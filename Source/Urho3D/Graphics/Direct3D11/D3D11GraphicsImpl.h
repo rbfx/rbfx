@@ -138,7 +138,7 @@ private:
     /// Constant buffer search map.
     ConstantBufferMap allConstantBuffers_;
     /// Currently dirty constant buffers.
-    PODVector<ConstantBuffer*> dirtyConstantBuffers_;
+    stl::vector<ConstantBuffer*> dirtyConstantBuffers_;
     /// Shader programs.
     ShaderProgramMap shaderPrograms_;
     /// Shader program in use.

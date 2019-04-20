@@ -84,7 +84,7 @@ void DropDownList::ApplyAttributes()
     SetSelection(selectionAttr_);
 }
 
-void DropDownList::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor)
+void DropDownList::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
 {
     Menu::GetBatches(batches, vertexData, currentScissor);
 
@@ -205,7 +205,7 @@ UIElement* DropDownList::GetItem(unsigned index) const
     return listView_->GetItem(index);
 }
 
-PODVector<UIElement*> DropDownList::GetItems() const
+stl::vector<UIElement*> DropDownList::GetItems() const
 {
     return listView_->GetItems();
 }

@@ -31,27 +31,27 @@
 namespace Urho3D
 {
 
-const Vector<String> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".7z", ".pak"};
-const Vector<String> wordExtensions_{".doc", ".docx", ".odt"};
-const Vector<String> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
-const Vector<String> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
-const Vector<String> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
-const Vector<String> audioExtensions_{".waw", ".ogg", ".mp3"};
+const stl::vector<String> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".7z", ".pak"};
+const stl::vector<String> wordExtensions_{".doc", ".docx", ".odt"};
+const stl::vector<String> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
+const stl::vector<String> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
+const stl::vector<String> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
+const stl::vector<String> audioExtensions_{".waw", ".ogg", ".mp3"};
 
 FileType GetFileType(const String& fileName)
 {
     auto extension = GetExtension(fileName).ToLower();
-    if (archiveExtensions_.Contains(extension))
+    if (archiveExtensions_.contains(extension))
         return FTYPE_ARCHIVE;
-    if (wordExtensions_.Contains(extension))
+    if (wordExtensions_.contains(extension))
         return FTYPE_WORD;
-    if (codeExtensions_.Contains(extension))
+    if (codeExtensions_.contains(extension))
         return FTYPE_CODE;
-    if (imagesExtensions_.Contains(extension))
+    if (imagesExtensions_.contains(extension))
         return FTYPE_IMAGE;
-    if (textExtensions_.Contains(extension))
+    if (textExtensions_.contains(extension))
         return FTYPE_TEXT;
-    if (audioExtensions_.Contains(extension))
+    if (audioExtensions_.contains(extension))
         return FTYPE_AUDIO;
     if (extension == "pdf")
         return FTYPE_PDF;
@@ -134,9 +134,9 @@ ContentType GetContentType(const String& resourcePath)
         return CTYPE_PARTICLE;
     if (extension == ".node")
         return CTYPE_SCENEOBJECT;
-    if (audioExtensions_.Contains(extension))
+    if (audioExtensions_.contains(extension))
         return CTYPE_SOUND;
-    if (imagesExtensions_.Contains(extension))
+    if (imagesExtensions_.contains(extension))
         return CTYPE_TEXTURE;
 
     return CTYPE_UNKNOWN;

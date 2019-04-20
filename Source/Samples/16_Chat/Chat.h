@@ -88,7 +88,7 @@ private:
     /// Handle connection status change (just update the buttons that should be shown.)
     void HandleConnectionStatus(StringHash eventType, VariantMap& eventData);
     /// Strings printed so far.
-    Vector<String> chatHistory_;
+    stl::vector<String> chatHistory_;
     /// Chat text element.
     stl::shared_ptr<Text> chatHistoryText_;
     /// Button container element.

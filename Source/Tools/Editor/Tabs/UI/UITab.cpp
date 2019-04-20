@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
@@ -152,7 +154,7 @@ void UITab::RenderNodeTree(UIElement* element)
         if (!wasDeleted)
         {
             // Do not use element->GetChildren() because child may be deleted during this loop.
-            PODVector<UIElement*> children;
+            stl::vector<UIElement*> children;
             element->GetChildren(children);
             for (const auto& child: children)
                 RenderNodeTree(child);
@@ -482,12 +484,12 @@ void UITab::SelectItem(UIElement* current)
 
 void UITab::AutoLoadDefaultStyle()
 {
-    styleNames_.Clear();
+    styleNames_.clear();
     auto cache = GetSubsystem<ResourceCache>();
     auto fs = GetSubsystem<FileSystem>();
     for (const auto& dir: cache->GetResourceDirs())
     {
-        Vector<String> items;
+        stl::vector<String> items;
         fs->ScanDir(items, dir + "UI", "", SCAN_FILES, false);
 
         for (const auto& fileName : items)
@@ -503,15 +505,15 @@ void UITab::AutoLoadDefaultStyle()
                 for (auto i = 0; i < styles.Size(); i++)
                 {
                     auto type = styles[i].GetAttribute("type");
-                    if (type.Length() && !styleNames_.Contains(type) &&
+                    if (type.Length() && !styleNames_.contains(type) &&
                         styles[i].GetAttribute("auto").ToLower() == "false")
-                        styleNames_.Push(type);
+                        styleNames_.push_back(type);
                 }
                 break;
             }
         }
     }
-    Sort(styleNames_.Begin(), styleNames_.End());
+    stl::quick_sort(styleNames_.begin(), styleNames_.end());
 }
 
 void UITab::RenderElementContextMenu()
@@ -521,7 +523,7 @@ void UITab::RenderElementContextMenu()
         if (ui::BeginMenu("Create Child"))
         {
             auto components = GetSubsystem<Editor>()->GetObjectsByCategory("UI");
-            Sort(components.Begin(), components.End());
+            stl::quick_sort(components.begin(), components.end());
 
             for (const String& component : components)
             {
@@ -532,7 +534,7 @@ void UITab::RenderElementContextMenu()
                     ui::SameLine();
                     if (ui::BeginMenu(component.CString()))
                     {
-                        for (auto j = 0; j < styleNames_.Size(); j++)
+                        for (auto j = 0; j < styleNames_.size(); j++)
                         {
                             if (ui::MenuItem(styleNames_[j].CString()))
                             {

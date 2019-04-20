@@ -71,39 +71,39 @@ void StaticModelGroup::ApplyAttributes()
         return;
 
     // Remove all old instance nodes before searching for new
-    for (unsigned i = 0; i < instanceNodes_.Size(); ++i)
+    for (unsigned i = 0; i < instanceNodes_.size(); ++i)
     {
         Node* node = instanceNodes_[i];
         if (node)
             node->RemoveListener(this);
     }
 
-    instanceNodes_.Clear();
+    instanceNodes_.clear();
 
     Scene* scene = GetScene();
     if (scene)
     {
         // The first index stores the number of IDs redundantly. This is for editing
-        for (unsigned i = 1; i < nodeIDsAttr_.Size(); ++i)
+        for (unsigned i = 1; i < nodeIDsAttr_.size(); ++i)
         {
             Node* node = scene->GetNode(nodeIDsAttr_[i].GetUInt());
             if (node)
             {
                 stl::weak_ptr<Node> instanceWeak(node);
                 node->AddListener(this);
-                instanceNodes_.Push(instanceWeak);
+                instanceNodes_.push_back(instanceWeak);
             }
         }
     }
 
-    worldTransforms_.Resize(instanceNodes_.Size());
+    worldTransforms_.resize(instanceNodes_.size());
     numWorldTransforms_ = 0; // Correct amount will be found during world bounding box update
     nodesDirty_ = false;
 
     OnMarkedDirty(GetNode());
 }
 
-void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     // If no bones or no bone-level testing, use the Drawable test
     RayQueryLevel level = query.level_;
@@ -135,7 +135,7 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, PODVector<Ra
             {
                 distance = M_INFINITY;
 
-                for (unsigned j = 0; j < batches_.Size(); ++j)
+                for (unsigned j = 0; j < batches_.size(); ++j)
                 {
                     Geometry* geometry = batches_[j].geometry_;
                     if (geometry)
@@ -161,7 +161,7 @@ void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, PODVector<Ra
             result.drawable_ = this;
             result.node_ = node_;
             result.subObject_ = i;
-            results.Push(result);
+            results.push_back(result);
         }
     }
 }
@@ -173,16 +173,16 @@ void StaticModelGroup::UpdateBatches(const FrameInfo& frame)
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
     distance_ = frame.camera_->GetDistance(worldBoundingBox.Center());
 
-    if (batches_.Size() > 1)
+    if (batches_.size() > 1)
     {
-        for (unsigned i = 0; i < batches_.Size(); ++i)
+        for (unsigned i = 0; i < batches_.size(); ++i)
         {
             batches_[i].distance_ = frame.camera_->GetDistance(worldTransform * geometryData_[i].center_);
             batches_[i].worldTransform_ = numWorldTransforms_ ? &worldTransforms_[0] : &Matrix3x4::IDENTITY;
             batches_[i].numWorldTransforms_ = numWorldTransforms_;
         }
     }
-    else if (batches_.Size() == 1)
+    else if (batches_.size() == 1)
     {
         batches_[0].distance_ = distance_;
         batches_[0].worldTransform_ = numWorldTransforms_ ? &worldTransforms_[0] : &Matrix3x4::IDENTITY;
@@ -206,7 +206,7 @@ unsigned StaticModelGroup::GetNumOccluderTriangles()
 
     unsigned triangles = 0;
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
         Geometry* geometry = GetLodGeometry(i, occlusionLodLevel_);
         if (!geometry)
@@ -230,7 +230,7 @@ bool StaticModelGroup::DrawOcclusion(OcclusionBuffer* buffer)
 
     for (unsigned i = 0; i < numWorldTransforms_; ++i)
     {
-        for (unsigned j = 0; j < batches_.Size(); ++j)
+        for (unsigned j = 0; j < batches_.size(); ++j)
         {
             Geometry* geometry = GetLodGeometry(j, occlusionLodLevel_);
             if (!geometry)
@@ -251,7 +251,7 @@ bool StaticModelGroup::DrawOcclusion(OcclusionBuffer* buffer)
             unsigned vertexSize;
             const unsigned char* indexData;
             unsigned indexSize;
-            const PODVector<VertexElement>* elements;
+            const stl::vector<VertexElement>* elements;
 
             geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
             // Check for valid geometry data
@@ -276,12 +276,12 @@ void StaticModelGroup::AddInstanceNode(Node* node)
         return;
 
     stl::weak_ptr<Node> instanceWeak(node);
-    if (instanceNodes_.Contains(instanceWeak))
+    if (instanceNodes_.contains(instanceWeak))
         return;
 
     // Add as a listener for the instance node, so that we know to dirty the transforms when the node moves or is enabled/disabled
     node->AddListener(this);
-    instanceNodes_.Push(instanceWeak);
+    instanceNodes_.push_back(instanceWeak);
     UpdateNumTransforms();
 }
 
@@ -291,40 +291,40 @@ void StaticModelGroup::RemoveInstanceNode(Node* node)
         return;
 
     stl::weak_ptr<Node> instanceWeak(node);
-    Vector<stl::weak_ptr<Node> >::Iterator i = instanceNodes_.Find(instanceWeak);
-    if (i == instanceNodes_.End())
+    auto i = instanceNodes_.find(instanceWeak);
+    if (i == instanceNodes_.end())
         return;
 
     node->RemoveListener(this);
-    instanceNodes_.Erase(i);
+    instanceNodes_.erase(i);
     UpdateNumTransforms();
 }
 
 void StaticModelGroup::RemoveAllInstanceNodes()
 {
-    for (unsigned i = 0; i < instanceNodes_.Size(); ++i)
+    for (unsigned i = 0; i < instanceNodes_.size(); ++i)
     {
         Node* node = instanceNodes_[i];
         if (node)
             node->RemoveListener(this);
     }
 
-    instanceNodes_.Clear();
+    instanceNodes_.clear();
     UpdateNumTransforms();
 }
 
 Node* StaticModelGroup::GetInstanceNode(unsigned index) const
 {
-    return index < instanceNodes_.Size() ? instanceNodes_[index].get() : nullptr;
+    return index < instanceNodes_.size() ? instanceNodes_[index].get() : nullptr;
 }
 
 void StaticModelGroup::SetNodeIDsAttr(const VariantVector& value)
 {
     // Just remember the node IDs. They need to go through the SceneResolver, and we actually find the nodes during
     // ApplyAttributes()
-    if (value.Size())
+    if (value.size())
     {
-        nodeIDsAttr_.Clear();
+        nodeIDsAttr_.clear();
 
         unsigned index = 0;
         unsigned numInstances = value[index++].GetUInt();
@@ -332,20 +332,20 @@ void StaticModelGroup::SetNodeIDsAttr(const VariantVector& value)
         if (numInstances > M_MAX_INT)
             numInstances = 0;
 
-        nodeIDsAttr_.Push(numInstances);
+        nodeIDsAttr_.push_back(numInstances);
         while (numInstances--)
         {
             // If vector contains less IDs than should, fill the rest with zeroes
-            if (index < value.Size())
-                nodeIDsAttr_.Push(value[index++].GetUInt());
+            if (index < value.size())
+                nodeIDsAttr_.push_back(value[index++].GetUInt());
             else
-                nodeIDsAttr_.Push(0);
+                nodeIDsAttr_.push_back(0);
         }
     }
     else
     {
-        nodeIDsAttr_.Clear();
-        nodeIDsAttr_.Push(0);
+        nodeIDsAttr_.clear();
+        nodeIDsAttr_.push_back(0);
     }
 
     nodesDirty_ = true;
@@ -372,7 +372,7 @@ void StaticModelGroup::OnWorldBoundingBoxUpdate()
 
     BoundingBox worldBox;
 
-    for (unsigned i = 0; i < instanceNodes_.Size(); ++i)
+    for (unsigned i = 0; i < instanceNodes_.size(); ++i)
     {
         Node* node = instanceNodes_[i];
         if (!node || !node->IsEnabled())
@@ -392,7 +392,7 @@ void StaticModelGroup::OnWorldBoundingBoxUpdate()
 
 void StaticModelGroup::UpdateNumTransforms()
 {
-    worldTransforms_.Resize(instanceNodes_.Size());
+    worldTransforms_.resize(instanceNodes_.size());
     numWorldTransforms_ = 0; // Correct amount will be during world bounding box update
     nodeIDsDirty_ = true;
 
@@ -402,15 +402,15 @@ void StaticModelGroup::UpdateNumTransforms()
 
 void StaticModelGroup::UpdateNodeIDs() const
 {
-    unsigned numInstances = instanceNodes_.Size();
+    unsigned numInstances = instanceNodes_.size();
 
-    nodeIDsAttr_.Clear();
-    nodeIDsAttr_.Push(numInstances);
+    nodeIDsAttr_.clear();
+    nodeIDsAttr_.push_back(numInstances);
 
     for (unsigned i = 0; i < numInstances; ++i)
     {
         Node* node = instanceNodes_[i];
-        nodeIDsAttr_.Push(node ? node->GetID() : 0);
+        nodeIDsAttr_.push_back(node ? node->GetID() : 0);
     }
 
     nodeIDsDirty_ = false;

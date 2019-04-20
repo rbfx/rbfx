@@ -111,7 +111,7 @@ void NATPunchtrough::CreateUI()
     logHistoryText_ = root->CreateChild<Text>();
     logHistoryText_->SetFont(font, 12);
     logHistoryText_->SetPosition(20, 200);
-    logHistory_.Resize(20);
+    logHistory_.resize(20);
 
     // Create NAT server config fields
     int marginTop = 40;
@@ -204,12 +204,12 @@ void NATPunchtrough::CreateLabel(const String& text, IntVector2 pos)
 
 void NATPunchtrough::ShowLogMessage(const String& row)
 {
-    logHistory_.Erase(0);
-    logHistory_.Push(row);
+    logHistory_.pop_front();
+    logHistory_.push_back(row);
 
     // Concatenate all the rows in history
     String allRows;
-    for (unsigned i = 0; i < logHistory_.Size(); ++i)
+    for (unsigned i = 0; i < logHistory_.size(); ++i)
         allRows += logHistory_[i] + "\n";
 
     logHistoryText_->SetText(allRows);

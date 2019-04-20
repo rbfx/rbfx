@@ -39,14 +39,14 @@ FileDialogResult OpenDialog(const String& filterList, const String& defaultPath,
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult OpenDialogMultiple(const String& filterList, const String& defaultPath, Vector<String>& outPaths)
+FileDialogResult OpenDialogMultiple(const String& filterList, const String& defaultPath, stl::vector<String>& outPaths)
 {
     nfdpathset_t output{};
     auto result = NFD_OpenDialogMultiple(filterList.CString(), defaultPath.CString(), &output);
     if (result == NFD_OKAY)
     {
         for (size_t i = 0, end = NFD_PathSet_GetCount(&output); i < end; i++)
-            outPaths.Push(NFD_PathSet_GetPath(&output, i));
+            outPaths.push_back(NFD_PathSet_GetPath(&output, i));
         NFD_PathSet_Free(&output);
     }
     return static_cast<FileDialogResult>(result);

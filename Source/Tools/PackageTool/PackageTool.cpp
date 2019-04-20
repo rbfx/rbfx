@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/IO/File.h>
@@ -36,6 +38,7 @@
 
 #include <Urho3D/DebugNew.h>
 
+
 using namespace Urho3D;
 
 static const unsigned COMPRESSED_BLOCK_SIZE = 32768;
@@ -51,7 +54,7 @@ struct FileEntry
 stl::shared_ptr<Context> context_(new Context());
 stl::shared_ptr<FileSystem> fileSystem_(new FileSystem(context_));
 String basePath_;
-Vector<FileEntry> entries_;
+stl::vector<FileEntry> entries_;
 unsigned checksum_ = 0;
 bool compress_ = false;
 bool quiet_ = false;
@@ -63,14 +66,14 @@ String ignoreExtensions_[] = {
 };
 
 int main(int argc, char** argv);
-void Run(const Vector<String>& arguments);
+void Run(const stl::vector<String>& arguments);
 void ProcessFile(const String& fileName, const String& rootDir);
 void WritePackageFile(const String& fileName, const String& rootDir);
 void WriteHeader(File& dest);
 
 int main(int argc, char** argv)
 {
-    Vector<String> arguments;
+    stl::vector<String> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -82,9 +85,9 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const Vector<String>& arguments)
+void Run(const stl::vector<String>& arguments)
 {
-    if (arguments.Size() < 2)
+    if (arguments.size() < 2)
         ErrorExit(
             "Usage: PackageTool <directory to process> <package name> [basepath] [options]\n"
             "\n"
@@ -103,9 +106,9 @@ void Run(const Vector<String>& arguments)
     const String& dirName = arguments[0];
     const String& packageName = arguments[1];
     bool isOutputMode = arguments[0].Length() == 2 && arguments[0][0] == '-';
-    if (arguments.Size() > 2)
+    if (arguments.size() > 2)
     {
-        for (unsigned i = 2; i < arguments.Size(); ++i)
+        for (unsigned i = 2; i < arguments.size(); ++i)
         {
             if (arguments[i][0] != '-')
                 basePath_ = AddTrailingSlash(arguments[i]);
@@ -135,34 +138,34 @@ void Run(const Vector<String>& arguments)
             PrintLine("Scanning directory " + dirName + " for files");
 
         // Get the file list recursively
-        Vector<String> fileNames;
+        stl::vector<String> fileNames;
         fileSystem_->ScanDir(fileNames, dirName, "*", SCAN_FILES, true);
-        if (!fileNames.Size())
+        if (!fileNames.size())
             ErrorExit("No files found");
 
         // Check for extensions to ignore
-        for (unsigned i = fileNames.Size() - 1; i < fileNames.Size(); --i)
+        for (unsigned i = fileNames.size() - 1; i < fileNames.size(); --i)
         {
             String extension = GetExtension(fileNames[i]);
             for (unsigned j = 0; j < ignoreExtensions_[j].Length(); ++j)
             {
                 if (extension == ignoreExtensions_[j])
                 {
-                    fileNames.Erase(fileNames.Begin() + i);
+                    fileNames.erase(fileNames.begin() + i);
                     break;
                 }
             }
         }
 
         // Ensure entries are sorted
-        Sort(fileNames.Begin(), fileNames.End());
+        stl::quick_sort(fileNames.begin(), fileNames.end());
 
         // Check if up to date
         if (fileSystem_->Exists(packageName))
         {
             unsigned packageTime = fileSystem_->GetLastModifiedTime(packageName);
             stl::shared_ptr<PackageFile> packageFile(new PackageFile(context_, packageName));
-            if (packageFile->GetNumFiles() == fileNames.Size())
+            if (packageFile->GetNumFiles() == fileNames.size())
             {
                 bool filesOutOfDate = false;
                 for (const String& fileName : fileNames)
@@ -182,7 +185,7 @@ void Run(const Vector<String>& arguments)
             }
         }
 
-        for (unsigned i = 0; i < fileNames.Size(); ++i)
+        for (unsigned i = 0; i < fileNames.size(); ++i)
             ProcessFile(fileNames[i], dirName);
 
         WritePackageFile(packageName, dirName);
@@ -242,7 +245,7 @@ void ProcessFile(const String& fileName, const String& rootDir)
     newEntry.offset_ = 0; // Offset not yet known
     newEntry.size_ = file.GetSize();
     newEntry.checksum_ = 0; // Will be calculated later
-    entries_.Push(newEntry);
+    entries_.push_back(newEntry);
 }
 
 void WritePackageFile(const String& fileName, const String& rootDir)
@@ -257,7 +260,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
     // Write ID, number of files & placeholder for checksum
     WriteHeader(dest);
 
-    for (unsigned i = 0; i < entries_.Size(); ++i)
+    for (unsigned i = 0; i < entries_.size(); ++i)
     {
         // Write entry (correct offset is still unknown, will be filled in later)
         dest.WriteString(basePath_ + entries_[i].name_);
@@ -270,7 +273,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
     unsigned lastOffset;
 
     // Write file data, calculate checksums & correct offsets
-    for (unsigned i = 0; i < entries_.Size(); ++i)
+    for (unsigned i = 0; i < entries_.size(); ++i)
     {
         lastOffset = entries_[i].offset_ = dest.GetSize();
         String fileFullPath = rootDir + "/" + entries_[i].name_;
@@ -341,7 +344,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
     dest.Seek(0);
     WriteHeader(dest);
 
-    for (unsigned i = 0; i < entries_.Size(); ++i)
+    for (unsigned i = 0; i < entries_.size(); ++i)
     {
         dest.WriteString(basePath_ + entries_[i].name_);
         dest.WriteUInt(entries_[i].offset_);
@@ -351,7 +354,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
 
     if (!quiet_)
     {
-        PrintLine("Number of files: " + String(entries_.Size()));
+        PrintLine("Number of files: " + String(entries_.size()));
         PrintLine("File data size: " + String(totalDataSize));
         PrintLine("Package size: " + String(dest.GetSize()));
         PrintLine("Checksum: " + String(checksum_));
@@ -365,6 +368,6 @@ void WriteHeader(File& dest)
         dest.WriteFileID("UPAK");
     else
         dest.WriteFileID("ULZ4");
-    dest.WriteUInt(entries_.Size());
+    dest.WriteUInt(entries_.size());
     dest.WriteUInt(checksum_);
 }

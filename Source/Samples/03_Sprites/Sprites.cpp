@@ -100,7 +100,7 @@ void Sprites::CreateSprites()
         sprite->SetVar(VAR_VELOCITY, Vector2(Random(200.0f) - 100.0f, Random(200.0f) - 100.0f));
 
         // Store sprites to our own container for easy movement update iteration
-        sprites_.Push(sprite);
+        sprites_.push_back(sprite);
     }
 }
 
@@ -111,7 +111,7 @@ void Sprites::MoveSprites(float timeStep)
     auto height = (float)graphics->GetHeight();
 
     // Go through all sprites
-    for (unsigned i = 0; i < sprites_.Size(); ++i)
+    for (unsigned i = 0; i < sprites_.size(); ++i)
     {
         Sprite* sprite = sprites_[i];
 

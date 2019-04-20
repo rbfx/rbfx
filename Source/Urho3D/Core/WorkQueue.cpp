@@ -82,7 +82,7 @@ WorkQueue::~WorkQueue()
     shutDown_ = true;
     Resume();
 
-    for (unsigned i = 0; i < threads_.Size(); ++i)
+    for (unsigned i = 0; i < threads_.size(); ++i)
         threads_[i]->Stop();
 }
 
@@ -91,7 +91,7 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 #ifdef URHO3D_THREADING
     // Other subsystems may initialize themselves according to the number of threads.
     // Therefore allow creating the threads only once, after which the amount is fixed
-    if (!threads_.Empty())
+    if (!threads_.empty())
         return;
 
     // Start threads in paused mode
@@ -102,7 +102,7 @@ void WorkQueue::CreateThreads(unsigned numThreads)
         stl::shared_ptr<WorkerThread> thread(new WorkerThread(this, i + 1));
         thread->SetName(Format("Worker {}", i + 1));
         thread->Run();
-        threads_.Push(thread);
+        threads_.push_back(thread);
     }
 #else
     URHO3D_LOGERROR("Can not create worker threads as threading is disabled");
@@ -143,7 +143,7 @@ void WorkQueue::AddWorkItem(const stl::shared_ptr<WorkItem>& item)
     item->completed_ = false;
 
     // Make sure worker threads' list is safe to modify
-    if (threads_.Size() && !paused_)
+    if (threads_.size() && !paused_)
         queueMutex_.Acquire();
 
     // Find position for new item
@@ -167,7 +167,7 @@ void WorkQueue::AddWorkItem(const stl::shared_ptr<WorkItem>& item)
             queue_.push_back(item.get());
     }
 
-    if (threads_.Size())
+    if (threads_.size())
     {
         queueMutex_.Release();
         paused_ = false;
@@ -208,12 +208,12 @@ bool WorkQueue::RemoveWorkItem(stl::shared_ptr<WorkItem> item)
     return false;
 }
 
-unsigned WorkQueue::RemoveWorkItems(const Vector<stl::shared_ptr<WorkItem> >& items)
+unsigned WorkQueue::RemoveWorkItems(const stl::vector<stl::shared_ptr<WorkItem> >& items)
 {
     MutexLock lock(queueMutex_);
     unsigned removed = 0;
 
-    for (Vector<stl::shared_ptr<WorkItem> >::ConstIterator i = items.Begin(); i != items.End(); ++i)
+    for (auto i = items.begin(); i != items.end(); ++i)
     {
         auto j = stl::find(queue_.begin(), queue_.end(), i->get());
         if (j != queue_.end())
@@ -259,7 +259,7 @@ void WorkQueue::Complete(unsigned priority)
 {
     completing_ = true;
 
-    if (threads_.Size())
+    if (threads_.size())
     {
         Resume();
 
@@ -427,7 +427,7 @@ void WorkQueue::ReturnToPool(stl::shared_ptr<WorkItem>& item)
 void WorkQueue::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 {
     // If no worker threads, complete low-priority work here
-    if (threads_.Empty() && !queue_.empty())
+    if (threads_.empty() && !queue_.empty())
     {
         URHO3D_PROFILE("CompleteWorkNonthreaded");
 

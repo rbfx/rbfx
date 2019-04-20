@@ -62,7 +62,7 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Return the depended on nodes to order network updates.
-    void GetDependencyNodes(PODVector<Node*>& dest) override;
+    void GetDependencyNodes(stl::vector<Node*>& dest) override;
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 

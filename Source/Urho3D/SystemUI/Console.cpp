@@ -21,6 +21,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include "Urho3D/Container/Utilities.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
@@ -82,8 +84,8 @@ void Console::Toggle()
 void Console::SetNumHistoryRows(unsigned rows)
 {
     historyRows_ = rows;
-    if (history_.Size() > rows)
-        history_.Resize(rows);
+    if (history_.size() > rows)
+        history_.resize(rows);
 }
 
 bool Console::IsVisible() const
@@ -93,30 +95,30 @@ bool Console::IsVisible() const
 
 void Console::RefreshInterpreters()
 {
-    interpreters_.Clear();
-    interpretersPointers_.Clear();
+    interpreters_.clear();
+    interpretersPointers_.clear();
 
     EventReceiverGroup* group = context_->GetEventReceivers(E_CONSOLECOMMAND);
-    if (!group || group->receivers_.Empty())
+    if (!group || group->receivers_.empty())
         return;
 
     String currentInterpreterName;
-    if (currentInterpreter_ < interpreters_.Size())
+    if (currentInterpreter_ < interpreters_.size())
         currentInterpreterName = interpreters_[currentInterpreter_];
 
-    for (unsigned i = 0; i < group->receivers_.Size(); ++i)
+    for (unsigned i = 0; i < group->receivers_.size(); ++i)
     {
         Object* receiver = group->receivers_[i];
         if (receiver)
         {
-            interpreters_.Push(receiver->GetTypeName());
-            interpretersPointers_.Push(interpreters_.Back().CString());
+            interpreters_.push_back(receiver->GetTypeName());
+            interpretersPointers_.push_back(interpreters_.back().CString());
         }
     }
-    Sort(interpreters_.Begin(), interpreters_.End());
+    stl::quick_sort(interpreters_.begin(), interpreters_.end());
 
-    currentInterpreter_ = interpreters_.IndexOf(currentInterpreterName);
-    if (currentInterpreter_ == interpreters_.Size())
+    currentInterpreter_ = interpreters_.index_of(currentInterpreterName);
+    if (currentInterpreter_ == interpreters_.size())
         currentInterpreter_ = 0;
 }
 
@@ -130,9 +132,9 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
     const String& message = eventData[P_MESSAGE].GetString();
 
     // The message may be multi-line, so split to rows in that case
-    Vector<String> rows = message.Split('\n');
+    stl::vector<String> rows = message.Split('\n');
     for (const auto& row : rows)
-        history_.Push(LogEntry{level, timestamp, logger, row});
+        history_.push_back(LogEntry{level, timestamp, logger, row});
     scrollToEnd_ = true;
 
     if (autoVisibleOnError_ && level == LOG_ERROR && !IsVisible())
@@ -142,7 +144,7 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 void Console::RenderContent()
 {
     auto region = ui::GetContentRegionAvail();
-    auto showCommandInput = !interpretersPointers_.Empty();
+    auto showCommandInput = !interpretersPointers_.empty();
     ui::BeginChild("ConsoleScrollArea", ImVec2(region.x, region.y - (showCommandInput ? 30 : 0)), false,
                    ImGuiWindowFlags_HorizontalScrollbar);
 
@@ -199,8 +201,8 @@ void Console::RenderContent()
     if (showCommandInput)
     {
         ui::PushItemWidth(110);
-        if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.Front(),
-            interpretersPointers_.Size()))
+        if (ui::Combo("##ConsoleInterpreter", &currentInterpreter_, &interpretersPointers_.front(),
+            interpretersPointers_.size()))
         {
         }
         ui::PopItemWidth();
@@ -215,12 +217,12 @@ void Console::RenderContent()
         {
             focusInput_ = true;
             String line(inputBuffer_);
-            if (line.Length() && currentInterpreter_ < interpreters_.Size())
+            if (line.Length() && currentInterpreter_ < interpreters_.size())
             {
                 // Store to history, then clear the lineedit
                 URHO3D_LOGINFOF("> %s", line.CString());
-                if (history_.Size() > historyRows_)
-                    history_.Erase(history_.Begin());
+                if (history_.size() > historyRows_)
+                    history_.pop_front();
                 scrollToEnd_ = true;
                 inputBuffer_[0] = 0;
 
@@ -268,15 +270,15 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
 
 void Console::Clear()
 {
-    history_.Clear();
+    history_.clear();
 }
 
 void Console::SetCommandInterpreter(const String& interpreter)
 {
     RefreshInterpreters();
 
-    auto index = interpreters_.IndexOf(interpreter);
-    if (index == interpreters_.Size())
+    auto index = interpreters_.index_of(interpreter);
+    if (index == interpreters_.size())
         index = 0;
     currentInterpreter_ = index;
 }
@@ -297,9 +299,9 @@ StringVector Console::GetLoggers() const
         loggers.insert(row.logger_);
 
     for (const String& logger : loggers)
-        loggersVector.EmplaceBack(logger);
+        loggersVector.emplace_back(logger);
 
-    Sort(loggersVector.Begin(), loggersVector.End());
+    stl::quick_sort(loggersVector.begin(), loggersVector.end());
     return loggersVector;
 }
 

@@ -1361,7 +1361,7 @@ bool Image::SaveDDS(const String& fileName) const
     }
 
     // Write image
-    PODVector<const Image*> levels;
+    stl::vector<const Image*> levels;
     GetLevels(levels);
 
     outFile.WriteFileID("DDS ");
@@ -1373,7 +1373,7 @@ bool Image::SaveDDS(const String& fileName) const
         | 0x00000002l /*DDSD_HEIGHT*/ | 0x00000004l /*DDSD_WIDTH*/ | 0x00020000l /*DDSD_MIPMAPCOUNT*/ | 0x00001000l /*DDSD_PIXELFORMAT*/;
     ddsd.dwWidth_ = width_;
     ddsd.dwHeight_ = height_;
-    ddsd.dwMipMapCount_ = levels.Size();
+    ddsd.dwMipMapCount_ = levels.size();
     ddsd.ddpfPixelFormat_.dwFlags_ = 0x00000040l /*DDPF_RGB*/ | 0x00000001l /*DDPF_ALPHAPIXELS*/;
     ddsd.ddpfPixelFormat_.dwSize_ = sizeof(ddsd.ddpfPixelFormat_);
     ddsd.ddpfPixelFormat_.dwRGBBitCount_ = 32;
@@ -1383,7 +1383,7 @@ bool Image::SaveDDS(const String& fileName) const
     ddsd.ddpfPixelFormat_.dwRGBAlphaBitMask_ = 0xff000000;
 
     outFile.Write(&ddsd, sizeof(ddsd));
-    for (unsigned i = 0; i < levels.Size(); ++i)
+    for (unsigned i = 0; i < levels.size(); ++i)
         outFile.Write(levels[i]->GetData(), levels[i]->GetWidth() * levels[i]->GetHeight() * 4);
 
     return true;
@@ -2153,7 +2153,7 @@ stl::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
         paddedRect.bottom_ = (rect.bottom_ / 4) * 4;
         IntRect currentRect = paddedRect;
 
-        PODVector<unsigned char> subimageData;
+        stl::vector<unsigned char> subimageData;
         unsigned subimageLevels = 0;
 
         // Save as many mips as possible until the next mip would cross a block boundary
@@ -2164,13 +2164,13 @@ stl::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
                 break;
 
             // Mips are stored continuously
-            unsigned destStartOffset = subimageData.Size();
+            unsigned destStartOffset = subimageData.size();
             unsigned destRowSize = currentRect.Width() / 4 * level.blockSize_;
             unsigned destSize = currentRect.Height() / 4 * destRowSize;
             if (!destSize)
                 break;
 
-            subimageData.Resize(destStartOffset + destSize);
+            subimageData.resize(destStartOffset + destSize);
             unsigned char* dest = &subimageData[destStartOffset];
 
             for (int y = currentRect.top_; y < currentRect.bottom_; y += 4)
@@ -2205,9 +2205,9 @@ stl::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
         image->compressedFormat_ = compressedFormat_;
         image->numCompressedLevels_ = subimageLevels;
         image->components_ = components_;
-        image->data_ = new unsigned char[subimageData.Size()];
-        memcpy(image->data_.get(), &subimageData[0], subimageData.Size());
-        image->SetMemoryUse(subimageData.Size());
+        image->data_ = new unsigned char[subimageData.size()];
+        memcpy(image->data_.get(), &subimageData[0], subimageData.size());
+        image->SetMemoryUse(subimageData.size());
 
         return image;
     }
@@ -2305,26 +2305,26 @@ void Image::CleanupLevels()
     nextLevel_.reset();
 }
 
-void Image::GetLevels(PODVector<Image*>& levels)
+void Image::GetLevels(stl::vector<Image*>& levels)
 {
-    levels.Clear();
+    levels.clear();
 
     Image* image = this;
     while (image)
     {
-        levels.Push(image);
+        levels.push_back(image);
         image = image->nextLevel_;
     }
 }
 
-void Image::GetLevels(PODVector<const Image*>& levels) const
+void Image::GetLevels(stl::vector<const Image*>& levels) const
 {
-    levels.Clear();
+    levels.clear();
 
     const Image* image = this;
     while (image)
     {
-        levels.Push(image);
+        levels.push_back(image);
         image = image->nextLevel_;
     }
 }

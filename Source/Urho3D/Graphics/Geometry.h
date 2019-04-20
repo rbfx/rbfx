@@ -63,7 +63,7 @@ public:
     /// Set the LOD distance.
     void SetLodDistance(float distance);
     /// Override raw vertex data to be returned for CPU-side operations.
-    void SetRawVertexData(const stl::shared_array<unsigned char>& data, const PODVector<VertexElement>& elements);
+    void SetRawVertexData(const stl::shared_array<unsigned char>& data, const stl::vector<VertexElement>& elements);
     /// Override raw vertex data to be returned for CPU-side operations using a legacy vertex bitmask.
     void SetRawVertexData(const stl::shared_array<unsigned char>& data, unsigned elementMask);
     /// Override raw index data to be returned for CPU-side operations.
@@ -72,10 +72,10 @@ public:
     void Draw(Graphics* graphics);
 
     /// Return all vertex buffers.
-    const Vector<stl::shared_ptr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
+    const stl::vector<stl::shared_ptr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 
     /// Return number of vertex buffers.
-    unsigned GetNumVertexBuffers() const { return vertexBuffers_.Size(); }
+    unsigned GetNumVertexBuffers() const { return vertexBuffers_.size(); }
 
     /// Return vertex buffer by index.
     VertexBuffer* GetVertexBuffer(unsigned index) const;
@@ -104,10 +104,10 @@ public:
     /// Return buffers' combined hash value for state sorting.
     unsigned short GetBufferHash() const;
     /// Return raw vertex and index data for CPU operations, or null pointers if not available. Will return data of the first vertex buffer if override data not set.
-    void GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData, unsigned& indexSize, const PODVector<VertexElement>*& elements) const;
+    void GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData, unsigned& indexSize, const stl::vector<VertexElement>*& elements) const;
     /// Return raw vertex and index data for CPU operations, or null pointers if not available. Will return data of the first vertex buffer if override data not set.
     void GetRawDataShared(stl::shared_array<unsigned char>& vertexData, unsigned& vertexSize, stl::shared_array<unsigned char>& indexData,
-        unsigned& indexSize, const PODVector<VertexElement>*& elements) const;
+        unsigned& indexSize, const stl::vector<VertexElement>*& elements) const;
     /// Return ray hit distance or infinity if no hit. Requires raw data to be set. Optionally return hit normal and hit uv coordinates at intersect point.
     float GetHitDistance(const Ray& ray, Vector3* outNormal = nullptr, Vector2* outUV = nullptr) const;
     /// Return whether or not the ray is inside geometry.
@@ -118,7 +118,7 @@ public:
 
 private:
     /// Vertex buffers.
-    Vector<stl::shared_ptr<VertexBuffer> > vertexBuffers_;
+    stl::vector<stl::shared_ptr<VertexBuffer> > vertexBuffers_;
     /// Index buffer.
     stl::shared_ptr<IndexBuffer> indexBuffer_;
     /// Primitive type.
@@ -134,7 +134,7 @@ private:
     /// LOD distance.
     float lodDistance_;
     /// Raw vertex data elements.
-    PODVector<VertexElement> rawElements_;
+    stl::vector<VertexElement> rawElements_;
     /// Raw vertex data override.
     stl::shared_array<unsigned char> rawVertexData_;
     /// Raw index data override.

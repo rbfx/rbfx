@@ -83,7 +83,7 @@ protected:
     /// Index of current figure displaying material.
     unsigned figureIndex_ = 0;
     /// A list of figures between which material view can be toggled.
-    PODVector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
+    stl::vector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
 };
 
 }

@@ -59,15 +59,15 @@ public:
     /// Run a program using the command interpreter, block until it exits and return the exit code. Will fail if any allowed paths are defined.
     int SystemCommand(const String& commandLine, bool redirectStdOutToLog = false);
     /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined. Returns STDOUT output of subprocess.
-    int SystemRun(const String& fileName, const Vector<String>& arguments, String& output);
+    int SystemRun(const String& fileName, const stl::vector<String>& arguments, String& output);
     /// Run a specific program, block until it exits and return the exit code. Will fail if any allowed paths are defined.
-    int SystemRun(const String& fileName, const Vector<String>& arguments);
+    int SystemRun(const String& fileName, const stl::vector<String>& arguments);
     /// Run a specific program, do not block until it exits. Will fail if any allowed paths are defined.
-    int SystemSpawn(const String& fileName, const Vector<String>& arguments);
+    int SystemSpawn(const String& fileName, const stl::vector<String>& arguments);
     /// Run a program using the command interpreter asynchronously. Return a request ID or M_MAX_UNSIGNED if failed. The exit code will be posted together with the request ID in an AsyncExecFinished event. Will fail if any allowed paths are defined.
     unsigned SystemCommandAsync(const String& commandLine);
     /// Run a specific program asynchronously. Return a request ID or M_MAX_UNSIGNED if failed. The exit code will be posted together with the request ID in an AsyncExecFinished event. Will fail if any allowed paths are defined.
-    unsigned SystemRunAsync(const String& fileName, const Vector<String>& arguments);
+    unsigned SystemRunAsync(const String& fileName, const stl::vector<String>& arguments);
     /// Open a file in an external program, with mode such as "edit" optionally specified. Will fail if any allowed paths are defined.
     bool SystemOpen(const String& fileName, const String& mode = String::EMPTY);
     /// Copy a file. Return true if successful.
@@ -99,7 +99,7 @@ public:
     /// Check if a directory exists.
     bool DirExists(const String& pathName) const;
     /// Scan a directory for specified files.
-    void ScanDir(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
+    void ScanDir(stl::vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Return the program's directory.
     String GetProgramDir() const;
 #if DESKTOP
@@ -129,7 +129,7 @@ public:
 private:
     /// Scan directory, called internally.
     void ScanDirInternal
-        (Vector<String>& result, String path, const String& startPath, const String& filter, unsigned flags, bool recursive) const;
+        (stl::vector<String>& result, String path, const String& startPath, const String& filter, unsigned flags, bool recursive) const;
     /// Handle begin frame event to check for completed async executions.
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
     /// Handle a console command event.

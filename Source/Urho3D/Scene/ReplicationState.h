@@ -122,13 +122,13 @@ struct URHO3D_API DirtyBits
 struct URHO3D_API NetworkState
 {
     /// Cached network attribute infos.
-    const Vector<AttributeInfo>* attributes_{};
+    const stl::vector<AttributeInfo>* attributes_{};
     /// Current network attribute values.
-    Vector<Variant> currentValues_;
+    stl::vector<Variant> currentValues_;
     /// Previous network attribute values.
-    Vector<Variant> previousValues_;
+    stl::vector<Variant> previousValues_;
     /// Replication states that are tracking this object.
-    PODVector<ReplicationState*> replicationStates_;
+    stl::vector<ReplicationState*> replicationStates_;
     /// Previous user variables.
     VariantMap previousVars_;
     /// Bitmask for intercepting network messages. Used on the client only.

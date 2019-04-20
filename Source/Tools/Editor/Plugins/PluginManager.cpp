@@ -140,7 +140,7 @@ Plugin* PluginManager::Load(const String& name)
             plugin->name_ = name;
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
-            plugins_.Push(plugin);
+            plugins_.push_back(plugin);
             return plugin.get();
         }
         else
@@ -168,8 +168,8 @@ void PluginManager::Unload(Plugin* plugin)
     if (plugin == nullptr)
         return;
 
-    auto it = plugins_.Find(stl::shared_ptr<Plugin>(plugin));
-    if (it == plugins_.End())
+    auto it = plugins_.find(stl::shared_ptr<Plugin>(plugin));
+    if (it == plugins_.end())
     {
         URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.CString());
         return;
@@ -188,7 +188,7 @@ void PluginManager::OnEndFrame()
 #if URHO3D_CSHARP
     Script* script = GetSubsystem<Script>();
     // C# plugin auto-reloading.
-    PODVector<Plugin*> reloadingPlugins;
+    stl::vector<Plugin*> reloadingPlugins;
     for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
     {
         Plugin* plugin = it->Get();
@@ -224,7 +224,7 @@ void PluginManager::OnEndFrame()
     }
 #endif
 
-    for (auto it = plugins_.Begin(); it != plugins_.End();)
+    for (auto it = plugins_.begin(); it != plugins_.end();)
     {
         Plugin* plugin = it->get();
 
@@ -250,7 +250,7 @@ void PluginManager::OnEndFrame()
             }
 #endif
             URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.CString());
-            it = plugins_.Erase(it);
+            it = plugins_.erase(it);
         }
         else if (plugin->type_ == PLUGIN_NATIVE && plugin->nativeContext_.userdata)
         {
@@ -279,7 +279,7 @@ void PluginManager::OnEndFrame()
                     GetFileNameAndExtension(plugin->name_).CString());
                 cr_plugin_close(plugin->nativeContext_);
                 plugin->nativeContext_.userdata = nullptr;
-                it = plugins_.Erase(it);
+                it = plugins_.erase(it);
             }
             else if (reloading && plugin->nativeContext_.userdata != nullptr)
             {
@@ -301,7 +301,7 @@ void PluginManager::OnEndFrame()
 
 Plugin* PluginManager::GetPlugin(const String& name)
 {
-    for (auto it = plugins_.Begin(); it != plugins_.End(); it++)
+    for (auto it = plugins_.begin(); it != plugins_.end(); it++)
     {
         if (it->get()->name_ == name)
             return it->get();
@@ -379,7 +379,7 @@ const StringVector& PluginManager::GetPluginNames()
 #if URHO3D_PLUGINS
     StringVector* pluginNames = ui::GetUIState<StringVector>();
 
-    if (pluginNames->Empty())
+    if (pluginNames->empty())
     {
         FileSystem* fs = GetFileSystem();
 
@@ -390,7 +390,7 @@ const StringVector& PluginManager::GetPluginNames()
         // Remove deleted plugin files.
         for (const String& key : pluginInfoCache_.Keys())
         {
-            if (!files.Contains(key))
+            if (!files.contains(key))
                 pluginInfoCache_.Erase(key);
         }
 
@@ -415,7 +415,7 @@ const StringVector& PluginManager::GetPluginNames()
             if (info.pluginType_ == PLUGIN_INVALID)
                 continue;
 
-            pluginNames->Push(baseName);
+            pluginNames->push_back(baseName);
         }
     }
 #endif

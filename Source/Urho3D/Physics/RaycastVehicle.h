@@ -187,15 +187,15 @@ private:
     /// Coordinate system.
     IntVector3 coordinateSystem_;
     /// Nodes of all wheels
-    Vector<Node*> wheelNodes_;
+    stl::vector<Node*> wheelNodes_;
     /// All wheels original rotations. These are applied in addition to wheel rotations by btRaycastVehicle
-    Vector<Quaternion> origRotation_;
+    stl::vector<Quaternion> origRotation_;
     /// Revolutions per minute value for in-air motor wheels. FIXME: set this one per wheel
     float inAirRPM_;
     /// Per-wheel extra settings.
-    Vector<float> skidInfoCumulative_;
+    stl::vector<float> skidInfoCumulative_;
     /// Wheel side movement speed.
-    Vector<float> wheelSideSlipSpeed_;
+    stl::vector<float> wheelSideSlipSpeed_;
     /// Side slip speed threshold.
     float maxSideSlipSpeed_;
     /// Loaded data temporarily wait here for ApplyAttributes to come pick them up.

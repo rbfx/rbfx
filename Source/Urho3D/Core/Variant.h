@@ -75,10 +75,10 @@ class Variant;
 class VectorBuffer;
 
 /// Vector of variants.
-using VariantVector = Vector<Variant>;
+using VariantVector = stl::vector<Variant>;
 
 /// Vector of strings.
-using StringVector = Vector<String>;
+using StringVector = stl::vector<String>;
 
 /// Map of variants.
 using VariantMap = HashMap<StringHash, Variant>;
@@ -302,7 +302,7 @@ union VariantValue
     StringVector stringVector_;
     VariantVector variantVector_;
     VariantMap variantMap_;
-    PODVector<unsigned char> buffer_;
+    stl::vector<unsigned char> buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
     CustomVariantValue* customValueHeap_;
@@ -316,7 +316,7 @@ union VariantValue
     ~VariantValue() { }     // NOLINT(modernize-use-equals-default)
 };
 
-static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
+// TODO: static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
 
 /// Variable that supports a fixed set of types.
 class URHO3D_API Variant
@@ -416,7 +416,7 @@ public:
     }
 
     /// Construct from a buffer.
-    Variant(const PODVector<unsigned char>& value)      // NOLINT(google-explicit-constructor)
+    Variant(const stl::vector<unsigned char>& value)      // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -687,7 +687,7 @@ public:
     }
 
     /// Assign from a buffer.
-    Variant& operator =(const PODVector<unsigned char>& rhs)
+    Variant& operator =(const stl::vector<unsigned char>& rhs)
     {
         SetType(VAR_BUFFER);
         value_.buffer_ = rhs;
@@ -878,7 +878,7 @@ public:
     }
 
     /// Test for equality with a buffer. To return true, both the type and value must match.
-    bool operator ==(const PODVector<unsigned char>& rhs) const;
+    bool operator ==(const stl::vector<unsigned char>& rhs) const;
     /// Test for equality with a %VectorBuffer. To return true, both the type and value must match.
     bool operator ==(const VectorBuffer& rhs) const;
 
@@ -1019,7 +1019,7 @@ public:
     bool operator !=(const String& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a buffer.
-    bool operator !=(const PODVector<unsigned char>& rhs) const { return !(*this == rhs); }
+    bool operator !=(const stl::vector<unsigned char>& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a %VectorBuffer.
     bool operator !=(const VectorBuffer& rhs) const { return !(*this == rhs); }
@@ -1198,7 +1198,7 @@ public:
     const String& GetString() const { return type_ == VAR_STRING ? value_.string_ : String::EMPTY; }
 
     /// Return buffer or empty on type mismatch.
-    const PODVector<unsigned char>& GetBuffer() const
+    const stl::vector<unsigned char>& GetBuffer() const
     {
         return type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer;
     }
@@ -1346,7 +1346,7 @@ public:
     template <class T> T Get() const;
 
     /// Return a pointer to a modifiable buffer or null on type mismatch.
-    PODVector<unsigned char>* GetBufferPtr()
+    stl::vector<unsigned char>* GetBufferPtr()
     {
         return type_ == VAR_BUFFER ? &value_.buffer_ : nullptr;
     }
@@ -1392,7 +1392,7 @@ public:
     /// Empty variant.
     static const Variant EMPTY;
     /// Empty buffer.
-    static const PODVector<unsigned char> emptyBuffer;
+    static const stl::vector<unsigned char> emptyBuffer;
     /// Empty resource reference.
     static const ResourceRef emptyResourceRef;
     /// Empty resource reference list.
@@ -1446,7 +1446,7 @@ template <> inline VariantType GetVariantType<String>() { return VAR_STRING; }
 
 template <> inline VariantType GetVariantType<StringHash>() { return VAR_INT; }
 
-template <> inline VariantType GetVariantType<PODVector<unsigned char> >() { return VAR_BUFFER; }
+template <> inline VariantType GetVariantType<stl::vector<unsigned char> >() { return VAR_BUFFER; }
 
 template <> inline VariantType GetVariantType<ResourceRef>() { return VAR_RESOURCEREF; }
 
@@ -1509,7 +1509,7 @@ template <> URHO3D_API const IntVector2& Variant::Get<const IntVector2&>() const
 
 template <> URHO3D_API const IntVector3& Variant::Get<const IntVector3&>() const;
 
-template <> URHO3D_API const PODVector<unsigned char>& Variant::Get<const PODVector<unsigned char>&>() const;
+template <> URHO3D_API const stl::vector<unsigned char>& Variant::Get<const stl::vector<unsigned char>&>() const;
 
 template <> URHO3D_API void* Variant::Get<void*>() const;
 
@@ -1551,7 +1551,7 @@ template <> URHO3D_API IntVector2 Variant::Get<IntVector2>() const;
 
 template <> URHO3D_API IntVector3 Variant::Get<IntVector3>() const;
 
-template <> URHO3D_API PODVector<unsigned char> Variant::Get<PODVector<unsigned char> >() const;
+template <> URHO3D_API stl::vector<unsigned char> Variant::Get<stl::vector<unsigned char> >() const;
 
 template <> URHO3D_API Matrix3 Variant::Get<Matrix3>() const;
 

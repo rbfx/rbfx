@@ -622,21 +622,21 @@ void BufferToString(String& dest, const void* data, unsigned size)
     }
 }
 
-void StringToBuffer(PODVector<unsigned char>& dest, const String& source)
+void StringToBuffer(stl::vector<unsigned char>& dest, const String& source)
 {
     StringToBuffer(dest, source.CString());
 }
 
-void StringToBuffer(PODVector<unsigned char>& dest, const char* source)
+void StringToBuffer(stl::vector<unsigned char>& dest, const char* source)
 {
     if (!source)
     {
-        dest.Clear();
+        dest.clear();
         return;
     }
 
     unsigned size = CountElements(source, ' ');
-    dest.Resize(size);
+    dest.resize(size);
 
     bool inSpace = true;
     unsigned index = 0;
@@ -792,14 +792,14 @@ static inline bool IsBase64(char c) {
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-PODVector<unsigned char> DecodeBase64(String encodedString)
+stl::vector<unsigned char> DecodeBase64(String encodedString)
 {
     int inLen = encodedString.Length();
     int i = 0;
     int j = 0;
     int in_ = 0;
     unsigned char charArray4[4], charArray3[3];
-    PODVector<unsigned char> ret;
+    stl::vector<unsigned char> ret;
 
     while (inLen-- && (encodedString[in_] != '=') && IsBase64(encodedString[in_]))
     {
@@ -816,7 +816,7 @@ PODVector<unsigned char> DecodeBase64(String encodedString)
             charArray3[2] = ((charArray4[2] & 0x3u) << 6u) + charArray4[3];
 
             for (i = 0; (i < 3); i++)
-                ret.Push(charArray3[i]);
+                ret.push_back(charArray3[i]);
 
             i = 0;
         }
@@ -835,7 +835,7 @@ PODVector<unsigned char> DecodeBase64(String encodedString)
         charArray3[2] = ((charArray4[2] & 0x3u) << 6u) + charArray4[3];
 
         for (j = 0; (j < i - 1); j++)
-            ret.Push(charArray3[j]);
+            ret.push_back(charArray3[j]);
     }
 
     return ret;

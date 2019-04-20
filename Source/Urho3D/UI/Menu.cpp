@@ -78,8 +78,8 @@ void Menu::Update(float timeStep)
 
     if (popup_ && showPopup_)
     {
-        const Vector<stl::shared_ptr<UIElement> >& children = popup_->GetChildren();
-        for (unsigned i = 0; i < children.Size(); ++i)
+        const stl::vector<stl::shared_ptr<UIElement> >& children = popup_->GetChildren();
+        for (unsigned i = 0; i < children.size(); ++i)
         {
             auto* menu = dynamic_cast<Menu*>(children[i].get());
             if (menu && !menu->autoPopup_ && !menu->IsHovering())
@@ -195,7 +195,7 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
                 child = popup_;
             else
             {
-                for (unsigned i = nextInternalChild; i < children_.Size(); ++i)
+                for (unsigned i = nextInternalChild; i < children_.size(); ++i)
                 {
                     if (children_[i]->IsInternal() && children_[i]->GetTypeName() == typeName)
                     {
@@ -311,9 +311,9 @@ void Menu::ShowPopup(bool enable)
         OnHidePopup();
 
         // If the popup has child menus, hide their popups as well
-        PODVector<UIElement*> children;
+        stl::vector<UIElement*> children;
         popup_->GetChildren(children, true);
-        for (PODVector<UIElement*>::ConstIterator i = children.Begin(); i != children.End(); ++i)
+        for (auto i = children.begin(); i != children.end(); ++i)
         {
             auto* menu = dynamic_cast<Menu*>(*i);
             if (menu)

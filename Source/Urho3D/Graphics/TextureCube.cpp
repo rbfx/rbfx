@@ -109,7 +109,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
         return false;
     }
 
-    loadImages_.Clear();
+    loadImages_.clear();
 
     XMLElement textureElem = loadParameters_->GetRoot();
     XMLElement imageElem = textureElem.GetChild("image");
@@ -126,7 +126,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
             return false;
 
         int faceWidth, faceHeight;
-        loadImages_.Resize(MAX_CUBEMAP_FACES);
+        loadImages_.resize(MAX_CUBEMAP_FACES);
 
         if (image->IsCubemap())
         {
@@ -215,7 +215,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
             if (GetPath(name).Empty())
                 name = texPath + name;
 
-            loadImages_.Push(cache->GetTempResource<Image>(name));
+            loadImages_.push_back(cache->GetTempResource<Image>(name));
             cache->StoreResourceDependency(this, name);
 
             faceElem = faceElem.GetNext("face");
@@ -225,7 +225,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
     // Precalculate mip levels if async loading
     if (GetAsyncLoadState() == ASYNC_LOADING)
     {
-        for (unsigned i = 0; i < loadImages_.Size(); ++i)
+        for (unsigned i = 0; i < loadImages_.size(); ++i)
         {
             if (loadImages_[i])
                 loadImages_[i]->PrecalculateLevels();
@@ -246,10 +246,10 @@ bool TextureCube::EndLoad()
 
     SetParameters(loadParameters_);
 
-    for (unsigned i = 0; i < loadImages_.Size() && i < MAX_CUBEMAP_FACES; ++i)
+    for (unsigned i = 0; i < loadImages_.size() && i < MAX_CUBEMAP_FACES; ++i)
         SetData((CubeMapFace)i, loadImages_[i]);
 
-    loadImages_.Clear();
+    loadImages_.clear();
     loadParameters_.reset();
 
     return true;

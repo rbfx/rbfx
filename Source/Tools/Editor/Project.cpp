@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -140,12 +142,12 @@ bool Project::LoadProject(const String& projectPath)
     // Unregister engine dirs
     auto enginePrefixPath = GetSubsystem<Editor>()->GetCoreResourcePrefixPath();
     auto pathsCopy = GetCache()->GetResourceDirs();
-    cachedEngineResourcePaths_.Clear();
+    cachedEngineResourcePaths_.clear();
     for (const auto& path : pathsCopy)
     {
         if (path.StartsWith(enginePrefixPath) && !path.EndsWith("/EditorData/"))
         {
-            cachedEngineResourcePaths_.EmplaceBack(path);
+            cachedEngineResourcePaths_.emplace_back(path);
             GetCache()->RemoveResourceDir(path);
         }
     }
@@ -194,7 +196,7 @@ bool Project::LoadProject(const String& projectPath)
                 if (tab == nullptr)
                 {
                     StringVector parts = String(name).Split('#');
-                    tab = editor->CreateTab(parts.Front());
+                    tab = editor->CreateTab(parts.front());
                 }
                 tab->OnLoadUISettings(name, line);
             }
@@ -354,10 +356,10 @@ bool Project::SaveProject()
             JSONArray plugins{};
             for (const auto& plugin : plugins_.GetPlugins())
             {
-                plugins.Push(JSONObject{{"name",    plugin->GetName()},
-                                        {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
+                plugins.push_back(JSONObject{{"name",    plugin->GetName()},
+                                             {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
             }
-            Sort(plugins.Begin(), plugins.End(), [](JSONValue& a, JSONValue& b) {
+            stl::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
                 const String& nameA = a.GetObject()["name"]->GetString();
                 const String& nameB = b.GetObject()["name"]->GetString();
                 return nameA.Compare(nameB);
@@ -400,11 +402,11 @@ bool Project::SaveProject()
     // StringHashNames.json
     {
         auto hashNames = StringHash::GetGlobalStringHashRegister()->GetInternalMap().Values();
-        Sort(hashNames.Begin(), hashNames.End());
+        stl::quick_sort(hashNames.begin(), hashNames.end());
         JSONFile file(context_);
         JSONArray names;
         for (const auto& string : hashNames)
-            names.Push(string);
+            names.push_back(string);
         file.GetRoot() = names;
 
         String filePath(projectFileDir_ + "StringHashNames.json");

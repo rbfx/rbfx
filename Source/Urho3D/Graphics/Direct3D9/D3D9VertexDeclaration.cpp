@@ -57,10 +57,10 @@ const BYTE d3dElementUsage[] =
     D3DDECLUSAGE_TEXCOORD // Object index (not supported by D3D9)
 };
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const PODVector<VertexElement>& srcElements) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<VertexElement>& srcElements) :
     declaration_(nullptr)
 {
-    PODVector<VertexDeclarationElement> elements;
+    stl::vector<VertexDeclarationElement> elements;
 
     for (unsigned i = 0; i < srcElements.Size(); ++i)
     {
@@ -84,10 +84,10 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const PODVector<VertexE
     Create(graphics, elements);
 }
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const PODVector<VertexBuffer*>& buffers) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<VertexBuffer*>& buffers) :
     declaration_(nullptr)
 {
-    PODVector<VertexDeclarationElement> elements;
+    stl::vector<VertexDeclarationElement> elements;
     unsigned prevBufferElements = 0;
 
     for (unsigned i = 0; i < buffers.Size(); ++i)
@@ -95,7 +95,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const PODVector<VertexB
         if (!buffers[i])
             continue;
 
-        const PODVector<VertexElement>& srcElements = buffers[i]->GetElements();
+        const stl::vector<VertexElement>& srcElements = buffers[i]->GetElements();
         bool isExisting = false;
 
         for (unsigned j = 0; j < srcElements.Size(); ++j)
@@ -138,10 +138,10 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const PODVector<VertexB
     Create(graphics, elements);
 }
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const Vector<stl::shared_ptr<VertexBuffer> >& buffers) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers) :
     declaration_(nullptr)
 {
-    PODVector<VertexDeclarationElement> elements;
+    stl::vector<VertexDeclarationElement> elements;
     unsigned prevBufferElements = 0;
 
     for (unsigned i = 0; i < buffers.Size(); ++i)
@@ -149,7 +149,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const Vector<stl::share
         if (!buffers[i])
             continue;
 
-        const PODVector<VertexElement>& srcElements = buffers[i]->GetElements();
+        const stl::vector<VertexElement>& srcElements = buffers[i]->GetElements();
         bool isExisting = false;
 
         for (unsigned j = 0; j < srcElements.Size(); ++j)
@@ -197,12 +197,12 @@ VertexDeclaration::~VertexDeclaration()
     Release();
 }
 
-void VertexDeclaration::Create(Graphics* graphics, const PODVector<VertexDeclarationElement>& elements)
+void VertexDeclaration::Create(Graphics* graphics, const stl::vector<VertexDeclarationElement>& elements)
 {
     stl::shared_array<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.Size() + 1]);
 
     D3DVERTEXELEMENT9* dest = elementArray;
-    for (Vector<VertexDeclarationElement>::ConstIterator i = elements.Begin(); i != elements.End(); ++i)
+    for (auto i = elements.Begin(); i != elements.End(); ++i)
     {
         dest->Stream = (WORD)i->streamIndex_;
         dest->Offset = (WORD)i->offset_;

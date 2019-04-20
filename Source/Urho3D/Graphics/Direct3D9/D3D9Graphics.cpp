@@ -273,7 +273,7 @@ Graphics::~Graphics()
         MutexLock lock(gpuObjectMutex_);
 
         // Release all GPU objects that still exist
-        for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
             (*i)->Release();
         gpuObjects_.Clear();
     }
@@ -371,7 +371,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     // Check fullscreen mode validity. Use a closest match if not found
     if (fullscreen)
     {
-        PODVector<IntVector3> resolutions = GetResolutions(monitor);
+        stl::vector<IntVector3> resolutions = GetResolutions(monitor);
         if (resolutions.Size())
         {
             unsigned best = 0;
@@ -973,7 +973,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         VertexBuffer* buffer = vertexBuffers_[i];
         if (buffer)
         {
-            const PODVector<VertexElement>& elements = buffer->GetElements();
+            const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
             if (elements.Size() && elements[0].perInstance_)
                 SetStreamFrequency(i, D3DSTREAMSOURCE_INSTANCEDATA | 1u);
@@ -1003,7 +1003,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         VertexBuffer* buffer = vertexBuffers_[i];
         if (buffer)
         {
-            const PODVector<VertexElement>& elements = buffer->GetElements();
+            const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
             if (elements.Size() && elements[0].perInstance_)
                 SetStreamFrequency(i, D3DSTREAMSOURCE_INSTANCEDATA | 1u);
@@ -1025,33 +1025,12 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
     // Note: this is not multi-instance safe
-    static PODVector<VertexBuffer*> vertexBuffers(1);
+    static stl::vector<VertexBuffer*> vertexBuffers(1);
     vertexBuffers[0] = buffer;
     SetVertexBuffers(vertexBuffers);
 }
 
-bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigned instanceOffset)
-{
-    if (buffers.Size() > MAX_VERTEX_STREAMS)
-    {
-        URHO3D_LOGERROR("Too many vertex buffers");
-        return false;
-    }
-
-    // Build vertex declaration hash code out of the buffers
-    unsigned long long hash = 0;
-    for (unsigned i = 0; i < buffers.Size(); ++i)
-    {
-        if (!buffers[i])
-            continue;
-
-        hash |= buffers[i]->GetBufferHash(i);
-    }
-
-    if (hash)
-    {
-        // If no previous vertex declaration for that hash, create new
-        VertexDeclarationMap::Iterator i = impl_->vertexDeclarations_.Find(hash);
+bool Graphics::SetVertexBuffers(const auto i = impl_->vertexDeclarations_.Find(hash);
         if (i == impl_->vertexDeclarations_.End())
         {
             stl::shared_ptr<VertexDeclaration> newDeclaration(new VertexDeclaration(this, buffers));
@@ -1077,7 +1056,7 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
         if (i < buffers.Size() && buffers[i])
         {
             buffer = buffers[i];
-            const PODVector<VertexElement>& elements = buffer->GetElements();
+            const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data; add instance offset in that case
             if (elements.Size() && elements[0].perInstance_)
                 offset = instanceOffset * buffer->GetVertexSize();
@@ -1099,9 +1078,9 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    return SetVertexBuffers(reinterpret_cast<const PODVector<VertexBuffer*>&>(buffers), instanceOffset);
+    return SetVertexBuffers(reinterpret_cast<const stl::vector<VertexBuffer*>&>(buffers), instanceOffset);
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
@@ -1938,9 +1917,9 @@ bool Graphics::IsInitialized() const
     return window_ != nullptr && impl_->GetDevice() != nullptr;
 }
 
-PODVector<int> Graphics::GetMultiSampleLevels() const
+stl::vector<int> Graphics::GetMultiSampleLevels() const
 {
-    PODVector<int> ret;
+    stl::vector<int> ret;
     // No multisampling always supported
     ret.Push(1);
 
@@ -2544,7 +2523,7 @@ void Graphics::OnDeviceLost()
     {
         MutexLock lock(gpuObjectMutex_);
 
-        for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
             (*i)->OnDeviceLost();
     }
 
@@ -2556,7 +2535,7 @@ void Graphics::OnDeviceReset()
     {
         MutexLock lock(gpuObjectMutex_);
 
-        for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
             (*i)->OnDeviceReset();
     }
 

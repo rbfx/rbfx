@@ -199,9 +199,9 @@ public:
     /// Clean up the mip levels.
     void CleanupLevels();
     /// Get all stored mip levels starting from this.
-    void GetLevels(PODVector<Image*>& levels);
+    void GetLevels(stl::vector<Image*>& levels);
     /// Get all stored mip levels starting from this.
-    void GetLevels(PODVector<const Image*>& levels) const;
+    void GetLevels(stl::vector<const Image*>& levels) const;
 
 private:
     /// Decode an image using stb_image.

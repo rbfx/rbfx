@@ -115,7 +115,7 @@ void Chat::CreateUI()
     if (rowHeight)
     {
         float numberOfRows = (graphics->GetHeight() - 100) / rowHeight;
-        chatHistory_.Resize(static_cast<unsigned int>(numberOfRows));
+        chatHistory_.resize(static_cast<unsigned int>(numberOfRows));
     }
 
     // No viewports or scene is defined. However, the default zone's fog color controls the fill color
@@ -160,12 +160,12 @@ Button* Chat::CreateButton(const String& text, int width)
 
 void Chat::ShowChatText(const String& row)
 {
-    chatHistory_.Erase(0);
-    chatHistory_.Push(row);
+    chatHistory_.pop_front();
+    chatHistory_.push_back(row);
 
     // Concatenate all the rows in history
     String allRows;
-    for (unsigned i = 0; i < chatHistory_.Size(); ++i)
+    for (unsigned i = 0; i < chatHistory_.size(); ++i)
         allRows += chatHistory_[i] + "\n";
 
     chatHistoryText_->SetText(allRows);
@@ -260,7 +260,7 @@ void Chat::HandleNetworkMessage(StringHash /*eventType*/, VariantMap& eventData)
     int msgID = eventData[P_MESSAGEID].GetInt();
     if (msgID == MSG_CHAT)
     {
-        const PODVector<unsigned char>& data = eventData[P_DATA].GetBuffer();
+        const stl::vector<unsigned char>& data = eventData[P_DATA].GetBuffer();
         // Use a MemoryBuffer to read the message data so that there is no unnecessary copying
         MemoryBuffer msg(data);
         String text = msg.ReadString();

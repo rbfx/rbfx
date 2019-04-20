@@ -49,7 +49,7 @@ void Mover::RegisterObject(Context* context)
 
     // These macros register the class attribute to the Context for automatic load / save handling.
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication.
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Path", GetPathAttr, SetPathAttr, PODVector<unsigned char>, Variant::emptyBuffer, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Path", GetPathAttr, SetPathAttr, stl::vector<unsigned char>, Variant::emptyBuffer, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Speed", float, speed_, 0.8f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Current Path ID", int, currentPathID_, 1, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Emit Time", float, emitTime_, 0.0f, AM_DEFAULT);
@@ -57,21 +57,21 @@ void Mover::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Flip Animation", float, flip_, 0.0f, AM_DEFAULT);
 }
 
-void Mover::SetPathAttr(const PODVector<unsigned char>& value)
+void Mover::SetPathAttr(const stl::vector<unsigned char>& value)
 {
-    if (value.Empty())
+    if (value.empty())
         return;
 
     MemoryBuffer buffer(value);
     while (!buffer.IsEof())
-        path_.Push(buffer.ReadVector2());
+        path_.push_back(buffer.ReadVector2());
 }
 
-PODVector<unsigned char> Mover::GetPathAttr() const
+stl::vector<unsigned char> Mover::GetPathAttr() const
 {
     VectorBuffer buffer;
 
-    for (unsigned i = 0; i < path_.Size(); ++i)
+    for (unsigned i = 0; i < path_.size(); ++i)
         buffer.WriteVector2(path_[i]);
 
     return buffer.GetBuffer();
@@ -79,7 +79,7 @@ PODVector<unsigned char> Mover::GetPathAttr() const
 
 void Mover::Update(float timeStep)
 {
-    if (path_.Size() < 2)
+    if (path_.size() < 2)
         return;
 
     // Handle Orc states (idle/wounded/fighting)
@@ -135,7 +135,7 @@ void Mover::Update(float timeStep)
     {
         if (speed_ > 0.0f)
         {
-            if (currentPathID_ + 1 < path_.Size())
+            if (currentPathID_ + 1 < path_.size())
                 currentPathID_ = currentPathID_ + 1;
             else
             {

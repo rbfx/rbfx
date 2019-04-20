@@ -45,7 +45,7 @@ public:
     /// Apply attribute changes that can not be applied immediately.
     void ApplyAttributes() override;
     /// Return UI rendering batches.
-    void GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor) override;
+    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor) override;
     /// React to the popup being shown.
     void OnShowPopup() override;
     /// React to the popup being hidden.
@@ -75,7 +75,7 @@ public:
     /// Return item at index.
     UIElement* GetItem(unsigned index) const;
     /// Return all items.
-    PODVector<UIElement*> GetItems() const;
+    stl::vector<UIElement*> GetItems() const;
     /// Return selection index, or M_MAX_UNSIGNED if none selected.
     unsigned GetSelection() const;
     /// Return selected item, or null if none selected.

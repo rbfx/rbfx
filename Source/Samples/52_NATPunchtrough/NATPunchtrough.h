@@ -117,7 +117,7 @@ private:
     /// Log history text element
     stl::shared_ptr<Text> logHistoryText_;
     /// Log messages
-    Vector<String> logHistory_;
+    stl::vector<String> logHistory_;
     /// Created server GUID field
     stl::shared_ptr<LineEdit> guid_;
 };

@@ -188,13 +188,13 @@ void SoundSource::Play(Sound* sound)
 
     // Forget the Sound & Is Playing attribute previous values so that they will be sent again, triggering
     // the sound correctly on network clients even after the initial playback
-    if (networkState_ && networkState_->attributes_ && networkState_->previousValues_.Size())
+    if (networkState_ && networkState_->attributes_ && networkState_->previousValues_.size())
     {
-        for (unsigned i = 1; i < networkState_->previousValues_.Size(); ++i)
+        for (unsigned i = 1; i < networkState_->previousValues_.size(); ++i)
         {
             // The indexing is different for SoundSource & SoundSource3D, as SoundSource3D removes two attributes,
             // so go by attribute types
-            VariantType type = networkState_->attributes_->At(i).type_;
+            VariantType type = networkState_->attributes_->at(i).type_;
             if (type == VAR_RESOURCEREF || type == VAR_BOOL)
                 networkState_->previousValues_[i] = Variant::EMPTY;
         }

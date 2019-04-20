@@ -119,17 +119,17 @@ namespace Urho3D
 {
 
 template<typename T>
-static bool IsValidPtr(const PODVector<unsigned char>& data, const T* p)
+static bool IsValidPtr(const stl::vector<unsigned char>& data, const T* p)
 {
-    return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
-           reinterpret_cast<std::uintptr_t>(p) + sizeof(T) <= reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
+    return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.data()) &&
+           reinterpret_cast<std::uintptr_t>(p) + sizeof(T) <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
 template<typename T>
-static bool IsValidPtr(const PODVector<unsigned char>& data, const T* p, unsigned len)
+static bool IsValidPtr(const stl::vector<unsigned char>& data, const T* p, unsigned len)
 {
-    return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.Buffer()) &&
-           reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.Buffer() + data.Size());
+    return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.data()) &&
+           reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
 PluginType GetPluginType(Context* context, const String& path)
@@ -137,7 +137,7 @@ PluginType GetPluginType(Context* context, const String& path)
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
-    PODVector<unsigned char> data;
+    stl::vector<unsigned char> data;
     const char pluginEntryPoint[] = "cr_main";
 
 #if __linux__
@@ -148,12 +148,12 @@ PluginType GetPluginType(Context* context, const String& path)
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        data.Resize(file.GetSize());
-        if (file.Read(data.Buffer(), data.Size()) != data.Size())
+        data.resize(file.GetSize());
+        if (file.Read(data.data(), data.size()) != data.size())
             return PLUGIN_INVALID;
 
         // Elf header parsing code based on elfdump by Owen Klan.
-        Elf_Ehdr* hdr = reinterpret_cast<Elf_Ehdr*>(data.Buffer());
+        Elf_Ehdr* hdr = reinterpret_cast<Elf_Ehdr*>(data.data());
         if (!IsValidPtr(data, hdr) || strncmp(reinterpret_cast<const char*>(hdr->e_ident), ELFMAG, SELFMAG) != 0)
             // Not elf.
             return PLUGIN_INVALID;
@@ -164,19 +164,19 @@ PluginType GetPluginType(Context* context, const String& path)
         // Find symbol name table
         unsigned symNameTableOffset = 0;
         {
-            Elf_Shdr* shdr = reinterpret_cast<Elf_Shdr*>(data.Buffer() + hdr->e_shoff + sizeof(Elf_Shdr) * hdr->e_shstrndx);
+            Elf_Shdr* shdr = reinterpret_cast<Elf_Shdr*>(data.data() + hdr->e_shoff + sizeof(Elf_Shdr) * hdr->e_shstrndx);
             if (!IsValidPtr(data, shdr))
                 return PLUGIN_INVALID;
 
             auto nameTableOffset = shdr->sh_offset;
-            shdr = reinterpret_cast<Elf_Shdr*>(data.Buffer() + hdr->e_shoff);
+            shdr = reinterpret_cast<Elf_Shdr*>(data.data() + hdr->e_shoff);
 
             for (auto i = 0; i < hdr->e_shnum; i++)
             {
                 if (!IsValidPtr(data, shdr))
                     return PLUGIN_INVALID;
 
-                const char* tabNamePtr = reinterpret_cast<const char*>(data.Buffer() + nameTableOffset + shdr->sh_name);
+                const char* tabNamePtr = reinterpret_cast<const char*>(data.data() + nameTableOffset + shdr->sh_name);
                 const char strTabName[] = ".strtab";
 
                 if (!IsValidPtr(data, tabNamePtr, sizeof(strTabName)))
@@ -201,7 +201,7 @@ PluginType GetPluginType(Context* context, const String& path)
             Elf_Shdr* sectab = nullptr;
             do
             {
-                sectab = reinterpret_cast<Elf_Shdr*>(data.Buffer() + shoff);
+                sectab = reinterpret_cast<Elf_Shdr*>(data.data() + shoff);
                 if (!IsValidPtr(data, sectab))
                     return PLUGIN_INVALID;
                 shoff += sizeof(Elf_Shdr);
@@ -212,12 +212,12 @@ PluginType GetPluginType(Context* context, const String& path)
             String funcName;
             for (auto i = 0; i < num; i++)
             {
-                Elf_Sym* symbol = reinterpret_cast<Elf_Sym*>(data.Buffer() + shoff);
+                Elf_Sym* symbol = reinterpret_cast<Elf_Sym*>(data.data() + shoff);
                 if (!IsValidPtr(data, symbol))
                     return PLUGIN_INVALID;
                 shoff += sizeof(Elf_Sym);
 
-                const char* funcNamePtr = reinterpret_cast<const char*>(data.Buffer() + symNameTableOffset + symbol->st_name);
+                const char* funcNamePtr = reinterpret_cast<const char*>(data.data() + symNameTableOffset + symbol->st_name);
                 if (!IsValidPtr(data, funcNamePtr, sizeof(pluginEntryPoint)))
                     return PLUGIN_INVALID;
 
@@ -236,15 +236,15 @@ PluginType GetPluginType(Context* context, const String& path)
             return PLUGIN_INVALID;
 
         data.Resize(file.GetSize());
-        if (file.Read(data.Buffer(), data.Size()) != data.Size())
+        if (file.Read(data.data(), data.Size()) != data.Size())
             return PLUGIN_INVALID;
 
-        PIMAGE_DOS_HEADER dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.Buffer());
+        PIMAGE_DOS_HEADER dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.data());
 
         if (!IsValidPtr(data, dos) || dos->e_magic != IMAGE_DOS_SIGNATURE)
             return PLUGIN_INVALID;
 
-        PIMAGE_NT_HEADERS nt = reinterpret_cast<PIMAGE_NT_HEADERS>(data.Buffer() + dos->e_lfanew);
+        PIMAGE_NT_HEADERS nt = reinterpret_cast<PIMAGE_NT_HEADERS>(data.data() + dos->e_lfanew);
         if (!IsValidPtr(data, dos) || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
             return PLUGIN_INVALID;
 
@@ -268,7 +268,7 @@ PluginType GetPluginType(Context* context, const String& path)
             uint32_t eatModifier = 0;
             for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++)
             {
-                PIMAGE_SECTION_HEADER section = reinterpret_cast<PIMAGE_SECTION_HEADER>(data.Buffer() + firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
+                PIMAGE_SECTION_HEADER section = reinterpret_cast<PIMAGE_SECTION_HEADER>(data.data() + firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
                 if (!IsValidPtr(data, section))
                     return PLUGIN_INVALID;
 
@@ -279,18 +279,18 @@ PluginType GetPluginType(Context* context, const String& path)
                 }
             }
 
-            PIMAGE_EXPORT_DIRECTORY eat = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(data.Buffer() + eatDir.VirtualAddress - eatModifier);
+            PIMAGE_EXPORT_DIRECTORY eat = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(data.data() + eatDir.VirtualAddress - eatModifier);
             if (!IsValidPtr(data, eat))
                 return PLUGIN_INVALID;
 
             unsigned namesOffset = eat->AddressOfNames - eatModifier;
             for (auto i = 0; i < eat->NumberOfFunctions; i++)
             {
-                uint32_t* nameOffset = reinterpret_cast<unsigned*>(data.Buffer() + namesOffset + i * sizeof(uint32_t));
+                uint32_t* nameOffset = reinterpret_cast<unsigned*>(data.data() + namesOffset + i * sizeof(uint32_t));
                 if (!IsValidPtr(data, nameOffset))
                     return PLUGIN_INVALID;
 
-                const char* funcNamePtr = reinterpret_cast<const char*>(data.Buffer() + *nameOffset - eatModifier);
+                const char* funcNamePtr = reinterpret_cast<const char*>(data.data() + *nameOffset - eatModifier);
                 if (!IsValidPtr(data, funcNamePtr, sizeof(pluginEntryPoint)))
                     return PLUGIN_INVALID;
 
@@ -309,10 +309,10 @@ PluginType GetPluginType(Context* context, const String& path)
             return PLUGIN_INVALID;
 
         data.Resize(file.GetSize());
-        if (file.Read(data.Buffer(), data.Size()) != data.Size())
+        if (file.Read(data.data(), data.Size()) != data.Size())
             return PLUGIN_INVALID;
 
-        mach_header* hdr = reinterpret_cast<mach_header*>(data.Buffer());
+        mach_header* hdr = reinterpret_cast<mach_header*>(data.data());
 
         if (!IsValidPtr(data, hdr) || hdr->magic != MACHO_MAGIC || hdr->filetype != 6 /*dylib*/)
             return PLUGIN_INVALID;
@@ -322,7 +322,7 @@ PluginType GetPluginType(Context* context, const String& path)
         unsigned offset = sizeof(mach_header);
         for (unsigned i = 0; i < hdr->ncmds; i++)
         {
-            load_command* cmd = reinterpret_cast<load_command*>(data.Buffer() + offset);
+            load_command* cmd = reinterpret_cast<load_command*>(data.data() + offset);
             if (!IsValidPtr(data, cmd))
                 return PLUGIN_INVALID;
 
@@ -348,8 +348,8 @@ PluginType GetPluginType(Context* context, const String& path)
         if (!symtab || !dysymtab)
             return PLUGIN_INVALID;
 
-        const char* strtab = reinterpret_cast<const char*>(data.Buffer() + symtab->stroff);
-        const nlist* lists = reinterpret_cast<nlist*>(data.Buffer() + symtab->symoff);
+        const char* strtab = reinterpret_cast<const char*>(data.data() + symtab->stroff);
+        const nlist* lists = reinterpret_cast<nlist*>(data.data() + symtab->symoff);
 
         if (!IsValidPtr(data, lists, sizeof(nlist) * symtab->nsyms))
             return PLUGIN_INVALID;

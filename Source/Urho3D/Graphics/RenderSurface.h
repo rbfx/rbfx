@@ -78,7 +78,7 @@ public:
     bool GetAutoResolve() const;
 
     /// Return number of viewports.
-    unsigned GetNumViewports() const { return viewports_.Size(); }
+    unsigned GetNumViewports() const { return viewports_.size(); }
 
     /// Return viewport by index.
     Viewport* GetViewport(unsigned index) const;
@@ -147,7 +147,7 @@ private:
     };
 
     /// Viewports.
-    Vector<stl::shared_ptr<Viewport> > viewports_;
+    stl::vector<stl::shared_ptr<Viewport> > viewports_;
     /// Linked color buffer.
     stl::weak_ptr<RenderSurface> linkedRenderTarget_;
     /// Linked depth buffer.

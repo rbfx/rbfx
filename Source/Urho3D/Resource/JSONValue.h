@@ -62,7 +62,7 @@ enum JSONNumberType
 class JSONValue;
 
 /// JSON array type.
-using JSONArray = Vector<JSONValue>;
+using JSONArray = stl::vector<JSONValue>;
 /// JSON object type.
 using JSONObject = HashMap<String, JSONValue>;
 /// JSON object iterator.

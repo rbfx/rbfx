@@ -46,7 +46,7 @@ class URHO3D_API HttpRequest : public RefCounted, public Deserializer, public Th
 {
 public:
     /// Construct with parameters.
-    HttpRequest(const String& url, const String& verb, const Vector<String>& headers, const String& postData);
+    HttpRequest(const String& url, const String& verb, const stl::vector<String>& headers, const String& postData);
     /// Destruct. Release the connection object.
     ~HttpRequest() override;
 
@@ -87,7 +87,7 @@ private:
     /// Error string. Empty if no error.
     String error_;
     /// Headers.
-    Vector<String> headers_;
+    stl::vector<String> headers_;
     /// POST data.
     String postData_;
     /// Connection state.

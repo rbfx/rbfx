@@ -76,7 +76,7 @@ void MaterialInspector::ToggleModel()
 {
     const char* currentModel = figures_[figureIndex_];
     SetModel(ToString("Models/%s.mdl", currentModel));
-    figureIndex_ = ++figureIndex_ % figures_.Size();
+    figureIndex_ = ++figureIndex_ % figures_.size();
 
     StaticModel* model = node_->GetComponent<StaticModel>();
     model->SetMaterial(inspectable_->GetMaterial());

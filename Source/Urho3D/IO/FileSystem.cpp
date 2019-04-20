@@ -154,7 +154,7 @@ enum SystemRunFlag
 };
 URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
-int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemRunFlags flags, String& output)
+int DoSystemRun(const String& fileName, const stl::vector<String>& arguments, SystemRunFlags flags, String& output)
 {
 #if defined(TVOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
     return -1;
@@ -249,11 +249,11 @@ int DoSystemRun(const String& fileName, const Vector<String>& arguments, SystemR
         fcntl(desc[1], F_SETFL, O_NONBLOCK);
     }
 
-    PODVector<const char*> argPtrs;
-    argPtrs.Push(fixedFileName.CString());
-    for (unsigned i = 0; i < arguments.Size(); ++i)
-        argPtrs.Push(arguments[i].CString());
-    argPtrs.Push(nullptr);
+    stl::vector<const char*> argPtrs;
+    argPtrs.push_back(fixedFileName.CString());
+    for (unsigned i = 0; i < arguments.size(); ++i)
+        argPtrs.push_back(arguments[i].CString());
+    argPtrs.push_back(nullptr);
 
     pid_t pid = 0;
     posix_spawn_file_actions_t actions{};
@@ -359,7 +359,7 @@ class AsyncSystemRun : public AsyncExecRequest
 {
 public:
     /// Construct and run.
-    AsyncSystemRun(unsigned requestID, const String& fileName, const Vector<String>& arguments) :
+    AsyncSystemRun(unsigned requestID, const String& fileName, const stl::vector<String>& arguments) :
         AsyncExecRequest(requestID),
         fileName_(fileName),
         arguments_(arguments)
@@ -379,7 +379,7 @@ private:
     /// File to run.
     String fileName_;
     /// Command line split in arguments.
-    const Vector<String>& arguments_;
+    const stl::vector<String>& arguments_;
 };
 
 FileSystem::FileSystem(Context* context) :
@@ -478,7 +478,7 @@ int FileSystem::SystemCommand(const String& commandLine, bool redirectStdOutToLo
     }
 }
 
-int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments, String& output)
+int FileSystem::SystemRun(const String& fileName, const stl::vector<String>& arguments, String& output)
 {
     if (allowedPaths_.empty())
         return DoSystemRun(fileName, arguments, SR_READ_OUTPUT, output);
@@ -489,13 +489,13 @@ int FileSystem::SystemRun(const String& fileName, const Vector<String>& argument
     }
 }
 
-int FileSystem::SystemRun(const String& fileName, const Vector<String>& arguments)
+int FileSystem::SystemRun(const String& fileName, const stl::vector<String>& arguments)
 {
     String output;
     return SystemRun(fileName, arguments, output);
 }
 
-int FileSystem::SystemSpawn(const String& fileName, const Vector<String>& arguments)
+int FileSystem::SystemSpawn(const String& fileName, const stl::vector<String>& arguments)
 {
     String output;
     if (allowedPaths_.empty())
@@ -528,7 +528,7 @@ unsigned FileSystem::SystemCommandAsync(const String& commandLine)
 #endif
 }
 
-unsigned FileSystem::SystemRunAsync(const String& fileName, const Vector<String>& arguments)
+unsigned FileSystem::SystemRunAsync(const String& fileName, const stl::vector<String>& arguments)
 {
 #ifdef URHO3D_THREADING
     if (allowedPaths_.empty())
@@ -567,8 +567,8 @@ bool FileSystem::SystemOpen(const String& fileName, const String& mode)
         bool success = (size_t)ShellExecuteW(nullptr, !mode.Empty() ? WString(mode).CString() : nullptr,
             GetWideNativePath(fileName).CString(), nullptr, nullptr, SW_SHOW) > 32;
 #else
-        Vector<String> arguments;
-        arguments.Push(fileName);
+        stl::vector<String> arguments;
+        arguments.push_back(fileName);
         bool success = SystemRun(
 #if defined(__APPLE__)
             "/usr/bin/open",
@@ -797,9 +797,9 @@ bool FileSystem::DirExists(const String& pathName) const
     return true;
 }
 
-void FileSystem::ScanDir(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const
+void FileSystem::ScanDir(stl::vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const
 {
-    result.Clear();
+    result.clear();
 
     if (CheckAccess(pathName))
     {
@@ -924,7 +924,7 @@ bool FileSystem::SetLastModifiedTime(const String& fileName, unsigned newTime)
 #endif
 }
 
-void FileSystem::ScanDirInternal(Vector<String>& result, String path, const String& startPath,
+void FileSystem::ScanDirInternal(stl::vector<String>& result, String path, const String& startPath,
     const String& filter, unsigned flags, bool recursive) const
 {
     path = AddTrailingSlash(path);
@@ -1021,14 +1021,14 @@ void FileSystem::ScanDirInternal(Vector<String>& result, String path, const Stri
                 if (st.st_mode & S_IFDIR)
                 {
                     if (flags & SCAN_DIRS)
-                        result.Push(deltaPath + fileName);
+                        result.push_back(deltaPath + fileName);
                     if (recursive && normalEntry)
                         ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
                 }
                 else if (flags & SCAN_FILES)
                 {
                     if (filterExtension.Empty() || fileName.EndsWith(filterExtension))
-                        result.Push(deltaPath + fileName);
+                        result.push_back(deltaPath + fileName);
                 }
             }
         }
@@ -1204,9 +1204,9 @@ bool FileSystem::CreateDirs(const String& root, const String& subdirectory)
 {
     String folder = AddTrailingSlash(GetInternalPath(root));
     String sub = GetInternalPath(subdirectory);
-    Vector<String> subs = sub.Split('/');
+    stl::vector<String> subs = sub.Split('/');
 
-    for (unsigned i = 0; i < subs.Size(); i++)
+    for (unsigned i = 0; i < subs.size(); i++)
     {
         folder += subs[i];
         folder += "/";
@@ -1236,9 +1236,9 @@ bool FileSystem::CreateDirsRecursive(const String& directoryIn)
 
     String parentPath = directory;
 
-    Vector<String> paths;
+    stl::vector<String> paths;
 
-    paths.Push(directory);
+    paths.push_back(directory);
 
     while (true)
     {
@@ -1247,13 +1247,13 @@ bool FileSystem::CreateDirsRecursive(const String& directoryIn)
         if (!parentPath.Length())
             break;
 
-        paths.Push(parentPath);
+        paths.push_back(parentPath);
     }
 
-    if (!paths.Size())
+    if (!paths.size())
         return false;
 
-    for (auto i = (int) (paths.Size() - 1); i >= 0; i--)
+    for (auto i = (int) (paths.size() - 1); i >= 0; i--)
     {
         const String& pathName = paths[i];
 
@@ -1283,16 +1283,16 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
     if (!DirExists(directory))
         return false;
 
-    Vector<String> results;
+    stl::vector<String> results;
 
     // ensure empty if not recursive
     if (!recursive)
     {
         ScanDir(results, directory, "*", SCAN_DIRS | SCAN_FILES | SCAN_HIDDEN, true );
-        while (results.Remove(".")) {}
-        while (results.Remove("..")) {}
+        while (results.erase_first(".") != results.end()) {}
+        while (results.erase_first("..") != results.end()) {}
 
-        if (results.Size())
+        if (results.size())
             return false;
 
 #ifdef WIN32
@@ -1304,16 +1304,16 @@ bool FileSystem::RemoveDir(const String& directoryIn, bool recursive)
 
     // delete all files at this level
     ScanDir(results, directory, "*", SCAN_FILES | SCAN_HIDDEN, false );
-    for (unsigned i = 0; i < results.Size(); i++)
+    for (unsigned i = 0; i < results.size(); i++)
     {
         if (!Delete(directory + results[i]))
             return false;
     }
-    results.Clear();
+    results.clear();
 
     // recurse into subfolders
     ScanDir(results, directory, "*", SCAN_DIRS, false );
-    for (unsigned i = 0; i < results.Size(); i++)
+    for (unsigned i = 0; i < results.size(); i++)
     {
         if (results[i] == "." || results[i] == "..")
             continue;
@@ -1331,10 +1331,10 @@ bool FileSystem::CopyDir(const String& directoryIn, const String& directoryOut)
     if (FileExists(directoryOut))
         return false;
 
-    Vector<String> results;
+    stl::vector<String> results;
     ScanDir(results, directoryIn, "*", SCAN_FILES, true );
 
-    for (unsigned i = 0; i < results.Size(); i++)
+    for (unsigned i = 0; i < results.size(); i++)
     {
         String srcFile = directoryIn + "/" + results[i];
         String dstFile = directoryOut + "/" + results[i];
@@ -1404,7 +1404,7 @@ bool GetRelativePath(const String& fromPath, const String& toPath, String& outpu
     StringVector fromParts = from.Split('/');
     StringVector toParts = to.Split('/');
 
-    if (!fromParts.Size() || !toParts.Size())
+    if (!fromParts.size() || !toParts.size())
         return false;
 
     if (fromParts == toParts)
@@ -1418,17 +1418,17 @@ bool GetRelativePath(const String& fromPath, const String& toPath, String& outpu
 
     int startIdx;
 
-    for (startIdx = 0; startIdx < toParts.Size(); startIdx++)
+    for (startIdx = 0; startIdx < toParts.size(); startIdx++)
     {
-        if (startIdx >= fromParts.Size() || fromParts[startIdx] != toParts[startIdx])
+        if (startIdx >= fromParts.size() || fromParts[startIdx] != toParts[startIdx])
             break;
     }
 
-    if (startIdx == toParts.Size())
+    if (startIdx == toParts.size())
     {
         if (from.EndsWith("/") && to.EndsWith("/"))
         {
-            for (unsigned i = 0; i < fromParts.Size() - startIdx; i++)
+            for (unsigned i = 0; i < fromParts.size() - startIdx; i++)
             {
                 output += "../";
             }
@@ -1438,12 +1438,12 @@ bool GetRelativePath(const String& fromPath, const String& toPath, String& outpu
         return false;
     }
 
-    for (int i = 0; i < (int)fromParts.Size() - startIdx; i++)
+    for (int i = 0; i < (int) fromParts.size() - startIdx; i++)
     {
         output += "../";
     }
 
-    for (int i = startIdx; i < (int) toParts.Size(); i++)
+    for (int i = startIdx; i < (int) toParts.size(); i++)
     {
         output += toParts[i] + "/";
     }
@@ -1476,18 +1476,19 @@ String FileSystem::GetTemporaryDir() const
 
 String GetAbsolutePath(const String& path)
 {
-    Vector<String> parts;
+    stl::vector<String> parts;
 #if !_WIN32
-    parts.Push("");
+    parts.push_back("");
 #endif
-    parts.Push(path.Split('/'));
+    auto split = path.Split('/');
+    parts.insert(parts.end(), split.begin(), split.end());
 
     int index = 0;
-    while (index < parts.Size() - 1)
+    while (index < parts.size() - 1)
     {
         if (parts[index] != ".." && parts[index + 1] == "..")
         {
-            parts.Erase(index, 2);
+            parts.erase(index, index + 2);
             index = Max(0, --index);
         }
         else

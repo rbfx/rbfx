@@ -46,7 +46,7 @@ void Polyhedron::Define(const BoundingBox& box)
     vertices[6] = Vector3(box.min_.x_, box.max_.y_, box.max_.z_);
     vertices[7] = box.max_;
 
-    faces_.Resize(6);
+    faces_.resize(6);
     SetFace(0, vertices[3], vertices[7], vertices[5], vertices[1]);
     SetFace(1, vertices[6], vertices[2], vertices[0], vertices[4]);
     SetFace(2, vertices[6], vertices[7], vertices[3], vertices[2]);
@@ -59,7 +59,7 @@ void Polyhedron::Define(const Frustum& frustum)
 {
     const Vector3* vertices = frustum.vertices_;
 
-    faces_.Resize(6);
+    faces_.resize(6);
     SetFace(0, vertices[0], vertices[4], vertices[5], vertices[1]);
     SetFace(1, vertices[7], vertices[3], vertices[2], vertices[6]);
     SetFace(2, vertices[7], vertices[4], vertices[0], vertices[3]);
@@ -70,9 +70,9 @@ void Polyhedron::Define(const Frustum& frustum)
 
 void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2)
 {
-    faces_.Resize(faces_.Size() + 1);
-    PODVector<Vector3>& face = faces_[faces_.Size() - 1];
-    face.Resize(3);
+    faces_.resize(faces_.size() + 1);
+    stl::vector<Vector3>& face = faces_[faces_.size() - 1];
+    face.resize(3);
     face[0] = v0;
     face[1] = v1;
     face[2] = v2;
@@ -80,33 +80,33 @@ void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2
 
 void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3)
 {
-    faces_.Resize(faces_.Size() + 1);
-    PODVector<Vector3>& face = faces_[faces_.Size() - 1];
-    face.Resize(4);
+    faces_.resize(faces_.size() + 1);
+    stl::vector<Vector3>& face = faces_[faces_.size() - 1];
+    face.resize(4);
     face[0] = v0;
     face[1] = v1;
     face[2] = v2;
     face[3] = v3;
 }
 
-void Polyhedron::AddFace(const PODVector<Vector3>& face)
+void Polyhedron::AddFace(const stl::vector<Vector3>& face)
 {
-    faces_.Push(face);
+    faces_.push_back(face);
 }
 
 void Polyhedron::Clip(const Plane& plane)
 {
-    clippedVertices_.Clear();
+    clippedVertices_.clear();
 
-    for (unsigned i = 0; i < faces_.Size(); ++i)
+    for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        PODVector<Vector3>& face = faces_[i];
+        stl::vector<Vector3>& face = faces_[i];
         Vector3 lastVertex;
         float lastDistance = 0.0f;
 
-        outFace_.Clear();
+        outFace_.clear();
 
-        for (unsigned j = 0; j < face.Size(); ++j)
+        for (unsigned j = 0; j < face.size(); ++j)
         {
             float distance = plane.Distance(face[j]);
             if (distance >= 0.0f)
@@ -115,11 +115,11 @@ void Polyhedron::Clip(const Plane& plane)
                 {
                     float t = lastDistance / (lastDistance - distance);
                     Vector3 clippedVertex = lastVertex + t * (face[j] - lastVertex);
-                    outFace_.Push(clippedVertex);
-                    clippedVertices_.Push(clippedVertex);
+                    outFace_.push_back(clippedVertex);
+                    clippedVertices_.push_back(clippedVertex);
                 }
 
-                outFace_.Push(face[j]);
+                outFace_.push_back(face[j]);
             }
             else
             {
@@ -127,8 +127,8 @@ void Polyhedron::Clip(const Plane& plane)
                 {
                     float t = lastDistance / (lastDistance - distance);
                     Vector3 clippedVertex = lastVertex + t * (face[j] - lastVertex);
-                    outFace_.Push(clippedVertex);
-                    clippedVertices_.Push(clippedVertex);
+                    outFace_.push_back(clippedVertex);
+                    clippedVertices_.push_back(clippedVertex);
                 }
             }
 
@@ -142,50 +142,50 @@ void Polyhedron::Clip(const Plane& plane)
         {
             float t = lastDistance / (lastDistance - distance);
             Vector3 clippedVertex = lastVertex + t * (face[0] - lastVertex);
-            outFace_.Push(clippedVertex);
-            clippedVertices_.Push(clippedVertex);
+            outFace_.push_back(clippedVertex);
+            clippedVertices_.push_back(clippedVertex);
         }
 
         // Do not keep faces which are less than triangles
-        if (outFace_.Size() < 3)
-            outFace_.Clear();
+        if (outFace_.size() < 3)
+            outFace_.clear();
 
         face = outFace_;
     }
 
     // Remove empty faces
-    for (unsigned i = faces_.Size() - 1; i < faces_.Size(); --i)
+    for (unsigned i = faces_.size() - 1; i < faces_.size(); --i)
     {
-        if (faces_[i].Empty())
-            faces_.Erase(i);
+        if (faces_[i].empty())
+            faces_.erase(i);
     }
 
     // Create a new face from the clipped vertices. First remove duplicates
-    for (unsigned i = 0; i < clippedVertices_.Size(); ++i)
+    for (unsigned i = 0; i < clippedVertices_.size(); ++i)
     {
-        for (unsigned j = clippedVertices_.Size() - 1; j > i; --j)
+        for (unsigned j = clippedVertices_.size() - 1; j > i; --j)
         {
             if (clippedVertices_[j].Equals(clippedVertices_[i]))
-                clippedVertices_.Erase(j);
+                clippedVertices_.erase(j);
         }
     }
 
-    if (clippedVertices_.Size() > 3)
+    if (clippedVertices_.size() > 3)
     {
-        outFace_.Clear();
+        outFace_.clear();
 
         // Start with the first vertex
-        outFace_.Push(clippedVertices_.Front());
-        clippedVertices_.Erase(0);
+        outFace_.push_back(clippedVertices_.front());
+        clippedVertices_.pop_front();
 
-        while (!clippedVertices_.Empty())
+        while (!clippedVertices_.empty())
         {
             // Then add the vertex which is closest to the last added
-            const Vector3& lastAdded = outFace_.Back();
+            const Vector3& lastAdded = outFace_.back();
             float bestDistance = M_INFINITY;
             unsigned bestIndex = 0;
 
-            for (unsigned i = 0; i < clippedVertices_.Size(); ++i)
+            for (unsigned i = 0; i < clippedVertices_.size(); ++i)
             {
                 float distance = (clippedVertices_[i] - lastAdded).LengthSquared();
                 if (distance < bestDistance)
@@ -195,11 +195,11 @@ void Polyhedron::Clip(const Plane& plane)
                 }
             }
 
-            outFace_.Push(clippedVertices_[bestIndex]);
-            clippedVertices_.Erase(bestIndex);
+            outFace_.push_back(clippedVertices_[bestIndex]);
+            clippedVertices_.erase(bestIndex);
         }
 
-        faces_.Push(outFace_);
+        faces_.push_back(outFace_);
     }
 }
 
@@ -231,25 +231,25 @@ void Polyhedron::Clip(const BoundingBox& box)
 
 void Polyhedron::Clear()
 {
-    faces_.Clear();
+    faces_.clear();
 }
 
 void Polyhedron::Transform(const Matrix3& transform)
 {
-    for (unsigned i = 0; i < faces_.Size(); ++i)
+    for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        PODVector<Vector3>& face = faces_[i];
-        for (unsigned j = 0; j < face.Size(); ++j)
+        stl::vector<Vector3>& face = faces_[i];
+        for (unsigned j = 0; j < face.size(); ++j)
             face[j] = transform * face[j];
     }
 }
 
 void Polyhedron::Transform(const Matrix3x4& transform)
 {
-    for (unsigned i = 0; i < faces_.Size(); ++i)
+    for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        PODVector<Vector3>& face = faces_[i];
-        for (unsigned j = 0; j < face.Size(); ++j)
+        stl::vector<Vector3>& face = faces_[i];
+        for (unsigned j = 0; j < face.size(); ++j)
             face[j] = transform * face[j];
     }
 }
@@ -257,15 +257,15 @@ void Polyhedron::Transform(const Matrix3x4& transform)
 Polyhedron Polyhedron::Transformed(const Matrix3& transform) const
 {
     Polyhedron ret;
-    ret.faces_.Resize(faces_.Size());
+    ret.faces_.resize(faces_.size());
 
-    for (unsigned i = 0; i < faces_.Size(); ++i)
+    for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        const PODVector<Vector3>& face = faces_[i];
-        PODVector<Vector3>& newFace = ret.faces_[i];
-        newFace.Resize(face.Size());
+        const stl::vector<Vector3>& face = faces_[i];
+        stl::vector<Vector3>& newFace = ret.faces_[i];
+        newFace.resize(face.size());
 
-        for (unsigned j = 0; j < face.Size(); ++j)
+        for (unsigned j = 0; j < face.size(); ++j)
             newFace[j] = transform * face[j];
     }
 
@@ -275,15 +275,15 @@ Polyhedron Polyhedron::Transformed(const Matrix3& transform) const
 Polyhedron Polyhedron::Transformed(const Matrix3x4& transform) const
 {
     Polyhedron ret;
-    ret.faces_.Resize(faces_.Size());
+    ret.faces_.resize(faces_.size());
 
-    for (unsigned i = 0; i < faces_.Size(); ++i)
+    for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        const PODVector<Vector3>& face = faces_[i];
-        PODVector<Vector3>& newFace = ret.faces_[i];
-        newFace.Resize(face.Size());
+        const stl::vector<Vector3>& face = faces_[i];
+        stl::vector<Vector3>& newFace = ret.faces_[i];
+        newFace.resize(face.size());
 
-        for (unsigned j = 0; j < face.Size(); ++j)
+        for (unsigned j = 0; j < face.size(); ++j)
             newFace[j] = transform * face[j];
     }
 
@@ -292,8 +292,8 @@ Polyhedron Polyhedron::Transformed(const Matrix3x4& transform) const
 
 void Polyhedron::SetFace(unsigned index, const Vector3& v0, const Vector3& v1, const Vector3& v2)
 {
-    PODVector<Vector3>& face = faces_[index];
-    face.Resize(3);
+    stl::vector<Vector3>& face = faces_[index];
+    face.resize(3);
     face[0] = v0;
     face[1] = v1;
     face[2] = v2;
@@ -301,8 +301,8 @@ void Polyhedron::SetFace(unsigned index, const Vector3& v0, const Vector3& v1, c
 
 void Polyhedron::SetFace(unsigned index, const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3)
 {
-    PODVector<Vector3>& face = faces_[index];
-    face.Resize(4);
+    stl::vector<Vector3>& face = faces_[index];
+    face.resize(4);
     face[0] = v0;
     face[1] = v1;
     face[2] = v2;

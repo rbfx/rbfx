@@ -66,16 +66,16 @@ void SceneResolver::Resolve()
             continue;
 
         bool hasIDAttributes = false;
-        const Vector<AttributeInfo>* attributes = component->GetAttributes();
+        const stl::vector<AttributeInfo>* attributes = component->GetAttributes();
         if (!attributes)
         {
             noIDAttributes.insert(component->GetType());
             continue;
         }
 
-        for (unsigned j = 0; j < attributes->Size(); ++j)
+        for (unsigned j = 0; j < attributes->size(); ++j)
         {
-            const AttributeInfo& info = attributes->At(j);
+            const AttributeInfo& info = attributes->at(j);
             if (info.mode_ & AM_NODEID)
             {
                 hasIDAttributes = true;
@@ -118,24 +118,24 @@ void SceneResolver::Resolve()
                 Variant attrValue = component->GetAttribute(j);
                 const VariantVector& oldNodeIDs = attrValue.GetVariantVector();
 
-                if (oldNodeIDs.Size())
+                if (oldNodeIDs.size())
                 {
                     // The first index stores the number of IDs redundantly. This is for editing
                     unsigned numIDs = oldNodeIDs[0].GetUInt();
                     VariantVector newIDs;
-                    newIDs.Push(numIDs);
+                    newIDs.push_back(numIDs);
 
-                    for (unsigned k = 1; k < oldNodeIDs.Size(); ++k)
+                    for (unsigned k = 1; k < oldNodeIDs.size(); ++k)
                     {
                         unsigned oldNodeID = oldNodeIDs[k].GetUInt();
                         HashMap<unsigned, stl::weak_ptr<Node> >::ConstIterator l = nodes_.Find(oldNodeID);
 
                         if (l != nodes_.End() && l->second_)
-                            newIDs.Push(l->second_->GetID());
+                            newIDs.push_back(l->second_->GetID());
                         else
                         {
                             // If node was not found, retain number of elements, just store ID 0
-                            newIDs.Push(0);
+                            newIDs.push_back(0);
                             URHO3D_LOGWARNING("Could not resolve node ID " + String(oldNodeID));
                         }
                     }

@@ -73,7 +73,7 @@ AnimationState::AnimationState(Node* node, Animation* animation) :
         if (node_)
         {
             const HashMap<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
-            stateTracks_.Clear();
+            stateTracks_.clear();
 
             for (HashMap<StringHash, AnimationTrack>::ConstIterator i = tracks.Begin(); i != tracks.End(); ++i)
             {
@@ -93,7 +93,7 @@ AnimationState::AnimationState(Node* node, Animation* animation) :
                 }
 
                 if (stateTrack.node_)
-                    stateTracks_.Push(stateTrack);
+                    stateTracks_.push_back(stateTrack);
             }
         }
     }
@@ -117,13 +117,13 @@ void AnimationState::SetStartBone(Bone* startBone)
     }
 
     // Do not reassign if the start bone did not actually change, and we already have valid bone nodes
-    if (startBone == startBone_ && !stateTracks_.Empty())
+    if (startBone == startBone_ && !stateTracks_.empty())
         return;
 
     startBone_ = startBone;
 
     const HashMap<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
-    stateTracks_.Clear();
+    stateTracks_.clear();
 
     if (!startBone->node_)
         return;
@@ -150,7 +150,7 @@ void AnimationState::SetStartBone(Bone* startBone)
         {
             stateTrack.bone_ = trackBone;
             stateTrack.node_ = trackBone->node_;
-            stateTracks_.Push(stateTrack);
+            stateTracks_.push_back(stateTrack);
         }
     }
 
@@ -204,7 +204,7 @@ void AnimationState::SetTime(float time)
 
 void AnimationState::SetBoneWeight(unsigned index, float weight, bool recursive)
 {
-    if (index >= stateTracks_.Size())
+    if (index >= stateTracks_.size())
         return;
 
     weight = Clamp(weight, 0.0f, 1.0f);
@@ -221,8 +221,8 @@ void AnimationState::SetBoneWeight(unsigned index, float weight, bool recursive)
         Node* boneNode = stateTracks_[index].node_;
         if (boneNode)
         {
-            const Vector<stl::shared_ptr<Node> >& children = boneNode->GetChildren();
-            for (unsigned i = 0; i < children.Size(); ++i)
+            const stl::vector<stl::shared_ptr<Node> >& children = boneNode->GetChildren();
+            for (unsigned i = 0; i < children.size(); ++i)
             {
                 unsigned childTrackIndex = GetTrackIndex(children[i]);
                 if (childTrackIndex != M_MAX_UNSIGNED)
@@ -331,8 +331,8 @@ void AnimationState::AddTime(float delta)
         if (oldTime > time)
             Swap(oldTime, time);
 
-        const Vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
-        for (Vector<AnimationTriggerPoint>::ConstIterator i = triggers.Begin(); i != triggers.End(); ++i)
+        const stl::vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
+        for (auto i = triggers.begin(); i != triggers.end(); ++i)
         {
             float frameTime = i->time_;
             if (looped_ && wrap)
@@ -388,7 +388,7 @@ Bone* AnimationState::GetStartBone() const
 
 float AnimationState::GetBoneWeight(unsigned index) const
 {
-    return index < stateTracks_.Size() ? stateTracks_[index].weight_ : 0.0f;
+    return index < stateTracks_.size() ? stateTracks_[index].weight_ : 0.0f;
 }
 
 float AnimationState::GetBoneWeight(const String& name) const
@@ -403,7 +403,7 @@ float AnimationState::GetBoneWeight(StringHash nameHash) const
 
 unsigned AnimationState::GetTrackIndex(const String& name) const
 {
-    for (unsigned i = 0; i < stateTracks_.Size(); ++i)
+    for (unsigned i = 0; i < stateTracks_.size(); ++i)
     {
         Node* node = stateTracks_[i].node_;
         if (node && node->GetName() == name)
@@ -415,7 +415,7 @@ unsigned AnimationState::GetTrackIndex(const String& name) const
 
 unsigned AnimationState::GetTrackIndex(Node* node) const
 {
-    for (unsigned i = 0; i < stateTracks_.Size(); ++i)
+    for (unsigned i = 0; i < stateTracks_.size(); ++i)
     {
         if (stateTracks_[i].node_ == node)
             return i;
@@ -426,7 +426,7 @@ unsigned AnimationState::GetTrackIndex(Node* node) const
 
 unsigned AnimationState::GetTrackIndex(StringHash nameHash) const
 {
-    for (unsigned i = 0; i < stateTracks_.Size(); ++i)
+    for (unsigned i = 0; i < stateTracks_.size(); ++i)
     {
         Node* node = stateTracks_[i].node_;
         if (node && node->GetNameHash() == nameHash)
@@ -454,7 +454,7 @@ void AnimationState::Apply()
 
 void AnimationState::ApplyToModel()
 {
-    for (Vector<AnimationStateTrack>::Iterator i = stateTracks_.Begin(); i != stateTracks_.End(); ++i)
+    for (auto i = stateTracks_.begin(); i != stateTracks_.end(); ++i)
     {
         AnimationStateTrack& stateTrack = *i;
         float finalWeight = weight_ * stateTrack.weight_;
@@ -470,7 +470,7 @@ void AnimationState::ApplyToModel()
 void AnimationState::ApplyToNodes()
 {
     // When applying to a node hierarchy, can only use full weight (nothing to blend to)
-    for (Vector<AnimationStateTrack>::Iterator i = stateTracks_.Begin(); i != stateTracks_.End(); ++i)
+    for (auto i = stateTracks_.begin(); i != stateTracks_.end(); ++i)
         ApplyTrack(*i, 1.0f, false);
 }
 
@@ -479,7 +479,7 @@ void AnimationState::ApplyTrack(AnimationStateTrack& stateTrack, float weight, b
     const AnimationTrack* track = stateTrack.track_;
     Node* node = stateTrack.node_;
 
-    if (track->keyFrames_.Empty() || !node)
+    if (track->keyFrames_.empty() || !node)
         return;
 
     unsigned& frame = stateTrack.keyFrame_;
@@ -488,7 +488,7 @@ void AnimationState::ApplyTrack(AnimationStateTrack& stateTrack, float weight, b
     // Check if next frame to interpolate to is valid, or if wrapping is needed (looping animation only)
     unsigned nextFrame = frame + 1;
     bool interpolate = true;
-    if (nextFrame >= track->keyFrames_.Size())
+    if (nextFrame >= track->keyFrames_.size())
     {
         if (!looped_)
         {

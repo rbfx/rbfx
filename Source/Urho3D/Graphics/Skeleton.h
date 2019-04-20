@@ -115,13 +115,13 @@ public:
     void Reset();
 
     /// Return all bones.
-    const Vector<Bone>& GetBones() const { return bones_; }
+    const stl::vector<Bone>& GetBones() const { return bones_; }
 
     /// Return modifiable bones.
-    Vector<Bone>& GetModifiableBones() { return bones_; }
+    stl::vector<Bone>& GetModifiableBones() { return bones_; }
 
     /// Return number of bones.
-    unsigned GetNumBones() const { return bones_.Size(); }
+    unsigned GetNumBones() const { return bones_.size(); }
 
     /// Return root bone.
     Bone* GetRootBone();
@@ -147,7 +147,7 @@ public:
 
 private:
     /// Bones.
-    Vector<Bone> bones_;
+    stl::vector<Bone> bones_;
     /// Root bone index.
     unsigned rootBoneIndex_;
 };

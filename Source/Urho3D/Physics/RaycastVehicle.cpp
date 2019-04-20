@@ -143,7 +143,7 @@ RaycastVehicle::RaycastVehicle(Context* context) :
     SetUpdateEventMask(USE_FIXEDUPDATE | USE_FIXEDPOSTUPDATE | USE_POSTUPDATE);
     vehicleData_ = new RaycastVehicleData();
     coordinateSystem_ = RIGHT_UP_FORWARD;
-    wheelNodes_.Clear();
+    wheelNodes_.clear();
     activate_ = false;
     inAirRPM_ = 0.0f;
     maxSideSlipSpeed_ = 4.0f;
@@ -152,7 +152,7 @@ RaycastVehicle::RaycastVehicle(Context* context) :
 RaycastVehicle::~RaycastVehicle()
 {
     delete vehicleData_;
-    wheelNodes_.Clear();
+    wheelNodes_.clear();
 }
 
 static const StringVector wheelElementNames =
@@ -206,9 +206,9 @@ void RaycastVehicle::ApplyAttributes()
     VariantVector& value = loadedWheelData_;
     int numObjects = value[index++].GetInt();
     int wheelIndex = 0;
-    origRotation_.Clear();
-    skidInfoCumulative_.Clear();
-    wheelSideSlipSpeed_.Clear();
+    origRotation_.clear();
+    skidInfoCumulative_.clear();
+    wheelSideSlipSpeed_.clear();
 
     for (int i = 0; i < numObjects; i++)
     {
@@ -253,10 +253,10 @@ void RaycastVehicle::ApplyAttributes()
                                 radius,
                                 vehicleData_->tuning_,
                                 isFrontWheel);
-        wheelNodes_.Push(wheelNode);
-        origRotation_.Push(origRotation);
-        skidInfoCumulative_.Push(skidInfoC);
-        wheelSideSlipSpeed_.Push(sideSlipSpeed);
+        wheelNodes_.push_back(wheelNode);
+        origRotation_.push_back(origRotation);
+        skidInfoCumulative_.push_back(skidInfoC);
+        wheelSideSlipSpeed_.push_back(sideSlipSpeed);
         SetSteeringValue(wheelIndex, steering);
         wheel.m_raycastInfo.m_isInContact = isContact;
         wheel.m_raycastInfo.m_contactNormalWS = btVector3(contactNormal.x_, contactNormal.y_, contactNormal.z_);
@@ -391,10 +391,10 @@ void RaycastVehicle::AddWheel(Node* wheelNode,
                             vehicleData_->tuning_,
                             frontWheel);
 
-    wheelNodes_.Push(wheelNode);
-    origRotation_.Push(wheelNode->GetWorldRotation());
-    skidInfoCumulative_.Push(1.0f);
-    wheelSideSlipSpeed_.Push(0.0f);
+    wheelNodes_.push_back(wheelNode);
+    origRotation_.push_back(wheelNode->GetWorldRotation());
+    skidInfoCumulative_.push_back(1.0f);
+    wheelSideSlipSpeed_.push_back(0.0f);
     wheel.m_raycastInfo.m_isInContact = false;
 }
 
@@ -703,37 +703,37 @@ void RaycastVehicle::ResetWheels()
 VariantVector RaycastVehicle::GetWheelDataAttr() const
 {
     VariantVector ret;
-    ret.Reserve(GetNumWheels() * 22 + 1);
-    ret.Push(GetNumWheels());
+    ret.reserve(GetNumWheels() * 22 + 1);
+    ret.push_back(GetNumWheels());
     for (int i = 0; i < GetNumWheels(); i++)
     {
         Node* wNode = GetWheelNode(i);
         int node_id = wNode->GetID();
         URHO3D_LOGDEBUG("RaycastVehicle: Saving node id = " + String(node_id));
-        ret.Push(node_id);
-        ret.Push(GetWheelDirection(i));
-        ret.Push(GetWheelAxle(i));
-        ret.Push(GetWheelRestLength(i));
-        ret.Push(GetWheelRadius(i));
-        ret.Push(IsFrontWheel(i));
-        ret.Push(GetSteeringValue(i));
-        ret.Push(GetWheelConnectionPoint(i));
-        ret.Push(origRotation_[i]);
-        ret.Push(GetWheelSkidInfoCumulative(i));
-        ret.Push(GetWheelSideSlipSpeed(i));
-        ret.Push(WheelIsGrounded(i));
-        ret.Push(GetContactPosition(i));
-        ret.Push(GetContactNormal(i));       // 14
-        ret.Push(GetWheelSuspensionStiffness(i));
-        ret.Push(GetWheelDampingRelaxation(i));
-        ret.Push(GetWheelDampingCompression(i));
-        ret.Push(GetWheelFrictionSlip(i));
-        ret.Push(GetWheelRollInfluence(i));
-        ret.Push(GetEngineForce(i));
-        ret.Push(GetBrake(i));
-        ret.Push(GetWheelSkidInfo(i));
+        ret.push_back(node_id);
+        ret.push_back(GetWheelDirection(i));
+        ret.push_back(GetWheelAxle(i));
+        ret.push_back(GetWheelRestLength(i));
+        ret.push_back(GetWheelRadius(i));
+        ret.push_back(IsFrontWheel(i));
+        ret.push_back(GetSteeringValue(i));
+        ret.push_back(GetWheelConnectionPoint(i));
+        ret.push_back(origRotation_[i]);
+        ret.push_back(GetWheelSkidInfoCumulative(i));
+        ret.push_back(GetWheelSideSlipSpeed(i));
+        ret.push_back(WheelIsGrounded(i));
+        ret.push_back(GetContactPosition(i));
+        ret.push_back(GetContactNormal(i));       // 14
+        ret.push_back(GetWheelSuspensionStiffness(i));
+        ret.push_back(GetWheelDampingRelaxation(i));
+        ret.push_back(GetWheelDampingCompression(i));
+        ret.push_back(GetWheelFrictionSlip(i));
+        ret.push_back(GetWheelRollInfluence(i));
+        ret.push_back(GetEngineForce(i));
+        ret.push_back(GetBrake(i));
+        ret.push_back(GetWheelSkidInfo(i));
     }
-    URHO3D_LOGDEBUG("RaycastVehicle: saved items: " + String(ret.Size()));
+    URHO3D_LOGDEBUG("RaycastVehicle: saved items: " + String(ret.size()));
     URHO3D_LOGDEBUG("maxSideSlipSpeed_ value save: " + String(maxSideSlipSpeed_));
     return ret;
 }
@@ -745,7 +745,7 @@ void RaycastVehicle::SetWheelDataAttr(const VariantVector& value)
         URHO3D_LOGERROR("RaycastVehicle: vehicleData doesn't exist");
         return;
     }
-    if (value.Size() < 2)
+    if (value.size() < 2)
     {
         URHO3D_LOGERROR("RaycastVehicle: Incorrect vehicleData");
         return;

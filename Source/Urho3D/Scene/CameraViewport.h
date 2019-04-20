@@ -68,7 +68,7 @@ public:
     void OnSceneSet(Scene* scene) override;
 
     /// Returns custom list of attributes that are different per instance.
-    const Vector<AttributeInfo>* GetAttributes() const override;
+    const stl::vector<AttributeInfo>* GetAttributes() const override;
 
     ///
     void SetScreenRect(const IntRect& rect) { screenRect_ = rect; }
@@ -97,7 +97,7 @@ protected:
     /// Flag that triggers rebuilding of attributes.
     bool attributesDirty_ = true;
     /// List of attributes available at the moment.
-    Vector<AttributeInfo> attributes_;
+    stl::vector<AttributeInfo> attributes_;
     /// Maping of effect tag to effect file.
     HashMap<String, String> effects_;
 };

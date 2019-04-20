@@ -80,11 +80,11 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Cloned models' vertex buffers that we will animate.
-    Vector<stl::shared_ptr<VertexBuffer> > animatingBuffers_;
+    stl::vector<stl::shared_ptr<VertexBuffer> > animatingBuffers_;
     /// Original vertex positions for the sphere model.
-    PODVector<Vector3> originalVertices_;
+    stl::vector<Vector3> originalVertices_;
     /// If the vertices are duplicates, indices to the original vertices (to allow seamless animation.)
-    PODVector<unsigned> vertexDuplicates_;
+    stl::vector<unsigned> vertexDuplicates_;
     /// Animation flag.
     bool animate_;
     /// Animation's elapsed time.

@@ -122,7 +122,7 @@ public:
         : editorScene(node->GetScene())
     {
         parentID = node->GetParent()->GetID();
-        parentIndex = node->GetParent()->GetChildren().IndexOf(stl::shared_ptr<Node>(node));
+        parentIndex = node->GetParent()->GetChildren().index_of(stl::shared_ptr<Node>(node));
         node->Save(nodeData);
     }
 
@@ -160,7 +160,7 @@ class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
     unsigned nodeID;
     unsigned oldParentID;
     unsigned newParentID;
-    PODVector<unsigned> nodeList; // 2 uints get inserted per node (node, node->GetParent())
+    stl::vector<unsigned> nodeList; // 2 uints get inserted per node (node, node->GetParent())
     bool multiple;
     stl::weak_ptr<Scene> editorScene;
 
@@ -174,16 +174,16 @@ public:
         newParentID = newParent->GetID();
     }
 
-    ReparentNodeAction(const Vector<Node*>& nodes, Node* newParent)
+    ReparentNodeAction(const stl::vector<Node*>& nodes, Node* newParent)
         : editorScene(newParent->GetScene())
     {
         multiple = true;
         newParentID = newParent->GetID();
-        for(unsigned i = 0; i < nodes.Size(); ++i)
+        for(unsigned i = 0; i < nodes.size(); ++i)
         {
             Node* node = nodes[i];
-            nodeList.Push(node->GetID());
-            nodeList.Push(node->GetParent()->GetID());
+            nodeList.push_back(node->GetID());
+            nodeList.push_back(node->GetParent()->GetID());
         }
     }
 
@@ -191,7 +191,7 @@ public:
     {
         if (multiple)
         {
-            for (unsigned i = 0; i < nodeList.Size(); i+=2)
+            for (unsigned i = 0; i < nodeList.size(); i+=2)
             {
                 unsigned nodeID_ = nodeList[i];
                 unsigned oldParentID_ = nodeList[i+1];
@@ -218,7 +218,7 @@ public:
             if (parent == nullptr)
                 return;
 
-            for (unsigned i = 0; i < nodeList.Size(); i+=2)
+            for (unsigned i = 0; i < nodeList.size(); i+=2)
             {
                 unsigned nodeID_ = nodeList[i];
                 Node* node = editorScene->GetNode(nodeID_);
@@ -609,7 +609,7 @@ public:
     }
 };
 
-using StateCollection = Vector<stl::shared_ptr<EditAction>>;
+using StateCollection = stl::vector<stl::shared_ptr<EditAction>>;
 
 class URHO3D_TOOLBOX_API Manager : public Object
 {
@@ -637,7 +637,7 @@ public:
     void Track(Args... args)
     {
         if (trackingEnabled_)
-            currentFrameStates_.Push(stl::shared_ptr<T>(new T(args...)));
+            currentFrameStates_.push_back(stl::shared_ptr<T>(new T(args...)));
     };
 
     /// Enables or disables tracking changes.
@@ -649,7 +649,7 @@ public:
 
 protected:
     /// State stack
-    Vector<StateCollection> stack_;
+    stl::vector<StateCollection> stack_;
     /// Current state index.
     int32_t index_ = 0;
     /// Flag indicating that state tracking is suspended. For example when undo manager is restoring states.

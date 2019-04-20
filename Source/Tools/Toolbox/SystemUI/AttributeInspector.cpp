@@ -312,7 +312,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_RESOURCEREFLIST:
         {
             auto& refList = value.GetResourceRefList();
-            for (auto i = 0; i < refList.names_.Size(); i++)
+            for (auto i = 0; i < refList.names_.size(); i++)
             {
                 UI_ID(i)
                 {
@@ -333,7 +333,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 }
 
             }
-            if (refList.names_.Empty())
+            if (refList.names_.empty())
             {
                 ui::SetCursorPosY(ui::GetCursorPosY() + 5_dpy);
                 ui::TextUnformatted("...");
@@ -487,12 +487,12 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 auto* buffer = ui::GetUIState<std::string>();
                 if (ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue))
                 {
-                    v.Push(*buffer);
+                    v.push_back(*buffer);
                     buffer->clear();
                     modified = true;
 
                     // Expire buffer of this new item just in case other item already used it.
-                    UI_ID(v.Size())
+                    UI_ID(v.size())
                         ui::ExpireUIState<std::string>();
                 }
                 if (ui::IsItemHovered())
@@ -501,7 +501,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
             // List of current items.
             unsigned index = 0;
-            for (auto it = v.Begin(); it != v.End();)
+            for (auto it = v.begin(); it != v.end();)
             {
                 String& sv = *it;
 
@@ -509,7 +509,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 auto* buffer = ui::GetUIState<std::string>(sv.CString());
                 if (ui::Button(ICON_FA_TRASH))
                 {
-                    it = v.Erase(it);
+                    it = v.erase(it);
                     modified = true;
                     ui::ExpireUIState<std::string>();
                 }
@@ -588,7 +588,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
     auto isOpen = ui::CollapsingHeader(item->GetTypeName().CString(), ImGuiTreeNodeFlags_DefaultOpen);
     if (isOpen)
     {
-        const Vector<AttributeInfo>* attributes = item->GetAttributes();
+        const stl::vector<AttributeInfo>* attributes = item->GetAttributes();
         if (attributes == nullptr)
             return false;
 

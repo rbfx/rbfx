@@ -62,5 +62,5 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Vector to store the sprites for iterating through them.
-    Vector<stl::shared_ptr<Sprite> > sprites_;
+    stl::vector<stl::shared_ptr<Sprite> > sprites_;
 };

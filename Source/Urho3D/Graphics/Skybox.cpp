@@ -50,7 +50,7 @@ void Skybox::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
 }
 
-void Skybox::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void Skybox::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     // Do not record a raycast result for a skybox, as it would block all other results
 }
@@ -70,7 +70,7 @@ void Skybox::UpdateBatches(const FrameInfo& frame)
     customWorldTransform.SetTranslation(node_->GetWorldPosition() + frame.camera_->GetEffectiveWorldTransform().Translation());
     HashMap<Camera*, Matrix3x4>::Iterator it = customWorldTransforms_.Insert(MakePair(frame.camera_, customWorldTransform));
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
         batches_[i].worldTransform_ = &it->second_;
         batches_[i].distance_ = 0.0f;

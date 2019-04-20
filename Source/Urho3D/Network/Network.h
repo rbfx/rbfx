@@ -102,7 +102,7 @@ public:
     /// Trigger all client connections in the specified scene to download a package file from the server. Can be used to download additional resource packages when clients are already joined in the scene. The package must have been added as a requirement to the scene, or else the eventual download will fail.
     void SendPackageToClients(Scene* scene, PackageFile* package);
     /// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which can be used to read the response data.
-    stl::shared_ptr<HttpRequest> MakeHttpRequest(const String& url, const String& verb = String::EMPTY, const Vector<String>& headers = Vector<String>(), const String& postData = String::EMPTY);
+    stl::shared_ptr<HttpRequest> MakeHttpRequest(const String& url, const String& verb = String::EMPTY, const stl::vector<String>& headers = stl::vector<String>(), const String& postData = String::EMPTY);
     /// Ban specific IP addresses.
     void BanAddress(const String& address);
     /// Return network update FPS.
@@ -119,7 +119,7 @@ public:
     /// Return the connection to the server. Null if not connected.
     Connection* GetServerConnection() const;
     /// Return all client connections.
-    Vector<stl::shared_ptr<Connection> > GetClientConnections() const;
+    stl::vector<stl::shared_ptr<Connection> > GetClientConnections() const;
     /// Return whether the server is running.
     bool IsServerRunning() const;
     /// Return whether a remote event is allowed to be received.

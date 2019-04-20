@@ -160,16 +160,16 @@ inline ResourceRef GetResourceRef(Resource* resource, StringHash defaultType)
     return ResourceRef(GetResourceType(resource, defaultType), GetResourceName(resource));
 }
 
-template <class T> Vector<String> GetResourceNames(const Vector<stl::shared_ptr<T> >& resources)
+template <class T> stl::vector<String> GetResourceNames(const stl::vector<stl::shared_ptr<T> >& resources)
 {
-    Vector<String> ret(resources.Size());
-    for (unsigned i = 0; i < resources.Size(); ++i)
+    stl::vector<String> ret(resources.size());
+    for (unsigned i = 0; i < resources.size(); ++i)
         ret[i] = GetResourceName(resources[i]);
 
     return ret;
 }
 
-template <class T> ResourceRefList GetResourceRefList(const Vector<stl::shared_ptr<T> >& resources)
+template <class T> ResourceRefList GetResourceRefList(const stl::vector<stl::shared_ptr<T> >& resources)
 {
     return ResourceRefList(T::GetTypeStatic(), GetResourceNames(resources));
 }

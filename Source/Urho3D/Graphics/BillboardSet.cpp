@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/Batch.h"
@@ -99,7 +101,7 @@ BillboardSet::BillboardSet(Context* context) :
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     geometry_->SetIndexBuffer(indexBuffer_);
 
-    batches_.Resize(1);
+    batches_.resize(1);
     batches_[0].geometry_ = geometry_;
     batches_[0].geometryType_ = GEOM_BILLBOARD;
     batches_[0].worldTransform_ = &transforms_[0];
@@ -128,11 +130,11 @@ void BillboardSet::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Billboards", GetBillboardsAttr, SetBillboardsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
         .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, billboardsStructureElementNames);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Billboards", GetNetBillboardsAttr, SetNetBillboardsAttr, PODVector<unsigned char>,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Billboards", GetNetBillboardsAttr, SetNetBillboardsAttr, stl::vector<unsigned char>,
         Variant::emptyBuffer, AM_NET | AM_NOEDIT);
 }
 
-void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     // If no billboard-level testing, use the Drawable test
     if (query.level_ < RAY_TRIANGLE)
@@ -149,7 +151,7 @@ void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQue
     Matrix3x4 billboardTransform = relative_ ? worldTransform : Matrix3x4::IDENTITY;
     Vector3 billboardScale = scaled_ ? worldTransform.Scale() : Vector3::ONE;
 
-    for (unsigned i = 0; i < billboards_.Size(); ++i)
+    for (unsigned i = 0; i < billboards_.size(); ++i)
     {
         if (!billboards_[i].enabled_)
             continue;
@@ -172,7 +174,7 @@ void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQue
             result.drawable_ = this;
             result.node_ = node_;
             result.subObject_ = i;
-            results.Push(result);
+            results.push_back(result);
         }
     }
 }
@@ -225,7 +227,7 @@ void BillboardSet::UpdateBatches(const FrameInfo& frame)
 void BillboardSet::UpdateGeometry(const FrameInfo& frame)
 {
     // If rendering from multiple views and fixed screen size is in use, re-update scale factors before each render
-    if (fixedScreenSize_ && viewCameras_.Size() > 1)
+    if (fixedScreenSize_ && viewCameras_.size() > 1)
         CalculateFixedScreenSize(frame);
 
     // If using camera facing, re-update the rotation for the current view now
@@ -264,11 +266,11 @@ void BillboardSet::SetNumBillboards(unsigned num)
     if (num > M_MAX_INT)
         num = 0;
 
-    unsigned oldNum = billboards_.Size();
+    unsigned oldNum = billboards_.size();
     if (num == oldNum)
         return;
 
-    billboards_.Resize(num);
+    billboards_.resize(num);
 
     // Set default values to new billboards
     for (unsigned i = oldNum; i < num; ++i)
@@ -356,7 +358,7 @@ Material* BillboardSet::GetMaterial() const
 
 Billboard* BillboardSet::GetBillboard(unsigned index)
 {
-    return index < billboards_.Size() ? &billboards_[index] : nullptr;
+    return index < billboards_.size() ? &billboards_[index] : nullptr;
 }
 
 void BillboardSet::SetMaterialAttr(const ResourceRef& value)
@@ -368,13 +370,13 @@ void BillboardSet::SetMaterialAttr(const ResourceRef& value)
 void BillboardSet::SetBillboardsAttr(const VariantVector& value)
 {
     unsigned index = 0;
-    unsigned numBillboards = index < value.Size() ? value[index++].GetUInt() : 0;
+    unsigned numBillboards = index < value.size() ? value[index++].GetUInt() : 0;
     SetNumBillboards(numBillboards);
 
     // Dealing with old billboard format
-    if (value.Size() == billboards_.Size() * 6 + 1)
+    if (value.size() == billboards_.size() * 6 + 1)
     {
-        for (PODVector<Billboard>::Iterator i = billboards_.Begin(); i != billboards_.End() && index < value.Size(); ++i)
+        for (auto i = billboards_.begin(); i != billboards_.end() && index < value.size(); ++i)
         {
             i->position_ = value[index++].GetVector3();
             i->size_ = value[index++].GetVector2();
@@ -388,7 +390,7 @@ void BillboardSet::SetBillboardsAttr(const VariantVector& value)
     // New billboard format
     else
     {
-        for (PODVector<Billboard>::Iterator i = billboards_.Begin(); i != billboards_.End() && index < value.Size(); ++i)
+        for (auto i = billboards_.begin(); i != billboards_.end() && index < value.size(); ++i)
         {
             i->position_ = value[index++].GetVector3();
             i->size_ = value[index++].GetVector2();
@@ -404,13 +406,13 @@ void BillboardSet::SetBillboardsAttr(const VariantVector& value)
     Commit();
 }
 
-void BillboardSet::SetNetBillboardsAttr(const PODVector<unsigned char>& value)
+void BillboardSet::SetNetBillboardsAttr(const stl::vector<unsigned char>& value)
 {
     MemoryBuffer buf(value);
     unsigned numBillboards = buf.ReadVLE();
     SetNumBillboards(numBillboards);
 
-    for (PODVector<Billboard>::Iterator i = billboards_.Begin(); i != billboards_.End(); ++i)
+    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
     {
         i->position_ = buf.ReadVector3();
         i->size_ = buf.ReadVector2();
@@ -432,29 +434,29 @@ ResourceRef BillboardSet::GetMaterialAttr() const
 VariantVector BillboardSet::GetBillboardsAttr() const
 {
     VariantVector ret;
-    ret.Reserve(billboards_.Size() * 7 + 1);
-    ret.Push(billboards_.Size());
+    ret.reserve(billboards_.size() * 7 + 1);
+    ret.push_back((int)billboards_.size());
 
-    for (PODVector<Billboard>::ConstIterator i = billboards_.Begin(); i != billboards_.End(); ++i)
+    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
     {
-        ret.Push(i->position_);
-        ret.Push(i->size_);
-        ret.Push(Vector4(i->uv_.min_.x_, i->uv_.min_.y_, i->uv_.max_.x_, i->uv_.max_.y_));
-        ret.Push(i->color_);
-        ret.Push(i->rotation_);
-        ret.Push(i->direction_);
-        ret.Push(i->enabled_);
+        ret.push_back(i->position_);
+        ret.push_back(i->size_);
+        ret.push_back(Vector4(i->uv_.min_.x_, i->uv_.min_.y_, i->uv_.max_.x_, i->uv_.max_.y_));
+        ret.push_back(i->color_);
+        ret.push_back(i->rotation_);
+        ret.push_back(i->direction_);
+        ret.push_back(i->enabled_);
     }
 
     return ret;
 }
 
-const PODVector<unsigned char>& BillboardSet::GetNetBillboardsAttr() const
+const stl::vector<unsigned char>& BillboardSet::GetNetBillboardsAttr() const
 {
     attrBuffer_.Clear();
-    attrBuffer_.WriteVLE(billboards_.Size());
+    attrBuffer_.WriteVLE(billboards_.size());
 
-    for (PODVector<Billboard>::ConstIterator i = billboards_.Begin(); i != billboards_.End(); ++i)
+    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
     {
         attrBuffer_.WriteVector3(i->position_);
         attrBuffer_.WriteVector2(i->size_);
@@ -476,7 +478,7 @@ void BillboardSet::OnWorldBoundingBoxUpdate()
     Vector3 billboardScale = scaled_ ? worldTransform.Scale() : Vector3::ONE;
     BoundingBox worldBox;
 
-    for (unsigned i = 0; i < billboards_.Size(); ++i)
+    for (unsigned i = 0; i < billboards_.size(); ++i)
     {
         if (!billboards_[i].enabled_)
             continue;
@@ -500,7 +502,7 @@ void BillboardSet::OnWorldBoundingBoxUpdate()
 
 void BillboardSet::UpdateBufferSize()
 {
-    unsigned numBillboards = billboards_.Size();
+    unsigned numBillboards = billboards_.size();
 
     if (vertexBuffer_->GetVertexCount() != numBillboards * 4 || geometryTypeUpdate_)
     {
@@ -590,7 +592,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
         }
     }
 
-    unsigned numBillboards = billboards_.Size();
+    unsigned numBillboards = billboards_.size();
     unsigned enabledBillboards = 0;
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
     Matrix3x4 billboardTransform = relative_ ? worldTransform : Matrix3x4::IDENTITY;
@@ -603,7 +605,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
             ++enabledBillboards;
     }
 
-    sortedBillboards_.Resize(enabledBillboards);
+    sortedBillboards_.resize(enabledBillboards);
     unsigned index = 0;
 
     // Then set initial sort order and distances
@@ -627,7 +629,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
 
     if (sorted_)
     {
-        Sort(sortedBillboards_.Begin(), sortedBillboards_.End(), CompareBillboards);
+        stl::quick_sort(sortedBillboards_.begin(), sortedBillboards_.end(), CompareBillboards);
         Vector3 worldPos = node_->GetWorldPosition();
         // Store the "last sorted position" now
         previousOffset_ = (worldPos - frame.camera_->GetNode()->GetWorldPosition());
@@ -782,7 +784,7 @@ void BillboardSet::CalculateFixedScreenSize(const FrameInfo& frame)
         const Matrix3x4& worldTransform = node_->GetWorldTransform();
         Matrix3x4 billboardTransform = relative_ ? worldTransform : Matrix3x4::IDENTITY;
 
-        for (unsigned i = 0; i < billboards_.Size(); ++i)
+        for (unsigned i = 0; i < billboards_.size(); ++i)
         {
             Vector4 projPos(viewProj * Vector4(billboardTransform * billboards_[i].position_, 1.0f));
             float newScaleFactor = invViewHeight * halfViewWorldSize * projPos.w_;
@@ -795,7 +797,7 @@ void BillboardSet::CalculateFixedScreenSize(const FrameInfo& frame)
     }
     else
     {
-        for (unsigned i = 0; i < billboards_.Size(); ++i)
+        for (unsigned i = 0; i < billboards_.size(); ++i)
         {
             float newScaleFactor = invViewHeight * halfViewWorldSize;
             if (newScaleFactor != billboards_[i].screenScaleFactor_)

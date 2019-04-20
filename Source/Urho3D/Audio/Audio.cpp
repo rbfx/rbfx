@@ -164,7 +164,7 @@ void Audio::SetMasterGain(const String& type, float gain)
 {
     masterGain_[type] = Clamp(gain, 0.0f, 1.0f);
 
-    for (PODVector<SoundSource*>::Iterator i = soundSources_.Begin(); i != soundSources_.End(); ++i)
+    for (auto i = soundSources_.begin(); i != soundSources_.end(); ++i)
         (*i)->UpdateMasterGain();
 }
 
@@ -197,7 +197,7 @@ void Audio::SetListener(SoundListener* listener)
 
 void Audio::StopSound(Sound* sound)
 {
-    for (PODVector<SoundSource*>::Iterator i = soundSources_.Begin(); i != soundSources_.End(); ++i)
+    for (auto i = soundSources_.begin(); i != soundSources_.end(); ++i)
     {
         if ((*i)->GetSound() == sound)
             (*i)->Stop();
@@ -227,16 +227,16 @@ SoundListener* Audio::GetListener() const
 void Audio::AddSoundSource(SoundSource* soundSource)
 {
     MutexLock lock(audioMutex_);
-    soundSources_.Push(soundSource);
+    soundSources_.push_back(soundSource);
 }
 
 void Audio::RemoveSoundSource(SoundSource* soundSource)
 {
-    PODVector<SoundSource*>::Iterator i = soundSources_.Find(soundSource);
-    if (i != soundSources_.End())
+    auto i = soundSources_.find(soundSource);
+    if (i != soundSources_.end())
     {
         MutexLock lock(audioMutex_);
-        soundSources_.Erase(i);
+        soundSources_.erase(i);
     }
 }
 
@@ -285,7 +285,7 @@ void Audio::MixOutput(void* dest, unsigned samples)
         memset(clipPtr, 0, clipSamples * sizeof(int));
 
         // Mix samples to clip buffer
-        for (PODVector<SoundSource*>::Iterator i = soundSources_.Begin(); i != soundSources_.End(); ++i)
+        for (auto i = soundSources_.begin(); i != soundSources_.end(); ++i)
         {
             SoundSource* source = *i;
 
@@ -331,7 +331,7 @@ void Audio::UpdateInternal(float timeStep)
     URHO3D_PROFILE("UpdateAudio");
 
     // Update in reverse order, because sound sources might remove themselves
-    for (unsigned i = soundSources_.Size() - 1; i < soundSources_.Size(); --i)
+    for (unsigned i = soundSources_.size() - 1; i < soundSources_.size(); --i)
     {
         SoundSource* source = soundSources_[i];
 

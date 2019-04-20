@@ -47,7 +47,7 @@ Spline::Spline(InterpolationMode mode) :
 {
 }
 
-Spline::Spline(const Vector<Variant>& knots, InterpolationMode mode) :
+Spline::Spline(const stl::vector<Variant>& knots, InterpolationMode mode) :
     interpolationMode_(mode),
     knots_(knots)
 {
@@ -55,8 +55,8 @@ Spline::Spline(const Vector<Variant>& knots, InterpolationMode mode) :
 
 Variant Spline::GetPoint(float f) const
 {
-    if (knots_.Size() < 2)
-        return knots_.Size() == 1 ? knots_[0] : Variant::EMPTY;
+    if (knots_.size() < 2)
+        return knots_.size() == 1 ? knots_[0] : Variant::EMPTY;
 
     if (f > 1.f)
         f = 1.f;
@@ -74,22 +74,22 @@ Variant Spline::GetPoint(float f) const
     case CATMULL_ROM_FULL_CURVE:
         {
             /// \todo Do not allocate a new vector each time
-            Vector<Variant> fullKnots;
-            if (knots_.Size() > 1)
+            stl::vector<Variant> fullKnots;
+            if (knots_.size() > 1)
             {
                 // Non-cyclic case: duplicate start and end
-                if (knots_.Front() != knots_.Back())
+                if (knots_.front() != knots_.back())
                 {
-                    fullKnots.Push(knots_.Front());
-                    fullKnots.Push(knots_);
-                    fullKnots.Push(knots_.Back());
+                    fullKnots.push_back(knots_.front());
+                    fullKnots.push_back(knots_);
+                    fullKnots.push_back(knots_.back());
                 }
                 // Cyclic case: smooth the tangents
                 else
                 {
-                    fullKnots.Push(knots_[knots_.Size() - 2]);
-                    fullKnots.Push(knots_);
-                    fullKnots.Push(knots_[1]);
+                    fullKnots.push_back(knots_[knots_.size() - 2]);
+                    fullKnots.push_back(knots_);
+                    fullKnots.push_back(knots_[1]);
                 }
             }
             return CatmullRomInterpolation(fullKnots, f);
@@ -103,12 +103,12 @@ Variant Spline::GetPoint(float f) const
 
 void Spline::SetKnot(const Variant& knot, unsigned index)
 {
-    if (index < knots_.Size())
+    if (index < knots_.size())
     {
-        if (knots_.Size() > 0 && knots_[0].GetType() == knot.GetType())
+        if (knots_.size() > 0 && knots_[0].GetType() == knot.GetType())
             knots_[index] = knot;
-        else if (knots_.Empty())
-            knots_.Push(knot);
+        else if (knots_.empty())
+            knots_.push_back(knot);
         else
             URHO3D_LOGERRORF("Attempted to set a Spline's Knot value of type %s where elements are already using %s",
                 knot.GetTypeName().CString(), knots_[0].GetTypeName().CString());
@@ -117,10 +117,10 @@ void Spline::SetKnot(const Variant& knot, unsigned index)
 
 void Spline::AddKnot(const Variant& knot)
 {
-    if (knots_.Size() > 0 && knots_[0].GetType() == knot.GetType())
-        knots_.Push(knot);
-    else if (knots_.Empty())
-        knots_.Push(knot);
+    if (knots_.size() > 0 && knots_[0].GetType() == knot.GetType())
+        knots_.push_back(knot);
+    else if (knots_.empty())
+        knots_.push_back(knot);
     else
         URHO3D_LOGERRORF("Attempted to add Knot to Spline of type %s where elements are already using %s", knot.GetTypeName().CString(),
             knots_[0].GetTypeName().CString());
@@ -128,21 +128,21 @@ void Spline::AddKnot(const Variant& knot)
 
 void Spline::AddKnot(const Variant& knot, unsigned index)
 {
-    if (index > knots_.Size())
-        index = knots_.Size();
+    if (index > knots_.size())
+        index = knots_.size();
 
-    if (knots_.Size() > 0 && knots_[0].GetType() == knot.GetType())
-        knots_.Insert(index, knot);
-    else if (knots_.Empty())
-        knots_.Push(knot);
+    if (knots_.size() > 0 && knots_[0].GetType() == knot.GetType())
+        knots_.insert(index, knot);
+    else if (knots_.empty())
+        knots_.push_back(knot);
     else
         URHO3D_LOGERRORF("Attempted to add Knot to Spline of type %s where elements are already using %s", knot.GetTypeName().CString(),
             knots_[0].GetTypeName().CString());
 }
 
-Variant Spline::BezierInterpolation(const Vector<Variant>& knots, float t) const
+Variant Spline::BezierInterpolation(const stl::vector<Variant>& knots, float t) const
 {
-    if (knots.Size() == 2)
+    if (knots.size() == 2)
     {
         switch (knots[0].GetType())
         {
@@ -160,8 +160,8 @@ Variant Spline::BezierInterpolation(const Vector<Variant>& knots, float t) const
     else
     {
         /// \todo Do not allocate a new vector each time
-        Vector<Variant> interpolatedKnots;
-        for (unsigned i = 1; i < knots.Size(); i++)
+        stl::vector<Variant> interpolatedKnots;
+        for (unsigned i = 1; i < knots.size(); i++)
         {
             switch (knots[0].GetType())
             {
@@ -171,7 +171,7 @@ Variant Spline::BezierInterpolation(const Vector<Variant>& knots, float t) const
             case VAR_VECTOR4:
             case VAR_COLOR:
             case VAR_DOUBLE:
-                interpolatedKnots.Push(LinearInterpolation(knots[i - 1], knots[i], t));
+                interpolatedKnots.push_back(LinearInterpolation(knots[i - 1], knots[i], t));
                 break;
             default:
                 return Variant::EMPTY;
@@ -188,17 +188,17 @@ template <typename T> Variant CalculateCatmullRom(const T& p0, const T& p1, cons
         (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3));
 }
 
-Variant Spline::CatmullRomInterpolation(const Vector<Variant>& knots, float t) const
+Variant Spline::CatmullRomInterpolation(const stl::vector<Variant>& knots, float t) const
 {
-    if (knots.Size() < 4)
+    if (knots.size() < 4)
         return Variant::EMPTY;
     else
     {
         if (t >= 1.f)
-            return knots[knots.Size() - 2];
+            return knots[knots.size() - 2];
 
-        auto originIndex = static_cast<int>(t * (knots.Size() - 3));
-        t = fmodf(t * (knots.Size() - 3), 1.f);
+        auto originIndex = static_cast<int>(t * (knots.size() - 3));
+        t = fmodf(t * (knots.size() - 3), 1.f);
         float t2 = t * t;
         float t3 = t2 * t;
 
@@ -228,17 +228,17 @@ Variant Spline::CatmullRomInterpolation(const Vector<Variant>& knots, float t) c
     }
 }
 
-Variant Spline::LinearInterpolation(const Vector<Variant>& knots, float t) const
+Variant Spline::LinearInterpolation(const stl::vector<Variant>& knots, float t) const
 {
-    if (knots.Size() < 2)
+    if (knots.size() < 2)
         return Variant::EMPTY;
     else
     {
         if (t >= 1.f)
-            return knots.Back();
+            return knots.back();
 
-        int originIndex = Clamp((int)(t * (knots.Size() - 1)), 0, (int)(knots.Size() - 2));
-        t = fmodf(t * (knots.Size() - 1), 1.f);
+        int originIndex = Clamp((int)(t * (knots.size() - 1)), 0, (int)(knots.size() - 2));
+        t = fmodf(t * (knots.size() - 1), 1.f);
         return LinearInterpolation(knots[originIndex], knots[originIndex + 1], t);
     }
 }

@@ -16,12 +16,12 @@ Manager::Manager(Context* ctx)
 {
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&)
     {
-        if (trackingEnabled_ && !currentFrameStates_.Empty())
+        if (trackingEnabled_ && !currentFrameStates_.empty())
         {
-            stack_.Resize(index_);              // Discard unneeded states
-            stack_.Push(currentFrameStates_);
+            stack_.resize(index_);              // Discard unneeded states
+            stack_.push_back(currentFrameStates_);
             index_++;
-            currentFrameStates_.Clear();
+            currentFrameStates_.clear();
         }
     });
 
@@ -42,7 +42,7 @@ Manager::Manager(Context* ctx)
 
     SubscribeToEvent(E_REDO, [this](StringHash, VariantMap& args)
     {
-        if (index_ < stack_.Size())
+        if (index_ < stack_.size())
         {
             auto time = stack_[index_][0]->time_;
             if (args[P_TIME].GetUInt() > time)
@@ -63,7 +63,7 @@ void Manager::Undo()
     {
         index_--;
         const auto& actions = stack_[index_];
-        for (int i = actions.Size() - 1; i >= 0; --i)
+        for (int i = actions.size() - 1; i >= 0; --i)
             actions[i]->Undo();
     }
     SetTrackingEnabled(isTracking);
@@ -73,7 +73,7 @@ void Manager::Redo()
 {
     bool isTracking = IsTrackingEnabled();
     SetTrackingEnabled(false);
-    if (index_ < stack_.Size())
+    if (index_ < stack_.size())
     {
         for (auto& action : stack_[index_])
             action->Redo();
@@ -84,8 +84,8 @@ void Manager::Redo()
 
 void Manager::Clear()
 {
-    stack_.Clear();
-    currentFrameStates_.Clear();
+    stack_.clear();
+    currentFrameStates_.clear();
     index_ = 0;
 }
 

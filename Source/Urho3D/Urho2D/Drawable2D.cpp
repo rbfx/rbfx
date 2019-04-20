@@ -96,7 +96,7 @@ void Drawable2D::SetOrderInLayer(int orderInLayer)
     MarkNetworkUpdate();
 }
 
-const Vector<SourceBatch2D>& Drawable2D::GetSourceBatches()
+const stl::vector<SourceBatch2D>& Drawable2D::GetSourceBatches()
 {
     if (sourceBatchesDirty_)
         UpdateSourceBatches();

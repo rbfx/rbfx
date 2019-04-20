@@ -87,7 +87,7 @@ public:
     /// Apply attribute changes that can not be applied immediately.
     void ApplyAttributes() override;
     /// Return UI rendering batches.
-    void GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor) override;
+    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor) override;
     /// React to resize.
     void OnResize(const IntVector2& newSize, const IntVector2& delta) override;
     /// React to indent change.
@@ -170,10 +170,10 @@ public:
     float GetRowHeight() const { return rowHeight_; }
 
     /// Return number of rows.
-    unsigned GetNumRows() const { return rowWidths_.Size(); }
+    unsigned GetNumRows() const { return rowWidths_.size(); }
 
     /// Return number of characters.
-    unsigned GetNumChars() const { return unicodeText_.Size(); }
+    unsigned GetNumChars() const { return unicodeText_.size(); }
 
     /// Return width of row by index.
     float GetRowWidth(unsigned index) const;
@@ -210,7 +210,7 @@ protected:
     int GetRowStartPosition(unsigned rowIndex) const;
     /// Construct batch.
     void ConstructBatch
-        (UIBatch& pageBatch, const PODVector<GlyphLocation>& pageGlyphLocation, float dx = 0, float dy = 0, Color* color = nullptr,
+        (UIBatch& pageBatch, const stl::vector<GlyphLocation>& pageGlyphLocation, float dx = 0, float dy = 0, Color* color = nullptr,
             float depthBias = 0.0f);
 
     /// Font.
@@ -248,17 +248,17 @@ protected:
     /// Row height.
     float rowHeight_;
     /// Text as Unicode characters.
-    PODVector<unsigned> unicodeText_;
+    stl::vector<unsigned> unicodeText_;
     /// Text modified into printed form.
-    PODVector<unsigned> printText_;
+    stl::vector<unsigned> printText_;
     /// Mapping of printed form back to original char indices.
-    PODVector<unsigned> printToText_;
+    stl::vector<unsigned> printToText_;
     /// Row widths.
-    PODVector<float> rowWidths_;
+    stl::vector<float> rowWidths_;
     /// Glyph locations per each texture in the font.
-    Vector<PODVector<GlyphLocation> > pageGlyphLocations_;
+    stl::vector<stl::vector<GlyphLocation> > pageGlyphLocations_;
     /// Cached locations of each character in the text.
-    PODVector<CharLocation> charLocations_;
+    stl::vector<CharLocation> charLocations_;
     /// The text will be automatically translated.
     bool autoLocalizable_;
     /// Localization string id storage. Used when autoLocalizable flag is set.

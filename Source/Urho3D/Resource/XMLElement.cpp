@@ -336,12 +336,12 @@ bool XMLElement::SetBuffer(const String& name, const void* data, unsigned size)
     return SetAttribute(name, dataStr);
 }
 
-bool XMLElement::SetBuffer(const String& name, const PODVector<unsigned char>& value)
+bool XMLElement::SetBuffer(const String& name, const stl::vector<unsigned char>& value)
 {
-    if (!value.Size())
+    if (!value.size())
         return SetAttribute(name, String::EMPTY);
     else
-        return SetBuffer(name, &value[0], value.Size());
+        return SetBuffer(name, &value[0], value.size());
 }
 
 bool XMLElement::SetColor(const String& name, const Color& value)
@@ -461,7 +461,7 @@ bool XMLElement::SetResourceRefList(const ResourceRefList& value)
     Context* context = file_->GetContext();
 
     String str(context->GetTypeName(value.type_));
-    for (unsigned i = 0; i < value.names_.Size(); ++i)
+    for (unsigned i = 0; i < value.names_.size(); ++i)
     {
         str += ";";
         str += value.names_[i];
@@ -476,7 +476,7 @@ bool XMLElement::SetVariantVector(const VariantVector& value)
     if (!RemoveChildren("variant"))
         return false;
 
-    for (VariantVector::ConstIterator i = value.Begin(); i != value.End(); ++i)
+    for (auto i = value.begin(); i != value.end(); ++i)
     {
         XMLElement variantElem = CreateChild("variant");
         if (!variantElem)
@@ -492,7 +492,7 @@ bool XMLElement::SetStringVector(const StringVector& value)
     if (!RemoveChildren("string"))
         return false;
 
-    for (StringVector::ConstIterator i = value.Begin(); i != value.End(); ++i)
+    for (auto i = value.begin(); i != value.end(); ++i)
     {
         XMLElement stringElem = CreateChild("string");
         if (!stringElem)
@@ -733,18 +733,18 @@ String XMLElement::GetAttributeUpper(const char* name) const
     return String(GetAttribute(name)).ToUpper();
 }
 
-Vector<String> XMLElement::GetAttributeNames() const
+stl::vector<String> XMLElement::GetAttributeNames() const
 {
     if (!file_ || (!node_ && !xpathNode_))
-        return Vector<String>();
+        return stl::vector<String>();
 
     const pugi::xml_node& node = xpathNode_ ? xpathNode_->node() : pugi::xml_node(node_);
-    Vector<String> ret;
+    stl::vector<String> ret;
 
     pugi::xml_attribute attr = node.first_attribute();
     while (!attr.empty())
     {
-        ret.Push(String(attr.name()));
+        ret.push_back(String(attr.name()));
         attr = attr.next_attribute();
     }
 
@@ -765,21 +765,21 @@ BoundingBox XMLElement::GetBoundingBox() const
     return ret;
 }
 
-PODVector<unsigned char> XMLElement::GetBuffer(const String& name) const
+stl::vector<unsigned char> XMLElement::GetBuffer(const String& name) const
 {
-    PODVector<unsigned char> ret;
+    stl::vector<unsigned char> ret;
     StringToBuffer(ret, GetAttribute(name));
     return ret;
 }
 
 bool XMLElement::GetBuffer(const String& name, void* dest, unsigned size) const
 {
-    Vector<String> bytes = GetAttribute(name).Split(' ');
-    if (size < bytes.Size())
+    stl::vector<String> bytes = GetAttribute(name).Split(' ');
+    if (size < bytes.size())
         return false;
 
     auto* destBytes = (unsigned char*)dest;
-    for (unsigned i = 0; i < bytes.Size(); ++i)
+    for (unsigned i = 0; i < bytes.size(); ++i)
         destBytes[i] = (unsigned char)ToInt(bytes[i]);
     return true;
 }
@@ -874,8 +874,8 @@ ResourceRef XMLElement::GetResourceRef() const
 {
     ResourceRef ret;
 
-    Vector<String> values = GetAttribute("value").Split(';');
-    if (values.Size() == 2)
+    stl::vector<String> values = GetAttribute("value").Split(';');
+    if (values.size() == 2)
     {
         ret.type_ = values[0];
         ret.name_ = values[1];
@@ -888,12 +888,12 @@ ResourceRefList XMLElement::GetResourceRefList() const
 {
     ResourceRefList ret;
 
-    Vector<String> values = GetAttribute("value").Split(';', true);
-    if (values.Size() >= 1)
+    stl::vector<String> values = GetAttribute("value").Split(';', true);
+    if (values.size() >= 1)
     {
         ret.type_ = values[0];
-        ret.names_.Resize(values.Size() - 1);
-        for (unsigned i = 1; i < values.Size(); ++i)
+        ret.names_.resize(values.size() - 1);
+        for (unsigned i = 1; i < values.size(); ++i)
             ret.names_[i - 1] = values[i];
     }
 
@@ -907,7 +907,7 @@ VariantVector XMLElement::GetVariantVector() const
     XMLElement variantElem = GetChild("variant");
     while (variantElem)
     {
-        ret.Push(variantElem.GetVariant());
+        ret.push_back(variantElem.GetVariant());
         variantElem = variantElem.GetNext("variant");
     }
 
@@ -921,7 +921,7 @@ StringVector XMLElement::GetStringVector() const
     XMLElement stringElem = GetChild("string");
     while (stringElem)
     {
-        ret.Push(stringElem.GetAttributeCString("value"));
+        ret.push_back(stringElem.GetAttributeCString("value"));
         stringElem = stringElem.GetNext("string");
     }
 
@@ -1119,11 +1119,11 @@ bool XPathQuery::SetQuery(const String& queryString, const String& variableStrin
         variables_ = new pugi::xpath_variable_set();
 
         // Parse the variable string having format "name1:type1,name2:type2,..." where type is one of "Bool", "Float", "String", "ResultSet"
-        Vector<String> vars = variableString.Split(',');
-        for (Vector<String>::ConstIterator i = vars.Begin(); i != vars.End(); ++i)
+        stl::vector<String> vars = variableString.Split(',');
+        for (auto i = vars.begin(); i != vars.end(); ++i)
         {
-            Vector<String> tokens = i->Trimmed().Split(':');
-            if (tokens.Size() != 2)
+            stl::vector<String> tokens = i->Trimmed().Split(':');
+            if (tokens.size() != 2)
                 continue;
 
             pugi::xpath_value_type type;

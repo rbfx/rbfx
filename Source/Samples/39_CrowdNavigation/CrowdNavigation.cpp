@@ -293,8 +293,8 @@ void CrowdNavigation::CreateMushroom(const Vector3& pos)
 
 void CrowdNavigation::CreateBoxOffMeshConnections(DynamicNavigationMesh* navMesh, Node* boxGroup)
 {
-    const Vector<stl::shared_ptr<Node> >& boxes = boxGroup->GetChildren();
-    for (unsigned i=0; i < boxes.Size(); ++i)
+    const stl::vector<stl::shared_ptr<Node> >& boxes = boxGroup->GetChildren();
+    for (unsigned i=0; i < boxes.size(); ++i)
     {
         Node* box = boxes[i];
         Vector3 boxPos = box->GetPosition();
@@ -389,10 +389,10 @@ bool CrowdNavigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hit
     auto* camera = cameraNode_->GetComponent<Camera>();
     Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-    PODVector<RayQueryResult> results;
+    stl::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
     scene_->GetComponent<Octree>()->RaycastSingle(query);
-    if (results.Size())
+    if (results.size())
     {
         RayQueryResult& result = results[0];
         hitPos = result.position_;

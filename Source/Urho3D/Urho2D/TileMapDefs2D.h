@@ -215,7 +215,7 @@ private:
     /// Size (for rectangle and ellipse).
     Vector2 size_;
     /// Points(for polygon and polyline).
-    Vector<Vector2> points_;
+    stl::vector<Vector2> points_;
     /// Gid (for tile).
     unsigned gid_{};
     /// Sprite (for tile).

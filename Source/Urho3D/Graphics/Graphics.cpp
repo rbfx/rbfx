@@ -160,9 +160,9 @@ void Graphics::SetShaderParameter(StringHash param, const Variant& value)
 
     case VAR_BUFFER:
         {
-            const PODVector<unsigned char>& buffer = value.GetBuffer();
-            if (buffer.Size() >= sizeof(float))
-                SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.Size() / sizeof(float));
+            const stl::vector<unsigned char>& buffer = value.GetBuffer();
+            if (buffer.size() >= sizeof(float))
+                SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.size() / sizeof(float));
         }
         break;
 
@@ -183,9 +183,9 @@ IntVector2 Graphics::GetWindowPosition() const
     return position_;
 }
 
-PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
+stl::vector<IntVector3> Graphics::GetResolutions(int monitor) const
 {
-    PODVector<IntVector3> ret;
+    stl::vector<IntVector3> ret;
     // Emscripten is not able to return a valid list
 #ifndef __EMSCRIPTEN__
     auto numModes = (unsigned)SDL_GetNumDisplayModes(monitor);
@@ -200,7 +200,7 @@ PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
 
         // Store mode if unique
         bool unique = true;
-        for (unsigned j = 0; j < ret.Size(); ++j)
+        for (unsigned j = 0; j < ret.size(); ++j)
         {
             if (ret[j].x_ == width && ret[j].y_ == height && ret[j].z_ == rate)
             {
@@ -210,7 +210,7 @@ PODVector<IntVector3> Graphics::GetResolutions(int monitor) const
         }
 
         if (unique)
-            ret.Push(IntVector3(width, height, rate));
+            ret.push_back(IntVector3(width, height, rate));
     }
 #endif
 
@@ -303,14 +303,14 @@ void Graphics::AddGPUObject(GPUObject* object)
 {
     MutexLock lock(gpuObjectMutex_);
 
-    gpuObjects_.Push(object);
+    gpuObjects_.push_back(object);
 }
 
 void Graphics::RemoveGPUObject(GPUObject* object)
 {
     MutexLock lock(gpuObjectMutex_);
 
-    gpuObjects_.Remove(object);
+    gpuObjects_.erase_first(object);
 }
 
 void* Graphics::ReserveScratchBuffer(unsigned size)
@@ -322,7 +322,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
         maxScratchBufferRequest_ = size;
 
     // First check for a free buffer that is large enough
-    for (Vector<ScratchBuffer>::Iterator i = scratchBuffers_.Begin(); i != scratchBuffers_.End(); ++i)
+    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
     {
         if (!i->reserved_ && i->size_ >= size)
         {
@@ -332,7 +332,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
     }
 
     // Then check if a free buffer can be resized
-    for (Vector<ScratchBuffer>::Iterator i = scratchBuffers_.Begin(); i != scratchBuffers_.End(); ++i)
+    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
     {
         if (!i->reserved_)
         {
@@ -351,7 +351,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
     newBuffer.data_.reset(new unsigned char[size]);
     newBuffer.size_ = size;
     newBuffer.reserved_ = true;
-    scratchBuffers_.Push(newBuffer);
+    scratchBuffers_.push_back(newBuffer);
 
     URHO3D_LOGDEBUG("Allocated scratch buffer with size " + String(size));
 
@@ -363,7 +363,7 @@ void Graphics::FreeScratchBuffer(void* buffer)
     if (!buffer)
         return;
 
-    for (Vector<ScratchBuffer>::Iterator i = scratchBuffers_.Begin(); i != scratchBuffers_.End(); ++i)
+    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
     {
         if (i->reserved_ && i->data_.get() == buffer)
         {
@@ -377,7 +377,7 @@ void Graphics::FreeScratchBuffer(void* buffer)
 
 void Graphics::CleanupScratchBuffers()
 {
-    for (Vector<ScratchBuffer>::Iterator i = scratchBuffers_.Begin(); i != scratchBuffers_.End(); ++i)
+    for (auto i = scratchBuffers_.begin(); i != scratchBuffers_.end(); ++i)
     {
         if (!i->reserved_ && i->size_ > maxScratchBufferRequest_ * 2 && i->size_ >= 1024 * 1024)
         {

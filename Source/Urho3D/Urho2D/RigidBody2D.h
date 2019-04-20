@@ -180,9 +180,9 @@ private:
     /// Box2D body.
     b2Body* body_;
     /// Collision shapes.
-    Vector<stl::weak_ptr<CollisionShape2D> > collisionShapes_;
+    stl::vector<stl::weak_ptr<CollisionShape2D> > collisionShapes_;
     /// Constraints.
-    Vector<stl::weak_ptr<Constraint2D> > constraints_;
+    stl::vector<stl::weak_ptr<Constraint2D> > constraints_;
 };
 
 }

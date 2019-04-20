@@ -45,16 +45,16 @@ MemoryBuffer::MemoryBuffer(const void* data, unsigned size) :
         size_ = 0;
 }
 
-MemoryBuffer::MemoryBuffer(PODVector<unsigned char>& data) :
-    AbstractFile(data.Size()),
-    buffer_(data.Begin().ptr_),
+MemoryBuffer::MemoryBuffer(stl::vector<unsigned char>& data) :
+    AbstractFile(data.size()),
+    buffer_(data.data()),
     readOnly_(false)
 {
 }
 
-MemoryBuffer::MemoryBuffer(const PODVector<unsigned char>& data) :
-    AbstractFile(data.Size()),
-    buffer_(const_cast<unsigned char*>(data.Begin().ptr_)),
+MemoryBuffer::MemoryBuffer(const stl::vector<unsigned char>& data) :
+    AbstractFile(data.size()),
+    buffer_(const_cast<unsigned char*>(data.data())),
     readOnly_(true)
 {
 }

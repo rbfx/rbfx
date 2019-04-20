@@ -57,9 +57,9 @@ struct LightQueryResult
     /// Light.
     Light* light_;
     /// Lit geometries.
-    PODVector<Drawable*> litGeometries_;
+    stl::vector<Drawable*> litGeometries_;
     /// Shadow casters.
-    PODVector<Drawable*> shadowCasters_;
+    stl::vector<Drawable*> shadowCasters_;
     /// Shadow cameras.
     Camera* shadowCameras_[MAX_LIGHT_SPLITS];
     /// Shadow caster start indices.
@@ -95,9 +95,9 @@ struct ScenePassInfo
 struct PerThreadSceneResult
 {
     /// Geometry objects.
-    PODVector<Drawable*> geometries_;
+    stl::vector<Drawable*> geometries_;
     /// Lights.
-    PODVector<Light*> lights_;
+    stl::vector<Light*> lights_;
     /// Scene minimum Z value.
     float minZ_;
     /// Scene maximum Z value.
@@ -158,16 +158,16 @@ public:
     const IntVector2& GetViewSize() const { return viewSize_; }
 
     /// Return geometry objects.
-    const PODVector<Drawable*>& GetGeometries() const { return geometries_; }
+    const stl::vector<Drawable*>& GetGeometries() const { return geometries_; }
 
     /// Return occluder objects.
-    const PODVector<Drawable*>& GetOccluders() const { return occluders_; }
+    const stl::vector<Drawable*>& GetOccluders() const { return occluders_; }
 
     /// Return lights.
-    const PODVector<Light*>& GetLights() const { return lights_; }
+    const stl::vector<Light*>& GetLights() const { return lights_; }
 
     /// Return light batch queues.
-    const Vector<LightBatchQueue>& GetLightQueues() const { return lightQueues_; }
+    const stl::vector<LightBatchQueue>& GetLightQueues() const { return lightQueues_; }
 
     /// Return the last used software occlusion buffer.
     OcclusionBuffer* GetOcclusionBuffer() const { return occlusionBuffer_; }
@@ -229,13 +229,13 @@ private:
     /// Blit the viewport from one surface to another.
     void BlitFramebuffer(Texture* source, RenderSurface* destination, bool depthWrite);
     /// Query for occluders as seen from a camera.
-    void UpdateOccluders(PODVector<Drawable*>& occluders, Camera* camera);
+    void UpdateOccluders(stl::vector<Drawable*>& occluders, Camera* camera);
     /// Draw occluders to occlusion buffer.
-    void DrawOccluders(OcclusionBuffer* buffer, const PODVector<Drawable*>& occluders);
+    void DrawOccluders(OcclusionBuffer* buffer, const stl::vector<Drawable*>& occluders);
     /// Query for lit geometries and shadow casters for a light.
     void ProcessLight(LightQueryResult& query, unsigned threadIndex);
     /// Process shadow casters' visibilities and build their combined view- or projection-space bounding box.
-    void ProcessShadowCasters(LightQueryResult& query, const PODVector<Drawable*>& drawables, unsigned splitIndex);
+    void ProcessShadowCasters(LightQueryResult& query, const stl::vector<Drawable*>& drawables, unsigned splitIndex);
     /// Set up initial shadow camera view(s).
     void SetupShadowCameras(LightQueryResult& query);
     /// Set up a directional light shadow camera
@@ -298,10 +298,10 @@ private:
     }
 
     /// Return hash code for a vertex light queue.
-    unsigned long long GetVertexLightQueueHash(const PODVector<Light*>& vertexLights)
+    unsigned long long GetVertexLightQueueHash(const stl::vector<Light*>& vertexLights)
     {
         unsigned long long hash = 0;
-        for (PODVector<Light*>::ConstIterator i = vertexLights.Begin(); i != vertexLights.End(); ++i)
+        for (auto i = vertexLights.begin(); i != vertexLights.end(); ++i)
             hash += (unsigned long long)(*i);
         return hash;
     }
@@ -383,21 +383,21 @@ private:
     /// Renderpath.
     RenderPath* renderPath_{};
     /// Per-thread octree query results.
-    Vector<PODVector<Drawable*> > tempDrawables_;
+    stl::vector<stl::vector<Drawable*> > tempDrawables_;
     /// Per-thread geometries, lights and Z range collection results.
-    Vector<PerThreadSceneResult> sceneResults_;
+    stl::vector<PerThreadSceneResult> sceneResults_;
     /// Visible zones.
-    PODVector<Zone*> zones_;
+    stl::vector<Zone*> zones_;
     /// Visible geometry objects.
-    PODVector<Drawable*> geometries_;
+    stl::vector<Drawable*> geometries_;
     /// Geometry objects that will be updated in the main thread.
-    PODVector<Drawable*> nonThreadedGeometries_;
+    stl::vector<Drawable*> nonThreadedGeometries_;
     /// Geometry objects that will be updated in worker threads.
-    PODVector<Drawable*> threadedGeometries_;
+    stl::vector<Drawable*> threadedGeometries_;
     /// Occluder objects.
-    PODVector<Drawable*> occluders_;
+    stl::vector<Drawable*> occluders_;
     /// Lights.
-    PODVector<Light*> lights_;
+    stl::vector<Light*> lights_;
     /// Number of active occluders.
     unsigned activeOccluders_{};
 
@@ -406,11 +406,11 @@ private:
     /// Rendertargets defined by the renderpath.
     HashMap<StringHash, Texture*> renderTargets_;
     /// Intermediate light processing results.
-    Vector<LightQueryResult> lightQueryResults_;
+    stl::vector<LightQueryResult> lightQueryResults_;
     /// Info for scene render passes defined by the renderpath.
-    PODVector<ScenePassInfo> scenePasses_;
+    stl::vector<ScenePassInfo> scenePasses_;
     /// Per-pixel light queues.
-    Vector<LightBatchQueue> lightQueues_;
+    stl::vector<LightBatchQueue> lightQueues_;
     /// Per-vertex light queues.
     HashMap<unsigned long long, LightBatchQueue> vertexLightQueues_;
     /// Batch queues by pass index.

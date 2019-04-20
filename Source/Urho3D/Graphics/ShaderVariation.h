@@ -122,7 +122,7 @@ public:
     unsigned long long GetElementHash() const { return elementHash_; }
 
     /// Return shader bytecode. Stored persistently on Direct3D11 only.
-    const PODVector<unsigned char>& GetByteCode() const { return byteCode_; }
+    const stl::vector<unsigned char>& GetByteCode() const { return byteCode_; }
 
     /// Return defines.
     const String& GetDefines() const { return defines_; }
@@ -164,7 +164,7 @@ private:
     /// Constant buffer sizes. 0 if a constant buffer slot is not in use.
     unsigned constantBufferSizes_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Shader bytecode. Needed for inspecting the input signature and parameters. Not used on OpenGL.
-    PODVector<unsigned char> byteCode_;
+    stl::vector<unsigned char> byteCode_;
     /// Shader name.
     String name_;
     /// Defines to use in compiling.

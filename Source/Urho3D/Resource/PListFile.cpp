@@ -375,7 +375,7 @@ bool PListFile::LoadArray(PListValueVector& array, const XMLElement& arrayElem)
         if (!LoadValue(value, valueElem))
             return false;
 
-        array.Push(value);
+        array.push_back(value);
     }
 
     return true;

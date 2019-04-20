@@ -37,20 +37,20 @@ SceneClipboard::SceneClipboard(Context* context, Undo::Manager& undo)
 
 void SceneClipboard::Clear()
 {
-    nodes_.Clear();
-    components_.Clear();
+    nodes_.clear();
+    components_.clear();
 }
 
 void SceneClipboard::Copy(Node* node)
 {
-    nodes_.Resize(nodes_.Size() + 1);
-    node->Save(nodes_.Back());
+    nodes_.resize(nodes_.size() + 1);
+    node->Save(nodes_.back());
 }
 
 void SceneClipboard::Copy(Component* component)
 {
-    components_.Resize(components_.Size() + 1);
-    component->Save(components_.Back());
+    components_.resize(components_.size() + 1);
+    component->Save(components_.back());
 }
 
 PasteResult SceneClipboard::Paste(Node* node)
@@ -66,7 +66,7 @@ PasteResult SceneClipboard::Paste(Node* node)
         if (component->Load(data))
         {
             component->ApplyAttributes();
-            result.components_.Push(component);
+            result.components_.push_back(component);
         }
         else
             component->Remove();
@@ -83,7 +83,7 @@ PasteResult SceneClipboard::Paste(Node* node)
             newNode->ApplyAttributes();
             if (!newNode->GetName().Empty())
                 undo_.Track<Undo::EditAttributeAction>(newNode, "Name", String::EMPTY, newNode->GetName());
-            result.nodes_.Push(newNode);
+            result.nodes_.push_back(newNode);
         }
         else
             newNode->Remove();
@@ -92,7 +92,7 @@ PasteResult SceneClipboard::Paste(Node* node)
     return result;
 }
 
-PasteResult SceneClipboard::Paste(const PODVector<Node*>& nodes)
+PasteResult SceneClipboard::Paste(const stl::vector<Node*>& nodes)
 {
     PasteResult result;
 
@@ -102,7 +102,7 @@ PasteResult SceneClipboard::Paste(const PODVector<Node*>& nodes)
     return result;
 }
 
-PasteResult SceneClipboard::Paste(const Vector<stl::weak_ptr<Node>>& nodes)
+PasteResult SceneClipboard::Paste(const stl::vector<stl::weak_ptr<Node>>& nodes)
 {
     PasteResult result;
 
@@ -112,19 +112,19 @@ PasteResult SceneClipboard::Paste(const Vector<stl::weak_ptr<Node>>& nodes)
     return result;
 }
 
-void SceneClipboard::Copy(const PODVector<Node*>& nodes)
+void SceneClipboard::Copy(const stl::vector<Node*>& nodes)
 {
     for (auto& node : nodes)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const PODVector<Component*>& components)
+void SceneClipboard::Copy(const stl::vector<Component*>& components)
 {
     for (auto& node : components)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const Vector<stl::weak_ptr<Node>>& nodes)
+void SceneClipboard::Copy(const stl::vector<stl::weak_ptr<Node>>& nodes)
 {
     for (auto& node : nodes)
         Copy(node);

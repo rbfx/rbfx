@@ -25,11 +25,11 @@
 #include "../Container/HashBase.h"
 #include "../Container/Pair.h"
 #include "../Container/Sort.h"
-#include "../Container/Vector.h"
 #include "../Core/Macros.h"
 
 #include <cassert>
-#include <initializer_list>
+#include <EASTL/initializer_list.h>
+#include <EASTL/vector.h>
 
 namespace Urho3D
 {
@@ -576,22 +576,22 @@ public:
     }
 
     /// Return all the keys.
-    Vector<T> Keys() const
+    stl::vector<T> Keys() const
     {
-        Vector<T> result;
-        result.Reserve(Size());
+        stl::vector<T> result;
+        result.reserve(Size());
         for (ConstIterator i = Begin(); i != End(); ++i)
-            result.Push(i->first_);
+            result.push_back(i->first_);
         return result;
     }
 
     /// Return all the values.
-    Vector<U> Values() const
+    stl::vector<U> Values() const
     {
-        Vector<U> result;
-        result.Reserve(Size());
+        stl::vector<U> result;
+        result.reserve(Size());
         for (ConstIterator i = Begin(); i != End(); ++i)
-            result.Push(i->second_);
+            result.push_back(i->second_);
         return result;
     }
 

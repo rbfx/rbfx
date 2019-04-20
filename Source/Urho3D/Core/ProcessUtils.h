@@ -48,17 +48,17 @@ URHO3D_API void PrintLine(const String& str, bool error = false);
 /// Print ASCII text to the console with a newline appended. Uses printf() to allow printing into the MSVC output window.
 URHO3D_API void PrintLine(const char* str, bool error = false);
 /// Parse arguments from the command line. First argument is by default assumed to be the executable name and is skipped.
-URHO3D_API const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgument = true);
+URHO3D_API const stl::vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgument = true);
 /// Parse arguments from the command line.
-URHO3D_API const Vector<String>& ParseArguments(const char* cmdLine);
+URHO3D_API const stl::vector<String>& ParseArguments(const char* cmdLine);
 /// Parse arguments from a wide char command line.
-URHO3D_API const Vector<String>& ParseArguments(const WString& cmdLine);
+URHO3D_API const stl::vector<String>& ParseArguments(const WString& cmdLine);
 /// Parse arguments from a wide char command line.
-URHO3D_API const Vector<String>& ParseArguments(const wchar_t* cmdLine);
+URHO3D_API const stl::vector<String>& ParseArguments(const wchar_t* cmdLine);
 /// Parse arguments from argc & argv.
-URHO3D_API const Vector<String>& ParseArguments(int argc, char** argv);
+URHO3D_API const stl::vector<String>& ParseArguments(int argc, char** argv);
 /// Return previously parsed arguments.
-URHO3D_API const Vector<String>& GetArguments();
+URHO3D_API const stl::vector<String>& GetArguments();
 /// Read input from the console window. Return empty if no input.
 URHO3D_API String GetConsoleInput();
 /// Return the runtime platform identifier, or (?) if not identified.

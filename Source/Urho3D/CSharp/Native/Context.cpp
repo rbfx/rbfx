@@ -117,7 +117,7 @@ protected:
     /// Lock for synchronizing `deletionQueue_` access.
     Mutex mutex_;
     /// LIFO deletion queue for objects that would otherwise get deleted by GC thread.
-    Vector<Pair<RefCounted*, std::function<void(RefCounted*)>>> deletionQueue_;
+    stl::vector<Pair<RefCounted*, std::function<void(RefCounted*)>>> deletionQueue_;
 };
 
 extern "C"

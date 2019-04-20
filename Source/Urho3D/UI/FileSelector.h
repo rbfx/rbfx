@@ -71,7 +71,7 @@ public:
     /// Set current filename.
     void SetFileName(const String& fileName);
     /// Set filters.
-    void SetFilters(const Vector<String>& filters, unsigned defaultIndex);
+    void SetFilters(const stl::vector<String>& filters, unsigned defaultIndex);
     /// Set directory selection mode. Default false.
     void SetDirectoryMode(bool enable);
     /// Update elements to layout properly. Call this after manually adjusting the sub-elements.
@@ -178,9 +178,9 @@ private:
     /// Current directory.
     String path_;
     /// Filters.
-    Vector<String> filters_;
+    stl::vector<String> filters_;
     /// File entries.
-    Vector<FileSelectorEntry> fileEntries_;
+    stl::vector<FileSelectorEntry> fileEntries_;
     /// Filter used to get the file list.
     String lastUsedFilter_;
     /// Directory mode flag.

@@ -81,7 +81,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
     XMLElement commonElem = root.GetChild("common");
     rowHeight_ = commonElem.GetInt("lineHeight");
     unsigned pages = commonElem.GetUInt("pages");
-    textures_.Reserve(pages);
+    textures_.reserve(pages);
 
     auto* resourceCache = font_->GetSubsystem<ResourceCache>();
     String fontPath = GetPath(font_->GetName());
@@ -111,7 +111,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         if (!texture)
             return false;
 
-        textures_.Push(texture);
+        textures_.push_back(texture);
 
         // Add texture to resource cache
         texture->SetName(fontFile->GetName());
@@ -216,11 +216,11 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
     unsigned components = ConvertFormatToNumComponents(fontFace->textures_[0]->GetFormat());
 
     // Save the existing textures as image resources
-    Vector<stl::shared_ptr<Image> > oldImages;
-    for (unsigned i = 0; i < fontFace->textures_.Size(); ++i)
-        oldImages.Push(SaveFaceTexture(fontFace->textures_[i].get()));
+    stl::vector<stl::shared_ptr<Image> > oldImages;
+    for (unsigned i = 0; i < fontFace->textures_.size(); ++i)
+        oldImages.push_back(SaveFaceTexture(fontFace->textures_[i].get()));
 
-    Vector<stl::shared_ptr<Image> > newImages(numPages);
+    stl::vector<stl::shared_ptr<Image> > newImages(numPages);
     for (unsigned i = 0; i < numPages; ++i)
     {
         stl::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
@@ -247,8 +247,8 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
             oldGlyph.x_, oldGlyph.y_, components);
     }
 
-    textures_.Resize(newImages.Size());
-    for (unsigned i = 0; i < newImages.Size(); ++i)
+    textures_.resize(newImages.size());
+    for (unsigned i = 0; i < newImages.size(); ++i)
         textures_[i] = LoadFaceTexture(newImages[i]);
 
     for (HashMap<unsigned, float>::ConstIterator i = fontFace->kerningMapping_.Begin(); i != fontFace->kerningMapping_.End(); ++i)
@@ -278,7 +278,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
     // Common
     childElem = rootElem.CreateChild("common");
     childElem.SetInt("lineHeight", rowHeight_);
-    unsigned pages = textures_.Size();
+    unsigned pages = textures_.size();
     childElem.SetUInt("pages", pages);
 
     // Construct the path to store the texture

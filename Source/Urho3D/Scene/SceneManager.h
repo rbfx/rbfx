@@ -69,7 +69,7 @@ protected:
     void UpdateViewports();
 
     /// Current loaded scenes.
-    Vector<stl::shared_ptr<Scene>> scenes_;
+    stl::vector<stl::shared_ptr<Scene>> scenes_;
     /// Current active scene.
     stl::weak_ptr<Scene> activeScene_;
     /// Surface for rendering active scene into.

@@ -51,7 +51,7 @@ void CollisionChain2D::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Loop", GetLoop, SetLoop, bool, false, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(CollisionShape2D);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Vertices", GetVerticesAttr, SetVerticesAttr, PODVector<unsigned char>, Variant::emptyBuffer, AM_FILE);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Vertices", GetVerticesAttr, SetVerticesAttr, stl::vector<unsigned char>, Variant::emptyBuffer, AM_FILE);
 }
 
 void CollisionChain2D::SetLoop(bool loop)
@@ -67,24 +67,24 @@ void CollisionChain2D::SetLoop(bool loop)
 
 void CollisionChain2D::SetVertexCount(unsigned count)
 {
-    vertices_.Resize(count);
+    vertices_.resize(count);
 }
 
 void CollisionChain2D::SetVertex(unsigned index, const Vector2& vertex)
 {
-    if (index >= vertices_.Size())
+    if (index >= vertices_.size())
         return;
 
     vertices_[index] = vertex;
 
-    if (index == vertices_.Size() - 1)
+    if (index == vertices_.size() - 1)
     {
         MarkNetworkUpdate();
         RecreateFixture();
     }
 }
 
-void CollisionChain2D::SetVertices(const PODVector<Vector2>& vertices)
+void CollisionChain2D::SetVertices(const stl::vector<Vector2>& vertices)
 {
     vertices_ = vertices;
 
@@ -92,25 +92,25 @@ void CollisionChain2D::SetVertices(const PODVector<Vector2>& vertices)
     RecreateFixture();
 }
 
-void CollisionChain2D::SetVerticesAttr(const PODVector<unsigned char>& value)
+void CollisionChain2D::SetVerticesAttr(const stl::vector<unsigned char>& value)
 {
-    if (value.Empty())
+    if (value.empty())
         return;
 
-    PODVector<Vector2> vertices;
+    stl::vector<Vector2> vertices;
 
     MemoryBuffer buffer(value);
     while (!buffer.IsEof())
-        vertices.Push(buffer.ReadVector2());
+        vertices.push_back(buffer.ReadVector2());
 
     SetVertices(vertices);
 }
 
-PODVector<unsigned char> CollisionChain2D::GetVerticesAttr() const
+stl::vector<unsigned char> CollisionChain2D::GetVerticesAttr() const
 {
     VectorBuffer ret;
 
-    for (unsigned i = 0; i < vertices_.Size(); ++i)
+    for (unsigned i = 0; i < vertices_.size(); ++i)
         ret.WriteVector2(vertices_[i]);
 
     return ret.GetBuffer();
@@ -125,9 +125,9 @@ void CollisionChain2D::RecreateFixture()
 {
     ReleaseFixture();
 
-    PODVector<b2Vec2> b2Vertices;
-    unsigned count = vertices_.Size();
-    b2Vertices.Resize(count);
+    stl::vector<b2Vec2> b2Vertices;
+    unsigned count = vertices_.size();
+    b2Vertices.resize(count);
 
     Vector2 worldScale(cachedWorldScale_.x_, cachedWorldScale_.y_);
     for (unsigned i = 0; i < count; ++i)

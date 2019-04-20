@@ -55,7 +55,7 @@ public:
     void Remove(Object* object);
 
     /// Receivers. May contain holes during sending.
-    PODVector<Object*> receivers_;
+    stl::vector<Object*> receivers_;
 
 private:
     /// "In send" recursion counter.
@@ -159,7 +159,7 @@ public:
     const HashMap<StringHash, stl::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
-    const HashMap<String, PODVector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
+    const HashMap<String, stl::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
 
     /// Return active event sender. Null outside event handling.
     Object* GetEventSender() const;
@@ -177,21 +177,21 @@ public:
     template <class T> AttributeInfo* GetAttribute(const char* name);
 
     /// Return attribute descriptions for an object type, or null if none defined.
-    const Vector<AttributeInfo>* GetAttributes(StringHash type) const
+    const stl::vector<AttributeInfo>* GetAttributes(StringHash type) const
     {
-        HashMap<StringHash, Vector<AttributeInfo> >::ConstIterator i = attributes_.Find(type);
+        auto i = attributes_.Find(type);
         return i != attributes_.End() ? &i->second_ : nullptr;
     }
 
     /// Return network replication attribute descriptions for an object type, or null if none defined.
-    const Vector<AttributeInfo>* GetNetworkAttributes(StringHash type) const
+    const stl::vector<AttributeInfo>* GetNetworkAttributes(StringHash type) const
     {
-        HashMap<StringHash, Vector<AttributeInfo> >::ConstIterator i = networkAttributes_.Find(type);
+        auto i = networkAttributes_.Find(type);
         return i != networkAttributes_.End() ? &i->second_ : nullptr;
     }
 
     /// Return all registered attributes.
-    const HashMap<StringHash, Vector<AttributeInfo> >& GetAllAttributes() const { return attributes_; }
+    const HashMap<StringHash, stl::vector<AttributeInfo> >& GetAllAttributes() const { return attributes_; }
 
     /// Return event receivers for a sender and event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(Object* sender, StringHash eventType)
@@ -311,21 +311,21 @@ private:
     /// Subsystems.
     HashMap<StringHash, stl::shared_ptr<Object> > subsystems_;
     /// Attribute descriptions per object type.
-    HashMap<StringHash, Vector<AttributeInfo> > attributes_;
+    HashMap<StringHash, stl::vector<AttributeInfo> > attributes_;
     /// Network replication attribute descriptions per object type.
-    HashMap<StringHash, Vector<AttributeInfo> > networkAttributes_;
+    HashMap<StringHash, stl::vector<AttributeInfo> > networkAttributes_;
     /// Event receivers for non-specific events.
     HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > eventReceivers_;
     /// Event receivers for specific senders' events.
     HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
     /// Event sender stack.
-    PODVector<Object*> eventSenders_;
+    stl::vector<Object*> eventSenders_;
     /// Event data stack.
-    PODVector<VariantMap*> eventDataMaps_;
+    stl::vector<VariantMap*> eventDataMaps_;
     /// Active event handler. Not stored in a stack for performance reasons; is needed only in esoteric cases.
     EventHandler* eventHandler_;
     /// Object categories.
-    HashMap<String, PODVector<StringHash> > objectCategories_;
+    HashMap<String, stl::vector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
 

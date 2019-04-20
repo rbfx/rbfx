@@ -143,9 +143,9 @@ public:
     /// Rebuild part of the navigation mesh in the rectangular area. Return true if successful.
     virtual bool Build(const IntVector2& from, const IntVector2& to);
     /// Return tile data.
-    virtual PODVector<unsigned char> GetTileData(const IntVector2& tile) const;
+    virtual stl::vector<unsigned char> GetTileData(const IntVector2& tile) const;
     /// Add tile to navigation mesh.
-    virtual bool AddTile(const PODVector<unsigned char>& tileData);
+    virtual bool AddTile(const stl::vector<unsigned char>& tileData);
     /// Remove tile from navigation mesh.
     virtual void RemoveTile(const IntVector2& tile);
     /// Remove all tiles from navigation mesh.
@@ -163,11 +163,11 @@ public:
     Vector3 MoveAlongSurface(const Vector3& start, const Vector3& end, const Vector3& extents = Vector3::ONE, int maxVisited = 3,
         const dtQueryFilter* filter = nullptr);
     /// Find a path between world space points. Return non-empty list of points if successful. Extents specifies how far off the navigation mesh the points can be.
-    void FindPath(PODVector<Vector3>& dest, const Vector3& start, const Vector3& end, const Vector3& extents = Vector3::ONE,
+    void FindPath(stl::vector<Vector3>& dest, const Vector3& start, const Vector3& end, const Vector3& extents = Vector3::ONE,
         const dtQueryFilter* filter = nullptr);
     /// Find a path between world space points. Return non-empty list of navigation path points if successful. Extents specifies how far off the navigation mesh the points can be.
     void FindPath
-        (PODVector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end, const Vector3& extents = Vector3::ONE,
+        (stl::vector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end, const Vector3& extents = Vector3::ONE,
             const dtQueryFilter* filter = nullptr);
     /// Return a random point on the navigation mesh.
     Vector3 GetRandomPoint(const dtQueryFilter* filter = nullptr, dtPolyRef* randomRef = nullptr);
@@ -256,9 +256,9 @@ public:
     NavmeshPartitionType GetPartitionType() const { return partitionType_; }
 
     /// Set navigation data attribute.
-    virtual void SetNavigationDataAttr(const PODVector<unsigned char>& value);
+    virtual void SetNavigationDataAttr(const stl::vector<unsigned char>& value);
     /// Return navigation data attribute.
-    virtual PODVector<unsigned char> GetNavigationDataAttr() const;
+    virtual stl::vector<unsigned char> GetNavigationDataAttr() const;
 
     /// Draw debug geometry for OffMeshConnection components.
     void SetDrawOffMeshConnections(bool enable) { drawOffMeshConnections_ = enable; }
@@ -280,17 +280,17 @@ private:
 
 protected:
     /// Collect geometry from under Navigable components.
-    void CollectGeometries(Vector<NavigationGeometryInfo>& geometryList);
+    void CollectGeometries(stl::vector<NavigationGeometryInfo>& geometryList);
     /// Visit nodes and collect navigable geometry.
-    void CollectGeometries(Vector<NavigationGeometryInfo>& geometryList, Node* node, stl::hash_set<Node*>& processedNodes, bool recursive);
+    void CollectGeometries(stl::vector<NavigationGeometryInfo>& geometryList, Node* node, stl::hash_set<Node*>& processedNodes, bool recursive);
     /// Get geometry data within a bounding box.
-    void GetTileGeometry(NavBuildData* build, Vector<NavigationGeometryInfo>& geometryList, BoundingBox& box);
+    void GetTileGeometry(NavBuildData* build, stl::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box);
     /// Add a triangle mesh to the geometry data.
     void AddTriMeshGeometry(NavBuildData* build, Geometry* geometry, const Matrix3x4& transform);
     /// Build one tile of the navigation mesh. Return true if successful.
-    virtual bool BuildTile(Vector<NavigationGeometryInfo>& geometryList, int x, int z);
+    virtual bool BuildTile(stl::vector<NavigationGeometryInfo>& geometryList, int x, int z);
     /// Build tiles in the rectangular area. Return number of built tiles.
-    unsigned BuildTiles(Vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
+    unsigned BuildTiles(stl::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to);
     /// Ensure that the navigation mesh query is initialized. Return true if successful.
     bool InitializeQuery();
     /// Release the navigation mesh and the query.
@@ -349,7 +349,7 @@ protected:
     /// Debug draw NavArea components.
     bool drawNavAreas_;
     /// NavAreas for this NavMesh
-    Vector<stl::weak_ptr<NavArea> > areas_;
+    stl::vector<stl::weak_ptr<NavArea> > areas_;
 };
 
 /// Register Navigation library objects.

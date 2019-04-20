@@ -91,7 +91,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
         return false;
     }
 
-    loadImages_.Clear();
+    loadImages_.clear();
 
     XMLElement textureElem = loadParameters_->GetRoot();
     XMLElement layerElem = textureElem.GetChild("layer");
@@ -103,7 +103,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
         if (GetPath(name).Empty())
             name = texPath + name;
 
-        loadImages_.Push(cache->GetTempResource<Image>(name));
+        loadImages_.push_back(cache->GetTempResource<Image>(name));
         cache->StoreResourceDependency(this, name);
 
         layerElem = layerElem.GetNext("layer");
@@ -112,7 +112,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
     // Precalculate mip levels if async loading
     if (GetAsyncLoadState() == ASYNC_LOADING)
     {
-        for (unsigned i = 0; i < loadImages_.Size(); ++i)
+        for (unsigned i = 0; i < loadImages_.size(); ++i)
         {
             if (loadImages_[i])
                 loadImages_[i]->PrecalculateLevels();
@@ -132,12 +132,12 @@ bool Texture2DArray::EndLoad()
     CheckTextureBudget(GetTypeStatic());
 
     SetParameters(loadParameters_);
-    SetLayers(loadImages_.Size());
+    SetLayers(loadImages_.size());
 
-    for (unsigned i = 0; i < loadImages_.Size(); ++i)
+    for (unsigned i = 0; i < loadImages_.size(); ++i)
         SetData(i, loadImages_[i]);
 
-    loadImages_.Clear();
+    loadImages_.clear();
     loadParameters_.reset();
 
     return true;
@@ -188,7 +188,7 @@ bool Texture2DArray::SetSize(unsigned layers, int width, int height, unsigned fo
     if (layers)
         layers_ = layers;
 
-    layerMemoryUse_.Resize(layers_);
+    layerMemoryUse_.resize(layers_);
     for (unsigned i = 0; i < layers_; ++i)
         layerMemoryUse_[i] = 0;
 

@@ -56,15 +56,17 @@ public:
     void AddDrawable(Drawable* drawable)
     {
         drawable->SetOctant(this);
-        drawables_.Push(drawable);
+        drawables_.push_back(drawable);
         IncDrawableCount();
     }
 
     /// Remove a drawable object from this octant.
     void RemoveDrawable(Drawable* drawable, bool resetOctant = true)
     {
-        if (drawables_.Remove(drawable))
+        auto it = drawables_.find(drawable);
+        if (it != drawables_.end())
         {
+            drawables_.erase(it);
             if (resetOctant)
                 drawable->SetOctant(nullptr);
             DecDrawableCount();
@@ -105,7 +107,7 @@ protected:
     /// Return drawable objects by a ray query, called internally.
     void GetDrawablesInternal(RayOctreeQuery& query) const;
     /// Return drawable objects only for a threaded ray query, called internally.
-    void GetDrawablesOnlyInternal(RayOctreeQuery& query, PODVector<Drawable*>& drawables) const;
+    void GetDrawablesOnlyInternal(RayOctreeQuery& query, stl::vector<Drawable*>& drawables) const;
 
     /// Increase drawable object count recursively.
     void IncDrawableCount()
@@ -136,7 +138,7 @@ protected:
     /// Bounding box used for drawable object fitting.
     BoundingBox cullingBox_;
     /// Drawable objects.
-    PODVector<Drawable*> drawables_;
+    stl::vector<Drawable*> drawables_;
     /// Child octants.
     Octant* children_[NUM_OCTANTS]{};
     /// World bounding box center.
@@ -204,13 +206,13 @@ private:
     void UpdateOctreeSize() { SetSize(worldBoundingBox_, numLevels_); }
 
     /// Drawable objects that require update.
-    PODVector<Drawable*> drawableUpdates_;
+    stl::vector<Drawable*> drawableUpdates_;
     /// Drawable objects that were inserted during threaded update phase.
-    PODVector<Drawable*> threadedDrawableUpdates_;
+    stl::vector<Drawable*> threadedDrawableUpdates_;
     /// Mutex for octree reinsertions.
     Mutex octreeMutex_;
     /// Ray query temporary list of drawables.
-    mutable PODVector<Drawable*> rayQueryDrawables_;
+    mutable stl::vector<Drawable*> rayQueryDrawables_;
     /// Subdivision level.
     unsigned numLevels_;
 };

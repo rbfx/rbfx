@@ -171,7 +171,7 @@ public:
     /// Return component from the whole scene by ID, or null if not found.
     Component* GetComponent(unsigned id) const;
     /// Get nodes with specific tag from the whole scene, return false if empty.
-    bool GetNodesWithTag(PODVector<Node*>& dest, const String& tag)  const;
+    bool GetNodesWithTag(stl::vector<Node*>& dest, const String& tag)  const;
 
     /// Return whether updates are enabled.
     bool IsUpdateEnabled() const { return updateEnabled_; }
@@ -207,7 +207,7 @@ public:
     int GetAsyncLoadingMs() const { return asyncLoadingMs_; }
 
     /// Return required package files.
-    const Vector<stl::shared_ptr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
+    const stl::vector<stl::shared_ptr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
 
     /// Return a node user variable name, or empty if not registered.
     const String& GetVarName(StringHash hash) const;
@@ -288,7 +288,7 @@ private:
     /// Local components by ID.
     HashMap<unsigned, Component*> localComponents_;
     /// Cached tagged nodes by tag.
-    HashMap<StringHash, PODVector<Node*> > taggedNodes_;
+    HashMap<StringHash, stl::vector<Node*> > taggedNodes_;
     /// Asynchronous loading progress.
     AsyncProgress asyncProgress_;
     /// Node and component ID resolver for asynchronous loading.
@@ -296,7 +296,7 @@ private:
     /// Source file name.
     mutable String fileName_;
     /// Required package files for networking.
-    Vector<stl::shared_ptr<PackageFile> > requiredPackageFiles_;
+    stl::vector<stl::shared_ptr<PackageFile> > requiredPackageFiles_;
     /// Registered node user variable reverse mappings.
     HashMap<StringHash, String> varNames_;
     /// Nodes to check for attribute changes on the next network update.
@@ -304,7 +304,7 @@ private:
     /// Components to check for attribute changes on the next network update.
     stl::hash_set<unsigned> networkUpdateComponents_;
     /// Delayed dirty notification queue for components.
-    PODVector<Component*> delayedDirtyComponents_;
+    stl::vector<Component*> delayedDirtyComponents_;
     /// Mutex for the delayed dirty notification queue.
     Mutex sceneMutex_;
     /// Preallocated event data map for smoothing update events.

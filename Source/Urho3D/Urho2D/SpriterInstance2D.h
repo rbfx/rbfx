@@ -71,7 +71,7 @@ public:
     /// Return root spatial info.
     const Spriter::SpatialInfo& GetSpatialInfo() const { return spatialInfo_; }
     /// Return animation result timeline keys.
-    const PODVector<Spriter::SpatialTimelineKey*>& GetTimelineKeys() const { return timelineKeys_; }
+    const stl::vector<Spriter::SpatialTimelineKey*>& GetTimelineKeys() const { return timelineKeys_; }
 
 private:
     /// Handle set entity.
@@ -104,7 +104,7 @@ private:
     /// Current mainline key.
     MainlineKey* mainlineKey_{};
     /// Current timeline keys.
-    PODVector<SpatialTimelineKey*> timelineKeys_;
+    stl::vector<SpatialTimelineKey*> timelineKeys_;
 };
 
 }

@@ -83,7 +83,7 @@ public:
     bool IsCompressed() const { return compressed_; }
 
     /// Return list of file names in the package.
-    const Vector<String> GetEntryNames() const { return entries_.Keys(); }
+    const stl::vector<String> GetEntryNames() const { return entries_.Keys(); }
 
     /// Return a file name in the package at the specified index
     const String& GetEntryName(unsigned index) const 
@@ -98,7 +98,7 @@ public:
     }
 
     /// Scan package for specified files.
-    void Scan(Vector<String>& result, const String& pathName, const String& filter, bool recursive) const;
+    void Scan(stl::vector<String>& result, const String& pathName, const String& filter, bool recursive) const;
 
 private:
     /// File entries.

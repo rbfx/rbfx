@@ -93,29 +93,29 @@ static DecalVertex ClipEdge(const DecalVertex& v0, const DecalVertex& v1, float 
     return ret;
 }
 
-static void ClipPolygon(PODVector<DecalVertex>& dest, const PODVector<DecalVertex>& src, const Plane& plane, bool skinned)
+static void ClipPolygon(stl::vector<DecalVertex>& dest, const stl::vector<DecalVertex>& src, const Plane& plane, bool skinned)
 {
     unsigned last = 0;
     float lastDistance = 0.0f;
-    dest.Clear();
+    dest.clear();
 
-    if (src.Empty())
+    if (src.empty())
         return;
 
-    for (unsigned i = 0; i < src.Size(); ++i)
+    for (unsigned i = 0; i < src.size(); ++i)
     {
         float distance = plane.Distance(src[i].position_);
         if (distance >= 0.0f)
         {
             if (lastDistance < 0.0f)
-                dest.Push(ClipEdge(src[last], src[i], lastDistance, distance, skinned));
+                dest.push_back(ClipEdge(src[last], src[i], lastDistance, distance, skinned));
 
-            dest.Push(src[i]);
+            dest.push_back(src[i]);
         }
         else
         {
             if (lastDistance >= 0.0f && i != 0)
-                dest.Push(ClipEdge(src[last], src[i], lastDistance, distance, skinned));
+                dest.push_back(ClipEdge(src[last], src[i], lastDistance, distance, skinned));
         }
 
         last = i;
@@ -125,29 +125,29 @@ static void ClipPolygon(PODVector<DecalVertex>& dest, const PODVector<DecalVerte
     // Recheck the distances of the last and first vertices and add the final clipped vertex if applicable
     float distance = plane.Distance(src[0].position_);
     if ((lastDistance < 0.0f && distance >= 0.0f) || (lastDistance >= 0.0f && distance < 0.0f))
-        dest.Push(ClipEdge(src[last], src[0], lastDistance, distance, skinned));
+        dest.push_back(ClipEdge(src[last], src[0], lastDistance, distance, skinned));
 }
 
 void Decal::AddVertex(const DecalVertex& vertex)
 {
-    for (unsigned i = 0; i < vertices_.Size(); ++i)
+    for (unsigned i = 0; i < vertices_.size(); ++i)
     {
         if (vertex.position_.Equals(vertices_[i].position_) && vertex.normal_.Equals(vertices_[i].normal_))
         {
-            indices_.Push((unsigned short)i);
+            indices_.push_back((unsigned short) i);
             return;
         }
     }
 
-    auto newIndex = (unsigned short)vertices_.Size();
-    vertices_.Push(vertex);
-    indices_.Push(newIndex);
+    auto newIndex = (unsigned short) vertices_.size();
+    vertices_.push_back(vertex);
+    indices_.push_back(newIndex);
 }
 
 void Decal::CalculateBoundingBox()
 {
     boundingBox_.Clear();
-    for (unsigned i = 0; i < vertices_.Size(); ++i)
+    for (unsigned i = 0; i < vertices_.size(); ++i)
         boundingBox_.Merge(vertices_[i].position_);
 }
 
@@ -170,7 +170,7 @@ DecalSet::DecalSet(Context* context) :
 {
     geometry_->SetIndexBuffer(indexBuffer_);
 
-    batches_.Resize(1);
+    batches_.resize(1);
     batches_[0].geometry_ = geometry_;
     batches_[0].geometryType_ = GEOM_STATIC_NOINSTANCING;
 }
@@ -190,7 +190,7 @@ void DecalSet::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Can Be Occluded", IsOccludee, SetOccludee, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Decals", GetDecalsAttr, SetDecalsAttr, PODVector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Decals", GetDecalsAttr, SetDecalsAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
         AM_FILE | AM_NOEDIT);
 }
 
@@ -207,7 +207,7 @@ void DecalSet::OnSetEnabled()
     UpdateEventSubscription(true);
 }
 
-void DecalSet::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void DecalSet::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     // Do not return raycast hits
 }
@@ -383,10 +383,10 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     Decal& newDecal = decals_.back();
     newDecal.timeToLive_ = timeToLive;
 
-    Vector<PODVector<DecalVertex> > faces;
-    PODVector<DecalVertex> tempFace;
+    stl::vector<stl::vector<DecalVertex> > faces;
+    stl::vector<DecalVertex> tempFace;
 
-    unsigned numBatches = target->GetBatches().Size();
+    unsigned numBatches = target->GetBatches().size();
 
     // Use either a specified subgeometry in the target, or all
     if (subGeometry < numBatches)
@@ -400,10 +400,10 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     // Clip the acquired faces against all frustum planes
     for (const auto& plane : decalFrustum.planes_)
     {
-        for (unsigned j = 0; j < faces.Size(); ++j)
+        for (unsigned j = 0; j < faces.size(); ++j)
         {
-            PODVector<DecalVertex>& face = faces[j];
-            if (face.Empty())
+            stl::vector<DecalVertex>& face = faces[j];
+            if (face.empty())
                 continue;
 
             ClipPolygon(tempFace, face, plane, skinned_);
@@ -412,13 +412,13 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     }
 
     // Now triangulate the resulting faces into decal vertices
-    for (unsigned i = 0; i < faces.Size(); ++i)
+    for (unsigned i = 0; i < faces.size(); ++i)
     {
-        PODVector<DecalVertex>& face = faces[i];
-        if (face.Size() < 3)
+        stl::vector<DecalVertex>& face = faces[i];
+        if (face.size() < 3)
             continue;
 
-        for (unsigned j = 2; j < face.Size(); ++j)
+        for (unsigned j = 2; j < face.size(); ++j)
         {
             newDecal.AddVertex(face[0]);
             newDecal.AddVertex(face[j - 1]);
@@ -427,22 +427,22 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     }
 
     // Check if resulted in no triangles
-    if (newDecal.vertices_.Empty())
+    if (newDecal.vertices_.empty())
     {
         decals_.pop_back();
         return true;
     }
 
-    if (newDecal.vertices_.Size() > maxVertices_)
+    if (newDecal.vertices_.size() > maxVertices_)
     {
-        URHO3D_LOGWARNING("Can not add decal, vertex count " + String(newDecal.vertices_.Size()) + " exceeds maximum " +
+        URHO3D_LOGWARNING("Can not add decal, vertex count " + String(newDecal.vertices_.size()) + " exceeds maximum " +
                    String(maxVertices_));
         decals_.pop_back();
         return false;
     }
-    if (newDecal.indices_.Size() > maxIndices_)
+    if (newDecal.indices_.size() > maxIndices_)
     {
-        URHO3D_LOGWARNING("Can not add decal, index count " + String(newDecal.indices_.Size()) + " exceeds maximum " +
+        URHO3D_LOGWARNING("Can not add decal, index count " + String(newDecal.indices_.size()) + " exceeds maximum " +
                    String(maxIndices_));
         decals_.pop_back();
         return false;
@@ -461,18 +461,18 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     Matrix3x4 decalTransform = node_->GetWorldTransform().Inverse() * target->GetNode()->GetWorldTransform();
     TransformVertices(newDecal, skinned_ ? Matrix3x4::IDENTITY : decalTransform);
     GenerateTangents(&newDecal.vertices_[0], sizeof(DecalVertex), &newDecal.indices_[0], sizeof(unsigned short), 0,
-        newDecal.indices_.Size(), offsetof(DecalVertex, normal_), offsetof(DecalVertex, texCoord_), offsetof(DecalVertex,
+        newDecal.indices_.size(), offsetof(DecalVertex, normal_), offsetof(DecalVertex, texCoord_), offsetof(DecalVertex,
         tangent_));
 
     newDecal.CalculateBoundingBox();
-    numVertices_ += newDecal.vertices_.Size();
-    numIndices_ += newDecal.indices_.Size();
+    numVertices_ += newDecal.vertices_.size();
+    numIndices_ += newDecal.indices_.size();
 
     // Remove oldest decals if total vertices exceeded
     while (decals_.size() && (numVertices_ > maxVertices_ || numIndices_ > maxIndices_))
         RemoveDecals(1);
 
-    URHO3D_LOGDEBUG("Added decal with " + String(newDecal.vertices_.Size()) + " vertices");
+    URHO3D_LOGDEBUG("Added decal with " + String(newDecal.vertices_.size()) + " vertices");
 
     // If new decal is time limited, subscribe to scene post-update
     if (newDecal.timeToLive_ > 0.0f && !subscribed_)
@@ -499,14 +499,14 @@ void DecalSet::RemoveAllDecals()
     }
 
     // Remove all bones and skinning matrices and stop listening to the bone nodes
-    for (Vector<Bone>::Iterator i = bones_.Begin(); i != bones_.End(); ++i)
+    for (auto i = bones_.begin(); i != bones_.end(); ++i)
     {
         if (i->node_)
             i->node_->RemoveListener(this);
     }
 
-    bones_.Clear();
-    skinMatrices_.Clear();
+    bones_.clear();
+    skinMatrices_.clear();
     UpdateBatch();
 }
 
@@ -521,11 +521,11 @@ void DecalSet::SetMaterialAttr(const ResourceRef& value)
     SetMaterial(cache->GetResource<Material>(value.name_));
 }
 
-void DecalSet::SetDecalsAttr(const PODVector<unsigned char>& value)
+void DecalSet::SetDecalsAttr(const stl::vector<unsigned char>& value)
 {
     RemoveAllDecals();
 
-    if (value.Empty())
+    if (value.empty())
         return;
 
     MemoryBuffer buffer(value);
@@ -540,10 +540,10 @@ void DecalSet::SetDecalsAttr(const PODVector<unsigned char>& value)
 
         newDecal.timer_ = buffer.ReadFloat();
         newDecal.timeToLive_ = buffer.ReadFloat();
-        newDecal.vertices_.Resize(buffer.ReadVLE());
-        newDecal.indices_.Resize(buffer.ReadVLE());
+        newDecal.vertices_.resize(buffer.ReadVLE());
+        newDecal.indices_.resize(buffer.ReadVLE());
 
-        for (PODVector<DecalVertex>::Iterator i = newDecal.vertices_.Begin(); i != newDecal.vertices_.End(); ++i)
+        for (auto i = newDecal.vertices_.begin(); i != newDecal.vertices_.end(); ++i)
         {
             i->position_ = buffer.ReadVector3();
             i->normal_ = buffer.ReadVector3();
@@ -558,19 +558,19 @@ void DecalSet::SetDecalsAttr(const PODVector<unsigned char>& value)
             }
         }
 
-        for (PODVector<unsigned short>::Iterator i = newDecal.indices_.Begin(); i != newDecal.indices_.End(); ++i)
+        for (auto i = newDecal.indices_.begin(); i != newDecal.indices_.end(); ++i)
             *i = buffer.ReadUShort();
 
         newDecal.CalculateBoundingBox();
-        numVertices_ += newDecal.vertices_.Size();
-        numIndices_ += newDecal.indices_.Size();
+        numVertices_ += newDecal.vertices_.size();
+        numIndices_ += newDecal.indices_.size();
     }
 
     if (skinned_)
     {
         unsigned numBones = buffer.ReadVLE();
-        skinMatrices_.Resize(numBones);
-        bones_.Resize(numBones);
+        skinMatrices_.resize(numBones);
+        bones_.resize(numBones);
 
         for (unsigned i = 0; i < numBones; ++i)
         {
@@ -599,7 +599,7 @@ ResourceRef DecalSet::GetMaterialAttr() const
     return GetResourceRef(batches_[0].material_, Material::GetTypeStatic());
 }
 
-PODVector<unsigned char> DecalSet::GetDecalsAttr() const
+stl::vector<unsigned char> DecalSet::GetDecalsAttr() const
 {
     VectorBuffer ret;
 
@@ -610,10 +610,10 @@ PODVector<unsigned char> DecalSet::GetDecalsAttr() const
     {
         ret.WriteFloat(i->timer_);
         ret.WriteFloat(i->timeToLive_);
-        ret.WriteVLE(i->vertices_.Size());
-        ret.WriteVLE(i->indices_.Size());
+        ret.WriteVLE(i->vertices_.size());
+        ret.WriteVLE(i->indices_.size());
 
-        for (PODVector<DecalVertex>::ConstIterator j = i->vertices_.Begin(); j != i->vertices_.End(); ++j)
+        for (auto j = i->vertices_.begin(); j != i->vertices_.end(); ++j)
         {
             ret.WriteVector3(j->position_);
             ret.WriteVector3(j->normal_);
@@ -628,15 +628,15 @@ PODVector<unsigned char> DecalSet::GetDecalsAttr() const
             }
         }
 
-        for (PODVector<unsigned short>::ConstIterator j = i->indices_.Begin(); j != i->indices_.End(); ++j)
+        for (auto j = i->indices_.begin(); j != i->indices_.end(); ++j)
             ret.WriteUShort(*j);
     }
 
     if (skinned_)
     {
-        ret.WriteVLE(bones_.Size());
+        ret.WriteVLE(bones_.size());
 
-        for (Vector<Bone>::ConstIterator i = bones_.Begin(); i != bones_.End(); ++i)
+        for (auto i = bones_.begin(); i != bones_.end(); ++i)
         {
             ret.WriteString(i->name_);
             ret.WriteUByte(i->collisionMask_);
@@ -676,7 +676,7 @@ void DecalSet::OnWorldBoundingBoxUpdate()
         // When using skinning, update world bounding box based on the bones
         BoundingBox worldBox;
 
-        for (Vector<Bone>::ConstIterator i = bones_.Begin(); i != bones_.End(); ++i)
+        for (auto i = bones_.begin(); i != bones_.end(); ++i)
         {
             Node* boneNode = i->node_;
             if (!boneNode)
@@ -694,7 +694,7 @@ void DecalSet::OnWorldBoundingBoxUpdate()
     }
 }
 
-void DecalSet::GetFaces(Vector<PODVector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, const Frustum& frustum,
+void DecalSet::GetFaces(stl::vector<stl::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, const Frustum& frustum,
     const Vector3& decalNormal, float normalCutoff)
 {
     // Try to use the most accurate LOD level if possible
@@ -751,7 +751,7 @@ void DecalSet::GetFaces(Vector<PODVector<DecalVertex> >& faces, Drawable* target
     if (!positionData)
     {
         // As a fallback, try to get the geometry's raw vertex/index data
-        const PODVector<VertexElement>* elements;
+        const stl::vector<VertexElement>* elements;
         geometry->GetRawData(positionData, positionStride, indexData, indexStride, elements);
         if (!positionData)
         {
@@ -807,7 +807,7 @@ void DecalSet::GetFaces(Vector<PODVector<DecalVertex> >& faces, Drawable* target
     }
 }
 
-void DecalSet::GetFace(Vector<PODVector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, unsigned i0, unsigned i1,
+void DecalSet::GetFace(stl::vector<stl::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, unsigned i0, unsigned i1,
     unsigned i2, const unsigned char* positionData, const unsigned char* normalData, const unsigned char* skinningData,
     unsigned positionStride, unsigned normalStride, unsigned skinningStride, const Frustum& frustum, const Vector3& decalNormal,
     float normalCutoff)
@@ -848,14 +848,14 @@ void DecalSet::GetFace(Vector<PODVector<DecalVertex> >& faces, Drawable* target,
             return;
     }
 
-    faces.Resize(faces.Size() + 1);
-    PODVector<DecalVertex>& face = faces.Back();
+    faces.resize(faces.size() + 1);
+    stl::vector<DecalVertex>& face = faces.back();
     if (!hasSkinning)
     {
-        face.Reserve(3);
-        face.Push(DecalVertex(v0, n0));
-        face.Push(DecalVertex(v1, n1));
-        face.Push(DecalVertex(v2, n2));
+        face.reserve(3);
+        face.push_back(DecalVertex(v0, n0));
+        face.push_back(DecalVertex(v1, n1));
+        face.push_back(DecalVertex(v2, n2));
     }
     else
     {
@@ -874,10 +874,10 @@ void DecalSet::GetFace(Vector<PODVector<DecalVertex> >& faces, Drawable* target,
             !GetBones(target, batchIndex, bw2, bi2, nbi2))
             return;
 
-        face.Reserve(3);
-        face.Push(DecalVertex(v0, n0, bw0, nbi0));
-        face.Push(DecalVertex(v1, n1, bw1, nbi1));
-        face.Push(DecalVertex(v2, n2, bw2, nbi2));
+        face.reserve(3);
+        face.push_back(DecalVertex(v0, n0, bw0, nbi0));
+        face.push_back(DecalVertex(v1, n1, bw1, nbi1));
+        face.push_back(DecalVertex(v2, n2, bw2, nbi2));
     }
 }
 
@@ -889,17 +889,17 @@ bool DecalSet::GetBones(Drawable* target, unsigned batchIndex, const float* blen
         return false;
 
     // Check whether target is using global or per-geometry skinning
-    const Vector<PODVector<Matrix3x4> >& geometrySkinMatrices = animatedModel->GetGeometrySkinMatrices();
-    const Vector<PODVector<unsigned> >& geometryBoneMappings = animatedModel->GetGeometryBoneMappings();
+    const stl::vector<stl::vector<Matrix3x4> >& geometrySkinMatrices = animatedModel->GetGeometrySkinMatrices();
+    const stl::vector<stl::vector<unsigned> >& geometryBoneMappings = animatedModel->GetGeometryBoneMappings();
 
     for (unsigned i = 0; i < 4; ++i)
     {
         if (blendWeights[i] > 0.0f)
         {
             Bone* bone = nullptr;
-            if (geometrySkinMatrices.Empty())
+            if (geometrySkinMatrices.empty())
                 bone = animatedModel->GetSkeleton().GetBone(blendIndices[i]);
-            else if (blendIndices[i] < geometryBoneMappings[batchIndex].Size())
+            else if (blendIndices[i] < geometryBoneMappings[batchIndex].size())
                 bone = animatedModel->GetSkeleton().GetBone(geometryBoneMappings[batchIndex][blendIndices[i]]);
 
             if (!bone)
@@ -911,7 +911,7 @@ bool DecalSet::GetBones(Drawable* target, unsigned batchIndex, const float* blen
             bool found = false;
             unsigned index;
 
-            for (index = 0; index < bones_.Size(); ++index)
+            for (index = 0; index < bones_.size(); ++index)
             {
                 if (bones_[index].node_ == bone->node_)
                 {
@@ -927,7 +927,7 @@ bool DecalSet::GetBones(Drawable* target, unsigned batchIndex, const float* blen
 
             if (!found)
             {
-                if (bones_.Size() >= Graphics::GetMaxBones())
+                if (bones_.size() >= Graphics::GetMaxBones())
                 {
                     URHO3D_LOGWARNING("Maximum skinned decal bone count reached");
                     return false;
@@ -935,10 +935,10 @@ bool DecalSet::GetBones(Drawable* target, unsigned batchIndex, const float* blen
                 else
                 {
                     // Copy the bone from the model to the decal
-                    index = bones_.Size();
-                    bones_.Resize(bones_.Size() + 1);
+                    index = bones_.size();
+                    bones_.resize(bones_.size() + 1);
                     bones_[index] = *bone;
-                    skinMatrices_.Resize(skinMatrices_.Size() + 1);
+                    skinMatrices_.resize(skinMatrices_.size() + 1);
                     skinningDirty_ = true;
 
                     // Start listening to bone transform changes to update skinning
@@ -962,7 +962,7 @@ void DecalSet::CalculateUVs(Decal& decal, const Matrix3x4& view, const Matrix4& 
 {
     Matrix4 viewProj = projection * view;
 
-    for (PODVector<DecalVertex>::Iterator i = decal.vertices_.Begin(); i != decal.vertices_.End(); ++i)
+    for (auto i = decal.vertices_.begin(); i != decal.vertices_.end(); ++i)
     {
         Vector3 projected = viewProj * i->position_;
         i->texCoord_ = Vector2(
@@ -974,7 +974,7 @@ void DecalSet::CalculateUVs(Decal& decal, const Matrix3x4& view, const Matrix4& 
 
 void DecalSet::TransformVertices(Decal& decal, const Matrix3x4& transform)
 {
-    for (PODVector<DecalVertex>::Iterator i = decal.vertices_.Begin(); i != decal.vertices_.End(); ++i)
+    for (auto i = decal.vertices_.begin(); i != decal.vertices_.end(); ++i)
     {
         i->position_ = transform * i->position_;
         i->normal_ = (transform * Vector4(i->normal_, 0.0f)).Normalized();
@@ -983,8 +983,8 @@ void DecalSet::TransformVertices(Decal& decal, const Matrix3x4& transform)
 
 stl::list<Decal>::iterator DecalSet::RemoveDecal(stl::list<Decal>::iterator i)
 {
-    numVertices_ -= i->vertices_.Size();
-    numIndices_ -= i->indices_.Size();
+    numVertices_ -= i->vertices_.size();
+    numIndices_ -= i->indices_.size();
     MarkDecalsDirty();
     return decals_.erase(i);
 }
@@ -1030,7 +1030,7 @@ void DecalSet::UpdateBuffers()
 
         for (auto i = decals_.begin(); i != decals_.end(); ++i)
         {
-            for (unsigned j = 0; j < i->vertices_.Size(); ++j)
+            for (unsigned j = 0; j < i->vertices_.size(); ++j)
             {
                 const DecalVertex& vertex = i->vertices_[j];
                 *vertices++ = vertex.position_.x_;
@@ -1055,10 +1055,10 @@ void DecalSet::UpdateBuffers()
                 }
             }
 
-            for (unsigned j = 0; j < i->indices_.Size(); ++j)
+            for (unsigned j = 0; j < i->indices_.size(); ++j)
                 *indices++ = i->indices_[j] + indexStart;
 
-            indexStart += i->vertices_.Size();
+            indexStart += i->vertices_.size();
         }
     }
 
@@ -1074,7 +1074,7 @@ void DecalSet::UpdateSkinning()
     // Use model's world transform in case a bone is missing
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
 
-    for (unsigned i = 0; i < bones_.Size(); ++i)
+    for (unsigned i = 0; i < bones_.size(); ++i)
     {
         const Bone& bone = bones_[i];
         if (bone.node_)
@@ -1088,11 +1088,11 @@ void DecalSet::UpdateSkinning()
 
 void DecalSet::UpdateBatch()
 {
-    if (skinMatrices_.Size())
+    if (skinMatrices_.size())
     {
         batches_[0].geometryType_ = GEOM_SKINNED;
         batches_[0].worldTransform_ = &skinMatrices_[0];
-        batches_[0].numWorldTransforms_ = skinMatrices_.Size();
+        batches_[0].numWorldTransforms_ = skinMatrices_.size();
     }
     else
     {
@@ -1110,7 +1110,7 @@ void DecalSet::AssignBoneNodes()
         return;
 
     // Find the bone nodes from the node hierarchy and add listeners
-    for (Vector<Bone>::Iterator i = bones_.Begin(); i != bones_.End(); ++i)
+    for (auto i = bones_.begin(); i != bones_.end(); ++i)
     {
         Node* boneNode = node_->GetChild(i->name_, true);
         if (boneNode)

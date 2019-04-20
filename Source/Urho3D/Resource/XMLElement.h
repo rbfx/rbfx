@@ -117,7 +117,7 @@ public:
     /// Set a buffer attribute.
     bool SetBuffer(const String& name, const void* data, unsigned size);
     /// Set a buffer attribute.
-    bool SetBuffer(const String& name, const PODVector<unsigned char>& value);
+    bool SetBuffer(const String& name, const stl::vector<unsigned char>& value);
     /// Set a color attribute.
     bool SetColor(const String& name, const Color& value);
     /// Set a float attribute.
@@ -218,11 +218,11 @@ public:
     /// Return attribute in lowercase, or empty if missing.
     String GetAttributeUpper(const char* name) const;
     /// Return names of all attributes.
-    Vector<String> GetAttributeNames() const;
+    stl::vector<String> GetAttributeNames() const;
     /// Return bool attribute, or false if missing.
     bool GetBool(const String& name) const;
     /// Return buffer attribute, or empty if missing.
-    PODVector<unsigned char> GetBuffer(const String& name) const;
+    stl::vector<unsigned char> GetBuffer(const String& name) const;
     /// Copy buffer attribute into a supplied buffer. Return true if buffer was large enough.
     bool GetBuffer(const String& name, void* dest, unsigned size) const;
     /// Return bounding box attribute, or empty if missing.

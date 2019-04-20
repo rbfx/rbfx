@@ -646,7 +646,7 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
     }
 }
 
-stl::shared_ptr<HttpRequest> Network::MakeHttpRequest(const String& url, const String& verb, const Vector<String>& headers,
+stl::shared_ptr<HttpRequest> Network::MakeHttpRequest(const String& url, const String& verb, const stl::vector<String>& headers,
     const String& postData)
 {
     URHO3D_PROFILE("MakeHttpRequest");
@@ -680,12 +680,12 @@ Connection* Network::GetServerConnection() const
     return serverConnection_;
 }
 
-Vector<stl::shared_ptr<Connection> > Network::GetClientConnections() const
+stl::vector<stl::shared_ptr<Connection> > Network::GetClientConnections() const
 {
-    Vector<stl::shared_ptr<Connection> > ret;
+    stl::vector<stl::shared_ptr<Connection> > ret;
     for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::ConstIterator i = clientConnections_.Begin();
          i != clientConnections_.End(); ++i)
-        ret.Push(i->second_);
+        ret.push_back(i->second_);
 
     return ret;
 }

@@ -176,7 +176,7 @@ private:
     /// Start bone.
     Bone* startBone_;
     /// Per-track data.
-    Vector<AnimationStateTrack> stateTracks_;
+    stl::vector<AnimationStateTrack> stateTracks_;
     /// Looped flag.
     bool looped_;
     /// Blending weight.

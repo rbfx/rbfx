@@ -56,7 +56,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
             if (!converter->LoadJSON(value))
                 return false;
 
-            converters_.Push(converter);
+            converters_.push_back(converter);
             return true;
         };
 

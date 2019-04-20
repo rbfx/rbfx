@@ -39,14 +39,14 @@ struct PasteResult
     ///
     void Merge(const PasteResult& other)
     {
-        nodes_.Push(other.nodes_);
-        components_.Push(other.components_);
+        nodes_.push_back(other.nodes_);
+        components_.push_back(other.components_);
     }
 
     ///
-    PODVector<Node*> nodes_;
+    stl::vector<Node*> nodes_;
     ///
-    PODVector<Component*> components_;
+    stl::vector<Component*> components_;
 };
 
 class SceneClipboard : public Object
@@ -62,29 +62,29 @@ public:
     ///
     void Copy(Component* component);
     ///
-    void Copy(const PODVector<Node*>& nodes);
+    void Copy(const stl::vector<Node*>& nodes);
     ///
-    void Copy(const PODVector<Component*>& components);
+    void Copy(const stl::vector<Component*>& components);
     ///
-    void Copy(const Vector<stl::weak_ptr<Node>>& nodes);
+    void Copy(const stl::vector<stl::weak_ptr<Node>>& nodes);
     ///
     void Copy(const stl::hash_set<stl::weak_ptr<Component>>& components);
     ///
     PasteResult Paste(Node* node);
     ///
-    PasteResult Paste(const PODVector<Node*>& nodes);
+    PasteResult Paste(const stl::vector<Node*>& nodes);
     ///
-    PasteResult Paste(const Vector<stl::weak_ptr<Node>>& nodes);
+    PasteResult Paste(const stl::vector<stl::weak_ptr<Node>>& nodes);
     ///
-    bool HasNodes() const { return !nodes_.Empty(); }
+    bool HasNodes() const { return !nodes_.empty(); }
     ///
-    bool HasComponents() const { return !components_.Empty(); }
+    bool HasComponents() const { return !components_.empty(); }
 
 protected:
     ///
-    Vector<VectorBuffer> nodes_;
+    stl::vector<VectorBuffer> nodes_;
     ///
-    Vector<VectorBuffer> components_;
+    stl::vector<VectorBuffer> components_;
     ///
     Undo::Manager& undo_;
 };

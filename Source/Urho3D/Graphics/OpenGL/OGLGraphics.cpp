@@ -314,13 +314,13 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 #ifdef DESKTOP_GRAPHICS
     if (fullscreen)
     {
-        PODVector<IntVector3> resolutions = GetResolutions(monitor);
-        if (resolutions.Size())
+        stl::vector<IntVector3> resolutions = GetResolutions(monitor);
+        if (resolutions.size())
         {
             unsigned best = 0;
             unsigned bestError = M_MAX_UNSIGNED;
 
-            for (unsigned i = 0; i < resolutions.Size(); ++i)
+            for (unsigned i = 0; i < resolutions.size(); ++i)
             {
                 unsigned error = Abs(resolutions[i].x_ - width) + Abs(resolutions[i].y_ - height);
                 if (error < bestError)
@@ -994,14 +994,14 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
     // Note: this is not multi-instance safe
-    static PODVector<VertexBuffer*> vertexBuffers(1);
+    static stl::vector<VertexBuffer*> vertexBuffers(1);
     vertexBuffers[0] = buffer;
     SetVertexBuffers(vertexBuffers);
 }
 
-bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
-    if (buffers.Size() > MAX_VERTEX_STREAMS)
+    if (buffers.size() > MAX_VERTEX_STREAMS)
     {
         URHO3D_LOGERROR("Too many vertex buffers");
         return false;
@@ -1016,7 +1016,7 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
     {
         VertexBuffer* buffer = nullptr;
-        if (i < buffers.Size())
+        if (i < buffers.size())
             buffer = buffers[i];
         if (buffer != vertexBuffers_[i])
         {
@@ -1028,12 +1028,12 @@ bool Graphics::SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigne
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    PODVector<VertexBuffer*> bufferPointers;
-    bufferPointers.Reserve(buffers.Size());
+    stl::vector<VertexBuffer*> bufferPointers;
+    bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
-        bufferPointers.Push(buffer.get());
+        bufferPointers.push_back(buffer.get());
     return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
@@ -1196,7 +1196,7 @@ void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned 
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, (unsigned)(count * sizeof(float)), data);
                 return;
             }
@@ -1244,7 +1244,7 @@ void Graphics::SetShaderParameter(StringHash param, float value)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(float), &value);
                 return;
             }
@@ -1265,7 +1265,7 @@ void Graphics::SetShaderParameter(StringHash param, int value)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(int), &value);
                 return;
             }
@@ -1287,7 +1287,7 @@ void Graphics::SetShaderParameter(StringHash param, bool value)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(bool), &value);
                 return;
             }
@@ -1313,7 +1313,7 @@ void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(Vector2), &vector);
                 return;
             }
@@ -1346,7 +1346,7 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetVector3ArrayParameter(info->offset_, 3, &matrix);
                 return;
             }
@@ -1367,7 +1367,7 @@ void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(Vector3), &vector);
                 return;
             }
@@ -1404,7 +1404,7 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(Matrix4), &matrix);
                 return;
             }
@@ -1425,7 +1425,7 @@ void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(Vector4), &vector);
                 return;
             }
@@ -1481,7 +1481,7 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
             {
                 ConstantBuffer* buffer = info->bufferPtr_;
                 if (!buffer->IsDirty())
-                    impl_->dirtyConstantBuffers_.Push(buffer);
+                    impl_->dirtyConstantBuffers_.push_back(buffer);
                 buffer->SetParameter(info->offset_, sizeof(Matrix4), &fullMatrix);
                 return;
             }
@@ -1639,7 +1639,7 @@ void Graphics::SetTextureParametersDirty()
 {
     MutexLock lock(gpuObjectMutex_);
 
-    for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+    for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
     {
         auto* texture = dynamic_cast<Texture*>(*i);
         if (texture)
@@ -2082,17 +2082,17 @@ bool Graphics::IsDeviceLost() const
     return impl_->context_ == nullptr;
 }
 
-PODVector<int> Graphics::GetMultiSampleLevels() const
+stl::vector<int> Graphics::GetMultiSampleLevels() const
 {
-    PODVector<int> ret;
+    stl::vector<int> ret;
     // No multisampling always supported
-    ret.Push(1);
+    ret.push_back(1);
 
 #ifndef GL_ES_VERSION_2_0
     int maxSamples = 0;
     glGetIntegerv(GL_MAX_SAMPLES, &maxSamples);
     for (int i = 2; i <= maxSamples && i <= 16; i *= 2)
-        ret.Push(i);
+        ret.push_back(i);
 #endif
 
     return ret;
@@ -2393,14 +2393,14 @@ void Graphics::Release(bool clearGPUObjects, bool closeWindow)
             // Shader programs are also GPU objects; clear them first to avoid list modification during iteration
             impl_->shaderPrograms_.Clear();
 
-            for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+            for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
                 (*i)->Release();
-            gpuObjects_.Clear();
+            gpuObjects_.clear();
         }
         else
         {
             // We are not shutting down, but recreating the context: mark GPU objects lost
-            for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+            for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
                 (*i)->OnDeviceLost();
 
             // In this case clear shader programs last so that they do not attempt to delete their OpenGL program
@@ -2466,20 +2466,20 @@ void Graphics::Restore()
 
 #if defined(__linux__)
         String driverx( (const char*)glGetString(GL_VERSION) );
-        Vector<String>tokens = driverx.Split (' ');
-        if (tokens.Size() > 2) // must have enough tokens to work with
+        stl::vector<String>tokens = driverx.Split (' ');
+        if (tokens.size() > 2) // must have enough tokens to work with
         {
             // Size() - 2 is the manufacturer, "Mesa" is the target
-            if ( tokens[ tokens.Size()-2].Compare ( "Mesa", false ) == 0 )
+            if ( tokens[tokens.size()-2].Compare ( "Mesa", false ) == 0 )
             {
                 // Size() - 1  is the version number, convert to long, can be n | n.n | n.n.n
-                Vector<String>versionx = tokens[tokens.Size()-1].Split ('.');
+                stl::vector<String>versionx = tokens[tokens.size()-1].Split ('.');
                 int majver = 0;
                 int minver = 0;
                 int pointver = 0;
-                if ( tokens.Size() > 1 ) majver = atoi(versionx[0].CString());
-                if ( tokens.Size() > 2 ) minver = atoi(versionx[1].CString());
-                if ( tokens.Size() > 3 ) pointver = atoi(versionx[2].CString());
+                if (tokens.size() > 1 ) majver = atoi(versionx[0].CString());
+                if (tokens.size() > 2 ) minver = atoi(versionx[1].CString());
+                if (tokens.size() > 3 ) pointver = atoi(versionx[2].CString());
 
                 int allver = (majver * 10000) + (minver * 1000) + pointver;
 
@@ -2586,7 +2586,7 @@ void Graphics::Restore()
     {
         MutexLock lock(gpuObjectMutex_);
 
-        for (PODVector<GPUObject*>::Iterator i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
             (*i)->OnDeviceReset();
     }
 
@@ -2901,9 +2901,10 @@ void Graphics::PrepareDraw()
 #ifndef GL_ES_VERSION_2_0
     if (gl3Support)
     {
-        for (PODVector<ConstantBuffer*>::Iterator i = impl_->dirtyConstantBuffers_.Begin(); i != impl_->dirtyConstantBuffers_.End(); ++i)
+        for (auto i = impl_->dirtyConstantBuffers_.begin(); i !=
+            impl_->dirtyConstantBuffers_.end(); ++i)
             (*i)->Apply();
-        impl_->dirtyConstantBuffers_.Clear();
+        impl_->dirtyConstantBuffers_.clear();
     }
 #endif
 
@@ -3139,9 +3140,9 @@ void Graphics::PrepareDraw()
             if (!buffer || !buffer->GetGPUObjectName() || !impl_->vertexAttributes_)
                 continue;
 
-            const PODVector<VertexElement>& elements = buffer->GetElements();
+            const stl::vector<VertexElement>& elements = buffer->GetElements();
 
-            for (PODVector<VertexElement>::ConstIterator j = elements.Begin(); j != elements.End(); ++j)
+            for (auto j = elements.begin(); j != elements.end(); ++j)
             {
                 const VertexElement& element = *j;
                 HashMap<Pair<unsigned char, unsigned char>, unsigned>::ConstIterator k =
@@ -3296,7 +3297,7 @@ void Graphics::ResetCachedState()
 
     for (auto& constantBuffer : impl_->constantBuffers_)
         constantBuffer = nullptr;
-    impl_->dirtyConstantBuffers_.Clear();
+    impl_->dirtyConstantBuffers_.clear();
 }
 
 void Graphics::SetTextureUnitMappings()

@@ -23,8 +23,9 @@
 #pragma once
 
 #include <EASTL/shared_ptr.h>
+#include <EASTL/vector.h>
+
 #include "../Container/RefCounted.h"
-#include "../Container/Vector.h"
 #include "../Scene/AnimationDefs.h"
 
 namespace Urho3D
@@ -80,7 +81,7 @@ protected:
     /// Calculate scaled time.
     float CalculateScaledTime(float currentTime, bool& finished) const;
     /// Return event frames.
-    void GetEventFrames(float beginTime, float endTime, PODVector<const VAnimEventFrame*>& eventFrames);
+    void GetEventFrames(float beginTime, float endTime, stl::vector<const VAnimEventFrame*>& eventFrames);
 
     /// Target object.
     stl::weak_ptr<Object> target_;

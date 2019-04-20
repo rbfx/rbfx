@@ -40,7 +40,7 @@ public:
     ~Localization() override;
 
     /// Return the number of languages.
-    int GetNumLanguages() const { return (int)languages_.Size(); }
+    int GetNumLanguages() const { return (int) languages_.size(); }
 
     /// Return the index number of current language. The index is determined by the order of loading.
     int GetLanguageIndex() const { return languageIndex_; }
@@ -68,7 +68,7 @@ public:
 
 private:
     /// Language names.
-    Vector<String> languages_;
+    stl::vector<String> languages_;
     /// Index of current language.
     int languageIndex_;
     /// Storage strings: <Language <StringId, Value> >.

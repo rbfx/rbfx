@@ -90,7 +90,7 @@ public:
     /// Remove a work item before it has started executing. Return true if successfully removed.
     bool RemoveWorkItem(stl::shared_ptr<WorkItem> item);
     /// Remove a number of work items before they have started executing. Return the number of items successfully removed.
-    unsigned RemoveWorkItems(const Vector<stl::shared_ptr<WorkItem> >& items);
+    unsigned RemoveWorkItems(const stl::vector<stl::shared_ptr<WorkItem> >& items);
     /// Pause worker threads.
     void Pause();
     /// Resume worker threads.
@@ -105,7 +105,7 @@ public:
     void SetNonThreadedWorkMs(int ms) { maxNonThreadedWorkMs_ = Max(ms, 1); }
 
     /// Return number of worker threads.
-    unsigned GetNumThreads() const { return threads_.Size(); }
+    unsigned GetNumThreads() const { return threads_.size(); }
 
     /// Return number of incomplete tasks with at least the specified priority.
     unsigned GetNumIncomplete(unsigned priority) const;
@@ -133,7 +133,7 @@ private:
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
 
     /// Worker threads.
-    Vector<stl::shared_ptr<WorkerThread> > threads_;
+    stl::vector<stl::shared_ptr<WorkerThread> > threads_;
     /// Work item pool for reuse to cut down on allocation. The bool is a flag for item pooling and whether it is available or not.
     stl::list<stl::shared_ptr<WorkItem> > poolItems_;
     /// Work item collection. Accessed only by the main thread.

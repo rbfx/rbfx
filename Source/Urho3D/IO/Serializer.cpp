@@ -203,10 +203,10 @@ bool Serializer::WriteStringHash(const StringHash& value)
     return WriteUInt(value.Value());
 }
 
-bool Serializer::WriteBuffer(const PODVector<unsigned char>& value)
+bool Serializer::WriteBuffer(const stl::vector<unsigned char>& value)
 {
     bool success = true;
-    unsigned size = value.Size();
+    unsigned size = value.size();
 
     success &= WriteVLE(size);
     if (size)
@@ -227,8 +227,8 @@ bool Serializer::WriteResourceRefList(const ResourceRefList& value)
     bool success = true;
 
     success &= WriteStringHash(value.type_);
-    success &= WriteVLE(value.names_.Size());
-    for (unsigned i = 0; i < value.names_.Size(); ++i)
+    success &= WriteVLE(value.names_.size());
+    for (unsigned i = 0; i < value.names_.size(); ++i)
         success &= WriteString(value.names_[i]);
 
     return success;
@@ -338,8 +338,8 @@ bool Serializer::WriteVariantData(const Variant& value)
 bool Serializer::WriteVariantVector(const VariantVector& value)
 {
     bool success = true;
-    success &= WriteVLE(value.Size());
-    for (VariantVector::ConstIterator i = value.Begin(); i != value.End(); ++i)
+    success &= WriteVLE(value.size());
+    for (auto i = value.begin(); i != value.end(); ++i)
         success &= WriteVariant(*i);
     return success;
 }
@@ -347,8 +347,8 @@ bool Serializer::WriteVariantVector(const VariantVector& value)
 bool Serializer::WriteStringVector(const StringVector& value)
 {
     bool success = true;
-    success &= WriteVLE(value.Size());
-    for (StringVector::ConstIterator i = value.Begin(); i != value.End(); ++i)
+    success &= WriteVLE(value.size());
+    for (auto i = value.begin(); i != value.end(); ++i)
         success &= WriteString(*i);
     return success;
 }

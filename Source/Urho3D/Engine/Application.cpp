@@ -85,9 +85,9 @@ int Application::Run()
         {
             const StringVector& rawArguments = GetArguments();
             std::vector<std::string> cliArgs;
-            cliArgs.reserve(rawArguments.Size());
+            cliArgs.reserve(rawArguments.size());
             // CLI11 detail - arguments must be in reversed order.
-            for (auto i = static_cast<int>(rawArguments.Size() - 1); i >= 0; i--)
+            for (auto i = static_cast<int>(rawArguments.size() - 1); i >= 0; i--)
                 cliArgs.emplace_back(rawArguments[static_cast<unsigned>(i)].CString());
 
             try {

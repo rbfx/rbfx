@@ -45,7 +45,7 @@ FontFace::~FontFace()
     {
         // When a face is unloaded, deduct the used texture data size from the parent font
         unsigned totalTextureSize = 0;
-        for (unsigned i = 0; i < textures_.Size(); ++i)
+        for (unsigned i = 0; i < textures_.size(); ++i)
             totalTextureSize += textures_[i]->GetWidth() * textures_[i]->GetHeight();
         font_->SetMemoryUse(font_->GetMemoryUse() - totalTextureSize);
     }
@@ -86,7 +86,7 @@ float FontFace::GetKerning(unsigned c, unsigned d) const
 
 bool FontFace::IsDataLost() const
 {
-    for (unsigned i = 0; i < textures_.Size(); ++i)
+    for (unsigned i = 0; i < textures_.size(); ++i)
     {
         if (textures_[i]->IsDataLost())
             return true;

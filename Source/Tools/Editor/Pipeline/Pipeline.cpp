@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
@@ -77,7 +79,7 @@ bool Pipeline::LoadJSON(const JSONValue& source)
         if (!converter || !converter->LoadJSON(converterData))
             return false;
 
-        converters_.Push(converter);
+        converters_.push_back(converter);
     }
 
     // CacheInfo.json
@@ -140,7 +142,7 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
     StringVector resourcePaths{files};
 
     // If we are not processing explicit list of files - process all resources.
-    if (resourcePaths.Empty())
+    if (resourcePaths.empty())
     {
         // Clean stale cache items
         StringVector resourceFiles, cacheFiles;
@@ -151,7 +153,7 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
         for (const String& resourceName : cacheInfo_.Keys())
         {
             // Source asset may be in resources dir or in cache dir.
-            if (!resourceFiles.Contains(resourceName) && !cacheFiles.Contains(resourceName))
+            if (!resourceFiles.contains(resourceName) && !cacheFiles.contains(resourceName))
                 ClearCache(resourceName);
         }
 
@@ -161,18 +163,18 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
     // Remove up to date entries from processing
     if (skipUpToDateAssets_)
     {
-        for (auto it = resourcePaths.Begin(); it != resourcePaths.End();)
+        for (auto it = resourcePaths.begin(); it != resourcePaths.end();)
         {
             if (IsCacheOutOfDate(*it))
                 // Pass to converter
                 ++it;
             else
                 // Ignore
-                it = resourcePaths.Erase(it);
+                it = resourcePaths.erase(it);
         }
     }
 
-    if (resourcePaths.Empty())
+    if (resourcePaths.empty())
         return;
 
     cacheInfoOutOfDate_ = true;
@@ -186,10 +188,10 @@ void Pipeline::WaitForCompletion()
         Time::Sleep(100);
         {
             MutexLock lock(lock_);
-            if (!reschedule_.Empty())
+            if (!reschedule_.empty())
             {
                 StartWorkItems(reschedule_);
-                reschedule_.Clear();
+                reschedule_.clear();
             }
         }
     }
@@ -250,9 +252,9 @@ void Pipeline::ClearCache(const String& resourceName)
                 continue;
             StringVector result;
             GetFileSystem()->ScanDir(result, parentPath, "*", SCAN_FILES|SCAN_DIRS|SCAN_HIDDEN, false);
-            result.Remove(".");
-            result.Remove("..");
-            if (result.Empty())
+            result.erase_first(".");
+            result.erase_first("..");
+            if (result.empty())
                 GetFileSystem()->RemoveDir(parentPath, false);
             else
                 break;
@@ -291,7 +293,7 @@ void Pipeline::SaveCacheInfo()
     root = JSONValue(JSON_OBJECT);
 
     StringVector keys = cacheInfo_.Keys();
-    Sort(keys.Begin(), keys.End());
+    stl::quick_sort(keys.begin(), keys.end());
     for (const String& resourceName : keys)
     {
         const CacheEntry& entry = cacheInfo_[resourceName];
@@ -312,7 +314,7 @@ void Pipeline::SaveCacheInfo()
 void Pipeline::Reschedule(const String& resourceName)
 {
     MutexLock lock(lock_);
-    reschedule_.EmplaceBack(resourceName);
+    reschedule_.emplace_back(resourceName);
 }
 
 void Pipeline::StartWorkItems(const StringVector& resourcePaths)
@@ -347,7 +349,7 @@ void Pipeline::HandleEndFrame(StringHash, VariantMap&)
 
     MutexLock lock(lock_);
     StartWorkItems(CONVERTER_ONLINE, reschedule_);
-    reschedule_.Clear();
+    reschedule_.clear();
 }
 
 void Pipeline::CreatePaksAsync()
@@ -358,9 +360,9 @@ void Pipeline::CreatePaksAsync()
         struct PackagingEntry
         {
             String pakName_;
-            Vector<std::regex> patterns_;
+            stl::vector<std::regex> patterns_;
         };
-        Vector<PackagingEntry> rules;
+        stl::vector<PackagingEntry> rules;
 
         auto* project = GetSubsystem<Project>();
         const String& projectPath = GetSubsystem<Project>()->GetProjectPath();
@@ -371,7 +373,7 @@ void Pipeline::CreatePaksAsync()
         {
             JSONValue& root = file.GetRoot();
             const JSONArray& entries = root.GetArray();
-            for (int i = 0; i < entries.Size(); i++)
+            for (int i = 0; i < entries.size(); i++)
             {
                 const JSONObject& entry = entries[i].GetObject();
 
@@ -398,7 +400,7 @@ void Pipeline::CreatePaksAsync()
                     continue;
                 }
 
-                for (int j = 0; j < patterns.Size(); j++)
+                for (int j = 0; j < patterns.size(); j++)
                 {
                     const String& pattern = patterns[j].GetString();
                     if (pattern.Empty())
@@ -407,16 +409,16 @@ void Pipeline::CreatePaksAsync()
                         continue;
                     }
                     else
-                        newEntry.patterns_.Push(GlobToRegex(pattern));
+                        newEntry.patterns_.push_back(GlobToRegex(pattern));
                 }
 
-                if (patterns.Empty())
+                if (patterns.empty())
                 {
                     logger.Error("At least one input glob pattern must exist.");
                     continue;
                 }
 
-                rules.EmplaceBack(std::move(newEntry));
+                rules.emplace_back(std::move(newEntry));
             }
         }
         else
@@ -425,7 +427,7 @@ void Pipeline::CreatePaksAsync()
                 logger.Error("Parsing of Pipeline.json failed. Using default rules.");
 
             // Default rule, package everything into single pak.
-            rules.EmplaceBack(PackagingEntry{"Resources.pak", {std::regex(".+")}});
+            rules.emplace_back(PackagingEntry{"Resources.pak", {std::regex(".+")}});
         }
 
 //        stl::shared_ptr<PackageFile> packageFile(new PackageFile(context_, "Data.pak"));
@@ -438,7 +440,7 @@ void Pipeline::CreatePaksAsync()
         for (const PackagingEntry& rule : rules)
         {
             lock_.Acquire();
-            assert(lockedPaths_.Empty());
+            assert(lockedPaths_.empty());
 
             Packager pkg(context_);
             pkg.OpenPackage(projectPath + "Output/" + rule.pakName_);
@@ -502,7 +504,7 @@ ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const String& resourcePat
         }
     }
 
-    pipeline->lockedPaths_.Push(resourcePath);
+    pipeline->lockedPaths_.push_back(resourcePath);
     pipeline->lock_.Release();
 }
 
@@ -511,7 +513,7 @@ ResourcePathLock::~ResourcePathLock()
     if (pipeline_)
     {
         MutexLock lock(pipeline_->lock_);
-        pipeline_->lockedPaths_.Remove(resourcePath_);
+        pipeline_->lockedPaths_.erase_first(resourcePath_);
     }
 }
 

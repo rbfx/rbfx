@@ -109,14 +109,14 @@ void Cursor::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Shapes", GetShapesAttr, SetShapesAttr, VariantVector, Variant::emptyVariantVector, AM_FILE);
 }
 
-void Cursor::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor)
+void Cursor::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
 {
-    unsigned initialSize = vertexData.Size();
+    unsigned initialSize = vertexData.size();
     const IntVector2& offset = shapeInfos_[shape_].hotSpot_;
     Vector2 floatOffset(-(float)offset.x_, -(float)offset.y_);
 
     BorderImage::GetBatches(batches, vertexData, currentScissor);
-    for (unsigned i = initialSize; i < vertexData.Size(); i += 6)
+    for (unsigned i = initialSize; i < vertexData.size(); i += 6)
     {
         vertexData[i] += floatOffset.x_;
         vertexData[i + 1] += floatOffset.y_;
@@ -214,13 +214,13 @@ void Cursor::SetUseSystemShapes(bool enable)
 
 void Cursor::SetShapesAttr(const VariantVector& value)
 {
-    if (!value.Size())
+    if (!value.size())
         return;
 
-    for (VariantVector::ConstIterator i = value.Begin(); i != value.End(); ++i)
+    for (auto i = value.begin(); i != value.end(); ++i)
     {
         VariantVector shapeVector = i->GetVariantVector();
-        if (shapeVector.Size() >= 4)
+        if (shapeVector.size() >= 4)
         {
             String shape = shapeVector[0].GetString();
             ResourceRef ref = shapeVector[1].GetResourceRef();
@@ -242,11 +242,11 @@ VariantVector Cursor::GetShapesAttr() const
         {
             // Could use a map but this simplifies the UI xml.
             VariantVector shape;
-            shape.Push(i->first_);
-            shape.Push(GetResourceRef(i->second_.texture_, Texture2D::GetTypeStatic()));
-            shape.Push(i->second_.imageRect_);
-            shape.Push(i->second_.hotSpot_);
-            ret.Push(shape);
+            shape.push_back(i->first_);
+            shape.push_back(GetResourceRef(i->second_.texture_, Texture2D::GetTypeStatic()));
+            shape.push_back(i->second_.imageRect_);
+            shape.push_back(i->second_.hotSpot_);
+            ret.push_back(shape);
         }
     }
 

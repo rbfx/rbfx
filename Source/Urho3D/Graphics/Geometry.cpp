@@ -68,15 +68,15 @@ bool Geometry::SetNumVertexBuffers(unsigned num)
         return false;
     }
 
-    unsigned oldSize = vertexBuffers_.Size();
-    vertexBuffers_.Resize(num);
+    unsigned oldSize = vertexBuffers_.size();
+    vertexBuffers_.resize(num);
 
     return true;
 }
 
 bool Geometry::SetVertexBuffer(unsigned index, VertexBuffer* buffer)
 {
-    if (index >= vertexBuffers_.Size())
+    if (index >= vertexBuffers_.size())
     {
         URHO3D_LOGERROR("Stream index out of bounds");
         return false;
@@ -163,7 +163,7 @@ void Geometry::SetLodDistance(float distance)
     lodDistance_ = distance;
 }
 
-void Geometry::SetRawVertexData(const stl::shared_array<unsigned char>& data, const PODVector<VertexElement>& elements)
+void Geometry::SetRawVertexData(const stl::shared_array<unsigned char>& data, const stl::vector<VertexElement>& elements)
 {
     rawVertexData_ = data;
     rawVertexSize_ = VertexBuffer::GetVertexSize(elements);
@@ -200,14 +200,14 @@ void Geometry::Draw(Graphics* graphics)
 
 VertexBuffer* Geometry::GetVertexBuffer(unsigned index) const
 {
-    return index < vertexBuffers_.Size() ? vertexBuffers_[index] : nullptr;
+    return index < vertexBuffers_.size() ? vertexBuffers_[index] : nullptr;
 }
 
 unsigned short Geometry::GetBufferHash() const
 {
     unsigned short hash = 0;
 
-    for (unsigned i = 0; i < vertexBuffers_.Size(); ++i)
+    for (unsigned i = 0; i < vertexBuffers_.size(); ++i)
     {
         VertexBuffer* vBuf = vertexBuffers_[i];
         hash += *((unsigned short*)&vBuf);
@@ -220,7 +220,7 @@ unsigned short Geometry::GetBufferHash() const
 }
 
 void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData,
-    unsigned& indexSize, const PODVector<VertexElement>*& elements) const
+    unsigned& indexSize, const stl::vector<VertexElement>*& elements) const
 {
     if (rawVertexData_)
     {
@@ -228,7 +228,7 @@ void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize
         vertexSize = rawVertexSize_;
         elements = &rawElements_;
     }
-    else if (vertexBuffers_.Size() && vertexBuffers_[0])
+    else if (vertexBuffers_.size() && vertexBuffers_[0])
     {
         vertexData = vertexBuffers_[0]->GetShadowData();
         vertexSize = vertexBuffers_[0]->GetVertexSize();
@@ -265,7 +265,7 @@ void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize
 }
 
 void Geometry::GetRawDataShared(stl::shared_array<unsigned char>& vertexData, unsigned& vertexSize,
-    stl::shared_array<unsigned char>& indexData, unsigned& indexSize, const PODVector<VertexElement>*& elements) const
+    stl::shared_array<unsigned char>& indexData, unsigned& indexSize, const stl::vector<VertexElement>*& elements) const
 {
     if (rawVertexData_)
     {
@@ -273,7 +273,7 @@ void Geometry::GetRawDataShared(stl::shared_array<unsigned char>& vertexData, un
         vertexSize = rawVertexSize_;
         elements = &rawElements_;
     }
-    else if (vertexBuffers_.Size() && vertexBuffers_[0])
+    else if (vertexBuffers_.size() && vertexBuffers_[0])
     {
         vertexData = vertexBuffers_[0]->GetShadowDataShared();
         vertexSize = vertexBuffers_[0]->GetVertexSize();
@@ -315,7 +315,7 @@ float Geometry::GetHitDistance(const Ray& ray, Vector3* outNormal, Vector2* outU
     const unsigned char* indexData;
     unsigned vertexSize;
     unsigned indexSize;
-    const PODVector<VertexElement>* elements;
+    const stl::vector<VertexElement>* elements;
 
     GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
 
@@ -342,7 +342,7 @@ bool Geometry::IsInside(const Ray& ray) const
     const unsigned char* indexData;
     unsigned vertexSize;
     unsigned indexSize;
-    const PODVector<VertexElement>* elements;
+    const stl::vector<VertexElement>* elements;
 
     GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
 

@@ -20,7 +20,8 @@
 // THE SOFTWARE.
 //
 
-#include "ResourceBrowser.h"
+#include <EASTL/sort.h>
+
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -29,6 +30,7 @@
 #include <Urho3D/Input/Input.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Urho3D/IO/Log.h>
+#include "ResourceBrowser.h"
 #include "Widgets.h"
 #include "IO/ContentUtilities.h"
 
@@ -92,8 +94,8 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         ui::End();
     }
 
-    Vector<String> mergedDirs;
-    Vector<String> mergedFiles;
+    stl::vector<String> mergedDirs;
+    stl::vector<String> mergedFiles;
 
     String cacheDir;
     for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
@@ -107,22 +109,22 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
             continue;
         }
 
-        Vector<String> items;
+        stl::vector<String> items;
         fs->ScanDir(items, dir + path, "", SCAN_FILES, false);
         for (const auto& item: items)
         {
-            if (!mergedFiles.Contains(item))
-                mergedFiles.Push(item);
+            if (!mergedFiles.contains(item))
+                mergedFiles.push_back(item);
         }
 
-        items.Clear();
+        items.clear();
         fs->ScanDir(items, dir + path, "", SCAN_DIRS, false);
-        items.Remove(".");
-        items.Remove("..");
+        items.erase_first(".");
+        items.erase_first("..");
         for (const auto& item: items)
         {
-            if (!mergedDirs.Contains(item))
-                mergedDirs.Push(item);
+            if (!mergedDirs.contains(item))
+                mergedDirs.push_back(item);
         }
     }
 
@@ -188,7 +190,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         return false;
     };
 
-    Sort(mergedDirs.Begin(), mergedDirs.End());
+    stl::quick_sort(mergedDirs.begin(), mergedDirs.end());
     for (const auto& item: mergedDirs)
     {
         if (!renameWidget(item, ICON_FA_FOLDER))
@@ -263,7 +265,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         }
     };
 
-    Sort(mergedFiles.Begin(), mergedFiles.End());
+    stl::quick_sort(mergedFiles.begin(), mergedFiles.end());
     for (const auto& item: mergedFiles)
     {
         if (fs->DirExists(cacheDir + path + item))
@@ -279,14 +281,14 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
                     ui::SameLine();
                     if (ui::TreeNode(GetFileNameAndExtension(subPath).CString()))
                     {
-                        Vector<String> files;
-                        Vector<String> dirs;
+                        stl::vector<String> files;
+                        stl::vector<String> dirs;
                         fs->ScanDir(files, targetPath, "", SCAN_FILES, false);
                         fs->ScanDir(dirs, targetPath, "", SCAN_DIRS, false);
-                        dirs.Remove(".");
-                        dirs.Remove("..");
-                        Sort(files.Begin(), files.End());
-                        Sort(dirs.Begin(), dirs.End());
+                        dirs.erase_first(".");
+                        dirs.erase_first("..");
+                        stl::quick_sort(files.begin(), files.end());
+                        stl::quick_sort(dirs.begin(), dirs.end());
 
                         for (const auto& dir : dirs)
                             renderCacheAssetTree(subPath + "/" + dir);

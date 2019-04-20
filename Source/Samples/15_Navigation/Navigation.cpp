@@ -285,7 +285,7 @@ void Navigation::SetPathPoint()
         if (GetSubsystem<Input>()->GetQualifierDown(QUAL_SHIFT))
         {
             // Teleport
-            currentPath_.Clear();
+            currentPath_.clear();
             jackNode_->LookAt(Vector3(pathPos.x_, jackNode_->GetPosition().y_, pathPos.z_), Vector3::UP);
             jackNode_->SetPosition(pathPos);
         }
@@ -325,7 +325,7 @@ void Navigation::AddOrRemoveObject()
         // Rebuild part of the navigation mesh, then recalculate path if applicable
         auto* navMesh = scene_->GetComponent<NavigationMesh>();
         navMesh->Build(updateBox);
-        if (currentPath_.Size())
+        if (currentPath_.size())
             navMesh->FindPath(currentPath_, jackNode_->GetPosition(), endPos_);
     }
 }
@@ -360,10 +360,10 @@ bool Navigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawa
     auto* camera = cameraNode_->GetComponent<Camera>();
     Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-    PODVector<RayQueryResult> results;
+    stl::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
     scene_->GetComponent<Octree>()->RaycastSingle(query);
-    if (results.Size())
+    if (results.size())
     {
         RayQueryResult& result = results[0];
         hitPos = result.position_;
@@ -376,7 +376,7 @@ bool Navigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawa
 
 void Navigation::FollowPath(float timeStep)
 {
-    if (currentPath_.Size())
+    if (currentPath_.size())
     {
         Vector3 nextWaypoint = currentPath_[0]; // NB: currentPath[0] is the next waypoint in order
 
@@ -391,7 +391,7 @@ void Navigation::FollowPath(float timeStep)
 
         // Remove waypoint if reached it
         if (distance < 0.1f)
-            currentPath_.Erase(0);
+            currentPath_.pop_front();
     }
 }
 
@@ -488,7 +488,7 @@ void Navigation::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventD
     if (drawDebug_)
         scene_->GetComponent<NavigationMesh>()->DrawDebugGeometry(true);
 
-    if (currentPath_.Size())
+    if (currentPath_.size())
     {
         // Visualize the current calculated path
         auto* debug = scene_->GetComponent<DebugRenderer>();
@@ -499,9 +499,9 @@ void Navigation::HandlePostRenderUpdate(StringHash eventType, VariantMap& eventD
         Vector3 bias(0.0f, 0.05f, 0.0f);
         debug->AddLine(jackNode_->GetPosition() + bias, currentPath_[0] + bias, Color(1.0f, 1.0f, 1.0f));
 
-        if (currentPath_.Size() > 1)
+        if (currentPath_.size() > 1)
         {
-            for (unsigned i = 0; i < currentPath_.Size() - 1; ++i)
+            for (unsigned i = 0; i < currentPath_.size() - 1; ++i)
                 debug->AddLine(currentPath_[i] + bias, currentPath_[i + 1] + bias, Color(1.0f, 1.0f, 1.0f));
         }
     }

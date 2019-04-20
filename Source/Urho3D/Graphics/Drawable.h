@@ -145,7 +145,7 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Process octree raycast. May be called from a worker thread.
-    virtual void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results);
+    virtual void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results);
     /// Update before octree reinsertion. Is called from a worker thread
     virtual void Update(const FrameInfo& frame) { }
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
@@ -240,7 +240,7 @@ public:
     bool IsInView(Camera* camera) const;
 
     /// Return draw call source data.
-    const Vector<SourceBatch>& GetBatches() const { return batches_; }
+    const stl::vector<SourceBatch>& GetBatches() const { return batches_; }
 
     /// Set new zone. Zone assignment may optionally be temporary, meaning it needs to be re-evaluated on the next frame.
     void SetZone(Zone* zone, bool temporary = false);
@@ -291,10 +291,10 @@ public:
     bool HasBasePass(unsigned batchIndex) const { return (basePassFlags_ & (1u << batchIndex)) != 0; }
 
     /// Return per-pixel lights.
-    const PODVector<Light*>& GetLights() const { return lights_; }
+    const stl::vector<Light*>& GetLights() const { return lights_; }
 
     /// Return per-vertex lights.
-    const PODVector<Light*>& GetVertexLights() const { return vertexLights_; }
+    const stl::vector<Light*>& GetVertexLights() const { return vertexLights_; }
 
     /// Return the first added per-pixel light.
     Light* GetFirstLight() const { return firstLight_; }
@@ -314,13 +314,13 @@ public:
         // Need to store into the light list only if the per-pixel lights are being limited
         // Otherwise recording the first light is enough
         if (maxLights_)
-            lights_.Push(light);
+            lights_.push_back(light);
     }
 
     /// Add a per-vertex light affecting the object this frame.
     void AddVertexLight(Light* light)
     {
-        vertexLights_.Push(light);
+        vertexLights_.push_back(light);
     }
 
 protected:
@@ -349,7 +349,7 @@ protected:
     /// Local-space bounding box.
     BoundingBox boundingBox_;
     /// Draw call source data.
-    Vector<SourceBatch> batches_;
+    stl::vector<SourceBatch> batches_;
     /// Drawable flags.
     DrawableFlags drawableFlags_;
     /// Bounding box dirty flag.
@@ -399,20 +399,20 @@ protected:
     /// Maximum per-pixel lights.
     unsigned maxLights_;
     /// List of cameras from which is seen on the current frame.
-    PODVector<Camera*> viewCameras_;
+    stl::vector<Camera*> viewCameras_;
     /// First per-pixel light added this frame.
     Light* firstLight_;
     /// Per-pixel lights affecting this drawable.
-    PODVector<Light*> lights_;
+    stl::vector<Light*> lights_;
     /// Per-vertex lights affecting this drawable.
-    PODVector<Light*> vertexLights_;
+    stl::vector<Light*> vertexLights_;
 };
 
-inline bool CompareDrawables(Drawable* lhs, Drawable* rhs)
+inline bool CompareDrawables(const Drawable* lhs, const Drawable* rhs)
 {
     return lhs->GetSortValue() < rhs->GetSortValue();
 }
 
-URHO3D_API bool WriteDrawablesToOBJ(PODVector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV = false);
+URHO3D_API bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV = false);
 
 }

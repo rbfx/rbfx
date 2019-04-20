@@ -118,7 +118,7 @@ void Urho2DSprite::CreateScene()
         spriteNode->SetVar(VAR_ROTATESPEED, Random(-90.0f, 90.0f));
 
         // Add to sprite node vector
-        spriteNodes_.Push(spriteNode);
+        spriteNodes_.push_back(spriteNode);
     }
 
     // Get animation set
@@ -217,7 +217,7 @@ void Urho2DSprite::HandleUpdate(StringHash eventType, VariantMap& eventData)
     float halfWidth = (float)graphics->GetWidth() * 0.5f * PIXEL_SIZE;
     float halfHeight = (float)graphics->GetHeight() * 0.5f * PIXEL_SIZE;
 
-    for (unsigned i = 0; i < spriteNodes_.Size(); ++i)
+    for (unsigned i = 0; i < spriteNodes_.size(); ++i)
     {
         stl::shared_ptr<Node> node = spriteNodes_[i];
 

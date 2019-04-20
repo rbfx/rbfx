@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
@@ -299,7 +301,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
             const JSONValue& rootVal = loadJSONFile_->GetRoot();
 
             JSONArray techniqueArray = rootVal.Get("techniques").GetArray();
-            for (unsigned i = 0; i < techniqueArray.Size(); i++)
+            for (unsigned i = 0; i < techniqueArray.size(); i++)
             {
                 const JSONValue& techVal = techniqueArray[i];
                 cache->BackgroundLoadResource<Technique>(techVal.Get("name").GetString(), true, this);
@@ -371,7 +373,7 @@ bool Material::Load(const XMLElement& source)
     }
 
     XMLElement techniqueElem = source.GetChild("technique");
-    techniques_.Clear();
+    techniques_.clear();
 
     while (techniqueElem)
     {
@@ -384,7 +386,7 @@ bool Material::Load(const XMLElement& source)
                 newTechnique.qualityLevel_ = (MaterialQuality)techniqueElem.GetInt("quality");
             if (techniqueElem.HasAttribute("loddistance"))
                 newTechnique.lodDistance_ = techniqueElem.GetFloat("loddistance");
-            techniques_.Push(newTechnique);
+            techniques_.push_back(newTechnique);
         }
 
         techniqueElem = techniqueElem.GetNext("technique");
@@ -523,10 +525,10 @@ bool Material::Load(const JSONValue& source)
 
     // Load techniques
     JSONArray techniquesArray = source.Get("techniques").GetArray();
-    techniques_.Clear();
-    techniques_.Reserve(techniquesArray.Size());
+    techniques_.clear();
+    techniques_.reserve(techniquesArray.size());
 
-    for (unsigned i = 0; i < techniquesArray.Size(); i++)
+    for (unsigned i = 0; i < techniquesArray.size(); i++)
     {
         const JSONValue& techVal = techniquesArray[i];
         auto* tech = cache->GetResource<Technique>(techVal.Get("name").GetString());
@@ -540,7 +542,7 @@ bool Material::Load(const JSONValue& source)
             JSONValue lodDistanceVal = techVal.Get("loddistance");
             if (!lodDistanceVal.IsNull())
                 newTechnique.lodDistance_ = lodDistanceVal.GetFloat();
-            techniques_.Push(newTechnique);
+            techniques_.push_back(newTechnique);
         }
     }
 
@@ -672,7 +674,7 @@ bool Material::Save(XMLElement& dest) const
     }
 
     // Write techniques
-    for (unsigned i = 0; i < techniques_.Size(); ++i)
+    for (unsigned i = 0; i < techniques_.size(); ++i)
     {
         const TechniqueEntry& entry = techniques_[i];
         if (!entry.technique_)
@@ -774,8 +776,8 @@ bool Material::Save(JSONValue& dest) const
 {
     // Write techniques
     JSONArray techniquesArray;
-    techniquesArray.Reserve(techniques_.Size());
-    for (unsigned i = 0; i < techniques_.Size(); ++i)
+    techniquesArray.reserve(techniques_.size());
+    for (unsigned i = 0; i < techniques_.size(); ++i)
     {
         const TechniqueEntry& entry = techniques_[i];
         if (!entry.technique_)
@@ -785,7 +787,7 @@ bool Material::Save(JSONValue& dest) const
         techniqueVal.Set("name", entry.technique_->GetName());
         techniqueVal.Set("quality", (int) entry.qualityLevel_);
         techniqueVal.Set("loddistance", entry.lodDistance_);
-        techniquesArray.Push(techniqueVal);
+        techniquesArray.push_back(techniqueVal);
     }
     dest.Set("techniques", techniquesArray);
 
@@ -876,13 +878,13 @@ void Material::SetNumTechniques(unsigned num)
     if (!num)
         return;
 
-    techniques_.Resize(num);
+    techniques_.resize(num);
     RefreshMemoryUse();
 }
 
 void Material::SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel, float lodDistance)
 {
-    if (index >= techniques_.Size())
+    if (index >= techniques_.size())
         return;
 
     techniques_[index] = TechniqueEntry(tech, qualityLevel, lodDistance);
@@ -1092,7 +1094,7 @@ void Material::RemoveShaderParameter(const String& name)
 
 void Material::ReleaseShaders()
 {
-    for (unsigned i = 0; i < techniques_.Size(); ++i)
+    for (unsigned i = 0; i < techniques_.size(); ++i)
     {
         Technique* tech = techniques_[i].technique_;
         if (tech)
@@ -1127,7 +1129,7 @@ stl::shared_ptr<Material> Material::Clone(const String& cloneName) const
 
 void Material::SortTechniques()
 {
-    Sort(techniques_.Begin(), techniques_.End(), CompareTechniqueEntries);
+    stl::quick_sort(techniques_.begin(), techniques_.end(), CompareTechniqueEntries);
 }
 
 void Material::MarkForAuxView(unsigned frameNumber)
@@ -1137,17 +1139,17 @@ void Material::MarkForAuxView(unsigned frameNumber)
 
 const TechniqueEntry& Material::GetTechniqueEntry(unsigned index) const
 {
-    return index < techniques_.Size() ? techniques_[index] : noEntry;
+    return index < techniques_.size() ? techniques_[index] : noEntry;
 }
 
 Technique* Material::GetTechnique(unsigned index) const
 {
-    return index < techniques_.Size() ? techniques_[index].technique_ : nullptr;
+    return index < techniques_.size() ? techniques_[index].technique_ : nullptr;
 }
 
 Pass* Material::GetPass(unsigned index, const String& passName) const
 {
-    Technique* tech = index < techniques_.Size() ? techniques_[index].technique_ : nullptr;
+    Technique* tech = index < techniques_.size() ? techniques_[index].technique_ : nullptr;
     return tech ? tech->GetPass(passName) : nullptr;
 }
 
@@ -1260,7 +1262,7 @@ void Material::RefreshMemoryUse()
 {
     unsigned memoryUse = sizeof(Material);
 
-    memoryUse += techniques_.Size() * sizeof(TechniqueEntry);
+    memoryUse += techniques_.size() * sizeof(TechniqueEntry);
     memoryUse += MAX_TEXTURE_UNITS * sizeof(stl::shared_ptr<Texture>);
     memoryUse += shaderParameters_.Size() * sizeof(MaterialShaderParameter);
 
@@ -1302,7 +1304,7 @@ void Material::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& 
     // Keep weak pointer to self to check for destruction caused by event handling
     stl::weak_ptr<Object> self(this);
 
-    Vector<String> finishedNames;
+    stl::vector<String> finishedNames;
     for (HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> >::ConstIterator i = shaderParameterAnimationInfos_.Begin();
          i != shaderParameterAnimationInfos_.End(); ++i)
     {
@@ -1312,11 +1314,11 @@ void Material::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& 
             return;
 
         if (finished)
-            finishedNames.Push(i->second_->GetName());
+            finishedNames.push_back(i->second_->GetName());
     }
 
     // Remove finished animations
-    for (unsigned i = 0; i < finishedNames.Size(); ++i)
+    for (unsigned i = 0; i < finishedNames.size(); ++i)
         SetShaderParameterAnimation(finishedNames[i], nullptr);
 }
 
@@ -1324,12 +1326,12 @@ void Material::ApplyShaderDefines(unsigned index)
 {
     if (index == M_MAX_UNSIGNED)
     {
-        for (unsigned i = 0; i < techniques_.Size(); ++i)
+        for (unsigned i = 0; i < techniques_.size(); ++i)
             ApplyShaderDefines(i);
         return;
     }
 
-    if (index >= techniques_.Size() || !techniques_[index].original_)
+    if (index >= techniques_.size() || !techniques_[index].original_)
         return;
 
     if (vertexShaderDefines_.Empty() && pixelShaderDefines_.Empty())

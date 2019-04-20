@@ -56,7 +56,7 @@ Scene* SceneManager::CreateScene(const String& name)
     scene->SetName(name);
     scene->GetOrCreateComponent<Octree>();
     scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
-    scenes_.Push(scene);
+    scenes_.push_back(scene);
     return scene;
 }
 
@@ -79,16 +79,16 @@ Scene* SceneManager::GetOrCreateScene(const String& name)
 
 void SceneManager::UnloadScene(Scene* scene)
 {
-    auto it = scenes_.Find(stl::shared_ptr<Scene>(scene));
-    if (it != scenes_.End())
-        scenes_.Erase(it);
+    auto it = scenes_.find(stl::shared_ptr<Scene>(scene));
+    if (it != scenes_.end())
+        scenes_.erase(it);
     if (activeScene_.expired())
         UpdateViewports();
 }
 
 void SceneManager::UnloadScene(const String& name)
 {
-    scenes_.Remove(stl::shared_ptr<Scene>(GetScene(name)));
+    scenes_.erase_first(stl::shared_ptr<Scene>(GetScene(name)));
     if (activeScene_.expired())
         UpdateViewports();
 }
@@ -163,9 +163,9 @@ void SceneManager::UpdateViewports()
     unsigned index = 0;
     const auto& viewportComponents = meta->GetCameraViewportComponents();
     if (renderSurface_.expired())
-        GetRenderer()->SetNumViewports(viewportComponents.Size());
+        GetRenderer()->SetNumViewports(viewportComponents.size());
     else
-        renderSurface_->SetNumViewports(viewportComponents.Size());
+        renderSurface_->SetNumViewports(viewportComponents.size());
 
     for (const auto& cameraViewport : viewportComponents)
     {

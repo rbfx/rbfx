@@ -101,13 +101,13 @@ private:
     /// Auto visible on error flag.
     bool autoVisibleOnError_ = false;
     /// List of command interpreters.
-    Vector<String> interpreters_{};
+    stl::vector<String> interpreters_{};
     /// Pointers to c strings in interpreters_ list for efficient UI rendering.
-    PODVector<const char*> interpretersPointers_{};
+    stl::vector<const char*> interpretersPointers_{};
     /// Last used command interpreter.
     int currentInterpreter_ = 0;
     /// Command history.
-    Vector<LogEntry> history_{};
+    stl::vector<LogEntry> history_{};
     /// Command history maximum rows.
     unsigned historyRows_ = 512;
     /// Is console window open.

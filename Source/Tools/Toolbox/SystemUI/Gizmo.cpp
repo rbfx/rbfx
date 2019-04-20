@@ -52,8 +52,8 @@ Gizmo::~Gizmo()
 
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
 {
-    Vector<stl::weak_ptr<Node>> nodes;
-    nodes.Push(stl::weak_ptr<Node>(node));
+    stl::vector<stl::weak_ptr<Node>> nodes;
+    nodes.push_back(stl::weak_ptr<Node>(node));
     return Manipulate(camera, nodes);
 }
 
@@ -62,16 +62,16 @@ bool Gizmo::IsActive() const
     return ImGuizmo::IsUsing();
 }
 
-bool Gizmo::Manipulate(const Camera* camera, const Vector<stl::weak_ptr<Node>>& nodes)
+bool Gizmo::Manipulate(const Camera* camera, const stl::vector<stl::weak_ptr<Node>>& nodes)
 {
-    if (nodes.Empty())
+    if (nodes.empty())
         return false;
 
     ImGuizmo::SetOrthographic(camera->IsOrthographic());
 
     if (!IsActive())
     {
-        if (nodes.Size() > 1)
+        if (nodes.size() > 1)
         {
             // Find center point of all nodes
             // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
@@ -93,8 +93,8 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<stl::weak_ptr<Node>>& 
             center /= count;
             currentOrigin_.SetTranslation(center);
         }
-        else if (!nodes.Front().expired())
-            currentOrigin_ = nodes.Front()->GetTransform().ToMatrix4();
+        else if (!nodes.front().expired())
+            currentOrigin_ = nodes.front()->GetTransform().ToMatrix4();
     }
 
     // Enums are compatible.
@@ -110,7 +110,7 @@ bool Gizmo::Manipulate(const Camera* camera, const Vector<stl::weak_ptr<Node>>& 
     if (operation_ == GIZMOOP_SCALE)
         mode = ImGuizmo::LOCAL;
         // Any other operations on multiselections are done in world space.
-    else if (nodes.Size() > 1)
+    else if (nodes.size() > 1)
         mode = ImGuizmo::WORLD;
 
     Matrix4 view = camera->GetView().ToMatrix4().Transpose();
@@ -208,10 +208,10 @@ bool Gizmo::ManipulateSelection(const Camera* camera)
     ImGuizmo::SetDrawlist();
 
     // Remove expired selections
-    for (auto it = nodeSelection_.Begin(); it != nodeSelection_.End();)
+    for (auto it = nodeSelection_.begin(); it != nodeSelection_.end();)
     {
         if (it->expired())
-            it = nodeSelection_.Erase(it);
+            it = nodeSelection_.erase(it);
         else
             ++it;
     }
@@ -245,22 +245,22 @@ void Gizmo::RenderUI()
 bool Gizmo::Select(Node* node)
 {
     stl::weak_ptr<Node> weakNode(node);
-    if (nodeSelection_.Contains(weakNode))
+    if (nodeSelection_.contains(weakNode))
         return false;
-    nodeSelection_.Push(weakNode);
+    nodeSelection_.push_back(weakNode);
     SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
 
-bool Gizmo::Select(PODVector<Node*> nodes)
+bool Gizmo::Select(stl::vector<Node*> nodes)
 {
     bool selectedAny = false;
     for (auto* node : nodes)
     {
         stl::weak_ptr<Node> weakNode(node);
-        if (!nodeSelection_.Contains(weakNode))
+        if (!nodeSelection_.contains(weakNode))
         {
-            nodeSelection_.Push(weakNode);
+            nodeSelection_.push_back(weakNode);
             selectedAny = true;
         }
     }
@@ -273,9 +273,9 @@ bool Gizmo::Select(PODVector<Node*> nodes)
 bool Gizmo::Unselect(Node* node)
 {
     stl::weak_ptr<Node> weakNode(node);
-    if (!nodeSelection_.Contains(weakNode))
+    if (!nodeSelection_.contains(weakNode))
         return false;
-    nodeSelection_.Remove(weakNode);
+    nodeSelection_.erase_first(weakNode);
     SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
@@ -290,9 +290,9 @@ void Gizmo::ToggleSelection(Node* node)
 
 bool Gizmo::UnselectAll()
 {
-    if (nodeSelection_.Empty())
+    if (nodeSelection_.empty())
         return false;
-    nodeSelection_.Clear();
+    nodeSelection_.clear();
     SendEvent(E_GIZMOSELECTIONCHANGED);
     return true;
 }
@@ -300,7 +300,7 @@ bool Gizmo::UnselectAll()
 bool Gizmo::IsSelected(Node* node) const
 {
     stl::weak_ptr<Node> pNode(node);
-    return nodeSelection_.Contains(pNode);
+    return nodeSelection_.contains(pNode);
 }
 
 void Gizmo::SetScreenRect(const IntVector2& pos, const IntVector2& size)

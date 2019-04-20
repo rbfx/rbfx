@@ -88,7 +88,7 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
 
     // Build work buffers for threading
     unsigned numThreadBuffers = threaded ? GetSubsystem<WorkQueue>()->GetNumThreads() + 1 : 1;
-    buffers_.Resize(numThreadBuffers);
+    buffers_.resize(numThreadBuffers);
     for (unsigned i = 0; i < numThreadBuffers; ++i)
     {
         // Reserve extra memory in case 3D clipping is not exact
@@ -98,7 +98,7 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
         buffer.used_ = false;
     }
 
-    mipBuffers_.Clear();
+    mipBuffers_.clear();
 
     // Build buffers for mip levels
     for (;;)
@@ -106,14 +106,14 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
         width = (width + 1) / 2;
         height = (height + 1) / 2;
 
-        mipBuffers_.Push(stl::shared_array<DepthValue>(new DepthValue[width * height]));
+        mipBuffers_.push_back(stl::shared_array<DepthValue>(new DepthValue[width * height]));
 
         if (width <= OCCLUSION_MIN_SIZE && height <= OCCLUSION_MIN_SIZE)
             break;
     }
 
     URHO3D_LOGDEBUG("Set occlusion buffer size " + String(width_) + "x" + String(height_) + " with " +
-             String(mipBuffers_.Size()) + " mip levels and " + String(numThreadBuffers) + " thread buffers");
+             String(mipBuffers_.size()) + " mip levels and " + String(numThreadBuffers) + " thread buffers");
 
     CalculateViewport();
     return true;
@@ -153,7 +153,7 @@ void OcclusionBuffer::SetCullMode(CullMode mode)
 void OcclusionBuffer::Reset()
 {
     numTriangles_ = 0;
-    batches_.Clear();
+    batches_.clear();
 }
 
 void OcclusionBuffer::Clear()
@@ -162,7 +162,7 @@ void OcclusionBuffer::Clear()
 
     // Only clear the main thread buffer. Rest are cleared on-demand when drawing the first batch
     ClearBuffer(0);
-    for (unsigned i = 1; i < buffers_.Size(); ++i)
+    for (unsigned i = 1; i < buffers_.size(); ++i)
         buffers_[i].used_ = false;
 
     depthHierarchyDirty_ = true;
@@ -171,8 +171,8 @@ void OcclusionBuffer::Clear()
 bool OcclusionBuffer::AddTriangles(const Matrix3x4& model, const void* vertexData, unsigned vertexSize, unsigned vertexStart,
     unsigned vertexCount)
 {
-    batches_.Resize(batches_.Size() + 1);
-    OcclusionBatch& batch = batches_.Back();
+    batches_.resize(batches_.size() + 1);
+    OcclusionBatch& batch = batches_.back();
 
     batch.model_ = model;
     batch.vertexData_ = vertexData;
@@ -189,8 +189,8 @@ bool OcclusionBuffer::AddTriangles(const Matrix3x4& model, const void* vertexDat
 bool OcclusionBuffer::AddTriangles(const Matrix3x4& model, const void* vertexData, unsigned vertexSize, const void* indexData,
     unsigned indexSize, unsigned indexStart, unsigned indexCount)
 {
-    batches_.Resize(batches_.Size() + 1);
-    OcclusionBatch& batch = batches_.Back();
+    batches_.resize(batches_.size() + 1);
+    OcclusionBatch& batch = batches_.back();
 
     batch.model_ = model;
     batch.vertexData_ = vertexData;
@@ -206,20 +206,20 @@ bool OcclusionBuffer::AddTriangles(const Matrix3x4& model, const void* vertexDat
 
 void OcclusionBuffer::DrawTriangles()
 {
-    if (buffers_.Size() == 1)
+    if (buffers_.size() == 1)
     {
         // Not threaded
-        for (Vector<OcclusionBatch>::Iterator i = batches_.Begin(); i != batches_.End(); ++i)
+        for (auto i = batches_.begin(); i != batches_.end(); ++i)
             DrawBatch(*i, 0);
 
         depthHierarchyDirty_ = true;
     }
-    else if (buffers_.Size() > 1)
+    else if (buffers_.size() > 1)
     {
         // Threaded
         auto* queue = GetSubsystem<WorkQueue>();
 
-        for (Vector<OcclusionBatch>::Iterator i = batches_.Begin(); i != batches_.End(); ++i)
+        for (auto i = batches_.begin(); i != batches_.end(); ++i)
         {
             stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
@@ -235,12 +235,12 @@ void OcclusionBuffer::DrawTriangles()
         depthHierarchyDirty_ = true;
     }
 
-    batches_.Clear();
+    batches_.clear();
 }
 
 void OcclusionBuffer::BuildDepthHierarchy()
 {
-    if (buffers_.Empty() || !depthHierarchyDirty_)
+    if (buffers_.empty() || !depthHierarchyDirty_)
         return;
 
     URHO3D_PROFILE("BuildDepthHierarchy");
@@ -248,7 +248,7 @@ void OcclusionBuffer::BuildDepthHierarchy()
     // Build the first mip level from the pixel-level data
     int width = (width_ + 1) / 2;
     int height = (height_ + 1) / 2;
-    if (mipBuffers_.Size())
+    if (mipBuffers_.size())
     {
         for (int y = 0; y < height; ++y)
         {
@@ -288,7 +288,7 @@ void OcclusionBuffer::BuildDepthHierarchy()
     }
 
     // Build the rest of the mip levels
-    for (unsigned i = 1; i < mipBuffers_.Size(); ++i)
+    for (unsigned i = 1; i < mipBuffers_.size(); ++i)
     {
         int prevWidth = width;
         int prevHeight = height;
@@ -342,7 +342,7 @@ void OcclusionBuffer::ResetUseTimer()
 
 bool OcclusionBuffer::IsVisible(const BoundingBox& worldSpaceBox) const
 {
-    if (buffers_.Empty())
+    if (buffers_.empty())
         return true;
 
     // Transform corners to projection space
@@ -411,7 +411,7 @@ bool OcclusionBuffer::IsVisible(const BoundingBox& worldSpaceBox) const
     if (!depthHierarchyDirty_)
     {
         // Start from lowest mip level and check if a conclusive result can be found
-        for (int i = mipBuffers_.Size() - 1; i >= 0; --i)
+        for (int i = mipBuffers_.size() - 1; i >= 0; --i)
         {
             int shift = i + 1;
             int width = width_ >> shift;
@@ -1012,7 +1012,7 @@ void OcclusionBuffer::MergeBuffers()
 {
     URHO3D_PROFILE("MergeBuffers");
 
-    for (unsigned i = 1; i < buffers_.Size(); ++i)
+    for (unsigned i = 1; i < buffers_.size(); ++i)
     {
         if (!buffers_[i].used_)
             continue;
@@ -1034,7 +1034,7 @@ void OcclusionBuffer::MergeBuffers()
 
 void OcclusionBuffer::ClearBuffer(unsigned threadIndex)
 {
-    if (threadIndex >= buffers_.Size())
+    if (threadIndex >= buffers_.size())
         return;
 
     int* dest = buffers_[threadIndex].data_;

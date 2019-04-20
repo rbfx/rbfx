@@ -80,9 +80,9 @@ CrowdManager::CrowdManager(Context* context) :
     maxAgentRadius_(DEFAULT_MAX_AGENT_RADIUS)
 {
     // The actual buffer is allocated inside dtCrowd, we only track the number of "slots" being configured explicitly
-    numAreas_.Reserve(DT_CROWD_MAX_QUERY_FILTER_TYPE);
+    numAreas_.reserve(DT_CROWD_MAX_QUERY_FILTER_TYPE);
     for (unsigned i = 0; i < DT_CROWD_MAX_QUERY_FILTER_TYPE; ++i)
-        numAreas_.Push(0);
+        numAreas_.push_back(0);
 }
 
 CrowdManager::~CrowdManager()
@@ -190,9 +190,9 @@ void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
     if (!crowd_)
         return;
 
-    PODVector<CrowdAgent*> agents = GetAgents(node, false);     // Get all crowd agent components
+    stl::vector<CrowdAgent*> agents = GetAgents(node, false);     // Get all crowd agent components
     Vector3 moveTarget(position);
-    for (unsigned i = 0; i < agents.Size(); ++i)
+    for (unsigned i = 0; i < agents.size(); ++i)
     {
         // Give application a chance to determine the desired crowd formation when they reach the target position
         CrowdAgent* agent = agents[i];
@@ -203,7 +203,7 @@ void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
         map[P_NODE] = agent->GetNode();
         map[P_CROWD_AGENT] = agent;
         map[P_INDEX] = i;
-        map[P_SIZE] = agents.Size();
+        map[P_SIZE] = (int)agents.size();
         map[P_POSITION] = moveTarget;   // Expect the event handler will modify this position accordingly
 
         SendEvent(E_CROWD_AGENT_FORMATION, map);
@@ -218,8 +218,8 @@ void CrowdManager::SetCrowdVelocity(const Vector3& velocity, Node* node)
     if (!crowd_)
         return;
 
-    PODVector<CrowdAgent*> agents = GetAgents(node, true);      // Get only crowd agent components already in the crowd
-    for (unsigned i = 0; i < agents.Size(); ++i)
+    stl::vector<CrowdAgent*> agents = GetAgents(node, true);      // Get only crowd agent components already in the crowd
+    for (unsigned i = 0; i < agents.size(); ++i)
         agents[i]->SetTargetVelocity(velocity);
 }
 
@@ -228,8 +228,8 @@ void CrowdManager::ResetCrowdTarget(Node* node)
     if (!crowd_)
         return;
 
-    PODVector<CrowdAgent*> agents = GetAgents(node, true);
-    for (unsigned i = 0; i < agents.Size(); ++i)
+    stl::vector<CrowdAgent*> agents = GetAgents(node, true);
+    for (unsigned i = 0; i < agents.size(); ++i)
         agents[i]->ResetTarget();
 }
 
@@ -284,11 +284,11 @@ void CrowdManager::SetQueryFilterTypesAttr(const VariantVector& value)
 
     unsigned index = 0;
     unsigned queryFilterType = 0;
-    numQueryFilterTypes_ = index < value.Size() ? Min(value[index++].GetUInt(), (unsigned)DT_CROWD_MAX_QUERY_FILTER_TYPE) : 0;
+    numQueryFilterTypes_ = index < value.size() ? Min(value[index++].GetUInt(), (unsigned)DT_CROWD_MAX_QUERY_FILTER_TYPE) : 0;
 
     while (queryFilterType < numQueryFilterTypes_)
     {
-        if (index + 3 <= value.Size())
+        if (index + 3 <= value.size())
         {
             dtQueryFilter* filter = crowd_->getEditableFilter(queryFilterType);
             assert(filter);
@@ -298,7 +298,7 @@ void CrowdManager::SetQueryFilterTypesAttr(const VariantVector& value)
             numAreas_[queryFilterType] = Min(value[index++].GetUInt(), (unsigned)DT_MAX_AREAS);
 
             // Must loop through based on previous number of areas, the new area cost (if any) can only be set in the next attribute get/set iteration
-            if (index + prevNumAreas <= value.Size())
+            if (index + prevNumAreas <= value.size())
             {
                 for (unsigned i = 0; i < prevNumAreas; ++i)
                     filter->setAreaCost(i, value[index++].GetFloat());
@@ -353,11 +353,11 @@ void CrowdManager::SetObstacleAvoidanceTypesAttr(const VariantVector& value)
 
     unsigned index = 0;
     unsigned obstacleAvoidanceType = 0;
-    numObstacleAvoidanceTypes_ = index < value.Size() ? Min(value[index++].GetUInt(), (unsigned)DT_CROWD_MAX_OBSTAVOIDANCE_PARAMS) : 0;
+    numObstacleAvoidanceTypes_ = index < value.size() ? Min(value[index++].GetUInt(), (unsigned)DT_CROWD_MAX_OBSTAVOIDANCE_PARAMS) : 0;
 
     while (obstacleAvoidanceType < numObstacleAvoidanceTypes_)
     {
-        if (index + 10 <= value.Size())
+        if (index + 10 <= value.size())
         {
             dtObstacleAvoidanceParams params;       // NOLINT(hicpp-member-init)
             params.velBias = value[index++].GetFloat();
@@ -402,7 +402,7 @@ Vector3 CrowdManager::MoveAlongSurface(const Vector3& start, const Vector3& end,
         end;
 }
 
-void CrowdManager::FindPath(PODVector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType)
+void CrowdManager::FindPath(stl::vector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType)
 {
     if (crowd_ && navigationMesh_)
         navigationMesh_->FindPath(dest, start, end, Vector3(crowd_->getQueryExtents()), crowd_->getFilter(queryFilterType));
@@ -459,23 +459,23 @@ VariantVector CrowdManager::GetQueryFilterTypesAttr() const
         for (unsigned i = 0; i < numQueryFilterTypes_; ++i)
             totalNumAreas += numAreas_[i];
 
-        ret.Reserve(numQueryFilterTypes_ * 3 + totalNumAreas + 1);
-        ret.Push(numQueryFilterTypes_);
+        ret.reserve(numQueryFilterTypes_ * 3 + totalNumAreas + 1);
+        ret.push_back(numQueryFilterTypes_);
 
         for (unsigned i = 0; i < numQueryFilterTypes_; ++i)
         {
             const dtQueryFilter* filter = crowd_->getFilter(i);
             assert(filter);
-            ret.Push(filter->getIncludeFlags());
-            ret.Push(filter->getExcludeFlags());
-            ret.Push(numAreas_[i]);
+            ret.push_back(filter->getIncludeFlags());
+            ret.push_back(filter->getExcludeFlags());
+            ret.push_back(numAreas_[i]);
 
             for (unsigned j = 0; j < numAreas_[i]; ++j)
-                ret.Push(filter->getAreaCost(j));
+                ret.push_back(filter->getAreaCost(j));
         }
     }
     else
-        ret.Push(0);
+        ret.push_back(0);
 
     return ret;
 }
@@ -513,27 +513,27 @@ VariantVector CrowdManager::GetObstacleAvoidanceTypesAttr() const
     VariantVector ret;
     if (crowd_)
     {
-        ret.Reserve(numObstacleAvoidanceTypes_ * 10 + 1);
-        ret.Push(numObstacleAvoidanceTypes_);
+        ret.reserve(numObstacleAvoidanceTypes_ * 10 + 1);
+        ret.push_back(numObstacleAvoidanceTypes_);
 
         for (unsigned i = 0; i < numObstacleAvoidanceTypes_; ++i)
         {
             const dtObstacleAvoidanceParams* params = crowd_->getObstacleAvoidanceParams(i);
             assert(params);
-            ret.Push(params->velBias);
-            ret.Push(params->weightDesVel);
-            ret.Push(params->weightCurVel);
-            ret.Push(params->weightSide);
-            ret.Push(params->weightToi);
-            ret.Push(params->horizTime);
-            ret.Push(params->gridSize);
-            ret.Push(params->adaptiveDivs);
-            ret.Push(params->adaptiveRings);
-            ret.Push(params->adaptiveDepth);
+            ret.push_back(params->velBias);
+            ret.push_back(params->weightDesVel);
+            ret.push_back(params->weightCurVel);
+            ret.push_back(params->weightSide);
+            ret.push_back(params->weightToi);
+            ret.push_back(params->horizTime);
+            ret.push_back(params->gridSize);
+            ret.push_back(params->adaptiveDivs);
+            ret.push_back(params->adaptiveRings);
+            ret.push_back(params->adaptiveDepth);
         }
     }
     else
-        ret.Push(0);
+        ret.push_back(0);
 
     return ret;
 }
@@ -545,21 +545,21 @@ const CrowdObstacleAvoidanceParams& CrowdManager::GetObstacleAvoidanceParams(uns
     return params ? *reinterpret_cast<const CrowdObstacleAvoidanceParams*>(params) : EMPTY_PARAMS;
 }
 
-PODVector<CrowdAgent*> CrowdManager::GetAgents(Node* node, bool inCrowdFilter) const
+stl::vector<CrowdAgent*> CrowdManager::GetAgents(Node* node, bool inCrowdFilter) const
 {
     if (!node)
         node = GetScene();
-    PODVector<CrowdAgent*> agents;
+    stl::vector<CrowdAgent*> agents;
     node->GetComponents<CrowdAgent>(agents, true);
     if (inCrowdFilter)
     {
-        PODVector<CrowdAgent*>::Iterator i = agents.Begin();
-        while (i != agents.End())
+        auto i = agents.begin();
+        while (i != agents.end())
         {
             if ((*i)->IsInCrowd())
                 ++i;
             else
-                i = agents.Erase(i);
+                i = agents.erase(i);
         }
     }
     return agents;
@@ -597,13 +597,13 @@ bool CrowdManager::CreateCrowd()
         SetObstacleAvoidanceTypesAttr(obstacleAvoidanceTypeConfiguration);
 
         // Re-add the existing crowd agents
-        PODVector<CrowdAgent*> agents = GetAgents();
-        for (unsigned i = 0; i < agents.Size(); ++i)
+        stl::vector<CrowdAgent*> agents = GetAgents();
+        for (unsigned i = 0; i < agents.size(); ++i)
         {
             // Keep adding until the crowd cannot take it anymore
             if (agents[i]->AddAgentToCrowd(true) == -1)
             {
-                URHO3D_LOGWARNINGF("CrowdManager: %d crowd agents orphaned", agents.Size() - i);
+                URHO3D_LOGWARNINGF("CrowdManager: %d crowd agents orphaned", agents.size() - i);
                 break;
             }
         }

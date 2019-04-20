@@ -145,7 +145,7 @@ void Light::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Light Mask", int, lightMask_, DEFAULT_LIGHTMASK, AM_DEFAULT);
 }
 
-void Light::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void Light::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     // Do not record a raycast result for a directional light, as it would block all other results
     if (lightType_ == LIGHT_DIRECTIONAL)
@@ -196,7 +196,7 @@ void Light::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResul
     result.drawable_ = this;
     result.node_ = node_;
     result.subObject_ = M_MAX_UNSIGNED;
-    results.Push(result);
+    results.push_back(result);
 }
 
 void Light::UpdateBatches(const FrameInfo& frame)

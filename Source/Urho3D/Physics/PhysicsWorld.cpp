@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Core/Mutex.h"
 #include "../Core/Profiler.h"
@@ -47,6 +49,7 @@
 #include <Bullet/BulletCollision/Gimpact/btGImpactCollisionAlgorithm.h>
 #include <Bullet/BulletDynamics/ConstraintSolver/btSequentialImpulseConstraintSolver.h>
 #include <Bullet/BulletDynamics/Dynamics/btDiscreteDynamicsWorld.h>
+
 
 extern ContactAddedCallback gContactAddedCallback;
 
@@ -119,7 +122,7 @@ void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
 struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
 {
     /// Construct.
-    PhysicsQueryCallback(PODVector<RigidBody*>& result, unsigned collisionMask) :
+    PhysicsQueryCallback(stl::vector<RigidBody*>& result, unsigned collisionMask) :
         result_(result),
         collisionMask_(collisionMask)
     {
@@ -130,16 +133,16 @@ struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
         const btCollisionObjectWrapper* colObj1Wrap, int, int) override
     {
         auto* body = reinterpret_cast<RigidBody*>(colObj0Wrap->getCollisionObject()->getUserPointer());
-        if (body && !result_.Contains(body) && (body->GetCollisionLayer() & collisionMask_))
-            result_.Push(body);
+        if (body && !result_.contains(body) && (body->GetCollisionLayer() & collisionMask_))
+            result_.push_back(body);
         body = reinterpret_cast<RigidBody*>(colObj1Wrap->getCollisionObject()->getUserPointer());
-        if (body && !result_.Contains(body) && (body->GetCollisionLayer() & collisionMask_))
-            result_.Push(body);
+        if (body && !result_.contains(body) && (body->GetCollisionLayer() & collisionMask_))
+            result_.push_back(body);
         return 0.0f;
     }
 
     /// Found rigid bodies.
-    PODVector<RigidBody*>& result_;
+    stl::vector<RigidBody*>& result_;
     /// Collision mask for the query.
     unsigned collisionMask_;
 };
@@ -177,13 +180,13 @@ PhysicsWorld::~PhysicsWorld()
     if (scene_)
     {
         // Force all remaining constraints, rigid bodies and collision shapes to release themselves
-        for (PODVector<Constraint*>::Iterator i = constraints_.Begin(); i != constraints_.End(); ++i)
+        for (auto i = constraints_.begin(); i != constraints_.end(); ++i)
             (*i)->ReleaseConstraint();
 
-        for (PODVector<RigidBody*>::Iterator i = rigidBodies_.Begin(); i != rigidBodies_.End(); ++i)
+        for (auto i = rigidBodies_.begin(); i != rigidBodies_.end(); ++i)
             (*i)->ReleaseBody();
 
-        for (PODVector<CollisionShape*>::Iterator i = collisionShapes_.Begin(); i != collisionShapes_.End(); ++i)
+        for (auto i = collisionShapes_.begin(); i != collisionShapes_.end(); ++i)
             (*i)->ReleaseShape();
     }
 
@@ -369,7 +372,7 @@ void PhysicsWorld::SetMaxNetworkAngularVelocity(float velocity)
     MarkNetworkUpdate();
 }
 
-void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
+void PhysicsWorld::Raycast(stl::vector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
 {
     URHO3D_PROFILE("PhysicsRaycast");
 
@@ -391,10 +394,10 @@ void PhysicsWorld::Raycast(PODVector<PhysicsRaycastResult>& result, const Ray& r
         newResult.normal_ = ToVector3(rayCallback.m_hitNormalWorld[i]);
         newResult.distance_ = (newResult.position_ - ray.origin_).Length();
         newResult.hitFraction_ = rayCallback.m_closestHitFraction;
-        result.Push(newResult);
+        result.push_back(newResult);
     }
 
-    Sort(result.Begin(), result.End(), CompareRaycastResults);
+    stl::quick_sort(result.begin(), result.end(), CompareRaycastResults);
 }
 
 void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, unsigned collisionMask)
@@ -618,11 +621,11 @@ void PhysicsWorld::RemoveCachedGeometry(Model* model)
     RemoveCachedGeometryImpl(gimpactTrimeshCache_, model);
 }
 
-void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
+void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
 {
     URHO3D_PROFILE("PhysicsSphereQuery");
 
-    result.Clear();
+    result.clear();
 
     btSphereShape sphereShape(sphere.radius_);
     stl::unique_ptr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &sphereShape));
@@ -637,11 +640,11 @@ void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const Sphere& s
     world_->removeRigidBody(tempRigidBody.get());
 }
 
-void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask)
+void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask)
 {
     URHO3D_PROFILE("PhysicsBoxQuery");
 
-    result.Clear();
+    result.clear();
 
     btBoxShape boxShape(ToBtVector3(box.HalfSize()));
     stl::unique_ptr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &boxShape));
@@ -655,11 +658,11 @@ void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const BoundingB
     world_->removeRigidBody(tempRigidBody.get());
 }
 
-void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody* body)
+void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const RigidBody* body)
 {
     URHO3D_PROFILE("PhysicsBodyQuery");
 
-    result.Clear();
+    result.clear();
 
     if (!body || !body->GetBody())
         return;
@@ -668,21 +671,21 @@ void PhysicsWorld::GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody
     world_->contactTest(body->GetBody(), callback);
 
     // Remove the body itself from the returned list
-    for (unsigned i = 0; i < result.Size(); i++)
+    for (unsigned i = 0; i < result.size(); i++)
     {
         if (result[i] == body)
         {
-            result.Erase(i);
+            result.erase(i);
             break;
         }
     }
 }
 
-void PhysicsWorld::GetCollidingBodies(PODVector<RigidBody*>& result, const RigidBody* body)
+void PhysicsWorld::GetCollidingBodies(stl::vector<RigidBody*>& result, const RigidBody* body)
 {
     URHO3D_PROFILE("GetCollidingBodies");
 
-    result.Clear();
+    result.clear();
 
     for (HashMap<Pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair>::Iterator i = currentCollisions_.Begin();
          i != currentCollisions_.End(); ++i)
@@ -690,12 +693,12 @@ void PhysicsWorld::GetCollidingBodies(PODVector<RigidBody*>& result, const Rigid
         if (i->first_.first_ == body)
         {
             if (i->first_.second_)
-                result.Push(i->first_.second_);
+                result.push_back(i->first_.second_);
         }
         else if (i->first_.second_ == body)
         {
             if (i->first_.first_)
-                result.Push(i->first_.first_);
+                result.push_back(i->first_.first_);
         }
     }
 }
@@ -717,34 +720,34 @@ bool PhysicsWorld::GetSplitImpulse() const
 
 void PhysicsWorld::AddRigidBody(RigidBody* body)
 {
-    rigidBodies_.Push(body);
+    rigidBodies_.push_back(body);
 }
 
 void PhysicsWorld::RemoveRigidBody(RigidBody* body)
 {
-    rigidBodies_.Remove(body);
+    rigidBodies_.erase_first(body);
     // Remove possible dangling pointer from the delayedWorldTransforms structure
     delayedWorldTransforms_.Erase(body);
 }
 
 void PhysicsWorld::AddCollisionShape(CollisionShape* shape)
 {
-    collisionShapes_.Push(shape);
+    collisionShapes_.push_back(shape);
 }
 
 void PhysicsWorld::RemoveCollisionShape(CollisionShape* shape)
 {
-    collisionShapes_.Remove(shape);
+    collisionShapes_.erase_first(shape);
 }
 
 void PhysicsWorld::AddConstraint(Constraint* constraint)
 {
-    constraints_.Push(constraint);
+    constraints_.push_back(constraint);
 }
 
 void PhysicsWorld::RemoveConstraint(Constraint* constraint)
 {
-    constraints_.Remove(constraint);
+    constraints_.erase_first(constraint);
 }
 
 void PhysicsWorld::AddDelayedWorldTransform(const DelayedWorldTransform& transform)

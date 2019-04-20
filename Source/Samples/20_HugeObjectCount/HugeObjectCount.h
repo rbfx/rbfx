@@ -90,7 +90,7 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Box scene nodes.
-    Vector<stl::shared_ptr<Node> > boxNodes_;
+    stl::vector<stl::shared_ptr<Node> > boxNodes_;
     /// Animation flag.
     bool animate_;
     /// Group optimization flag.

@@ -137,7 +137,7 @@ void AnimatedSprite2D::SetAnimationSet(AnimationSet2D* animationSet)
     {
         spriterInstance_ = new Spriter::SpriterInstance(this, animationSet_->GetSpriterData());
 
-        if (!animationSet_->GetSpriterData()->entities_.Empty())
+        if (!animationSet_->GetSpriterData()->entities_.empty())
         {
             // If entity is empty use first entity in spriter
             if (entity_.Empty())
@@ -438,8 +438,8 @@ void AnimatedSprite2D::UpdateSourceBatchesSpriter()
 {
     const Matrix3x4& nodeWorldTransform = GetNode()->GetWorldTransform();
 
-    Vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
-    vertices.Clear();
+    stl::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
+    vertices.clear();
 
     Rect drawRect;
     Rect textureRect;
@@ -450,8 +450,8 @@ void AnimatedSprite2D::UpdateSourceBatchesSpriter()
     Vertex2D vertex2;
     Vertex2D vertex3;
 
-    const PODVector<Spriter::SpatialTimelineKey*>& timelineKeys = spriterInstance_->GetTimelineKeys();
-    for (unsigned i = 0; i < timelineKeys.Size(); ++i)
+    const stl::vector<Spriter::SpatialTimelineKey*>& timelineKeys = spriterInstance_->GetTimelineKeys();
+    for (unsigned i = 0; i < timelineKeys.size(); ++i)
     {
         if (timelineKeys[i]->GetObjectType() != Spriter::SPRITE)
             continue;
@@ -498,10 +498,10 @@ void AnimatedSprite2D::UpdateSourceBatchesSpriter()
 
         vertex0.color_ = vertex1.color_ = vertex2.color_ = vertex3.color_ = color;
 
-        vertices.Push(vertex0);
-        vertices.Push(vertex1);
-        vertices.Push(vertex2);
-        vertices.Push(vertex3);
+        vertices.push_back(vertex0);
+        vertices.push_back(vertex1);
+        vertices.push_back(vertex2);
+        vertices.push_back(vertex3);
     }
 }
 

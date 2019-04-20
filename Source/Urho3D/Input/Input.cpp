@@ -329,24 +329,24 @@ int Win32_ResizingEventWatcher(void* data, SDL_Event* event)
 
 void JoystickState::Initialize(unsigned numButtons, unsigned numAxes, unsigned numHats)
 {
-    buttons_.Resize(numButtons);
-    buttonPress_.Resize(numButtons);
-    axes_.Resize(numAxes);
-    hats_.Resize(numHats);
+    buttons_.resize(numButtons);
+    buttonPress_.resize(numButtons);
+    axes_.resize(numAxes);
+    hats_.resize(numHats);
 
     Reset();
 }
 
 void JoystickState::Reset()
 {
-    for (unsigned i = 0; i < buttons_.Size(); ++i)
+    for (unsigned i = 0; i < buttons_.size(); ++i)
     {
         buttons_[i] = false;
         buttonPress_[i] = false;
     }
-    for (unsigned i = 0; i < axes_.Size(); ++i)
+    for (unsigned i = 0; i < axes_.size(); ++i)
         axes_[i] = 0.0f;
-    for (unsigned i = 0; i < hats_.Size(); ++i)
+    for (unsigned i = 0; i < hats_.size(); ++i)
         hats_[i] = HAT_CENTER;
 }
 
@@ -1024,8 +1024,8 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     unsigned numButtons = 0;
     unsigned numAxes = 0;
     unsigned numHats = 0;
-    const Vector<stl::shared_ptr<UIElement> >& children = state.screenJoystick_->GetChildren();
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator iter = children.Begin(); iter != children.End(); ++iter)
+    const stl::vector<stl::shared_ptr<UIElement> >& children = state.screenJoystick_->GetChildren();
+    for (auto iter = children.begin(); iter != children.end(); ++iter)
     {
         UIElement* element = iter->get();
         String name = element->GetName();
@@ -1092,16 +1092,16 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
                 text->SetVisible(false);
                 String keyBinding = text->GetText();
                 int mappedKeyBinding[4] = {KEY_W, KEY_S, KEY_A, KEY_D};
-                Vector<String> keyBindings;
+                stl::vector<String> keyBindings;
                 if (keyBinding.Contains(' '))   // e.g.: "UP DOWN LEFT RIGHT"
                     keyBindings = keyBinding.Split(' ');    // Attempt to split the text using ' ' as separator
                 else if (keyBinding.Length() == 4)
                 {
-                    keyBindings.Resize(4);      // e.g.: "WSAD"
+                    keyBindings.resize(4);      // e.g.: "WSAD"
                     for (unsigned i = 0; i < 4; ++i)
                         keyBindings[i] = keyBinding.Substring(i, 1);
                 }
-                if (keyBindings.Size() == 4)
+                if (keyBindings.size() == 4)
                 {
                     PopulateKeyBindingMap(keyBindingMap);
 
@@ -1130,9 +1130,9 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     }
 
     // Make sure all the children are non-focusable so they do not mistakenly to be considered as active UI input controls by application
-    PODVector<UIElement*> allChildren;
+    stl::vector<UIElement*> allChildren;
     state.screenJoystick_->GetChildren(allChildren, true);
-    for (PODVector<UIElement*>::Iterator iter = allChildren.Begin(); iter != allChildren.End(); ++iter)
+    for (auto iter = allChildren.begin(); iter != allChildren.end(); ++iter)
         (*iter)->SetFocusMode(FM_NOTFOCUSABLE);
 
     state.Initialize(numButtons, numAxes, numHats);
@@ -1582,7 +1582,7 @@ void Input::ResetInputAccumulation()
     mouseMoveWheel_ = 0;
     for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
     {
-        for (unsigned j = 0; j < i->second_.buttonPress_.Size(); ++j)
+        for (unsigned j = 0; j < i->second_.buttonPress_.size(); ++j)
             i->second_.buttonPress_[j] = false;
     }
 
@@ -2213,7 +2213,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
                 eventData[P_JOYSTICKID] = joystickID;
                 eventData[P_BUTTON] = button;
 
-                if (button < state.buttons_.Size())
+                if (button < state.buttons_.size())
                 {
                     state.buttons_[button] = true;
                     state.buttonPress_[button] = true;
@@ -2237,7 +2237,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
                 eventData[P_JOYSTICKID] = joystickID;
                 eventData[P_BUTTON] = button;
 
-                if (button < state.buttons_.Size())
+                if (button < state.buttons_.size())
                 {
                     if (!state.controller_)
                         state.buttons_[button] = false;
@@ -2261,7 +2261,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
                 eventData[P_AXIS] = evt.jaxis.axis;
                 eventData[P_POSITION] = Clamp((float)evt.jaxis.value / 32767.0f, -1.0f, 1.0f);
 
-                if (evt.jaxis.axis < state.axes_.Size())
+                if (evt.jaxis.axis < state.axes_.size())
                 {
                     // If the joystick is a controller, only use the controller axis mappings
                     // (we'll also get the controller event)
@@ -2285,7 +2285,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             eventData[P_HAT] = evt.jhat.hat;
             eventData[P_POSITION] = evt.jhat.value;
 
-            if (evt.jhat.hat < state.hats_.Size())
+            if (evt.jhat.hat < state.hats_.size())
             {
                 state.hats_[evt.jhat.hat] = evt.jhat.value;
                 SendEvent(E_JOYSTICKHATMOVE, eventData);
@@ -2305,7 +2305,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             eventData[P_JOYSTICKID] = joystickID;
             eventData[P_BUTTON] = button;
 
-            if (button < state.buttons_.Size())
+            if (button < state.buttons_.size())
             {
                 state.buttons_[button] = true;
                 state.buttonPress_[button] = true;
@@ -2326,7 +2326,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             eventData[P_JOYSTICKID] = joystickID;
             eventData[P_BUTTON] = button;
 
-            if (button < state.buttons_.Size())
+            if (button < state.buttons_.size())
             {
                 state.buttons_[button] = false;
                 SendEvent(E_JOYSTICKBUTTONUP, eventData);
@@ -2346,7 +2346,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             eventData[P_AXIS] = evt.caxis.axis;
             eventData[P_POSITION] = Clamp((float)evt.caxis.value / 32767.0f, -1.0f, 1.0f);
 
-            if (evt.caxis.axis < state.axes_.Size())
+            if (evt.caxis.axis < state.axes_.size())
             {
                 state.axes_[evt.caxis.axis] = eventData[P_POSITION].GetFloat();
                 SendEvent(E_JOYSTICKAXISMOVE, eventData);

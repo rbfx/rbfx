@@ -37,7 +37,7 @@ namespace Urho3D
 static const unsigned ERROR_BUFFER_SIZE = 256;
 static const unsigned READ_BUFFER_SIZE = 65536; // Must be a power of two
 
-HttpRequest::HttpRequest(const String& url, const String& verb, const Vector<String>& headers, const String& postData) :
+HttpRequest::HttpRequest(const String& url, const String& verb, const stl::vector<String>& headers, const String& postData) :
     url_(url.Trimmed()),
     verb_(!verb.Empty() ? verb : "GET"),
     headers_(headers),
@@ -101,7 +101,7 @@ void HttpRequest::ThreadFunction()
     memset(errorBuffer, 0, sizeof(errorBuffer));
 
     String headersStr;
-    for (unsigned i = 0; i < headers_.Size(); ++i)
+    for (unsigned i = 0; i < headers_.size(); ++i)
     {
         // Trim and only add non-empty header strings
         String header = headers_[i].Trimmed();

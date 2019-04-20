@@ -252,7 +252,7 @@ public:
     void ApplyShadowMapFilter(View* view, Texture2D* shadowMap, float blurScale);
 
     /// Return number of backbuffer viewports.
-    unsigned GetNumViewports() const { return viewports_.Size(); }
+    unsigned GetNumViewports() const { return viewports_.size(); }
 
     /// Return backbuffer viewport by index.
     Viewport* GetViewport(unsigned index) const;
@@ -339,7 +339,7 @@ public:
     float GetMobileNormalOffsetMul() const { return mobileNormalOffsetMul_; }
 
     /// Return number of views rendered.
-    unsigned GetNumViews() const { return views_.Size(); }
+    unsigned GetNumViews() const { return views_.size(); }
 
     /// Return number of primitives rendered.
     unsigned GetNumPrimitives() const { return numPrimitives_; }
@@ -435,7 +435,7 @@ private:
     /// Reload shaders.
     void LoadShaders();
     /// Reload shaders for a material pass. The related batch queue is provided in case it has extra shader compilation defines.
-    void LoadPassShaders(Pass* pass, Vector<stl::shared_ptr<ShaderVariation> >& vertexShaders, Vector<stl::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
+    void LoadPassShaders(Pass* pass, stl::vector<stl::shared_ptr<ShaderVariation> >& vertexShaders, stl::vector<stl::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
     /// Release shaders used in materials.
     void ReleaseMaterialShaders();
     /// Reload textures.
@@ -496,31 +496,31 @@ private:
     /// Indirection cube map for shadowed pointlights.
     stl::shared_ptr<TextureCube> indirectionCubeMap_;
     /// Reusable scene nodes with shadow camera components.
-    Vector<stl::shared_ptr<Node> > shadowCameraNodes_;
+    stl::vector<stl::shared_ptr<Node> > shadowCameraNodes_;
     /// Reusable occlusion buffers.
-    Vector<stl::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
+    stl::vector<stl::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
     /// Shadow maps by resolution.
-    HashMap<int, Vector<stl::shared_ptr<Texture2D> > > shadowMaps_;
+    HashMap<int, stl::vector<stl::shared_ptr<Texture2D> > > shadowMaps_;
     /// Shadow map dummy color buffers by resolution.
     HashMap<int, stl::shared_ptr<Texture2D> > colorShadowMaps_;
     /// Shadow map allocations by resolution.
-    HashMap<int, PODVector<Light*> > shadowMapAllocations_;
+    HashMap<int, stl::vector<Light*> > shadowMapAllocations_;
     /// Instance of shadow map filter
     Object* shadowMapFilterInstance_{};
     /// Function pointer of shadow map filter
     ShadowMapFilter shadowMapFilter_{};
     /// Screen buffers by resolution and format.
-    HashMap<unsigned long long, Vector<stl::shared_ptr<Texture> > > screenBuffers_;
+    HashMap<unsigned long long, stl::vector<stl::shared_ptr<Texture> > > screenBuffers_;
     /// Current screen buffer allocations by resolution and format.
     HashMap<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
     HashMap<Pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
-    Vector<stl::shared_ptr<Viewport> > viewports_;
+    stl::vector<stl::shared_ptr<Viewport> > viewports_;
     /// Render surface viewports queued for update.
-    Vector<Pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > > queuedViewports_;
+    stl::vector<Pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > > queuedViewports_;
     /// Views that have been processed this frame.
-    Vector<stl::weak_ptr<View> > views_;
+    stl::vector<stl::weak_ptr<View> > views_;
     /// Prepared views by culling camera.
     HashMap<Camera*, stl::weak_ptr<View> > preparedViews_;
     /// Octrees that have been updated during the frame.
@@ -530,7 +530,7 @@ private:
     /// Mutex for shadow camera allocation.
     Mutex rendererMutex_;
     /// Current variation names for deferred light volume shaders.
-    Vector<String> deferredLightPSVariations_;
+    stl::vector<String> deferredLightPSVariations_;
     /// Frame info for rendering.
     FrameInfo frame_;
     /// Texture anisotropy level.

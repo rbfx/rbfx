@@ -189,12 +189,12 @@ TileMapObject2D::TileMapObject2D() = default;
 
 unsigned TileMapObject2D::GetNumPoints() const
 {
-    return points_.Size();
+    return points_.size();
 }
 
 const Vector2& TileMapObject2D::GetPoint(unsigned index) const
 {
-    if (index >= points_.Size())
+    if (index >= points_.size())
         return Vector2::ZERO;
 
     return points_[index];

@@ -147,7 +147,7 @@ public:
     /// Return number of pending background-loaded resources.
     unsigned GetNumBackgroundLoadResources() const;
     /// Return all loaded resources of a specific type.
-    void GetResources(PODVector<Resource*>& result, StringHash type) const;
+    void GetResources(stl::vector<Resource*>& result, StringHash type) const;
     /// Return an already loaded resource of specific type & name, or null if not found. Will not load if does not exist.
     Resource* GetExistingResource(StringHash type, const String& name);
 
@@ -155,10 +155,10 @@ public:
     const HashMap<StringHash, ResourceGroup>& GetAllResources() const { return resourceGroups_; }
 
     /// Return added resource load directories.
-    const Vector<String>& GetResourceDirs() const { return resourceDirs_; }
+    const stl::vector<String>& GetResourceDirs() const { return resourceDirs_; }
 
     /// Return added package files.
-    const Vector<stl::shared_ptr<PackageFile> >& GetPackageFiles() const { return packages_; }
+    const stl::vector<stl::shared_ptr<PackageFile> >& GetPackageFiles() const { return packages_; }
 
     /// Template version of returning a resource by name.
     template <class T> T* GetResource(const String& name, bool sendEventOnFailure = true);
@@ -171,7 +171,7 @@ public:
     /// Template version of queueing a resource background load.
     template <class T> bool BackgroundLoadResource(const String& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
     /// Template version of returning loaded resources of a specific type.
-    template <class T> void GetResources(PODVector<T*>& result) const;
+    template <class T> void GetResources(stl::vector<T*>& result) const;
     /// Return whether a file exists in the resource directories or package files. Does not check manually added in-memory resources.
     bool Exists(const String& name) const;
     /// Return memory budget for a resource type.
@@ -212,12 +212,12 @@ public:
     /// Returns a formatted string containing the memory actively used.
     String PrintMemoryUsage() const;
     /// Get the number of resource directories
-    unsigned GetNumResourceDirs() const { return resourceDirs_.Size(); }
+    unsigned GetNumResourceDirs() const { return resourceDirs_.size(); }
     /// Get resource directory at a given index
-    const String& GetResourceDir(unsigned index) const { return index < resourceDirs_.Size() ? resourceDirs_[index] : String::EMPTY; }
+    const String& GetResourceDir(unsigned index) const { return index < resourceDirs_.size() ? resourceDirs_[index] : String::EMPTY; }
     
     /// Scan for specified files.
-    void Scan(Vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
+    void Scan(stl::vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
     String PrintResources(const String& typeName = String::EMPTY) const;
     /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
@@ -251,17 +251,17 @@ private:
     /// Resources by type.
     HashMap<StringHash, ResourceGroup> resourceGroups_;
     /// Resource load directories.
-    Vector<String> resourceDirs_;
+    stl::vector<String> resourceDirs_;
     /// File watchers for resource directories, if automatic reloading enabled.
-    Vector<stl::shared_ptr<FileWatcher> > fileWatchers_;
+    stl::vector<stl::shared_ptr<FileWatcher> > fileWatchers_;
     /// Package files.
-    Vector<stl::shared_ptr<PackageFile> > packages_;
+    stl::vector<stl::shared_ptr<PackageFile> > packages_;
     /// Dependent resources. Only used with automatic reload to eg. trigger reload of a cube texture when any of its faces change.
     HashMap<StringHash, stl::hash_set<StringHash> > dependentResources_;
     /// Resource background loader.
     stl::shared_ptr<BackgroundLoader> backgroundLoader_;
     /// Resource routers.
-    Vector<stl::shared_ptr<ResourceRouter> > resourceRouters_;
+    stl::vector<stl::shared_ptr<ResourceRouter> > resourceRouters_;
     /// Automatic resource reloading flag.
     bool autoReloadResources_;
     /// Return failed resources flag.
@@ -273,7 +273,7 @@ private:
     /// How many milliseconds maximum per frame to spend on finishing background loaded resources.
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
-    Vector<String> ignoreResourceAutoReload_;
+    stl::vector<String> ignoreResourceAutoReload_;
 };
 
 template <class T> T* ResourceCache::GetExistingResource(const String& name)
@@ -306,14 +306,14 @@ template <class T> bool ResourceCache::BackgroundLoadResource(const String& name
     return BackgroundLoadResource(type, name, sendEventOnFailure, caller);
 }
 
-template <class T> void ResourceCache::GetResources(PODVector<T*>& result) const
+template <class T> void ResourceCache::GetResources(stl::vector<T*>& result) const
 {
-    auto& resources = reinterpret_cast<PODVector<Resource*>&>(result);
+    auto& resources = reinterpret_cast<stl::vector<Resource*>&>(result);
     StringHash type = T::GetTypeStatic();
     GetResources(resources, type);
 
     // Perform conversion of the returned pointers
-    for (unsigned i = 0; i < result.Size(); ++i)
+    for (unsigned i = 0; i < result.size(); ++i)
     {
         Resource* resource = resources[i];
         result[i] = static_cast<T*>(resource);

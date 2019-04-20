@@ -141,7 +141,7 @@ public:
 
 private:
     /// List of tasks for every event tasks are executed on.
-    Vector<stl::shared_ptr<Task>> tasks_;
+    stl::vector<stl::shared_ptr<Task>> tasks_;
 
     friend class Task;
 };

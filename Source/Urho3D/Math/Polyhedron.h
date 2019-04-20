@@ -38,7 +38,7 @@ class URHO3D_API Polyhedron
 {
 public:
     /// Construct empty.
-    Polyhedron() noexcept = default;
+    Polyhedron() /*TODO: noexcept*/ = default;
     /// Destruct.
     ~Polyhedron() noexcept = default;
 
@@ -49,7 +49,7 @@ public:
     }
 
     /// Construct from a list of faces.
-    explicit Polyhedron(const Vector<PODVector<Vector3> >& faces) :
+    explicit Polyhedron(const stl::vector<stl::vector<Vector3> >& faces) :
         faces_(faces)
     {
     }
@@ -82,7 +82,7 @@ public:
     /// Add a quadrilateral face.
     void AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3);
     /// Add an arbitrary face.
-    void AddFace(const PODVector<Vector3>& face);
+    void AddFace(const stl::vector<Vector3>& face);
     /// Clip with a plane.
     void Clip(const Plane& plane);
     /// Clip with a bounding box.
@@ -102,10 +102,10 @@ public:
     Polyhedron Transformed(const Matrix3x4& transform) const;
 
     /// Return whether is empty.
-    bool Empty() const { return faces_.Empty(); }
+    bool Empty() const { return faces_.empty(); }
 
     /// Polygon faces.
-    Vector<PODVector<Vector3> > faces_;
+    stl::vector<stl::vector<Vector3> > faces_;
 
 private:
     /// Set a triangle face by index.
@@ -113,9 +113,9 @@ private:
     /// Set a quadrilateral face by index.
     void SetFace(unsigned index, const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3);
     /// Internal vector for clipped vertices.
-    PODVector<Vector3> clippedVertices_;
+    stl::vector<Vector3> clippedVertices_;
     /// Internal vector for the new face being constructed.
-    PODVector<Vector3> outFace_;
+    stl::vector<Vector3> outFace_;
 };
 
 }

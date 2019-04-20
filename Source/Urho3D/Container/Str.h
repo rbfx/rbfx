@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Container/Vector.h"
+#include <EASTL/vector.h>
 
 #include <cstdarg>
 #include <cstring>
@@ -32,12 +32,15 @@
 #include <fmt/ostream.h>
 #include <fmt/format.h>
 
+#include "../Container/VectorBase.h"
+
 namespace Urho3D
 {
 
 static const int CONVERSION_BUFFER_LENGTH = 128;
 static const int MATRIX_CONVERSION_BUFFER_LENGTH = 256;
 
+class String;
 class WString;
 
 class StringHash;
@@ -427,9 +430,9 @@ public:
     /// Return string in lowercase.
     String ToLower() const;
     /// Return substrings split by a separator char. By default don't return empty strings.
-    Vector<String> Split(char separator, bool keepEmptyStrings = false) const;
+    stl::vector<String> Split(char separator, bool keepEmptyStrings = false) const;
     /// Join substrings with a 'glue' string.
-    void Join(const Vector<String>& subStrings, const String& glue);
+    void Join(const stl::vector<String>& subStrings, const String& glue);
     /// Return index to the first occurrence of a string, or NPOS if not found.
     unsigned Find(const String& str, unsigned startPos = 0, bool caseSensitive = true) const;
     /// Return index to the first occurrence of a character, or NPOS if not found.
@@ -502,9 +505,9 @@ public:
     }
 
     /// Return substrings split by a separator char. By default don't return empty strings.
-    static Vector<String> Split(const char* str, char separator, bool keepEmptyStrings = false);
+    static stl::vector<String> Split(const char* str, char separator, bool keepEmptyStrings = false);
     /// Return a string by joining substrings with a 'glue' string.
-    static String Joined(const Vector<String>& subStrings, const String& glue);
+    static String Joined(const stl::vector<String>& subStrings, const String& glue);
     /// Encode Unicode character to UTF8. Pointer will be incremented.
     static void EncodeUTF8(char*& dest, unsigned unicodeChar);
     /// Decode Unicode character from UTF8. Pointer will be incremented.

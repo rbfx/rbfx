@@ -241,7 +241,7 @@ void JSONValue::Push(const JSONValue& value)
     // Convert to array type
     SetType(JSON_ARRAY);
 
-    arrayValue_->Push(value);
+    arrayValue_->push_back(value);
 }
 
 void JSONValue::Pop()
@@ -249,7 +249,7 @@ void JSONValue::Pop()
     if (GetValueType() != JSON_ARRAY)
         return;
 
-    arrayValue_->Pop();
+    arrayValue_->pop_back();
 }
 
 void JSONValue::Insert(unsigned pos, const JSONValue& value)
@@ -257,7 +257,7 @@ void JSONValue::Insert(unsigned pos, const JSONValue& value)
     if (GetValueType() != JSON_ARRAY)
         return;
 
-    arrayValue_->Insert(pos, value);
+    arrayValue_->insert(arrayValue_->begin() + pos, value);
 }
 
 void JSONValue::Erase(unsigned pos, unsigned length)
@@ -265,7 +265,7 @@ void JSONValue::Erase(unsigned pos, unsigned length)
     if (GetValueType() != JSON_ARRAY)
         return;
 
-    arrayValue_->Erase(pos, length);
+    arrayValue_->erase(arrayValue_->begin() + pos, arrayValue_->begin() + pos + length);
 }
 
 void JSONValue::Resize(unsigned newSize)
@@ -273,13 +273,13 @@ void JSONValue::Resize(unsigned newSize)
     // Convert to array type
     SetType(JSON_ARRAY);
 
-    arrayValue_->Resize(newSize);
+    arrayValue_->resize(newSize);
 }
 
 unsigned JSONValue::Size() const
 {
     if (GetValueType() == JSON_ARRAY)
-        return arrayValue_->Size();
+        return arrayValue_->size();
     else if (GetValueType() == JSON_OBJECT)
         return objectValue_->Size();
 
@@ -327,10 +327,10 @@ const JSONValue& JSONValue::Get(int index) const
     if (GetValueType() != JSON_ARRAY)
         return EMPTY;
 
-    if (index < 0 || index >= arrayValue_->Size())
+    if (index < 0 || index >= arrayValue_->size())
         return EMPTY;
 
-    return arrayValue_->At(index);
+    return arrayValue_->at(index);
 }
 
 bool JSONValue::Erase(const String& key)
@@ -384,7 +384,7 @@ ConstJSONObjectIterator JSONValue::End() const
 void JSONValue::Clear()
 {
     if (GetValueType() == JSON_ARRAY)
-        arrayValue_->Clear();
+        arrayValue_->clear();
     else if (GetValueType() == JSON_OBJECT)
         objectValue_->Clear();
 }
@@ -511,7 +511,7 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
 
             const ResourceRefList& refList = variant.GetResourceRefList();
             String str(context->GetTypeName(refList.type_));
-            for (unsigned i = 0; i < refList.names_.Size(); ++i)
+            for (unsigned i = 0; i < refList.names_.size(); ++i)
             {
                 str += ";";
                 str += refList.names_[i];
@@ -523,8 +523,8 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
     case VAR_STRINGVECTOR:
         {
             const StringVector& vector = variant.GetStringVector();
-            Resize(vector.Size());
-            for (unsigned i = 0; i < vector.Size(); ++i)
+            Resize(vector.size());
+            for (unsigned i = 0; i < vector.size(); ++i)
                 (*this)[i] = vector[i];
         }
         return;
@@ -570,8 +570,8 @@ Variant JSONValue::GetVariantValue(VariantType type) const
     case VAR_RESOURCEREF:
         {
             ResourceRef ref;
-            Vector<String> values = GetString().Split(';');
-            if (values.Size() == 2)
+            stl::vector<String> values = GetString().Split(';');
+            if (values.size() == 2)
             {
                 ref.type_ = values[0];
                 ref.name_ = values[1];
@@ -583,12 +583,12 @@ Variant JSONValue::GetVariantValue(VariantType type) const
     case VAR_RESOURCEREFLIST:
         {
             ResourceRefList refList;
-            Vector<String> values = GetString().Split(';', true);
-            if (values.Size() >= 1)
+            stl::vector<String> values = GetString().Split(';', true);
+            if (values.size() >= 1)
             {
                 refList.type_ = values[0];
-                refList.names_.Resize(values.Size() - 1);
-                for (unsigned i = 1; i < values.Size(); ++i)
+                refList.names_.resize(values.size() - 1);
+                for (unsigned i = 1; i < values.size(); ++i)
                     refList.names_[i - 1] = values[i];
             }
             variant = refList;
@@ -599,7 +599,7 @@ Variant JSONValue::GetVariantValue(VariantType type) const
         {
             StringVector vector;
             for (unsigned i = 0; i < Size(); ++i)
-                vector.Push((*this)[i].GetString());
+                vector.push_back((*this)[i].GetString());
             variant = vector;
         }
         break;
@@ -641,12 +641,12 @@ VariantMap JSONValue::GetVariantMap() const
 void JSONValue::SetVariantVector(const VariantVector& variantVector, Context* context)
 {
     SetType(JSON_ARRAY);
-    arrayValue_->Reserve(variantVector.Size());
-    for (unsigned i = 0; i < variantVector.Size(); ++i)
+    arrayValue_->reserve(variantVector.size());
+    for (unsigned i = 0; i < variantVector.size(); ++i)
     {
         JSONValue val;
         val.SetVariant(variantVector[i], context);
-        arrayValue_->Push(val);
+        arrayValue_->push_back(val);
     }
 }
 
@@ -662,7 +662,7 @@ VariantVector JSONValue::GetVariantVector() const
     for (unsigned i = 0; i < Size(); ++i)
     {
         Variant variant = (*this)[i].GetVariant();
-        variantVector.Push(variant);
+        variantVector.push_back(variant);
     }
 
     return variantVector;

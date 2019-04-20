@@ -147,9 +147,9 @@ public:
     /// Update and return screen position.
     virtual const IntVector2& GetScreenPosition() const;
     /// Return UI rendering batches.
-    virtual void GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor);
+    virtual void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor);
     /// Return UI rendering batches for debug draw.
-    virtual void GetDebugDrawBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor);
+    virtual void GetDebugDrawBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor);
     /// React to mouse hover.
     virtual void OnHover(const IntVector2& position, const IntVector2& screenPosition, int buttons, int qualifiers, Cursor* cursor);
     /// React to mouse click begin.
@@ -565,10 +565,10 @@ public:
     UIElement* GetChild(const StringHash& key, const Variant& value = Variant::EMPTY, bool recursive = false) const;
 
     /// Return immediate child elements.
-    const Vector<stl::shared_ptr<UIElement> >& GetChildren() const { return children_; }
+    const stl::vector<stl::shared_ptr<UIElement> >& GetChildren() const { return children_; }
 
     /// Return child elements either recursively or non-recursively.
-    void GetChildren(PODVector<UIElement*>& dest, bool recursive = false) const;
+    void GetChildren(stl::vector<UIElement*>& dest, bool recursive = false) const;
 
     /// Return parent element.
     UIElement* GetParent() const { return parent_; }
@@ -590,10 +590,10 @@ public:
     const StringVector& GetTags() const { return tags_; }
 
     /// Return child elements with a specific tag either recursively or non-recursively.
-    void GetChildrenWithTag(PODVector<UIElement*>& dest, const String& tag, bool recursive = false) const;
+    void GetChildrenWithTag(stl::vector<UIElement*>& dest, const String& tag, bool recursive = false) const;
 
     /// Return child elements with a specific tag either recursively or non-recursively.
-    PODVector<UIElement*> GetChildrenWithTag(const String& tag, bool recursive = false) const;
+    stl::vector<UIElement*> GetChildrenWithTag(const String& tag, bool recursive = false) const;
 
     /// Return the drag button combo if this element is being dragged.
     int GetDragButtonCombo() const { return dragButtonCombo_; }
@@ -629,7 +629,7 @@ public:
     /// Adjust scissor for rendering.
     void AdjustScissor(IntRect& currentScissor);
     /// Get UI rendering batches with a specified offset. Also recurse to child elements.
-    void GetBatchesWithOffset(IntVector2& offset, PODVector<UIBatch>& batches, PODVector<float>& vertexData, IntRect currentScissor);
+    void GetBatchesWithOffset(IntVector2& offset, stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, IntRect currentScissor);
 
     /// Return color attribute. Uses just the top-left color.
     const Color& GetColorAttr() const { return colors_[0]; }
@@ -669,7 +669,7 @@ protected:
     /// Name.
     String name_;
     /// Child elements.
-    Vector<stl::shared_ptr<UIElement> > children_;
+    stl::vector<stl::shared_ptr<UIElement> > children_;
     /// Parent element.
     UIElement* parent_{};
     /// Child element clipping border.
@@ -741,17 +741,17 @@ protected:
 
 private:
     /// Return child elements recursively.
-    void GetChildrenRecursive(PODVector<UIElement*>& dest) const;
+    void GetChildrenRecursive(stl::vector<UIElement*>& dest) const;
     /// Return child elements with a specific tag recursively.
-    void GetChildrenWithTagRecursive(PODVector<UIElement*>& dest, const String& tag) const;
+    void GetChildrenWithTagRecursive(stl::vector<UIElement*>& dest, const String& tag) const;
     /// Recursively apply style to a child element hierarchy when adding to an element.
     void ApplyStyleRecursive(UIElement* element);
     /// Calculate layout width for resizing the parent element.
-    int CalculateLayoutParentSize(const PODVector<int>& sizes, int begin, int end, int spacing);
+    int CalculateLayoutParentSize(const stl::vector<int>& sizes, int begin, int end, int spacing);
     /// Calculate child widths/positions in the layout.
     void CalculateLayout
-        (PODVector<int>& positions, PODVector<int>& sizes, const PODVector<int>& minSizes, const PODVector<int>& maxSizes,
-            const PODVector<float>& flexScales, int targetSize, int begin, int end, int spacing);
+        (stl::vector<int>& positions, stl::vector<int>& sizes, const stl::vector<int>& minSizes, const stl::vector<int>& maxSizes,
+            const stl::vector<float>& flexScales, int targetSize, int begin, int end, int spacing);
     /// Get child element constant position in a layout.
     IntVector2 GetLayoutChildPosition(UIElement* child);
     /// Detach from parent.

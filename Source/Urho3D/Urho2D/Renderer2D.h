@@ -53,15 +53,15 @@ struct ViewBatchInfo2D
     /// Batch updated frame number.
     unsigned batchUpdatedFrameNumber_;
     /// Source batches.
-    PODVector<const SourceBatch2D*> sourceBatches_;
+    stl::vector<const SourceBatch2D*> sourceBatches_;
     /// Batch count;
     unsigned batchCount_;
     /// Distances.
-    PODVector<float> distances_;
+    stl::vector<float> distances_;
     /// Materials.
-    Vector<stl::shared_ptr<Material> > materials_;
+    stl::vector<stl::shared_ptr<Material> > materials_;
     /// Geometries.
-    Vector<stl::shared_ptr<Geometry> > geometries_;
+    stl::vector<stl::shared_ptr<Geometry> > geometries_;
 };
 
 /// 2D renderer component.
@@ -80,7 +80,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
@@ -106,7 +106,7 @@ private:
     /// Handle view update begin event. Determine Drawable2D's and their batches here.
     void HandleBeginViewUpdate(StringHash eventType, VariantMap& eventData);
     /// Get all drawables in node.
-    void GetDrawables(PODVector<Drawable2D*>& drawables, Node* node);
+    void GetDrawables(stl::vector<Drawable2D*>& drawables, Node* node);
     /// Update view batch info.
     void UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* camera);
     /// Add view batch.
@@ -118,7 +118,7 @@ private:
     /// Material.
     stl::shared_ptr<Material> material_;
     /// Drawables.
-    PODVector<Drawable2D*> drawables_;
+    stl::vector<Drawable2D*> drawables_;
     /// View frame info for current frame.
     FrameInfo frame_;
     /// View batch info.

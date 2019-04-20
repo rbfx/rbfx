@@ -154,9 +154,9 @@ const PackageEntry* PackageFile::GetEntry(const String& fileName) const
     return nullptr;
 }
 
-void PackageFile::Scan(Vector<String>& result, const String& pathName, const String& filter, bool recursive) const
+void PackageFile::Scan(stl::vector<String>& result, const String& pathName, const String& filter, bool recursive) const
 {
-    result.Clear();
+    result.clear();
 
     String sanitizedPath = GetSanitizedPath(pathName);
     String filterExtension = filter.Substring(filter.FindLast('.'));
@@ -170,7 +170,7 @@ void PackageFile::Scan(Vector<String>& result, const String& pathName, const Str
 #endif
 
     const StringVector& entryNames = GetEntryNames();
-    for (StringVector::ConstIterator i = entryNames.Begin(); i != entryNames.End(); ++i)
+    for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
     {
         String entryName = GetSanitizedPath(*i);
         if ((filterExtension.Empty() || entryName.EndsWith(filterExtension, caseSensitive)) &&
@@ -182,7 +182,7 @@ void PackageFile::Scan(Vector<String>& result, const String& pathName, const Str
             if (!recursive && (fileName.Contains("\\") || fileName.Contains("/")))
                 continue;
 
-            result.Push(fileName);
+            result.push_back(fileName);
         }
     }
 }

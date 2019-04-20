@@ -108,8 +108,8 @@ void ParticleEmitter::Update(const FrameInfo& frame)
         return;
 
     // If there is an amount mismatch between particles and billboards, correct it
-    if (particles_.Size() != billboards_.Size())
-        SetNumBillboards(particles_.Size());
+    if (particles_.size() != billboards_.size())
+        SetNumBillboards(particles_.size());
 
     bool needCommit = false;
 
@@ -172,7 +172,7 @@ void ParticleEmitter::Update(const FrameInfo& frame)
     if (scaled_ && !relative_)
         scaleVector = node_->GetWorldScale();
 
-    for (unsigned i = 0; i < particles_.Size(); ++i)
+    for (unsigned i = 0; i < particles_.size(); ++i)
     {
         Particle& particle = particles_[i];
         Billboard& billboard = billboards_[i];
@@ -226,15 +226,15 @@ void ParticleEmitter::Update(const FrameInfo& frame)
 
             // Color interpolation
             unsigned& index = particle.colorIndex_;
-            const Vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
-            if (index < colorFrames_.Size())
+            const stl::vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
+            if (index < colorFrames_.size())
             {
-                if (index < colorFrames_.Size() - 1)
+                if (index < colorFrames_.size() - 1)
                 {
                     if (particle.timer_ >= colorFrames_[index + 1].time_)
                         ++index;
                 }
-                if (index < colorFrames_.Size() - 1)
+                if (index < colorFrames_.size() - 1)
                     billboard.color_ = colorFrames_[index].Interpolate(colorFrames_[index + 1], particle.timer_);
                 else
                     billboard.color_ = colorFrames_[index].color_;
@@ -242,8 +242,8 @@ void ParticleEmitter::Update(const FrameInfo& frame)
 
             // Texture animation
             unsigned& texIndex = particle.texIndex_;
-            const Vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
-            if (textureFrames_.Size() && texIndex < textureFrames_.Size() - 1)
+            const stl::vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
+            if (textureFrames_.size() && texIndex < textureFrames_.size() - 1)
             {
                 if (particle.timer_ >= textureFrames_[texIndex + 1].time_)
                 {
@@ -286,7 +286,7 @@ void ParticleEmitter::SetNumParticles(unsigned num)
     if (num > M_MAX_INT)
         num = 0;
 
-    particles_.Resize(num);
+    particles_.resize(num);
     SetNumBillboards(num);
 }
 
@@ -322,7 +322,7 @@ void ParticleEmitter::ResetEmissionTimer()
 
 void ParticleEmitter::RemoveAllParticles()
 {
-    for (PODVector<Billboard>::Iterator i = billboards_.Begin(); i != billboards_.End(); ++i)
+    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
         i->enabled_ = false;
 
     Commit();
@@ -369,9 +369,9 @@ ResourceRef ParticleEmitter::GetEffectAttr() const
 void ParticleEmitter::SetParticlesAttr(const VariantVector& value)
 {
     unsigned index = 0;
-    SetNumParticles(index < value.Size() ? value[index++].GetUInt() : 0);
+    SetNumParticles(index < value.size() ? value[index++].GetUInt() : 0);
 
-    for (PODVector<Particle>::Iterator i = particles_.Begin(); i != particles_.End() && index < value.Size(); ++i)
+    for (auto i = particles_.begin(); i != particles_.end() && index < value.size(); ++i)
     {
         i->velocity_ = value[index++].GetVector3();
         i->size_ = value[index++].GetVector2();
@@ -389,22 +389,22 @@ VariantVector ParticleEmitter::GetParticlesAttr() const
     VariantVector ret;
     if (!serializeParticles_)
     {
-        ret.Push(particles_.Size());
+        ret.push_back((int)particles_.size());
         return ret;
     }
 
-    ret.Reserve(particles_.Size() * 8 + 1);
-    ret.Push(particles_.Size());
-    for (PODVector<Particle>::ConstIterator i = particles_.Begin(); i != particles_.End(); ++i)
+    ret.reserve(particles_.size() * 8 + 1);
+    ret.push_back((int)particles_.size());
+    for (auto i = particles_.begin(); i != particles_.end(); ++i)
     {
-        ret.Push(i->velocity_);
-        ret.Push(i->size_);
-        ret.Push(i->timer_);
-        ret.Push(i->timeToLive_);
-        ret.Push(i->scale_);
-        ret.Push(i->rotationSpeed_);
-        ret.Push(i->colorIndex_);
-        ret.Push(i->texIndex_);
+        ret.push_back(i->velocity_);
+        ret.push_back(i->size_);
+        ret.push_back(i->timer_);
+        ret.push_back(i->timeToLive_);
+        ret.push_back(i->scale_);
+        ret.push_back(i->rotationSpeed_);
+        ret.push_back(i->colorIndex_);
+        ret.push_back(i->texIndex_);
     }
     return ret;
 }
@@ -414,22 +414,22 @@ VariantVector ParticleEmitter::GetParticleBillboardsAttr() const
     VariantVector ret;
     if (!serializeParticles_)
     {
-        ret.Push(billboards_.Size());
+        ret.push_back((int)billboards_.size());
         return ret;
     }
 
-    ret.Reserve(billboards_.Size() * 7 + 1);
-    ret.Push(billboards_.Size());
+    ret.reserve(billboards_.size() * 7 + 1);
+    ret.push_back((int)billboards_.size());
 
-    for (PODVector<Billboard>::ConstIterator i = billboards_.Begin(); i != billboards_.End(); ++i)
+    for (auto i = billboards_.begin(); i != billboards_.end(); ++i)
     {
-        ret.Push(i->position_);
-        ret.Push(i->size_);
-        ret.Push(Vector4(i->uv_.min_.x_, i->uv_.min_.y_, i->uv_.max_.x_, i->uv_.max_.y_));
-        ret.Push(i->color_);
-        ret.Push(i->rotation_);
-        ret.Push(i->direction_);
-        ret.Push(i->enabled_);
+        ret.push_back(i->position_);
+        ret.push_back(i->size_);
+        ret.push_back(Vector4(i->uv_.min_.x_, i->uv_.min_.y_, i->uv_.max_.x_, i->uv_.max_.y_));
+        ret.push_back(i->color_);
+        ret.push_back(i->rotation_);
+        ret.push_back(i->direction_);
+        ret.push_back(i->enabled_);
     }
 
     return ret;
@@ -450,7 +450,7 @@ bool ParticleEmitter::EmitNewParticle()
     unsigned index = GetFreeParticle();
     if (index == M_MAX_UNSIGNED)
         return false;
-    assert(index < particles_.Size());
+    assert(index < particles_.size());
     Particle& particle = particles_[index];
     Billboard& billboard = billboards_[index];
 
@@ -536,11 +536,11 @@ bool ParticleEmitter::EmitNewParticle()
 
     billboard.position_ = startPos;
     billboard.size_ = particles_[index].size_;
-    const Vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
-    billboard.uv_ = textureFrames_.Size() ? textureFrames_[0].uv_ : Rect::POSITIVE;
+    const stl::vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
+    billboard.uv_ = textureFrames_.size() ? textureFrames_[0].uv_ : Rect::POSITIVE;
     billboard.rotation_ = effect_->GetRandomRotation();
-    const Vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
-    billboard.color_ = colorFrames_.Size() ? colorFrames_[0].color_ : Color();
+    const stl::vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
+    billboard.color_ = colorFrames_.size() ? colorFrames_[0].color_ : Color();
     billboard.enabled_ = true;
     billboard.direction_ = startDir;
 
@@ -549,7 +549,7 @@ bool ParticleEmitter::EmitNewParticle()
 
 unsigned ParticleEmitter::GetFreeParticle() const
 {
-    for (unsigned i = 0; i < billboards_.Size(); ++i)
+    for (unsigned i = 0; i < billboards_.size(); ++i)
     {
         if (!billboards_[i].enabled_)
             return i;
@@ -560,7 +560,7 @@ unsigned ParticleEmitter::GetFreeParticle() const
 
 bool ParticleEmitter::CheckActiveParticles() const
 {
-    for (unsigned i = 0; i < billboards_.Size(); ++i)
+    for (unsigned i = 0; i < billboards_.size(); ++i)
     {
         if (billboards_[i].enabled_)
         {

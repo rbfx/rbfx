@@ -235,7 +235,7 @@ bool ShaderVariation::LoadByteCode(const String& binaryShaderName)
 bool ShaderVariation::Compile()
 {
     const String& sourceCode = owner_->GetSourceCode(type_);
-    Vector<String> defines = defines_.Split(' ');
+    stl::vector<String> defines = defines_.Split(' ');
 
     // Set the entrypoint, profile and flags according to the shader being compiled
     const char* entryPoint = nullptr;
@@ -261,8 +261,8 @@ bool ShaderVariation::Compile()
     defines.Push("MAXBONES=" + String(Graphics::GetMaxBones()));
 
     // Collect defines into macros
-    Vector<String> defineValues;
-    PODVector<D3D_SHADER_MACRO> macros;
+    stl::vector<String> defineValues;
+    stl::vector<D3D_SHADER_MACRO> macros;
 
     for (unsigned i = 0; i < defines.Size(); ++i)
     {

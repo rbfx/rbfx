@@ -45,7 +45,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
@@ -98,7 +98,7 @@ public:
     TerrainPatch* GetEastPatch() const { return east_; }
 
     /// Return geometrical error array.
-    PODVector<float>& GetLodErrors() { return lodErrors_; }
+    stl::vector<float>& GetLodErrors() { return lodErrors_; }
 
     /// Return patch coordinates.
     const IntVector2& GetCoordinates() const { return coordinates_; }
@@ -133,7 +133,7 @@ private:
     /// East neighbor patch.
     stl::weak_ptr<TerrainPatch> east_;
     /// Geometrical error per LOD level.
-    PODVector<float> lodErrors_;
+    stl::vector<float> lodErrors_;
     /// Patch coordinates in the terrain. (0,0) is the northwest corner.
     IntVector2 coordinates_;
     /// Current LOD level.

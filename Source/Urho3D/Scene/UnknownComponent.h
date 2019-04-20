@@ -51,7 +51,7 @@ public:
     const String& GetTypeName() const override { return typeName_; }
 
     /// Return attribute descriptions, or null if none defined.
-    const Vector<AttributeInfo>* GetAttributes() const override { return &xmlAttributeInfos_; }
+    const stl::vector<AttributeInfo>* GetAttributes() const override { return &xmlAttributeInfos_; }
 
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
@@ -72,10 +72,10 @@ public:
     void SetType(StringHash typeHash);
 
     /// Return the XML format attributes. Empty when loaded with binary serialization.
-    const Vector<String>& GetXMLAttributes() const { return xmlAttributes_; }
+    const stl::vector<String>& GetXMLAttributes() const { return xmlAttributes_; }
 
     /// Return the binary attributes. Empty when loaded with XML serialization.
-    const PODVector<unsigned char>& GetBinaryAttributes() const { return binaryAttributes_; }
+    const stl::vector<unsigned char>& GetBinaryAttributes() const { return binaryAttributes_; }
 
     /// Return whether was loaded using XML data.
     bool GetUseXML() const { return useXML_; }
@@ -86,11 +86,11 @@ private:
     /// Type name of the stored component.
     String typeName_;
     /// XML format attribute infos.
-    Vector<AttributeInfo> xmlAttributeInfos_;
+    stl::vector<AttributeInfo> xmlAttributeInfos_;
     /// XML format attribute data (as strings)
-    Vector<String> xmlAttributes_;
+    stl::vector<String> xmlAttributes_;
     /// Binary attributes.
-    PODVector<unsigned char> binaryAttributes_;
+    stl::vector<unsigned char> binaryAttributes_;
     /// Flag of whether was loaded using XML/JSON data.
     bool useXML_;
 

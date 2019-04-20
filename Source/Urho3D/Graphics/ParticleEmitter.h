@@ -91,7 +91,7 @@ public:
     ParticleEffect* GetEffect() const;
 
     /// Return maximum number of particles.
-    unsigned GetNumParticles() const { return particles_.Size(); }
+    unsigned GetNumParticles() const { return particles_.size(); }
 
     /// Return whether is currently emitting.
     bool IsEmitting() const { return emitting_; }
@@ -133,7 +133,7 @@ private:
     /// Particle effect.
     stl::shared_ptr<ParticleEffect> effect_;
     /// Particles.
-    PODVector<Particle> particles_;
+    stl::vector<Particle> particles_;
     /// Active/inactive period timer.
     float periodTimer_;
     /// New particle emission timer.

@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include <Urho3D/Container/Utilities.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Graphics/BillboardSet.h>
@@ -214,19 +216,19 @@ bool SceneTab::RenderWindowContent()
 
         Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
         // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-        PODVector<RayQueryResult> results;
+        stl::vector<RayQueryResult> results;
 
         RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
         GetScene()->GetComponent<Octree>()->RaycastSingle(query);
 
-        if (!results.Size())
+        if (!results.size())
         {
             // When object geometry was not hit by a ray - query for object bounding box.
             RayOctreeQuery query2(results, cameraRay, RAY_OBB, M_INFINITY, DRAWABLE_GEOMETRY);
             GetScene()->GetComponent<Octree>()->RaycastSingle(query2);
         }
 
-        if (results.Size() && results[0].drawable_->GetNode() != nullptr)
+        if (results.size() && results[0].drawable_->GetNode() != nullptr)
         {
             StringHash componentType;
             stl::weak_ptr<Node> clickNode(results[0].drawable_->GetNode());
@@ -429,9 +431,9 @@ void SceneTab::Select(Component* component)
     SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
 
-void SceneTab::Select(PODVector<Node*> nodes)
+void SceneTab::Select(stl::vector<Node*> nodes)
 {
-    if (nodes.Empty())
+    if (nodes.empty())
         return;
 
     if (gizmo_.Select(nodes))
@@ -501,7 +503,7 @@ void SceneTab::UnselectAll()
     }
 }
 
-const Vector<stl::weak_ptr<Node>>& SceneTab::GetSelection() const
+const stl::vector<stl::weak_ptr<Node>>& SceneTab::GetSelection() const
 {
     return gizmo_.GetSelection();
 }
@@ -582,7 +584,7 @@ void SceneTab::OnNodeSelectionChanged()
 void SceneTab::RenderInspector(const char* filter)
 {
     const auto& selection = GetSelection();
-    bool singleNodeMode = selection.Size() == 1 && selectedComponents_.empty();
+    bool singleNodeMode = selection.size() == 1 && selectedComponents_.empty();
     for (auto& node : GetSelection())
     {
         if (node.expired())
@@ -641,15 +643,15 @@ void SceneTab::RenderNodeTree(Node* node)
     ui::SameLine();
     ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.CString(), flags);
-    auto it = openHierarchyNodes_.Find(node);
-    if (it != openHierarchyNodes_.End())
+    auto it = openHierarchyNodes_.find(node);
+    if (it != openHierarchyNodes_.end())
     {
         if (!opened)
         {
             ui::OpenTreeNode(ui::GetCurrentWindow()->GetID(name.CString()));
             opened = true;
         }
-        openHierarchyNodes_.Erase(it);
+        openHierarchyNodes_.erase(it);
     }
 
     if (ui::BeginDragDropSource())
@@ -669,7 +671,7 @@ void SceneTab::RenderNodeTree(Node* node)
             {
                 node->AddChild(child);
                 if (!opened)
-                    openHierarchyNodes_.Push(node);
+                    openHierarchyNodes_.push_back(node);
             }
         }
         ui::EndDragDropTarget();
@@ -712,7 +714,7 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (!nodeRef.expired())
         {
-            Vector<stl::shared_ptr<Component>> components = node->GetComponents();
+            stl::vector<stl::shared_ptr<Component>> components = node->GetComponents();
             for (const auto& component: components)
             {
                 if (component->IsTemporary())
@@ -752,12 +754,12 @@ void SceneTab::RenderNodeTree(Node* node)
             }
 
             // Do not use element->GetChildren() because child may be deleted during this loop.
-            PODVector<Node*> children;
+            stl::vector<Node*> children;
             node->GetChildren(children);
             for (Node* child : children) 
             {
                 // ensure the tree is expanded to the currently selected node if there is one node selected.
-                if (GetSelection().Size() == 1)
+                if (GetSelection().size() == 1)
                 {
                     for (auto& selectedNode : GetSelection())
                     {
@@ -889,17 +891,17 @@ void SceneTab::SaveState(SceneState& destination)
     Undo::SetTrackingScoped tracking(undo_, false);
 
     // Preserve current selection
-    savedNodeSelection_.Clear();
-    savedComponentSelection_.Clear();
+    savedNodeSelection_.clear();
+    savedComponentSelection_.clear();
     for (auto& node : GetSelection())
     {
         if (node)
-            savedNodeSelection_.Push(node->GetID());
+            savedNodeSelection_.push_back(node->GetID());
     }
     for (auto& component : selectedComponents_)
     {
         if (component)
-            savedComponentSelection_.Push(component->GetID());
+            savedComponentSelection_.push_back(component->GetID());
     }
 
     destination.Save(GetScene(), rootElement_);
@@ -940,13 +942,13 @@ void SceneTab::RestoreState(SceneState& source)
 
     for (unsigned id : savedComponentSelection_)
         Select(GetScene()->GetComponent(id));
-    savedNodeSelection_.Clear();
-    savedComponentSelection_.Clear();
+    savedNodeSelection_.clear();
+    savedComponentSelection_.clear();
 }
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if ((!GetSelection().Empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
+    if ((!GetSelection().empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
@@ -957,21 +959,21 @@ void SceneTab::RenderNodeContextMenu()
             return;
         }
 
-        if (!GetSelection().Empty())
+        if (!GetSelection().empty())
         {
             bool alternative = input->GetKeyDown(KEY_SHIFT);
 
             if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
             {
-                PODVector<Node*> newNodes;
+                stl::vector<Node*> newNodes;
                 for (auto& selectedNode : GetSelection())
                 {
                     if (!selectedNode.expired())
                     {
-                        newNodes.Push(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
-                        openHierarchyNodes_.Push(selectedNode);
-                        openHierarchyNodes_.Push(newNodes.Back());
-                        scrollTo_ = newNodes.Back();
+                        newNodes.push_back(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+                        openHierarchyNodes_.push_back(selectedNode);
+                        openHierarchyNodes_.push_back(newNodes.back());
+                        scrollTo_ = newNodes.back();
                     }
                 }
 
@@ -983,17 +985,17 @@ void SceneTab::RenderNodeContextMenu()
             {
                 auto* editor = GetSubsystem<Editor>();
                 auto categories = context_->GetObjectCategories().Keys();
-                categories.Remove("UI");
+                categories.erase_first("UI");
 
                 for (const String& category : categories)
                 {
                     auto components = editor->GetObjectsByCategory(category);
-                    if (components.Empty())
+                    if (components.empty())
                         continue;
 
                     if (ui::BeginMenu(category.CString()))
                     {
-                        Sort(components.Begin(), components.End());
+                        stl::quick_sort(components.begin(), components.end());
 
                         for (const String& component : components)
                         {
@@ -1007,7 +1009,7 @@ void SceneTab::RenderNodeContextMenu()
                                     {
                                         if (selectedNode->CreateComponent(StringHash(component),
                                                                           alternative ? LOCAL : REPLICATED))
-                                            openHierarchyNodes_.Push(selectedNode);
+                                            openHierarchyNodes_.push_back(selectedNode);
                                     }
                                 }
                             }
@@ -1155,14 +1157,14 @@ void SceneTab::AddComponentIcon(Component* component)
     auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
     if (material != nullptr)
     {
-        if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).Size() > 0)
+        if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).size() > 0)
             return;
 
         auto iconTag = "DebugIcon" + component->GetTypeName();
-        if (node->GetChildrenWithTag(iconTag).Empty())
+        if (node->GetChildrenWithTag(iconTag).empty())
         {
             Undo::SetTrackingScoped tracking(undo_, false);
-            int count = node->GetChildrenWithTag("DebugIcon").Size();
+            int count = node->GetChildrenWithTag("DebugIcon").size();
             node = node->CreateChild();
             node->AddTag("DebugIcon");
             node->AddTag("DebugIcon" + component->GetTypeName());
@@ -1225,9 +1227,9 @@ void SceneTab::UpdateCameras()
 {
     cameraPreviewViewport_->SetCamera(nullptr);
 
-    if (GetSelection().Size())
+    if (GetSelection().size())
     {
-        if (Node* node = GetSelection().At(0))
+        if (Node* node = GetSelection().at(0))
         {
             if (Camera* camera = node->GetComponent<Camera>())
             {
@@ -1249,7 +1251,7 @@ void SceneTab::UpdateCameras()
 void SceneTab::CopySelection()
 {
     const auto& selection = GetSelection();
-    if (!selection.Empty())
+    if (!selection.empty())
     {
         clipboard_.Clear();
         clipboard_.Copy(GetSelection());
@@ -1266,11 +1268,11 @@ void SceneTab::PasteNextToSelection()
     const auto& selection = GetSelection();
     PasteResult result;
     Node* target = nullptr;
-    if (!selection.Empty())
+    if (!selection.empty())
     {
         target = nullptr;
         unsigned i = 0;
-        while (target == nullptr && i < selection.Size())   // Selected node may be null
+        while (target == nullptr && i < selection.size())   // Selected node may be null
             target = selection[i++].get();
         if (target != nullptr)
             target = target->GetParent();
@@ -1294,7 +1296,7 @@ void SceneTab::PasteIntoSelection()
 {
     const auto& selection = GetSelection();
     PasteResult result;
-    if (selection.Empty())
+    if (selection.empty())
         result = clipboard_.Paste(GetScene());
     else
         result = clipboard_.Paste(selection);
@@ -1370,11 +1372,11 @@ void SceneTab::RenderDebugInfo()
         }
     }
 
-    PODVector<Node*> debugNodes;
+    stl::vector<Node*> debugNodes;
     scene->GetNodesWithTag(debugNodes, "DebugInfoAlways");
     for (Node* node : debugNodes)
     {
-        if (selection.Contains(stl::weak_ptr<Node>(node)))
+        if (selection.contains(stl::weak_ptr<Node>(node)))
             continue;
 
         for (auto& component: node->GetComponents())

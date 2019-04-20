@@ -233,7 +233,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
         // in rendering loop.
         if (cmdList->VtxBuffer.Size > vertexBuffer_.GetVertexCount())
         {
-            PODVector<VertexElement> elems = {VertexElement(TYPE_VECTOR2, SEM_POSITION),
+            stl::vector<VertexElement> elems = {VertexElement(TYPE_VECTOR2, SEM_POSITION),
                                               VertexElement(TYPE_VECTOR2, SEM_TEXCOORD),
                                               VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR)
             };
@@ -318,21 +318,21 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
 
 ImFont* SystemUI::AddFont(const String& fontPath, const ImWchar* ranges, float size, bool merge)
 {
-    float previousSize = fontSizes_.Empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.Back();
-    fontSizes_.Push(size);
+    float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
+    fontSizes_.push_back(size);
     size = (size == 0 ? previousSize : size) * fontScale_;
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
-        PODVector<uint8_t> data;
-        data.Resize(fontFile->GetSize());
-        auto bytesLen = fontFile->Read(&data.Front(), data.Size());
+        stl::vector<uint8_t> data;
+        data.resize(fontFile->GetSize());
+        auto bytesLen = fontFile->Read(&data.front(), data.size());
         ImFontConfig cfg;
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
         cfg.PixelSnapH = true;
         strncpy(cfg.Name, fontPath.CString(), sizeof(cfg.Name));
-        if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.Front(), bytesLen, size, &cfg, ranges))
+        if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();
             return newFont;

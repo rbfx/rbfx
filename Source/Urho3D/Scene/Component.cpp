@@ -109,7 +109,7 @@ void Component::MarkNetworkUpdate()
     }
 }
 
-void Component::GetDependencyNodes(PODVector<Node*>& dest)
+void Component::GetDependencyNodes(stl::vector<Node*>& dest)
 {
 }
 
@@ -162,7 +162,7 @@ void Component::AddReplicationState(ComponentReplicationState* state)
     if (!networkState_)
         AllocateNetworkState();
 
-    networkState_->replicationStates_.Push(state);
+    networkState_->replicationStates_.push_back(state);
 }
 
 void Component::PrepareNetworkUpdate()
@@ -170,16 +170,16 @@ void Component::PrepareNetworkUpdate()
     if (!networkState_)
         AllocateNetworkState();
 
-    const Vector<AttributeInfo>* attributes = networkState_->attributes_;
+    const stl::vector<AttributeInfo>* attributes = networkState_->attributes_;
     if (!attributes)
         return;
 
-    unsigned numAttributes = attributes->Size();
+    unsigned numAttributes = attributes->size();
 
     // Check for attribute changes
     for (unsigned i = 0; i < numAttributes; ++i)
     {
-        const AttributeInfo& attr = attributes->At(i);
+        const AttributeInfo& attr = attributes->at(i);
 
         if (animationEnabled_ && IsAnimatedNetworkAttribute(attr))
             continue;
@@ -191,8 +191,8 @@ void Component::PrepareNetworkUpdate()
             networkState_->previousValues_[i] = networkState_->currentValues_[i];
 
             // Mark the attribute dirty in all replication states that are tracking this component
-            for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
-                 j != networkState_->replicationStates_.End(); ++j)
+            for (auto j = networkState_->replicationStates_.begin();
+                 j != networkState_->replicationStates_.end(); ++j)
             {
                 auto* compState = static_cast<ComponentReplicationState*>(*j);
                 compState->dirtyAttributes_.Set(i);
@@ -215,10 +215,10 @@ void Component::CleanupConnection(Connection* connection)
 {
     if (networkState_)
     {
-        for (unsigned i = networkState_->replicationStates_.Size() - 1; i < networkState_->replicationStates_.Size(); --i)
+        for (unsigned i = networkState_->replicationStates_.size() - 1; i < networkState_->replicationStates_.size(); --i)
         {
             if (networkState_->replicationStates_[i]->connection_ == connection)
-                networkState_->replicationStates_.Erase(i);
+                networkState_->replicationStates_.erase(i);
         }
     }
 }
@@ -272,12 +272,12 @@ bool Component::IsEnabledEffective() const
     return enabled_ && node_ && node_->IsEnabled();
 }
 
-void Component::GetComponents(PODVector<Component*>& dest, StringHash type) const
+void Component::GetComponents(stl::vector<Component*>& dest, StringHash type) const
 {
     if (node_)
         node_->GetComponents(dest, type);
     else
-        dest.Clear();
+        dest.clear();
 }
 
 void Component::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData)

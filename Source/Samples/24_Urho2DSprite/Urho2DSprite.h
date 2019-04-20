@@ -84,5 +84,5 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Sprite nodes.
-    Vector<stl::shared_ptr<Node> > spriteNodes_;
+    stl::vector<stl::shared_ptr<Node> > spriteNodes_;
 };

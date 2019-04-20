@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
@@ -102,7 +104,7 @@ UIElement::UIElement(Context* context) :
 UIElement::~UIElement()
 {
     // If child elements have outside references, detach them
-    for (Vector<stl::shared_ptr<UIElement> >::Iterator i = children_.Begin(); i < children_.End(); ++i)
+    for (auto i = children_.begin(); i < children_.end(); ++i)
     {
         if (i->use_count() > 1)
             (*i)->Detach();
@@ -247,7 +249,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
             child = CreateChild(typeName, String::EMPTY, index);
         else
         {
-            for (unsigned i = nextInternalChild; i < children_.Size(); ++i)
+            for (unsigned i = nextInternalChild; i < children_.size(); ++i)
             {
                 if (children_[i]->IsInternal() && children_[i]->GetTypeName() == typeName)
                 {
@@ -346,7 +348,7 @@ bool UIElement::SaveXML(XMLElement& dest) const
         return false;
 
     // Write child elements
-    for (unsigned i = 0; i < children_.Size(); ++i)
+    for (unsigned i = 0; i < children_.size(); ++i)
     {
         UIElement* element = children_[i];
         if (element->IsTemporary())
@@ -365,13 +367,13 @@ void UIElement::Update(float timeStep)
 {
 }
 
-void UIElement::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor)
+void UIElement::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
 {
     // Reset hovering for next frame
     hovering_ = false;
 }
 
-void UIElement::GetDebugDrawBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, const IntRect& currentScissor)
+void UIElement::GetDebugDrawBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
 {
     UIBatch batch(this, BLEND_ALPHA, currentScissor, nullptr, &vertexData);
 
@@ -919,7 +921,7 @@ void UIElement::SetDeepEnabled(bool enable)
 {
     enabled_ = enable;
 
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->SetDeepEnabled(enable);
 }
 
@@ -927,7 +929,7 @@ void UIElement::ResetDeepEnabled()
 {
     enabled_ = enabledPrev_;
 
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->ResetDeepEnabled();
 }
 
@@ -936,7 +938,7 @@ void UIElement::SetEnabledRecursive(bool enable)
     enabled_ = enable;
     enabledPrev_ = enable;
 
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->SetEnabledRecursive(enable);
 }
 
@@ -1125,11 +1127,11 @@ void UIElement::UpdateLayout()
     // Prevent further updates while this update happens
     DisableLayoutUpdate();
 
-    PODVector<int> positions;
-    PODVector<int> sizes;
-    PODVector<int> minSizes;
-    PODVector<int> maxSizes;
-    PODVector<float> flexScales;
+    stl::vector<int> positions;
+    stl::vector<int> sizes;
+    stl::vector<int> minSizes;
+    stl::vector<int> maxSizes;
+    stl::vector<float> flexScales;
 
     int baseIndentWidth = GetIndentWidth();
 
@@ -1137,16 +1139,16 @@ void UIElement::UpdateLayout()
     {
         int minChildHeight = 0;
 
-        for (unsigned i = 0; i < children_.Size(); ++i)
+        for (unsigned i = 0; i < children_.size(); ++i)
         {
             if (!children_[i]->IsVisible())
                 continue;
-            positions.Push(baseIndentWidth);
+            positions.push_back(baseIndentWidth);
             auto indent = (unsigned)children_[i]->GetIndentWidth();
-            sizes.Push(children_[i]->GetWidth() + indent);
-            minSizes.Push(children_[i]->GetEffectiveMinSize().x_ + indent);
-            maxSizes.Push(children_[i]->GetMaxWidth() + indent);
-            flexScales.Push(children_[i]->GetLayoutFlexScale().x_);
+            sizes.push_back(children_[i]->GetWidth() + indent);
+            minSizes.push_back(children_[i]->GetEffectiveMinSize().x_ + indent);
+            maxSizes.push_back(children_[i]->GetMaxWidth() + indent);
+            flexScales.push_back(children_[i]->GetLayoutFlexScale().x_);
             minChildHeight = Max(minChildHeight, children_[i]->GetEffectiveMinSize().y_);
         }
 
@@ -1164,7 +1166,7 @@ void UIElement::UpdateLayout()
         height = size_.y_;
 
         unsigned j = 0;
-        for (unsigned i = 0; i < children_.Size(); ++i)
+        for (unsigned i = 0; i < children_.size(); ++i)
         {
             if (!children_[i]->IsVisible())
                 continue;
@@ -1177,15 +1179,15 @@ void UIElement::UpdateLayout()
     {
         int minChildWidth = 0;
 
-        for (unsigned i = 0; i < children_.Size(); ++i)
+        for (unsigned i = 0; i < children_.size(); ++i)
         {
             if (!children_[i]->IsVisible())
                 continue;
-            positions.Push(0);
-            sizes.Push(children_[i]->GetHeight());
-            minSizes.Push(children_[i]->GetEffectiveMinSize().y_);
-            maxSizes.Push(children_[i]->GetMaxHeight());
-            flexScales.Push(children_[i]->GetLayoutFlexScale().y_);
+            positions.push_back(0);
+            sizes.push_back(children_[i]->GetHeight());
+            minSizes.push_back(children_[i]->GetEffectiveMinSize().y_);
+            maxSizes.push_back(children_[i]->GetMaxHeight());
+            flexScales.push_back(children_[i]->GetLayoutFlexScale().y_);
             minChildWidth = Max(minChildWidth, children_[i]->GetEffectiveMinSize().x_ + children_[i]->GetIndentWidth());
         }
 
@@ -1202,7 +1204,7 @@ void UIElement::UpdateLayout()
         height = size_.y_;
 
         unsigned j = 0;
-        for (unsigned i = 0; i < children_.Size(); ++i)
+        for (unsigned i = 0; i < children_.size(); ++i)
         {
             if (!children_[i]->IsVisible())
                 continue;
@@ -1213,7 +1215,7 @@ void UIElement::UpdateLayout()
     }
     else
     {
-        for (unsigned i = 0; i < children_.Size(); ++i)
+        for (unsigned i = 0; i < children_.size(); ++i)
         {
             if (children_[i]->GetEnableAnchor())
                 children_[i]->UpdateAnchoring();
@@ -1259,8 +1261,8 @@ void UIElement::BringToFront()
     stl::hash_set<int> usedPriorities;
 
     int maxPriority = M_MIN_INT;
-    const Vector<stl::shared_ptr<UIElement> >& rootChildren = root->GetChildren();
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)
+    const stl::vector<stl::shared_ptr<UIElement> >& rootChildren = root->GetChildren();
+    for (auto i = rootChildren.begin(); i != rootChildren.end(); ++i)
     {
         UIElement* other = *i;
         if (other->IsEnabled() && other->bringToBack_ && other != ptr)
@@ -1282,7 +1284,8 @@ void UIElement::BringToFront()
         while (stl::contains(usedPriorities, minPriority))
             --minPriority;
 
-        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = rootChildren.Begin(); i != rootChildren.End(); ++i)
+        for (auto i = rootChildren.begin(); i !=
+            rootChildren.end(); ++i)
         {
             UIElement* other = *i;
             int priority = other->GetPriority();
@@ -1330,10 +1333,10 @@ void UIElement::InsertChild(unsigned index, UIElement* element)
     }
 
     // Add first, then remove from old parent, to ensure the element does not get deleted
-    if (index >= children_.Size())
-        children_.Push(stl::shared_ptr<UIElement>(element));
+    if (index >= children_.size())
+        children_.push_back(stl::shared_ptr<UIElement>(element));
     else
-        children_.Insert(children_.Begin() + index, stl::shared_ptr<UIElement>(element));
+        children_.insert(index, stl::shared_ptr<UIElement>(element));
 
     element->Remove();
 
@@ -1367,7 +1370,7 @@ void UIElement::InsertChild(unsigned index, UIElement* element)
 
 void UIElement::RemoveChild(UIElement* element, unsigned index)
 {
-    for (unsigned i = index; i < children_.Size(); ++i)
+    for (unsigned i = index; i < children_.size(); ++i)
     {
         if (children_[i] == element)
         {
@@ -1386,7 +1389,7 @@ void UIElement::RemoveChild(UIElement* element, unsigned index)
             }
 
             element->Detach();
-            children_.Erase(i);
+            children_.erase(i);
             UpdateLayout();
             return;
         }
@@ -1395,7 +1398,7 @@ void UIElement::RemoveChild(UIElement* element, unsigned index)
 
 void UIElement::RemoveChildAtIndex(unsigned index)
 {
-    if (index >= children_.Size())
+    if (index >= children_.size())
         return;
 
     // Send change event if not already being destroyed
@@ -1413,7 +1416,7 @@ void UIElement::RemoveChildAtIndex(unsigned index)
     }
 
     children_[index]->Detach();
-    children_.Erase(index);
+    children_.erase(index);
     UpdateLayout();
 }
 
@@ -1422,7 +1425,7 @@ void UIElement::RemoveAllChildren()
     UIElement* root = GetRoot();
     UIElement* sender = Refs() > 0 ? GetElementEventSender() : nullptr;
 
-    for (Vector<stl::shared_ptr<UIElement> >::Iterator i = children_.Begin(); i < children_.End();)
+    for (auto i = children_.begin(); i < children_.end();)
     {
         // Send change event if not already being destroyed
         if (sender)
@@ -1439,7 +1442,7 @@ void UIElement::RemoveAllChildren()
 
         (*i++)->Detach();
     }
-    children_.Clear();
+    children_.clear();
     UpdateLayout();
 }
 
@@ -1451,8 +1454,8 @@ void UIElement::Remove()
 
 unsigned UIElement::FindChild(UIElement* element) const
 {
-    Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Find(stl::shared_ptr<UIElement>(element));
-    return i != children_.End() ? (unsigned)(i - children_.Begin()) : M_MAX_UNSIGNED;
+    auto i = children_.find(stl::shared_ptr<UIElement>(element));
+    return i != children_.end() ? (unsigned)(i - children_.begin()) : M_MAX_UNSIGNED;
 }
 
 void UIElement::SetParent(UIElement* parent, unsigned index)
@@ -1492,7 +1495,7 @@ void UIElement::AddTag(const String& tag)
     if (tag.Empty() || HasTag(tag))
         return;
 
-    tags_.Push(tag);
+    tags_.push_back(tag);
 }
 
 void UIElement::AddTags(const String& tags, char separator)
@@ -1503,18 +1506,23 @@ void UIElement::AddTags(const String& tags, char separator)
 
 void UIElement::AddTags(const StringVector& tags)
 {
-    for (unsigned i = 0; i < tags.Size(); ++i)
+    for (unsigned i = 0; i < tags.size(); ++i)
         AddTag(tags[i]);
 }
 
 bool UIElement::RemoveTag(const String& tag)
 {
-    return tags_.Remove(tag);
+    auto it = tags_.find(tag);
+    if (it == tags_.end())
+        return false;
+
+    tags_.erase_first(tag);
+    return true;
 }
 
 void UIElement::RemoveAllTags()
 {
-    tags_.Clear();
+    tags_.clear();
 }
 
 HorizontalAlignment UIElement::GetHorizontalAlignment() const
@@ -1618,15 +1626,15 @@ XMLFile* UIElement::GetDefaultStyle(bool recursiveUp) const
         return defaultStyle_;
 }
 
-void UIElement::GetChildren(PODVector<UIElement*>& dest, bool recursive) const
+void UIElement::GetChildren(stl::vector<UIElement*>& dest, bool recursive) const
 {
-    dest.Clear();
+    dest.clear();
 
     if (!recursive)
     {
-        dest.Reserve(children_.Size());
-        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
-            dest.Push(*i);
+        dest.reserve(children_.size());
+        for (auto i = children_.begin(); i != children_.end(); ++i)
+            dest.push_back(*i);
     }
     else
         GetChildrenRecursive(dest);
@@ -1635,11 +1643,11 @@ void UIElement::GetChildren(PODVector<UIElement*>& dest, bool recursive) const
 unsigned UIElement::GetNumChildren(bool recursive) const
 {
     if (!recursive)
-        return children_.Size();
+        return children_.size();
     else
     {
-        unsigned allChildren = children_.Size();
-        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        unsigned allChildren = children_.size();
+        for (auto i = children_.begin(); i != children_.end(); ++i)
             allChildren += (*i)->GetNumChildren(true);
 
         return allChildren;
@@ -1648,12 +1656,12 @@ unsigned UIElement::GetNumChildren(bool recursive) const
 
 UIElement* UIElement::GetChild(unsigned index) const
 {
-    return index < children_.Size() ? children_[index] : nullptr;
+    return index < children_.size() ? children_[index] : nullptr;
 }
 
 UIElement* UIElement::GetChild(const String& name, bool recursive) const
 {
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         if ((*i)->name_ == name)
             return *i;
@@ -1671,7 +1679,7 @@ UIElement* UIElement::GetChild(const String& name, bool recursive) const
 
 UIElement* UIElement::GetChild(const StringHash& key, const Variant& value, bool recursive) const
 {
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         const Variant& varValue = (*i)->GetVar(key);
         if (value != Variant::EMPTY ? varValue == value : varValue != Variant::EMPTY)
@@ -1718,41 +1726,41 @@ const Variant& UIElement::GetVar(const StringHash& key) const
 
 bool UIElement::HasTag(const String& tag) const
 {
-    return tags_.Contains(tag);
+    return tags_.contains(tag);
 }
 
-void UIElement::GetChildrenWithTag(PODVector<UIElement*>& dest, const String& tag, bool recursive) const
+void UIElement::GetChildrenWithTag(stl::vector<UIElement*>& dest, const String& tag, bool recursive) const
 {
-    dest.Clear();
+    dest.clear();
 
     if (!recursive)
     {
-        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             UIElement* element = *i;
             if (element->HasTag(tag))
-                dest.Push(element);
+                dest.push_back(element);
         }
     }
     else
         GetChildrenWithTagRecursive(dest, tag);
 }
 
-PODVector<UIElement*> UIElement::GetChildrenWithTag(const String& tag, bool recursive) const
+stl::vector<UIElement*> UIElement::GetChildrenWithTag(const String& tag, bool recursive) const
 {
-    PODVector<UIElement*> dest;
+    stl::vector<UIElement*> dest;
     GetChildrenWithTag(dest, tag, recursive);
     return dest;
 }
 
-void UIElement::GetChildrenWithTagRecursive(PODVector<UIElement*>& dest, const String& tag) const
+void UIElement::GetChildrenWithTagRecursive(stl::vector<UIElement*>& dest, const String& tag) const
 {
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         UIElement* element = *i;
         if (element->HasTag(tag))
-            dest.Push(element);
-        if (!element->children_.Empty())
+            dest.push_back(element);
+        if (!element->children_.empty())
             element->GetChildrenWithTagRecursive(dest, tag);
     }
 }
@@ -1785,7 +1793,7 @@ IntRect UIElement::GetCombinedScreenRect()
 
     if (!clipChildren_)
     {
-        for (Vector<stl::shared_ptr<UIElement> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             IntRect childCombined((*i)->GetCombinedScreenRect());
 
@@ -1810,7 +1818,7 @@ void UIElement::SortChildren()
         // Only sort when there is no layout
         /// \todo Order is not stable when children have same priorities
         if (layoutMode_ == LM_FREE)
-            Sort(children_.Begin(), children_.End(), CompareUIElements);
+            stl::quick_sort(children_.begin(), children_.end(), CompareUIElements);
         sortOrderDirty_ = false;
     }
 }
@@ -1820,7 +1828,7 @@ void UIElement::SetChildOffset(const IntVector2& offset)
     if (offset != childOffset_)
     {
         childOffset_ = offset;
-        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
             (*i)->MarkDirty();
     }
 }
@@ -1847,21 +1855,21 @@ void UIElement::AdjustScissor(IntRect& currentScissor)
     }
 }
 
-void UIElement::GetBatchesWithOffset(IntVector2& offset, PODVector<UIBatch>& batches, PODVector<float>& vertexData,
+void UIElement::GetBatchesWithOffset(IntVector2& offset, stl::vector<UIBatch>& batches, stl::vector<float>& vertexData,
     IntRect currentScissor)
 {
     Vector2 floatOffset((float)offset.x_, (float)offset.y_);
-    unsigned initialSize = vertexData.Size();
+    unsigned initialSize = vertexData.size();
 
     GetBatches(batches, vertexData, currentScissor);
-    for (unsigned i = initialSize; i < vertexData.Size(); i += 6)
+    for (unsigned i = initialSize; i < vertexData.size(); i += 6)
     {
         vertexData[i] += floatOffset.x_;
         vertexData[i + 1] += floatOffset.y_;
     }
 
     AdjustScissor(currentScissor);
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         if ((*i)->IsVisible())
             (*i)->GetBatchesWithOffset(offset, batches, vertexData, currentScissor);
@@ -1907,9 +1915,9 @@ void UIElement::OnAttributeAnimationRemoved()
 
 Animatable* UIElement::FindAttributeAnimationTarget(const String& name, String& outName)
 {
-    Vector<String> names = name.Split('/');
+    stl::vector<String> names = name.Split('/');
     // Only attribute name
-    if (names.Size() == 1)
+    if (names.size() == 1)
     {
         outName = name;
         return this;
@@ -1918,7 +1926,7 @@ Animatable* UIElement::FindAttributeAnimationTarget(const String& name, String& 
     {
         // Name must in following format: "#0/#1/attribute"
         UIElement* element = this;
-        for (unsigned i = 0; i < names.Size() - 1; ++i)
+        for (unsigned i = 0; i < names.size() - 1; ++i)
         {
             if (names[i].Front() != '#')
             {
@@ -1945,7 +1953,7 @@ Animatable* UIElement::FindAttributeAnimationTarget(const String& name, String& 
             }
         }
 
-        outName = names.Back();
+        outName = names.back();
         return element;
     }
 }
@@ -1956,7 +1964,7 @@ void UIElement::MarkDirty()
     opacityDirty_ = true;
     derivedColorDirty_ = true;
 
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->MarkDirty();
 }
 
@@ -2070,13 +2078,13 @@ void UIElement::UpdateAnchoring()
     }
 }
 
-void UIElement::GetChildrenRecursive(PODVector<UIElement*>& dest) const
+void UIElement::GetChildrenRecursive(stl::vector<UIElement*>& dest) const
 {
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         UIElement* element = *i;
-        dest.Push(element);
-        if (!element->children_.Empty())
+        dest.push_back(element);
+        if (!element->children_.empty())
             element->GetChildrenRecursive(dest);
     }
 }
@@ -2087,18 +2095,19 @@ void UIElement::ApplyStyleRecursive(UIElement* element)
     if (!element->appliedStyle_.Empty() && element->appliedStyleFile_ != element->GetDefaultStyle())
     {
         element->SetStyle(element->appliedStyle_);
-        for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = element->children_.Begin(); i != element->children_.End(); ++i)
+        for (auto i = element->children_.begin(); i !=
+            element->children_.end(); ++i)
             element->ApplyStyleRecursive(*i);
     }
 }
 
-int UIElement::CalculateLayoutParentSize(const PODVector<int>& sizes, int begin, int end, int spacing)
+int UIElement::CalculateLayoutParentSize(const stl::vector<int>& sizes, int begin, int end, int spacing)
 {
     int width = begin + end;
-    if (sizes.Empty())
+    if (sizes.empty())
         return width;
 
-    for (unsigned i = 0; i < sizes.Size(); ++i)
+    for (unsigned i = 0; i < sizes.size(); ++i)
     {
         // If calculating maximum size, and the default is specified, do not overflow it
         if (sizes[i] == M_MAX_INT)
@@ -2109,10 +2118,10 @@ int UIElement::CalculateLayoutParentSize(const PODVector<int>& sizes, int begin,
     return width - spacing;
 }
 
-void UIElement::CalculateLayout(PODVector<int>& positions, PODVector<int>& sizes, const PODVector<int>& minSizes,
-    const PODVector<int>& maxSizes, const PODVector<float>& flexScales, int targetSize, int begin, int end, int spacing)
+void UIElement::CalculateLayout(stl::vector<int>& positions, stl::vector<int>& sizes, const stl::vector<int>& minSizes,
+    const stl::vector<int>& maxSizes, const stl::vector<float>& flexScales, int targetSize, int begin, int end, int spacing)
 {
-    unsigned numChildren = sizes.Size();
+    unsigned numChildren = sizes.size();
     if (!numChildren)
         return;
     int targetTotalSize = targetSize - begin - end - (numChildren - 1) * spacing;
@@ -2152,18 +2161,18 @@ void UIElement::CalculateLayout(PODVector<int>& positions, PODVector<int>& sizes
             break;
 
         // Check which of the children can be resized to correct the error. If none, must break
-        PODVector<unsigned> resizable;
+        stl::vector<unsigned> resizable;
         for (unsigned i = 0; i < numChildren; ++i)
         {
             if (error < 0 && sizes[i] > minSizes[i])
-                resizable.Push(i);
+                resizable.push_back(i);
             else if (error > 0 && sizes[i] < maxSizes[i])
-                resizable.Push(i);
+                resizable.push_back(i);
         }
-        if (resizable.Empty())
+        if (resizable.empty())
             break;
 
-        int numResizable = resizable.Size();
+        int numResizable = resizable.size();
         int errorPerChild = error / numResizable;
         remainder = (abs(error)) % numResizable;
         add = (float)remainder / numResizable;
@@ -2245,7 +2254,7 @@ void UIElement::Detach()
 
 void UIElement::VerifyChildAlignment()
 {
-    for (Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         // Reapply child alignments. If they are illegal compared to layout, they will be set left/top as neded
         (*i)->SetHorizontalAlignment((*i)->GetHorizontalAlignment());

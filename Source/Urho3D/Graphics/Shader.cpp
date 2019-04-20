@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Shader.h"
@@ -207,8 +209,8 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
 
 String Shader::NormalizeDefines(const String& defines)
 {
-    Vector<String> definesVec = defines.ToUpper().Split(' ');
-    Sort(definesVec.Begin(), definesVec.End());
+    stl::vector<String> definesVec = defines.ToUpper().Split(' ');
+    stl::quick_sort(definesVec.begin(), definesVec.end());
     return String::Joined(definesVec, " ");
 }
 

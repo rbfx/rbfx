@@ -54,15 +54,15 @@ static const float sigma3Kernel9x9[9 * 9] = {
 };
 
 int main(int argc, char** argv);
-void Run(const Vector<String>& arguments);
+void Run(const stl::vector<String>& arguments);
 
-bool ReadIES(File* data, PODVector<float>& vertical, PODVector<float>& horizontal, PODVector<float>& luminance);
-void WriteIES(unsigned char* data, unsigned width, unsigned height, PODVector<float>& horizontal, PODVector<float>& vertical, PODVector<float>& luminance);
+bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horizontal, stl::vector<float>& luminance);
+void WriteIES(unsigned char* data, unsigned width, unsigned height, stl::vector<float>& horizontal, stl::vector<float>& vertical, stl::vector<float>& luminance);
 void Blur(unsigned char* data, unsigned width, unsigned height, const float* kernel, unsigned kernelWidth);
 
 int main(int argc, char** argv)
 {
-    Vector<String> arguments;
+    stl::vector<String> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -74,9 +74,9 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const Vector<String>& arguments)
+void Run(const stl::vector<String>& arguments)
 {
-    if (arguments.Size() < 3)
+    if (arguments.size() < 3)
         ErrorExit("Usage: RampGenerator <output png file> <width> <power> [dimensions]\n"
                   "IES Usage: RampGenerator <input file> <output png file> <width> [dimensions]");
 
@@ -86,10 +86,10 @@ void Run(const Vector<String>& arguments)
         String ouputFile = arguments[1];
         int width = ToInt(arguments[2]);
         int dim = 1;
-        if (arguments.Size() > 3)
+        if (arguments.size() > 3)
             dim = ToInt(arguments[3]);
         int blurLevel = 0;
-        if (arguments.Size() > 4)
+        if (arguments.size() > 4)
             blurLevel = ToInt(arguments[4]);
 
         const int height = dim == 2 ? width : 1;
@@ -98,9 +98,9 @@ void Run(const Vector<String>& arguments)
         File file(&context);
         file.Open(inputFile);
 
-        PODVector<float> horizontal;
-        PODVector<float> vertical;
-        PODVector<float> luminance;
+        stl::vector<float> horizontal;
+        stl::vector<float> vertical;
+        stl::vector<float> luminance;
         ReadIES(&file, vertical, horizontal, luminance);
 
         stl::unique_ptr<unsigned char[]> data(new unsigned char[width * height]);
@@ -117,7 +117,7 @@ void Run(const Vector<String>& arguments)
         float power = ToFloat(arguments[2]);
 
         int dimensions = 1;
-        if (arguments.Size() > 3)
+        if (arguments.size() > 3)
             dimensions = ToInt(arguments[3]);
 
         if (width < 2)
@@ -179,19 +179,19 @@ void Run(const Vector<String>& arguments)
     }
 }
 
-unsigned GetSample(float position, PODVector<float>& inputs)
+unsigned GetSample(float position, stl::vector<float>& inputs)
 {
     unsigned pos = 0;
     // Early outs
     if (position < inputs[0])
         return 0;
-    else if (position > inputs.Back())
-        return inputs.Size() - 1;
+    else if (position > inputs.back())
+        return inputs.size() - 1;
 
     // Find best candidate
     float closestVal = M_INFINITY;
     unsigned samplePos = -1;
-    for (unsigned i = 0; i < inputs.Size(); ++i)
+    for (unsigned i = 0; i < inputs.size(); ++i)
     {
         float val = inputs[i];
         float diff = Abs(val - position);
@@ -216,29 +216,29 @@ bool IsWhitespace(const String& string)
     return !anyNot;
 }
 
-float PopFirstFloat(Vector<String>& words)
+float PopFirstFloat(stl::vector<String>& words)
 {
-    if (words.Size() > 0)
+    if (words.size() > 0)
     {
         float ret = ToFloat(words[0]);
-        words.Erase(0);
+        words.pop_front();
         return ret;
     }
     return -1.0f; // is < 0 ever valid?
 }
 
-int PopFirstInt(Vector<String>& words)
+int PopFirstInt(stl::vector<String>& words)
 {
-    if (words.Size() > 0)
+    if (words.size() > 0)
     {
         int ret = ToInt(words[0]);
-        words.Erase(0);
+        words.pop_front();
         return ret;
     }
     return -1; // < 0 ever valid?
 }
 
-bool ReadIES(File* data, PODVector<float>& vertical, PODVector<float>& horizontal, PODVector<float>& luminance)
+bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horizontal, stl::vector<float>& luminance)
 {
     String line = data->ReadLine();
     if (!line.Contains("IESNA:LM-63-1995") && !line.Contains("IESNA:LM-63-2002"))
@@ -257,19 +257,19 @@ bool ReadIES(File* data, PODVector<float>& vertical, PODVector<float>& horizonta
     }
 
     // Collect everything into a a list to process, we're now reading actual values
-    Vector<String> lines;
+    stl::vector<String> lines;
     while (!data->IsEof())
-        lines.Push(data->ReadLine());
-    Vector<String> words;
-    for (unsigned i = 0; i < lines.Size(); ++i)
-        words.Push(lines[i].Split(' '));
+        lines.push_back(data->ReadLine());
+    stl::vector<String> words;
+    for (unsigned i = 0; i < lines.size(); ++i)
+        words.push_back(lines[i].Split(' '));
 
     // Prune any 'junk' collected
-    for (unsigned i = 0; i < words.Size(); ++i)
+    for (unsigned i = 0; i < words.size(); ++i)
     {
         if (words[i].Empty() || IsWhitespace(words[i]))
         {
-            words.Erase(i);
+            words.erase(i);
             --i;
         }
     }
@@ -291,39 +291,39 @@ bool ReadIES(File* data, PODVector<float>& vertical, PODVector<float>& horizonta
     for (int i = 0; i < verticalCount; ++i)
     {
         float value = PopFirstFloat(words);
-        vertical.Push(value);
+        vertical.push_back(value);
     }
 
     for (int i = 0; i < horizontalCount; ++i)
     {
         float value = PopFirstFloat(words);
-        horizontal.Push(value);
+        horizontal.push_back(value);
     }
 
     for (int x = 0; x < horizontalCount; ++x)
     {
         for (int y = 0; y < verticalCount; ++y)
-            luminance.Push(PopFirstFloat(words) * multiplier);
+            luminance.push_back(PopFirstFloat(words) * multiplier);
     }
 
     return true;
 }
 
-void WriteIES(unsigned char* data, unsigned width, unsigned height, PODVector<float>& horizontal, PODVector<float>& vertical, PODVector<float>& luminance)
+void WriteIES(unsigned char* data, unsigned width, unsigned height, stl::vector<float>& horizontal, stl::vector<float>& vertical, stl::vector<float>& luminance)
 {
     // Find maximum luminance value
     float maximum = -1;
-    for (unsigned i = 0; i < luminance.Size(); ++i)
+    for (unsigned i = 0; i < luminance.size(); ++i)
         maximum = Max(maximum, luminance[i]);
 
     // Find maximum radial slice
     float maxVert = 0;
-    for (unsigned i = 0; i < vertical.Size(); ++i)
+    for (unsigned i = 0; i < vertical.size(); ++i)
         maxVert = Max(maxVert, vertical[i]);
 
     // Find maximum altitude value
     float maxHoriz = 0;
-    for (unsigned i = 0; i < horizontal.Size(); ++i)
+    for (unsigned i = 0; i < horizontal.size(); ++i)
         maxHoriz = Max(maxHoriz, horizontal[i]);
 
     const float inverseLightValue = 1.0f / maximum;
@@ -358,7 +358,7 @@ void WriteIES(unsigned char* data, unsigned width, unsigned height, PODVector<fl
             float value = 0.0f;
             if (weight > 0.0f)
             {
-                if (vertical.Size() == 1) // easy case
+                if (vertical.size() == 1) // easy case
                     value = luminance[vert];
                 else
                 {
@@ -370,14 +370,14 @@ void WriteIES(unsigned char* data, unsigned width, unsigned height, PODVector<fl
                             angle += 360.0f;
                         const float moddedAngle = fmodf(angle, maxVert);
                         unsigned horiz = GetSample(moddedAngle, vertical);
-                        value = luminance[vert + horizontal.Size() * horiz];
+                        value = luminance[vert + horizontal.size() * horiz];
                     }
                     else
                     {
                         // Accumulate for an average across the radial slices
-                        for (unsigned i = 0; i < vertical.Size(); ++i)
-                            value += luminance[vert + i * vertical.Size()];
-                        value /= vertical.Size();
+                        for (unsigned i = 0; i < vertical.size(); ++i)
+                            value += luminance[vert + i * vertical.size()];
+                        value /= vertical.size();
                     }
                 }
             }

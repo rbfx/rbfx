@@ -158,7 +158,7 @@ private:
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Last calculated path.
-    PODVector<Vector3> currentPath_;
+    stl::vector<Vector3> currentPath_;
     /// Path end position.
     Vector3 endPos_;
     /// Jack scene node.
@@ -170,7 +170,7 @@ private:
     /// Streaming distance.
     int streamingDistance_;
     /// Tile data.
-    HashMap<IntVector2, PODVector<unsigned char> > tileData_;
+    HashMap<IntVector2, stl::vector<unsigned char> > tileData_;
     /// Added tiles.
     stl::hash_set<IntVector2> addedTiles_;
 };

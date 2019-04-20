@@ -72,7 +72,7 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Update before octree reinsertion. Is called from a main thread.
@@ -175,7 +175,7 @@ protected:
     /// Mark vertex buffer to need an update.
     void MarkPositionsDirty();
     /// Tails.
-    PODVector<TrailPoint> points_;
+    stl::vector<TrailPoint> points_;
     /// Tails sorted flag.
     bool sorted_;
     /// Animation LOD bias.
@@ -238,7 +238,7 @@ private:
     /// Previous offset to camera for determining whether sorting is necessary.
     Vector3 previousOffset_;
     /// Trail pointers for sorting.
-    Vector<TrailPoint*> sortedPoints_;
+    stl::vector<TrailPoint*> sortedPoints_;
     /// Force update flag (ignore animation LOD momentarily.)
     bool forceUpdate_;
     /// Currently emitting flag.

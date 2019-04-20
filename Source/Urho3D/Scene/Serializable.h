@@ -56,9 +56,9 @@ public:
     /// Handle attribute read access. Default implementation reads the variable at offset, or invokes the get accessor.
     virtual void OnGetAttribute(const AttributeInfo& attr, Variant& dest) const;
     /// Return attribute descriptions, or null if none defined.
-    virtual const Vector<AttributeInfo>* GetAttributes() const;
+    virtual const stl::vector<AttributeInfo>* GetAttributes() const;
     /// Return network replication attribute descriptions, or null if none defined.
-    virtual const Vector<AttributeInfo>* GetNetworkAttributes() const;
+    virtual const stl::vector<AttributeInfo>* GetNetworkAttributes() const;
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);
     /// Save as binary data. Return true if successful.

@@ -69,7 +69,7 @@ IKSolver::~IKSolver()
 {
     // Destroying the solver tree will destroy the effector objects, so remove
     // any references any of the IKEffector objects could be holding
-    for (PODVector<IKEffector*>::ConstIterator it = effectorList_.Begin(); it != effectorList_.End(); ++it)
+    for (auto it = effectorList_.begin(); it != effectorList_.end(); ++it)
         (*it)->SetIKEffectorNode(nullptr);
 
     ik_solver_destroy(solver_);
@@ -264,8 +264,8 @@ ik_node_t* IKSolver::CreateIKNodeFromUrhoNode(const Node* node)
 void IKSolver::DestroyTree()
 {
     ik_solver_destroy_tree(solver_);
-    effectorList_.Clear();
-    constraintList_.Clear();
+    effectorList_.clear();
+    constraintList_.clear();
 }
 
 // ----------------------------------------------------------------------------
@@ -284,7 +284,7 @@ void IKSolver::RebuildTree()
      */
     node_->GetComponents<IKEffector>(effectorList_, true);
     node_->GetComponents<IKConstraint>(constraintList_, true);
-    for (PODVector<IKEffector*>::Iterator it = effectorList_.Begin(); it != effectorList_.End();)
+    for (auto it = effectorList_.begin(); it != effectorList_.end();)
     {
         if (ComponentIsInOurSubtree(*it))
         {
@@ -293,15 +293,15 @@ void IKSolver::RebuildTree()
         }
         else
         {
-            it = effectorList_.Erase(it);
+            it = effectorList_.erase(it);
         }
     }
-    for (PODVector<IKConstraint*>::Iterator it = constraintList_.Begin(); it != constraintList_.End();)
+    for (auto it = constraintList_.begin(); it != constraintList_.end();)
     {
         if (ComponentIsInOurSubtree(*it))
             ++it;
         else
-            it = constraintList_.Erase(it);
+            it = constraintList_.erase(it);
     }
 
     treeNeedsRebuild = false;
@@ -326,10 +326,10 @@ bool IKSolver::BuildTreeToEffector(IKEffector* effector)
      */
     const Node* iterNode = effector->GetNode();
     ik_node_t* ikNode;
-    PODVector<const Node*> missingNodes;
+    stl::vector<const Node*> missingNodes;
     while ((ikNode = ik_node_find_child(solver_->tree, iterNode->GetID())) == nullptr)
     {
-        missingNodes.Push(iterNode);
+        missingNodes.push_back(iterNode);
         iterNode = iterNode->GetParent();
 
         // Assert the assumptions made (described in the beginning of this function)
@@ -337,10 +337,10 @@ bool IKSolver::BuildTreeToEffector(IKEffector* effector)
         assert (iterNode->HasComponent<IKSolver>() == false || iterNode == node_);
     }
 
-    while (missingNodes.Size() > 0)
+    while (missingNodes.size() > 0)
     {
-        iterNode = missingNodes.Back();
-        missingNodes.Pop();
+        iterNode = missingNodes.back();
+        missingNodes.pop_back();
 
         ik_node_t* ikChildNode = CreateIKNodeFromUrhoNode(iterNode);
         ik_node_add_child(ikNode, ikChildNode);
@@ -418,7 +418,7 @@ void IKSolver::Solve()
     if (features_ & USE_ORIGINAL_POSE)
         ApplyOriginalPoseToActivePose();
 
-    for (PODVector<IKEffector*>::ConstIterator it = effectorList_.Begin(); it != effectorList_.End(); ++it)
+    for (auto it = effectorList_.begin(); it != effectorList_.end(); ++it)
     {
         (*it)->UpdateTargetNodePosition();
     }
@@ -572,7 +572,7 @@ void IKSolver::HandleComponentAdded(StringHash eventType, VariantMap& eventData)
             return;
 
         BuildTreeToEffector(static_cast<IKEffector*>(component));
-        effectorList_.Push(static_cast<IKEffector*>(component));
+        effectorList_.push_back(static_cast<IKEffector*>(component));
         return;
     }
 
@@ -581,7 +581,7 @@ void IKSolver::HandleComponentAdded(StringHash eventType, VariantMap& eventData)
         if (ComponentIsInOurSubtree(component) == false)
             return;
 
-        constraintList_.Push(static_cast<IKConstraint*>(component));
+        constraintList_.push_back(static_cast<IKConstraint*>(component));
     }
 }
 
@@ -625,7 +625,7 @@ void IKSolver::HandleComponentRemoved(StringHash eventType, VariantMap& eventDat
 
         ik_node_destroy_effector(ikNode);
         static_cast<IKEffector*>(component)->SetIKEffectorNode(nullptr);
-        effectorList_.RemoveSwap(static_cast<IKEffector*>(component));
+        effectorList_.erase_first_unsorted(static_cast<IKEffector*>(component));
 
         ApplyOriginalPoseToScene();
         MarkTreeNeedsRebuild();
@@ -642,7 +642,7 @@ void IKSolver::HandleComponentRemoved(StringHash eventType, VariantMap& eventDat
         assert(ikNode != nullptr);
 
         static_cast<IKConstraint*>(component)->SetIKConstraintNode(nullptr);
-        constraintList_.RemoveSwap(static_cast<IKConstraint*>(component));
+        constraintList_.erase_first_unsorted(static_cast<IKConstraint*>(component));
     }
 }
 
@@ -656,25 +656,25 @@ void IKSolver::HandleNodeAdded(StringHash eventType, VariantMap& eventData)
 
     auto* node = static_cast<Node*>(eventData[P_NODE].GetPtr());
 
-    PODVector<IKEffector*> effectors;
+    stl::vector<IKEffector*> effectors;
     node->GetComponents<IKEffector>(effectors, true);
-    for (PODVector<IKEffector*>::ConstIterator it = effectors.Begin(); it != effectors.End(); ++it)
+    for (auto it = effectors.begin(); it != effectors.end(); ++it)
     {
         if (ComponentIsInOurSubtree(*it) == false)
             continue;
 
         BuildTreeToEffector(*it);
-        effectorList_.Push(*it);
+        effectorList_.push_back(*it);
     }
 
-    PODVector<IKConstraint*> constraints;
+    stl::vector<IKConstraint*> constraints;
     node->GetComponents<IKConstraint>(constraints, true);
-    for (PODVector<IKConstraint*>::ConstIterator it = constraints.Begin(); it != constraints.End(); ++it)
+    for (auto it = constraints.begin(); it != constraints.end(); ++it)
     {
         if (ComponentIsInOurSubtree(*it) == false)
             continue;
 
-        constraintList_.Push(*it);
+        constraintList_.push_back(*it);
     }
 }
 
@@ -689,19 +689,19 @@ void IKSolver::HandleNodeRemoved(StringHash eventType, VariantMap& eventData)
     auto* node = static_cast<Node*>(eventData[P_NODE].GetPtr());
 
     // Remove cached IKEffectors from our list
-    PODVector<IKEffector*> effectors;
+    stl::vector<IKEffector*> effectors;
     node->GetComponents<IKEffector>(effectors, true);
-    for (PODVector<IKEffector*>::ConstIterator it = effectors.Begin(); it != effectors.End(); ++it)
+    for (auto it = effectors.begin(); it != effectors.end(); ++it)
     {
         (*it)->SetIKEffectorNode(nullptr);
-        effectorList_.RemoveSwap(*it);
+        effectorList_.erase_first_unsorted(*it);
     }
 
-    PODVector<IKConstraint*> constraints;
+    stl::vector<IKConstraint*> constraints;
     node->GetComponents<IKConstraint>(constraints, true);
-    for (PODVector<IKConstraint*>::ConstIterator it = constraints.Begin(); it != constraints.End(); ++it)
+    for (auto it = constraints.begin(); it != constraints.end(); ++it)
     {
-        constraintList_.RemoveSwap(*it);
+        constraintList_.erase_first_unsorted(*it);
     }
 
     // Special case, if the node being destroyed is the root node, destroy the
@@ -737,7 +737,7 @@ void IKSolver::DrawDebugGeometry(bool depthTest)
 void IKSolver::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
     // Draws all scene segments
-    for (PODVector<IKEffector*>::ConstIterator it = effectorList_.Begin(); it != effectorList_.End(); ++it)
+    for (auto it = effectorList_.begin(); it != effectorList_.end(); ++it)
         (*it)->DrawDebugGeometry(debug, depthTest);
 
     ORDERED_VECTOR_FOR_EACH(&solver_->effector_nodes_list, ik_node_t*, pnode)

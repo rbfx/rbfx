@@ -380,9 +380,9 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
     // Server: apply controls to client objects
     else if (network->IsServerRunning())
     {
-        const Vector<stl::shared_ptr<Connection> >& connections = network->GetClientConnections();
+        const stl::vector<stl::shared_ptr<Connection> >& connections = network->GetClientConnections();
 
-        for (unsigned i = 0; i < connections.Size(); ++i)
+        for (unsigned i = 0; i < connections.size(); ++i)
         {
             Connection* connection = connections[i];
             // Get the object this connection is controlling

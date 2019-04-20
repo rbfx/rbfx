@@ -103,7 +103,7 @@ public:
     /// Add a component to selection.
     void Select(Component* component);
     /// Add multiple nodes to selection.
-    void Select(PODVector<Node*> nodes);
+    void Select(stl::vector<Node*> nodes);
     /// Remove a node from selection.
     void Unselect(Node* node);
     /// Remove a component from selection.
@@ -119,7 +119,7 @@ public:
     /// Return true if component is selected.
     bool IsSelected(Component* component) const;
     /// Return list of selected nodes.
-    const Vector<stl::weak_ptr<Node>>& GetSelection() const;
+    const stl::vector<stl::weak_ptr<Node>>& GetSelection() const;
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene displayed in the tab viewport.
@@ -196,7 +196,7 @@ protected:
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
-    PODVector<Node*> openHierarchyNodes_;
+    stl::vector<Node*> openHierarchyNodes_;
     /// Node to scroll to on next frame.
     stl::weak_ptr<Node> scrollTo_;
     /// Selected camera preview texture.
@@ -208,9 +208,9 @@ protected:
     /// Original window padding that was overwritten before creating window. This padding will be restored right after window started.
     ImVec2 windowPadding_;
     /// List of node IDs that are saved when scene state is saved. Node selection will be restored using these.
-    PODVector<unsigned> savedNodeSelection_;
+    stl::vector<unsigned> savedNodeSelection_;
     /// List of component IDs that are saved when scene state is saved. Component selection will be restored using these.
-    PODVector<unsigned> savedComponentSelection_;
+    stl::vector<unsigned> savedComponentSelection_;
     ///
     stl::shared_ptr<UI> offScreenUI_;
     /// Root element which contains edited UI.

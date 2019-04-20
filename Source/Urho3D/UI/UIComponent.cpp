@@ -113,15 +113,15 @@ public:
         }
 
         Ray ray(camera->GetScreenRay((float)screenPos.x_ / rect.Width(), (float)screenPos.y_ / rect.Height()));
-        PODVector<RayQueryResult> queryResultVector;
+        stl::vector<RayQueryResult> queryResultVector;
         RayOctreeQuery query(queryResultVector, ray, RAY_TRIANGLE_UV, M_INFINITY, DRAWABLE_GEOMETRY, DEFAULT_VIEWMASK);
 
         octree->Raycast(query);
 
-        if (queryResultVector.Empty())
+        if (queryResultVector.empty())
             return result;
 
-        for (unsigned i = 0; i < queryResultVector.Size(); i++)
+        for (unsigned i = 0; i < queryResultVector.size(); i++)
         {
             RayQueryResult& queryResult = queryResultVector[i];
             if (queryResult.drawable_ != model)

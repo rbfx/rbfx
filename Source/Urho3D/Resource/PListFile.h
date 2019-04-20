@@ -47,7 +47,7 @@ class PListValue;
 using PListValueMap = HashMap<String, PListValue>;
 
 /// Vector of PList value.
-using PListValueVector = Vector<PListValue>;
+using PListValueVector = stl::vector<PListValue>;
 
 /// PList value.
 class URHO3D_API PListValue

@@ -135,8 +135,8 @@ void Pass::SetPixelShaderDefineExcludes(const String& excludes)
 
 void Pass::ReleaseShaders()
 {
-    vertexShaders_.Clear();
-    pixelShaders_.Clear();
+    vertexShaders_.clear();
+    pixelShaders_.clear();
     extraVertexShaders_.Clear();
     extraPixelShaders_.Clear();
 }
@@ -152,10 +152,10 @@ String Pass::GetEffectiveVertexShaderDefines() const
     if (vertexShaderDefineExcludes_.Empty())
         return vertexShaderDefines_;
 
-    Vector<String> vsDefines = vertexShaderDefines_.Split(' ');
-    Vector<String> vsExcludes = vertexShaderDefineExcludes_.Split(' ');
-    for (unsigned i = 0; i < vsExcludes.Size(); ++i)
-        vsDefines.Remove(vsExcludes[i]);
+    stl::vector<String> vsDefines = vertexShaderDefines_.Split(' ');
+    stl::vector<String> vsExcludes = vertexShaderDefineExcludes_.Split(' ');
+    for (unsigned i = 0; i < vsExcludes.size(); ++i)
+        vsDefines.erase_first(vsExcludes[i]);
 
     return String::Joined(vsDefines, " ");
 }
@@ -166,15 +166,15 @@ String Pass::GetEffectivePixelShaderDefines() const
     if (pixelShaderDefineExcludes_.Empty())
         return pixelShaderDefines_;
 
-    Vector<String> psDefines = pixelShaderDefines_.Split(' ');
-    Vector<String> psExcludes = pixelShaderDefineExcludes_.Split(' ');
-    for (unsigned i = 0; i < psExcludes.Size(); ++i)
-        psDefines.Remove(psExcludes[i]);
+    stl::vector<String> psDefines = pixelShaderDefines_.Split(' ');
+    stl::vector<String> psExcludes = pixelShaderDefineExcludes_.Split(' ');
+    for (unsigned i = 0; i < psExcludes.size(); ++i)
+        psDefines.erase_first(psExcludes[i]);
 
     return String::Joined(psDefines, " ");
 }
 
-Vector<stl::shared_ptr<ShaderVariation> >& Pass::GetVertexShaders(const StringHash& extraDefinesHash)
+stl::vector<stl::shared_ptr<ShaderVariation> >& Pass::GetVertexShaders(const StringHash& extraDefinesHash)
 {
     // If empty hash, return the base shaders
     if (!extraDefinesHash.Value())
@@ -183,7 +183,7 @@ Vector<stl::shared_ptr<ShaderVariation> >& Pass::GetVertexShaders(const StringHa
         return extraVertexShaders_[extraDefinesHash];
 }
 
-Vector<stl::shared_ptr<ShaderVariation> >& Pass::GetPixelShaders(const StringHash& extraDefinesHash)
+stl::vector<stl::shared_ptr<ShaderVariation> >& Pass::GetPixelShaders(const StringHash& extraDefinesHash)
 {
     if (!extraDefinesHash.Value())
         return pixelShaders_;
@@ -222,7 +222,7 @@ void Technique::RegisterObject(Context* context)
 
 bool Technique::BeginLoad(Deserializer& source)
 {
-    passes_.Clear();
+    passes_.clear();
     cloneTechniques_.Clear();
 
     SetMemoryUse(sizeof(Technique));
@@ -330,7 +330,7 @@ void Technique::SetIsDesktop(bool enable)
 
 void Technique::ReleaseShaders()
 {
-    for (Vector<stl::shared_ptr<Pass> >::ConstIterator i = passes_.Begin(); i != passes_.End(); ++i)
+    for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
         Pass* pass = i->get();
         if (pass)
@@ -345,7 +345,7 @@ stl::shared_ptr<Technique> Technique::Clone(const String& cloneName) const
     ret->SetName(cloneName);
 
     // Deep copy passes
-    for (Vector<stl::shared_ptr<Pass> >::ConstIterator i = passes_.Begin(); i != passes_.End(); ++i)
+    for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
         Pass* srcPass = i->get();
         if (!srcPass)
@@ -377,8 +377,8 @@ Pass* Technique::CreatePass(const String& name)
 
     stl::shared_ptr<Pass> newPass(new Pass(name));
     unsigned passIndex = newPass->GetIndex();
-    if (passIndex >= passes_.Size())
-        passes_.Resize(passIndex + 1);
+    if (passIndex >= passes_.size())
+        passes_.resize(passIndex + 1);
     passes_[passIndex] = newPass;
 
     // Calculate memory use now
@@ -392,7 +392,7 @@ void Technique::RemovePass(const String& name)
     HashMap<String, unsigned>::ConstIterator i = passIndices.Find(name.ToLower());
     if (i == passIndices.End())
         return;
-    else if (i->second_ < passes_.Size() && passes_[i->second_].get())
+    else if (i->second_ < passes_.size() && passes_[i->second_].get())
     {
         passes_[i->second_].reset();
         SetMemoryUse((unsigned)(sizeof(Technique) + GetNumPasses() * sizeof(Pass)));
@@ -421,7 +421,7 @@ unsigned Technique::GetNumPasses() const
 {
     unsigned ret = 0;
 
-    for (Vector<stl::shared_ptr<Pass> >::ConstIterator i = passes_.Begin(); i != passes_.End(); ++i)
+    for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
         if (i->get())
             ++ret;
@@ -430,29 +430,29 @@ unsigned Technique::GetNumPasses() const
     return ret;
 }
 
-Vector<String> Technique::GetPassNames() const
+stl::vector<String> Technique::GetPassNames() const
 {
-    Vector<String> ret;
+    stl::vector<String> ret;
 
-    for (Vector<stl::shared_ptr<Pass> >::ConstIterator i = passes_.Begin(); i != passes_.End(); ++i)
+    for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
         Pass* pass = i->get();
         if (pass)
-            ret.Push(pass->GetName());
+            ret.push_back(pass->GetName());
     }
 
     return ret;
 }
 
-PODVector<Pass*> Technique::GetPasses() const
+stl::vector<Pass*> Technique::GetPasses() const
 {
-    PODVector<Pass*> ret;
+    stl::vector<Pass*> ret;
 
-    for (Vector<stl::shared_ptr<Pass> >::ConstIterator i = passes_.Begin(); i != passes_.End(); ++i)
+    for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
         Pass* pass = i->get();
         if (pass)
-            ret.Push(pass);
+            ret.push_back(pass);
     }
 
     return ret;
@@ -475,7 +475,7 @@ stl::shared_ptr<Technique> Technique::CloneWithDefines(const String& vsDefines, 
     // since the clones are never stored to the resource cache
     i = cloneTechniques_.Insert(MakePair(key, Clone(GetName())));
 
-    for (Vector<stl::shared_ptr<Pass> >::ConstIterator j = i->second_->passes_.Begin(); j != i->second_->passes_.End(); ++j)
+    for (auto j = i->second_->passes_.begin(); j != i->second_->passes_.end(); ++j)
     {
         Pass* pass = (*j);
         if (!pass)

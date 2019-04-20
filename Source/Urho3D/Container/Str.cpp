@@ -558,12 +558,12 @@ String String::ToUpper() const
     return ret;
 }
 
-Vector<String> String::Split(char separator, bool keepEmptyStrings) const
+stl::vector<String> String::Split(char separator, bool keepEmptyStrings) const
 {
     return Split(CString(), separator, keepEmptyStrings);
 }
 
-void String::Join(const Vector<String>& subStrings, const String& glue)
+void String::Join(const stl::vector<String>& subStrings, const String& glue)
 {
     *this = Joined(subStrings, glue);
 }
@@ -1040,9 +1040,9 @@ unsigned String::DecodeUTF16(const wchar_t*& src)
 }
 #endif
 
-Vector<String> String::Split(const char* str, char separator, bool keepEmptyStrings)
+stl::vector<String> String::Split(const char* str, char separator, bool keepEmptyStrings)
 {
-    Vector<String> ret;
+    stl::vector<String> ret;
     const char* strEnd = str + String::CStringLength(str);
 
     for (const char* splitEnd = str; splitEnd != strEnd; ++splitEnd)
@@ -1051,25 +1051,25 @@ Vector<String> String::Split(const char* str, char separator, bool keepEmptyStri
         {
             const ptrdiff_t splitLen = splitEnd - str;
             if (splitLen > 0 || keepEmptyStrings)
-                ret.Push(String(str, splitLen));
+                ret.push_back(String(str, splitLen));
             str = splitEnd + 1;
         }
     }
 
     const ptrdiff_t splitLen = strEnd - str;
     if (splitLen > 0 || keepEmptyStrings)
-        ret.Push(String(str, splitLen));
+        ret.push_back(String(str, splitLen));
 
     return ret;
 }
 
-String String::Joined(const Vector<String>& subStrings, const String& glue)
+String String::Joined(const stl::vector<String>& subStrings, const String& glue)
 {
-    if (subStrings.Empty())
+    if (subStrings.empty())
         return String();
 
     String joinedString(subStrings[0]);
-    for (unsigned i = 1; i < subStrings.Size(); ++i)
+    for (unsigned i = 1; i < subStrings.size(); ++i)
         joinedString.Append(glue).Append(subStrings[i]);
 
     return joinedString;

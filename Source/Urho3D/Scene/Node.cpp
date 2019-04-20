@@ -87,9 +87,9 @@ void Node::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
     URHO3D_ACCESSOR_ATTRIBUTE("Network Position", GetNetPositionAttr, SetNetPositionAttr, Vector3, Vector3::ZERO,
         AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Rotation", GetNetRotationAttr, SetNetRotationAttr, PODVector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Rotation", GetNetRotationAttr, SetNetRotationAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
         AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Parent Node", GetNetParentAttr, SetNetParentAttr, PODVector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Parent Node", GetNetParentAttr, SetNetParentAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
         AM_NET | AM_NOEDIT);
 }
 
@@ -124,7 +124,7 @@ bool Node::Save(Serializer& dest) const
 
     // Write components
     dest.WriteVLE(GetNumPersistentComponents());
-    for (unsigned i = 0; i < components_.Size(); ++i)
+    for (unsigned i = 0; i < components_.size(); ++i)
     {
         Component* component = components_[i];
         if (component->IsTemporary())
@@ -140,7 +140,7 @@ bool Node::Save(Serializer& dest) const
 
     // Write child nodes
     dest.WriteVLE(GetNumPersistentChildren());
-    for (unsigned i = 0; i < children_.Size(); ++i)
+    for (unsigned i = 0; i < children_.size(); ++i)
     {
         Node* node = children_[i];
         if (node->IsTemporary())
@@ -202,7 +202,7 @@ bool Node::SaveXML(XMLElement& dest) const
         return false;
 
     // Write components
-    for (unsigned i = 0; i < components_.Size(); ++i)
+    for (unsigned i = 0; i < components_.size(); ++i)
     {
         Component* component = components_[i];
         if (component->IsTemporary())
@@ -214,7 +214,7 @@ bool Node::SaveXML(XMLElement& dest) const
     }
 
     // Write child nodes
-    for (unsigned i = 0; i < children_.Size(); ++i)
+    for (unsigned i = 0; i < children_.size(); ++i)
     {
         Node* node = children_[i];
         if (node->IsTemporary())
@@ -239,8 +239,8 @@ bool Node::SaveJSON(JSONValue& dest) const
 
     // Write components
     JSONArray componentsArray;
-    componentsArray.Reserve(components_.Size());
-    for (unsigned i = 0; i < components_.Size(); ++i)
+    componentsArray.reserve(components_.size());
+    for (unsigned i = 0; i < components_.size(); ++i)
     {
         Component* component = components_[i];
         if (component->IsTemporary())
@@ -249,14 +249,14 @@ bool Node::SaveJSON(JSONValue& dest) const
         JSONValue compVal;
         if (!component->SaveJSON(compVal))
             return false;
-        componentsArray.Push(compVal);
+        componentsArray.push_back(compVal);
     }
     dest.Set("components", componentsArray);
 
     // Write child nodes
     JSONArray childrenArray;
-    childrenArray.Reserve(children_.Size());
-    for (unsigned i = 0; i < children_.Size(); ++i)
+    childrenArray.reserve(children_.size());
+    for (unsigned i = 0; i < children_.size(); ++i)
     {
         Node* node = children_[i];
         if (node->IsTemporary())
@@ -265,7 +265,7 @@ bool Node::SaveJSON(JSONValue& dest) const
         JSONValue childVal;
         if (!node->SaveJSON(childVal))
             return false;
-        childrenArray.Push(childVal);
+        childrenArray.push_back(childVal);
     }
     dest.Set("children", childrenArray);
 
@@ -274,10 +274,10 @@ bool Node::SaveJSON(JSONValue& dest) const
 
 void Node::ApplyAttributes()
 {
-    for (unsigned i = 0; i < components_.Size(); ++i)
+    for (unsigned i = 0; i < components_.size(); ++i)
         components_[i]->ApplyAttributes();
 
-    for (unsigned i = 0; i < children_.Size(); ++i)
+    for (unsigned i = 0; i < children_.size(); ++i)
         children_[i]->ApplyAttributes();
 }
 
@@ -295,7 +295,7 @@ void Node::AddReplicationState(NodeReplicationState* state)
     if (!networkState_)
         AllocateNetworkState();
 
-    networkState_->replicationStates_.Push(state);
+    networkState_->replicationStates_.push_back(state);
 }
 
 bool Node::SaveXML(Serializer& dest, const String& indentation) const
@@ -356,7 +356,7 @@ void Node::AddTag(const String& tag)
         return;
 
     // Add tag
-    impl_->tags_.Push(tag);
+    impl_->tags_.push_back(tag);
 
     // Cache
     scene_->NodeTagAdded(this, tag);
@@ -382,17 +382,19 @@ void Node::AddTags(const String& tags, char separator)
 void Node::AddTags(const StringVector& tags)
 {
     // This is OK, as MarkNetworkUpdate() early-outs when called multiple times
-    for (unsigned i = 0; i < tags.Size(); ++i)
+    for (unsigned i = 0; i < tags.size(); ++i)
         AddTag(tags[i]);
 }
 
 bool Node::RemoveTag(const String& tag)
 {
-    bool removed = impl_->tags_.Remove(tag);
+    auto it = impl_->tags_.find(tag);
 
     // Nothing to do
-    if (!removed)
+    if (it == impl_->tags_.end())
         return false;
+
+    impl_->tags_.erase(it);
 
     // Scene cache update
     if (scene_)
@@ -417,7 +419,7 @@ void Node::RemoveAllTags()
     // Clear old scene cache
     if (scene_)
     {
-        for (unsigned i = 0; i < impl_->tags_.Size(); ++i)
+        for (unsigned i = 0; i < impl_->tags_.size(); ++i)
         {
             scene_->NodeTagRemoved(this, impl_->tags_[i]);
 
@@ -431,7 +433,7 @@ void Node::RemoveAllTags()
         }
     }
 
-    impl_->tags_.Clear();
+    impl_->tags_.clear();
 
     // Sync
     MarkNetworkUpdate();
@@ -719,7 +721,7 @@ void Node::ResetDeepEnabled()
 {
     SetEnabled(enabledPrev_, false, false);
 
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->ResetDeepEnabled();
 }
 
@@ -750,7 +752,8 @@ void Node::MarkDirty()
         cur->dirty_ = true;
 
         // Notify listener components first, then mark child nodes
-        for (Vector<stl::weak_ptr<Component> >::Iterator i = cur->listeners_.Begin(); i != cur->listeners_.End();)
+        for (auto i = cur->listeners_.begin(); i !=
+            cur->listeners_.end();)
         {
             Component *c = i->get();
             if (c)
@@ -761,19 +764,19 @@ void Node::MarkDirty()
             // If listener has expired, erase from list (swap with the last element to avoid O(n^2) behavior)
             else
             {
-                *i = cur->listeners_.Back();
-                cur->listeners_.Pop();
+                *i = cur->listeners_.back();
+                cur->listeners_.pop_back();
             }
         }
 
         // Tail call optimization: Don't recurse to mark the first child dirty, but
         // instead process it in the context of the current function. If there are more
         // than one child, then recurse to the excess children.
-        Vector<stl::shared_ptr<Node> >::Iterator i = cur->children_.Begin();
-        if (i != cur->children_.End())
+        auto i = cur->children_.begin();
+        if (i != cur->children_.end())
         {
             Node *next = i->get();
-            for (++i; i != cur->children_.End(); ++i)
+            for (++i; i != cur->children_.end(); ++i)
                 (*i)->MarkDirty();
             cur = next;
         }
@@ -826,12 +829,12 @@ void Node::AddChild(Node* node, unsigned index)
                 scene_->SendEvent(E_NODEREMOVED, eventData);
             }
 
-            oldParent->children_.Remove(nodeShared);
+            oldParent->children_.erase_first(nodeShared);
         }
     }
 
     // Add to the child vector, then add to the scene if not added yet
-    children_.Insert(index, nodeShared);
+    children_.insert(index, nodeShared);
     if (scene_ && node->GetScene() != scene_)
         scene_->NodeAdded(node);
 
@@ -839,7 +842,8 @@ void Node::AddChild(Node* node, unsigned index)
     node->MarkDirty();
     node->MarkNetworkUpdate();
     // If the child node has components, also mark network update on them to ensure they have a valid NetworkState
-    for (Vector<stl::shared_ptr<Component> >::Iterator i = node->components_.Begin(); i != node->components_.End(); ++i)
+    for (auto i = node->components_.begin(); i !=
+        node->components_.end(); ++i)
         (*i)->MarkNetworkUpdate();
 
     // Send change event
@@ -861,7 +865,7 @@ void Node::RemoveChild(Node* node)
     if (!node)
         return;
 
-    for (Vector<stl::shared_ptr<Node> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         if (i->get() == node)
         {
@@ -880,7 +884,7 @@ void Node::RemoveChildren(bool removeReplicated, bool removeLocal, bool recursiv
 {
     unsigned numRemoved = 0;
 
-    for (unsigned i = children_.Size() - 1; i < children_.Size(); --i)
+    for (unsigned i = children_.size() - 1; i < children_.size(); --i)
     {
         bool remove = false;
         Node* childNode = children_[i];
@@ -894,7 +898,7 @@ void Node::RemoveChildren(bool removeReplicated, bool removeLocal, bool recursiv
 
         if (remove)
         {
-            RemoveChild(children_.Begin() + i);
+            RemoveChild(children_.begin() + i);
             ++numRemoved;
         }
     }
@@ -958,15 +962,15 @@ Component* Node::CloneComponent(Component* component, CreateMode mode, unsigned 
         return nullptr;
     }
 
-    const Vector<AttributeInfo>* compAttributes = component->GetAttributes();
-    const Vector<AttributeInfo>* cloneAttributes = cloneComponent->GetAttributes();
+    const stl::vector<AttributeInfo>* compAttributes = component->GetAttributes();
+    const stl::vector<AttributeInfo>* cloneAttributes = cloneComponent->GetAttributes();
 
     if (compAttributes)
     {
-        for (unsigned i = 0; i < compAttributes->Size() && i < cloneAttributes->Size(); ++i)
+        for (unsigned i = 0; i < compAttributes->size() && i < cloneAttributes->size(); ++i)
         {
-            const AttributeInfo& attr = compAttributes->At(i);
-            const AttributeInfo& cloneAttr = cloneAttributes->At(i);
+            const AttributeInfo& attr = compAttributes->at(i);
+            const AttributeInfo& cloneAttr = cloneAttributes->at(i);
             if (attr.mode_ & AM_FILE)
             {
                 Variant value;
@@ -996,7 +1000,7 @@ Component* Node::CloneComponent(Component* component, CreateMode mode, unsigned 
 
 void Node::RemoveComponent(Component* component)
 {
-    for (Vector<stl::shared_ptr<Component> >::Iterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if (i->get() == component)
         {
@@ -1011,7 +1015,7 @@ void Node::RemoveComponent(Component* component)
 
 void Node::RemoveComponent(StringHash type)
 {
-    for (Vector<stl::shared_ptr<Component> >::Iterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
         {
@@ -1028,7 +1032,7 @@ void Node::RemoveComponents(bool removeReplicated, bool removeLocal)
 {
     unsigned numRemoved = 0;
 
-    for (unsigned i = components_.Size() - 1; i < components_.Size(); --i)
+    for (unsigned i = components_.size() - 1; i < components_.size(); --i)
     {
         bool remove = false;
         Component* component = components_[i];
@@ -1040,7 +1044,7 @@ void Node::RemoveComponents(bool removeReplicated, bool removeLocal)
 
         if (remove)
         {
-            RemoveComponent(components_.Begin() + i);
+            RemoveComponent(components_.begin() + i);
             ++numRemoved;
         }
     }
@@ -1054,11 +1058,11 @@ void Node::RemoveComponents(StringHash type)
 {
     unsigned numRemoved = 0;
 
-    for (unsigned i = components_.Size() - 1; i < components_.Size(); --i)
+    for (unsigned i = components_.size() - 1; i < components_.size(); --i)
     {
         if (components_[i]->GetType() == type)
         {
-            RemoveComponent(components_.Begin() + i);
+            RemoveComponent(components_.begin() + i);
             ++numRemoved;
         }
     }
@@ -1078,14 +1082,14 @@ void Node::ReorderComponent(Component* component, unsigned index)
     if (!component || component->GetNode() != this)
         return;
 
-    for (Vector<stl::shared_ptr<Component> >::Iterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if (i->get() == component)
         {
             // Need shared ptr to insert. Also, prevent destruction when removing first
             stl::shared_ptr<Component> componentShared(component);
-            components_.Erase(i);
-            components_.Insert(index, componentShared);
+            components_.erase(i);
+            components_.insert(index, componentShared);
             return;
         }
     }
@@ -1148,13 +1152,13 @@ void Node::AddListener(Component* component)
         return;
 
     // Check for not adding twice
-    for (Vector<stl::weak_ptr<Component> >::Iterator i = listeners_.Begin(); i != listeners_.End(); ++i)
+    for (auto i = listeners_.begin(); i != listeners_.end(); ++i)
     {
         if (i->get() == component)
             return;
     }
 
-    listeners_.Push(stl::weak_ptr<Component>(component));
+    listeners_.push_back(stl::weak_ptr<Component>(component));
     // If the node is currently dirty, notify immediately
     if (dirty_)
         component->OnMarkedDirty(this);
@@ -1162,11 +1166,11 @@ void Node::AddListener(Component* component)
 
 void Node::RemoveListener(Component* component)
 {
-    for (Vector<stl::weak_ptr<Component> >::Iterator i = listeners_.Begin(); i != listeners_.End(); ++i)
+    for (auto i = listeners_.begin(); i != listeners_.end(); ++i)
     {
         if (i->get() == component)
         {
-            listeners_.Erase(i);
+            listeners_.erase(i);
             return;
         }
     }
@@ -1215,86 +1219,86 @@ Vector2 Node::WorldToLocal2D(const Vector2& vector) const
 unsigned Node::GetNumChildren(bool recursive) const
 {
     if (!recursive)
-        return children_.Size();
+        return children_.size();
     else
     {
-        unsigned allChildren = children_.Size();
-        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        unsigned allChildren = children_.size();
+        for (auto i = children_.begin(); i != children_.end(); ++i)
             allChildren += (*i)->GetNumChildren(true);
 
         return allChildren;
     }
 }
 
-void Node::GetChildren(PODVector<Node*>& dest, bool recursive) const
+void Node::GetChildren(stl::vector<Node*>& dest, bool recursive) const
 {
-    dest.Clear();
+    dest.clear();
 
     if (!recursive)
     {
-        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
-            dest.Push(i->get());
+        for (auto i = children_.begin(); i != children_.end(); ++i)
+            dest.push_back(i->get());
     }
     else
         GetChildrenRecursive(dest);
 }
 
-PODVector<Node*> Node::GetChildren(bool recursive) const
+stl::vector<Node*> Node::GetChildren(bool recursive) const
 {
-    PODVector<Node*> dest;
+    stl::vector<Node*> dest;
     GetChildren(dest, recursive);
     return dest;
 }
 
-void Node::GetChildrenWithComponent(PODVector<Node*>& dest, StringHash type, bool recursive) const
+void Node::GetChildrenWithComponent(stl::vector<Node*>& dest, StringHash type, bool recursive) const
 {
-    dest.Clear();
+    dest.clear();
 
     if (!recursive)
     {
-        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             if ((*i)->HasComponent(type))
-                dest.Push(i->get());
+                dest.push_back(i->get());
         }
     }
     else
         GetChildrenWithComponentRecursive(dest, type);
 }
 
-PODVector<Node*> Node::GetChildrenWithComponent(StringHash type, bool recursive) const
+stl::vector<Node*> Node::GetChildrenWithComponent(StringHash type, bool recursive) const
 {
-    PODVector<Node*> dest;
+    stl::vector<Node*> dest;
     GetChildrenWithComponent(dest, type, recursive);
     return dest;
 }
 
-void Node::GetChildrenWithTag(PODVector<Node*>& dest, const String& tag, bool recursive /*= true*/) const
+void Node::GetChildrenWithTag(stl::vector<Node*>& dest, const String& tag, bool recursive /*= true*/) const
 {
-    dest.Clear();
+    dest.clear();
 
     if (!recursive)
     {
-        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             if ((*i)->HasTag(tag))
-                dest.Push(i->get());
+                dest.push_back(i->get());
         }
     }
     else
         GetChildrenWithTagRecursive(dest, tag);
 }
 
-PODVector<Node*> Node::GetChildrenWithTag(const String& tag, bool recursive) const
+stl::vector<Node*> Node::GetChildrenWithTag(const String& tag, bool recursive) const
 {
-    PODVector<Node*> dest;
+    stl::vector<Node*> dest;
     GetChildrenWithTag(dest, tag, recursive);
     return dest;
 }
 
 Node* Node::GetChild(unsigned index) const
 {
-    return index < children_.Size() ? children_[index] : nullptr;
+    return index < children_.size() ? children_[index] : nullptr;
 }
 
 Node* Node::GetChild(const String& name, bool recursive) const
@@ -1309,7 +1313,7 @@ Node* Node::GetChild(const char* name, bool recursive) const
 
 Node* Node::GetChild(StringHash nameHash, bool recursive) const
 {
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         if ((*i)->GetNameHash() == nameHash)
             return i->get();
@@ -1328,7 +1332,7 @@ Node* Node::GetChild(StringHash nameHash, bool recursive) const
 unsigned Node::GetNumNetworkComponents() const
 {
     unsigned num = 0;
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->IsReplicated())
             ++num;
@@ -1337,16 +1341,16 @@ unsigned Node::GetNumNetworkComponents() const
     return num;
 }
 
-void Node::GetComponents(PODVector<Component*>& dest, StringHash type, bool recursive) const
+void Node::GetComponents(stl::vector<Component*>& dest, StringHash type, bool recursive) const
 {
-    dest.Clear();
+    dest.clear();
 
     if (!recursive)
     {
-        for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+        for (auto i = components_.begin(); i != components_.end(); ++i)
         {
             if ((*i)->GetType() == type)
-                dest.Push(i->get());
+                dest.push_back(i->get());
         }
     }
     else
@@ -1355,7 +1359,7 @@ void Node::GetComponents(PODVector<Component*>& dest, StringHash type, bool recu
 
 bool Node::HasComponent(StringHash type) const
 {
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
             return true;
@@ -1370,7 +1374,7 @@ bool Node::IsReplicated() const
 
 bool Node::HasTag(const String& tag) const
 {
-    return impl_->tags_.Contains(tag);
+    return impl_->tags_.contains(tag);
 }
 
 bool Node::IsChildOf(Node* node) const
@@ -1393,7 +1397,7 @@ const Variant& Node::GetVar(StringHash key) const
 
 Component* Node::GetComponent(StringHash type, bool recursive) const
 {
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
             return i->get();
@@ -1401,7 +1405,7 @@ Component* Node::GetComponent(StringHash type, bool recursive) const
 
     if (recursive)
     {
-        for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             Component* component = (*i)->GetComponent(type, true);
             if (component)
@@ -1455,7 +1459,7 @@ void Node::SetNetPositionAttr(const Vector3& value)
         SetPosition(value);
 }
 
-void Node::SetNetRotationAttr(const PODVector<unsigned char>& value)
+void Node::SetNetRotationAttr(const stl::vector<unsigned char>& value)
 {
     MemoryBuffer buf(value);
     auto* transform = GetComponent<SmoothedTransform>();
@@ -1465,7 +1469,7 @@ void Node::SetNetRotationAttr(const PODVector<unsigned char>& value)
         SetRotation(buf.ReadPackedQuaternion());
 }
 
-void Node::SetNetParentAttr(const PODVector<unsigned char>& value)
+void Node::SetNetParentAttr(const stl::vector<unsigned char>& value)
 {
     Scene* scene = GetScene();
     if (!scene)
@@ -1507,14 +1511,14 @@ const Vector3& Node::GetNetPositionAttr() const
     return position_;
 }
 
-const PODVector<unsigned char>& Node::GetNetRotationAttr() const
+const stl::vector<unsigned char>& Node::GetNetRotationAttr() const
 {
     impl_->attrBuffer_.Clear();
     impl_->attrBuffer_.WritePackedQuaternion(rotation_);
     return impl_->attrBuffer_.GetBuffer();
 }
 
-const PODVector<unsigned char>& Node::GetNetParentAttr() const
+const stl::vector<unsigned char>& Node::GetNetParentAttr() const
 {
     impl_->attrBuffer_.Clear();
     Scene* scene = GetScene();
@@ -1641,9 +1645,9 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
 
     const JSONArray& componentsArray = source.Get("components").GetArray();
 
-    for (unsigned i = 0; i < componentsArray.Size(); i++)
+    for (unsigned i = 0; i < componentsArray.size(); i++)
     {
-        const JSONValue& compVal = componentsArray.At(i);
+        const JSONValue& compVal = componentsArray.at(i);
         String typeName = compVal.Get("type").GetString();
         unsigned compID = compVal.Get("id").GetUInt();
         Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
@@ -1660,9 +1664,9 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
         return true;
 
     const JSONArray& childrenArray = source.Get("children").GetArray();
-    for (unsigned i = 0; i < childrenArray.Size(); i++)
+    for (unsigned i = 0; i < childrenArray.size(); i++)
     {
-        const JSONValue& childVal = childrenArray.At(i);
+        const JSONValue& childVal = childrenArray.at(i);
 
         unsigned nodeID = childVal.Get("id").GetUInt();
         Node* newNode = CreateChild(rewriteIDs ? 0 : nodeID, (mode == REPLICATED && Scene::IsReplicatedID(nodeID)) ? REPLICATED :
@@ -1678,7 +1682,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
 void Node::PrepareNetworkUpdate()
 {
     // Update dependency nodes list first
-    impl_->dependencyNodes_.Clear();
+    impl_->dependencyNodes_.clear();
 
     // Add the parent node, but if it is local, traverse to the first non-local node
     if (parent_ && parent_ != scene_)
@@ -1687,11 +1691,11 @@ void Node::PrepareNetworkUpdate()
         while (!current->IsReplicated())
             current = current->parent_;
         if (current && current != scene_)
-            impl_->dependencyNodes_.Push(current);
+            impl_->dependencyNodes_.push_back(current);
     }
 
     // Let the components add their dependencies
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         Component* component = i->get();
         if (component->IsReplicated())
@@ -1702,13 +1706,13 @@ void Node::PrepareNetworkUpdate()
     if (!networkState_)
         AllocateNetworkState();
 
-    const Vector<AttributeInfo>* attributes = networkState_->attributes_;
-    unsigned numAttributes = attributes->Size();
+    const stl::vector<AttributeInfo>* attributes = networkState_->attributes_;
+    unsigned numAttributes = attributes->size();
 
     // Check for attribute changes
     for (unsigned i = 0; i < numAttributes; ++i)
     {
-        const AttributeInfo& attr = attributes->At(i);
+        const AttributeInfo& attr = attributes->at(i);
 
         if (animationEnabled_ && IsAnimatedNetworkAttribute(attr))
             continue;
@@ -1720,8 +1724,8 @@ void Node::PrepareNetworkUpdate()
             networkState_->previousValues_[i] = networkState_->currentValues_[i];
 
             // Mark the attribute dirty in all replication states that are tracking this node
-            for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
-                 j != networkState_->replicationStates_.End(); ++j)
+            for (auto j = networkState_->replicationStates_.begin();
+                 j != networkState_->replicationStates_.end(); ++j)
             {
                 auto* nodeState = static_cast<NodeReplicationState*>(*j);
                 nodeState->dirtyAttributes_.Set(i);
@@ -1745,8 +1749,8 @@ void Node::PrepareNetworkUpdate()
             networkState_->previousVars_[i->first_] = i->second_;
 
             // Mark the var dirty in all replication states that are tracking this node
-            for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
-                 j != networkState_->replicationStates_.End(); ++j)
+            for (auto j = networkState_->replicationStates_.begin();
+                 j != networkState_->replicationStates_.end(); ++j)
             {
                 auto* nodeState = static_cast<NodeReplicationState*>(*j);
                 nodeState->dirtyVars_.insert(i->first_);
@@ -1770,10 +1774,10 @@ void Node::CleanupConnection(Connection* connection)
 
     if (networkState_)
     {
-        for (unsigned i = networkState_->replicationStates_.Size() - 1; i < networkState_->replicationStates_.Size(); --i)
+        for (unsigned i = networkState_->replicationStates_.size() - 1; i < networkState_->replicationStates_.size(); --i)
         {
             if (networkState_->replicationStates_[i]->connection_ == connection)
-                networkState_->replicationStates_.Erase(i);
+                networkState_->replicationStates_.erase(i);
         }
     }
 }
@@ -1782,8 +1786,8 @@ void Node::MarkReplicationDirty()
 {
     if (networkState_)
     {
-        for (PODVector<ReplicationState*>::Iterator j = networkState_->replicationStates_.Begin();
-             j != networkState_->replicationStates_.End(); ++j)
+        for (auto j = networkState_->replicationStates_.begin();
+             j != networkState_->replicationStates_.end(); ++j)
         {
             auto* nodeState = static_cast<NodeReplicationState*>(*j);
             if (!nodeState->markedDirty_)
@@ -1819,7 +1823,7 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
     if (!component)
         return;
 
-    components_.Push(stl::shared_ptr<Component>(component));
+    components_.push_back(stl::shared_ptr<Component>(component));
 
     if (component->GetNode())
         URHO3D_LOGWARNING("Component " + component->GetTypeName() + " already belongs to a node!");
@@ -1862,7 +1866,7 @@ unsigned Node::GetNumPersistentChildren() const
 {
     unsigned ret = 0;
 
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         if (!(*i)->IsTemporary())
             ++ret;
@@ -1875,7 +1879,7 @@ unsigned Node::GetNumPersistentComponents() const
 {
     unsigned ret = 0;
 
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if (!(*i)->IsTemporary())
             ++ret;
@@ -1910,9 +1914,9 @@ void Node::OnAttributeAnimationRemoved()
 
 Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outName)
 {
-    Vector<String> names = name.Split('/');
+    stl::vector<String> names = name.Split('/');
     // Only attribute name
-    if (names.Size() == 1)
+    if (names.size() == 1)
     {
         outName = name;
         return this;
@@ -1922,7 +1926,7 @@ Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outNa
         // Name must in following format: "#0/#1/@component#0/attribute"
         Node* node = this;
         unsigned i = 0;
-        for (; i < names.Size() - 1; ++i)
+        for (; i < names.size() - 1; ++i)
         {
             if (names[i].Front() != '#')
                 break;
@@ -1946,44 +1950,44 @@ Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outNa
             }
         }
 
-        if (i == names.Size() - 1)
+        if (i == names.size() - 1)
         {
-            outName = names.Back();
+            outName = names.back();
             return node;
         }
 
-        if (i != names.Size() - 2 || names[i].Front() != '@')
+        if (i != names.size() - 2 || names[i].Front() != '@')
         {
             URHO3D_LOGERROR("Invalid name " + name);
             return nullptr;
         }
 
         String componentName = names[i].Substring(1, names[i].Length() - 1);
-        Vector<String> componentNames = componentName.Split('#');
-        if (componentNames.Size() == 1)
+        stl::vector<String> componentNames = componentName.Split('#');
+        if (componentNames.size() == 1)
         {
-            Component* component = node->GetComponent(StringHash(componentNames.Front()));
+            Component* component = node->GetComponent(StringHash(componentNames.front()));
             if (!component)
             {
                 URHO3D_LOGERROR("Could not find component by name " + name);
                 return nullptr;
             }
 
-            outName = names.Back();
+            outName = names.back();
             return component;
         }
         else
         {
             unsigned index = ToUInt(componentNames[1]);
-            PODVector<Component*> components;
-            node->GetComponents(components, StringHash(componentNames.Front()));
-            if (index >= components.Size())
+            stl::vector<Component*> components;
+            node->GetComponents(components, StringHash(componentNames.front()));
+            if (index >= components.size())
             {
                 URHO3D_LOGERROR("Could not find component by name " + name);
                 return nullptr;
             }
 
-            outName = names.Back();
+            outName = names.back();
             return components[index];
         }
     }
@@ -2007,7 +2011,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
         MarkNetworkUpdate();
 
         // Notify listener components of the state change
-        for (Vector<stl::weak_ptr<Component> >::Iterator i = listeners_.Begin(); i != listeners_.End();)
+        for (auto i = listeners_.begin(); i != listeners_.end();)
         {
             if (*i)
             {
@@ -2016,7 +2020,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
             }
             // If listener has expired, erase from list
             else
-                i = listeners_.Erase(i);
+                i = listeners_.erase(i);
         }
 
         // Send change event
@@ -2031,7 +2035,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
             scene_->SendEvent(E_NODEENABLEDCHANGED, eventData);
         }
 
-        for (Vector<stl::shared_ptr<Component> >::Iterator i = components_.Begin(); i != components_.End(); ++i)
+        for (auto i = components_.begin(); i != components_.end(); ++i)
         {
             (*i)->OnSetEnabled();
 
@@ -2052,7 +2056,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
 
     if (recursive)
     {
-        for (Vector<stl::shared_ptr<Node> >::Iterator i = children_.Begin(); i != children_.End(); ++i)
+        for (auto i = children_.begin(); i != children_.end(); ++i)
             (*i)->SetEnabled(enable, recursive, storeSelf);
     }
 }
@@ -2101,7 +2105,7 @@ void Node::UpdateWorldTransform() const
     dirty_ = false;
 }
 
-void Node::RemoveChild(Vector<stl::shared_ptr<Node> >::Iterator i)
+void Node::RemoveChild(stl::vector<stl::shared_ptr<Node> >::iterator i)
 {
     // Keep a shared pointer to the child about to be removed, to make sure the erase from container completes first. Otherwise
     // it would be possible that other child nodes get removed as part of the node's components' cleanup, causing a re-entrant
@@ -2127,51 +2131,51 @@ void Node::RemoveChild(Vector<stl::shared_ptr<Node> >::Iterator i)
     if (scene_)
         scene_->NodeRemoved(child.get());
 
-    children_.Erase(i);
+    children_.erase(i);
 }
 
-void Node::GetChildrenRecursive(PODVector<Node*>& dest) const
+void Node::GetChildrenRecursive(stl::vector<Node*>& dest) const
 {
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         Node* node = i->get();
-        dest.Push(node);
-        if (!node->children_.Empty())
+        dest.push_back(node);
+        if (!node->children_.empty())
             node->GetChildrenRecursive(dest);
     }
 }
 
-void Node::GetChildrenWithComponentRecursive(PODVector<Node*>& dest, StringHash type) const
+void Node::GetChildrenWithComponentRecursive(stl::vector<Node*>& dest, StringHash type) const
 {
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         Node* node = i->get();
         if (node->HasComponent(type))
-            dest.Push(node);
-        if (!node->children_.Empty())
+            dest.push_back(node);
+        if (!node->children_.empty())
             node->GetChildrenWithComponentRecursive(dest, type);
     }
 }
 
-void Node::GetComponentsRecursive(PODVector<Component*>& dest, StringHash type) const
+void Node::GetComponentsRecursive(stl::vector<Component*>& dest, StringHash type) const
 {
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
-            dest.Push(i->get());
+            dest.push_back(i->get());
     }
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->GetComponentsRecursive(dest, type);
 }
 
-void Node::GetChildrenWithTagRecursive(PODVector<Node*>& dest, const String& tag) const
+void Node::GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const String& tag) const
 {
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         Node* node = i->get();
         if (node->HasTag(tag))
-            dest.Push(node);
-        if (!node->children_.Empty())
+            dest.push_back(node);
+        if (!node->children_.empty())
             node->GetChildrenWithTagRecursive(dest, tag);
     }
 }
@@ -2183,10 +2187,10 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     resolver.AddNode(id_, cloneNode);
 
     // Copy attributes
-    const Vector<AttributeInfo>* attributes = GetAttributes();
-    for (unsigned j = 0; j < attributes->Size(); ++j)
+    const stl::vector<AttributeInfo>* attributes = GetAttributes();
+    for (unsigned j = 0; j < attributes->size(); ++j)
     {
-        const AttributeInfo& attr = attributes->At(j);
+        const AttributeInfo& attr = attributes->at(j);
         // Do not copy network-only attributes, as they may have unintended side effects
         if (attr.mode_ & AM_FILE)
         {
@@ -2197,7 +2201,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     }
 
     // Clone components
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components_.Begin(); i != components_.End(); ++i)
+    for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         Component* component = i->get();
         if (component->IsTemporary())
@@ -2210,7 +2214,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     }
 
     // Clone child nodes recursively
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children_.Begin(); i != children_.End(); ++i)
+    for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         Node* node = i->get();
         if (node->IsTemporary())
@@ -2234,7 +2238,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     return cloneNode;
 }
 
-void Node::RemoveComponent(Vector<stl::shared_ptr<Component> >::Iterator i)
+void Node::RemoveComponent(stl::vector<stl::shared_ptr<Component> >::iterator i)
 {
     // Send node change event. Do not send when already being destroyed
     if (Refs() > 0 && scene_)
@@ -2253,7 +2257,7 @@ void Node::RemoveComponent(Vector<stl::shared_ptr<Component> >::Iterator i)
     if (scene_)
         scene_->ComponentRemoved(i->get());
     (*i)->SetNode(nullptr);
-    components_.Erase(i);
+    components_.erase(i);
 }
 
 void Node::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData)

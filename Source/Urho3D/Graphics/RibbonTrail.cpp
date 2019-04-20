@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Graphics/RibbonTrail.h"
 #include "../Graphics/VertexBuffer.h"
@@ -48,7 +50,7 @@ const char* trailTypeNames[] =
     nullptr
 };
 
-inline bool CompareTails(TrailPoint* lhs, TrailPoint* rhs)
+inline bool CompareTails(const TrailPoint* lhs, const TrailPoint* rhs)
 {
     return lhs->sortDistance_ > rhs->sortDistance_;
 }
@@ -93,7 +95,7 @@ RibbonTrail::RibbonTrail(Context* context) :
     geometry_->SetVertexBuffer(0, vertexBuffer_);
     geometry_->SetIndexBuffer(indexBuffer_);
 
-    batches_.Resize(1);
+    batches_.resize(1);
     batches_[0].geometry_ = geometry_;
     batches_[0].geometryType_ = GEOM_TRAIL_FACE_CAMERA;
     batches_[0].worldTransform_ = &transforms_;
@@ -125,7 +127,7 @@ void RibbonTrail::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Sort By Distance", IsSorted, SetSorted, bool, false, AM_DEFAULT);
 }
 
-void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     // If no trail-level testing, use the Drawable test
     if (query.level_ < RAY_TRIANGLE)
@@ -139,7 +141,7 @@ void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQuer
         return;
 
     // Approximate the tails as spheres for raycasting
-    for (unsigned i = 0; i < points_.Size() - 1; ++i)
+    for (unsigned i = 0; i < points_.size() - 1; ++i)
     {
         Vector3 center = (points_[i].position_ + points_[i+1].position_) * 0.5f;
         Vector3 scale = width_ * Vector3::ONE;
@@ -156,7 +158,7 @@ void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQuer
             result.drawable_ = this;
             result.node_ = node_;
             result.subObject_ = i;
-            results.Push(result);
+            results.push_back(result);
         }
     }
 }
@@ -186,10 +188,10 @@ void RibbonTrail::HandleScenePostUpdate(StringHash eventType, VariantMap& eventD
     if (updateInvisible_ || viewFrameNumber_ != lastUpdateFrameNumber_)
     {
         // Reset if ribbon trail is too small and too much difference in frame
-        if (points_.Size() < 3 && viewFrameNumber_ - lastUpdateFrameNumber_ > 1)
+        if (points_.size() < 3 && viewFrameNumber_ - lastUpdateFrameNumber_ > 1)
         {
             previousPosition_ = node_->GetWorldPosition();
-            points_.Erase(0, points_.Size());
+            points_.erase(0, points_.size());
         }
 
         lastUpdateFrameNumber_ = viewFrameNumber_;
@@ -225,10 +227,10 @@ void RibbonTrail::UpdateTail(float timeStep)
 
     // Update tails lifetime
     int expiredIndex = -1;
-    if (points_.Size() > 0)
+    if (points_.size() > 0)
     {
         // No need to update last point
-        for (unsigned i = 0; i < points_.Size() - 1; ++i)
+        for (unsigned i = 0; i < points_.size() - 1; ++i)
         {
             points_[i].lifetime_ += lastTimeStep_;
 
@@ -241,10 +243,10 @@ void RibbonTrail::UpdateTail(float timeStep)
     // Delete expired points
     if (expiredIndex != -1)
     {
-        points_.Erase(0, (unsigned)(expiredIndex + 1));
+        points_.erase(points_.begin(), points_.begin() + (unsigned) (expiredIndex + 1));
 
         // Update endTail pointer
-        if (points_.Size() > 1)
+        if (points_.size() > 1)
         {
             endTail_.position_ = points_[0].position_;
             startEndTailTime_ = points_[0].lifetime_;
@@ -252,18 +254,18 @@ void RibbonTrail::UpdateTail(float timeStep)
     }
 
     // Update previous world position if trail is still zero
-    if (points_.Size() == 0)
+    if (points_.size() == 0)
     {
         previousPosition_ = worldPosition;
     }
     // Delete lonely point
-    else if (points_.Size() == 1)
+    else if (points_.size() == 1)
     {
-        points_.Erase(0, 1);
+        points_.pop_front();
         previousPosition_ = worldPosition;
     }
     // Update end of trail position using endTail linear interpolation
-    else if (points_.Size() > 1 && points_[0].lifetime_ < lifetime_)
+    else if (points_.size() > 1 && points_[0].lifetime_ < lifetime_)
     {
         const float step = SmoothStep(startEndTailTime_, lifetime_, points_[0].lifetime_);
         points_[0].position_ = Lerp(endTail_.position_, points_[1].position_, step);
@@ -271,7 +273,7 @@ void RibbonTrail::UpdateTail(float timeStep)
     }
 
     // Add starting points
-    if (points_.Size() == 0 && path > M_LARGE_EPSILON && emitting_)
+    if (points_.size() == 0 && path > M_LARGE_EPSILON && emitting_)
     {
         const Vector3 forwardMotion = (previousPosition_ - worldPosition).Normalized();
 
@@ -284,8 +286,8 @@ void RibbonTrail::UpdateTail(float timeStep)
             nextPoint.parentPos_ = node_->GetParent()->GetWorldPosition();
         }
 
-        points_.Push(startPoint);
-        points_.Push(nextPoint);
+        points_.push_back(startPoint);
+        points_.push_back(nextPoint);
 
         // Update endTail
         endTail_.position_ = startPoint.position_;
@@ -293,7 +295,7 @@ void RibbonTrail::UpdateTail(float timeStep)
     }
 
     // Add more points
-    if (points_.Size() > 1 && emitting_)
+    if (points_.size() > 1 && emitting_)
     {
         const Vector3 forwardMotion = (previousPosition_ - worldPosition).Normalized();
 
@@ -304,21 +306,21 @@ void RibbonTrail::UpdateTail(float timeStep)
             if (node_->GetParent() != nullptr)
                 newPoint.parentPos_ = node_->GetParent()->GetWorldPosition();
 
-            points_.Push(newPoint);
+            points_.push_back(newPoint);
 
             previousPosition_ = worldPosition;
         }
         else
         {
             // Update recent tail
-            points_.Back().position_ = worldPosition;
+            points_.back().position_ = worldPosition;
             if (forwardMotion != Vector3::ZERO)
-                points_.Back().forward_ = forwardMotion;
+                points_.back().forward_ = forwardMotion;
         }
     }
 
     // Update buffer size if size of points different with tail number
-    if (points_.Size() != numPoints_)
+    if (points_.size() != numPoints_)
         bufferSizeDirty_ = true;
 }
 
@@ -342,9 +344,9 @@ void RibbonTrail::SetEmitting(bool emitting)
     emitting_ = emitting;
 
     // Reset already available points
-    if (emitting && points_.Size() > 0)
+    if (emitting && points_.size() > 0)
     {
-        points_.Clear();
+        points_.clear();
         bufferSizeDirty_ = true;
     }
 
@@ -431,7 +433,7 @@ void RibbonTrail::OnWorldBoundingBoxUpdate()
 {
     BoundingBox worldBox;
 
-    for (unsigned i = 0; i < points_.Size(); ++i)
+    for (unsigned i = 0; i < points_.size(); ++i)
     {
         Vector3 &p = points_[i].position_;
         Vector3 scale = width_ * Vector3::ONE;
@@ -443,7 +445,7 @@ void RibbonTrail::OnWorldBoundingBoxUpdate()
 
 void RibbonTrail::UpdateBufferSize()
 {
-    numPoints_ = points_.Size();
+    numPoints_ = points_.size();
 
     unsigned indexPerSegment = 6 + (tailColumn_ - 1) * 6;
     unsigned vertexPerSegment = 4 + (tailColumn_ - 1) * 2;
@@ -547,7 +549,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
     unsigned vertexPerSegment = 4 + (tailColumn_ - 1) * 2;
 
     // Fill sorted points vector
-    sortedPoints_.Resize(numPoints_);
+    sortedPoints_.resize(numPoints_);
     for (unsigned i = 0; i < numPoints_; ++i)
     {
         TrailPoint& point = points_[i];
@@ -558,7 +560,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
 
     // Sort points
     if (sorted_)
-        Sort(sortedPoints_.Begin(), sortedPoints_.End(), CompareTails);
+        stl::quick_sort(sortedPoints_.begin(), sortedPoints_.end(), CompareTails);
 
     // Update individual trail elapsed length
     float trailLength = 0.0f;
@@ -586,7 +588,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
         {
             TrailPoint& point = *sortedPoints_[i];
 
-            if (sortedPoints_[i] == &points_.Back()) continue;
+            if (sortedPoints_[i] == &points_.back()) continue;
 
             // This point
             float factor = SmoothStep(0.0f, trailLength, point.elapsedLength_);
@@ -687,7 +689,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
         {
             TrailPoint& point = *sortedPoints_[i];
 
-            if (sortedPoints_[i] == &points_.Back()) continue;
+            if (sortedPoints_[i] == &points_.back()) continue;
 
             // This point
             float factor = SmoothStep(0.0f, trailLength, point.elapsedLength_);

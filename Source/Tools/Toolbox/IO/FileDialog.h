@@ -37,7 +37,7 @@ enum FileDialogResult
 
 URHO3D_API FileDialogResult OpenDialog(const String& filterList, const String& defaultPath, String& outPath);
 URHO3D_API FileDialogResult OpenDialogMultiple(const String& filterList, const String& defaultPath,
-                                               Vector<String>& outPaths);
+                                               stl::vector<String>& outPaths);
 URHO3D_API FileDialogResult SaveDialog(const String& filterList, const String& defaultPath, String& outPath);
 URHO3D_API FileDialogResult PickFolder(const String& defaultPath, String& outPath);
 

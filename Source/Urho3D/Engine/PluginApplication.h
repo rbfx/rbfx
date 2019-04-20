@@ -70,7 +70,7 @@ protected:
 
 private:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
-    Vector<Pair<StringHash, String>> registeredTypes_;
+    stl::vector<Pair<StringHash, String>> registeredTypes_;
     /// Plugin type is set to PLUGIN_NATIVE in PluginMain(). Managed plugins however do not call this main function hence the default value.
     PluginType type_ = PLUGIN_MANAGED;
 };

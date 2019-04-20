@@ -241,10 +241,10 @@ public:
     void MarkForAuxView(unsigned frameNumber);
 
     /// Return number of techniques.
-    unsigned GetNumTechniques() const { return techniques_.Size(); }
+    unsigned GetNumTechniques() const { return techniques_.size(); }
 
     /// Return all techniques.
-    const Vector<TechniqueEntry>& GetTechniques() const { return techniques_; }
+    const stl::vector<TechniqueEntry>& GetTechniques() const { return techniques_; }
 
     /// Return technique entry by index.
     const TechniqueEntry& GetTechniqueEntry(unsigned index) const;
@@ -338,7 +338,7 @@ private:
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Techniques.
-    Vector<TechniqueEntry> techniques_;
+    stl::vector<TechniqueEntry> techniques_;
     /// Textures.
     HashMap<TextureUnit, stl::shared_ptr<Texture> > textures_;
     /// %Shader parameters.

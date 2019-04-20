@@ -178,9 +178,9 @@ static void ToRapidjsonValue(rapidjson::Value& rapidjsonValue, const JSONValue& 
             const JSONArray& jsonArray = jsonValue.GetArray();
 
             rapidjsonValue.SetArray();
-            rapidjsonValue.Reserve(jsonArray.Size(), allocator);
+            rapidjsonValue.Reserve(jsonArray.size(), allocator);
 
-            for (unsigned i = 0; i < jsonArray.Size(); ++i)
+            for (unsigned i = 0; i < jsonArray.size(); ++i)
             {
                 rapidjson::Value value;
                 ToRapidjsonValue(value, jsonArray[i], allocator);

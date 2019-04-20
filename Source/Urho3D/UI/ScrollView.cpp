@@ -125,9 +125,9 @@ void ScrollView::Update(float timeStep)
 
     if (GetSubsystem<UI>()->IsDragging())
     {
-        const PODVector<UIElement*>& dragElements = GetSubsystem<UI>()->GetDragElements();
+        const stl::vector<UIElement*>& dragElements = GetSubsystem<UI>()->GetDragElements();
 
-        for (unsigned i = 0; i < dragElements.Size(); i++)
+        for (unsigned i = 0; i < dragElements.size(); i++)
         {
             UIElement* dragElement = dragElements[i];
             int dragButtons = dragElement->GetDragButtonCombo();

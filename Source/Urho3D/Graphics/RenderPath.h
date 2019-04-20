@@ -136,7 +136,7 @@ struct URHO3D_API RenderPathCommand
     const Variant& GetShaderParameter(const String& name) const;
 
     /// Return number of output rendertargets.
-    unsigned GetNumOutputs() const { return outputs_.Size(); }
+    unsigned GetNumOutputs() const { return outputs_.size(); }
 
     /// Return output rendertarget name.
     const String& GetOutputName(unsigned index) const;
@@ -183,7 +183,7 @@ struct URHO3D_API RenderPathCommand
     /// %Shader parameters.
     HashMap<StringHash, Variant> shaderParameters_;
     /// Output rendertarget names and faces.
-    Vector<Pair<String, CubeMapFace> > outputs_;
+    stl::vector<Pair<String, CubeMapFace> > outputs_;
     /// Depth-stencil output name.
     String depthStencilName_;
     /// Clear flags. Affects clear command only.
@@ -257,21 +257,21 @@ public:
     void SetShaderParameter(const String& name, const Variant& value);
 
     /// Return number of rendertargets.
-    unsigned GetNumRenderTargets() const { return renderTargets_.Size(); }
+    unsigned GetNumRenderTargets() const { return renderTargets_.size(); }
 
     /// Return number of commands.
-    unsigned GetNumCommands() const { return commands_.Size(); }
+    unsigned GetNumCommands() const { return commands_.size(); }
 
     /// Return command at index, or null if does not exist.
-    RenderPathCommand* GetCommand(unsigned index) { return index < commands_.Size() ? &commands_[index] : nullptr; }
+    RenderPathCommand* GetCommand(unsigned index) { return index < commands_.size() ? &commands_[index] : nullptr; }
 
     /// Return a shader parameter (first appearance in any command.)
     const Variant& GetShaderParameter(const String& name) const;
 
     /// Rendertargets.
-    Vector<RenderTargetInfo> renderTargets_;
+    stl::vector<RenderTargetInfo> renderTargets_;
     /// Rendering commands.
-    Vector<RenderPathCommand> commands_;
+    stl::vector<RenderPathCommand> commands_;
 };
 
 }

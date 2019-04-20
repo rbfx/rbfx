@@ -73,7 +73,7 @@ struct SourceBatch2D
     /// Material.
     stl::shared_ptr<Material> material_;
     /// Vertices.
-    Vector<Vertex2D> vertices_;
+    stl::vector<Vertex2D> vertices_;
 
     /// Equality comparison operator.
     bool operator==(const SourceBatch2D& other) const
@@ -122,7 +122,7 @@ public:
     int GetOrderInLayer() const { return orderInLayer_; }
 
     /// Return all source batches (called by Renderer2D).
-    const Vector<SourceBatch2D>& GetSourceBatches();
+    const stl::vector<SourceBatch2D>& GetSourceBatches();
 
 protected:
     /// Handle scene being assigned.
@@ -142,7 +142,7 @@ protected:
     /// Order in layer.
     int orderInLayer_;
     /// Source batches.
-    Vector<SourceBatch2D> sourceBatches_;
+    stl::vector<SourceBatch2D> sourceBatches_;
     /// Source batches dirty flag.
     bool sourceBatchesDirty_;
     /// Renderer2D.

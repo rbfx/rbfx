@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Core/WorkQueue.h"
@@ -86,7 +88,7 @@ void Renderer2D::RegisterObject(Context* context)
     context->RegisterFactory<Renderer2D>();
 }
 
-static inline bool CompareRayQueryResults(RayQueryResult& lr, RayQueryResult& rr)
+static inline bool CompareRayQueryResults(const RayQueryResult& lr, const RayQueryResult& rr)
 {
     auto* lhs = static_cast<Drawable2D*>(lr.drawable_);
     auto* rhs = static_cast<Drawable2D*>(rr.drawable_);
@@ -99,22 +101,22 @@ static inline bool CompareRayQueryResults(RayQueryResult& lr, RayQueryResult& rr
     return lhs->GetID() > rhs->GetID();
 }
 
-void Renderer2D::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void Renderer2D::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
-    unsigned resultSize = results.Size();
-    for (unsigned i = 0; i < drawables_.Size(); ++i)
+    unsigned resultSize = results.size();
+    for (unsigned i = 0; i < drawables_.size(); ++i)
     {
         if (drawables_[i]->GetViewMask() & query.viewMask_)
             drawables_[i]->ProcessRayQuery(query, results);
     }
 
-    if (results.Size() != resultSize)
-        Sort(results.Begin() + resultSize, results.End(), CompareRayQueryResults);
+    if (results.size() != resultSize)
+        stl::quick_sort(results.begin() + resultSize, results.end(), CompareRayQueryResults);
 }
 
 void Renderer2D::UpdateBatches(const FrameInfo& frame)
 {
-    unsigned count = batches_.Size();
+    unsigned count = batches_.size();
 
     // Update non-thread critical parts of the source batches
     for (unsigned i = 0; i < count; ++i)
@@ -198,13 +200,13 @@ void Renderer2D::UpdateGeometry(const FrameInfo& frame)
             auto* dest = reinterpret_cast<Vertex2D*>(vertexBuffer->Lock(0, vertexCount, true));
             if (dest)
             {
-                const PODVector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
-                for (unsigned b = 0; b < sourceBatches.Size(); ++b)
+                const stl::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
+                for (unsigned b = 0; b < sourceBatches.size(); ++b)
                 {
-                    const Vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
-                    for (unsigned i = 0; i < vertices.Size(); ++i)
+                    const stl::vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
+                    for (unsigned i = 0; i < vertices.size(); ++i)
                         dest[i] = vertices[i];
-                    dest += vertices.Size();
+                    dest += vertices.size();
                 }
 
                 vertexBuffer->Unlock();
@@ -227,7 +229,7 @@ void Renderer2D::AddDrawable(Drawable2D* drawable)
     if (!drawable)
         return;
 
-    drawables_.Push(drawable);
+    drawables_.push_back(drawable);
 }
 
 void Renderer2D::RemoveDrawable(Drawable2D* drawable)
@@ -235,7 +237,7 @@ void Renderer2D::RemoveDrawable(Drawable2D* drawable)
     if (!drawable)
         return;
 
-    drawables_.Remove(drawable);
+    drawables_.erase_first(drawable);
 }
 
 Material* Renderer2D::GetMaterial(Texture2D* texture, BlendMode blendMode)
@@ -338,9 +340,9 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
 
         auto* queue = GetSubsystem<WorkQueue>();
         int numWorkItems = queue->GetNumThreads() + 1; // Worker threads + main thread
-        int drawablesPerItem = drawables_.Size() / numWorkItems;
+        int drawablesPerItem = drawables_.size() / numWorkItems;
 
-        PODVector<Drawable2D*>::Iterator start = drawables_.Begin();
+        auto start = drawables_.begin();
         for (int i = 0; i < numWorkItems; ++i)
         {
             stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
@@ -348,7 +350,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
             item->workFunction_ = CheckDrawableVisibilityWork;
             item->aux_ = this;
 
-            PODVector<Drawable2D*>::Iterator end = drawables_.End();
+            auto end = drawables_.end();
             if (i < numWorkItems - 1 && end - start > drawablesPerItem)
                 end = start + drawablesPerItem;
 
@@ -374,7 +376,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
     // but upload the actual vertex data later. The idea is that the View class copies our batch vector to
     // its internal data structures, so we can reuse the batches for each view, provided that unique Geometry
     // objects are used for each view to specify the draw ranges
-    batches_.Resize(viewBatchInfo.batchCount_);
+    batches_.resize(viewBatchInfo.batchCount_);
     for (unsigned i = 0; i < viewBatchInfo.batchCount_; ++i)
     {
         batches_[i].distance_ = viewBatchInfo.distances_[i];
@@ -383,21 +385,21 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
     }
 }
 
-void Renderer2D::GetDrawables(PODVector<Drawable2D*>& drawables, Node* node)
+void Renderer2D::GetDrawables(stl::vector<Drawable2D*>& drawables, Node* node)
 {
     if (!node || !node->IsEnabled())
         return;
 
-    const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
-    for (Vector<stl::shared_ptr<Component> >::ConstIterator i = components.Begin(); i != components.End(); ++i)
+    const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    for (auto i = components.begin(); i != components.end(); ++i)
     {
         auto* drawable = dynamic_cast<Drawable2D*>(i->get());
         if (drawable && drawable->IsEnabled())
-            drawables.Push(drawable);
+            drawables.push_back(drawable);
     }
 
-    const Vector<stl::shared_ptr<Node> >& children = node->GetChildren();
-    for (Vector<stl::shared_ptr<Node> >::ConstIterator i = children.Begin(); i != children.End(); ++i)
+    const stl::vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    for (auto i = children.begin(); i != children.end(); ++i)
         GetDrawables(drawables, i->get());
 }
 
@@ -421,22 +423,22 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
     if (viewBatchInfo.batchUpdatedFrameNumber_ == frame_.frameNumber_)
         return;
 
-    PODVector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
-    sourceBatches.Clear();
-    for (unsigned d = 0; d < drawables_.Size(); ++d)
+    stl::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
+    sourceBatches.clear();
+    for (unsigned d = 0; d < drawables_.size(); ++d)
     {
         if (!drawables_[d]->IsInView(camera))
             continue;
 
-        const Vector<SourceBatch2D>& batches = drawables_[d]->GetSourceBatches();
-        for (unsigned b = 0; b < batches.Size(); ++b)
+        const stl::vector<SourceBatch2D>& batches = drawables_[d]->GetSourceBatches();
+        for (unsigned b = 0; b < batches.size(); ++b)
         {
-            if (batches[b].material_ && !batches[b].vertices_.Empty())
-                sourceBatches.Push(&batches[b]);
+            if (batches[b].material_ && !batches[b].vertices_.empty())
+                sourceBatches.push_back(&batches[b]);
         }
     }
 
-    for (unsigned i = 0; i < sourceBatches.Size(); ++i)
+    for (unsigned i = 0; i < sourceBatches.size(); ++i)
     {
         const SourceBatch2D* sourceBatch = sourceBatches[i];
         // if (sourceBatch->owner_)
@@ -446,7 +448,7 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
         }
     }
 
-    Sort(sourceBatches.Begin(), sourceBatches.End(), CompareSourceBatch2Ds);
+    stl::quick_sort(sourceBatches.begin(), sourceBatches.end(), CompareSourceBatch2Ds);
 
     viewBatchInfo.batchCount_ = 0;
     Material* currMaterial = nullptr;
@@ -456,11 +458,11 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
     unsigned vCount = 0;
     float distance = M_INFINITY;
 
-    for (unsigned b = 0; b < sourceBatches.Size(); ++b)
+    for (unsigned b = 0; b < sourceBatches.size(); ++b)
     {
         distance = Min(distance, sourceBatches[b]->distance_);
         Material* material = sourceBatches[b]->material_;
-        const Vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
+        const stl::vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
 
         // When new material encountered, finish the current batch and start new
         if (currMaterial != material)
@@ -478,8 +480,8 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
             currMaterial = material;
         }
 
-        iCount += vertices.Size() * 6 / 4;
-        vCount += vertices.Size();
+        iCount += vertices.size() * 6 / 4;
+        vCount += vertices.size();
     }
 
     // Add the final batch if necessary
@@ -497,22 +499,22 @@ void Renderer2D::AddViewBatch(ViewBatchInfo2D& viewBatchInfo, Material* material
     if (!material || indexCount == 0 || vertexCount == 0)
         return;
 
-    if (viewBatchInfo.distances_.Size() <= viewBatchInfo.batchCount_)
-        viewBatchInfo.distances_.Resize(viewBatchInfo.batchCount_ + 1);
+    if (viewBatchInfo.distances_.size() <= viewBatchInfo.batchCount_)
+        viewBatchInfo.distances_.resize(viewBatchInfo.batchCount_ + 1);
     viewBatchInfo.distances_[viewBatchInfo.batchCount_] = distance;
 
-    if (viewBatchInfo.materials_.Size() <= viewBatchInfo.batchCount_)
-        viewBatchInfo.materials_.Resize(viewBatchInfo.batchCount_ + 1);
+    if (viewBatchInfo.materials_.size() <= viewBatchInfo.batchCount_)
+        viewBatchInfo.materials_.resize(viewBatchInfo.batchCount_ + 1);
     viewBatchInfo.materials_[viewBatchInfo.batchCount_] = material;
 
     // Allocate new geometry if necessary
-    if (viewBatchInfo.geometries_.Size() <= viewBatchInfo.batchCount_)
+    if (viewBatchInfo.geometries_.size() <= viewBatchInfo.batchCount_)
     {
         stl::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetVertexBuffer(0, viewBatchInfo.vertexBuffer_);
 
-        viewBatchInfo.geometries_.Push(geometry);
+        viewBatchInfo.geometries_.push_back(geometry);
     }
 
     Geometry* geometry = viewBatchInfo.geometries_[viewBatchInfo.batchCount_];

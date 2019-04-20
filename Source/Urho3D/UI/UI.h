@@ -157,7 +157,7 @@ public:
     /// Return topmost enabled root-level non-modal element.
     UIElement* GetFrontElement() const;
     /// Return currently dragged elements.
-    const PODVector<UIElement*>& GetDragElements();
+    const stl::vector<UIElement*>& GetDragElements();
 
     /// Return the number of currently dragged elements.
     unsigned GetNumDragElements() const { return (unsigned)dragConfirmedCount_; }
@@ -257,11 +257,11 @@ private:
     /// Update UI element logic recursively.
     void Update(float timeStep, UIElement* element);
     /// Upload UI geometry into a vertex buffer.
-    void SetVertexData(VertexBuffer* dest, const PODVector<float>& vertexData);
+    void SetVertexData(VertexBuffer* dest, const stl::vector<float>& vertexData);
     /// Render UI batches to the current rendertarget. Geometry must have been uploaded first.
-    void Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd);
+    void Render(VertexBuffer* buffer, const stl::vector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd);
     /// Generate batches from an UI element recursively. Skip the cursor element.
-    void GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, UIElement* element, IntRect currentScissor);
+    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, UIElement* element, IntRect currentScissor);
     /// Return UI element at global screen coordinates. Return position converted to element's screen coordinates.
     UIElement* GetElementAt(const IntVector2& position, bool enabledOnly, IntVector2* elementScreenPosition);
     /// Return UI element at screen position recursively.
@@ -351,19 +351,19 @@ private:
     /// Currently focused element.
     stl::weak_ptr<UIElement> focusElement_;
     /// UI rendering batches.
-    PODVector<UIBatch> batches_;
+    stl::vector<UIBatch> batches_;
     /// UI rendering vertex data.
-    PODVector<float> vertexData_;
+    stl::vector<float> vertexData_;
     /// UI rendering batches for debug draw.
-    PODVector<UIBatch> debugDrawBatches_;
+    stl::vector<UIBatch> debugDrawBatches_;
     /// UI rendering vertex data for debug draw.
-    PODVector<float> debugVertexData_;
+    stl::vector<float> debugVertexData_;
     /// UI vertex buffer.
     stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// UI debug geometry vertex buffer.
     stl::shared_ptr<VertexBuffer> debugVertexBuffer_;
     /// UI element query vector.
-    PODVector<UIElement*> tempElements_;
+    stl::vector<UIElement*> tempElements_;
     /// Clipboard text.
     mutable String clipBoard_;
     /// Seconds between clicks to register a double click.
@@ -425,7 +425,7 @@ private:
     /// UI elements that are being touched with touch input.
     HashMap<stl::weak_ptr<UIElement>, MouseButtonFlags> touchDragElements_;
     /// Confirmed drag elements cache.
-    PODVector<UIElement*> dragElementsConfirmed_;
+    stl::vector<UIElement*> dragElementsConfirmed_;
     /// Current scale of UI.
     float uiScale_;
     /// Root element custom size. 0,0 for automatic resizing (default.)

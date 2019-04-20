@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 const Variant Variant::EMPTY { };
-const PODVector<unsigned char> Variant::emptyBuffer { };
+const stl::vector<unsigned char> Variant::emptyBuffer { };
 const ResourceRef Variant::emptyResourceRef { };
 const ResourceRefList Variant::emptyResourceRefList { };
 const VariantMap Variant::emptyVariantMap;
@@ -235,20 +235,20 @@ bool Variant::operator ==(const Variant& rhs) const
     }
 }
 
-bool Variant::operator ==(const PODVector<unsigned char>& rhs) const
+bool Variant::operator ==(const stl::vector<unsigned char>& rhs) const
 {
-    // Use strncmp() instead of PODVector<unsigned char>::operator ==()
-    const PODVector<unsigned char>& buffer = value_.buffer_;
-    return type_ == VAR_BUFFER && buffer.Size() == rhs.Size() ?
-        strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(&rhs[0]), buffer.Size()) == 0 :
+    // Use strncmp() instead of stl::vector<unsigned char>::operator ==()
+    const stl::vector<unsigned char>& buffer = value_.buffer_;
+    return type_ == VAR_BUFFER && buffer.size() == rhs.size() ?
+        strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(&rhs[0]), buffer.size()) == 0 :
         false;
 }
 
 bool Variant::operator ==(const VectorBuffer& rhs) const
 {
-    const PODVector<unsigned char>& buffer = value_.buffer_;
-    return type_ == VAR_BUFFER && buffer.Size() == rhs.GetSize() ?
-        strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(rhs.GetData()), buffer.Size()) == 0 :
+    const stl::vector<unsigned char>& buffer = value_.buffer_;
+    return type_ == VAR_BUFFER && buffer.size() == rhs.GetSize() ?
+        strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(rhs.GetData()), buffer.size()) == 0 :
         false;
 }
 
@@ -414,7 +414,7 @@ void Variant::FromString(VariantType type, const char* value)
     case VAR_RESOURCEREF:
     {
         StringVector values = String::Split(value, ';');
-        if (values.Size() == 2)
+        if (values.size() == 2)
         {
             SetType(VAR_RESOURCEREF);
             value_.resourceRef_.type_ = values[0];
@@ -426,12 +426,12 @@ void Variant::FromString(VariantType type, const char* value)
     case VAR_RESOURCEREFLIST:
     {
         StringVector values = String::Split(value, ';', true);
-        if (values.Size() >= 1)
+        if (values.size() >= 1)
         {
             SetType(VAR_RESOURCEREFLIST);
             value_.resourceRefList_.type_ = values[0];
-            value_.resourceRefList_.names_.Resize(values.Size() - 1);
-            for (unsigned i = 1; i < values.Size(); ++i)
+            value_.resourceRefList_.names_.resize(values.size() - 1);
+            for (unsigned i = 1; i < values.size(); ++i)
                 value_.resourceRefList_.names_[i - 1] = values[i];
         }
         break;
@@ -485,8 +485,8 @@ void Variant::SetBuffer(const void* data, unsigned size)
         size = 0;
 
     SetType(VAR_BUFFER);
-    PODVector<unsigned char>& buffer = value_.buffer_;
-    buffer.Resize(size);
+    stl::vector<unsigned char>& buffer = value_.buffer_;
+    buffer.resize(size);
     if (size)
         memcpy(&buffer[0], data, size);
 }
@@ -563,9 +563,9 @@ String Variant::ToString() const
 
     case VAR_BUFFER:
         {
-            const PODVector<unsigned char>& buffer = value_.buffer_;
+            const stl::vector<unsigned char>& buffer = value_.buffer_;
             String ret;
-            BufferToString(ret, buffer.Begin().ptr_, buffer.Size());
+            BufferToString(ret, buffer.data(), buffer.size());
             return ret;
         }
 
@@ -646,7 +646,7 @@ bool Variant::IsZero() const
         return value_.string_.Empty();
 
     case VAR_BUFFER:
-        return value_.buffer_.Empty();
+        return value_.buffer_.empty();
 
     case VAR_VOIDPTR:
         return value_.voidPtr_ == nullptr;
@@ -657,7 +657,7 @@ bool Variant::IsZero() const
     case VAR_RESOURCEREFLIST:
     {
         const StringVector& names = value_.resourceRefList_.names_;
-        for (StringVector::ConstIterator i = names.Begin(); i != names.End(); ++i)
+        for (auto i = names.begin(); i != names.end(); ++i)
         {
             if (!i->Empty())
                 return false;
@@ -666,10 +666,10 @@ bool Variant::IsZero() const
     }
 
     case VAR_VARIANTVECTOR:
-        return value_.variantVector_.Empty();
+        return value_.variantVector_.empty();
 
     case VAR_STRINGVECTOR:
-        return value_.stringVector_.Empty();
+        return value_.stringVector_.empty();
 
     case VAR_VARIANTMAP:
         return value_.variantMap_.Empty();
@@ -722,7 +722,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_BUFFER:
-        value_.buffer_.~PODVector<unsigned char>();
+        value_.buffer_.~vector<unsigned char>();
         break;
 
     case VAR_RESOURCEREF:
@@ -782,7 +782,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_BUFFER:
-        new(&value_.buffer_) PODVector<unsigned char>();
+        new(&value_.buffer_) stl::vector<unsigned char>();
         break;
 
     case VAR_RESOURCEREF:
@@ -926,7 +926,7 @@ template <> const IntVector3& Variant::Get<const IntVector3&>() const
     return GetIntVector3();
 }
 
-template <> const PODVector<unsigned char>& Variant::Get<const PODVector<unsigned char>&>() const
+template <> const stl::vector<unsigned char>& Variant::Get<const stl::vector<unsigned char>&>() const
 {
     return GetBuffer();
 }
@@ -1031,7 +1031,7 @@ template <> IntVector3 Variant::Get<IntVector3>() const
     return GetIntVector3();
 }
 
-template <> PODVector<unsigned char> Variant::Get<PODVector<unsigned char> >() const
+template <> stl::vector<unsigned char> Variant::Get<stl::vector<unsigned char> >() const
 {
     return GetBuffer();
 }

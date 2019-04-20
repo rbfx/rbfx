@@ -291,15 +291,15 @@ private:
     /// Ongoing package send transfers.
     HashMap<StringHash, PackageUpload> uploads_;
     /// Pending latest data for not yet received nodes.
-    HashMap<unsigned, PODVector<unsigned char> > nodeLatestData_;
+    HashMap<unsigned, stl::vector<unsigned char> > nodeLatestData_;
     /// Pending latest data for not yet received components.
-    HashMap<unsigned, PODVector<unsigned char> > componentLatestData_;
+    HashMap<unsigned, stl::vector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
     stl::hash_set<unsigned> nodesToProcess_;
     /// Reusable message buffer.
     VectorBuffer msg_;
     /// Queued remote events.
-    Vector<RemoteEvent> remoteEvents_;
+    stl::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.
     String sceneFileName_;
     /// Statistics timer.

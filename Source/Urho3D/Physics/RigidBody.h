@@ -224,7 +224,7 @@ public:
     CollisionEventMode GetCollisionEventMode() const { return collisionEventMode_; }
 
     /// Return colliding rigid bodies from the last simulation step. Only returns collisions that were sent as events (depends on collision event mode) and excludes e.g. static-static collisions.
-    void GetCollidingBodies(PODVector<RigidBody*>& result) const;
+    void GetCollidingBodies(stl::vector<RigidBody*>& result) const;
 
     /// Apply new world transform after a simulation step. Called internally.
     void ApplyWorldTransform(const Vector3& newWorldPosition, const Quaternion& newWorldRotation);
@@ -233,9 +233,9 @@ public:
     /// Update gravity parameters to the Bullet rigid body.
     void UpdateGravity();
     /// Set network angular velocity attribute.
-    void SetNetAngularVelocityAttr(const PODVector<unsigned char>& value);
+    void SetNetAngularVelocityAttr(const stl::vector<unsigned char>& value);
     /// Return network angular velocity attribute.
-    const PODVector<unsigned char>& GetNetAngularVelocityAttr() const;
+    const stl::vector<unsigned char>& GetNetAngularVelocityAttr() const;
     /// Add a constraint that refers to this rigid body.
     void AddConstraint(Constraint* constraint);
     /// Remove a constraint that refers to this rigid body.
@@ -274,7 +274,7 @@ private:
     /// Smoothed transform, if has one.
     stl::weak_ptr<SmoothedTransform> smoothedTransform_;
     /// Constraints that refer to this rigid body.
-    PODVector<Constraint*> constraints_;
+    stl::vector<Constraint*> constraints_;
     /// Gravity override vector.
     Vector3 gravityOverride_;
     /// Center of mass offset.

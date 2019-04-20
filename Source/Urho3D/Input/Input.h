@@ -84,25 +84,25 @@ struct URHO3D_API JoystickState
     bool IsController() const { return controller_ != nullptr; }
 
     /// Return number of buttons.
-    unsigned GetNumButtons() const { return buttons_.Size(); }
+    unsigned GetNumButtons() const { return buttons_.size(); }
 
     /// Return number of axes.
-    unsigned GetNumAxes() const { return axes_.Size(); }
+    unsigned GetNumAxes() const { return axes_.size(); }
 
     /// Return number of hats.
-    unsigned GetNumHats() const { return hats_.Size(); }
+    unsigned GetNumHats() const { return hats_.size(); }
 
     /// Check if a button is held down.
-    bool GetButtonDown(unsigned index) const { return index < buttons_.Size() ? buttons_[index] : false; }
+    bool GetButtonDown(unsigned index) const { return index < buttons_.size() ? buttons_[index] : false; }
 
     /// Check if a button has been pressed on this frame.
-    bool GetButtonPress(unsigned index) const { return index < buttonPress_.Size() ? buttonPress_[index] : false; }
+    bool GetButtonPress(unsigned index) const { return index < buttonPress_.size() ? buttonPress_[index] : false; }
 
     /// Return axis position.
-    float GetAxisPosition(unsigned index) const { return index < axes_.Size() ? axes_[index] : 0.0f; }
+    float GetAxisPosition(unsigned index) const { return index < axes_.size() ? axes_[index] : 0.0f; }
 
     /// Return hat position.
-    int GetHatPosition(unsigned index) const { return index < hats_.Size() ? hats_[index] : HAT_CENTER; }
+    int GetHatPosition(unsigned index) const { return index < hats_.size() ? hats_[index] : HAT_CENTER; }
 
     /// SDL joystick.
     SDL_Joystick* joystick_{};
@@ -115,13 +115,13 @@ struct URHO3D_API JoystickState
     /// Joystick name.
     String name_;
     /// Button up/down state.
-    PODVector<bool> buttons_;
+    stl::vector<bool> buttons_;
     /// Button pressed on this frame.
-    PODVector<bool> buttonPress_;
+    stl::vector<bool> buttonPress_;
     /// Axis position from -1 to 1.
-    PODVector<float> axes_;
+    stl::vector<float> axes_;
     /// POV hat bits.
-    PODVector<int> hats_;
+    stl::vector<int> hats_;
 };
 
 #ifdef __EMSCRIPTEN__

@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
@@ -325,7 +327,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 case LIGHT_DIRECTIONAL:
                     {
                         Matrix4 shadowMatrices[MAX_CASCADE_SPLITS];
-                        unsigned numSplits = Min(MAX_CASCADE_SPLITS, lightQueue_->shadowSplits_.Size());
+                        unsigned numSplits = Min(MAX_CASCADE_SPLITS, lightQueue_->shadowSplits_.size());
 
                         for (unsigned i = 0; i < numSplits; ++i)
                             CalculateShadowMatrix(shadowMatrices[i], lightQueue_, i, renderer);
@@ -385,7 +387,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 case LIGHT_DIRECTIONAL:
                     {
                         Matrix4 shadowMatrices[MAX_CASCADE_SPLITS];
-                        unsigned numSplits = Min(MAX_CASCADE_SPLITS, lightQueue_->shadowSplits_.Size());
+                        unsigned numSplits = Min(MAX_CASCADE_SPLITS, lightQueue_->shadowSplits_.size());
 
                         for (unsigned i = 0; i < numSplits; ++i)
                             CalculateShadowMatrix(shadowMatrices[i], lightQueue_, i, renderer);
@@ -489,11 +491,11 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 graphics->SetShaderParameter(PSP_SHADOWMAPINVSIZE, Vector2(sizeX, sizeY));
 
                 Vector4 lightSplits(M_LARGE_VALUE, M_LARGE_VALUE, M_LARGE_VALUE, M_LARGE_VALUE);
-                if (lightQueue_->shadowSplits_.Size() > 1)
+                if (lightQueue_->shadowSplits_.size() > 1)
                     lightSplits.x_ = lightQueue_->shadowSplits_[0].farSplit_ / camera->GetFarClip();
-                if (lightQueue_->shadowSplits_.Size() > 2)
+                if (lightQueue_->shadowSplits_.size() > 2)
                     lightSplits.y_ = lightQueue_->shadowSplits_[1].farSplit_ / camera->GetFarClip();
-                if (lightQueue_->shadowSplits_.Size() > 3)
+                if (lightQueue_->shadowSplits_.size() > 3)
                     lightSplits.z_ = lightQueue_->shadowSplits_[2].farSplit_ / camera->GetFarClip();
 
                 graphics->SetShaderParameter(PSP_SHADOWSPLITS, lightSplits);
@@ -514,11 +516,11 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                     else
                     {
                         normalOffsetScale.x_ = lightQueue_->shadowSplits_[0].shadowCamera_->GetOrthoSize();
-                        if (lightQueue_->shadowSplits_.Size() > 1)
+                        if (lightQueue_->shadowSplits_.size() > 1)
                             normalOffsetScale.y_ = lightQueue_->shadowSplits_[1].shadowCamera_->GetOrthoSize();
-                        if (lightQueue_->shadowSplits_.Size() > 2)
+                        if (lightQueue_->shadowSplits_.size() > 2)
                             normalOffsetScale.z_ = lightQueue_->shadowSplits_[2].shadowCamera_->GetOrthoSize();
-                        if (lightQueue_->shadowSplits_.Size() > 3)
+                        if (lightQueue_->shadowSplits_.size() > 3)
                             normalOffsetScale.w_ = lightQueue_->shadowSplits_[3].shadowCamera_->GetOrthoSize();
                     }
 
@@ -531,13 +533,13 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 }
             }
         }
-        else if (lightQueue_->vertexLights_.Size() && graphics->HasShaderParameter(VSP_VERTEXLIGHTS) &&
+        else if (lightQueue_->vertexLights_.size() && graphics->HasShaderParameter(VSP_VERTEXLIGHTS) &&
                  graphics->NeedParameterUpdate(SP_LIGHT, lightQueue_))
         {
             Vector4 vertexLights[MAX_VERTEX_LIGHTS * 3];
-            const PODVector<Light*>& lights = lightQueue_->vertexLights_;
+            const stl::vector<Light*>& lights = lightQueue_->vertexLights_;
 
-            for (unsigned i = 0; i < lights.Size(); ++i)
+            for (unsigned i = 0; i < lights.size(); ++i)
             {
                 Light* vertexLight = lights[i];
                 Node* vertexLightNode = vertexLight->GetNode();
@@ -579,7 +581,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 vertexLights[i * 3 + 2] = Vector4(vertexLightNode->GetWorldPosition(), invCutoff);
             }
 
-            graphics->SetShaderParameter(VSP_VERTEXLIGHTS, vertexLights[0].Data(), lights.Size() * 3 * 4);
+            graphics->SetShaderParameter(VSP_VERTEXLIGHTS, vertexLights[0].Data(), lights.size() * 3 * 4);
         }
     }
 
@@ -651,7 +653,7 @@ void BatchGroup::SetInstancingData(void* lockedData, unsigned stride, unsigned& 
     startIndex_ = freeIndex;
     unsigned char* buffer = static_cast<unsigned char*>(lockedData) + startIndex_ * stride;
 
-    for (unsigned i = 0; i < instances_.Size(); ++i)
+    for (unsigned i = 0; i < instances_.size(); ++i)
     {
         const InstanceData& instance = instances_[i];
 
@@ -662,7 +664,7 @@ void BatchGroup::SetInstancingData(void* lockedData, unsigned stride, unsigned& 
         buffer += stride;
     }
 
-    freeIndex += instances_.Size();
+    freeIndex += instances_.size();
 }
 
 void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
@@ -670,7 +672,7 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
     Graphics* graphics = view->GetGraphics();
     Renderer* renderer = view->GetRenderer();
 
-    if (instances_.Size() && !geometry_->IsEmpty())
+    if (instances_.size() && !geometry_->IsEmpty())
     {
         // Draw as individual objects if instancing not supported or could not fill the instancing buffer
         VertexBuffer* instanceBuffer = renderer->GetInstancingBuffer();
@@ -681,7 +683,7 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
             graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
             graphics->SetVertexBuffers(geometry_->GetVertexBuffers());
 
-            for (unsigned i = 0; i < instances_.Size(); ++i)
+            for (unsigned i = 0; i < instances_.size(); ++i)
             {
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
                     graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
@@ -696,17 +698,17 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
 
             // Get the geometry vertex buffers, then add the instancing stream buffer
             // Hack: use a const_cast to avoid dynamic allocation of new temp vectors
-            auto& vertexBuffers = const_cast<Vector<stl::shared_ptr<VertexBuffer> >&>(
+            auto& vertexBuffers = const_cast<stl::vector<stl::shared_ptr<VertexBuffer> >&>(
                 geometry_->GetVertexBuffers());
-            vertexBuffers.Push(stl::shared_ptr<VertexBuffer>(instanceBuffer));
+            vertexBuffers.push_back(stl::shared_ptr<VertexBuffer>(instanceBuffer));
 
             graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
             graphics->SetVertexBuffers(vertexBuffers, startIndex_);
             graphics->DrawInstanced(geometry_->GetPrimitiveType(), geometry_->GetIndexStart(), geometry_->GetIndexCount(),
-                geometry_->GetVertexStart(), geometry_->GetVertexCount(), instances_.Size());
+                geometry_->GetVertexStart(), geometry_->GetVertexCount(), instances_.size());
 
             // Remove the instancing buffer & element mask now
-            vertexBuffers.Pop();
+            vertexBuffers.pop_back();
         }
     }
 }
@@ -719,67 +721,68 @@ unsigned BatchGroupKey::ToHash() const
 
 void BatchQueue::Clear(int maxSortedInstances)
 {
-    batches_.Clear();
-    sortedBatches_.Clear();
+    batches_.clear();
+    sortedBatches_.clear();
     batchGroups_.Clear();
     maxSortedInstances_ = (unsigned)maxSortedInstances;
 }
 
 void BatchQueue::SortBackToFront()
 {
-    sortedBatches_.Resize(batches_.Size());
+    sortedBatches_.resize(batches_.size());
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
         sortedBatches_[i] = &batches_[i];
 
-    Sort(sortedBatches_.Begin(), sortedBatches_.End(), CompareBatchesBackToFront);
+    stl::quick_sort(sortedBatches_.begin(), sortedBatches_.end(), CompareBatchesBackToFront);
 
-    sortedBatchGroups_.Resize(batchGroups_.Size());
+    sortedBatchGroups_.resize(batchGroups_.Size());
 
     unsigned index = 0;
     for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
         sortedBatchGroups_[index++] = &i->second_;
 
-    Sort(sortedBatchGroups_.Begin(), sortedBatchGroups_.End(), CompareBatchGroupOrder);
+    stl::quick_sort(sortedBatchGroups_.begin(), sortedBatchGroups_.end(), CompareBatchGroupOrder);
 }
 
 void BatchQueue::SortFrontToBack()
 {
-    sortedBatches_.Clear();
+    sortedBatches_.clear();
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
-        sortedBatches_.Push(&batches_[i]);
+    for (unsigned i = 0; i < batches_.size(); ++i)
+        sortedBatches_.push_back(&batches_[i]);
 
     SortFrontToBack2Pass(sortedBatches_);
 
     // Sort each group front to back
     for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
     {
-        if (i->second_.instances_.Size() <= maxSortedInstances_)
+        if (i->second_.instances_.size() <= maxSortedInstances_)
         {
-            Sort(i->second_.instances_.Begin(), i->second_.instances_.End(), CompareInstancesFrontToBack);
-            if (i->second_.instances_.Size())
+            stl::quick_sort(i->second_.instances_.begin(), i->second_.instances_.end(), CompareInstancesFrontToBack);
+            if (i->second_.instances_.size())
                 i->second_.distance_ = i->second_.instances_[0].distance_;
         }
         else
         {
             float minDistance = M_INFINITY;
-            for (PODVector<InstanceData>::ConstIterator j = i->second_.instances_.Begin(); j != i->second_.instances_.End(); ++j)
+            for (auto j = i->second_.instances_.begin(); j !=
+                i->second_.instances_.end(); ++j)
                 minDistance = Min(minDistance, j->distance_);
             i->second_.distance_ = minDistance;
         }
     }
 
-    sortedBatchGroups_.Resize(batchGroups_.Size());
+    sortedBatchGroups_.resize(batchGroups_.Size());
 
     unsigned index = 0;
     for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
         sortedBatchGroups_[index++] = &i->second_;
 
-    SortFrontToBack2Pass(reinterpret_cast<PODVector<Batch*>& >(sortedBatchGroups_));
+    SortFrontToBack2Pass(reinterpret_cast<stl::vector<Batch*>& >(sortedBatchGroups_));
 }
 
-void BatchQueue::SortFrontToBack2Pass(PODVector<Batch*>& batches)
+void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
 {
     // Mobile devices likely use a tiled deferred approach, with which front-to-back sorting is irrelevant. The 2-pass
     // method is also time consuming, so just sort with state having priority
@@ -787,13 +790,13 @@ void BatchQueue::SortFrontToBack2Pass(PODVector<Batch*>& batches)
     Sort(batches.Begin(), batches.End(), CompareBatchesState);
 #else
     // For desktop, first sort by distance and remap shader/material/geometry IDs in the sort key
-    Sort(batches.Begin(), batches.End(), CompareBatchesFrontToBack);
+    stl::quick_sort(batches.begin(), batches.end(), CompareBatchesFrontToBack);
 
     unsigned freeShaderID = 0;
     unsigned short freeMaterialID = 0;
     unsigned short freeGeometryID = 0;
 
-    for (PODVector<Batch*>::Iterator i = batches.Begin(); i != batches.End(); ++i)
+    for (auto i = batches.begin(); i != batches.end(); ++i)
     {
         Batch* batch = *i;
 
@@ -835,7 +838,7 @@ void BatchQueue::SortFrontToBack2Pass(PODVector<Batch*>& batches)
     geometryRemapping_.Clear();
 
     // Finally sort again with the rewritten ID's
-    Sort(batches.Begin(), batches.End(), CompareBatchesState);
+    stl::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
 #endif
 }
 
@@ -861,7 +864,7 @@ void BatchQueue::Draw(View* view, Camera* camera, bool markToStencil, bool using
     }
 
     // Instanced
-    for (PODVector<BatchGroup*>::ConstIterator i = sortedBatchGroups_.Begin(); i != sortedBatchGroups_.End(); ++i)
+    for (auto i = sortedBatchGroups_.begin(); i != sortedBatchGroups_.end(); ++i)
     {
         BatchGroup* group = *i;
         if (markToStencil)
@@ -870,7 +873,7 @@ void BatchQueue::Draw(View* view, Camera* camera, bool markToStencil, bool using
         group->Draw(view, camera, allowDepthWrite);
     }
     // Non-instanced
-    for (PODVector<Batch*>::ConstIterator i = sortedBatches_.Begin(); i != sortedBatches_.End(); ++i)
+    for (auto i = sortedBatches_.begin(); i != sortedBatches_.end(); ++i)
     {
         Batch* batch = *i;
         if (markToStencil)
@@ -895,7 +898,7 @@ unsigned BatchQueue::GetNumInstances() const
     for (HashMap<BatchGroupKey, BatchGroup>::ConstIterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
     {
         if (i->second_.geometryType_ == GEOM_INSTANCED)
-            total += i->second_.instances_.Size();
+            total += i->second_.instances_.size();
     }
 
     return total;

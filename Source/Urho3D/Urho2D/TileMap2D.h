@@ -59,7 +59,7 @@ public:
     const TileMapInfo2D& GetInfo() const { return info_; }
 
     /// Return number of layers.
-    unsigned GetNumLayers() const { return layers_.Size(); }
+    unsigned GetNumLayers() const { return layers_.size(); }
 
     /// Return tile map layer at index.
     TileMapLayer2D* GetLayer(unsigned index) const;
@@ -73,7 +73,7 @@ public:
     /// Return tile map file attribute.
     ResourceRef GetTmxFileAttr() const;
     ///
-    Vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
+    stl::vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
 private:
     /// Tmx file.
     stl::shared_ptr<TmxFile2D> tmxFile_;
@@ -82,7 +82,7 @@ private:
     /// Root node for tile map layer.
     stl::shared_ptr<Node> rootNode_;
     /// Tile map layers.
-    Vector<stl::weak_ptr<TileMapLayer2D> > layers_;
+    stl::vector<stl::weak_ptr<TileMapLayer2D> > layers_;
 };
 
 }

@@ -144,7 +144,7 @@ void Editor::RenderProjectMenu()
     {
         ui::PushID("Plugins");
         const StringVector& pluginNames = project_->GetPlugins()->GetPluginNames();
-        if (pluginNames.Size() == 0)
+        if (pluginNames.size() == 0)
         {
             ui::TextUnformatted("No available files.");
             ui::SetHelpTooltip("Plugins are shared libraries that have a class inheriting from PluginApplication and "
@@ -194,15 +194,15 @@ void Editor::RenderProjectMenu()
     {
         ui::PushID("Main Scene");
         auto* sceneNames = ui::GetUIState<StringVector>();
-        if (sceneNames->Empty())
+        if (sceneNames->empty())
         {
             GetFileSystem()->ScanDir(*sceneNames, project_->GetResourcePath(), "*.xml", SCAN_FILES, true);
-            for (auto it = sceneNames->Begin(); it != sceneNames->End();)
+            for (auto it = sceneNames->begin(); it != sceneNames->end();)
             {
                 if (GetContentType(*it) == CTYPE_SCENE)
                     ++it;
                 else
-                    it = sceneNames->Erase(it);
+                    it = sceneNames->erase(it);
             }
         }
 
@@ -216,7 +216,7 @@ void Editor::RenderProjectMenu()
             }
         }
 
-        if (sceneNames->Empty())
+        if (sceneNames->empty())
             ui::TextUnformatted("Create a new scene first.");
 
         ui::PopID();    // Main Scene

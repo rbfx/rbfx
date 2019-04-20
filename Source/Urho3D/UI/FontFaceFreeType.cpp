@@ -146,7 +146,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     auto numGlyphs = (unsigned)face->num_glyphs;
     URHO3D_LOGDEBUGF("Font face %s (%fpt) has %d glyphs", GetFileName(font_->GetName()).CString(), pointSize, numGlyphs);
 
-    PODVector<unsigned> charCodes(numGlyphs + 1, 0);
+    stl::vector<unsigned> charCodes(numGlyphs + 1, 0);
 
     // Attempt to load space glyph first regardless if it's listed or not
     // In some fonts (Consola) it is missing
@@ -204,7 +204,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
     allocator_.Reset(FONT_TEXTURE_MIN_SIZE, FONT_TEXTURE_MIN_SIZE, textureWidth, textureHeight);
 
-    for (unsigned i = 0; i < charCodes.Size(); ++i)
+    for (unsigned i = 0; i < charCodes.size(); ++i)
     {
         unsigned charCode = charCodes[i];
         if (charCode == 0)
@@ -221,7 +221,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     if (!texture)
         return false;
 
-    textures_.Push(texture);
+    textures_.push_back(texture);
     font_->SetMemoryUse(font_->GetMemoryUse() + textureWidth * textureHeight);
 
     // Store kerning if face has kerning information
@@ -340,7 +340,7 @@ bool FontFaceFreeType::SetupNextTexture(int textureWidth, int textureHeight)
     if (!texture)
         return false;
 
-    textures_.Push(texture);
+    textures_.push_back(texture);
     allocator_.Reset(FONT_TEXTURE_MIN_SIZE, FONT_TEXTURE_MIN_SIZE, textureWidth, textureHeight);
 
     font_->SetMemoryUse(font_->GetMemoryUse() + textureWidth * textureHeight);
@@ -495,7 +495,7 @@ bool FontFaceFreeType::LoadCharGlyph(unsigned charCode, Image* image)
         }
         else
         {
-            fontGlyph.page_ = textures_.Size() - 1;
+            fontGlyph.page_ = textures_.size() - 1;
             dest = new unsigned char[fontGlyph.texWidth_ * fontGlyph.texHeight_];
             pitch = (unsigned)fontGlyph.texWidth_;
         }
@@ -524,7 +524,7 @@ bool FontFaceFreeType::LoadCharGlyph(unsigned charCode, Image* image)
 
         if (!image)
         {
-            textures_.Back()->SetData(0, fontGlyph.x_, fontGlyph.y_, fontGlyph.texWidth_, fontGlyph.texHeight_, dest);
+            textures_.back()->SetData(0, fontGlyph.x_, fontGlyph.y_, fontGlyph.texWidth_, fontGlyph.texHeight_, dest);
             delete[] dest;
         }
     }

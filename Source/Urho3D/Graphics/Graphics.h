@@ -148,9 +148,9 @@ public:
     /// Set vertex buffer.
     void SetVertexBuffer(VertexBuffer* buffer);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers(const PODVector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers(const Vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
@@ -368,9 +368,9 @@ public:
     bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
 
     /// Return supported fullscreen resolutions (third component is refreshRate). Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
-    PODVector<IntVector3> GetResolutions(int monitor) const;
+    stl::vector<IntVector3> GetResolutions(int monitor) const;
     /// Return supported multisampling levels.
-    PODVector<int> GetMultiSampleLevels() const;
+    stl::vector<int> GetMultiSampleLevels() const;
     /// Return the desktop resolution.
     IntVector2 GetDesktopResolution(int monitor) const;
     /// Return the number of currently connected monitors.
@@ -702,9 +702,9 @@ private:
     /// Largest scratch buffer request this frame.
     unsigned maxScratchBufferRequest_{};
     /// GPU objects.
-    PODVector<GPUObject*> gpuObjects_;
+    stl::vector<GPUObject*> gpuObjects_;
     /// Scratch buffers.
-    Vector<ScratchBuffer> scratchBuffers_;
+    stl::vector<ScratchBuffer> scratchBuffers_;
     /// Shadow map dummy color texture format.
     unsigned dummyColorFormat_{};
     /// Shadow map depth texture format.

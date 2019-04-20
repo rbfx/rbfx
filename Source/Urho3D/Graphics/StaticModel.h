@@ -52,7 +52,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Return the geometry for a specific LOD level.
@@ -77,7 +77,7 @@ public:
     Model* GetModel() const { return model_; }
 
     /// Return number of geometries.
-    unsigned GetNumGeometries() const { return geometries_.Size(); }
+    unsigned GetNumGeometries() const { return geometries_.size(); }
 
     /// Return material from the first geometry, assuming all the geometries use the same material.
     virtual Material* GetMaterial() const { return GetMaterial(0); }
@@ -114,9 +114,9 @@ protected:
     void CalculateLodLevels();
 
     /// Extra per-geometry data.
-    PODVector<StaticModelGeometryData> geometryData_;
+    stl::vector<StaticModelGeometryData> geometryData_;
     /// All geometries.
-    Vector<Vector<stl::shared_ptr<Geometry> > > geometries_;
+    stl::vector<stl::vector<stl::shared_ptr<Geometry> > > geometries_;
     /// Model.
     stl::shared_ptr<Model> model_;
     /// Occlusion LOD level.

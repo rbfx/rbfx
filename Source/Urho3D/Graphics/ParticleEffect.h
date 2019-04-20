@@ -220,7 +220,7 @@ public:
     /// Remove color frame at index
     void RemoveColorFrame(unsigned index);
     /// Set color animation of particles.
-    void SetColorFrames(const Vector<ColorFrame>& colorFrames);
+    void SetColorFrames(const stl::vector<ColorFrame>& colorFrames);
     /// Set color animation frame at index. If index is greater than number of color frames, new color frames are added.
     void SetColorFrame(unsigned index, const ColorFrame& colorFrame);
     /// Set number of color frames.
@@ -235,7 +235,7 @@ public:
     /// Remove texture frame at index
     void RemoveTextureFrame(unsigned index);
     /// Set particle texture animation.
-    void SetTextureFrames(const Vector<TextureFrame>& textureFrames);
+    void SetTextureFrames(const stl::vector<TextureFrame>& textureFrames);
     /// Set number of texture animation frames.
     void SetTextureFrame(unsigned index, const TextureFrame& textureFrame);
     /// Set number of texture frames.
@@ -336,19 +336,19 @@ public:
     float GetSizeMul() const { return sizeMul_; }
 
     /// Return all color animation frames.
-    const Vector<ColorFrame>& GetColorFrames() const { return colorFrames_; }
+    const stl::vector<ColorFrame>& GetColorFrames() const { return colorFrames_; }
 
     /// Return number of color animation frames.
-    unsigned GetNumColorFrames() const { return colorFrames_.Size(); }
+    unsigned GetNumColorFrames() const { return colorFrames_.size(); }
 
     /// Return a color animation frame, or null if outside range.
     const ColorFrame* GetColorFrame(unsigned index) const;
 
     /// Return all texture animation frames.
-    const Vector<TextureFrame>& GetTextureFrames() const { return textureFrames_; }
+    const stl::vector<TextureFrame>& GetTextureFrames() const { return textureFrames_; }
 
     /// Return number of texture animation frames.
-    unsigned GetNumTextureFrames() const { return textureFrames_.Size(); }
+    unsigned GetNumTextureFrames() const { return textureFrames_.size(); }
 
     /// Return a texture animation frame, or null if outside range.
     const TextureFrame* GetTextureFrame(unsigned index) const;
@@ -438,9 +438,9 @@ private:
     /// Particle size multiplicative parameter.
     float sizeMul_;
     /// Particle color animation frames.
-    Vector<ColorFrame> colorFrames_;
+    stl::vector<ColorFrame> colorFrames_;
     /// Texture animation frames.
-    Vector<TextureFrame> textureFrames_;
+    stl::vector<TextureFrame> textureFrames_;
     /// Material name acquired during BeginLoad().
     String loadMaterialName_;
     /// Particle rotation mode in relation to the camera.

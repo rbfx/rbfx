@@ -23,6 +23,8 @@
 
 #include "../Precompiled.h"
 
+#include <EASTL/sort.h>
+
 #include "../Core/Context.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
@@ -111,7 +113,7 @@ void Drawable::OnSetEnabled()
         RemoveFromOctree();
 }
 
-void Drawable::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void Drawable::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     float distance = query.ray_.HitDistance(GetWorldBoundingBox());
     if (distance < query.maxDistance_)
@@ -123,7 +125,7 @@ void Drawable::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryRe
         result.drawable_ = this;
         result.node_ = GetNode();
         result.subObject_ = M_MAX_UNSIGNED;
-        results.Push(result);
+        results.push_back(result);
     }
 }
 
@@ -133,7 +135,7 @@ void Drawable::UpdateBatches(const FrameInfo& frame)
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
     distance_ = frame.camera_->GetDistance(worldBoundingBox.Center());
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
         batches_[i].distance_ = distance_;
         batches_[i].worldTransform_ = &worldTransform;
@@ -149,7 +151,7 @@ void Drawable::UpdateBatches(const FrameInfo& frame)
 Geometry* Drawable::GetLodGeometry(unsigned batchIndex, unsigned level)
 {
     // By default return the visible batch geometry
-    if (batchIndex < batches_.Size())
+    if (batchIndex < batches_.size())
         return batches_[batchIndex].geometry_;
     else
         return nullptr;
@@ -262,18 +264,19 @@ bool Drawable::IsInView() const
     // Note: in headless mode there is no renderer subsystem and no view frustum tests are performed, so return
     // always false in that case
     auto* renderer = GetSubsystem<Renderer>();
-    return renderer && viewFrameNumber_ == renderer->GetFrameInfo().frameNumber_ && !viewCameras_.Empty();
+    return renderer && viewFrameNumber_ == renderer->GetFrameInfo().frameNumber_ && !viewCameras_.empty();
 }
 
 bool Drawable::IsInView(Camera* camera) const
 {
     auto* renderer = GetSubsystem<Renderer>();
-    return renderer && viewFrameNumber_ == renderer->GetFrameInfo().frameNumber_ && (!camera || viewCameras_.Contains(camera));
+    return renderer && viewFrameNumber_ == renderer->GetFrameInfo().frameNumber_ && (!camera ||
+        viewCameras_.contains(camera));
 }
 
 bool Drawable::IsInView(const FrameInfo& frame, bool anyCamera) const
 {
-    return viewFrameNumber_ == frame.frameNumber_ && (anyCamera || viewCameras_.Contains(frame.camera_));
+    return viewFrameNumber_ == frame.frameNumber_ && (anyCamera || viewCameras_.contains(frame.camera_));
 }
 
 void Drawable::SetZone(Zone* zone, bool temporary)
@@ -294,16 +297,16 @@ void Drawable::MarkInView(const FrameInfo& frame)
     if (frame.frameNumber_ != viewFrameNumber_)
     {
         viewFrameNumber_ = frame.frameNumber_;
-        viewCameras_.Resize(1);
+        viewCameras_.resize(1);
         viewCameras_[0] = frame.camera_;
     }
     else
-        viewCameras_.Push(frame.camera_);
+        viewCameras_.push_back(frame.camera_);
 
     basePassFlags_ = 0;
     firstLight_ = nullptr;
-    lights_.Clear();
-    vertexLights_.Clear();
+    lights_.clear();
+    vertexLights_.clear();
 }
 
 void Drawable::MarkInView(unsigned frameNumber)
@@ -311,46 +314,46 @@ void Drawable::MarkInView(unsigned frameNumber)
     if (frameNumber != viewFrameNumber_)
     {
         viewFrameNumber_ = frameNumber;
-        viewCameras_.Clear();
+        viewCameras_.clear();
     }
 }
 
 void Drawable::LimitLights()
 {
     // Maximum lights value 0 means unlimited
-    if (!maxLights_ || lights_.Size() <= maxLights_)
+    if (!maxLights_ || lights_.size() <= maxLights_)
         return;
 
     // If more lights than allowed, move to vertex lights and cut the list
     const BoundingBox& box = GetWorldBoundingBox();
-    for (unsigned i = 0; i < lights_.Size(); ++i)
+    for (unsigned i = 0; i < lights_.size(); ++i)
         lights_[i]->SetIntensitySortValue(box);
 
-    Sort(lights_.Begin(), lights_.End(), CompareDrawables);
-    vertexLights_.Insert(vertexLights_.End(), lights_.Begin() + maxLights_, lights_.End());
-    lights_.Resize(maxLights_);
+    stl::quick_sort(lights_.begin(), lights_.end(), CompareDrawables);
+    vertexLights_.insert(vertexLights_.end(), lights_.begin() + maxLights_, lights_.end());
+    lights_.resize(maxLights_);
 }
 
 void Drawable::LimitVertexLights(bool removeConvertedLights)
 {
     if (removeConvertedLights)
     {
-        for (unsigned i = vertexLights_.Size() - 1; i < vertexLights_.Size(); --i)
+        for (unsigned i = vertexLights_.size() - 1; i < vertexLights_.size(); --i)
         {
             if (!vertexLights_[i]->GetPerVertex())
-                vertexLights_.Erase(i);
+                vertexLights_.erase(i);
         }
     }
 
-    if (vertexLights_.Size() <= MAX_VERTEX_LIGHTS)
+    if (vertexLights_.size() <= MAX_VERTEX_LIGHTS)
         return;
 
     const BoundingBox& box = GetWorldBoundingBox();
-    for (unsigned i = 0; i < vertexLights_.Size(); ++i)
+    for (unsigned i = 0; i < vertexLights_.size(); ++i)
         vertexLights_[i]->SetIntensitySortValue(box);
 
-    Sort(vertexLights_.Begin(), vertexLights_.End(), CompareDrawables);
-    vertexLights_.Resize(MAX_VERTEX_LIGHTS);
+    stl::quick_sort(vertexLights_.begin(), vertexLights_.end(), CompareDrawables);
+    vertexLights_.resize(MAX_VERTEX_LIGHTS);
 }
 
 void Drawable::OnNodeSet(Node* node)
@@ -415,7 +418,7 @@ void Drawable::RemoveFromOctree()
     }
 }
 
-bool WriteDrawablesToOBJ(PODVector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)
+bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)
 {
     // Must track indices independently to deal with potential mismatching of drawables vertex attributes (ie. one with UV, another without, then another with)
     unsigned currentPositionIndex = 1;
@@ -426,7 +429,7 @@ bool WriteDrawablesToOBJ(PODVector<Drawable*> drawables, File* outputFile, bool 
     // Write the common "I came from X" comment
     outputFile->WriteLine("# OBJ file exported from Urho3D");
 
-    for (unsigned i = 0; i < drawables.Size(); ++i)
+    for (unsigned i = 0; i < drawables.size(); ++i)
     {
         Drawable* drawable = drawables[i];
 
@@ -440,8 +443,8 @@ bool WriteDrawablesToOBJ(PODVector<Drawable*> drawables, File* outputFile, bool 
         Matrix3 normalMat = Matrix3(n.m00_, n.m01_, n.m02_, n.m10_, n.m11_, n.m12_, n.m20_, n.m21_, n.m22_);
         normalMat = normalMat.Transpose();
 
-        const Vector<SourceBatch>& batches = drawable->GetBatches();
-        for (unsigned geoIndex = 0; geoIndex < batches.Size(); ++geoIndex)
+        const stl::vector<SourceBatch>& batches = drawable->GetBatches();
+        for (unsigned geoIndex = 0; geoIndex < batches.size(); ++geoIndex)
         {
             Geometry* geo = drawable->GetLodGeometry(geoIndex, 0);
             if (geo == nullptr)
@@ -458,7 +461,7 @@ bool WriteDrawablesToOBJ(PODVector<Drawable*> drawables, File* outputFile, bool 
             const unsigned char* vertexData;
             const unsigned char* indexData;
             unsigned elementSize, indexSize;
-            const PODVector<VertexElement>* elements;
+            const stl::vector<VertexElement>* elements;
             geo->GetRawData(vertexData, elementSize, indexData, indexSize, elements);
             if (!vertexData || !elements)
                 continue;

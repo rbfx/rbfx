@@ -51,7 +51,7 @@ PluginApplication::~PluginApplication()
 
 void PluginApplication::RecordPluginFactory(StringHash type, const char* category)
 {
-    registeredTypes_.Push({type, category});
+    registeredTypes_.push_back({type, category});
 }
 
 #if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)

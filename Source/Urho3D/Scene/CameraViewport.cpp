@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include "../Core/StringUtils.h"
 #include "../Engine/PluginApplication.h"
 #include "../Graphics/Camera.h"
@@ -132,7 +134,7 @@ IntRect CameraViewport::GetScreenRect() const
     return screenRect_;
 }
 
-const Vector<AttributeInfo>* CameraViewport::GetAttributes() const
+const stl::vector<AttributeInfo>* CameraViewport::GetAttributes() const
 {
     if (attributesDirty_)
         const_cast<CameraViewport*>(this)->RebuildAttributes();
@@ -142,8 +144,8 @@ const Vector<AttributeInfo>* CameraViewport::GetAttributes() const
 template<typename T>
 AttributeInfo& CameraViewport::RegisterAttribute(const AttributeInfo& attr)
 {
-    attributes_.Push(attr);
-    return attributes_.Back();
+    attributes_.push_back(attr);
+    return attributes_.back();
 }
 
 void CameraViewport::RebuildAttributes()
@@ -158,7 +160,7 @@ void CameraViewport::RebuildAttributes()
         effects_.Clear();
         for (const auto& dir: GetCache()->GetResourceDirs())
         {
-            Vector<String> effects;
+            stl::vector<String> effects;
             String resourcePath = "PostProcess/";
             String scanDir = AddTrailingSlash(dir) + resourcePath;
             GetFileSystem()->ScanDir(effects, scanDir, "*.xml", SCAN_FILES, false);
@@ -189,7 +191,7 @@ void CameraViewport::RebuildAttributes()
         }
 
         StringVector tags = effects_.Keys();
-        Sort(tags.Begin(), tags.End());
+        stl::quick_sort(tags.begin(), tags.end());
 
         for (auto& effect : effects_)
         {

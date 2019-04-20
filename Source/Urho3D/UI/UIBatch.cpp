@@ -38,15 +38,15 @@ UIBatch::UIBatch()
     SetDefaultColor();
 }
 
-UIBatch::UIBatch(UIElement* element, BlendMode blendMode, const IntRect& scissor, Texture* texture, PODVector<float>* vertexData) :     // NOLINT(modernize-pass-by-value)
+UIBatch::UIBatch(UIElement* element, BlendMode blendMode, const IntRect& scissor, Texture* texture, stl::vector<float>* vertexData) :     // NOLINT(modernize-pass-by-value)
     element_(element),
     blendMode_(blendMode),
     scissor_(scissor),
     texture_(texture),
     invTextureSize_(texture ? Vector2(1.0f / (float)texture->GetWidth(), 1.0f / (float)texture->GetHeight()) : Vector2::ONE),
     vertexData_(vertexData),
-    vertexStart_(vertexData->Size()),
-    vertexEnd_(vertexData->Size())
+    vertexStart_(vertexData->size()),
+    vertexEnd_(vertexData->size())
 {
     SetDefaultColor();
 }
@@ -110,10 +110,10 @@ void UIBatch::AddQuad(float x, float y, float width, float height, int texOffset
     float rightUV = (texOffsetX + (texWidth ? texWidth : width)) * invTextureSize_.x_;
     float bottomUV = (texOffsetY + (texHeight ? texHeight : height)) * invTextureSize_.y_;
 
-    unsigned begin = vertexData_->Size();
-    vertexData_->Resize(begin + 6 * UI_VERTEX_SIZE);
-    float* dest = &(vertexData_->At(begin));
-    vertexEnd_ = vertexData_->Size();
+    unsigned begin = vertexData_->size();
+    vertexData_->resize(begin + 6 * UI_VERTEX_SIZE);
+    float* dest = &(vertexData_->at(begin));
+    vertexEnd_ = vertexData_->size();
 
     dest[0] = left;
     dest[1] = top;
@@ -192,10 +192,10 @@ void UIBatch::AddQuad(const Matrix3x4& transform, int x, int y, int width, int h
     float rightUV = ((float)(texOffsetX + (texWidth ? texWidth : width))) * invTextureSize_.x_;
     float bottomUV = ((float)(texOffsetY + (texHeight ? texHeight : height))) * invTextureSize_.y_;
 
-    unsigned begin = vertexData_->Size();
-    vertexData_->Resize(begin + 6 * UI_VERTEX_SIZE);
-    float* dest = &(vertexData_->At(begin));
-    vertexEnd_ = vertexData_->Size();
+    unsigned begin = vertexData_->size();
+    vertexData_->resize(begin + 6 * UI_VERTEX_SIZE);
+    float* dest = &(vertexData_->at(begin));
+    vertexEnd_ = vertexData_->size();
 
     dest[0] = v1.x_;
     dest[1] = v1.y_;
@@ -287,10 +287,10 @@ void UIBatch::AddQuad(const Matrix3x4& transform, const IntVector2& a, const Int
     Vector2 uv3((float)texC.x_ * invTextureSize_.x_, (float)texC.y_ * invTextureSize_.y_);
     Vector2 uv4((float)texD.x_ * invTextureSize_.x_, (float)texD.y_ * invTextureSize_.y_);
 
-    unsigned begin = vertexData_->Size();
-    vertexData_->Resize(begin + 6 * UI_VERTEX_SIZE);
-    float* dest = &(vertexData_->At(begin));
-    vertexEnd_ = vertexData_->Size();
+    unsigned begin = vertexData_->size();
+    vertexData_->resize(begin + 6 * UI_VERTEX_SIZE);
+    float* dest = &(vertexData_->at(begin));
+    vertexEnd_ = vertexData_->size();
 
     dest[0] = v1.x_;
     dest[1] = v1.y_;
@@ -354,10 +354,10 @@ void UIBatch::AddQuad(const Matrix3x4& transform, const IntVector2& a, const Int
     unsigned c3 = colC.ToUInt();
     unsigned c4 = colD.ToUInt();
 
-    unsigned begin = vertexData_->Size();
-    vertexData_->Resize(begin + 6 * UI_VERTEX_SIZE);
-    float* dest = &(vertexData_->At(begin));
-    vertexEnd_ = vertexData_->Size();
+    unsigned begin = vertexData_->size();
+    vertexData_->resize(begin + 6 * UI_VERTEX_SIZE);
+    float* dest = &(vertexData_->at(begin));
+    vertexEnd_ = vertexData_->size();
 
     dest[0] = v1.x_;
     dest[1] = v1.y_;
@@ -438,15 +438,15 @@ unsigned UIBatch::GetInterpolatedColor(float x, float y)
     }
 }
 
-void UIBatch::AddOrMerge(const UIBatch& batch, PODVector<UIBatch>& batches)
+void UIBatch::AddOrMerge(const UIBatch& batch, stl::vector<UIBatch>& batches)
 {
     if (batch.vertexEnd_ == batch.vertexStart_)
         return;
 
-    if (!batches.Empty() && batches.Back().Merge(batch))
+    if (!batches.empty() && batches.back().Merge(batch))
         return;
 
-    batches.Push(batch);
+    batches.push_back(batch);
 }
 
 }

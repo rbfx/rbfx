@@ -125,7 +125,7 @@ public:
     void ResetUseTimer();
 
     /// Return highest level depth values.
-    int* GetBuffer() const { return buffers_.Size() ? buffers_[0].data_ : nullptr; }
+    int* GetBuffer() const { return buffers_.size() ? buffers_[0].data_ : nullptr; }
 
     /// Return view transform matrix.
     const Matrix3x4& GetView() const { return view_; }
@@ -149,7 +149,7 @@ public:
     CullMode GetCullMode() const { return cullMode_; }
 
     /// Return whether is using threads to speed up rendering.
-    bool IsThreaded() const { return buffers_.Size() > 1; }
+    bool IsThreaded() const { return buffers_.size() > 1; }
 
     /// Test a bounding box for visibility. For best performance, build depth hierarchy first.
     bool IsVisible(const BoundingBox& worldSpaceBox) const;
@@ -182,11 +182,11 @@ private:
     void MergeBuffers();
 
     /// Highest-level buffer data per thread.
-    Vector<OcclusionBufferData> buffers_;
+    stl::vector<OcclusionBufferData> buffers_;
     /// Reduced size depth buffers.
-    Vector<stl::shared_array<DepthValue> > mipBuffers_;
+    stl::vector<stl::shared_array<DepthValue> > mipBuffers_;
     /// Submitted render jobs.
-    PODVector<OcclusionBatch> batches_;
+    stl::vector<OcclusionBatch> batches_;
     /// Buffer width.
     int width_{};
     /// Buffer height.

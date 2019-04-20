@@ -189,15 +189,15 @@ protected:
     /// Internally used text element.
     Text text_;
     /// Geometries.
-    Vector<stl::shared_ptr<Geometry> > geometries_;
+    stl::vector<stl::shared_ptr<Geometry> > geometries_;
     /// Vertex buffer.
     stl::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Material to use as a base for the text material(s).
     stl::shared_ptr<Material> material_;
     /// Text UI batches.
-    PODVector<UIBatch> uiBatches_;
+    stl::vector<UIBatch> uiBatches_;
     /// Text vertex data.
-    PODVector<float> uiVertexData_;
+    stl::vector<float> uiVertexData_;
     /// Custom world transform for facing the camera automatically.
     Matrix3x4 customWorldTransform_;
     /// Text rotation mode in relation to the camera.

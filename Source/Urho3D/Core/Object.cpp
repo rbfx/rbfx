@@ -256,11 +256,11 @@ void Object::UnsubscribeFromAllEvents()
     }
 }
 
-void Object::UnsubscribeFromAllEventsExcept(const PODVector<StringHash>& exceptions, bool onlyUserData)
+void Object::UnsubscribeFromAllEventsExcept(const stl::vector<StringHash>& exceptions, bool onlyUserData)
 {
     for (auto handler = eventHandlers_.begin(); handler != eventHandlers_.end(); )
     {
-        if ((!onlyUserData || handler->GetUserData()) && !exceptions.Contains(handler->GetEventType()))
+        if ((!onlyUserData || handler->GetUserData()) && !exceptions.contains(handler->GetEventType()))
         {
             if (handler->GetSender())
                 context_->RemoveEventReceiver(this, handler->GetSender(), handler->GetEventType());
@@ -311,7 +311,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     {
         group->BeginSendEvent();
 
-        const unsigned numReceivers = group->receivers_.Size();
+        const unsigned numReceivers = group->receivers_.size();
         for (unsigned i = 0; i < numReceivers; ++i)
         {
             Object* receiver = group->receivers_[i];
@@ -339,12 +339,12 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     {
         groupNonSpec->BeginSendEvent();
 
-        const unsigned numReceivers = groupNonSpec->receivers_.Size();
+        const unsigned numReceivers = groupNonSpec->receivers_.size();
         for (unsigned i = 0; i < numReceivers; ++i)
         {
             Object* receiver = groupNonSpec->receivers_[i];
             // If there were specific receivers, check that the event is not sent doubly to them
-            if (!receiver || (group && group->receivers_.Contains(receiver)))
+            if (!receiver || (group && group->receivers_.contains(receiver)))
                 continue;
 
             receiver->OnEvent(this, eventType, eventData);
@@ -413,10 +413,10 @@ bool Object::HasSubscribedToEvent(Object* sender, StringHash eventType) const
 
 const String& Object::GetCategory() const
 {
-    const HashMap<String, PODVector<StringHash> >& objectCategories = context_->GetObjectCategories();
-    for (HashMap<String, PODVector<StringHash> >::ConstIterator i = objectCategories.Begin(); i != objectCategories.End(); ++i)
+    const HashMap<String, stl::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
+    for (auto i = objectCategories.Begin(); i != objectCategories.End(); ++i)
     {
-        if (i->second_.Contains(GetType()))
+        if (i->second_.contains(GetType()))
             return i->first_;
     }
 

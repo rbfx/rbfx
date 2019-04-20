@@ -86,7 +86,7 @@ protected:
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
     stl::shared_ptr<Texture2D> fontTexture_;
-    PODVector<float> fontSizes_;
+    stl::vector<float> fontSizes_;
     ImGuiContext* imContext_;
 
     void ReallocateFontTexture();

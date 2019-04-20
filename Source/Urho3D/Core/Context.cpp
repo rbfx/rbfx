@@ -85,10 +85,10 @@ void EventReceiverGroup::EndSendEvent()
     if (inSend_ == 0 && dirty_)
     {
         /// \todo Could be optimized by erase-swap, but this keeps the receiver order
-        for (unsigned i = receivers_.Size() - 1; i < receivers_.Size(); --i)
+        for (unsigned i = receivers_.size() - 1; i < receivers_.size(); --i)
         {
             if (!receivers_[i])
-                receivers_.Erase(i);
+                receivers_.erase(i);
         }
 
         dirty_ = false;
@@ -98,43 +98,43 @@ void EventReceiverGroup::EndSendEvent()
 void EventReceiverGroup::Add(Object* object)
 {
     if (object)
-        receivers_.Push(object);
+        receivers_.push_back(object);
 }
 
 void EventReceiverGroup::Remove(Object* object)
 {
     if (inSend_ > 0)
     {
-        PODVector<Object*>::Iterator i = receivers_.Find(object);
-        if (i != receivers_.End())
+        auto i = receivers_.find(object);
+        if (i != receivers_.end())
         {
             (*i) = nullptr;
             dirty_ = true;
         }
     }
     else
-        receivers_.Remove(object);
+        receivers_.erase_first(object);
 }
 
-void RemoveNamedAttribute(HashMap<StringHash, Vector<AttributeInfo> >& attributes, StringHash objectType, const char* name)
+void RemoveNamedAttribute(HashMap<StringHash, stl::vector<AttributeInfo> >& attributes, StringHash objectType, const char* name)
 {
-    HashMap<StringHash, Vector<AttributeInfo> >::Iterator i = attributes.Find(objectType);
+    auto i = attributes.Find(objectType);
     if (i == attributes.End())
         return;
 
-    Vector<AttributeInfo>& infos = i->second_;
+    stl::vector<AttributeInfo>& infos = i->second_;
 
-    for (Vector<AttributeInfo>::Iterator j = infos.Begin(); j != infos.End(); ++j)
+    for (auto j = infos.begin(); j != infos.end(); ++j)
     {
         if (!j->name_.Compare(name, true))
         {
-            infos.Erase(j);
+            infos.erase(j);
             break;
         }
     }
 
     // If the vector became empty, erase the object type from the map
-    if (infos.Empty())
+    if (infos.empty())
         attributes.Erase(i);
 }
 
@@ -166,9 +166,9 @@ Context::~Context()
     factories_.Clear();
 
     // Delete allocated event data maps
-    for (PODVector<VariantMap*>::Iterator i = eventDataMaps_.Begin(); i != eventDataMaps_.End(); ++i)
+    for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
         delete *i;
-    eventDataMaps_.Clear();
+    eventDataMaps_.clear();
 }
 
 stl::shared_ptr<Object> Context::CreateObject(StringHash objectType)
@@ -203,7 +203,7 @@ void Context::RegisterFactory(ObjectFactory* factory, const char* category)
 
     RegisterFactory(factory);
     if (String::CStringLength(category))
-        objectCategories_[category].Push(factory->GetType());
+        objectCategories_[category].push_back(factory->GetType());
 }
 
 void Context::RemoveFactory(StringHash type)
@@ -215,7 +215,7 @@ void Context::RemoveFactory(StringHash type, const char* category)
 {
     RemoveFactory(type);
     if (String::CStringLength(category))
-        objectCategories_[category].Remove(type);
+        objectCategories_[category].erase_first_unsorted(type);
 }
 
 void Context::RegisterSubsystem(Object* object)
@@ -246,15 +246,15 @@ AttributeHandle Context::RegisterAttribute(StringHash objectType, const Attribut
 
     AttributeHandle handle;
 
-    Vector<AttributeInfo>& objectAttributes = attributes_[objectType];
-    objectAttributes.Push(attr);
-    handle.attributeInfo_ = &objectAttributes.Back();
+    stl::vector<AttributeInfo>& objectAttributes = attributes_[objectType];
+    objectAttributes.push_back(attr);
+    handle.attributeInfo_ = &objectAttributes.back();
 
     if (attr.mode_ & AM_NET)
     {
-        Vector<AttributeInfo>& objectNetworkAttributes = networkAttributes_[objectType];
-        objectNetworkAttributes.Push(attr);
-        handle.networkAttributeInfo_ = &objectNetworkAttributes.Back();
+        stl::vector<AttributeInfo>& objectNetworkAttributes = networkAttributes_[objectType];
+        objectNetworkAttributes.push_back(attr);
+        handle.networkAttributeInfo_ = &objectNetworkAttributes.back();
     }
     return handle;
 }
@@ -280,9 +280,9 @@ void Context::UpdateAttributeDefaultValue(StringHash objectType, const char* nam
 
 VariantMap& Context::GetEventDataMap()
 {
-    unsigned nestingLevel = eventSenders_.Size();
-    while (eventDataMaps_.Size() < nestingLevel + 1)
-        eventDataMaps_.Push(new VariantMap());
+    unsigned nestingLevel = eventSenders_.size();
+    while (eventDataMaps_.size() < nestingLevel + 1)
+        eventDataMaps_.push_back(new VariantMap());
 
     VariantMap& ret = *eventDataMaps_[nestingLevel];
     ret.Clear();
@@ -378,15 +378,15 @@ void Context::CopyBaseAttributes(StringHash baseType, StringHash derivedType)
         return;
     }
 
-    const Vector<AttributeInfo>* baseAttributes = GetAttributes(baseType);
+    const stl::vector<AttributeInfo>* baseAttributes = GetAttributes(baseType);
     if (baseAttributes)
     {
-        for (unsigned i = 0; i < baseAttributes->Size(); ++i)
+        for (unsigned i = 0; i < baseAttributes->size(); ++i)
         {
-            const AttributeInfo& attr = baseAttributes->At(i);
-            attributes_[derivedType].Push(attr);
+            const AttributeInfo& attr = baseAttributes->at(i);
+            attributes_[derivedType].push_back(attr);
             if (attr.mode_ & AM_NET)
-                networkAttributes_[derivedType].Push(attr);
+                networkAttributes_[derivedType].push_back(attr);
         }
     }
 }
@@ -413,8 +413,8 @@ void Context::SetGlobalVar(StringHash key, const Variant& value)
 
 Object* Context::GetEventSender() const
 {
-    if (!eventSenders_.Empty())
-        return eventSenders_.Back();
+    if (!eventSenders_.empty())
+        return eventSenders_.back();
     else
         return nullptr;
 }
@@ -428,13 +428,13 @@ const String& Context::GetTypeName(StringHash objectType) const
 
 AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 {
-    HashMap<StringHash, Vector<AttributeInfo> >::Iterator i = attributes_.Find(objectType);
+    auto i = attributes_.Find(objectType);
     if (i == attributes_.End())
         return nullptr;
 
-    Vector<AttributeInfo>& infos = i->second_;
+    stl::vector<AttributeInfo>& infos = i->second_;
 
-    for (Vector<AttributeInfo>::Iterator j = infos.Begin(); j != infos.End(); ++j)
+    for (auto j = infos.begin(); j != infos.end(); ++j)
     {
         if (!j->name_.Compare(name, true))
             return &(*j);
@@ -466,7 +466,8 @@ void Context::RemoveEventSender(Object* sender)
     {
         for (HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator j = i->second_.Begin(); j != i->second_.End(); ++j)
         {
-            for (PODVector<Object*>::Iterator k = j->second_->receivers_.Begin(); k != j->second_->receivers_.End(); ++k)
+            for (auto k = j->second_->receivers_.begin(); k !=
+                j->second_->receivers_.end(); ++k)
             {
                 Object* receiver = *k;
                 if (receiver)
@@ -493,12 +494,12 @@ void Context::RemoveEventReceiver(Object* receiver, Object* sender, StringHash e
 
 void Context::BeginSendEvent(Object* sender, StringHash eventType)
 {
-    eventSenders_.Push(sender);
+    eventSenders_.push_back(sender);
 }
 
 void Context::EndSendEvent()
 {
-    eventSenders_.Pop();
+    eventSenders_.pop_back();
 }
 
 void Context::RegisterSubsystem(Engine* subsystem)

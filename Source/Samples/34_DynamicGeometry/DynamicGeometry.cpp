@@ -120,13 +120,13 @@ void DynamicGeometry::CreateScene()
         for (unsigned i = 0; i < numVertices; ++i)
         {
             const Vector3& src = *reinterpret_cast<const Vector3*>(vertexData + i * vertexSize);
-            originalVertices_.Push(src);
+            originalVertices_.push_back(src);
         }
         buffer->Unlock();
 
         // Detect duplicate vertices to allow seamless animation
-        vertexDuplicates_.Resize(originalVertices_.Size());
-        for (unsigned i = 0; i < originalVertices_.Size(); ++i)
+        vertexDuplicates_.resize(originalVertices_.size());
+        for (unsigned i = 0; i < originalVertices_.size(); ++i)
         {
             vertexDuplicates_[i] = i; // Assume not a duplicate
             for (unsigned j = 0; j < i; ++j)
@@ -156,7 +156,8 @@ void DynamicGeometry::CreateScene()
             stl::shared_ptr<Model> cloneModel = originalModel->Clone();
             object->SetModel(cloneModel);
             // Store the cloned vertex buffer that we will modify when animating
-            animatingBuffers_.Push(stl::shared_ptr<VertexBuffer>(cloneModel->GetGeometry(0, 0)->GetVertexBuffer(0)));
+            animatingBuffers_.push_back(
+                stl::shared_ptr<VertexBuffer>(cloneModel->GetGeometry(0, 0)->GetVertexBuffer(0)));
         }
     }
 
@@ -225,9 +226,9 @@ void DynamicGeometry::CreateScene()
         vb->SetShadowed(true);
         // We could use the "legacy" element bitmask to define elements for more compact code, but let's demonstrate
         // defining the vertex elements explicitly to allow any element types and order
-        PODVector<VertexElement> elements;
-        elements.Push(VertexElement(TYPE_VECTOR3, SEM_POSITION));
-        elements.Push(VertexElement(TYPE_VECTOR3, SEM_NORMAL));
+        stl::vector<VertexElement> elements;
+        elements.push_back(VertexElement(TYPE_VECTOR3, SEM_POSITION));
+        elements.push_back(VertexElement(TYPE_VECTOR3, SEM_NORMAL));
         vb->SetSize(numVertices, elements);
         vb->SetData(vertexData);
 
@@ -244,15 +245,15 @@ void DynamicGeometry::CreateScene()
         fromScratchModel->SetBoundingBox(BoundingBox(Vector3(-0.5f, -0.5f, -0.5f), Vector3(0.5f, 0.5f, 0.5f)));
 
         // Though not necessary to render, the vertex & index buffers must be listed in the model so that it can be saved properly
-        Vector<stl::shared_ptr<VertexBuffer> > vertexBuffers;
-        Vector<stl::shared_ptr<IndexBuffer> > indexBuffers;
-        vertexBuffers.Push(vb);
-        indexBuffers.Push(ib);
+        stl::vector<stl::shared_ptr<VertexBuffer> > vertexBuffers;
+        stl::vector<stl::shared_ptr<IndexBuffer> > indexBuffers;
+        vertexBuffers.push_back(vb);
+        indexBuffers.push_back(ib);
         // Morph ranges could also be not defined. Here we simply define a zero range (no morphing) for the vertex buffer
-        PODVector<unsigned> morphRangeStarts;
-        PODVector<unsigned> morphRangeCounts;
-        morphRangeStarts.Push(0);
-        morphRangeCounts.Push(0);
+        stl::vector<unsigned> morphRangeStarts;
+        stl::vector<unsigned> morphRangeCounts;
+        morphRangeStarts.push_back(0);
+        morphRangeCounts.push_back(0);
         fromScratchModel->SetVertexBuffers(vertexBuffers, morphRangeStarts, morphRangeCounts);
         fromScratchModel->SetIndexBuffers(indexBuffers);
 
@@ -345,7 +346,7 @@ void DynamicGeometry::AnimateObjects(float timeStep)
     time_ += timeStep * 100.0f;
 
     // Repeat for each of the cloned vertex buffers
-    for (unsigned i = 0; i < animatingBuffers_.Size(); ++i)
+    for (unsigned i = 0; i < animatingBuffers_.size(); ++i)
     {
         float startPhase = time_ + i * 30.0f;
         VertexBuffer* buffer = animatingBuffers_[i];

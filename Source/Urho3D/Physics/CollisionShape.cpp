@@ -105,7 +105,7 @@ public:
             stl::shared_array<unsigned char> indexData;
             unsigned vertexSize;
             unsigned indexSize;
-            const PODVector<VertexElement>* elements;
+            const stl::vector<VertexElement>* elements;
 
             geometry->GetRawDataShared(vertexData, vertexSize, indexData, indexSize, elements);
             if (!vertexData || !indexData || !elements || VertexBuffer::GetElementOffset(*elements, TYPE_VECTOR3, SEM_POSITION) != 0)
@@ -115,8 +115,8 @@ public:
             }
 
             // Keep shared pointers to the vertex/index data so that if it's unloaded or changes size, we don't crash
-            dataArrays_.Push(vertexData);
-            dataArrays_.Push(indexData);
+            dataArrays_.push_back(vertexData);
+            dataArrays_.push_back(indexData);
 
             unsigned indexStart = geometry->GetIndexStart();
             unsigned indexCount = geometry->GetIndexCount();
@@ -143,28 +143,28 @@ public:
     explicit TriangleMeshInterface(CustomGeometry* custom) :
         btTriangleIndexVertexArray()
     {
-        const Vector<PODVector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
+        const stl::vector<stl::vector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
         unsigned totalVertexCount = 0;
         unsigned totalTriangles = 0;
 
-        for (unsigned i = 0; i < srcVertices.Size(); ++i)
-            totalVertexCount += srcVertices[i].Size();
+        for (unsigned i = 0; i < srcVertices.size(); ++i)
+            totalVertexCount += srcVertices[i].size();
 
         if (totalVertexCount)
         {
             // CustomGeometry vertex data is unindexed, so build index data here
             stl::shared_array<unsigned char> vertexData(new unsigned char[totalVertexCount * sizeof(Vector3)]);
             stl::shared_array<unsigned char> indexData(new unsigned char[totalVertexCount * sizeof(unsigned)]);
-            dataArrays_.Push(vertexData);
-            dataArrays_.Push(indexData);
+            dataArrays_.push_back(vertexData);
+            dataArrays_.push_back(indexData);
 
             auto* destVertex = reinterpret_cast<Vector3*>(&vertexData[0]);
             auto* destIndex = reinterpret_cast<unsigned*>(&indexData[0]);
             unsigned k = 0;
 
-            for (unsigned i = 0; i < srcVertices.Size(); ++i)
+            for (unsigned i = 0; i < srcVertices.size(); ++i)
             {
-                for (unsigned j = 0; j < srcVertices[i].Size(); ++j)
+                for (unsigned j = 0; j < srcVertices[i].size(); ++j)
                 {
                     *destVertex++ = srcVertices[i][j].position_;
                     *destIndex++ = k++;
@@ -193,7 +193,7 @@ public:
 
 private:
     /// Shared vertex/index data used in the collision
-    Vector<stl::shared_array<unsigned char> > dataArrays_;
+    stl::vector<stl::shared_array<unsigned char> > dataArrays_;
 };
 
 TriangleMeshData::TriangleMeshData(Model* model, unsigned lodLevel)
@@ -226,7 +226,7 @@ GImpactMeshData::GImpactMeshData(CustomGeometry* custom)
 
 ConvexData::ConvexData(Model* model, unsigned lodLevel)
 {
-    PODVector<Vector3> vertices;
+    stl::vector<Vector3> vertices;
     unsigned numGeometries = model->GetNumGeometries();
 
     for (unsigned i = 0; i < numGeometries; ++i)
@@ -242,7 +242,7 @@ ConvexData::ConvexData(Model* model, unsigned lodLevel)
         const unsigned char* indexData;
         unsigned vertexSize;
         unsigned indexSize;
-        const PODVector<VertexElement>* elements;
+        const stl::vector<VertexElement>* elements;
 
         geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
         if (!vertexData || VertexBuffer::GetElementOffset(*elements, TYPE_VECTOR3, SEM_POSITION) != 0)
@@ -258,7 +258,7 @@ ConvexData::ConvexData(Model* model, unsigned lodLevel)
         for (unsigned j = 0; j < vertexCount; ++j)
         {
             const Vector3& v = *((const Vector3*)(&vertexData[(vertexStart + j) * vertexSize]));
-            vertices.Push(v);
+            vertices.push_back(v);
         }
     }
 
@@ -267,26 +267,26 @@ ConvexData::ConvexData(Model* model, unsigned lodLevel)
 
 ConvexData::ConvexData(CustomGeometry* custom)
 {
-    const Vector<PODVector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
-    PODVector<Vector3> vertices;
+    const stl::vector<stl::vector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
+    stl::vector<Vector3> vertices;
 
-    for (unsigned i = 0; i < srcVertices.Size(); ++i)
+    for (unsigned i = 0; i < srcVertices.size(); ++i)
     {
-        for (unsigned j = 0; j < srcVertices[i].Size(); ++j)
-            vertices.Push(srcVertices[i][j].position_);
+        for (unsigned j = 0; j < srcVertices[i].size(); ++j)
+            vertices.push_back(srcVertices[i][j].position_);
     }
 
     BuildHull(vertices);
 }
 
-void ConvexData::BuildHull(const PODVector<Vector3>& vertices)
+void ConvexData::BuildHull(const stl::vector<Vector3>& vertices)
 {
-    if (vertices.Size())
+    if (vertices.size())
     {
         // Build the convex hull from the raw geometry
         StanHull::HullDesc desc;
         desc.SetHullFlag(StanHull::QF_TRIANGLES);
-        desc.mVcount = vertices.Size();
+        desc.mVcount = vertices.size();
         desc.mVertices = vertices[0].Data();
         desc.mVertexStride = 3 * sizeof(float);
         desc.mSkinWidth = 0.0f;

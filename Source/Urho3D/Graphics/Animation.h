@@ -94,7 +94,7 @@ struct URHO3D_API AnimationTrack
     /// Return keyframe at index, or null if not found.
     AnimationKeyFrame* GetKeyFrame(unsigned index);
     /// Return number of keyframes.
-    unsigned GetNumKeyFrames() const { return keyFrames_.Size(); }
+    unsigned GetNumKeyFrames() const { return keyFrames_.size(); }
     /// Return keyframe index based on time and previous index.
     void GetKeyFrameIndex(float time, unsigned& index) const;
 
@@ -105,7 +105,7 @@ struct URHO3D_API AnimationTrack
     /// Bitmask of included data (position, rotation, scale.)
     AnimationChannelFlags channelMask_{};
     /// Keyframes.
-    Vector<AnimationKeyFrame> keyFrames_;
+    stl::vector<AnimationKeyFrame> keyFrames_;
 
     /// Instance equality operator.
     bool operator ==(const AnimationTrack& rhs) const
@@ -214,16 +214,16 @@ public:
     AnimationTrack* GetTrack(StringHash nameHash);
 
     /// Return animation trigger points.
-    const Vector<AnimationTriggerPoint>& GetTriggers() const { return triggers_; }
+    const stl::vector<AnimationTriggerPoint>& GetTriggers() const { return triggers_; }
 
     /// Return number of animation trigger points.
-    unsigned GetNumTriggers() const { return triggers_.Size(); }
+    unsigned GetNumTriggers() const { return triggers_.size(); }
 
     /// Return a trigger point by index.
     AnimationTriggerPoint* GetTrigger(unsigned index);
 
     /// Set all animation tracks.
-    void SetTracks(const Vector<AnimationTrack>& tracks);
+    void SetTracks(const stl::vector<AnimationTrack>& tracks);
 private:
     /// Animation name.
     String animationName_;
@@ -234,7 +234,7 @@ private:
     /// Animation tracks.
     HashMap<StringHash, AnimationTrack> tracks_;
     /// Animation trigger points.
-    Vector<AnimationTriggerPoint> triggers_;
+    stl::vector<AnimationTriggerPoint> triggers_;
 };
 
 }

@@ -255,9 +255,9 @@ private:
     /// Material.
     stl::shared_ptr<Material> material_;
     /// Terrain patches.
-    Vector<stl::weak_ptr<TerrainPatch> > patches_;
+    stl::vector<stl::weak_ptr<TerrainPatch> > patches_;
     /// Draw ranges for different LODs and stitching combinations.
-    PODVector<Pair<unsigned, unsigned> > drawRanges_;
+    stl::vector<Pair<unsigned, unsigned> > drawRanges_;
     /// North neighbor terrain.
     stl::weak_ptr<Terrain> north_;
     /// South neighbor terrain.

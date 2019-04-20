@@ -231,7 +231,8 @@ bool Player::LoadAssembly(const String& path, PluginType assumeType)
                 dummy.userdata = reinterpret_cast<void*>(context_);
                 if (pluginMain(&dummy, CR_LOAD) == 0)
                 {
-                    plugins_.Push(stl::shared_ptr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
+                    plugins_.push_back(
+                        stl::shared_ptr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
                     return true;
                 }
             }
@@ -264,7 +265,7 @@ BakedResourceRouter::BakedResourceRouter(Context* context)
         for (auto it = info.Begin(); it != info.End(); it++)
         {
             const JSONArray& files = it->second_["files"].GetArray();
-            if (files.Size() == 1)
+            if (files.size() == 1)
                 routes_[it->first_] = files[0].GetString();
         }
     }

@@ -311,9 +311,9 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
     JSONValue rootVal = loadJSONFile_->GetRoot();
     JSONArray subTextureArray = rootVal.Get("subtextures").GetArray();
 
-    for (unsigned i = 0; i < subTextureArray.Size(); i++)
+    for (unsigned i = 0; i < subTextureArray.size(); i++)
     {
-        const JSONValue& subTextureVal = subTextureArray.At(i);
+        const JSONValue& subTextureVal = subTextureArray.at(i);
         String name = subTextureVal.Get("name").GetString();
 
         int x = subTextureVal.Get("x").GetInt();

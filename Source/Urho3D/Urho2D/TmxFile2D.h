@@ -100,7 +100,7 @@ public:
 
 protected:
     /// Tiles.
-    Vector<stl::shared_ptr<Tile2D> > tiles_;
+    stl::vector<stl::shared_ptr<Tile2D> > tiles_;
 };
 
 /// Tmx objects layer.
@@ -116,14 +116,14 @@ public:
     void StoreObject(const XMLElement& objectElem, const stl::shared_ptr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile = false);
 
     /// Return number of objects.
-    unsigned GetNumObjects() const { return objects_.Size(); }
+    unsigned GetNumObjects() const { return objects_.size(); }
 
     /// Return tile map object at index.
     TileMapObject2D* GetObject(unsigned index) const;
 
 private:
     /// Objects.
-    Vector<stl::shared_ptr<TileMapObject2D> > objects_;
+    stl::vector<stl::shared_ptr<TileMapObject2D> > objects_;
 };
 
 /// Tmx image layer.
@@ -187,13 +187,13 @@ public:
     Sprite2D* GetTileSprite(unsigned gid) const;
 
     /// Return tile collision shapes for a given gid.
-    Vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
+    stl::vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
 
     /// Return tile property set by gid, if not exist return 0.
     PropertySet2D* GetTilePropertySet(unsigned gid) const;
 
     /// Return number of layers.
-    unsigned GetNumLayers() const { return layers_.Size(); }
+    unsigned GetNumLayers() const { return layers_.size(); }
 
     /// Return layer at index.
     const TmxLayer2D* GetLayer(unsigned index) const;
@@ -221,9 +221,9 @@ private:
     /// Gid to tile property set mapping.
     HashMap<unsigned, stl::shared_ptr<PropertySet2D> > gidToPropertySetMapping_;
     /// Gid to tile collision shape mapping.
-    HashMap<unsigned, Vector<stl::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
+    HashMap<unsigned, stl::vector<stl::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
     /// Layers.
-    Vector<TmxLayer2D*> layers_;
+    stl::vector<TmxLayer2D*> layers_;
     /// Texture edge offset.
     float edgeOffset_;
 };

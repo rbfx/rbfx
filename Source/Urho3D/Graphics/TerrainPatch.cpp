@@ -58,7 +58,7 @@ TerrainPatch::TerrainPatch(Context* context) :
     maxLodGeometry_->SetVertexBuffer(0, vertexBuffer_);
     occlusionGeometry_->SetVertexBuffer(0, vertexBuffer_);
 
-    batches_.Resize(1);
+    batches_.resize(1);
     batches_[0].geometry_ = geometry_;
     batches_[0].geometryType_ = GEOM_STATIC_NOINSTANCING;
 }
@@ -70,7 +70,7 @@ void TerrainPatch::RegisterObject(Context* context)
     context->RegisterFactory<TerrainPatch>();
 }
 
-void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     RayQueryLevel level = query.level_;
 
@@ -104,7 +104,7 @@ void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQue
                 result.drawable_ = this;
                 result.node_ = node_;
                 result.subObject_ = M_MAX_UNSIGNED;
-                results.Push(result);
+                results.push_back(result);
             }
         }
         break;
@@ -127,7 +127,7 @@ void TerrainPatch::UpdateBatches(const FrameInfo& frame)
     batches_[0].worldTransform_ = &worldTransform;
 
     unsigned newLodLevel = 0;
-    for (unsigned i = 0; i < lodErrors_.Size(); ++i)
+    for (unsigned i = 0; i < lodErrors_.size(); ++i)
     {
         if (lodErrors_[i] / lodDistance_ > LOD_CONSTANT)
             break;
@@ -194,7 +194,7 @@ bool TerrainPatch::DrawOcclusion(OcclusionBuffer* buffer)
     unsigned vertexSize;
     const unsigned char* indexData;
     unsigned indexSize;
-    const PODVector<VertexElement>* elements;
+    const stl::vector<VertexElement>* elements;
 
     occlusionGeometry_->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
     // Check for valid geometry data

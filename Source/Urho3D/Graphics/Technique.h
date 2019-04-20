@@ -161,15 +161,15 @@ public:
     const String& GetPixelShaderDefineExcludes() const { return pixelShaderDefineExcludes_; }
 
     /// Return vertex shaders.
-    Vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
+    stl::vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
 
     /// Return pixel shaders.
-    Vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
+    stl::vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
 
     /// Return vertex shaders with extra defines from the renderpath.
-    Vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
+    stl::vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
     /// Return pixel shaders with extra defines from the renderpath.
-    Vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
+    stl::vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
     /// Return the effective vertex shader defines, accounting for excludes. Called internally by Renderer.
     String GetEffectiveVertexShaderDefines() const;
     /// Return the effective pixel shader defines, accounting for excludes. Called internally by Renderer.
@@ -207,13 +207,13 @@ private:
     /// Pixel shader define excludes.
     String pixelShaderDefineExcludes_;
     /// Vertex shaders.
-    Vector<stl::shared_ptr<ShaderVariation> > vertexShaders_;
+    stl::vector<stl::shared_ptr<ShaderVariation> > vertexShaders_;
     /// Pixel shaders.
-    Vector<stl::shared_ptr<ShaderVariation> > pixelShaders_;
+    stl::vector<stl::shared_ptr<ShaderVariation> > pixelShaders_;
     /// Vertex shaders with extra defines from the renderpath.
-    HashMap<StringHash, Vector<stl::shared_ptr<ShaderVariation> > > extraVertexShaders_;
+    HashMap<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraVertexShaders_;
     /// Pixel shaders with extra defines from the renderpath.
-    HashMap<StringHash, Vector<stl::shared_ptr<ShaderVariation> > > extraPixelShaders_;
+    HashMap<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraPixelShaders_;
     /// Pass name.
     String name_;
 };
@@ -254,13 +254,13 @@ public:
     bool IsSupported() const { return !isDesktop_ || desktopSupport_; }
 
     /// Return whether has a pass.
-    bool HasPass(unsigned passIndex) const { return passIndex < passes_.Size() && passes_[passIndex] != nullptr; }
+    bool HasPass(unsigned passIndex) const { return passIndex < passes_.size() && passes_[passIndex] != nullptr; }
 
     /// Return whether has a pass by name. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
     bool HasPass(const String& name) const;
 
     /// Return a pass, or null if not found.
-    Pass* GetPass(unsigned passIndex) const { return passIndex < passes_.Size() ? passes_[passIndex] : nullptr; }
+    Pass* GetPass(unsigned passIndex) const { return passIndex < passes_.size() ? passes_[passIndex] : nullptr; }
 
     /// Return a pass by name, or null if not found. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
     Pass* GetPass(const String& name) const;
@@ -268,7 +268,7 @@ public:
     /// Return a pass that is supported for rendering, or null if not found.
     Pass* GetSupportedPass(unsigned passIndex) const
     {
-        Pass* pass = passIndex < passes_.Size() ? passes_[passIndex] : nullptr;
+        Pass* pass = passIndex < passes_.size() ? passes_[passIndex] : nullptr;
         return pass && (!pass->IsDesktop() || desktopSupport_) ? pass : nullptr;
     }
 
@@ -278,9 +278,9 @@ public:
     /// Return number of passes.
     unsigned GetNumPasses() const;
     /// Return all pass names.
-    Vector<String> GetPassNames() const;
+    stl::vector<String> GetPassNames() const;
     /// Return all passes.
-    PODVector<Pass*> GetPasses() const;
+    stl::vector<Pass*> GetPasses() const;
 
     /// Return a clone with added shader compilation defines. Called internally by Material.
     stl::shared_ptr<Technique> CloneWithDefines(const String& vsDefines, const String& psDefines);
@@ -311,7 +311,7 @@ private:
     /// Cached desktop GPU support flag.
     bool desktopSupport_;
     /// Passes.
-    Vector<stl::shared_ptr<Pass> > passes_;
+    stl::vector<stl::shared_ptr<Pass> > passes_;
     /// Cached clones with added shader compilation defines.
     HashMap<Pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
 

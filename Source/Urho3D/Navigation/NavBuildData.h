@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/Vector.h"
+#include <EASTL/vector.h>
+
 #include "../Math/BoundingBox.h"
 #include "../Math/Vector3.h"
 
@@ -61,19 +62,19 @@ struct URHO3D_API NavBuildData
     /// World-space bounding box of the navigation mesh tile.
     BoundingBox worldBoundingBox_;
     /// Vertices from geometries.
-    PODVector<Vector3> vertices_;
+    stl::vector<Vector3> vertices_;
     /// Triangle indices from geometries.
-    PODVector<int> indices_;
+    stl::vector<int> indices_;
     /// Offmesh connection vertices.
-    PODVector<Vector3> offMeshVertices_;
+    stl::vector<Vector3> offMeshVertices_;
     /// Offmesh connection radii.
-    PODVector<float> offMeshRadii_;
+    stl::vector<float> offMeshRadii_;
     /// Offmesh connection flags.
-    PODVector<unsigned short> offMeshFlags_;
+    stl::vector<unsigned short> offMeshFlags_;
     /// Offmesh connection areas.
-    PODVector<unsigned char> offMeshAreas_;
+    stl::vector<unsigned char> offMeshAreas_;
     /// Offmesh connection direction.
-    PODVector<unsigned char> offMeshDir_;
+    stl::vector<unsigned char> offMeshDir_;
     /// Recast context.
     rcContext* ctx_;
     /// Recast heightfield.
@@ -81,7 +82,7 @@ struct URHO3D_API NavBuildData
     /// Recast compact heightfield.
     rcCompactHeightfield* compactHeightField_;
     /// Pretransformed navigation areas, no correlation to the geometry above.
-    PODVector<NavAreaStub> navAreas_;
+    stl::vector<NavAreaStub> navAreas_;
 };
 
 struct URHO3D_API SimpleNavBuildData : public NavBuildData

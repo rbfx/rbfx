@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include "../IO/Log.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
@@ -138,14 +140,14 @@ stl::shared_ptr<Task> TaskScheduler::Create(const std::function<void()>& taskFun
 
 void TaskScheduler::Add(Task* task)
 {
-    tasks_.Push(stl::shared_ptr<Task>(task));   // TODO: verify!!!
+    tasks_.push_back(stl::shared_ptr<Task>(task));   // TODO: verify!!!
 }
 
 void TaskScheduler::ExecuteTasks()
 {
     // Tasks with smallest next runtime value end up at the beginning of the list. Null pointers end up at the end of
     // the list.
-    Sort(tasks_.Begin(), tasks_.End(), [](stl::shared_ptr<Task>& a, stl::shared_ptr<Task>& b) {
+    stl::quick_sort(tasks_.begin(), tasks_.end(), [](const stl::shared_ptr<Task>& a, const stl::shared_ptr<Task>& b) {
         if (!a)
             return false;
         if (!b)
@@ -153,17 +155,17 @@ void TaskScheduler::ExecuteTasks()
         return a->nextRunTime_ < b->nextRunTime_;
     });
     // Count null pointers at the end and discard them.
-    unsigned newSize = tasks_.Size();
-    for (auto it = tasks_.End(); it != tasks_.Begin();)
+    unsigned newSize = tasks_.size();
+    for (auto it = tasks_.end(); it != tasks_.begin();)
     {
         if (!(*--it))
             newSize--;
         else
             break;
     }
-    tasks_.Resize(newSize);
+    tasks_.resize(newSize);
     // Schedule sorted tasks.
-    for (auto it = tasks_.Begin(); it != tasks_.End(); it++)
+    for (auto it = tasks_.begin(); it != tasks_.end(); it++)
     {
         Task* task = it->get();
 
@@ -180,7 +182,7 @@ void TaskScheduler::ExecuteTasks()
 
 unsigned TaskScheduler::GetActiveTaskCount() const
 {
-    return tasks_.Size();
+    return tasks_.size();
 }
 
 void TaskScheduler::ExecuteAllTasks()

@@ -68,7 +68,7 @@ protected:
         unsigned checksum_;
     } header_{};
     ///
-    Vector<FileEntry> entries_{};
+    stl::vector<FileEntry> entries_{};
     ///
     bool compress_ = false;
 

@@ -86,7 +86,7 @@ struct AttributeInfo
     }
 #endif
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const stl::shared_ptr<AttributeAccessor>& accessor, const Vector<String>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
+    AttributeInfo(VariantType type, const char* name, const stl::shared_ptr<AttributeAccessor>& accessor, const stl::vector<String>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(nullptr),
@@ -111,7 +111,7 @@ struct AttributeInfo
         ptr_ = other.ptr_;
         enumNamesStorage_ = other.enumNamesStorage_;
 
-        if (!enumNamesStorage_.Empty())
+        if (!enumNamesStorage_.empty())
             InitializeEnumNamesFromStorage();
     }
 
@@ -157,21 +157,21 @@ struct AttributeInfo
     /// Attribute data pointer if elsewhere than in the Serializable.
     void* ptr_ = nullptr;
     /// List of enum names. Used when names can not be stored externally.
-    Vector<String> enumNamesStorage_;
+    stl::vector<String> enumNamesStorage_;
     /// List of enum name pointers. Front of this vector will be assigned to enumNames_ when enumNamesStorage_ is in use.
-    Vector<const char*> enumNamesPointers_;
+    stl::vector<const char*> enumNamesPointers_;
 
 private:
     void InitializeEnumNamesFromStorage()
     {
-        if (enumNamesStorage_.Empty())
+        if (enumNamesStorage_.empty())
             enumNames_ = nullptr;
         else
         {
             for (const auto& enumName : enumNamesStorage_)
-                enumNamesPointers_.EmplaceBack(enumName.CString());
-            enumNamesPointers_.EmplaceBack(nullptr);
-            enumNames_ = &enumNamesPointers_.Front();
+                enumNamesPointers_.emplace_back(enumName.CString());
+            enumNamesPointers_.emplace_back(nullptr);
+            enumNames_ = &enumNamesPointers_.front();
         }
     }
 };

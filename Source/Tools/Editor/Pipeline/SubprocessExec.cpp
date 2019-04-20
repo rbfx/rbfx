@@ -128,11 +128,11 @@ void SubprocessExec::Execute(const StringVector& input)
                     if (!dirListingBefore.Contains(path) ||
                         dirListingBefore[path] < fs->GetLastModifiedTime(output + path))
                         // Record new or changed files
-                        outputFiles.EmplaceBack(outputRelative + path);
+                        outputFiles.emplace_back(outputRelative + path);
                 }
             }
             else if (fs->FileExists(output))
-                outputFiles.EmplaceBack(outputRelative);
+                outputFiles.emplace_back(outputRelative);
         }
 
         auto logger = Log::GetLogger("pipeline");
@@ -164,11 +164,11 @@ void SubprocessExec::Execute(const StringVector& input)
         if (!output_.Empty())
             project->GetPipeline().AddCacheEntry(resourceName, outputFiles);
 
-        if (!reschedule_.Empty())
+        if (!reschedule_.empty())
         {
-            Vector<std::regex> reschedulePatterns;
+            stl::vector<std::regex> reschedulePatterns;
             for (const String& glob : reschedule_)
-                reschedulePatterns.Push(GlobToRegex(insertVariables(glob, resourceName)));
+                reschedulePatterns.push_back(GlobToRegex(insertVariables(glob, resourceName)));
 
             // In some cases processing file may produce extra files that should be once again processed by the pipeline.
             // For example fbx model may contain embedded textures which get extracted to Cache folder upon conversion.

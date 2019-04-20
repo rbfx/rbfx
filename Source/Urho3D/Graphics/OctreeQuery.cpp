@@ -46,7 +46,7 @@ void PointOctreeQuery::TestDrawables(Drawable** start, Drawable** end, bool insi
         if ((drawable->GetDrawableFlags() & drawableFlags_) && (drawable->GetViewMask() & viewMask_))
         {
             if (inside || drawable->GetWorldBoundingBox().IsInside(point_))
-                result_.Push(drawable);
+                result_.push_back(drawable);
         }
     }
 }
@@ -68,7 +68,7 @@ void SphereOctreeQuery::TestDrawables(Drawable** start, Drawable** end, bool ins
         if ((drawable->GetDrawableFlags() & drawableFlags_) && (drawable->GetViewMask() & viewMask_))
         {
             if (inside || sphere_.IsInsideFast(drawable->GetWorldBoundingBox()))
-                result_.Push(drawable);
+                result_.push_back(drawable);
         }
     }
 }
@@ -90,7 +90,7 @@ void BoxOctreeQuery::TestDrawables(Drawable** start, Drawable** end, bool inside
         if ((drawable->GetDrawableFlags() & drawableFlags_) && (drawable->GetViewMask() & viewMask_))
         {
             if (inside || box_.IsInsideFast(drawable->GetWorldBoundingBox()))
-                result_.Push(drawable);
+                result_.push_back(drawable);
         }
     }
 }
@@ -112,7 +112,7 @@ void FrustumOctreeQuery::TestDrawables(Drawable** start, Drawable** end, bool in
         if ((drawable->GetDrawableFlags() & drawableFlags_) && (drawable->GetViewMask() & viewMask_))
         {
             if (inside || frustum_.IsInsideFast(drawable->GetWorldBoundingBox()))
-                result_.Push(drawable);
+                result_.push_back(drawable);
         }
     }
 }
@@ -130,7 +130,7 @@ void AllContentOctreeQuery::TestDrawables(Drawable** start, Drawable** end, bool
         Drawable* drawable = *start++;
 
         if ((drawable->GetDrawableFlags() & drawableFlags_) && (drawable->GetViewMask() & viewMask_))
-            result_.Push(drawable);
+            result_.push_back(drawable);
     }
 }
 

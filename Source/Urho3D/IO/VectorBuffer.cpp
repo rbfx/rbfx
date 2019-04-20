@@ -33,7 +33,7 @@ static String vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 
-VectorBuffer::VectorBuffer(const PODVector<unsigned char>& data)
+VectorBuffer::VectorBuffer(const stl::vector<unsigned char>& data)
 {
     SetData(data);
 }
@@ -96,7 +96,7 @@ unsigned VectorBuffer::Write(const void* data, unsigned size)
     if (size + position_ > size_)
     {
         size_ = size + position_;
-        buffer_.Resize(size_);
+        buffer_.resize(size_);
     }
 
     auto* srcPtr = (unsigned char*)data;
@@ -123,11 +123,11 @@ unsigned VectorBuffer::Write(const void* data, unsigned size)
     return size;
 }
 
-void VectorBuffer::SetData(const PODVector<unsigned char>& data)
+void VectorBuffer::SetData(const stl::vector<unsigned char>& data)
 {
     buffer_ = data;
     position_ = 0;
-    size_ = data.Size();
+    size_ = data.size();
 }
 
 void VectorBuffer::SetData(const void* data, unsigned size)
@@ -135,7 +135,7 @@ void VectorBuffer::SetData(const void* data, unsigned size)
     if (!data)
         size = 0;
 
-    buffer_.Resize(size);
+    buffer_.resize(size);
     if (size)
         memcpy(&buffer_[0], data, size);
 
@@ -145,10 +145,10 @@ void VectorBuffer::SetData(const void* data, unsigned size)
 
 void VectorBuffer::SetData(Deserializer& source, unsigned size)
 {
-    buffer_.Resize(size);
+    buffer_.resize(size);
     unsigned actualSize = source.Read(&buffer_[0], size);
     if (actualSize != size)
-        buffer_.Resize(actualSize);
+        buffer_.resize(actualSize);
 
     position_ = 0;
     size_ = actualSize;
@@ -156,14 +156,14 @@ void VectorBuffer::SetData(Deserializer& source, unsigned size)
 
 void VectorBuffer::Clear()
 {
-    buffer_.Clear();
+    buffer_.clear();
     position_ = 0;
     size_ = 0;
 }
 
 void VectorBuffer::Resize(unsigned size)
 {
-    buffer_.Resize(size);
+    buffer_.resize(size);
     size_ = size;
     if (position_ > size_)
         position_ = size_;

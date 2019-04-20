@@ -34,7 +34,7 @@ public:
     /// Construct an empty buffer.
     VectorBuffer();
     /// Construct from another buffer.
-    explicit VectorBuffer(const PODVector<unsigned char>& data);
+    explicit VectorBuffer(const stl::vector<unsigned char>& data);
     /// Construct from a memory area.
     VectorBuffer(const void* data, unsigned size);
     /// Construct from a stream.
@@ -51,7 +51,7 @@ public:
     unsigned Write(const void* data, unsigned size) override;
 
     /// Set data from another buffer.
-    void SetData(const PODVector<unsigned char>& data);
+    void SetData(const stl::vector<unsigned char>& data);
     /// Set data from a memory area.
     void SetData(const void* data, unsigned size);
     /// Set data from a stream.
@@ -68,11 +68,11 @@ public:
     unsigned char* GetModifiableData() { return size_ ? &buffer_[0] : nullptr; }
 
     /// Return the buffer.
-    const PODVector<unsigned char>& GetBuffer() const { return buffer_; }
+    const stl::vector<unsigned char>& GetBuffer() const { return buffer_; }
 
 private:
     /// Dynamic data buffer.
-    PODVector<unsigned char> buffer_;
+    stl::vector<unsigned char> buffer_;
 };
 
 }

@@ -97,7 +97,7 @@ public:
     SoundListener* GetListener() const;
 
     /// Return all sound sources.
-    const PODVector<SoundSource*>& GetSoundSources() const { return soundSources_; }
+    const stl::vector<SoundSource*>& GetSoundSources() const { return soundSources_; }
 
     /// Return whether the specified master gain has been defined.
     bool HasMasterGain(const String& type) const { return masterGain_.Contains(type); }
@@ -147,7 +147,7 @@ private:
     /// Paused sound types.
     stl::hash_set<StringHash> pausedSoundTypes_;
     /// Sound sources.
-    PODVector<SoundSource*> soundSources_;
+    stl::vector<SoundSource*> soundSources_;
     /// Sound listener.
     stl::weak_ptr<SoundListener> listener_;
 };

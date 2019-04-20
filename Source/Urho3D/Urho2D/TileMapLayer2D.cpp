@@ -75,7 +75,7 @@ void TileMapLayer2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
             {
             case OT_RECTANGLE:
                 {
-                    Vector<Vector2> points;
+                    stl::vector<Vector2> points;
 
                     switch (info.orientation_)
                     {
@@ -83,26 +83,26 @@ void TileMapLayer2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
                     case O_HEXAGONAL:
                     case O_STAGGERED:
                         {
-                            points.Push(Vector2::ZERO);
-                            points.Push(Vector2(size.x_, 0.0f));
-                            points.Push(Vector2(size.x_, -size.y_));
-                            points.Push(Vector2(0.0f, -size.y_));
+                            points.push_back(Vector2::ZERO);
+                            points.push_back(Vector2(size.x_, 0.0f));
+                            points.push_back(Vector2(size.x_, -size.y_));
+                            points.push_back(Vector2(0.0f, -size.y_));
                             break;
                         }
                     case O_ISOMETRIC:
                         {
                             float ratio = (info.tileWidth_ / info.tileHeight_) * 0.5f;
-                            points.Push(Vector2::ZERO);
-                            points.Push(Vector2(size.y_ * ratio, size.y_ * 0.5f));
-                            points.Push(Vector2((size.x_ + size.y_) * ratio, (-size.x_ + size.y_) * 0.5f));
-                            points.Push(Vector2(size.x_ * ratio, -size.x_ * 0.5f));
+                            points.push_back(Vector2::ZERO);
+                            points.push_back(Vector2(size.y_ * ratio, size.y_ * 0.5f));
+                            points.push_back(Vector2((size.x_ + size.y_) * ratio, (-size.x_ + size.y_) * 0.5f));
+                            points.push_back(Vector2(size.x_ * ratio, -size.x_ * 0.5f));
                             break;
                         }
                     }
 
-                    for (unsigned j = 0; j < points.Size(); ++j)
+                    for (unsigned j = 0; j < points.size(); ++j)
                         debug->AddLine(Vector3(TransformNode2D(transform, points[j] + object->GetPosition())),
-                            Vector3(TransformNode2D(transform, points[(j + 1) % points.Size()] + object->GetPosition())), color,
+                            Vector3(TransformNode2D(transform, points[(j + 1) % points.size()] + object->GetPosition())), color,
                             depthTest);
                 }
                 break;
@@ -174,13 +174,13 @@ void TileMapLayer2D::Initialize(TileMap2D* tileMap, const TmxLayer2D* tmxLayer)
 
     if (tmxLayer_)
     {
-        for (unsigned i = 0; i < nodes_.Size(); ++i)
+        for (unsigned i = 0; i < nodes_.size(); ++i)
         {
             if (nodes_[i])
                 nodes_[i]->Remove();
         }
 
-        nodes_.Clear();
+        nodes_.clear();
     }
 
     tileLayer_ = nullptr;
@@ -221,7 +221,7 @@ void TileMapLayer2D::SetDrawOrder(int drawOrder)
 
     drawOrder_ = drawOrder;
 
-    for (unsigned i = 0; i < nodes_.Size(); ++i)
+    for (unsigned i = 0; i < nodes_.size(); ++i)
     {
         if (!nodes_[i])
             continue;
@@ -239,7 +239,7 @@ void TileMapLayer2D::SetVisible(bool visible)
 
     visible_ = visible;
 
-    for (unsigned i = 0; i < nodes_.Size(); ++i)
+    for (unsigned i = 0; i < nodes_.size(); ++i)
     {
         if (nodes_[i])
             nodes_[i]->SetEnabled(visible_);
@@ -321,7 +321,7 @@ Node* TileMapLayer2D::GetObjectNode(unsigned index) const
     if (!objectGroup_)
         return nullptr;
 
-    if (index >= nodes_.Size())
+    if (index >= nodes_.size())
         return nullptr;
 
     return nodes_[index];
@@ -329,7 +329,7 @@ Node* TileMapLayer2D::GetObjectNode(unsigned index) const
 
 Node* TileMapLayer2D::GetImageNode() const
 {
-    if (!imageLayer_ || nodes_.Empty())
+    if (!imageLayer_ || nodes_.empty())
         return nullptr;
 
     return nodes_[0];
@@ -341,7 +341,7 @@ void TileMapLayer2D::SetTileLayer(const TmxTileLayer2D* tileLayer)
 
     int width = tileLayer->GetWidth();
     int height = tileLayer->GetHeight();
-    nodes_.Resize((unsigned)(width * height));
+    nodes_.resize((unsigned) (width * height));
 
     const TileMapInfo2D& info = tileMap_->GetInfo();
     for (int y = 0; y < height; ++y)
@@ -371,7 +371,7 @@ void TileMapLayer2D::SetObjectGroup(const TmxObjectGroup2D* objectGroup)
     objectGroup_ = objectGroup;
 
     TmxFile2D* tmxFile = objectGroup->GetTmxFile();
-    nodes_.Resize(objectGroup->GetNumObjects());
+    nodes_.resize(objectGroup->GetNumObjects());
 
     for (unsigned i = 0; i < objectGroup->GetNumObjects(); ++i)
     {
@@ -415,7 +415,7 @@ void TileMapLayer2D::SetImageLayer(const TmxImageLayer2D* imageLayer)
     staticSprite->SetSprite(imageLayer->GetSprite());
     staticSprite->SetOrderInLayer(0);
 
-    nodes_.Push(imageNode);
+    nodes_.push_back(imageNode);
 }
 
 }

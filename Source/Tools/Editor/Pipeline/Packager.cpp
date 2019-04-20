@@ -52,7 +52,7 @@ void Packager::AddFile(const String& root, const String& path)
     entry.offset_ = 0;
     entry.size_ = File(context_, root + path).GetSize();
     if (entry.size_)
-        entries_.Push(entry);
+        entries_.push_back(entry);
 }
 
 void Packager::Write()
@@ -62,7 +62,7 @@ void Packager::Write()
     unsigned totalDataSize = 0;
     unsigned lastOffset = 0;
     const unsigned blockSize_ = 32768;
-    Vector<uint8_t> buffer;
+    stl::vector<uint8_t> buffer;
 
     auto logger = Log::GetLogger("packager");
     // Write file data, calculate checksums & correct offsets
@@ -80,7 +80,7 @@ void Packager::Write()
 
         unsigned dataSize = entry.size_;
         totalDataSize += dataSize;
-        buffer.Resize(dataSize);
+        buffer.resize(dataSize);
 
         if (srcFile.Read(&buffer[0], dataSize) != dataSize)
         {
@@ -138,7 +138,7 @@ void Packager::Write()
 
 void Packager::WriteHeaders()
 {
-    header_.numEntries_ = entries_.Size();
+    header_.numEntries_ = entries_.size();
 
     output_.Seek(0);
     output_.Write(&header_, sizeof(header_));

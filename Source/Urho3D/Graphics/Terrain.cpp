@@ -174,7 +174,7 @@ void Terrain::OnSetEnabled()
 {
     bool enabled = IsEnabledEffective();
 
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetEnabled(enabled);
@@ -253,7 +253,7 @@ bool Terrain::SetHeightMap(Image* image)
 void Terrain::SetMaterial(Material* material)
 {
     material_ = material;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetMaterial(material);
@@ -381,7 +381,7 @@ void Terrain::SetNeighbors(Terrain* north, Terrain* south, Terrain* west, Terrai
 void Terrain::SetDrawDistance(float distance)
 {
     drawDistance_ = distance;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetDrawDistance(distance);
@@ -393,7 +393,7 @@ void Terrain::SetDrawDistance(float distance)
 void Terrain::SetShadowDistance(float distance)
 {
     shadowDistance_ = distance;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetShadowDistance(distance);
@@ -405,7 +405,7 @@ void Terrain::SetShadowDistance(float distance)
 void Terrain::SetLodBias(float bias)
 {
     lodBias_ = bias;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetLodBias(bias);
@@ -417,7 +417,7 @@ void Terrain::SetLodBias(float bias)
 void Terrain::SetViewMask(unsigned mask)
 {
     viewMask_ = mask;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetViewMask(mask);
@@ -429,7 +429,7 @@ void Terrain::SetViewMask(unsigned mask)
 void Terrain::SetLightMask(unsigned mask)
 {
     lightMask_ = mask;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetLightMask(mask);
@@ -441,7 +441,7 @@ void Terrain::SetLightMask(unsigned mask)
 void Terrain::SetShadowMask(unsigned mask)
 {
     shadowMask_ = mask;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetShadowMask(mask);
@@ -453,7 +453,7 @@ void Terrain::SetShadowMask(unsigned mask)
 void Terrain::SetZoneMask(unsigned mask)
 {
     zoneMask_ = mask;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetZoneMask(mask);
@@ -465,7 +465,7 @@ void Terrain::SetZoneMask(unsigned mask)
 void Terrain::SetMaxLights(unsigned num)
 {
     maxLights_ = num;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetMaxLights(num);
@@ -477,7 +477,7 @@ void Terrain::SetMaxLights(unsigned num)
 void Terrain::SetCastShadows(bool enable)
 {
     castShadows_ = enable;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetCastShadows(enable);
@@ -489,7 +489,7 @@ void Terrain::SetCastShadows(bool enable)
 void Terrain::SetOccluder(bool enable)
 {
     occluder_ = enable;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetOccluder(enable);
@@ -501,7 +501,7 @@ void Terrain::SetOccluder(bool enable)
 void Terrain::SetOccludee(bool enable)
 {
     occludee_ = enable;
-    for (unsigned i = 0; i < patches_.Size(); ++i)
+    for (unsigned i = 0; i < patches_.size(); ++i)
     {
         if (patches_[i])
             patches_[i]->SetOccludee(enable);
@@ -532,7 +532,7 @@ Material* Terrain::GetMaterial() const
 
 TerrainPatch* Terrain::GetPatch(unsigned index) const
 {
-    return index < patches_.Size() ? patches_[index].get() : nullptr;
+    return index < patches_.size() ? patches_[index].get() : nullptr;
 }
 
 TerrainPatch* Terrain::GetPatch(int x, int z) const
@@ -747,7 +747,7 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
 
     patch->SetBoundingBox(box);
 
-    if (drawRanges_.Size())
+    if (drawRanges_.size())
     {
         unsigned occlusionDrawRange = occlusionLevel << 4u;
 
@@ -789,7 +789,7 @@ void Terrain::UpdatePatchLod(TerrainPatch* patch)
             drawRangeIndex |= STITCH_EAST;
     }
 
-    if (drawRangeIndex < drawRanges_.Size())
+    if (drawRangeIndex < drawRanges_.size())
         geometry->SetDrawRange(TRIANGLE_LIST, drawRanges_[drawRangeIndex].first_, drawRanges_[drawRangeIndex].second_, false);
 }
 
@@ -859,7 +859,7 @@ void Terrain::CreateGeometry()
 
     URHO3D_PROFILE("CreateTerrainGeometry");
 
-    unsigned prevNumPatches = patches_.Size();
+    unsigned prevNumPatches = patches_.size();
 
     // Determine number of LOD levels
     auto lodSize = (unsigned)patchSize_;
@@ -915,13 +915,13 @@ void Terrain::CreateGeometry()
     {
         URHO3D_PROFILE("RemoveOldPatches");
 
-        PODVector<Node*> oldPatchNodes;
+        stl::vector<Node*> oldPatchNodes;
         node_->GetChildrenWithComponent<TerrainPatch>(oldPatchNodes);
-        for (PODVector<Node*>::Iterator i = oldPatchNodes.Begin(); i != oldPatchNodes.End(); ++i)
+        for (auto i = oldPatchNodes.begin(); i != oldPatchNodes.end(); ++i)
         {
             bool nodeOk = false;
-            Vector<String> coords = (*i)->GetName().Substring(6).Split('_');
-            if (coords.Size() == 2)
+            stl::vector<String> coords = (*i)->GetName().Substring(6).Split('_');
+            if (coords.size() == 2)
             {
                 int x = ToInt(coords[0]);
                 int z = ToInt(coords[1]);
@@ -935,11 +935,11 @@ void Terrain::CreateGeometry()
     }
 
     // Keep track of which patches actually need an update
-    PODVector<bool> dirtyPatches((unsigned)(numPatches_.x_ * numPatches_.y_));
-    for (unsigned i = 0; i < dirtyPatches.Size(); ++i)
+    stl::vector<bool> dirtyPatches((unsigned)(numPatches_.x_ * numPatches_.y_));
+    for (unsigned i = 0; i < dirtyPatches.size(); ++i)
         dirtyPatches[i] = updateAll;
 
-    patches_.Clear();
+    patches_.clear();
 
     if (heightMap_)
     {
@@ -1024,7 +1024,7 @@ void Terrain::CreateGeometry()
             }
         }
 
-        patches_.Reserve((unsigned)(numPatches_.x_ * numPatches_.y_));
+        patches_.reserve((unsigned) (numPatches_.x_ * numPatches_.y_));
 
         bool enabled = IsEnabledEffective();
 
@@ -1074,7 +1074,7 @@ void Terrain::CreateGeometry()
                         patch->SetOccludee(occludee_);
                     }
 
-                    patches_.Push(stl::weak_ptr<TerrainPatch>(patch));
+                    patches_.push_back(stl::weak_ptr<TerrainPatch>(patch));
                 }
             }
         }
@@ -1088,7 +1088,7 @@ void Terrain::CreateGeometry()
         {
             URHO3D_PROFILE("UpdateSmoothing");
 
-            for (unsigned i = 0; i < patches_.Size(); ++i)
+            for (unsigned i = 0; i < patches_.size(); ++i)
             {
                 if (dirtyPatches[i])
                 {
@@ -1116,7 +1116,7 @@ void Terrain::CreateGeometry()
             }
         }
 
-        for (unsigned i = 0; i < patches_.Size(); ++i)
+        for (unsigned i = 0; i < patches_.size(); ++i)
         {
             TerrainPatch* patch = patches_[i];
 
@@ -1131,7 +1131,7 @@ void Terrain::CreateGeometry()
     }
 
     // Send event only if new geometry was generated, or the old was cleared
-    if (patches_.Size() || prevNumPatches)
+    if (patches_.size() || prevNumPatches)
     {
         using namespace TerrainCreated;
 
@@ -1145,8 +1145,8 @@ void Terrain::CreateIndexData()
 {
     URHO3D_PROFILE("CreateIndexData");
 
-    PODVector<unsigned short> indices;
-    drawRanges_.Clear();
+    stl::vector<unsigned short> indices;
+    drawRanges_.clear();
     auto row = (unsigned)(patchSize_ + 1);
 
     /* Build index data for each LOD level. Each LOD level except the lowest can stitch to the next lower LOD from the edges:
@@ -1167,7 +1167,7 @@ void Terrain::CreateIndexData()
 
         for (unsigned j = 0; j < combinations; ++j)
         {
-            unsigned indexStart = indices.Size();
+            unsigned indexStart = indices.size();
 
             int zStart = 0;
             int xStart = 0;
@@ -1188,12 +1188,12 @@ void Terrain::CreateIndexData()
             {
                 for (int x = xStart; x < xEnd; x += skip)
                 {
-                    indices.Push((unsigned short)((z + skip) * row + x));
-                    indices.Push((unsigned short)(z * row + x + skip));
-                    indices.Push((unsigned short)(z * row + x));
-                    indices.Push((unsigned short)((z + skip) * row + x));
-                    indices.Push((unsigned short)((z + skip) * row + x + skip));
-                    indices.Push((unsigned short)(z * row + x + skip));
+                    indices.push_back((unsigned short) ((z + skip) * row + x));
+                    indices.push_back((unsigned short) (z * row + x + skip));
+                    indices.push_back((unsigned short) (z * row + x));
+                    indices.push_back((unsigned short) ((z + skip) * row + x));
+                    indices.push_back((unsigned short) ((z + skip) * row + x + skip));
+                    indices.push_back((unsigned short) (z * row + x + skip));
                 }
             }
 
@@ -1205,18 +1205,18 @@ void Terrain::CreateIndexData()
                 {
                     if (x > 0 || (j & STITCH_WEST) == 0)
                     {
-                        indices.Push((unsigned short)((z + skip) * row + x));
-                        indices.Push((unsigned short)(z * row + x + skip));
-                        indices.Push((unsigned short)(z * row + x));
+                        indices.push_back((unsigned short) ((z + skip) * row + x));
+                        indices.push_back((unsigned short) (z * row + x + skip));
+                        indices.push_back((unsigned short) (z * row + x));
                     }
-                    indices.Push((unsigned short)((z + skip) * row + x));
-                    indices.Push((unsigned short)((z + skip) * row + x + 2 * skip));
-                    indices.Push((unsigned short)(z * row + x + skip));
+                    indices.push_back((unsigned short) ((z + skip) * row + x));
+                    indices.push_back((unsigned short) ((z + skip) * row + x + 2 * skip));
+                    indices.push_back((unsigned short) (z * row + x + skip));
                     if (x < patchSize_ - skip * 2 || (j & STITCH_EAST) == 0)
                     {
-                        indices.Push((unsigned short)((z + skip) * row + x + 2 * skip));
-                        indices.Push((unsigned short)(z * row + x + 2 * skip));
-                        indices.Push((unsigned short)(z * row + x + skip));
+                        indices.push_back((unsigned short) ((z + skip) * row + x + 2 * skip));
+                        indices.push_back((unsigned short) (z * row + x + 2 * skip));
+                        indices.push_back((unsigned short) (z * row + x + skip));
                     }
                 }
             }
@@ -1229,18 +1229,18 @@ void Terrain::CreateIndexData()
                 {
                     if (x > 0 || (j & STITCH_WEST) == 0)
                     {
-                        indices.Push((unsigned short)((z + skip) * row + x));
-                        indices.Push((unsigned short)((z + skip) * row + x + skip));
-                        indices.Push((unsigned short)(z * row + x));
+                        indices.push_back((unsigned short) ((z + skip) * row + x));
+                        indices.push_back((unsigned short) ((z + skip) * row + x + skip));
+                        indices.push_back((unsigned short) (z * row + x));
                     }
-                    indices.Push((unsigned short)(z * row + x));
-                    indices.Push((unsigned short)((z + skip) * row + x + skip));
-                    indices.Push((unsigned short)(z * row + x + 2 * skip));
+                    indices.push_back((unsigned short) (z * row + x));
+                    indices.push_back((unsigned short) ((z + skip) * row + x + skip));
+                    indices.push_back((unsigned short) (z * row + x + 2 * skip));
                     if (x < patchSize_ - skip * 2 || (j & STITCH_EAST) == 0)
                     {
-                        indices.Push((unsigned short)((z + skip) * row + x + skip));
-                        indices.Push((unsigned short)((z + skip) * row + x + 2 * skip));
-                        indices.Push((unsigned short)(z * row + x + 2 * skip));
+                        indices.push_back((unsigned short) ((z + skip) * row + x + skip));
+                        indices.push_back((unsigned short) ((z + skip) * row + x + 2 * skip));
+                        indices.push_back((unsigned short) (z * row + x + 2 * skip));
                     }
                 }
             }
@@ -1253,18 +1253,18 @@ void Terrain::CreateIndexData()
                 {
                     if (z > 0 || (j & STITCH_SOUTH) == 0)
                     {
-                        indices.Push((unsigned short)(z * row + x));
-                        indices.Push((unsigned short)((z + skip) * row + x + skip));
-                        indices.Push((unsigned short)(z * row + x + skip));
+                        indices.push_back((unsigned short) (z * row + x));
+                        indices.push_back((unsigned short) ((z + skip) * row + x + skip));
+                        indices.push_back((unsigned short) (z * row + x + skip));
                     }
-                    indices.Push((unsigned short)((z + 2 * skip) * row + x));
-                    indices.Push((unsigned short)((z + skip) * row + x + skip));
-                    indices.Push((unsigned short)(z * row + x));
+                    indices.push_back((unsigned short) ((z + 2 * skip) * row + x));
+                    indices.push_back((unsigned short) ((z + skip) * row + x + skip));
+                    indices.push_back((unsigned short) (z * row + x));
                     if (z < patchSize_ - skip * 2 || (j & STITCH_NORTH) == 0)
                     {
-                        indices.Push((unsigned short)((z + 2 * skip) * row + x));
-                        indices.Push((unsigned short)((z + 2 * skip) * row + x + skip));
-                        indices.Push((unsigned short)((z + skip) * row + x + skip));
+                        indices.push_back((unsigned short) ((z + 2 * skip) * row + x));
+                        indices.push_back((unsigned short) ((z + 2 * skip) * row + x + skip));
+                        indices.push_back((unsigned short) ((z + skip) * row + x + skip));
                     }
                 }
             }
@@ -1277,27 +1277,27 @@ void Terrain::CreateIndexData()
                 {
                     if (z > 0 || (j & STITCH_SOUTH) == 0)
                     {
-                        indices.Push((unsigned short)(z * row + x));
-                        indices.Push((unsigned short)((z + skip) * row + x));
-                        indices.Push((unsigned short)(z * row + x + skip));
+                        indices.push_back((unsigned short) (z * row + x));
+                        indices.push_back((unsigned short) ((z + skip) * row + x));
+                        indices.push_back((unsigned short) (z * row + x + skip));
                     }
-                    indices.Push((unsigned short)((z + skip) * row + x));
-                    indices.Push((unsigned short)((z + 2 * skip) * row + x + skip));
-                    indices.Push((unsigned short)(z * row + x + skip));
+                    indices.push_back((unsigned short) ((z + skip) * row + x));
+                    indices.push_back((unsigned short) ((z + 2 * skip) * row + x + skip));
+                    indices.push_back((unsigned short) (z * row + x + skip));
                     if (z < patchSize_ - skip * 2 || (j & STITCH_NORTH) == 0)
                     {
-                        indices.Push((unsigned short)((z + skip) * row + x));
-                        indices.Push((unsigned short)((z + 2 * skip) * row + x));
-                        indices.Push((unsigned short)((z + 2 * skip) * row + x + skip));
+                        indices.push_back((unsigned short) ((z + skip) * row + x));
+                        indices.push_back((unsigned short) ((z + 2 * skip) * row + x));
+                        indices.push_back((unsigned short) ((z + 2 * skip) * row + x + skip));
                     }
                 }
             }
 
-            drawRanges_.Push(MakePair(indexStart, indices.Size() - indexStart));
+            drawRanges_.push_back(MakePair(indexStart, (unsigned)indices.size() - indexStart));
         }
     }
 
-    indexBuffer_->SetSize(indices.Size(), false);
+    indexBuffer_->SetSize(indices.size(), false);
     indexBuffer_->SetData(&indices[0]);
 }
 
@@ -1374,9 +1374,9 @@ void Terrain::CalculateLodErrors(TerrainPatch* patch)
     URHO3D_PROFILE("CalculateLodErrors");
 
     const IntVector2& coords = patch->GetCoordinates();
-    PODVector<float>& lodErrors = patch->GetLodErrors();
-    lodErrors.Clear();
-    lodErrors.Reserve(numLodLevels_);
+    stl::vector<float>& lodErrors = patch->GetLodErrors();
+    lodErrors.clear();
+    lodErrors.reserve(numLodLevels_);
 
     int xStart = coords.x_ * patchSize_;
     int zStart = coords.y_ * patchSize_;
@@ -1406,7 +1406,7 @@ void Terrain::CalculateLodErrors(TerrainPatch* patch)
             maxError = Max(maxError, 0.25f * (spacing_.x_ + spacing_.z_) * (float)(1u << i));
         }
 
-        lodErrors.Push(maxError);
+        lodErrors.push_back(maxError);
     }
 }
 

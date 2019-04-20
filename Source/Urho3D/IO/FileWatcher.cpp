@@ -133,10 +133,10 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
 
         if (watchSubDirs_)
         {
-            Vector<String> subDirs;
+            stl::vector<String> subDirs;
             fileSystem_->ScanDir(subDirs, pathName, "*", SCAN_DIRS, true);
 
-            for (unsigned i = 0; i < subDirs.Size(); ++i)
+            for (unsigned i = 0; i < subDirs.size(); ++i)
             {
                 String subDirFullPath = AddTrailingSlash(path_ + subDirs[i]);
 
@@ -357,7 +357,7 @@ void FileWatcher::ThreadFunction()
         String changes = ReadFileWatcher(watcher_);
         if (!changes.Empty())
         {
-            Vector<String> fileChanges = changes.Split('\n');
+            stl::vector<String> fileChanges = changes.Split('\n');
             FileChange change{};
             for (const String& fileResult : fileChanges)
             {

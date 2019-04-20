@@ -25,8 +25,8 @@
 
 #include <limits>
 #include <EASTL/unique_ptr.h>
+#include <EASTL/vector.h>
 
-#include "../Container/Vector.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Engine/PluginApplication.h"
@@ -77,28 +77,28 @@ protected:
     std::uintptr_t Command(unsigned command, const Args&... args)
     {
         unsigned index = 0;
-        PODVector<void*> runtimeArgs;
-        runtimeArgs.Resize(sizeof...(args));
+        stl::vector<void*> runtimeArgs;
+        runtimeArgs.resize(sizeof...(args));
         ConvertArguments(runtimeArgs, index, std::forward<const Args&>(args)...);
         std::uintptr_t result = ScriptCommandFailed;
         for (auto handler : commandHandlers_)
         {
             if (!IsInRange(handler.first_, command))
                 continue;
-            result = handler.second_(command, runtimeArgs.Buffer());
+            result = handler.second_(command, runtimeArgs.data());
             break;
         }
         return result;
     }
     ///
     template<typename T, typename... Args>
-    void ConvertArguments(PODVector<void*>& runtimeArgs, unsigned index, T arg, Args... args)
+    void ConvertArguments(stl::vector<void*>& runtimeArgs, unsigned index, T arg, Args... args)
     {
         runtimeArgs[index] = ConvertArgument(arg);
         if (sizeof...(args) > 0)
             ConvertArguments(runtimeArgs, ++index, std::forward<Args>(args)...);
     }
-    void ConvertArguments(PODVector<void*>& runtimeArgs, unsigned index) { }
+    void ConvertArguments(stl::vector<void*>& runtimeArgs, unsigned index) { }
     template<typename T>
     void* ConvertArgument(T value) { return const_cast<void*>(reinterpret_cast<const void*>(value)); }
     ///
@@ -107,11 +107,11 @@ protected:
         return range.first_ <= command && command <= range.second_;
     }
     ///
-    Vector<Pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
+    stl::vector<Pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
     ///
     Mutex destructionQueueLock_;
     ///
-    PODVector<RefCounted*> destructionQueue_;
+    stl::vector<RefCounted*> destructionQueue_;
 };
 
 

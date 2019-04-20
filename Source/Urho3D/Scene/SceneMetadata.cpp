@@ -35,13 +35,13 @@ SceneMetadata::SceneMetadata(Context* context)
 void SceneMetadata::RegisterComponent(Component* component)
 {
     if (auto* viewportComponent = component->Cast<CameraViewport>())
-        viewportComponents_.Push(stl::weak_ptr<CameraViewport>(viewportComponent));
+        viewportComponents_.push_back(stl::weak_ptr<CameraViewport>(viewportComponent));
 }
 
 void SceneMetadata::UnregisterComponent(Component* component)
 {
     if (auto* viewportComponent = component->Cast<CameraViewport>())
-        viewportComponents_.Remove(stl::weak_ptr<CameraViewport>(viewportComponent));
+        viewportComponents_.erase_first(stl::weak_ptr<CameraViewport>(viewportComponent));
 }
 
 void SceneMetadata::RegisterObject(Context* context)

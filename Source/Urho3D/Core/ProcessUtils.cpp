@@ -116,7 +116,7 @@ namespace Urho3D
 static bool consoleOpened = false;
 #endif
 static String currentLine;
-static Vector<String> arguments;
+static stl::vector<String> arguments;
 static String miniDumpDir;
 extern String specifiedExecutableFile;
 
@@ -266,9 +266,9 @@ void PrintLine(const char* str, bool error)
 #endif
 }
 
-const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgument)
+const stl::vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgument)
 {
-    arguments.Clear();
+    arguments.clear();
 
     unsigned cmdStart = 0, cmdEnd = 0;
     bool inQuote = false;
@@ -290,41 +290,41 @@ const Vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgume
 
                 String argument = cmdLine.Substring(cmdStart, cmdEnd - cmdStart);
                 if (!argument.Empty())  // May be empty when multiple spaces follow one another.
-                    arguments.Push(argument);
+                    arguments.push_back(argument);
                 cmdStart = i + 1;
             }
         }
     }
 
     // Strip double quotes from the arguments
-    for (unsigned i = 0; i < arguments.Size(); ++i)
+    for (unsigned i = 0; i < arguments.size(); ++i)
         arguments[i].Replace("\"", "");
 
     specifiedExecutableFile = arguments[0];
 
     // Do not store the first argument (executable name)
-    if (skipFirstArgument && !arguments.Empty())
-        arguments.Erase(arguments.Begin());
+    if (skipFirstArgument && !arguments.empty())
+        arguments.pop_front();
 
     return arguments;
 }
 
-const Vector<String>& ParseArguments(const char* cmdLine)
+const stl::vector<String>& ParseArguments(const char* cmdLine)
 {
     return ParseArguments(String(cmdLine));
 }
 
-const Vector<String>& ParseArguments(const WString& cmdLine)
+const stl::vector<String>& ParseArguments(const WString& cmdLine)
 {
     return ParseArguments(String(cmdLine));
 }
 
-const Vector<String>& ParseArguments(const wchar_t* cmdLine)
+const stl::vector<String>& ParseArguments(const wchar_t* cmdLine)
 {
     return ParseArguments(String(cmdLine));
 }
 
-const Vector<String>& ParseArguments(int argc, char** argv)
+const stl::vector<String>& ParseArguments(int argc, char** argv)
 {
     String cmdLine;
 
@@ -334,7 +334,7 @@ const Vector<String>& ParseArguments(int argc, char** argv)
     return ParseArguments(cmdLine);
 }
 
-const Vector<String>& GetArguments()
+const stl::vector<String>& GetArguments()
 {
     return arguments;
 }
@@ -645,7 +645,7 @@ String GetOSVersion()
 
     if (sysctlbyname("kern.osrelease", &kernel_r, &size, NULL, 0) != -1)
     {
-        Vector<String> kernel_version = String(kernel_r).Split('.');
+        stl::vector<String> kernel_version = String(kernel_r).Split('.');
         String version = "macOS/Mac OS X ";
         int major = ToInt(kernel_version[0]);
         int minor = ToInt(kernel_version[1]);

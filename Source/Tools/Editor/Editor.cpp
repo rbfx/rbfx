@@ -295,7 +295,7 @@ void Editor::OnUpdate(VariantMap& args)
         }
         else if (!tab->IsUtility())
             // Content tabs get closed permanently
-            tabs_.Erase(tabs_.Find(tab));
+            tabs_.erase(tabs_.find(tab));
     }
 
     if (!activeTab_.expired())
@@ -379,7 +379,7 @@ void Editor::OnUpdate(VariantMap& args)
 Tab* Editor::CreateTab(StringHash type)
 {
     stl::shared_ptr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
-    tabs_.Push(tab);
+    tabs_.push_back(tab);
     return tab.get();
 }
 
@@ -394,7 +394,7 @@ StringVector Editor::GetObjectsByCategory(const String& category)
         {
             auto jt = factories.Find(type);
             if (jt != factories.End())
-                result.Push(jt->second_->GetTypeName());
+                result.push_back(jt->second_->GetTypeName());
         }
     }
     return result;
@@ -409,13 +409,13 @@ void Editor::OnConsoleCommand(VariantMap& args)
 
 void Editor::CreateDefaultTabs()
 {
-    tabs_.Clear();
-    tabs_.EmplaceBack(new InspectorTab(context_));
-    tabs_.EmplaceBack(new HierarchyTab(context_));
-    tabs_.EmplaceBack(new ResourceTab(context_));
-    tabs_.EmplaceBack(new ConsoleTab(context_));
-    tabs_.EmplaceBack(new PreviewTab(context_));
-    tabs_.EmplaceBack(new SceneTab(context_));
+    tabs_.clear();
+    tabs_.emplace_back(new InspectorTab(context_));
+    tabs_.emplace_back(new HierarchyTab(context_));
+    tabs_.emplace_back(new ResourceTab(context_));
+    tabs_.emplace_back(new ConsoleTab(context_));
+    tabs_.emplace_back(new PreviewTab(context_));
+    tabs_.emplace_back(new SceneTab(context_));
 }
 
 void Editor::LoadDefaultLayout()
@@ -456,7 +456,7 @@ void Editor::CloseProject()
 {
     SendEvent(E_EDITORPROJECTCLOSING);
     context_->RemoveSubsystem<Project>();
-    tabs_.Clear();
+    tabs_.clear();
     project_.reset();
 }
 
@@ -620,7 +620,7 @@ void Editor::RegisterSubcommand()
 {
     T::RegisterObject(context_);
     stl::shared_ptr<T> cmd(context_->CreateObject<T>());
-    subCommands_.Push(DynamicCast<SubCommand>(cmd));
+    subCommands_.push_back(DynamicCast<SubCommand>(cmd));
     if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().CString()))
         cmd->RegisterCommandLine(*subCommand);
     else

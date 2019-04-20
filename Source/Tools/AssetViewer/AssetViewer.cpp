@@ -205,7 +205,7 @@ public:
             LoadFbx(file_path);
     }
 
-    void LoadModel(const String& file_path, const Vector<String>& materials = { })
+    void LoadModel(const String& file_path, const stl::vector<String>& materials = { })
     {
         if (node_)
             node_->Remove();
@@ -219,7 +219,7 @@ public:
 
         ResetNode();
 
-        for (auto i = 0; i < materials.Size(); i++)
+        for (auto i = 0; i < materials.size(); i++)
             model_->SetMaterial(i, cache->GetTempResource<Material>(materials[i]));
     }
 
@@ -271,17 +271,17 @@ public:
 
         if (fs->FileExists(model_file))
         {
-            Vector<String> materials;
+            stl::vector<String> materials;
             File fp(context_, material_list_file);
             if (fp.IsOpen())
             {
                 while (!fp.IsEof())
-                    materials.Push(model_path + fp.ReadLine());
+                    materials.push_back(model_path + fp.ReadLine());
             }
             LoadModel(model_file, materials);
         }
 
-        Vector<String> animations;
+        stl::vector<String> animations;
         fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
         for (const auto& filename : animations)
             fs->Delete(animation_path + filename);
@@ -296,7 +296,7 @@ public:
 
         fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
 
-        if (animations.Size())
+        if (animations.size())
             LoadAnimation(animation_path + "/" + animations[0]);
     }
 };

@@ -147,7 +147,7 @@ void Connection::SendRemoteEvent(StringHash eventType, bool inOrder, const Varia
     queuedEvent.eventType_ = eventType;
     queuedEvent.eventData_ = eventData;
     queuedEvent.inOrder_ = inOrder;
-    remoteEvents_.Push(queuedEvent);
+    remoteEvents_.push_back(queuedEvent);
 }
 
 void Connection::SendRemoteEvent(Node* node, StringHash eventType, bool inOrder, const VariantMap& eventData)
@@ -173,7 +173,7 @@ void Connection::SendRemoteEvent(Node* node, StringHash eventType, bool inOrder,
     queuedEvent.eventType_ = eventType;
     queuedEvent.eventData_ = eventData;
     queuedEvent.inOrder_ = inOrder;
-    remoteEvents_.Push(queuedEvent);
+    remoteEvents_.push_back(queuedEvent);
 }
 
 void Connection::SetScene(Scene* newScene)
@@ -196,8 +196,8 @@ void Connection::SetScene(Scene* newScene)
         sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
-        const Vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
-        unsigned numPackages = packages.Size();
+        const stl::vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+        unsigned numPackages = packages.size();
         msg_.Clear();
         msg_.WriteString(scene_->GetFileName());
         msg_.WriteVLE(numPackages);
@@ -323,12 +323,12 @@ void Connection::SendRemoteEvents()
         tempPacketCounter_ = IntVector2::ZERO;
     }
 
-    if (remoteEvents_.Empty())
+    if (remoteEvents_.empty())
         return;
 
     URHO3D_PROFILE("SendRemoteEvents");
 
-    for (Vector<RemoteEvent>::ConstIterator i = remoteEvents_.Begin(); i != remoteEvents_.End(); ++i)
+    for (auto i = remoteEvents_.begin(); i != remoteEvents_.end(); ++i)
     {
         msg_.Clear();
         if (!i->senderID_)
@@ -346,7 +346,7 @@ void Connection::SendRemoteEvents()
         }
     }
 
-    remoteEvents_.Clear();
+    remoteEvents_.clear();
 }
 
 void Connection::SendPackages()
@@ -382,9 +382,9 @@ void Connection::ProcessPendingLatestData()
         return;
 
     // Iterate through pending node data and see if we can find the nodes now
-    for (HashMap<unsigned, PODVector<unsigned char> >::Iterator i = nodeLatestData_.Begin(); i != nodeLatestData_.End();)
+    for (auto i = nodeLatestData_.Begin(); i != nodeLatestData_.End();)
     {
-        HashMap<unsigned, PODVector<unsigned char> >::Iterator current = i++;
+        auto current = i++;
         Node* node = scene_->GetNode(current->first_);
         if (node)
         {
@@ -398,9 +398,9 @@ void Connection::ProcessPendingLatestData()
     }
 
     // Iterate through pending component data and see if we can find the components now
-    for (HashMap<unsigned, PODVector<unsigned char> >::Iterator i = componentLatestData_.Begin(); i != componentLatestData_.End();)
+    for (auto i = componentLatestData_.Begin(); i != componentLatestData_.End();)
     {
-        HashMap<unsigned, PODVector<unsigned char> >::Iterator current = i++;
+        auto current = i++;
         Component* component = scene_->GetComponent(current->first_);
         if (component)
         {
@@ -510,8 +510,8 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     auto* cache = GetSubsystem<ResourceCache>();
     const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    Vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
-    for (unsigned i = 0; i < packages.Size(); ++i)
+    stl::vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
+    for (unsigned i = 0; i < packages.size(); ++i)
     {
         PackageFile* package = packages[i];
         if (!package->GetName().Find(packageCacheDir))
@@ -653,8 +653,8 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
             else
             {
                 // Latest data messages may be received out-of-order relative to node creation, so cache if necessary
-                PODVector<unsigned char>& data = nodeLatestData_[nodeID];
-                data.Resize(msg.GetSize());
+                stl::vector<unsigned char>& data = nodeLatestData_[nodeID];
+                data.resize(msg.GetSize());
                 memcpy(&data[0], msg.GetData(), msg.GetSize());
             }
         }
@@ -730,8 +730,8 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
             else
             {
                 // Latest data messages may be received out-of-order relative to component creation, so cache if necessary
-                PODVector<unsigned char>& data = componentLatestData_[componentID];
-                data.Resize(msg.GetSize());
+                stl::vector<unsigned char>& data = componentLatestData_[componentID];
+                data.resize(msg.GetSize());
                 memcpy(&data[0], msg.GetData(), msg.GetSize());
             }
         }
@@ -772,8 +772,8 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             }
 
             // The package must be one of those required by the scene
-            const Vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
-            for (unsigned i = 0; i < packages.Size(); ++i)
+            const stl::vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+            for (unsigned i = 0; i < packages.size(); ++i)
             {
                 PackageFile* package = packages[i];
                 const String& packageFullName = package->GetName();
@@ -1192,8 +1192,8 @@ void Connection::ProcessNode(unsigned nodeID)
 void Connection::ProcessNewNode(Node* node)
 {
     // Process depended upon nodes first, if they are dirty
-    const PODVector<Node*>& dependencyNodes = node->GetDependencyNodes();
-    for (PODVector<Node*>::ConstIterator i = dependencyNodes.Begin(); i != dependencyNodes.End(); ++i)
+    const stl::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
+    for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
         if (stl::contains(sceneState_.dirtyNodes_, nodeID))
@@ -1223,8 +1223,8 @@ void Connection::ProcessNewNode(Node* node)
 
     // Write node's components
     msg_.WriteVLE(node->GetNumNetworkComponents());
-    const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
-    for (unsigned i = 0; i < components.Size(); ++i)
+    const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    for (unsigned i = 0; i < components.size(); ++i)
     {
         Component* component = components[i];
         // Check if component is not to be replicated
@@ -1251,8 +1251,8 @@ void Connection::ProcessNewNode(Node* node)
 void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState)
 {
     // Process depended upon nodes first, if they are dirty
-    const PODVector<Node*>& dependencyNodes = node->GetDependencyNodes();
-    for (PODVector<Node*>::ConstIterator i = dependencyNodes.Begin(); i != dependencyNodes.End(); ++i)
+    const stl::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
+    for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
         if (stl::contains(sceneState_.dirtyNodes_, nodeID))
@@ -1272,13 +1272,13 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     // Check if attributes have changed
     if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.size())
     {
-        const Vector<AttributeInfo>* attributes = node->GetNetworkAttributes();
-        unsigned numAttributes = attributes->Size();
+        const stl::vector<AttributeInfo>* attributes = node->GetNetworkAttributes();
+        unsigned numAttributes = attributes->size();
         bool hasLatestData = false;
 
         for (unsigned i = 0; i < numAttributes; ++i)
         {
-            if (nodeState.dirtyAttributes_.IsSet(i) && (attributes->At(i).mode_ & AM_LATESTDATA))
+            if (nodeState.dirtyAttributes_.IsSet(i) && (attributes->at(i).mode_ & AM_LATESTDATA))
             {
                 hasLatestData = true;
                 nodeState.dirtyAttributes_.Clear(i);
@@ -1350,13 +1350,13 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             // Existing component. Check if attributes have changed
             if (componentState.dirtyAttributes_.Count())
             {
-                const Vector<AttributeInfo>* attributes = component->GetNetworkAttributes();
-                unsigned numAttributes = attributes->Size();
+                const stl::vector<AttributeInfo>* attributes = component->GetNetworkAttributes();
+                unsigned numAttributes = attributes->size();
                 bool hasLatestData = false;
 
                 for (unsigned i = 0; i < numAttributes; ++i)
                 {
-                    if (componentState.dirtyAttributes_.IsSet(i) && (attributes->At(i).mode_ & AM_LATESTDATA))
+                    if (componentState.dirtyAttributes_.IsSet(i) && (attributes->at(i).mode_ & AM_LATESTDATA))
                     {
                         hasLatestData = true;
                         componentState.dirtyAttributes_.Clear(i);
@@ -1391,8 +1391,8 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     // Check for new components
     if (nodeState.componentStates_.Size() != node->GetNumNetworkComponents())
     {
-        const Vector<stl::shared_ptr<Component> >& components = node->GetComponents();
-        for (unsigned i = 0; i < components.Size(); ++i)
+        const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+        for (unsigned i = 0; i < components.size(); ++i)
         {
             Component* component = components[i];
             // Check if component is not to be replicated
@@ -1429,8 +1429,8 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
     auto* cache = GetSubsystem<ResourceCache>();
     const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    Vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
-    Vector<String> downloadedPackages;
+    stl::vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
+    stl::vector<String> downloadedPackages;
     bool packagesScanned = false;
 
     for (unsigned i = 0; i < numPackages; ++i)
@@ -1442,7 +1442,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
         bool found = false;
 
         // Check first the resource cache
-        for (unsigned j = 0; j < packages.Size(); ++j)
+        for (unsigned j = 0; j < packages.size(); ++j)
         {
             PackageFile* package = packages[j];
             if (!GetFileNameAndExtension(package->GetName()).Compare(name, false) && package->GetTotalSize() == fileSize &&
@@ -1469,7 +1469,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
         }
 
         // Then the download cache
-        for (unsigned j = 0; j < downloadedPackages.Size(); ++j)
+        for (unsigned j = 0; j < downloadedPackages.size(); ++j)
         {
             const String& fileName = downloadedPackages[j];
             // In download cache, package file name format is checksum_packagename

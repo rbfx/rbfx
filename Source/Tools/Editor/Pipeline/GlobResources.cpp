@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-bool MatchesAny(const String& string, const Vector<std::regex>& patterns)
+bool MatchesAny(const String& string, const stl::vector<std::regex>& patterns)
 {
     for (const std::regex& regex : patterns)
     {
@@ -78,12 +78,12 @@ void GlobResources::RegisterObject(Context* context)
 void GlobResources::Execute(const StringVector& input)
 {
     StringVector results = input;
-    for (auto it = results.Begin(); it != results.End();)
+    for (auto it = results.begin(); it != results.end();)
     {
         if (MatchesAny(*it, regex_))
             ++it;
         else
-            it = results.Erase(it);
+            it = results.erase(it);
     }
 
     Converter::Execute(results);
@@ -92,7 +92,7 @@ void GlobResources::Execute(const StringVector& input)
 void GlobResources::ConvertGlobToRegex()
 {
     for (const String& glob : glob_)
-        regex_.Push(GlobToRegex(glob));
+        regex_.push_back(GlobToRegex(glob));
 }
 
 }

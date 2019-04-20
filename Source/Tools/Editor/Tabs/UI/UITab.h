@@ -93,7 +93,7 @@ protected:
 
     stl::weak_ptr<UIElement> selectedElement_;
     bool hideResizeHandles_ = false;
-    Vector<String> styleNames_;
+    stl::vector<String> styleNames_;
     String textureSelectorAttribute_;
 };
 

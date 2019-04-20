@@ -86,7 +86,7 @@ private:
     /// Memory use per face.
     unsigned faceMemoryUse_[MAX_CUBEMAP_FACES]{};
     /// Face image files acquired during BeginLoad.
-    Vector<stl::shared_ptr<Image> > loadImages_;
+    stl::vector<stl::shared_ptr<Image> > loadImages_;
     /// Parameter file acquired during BeginLoad.
     stl::shared_ptr<XMLFile> loadParameters_;
 };

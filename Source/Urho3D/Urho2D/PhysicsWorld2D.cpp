@@ -65,7 +65,7 @@ PhysicsWorld2D::PhysicsWorld2D(Context* context) :
 
 PhysicsWorld2D::~PhysicsWorld2D()
 {
-    for (unsigned i = 0; i < rigidBodies_.Size(); ++i)
+    for (unsigned i = 0; i < rigidBodies_.size(); ++i)
         if (rigidBodies_[i])
             rigidBodies_[i]->ReleaseBody();
 }
@@ -115,7 +115,7 @@ void PhysicsWorld2D::BeginContact(b2Contact* contact)
     if (!fixtureA || !fixtureB)
         return;
 
-    beginContactInfos_.Push(ContactInfo(contact));
+    beginContactInfos_.push_back(ContactInfo(contact));
 }
 
 void PhysicsWorld2D::EndContact(b2Contact* contact)
@@ -128,7 +128,7 @@ void PhysicsWorld2D::EndContact(b2Contact* contact)
     if (!fixtureA || !fixtureB)
         return;
 
-    endContactInfos_.Push(ContactInfo(contact));
+    endContactInfos_.push_back(ContactInfo(contact));
 }
 
 void PhysicsWorld2D::PreSolve(b2Contact* contact, const b2Manifold* oldManifold)
@@ -292,7 +292,7 @@ void PhysicsWorld2D::Update(float timeStep)
     physicsStepping_ = false;
 
     // Apply world transforms. Unparented transforms first
-    for (unsigned i = 0; i < rigidBodies_.Size();)
+    for (unsigned i = 0; i < rigidBodies_.size();)
     {
         if (rigidBodies_[i])
         {
@@ -302,7 +302,7 @@ void PhysicsWorld2D::Update(float timeStep)
         else
         {
             // Erase possible stale weak pointer
-            rigidBodies_.Erase(i);
+            rigidBodies_.erase(i);
         }
     }
 
@@ -433,10 +433,10 @@ void PhysicsWorld2D::AddRigidBody(RigidBody2D* rigidBody)
         return;
 
     stl::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
-    if (rigidBodies_.Contains(rigidBodyPtr))
+    if (rigidBodies_.contains(rigidBodyPtr))
         return;
 
-    rigidBodies_.Push(rigidBodyPtr);
+    rigidBodies_.push_back(rigidBodyPtr);
 }
 
 void PhysicsWorld2D::RemoveRigidBody(RigidBody2D* rigidBody)
@@ -445,7 +445,7 @@ void PhysicsWorld2D::RemoveRigidBody(RigidBody2D* rigidBody)
         return;
 
     stl::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
-    rigidBodies_.Remove(rigidBodyPtr);
+    rigidBodies_.erase_first(rigidBodyPtr);
 }
 
 void PhysicsWorld2D::AddDelayedWorldTransform(const DelayedWorldTransform2D& transform)
@@ -458,7 +458,7 @@ class RayCastCallback : public b2RayCastCallback
 {
 public:
     // Construct.
-    RayCastCallback(PODVector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, unsigned collisionMask) :
+    RayCastCallback(stl::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, unsigned collisionMask) :
         results_(results),
         startPoint_(startPoint),
         collisionMask_(collisionMask)
@@ -481,23 +481,23 @@ public:
         result.distance_ = (result.position_ - startPoint_).Length();
         result.body_ = (RigidBody2D*)(fixture->GetBody()->GetUserData());
 
-        results_.Push(result);
+        results_.push_back(result);
         return true;
     }
 
 protected:
     // Physics raycast results.
-    PODVector<PhysicsRaycastResult2D>& results_;
+    stl::vector<PhysicsRaycastResult2D>& results_;
     // Start point.
     Vector2 startPoint_;
     // Collision mask.
     unsigned collisionMask_;
 };
 
-void PhysicsWorld2D::Raycast(PODVector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, const Vector2& endPoint,
+void PhysicsWorld2D::Raycast(stl::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, const Vector2& endPoint,
     unsigned collisionMask)
 {
-    results.Clear();
+    results.clear();
 
     RayCastCallback callback(results, startPoint, collisionMask);
     world_->RayCast(&callback, ToB2Vec2(startPoint), ToB2Vec2(endPoint));
@@ -638,7 +638,7 @@ class AabbQueryCallback : public b2QueryCallback
 {
 public:
     // Construct.
-    AabbQueryCallback(PODVector<RigidBody2D*>& results, unsigned collisionMask) :
+    AabbQueryCallback(stl::vector<RigidBody2D*>& results, unsigned collisionMask) :
         results_(results),
         collisionMask_(collisionMask)
     {
@@ -654,18 +654,18 @@ public:
         if ((fixture->GetFilterData().maskBits & collisionMask_) == 0)
             return true;
 
-        results_.Push((RigidBody2D*)(fixture->GetBody()->GetUserData()));
+        results_.push_back((RigidBody2D*) (fixture->GetBody()->GetUserData()));
         return true;
     }
 
 private:
     // Results.
-    PODVector<RigidBody2D*>& results_;
+    stl::vector<RigidBody2D*>& results_;
     // Collision mask.
     unsigned collisionMask_;
 };
 
-void PhysicsWorld2D::GetRigidBodies(PODVector<RigidBody2D*>& results, const Rect& aabb, unsigned collisionMask)
+void PhysicsWorld2D::GetRigidBodies(stl::vector<RigidBody2D*>& results, const Rect& aabb, unsigned collisionMask)
 {
     AabbQueryCallback callback(results, collisionMask);
 
@@ -722,7 +722,7 @@ void PhysicsWorld2D::HandleSceneSubsystemUpdate(StringHash eventType, VariantMap
 
 void PhysicsWorld2D::SendBeginContactEvents()
 {
-    if (beginContactInfos_.Empty())
+    if (beginContactInfos_.empty())
         return;
 
     using namespace PhysicsBeginContact2D;
@@ -730,7 +730,7 @@ void PhysicsWorld2D::SendBeginContactEvents()
     VariantMap nodeEventData;
     eventData[P_WORLD] = this;
 
-    for (unsigned i = 0; i < beginContactInfos_.Size(); ++i)
+    for (unsigned i = 0; i < beginContactInfos_.size(); ++i)
     {
         ContactInfo& contactInfo = beginContactInfos_[i];
         eventData[P_BODYA] = contactInfo.bodyA_;
@@ -768,12 +768,12 @@ void PhysicsWorld2D::SendBeginContactEvents()
         }
     }
 
-    beginContactInfos_.Clear();
+    beginContactInfos_.clear();
 }
 
 void PhysicsWorld2D::SendEndContactEvents()
 {
-    if (endContactInfos_.Empty())
+    if (endContactInfos_.empty())
         return;
 
     using namespace PhysicsEndContact2D;
@@ -781,7 +781,7 @@ void PhysicsWorld2D::SendEndContactEvents()
     VariantMap nodeEventData;
     eventData[P_WORLD] = this;
 
-    for (unsigned i = 0; i < endContactInfos_.Size(); ++i)
+    for (unsigned i = 0; i < endContactInfos_.size(); ++i)
     {
         ContactInfo& contactInfo = endContactInfos_[i];
         eventData[P_BODYA] = contactInfo.bodyA_;
@@ -819,7 +819,7 @@ void PhysicsWorld2D::SendEndContactEvents()
         }
     }
 
-    endContactInfos_.Clear();
+    endContactInfos_.clear();
 }
 
 PhysicsWorld2D::ContactInfo::ContactInfo() = default;
@@ -846,7 +846,7 @@ PhysicsWorld2D::ContactInfo::ContactInfo(b2Contact* contact)
     }
 }
 
-const Urho3D::PODVector<unsigned char>& PhysicsWorld2D::ContactInfo::Serialize(VectorBuffer& buffer) const
+const stl::vector<unsigned char>& PhysicsWorld2D::ContactInfo::Serialize(VectorBuffer& buffer) const
 {
     buffer.Clear();
     for (int i = 0; i < numPoints_; ++i)

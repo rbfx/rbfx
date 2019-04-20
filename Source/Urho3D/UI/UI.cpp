@@ -310,10 +310,10 @@ void UI::Clear()
     if (cursor_)
         rootElement_->AddChild(cursor_);
 
-    batches_.Clear();
-    vertexData_.Clear();
-    debugDrawBatches_.Clear();
-    debugVertexData_.Clear();
+    batches_.clear();
+    vertexData_.clear();
+    debugDrawBatches_.clear();
+    debugVertexData_.clear();
 }
 
 void UI::Update(float timeStep)
@@ -433,8 +433,8 @@ void UI::RenderUpdate()
     bool osCursorVisible = GetSubsystem<Input>()->IsMouseVisible();
 
     // Get rendering batches from the non-modal UI elements
-    batches_.Clear();
-    vertexData_.Clear();
+    batches_.clear();
+    vertexData_.clear();
     const IntVector2& rootSize = rootElement_->GetSize();
     const IntVector2& rootPos = rootElement_->GetPosition();
     // Note: the scissors operate on unscaled coordinates. Scissor scaling is only performed during render
@@ -443,7 +443,7 @@ void UI::RenderUpdate()
         GetBatches(batches_, vertexData_, rootElement_, currentScissor);
 
     // Save the batch size of the non-modal batches for later use
-    nonModalBatchSize_ = batches_.Size();
+    nonModalBatchSize_ = batches_.size();
 
     // Get rendering batches from the modal UI elements
     GetBatches(batches_, vertexData_, rootModalElement_, currentScissor);
@@ -457,12 +457,12 @@ void UI::RenderUpdate()
     }
 
     // UIElement does not have anything to show. Insert dummy batch that will clear the texture.
-    if (batches_.Empty() && texture_)
+    if (batches_.empty() && texture_)
     {
         UIBatch batch(rootElement_, BLEND_REPLACE, currentScissor, nullptr, &vertexData_);
         batch.SetColor(Color::BLACK);
         batch.AddQuad(currentScissor.left_, currentScissor.top_, currentScissor.right_, currentScissor.bottom_, 0, 0);
-        batches_.Push(batch);
+        batches_.push_back(batch);
     }
 }
 
@@ -481,13 +481,13 @@ void UI::Render()
     // Render non-modal batches
     Render(vertexBuffer_, batches_, 0, nonModalBatchSize_);
     // Render debug draw
-    Render(debugVertexBuffer_, debugDrawBatches_, 0, debugDrawBatches_.Size());
+    Render(debugVertexBuffer_, debugDrawBatches_, 0, debugDrawBatches_.size());
     // Render modal batches
-    Render(vertexBuffer_, batches_, nonModalBatchSize_, batches_.Size());
+    Render(vertexBuffer_, batches_, nonModalBatchSize_, batches_.size());
 
     // Clear the debug draw batches and data
-    debugDrawBatches_.Clear();
-    debugVertexData_.Clear();
+    debugDrawBatches_.clear();
+    debugVertexData_.clear();
 
     uiRendered_ = true;
 }
@@ -763,11 +763,11 @@ UIElement* UI::GetElementAt(int x, int y, bool enabledOnly)
 
 UIElement* UI::GetFrontElement() const
 {
-    const Vector<stl::shared_ptr<UIElement> >& rootChildren = rootElement_->GetChildren();
+    const stl::vector<stl::shared_ptr<UIElement> >& rootChildren = rootElement_->GetChildren();
     int maxPriority = M_MIN_INT;
     UIElement* front = nullptr;
 
-    for (unsigned i = 0; i < rootChildren.Size(); ++i)
+    for (unsigned i = 0; i < rootChildren.size(); ++i)
     {
         // Do not take into account input-disabled elements, hidden elements or those that are always in the front
         if (!rootChildren[i]->IsEnabled() || !rootChildren[i]->IsVisible() || !rootChildren[i]->GetBringToBack())
@@ -784,10 +784,10 @@ UIElement* UI::GetFrontElement() const
     return front;
 }
 
-const PODVector<UIElement*>& UI::GetDragElements()
+const stl::vector<UIElement*>& UI::GetDragElements()
 {
     // Do not return the element until drag begin event has actually been posted
-    if (!dragElementsConfirmed_.Empty())
+    if (!dragElementsConfirmed_.empty())
         return dragElementsConfirmed_;
 
     for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
@@ -802,7 +802,7 @@ const PODVector<UIElement*>& UI::GetDragElements()
         }
 
         if (!dragData->dragBeginPending)
-            dragElementsConfirmed_.Push(dragElement);
+            dragElementsConfirmed_.push_back(dragElement);
 
         ++i;
     }
@@ -813,7 +813,7 @@ const PODVector<UIElement*>& UI::GetDragElements()
 UIElement* UI::GetDragElement(unsigned index)
 {
     GetDragElements();
-    if (index >= dragElementsConfirmed_.Size())
+    if (index >= dragElementsConfirmed_.size())
         return nullptr;
 
     return dragElementsConfirmed_[index];
@@ -882,32 +882,32 @@ void UI::Update(float timeStep, UIElement* element)
     if (elementWeak.expired())
         return;
 
-    const Vector<stl::shared_ptr<UIElement> >& children = element->GetChildren();
+    const stl::vector<stl::shared_ptr<UIElement> >& children = element->GetChildren();
     // Update of an element may modify its child vector. Use just index-based iteration to be safe
-    for (unsigned i = 0; i < children.Size(); ++i)
+    for (unsigned i = 0; i < children.size(); ++i)
         Update(timeStep, children[i]);
 }
 
-void UI::SetVertexData(VertexBuffer* dest, const PODVector<float>& vertexData)
+void UI::SetVertexData(VertexBuffer* dest, const stl::vector<float>& vertexData)
 {
-    if (vertexData.Empty())
+    if (vertexData.empty())
         return;
 
     // Update quad geometry into the vertex buffer
     // Resize the vertex buffer first if too small or much too large
-    unsigned numVertices = vertexData.Size() / UI_VERTEX_SIZE;
+    unsigned numVertices = vertexData.size() / UI_VERTEX_SIZE;
     if (dest->GetVertexCount() < numVertices || dest->GetVertexCount() > numVertices * 2)
         dest->SetSize(numVertices, MASK_POSITION | MASK_COLOR | MASK_TEXCOORD1, true);
 
     dest->SetData(&vertexData[0]);
 }
 
-void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd)
+void UI::Render(VertexBuffer* buffer, const stl::vector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd)
 {
     // Engine does not render when window is closed or device is lost
     assert(graphics_ && graphics_->IsInitialized() && !graphics_->IsDeviceLost());
 
-    if (batches.Empty())
+    if (batches.empty())
         return;
 
     unsigned alphaFormat = Graphics::GetAlphaFormat();
@@ -1023,7 +1023,7 @@ void UI::Render(VertexBuffer* buffer, const PODVector<UIBatch>& batches, unsigne
     }
 }
 
-void UI::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, UIElement* element, IntRect currentScissor)
+void UI::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, UIElement* element, IntRect currentScissor)
 {
     // Set clipping scissor for child elements. No need to draw if zero size
     element->AdjustScissor(currentScissor);
@@ -1031,20 +1031,20 @@ void UI::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, U
         return;
 
     element->SortChildren();
-    const Vector<stl::shared_ptr<UIElement> >& children = element->GetChildren();
-    if (children.Empty())
+    const stl::vector<stl::shared_ptr<UIElement> >& children = element->GetChildren();
+    if (children.empty())
         return;
 
     // For non-root elements draw all children of same priority before recursing into their children: assumption is that they have
     // same renderstate
-    Vector<stl::shared_ptr<UIElement> >::ConstIterator i = children.Begin();
+    auto i = children.begin();
     if (element->GetTraversalMode() == TM_BREADTH_FIRST)
     {
-        Vector<stl::shared_ptr<UIElement> >::ConstIterator j = i;
-        while (i != children.End())
+        auto j = i;
+        while (i != children.end())
         {
             int currentPriority = (*i)->GetPriority();
-            while (j != children.End() && (*j)->GetPriority() == currentPriority)
+            while (j != children.end() && (*j)->GetPriority() == currentPriority)
             {
                 if ((*j)->IsWithinScissor(currentScissor) && (*j) != cursor_)
                     (*j)->GetBatches(batches, vertexData, currentScissor);
@@ -1062,7 +1062,7 @@ void UI::GetBatches(PODVector<UIBatch>& batches, PODVector<float>& vertexData, U
     // On the root level draw each element and its children immediately after to avoid artifacts
     else
     {
-        while (i != children.End())
+        while (i != children.end())
         {
             if ((*i) != cursor_)
             {
@@ -1082,10 +1082,10 @@ void UI::GetElementAt(UIElement*& result, UIElement* current, const IntVector2& 
         return;
 
     current->SortChildren();
-    const Vector<stl::shared_ptr<UIElement> >& children = current->GetChildren();
+    const stl::vector<stl::shared_ptr<UIElement> >& children = current->GetChildren();
     LayoutMode parentLayoutMode = current->GetLayoutMode();
 
-    for (unsigned i = 0; i < children.Size(); ++i)
+    for (unsigned i = 0; i < children.size(); ++i)
     {
         UIElement* element = children[i];
         bool hasChildren = element->GetNumChildren() > 0;
@@ -1195,10 +1195,10 @@ void UI::ReleaseFontFaces()
 {
     URHO3D_LOGDEBUG("Reloading font faces");
 
-    PODVector<Font*> fonts;
+    stl::vector<Font*> fonts;
     GetSubsystem<ResourceCache>()->GetResources<Font>(fonts);
 
-    for (unsigned i = 0; i < fonts.Size(); ++i)
+    for (unsigned i = 0; i < fonts.size(); ++i)
         fonts[i]->ReleaseFaces();
 }
 
@@ -1898,19 +1898,19 @@ void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
             if (topLevel)
             {
                 topLevel->GetChildren(tempElements_, true);
-                for (PODVector<UIElement*>::Iterator i = tempElements_.Begin(); i != tempElements_.End();)
+                for (auto i = tempElements_.begin(); i != tempElements_.end();)
                 {
                     if ((*i)->GetFocusMode() < FM_FOCUSABLE)
-                        i = tempElements_.Erase(i);
+                        i = tempElements_.erase(i);
                     else
                         ++i;
                 }
-                for (unsigned i = 0; i < tempElements_.Size(); ++i)
+                for (unsigned i = 0; i < tempElements_.size(); ++i)
                 {
                     if (tempElements_[i] == element)
                     {
                         int dir = (qualifiers_ & QUAL_SHIFT) ? -1 : 1;
-                        unsigned nextIndex = (tempElements_.Size() + i + dir) % tempElements_.Size();
+                        unsigned nextIndex = (tempElements_.size() + i + dir) % tempElements_.size();
                         UIElement* next = tempElements_[nextIndex];
                         SetFocusElement(next, true);
                         return;
@@ -2026,7 +2026,7 @@ HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator UI::DragElementErase(
     if (dragElements_.Empty())
         return dragElements_.End();
 
-    dragElementsConfirmed_.Clear();
+    dragElementsConfirmed_.clear();
 
     DragData* dragData = i->second_;
 

@@ -273,11 +273,11 @@ StringHash Deserializer::ReadStringHash()
     return StringHash(ReadUInt());
 }
 
-PODVector<unsigned char> Deserializer::ReadBuffer()
+stl::vector<unsigned char> Deserializer::ReadBuffer()
 {
-    PODVector<unsigned char> ret(ReadVLE());
-    if (ret.Size())
-        Read(&ret[0], ret.Size());
+    stl::vector<unsigned char> ret(ReadVLE());
+    if (ret.size())
+        Read(&ret[0], ret.size());
     return ret;
 }
 
@@ -293,8 +293,8 @@ ResourceRefList Deserializer::ReadResourceRefList()
 {
     ResourceRefList ret;
     ret.type_ = ReadStringHash();
-    ret.names_.Resize(ReadVLE());
-    for (unsigned i = 0; i < ret.names_.Size(); ++i)
+    ret.names_.resize(ReadVLE());
+    for (unsigned i = 0; i < ret.names_.size(); ++i)
         ret.names_[i] = ReadString();
     return ret;
 }
@@ -401,7 +401,7 @@ Variant Deserializer::ReadVariant(VariantType type)
 VariantVector Deserializer::ReadVariantVector()
 {
     VariantVector ret(ReadVLE());
-    for (unsigned i = 0; i < ret.Size(); ++i)
+    for (unsigned i = 0; i < ret.size(); ++i)
         ret[i] = ReadVariant();
     return ret;
 }
@@ -409,7 +409,7 @@ VariantVector Deserializer::ReadVariantVector()
 StringVector Deserializer::ReadStringVector()
 {
     StringVector ret(ReadVLE());
-    for (unsigned i = 0; i < ret.Size(); ++i)
+    for (unsigned i = 0; i < ret.size(); ++i)
         ret[i] = ReadString();
     return ret;
 }

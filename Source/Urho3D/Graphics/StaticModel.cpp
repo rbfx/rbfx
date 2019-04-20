@@ -71,7 +71,7 @@ void StaticModel::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
 }
 
-void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQueryResult>& results)
+void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
 {
     RayQueryLevel level = query.level_;
 
@@ -95,7 +95,7 @@ void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQuer
         {
             distance = M_INFINITY;
 
-            for (unsigned i = 0; i < batches_.Size(); ++i)
+            for (unsigned i = 0; i < batches_.size(); ++i)
             {
                 Geometry* geometry = batches_[i].geometry_;
                 if (geometry)
@@ -123,7 +123,7 @@ void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, PODVector<RayQuer
             result.drawable_ = this;
             result.node_ = node_;
             result.subObject_ = hitBatch;
-            results.Push(result);
+            results.push_back(result);
         }
         break;
     }
@@ -134,12 +134,12 @@ void StaticModel::UpdateBatches(const FrameInfo& frame)
     const BoundingBox& worldBoundingBox = GetWorldBoundingBox();
     distance_ = frame.camera_->GetDistance(worldBoundingBox.Center());
 
-    if (batches_.Size() == 1)
+    if (batches_.size() == 1)
         batches_[0].distance_ = distance_;
     else
     {
         const Matrix3x4& worldTransform = node_->GetWorldTransform();
-        for (unsigned i = 0; i < batches_.Size(); ++i)
+        for (unsigned i = 0; i < batches_.size(); ++i)
             batches_[i].distance_ = frame.camera_->GetDistance(worldTransform * geometryData_[i].center_);
     }
 
@@ -155,11 +155,11 @@ void StaticModel::UpdateBatches(const FrameInfo& frame)
 
 Geometry* StaticModel::GetLodGeometry(unsigned batchIndex, unsigned level)
 {
-    if (batchIndex >= geometries_.Size())
+    if (batchIndex >= geometries_.size())
         return nullptr;
 
     // If level is out of range, use visible geometry
-    if (level < geometries_[batchIndex].Size())
+    if (level < geometries_[batchIndex].size())
         return geometries_[batchIndex][level];
     else
         return batches_[batchIndex].geometry_;
@@ -169,7 +169,7 @@ unsigned StaticModel::GetNumOccluderTriangles()
 {
     unsigned triangles = 0;
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
         Geometry* geometry = GetLodGeometry(i, occlusionLodLevel_);
         if (!geometry)
@@ -188,7 +188,7 @@ unsigned StaticModel::GetNumOccluderTriangles()
 
 bool StaticModel::DrawOcclusion(OcclusionBuffer* buffer)
 {
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
         Geometry* geometry = GetLodGeometry(i, occlusionLodLevel_);
         if (!geometry)
@@ -209,7 +209,7 @@ bool StaticModel::DrawOcclusion(OcclusionBuffer* buffer)
         unsigned vertexSize;
         const unsigned char* indexData;
         unsigned indexSize;
-        const PODVector<VertexElement>* elements;
+        const stl::vector<VertexElement>* elements;
 
         geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
         // Check for valid geometry data
@@ -250,10 +250,10 @@ void StaticModel::SetModel(Model* model)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const Vector<Vector<stl::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
-        const PODVector<Vector3>& geometryCenters = model->GetGeometryCenters();
+        const stl::vector<stl::vector<stl::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
+        const stl::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
         const Matrix3x4* worldTransform = node_ ? &node_->GetWorldTransform() : nullptr;
-        for (unsigned i = 0; i < geometries.Size(); ++i)
+        for (unsigned i = 0; i < geometries.size(); ++i)
         {
             batches_[i].worldTransform_ = worldTransform;
             geometries_[i] = geometries[i];
@@ -274,7 +274,7 @@ void StaticModel::SetModel(Model* model)
 
 void StaticModel::SetMaterial(Material* material)
 {
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
         batches_[i].material_ = material;
 
     MarkNetworkUpdate();
@@ -282,7 +282,7 @@ void StaticModel::SetMaterial(Material* material)
 
 bool StaticModel::SetMaterial(unsigned index, Material* material)
 {
-    if (index >= batches_.Size())
+    if (index >= batches_.size())
     {
         URHO3D_LOGERROR("Material index out of bounds");
         return false;
@@ -311,7 +311,7 @@ void StaticModel::ApplyMaterialList(const String& fileName)
         return;
 
     unsigned index = 0;
-    while (!file->IsEof() && index < batches_.Size())
+    while (!file->IsEof() && index < batches_.size())
     {
         auto* material = cache->GetResource<Material>(file->ReadLine());
         if (material)
@@ -323,7 +323,7 @@ void StaticModel::ApplyMaterialList(const String& fileName)
 
 Material* StaticModel::GetMaterial(unsigned index) const
 {
-    return index < batches_.Size() ? batches_[index].material_ : nullptr;
+    return index < batches_.size() ? batches_[index].material_ : nullptr;
 }
 
 bool StaticModel::IsInside(const Vector3& point) const
@@ -343,7 +343,7 @@ bool StaticModel::IsInsideLocal(const Vector3& point) const
 
     Ray localRay(point, Vector3(1.0f, -1.0f, 1.0f));
 
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
         Geometry* geometry = batches_[i].geometry_;
         if (geometry)
@@ -364,9 +364,9 @@ void StaticModel::SetBoundingBox(const BoundingBox& box)
 
 void StaticModel::SetNumGeometries(unsigned num)
 {
-    batches_.Resize(num);
-    geometries_.Resize(num);
-    geometryData_.Resize(num);
+    batches_.resize(num);
+    geometries_.resize(num);
+    geometryData_.resize(num);
     ResetLodLevels();
 }
 
@@ -379,7 +379,7 @@ void StaticModel::SetModelAttr(const ResourceRef& value)
 void StaticModel::SetMaterialsAttr(const ResourceRefList& value)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    for (unsigned i = 0; i < value.names_.Size(); ++i)
+    for (unsigned i = 0; i < value.names_.size(); ++i)
         SetMaterial(i, cache->GetResource<Material>(value.names_[i]));
 }
 
@@ -390,8 +390,8 @@ ResourceRef StaticModel::GetModelAttr() const
 
 const ResourceRefList& StaticModel::GetMaterialsAttr() const
 {
-    materialsAttr_.names_.Resize(batches_.Size());
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    materialsAttr_.names_.resize(batches_.size());
+    for (unsigned i = 0; i < batches_.size(); ++i)
         materialsAttr_.names_[i] = GetResourceName(GetMaterial(i));
 
     return materialsAttr_;
@@ -405,10 +405,10 @@ void StaticModel::OnWorldBoundingBoxUpdate()
 void StaticModel::ResetLodLevels()
 {
     // Ensure that each subgeometry has at least one LOD level, and reset the current LOD level
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
-        if (!geometries_[i].Size())
-            geometries_[i].Resize(1);
+        if (!geometries_[i].size())
+            geometries_[i].resize(1);
         batches_[i].geometry_ = geometries_[i][0];
         geometryData_[i].lodLevel_ = 0;
     }
@@ -419,16 +419,16 @@ void StaticModel::ResetLodLevels()
 
 void StaticModel::CalculateLodLevels()
 {
-    for (unsigned i = 0; i < batches_.Size(); ++i)
+    for (unsigned i = 0; i < batches_.size(); ++i)
     {
-        const Vector<stl::shared_ptr<Geometry> >& batchGeometries = geometries_[i];
+        const stl::vector<stl::shared_ptr<Geometry> >& batchGeometries = geometries_[i];
         // If only one LOD geometry, no reason to go through the LOD calculation
-        if (batchGeometries.Size() <= 1)
+        if (batchGeometries.size() <= 1)
             continue;
 
         unsigned j;
 
-        for (j = 1; j < batchGeometries.Size(); ++j)
+        for (j = 1; j < batchGeometries.size(); ++j)
         {
             if (batchGeometries[j] && lodDistance_ <= batchGeometries[j]->GetLodDistance())
                 break;

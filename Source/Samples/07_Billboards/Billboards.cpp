@@ -289,8 +289,8 @@ void Billboards::MoveCamera(float timeStep)
 void Billboards::AnimateScene(float timeStep)
 {
     // Get the light and billboard scene nodes
-    PODVector<Node*> lightNodes;
-    PODVector<Node*> billboardNodes;
+    stl::vector<Node*> lightNodes;
+    stl::vector<Node*> billboardNodes;
     scene_->GetChildrenWithComponent<Light>(lightNodes);
     scene_->GetChildrenWithComponent<BillboardSet>(billboardNodes);
 
@@ -298,11 +298,11 @@ void Billboards::AnimateScene(float timeStep)
     const float BILLBOARD_ROTATION_SPEED = 50.0f;
 
     // Rotate the lights around the world Y-axis
-    for (unsigned i = 0; i < lightNodes.Size(); ++i)
+    for (unsigned i = 0; i < lightNodes.size(); ++i)
         lightNodes[i]->Rotate(Quaternion(0.0f, LIGHT_ROTATION_SPEED * timeStep, 0.0f), TS_WORLD);
 
     // Rotate the individual billboards within the billboard sets, then recommit to make the changes visible
-    for (unsigned i = 0; i < billboardNodes.Size(); ++i)
+    for (unsigned i = 0; i < billboardNodes.size(); ++i)
     {
         auto* billboardObject = billboardNodes[i]->GetComponent<BillboardSet>();
 

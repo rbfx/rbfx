@@ -144,7 +144,7 @@ void Vehicle::CreateEmitter(Vector3 place)
     auto* particleEmitter = emitter->CreateComponent<ParticleEmitter>();
     particleEmitter->SetEffect(cache->GetResource<ParticleEffect>("Particle/Dust.xml"));
     particleEmitter->SetEmitting(false);
-    particleEmitterNodeList_.Push(emitter);
+    particleEmitterNodeList_.push_back(emitter);
     emitter->SetTemporary(true);
 }
 

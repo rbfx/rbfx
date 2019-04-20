@@ -67,7 +67,7 @@ protected:
 #endif
 
     ///
-    Vector<stl::shared_ptr<PluginApplication>> plugins_;
+    stl::vector<stl::shared_ptr<PluginApplication>> plugins_;
 };
 
 }

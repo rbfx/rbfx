@@ -159,7 +159,7 @@ struct BatchGroup : public Batch
         for (unsigned i = 0; i < batch.numWorldTransforms_; ++i)
         {
             newInstance.worldTransform_ = &batch.worldTransform_[i];
-            instances_.Push(newInstance);
+            instances_.push_back(newInstance);
         }
     }
 
@@ -169,7 +169,7 @@ struct BatchGroup : public Batch
     void Draw(View* view, Camera* camera, bool allowDepthWrite) const;
 
     /// Instance data.
-    PODVector<InstanceData> instances_;
+    stl::vector<InstanceData> instances_;
     /// Instance stream start index, or M_MAX_UNSIGNED if transforms not pre-set.
     unsigned startIndex_;
 };
@@ -233,7 +233,7 @@ public:
     /// Sort instanced and non-instanced draw calls front to back.
     void SortFrontToBack();
     /// Sort batches front to back while also maintaining state sorting.
-    void SortFrontToBack2Pass(PODVector<Batch*>& batches);
+    void SortFrontToBack2Pass(stl::vector<Batch*>& batches);
     /// Pre-set instance data of all groups. The vertex buffer must be big enough to hold all data.
     void SetInstancingData(void* lockedData, unsigned stride, unsigned& freeIndex);
     /// Draw.
@@ -242,7 +242,7 @@ public:
     unsigned GetNumInstances() const;
 
     /// Return whether the batch group is empty.
-    bool IsEmpty() const { return batches_.Empty() && batchGroups_.Empty(); }
+    bool IsEmpty() const { return batches_.empty() && batchGroups_.Empty(); }
 
     /// Instanced draw calls.
     HashMap<BatchGroupKey, BatchGroup> batchGroups_;
@@ -254,11 +254,11 @@ public:
     HashMap<unsigned short, unsigned short> geometryRemapping_;
 
     /// Unsorted non-instanced draw calls.
-    PODVector<Batch> batches_;
+    stl::vector<Batch> batches_;
     /// Sorted non-instanced draw calls.
-    PODVector<Batch*> sortedBatches_;
+    stl::vector<Batch*> sortedBatches_;
     /// Sorted instanced draw calls.
-    PODVector<BatchGroup*> sortedBatchGroups_;
+    stl::vector<BatchGroup*> sortedBatchGroups_;
     /// Maximum sorted instances.
     unsigned maxSortedInstances_;
     /// Whether the pass command contains extra shader defines.
@@ -302,11 +302,11 @@ struct LightBatchQueue
     /// Lit geometry draw calls, non-base (additive)
     BatchQueue litBatches_;
     /// Shadow map split queues.
-    Vector<ShadowBatchQueue> shadowSplits_;
+    stl::vector<ShadowBatchQueue> shadowSplits_;
     /// Per-vertex lights.
-    PODVector<Light*> vertexLights_;
+    stl::vector<Light*> vertexLights_;
     /// Light volume draw calls.
-    PODVector<Batch> volumeBatches_;
+    stl::vector<Batch> volumeBatches_;
 };
 
 }
