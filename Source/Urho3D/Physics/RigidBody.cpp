@@ -1338,8 +1338,8 @@ namespace Urho3D {
 
 
 
-    void RigidBody::ApplyTransformToNode(float timestep)
-{
+    void RigidBody::ApplyTransformToNode()
+    {
         if (!newtonBody_)
             return;
 

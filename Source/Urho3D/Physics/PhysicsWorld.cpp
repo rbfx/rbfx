@@ -693,7 +693,7 @@ namespace Urho3D {
 
             //apply the transform of all rigid body components to their respective nodes.
             if (rigBody->GetInternalTransformDirty()) {
-                rigBody->ApplyTransformToNode(physicsTimeStep);
+                rigBody->ApplyTransformToNode();
 
                 //if (rigBody->InterpolationWithinRestTolerance())
                 rigBody->MarkInternalTransformDirty(false);
@@ -747,7 +747,7 @@ namespace Urho3D {
 
             rigBody->reBuildBody();
 
-            rigBody->ApplyTransformToNode(0.0f);
+            rigBody->ApplyTransformToNode();
             rigBody->MarkDirty(false);
         }
 

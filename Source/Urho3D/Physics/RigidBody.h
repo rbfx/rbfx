@@ -303,7 +303,7 @@ namespace Urho3D
         PODVector<CollisionShape*> GetCollisionShapes() const { return collisionShapes_; }
 
         ///Apply the current newton body transform to the node.
-        void ApplyTransformToNode(float timestep);
+        void ApplyTransformToNode();
 
         ///Return the net force and torque for newton.
         void GetForceAndTorque(Vector3& force, Vector3& torque);
