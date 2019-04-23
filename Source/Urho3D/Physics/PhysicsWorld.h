@@ -170,7 +170,7 @@ namespace Urho3D
 
 
         /// Force the physics world to rebuild
-        void ForceRebuild() { freePhysicsInternals(); rebuildDirtyPhysicsComponents(); }
+        void ForceRebuild() { WaitForUpdateFinished(); freePhysicsInternals(); rebuildDirtyPhysicsComponents(); }
 
 
         

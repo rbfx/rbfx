@@ -582,7 +582,6 @@ namespace Urho3D {
     void RigidBody::MarkDirty(bool dirty)
     {
         needsRebuilt_ = dirty;
-
     }
 
     void RigidBody::MarkInternalTransformDirty(bool dirty)
