@@ -169,10 +169,14 @@ namespace Urho3D
         void GetRigidBodies(PODVector<RigidBody*>& result, const RigidBody* body);
 
 
-        /// Force the physics world to rebuild
+        /// Force the physics world to rebuild (will rebuild everything)
         void ForceRebuild() { WaitForUpdateFinished(); freePhysicsInternals(); rebuildDirtyPhysicsComponents(); }
 
-
+        /// Force the physics world to update builds (will build only things that need built)
+        void ForceBuild() {
+            WaitForUpdateFinished();
+            rebuildDirtyPhysicsComponents();
+        }
         
         ///set the global force acting on all rigid bodies in the world this force is always the same regardless of physics world scale.
         void SetGravity(const Vector3& force);

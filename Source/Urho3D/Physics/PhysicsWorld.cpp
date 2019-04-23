@@ -723,7 +723,6 @@ namespace Urho3D {
         URHO3D_PROFILE_FUNCTION();
 
 
-
         //rebuild dirty collision shapes
         for (CollisionShape* colShape : collisionComponentList)
         {

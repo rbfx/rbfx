@@ -126,7 +126,6 @@ namespace Urho3D {
         Color zAxisDark = zAxisC.Lerp(Color::BLACK, 0.5f);
 
 
-
         debug->AddFrame(GetOwnWorldFrame(), axisLengths, xAxisC, yAxisC, zAxisC, depthTest);
         debug->AddFrame(GetOtherWorldFrame(), axisLengths, xAxisDark, yAxisDark, zAxisDark, depthTest);
 
