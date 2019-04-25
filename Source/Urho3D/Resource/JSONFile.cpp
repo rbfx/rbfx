@@ -99,7 +99,7 @@ static void ToJSONValue(JSONValue& jsonValue, const rapidjson::Value& rapidjsonV
             jsonValue.SetType(JSON_OBJECT);
             for (rapidjson::Value::ConstMemberIterator i = rapidjsonValue.MemberBegin(); i != rapidjsonValue.MemberEnd(); ++i)
             {
-                JSONValue& value = jsonValue[String(i->name.GetString())];
+                JSONValue& value = jsonValue[stl::string(i->name.GetString())];
                 ToJSONValue(value, i->value);
             }
         }
@@ -113,7 +113,7 @@ static void ToJSONValue(JSONValue& jsonValue, const rapidjson::Value& rapidjsonV
 bool JSONFile::BeginLoad(Deserializer& source)
 {
     unsigned dataSize = source.GetSize();
-    if (!dataSize && !source.GetName().Empty())
+    if (!dataSize && !source.GetName().empty())
     {
         URHO3D_LOGERROR("Zero sized JSON data in " + source.GetName());
         return false;
@@ -196,7 +196,7 @@ static void ToRapidjsonValue(rapidjson::Value& rapidjsonValue, const JSONValue& 
             rapidjsonValue.SetObject();
             for (JSONObject::ConstIterator i = jsonObject.Begin(); i != jsonObject.End(); ++i)
             {
-                const char* name = i->first_.CString();
+                const char* name = i->first_.c_str();
                 rapidjson::Value value;
                 ToRapidjsonValue(value, i->second_, allocator);
                 rapidjsonValue.AddMember(StringRef(name), value, allocator);
@@ -214,33 +214,33 @@ bool JSONFile::Save(Serializer& dest) const
     return Save(dest, "\t");
 }
 
-bool JSONFile::Save(Serializer& dest, const String& indendation) const
+bool JSONFile::Save(Serializer& dest, const stl::string& indendation) const
 {
     rapidjson::Document document;
     ToRapidjsonValue(document, root_, document.GetAllocator());
 
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
-    writer.SetIndent(!indendation.Empty() ? indendation.Front() : '\0', indendation.Length());
+    writer.SetIndent(!indendation.empty() ? indendation.front() : '\0', indendation.length());
 
     document.Accept(writer);
     auto size = (unsigned)buffer.GetSize();
     return dest.Write(buffer.GetString(), size) == size;
 }
 
-bool JSONFile::FromString(const String & source)
+bool JSONFile::FromString(const stl::string & source)
 {
-    if (source.Empty())
+    if (source.empty())
         return false;
 
-    MemoryBuffer buffer(source.CString(), source.Length());
+    MemoryBuffer buffer(source.c_str(), source.length());
     return Load(buffer);
 }
 
-bool JSONFile::ParseJSON(const String& json, JSONValue& value, bool reportError)
+bool JSONFile::ParseJSON(const stl::string& json, JSONValue& value, bool reportError)
 {
     rapidjson::Document document;
-    if (document.Parse<0>(json.CString()).HasParseError())
+    if (document.Parse<0>(json.c_str()).HasParseError())
     {
         if (reportError)
             URHO3D_LOGERRORF("Could not parse JSON data from string with error: %s", document.GetParseError());
@@ -251,14 +251,14 @@ bool JSONFile::ParseJSON(const String& json, JSONValue& value, bool reportError)
     return true;
 }
 
-String JSONFile::ToString(const String& indendation) const
+stl::string JSONFile::ToString(const stl::string& indendation) const
 {
     rapidjson::Document document;
     ToRapidjsonValue(document, root_, document.GetAllocator());
 
     StringBuffer buffer;
     PrettyWriter<StringBuffer> writer(buffer);
-    writer.SetIndent(!indendation.Empty() ? indendation.Front() : '\0', indendation.Length());
+    writer.SetIndent(!indendation.empty() ? indendation.front() : '\0', indendation.length());
 
     document.Accept(writer);
     return buffer.GetString();

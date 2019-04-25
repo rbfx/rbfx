@@ -115,7 +115,7 @@ void UIElement::RegisterObject(Context* context)
 {
     context->RegisterFactory<UIElement>(UI_CATEGORY);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, String, String::EMPTY, AM_FILE);
+    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, stl::string, EMPTY_STRING, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, IntVector2, IntVector2::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, IntVector2, IntVector2::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Min Size", GetMinSize, SetMinSize, IntVector2, IntVector2::ZERO, AM_FILE);
@@ -178,40 +178,40 @@ bool UIElement::LoadXML(const XMLElement& source)
 bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
 {
     // If this is a root element get style file from which style is loaded.
-    String defaultStyleFileName = source.GetAttribute("styleFile");
-    if (!defaultStyleFileName.Empty())
+    stl::string defaultStyleFileName = source.GetAttribute("styleFile");
+    if (!defaultStyleFileName.empty())
         defaultStyleFileName_ = defaultStyleFileName;
 
     stl::shared_ptr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
     if (styleFile == nullptr)
     {
-        if (!defaultStyleFileName.Empty())
+        if (!defaultStyleFileName.empty())
         {
             auto cacheFile = GetSubsystem<ResourceCache>()->GetFile(defaultStyleFileName);
             if (cacheFile && savedStyleFile->Load(*cacheFile))
             {
                 styleFile = savedStyleFile;
-                URHO3D_LOGDEBUGF("Style file %s loaded automatically.", defaultStyleFileName.CString());
+                URHO3D_LOGDEBUGF("Style file %s loaded automatically.", defaultStyleFileName.c_str());
             }
             else
-                URHO3D_LOGWARNINGF("Style file %s could not be loaded, using default style instead.", defaultStyleFileName.CString());
+                URHO3D_LOGWARNINGF("Style file %s could not be loaded, using default style instead.", defaultStyleFileName.c_str());
         }
     }
 
     // Get style override if defined
-    String styleName = source.GetAttribute("style");
+    stl::string styleName = source.GetAttribute("style");
 
     // Apply the style first, if the style file is available
     if (styleFile)
     {
         // If not defined, use type name
-        if (styleName.Empty())
+        if (styleName.empty())
             styleName = GetTypeName();
 
         SetStyle(styleName, styleFile);
     }
     // The 'style' attribute value in the style file cannot be equals to original's applied style to prevent infinite loop
-    else if (!styleName.Empty() && styleName != appliedStyle_)
+    else if (!styleName.empty() && styleName != appliedStyle_)
     {
         // Attempt to use the default style file
         styleFile = GetDefaultStyle();
@@ -219,7 +219,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
         if (styleFile)
         {
             // Remember the original applied style
-            String appliedStyle(appliedStyle_);
+            stl::string appliedStyle(appliedStyle_);
             SetStyle(styleName, styleFile);
             appliedStyle_ = appliedStyle;
         }
@@ -239,14 +239,14 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
     while (childElem)
     {
         bool internalElem = childElem.GetBool("internal");
-        String typeName = childElem.GetAttribute("type");
-        if (typeName.Empty())
+        stl::string typeName = childElem.GetAttribute("type");
+        if (typeName.empty())
             typeName = "UIElement";
         unsigned index = childElem.HasAttribute("index") ? childElem.GetUInt("index") : M_MAX_UNSIGNED;
         UIElement* child = nullptr;
 
         if (!internalElem)
-            child = CreateChild(typeName, String::EMPTY, index);
+            child = CreateChild(typeName, EMPTY_STRING, index);
         else
         {
             for (unsigned i = nextInternalChild; i < children_.size(); ++i)
@@ -291,11 +291,11 @@ UIElement* UIElement::LoadChildXML(const XMLElement& childElem, XMLFile* styleFi
         return nullptr;
     }
 
-    String typeName = childElem.GetAttribute("type");
-    if (typeName.Empty())
+    stl::string typeName = childElem.GetAttribute("type");
+    if (typeName.empty())
         typeName = "UIElement";
     unsigned index = childElem.HasAttribute("index") ? childElem.GetUInt("index") : M_MAX_UNSIGNED;
-    UIElement* child = CreateChild(typeName, String::EMPTY, index);
+    UIElement* child = CreateChild(typeName, EMPTY_STRING, index);
 
     if (child)
     {
@@ -328,7 +328,7 @@ bool UIElement::SaveXML(XMLElement& dest) const
     }
 
     // Write style
-    if (!appliedStyle_.Empty() && appliedStyle_ != "UIElement")
+    if (!appliedStyle_.empty() && appliedStyle_ != "UIElement")
     {
         if (!dest.SetAttribute("style", appliedStyle_))
             return false;
@@ -340,7 +340,7 @@ bool UIElement::SaveXML(XMLElement& dest) const
     }
 
     // Write style resource name
-    if (!defaultStyleFileName_.Empty())
+    if (!defaultStyleFileName_.empty())
         dest.SetString("styleFile", defaultStyleFileName_);
 
     // Write attributes
@@ -502,7 +502,7 @@ bool UIElement::LoadXML(Deserializer& source)
     return xml->Load(source) && LoadXML(xml->GetRoot());
 }
 
-bool UIElement::SaveXML(Serializer& dest, const String& indentation) const
+bool UIElement::SaveXML(Serializer& dest, const stl::string& indentation) const
 {
     stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("element");
@@ -515,8 +515,8 @@ bool UIElement::FilterAttributes(XMLElement& dest) const
     XMLFile* styleFile = GetDefaultStyle();
     if (styleFile)
     {
-        String style = dest.GetAttribute("style");
-        if (!style.Empty() && style != "none")
+        stl::string style = dest.GetAttribute("style");
+        if (!style.empty() && style != "none")
         {
             if (styleXPathQuery_.SetVariable("typeName", style))
             {
@@ -537,7 +537,7 @@ bool UIElement::FilterAttributes(XMLElement& dest) const
     return true;
 }
 
-void UIElement::SetName(const String& name)
+void UIElement::SetName(const stl::string& name)
 {
     name_ = name;
 
@@ -1018,10 +1018,10 @@ void UIElement::SetDragDropMode(DragAndDropModeFlags mode)
     dragDropMode_ = mode;
 }
 
-bool UIElement::SetStyle(const String& styleName, XMLFile* file)
+bool UIElement::SetStyle(const stl::string& styleName, XMLFile* file)
 {
     // If empty style was requested, replace with type name
-    String actualStyleName = !styleName.Empty() ? styleName : GetTypeName();
+    stl::string actualStyleName = !styleName.empty() ? styleName : GetTypeName();
 
     appliedStyle_ = actualStyleName;
     if (styleName == "none")
@@ -1060,7 +1060,7 @@ bool UIElement::SetStyle(const XMLElement& element)
 
 bool UIElement::SetStyleAuto(XMLFile* file)
 {
-    return SetStyle(String::EMPTY, file);
+    return SetStyle(EMPTY_STRING, file);
 }
 
 void UIElement::SetDefaultStyle(XMLFile* style)
@@ -1296,7 +1296,7 @@ void UIElement::BringToFront()
     }
 }
 
-UIElement* UIElement::CreateChild(StringHash type, const String& name, unsigned index)
+UIElement* UIElement::CreateChild(StringHash type, const stl::string& name, unsigned index)
 {
     // Check that creation succeeds and that the object in fact is a UI element
     stl::shared_ptr<UIElement> newElement = DynamicCast<UIElement>(context_->CreateObject(type));
@@ -1306,7 +1306,7 @@ UIElement* UIElement::CreateChild(StringHash type, const String& name, unsigned 
         return nullptr;
     }
 
-    if (!name.Empty())
+    if (!name.empty())
         newElement->SetName(name);
 
     InsertChild(index, newElement);
@@ -1490,17 +1490,17 @@ void UIElement::SetTags(const StringVector& tags)
     AddTags(tags);
 }
 
-void UIElement::AddTag(const String& tag)
+void UIElement::AddTag(const stl::string& tag)
 {
-    if (tag.Empty() || HasTag(tag))
+    if (tag.empty() || HasTag(tag))
         return;
 
     tags_.push_back(tag);
 }
 
-void UIElement::AddTags(const String& tags, char separator)
+void UIElement::AddTags(const stl::string& tags, char separator)
 {
-    StringVector tagVector = tags.Split(separator);
+    StringVector tagVector = tags.split(separator);
     AddTags(tagVector);
 }
 
@@ -1510,7 +1510,7 @@ void UIElement::AddTags(const StringVector& tags)
         AddTag(tags[i]);
 }
 
-bool UIElement::RemoveTag(const String& tag)
+bool UIElement::RemoveTag(const stl::string& tag)
 {
     auto it = tags_.find(tag);
     if (it == tags_.end())
@@ -1604,9 +1604,9 @@ bool UIElement::IsVisibleEffective() const
     return visible;
 }
 
-const String& UIElement::GetAppliedStyle() const
+const stl::string& UIElement::GetAppliedStyle() const
 {
-    return appliedStyle_ == GetTypeName() ? String::EMPTY : appliedStyle_;
+    return appliedStyle_ == GetTypeName() ? EMPTY_STRING : appliedStyle_;
 }
 
 XMLFile* UIElement::GetDefaultStyle(bool recursiveUp) const
@@ -1659,7 +1659,7 @@ UIElement* UIElement::GetChild(unsigned index) const
     return index < children_.size() ? children_[index] : nullptr;
 }
 
-UIElement* UIElement::GetChild(const String& name, bool recursive) const
+UIElement* UIElement::GetChild(const stl::string& name, bool recursive) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
@@ -1724,12 +1724,12 @@ const Variant& UIElement::GetVar(const StringHash& key) const
     return i != vars_.End() ? i->second_ : Variant::EMPTY;
 }
 
-bool UIElement::HasTag(const String& tag) const
+bool UIElement::HasTag(const stl::string& tag) const
 {
     return tags_.contains(tag);
 }
 
-void UIElement::GetChildrenWithTag(stl::vector<UIElement*>& dest, const String& tag, bool recursive) const
+void UIElement::GetChildrenWithTag(stl::vector<UIElement*>& dest, const stl::string& tag, bool recursive) const
 {
     dest.clear();
 
@@ -1746,14 +1746,14 @@ void UIElement::GetChildrenWithTag(stl::vector<UIElement*>& dest, const String& 
         GetChildrenWithTagRecursive(dest, tag);
 }
 
-stl::vector<UIElement*> UIElement::GetChildrenWithTag(const String& tag, bool recursive) const
+stl::vector<UIElement*> UIElement::GetChildrenWithTag(const stl::string& tag, bool recursive) const
 {
     stl::vector<UIElement*> dest;
     GetChildrenWithTag(dest, tag, recursive);
     return dest;
 }
 
-void UIElement::GetChildrenWithTagRecursive(stl::vector<UIElement*>& dest, const String& tag) const
+void UIElement::GetChildrenWithTagRecursive(stl::vector<UIElement*>& dest, const stl::string& tag) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
@@ -1913,9 +1913,9 @@ void UIElement::OnAttributeAnimationRemoved()
         UnsubscribeFromEvent(E_POSTUPDATE);
 }
 
-Animatable* UIElement::FindAttributeAnimationTarget(const String& name, String& outName)
+Animatable* UIElement::FindAttributeAnimationTarget(const stl::string& name, stl::string& outName)
 {
-    stl::vector<String> names = name.Split('/');
+    stl::vector<stl::string> names = name.split('/');
     // Only attribute name
     if (names.size() == 1)
     {
@@ -1928,14 +1928,14 @@ Animatable* UIElement::FindAttributeAnimationTarget(const String& name, String& 
         UIElement* element = this;
         for (unsigned i = 0; i < names.size() - 1; ++i)
         {
-            if (names[i].Front() != '#')
+            if (names[i].front() != '#')
             {
                 URHO3D_LOGERROR("Invalid name " + name);
                 return nullptr;
             }
 
-            String name = names[i].Substring(1, names[i].Length() - 1);
-            char s = name.Front();
+            stl::string name = names[i].substr(1, names[i].length() - 1);
+            char s = name.front();
             if (s >= '0' && s <= '9')
             {
                 unsigned index = ToUInt(name);
@@ -1968,7 +1968,7 @@ void UIElement::MarkDirty()
         (*i)->MarkDirty();
 }
 
-bool UIElement::RemoveChildXML(XMLElement& parent, const String& name) const
+bool UIElement::RemoveChildXML(XMLElement& parent, const stl::string& name) const
 {
     static XPathQuery matchXPathQuery("./attribute[@name=$attributeName]", "attributeName:String");
 
@@ -1979,7 +1979,7 @@ bool UIElement::RemoveChildXML(XMLElement& parent, const String& name) const
     return !removeElem || parent.RemoveChild(removeElem);
 }
 
-bool UIElement::RemoveChildXML(XMLElement& parent, const String& name, const String& value) const
+bool UIElement::RemoveChildXML(XMLElement& parent, const stl::string& name, const stl::string& value) const
 {
     static XPathQuery matchXPathQuery
         ("./attribute[@name=$attributeName and @value=$attributeValue]", "attributeName:String, attributeValue:String");
@@ -1996,8 +1996,8 @@ bool UIElement::RemoveChildXML(XMLElement& parent, const String& name, const Str
 bool UIElement::FilterUIStyleAttributes(XMLElement& dest, const XMLElement& styleElem) const
 {
     // Remove style attribute only when its value is identical to the value stored in style file
-    String style = styleElem.GetAttribute("style");
-    if (!style.Empty())
+    stl::string style = styleElem.GetAttribute("style");
+    if (!style.empty())
     {
         if (style == dest.GetAttribute("style"))
         {
@@ -2027,7 +2027,7 @@ bool UIElement::FilterUIStyleAttributes(XMLElement& dest, const XMLElement& styl
     }
 
     // Remove style attribute when it is the same as its type, however, if it is an internal element then replace it to "none" instead
-    if (!dest.GetAttribute("style").Empty() && dest.GetAttribute("style") == dest.GetAttribute("type"))
+    if (!dest.GetAttribute("style").empty() && dest.GetAttribute("style") == dest.GetAttribute("type"))
     {
         if (internal_)
         {
@@ -2092,7 +2092,7 @@ void UIElement::GetChildrenRecursive(stl::vector<UIElement*>& dest) const
 void UIElement::ApplyStyleRecursive(UIElement* element)
 {
     // If child element style file changes as result of being (re)parented and it has a defined style, apply it now
-    if (!element->appliedStyle_.Empty() && element->appliedStyleFile_ != element->GetDefaultStyle())
+    if (!element->appliedStyle_.empty() && element->appliedStyleFile_ != element->GetDefaultStyle())
     {
         element->SetStyle(element->appliedStyle_);
         for (auto i = element->children_.begin(); i !=

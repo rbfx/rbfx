@@ -53,7 +53,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    String GetScreenJoystickPatchString() const override { return
+    stl::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -70,9 +70,9 @@ private:
     /// Subscribe to log message, UI and network events.
     void SubscribeToEvents();
     /// Create a button to the button container.
-    Button* CreateButton(const String& text, int width, IntVector2 position);
+    Button* CreateButton(const stl::string& text, int width, IntVector2 position);
     /// Create label
-    Text* CreateLabel(const String& text, IntVector2 pos);
+    Text* CreateLabel(const stl::string& text, IntVector2 pos);
     
     /// Handle found LAN server
     void HandleNetworkHostDiscovered(StringHash eventType, VariantMap& eventData);

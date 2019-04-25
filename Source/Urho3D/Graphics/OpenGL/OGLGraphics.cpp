@@ -174,13 +174,13 @@ static unsigned glesDepthStencilFormat = GL_DEPTH_COMPONENT16;
 static unsigned glesReadableDepthFormat = GL_DEPTH_COMPONENT;
 #endif
 
-static String extensions;
+static stl::string extensions;
 
-bool CheckExtension(const String& name)
+bool CheckExtension(const stl::string& name)
 {
-    if (extensions.Empty())
+    if (extensions.empty())
         extensions = (const char*)glGetString(GL_EXTENSIONS);
-    return extensions.Contains(name);
+    return extensions.contains(name);
 }
 
 static void GetGLPrimitiveType(unsigned elementCount, PrimitiveType type, unsigned& primitiveCount, GLenum& glPrimitiveType)
@@ -420,12 +420,12 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
         if (highDPI)
             flags |= SDL_WINDOW_ALLOW_HIGHDPI;
 
-        SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.CString());
+        SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
 
         for (;;)
         {
             if (!externalWindow_)
-                window_ = SDL_CreateWindow(windowTitle_.CString(), x, y, width, height, flags);
+                window_ = SDL_CreateWindow(windowTitle_.c_str(), x, y, width, height, flags);
             else
             {
 #ifndef __EMSCRIPTEN__
@@ -511,14 +511,15 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 #ifdef URHO3D_LOGGING
     URHO3D_LOGINFOF("Adapter used %s %s", (const char *) glGetString(GL_VENDOR), (const char *) glGetString(GL_RENDERER));
     
-    String msg;
-    msg.AppendWithFormat("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
+    stl::string msg;
+    msg.append_sprintf("Set screen mode %dx%d %s monitor %d", width_, height_,
+        (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
-        msg.Append(" borderless");
+        msg.append(" borderless");
     if (resizable_)
-        msg.Append(" resizable");
+        msg.append(" resizable");
     if (multiSample > 1)
-        msg.AppendWithFormat(" multisample %d", multiSample);
+        msg.append_sprintf(" multisample %d", multiSample);
     URHO3D_LOGINFO(msg);
 #endif
 
@@ -1054,7 +1055,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     // Compile the shaders now if not yet compiled. If already attempted, do not retry
     if (vs && !vs->GetGPUObjectName())
     {
-        if (vs->GetCompilerOutput().Empty())
+        if (vs->GetCompilerOutput().empty())
         {
             URHO3D_PROFILE("CompileVertexShader");
 
@@ -1073,7 +1074,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     if (ps && !ps->GetGPUObjectName())
     {
-        if (ps->GetCompilerOutput().Empty())
+        if (ps->GetCompilerOutput().empty())
         {
             URHO3D_PROFILE("CompilePixelShader");
 
@@ -2158,9 +2159,9 @@ bool Graphics::GetGL3Support()
     return gl3Support;
 }
 
-ShaderVariation* Graphics::GetShader(ShaderType type, const String& name, const String& defines) const
+ShaderVariation* Graphics::GetShader(ShaderType type, const stl::string& name, const stl::string& defines) const
 {
-    return GetShader(type, name.CString(), defines.CString());
+    return GetShader(type, name.c_str(), defines.c_str());
 }
 
 ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const char* defines) const
@@ -2169,7 +2170,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
     {
         auto* cache = GetSubsystem<ResourceCache>();
 
-        String fullShaderName = shaderPath_ + name + shaderExtension_;
+        stl::string fullShaderName = shaderPath_ + name + shaderExtension_;
         // Try to reduce repeated error log prints because of missing shaders
         if (lastShaderName_ == name && !cache->Exists(fullShaderName))
             return nullptr;
@@ -2191,23 +2192,23 @@ ShaderProgram* Graphics::GetShaderProgram() const
     return impl_->shaderProgram_;
 }
 
-TextureUnit Graphics::GetTextureUnit(const String& name)
+TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 {
-    HashMap<String, TextureUnit>::Iterator i = textureUnits_.Find(name);
+    HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Find(name);
     if (i != textureUnits_.End())
         return i->second_;
     else
         return MAX_TEXTURE_UNITS;
 }
 
-const String& Graphics::GetTextureUnitName(TextureUnit unit)
+const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
-    for (HashMap<String, TextureUnit>::Iterator i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
+    for (HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
     {
         if (i->second_ == unit)
             return i->first_;
     }
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 Texture* Graphics::GetTexture(unsigned index) const
@@ -2465,21 +2466,21 @@ void Graphics::Restore()
         impl_->context_ = SDL_GL_CreateContext(window_);
 
 #if defined(__linux__)
-        String driverx( (const char*)glGetString(GL_VERSION) );
-        stl::vector<String>tokens = driverx.Split (' ');
+        stl::string driverx( (const char*)glGetString(GL_VERSION) );
+        stl::vector<stl::string>tokens = driverx.split(' ');
         if (tokens.size() > 2) // must have enough tokens to work with
         {
             // Size() - 2 is the manufacturer, "Mesa" is the target
-            if ( tokens[tokens.size()-2].Compare ( "Mesa", false ) == 0 )
+            if (tokens[tokens.size() - 2].comparei("Mesa") == 0 )
             {
                 // Size() - 1  is the version number, convert to long, can be n | n.n | n.n.n
-                stl::vector<String>versionx = tokens[tokens.size()-1].Split ('.');
+                stl::vector<stl::string>versionx = tokens[tokens.size() - 1].split('.');
                 int majver = 0;
                 int minver = 0;
                 int pointver = 0;
-                if (tokens.size() > 1 ) majver = atoi(versionx[0].CString());
-                if (tokens.size() > 2 ) minver = atoi(versionx[1].CString());
-                if (tokens.size() > 3 ) pointver = atoi(versionx[2].CString());
+                if (tokens.size() > 1 ) majver = atoi(versionx[0].c_str());
+                if (tokens.size() > 2 ) minver = atoi(versionx[1].c_str());
+                if (tokens.size() > 3 ) pointver = atoi(versionx[2].c_str());
 
                 int allver = (majver * 10000) + (minver * 1000) + pointver;
 
@@ -2487,7 +2488,7 @@ void Graphics::Restore()
                 {                      // so remove this context and let it fall back to GL2
                     SDL_GL_DeleteContext(impl_->context_);
                     impl_->context_ = nullptr;
-                    URHO3D_LOGINFOF ( "Mesa GL Driver: %s detected, forcing GL2 context creation.  Please use gl2 command line option to avoid this warning.", driverx.CString() );
+                    URHO3D_LOGINFOF ( "Mesa GL Driver: %s detected, forcing GL2 context creation.  Please use gl2 command line option to avoid this warning.", driverx.c_str() );
                 }
             }
         }
@@ -2519,7 +2520,7 @@ void Graphics::Restore()
         }
 
         // Clear cached extensions string from the previous context
-        extensions.Clear();
+        extensions.clear();
 
         // Initialize OpenGL extensions library (desktop only)
 #ifndef GL_ES_VERSION_2_0
@@ -2762,9 +2763,10 @@ unsigned Graphics::GetReadableDepthFormat()
 #endif
 }
 
-unsigned Graphics::GetFormat(const String& formatName)
+unsigned Graphics::GetFormat(const stl::string& formatName)
 {
-    String nameLower = formatName.ToLower().Trimmed();
+    stl::string nameLower = formatName.to_lower();
+    nameLower.trim();
 
     if (nameLower == "a")
         return GetAlphaFormat();
@@ -2842,7 +2844,7 @@ void Graphics::CheckFeatureSupport()
     // On macOS check for an Intel driver and use shadow map RGBA dummy color textures, because mixing
     // depth-only FBO rendering and backbuffer rendering will bug, resulting in a black screen in full
     // screen mode, and incomplete shadow maps in windowed mode
-    String renderer((const char*)glGetString(GL_RENDERER));
+    stl::string renderer((const char*)glGetString(GL_RENDERER));
     if (renderer.Contains("Intel", false))
         dummyColorFormat_ = GetRGBAFormat();
 #endif

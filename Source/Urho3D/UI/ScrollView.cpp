@@ -408,7 +408,7 @@ bool ScrollView::FilterImplicitAttributes(XMLElement& dest) const
     return true;
 }
 
-bool ScrollView::FilterScrollBarImplicitAttributes(XMLElement& dest, const String& name) const
+bool ScrollView::FilterScrollBarImplicitAttributes(XMLElement& dest, const stl::string& name) const
 {
     if (!dest)
         return false;

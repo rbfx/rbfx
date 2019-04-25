@@ -312,7 +312,7 @@ void Network::HandleMessage(const SLNet::AddressOrGUID& source, int packetID, in
         connection->SendEvent(E_NETWORKMESSAGE, eventData);
     }
     else
-        URHO3D_LOGWARNING("Discarding message from unknown MessageConnection " + String(source.ToString()));
+        URHO3D_LOGWARNING("Discarding message from unknown MessageConnection " + stl::string(source.ToString()));
 }
 
 void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
@@ -355,7 +355,7 @@ void Network::SetDiscoveryBeacon(const VariantMap& data)
     VectorBuffer buffer;
     buffer.WriteVariantMap(data);
     if (buffer.GetSize() > 400)
-        URHO3D_LOGERROR("Discovery beacon of size: " + String(buffer.GetSize()) + " bytes is too large, modify MAX_OFFLINE_DATA_LENGTH in RakNet or reduce size");
+        URHO3D_LOGERROR("Discovery beacon of size: " + stl::to_string(buffer.GetSize()) + " bytes is too large, modify MAX_OFFLINE_DATA_LENGTH in RakNet or reduce size");
     rakPeer_->SetOfflinePingResponse((const char*)buffer.GetData(), buffer.GetSize());
 }
 
@@ -371,13 +371,13 @@ void Network::DiscoverHosts(unsigned port)
     rakPeerClient_->Ping("255.255.255.255", port, false);
 }
 
-void Network::SetPassword(const String& password)
+void Network::SetPassword(const stl::string& password)
 {
-    rakPeer_->SetIncomingPassword(password.CString(), password.Length());
+    rakPeer_->SetIncomingPassword(password.c_str(), password.length());
     password_ = password;
 }
 
-bool Network::Connect(const String& address, unsigned short port, Scene* scene, const VariantMap& identity)
+bool Network::Connect(const stl::string& address, unsigned short port, Scene* scene, const VariantMap& identity)
 {
     URHO3D_PROFILE("Connect");
 
@@ -392,10 +392,11 @@ bool Network::Connect(const String& address, unsigned short port, Scene* scene, 
     }
 
     //isServer_ = false;
-    SLNet::ConnectionAttemptResult connectResult = rakPeerClient_->Connect(address.CString(), port, password_.CString(), password_.Length());
+    SLNet::ConnectionAttemptResult connectResult = rakPeerClient_->Connect(address.c_str(), port, password_.c_str(),
+        password_.length());
     if (connectResult != SLNet::CONNECTION_ATTEMPT_STARTED)
     {
-        URHO3D_LOGERROR("Failed to connect to server " + address + ":" + String(port) + ", error code: " + String((int)connectResult));
+        URHO3D_LOGERROR("Failed to connect to server " + address + ":" + stl::to_string(port) + ", error code: " + stl::to_string((int)connectResult));
         SendEvent(E_CONNECTFAILED);
         return false;
     }
@@ -408,7 +409,7 @@ bool Network::Connect(const String& address, unsigned short port, Scene* scene, 
         serverConnection_->SetConnectPending(true);
         serverConnection_->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
 
-        URHO3D_LOGINFO("Connecting to server " + address + ":" + String(port) + ", Client: " + serverConnection_->ToString());
+        URHO3D_LOGINFO("Connecting to server " + address + ":" + stl::to_string(port) + ", Client: " + serverConnection_->ToString());
         return true;
     }
 }
@@ -436,7 +437,7 @@ bool Network::StartServer(unsigned short port)
     SLNet::StartupResult startResult = rakPeer_->Startup(128, &socket, 1);
     if (startResult == SLNet::RAKNET_STARTED)
     {
-        URHO3D_LOGINFO("Started server on port " + String(port));
+        URHO3D_LOGINFO("Started server on port " + stl::to_string(port));
         rakPeer_->SetMaximumIncomingConnections(128);
         isServer_ = true;
         rakPeer_->SetOccasionalPing(true);
@@ -446,7 +447,7 @@ bool Network::StartServer(unsigned short port)
     }
     else
     {
-        URHO3D_LOGINFO("Failed to start server on port " + String(port) + ", error code: " + String((int)startResult));
+        URHO3D_LOGINFO("Failed to start server on port " + stl::to_string(port) + ", error code: " + stl::to_string((int)startResult));
         return false;
     }
 }
@@ -468,12 +469,12 @@ void Network::StopServer()
     URHO3D_LOGINFO("Stopped server");
 }
 
-void Network::SetNATServerInfo(const String& address, unsigned short port)
+void Network::SetNATServerInfo(const stl::string& address, unsigned short port)
 {
     if (!natPunchServerAddress_)
         natPunchServerAddress_ = new SLNet::SystemAddress;
 
-    natPunchServerAddress_->FromStringExplicitPort(address.CString(), port);
+    natPunchServerAddress_->FromStringExplicitPort(address.c_str(), port);
 }
 
 void Network::StartNATClient()
@@ -488,19 +489,19 @@ void Network::StartNATClient()
     }
 
     rakPeer_->AttachPlugin(natPunchthroughServerClient_);
-    guid_ = String(rakPeer_->GetGuidFromSystemAddress(SLNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
+    guid_ = stl::string(rakPeer_->GetGuidFromSystemAddress(SLNet::UNASSIGNED_SYSTEM_ADDRESS).ToString());
     URHO3D_LOGINFO("GUID: " + guid_);
     rakPeer_->Connect(natPunchServerAddress_->ToString(false), natPunchServerAddress_->GetPort(), nullptr, 0);
 }
 
-void Network::AttemptNATPunchtrough(const String& guid, Scene* scene, const VariantMap& identity)
+void Network::AttemptNATPunchtrough(const stl::string& guid, Scene* scene, const VariantMap& identity)
 {
     scene_ = scene;
     identity_ = identity;
     if (!remoteGUID_)
         remoteGUID_ = new SLNet::RakNetGUID;
 
-    remoteGUID_->FromString(guid.CString());
+    remoteGUID_->FromString(guid.c_str());
     rakPeerClient_->AttachPlugin(natPunchthroughClient_);
     if (rakPeerClient_->IsActive()) {
         natPunchthroughClient_->OpenNAT(*remoteGUID_, *natPunchServerAddress_);
@@ -603,7 +604,7 @@ void Network::RegisterRemoteEvent(StringHash eventType)
 {
     if (blacklistedRemoteEvents_.find(eventType) != blacklistedRemoteEvents_.end())
     {
-        URHO3D_LOGERROR("Attempted to register blacklisted remote event type " + String(eventType));
+        URHO3D_LOGERROR("Attempted to register blacklisted remote event type " + eventType.ToString());
         return;
     }
 
@@ -620,7 +621,7 @@ void Network::UnregisterAllRemoteEvents()
     allowedRemoteEvents_.clear();
 }
 
-void Network::SetPackageCacheDir(const String& path)
+void Network::SetPackageCacheDir(const stl::string& path)
 {
     packageCacheDir_ = AddTrailingSlash(path);
 }
@@ -646,8 +647,8 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
     }
 }
 
-stl::shared_ptr<HttpRequest> Network::MakeHttpRequest(const String& url, const String& verb, const stl::vector<String>& headers,
-    const String& postData)
+stl::shared_ptr<HttpRequest> Network::MakeHttpRequest(const stl::string& url, const stl::string& verb, const stl::vector<stl::string>& headers,
+    const stl::string& postData)
 {
     URHO3D_PROFILE("MakeHttpRequest");
 
@@ -656,9 +657,9 @@ stl::shared_ptr<HttpRequest> Network::MakeHttpRequest(const String& url, const S
     return request;
 }
 
-void Network::BanAddress(const String& address)
+void Network::BanAddress(const stl::string& address)
 {
-    rakPeer_->AddToBanList(address.CString(), 0);
+    rakPeer_->AddToBanList(address.c_str(), 0);
 }
 
 Connection* Network::GetConnection(const SLNet::AddressOrGUID& connection) const
@@ -799,7 +800,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
     else if (packetID == ID_NAT_PUNCHTHROUGH_SUCCEEDED)
     {
         SLNet::SystemAddress remotePeer = packet->systemAddress;
-        URHO3D_LOGINFO("NAT punchtrough succeeded! Remote peer: " + String(remotePeer.ToString()));
+        URHO3D_LOGINFO("NAT punchtrough succeeded! Remote peer: " + stl::string(remotePeer.ToString()));
         if (!isServer)
         {
             using namespace NetworkNatPunchtroughSucceeded;
@@ -807,8 +808,8 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
             eventMap[P_ADDRESS] = remotePeer.ToString(false);
             eventMap[P_PORT] = remotePeer.GetPort();
             SendEvent(E_NETWORKNATPUNCHTROUGHSUCCEEDED, eventMap);
-            URHO3D_LOGINFO("Connecting to server behind NAT: " + String(remotePeer.ToString()));
-            Connect(String(remotePeer.ToString(false)), remotePeer.GetPort(), scene_, identity_);
+            URHO3D_LOGINFO("Connecting to server behind NAT: " + stl::string(remotePeer.ToString()));
+            Connect(stl::string(remotePeer.ToString(false)), remotePeer.GetPort(), scene_, identity_);
         }
         packetHandled = true;
     }
@@ -860,7 +861,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
                 eventMap[P_BEACON] = VariantMap();
             }
 
-            eventMap[P_ADDRESS] = String(packet->systemAddress.ToString(false));
+            eventMap[P_ADDRESS] = stl::string(packet->systemAddress.ToString(false));
             eventMap[P_PORT] = (int)packet->systemAddress.GetPort();
             SendEvent(E_NETWORKHOSTDISCOVERED, eventMap);
         }
@@ -887,7 +888,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
     }
 
     if (!packetHandled && packetID < sizeof(RAKNET_MESSAGEID_STRINGS))
-        URHO3D_LOGERROR("Unhandled network packet: " + String(RAKNET_MESSAGEID_STRINGS[packetID]));
+        URHO3D_LOGERROR("Unhandled network packet: " + stl::string(RAKNET_MESSAGEID_STRINGS[packetID]));
     else if (!packetHandled)
         URHO3D_LOGERRORF("Unhandled network packet: %i", packetID);
 

@@ -78,7 +78,7 @@ class VectorBuffer;
 using VariantVector = stl::vector<Variant>;
 
 /// Vector of strings.
-using StringVector = stl::vector<String>;
+using StringVector = stl::vector<stl::string>;
 
 /// Map of variants.
 using VariantMap = HashMap<StringHash, Variant>;
@@ -96,14 +96,14 @@ struct URHO3D_API ResourceRef
     }
 
     /// Construct with type and resource name.
-    ResourceRef(StringHash type, const String& name) :
+    ResourceRef(StringHash type, const stl::string& name) :
         type_(type),
         name_(name)
     {
     }
 
     /// Construct with type and resource name.
-    ResourceRef(const String& type, const String& name) :
+    ResourceRef(const stl::string& type, const stl::string& name) :
         type_(type),
         name_(name)
     {
@@ -122,7 +122,7 @@ struct URHO3D_API ResourceRef
     /// Object type.
     StringHash type_;
     /// Object name.
-    String name_;
+    stl::string name_;
 
     /// Test for equality with another reference.
     bool operator ==(const ResourceRef& rhs) const { return type_ == rhs.type_ && name_ == rhs.name_; }
@@ -201,7 +201,7 @@ public:
     /// Compare to zero.
     virtual bool IsZero() const { return false; }
     /// Convert custom value to string.
-    virtual String ToString() const { return String::EMPTY; }
+    virtual stl::string ToString() const { return EMPTY_STRING; }
 
 private:
     /// Type info.
@@ -216,7 +216,7 @@ template <class T> struct CustomVariantValueTraits
     /// Check whether the value is zero.
     static bool IsZero(const T& value) { (void)value; return false; }
     /// Convert type to string.
-    static String ToString(const T& value) { (void)value; return String::EMPTY; }
+    static stl::string ToString(const T& value) { (void)value; return EMPTY_STRING; }
 };
 
 /// Custom variant value implementation.
@@ -262,7 +262,7 @@ public:
     /// Compare to zero.
     bool IsZero() const override { return Traits::IsZero(value_);}
     /// Convert custom value to string.
-    String ToString() const override { return Traits::ToString(value_); }
+    stl::string ToString() const override { return Traits::ToString(value_); }
 
 private:
     /// Value.
@@ -298,7 +298,7 @@ union VariantValue
     Matrix4* matrix4_;
     Quaternion quaternion_;
     Color color_;
-    String string_;
+    stl::string string_;
     StringVector stringVector_;
     VariantVector variantVector_;
     VariantMap variantMap_;
@@ -316,7 +316,7 @@ union VariantValue
     ~VariantValue() { }     // NOLINT(modernize-use-equals-default)
 };
 
-// TODO: static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
+static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
 
 /// Variable that supports a fixed set of types.
 class URHO3D_API Variant
@@ -404,7 +404,7 @@ public:
     }
 
     /// Construct from a string.
-    Variant(const String& value)        // NOLINT(google-explicit-constructor)
+    Variant(const stl::string& value)        // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -519,13 +519,13 @@ public:
     }
 
     /// Construct from type and value.
-    Variant(const String& type, const String& value)
+    Variant(const stl::string& type, const stl::string& value)
     {
         FromString(type, value);
     }
 
     /// Construct from type and value.
-    Variant(VariantType type, const String& value)
+    Variant(VariantType type, const stl::string& value)
     {
         FromString(type, value);
     }
@@ -671,7 +671,7 @@ public:
     }
 
     /// Assign from a string.
-    Variant& operator =(const String& rhs)
+    Variant& operator =(const stl::string& rhs)
     {
         SetType(VAR_STRING);
         value_.string_ = rhs;
@@ -872,7 +872,7 @@ public:
     }
 
     /// Test for equality with a string. To return true, both the type and value must match.
-    bool operator ==(const String& rhs) const
+    bool operator ==(const stl::string& rhs) const
     {
         return type_ == VAR_STRING ? value_.string_ == rhs : false;
     }
@@ -1016,7 +1016,7 @@ public:
     bool operator !=(const Quaternion& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a string.
-    bool operator !=(const String& rhs) const { return !(*this == rhs); }
+    bool operator !=(const stl::string& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a buffer.
     bool operator !=(const stl::vector<unsigned char>& rhs) const { return !(*this == rhs); }
@@ -1070,11 +1070,11 @@ public:
     bool operator !=(const Matrix4& rhs) const { return !(*this == rhs); }
 
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
-    void FromString(const String& type, const String& value);
+    void FromString(const stl::string& type, const stl::string& value);
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(const char* type, const char* value);
     /// Set from type and value string. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
-    void FromString(VariantType type, const String& value);
+    void FromString(VariantType type, const stl::string& value);
     /// Set from type and value string. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(VariantType type, const char* value);
     /// Set buffer type from a memory area.
@@ -1195,7 +1195,7 @@ public:
     const Color& GetColor() const { return (type_ == VAR_COLOR || type_ == VAR_VECTOR4) ? value_.color_ : Color::WHITE; }
 
     /// Return string or empty on type mismatch.
-    const String& GetString() const { return type_ == VAR_STRING ? value_.string_ : String::EMPTY; }
+    const stl::string& GetString() const { return type_ == VAR_STRING ? value_.string_ : EMPTY_STRING; }
 
     /// Return buffer or empty on type mismatch.
     const stl::vector<unsigned char>& GetBuffer() const
@@ -1330,9 +1330,9 @@ public:
     VariantType GetType() const { return type_; }
 
     /// Return value's type name.
-    String GetTypeName() const;
+    stl::string GetTypeName() const;
     /// Convert value to string. Pointers are returned as null, and VariantBuffer or VariantMap are not supported and return empty.
-    String ToString() const;
+    stl::string ToString() const;
     /// Return true when the variant value is considered zero according to its actual type.
     bool IsZero() const;
 
@@ -1383,9 +1383,9 @@ public:
     }
 
     /// Return name for variant type.
-    static String GetTypeName(VariantType type);
+    static stl::string GetTypeName(VariantType type);
     /// Return variant type from type name.
-    static VariantType GetTypeFromName(const String& typeName);
+    static VariantType GetTypeFromName(const stl::string& typeName);
     /// Return variant type from type name.
     static VariantType GetTypeFromName(const char* typeName);
 
@@ -1442,7 +1442,7 @@ template <> inline VariantType GetVariantType<Quaternion>() { return VAR_QUATERN
 
 template <> inline VariantType GetVariantType<Color>() { return VAR_COLOR; }
 
-template <> inline VariantType GetVariantType<String>() { return VAR_STRING; }
+template <> inline VariantType GetVariantType<stl::string>() { return VAR_STRING; }
 
 template <> inline VariantType GetVariantType<StringHash>() { return VAR_INT; }
 
@@ -1499,7 +1499,7 @@ template <> URHO3D_API const Quaternion& Variant::Get<const Quaternion&>() const
 
 template <> URHO3D_API const Color& Variant::Get<const Color&>() const;
 
-template <> URHO3D_API const String& Variant::Get<const String&>() const;
+template <> URHO3D_API const stl::string& Variant::Get<const stl::string&>() const;
 
 template <> URHO3D_API const Rect& Variant::Get<const Rect&>() const;
 
@@ -1541,7 +1541,7 @@ template <> URHO3D_API Quaternion Variant::Get<Quaternion>() const;
 
 template <> URHO3D_API Color Variant::Get<Color>() const;
 
-template <> URHO3D_API String Variant::Get<String>() const;
+template <> URHO3D_API stl::string Variant::Get<stl::string>() const;
 
 template <> URHO3D_API Rect Variant::Get<Rect>() const;
 

@@ -315,7 +315,7 @@ public:
     Intersection IsInsideFast(const Sphere& sphere) const;
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     /// Minimum vector.
     Vector3 min_;

@@ -169,14 +169,14 @@ unsigned Time::GetTimeSinceEpoch()
     return (unsigned)time(nullptr);
 }
 
-String Time::GetTimeStamp(const char* format)
+stl::string Time::GetTimeStamp(const char* format)
 {
     time_t timestamp = 0;
     time(&timestamp);
     return GetTimeStamp(timestamp, format);
 }
 
-String Time::GetTimeStamp(time_t timestamp, const char* format)
+stl::string Time::GetTimeStamp(time_t timestamp, const char* format)
 {
     if (format == nullptr)
         format = DEFAULT_DATE_TIME_FORMAT;

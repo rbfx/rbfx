@@ -71,7 +71,7 @@ public:
 
 private:
     /// Initialize a wheel and remember its scene node and ID.
-    void InitWheel(const String& name, const Vector3& offset, stl::weak_ptr<Node>& wheelNode, unsigned& wheelNodeID);
+    void InitWheel(const stl::string& name, const Vector3& offset, stl::weak_ptr<Node>& wheelNode, unsigned& wheelNodeID);
     /// Acquire wheel components from wheel scene nodes.
     void GetWheelComponents();
 

@@ -103,7 +103,7 @@ public:
     /// Set per-bone blending weight by track index. Default is 1.0 (full), is multiplied  with the state's blending weight when applying the animation. Optionally recurses to child bones.
     void SetBoneWeight(unsigned index, float weight, bool recursive = false);
     /// Set per-bone blending weight by name.
-    void SetBoneWeight(const String& name, float weight, bool recursive = false);
+    void SetBoneWeight(const stl::string& name, float weight, bool recursive = false);
     /// Set per-bone blending weight by name hash.
     void SetBoneWeight(StringHash nameHash, float weight, bool recursive = false);
     /// Modify blending weight.
@@ -125,13 +125,13 @@ public:
     /// Return per-bone blending weight by track index.
     float GetBoneWeight(unsigned index) const;
     /// Return per-bone blending weight by name.
-    float GetBoneWeight(const String& name) const;
+    float GetBoneWeight(const stl::string& name) const;
     /// Return per-bone blending weight by name.
     float GetBoneWeight(StringHash nameHash) const;
     /// Return track index with matching bone node, or M_MAX_UNSIGNED if not found.
     unsigned GetTrackIndex(Node* node) const;
     /// Return track index by bone name, or M_MAX_UNSIGNED if not found.
-    unsigned GetTrackIndex(const String& name) const;
+    unsigned GetTrackIndex(const stl::string& name) const;
     /// Return track index by bone name hash, or M_MAX_UNSIGNED if not found.
     unsigned GetTrackIndex(StringHash nameHash) const;
 

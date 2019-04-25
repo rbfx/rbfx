@@ -106,7 +106,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
     {
         URHO3D_SAFE_RELEASE(inputLayout_);
         URHO3D_LOGERRORF("Failed to create input layout for shader %s due to missing vertex element(s) (HRESULT %x)",
-            vertexShader->GetFullName().CString(), (unsigned)hr);
+            vertexShader->GetFullName().c_str(), (unsigned)hr);
     }
 }
 

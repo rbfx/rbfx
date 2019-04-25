@@ -65,7 +65,7 @@ struct URHO3D_API AnimationControl
     }
 
     /// Animation resource name.
-    String name_;
+    stl::string name_;
     /// Animation resource name hash.
     StringHash hash_;
     /// Animation speed.
@@ -111,77 +111,77 @@ public:
     /// Update the animations. Is called from HandleScenePostUpdate().
     virtual void Update(float timeStep);
     /// Play an animation and set full target weight. Name must be the full resource name. Return true on success.
-    bool Play(const String& name, unsigned char layer, bool looped, float fadeInTime = 0.0f);
+    bool Play(const stl::string& name, unsigned char layer, bool looped, float fadeInTime = 0.0f);
     /// Play an animation, set full target weight and fade out all other animations on the same layer. Name must be the full resource name. Return true on success.
-    bool PlayExclusive(const String& name, unsigned char layer, bool looped, float fadeTime = 0.0f);
+    bool PlayExclusive(const stl::string& name, unsigned char layer, bool looped, float fadeTime = 0.0f);
     /// Stop an animation. Zero fadetime is instant. Return true on success.
-    bool Stop(const String& name, float fadeOutTime = 0.0f);
+    bool Stop(const stl::string& name, float fadeOutTime = 0.0f);
     /// Stop all animations on a specific layer. Zero fadetime is instant.
     void StopLayer(unsigned char layer, float fadeOutTime = 0.0f);
     /// Stop all animations. Zero fadetime is instant.
     void StopAll(float fadeOutTime = 0.0f);
     /// Fade animation to target weight. Return true on success.
-    bool Fade(const String& name, float targetWeight, float fadeTime);
+    bool Fade(const stl::string& name, float targetWeight, float fadeTime);
     /// Fade other animations on the same layer to target weight. Return true on success.
-    bool FadeOthers(const String& name, float targetWeight, float fadeTime);
+    bool FadeOthers(const stl::string& name, float targetWeight, float fadeTime);
 
     /// Set animation blending layer priority. Return true on success.
-    bool SetLayer(const String& name, unsigned char layer);
+    bool SetLayer(const stl::string& name, unsigned char layer);
     /// Set animation start bone. Return true on success.
-    bool SetStartBone(const String& name, const String& startBoneName);
+    bool SetStartBone(const stl::string& name, const stl::string& startBoneName);
     /// Set animation time position. Return true on success.
-    bool SetTime(const String& name, float time);
+    bool SetTime(const stl::string& name, float time);
     /// Set animation weight. Return true on success.
-    bool SetWeight(const String& name, float weight);
+    bool SetWeight(const stl::string& name, float weight);
     /// Set animation looping. Return true on success.
-    bool SetLooped(const String& name, bool enable);
+    bool SetLooped(const stl::string& name, bool enable);
     /// Set animation speed. Return true on success.
-    bool SetSpeed(const String& name, float speed);
+    bool SetSpeed(const stl::string& name, float speed);
     /// Set animation autofade at end (non-looped animations only.) Zero time disables. Return true on success.
-    bool SetAutoFade(const String& name, float fadeOutTime);
+    bool SetAutoFade(const stl::string& name, float fadeOutTime);
     /// Set whether an animation auto-removes on completion.
-    bool SetRemoveOnCompletion(const String& name, bool removeOnCompletion);
+    bool SetRemoveOnCompletion(const stl::string& name, bool removeOnCompletion);
     /// Set animation blending mode. Return true on success.
-    bool SetBlendMode(const String& name, AnimationBlendMode mode);
+    bool SetBlendMode(const stl::string& name, AnimationBlendMode mode);
 
     /// Return whether an animation is active. Note that non-looping animations that are being clamped at the end also return true.
-    bool IsPlaying(const String& name) const;
+    bool IsPlaying(const stl::string& name) const;
     /// Return whether any animation is active on a specific layer.
     bool IsPlaying(unsigned char layer) const;
     /// Return whether an animation is fading in.
-    bool IsFadingIn(const String& name) const;
+    bool IsFadingIn(const stl::string& name) const;
     /// Return whether an animation is fading out.
-    bool IsFadingOut(const String& name) const;
+    bool IsFadingOut(const stl::string& name) const;
     /// Return whether an animation is at its end. Will return false if the animation is not active at all.
-    bool IsAtEnd(const String& name) const;
+    bool IsAtEnd(const stl::string& name) const;
     /// Return animation blending layer.
-    unsigned char GetLayer(const String& name) const;
+    unsigned char GetLayer(const stl::string& name) const;
     /// Return animation start bone, or null if no such animation.
-    Bone* GetStartBone(const String& name) const;
+    Bone* GetStartBone(const stl::string& name) const;
     /// Return animation start bone name, or empty string if no such animation.
-    const String& GetStartBoneName(const String& name) const;
+    const stl::string& GetStartBoneName(const stl::string& name) const;
     /// Return animation time position.
-    float GetTime(const String& name) const;
+    float GetTime(const stl::string& name) const;
     /// Return animation weight.
-    float GetWeight(const String& name) const;
+    float GetWeight(const stl::string& name) const;
     /// Return animation looping.
-    bool IsLooped(const String& name) const;
+    bool IsLooped(const stl::string& name) const;
     /// Return animation blending mode.
-    AnimationBlendMode GetBlendMode(const String& name) const;
+    AnimationBlendMode GetBlendMode(const stl::string& name) const;
     /// Return animation length.
-    float GetLength(const String& name) const;
+    float GetLength(const stl::string& name) const;
     /// Return animation speed.
-    float GetSpeed(const String& name) const;
+    float GetSpeed(const stl::string& name) const;
     /// Return animation fade target weight.
-    float GetFadeTarget(const String& name) const;
+    float GetFadeTarget(const stl::string& name) const;
     /// Return animation fade time.
-    float GetFadeTime(const String& name) const;
+    float GetFadeTime(const stl::string& name) const;
     /// Return animation autofade time.
-    float GetAutoFade(const String& name) const;
+    float GetAutoFade(const stl::string& name) const;
     /// Return whether animation auto-removes on completion, or false if no such animation.
-    bool GetRemoveOnCompletion(const String& name) const;
+    bool GetRemoveOnCompletion(const stl::string& name) const;
     /// Find an animation state by animation name.
-    AnimationState* GetAnimationState(const String& name) const;
+    AnimationState* GetAnimationState(const stl::string& name) const;
     /// Find an animation state by animation name hash.
     AnimationState* GetAnimationState(StringHash nameHash) const;
     /// Return the animation control structures for inspection.
@@ -210,7 +210,7 @@ private:
     /// Remove an animation state.
     void RemoveAnimationState(AnimationState* state);
     /// Find the internal index and animation state of an animation.
-    void FindAnimation(const String& name, unsigned& index, AnimationState*& state) const;
+    void FindAnimation(const stl::string& name, unsigned& index, AnimationState*& state) const;
     /// Handle scene post-update event.
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
 

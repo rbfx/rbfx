@@ -126,12 +126,12 @@ void DebugHud::ToggleAll()
     Toggle(DEBUGHUD_SHOW_ALL);
 }
 
-void DebugHud::SetAppStats(const String& label, const Variant& stats)
+void DebugHud::SetAppStats(const stl::string& label, const Variant& stats)
 {
     SetAppStats(label, stats.ToString());
 }
 
-void DebugHud::SetAppStats(const String& label, const String& stats)
+void DebugHud::SetAppStats(const stl::string& label, const stl::string& stats)
 {
     bool newLabel = !appStats_.Contains(label);
     appStats_[label] = stats;
@@ -139,7 +139,7 @@ void DebugHud::SetAppStats(const String& label, const String& stats)
         appStats_.Sort();
 }
 
-bool DebugHud::ResetAppStats(const String& label)
+bool DebugHud::ResetAppStats(const stl::string& label)
 {
     return appStats_.Erase(label);
 }
@@ -170,7 +170,7 @@ void DebugHud::RenderUi(VariantMap& eventData)
                 fpsTimer_.Reset();
             }
 
-            String stats;
+            stl::string stats;
             unsigned primitives, batches;
             if (!useRendererStats_)
             {
@@ -191,8 +191,8 @@ void DebugHud::RenderUi(VariantMap& eventData)
             ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps(true));
             ui::Text("Occluders %u", renderer->GetNumOccluders(true));
 
-            for (HashMap<String, String>::ConstIterator i = appStats_.Begin(); i != appStats_.End(); ++i)
-                ui::Text("%s %s", i->first_.CString(), i->second_.CString());
+            for (HashMap<stl::string, stl::string>::ConstIterator i = appStats_.Begin(); i != appStats_.End(); ++i)
+                ui::Text("%s %s", i->first_.c_str(), i->second_.c_str());
         }
 
         if (mode_ & DEBUGHUD_SHOW_MODE)
@@ -208,7 +208,7 @@ void DebugHud::RenderUi(VariantMap& eventData)
                 shadowQualityTexts[renderer->GetShadowQuality()],
                 renderer->GetMaxOccluderTriangles() > 0 ? "On" : "Off",
                 renderer->GetDynamicInstancing() ? "On" : "Off",
-                graphics->GetApiName().CString());
+                graphics->GetApiName().c_str());
         }
     }
     ui::End();

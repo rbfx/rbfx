@@ -126,7 +126,7 @@ void RemoveNamedAttribute(HashMap<StringHash, stl::vector<AttributeInfo> >& attr
 
     for (auto j = infos.begin(); j != infos.end(); ++j)
     {
-        if (!j->name_.Compare(name, true))
+        if (!j->name_.comparei(name))
         {
             infos.erase(j);
             break;
@@ -189,7 +189,7 @@ void Context::RegisterFactory(ObjectFactory* factory)
     if (it != factories_.End())
     {
         URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
-            factory->GetTypeName().CString(), it->second_->GetTypeName().CString());
+            factory->GetTypeName().c_str(), it->second_->GetTypeName().c_str());
         assert(false);
         return;
     }
@@ -202,7 +202,7 @@ void Context::RegisterFactory(ObjectFactory* factory, const char* category)
         return;
 
     RegisterFactory(factory);
-    if (String::CStringLength(category))
+    if (CStringLength(category))
         objectCategories_[category].push_back(factory->GetType());
 }
 
@@ -214,7 +214,7 @@ void Context::RemoveFactory(StringHash type)
 void Context::RemoveFactory(StringHash type, const char* category)
 {
     RemoveFactory(type);
-    if (String::CStringLength(category))
+    if (CStringLength(category))
         objectCategories_[category].erase_first_unsorted(type);
 }
 
@@ -419,11 +419,11 @@ Object* Context::GetEventSender() const
         return nullptr;
 }
 
-const String& Context::GetTypeName(StringHash objectType) const
+const stl::string& Context::GetTypeName(StringHash objectType) const
 {
     // Search factories to find the hash-to-name mapping
     HashMap<StringHash, stl::shared_ptr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
-    return i != factories_.End() ? i->second_->GetTypeName() : String::EMPTY;
+    return i != factories_.End() ? i->second_->GetTypeName() : EMPTY_STRING;
 }
 
 AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
@@ -436,7 +436,7 @@ AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 
     for (auto j = infos.begin(); j != infos.end(); ++j)
     {
-        if (!j->name_.Compare(name, true))
+        if (!j->name_.comparei(name))
             return &(*j);
     }
 

@@ -237,7 +237,7 @@ void SceneReplication::SubscribeToEvents()
     GetSubsystem<Network>()->RegisterRemoteEvent(E_CLIENTOBJECTID);
 }
 
-Button* SceneReplication::CreateButton(const String& text, int width)
+Button* SceneReplication::CreateButton(const stl::string& text, int width)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
@@ -417,8 +417,9 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
 void SceneReplication::HandleConnect(StringHash eventType, VariantMap& eventData)
 {
     auto* network = GetSubsystem<Network>();
-    String address = textEdit_->GetText().Trimmed();
-    if (address.Empty())
+    stl::string address = textEdit_->GetText();
+    address.trim();
+    if (address.empty())
         address = "localhost"; // Use localhost to connect if nothing else specified
 
     // Connect to server, specify scene to use as a client for replication

@@ -42,12 +42,12 @@ BaseResourceTab::BaseResourceTab(Context* context)
     });
 }
 
-bool BaseResourceTab::LoadResource(const Urho3D::String& resourcePath)
+bool BaseResourceTab::LoadResource(const stl::string& resourcePath)
 {
     if (!Tab::LoadResource(resourcePath))
         return false;
 
-    if (resourcePath.Empty())
+    if (resourcePath.empty())
         return false;
 
     if (IsModified())
@@ -66,7 +66,7 @@ bool Urho3D::BaseResourceTab::SaveResource()
     if (!Tab::SaveResource())
         return false;
 
-    if (resourceName_.Empty())
+    if (resourceName_.empty())
         return false;
 
     lastUndoIndex_ = undo_.Index();
@@ -77,8 +77,8 @@ bool Urho3D::BaseResourceTab::SaveResource()
 void BaseResourceTab::OnSaveUISettings(ImGuiTextBuffer* buf)
 {
     Tab::OnSaveUISettings(buf);
-    if (!resourceName_.Empty())
-        buf->appendf("Path=%s\n", resourceName_.CString());
+    if (!resourceName_.empty())
+        buf->appendf("Path=%s\n", resourceName_.c_str());
 }
 
 void BaseResourceTab::OnLoadUISettings(const char* name, const char* line)
@@ -88,7 +88,7 @@ void BaseResourceTab::OnLoadUISettings(const char* name, const char* line)
         LoadResource(line + 5);
 }
 
-void BaseResourceTab::SetResourceName(const String& resourceName)
+void BaseResourceTab::SetResourceName(const stl::string& resourceName)
 {
     resourceName_ = resourceName;
     if (!isUtility_)
@@ -105,7 +105,7 @@ void BaseResourceTab::Close()
     undo_.Clear();
     lastUndoIndex_ = 0;
     GetCache()->ReleaseResource(GetResourceType(), GetResourceName(), true);
-    resourceName_.Clear();
+    resourceName_.clear();
 }
 
 void BaseResourceTab::OnBeforeEnd()
@@ -114,7 +114,7 @@ void BaseResourceTab::OnBeforeEnd()
 
     if (wasOpen_ && !ui::IsPopupOpen("Save?"))
     {
-        if ((!open_ && IsModified()) || !pendingLoadResource_.Empty())
+        if ((!open_ && IsModified()) || !pendingLoadResource_.empty())
         {
             ui::OpenPopup("Save?");
             open_ = true;
@@ -125,25 +125,25 @@ void BaseResourceTab::OnBeforeEnd()
     if (ui::BeginPopupModal("Save?", &noCancel, ImGuiWindowFlags_NoDocking|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_Popup))
     {
         // Warn when closing a tab that was modified.
-        if (!pendingLoadResource_.Empty())
+        if (!pendingLoadResource_.empty())
         {
             ui::Text(
                 "Resource '%s' was modified. Would you like to save it before opening '%s'?",
-                GetFileNameAndExtension(resourceName_).CString(),
-                GetFileNameAndExtension(pendingLoadResource_).CString());
+                GetFileNameAndExtension(resourceName_).c_str(),
+                GetFileNameAndExtension(pendingLoadResource_).c_str());
 
             if (ui::Button(ICON_FA_SAVE " Save & Open"))
             {
                 SaveResource();
                 LoadResource(pendingLoadResource_);
-                pendingLoadResource_.Clear();
+                pendingLoadResource_.clear();
                 ui::CloseCurrentPopup();
             }
         }
         else
         {
             ui::Text("Resource '%s' was modified. Would you like to save it before closing?",
-                GetFileNameAndExtension(resourceName_).CString());
+                GetFileNameAndExtension(resourceName_).c_str());
 
             bool save = ui::Button(ICON_FA_SAVE " Save & Close");
             ui::SameLine();
@@ -162,15 +162,15 @@ void BaseResourceTab::OnBeforeEnd()
         ui::SameLine();
         if (ui::Button(ICON_FA_TIMES " Cancel"))
         {
-            pendingLoadResource_.Clear();
+            pendingLoadResource_.clear();
             ui::CloseCurrentPopup();
         }
         ui::EndPopup();
     }
-    else if (!pendingLoadResource_.Empty())
+    else if (!pendingLoadResource_.empty())
     {
         // Click outside of popup.
-        pendingLoadResource_.Clear();
+        pendingLoadResource_.clear();
     }
 
     if (wasOpen_ && !open_)

@@ -132,6 +132,9 @@ EA_RESTORE_ALL_VC_WARNINGS()
 
 #include <EASTL/internal/char_traits.h>
 #include <EASTL/string_view.h>
+#if EASTL_URHO3D_EXTENSIONS
+#include <EASTL/vector.h>
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // EASTL_STRING_EXPLICIT
@@ -728,6 +731,210 @@ namespace eastl
 		bool validate() const EA_NOEXCEPT;
 		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
+#if EASTL_URHO3D_EXTENSIONS
+		this_type trimmed() const
+        {
+		    this_type result(*this);
+		    result.trim();
+		    return result;
+        }
+
+        void replace(value_type needle, value_type replacement)
+        {
+            for (auto& c : *this)
+            {
+                if (c == needle)
+                    c = replacement;
+            }
+        }
+
+		void replace(const value_type* needle, const value_type* replacement)
+        {
+		    if (needle == nullptr || replacement == nullptr)
+		        return;
+
+		    const size_type needle_length = strlen(needle);
+		    const size_type replacement_length = strlen(replacement);
+		    size_type position = 0;
+		    for (auto pos = find(needle, position); pos != npos; pos = find(needle, position))
+            {
+		        replace(begin() + pos, begin() + pos + needle_length, replacement);
+                position = pos + replacement_length;
+            }
+        }
+
+        this_type replaced(value_type needle, value_type replacement) const
+        {
+            this_type result(*this);
+            result.replace(needle, replacement);
+            return result;
+        }
+
+        this_type replaced(const value_type* needle, const value_type* replacement) const
+        {
+            this_type result(*this);
+            result.replace(needle, replacement);
+            return result;
+        }
+
+        bool contains(value_type c, bool caseSensitive=true) const
+        {
+		    if (caseSensitive)
+                return find(c) != npos;
+		    else
+            {
+		        this_type needle;
+                needle.resize(1);
+		        needle[0] = c;
+                auto it = eastl::search(begin(), end(), needle.begin(), needle.end(),
+                    [](value_type a, value_type b) { return CharToLower(a) == CharToLower(b); });
+                return it != end();
+            }
+        }
+
+        bool contains(const value_type* substring, bool caseSensitive=true) const
+        {
+            if (substring == nullptr)
+                return false;
+
+            if (caseSensitive)
+                return find(substring) != npos;
+            else
+            {
+                view_type needle(substring);
+                auto it = eastl::search(begin(), end(), needle.begin(), needle.end(),
+                    [](value_type a, value_type b) { return CharToLower(a) == CharToLower(b); });
+                return it != end();
+            }
+        }
+
+        bool contains(const this_type& substring, bool caseSensitive=true) const
+        {
+            if (caseSensitive)
+                return find(substring) != npos;
+            else
+            {
+                view_type needle(substring);
+                auto it = eastl::search(begin(), end(), needle.begin(), needle.end(),
+                    [](value_type a, value_type b) { return CharToLower(a) == CharToLower(b); });
+                return it != end();
+            }
+        }
+
+        bool starts_with(value_type c, bool caseSensitive=true) const
+        {
+            value_type str[2]{c, 0};
+            return starts_with(view_type(str, 2), caseSensitive);
+        }
+
+        bool starts_with(const value_type* substring, bool caseSensitive=true) const
+        {
+            if (substring == nullptr)
+                return false;
+            return starts_with(view_type(substring, strlen(substring)), caseSensitive);
+        }
+
+        bool starts_with(const this_type& substring, bool caseSensitive=true) const
+        {
+            return starts_with(view_type(substring), caseSensitive);
+        }
+
+        bool starts_with(const view_type& substring, bool caseSensitive=true) const
+        {
+            if (caseSensitive)
+                return compare(begin(), begin() + substring.length(), substring.begin(), substring.end()) == 0;
+            else
+                return comparei(begin(), begin() + substring.length(), substring.begin(), substring.end()) == 0;
+        }
+
+        bool ends_with(value_type c, bool caseSensitive=true) const
+        {
+            value_type str[2]{c, 0};
+            return ends_with(view_type(str, 2), caseSensitive);
+        }
+
+        bool ends_with(const value_type* substring, bool caseSensitive=true) const
+        {
+            if (substring == nullptr)
+                return false;
+
+            return ends_with(view_type(substring, strlen(substring)));
+        }
+
+        bool ends_with(const this_type& substring, bool caseSensitive=true) const
+        {
+            return ends_with(view_type(substring));
+        }
+
+        bool ends_with(const view_type& substring, bool caseSensitive=true) const
+        {
+            if (caseSensitive)
+                return compare(end() - substring.length(), end(), substring.begin(), substring.end()) == 0;
+            else
+                return comparei(end() - substring.length(), end(), substring.begin(), substring.end()) == 0;
+        }
+
+        this_type to_lower() const
+        {
+            this_type result(*this);
+            result.make_lower();
+            return result;
+        }
+
+        this_type to_upper() const
+        {
+            this_type result(*this);
+            result.make_upper();
+            return result;
+        }
+
+        static eastl::vector<this_type> split(const value_type* str, value_type separator, bool keepEmptyStrings = false)
+        {
+            stl::vector<this_type> ret;
+            const char* strEnd = str + strlen(str);
+
+            for (const char* splitEnd = str; splitEnd != strEnd; ++splitEnd)
+            {
+                if (*splitEnd == separator)
+                {
+                    const ptrdiff_t splitLen = splitEnd - str;
+                    if (splitLen > 0 || keepEmptyStrings)
+                        ret.push_back(this_type(str, splitLen));
+                    str = splitEnd + 1;
+                }
+            }
+
+            const ptrdiff_t splitLen = strEnd - str;
+            if (splitLen > 0 || keepEmptyStrings)
+                ret.push_back(this_type(str, splitLen));
+
+            return ret;
+        }
+
+        eastl::vector<this_type> split(value_type separator, bool keepEmptyStrings = false) const
+        {
+            return split(c_str(), separator, keepEmptyStrings);
+        }
+        /// Return a string by joining substrings with a 'glue' string.
+        static this_type joined(const stl::vector<this_type>& subStrings, const this_type& glue)
+        {
+            if (subStrings.empty())
+                return this_type();
+
+            size_type result_size = (subStrings.size() - 1) * glue.length();
+            for (const auto& sub : subStrings)
+                result_size += sub.length();
+
+            this_type joinedString;
+            joinedString.reserve(result_size);
+            joinedString.append(subStrings[0]);
+            for (unsigned i = 1; i < subStrings.size(); ++i)
+                joinedString.append(glue).append(subStrings[i]);
+
+            return joinedString;
+        }
+
+#endif
 
 	protected:
 		// Helper functions for initialization/insertion operations.

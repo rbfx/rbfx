@@ -402,7 +402,7 @@ void Urho2DConstraints::CreateScene()
     constraintWheel->SetCollideConnected(true); // doesn't work
 }
 
-void Urho2DConstraints::CreateFlag(const String& text, float x, float y) // Used to create Tex3D flags
+void Urho2DConstraints::CreateFlag(const stl::string& text, float x, float y) // Used to create Tex3D flags
 {
     Node* flagNode = scene_->CreateChild("Flag");
     flagNode->SetPosition(Vector3(x, y, 0.0f));

@@ -75,7 +75,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
         return true;
     }
 
-    String texPath, texName, texExt;
+    stl::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
     cache->ResetDependencies(this);
@@ -93,12 +93,12 @@ bool Texture3D::BeginLoad(Deserializer& source)
 
     if (volumeElem)
     {
-        String name = volumeElem.GetAttribute("name");
+        stl::string name = volumeElem.GetAttribute("name");
 
-        String volumeTexPath, volumeTexName, volumeTexExt;
+        stl::string volumeTexPath, volumeTexName, volumeTexExt;
         SplitPath(name, volumeTexPath, volumeTexName, volumeTexExt);
         // If path is empty, add the XML file path
-        if (volumeTexPath.Empty())
+        if (volumeTexPath.empty())
             name = texPath + name;
 
         loadImage_ = cache->GetTempResource<Image>(name);
@@ -110,12 +110,12 @@ bool Texture3D::BeginLoad(Deserializer& source)
     }
     else if (colorlutElem)
     {
-        String name = colorlutElem.GetAttribute("name");
+        stl::string name = colorlutElem.GetAttribute("name");
 
-        String colorlutTexPath, colorlutTexName, colorlutTexExt;
+        stl::string colorlutTexPath, colorlutTexName, colorlutTexExt;
         SplitPath(name, colorlutTexPath, colorlutTexName, colorlutTexExt);
         // If path is empty, add the XML file path
-        if (colorlutTexPath.Empty())
+        if (colorlutTexPath.empty())
             name = texPath + name;
 
         stl::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(name);

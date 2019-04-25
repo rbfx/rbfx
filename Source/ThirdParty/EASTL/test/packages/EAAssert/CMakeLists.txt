@@ -22,7 +22,7 @@ add_definitions(-D_CHAR16T)
 #-------------------------------------------------------------------------------------------
 # exported include directories 
 #-------------------------------------------------------------------------------------------
-target_include_directories(EAAssert INTERFACE include)
+target_include_directories(EAAssert INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 # Workaround to have header files show up in IDEs
 add_custom_target(EAAssert_ide SOURCES ${EAASSERT_SOURCES})

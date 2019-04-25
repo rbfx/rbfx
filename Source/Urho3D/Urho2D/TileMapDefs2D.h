@@ -109,13 +109,13 @@ public:
     /// Load from XML element.
     void Load(const XMLElement& element);
     /// Return has property.
-    bool HasProperty(const String& name) const;
+    bool HasProperty(const stl::string& name) const;
     /// Return property value.
-    const String& GetProperty(const String& name) const;
+    const stl::string& GetProperty(const stl::string& name) const;
 
 protected:
     /// Property name to property value mapping.
-    HashMap<String, String> nameToValueMapping_;
+    HashMap<stl::string, stl::string> nameToValueMapping_;
 };
 
 /// Tile flipping flags.
@@ -144,9 +144,9 @@ public:
     /// Return sprite.
     Sprite2D* GetSprite() const;
     /// Return has property.
-    bool HasProperty(const String& name) const;
+    bool HasProperty(const stl::string& name) const;
     /// Return property.
-    const String& GetProperty(const String& name) const;
+    const stl::string& GetProperty(const stl::string& name) const;
 
 private:
     friend class TmxTileLayer2D;
@@ -169,10 +169,10 @@ public:
     TileMapObjectType2D GetObjectType() const { return objectType_; }
 
     /// Return name.
-    const String& GetName() const { return name_; }
+    const stl::string& GetName() const { return name_; }
 
     /// Return type.
-    const String& GetType() const { return type_; }
+    const stl::string& GetType() const { return type_; }
 
     /// Return position.
     const Vector2& GetPosition() const { return position_; }
@@ -197,9 +197,9 @@ public:
     /// Return tile sprite.
     Sprite2D* GetTileSprite() const;
     /// Return has property.
-    bool HasProperty(const String& name) const;
+    bool HasProperty(const stl::string& name) const;
     /// Return property value.
-    const String& GetProperty(const String& name) const;
+    const stl::string& GetProperty(const stl::string& name) const;
 
 private:
     friend class TmxObjectGroup2D;
@@ -207,9 +207,9 @@ private:
     /// Object type.
     TileMapObjectType2D objectType_{};
     /// Name.
-    String name_;
+    stl::string name_;
     /// Type.
-    String type_;
+    stl::string type_;
     /// Position.
     Vector2 position_;
     /// Size (for rectangle and ellipse).

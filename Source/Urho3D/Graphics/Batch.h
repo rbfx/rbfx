@@ -264,9 +264,9 @@ public:
     /// Whether the pass command contains extra shader defines.
     bool hasExtraDefines_;
     /// Vertex shader extra defines.
-    String vsExtraDefines_;
+    stl::string vsExtraDefines_;
     /// Pixel shader extra defines.
-    String psExtraDefines_;
+    stl::string psExtraDefines_;
     /// Hash for vertex shader extra defines.
     StringHash vsExtraDefinesHash_;
     /// Hash for pixel shader extra defines.

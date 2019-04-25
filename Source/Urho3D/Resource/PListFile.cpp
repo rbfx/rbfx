@@ -62,7 +62,7 @@ PListValue::PListValue(float value) :                       // NOLINT(hicpp-memb
     SetFloat(value);
 }
 
-PListValue::PListValue(const String& value) :               // NOLINT(hicpp-member-init)
+PListValue::PListValue(const stl::string& value) :               // NOLINT(hicpp-member-init)
     type_(PLVT_NONE)
 {
     SetString(value);
@@ -153,13 +153,13 @@ void PListValue::SetFloat(float value)
     float_ = value;
 }
 
-void PListValue::SetString(const String& value)
+void PListValue::SetString(const stl::string& value)
 {
     if (type_ != PLVT_STRING)
     {
         Reset();
         type_ = PLVT_STRING;
-        string_ = new String();
+        string_ = new stl::string();
     }
 
     *string_ = value;
@@ -204,9 +204,9 @@ float PListValue::GetFloat() const
     return type_ == PLVT_FLOAT ? float_ : 0.0f;
 }
 
-const String& PListValue::GetString() const
+const stl::string& PListValue::GetString() const
 {
-    return type_ == PLVT_STRING ? *string_ : String::EMPTY;
+    return type_ == PLVT_STRING ? *string_ : EMPTY_STRING;
 }
 
 IntRect PListValue::GetIntRect() const
@@ -215,7 +215,7 @@ IntRect PListValue::GetIntRect() const
         return IntRect::ZERO;
 
     int x, y, w, h;
-    sscanf(string_->CString(), "{{%d,%d},{%d,%d}}", &x, &y, &w, &h);    // NOLINT(cert-err34-c)
+    sscanf(string_->c_str(), "{{%d,%d},{%d,%d}}", &x, &y, &w, &h);    // NOLINT(cert-err34-c)
     return {x, y, x + w, y + h};
 }
 
@@ -225,7 +225,7 @@ IntVector2 PListValue::GetIntVector2() const
         return IntVector2::ZERO;
 
     int x, y;
-    sscanf(string_->CString(), "{%d,%d}", &x, &y);                      // NOLINT(cert-err34-c)
+    sscanf(string_->c_str(), "{%d,%d}", &x, &y);                      // NOLINT(cert-err34-c)
     return IntVector2(x, y);
 }
 
@@ -235,7 +235,7 @@ IntVector3 PListValue::GetIntVector3() const
         return IntVector3::ZERO;
 
     int x, y, z;
-    sscanf(string_->CString(), "{%d,%d,%d}", &x, &y, &z);               // NOLINT(cert-err34-c)
+    sscanf(string_->c_str(), "{%d,%d,%d}", &x, &y, &z);               // NOLINT(cert-err34-c)
     return IntVector3(x, y, z);
 }
 
@@ -310,7 +310,7 @@ void PListFile::RegisterObject(Context* context)
 
 bool PListFile::BeginLoad(Deserializer& source)
 {
-    if (GetName().Empty())
+    if (GetName().empty())
         SetName(source.GetName());
 
     XMLFile xmlFile(context_);
@@ -347,7 +347,7 @@ bool PListFile::LoadDict(PListValueMap& dict, const XMLElement& dictElem)
     XMLElement valueElem = keyElem.GetNext();
     while (keyElem && valueElem)
     {
-        String key = keyElem.GetValue();
+        stl::string key = keyElem.GetValue();
         valueElem = keyElem.GetNext();
 
         PListValue value;
@@ -383,7 +383,7 @@ bool PListFile::LoadArray(PListValueVector& array, const XMLElement& arrayElem)
 
 bool PListFile::LoadValue(PListValue& value, const XMLElement& valueElem)
 {
-    String valueType = valueElem.GetName();
+    stl::string valueType = valueElem.GetName();
 
     if (valueType == "string")
         value.SetString(valueElem.GetValue());

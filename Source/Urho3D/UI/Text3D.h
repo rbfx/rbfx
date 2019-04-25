@@ -55,7 +55,7 @@ public:
     UpdateGeometryType GetUpdateGeometryType() override;
 
     /// Set font by looking from resource cache by name and font size. Return true if successful.
-    bool SetFont(const String& fontName, float size = DEFAULT_FONT_SIZE);
+    bool SetFont(const stl::string& fontName, float size = DEFAULT_FONT_SIZE);
     /// Set font and font size. Return true if successful.
     bool SetFont(Font* font, float size = DEFAULT_FONT_SIZE);
     /// Set font size only while retaining the existing font. Return true if successful.
@@ -63,7 +63,7 @@ public:
     /// Set material.
     void SetMaterial(Material* material);
     /// Set text. Text is assumed to be either ASCII or UTF8-encoded.
-    void SetText(const String& text);
+    void SetText(const stl::string& text);
     /// Set horizontal and vertical alignment.
     void SetAlignment(HorizontalAlignment hAlign, VerticalAlignment vAlign);
     /// Set horizontal alignment.
@@ -108,7 +108,7 @@ public:
     /// Return material.
     Material* GetMaterial() const;
     /// Return text.
-    const String& GetText() const;
+    const stl::string& GetText() const;
     /// Return row alignment.
     HorizontalAlignment GetTextAlignment() const;
     /// Return horizontal alignment.
@@ -165,9 +165,9 @@ public:
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
     /// Set text attribute.
-    void SetTextAttr(const String& value);
+    void SetTextAttr(const stl::string& value);
     /// Return text attribute.
-    String GetTextAttr() const;
+    stl::string GetTextAttr() const;
 
     /// Get color attribute. Uses just the top-left color.
     const Color& GetColorAttr() const { return text_.colors_[0]; }

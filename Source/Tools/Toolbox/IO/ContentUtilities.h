@@ -65,11 +65,11 @@ enum ContentType
 };
 
 /// Return file type based on extension of file name.
-URHO3D_TOOLBOX_API FileType GetFileType(const String& fileName);
+URHO3D_TOOLBOX_API FileType GetFileType(const stl::string& fileName);
 /// Return icon from icon font based on extension of file name.
-URHO3D_TOOLBOX_API String GetFileIcon(const String& fileName);
+URHO3D_TOOLBOX_API stl::string GetFileIcon(const stl::string& fileName);
 
 /// Return content type by inspecting file contents.
-URHO3D_TOOLBOX_API ContentType GetContentType(const String& resourcePath);
+URHO3D_TOOLBOX_API ContentType GetContentType(const stl::string& resourcePath);
 
 }

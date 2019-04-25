@@ -75,7 +75,7 @@ void Text3D::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Material", GetMaterialAttr, SetMaterialAttr, ResourceRef, ResourceRef(Material::GetTypeStatic()),
         AM_DEFAULT);
     URHO3D_ATTRIBUTE("Font Size", float, text_.fontSize_, DEFAULT_FONT_SIZE, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Text", GetTextAttr, SetTextAttr, String, String::EMPTY, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Text", GetTextAttr, SetTextAttr, stl::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("Text Alignment", text_.textAlignment_, horizontalAlignments, HA_LEFT, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Row Spacing", float, text_.rowSpacing_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Word Wrap", bool, text_.wordWrap_, false, AM_DEFAULT);
@@ -185,7 +185,7 @@ void Text3D::SetMaterial(Material* material)
     UpdateTextMaterials(true);
 }
 
-bool Text3D::SetFont(const String& fontName, float size)
+bool Text3D::SetFont(const stl::string& fontName, float size)
 {
     bool success = text_.SetFont(fontName, size);
 
@@ -220,7 +220,7 @@ bool Text3D::SetFontSize(float size)
     return success;
 }
 
-void Text3D::SetText(const String& text)
+void Text3D::SetText(const stl::string& text)
 {
     text_.SetText(text);
 
@@ -395,7 +395,7 @@ float Text3D::GetFontSize() const
     return text_.GetFontSize();
 }
 
-const String& Text3D::GetText() const
+const stl::string& Text3D::GetText() const
 {
     return text_.GetText();
 }
@@ -548,12 +548,12 @@ void Text3D::SetFontAttr(const ResourceRef& value)
     text_.font_ = cache->GetResource<Font>(value.name_);
 }
 
-void Text3D::SetTextAttr(const String& value)
+void Text3D::SetTextAttr(const stl::string& value)
 {
     text_.SetTextAttr(value);
 }
 
-String Text3D::GetTextAttr() const
+stl::string Text3D::GetTextAttr() const
 {
     return text_.GetTextAttr();
 }

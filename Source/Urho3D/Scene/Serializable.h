@@ -72,13 +72,13 @@ public:
     /// Save as JSON data. Return true if successful.
     virtual bool SaveJSON(JSONValue& dest) const;
     /// Load from binary resource.
-    virtual bool Load(const String& resourceName);
+    virtual bool Load(const stl::string& resourceName);
     /// Load from XML resource.
-    virtual bool LoadXML(const String& resourceName);
+    virtual bool LoadXML(const stl::string& resourceName);
     /// Load from JSON resource.
-    virtual bool LoadJSON(const String& resourceName);
+    virtual bool LoadJSON(const stl::string& resourceName);
     /// Load from resource of automatically detected type.
-    virtual bool LoadFile(const String& resourceName);
+    virtual bool LoadFile(const stl::string& resourceName);
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() { }
@@ -92,7 +92,7 @@ public:
     /// Set attribute by index. Return true if successfully set.
     bool SetAttribute(unsigned index, const Variant& value);
     /// Set attribute by name. Return true if successfully set.
-    bool SetAttribute(const String& name, const Variant& value);
+    bool SetAttribute(const stl::string& name, const Variant& value);
     /// Set instance-level default flag.
     void SetInstanceDefault(bool enable) { setInstanceDefault_ = enable; }
     /// Reset all editable attributes to their default values.
@@ -102,7 +102,7 @@ public:
     /// Set temporary flag. Temporary objects will not be saved.
     void SetTemporary(bool enable);
     /// Enable interception of an attribute from network updates. Intercepted attributes are sent as events instead of applying directly. This can be used to implement client side prediction.
-    void SetInterceptNetworkUpdate(const String& attributeName, bool enable);
+    void SetInterceptNetworkUpdate(const stl::string& attributeName, bool enable);
     /// Allocate network attribute state.
     void AllocateNetworkState();
     /// Write initial delta network update.
@@ -119,11 +119,11 @@ public:
     /// Return attribute value by index. Return empty if illegal index.
     Variant GetAttribute(unsigned index) const;
     /// Return attribute value by name. Return empty if not found.
-    Variant GetAttribute(const String& name) const;
+    Variant GetAttribute(const stl::string& name) const;
     /// Return attribute default value by index. Return empty if illegal index.
     Variant GetAttributeDefault(unsigned index) const;
     /// Return attribute default value by name. Return empty if not found.
-    Variant GetAttributeDefault(const String& name) const;
+    Variant GetAttributeDefault(const stl::string& name) const;
     /// Return number of attributes.
     unsigned GetNumAttributes() const;
     /// Return number of network replication attributes.
@@ -133,7 +133,7 @@ public:
     bool IsTemporary() const { return temporary_; }
 
     /// Return whether an attribute's network updates are being intercepted.
-    bool GetInterceptNetworkUpdate(const String& attributeName) const;
+    bool GetInterceptNetworkUpdate(const stl::string& attributeName) const;
 
     /// Return the network attribute state, if allocated.
     NetworkState* GetNetworkState() const { return networkState_.get(); }
@@ -144,9 +144,9 @@ protected:
 
 private:
     /// Set instance-level default value. Allocate the internal data structure as necessary.
-    void SetInstanceDefault(const String& name, const Variant& defaultValue);
+    void SetInstanceDefault(const stl::string& name, const Variant& defaultValue);
     /// Get instance-level default value.
-    Variant GetInstanceDefault(const String& name) const;
+    Variant GetInstanceDefault(const stl::string& name) const;
 
     /// Attribute default value at each instance level.
     stl::unique_ptr<VariantMap> instanceDefaultValues_;

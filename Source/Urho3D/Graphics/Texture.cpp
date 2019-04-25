@@ -182,16 +182,16 @@ void Texture::SetParameters(const XMLElement& element)
     LoadMetadataFromXML(element);
     for (XMLElement paramElem = element.GetChild(); paramElem; paramElem = paramElem.GetNext())
     {
-        String name = paramElem.GetName();
+        stl::string name = paramElem.GetName();
 
         if (name == "address")
         {
-            String coord = paramElem.GetAttributeLower("coord");
-            if (coord.Length() >= 1)
+            stl::string coord = paramElem.GetAttributeLower("coord");
+            if (coord.length() >= 1)
             {
                 auto coordIndex = (TextureCoordinate)(coord[0] - 'u');
-                String mode = paramElem.GetAttributeLower("mode");
-                SetAddressMode(coordIndex, (TextureAddressMode)GetStringListIndex(mode.CString(), addressModeNames, ADDRESS_WRAP));
+                stl::string mode = paramElem.GetAttributeLower("mode");
+                SetAddressMode(coordIndex, (TextureAddressMode)GetStringListIndex(mode.c_str(), addressModeNames, ADDRESS_WRAP));
             }
         }
 
@@ -200,8 +200,8 @@ void Texture::SetParameters(const XMLElement& element)
 
         if (name == "filter")
         {
-            String mode = paramElem.GetAttributeLower("mode");
-            SetFilterMode((TextureFilterMode)GetStringListIndex(mode.CString(), filterModeNames, FILTER_DEFAULT));
+            stl::string mode = paramElem.GetAttributeLower("mode");
+            SetFilterMode((TextureFilterMode)GetStringListIndex(mode.c_str(), filterModeNames, FILTER_DEFAULT));
             if (paramElem.HasAttribute("anisotropy"))
                 SetAnisotropy(paramElem.GetUInt("anisotropy"));
         }

@@ -48,7 +48,7 @@ public:
     /// Update window when it is active.
     void OnActiveUpdate() override;
     /// Load UI layout from resource path.
-    bool LoadResource(const String& resourcePath) override;
+    bool LoadResource(const stl::string& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource() override;
     ///
@@ -74,7 +74,7 @@ protected:
     ///
     Variant GetVariantFromXML(const XMLElement& attribute, const AttributeInfo& info) const;
     ///
-    String GetAppliedStyle(UIElement* element = nullptr);
+    stl::string GetAppliedStyle(UIElement* element = nullptr);
     ///
     void GetStyleData(const AttributeInfo& info, XMLElement& style, XMLElement& attribute, Variant& value);
     ///
@@ -93,8 +93,8 @@ protected:
 
     stl::weak_ptr<UIElement> selectedElement_;
     bool hideResizeHandles_ = false;
-    stl::vector<String> styleNames_;
-    String textureSelectorAttribute_;
+    stl::vector<stl::string> styleNames_;
+    stl::string textureSelectorAttribute_;
 };
 
 }

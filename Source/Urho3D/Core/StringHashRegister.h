@@ -47,12 +47,12 @@ public:
     /// Register string for hash reverse mapping.
     StringHash RegisterString(const char* string);
     /// Return string for given StringHash. Return empty string if not found.
-    String GetStringCopy(const StringHash& hash) const;
+    stl::string GetStringCopy(const StringHash& hash) const;
     /// Return whether the string in contained in the register.
     bool Contains(const StringHash& hash) const;
 
     /// Return String for given StringHash. Return value is unsafe to use if RegisterString is called from other threads.
-    const String& GetString(const StringHash& hash) const;
+    const stl::string& GetString(const StringHash& hash) const;
     /// Return map of hashes. Return value is unsafe to use if RegisterString is called from other threads.
     const StringMap& GetInternalMap() const { return map_; }
 

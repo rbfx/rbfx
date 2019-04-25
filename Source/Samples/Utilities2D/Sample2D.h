@@ -93,26 +93,26 @@ public:
     /// Create path from tmx object's points.
     stl::vector<Vector2> CreatePathFromPoints(TileMapObject2D* object, Vector2 offset);
     /// Create the UI content.
-    void CreateUIContent(const String& demoTitle, int remainingLifes, int remainingCoins);
+    void CreateUIContent(const stl::string& demoTitle, int remainingLifes, int remainingCoins);
     /// Handle 'EXIT' button released event.
     void HandleExitButton(StringHash eventType, VariantMap& eventData);
     /// Save the scene.
     void SaveScene(bool initial);
     /// Create a background 2D sprite, optionally rotated by a ValueAnimation object.
-    void CreateBackgroundSprite(TileMapInfo2D info, float scale, const String& texture, bool animate);
+    void CreateBackgroundSprite(TileMapInfo2D info, float scale, const stl::string& texture, bool animate);
     /// Create a particle emitter attached to the given node.
     void SpawnEffect(Node* node);
     /// Play a non-looping sound effect.
-    void PlaySoundEffect(const String& soundName);
+    void PlaySoundEffect(const stl::string& soundName);
 
     /// Filename used in load/save functions.
-    String demoFilename_;
+    stl::string demoFilename_;
     /// The scene.
     Scene* scene_{};
 
 protected:
     /// Return XML patch instructions for screen joystick layout.
-    virtual String GetScreenJoystickPatchString() const { return
+    virtual stl::string GetScreenJoystickPatchString() const { return
         "<patch>"
         "    <remove sel=\"/element/element[./attribute[@name='Name' and @value='Button0']]/attribute[@name='Is Visible']\" />"
         "    <replace sel=\"/element/element[./attribute[@name='Name' and @value='Button0']]/element[./attribute[@name='Name' and @value='Label']]/attribute[@name='Text']/@value\">Fight</replace>"

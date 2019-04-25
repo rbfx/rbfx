@@ -243,7 +243,7 @@ public:
     /// Sort the list of texture frames based on time.
     void SortTextureFrames();
     /// Clone the particle effect.
-    stl::shared_ptr<ParticleEffect> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<ParticleEffect> Clone(const stl::string& cloneName = EMPTY_STRING) const;
 
     /// Return material.
     Material* GetMaterial() const { return material_; }
@@ -442,7 +442,7 @@ private:
     /// Texture animation frames.
     stl::vector<TextureFrame> textureFrames_;
     /// Material name acquired during BeginLoad().
-    String loadMaterialName_;
+    stl::string loadMaterialName_;
     /// Particle rotation mode in relation to the camera.
     FaceCameraMode faceCameraMode_;
 };

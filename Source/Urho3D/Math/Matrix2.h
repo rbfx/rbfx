@@ -203,7 +203,7 @@ public:
     const float* Data() const { return &m00_; }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     float m00_;
     float m01_;

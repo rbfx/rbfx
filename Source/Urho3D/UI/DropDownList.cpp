@@ -185,7 +185,7 @@ void DropDownList::SetSelection(unsigned index)
     listView_->SetSelection(index);
 }
 
-void DropDownList::SetPlaceholderText(const String& text)
+void DropDownList::SetPlaceholderText(const stl::string& text)
 {
     placeholder_->GetChildStaticCast<Text>(0)->SetText(text);
 }
@@ -220,7 +220,7 @@ UIElement* DropDownList::GetSelectedItem() const
     return listView_->GetSelectedItem();
 }
 
-const String& DropDownList::GetPlaceholderText() const
+const stl::string& DropDownList::GetPlaceholderText() const
 {
     return placeholder_->GetChildStaticCast<Text>(0)->GetText();
 }
@@ -266,7 +266,7 @@ bool DropDownList::FilterPopupImplicitAttributes(XMLElement& dest) const
         return false;
 
     // Window popup
-    if (dest.GetAttribute("style").Empty() && !dest.SetAttribute("style", "none"))
+    if (dest.GetAttribute("style").empty() && !dest.SetAttribute("style", "none"))
         return false;
     if (!RemoveChildXML(dest, "Layout Mode", "Vertical"))
         return false;
@@ -279,7 +279,7 @@ bool DropDownList::FilterPopupImplicitAttributes(XMLElement& dest) const
         return false;
     if (!listView_->FilterAttributes(childElem))
         return false;
-    if (childElem.GetAttribute("style").Empty() && !childElem.SetAttribute("style", "none"))
+    if (childElem.GetAttribute("style").empty() && !childElem.SetAttribute("style", "none"))
         return false;
     if (!RemoveChildXML(childElem, "Focus Mode", "NotFocusable"))
         return false;
@@ -300,13 +300,13 @@ bool DropDownList::FilterPopupImplicitAttributes(XMLElement& dest) const
 
     if (panelElem)
     {
-        if (panelElem.GetAttribute("style").Empty() && !panelElem.SetAttribute("style", "none"))
+        if (panelElem.GetAttribute("style").empty() && !panelElem.SetAttribute("style", "none"))
             return false;
         // Item container
         XMLElement containerElem = panelElem.GetChild("element");
         if (containerElem)
         {
-            if (containerElem.GetAttribute("style").Empty() && !containerElem.SetAttribute("style", "none"))
+            if (containerElem.GetAttribute("style").empty() && !containerElem.SetAttribute("style", "none"))
                 return false;
         }
     }

@@ -86,7 +86,7 @@ void Mover::Update(float timeStep)
     if (node_->GetName() == "Orc")
     {
         auto* animatedSprite = node_->GetComponent<AnimatedSprite2D>();
-        String anim = "run";
+        stl::string anim = "run";
 
         // Handle wounded state
         if (emitTime_ > 0.0f)

@@ -77,7 +77,7 @@ class URHO3D_API Pass : public RefCounted
 {
 public:
     /// Construct.
-    explicit Pass(const String& name);
+    explicit Pass(const stl::string& name);
     /// Destruct.
     ~Pass() override;
 
@@ -96,24 +96,24 @@ public:
     /// Set whether requires desktop level hardware.
     void SetIsDesktop(bool enable);
     /// Set vertex shader name.
-    void SetVertexShader(const String& name);
+    void SetVertexShader(const stl::string& name);
     /// Set pixel shader name.
-    void SetPixelShader(const String& name);
+    void SetPixelShader(const stl::string& name);
     /// Set vertex shader defines. Separate multiple defines with spaces.
-    void SetVertexShaderDefines(const String& defines);
+    void SetVertexShaderDefines(const stl::string& defines);
     /// Set pixel shader defines. Separate multiple defines with spaces.
-    void SetPixelShaderDefines(const String& defines);
+    void SetPixelShaderDefines(const stl::string& defines);
     /// Set vertex shader define excludes. Use to mark defines that the shader code will not recognize, to prevent compiling redundant shader variations.
-    void SetVertexShaderDefineExcludes(const String& excludes);
+    void SetVertexShaderDefineExcludes(const stl::string& excludes);
     /// Set pixel shader define excludes. Use to mark defines that the shader code will not recognize, to prevent compiling redundant shader variations.
-    void SetPixelShaderDefineExcludes(const String& excludes);
+    void SetPixelShaderDefineExcludes(const stl::string& excludes);
     /// Reset shader pointers.
     void ReleaseShaders();
     /// Mark shaders loaded this frame.
     void MarkShadersLoaded(unsigned frameNumber);
 
     /// Return pass name.
-    const String& GetName() const { return name_; }
+    const stl::string& GetName() const { return name_; }
 
     /// Return pass index. This is used for optimal render-time pass queries that avoid map lookups.
     unsigned GetIndex() const { return index_; }
@@ -143,22 +143,22 @@ public:
     bool IsDesktop() const { return isDesktop_; }
 
     /// Return vertex shader name.
-    const String& GetVertexShader() const { return vertexShaderName_; }
+    const stl::string& GetVertexShader() const { return vertexShaderName_; }
 
     /// Return pixel shader name.
-    const String& GetPixelShader() const { return pixelShaderName_; }
+    const stl::string& GetPixelShader() const { return pixelShaderName_; }
 
     /// Return vertex shader defines.
-    const String& GetVertexShaderDefines() const { return vertexShaderDefines_; }
+    const stl::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
 
     /// Return pixel shader defines.
-    const String& GetPixelShaderDefines() const { return pixelShaderDefines_; }
+    const stl::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
 
     /// Return vertex shader define excludes.
-    const String& GetVertexShaderDefineExcludes() const { return vertexShaderDefineExcludes_; }
+    const stl::string& GetVertexShaderDefineExcludes() const { return vertexShaderDefineExcludes_; }
 
     /// Return pixel shader define excludes.
-    const String& GetPixelShaderDefineExcludes() const { return pixelShaderDefineExcludes_; }
+    const stl::string& GetPixelShaderDefineExcludes() const { return pixelShaderDefineExcludes_; }
 
     /// Return vertex shaders.
     stl::vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
@@ -171,9 +171,9 @@ public:
     /// Return pixel shaders with extra defines from the renderpath.
     stl::vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
     /// Return the effective vertex shader defines, accounting for excludes. Called internally by Renderer.
-    String GetEffectiveVertexShaderDefines() const;
+    stl::string GetEffectiveVertexShaderDefines() const;
     /// Return the effective pixel shader defines, accounting for excludes. Called internally by Renderer.
-    String GetEffectivePixelShaderDefines() const;
+    stl::string GetEffectivePixelShaderDefines() const;
 
 private:
     /// Pass index.
@@ -195,17 +195,17 @@ private:
     /// Require desktop level hardware flag.
     bool isDesktop_;
     /// Vertex shader name.
-    String vertexShaderName_;
+    stl::string vertexShaderName_;
     /// Pixel shader name.
-    String pixelShaderName_;
+    stl::string pixelShaderName_;
     /// Vertex shader defines.
-    String vertexShaderDefines_;
+    stl::string vertexShaderDefines_;
     /// Pixel shader defines.
-    String pixelShaderDefines_;
+    stl::string pixelShaderDefines_;
     /// Vertex shader define excludes.
-    String vertexShaderDefineExcludes_;
+    stl::string vertexShaderDefineExcludes_;
     /// Pixel shader define excludes.
-    String pixelShaderDefineExcludes_;
+    stl::string pixelShaderDefineExcludes_;
     /// Vertex shaders.
     stl::vector<stl::shared_ptr<ShaderVariation> > vertexShaders_;
     /// Pixel shaders.
@@ -215,7 +215,7 @@ private:
     /// Pixel shaders with extra defines from the renderpath.
     HashMap<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraPixelShaders_;
     /// Pass name.
-    String name_;
+    stl::string name_;
 };
 
 /// %Material technique. Consists of several passes.
@@ -239,13 +239,13 @@ public:
     /// Set whether requires desktop level hardware.
     void SetIsDesktop(bool enable);
     /// Create a new pass.
-    Pass* CreatePass(const String& name);
+    Pass* CreatePass(const stl::string& name);
     /// Remove a pass.
-    void RemovePass(const String& name);
+    void RemovePass(const stl::string& name);
     /// Reset shader pointers in all passes.
     void ReleaseShaders();
     /// Clone the technique. Passes will be deep copied to allow independent modification.
-    stl::shared_ptr<Technique> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Technique> Clone(const stl::string& cloneName = EMPTY_STRING) const;
 
     /// Return whether requires desktop level hardware.
     bool IsDesktop() const { return isDesktop_; }
@@ -257,13 +257,13 @@ public:
     bool HasPass(unsigned passIndex) const { return passIndex < passes_.size() && passes_[passIndex] != nullptr; }
 
     /// Return whether has a pass by name. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    bool HasPass(const String& name) const;
+    bool HasPass(const stl::string& name) const;
 
     /// Return a pass, or null if not found.
     Pass* GetPass(unsigned passIndex) const { return passIndex < passes_.size() ? passes_[passIndex] : nullptr; }
 
     /// Return a pass by name, or null if not found. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    Pass* GetPass(const String& name) const;
+    Pass* GetPass(const stl::string& name) const;
 
     /// Return a pass that is supported for rendering, or null if not found.
     Pass* GetSupportedPass(unsigned passIndex) const
@@ -273,20 +273,20 @@ public:
     }
 
     /// Return a supported pass by name. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    Pass* GetSupportedPass(const String& name) const;
+    Pass* GetSupportedPass(const stl::string& name) const;
 
     /// Return number of passes.
     unsigned GetNumPasses() const;
     /// Return all pass names.
-    stl::vector<String> GetPassNames() const;
+    stl::vector<stl::string> GetPassNames() const;
     /// Return all passes.
     stl::vector<Pass*> GetPasses() const;
 
     /// Return a clone with added shader compilation defines. Called internally by Material.
-    stl::shared_ptr<Technique> CloneWithDefines(const String& vsDefines, const String& psDefines);
+    stl::shared_ptr<Technique> CloneWithDefines(const stl::string& vsDefines, const stl::string& psDefines);
 
     /// Return a pass type index by name. Allocate new if not used yet.
-    static unsigned GetPassIndex(const String& passName);
+    static unsigned GetPassIndex(const stl::string& passName);
 
     /// Index for base pass. Initialized once GetPassIndex() has been called for the first time.
     static unsigned basePassIndex;
@@ -316,7 +316,7 @@ private:
     HashMap<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
 
     /// Pass index assignments.
-    static HashMap<String, unsigned> passIndices;
+    static HashMap<stl::string, unsigned> passIndices;
 };
 
 }

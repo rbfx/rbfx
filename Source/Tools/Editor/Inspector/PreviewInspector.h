@@ -45,7 +45,7 @@ public:
     /// Copy effects from specified render path.
     void SetEffectSource(RenderPath* renderPath);
     /// Set preview model by passing a resource name.
-    void SetModel(const String& resourceName);
+    void SetModel(const stl::string& resourceName);
     /// Set preview model by passing model resourcei nstance.
     void SetModel(Model* model);
 

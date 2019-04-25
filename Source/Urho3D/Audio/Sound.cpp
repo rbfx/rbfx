@@ -341,7 +341,7 @@ unsigned Sound::GetSampleSize() const
 void Sound::LoadParameters()
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    String xmlName = ReplaceExtension(GetName(), ".xml");
+    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
 
     stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (!file)
@@ -352,7 +352,7 @@ void Sound::LoadParameters()
 
     for (XMLElement paramElem = rootElem.GetChild(); paramElem; paramElem = paramElem.GetNext())
     {
-        String name = paramElem.GetName();
+        stl::string name = paramElem.GetName();
 
         if (name == "format" && !compressed_)
         {

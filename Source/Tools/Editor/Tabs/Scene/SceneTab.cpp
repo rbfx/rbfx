@@ -321,7 +321,7 @@ void SceneTab::OnAfterEnd()
     ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
-bool SceneTab::LoadResource(const String& resourcePath)
+bool SceneTab::LoadResource(const stl::string& resourcePath)
 {
     Undo::SetTrackingScoped noTrack(undo_, false);
 
@@ -337,19 +337,19 @@ bool SceneTab::LoadResource(const String& resourcePath)
     manager->SetActiveScene(scene);
 
     bool loaded = false;
-    if (resourcePath.EndsWith(".xml", false))
+    if (resourcePath.ends_with(".xml", false))
     {
         auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
         loaded = file && scene->LoadXML(file->GetRoot());
     }
-    else if (resourcePath.EndsWith(".json", false))
+    else if (resourcePath.ends_with(".json", false))
     {
         auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
         loaded = file && scene->LoadJSON(file->GetRoot());
     }
     else
     {
-        URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).CString());
+        URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).c_str());
         manager->UnloadScene(scene);
         GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
@@ -357,7 +357,7 @@ bool SceneTab::LoadResource(const String& resourcePath)
 
     if (!loaded)
     {
-        URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).CString());
+        URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).c_str());
         manager->UnloadScene(scene);
         GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
@@ -385,7 +385,7 @@ bool SceneTab::SaveResource()
     GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
 
     auto fullPath = GetCache()->GetResourceFileName(resourceName_);
-    if (fullPath.Empty())
+    if (fullPath.empty())
         return false;
 
     File file(context_, fullPath, FILE_WRITE);
@@ -394,9 +394,9 @@ bool SceneTab::SaveResource()
     float elapsed = GetScene()->GetElapsedTime();
     GetScene()->SetElapsedTime(0);
     GetScene()->SetUpdateEnabled(true);
-    if (fullPath.EndsWith(".xml", false))
+    if (fullPath.ends_with(".xml", false))
         result = GetScene()->SaveXML(file);
-    else if (fullPath.EndsWith(".json", false))
+    else if (fullPath.ends_with(".json", false))
         result = GetScene()->SaveJSON(file);
     GetScene()->SetUpdateEnabled(false);
     GetScene()->SetElapsedTime(elapsed);
@@ -404,7 +404,7 @@ bool SceneTab::SaveResource()
     if (result)
         SendEvent(E_EDITORRESOURCESAVED);
     else
-        URHO3D_LOGERRORF("Saving scene to %s failed.", resourceName_.CString());
+        URHO3D_LOGERRORF("Saving scene to %s failed.", resourceName_.c_str());
 
     return result;
 }
@@ -633,7 +633,7 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node == scrollTo_.get())
         ui::SetScrollHereY();
 
-    String name = node->GetName().Empty() ? ToString("%s %d", node->GetTypeName().CString(), node->GetID()) : node->GetName();
+    stl::string name = node->GetName().empty() ? ToString("%s %d", node->GetTypeName().c_str(), node->GetID()) : node->GetName();
     bool isSelected = IsSelected(node);
 
     if (isSelected)
@@ -642,13 +642,13 @@ void SceneTab::RenderNodeTree(Node* node)
     ui::Image("Node");
     ui::SameLine();
     ui::PushID((void*)node);
-    auto opened = ui::TreeNodeEx(name.CString(), flags);
+    auto opened = ui::TreeNodeEx(name.c_str(), flags);
     auto it = openHierarchyNodes_.find(node);
     if (it != openHierarchyNodes_.end())
     {
         if (!opened)
         {
-            ui::OpenTreeNode(ui::GetCurrentWindow()->GetID(name.CString()));
+            ui::OpenTreeNode(ui::GetCurrentWindow()->GetID(name.c_str()));
             opened = true;
         }
         openHierarchyNodes_.erase(it);
@@ -657,7 +657,7 @@ void SceneTab::RenderNodeTree(Node* node)
     if (ui::BeginDragDropSource())
     {
         ui::SetDragDropVariant("ptr", node);
-        ui::Text("%s", name.CString());
+        ui::Text("%s", name.c_str());
         ui::EndDragDropSource();
     }
 
@@ -683,7 +683,7 @@ void SceneTab::RenderNodeTree(Node* node)
         // ID is pushed. This creates a situation where context menu is not properly attached to said tree node due to
         // missing ID on the stack. To correct this we ensure that ID is always pushed. This allows us to show context
         // menus even for closed tree nodes.
-        ui::PushID(name.CString());
+        ui::PushID(name.c_str());
     }
 
     // Popup may delete node. Weak reference will convey that information.
@@ -726,7 +726,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 ui::SameLine();
 
                 bool selected = stl::contains(selectedComponents_, component);
-                ui::Selectable(component->GetTypeName().CString(), selected);
+                ui::Selectable(component->GetTypeName().c_str(), selected);
 
                 if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
                 {
@@ -970,7 +970,7 @@ void SceneTab::RenderNodeContextMenu()
                 {
                     if (!selectedNode.expired())
                     {
-                        newNodes.push_back(selectedNode->CreateChild(String::EMPTY, alternative ? LOCAL : REPLICATED));
+                        newNodes.push_back(selectedNode->CreateChild(EMPTY_STRING, alternative ? LOCAL : REPLICATED));
                         openHierarchyNodes_.push_back(selectedNode);
                         openHierarchyNodes_.push_back(newNodes.back());
                         scrollTo_ = newNodes.back();
@@ -987,21 +987,21 @@ void SceneTab::RenderNodeContextMenu()
                 auto categories = context_->GetObjectCategories().Keys();
                 categories.erase_first("UI");
 
-                for (const String& category : categories)
+                for (const stl::string& category : categories)
                 {
                     auto components = editor->GetObjectsByCategory(category);
                     if (components.empty())
                         continue;
 
-                    if (ui::BeginMenu(category.CString()))
+                    if (ui::BeginMenu(category.c_str()))
                     {
                         stl::quick_sort(components.begin(), components.end());
 
-                        for (const String& component : components)
+                        for (const stl::string& component : components)
                         {
                             ui::Image(component);
                             ui::SameLine();
-                            if (ui::MenuItem(component.CString()))
+                            if (ui::MenuItem(component.c_str()))
                             {
                                 for (auto& selectedNode : GetSelection())
                                 {
@@ -1151,7 +1151,7 @@ void SceneTab::AddComponentIcon(Component* component)
     Node* node = component->GetNode();
 
     if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__") ||
-        (node->GetName().StartsWith("__") && node->GetName().EndsWith("__")))
+        (node->GetName().starts_with("__") && node->GetName().ends_with("__")))
         return;
 
     auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);

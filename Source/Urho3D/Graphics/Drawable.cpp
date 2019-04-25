@@ -451,7 +451,8 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                 continue;
             if (geo->GetPrimitiveType() != TRIANGLE_LIST)
             {
-                URHO3D_LOGERRORF("%s (%u) %s (%u) Geometry %u contains an unsupported geometry type %u", node->GetName().Length() > 0 ? node->GetName().CString() : "Node", node->GetID(), drawable->GetTypeName().CString(), drawable->GetID(), geoIndex, (unsigned)geo->GetPrimitiveType());
+                URHO3D_LOGERRORF("%s (%u) %s (%u) Geometry %u contains an unsupported geometry type %u",
+                    node->GetName().length() > 0 ? node->GetName().c_str() : "Node", node->GetID(), drawable->GetTypeName().c_str(), drawable->GetID(), geoIndex, (unsigned)geo->GetPrimitiveType());
                 continue;
             }
 
@@ -469,7 +470,8 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
             bool hasPosition = VertexBuffer::HasElement(*elements, TYPE_VECTOR3, SEM_POSITION);
             if (!hasPosition)
             {
-                URHO3D_LOGERRORF("%s (%u) %s (%u) Geometry %u contains does not have Vector3 type positions in vertex data", node->GetName().Length() > 0 ? node->GetName().CString() : "Node", node->GetID(), drawable->GetTypeName().CString(), drawable->GetID(), geoIndex);
+                URHO3D_LOGERRORF("%s (%u) %s (%u) Geometry %u contains does not have Vector3 type positions in vertex data",
+                    node->GetName().length() > 0 ? node->GetName().c_str() : "Node", node->GetID(), drawable->GetTypeName().c_str(), drawable->GetID(), geoIndex);
                 continue;
             }
 
@@ -486,7 +488,9 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
 
                 // Name NodeID DrawableType DrawableID GeometryIndex ("Geo" is included for clarity as StaticModel_32_2 could easily be misinterpreted or even quickly misread as 322)
                 // Generated object name example: Node_5_StaticModel_32_Geo_0 ... or ... Bob_5_StaticModel_32_Geo_0
-                outputFile->WriteLine(String("o ").AppendWithFormat("%s_%u_%s_%u_Geo_%u", node->GetName().Length() > 0 ? node->GetName().CString() : "Node", node->GetID(), drawable->GetTypeName().CString(), drawable->GetID(), geoIndex));
+                outputFile->WriteLine(stl::string("o ").append_sprintf("%s_%u_%s_%u_Geo_%u",
+                    node->GetName().length() > 0 ? node->GetName().c_str() : "Node", node->GetID(),
+                    drawable->GetTypeName().c_str(), drawable->GetID(), geoIndex));
 
                 // Write vertex position
                 unsigned positionOffset = VertexBuffer::GetElementOffset(*elements, TYPE_VECTOR3, SEM_POSITION);
@@ -504,7 +508,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                         vertexPosition.y_ = vertexPosition.z_;
                         vertexPosition.z_ = yVal;
                     }
-                    outputFile->WriteLine("v " + String(vertexPosition));
+                    outputFile->WriteLine("v " + vertexPosition.ToString());
                 }
 
                 if (hasNormals)
@@ -525,7 +529,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                             vertexNormal.z_ = yVal;
                         }
 
-                        outputFile->WriteLine("vn " + String(vertexNormal));
+                        outputFile->WriteLine("vn " + vertexNormal.ToString());
                     }
                 }
 
@@ -538,12 +542,12 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                     for (unsigned j = 0; j < vertexCount; ++j)
                     {
                         Vector2 uvCoords = *((const Vector2*)(&vertexData[(vertexStart + j) * elementSize + texCoordOffset]));
-                        outputFile->WriteLine("vt " + String(uvCoords));
+                        outputFile->WriteLine("vt " + uvCoords.ToString());
                     }
                 }
 
                 // If we don't have UV but have normals then must write a double-slash to indicate the absence of UV coords, otherwise use a single slash
-                const String slashCharacter = hasNormals ? "//" : "/";
+                const stl::string slashCharacter = hasNormals ? "//" : "/";
 
                 // Amount by which to offset indices in the OBJ vs their values in the Urho3D geometry, basically the lowest index value
                 // Compensates for the above vertex writing which doesn't write ALL vertices, just the used ones
@@ -579,40 +583,28 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                         longIndices[2] = indices[2] - indexOffset;
                     }
 
-                    String output = "f ";
+                    stl::string output = "f ";
                     if (hasNormals)
                     {
-                        output.AppendWithFormat("%l/%l/%l %l/%l/%l %l/%l/%l",
-                            currentPositionIndex + longIndices[0],
-                            currentUVIndex + longIndices[0],
-                            currentNormalIndex + longIndices[0],
-                            currentPositionIndex + longIndices[1],
-                            currentUVIndex + longIndices[1],
-                            currentNormalIndex + longIndices[1],
-                            currentPositionIndex + longIndices[2],
-                            currentUVIndex + longIndices[2],
-                            currentNormalIndex + longIndices[2]);
+                        output.append_sprintf("%l/%l/%l %l/%l/%l %l/%l/%l", currentPositionIndex + longIndices[0],
+                            currentUVIndex + longIndices[0], currentNormalIndex + longIndices[0],
+                            currentPositionIndex + longIndices[1], currentUVIndex + longIndices[1],
+                            currentNormalIndex + longIndices[1], currentPositionIndex + longIndices[2],
+                            currentUVIndex + longIndices[2], currentNormalIndex + longIndices[2]);
                     }
                     else if (hasNormals || hasUV)
                     {
                         unsigned secondTraitIndex = hasNormals ? currentNormalIndex : currentUVIndex;
-                        output.AppendWithFormat("%l%s%l %l%s%l %l%s%l",
-                            currentPositionIndex + longIndices[0],
-                            slashCharacter.CString(),
-                            secondTraitIndex + longIndices[0],
-                            currentPositionIndex + longIndices[1],
-                            slashCharacter.CString(),
-                            secondTraitIndex + longIndices[1],
-                            currentPositionIndex + longIndices[2],
-                            slashCharacter.CString(),
-                            secondTraitIndex + longIndices[2]);
+                        output.append_sprintf("%l%s%l %l%s%l %l%s%l", currentPositionIndex + longIndices[0],
+                            slashCharacter.c_str(), secondTraitIndex + longIndices[0],
+                            currentPositionIndex + longIndices[1], slashCharacter.c_str(),
+                            secondTraitIndex + longIndices[1], currentPositionIndex + longIndices[2],
+                            slashCharacter.c_str(), secondTraitIndex + longIndices[2]);
                     }
                     else
                     {
-                        output.AppendWithFormat("%l %l %l",
-                            currentPositionIndex + longIndices[0],
-                            currentPositionIndex + longIndices[1],
-                            currentPositionIndex + longIndices[2]);
+                        output.append_sprintf("%l %l %l", currentPositionIndex + longIndices[0],
+                            currentPositionIndex + longIndices[1], currentPositionIndex + longIndices[2]);
                     }
                     outputFile->WriteLine(output);
                 }

@@ -55,23 +55,23 @@ public:
     /// Save resource with default indentation (one tab). Return true if successful.
     bool Save(Serializer& dest) const override;
     /// Save resource with user-defined indentation. Return true if successful.
-    bool Save(Serializer& dest, const String& indentation) const;
+    bool Save(Serializer& dest, const stl::string& indentation) const;
 
     /// Deserialize from a string. Return true if successful.
-    bool FromString(const String& source);
+    bool FromString(const stl::string& source);
     /// Clear the document and create a root element.
-    XMLElement CreateRoot(const String& name);
+    XMLElement CreateRoot(const stl::string& name);
     /// Get the root element if it has matching name, otherwise create it and clear the document.
-    XMLElement GetOrCreateRoot(const String& name);
+    XMLElement GetOrCreateRoot(const stl::string& name);
 
     /// Return the root element, with optionally specified name. Return null element if not found.
-    XMLElement GetRoot(const String& name = String::EMPTY);
+    XMLElement GetRoot(const stl::string& name = EMPTY_STRING);
 
     /// Return the pugixml document.
     pugi::xml_document* GetDocument() const { return document_.get(); }
 
     /// Serialize the XML content to a string.
-    String ToString(const String& indentation = "\t") const;
+    stl::string ToString(const stl::string& indentation = "\t") const;
 
     /// Patch the XMLFile with another XMLFile. Based on RFC 5261.
     void Patch(XMLFile* patchFile);

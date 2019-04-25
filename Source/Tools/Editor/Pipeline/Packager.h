@@ -32,8 +32,8 @@ namespace Urho3D
 
 struct FileEntry
 {
-    String root_;
-    String name_;
+    stl::string root_;
+    stl::string name_;
     unsigned offset_{};
     unsigned size_{};
     unsigned checksum_{};
@@ -46,9 +46,9 @@ public:
     ///
     explicit Packager(Context* context);
     ///
-    bool OpenPackage(const String& path);
+    bool OpenPackage(const stl::string& path);
     ///
-    void AddFile(const String& root, const String& path);
+    void AddFile(const stl::string& root, const stl::string& path);
     ///
     void Write();
     ///

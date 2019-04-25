@@ -57,11 +57,11 @@ public:
     /// Suspend sound output.
     void Stop();
     /// Set master gain on a specific sound type such as sound effects, music or voice.
-    void SetMasterGain(const String& type, float gain);
+    void SetMasterGain(const stl::string& type, float gain);
     /// Pause playback of specific sound type. This allows to suspend e.g. sound effects or voice when the game is paused. By default all sound types are unpaused.
-    void PauseSoundType(const String& type);
+    void PauseSoundType(const stl::string& type);
     /// Resume playback of specific sound type.
-    void ResumeSoundType(const String& type);
+    void ResumeSoundType(const stl::string& type);
     /// Resume playback of all sound types.
     void ResumeAll();
     /// Set active sound listener for 3D sounds.
@@ -88,10 +88,10 @@ public:
     bool IsInitialized() const { return deviceID_ != 0; }
 
     /// Return master gain for a specific sound source type. Unknown sound types will return full gain (1).
-    float GetMasterGain(const String& type) const;
+    float GetMasterGain(const stl::string& type) const;
 
     /// Return whether specific sound type has been paused.
-    bool IsSoundTypePaused(const String& type) const;
+    bool IsSoundTypePaused(const stl::string& type) const;
 
     /// Return active sound listener.
     SoundListener* GetListener() const;
@@ -100,7 +100,7 @@ public:
     const stl::vector<SoundSource*>& GetSoundSources() const { return soundSources_; }
 
     /// Return whether the specified master gain has been defined.
-    bool HasMasterGain(const String& type) const { return masterGain_.Contains(type); }
+    bool HasMasterGain(const stl::string& type) const { return masterGain_.Contains(type); }
 
     /// Add a sound source to keep track of. Called by SoundSource.
     void AddSoundSource(SoundSource* soundSource);

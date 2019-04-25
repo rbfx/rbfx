@@ -322,11 +322,11 @@ Quaternion Quaternion::Nlerp(const Quaternion& rhs, float t, bool shortestPath) 
     return result;
 }
 
-String Quaternion::ToString() const
+stl::string Quaternion::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g %g", w_, x_, y_, z_);
-    return String(tempBuffer);
+    return stl::string(tempBuffer);
 }
 
 }

@@ -241,8 +241,8 @@ void Vehicle::PostUpdate(float timeStep)
                 particleEmitter->SetEmitting(true);
             }
             URHO3D_LOGDEBUG("GetWheelSkidInfoCumulative() = " +
-                            String(vehicle->GetWheelSkidInfoCumulative(i)) + " " +
-                            String(vehicle->GetMaxSideSlipSpeed()));
+                            stl::to_string(vehicle->GetWheelSkidInfoCumulative(i)) + " " +
+                            stl::to_string(vehicle->GetMaxSideSlipSpeed()));
             /* TODO: Add skid marks here */
         }
         else if (particleEmitter->IsEmitting())

@@ -49,7 +49,7 @@ Console::Console(Context* context) :
 
     SetNumHistoryRows(historyRows_);
     VariantMap dummy;
-    HandleScreenMode(nullptr, dummy);
+    HandleScreenMode(StringHash::ZERO, dummy);
     RefreshInterpreters();
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Console, HandleScreenMode));
@@ -102,7 +102,7 @@ void Console::RefreshInterpreters()
     if (!group || group->receivers_.empty())
         return;
 
-    String currentInterpreterName;
+    stl::string currentInterpreterName;
     if (currentInterpreter_ < interpreters_.size())
         currentInterpreterName = interpreters_[currentInterpreter_];
 
@@ -112,7 +112,7 @@ void Console::RefreshInterpreters()
         if (receiver)
         {
             interpreters_.push_back(receiver->GetTypeName());
-            interpretersPointers_.push_back(interpreters_.back().CString());
+            interpretersPointers_.push_back(interpreters_.back().c_str());
         }
     }
     stl::quick_sort(interpreters_.begin(), interpreters_.end());
@@ -128,11 +128,11 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 
     auto level = (LogLevel)eventData[P_LEVEL].GetInt();
     time_t timestamp = eventData[P_TIME].GetUInt();
-    const String& logger = eventData[P_LOGGER].GetString();
-    const String& message = eventData[P_MESSAGE].GetString();
+    const stl::string& logger = eventData[P_LOGGER].GetString();
+    const stl::string& message = eventData[P_MESSAGE].GetString();
 
     // The message may be multi-line, so split to rows in that case
-    stl::vector<String> rows = message.Split('\n');
+    stl::vector<stl::string> rows = message.split('\n');
     for (const auto& row : rows)
         history_.push_back(LogEntry{level, timestamp, logger, row});
     scrollToEnd_ = true;
@@ -186,8 +186,8 @@ void Console::RenderContent()
             break;
         }
 
-        ui::TextColored(color, "[%s] [%s] [%s] : %s", Time::GetTimeStamp(row.timestamp_, "%H:%M:%S").CString(),
-            debugLevel, row.logger_.CString(), row.message_.CString());
+        ui::TextColored(color, "[%s] [%s] [%s] : %s", Time::GetTimeStamp(row.timestamp_, "%H:%M:%S").c_str(),
+            debugLevel, row.logger_.c_str(), row.message_.c_str());
     }
 
     if (scrollToEnd_)
@@ -216,11 +216,11 @@ void Console::RenderContent()
         if (ui::InputText("##ConsoleInput", inputBuffer_, sizeof(inputBuffer_), ImGuiInputTextFlags_EnterReturnsTrue))
         {
             focusInput_ = true;
-            String line(inputBuffer_);
-            if (line.Length() && currentInterpreter_ < interpreters_.size())
+            stl::string line(inputBuffer_);
+            if (line.length() && currentInterpreter_ < interpreters_.size())
             {
                 // Store to history, then clear the lineedit
-                URHO3D_LOGINFOF("> %s", line.CString());
+                URHO3D_LOGINFOF("> %s", line.c_str());
                 if (history_.size() > historyRows_)
                     history_.pop_front();
                 scrollToEnd_ = true;
@@ -273,7 +273,7 @@ void Console::Clear()
     history_.clear();
 }
 
-void Console::SetCommandInterpreter(const String& interpreter)
+void Console::SetCommandInterpreter(const stl::string& interpreter)
 {
     RefreshInterpreters();
 
@@ -292,20 +292,20 @@ void Console::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 
 StringVector Console::GetLoggers() const
 {
-    stl::hash_set<String> loggers;
+    stl::hash_set<stl::string> loggers;
     StringVector loggersVector;
 
     for (const auto& row : history_)
         loggers.insert(row.logger_);
 
-    for (const String& logger : loggers)
+    for (const stl::string& logger : loggers)
         loggersVector.emplace_back(logger);
 
     stl::quick_sort(loggersVector.begin(), loggersVector.end());
     return loggersVector;
 }
 
-void Console::SetLoggerVisible(const String& loggerName, bool visible)
+void Console::SetLoggerVisible(const stl::string& loggerName, bool visible)
 {
     scrollToEnd_ = true;
     if (visible)
@@ -314,7 +314,7 @@ void Console::SetLoggerVisible(const String& loggerName, bool visible)
         loggersHidden_.insert(loggerName);
 }
 
-bool Console::GetLoggerVisible(const String& loggerName) const
+bool Console::GetLoggerVisible(const stl::string& loggerName) const
 {
     return !stl::contains(loggersHidden_, loggerName);
 }

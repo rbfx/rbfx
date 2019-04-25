@@ -263,7 +263,7 @@ void Image::RegisterObject(Context* context)
 bool Image::BeginLoad(Deserializer& source)
 {
     // Check for DDS, KTX or PVR compressed format
-    String fileID = source.ReadFileID();
+    stl::string fileID = source.ReadFileID();
 
     if (fileID == "DDS ")
     {
@@ -845,7 +845,7 @@ bool Image::BeginLoad(Deserializer& source)
         unsigned char* pixelData = GetImageData(source, width, height, components);
         if (!pixelData)
         {
-            URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + String(stbi_failure_reason()));
+            URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + stl::string(stbi_failure_reason()));
             return false;
         }
         SetSize(width, height, components);
@@ -879,18 +879,18 @@ bool Image::Save(Serializer& dest) const
     return success;
 }
 
-bool Image::SaveFile(const String& fileName) const
+bool Image::SaveFile(const stl::string& fileName) const
 {
-    if (fileName.EndsWith(".dds", false))
+    if (fileName.ends_with(".dds", false))
         return SaveDDS(fileName);
-    else if (fileName.EndsWith(".bmp", false))
+    else if (fileName.ends_with(".bmp", false))
         return SaveBMP(fileName);
-    else if (fileName.EndsWith(".jpg", false) || fileName.EndsWith(".jpeg", false))
+    else if (fileName.ends_with(".jpg", false) || fileName.ends_with(".jpeg", false))
         return SaveJPG(fileName, 100);
-    else if (fileName.EndsWith(".tga", false))
+    else if (fileName.ends_with(".tga", false))
         return SaveTGA(fileName);
 #ifdef URHO3D_WEBP
-    else if (fileName.EndsWith(".webp", false))
+    else if (fileName.ends_with(".webp", false))
         return SaveWEBP(fileName, 100.0f);
 #endif
     else
@@ -990,7 +990,7 @@ void Image::SetData(const unsigned char* pixelData)
 
 bool Image::LoadColorLUT(Deserializer& source)
 {
-    String fileID = source.ReadFileID();
+    stl::string fileID = source.ReadFileID();
 
     if (fileID == "DDS " || fileID == "\253KTX" || fileID == "PVR\3")
     {
@@ -1004,7 +1004,7 @@ bool Image::LoadColorLUT(Deserializer& source)
     unsigned char* pixelDataIn = GetImageData(source, width, height, components);
     if (!pixelDataIn)
     {
-        URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + String(stbi_failure_reason()));
+        URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + stl::string(stbi_failure_reason()));
         return false;
     }
     if (components != 3)
@@ -1257,7 +1257,7 @@ void Image::ClearInt(unsigned uintColor)
     }
 }
 
-bool Image::SaveBMP(const String& fileName) const
+bool Image::SaveBMP(const stl::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageBMP");
 
@@ -1275,12 +1275,12 @@ bool Image::SaveBMP(const String& fileName) const
     }
 
     if (data_)
-        return stbi_write_bmp(fileName.CString(), width_, height_, components_, data_.get()) != 0;
+        return stbi_write_bmp(fileName.c_str(), width_, height_, components_, data_.get()) != 0;
     else
         return false;
 }
 
-bool Image::SavePNG(const String& fileName) const
+bool Image::SavePNG(const stl::string& fileName) const
 {
     URHO3D_PROFILE("SaveImagePNG");
 
@@ -1291,7 +1291,7 @@ bool Image::SavePNG(const String& fileName) const
         return false;
 }
 
-bool Image::SaveTGA(const String& fileName) const
+bool Image::SaveTGA(const stl::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageTGA");
 
@@ -1309,12 +1309,12 @@ bool Image::SaveTGA(const String& fileName) const
     }
 
     if (data_)
-        return stbi_write_tga(GetNativePath(fileName).CString(), width_, height_, components_, data_.get()) != 0;
+        return stbi_write_tga(GetNativePath(fileName).c_str(), width_, height_, components_, data_.get()) != 0;
     else
         return false;
 }
 
-bool Image::SaveJPG(const String& fileName, int quality) const
+bool Image::SaveJPG(const stl::string& fileName, int quality) const
 {
     URHO3D_PROFILE("SaveImageJPG");
 
@@ -1332,12 +1332,12 @@ bool Image::SaveJPG(const String& fileName, int quality) const
     }
 
     if (data_)
-        return stbi_write_jpg(GetNativePath(fileName).CString(), width_, height_, components_, data_.get(), quality) != 0;
+        return stbi_write_jpg(GetNativePath(fileName).c_str(), width_, height_, components_, data_.get(), quality) != 0;
     else
         return false;
 }
 
-bool Image::SaveDDS(const String& fileName) const
+bool Image::SaveDDS(const stl::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageDDS");
 
@@ -1389,7 +1389,7 @@ bool Image::SaveDDS(const String& fileName) const
     return true;
 }
 
-bool Image::SaveWEBP(const String& fileName, float compression /* = 0.0f */) const
+bool Image::SaveWEBP(const stl::string& fileName, float compression /* = 0.0f */) const
 {
 #ifdef URHO3D_WEBP
     URHO3D_PROFILE("SaveImageWEBP");
@@ -1411,7 +1411,7 @@ bool Image::SaveWEBP(const String& fileName, float compression /* = 0.0f */) con
 
     if (height_ > WEBP_MAX_DIMENSION || width_ > WEBP_MAX_DIMENSION)
     {
-        URHO3D_LOGERROR("Maximum dimension supported by WebP is " + String(WEBP_MAX_DIMENSION));
+        URHO3D_LOGERROR("Maximum dimension supported by WebP is " + stl::to_string(WEBP_MAX_DIMENSION));
         return false;
     }
 
@@ -2012,8 +2012,8 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 
             if (offset + level.dataSize_ > GetMemoryUse())
             {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + String(offset) + " Size: " + String(level.dataSize_) +
-                         " Datasize: " + String(GetMemoryUse()));
+                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + stl::to_string(offset) + " Size: " + stl::to_string(level.dataSize_) +
+                         " Datasize: " + stl::to_string(GetMemoryUse()));
                 level.data_ = nullptr;
                 return level;
             }
@@ -2050,8 +2050,8 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 
             if (offset + level.dataSize_ > GetMemoryUse())
             {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + String(offset) + " Size: " + String(level.dataSize_) +
-                         " Datasize: " + String(GetMemoryUse()));
+                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + stl::to_string(offset) + " Size: " + stl::to_string(level.dataSize_) +
+                         " Datasize: " + stl::to_string(GetMemoryUse()));
                 level.data_ = nullptr;
                 return level;
             }
@@ -2088,8 +2088,8 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 
             if (offset + level.dataSize_ > GetMemoryUse())
             {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + String(offset) + " Size: " + String(level.dataSize_) +
-                         " Datasize: " + String(GetMemoryUse()));
+                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + stl::to_string(offset) + " Size: " + stl::to_string(level.dataSize_) +
+                         " Datasize: " + stl::to_string(GetMemoryUse()));
                 level.data_ = nullptr;
                 return level;
             }

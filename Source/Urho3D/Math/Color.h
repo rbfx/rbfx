@@ -22,12 +22,12 @@
 
 #pragma once
 
+#include <EASTL/string.h>
+
 #include "../Math/Vector4.h"
 
 namespace Urho3D
 {
-
-class String;
 
 /// RGBA color.
 class URHO3D_API Color
@@ -184,7 +184,7 @@ public:
     }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     /// Return color packed to a 32-bit integer, with B component in the lowest 8 bits. Components are clamped to [0, 1] range.
     unsigned ToUIntArgb() const;

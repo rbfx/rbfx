@@ -75,24 +75,24 @@ void CookScene::Execute()
                 component->Remove();
 
             // Cook scene
-            assert(input_.StartsWith(project->GetResourcePath()));
-            auto resourceName = input_.Substring(project->GetResourcePath().Length());
+            assert(input_.starts_with(project->GetResourcePath()));
+            auto resourceName = input_.substr(project->GetResourcePath().length());
             GetFileSystem()->CreateDirsRecursive(GetPath(output_));
 
             File output(context_);
             if (output.Open(output_, FILE_WRITE))
             {
                 if (!scene.Save(output))
-                    GetSubsystem<Editor>()->ErrorExit(Format("Could not convert '%s' to binary version.", input_.CString()));
+                    GetSubsystem<Editor>()->ErrorExit(Format("Could not convert '%s' to binary version.", input_.c_str()));
             }
             else
-                GetSubsystem<Editor>()->ErrorExit(Format("Could not open '%s' for writing.", output_.CString()));
+                GetSubsystem<Editor>()->ErrorExit(Format("Could not open '%s' for writing.", output_.c_str()));
         }
         else
-            GetSubsystem<Editor>()->ErrorExit(Format("Could not open load scene '%s'.", input_.CString()));
+            GetSubsystem<Editor>()->ErrorExit(Format("Could not open load scene '%s'.", input_.c_str()));
     }
     else
-        GetSubsystem<Editor>()->ErrorExit(Format("Could not open open '%s' for reading.", input_.CString()));
+        GetSubsystem<Editor>()->ErrorExit(Format("Could not open open '%s' for reading.", input_.c_str()));
 }
 
 }

@@ -46,33 +46,33 @@ public:
     int GetLanguageIndex() const { return languageIndex_; }
 
     /// Return the index number of language. The index is determined by the order of loading.
-    int GetLanguageIndex(const String& language);
+    int GetLanguageIndex(const stl::string& language);
     /// Return the name of current language.
-    String GetLanguage();
+    stl::string GetLanguage();
     /// Return the name of language.
-    String GetLanguage(int index);
+    stl::string GetLanguage(int index);
     /// Set current language.
     void SetLanguage(int index);
     /// Set current language.
-    void SetLanguage(const String& language);
-    /// Return a string in the current language. Returns String::EMPTY if id is empty. Returns id if translation is not found and logs a warning.
-    String Get(const String& id, int index=-1);
+    void SetLanguage(const stl::string& language);
+    /// Return a string in the current language. Returns EMPTY_STRING if id is empty. Returns id if translation is not found and logs a warning.
+    stl::string Get(const stl::string& id, int index=-1);
     /// Clear all loaded strings.
     void Reset();
     /// Load strings from JSONFile. The file should be UTF8 without BOM.
-    void LoadJSONFile(const String& name, const String language = String::EMPTY);
+    void LoadJSONFile(const stl::string& name, const stl::string language = EMPTY_STRING);
     /// Load strings from JSONValue.
     void LoadMultipleLanguageJSON(const JSONValue& source);
     /// Load strings from JSONValue for specific language.
-    void LoadSingleLanguageJSON(const JSONValue& source, const String& language = String::EMPTY);
+    void LoadSingleLanguageJSON(const JSONValue& source, const stl::string& language = EMPTY_STRING);
 
 private:
     /// Language names.
-    stl::vector<String> languages_;
+    stl::vector<stl::string> languages_;
     /// Index of current language.
     int languageIndex_;
     /// Storage strings: <Language <StringId, Value> >.
-    HashMap<StringHash, HashMap<StringHash, String> > strings_;
+    HashMap<StringHash, HashMap<StringHash, stl::string> > strings_;
 };
 
 }

@@ -126,7 +126,7 @@ void Serializable::OnSetAttribute(const AttributeInfo& attr, const Variant& src)
         break;
 
     case VAR_STRING:
-        *(reinterpret_cast<String*>(dest)) = src.GetString();
+        *(reinterpret_cast<stl::string*>(dest)) = src.GetString();
         break;
 
     case VAR_BUFFER:
@@ -235,7 +235,7 @@ void Serializable::OnGetAttribute(const AttributeInfo& attr, Variant& dest) cons
         break;
 
     case VAR_STRING:
-        dest = *(reinterpret_cast<const String*>(src));
+        dest = *(reinterpret_cast<const stl::string*>(src));
         break;
 
     case VAR_BUFFER:
@@ -362,27 +362,27 @@ bool Serializable::LoadXML(const XMLElement& source)
 
     while (attrElem)
     {
-        String name = attrElem.GetAttribute("name");
+        stl::string name = attrElem.GetAttribute("name");
         unsigned i = startIndex;
         unsigned attempts = attributes->size();
 
         while (attempts)
         {
             const AttributeInfo& attr = attributes->at(i);
-            if ((attr.mode_ & AM_FILE) && !attr.name_.Compare(name, true))
+            if ((attr.mode_ & AM_FILE) && !attr.name_.compare(name))
             {
                 Variant varValue;
 
                 // If enums specified, do enum lookup and int assignment. Otherwise assign the variant directly
                 if (attr.enumNames_ && attr.type_ == VAR_INT)
                 {
-                    String value = attrElem.GetAttribute("value");
+                    stl::string value = attrElem.GetAttribute("value");
                     bool enumFound = false;
                     int enumValue = 0;
                     const char** enumPtr = attr.enumNames_;
                     while (*enumPtr)
                     {
-                        if (!value.Compare(*enumPtr, false))
+                        if (!value.comparei(*enumPtr))
                         {
                             enumFound = true;
                             break;
@@ -449,7 +449,7 @@ bool Serializable::LoadJSON(const JSONValue& source)
 
     for (JSONObject::ConstIterator it = attributesObject.Begin(); it != attributesObject.End();)
     {
-        String name = it->first_;
+        stl::string name = it->first_;
         const JSONValue& value = it->second_;
         unsigned i = startIndex;
         unsigned attempts = attributes->size();
@@ -457,20 +457,20 @@ bool Serializable::LoadJSON(const JSONValue& source)
         while (attempts)
         {
             const AttributeInfo& attr = attributes->at(i);
-            if ((attr.mode_ & AM_FILE) && !attr.name_.Compare(name, true))
+            if ((attr.mode_ & AM_FILE) && !attr.name_.compare(name))
             {
                 Variant varValue;
 
                 // If enums specified, do enum lookup ad int assignment. Otherwise assign variant directly
                 if (attr.enumNames_ && attr.type_ == VAR_INT)
                 {
-                    const String& valueStr = value.GetString();
+                    const stl::string& valueStr = value.GetString();
                     bool enumFound = false;
                     int enumValue = 0;
                     const char** enumPtr = attr.enumNames_;
                     while (*enumPtr)
                     {
-                        if (!valueStr.Compare(*enumPtr, false))
+                        if (!valueStr.comparei(*enumPtr))
                         {
                             enumFound = true;
                             break;
@@ -589,7 +589,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
     return true;
 }
 
-bool Serializable::Load(const String& resourceName)
+bool Serializable::Load(const stl::string& resourceName)
 {
     stl::shared_ptr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
     if (file)
@@ -597,7 +597,7 @@ bool Serializable::Load(const String& resourceName)
     return false;
 }
 
-bool Serializable::LoadXML(const String& resourceName)
+bool Serializable::LoadXML(const stl::string& resourceName)
 {
     stl::shared_ptr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
     if (file)
@@ -605,7 +605,7 @@ bool Serializable::LoadXML(const String& resourceName)
     return false;
 }
 
-bool Serializable::LoadJSON(const String& resourceName)
+bool Serializable::LoadJSON(const stl::string& resourceName)
 {
     stl::shared_ptr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
     if (file)
@@ -613,13 +613,13 @@ bool Serializable::LoadJSON(const String& resourceName)
     return false;
 }
 
-bool Serializable::LoadFile(const String& resourceName)
+bool Serializable::LoadFile(const stl::string& resourceName)
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     // Router may redirect to different file.
-    String realResourceName = resourceName;
+    stl::string realResourceName = resourceName;
     cache->RouteResourceName(realResourceName, RESOURCE_CHECKEXISTS);
-    String extension = GetExtension(realResourceName);
+    stl::string extension = GetExtension(realResourceName);
 
     if (extension == ".xml")
         return LoadXML(realResourceName);
@@ -658,7 +658,7 @@ bool Serializable::SetAttribute(unsigned index, const Variant& value)
     }
 }
 
-bool Serializable::SetAttribute(const String& name, const Variant& value)
+bool Serializable::SetAttribute(const stl::string& name, const Variant& value)
 {
     const stl::vector<AttributeInfo>* attributes = GetAttributes();
     if (!attributes)
@@ -669,7 +669,7 @@ bool Serializable::SetAttribute(const String& name, const Variant& value)
 
     for (auto i = attributes->begin(); i != attributes->end(); ++i)
     {
-        if (!i->name_.Compare(name, true))
+        if (!i->name_.compare(name))
         {
             // Check that the new value's type matches the attribute type
             if (value.GetType() == i->type_)
@@ -730,7 +730,7 @@ void Serializable::SetTemporary(bool enable)
     }
 }
 
-void Serializable::SetInterceptNetworkUpdate(const String& attributeName, bool enable)
+void Serializable::SetInterceptNetworkUpdate(const stl::string& attributeName, bool enable)
 {
     AllocateNetworkState();
 
@@ -741,7 +741,7 @@ void Serializable::SetInterceptNetworkUpdate(const String& attributeName, bool e
     for (unsigned i = 0; i < attributes->size(); ++i)
     {
         const AttributeInfo& attr = attributes->at(i);
-        if (!attr.name_.Compare(attributeName, true))
+        if (!attr.name_.compare(attributeName))
         {
             if (enable)
                 networkState_->interceptMask_ |= 1ULL << i;
@@ -962,7 +962,7 @@ Variant Serializable::GetAttribute(unsigned index) const
     return ret;
 }
 
-Variant Serializable::GetAttribute(const String& name) const
+Variant Serializable::GetAttribute(const stl::string& name) const
 {
     Variant ret;
 
@@ -975,7 +975,7 @@ Variant Serializable::GetAttribute(const String& name) const
 
     for (auto i = attributes->begin(); i != attributes->end(); ++i)
     {
-        if (!i->name_.Compare(name, true))
+        if (!i->name_.compare(name))
         {
             OnGetAttribute(*i, ret);
             return ret;
@@ -1005,7 +1005,7 @@ Variant Serializable::GetAttributeDefault(unsigned index) const
     return defaultValue.IsEmpty() ? attr.defaultValue_ : defaultValue;
 }
 
-Variant Serializable::GetAttributeDefault(const String& name) const
+Variant Serializable::GetAttributeDefault(const stl::string& name) const
 {
     Variant defaultValue = GetInstanceDefault(name);
     if (!defaultValue.IsEmpty())
@@ -1020,7 +1020,7 @@ Variant Serializable::GetAttributeDefault(const String& name) const
 
     for (auto i = attributes->begin(); i != attributes->end(); ++i)
     {
-        if (!i->name_.Compare(name, true))
+        if (!i->name_.compare(name))
             return i->defaultValue_;
     }
 
@@ -1041,7 +1041,7 @@ unsigned Serializable::GetNumNetworkAttributes() const
     return attributes ? attributes->size() : 0;
 }
 
-bool Serializable::GetInterceptNetworkUpdate(const String& attributeName) const
+bool Serializable::GetInterceptNetworkUpdate(const stl::string& attributeName) const
 {
     const stl::vector<AttributeInfo>* attributes = GetNetworkAttributes();
     if (!attributes)
@@ -1052,14 +1052,14 @@ bool Serializable::GetInterceptNetworkUpdate(const String& attributeName) const
     for (unsigned i = 0; i < attributes->size(); ++i)
     {
         const AttributeInfo& attr = attributes->at(i);
-        if (!attr.name_.Compare(attributeName, true))
+        if (!attr.name_.compare(attributeName))
             return interceptMask & (1ULL << i) ? true : false;
     }
 
     return false;
 }
 
-void Serializable::SetInstanceDefault(const String& name, const Variant& defaultValue)
+void Serializable::SetInstanceDefault(const stl::string& name, const Variant& defaultValue)
 {
     // Allocate the instance level default value
     if (!instanceDefaultValues_)
@@ -1067,7 +1067,7 @@ void Serializable::SetInstanceDefault(const String& name, const Variant& default
     instanceDefaultValues_->operator [](name) = defaultValue;
 }
 
-Variant Serializable::GetInstanceDefault(const String& name) const
+Variant Serializable::GetInstanceDefault(const stl::string& name) const
 {
     if (instanceDefaultValues_)
     {

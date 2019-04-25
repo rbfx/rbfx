@@ -382,7 +382,7 @@ stl::vector<Vector2> Sample2D::CreatePathFromPoints(TileMapObject2D* object, Vec
     return path;
 }
 
-void Sample2D::CreateUIContent(const String& demoTitle, int remainingLifes, int remainingCoins)
+void Sample2D::CreateUIContent(const stl::string& demoTitle, int remainingLifes, int remainingCoins)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
@@ -404,7 +404,7 @@ void Sample2D::CreateUIContent(const String& demoTitle, int remainingLifes, int 
     coinsText->SetAlignment(HA_CENTER, VA_CENTER);
     coinsText->SetFont(font, 24);
     coinsText->SetTextEffect(TE_SHADOW);
-    coinsText->SetText(String(remainingCoins));
+    coinsText->SetText(stl::to_string(remainingCoins));
 
     // Create the UI for displaying the remaining lifes
     auto* lifeUI = ui->GetRoot()->CreateChild<BorderImage>("Life");
@@ -416,7 +416,7 @@ void Sample2D::CreateUIContent(const String& demoTitle, int remainingLifes, int 
     lifeText->SetAlignment(HA_CENTER, VA_CENTER);
     lifeText->SetFont(font, 24);
     lifeText->SetTextEffect(TE_SHADOW);
-    lifeText->SetText(String(remainingLifes));
+    lifeText->SetText(stl::to_string(remainingLifes));
 
     // Create the fullscreen UI for start/end
     auto* fullUI = ui->GetRoot()->CreateChild<Window>("FullUI");
@@ -489,14 +489,14 @@ void Sample2D::HandleExitButton(StringHash eventType, VariantMap& eventData)
 
 void Sample2D::SaveScene(bool initial)
 {
-    String filename = demoFilename_;
+    stl::string filename = demoFilename_;
     if (!initial)
         filename += "InGame";
     File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_WRITE);
     scene_->SaveXML(saveFile);
 }
 
-void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const String& texture, bool animate)
+void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const stl::string& texture, bool animate)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     Node* node = scene_->CreateChild("Background");
@@ -528,7 +528,7 @@ void Sample2D::SpawnEffect(Node* node)
     particleEmitter->SetEffect(cache->GetResource<ParticleEffect2D>("Urho2D/sun.pex"));
 }
 
-void Sample2D::PlaySoundEffect(const String& soundName)
+void Sample2D::PlaySoundEffect(const stl::string& soundName)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* source = scene_->CreateComponent<SoundSource>();

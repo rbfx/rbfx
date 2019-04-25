@@ -289,7 +289,7 @@ void SortShadowQueueWork(const WorkItem* item, unsigned threadIndex)
         start->shadowSplits_[i].shadowBatches_.SortFrontToBack();
 }
 
-StringHash ParseTextureTypeXml(ResourceCache* cache, const String& filename);
+StringHash ParseTextureTypeXml(ResourceCache* cache, const stl::string& filename);
 
 View::View(Context* context) :
     Object(context),
@@ -403,7 +403,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
         const RenderPathCommand& command = renderPath_->commands_[i];
         if (!command.enabled_)
             continue;
-        if (command.depthStencilName_.Length())
+        if (command.depthStencilName_.length())
         {
             // Using a readable depth texture will disable light stencil optimizations on OpenGL, as for compatibility reasons
             // we are using a depth format without stencil channel
@@ -432,7 +432,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
             info.vertexLights_ = command.vertexLights_;
 
             // Check scenepass metadata for defining custom passes which interact with lighting
-            if (!command.metadata_.Empty())
+            if (!command.metadata_.empty())
             {
                 if (command.metadata_ == "gbuffer")
                     gBufferPassIndex_ = command.passIndex_;
@@ -457,7 +457,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
             scenePasses_.push_back(info);
         }
         // Allow a custom forward light pass
-        else if (command.type_ == CMD_FORWARDLIGHTS && !command.pass_.Empty())
+        else if (command.type_ == CMD_FORWARDLIGHTS && !command.pass_.empty())
             lightPassIndex_ = command.passIndex_ = Technique::GetPassIndex(command.pass_);
     }
 
@@ -1742,7 +1742,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
 
     while (index < command.outputs_.size())
     {
-        if (!command.outputs_[index].first.Compare("viewport", false))
+        if (!command.outputs_[index].first.comparei("viewport"))
         {
             graphics_->SetRenderTarget(index, currentRenderTarget_);
             useViewportOutput = true;
@@ -1781,7 +1781,7 @@ void View::SetRenderTargets(RenderPathCommand& command)
         ++index;
     }
 
-    if (command.depthStencilName_.Length())
+    if (command.depthStencilName_.length())
     {
         Texture* depthTexture = FindNamedTexture(command.depthStencilName_, true, false);
         if (depthTexture)
@@ -1810,11 +1810,11 @@ bool View::SetTextures(RenderPathCommand& command)
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
-        if (command.textureNames_[i].Empty())
+        if (command.textureNames_[i].empty())
             continue;
 
         // Bind the rendered output
-        if (!command.textureNames_[i].Compare("viewport", false))
+        if (!command.textureNames_[i].comparei("viewport"))
         {
             graphics_->SetTexture(i, currentViewportTexture_);
             continue;
@@ -1836,7 +1836,7 @@ bool View::SetTextures(RenderPathCommand& command)
         else
         {
             // If requesting a texture fails, clear the texture name to prevent redundant attempts
-            command.textureNames_[i] = String::EMPTY;
+            command.textureNames_[i] = EMPTY_STRING;
         }
     }
 
@@ -1845,16 +1845,16 @@ bool View::SetTextures(RenderPathCommand& command)
 
 void View::RenderQuad(RenderPathCommand& command)
 {
-    if (command.vertexShaderName_.Empty() || command.pixelShaderName_.Empty())
+    if (command.vertexShaderName_.empty() || command.pixelShaderName_.empty())
         return;
 
     // If shader can not be found, clear it from the command to prevent redundant attempts
     ShaderVariation* vs = graphics_->GetShader(VS, command.vertexShaderName_, command.vertexShaderDefines_);
     if (!vs)
-        command.vertexShaderName_ = String::EMPTY;
+        command.vertexShaderName_ = EMPTY_STRING;
     ShaderVariation* ps = graphics_->GetShader(PS, command.pixelShaderName_, command.pixelShaderDefines_);
     if (!ps)
-        command.pixelShaderName_ = String::EMPTY;
+        command.pixelShaderName_ = EMPTY_STRING;
 
     // Set shaders & shader parameters and textures
     graphics_->SetShaders(vs, ps);
@@ -1878,8 +1878,8 @@ void View::RenderQuad(RenderPathCommand& command)
         if (!renderTargets_.Contains(nameHash))
             continue;
 
-        String invSizeName = rtInfo.name_ + "InvSize";
-        String offsetsName = rtInfo.name_ + "Offsets";
+        stl::string invSizeName = rtInfo.name_ + "InvSize";
+        stl::string offsetsName = rtInfo.name_ + "Offsets";
         auto width = (float)renderTargets_[nameHash]->GetWidth();
         auto height = (float)renderTargets_[nameHash]->GetHeight();
 
@@ -1913,7 +1913,7 @@ bool View::CheckViewportRead(const RenderPathCommand& command)
 {
     for (const auto& textureName : command.textureNames_)
     {
-        if (!textureName.Empty() && !textureName.Compare("viewport", false))
+        if (!textureName.empty() && !textureName.comparei("viewport"))
             return true;
     }
 
@@ -1924,7 +1924,7 @@ bool View::CheckViewportWrite(const RenderPathCommand& command)
 {
     for (unsigned i = 0; i < command.outputs_.size(); ++i)
     {
-        if (!command.outputs_[i].first.Compare("viewport", false))
+        if (!command.outputs_[i].first.comparei("viewport"))
             return true;
     }
 
@@ -1980,13 +1980,13 @@ void View::AllocateScreenBuffers()
             hasViewportRead = true;
         if (!hasPingpong && CheckPingpong(i))
             hasPingpong = true;
-        if (command.depthStencilName_.Length())
+        if (command.depthStencilName_.length())
             hasCustomDepth = true;
         if (!hasScenePassToRTs && command.type_ == CMD_SCENEPASS)
         {
             for (unsigned j = 0; j < command.outputs_.size(); ++j)
             {
-                if (command.outputs_[j].first.Compare("viewport", false))
+                if (command.outputs_[j].first.comparei("viewport"))
                 {
                     hasScenePassToRTs = true;
                     break;
@@ -2887,9 +2887,9 @@ void View::CheckMaterialForAuxView(Material* material)
 
 void View::SetQueueShaderDefines(BatchQueue& queue, const RenderPathCommand& command)
 {
-    String vsDefines = command.vertexShaderDefines_.Trimmed();
-    String psDefines = command.pixelShaderDefines_.Trimmed();
-    if (vsDefines.Length() || psDefines.Length())
+    stl::string vsDefines = command.vertexShaderDefines_.trimmed();
+    stl::string psDefines = command.pixelShaderDefines_.trimmed();
+    if (vsDefines.length() || psDefines.length())
     {
         queue.hasExtraDefines_ = true;
         queue.vsExtraDefines_ = vsDefines;
@@ -3187,7 +3187,7 @@ void View::SendViewEvent(StringHash eventType)
     renderer_->SendEvent(eventType, eventData);
 }
 
-Texture* View::FindNamedTexture(const String& name, bool isRenderTarget, bool isVolumeMap)
+Texture* View::FindNamedTexture(const stl::string& name, bool isRenderTarget, bool isVolumeMap)
 {
     // Check rendertargets first
     StringHash nameHash(name);

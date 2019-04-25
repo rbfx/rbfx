@@ -313,7 +313,7 @@ bool DynamicNavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned ma
         return false;
     }
 
-    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + String(maxTiles) + " tiles");
+    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + stl::to_string(maxTiles) + " tiles");
 
     // Scan for obstacles to insert into us
     stl::vector<Node*> obstacles;
@@ -456,7 +456,7 @@ bool DynamicNavigationMesh::Build()
         // not doing so will cause dependent components to crash, like CrowdManager
         tileCache_->update(0, navMesh_);
 
-        URHO3D_LOGDEBUG("Built navigation mesh with " + String(numTiles) + " tiles");
+        URHO3D_LOGDEBUG("Built navigation mesh with " + stl::to_string(numTiles) + " tiles");
 
         // Send a notification event to concerned parties that we've been fully rebuilt
         {
@@ -511,7 +511,7 @@ bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 
     unsigned numTiles = BuildTiles(geometryList, IntVector2(sx, sz), IntVector2(ex, ez));
 
-    URHO3D_LOGDEBUG("Rebuilt " + String(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
@@ -536,7 +536,7 @@ bool DynamicNavigationMesh::Build(const IntVector2& from, const IntVector2& to)
 
     unsigned numTiles = BuildTiles(geometryList, from, to);
 
-    URHO3D_LOGDEBUG("Rebuilt " + String(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 

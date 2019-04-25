@@ -83,13 +83,13 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
     animElem = source.GetChild("attributeanimation");
     while (animElem)
     {
-        String name = animElem.GetAttribute("name");
+        stl::string name = animElem.GetAttribute("name");
 
         stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(animElem))
             return false;
 
-        String wrapModeString = animElem.GetAttribute("wrapmode");
+        stl::string wrapModeString = animElem.GetAttribute("wrapmode");
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -111,7 +111,7 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
 
 bool ObjectAnimation::SaveXML(XMLElement& dest) const
 {
-    for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
+    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
          i != attributeAnimationInfos_.End(); ++i)
     {
         XMLElement animElem = dest.CreateChild("attributeanimation");
@@ -142,13 +142,13 @@ bool ObjectAnimation::LoadJSON(const JSONValue& source)
 
     for (JSONObject::ConstIterator it = attributeAnimationsObject.Begin(); it != attributeAnimationsObject.End(); it++)
     {
-        String name = it->first_;
+        stl::string name = it->first_;
         JSONValue value = it->second_;
         stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(value))
             return false;
 
-        String wrapModeString = value.Get("wrapmode").GetString();
+        stl::string wrapModeString = value.Get("wrapmode").GetString();
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -170,7 +170,7 @@ bool ObjectAnimation::SaveJSON(JSONValue& dest) const
 {
     JSONValue attributeAnimationsValue;
 
-    for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
+    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
          i != attributeAnimationInfos_.End(); ++i)
     {
         JSONValue animValue;
@@ -190,7 +190,7 @@ bool ObjectAnimation::SaveJSON(JSONValue& dest) const
     return true;
 }
 
-void ObjectAnimation::AddAttributeAnimation(const String& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
+void ObjectAnimation::AddAttributeAnimation(const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
 {
     if (!attributeAnimation)
         return;
@@ -201,9 +201,9 @@ void ObjectAnimation::AddAttributeAnimation(const String& name, ValueAnimation* 
     SendAttributeAnimationAddedEvent(name);
 }
 
-void ObjectAnimation::RemoveAttributeAnimation(const String& name)
+void ObjectAnimation::RemoveAttributeAnimation(const stl::string& name)
 {
-    HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::Iterator i = attributeAnimationInfos_.Find(name);
+    HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::Iterator i = attributeAnimationInfos_.Find(name);
     if (i != attributeAnimationInfos_.End())
     {
         SendAttributeAnimationRemovedEvent(name);
@@ -218,7 +218,7 @@ void ObjectAnimation::RemoveAttributeAnimation(ValueAnimation* attributeAnimatio
     if (!attributeAnimation)
         return;
 
-    for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::Iterator i = attributeAnimationInfos_.Begin();
+    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::Iterator i = attributeAnimationInfos_.Begin();
          i != attributeAnimationInfos_.End(); ++i)
     {
         if (i->second_->GetAnimation() == attributeAnimation)
@@ -232,33 +232,33 @@ void ObjectAnimation::RemoveAttributeAnimation(ValueAnimation* attributeAnimatio
     }
 }
 
-ValueAnimation* ObjectAnimation::GetAttributeAnimation(const String& name) const
+ValueAnimation* ObjectAnimation::GetAttributeAnimation(const stl::string& name) const
 {
     ValueAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetAnimation() : nullptr;
 }
 
-WrapMode ObjectAnimation::GetAttributeAnimationWrapMode(const String& name) const
+WrapMode ObjectAnimation::GetAttributeAnimationWrapMode(const stl::string& name) const
 {
     ValueAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetWrapMode() : WM_LOOP;
 }
 
-float ObjectAnimation::GetAttributeAnimationSpeed(const String& name) const
+float ObjectAnimation::GetAttributeAnimationSpeed(const stl::string& name) const
 {
     ValueAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetSpeed() : 1.0f;
 }
 
-ValueAnimationInfo* ObjectAnimation::GetAttributeAnimationInfo(const String& name) const
+ValueAnimationInfo* ObjectAnimation::GetAttributeAnimationInfo(const stl::string& name) const
 {
-    HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Find(name);
+    HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Find(name);
     if (i != attributeAnimationInfos_.End())
         return i->second_;
     return nullptr;
 }
 
-void ObjectAnimation::SendAttributeAnimationAddedEvent(const String& name)
+void ObjectAnimation::SendAttributeAnimationAddedEvent(const stl::string& name)
 {
     using namespace AttributeAnimationAdded;
     VariantMap& eventData = GetEventDataMap();
@@ -267,7 +267,7 @@ void ObjectAnimation::SendAttributeAnimationAddedEvent(const String& name)
     SendEvent(E_ATTRIBUTEANIMATIONADDED, eventData);
 }
 
-void ObjectAnimation::SendAttributeAnimationRemovedEvent(const String& name)
+void ObjectAnimation::SendAttributeAnimationRemovedEvent(const stl::string& name)
 {
     using namespace AttributeAnimationRemoved;
     VariantMap& eventData = GetEventDataMap();

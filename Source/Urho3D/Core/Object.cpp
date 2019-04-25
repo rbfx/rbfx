@@ -295,7 +295,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 #if URHO3D_PROFILING
     URHO3D_PROFILE_C("SendEvent", PROFILER_COLOR_EVENTS);
     const auto& eventName = GetEventNameRegister().GetString(eventType);
-    URHO3D_PROFILE_ZONENAME(eventName.CString(), eventName.Length());
+    URHO3D_PROFILE_ZONENAME(eventName.c_str(), eventName.Length());
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling
@@ -411,16 +411,16 @@ bool Object::HasSubscribedToEvent(Object* sender, StringHash eventType) const
         return FindSpecificEventHandler(sender, eventType) != eventHandlers_.end();
 }
 
-const String& Object::GetCategory() const
+const stl::string& Object::GetCategory() const
 {
-    const HashMap<String, stl::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
+    const HashMap<stl::string, stl::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
     for (auto i = objectCategories.Begin(); i != objectCategories.End(); ++i)
     {
         if (i->second_.contains(GetType()))
             return i->first_;
     }
 
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 stl::intrusive_list<EventHandler>::iterator Object::FindEventHandler(StringHash eventType)

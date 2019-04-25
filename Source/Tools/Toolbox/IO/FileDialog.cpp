@@ -27,10 +27,10 @@
 namespace Urho3D
 {
 
-FileDialogResult OpenDialog(const String& filterList, const String& defaultPath, String& outPath)
+FileDialogResult OpenDialog(const stl::string& filterList, const stl::string& defaultPath, stl::string& outPath)
 {
     nfdchar_t* output = nullptr;
-    auto result = NFD_OpenDialog(filterList.CString(), defaultPath.CString(), &output);
+    auto result = NFD_OpenDialog(filterList.c_str(), defaultPath.c_str(), &output);
     if (output != nullptr)
     {
         outPath = output;
@@ -39,10 +39,10 @@ FileDialogResult OpenDialog(const String& filterList, const String& defaultPath,
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult OpenDialogMultiple(const String& filterList, const String& defaultPath, stl::vector<String>& outPaths)
+FileDialogResult OpenDialogMultiple(const stl::string& filterList, const stl::string& defaultPath, stl::vector<stl::string>& outPaths)
 {
     nfdpathset_t output{};
-    auto result = NFD_OpenDialogMultiple(filterList.CString(), defaultPath.CString(), &output);
+    auto result = NFD_OpenDialogMultiple(filterList.c_str(), defaultPath.c_str(), &output);
     if (result == NFD_OKAY)
     {
         for (size_t i = 0, end = NFD_PathSet_GetCount(&output); i < end; i++)
@@ -52,10 +52,10 @@ FileDialogResult OpenDialogMultiple(const String& filterList, const String& defa
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult SaveDialog(const String& filterList, const String& defaultPath, String& outPath)
+FileDialogResult SaveDialog(const stl::string& filterList, const stl::string& defaultPath, stl::string& outPath)
 {
     nfdchar_t* output = nullptr;
-    auto result = NFD_SaveDialog(filterList.CString(), defaultPath.CString(), &output);
+    auto result = NFD_SaveDialog(filterList.c_str(), defaultPath.c_str(), &output);
     if (output != nullptr)
     {
         outPath = output;
@@ -64,10 +64,10 @@ FileDialogResult SaveDialog(const String& filterList, const String& defaultPath,
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult PickFolder(const String& defaultPath, String& outPath)
+FileDialogResult PickFolder(const stl::string& defaultPath, stl::string& outPath)
 {
     nfdchar_t* output = nullptr;
-    auto result = NFD_PickFolder(defaultPath.CString(), &output);
+    auto result = NFD_PickFolder(defaultPath.c_str(), &output);
     if (output != nullptr)
     {
         outPath = output;

@@ -103,9 +103,9 @@ public:
     /// Write a bounding box.
     bool WriteBoundingBox(const BoundingBox& value);
     /// Write a null-terminated string.
-    bool WriteString(const String& value);
+    bool WriteString(const stl::string& value);
     /// Write a four-letter file ID. If the string is not long enough, spaces will be appended.
-    bool WriteFileID(const String& value);
+    bool WriteFileID(const stl::string& value);
     /// Write a 32-bit StringHash.
     bool WriteStringHash(const StringHash& value);
     /// Write a buffer, with size encoded as VLE.
@@ -129,7 +129,7 @@ public:
     /// Write a 24-bit network object ID.
     bool WriteNetID(unsigned value);
     /// Write a text line. Char codes 13 & 10 will be automatically appended.
-    bool WriteLine(const String& value);
+    bool WriteLine(const stl::string& value);
 };
 
 }

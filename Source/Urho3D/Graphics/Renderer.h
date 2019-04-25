@@ -414,7 +414,7 @@ public:
     void SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows, const BatchQueue& queue);
     /// Choose shaders for a deferred light volume batch.
     void SetLightVolumeBatchShaders
-        (Batch& batch, Camera* camera, const String& vsName, const String& psName, const String& vsDefines, const String& psDefines);
+        (Batch& batch, Camera* camera, const stl::string& vsName, const stl::string& psName, const stl::string& vsDefines, const stl::string& psDefines);
     /// Set cull mode while taking possible projection flipping into account.
     void SetCullMode(CullMode mode, Camera* camera);
     /// Ensure sufficient size of the instancing vertex buffer. Return true if successful.
@@ -461,7 +461,7 @@ private:
     /// Remove all occlusion and screen buffers.
     void ResetBuffers();
     /// Find variations for shadow shaders
-    String GetShadowVariations() const;
+    stl::string GetShadowVariations() const;
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle render update event.
@@ -530,7 +530,7 @@ private:
     /// Mutex for shadow camera allocation.
     Mutex rendererMutex_;
     /// Current variation names for deferred light volume shaders.
-    stl::vector<String> deferredLightPSVariations_;
+    stl::vector<stl::string> deferredLightPSVariations_;
     /// Frame info for rendering.
     FrameInfo frame_;
     /// Texture anisotropy level.

@@ -157,7 +157,7 @@ void SoundSynthesis::HandleUpdate(StringHash eventType, VariantMap& eventData)
     filter_ = Clamp(filter_, 0.01f, 1.0f);
 
     instructionText_->SetText("Use cursor up and down to control sound filtering\n"
-        "Coefficient: " + String(filter_));
+        "Coefficient: " + stl::to_string(filter_));
 
     UpdateSound();
 }

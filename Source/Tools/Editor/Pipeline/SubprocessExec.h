@@ -43,9 +43,9 @@ public:
 
 protected:
     ///
-    String executable_;
+    stl::string executable_;
     ///
-    String output_;
+    stl::string output_;
     ///
     StringVector args_;
     /// A list of glob expressions which will reschedule converted files for consumption through pipeline if matched.

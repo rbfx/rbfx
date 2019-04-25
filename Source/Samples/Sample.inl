@@ -106,8 +106,8 @@ void Sample::InitTouchInput()
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     Input* input = GetSubsystem<Input>();
     XMLFile* layout = cache->GetResource<XMLFile>("UI/ScreenJoystick_Samples.xml");
-    const String& patchString = GetScreenJoystickPatchString();
-    if (!patchString.Empty())
+    const stl::string& patchString = GetScreenJoystickPatchString();
+    if (!patchString.empty())
     {
         // Patch the screen joystick layout further on demand
         stl::shared_ptr<XMLFile> patchFile(new XMLFile(context_));
@@ -349,7 +349,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
             graphics->TakeScreenShot(screenshot);
             // Here we save in the Data folder with date and time appended
             screenshot.SavePNG(GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Screenshot_" +
-                Time::GetTimeStamp().Replaced(':', '_').Replaced('.', '_').Replaced(' ', '_') + ".png");
+                Time::GetTimeStamp().replaced(':', '_').replaced('.', '_').replaced(' ', '_') + ".png");
         }
     }
 }

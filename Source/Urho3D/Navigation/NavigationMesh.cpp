@@ -220,7 +220,7 @@ void NavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     }
 }
 
-void NavigationMesh::SetMeshName(const String& newName)
+void NavigationMesh::SetMeshName(const stl::string& newName)
 {
     meshName_ = newName;
 }
@@ -369,7 +369,7 @@ bool NavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned maxTiles)
         return false;
     }
 
-    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + String(maxTiles) + " tiles");
+    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + stl::to_string(maxTiles) + " tiles");
 
     // Send a notification event to concerned parties that we've been fully rebuilt
     {
@@ -448,7 +448,7 @@ bool NavigationMesh::Build()
         // Build each tile
         unsigned numTiles = BuildTiles(geometryList, IntVector2::ZERO, GetNumTiles() - IntVector2::ONE);
 
-        URHO3D_LOGDEBUG("Built navigation mesh with " + String(numTiles) + " tiles");
+        URHO3D_LOGDEBUG("Built navigation mesh with " + stl::to_string(numTiles) + " tiles");
 
         // Send a notification event to concerned parties that we've been fully rebuilt
         {
@@ -493,7 +493,7 @@ bool NavigationMesh::Build(const BoundingBox& boundingBox)
 
     unsigned numTiles = BuildTiles(geometryList, IntVector2(sx, sz), IntVector2(ex, ez));
 
-    URHO3D_LOGDEBUG("Rebuilt " + String(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
@@ -518,7 +518,7 @@ bool NavigationMesh::Build(const IntVector2& from, const IntVector2& to)
 
     unsigned numTiles = BuildTiles(geometryList, from, to);
 
-    URHO3D_LOGDEBUG("Rebuilt " + String(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
@@ -921,7 +921,7 @@ void NavigationMesh::SetNavigationDataAttr(const stl::vector<unsigned char>& val
             return;
     }
 
-    URHO3D_LOGDEBUG("Created navigation mesh with " + String(numTiles) + " tiles from serialized data");
+    URHO3D_LOGDEBUG("Created navigation mesh with " + stl::to_string(numTiles) + " tiles from serialized data");
     // \todo Shall we send E_NAVIGATION_MESH_REBUILT here?
 }
 

@@ -89,7 +89,7 @@ Cursor::Cursor(Context* context) :
 
 Cursor::~Cursor()
 {
-    for (HashMap<String, CursorShapeInfo>::Iterator i = shapeInfos_.Begin(); i != shapeInfos_.End(); ++i)
+    for (HashMap<stl::string, CursorShapeInfo>::Iterator i = shapeInfos_.Begin(); i != shapeInfos_.End(); ++i)
     {
         if (i->second_.osCursor_)
         {
@@ -134,7 +134,7 @@ void Cursor::DefineShape(CursorShape shape, Image* image, const IntRect& imageRe
     DefineShape(shapeNames[shape], image, imageRect, hotSpot);
 }
 
-void Cursor::DefineShape(const String& shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot)
+void Cursor::DefineShape(const stl::string& shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot)
 {
     if (!image)
         return;
@@ -169,15 +169,15 @@ void Cursor::DefineShape(const String& shape, Image* image, const IntRect& image
     // Reset current shape if it was edited
     if (shape_ == shape)
     {
-        shape_ = String::EMPTY;
+        shape_ = EMPTY_STRING;
         SetShape(shape);
     }
 }
 
 
-void Cursor::SetShape(const String& shape)
+void Cursor::SetShape(const stl::string& shape)
 {
-    if (shape == String::EMPTY || shape.Empty() || shape_ == shape || !shapeInfos_.Contains(shape))
+    if (shape == EMPTY_STRING || shape.empty() || shape_ == shape || !shapeInfos_.Contains(shape))
         return;
 
     shape_ = shape;
@@ -219,10 +219,10 @@ void Cursor::SetShapesAttr(const VariantVector& value)
 
     for (auto i = value.begin(); i != value.end(); ++i)
     {
-        VariantVector shapeVector = i->GetVariantVector();
+        const VariantVector& shapeVector = i->GetVariantVector();
         if (shapeVector.size() >= 4)
         {
-            String shape = shapeVector[0].GetString();
+            stl::string shape = shapeVector[0].GetString();
             ResourceRef ref = shapeVector[1].GetResourceRef();
             IntRect imageRect = shapeVector[2].GetIntRect();
             IntVector2 hotSpot = shapeVector[3].GetIntVector2();
@@ -236,7 +236,7 @@ VariantVector Cursor::GetShapesAttr() const
 {
     VariantVector ret;
 
-    for (HashMap<String, CursorShapeInfo>::ConstIterator i = shapeInfos_.Begin(); i != shapeInfos_.End(); ++i)
+    for (HashMap<stl::string, CursorShapeInfo>::ConstIterator i = shapeInfos_.Begin(); i != shapeInfos_.End(); ++i)
     {
         if (i->second_.imageRect_ != IntRect::ZERO)
         {

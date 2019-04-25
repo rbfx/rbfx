@@ -33,7 +33,7 @@ Urho3D::Converter::Converter(Urho3D::Context* context)
 
 void Urho3D::Converter::RegisterObject(Context* context)
 {
-    URHO3D_ATTRIBUTE("comment", String, comment_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("comment", stl::string, comment_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("kind", kind_, converterKindNames, CONVERTER_OFFLINE, AM_DEFAULT);
 }
 

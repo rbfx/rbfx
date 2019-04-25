@@ -91,8 +91,8 @@ bool ValueAnimation::LoadXML(const XMLElement& source)
     valueType_ = VAR_NONE;
     eventFrames_.clear();
 
-    String interpMethodString = source.GetAttribute("interpolationmethod");
-    auto method = (InterpMethod)GetStringListIndex(interpMethodString.CString(), interpMethodNames, IM_LINEAR);
+    stl::string interpMethodString = source.GetAttribute("interpolationmethod");
+    auto method = (InterpMethod)GetStringListIndex(interpMethodString.c_str(), interpMethodNames, IM_LINEAR);
 
     SetInterpolationMethod(method);
     if (interpolationMethod_ == IM_SPLINE)
@@ -153,8 +153,8 @@ bool ValueAnimation::LoadJSON(const JSONValue& source)
     valueType_ = VAR_NONE;
     eventFrames_.clear();
 
-    String interpMethodString = source.Get("interpolationmethod").GetString();
-    auto method = (InterpMethod)GetStringListIndex(interpMethodString.CString(), interpMethodNames, IM_LINEAR);
+    stl::string interpMethodString = source.Get("interpolationmethod").GetString();
+    auto method = (InterpMethod)GetStringListIndex(interpMethodString.c_str(), interpMethodNames, IM_LINEAR);
 
     SetInterpolationMethod(method);
     if (interpolationMethod_ == IM_SPLINE)

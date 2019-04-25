@@ -99,7 +99,7 @@ protected:
     /// List of attributes available at the moment.
     stl::vector<AttributeInfo> attributes_;
     /// Maping of effect tag to effect file.
-    HashMap<String, String> effects_;
+    HashMap<stl::string, stl::string> effects_;
 };
 
 }

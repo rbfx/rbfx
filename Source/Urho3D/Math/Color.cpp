@@ -229,11 +229,11 @@ Color Color::Lerp(const Color& rhs, float t) const
     );
 }
 
-String Color::ToString() const
+stl::string Color::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g %g", r_, g_, b_, a_);
-    return String(tempBuffer);
+    return stl::string(tempBuffer);
 }
 
 float Color::Hue(float min, float max) const

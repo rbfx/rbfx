@@ -89,7 +89,7 @@ public:
     /// Save a UI layout to an XML file. Return true if successful.
     bool SaveLayout(Serializer& dest, UIElement* element);
     /// Set clipboard text.
-    void SetClipboardText(const String& text);
+    void SetClipboardText(const stl::string& text);
     /// Set UI element double click interval in seconds.
     void SetDoubleClickInterval(float interval);
     /// Set max screen distance in pixels between double click clicks.
@@ -165,7 +165,7 @@ public:
     /// Return the drag element at index.
     UIElement* GetDragElement(unsigned index);
     /// Return clipboard text.
-    const String& GetClipboardText() const;
+    const stl::string& GetClipboardText() const;
 
     /// Return UI element double click interval in seconds.
     float GetDoubleClickInterval() const { return doubleClickInterval_; }
@@ -365,7 +365,7 @@ private:
     /// UI element query vector.
     stl::vector<UIElement*> tempElements_;
     /// Clipboard text.
-    mutable String clipBoard_;
+    mutable stl::string clipBoard_;
     /// Seconds between clicks to register a double click.
     float doubleClickInterval_;
     /// Seconds from mouse button down to begin a drag if there has been no movement exceeding pixel threshold.

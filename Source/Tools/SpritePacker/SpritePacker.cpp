@@ -49,13 +49,13 @@ const int PACKER_NUM_NODES = 4096;
 const int MAX_TEXTURE_SIZE = 2048;
 
 int main(int argc, char** argv);
-void Run(stl::vector<String>& arguments);
+void Run(stl::vector<stl::string>& arguments);
 
 class PackerInfo : public RefCounted
 {
 public:
-    String path;
-    String name;
+    stl::string path;
+    stl::string name;
     int x{};
     int y{};
     int offsetX{};
@@ -65,7 +65,7 @@ public:
     int frameWidth{};
     int frameHeight{};
 
-    PackerInfo(const String& path_, const String& name_) :
+    PackerInfo(const stl::string& path_, const stl::string& name_) :
         path(path_),
         name(name_)
     {
@@ -93,7 +93,7 @@ void Help()
 
 int main(int argc, char** argv)
 {
-    stl::vector<String> arguments;
+    stl::vector<stl::string> arguments;
 
 #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -105,7 +105,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(stl::vector<String>& arguments)
+void Run(stl::vector<stl::string>& arguments)
 {
     if (arguments.size() < 2)
         Help();
@@ -115,9 +115,9 @@ void Run(stl::vector<String>& arguments)
     context->RegisterSubsystem(new Log(context));
     auto* fileSystem = context->GetSubsystem<FileSystem>();
 
-    stl::vector<String> inputFiles;
-    String outputFile;
-    String spriteSheetFileName;
+    stl::vector<stl::string> inputFiles;
+    stl::string outputFile;
+    stl::string spriteSheetFileName;
     bool debug = false;
     unsigned padX = 0;
     unsigned padY = 0;
@@ -130,13 +130,13 @@ void Run(stl::vector<String>& arguments)
 
     while (arguments.size() > 0)
     {
-        String arg = arguments[0];
+        stl::string arg = arguments[0];
         arguments.pop_front();
 
-        if (arg.Empty())
+        if (arg.empty())
             continue;
 
-        if (arg.StartsWith("-"))
+        if (arg.starts_with("-"))
         {
             if (arg == "-px")      { padX = ToUInt(arguments[0]);
                 arguments.pop_front(); }
@@ -178,7 +178,7 @@ void Run(stl::vector<String>& arguments)
     }
 
     // set spritesheet name to outputfile.xml if not specified
-    if (spriteSheetFileName.Empty())
+    if (spriteSheetFileName.empty())
         spriteSheetFileName = ReplaceExtension(outputFile, ".xml");
 
     if (GetParentPath(spriteSheetFileName) != GetParentPath(outputFile))
@@ -200,8 +200,8 @@ void Run(stl::vector<String>& arguments)
 
     for (unsigned i = 0; i < inputFiles.size(); ++i)
     {
-        String path = inputFiles[i];
-        String name = ReplaceExtension(GetFileName(path), "");
+        stl::string path = inputFiles[i];
+        stl::string name = ReplaceExtension(GetFileName(path), "");
         File file(context, path);
         Image image(context);
 
@@ -328,7 +328,7 @@ void Run(stl::vector<String>& arguments)
         }
         delete[] packerRects;
         if (!success)
-            ErrorExit("Could not allocate for all images.  The max sprite sheet texture size is " + String(MAX_TEXTURE_SIZE) + "x" + String(MAX_TEXTURE_SIZE) + ".");
+            ErrorExit("Could not allocate for all images.  The max sprite sheet texture size is " + stl::to_string(MAX_TEXTURE_SIZE) + "x" + stl::to_string(MAX_TEXTURE_SIZE) + ".");
     }
 
     // create image for spritesheet

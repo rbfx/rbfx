@@ -44,12 +44,12 @@ static const char* shaderParameterGroups[] = {
     "custom"
 };
 
-static unsigned NumberPostfix(const String& str)
+static unsigned NumberPostfix(const stl::string& str)
 {
-    for (unsigned i = 0; i < str.Length(); ++i)
+    for (unsigned i = 0; i < str.length(); ++i)
     {
         if (IsDigit(str[i]))
-            return ToUInt(str.CString() + i);
+            return ToUInt(str.c_str() + i);
     }
 
     return M_MAX_UNSIGNED;
@@ -79,7 +79,7 @@ void ShaderProgram::OnDeviceLost()
     if (graphics_ && graphics_->GetShaderProgram() == this)
         graphics_->SetShaders(nullptr, nullptr);
 
-    linkerOutput_.Clear();
+    linkerOutput_.clear();
 }
 
 void ShaderProgram::Release()
@@ -98,7 +98,7 @@ void ShaderProgram::Release()
         }
 
         object_.name_ = 0;
-        linkerOutput_.Clear();
+        linkerOutput_.clear();
         shaderParameters_.Clear();
         vertexAttributes_.Clear();
         usedVertexAttributes_ = 0;
@@ -133,14 +133,14 @@ bool ShaderProgram::Link()
     if (!linked)
     {
         glGetProgramiv(object_.name_, GL_INFO_LOG_LENGTH, &length);
-        linkerOutput_.Resize((unsigned)length);
+        linkerOutput_.resize((unsigned) length);
         int outLength;
         glGetProgramInfoLog(object_.name_, length, &outLength, &linkerOutput_[0]);
         glDeleteProgram(object_.name_);
         object_.name_ = 0;
     }
     else
-        linkerOutput_.Clear();
+        linkerOutput_.clear();
 
     if (!object_.name_)
         return false;
@@ -158,14 +158,14 @@ bool ShaderProgram::Link()
     {
         glGetActiveAttrib(object_.name_, i, (GLsizei)MAX_NAME_LENGTH, &nameLength, &elementCount, &type, nameBuffer);
 
-        String name = String(nameBuffer, nameLength);
+        stl::string name = stl::string(nameBuffer, nameLength);
         VertexElementSemantic semantic = MAX_VERTEX_ELEMENT_SEMANTICS;
         unsigned char semanticIndex = 0;
 
         // Go in reverse order so that "binormal" is detected before "normal"
         for (unsigned j = MAX_VERTEX_ELEMENT_SEMANTICS - 1; j < MAX_VERTEX_ELEMENT_SEMANTICS; --j)
         {
-            if (name.Contains(ShaderVariation::elementSemanticNames[j], false))
+            if (name.contains(ShaderVariation::elementSemanticNames[j], false))
             {
                 semantic = (VertexElementSemantic)j;
                 unsigned index = NumberPostfix(name);
@@ -182,7 +182,7 @@ bool ShaderProgram::Link()
             continue;
         }
 
-        int location = glGetAttribLocation(object_.name_, name.CString());
+        int location = glGetAttribLocation(object_.name_, name.c_str());
         vertexAttributes_[stl::make_pair((unsigned char)semantic, semanticIndex)] = location;
         usedVertexAttributes_ |= (1u << location);
     }
@@ -200,15 +200,15 @@ bool ShaderProgram::Link()
         {
             glGetActiveUniformBlockName(object_.name_, (GLuint)i, MAX_NAME_LENGTH, &nameLength, nameBuffer);
 
-            String name(nameBuffer, (unsigned)nameLength);
+            stl::string name(nameBuffer, (unsigned)nameLength);
 
-            unsigned blockIndex = glGetUniformBlockIndex(object_.name_, name.CString());
+            unsigned blockIndex = glGetUniformBlockIndex(object_.name_, name.c_str());
             unsigned group = M_MAX_UNSIGNED;
 
             // Try to recognize the use of the buffer from its name
             for (unsigned j = 0; j < MAX_SHADER_PARAMETER_GROUPS; ++j)
             {
-                if (name.Contains(shaderParameterGroups[j], false))
+                if (name.contains(shaderParameterGroups[j], false))
                 {
                     group = j;
                     break;
@@ -236,7 +236,7 @@ bool ShaderProgram::Link()
             // Vertex shader constant buffer bindings occupy slots starting from zero to maximum supported, pixel shader bindings
             // from that point onward
             ShaderType shaderType = VS;
-            if (name.Contains("PS", false))
+            if (name.contains("PS", false))
             {
                 bindingIndex += MAX_SHADER_PARAMETER_GROUPS;
                 shaderType = PS;
@@ -258,21 +258,21 @@ bool ShaderProgram::Link()
         int location = glGetUniformLocation(object_.name_, nameBuffer);
 
         // Check for array index included in the name and strip it
-        String name(nameBuffer);
-        unsigned index = name.Find('[');
-        if (index != String::NPOS)
+        stl::string name(nameBuffer);
+        unsigned index = name.find('[');
+        if (index != stl::string::npos)
         {
             // If not the first index, skip
-            if (name.Find("[0]", index) == String::NPOS)
+            if (name.find("[0]", index) == stl::string::npos)
                 continue;
 
-            name = name.Substring(0, index);
+            name = name.substr(0, index);
         }
 
         if (name[0] == 'c')
         {
             // Store constant uniform
-            String paramName = name.Substring(1);
+            stl::string paramName = name.substr(1);
             ShaderParameter parameter{paramName, type, location};
             bool store = location >= 0;
 
@@ -298,7 +298,7 @@ bool ShaderProgram::Link()
         else if (location >= 0 && name[0] == 's')
         {
             // Set the samplers here so that they do not have to be set later
-            unsigned unit = graphics_->GetTextureUnit(name.Substring(1));
+            unsigned unit = graphics_->GetTextureUnit(name.substr(1));
             if (unit >= MAX_TEXTURE_UNITS)
                 unit = NumberPostfix(name);
 

@@ -43,11 +43,11 @@ public:
     /// Reads EditorIcons.xml and stores information for later use by imgui.
     explicit EditorIconCache(Context* context);
     /// Return pointer to icon data.
-    IconData* GetIconData(const String& name);
+    IconData* GetIconData(const stl::string& name);
 
 protected:
     /// Editor icon cache.
-    HashMap<String, IconData> iconCache_;
+    HashMap<stl::string, IconData> iconCache_;
 };
 
 }

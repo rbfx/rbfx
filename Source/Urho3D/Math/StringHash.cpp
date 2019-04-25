@@ -51,11 +51,11 @@ static StringHashRegister& GetGlobalStringHashRegister()
 
 const StringHash StringHash::ZERO;
 
-StringHash::StringHash(const String& str) noexcept :
-    value_(Calculate(str.CString()))
+StringHash::StringHash(const stl::string& str) noexcept :
+    value_(Calculate(str.c_str()))
 {
 #ifdef URHO3D_HASH_DEBUG
-    Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str.CString());
+    Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str.c_str());
 #endif
 }
 
@@ -94,19 +94,19 @@ StringHashRegister* StringHash::GetGlobalStringHashRegister()
 #endif
 }
 
-String StringHash::ToString() const
+stl::string StringHash::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%08X", value_);
-    return String(tempBuffer);
+    return stl::string(tempBuffer);
 }
 
-String StringHash::Reverse() const
+stl::string StringHash::Reverse() const
 {
 #ifdef URHO3D_HASH_DEBUG
     return Urho3D::GetGlobalStringHashRegister().GetStringCopy(*this);
 #else
-    return String::EMPTY;
+    return EMPTY_STRING;
 #endif
 }
 

@@ -90,7 +90,7 @@ public:
     /// Called on every frame when tab is active.
     void OnActiveUpdate() override;
     /// Load scene from xml or json file.
-    bool LoadResource(const String& resourcePath) override;
+    bool LoadResource(const stl::string& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource() override;
     ///

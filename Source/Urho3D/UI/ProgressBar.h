@@ -72,10 +72,10 @@ public:
     BorderImage *GetKnob() const { return knob_; }
 
     /// Sets the loading percent style.
-    void SetLoadingPercentStyle(const String &style) { loadingPercentStyle_ = style; }
+    void SetLoadingPercentStyle(const stl::string &style) { loadingPercentStyle_ = style; }
 
     /// Returns the loading percent style.
-    const String& GetLoadingPercentStyle() const { return loadingPercentStyle_; }
+    const stl::string& GetLoadingPercentStyle() const { return loadingPercentStyle_; }
 
     /// Sets the flag to display the percent text.
     void SetShowPercentText(bool enable);
@@ -97,7 +97,7 @@ protected:
     /// Orientation.
     Orientation orientation_;
     /// ProgressBar text style
-    String loadingPercentStyle_;
+    stl::string loadingPercentStyle_;
     /// ProgressBar range.
     float range_;
     /// ProgressBar current value.

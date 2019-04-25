@@ -44,7 +44,7 @@ enum PListValueType
 class PListValue;
 
 /// PList value map.
-using PListValueMap = HashMap<String, PListValue>;
+using PListValueMap = HashMap<stl::string, PListValue>;
 
 /// Vector of PList value.
 using PListValueVector = stl::vector<PListValue>;
@@ -62,7 +62,7 @@ public:
     /// Construct from float.
     explicit PListValue(float value);
     /// Construct from string.
-    explicit PListValue(const String& value);
+    explicit PListValue(const stl::string& value);
     /// Construct from value map.
     explicit PListValue(PListValueMap& valueMap);
     /// Construct from value vector.
@@ -85,7 +85,7 @@ public:
     /// Set float.
     void SetFloat(float value);
     /// Set string.
-    void SetString(const String& value);
+    void SetString(const stl::string& value);
     /// Set value map.
     void SetValueMap(const PListValueMap& valueMap);
     /// Set value vector.
@@ -101,7 +101,7 @@ public:
     /// Return float.
     float GetFloat() const;
     /// Return string.
-    const String& GetString() const;
+    const stl::string& GetString() const;
     /// Return IntRect, for string type.
     IntRect GetIntRect() const;
     /// Return IntVector2, for string type.
@@ -163,7 +163,7 @@ private:
         int int_;
         bool bool_;
         float float_;
-        String* string_;
+        stl::string* string_;
         PListValueMap* valueMap_;
         PListValueVector* valueVector_;
     };

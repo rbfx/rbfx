@@ -38,16 +38,16 @@
 namespace Urho3D
 {
 
-void CommentOutFunction(String& code, const String& signature)
+void CommentOutFunction(stl::string& code, const stl::string& signature)
 {
-    unsigned startPos = code.Find(signature);
+    unsigned startPos = code.find(signature);
     unsigned braceLevel = 0;
-    if (startPos == String::NPOS)
+    if (startPos == stl::string::npos)
         return;
 
-    code.Insert(startPos, "/*");
+    code.insert(startPos, "/*");
 
-    for (unsigned i = startPos + 2 + signature.Length(); i < code.Length(); ++i)
+    for (unsigned i = startPos + 2 + signature.length(); i < code.length(); ++i)
     {
         if (code[i] == '{')
             ++braceLevel;
@@ -56,7 +56,7 @@ void CommentOutFunction(String& code, const String& signature)
             --braceLevel;
             if (braceLevel == 0)
             {
-                code.Insert(i + 1, "*/");
+                code.insert(i + 1, "*/");
                 return;
             }
         }
@@ -91,7 +91,7 @@ bool Shader::BeginLoad(Deserializer& source)
 
     // Load the shader source code and resolve any includes
     timeStamp_ = 0;
-    String shaderCode;
+    stl::string shaderCode;
     if (!ProcessSource(shaderCode, source))
         return false;
 
@@ -103,8 +103,8 @@ bool Shader::BeginLoad(Deserializer& source)
 
     // OpenGL: rename either VS() or PS() to main()
 #ifdef URHO3D_OPENGL
-    vsSourceCode_.Replace("void VS(", "void main(");
-    psSourceCode_.Replace("void PS(", "void main(");
+    vsSourceCode_.replace("void VS(", "void main(");
+    psSourceCode_.replace("void PS(", "void main(");
 #endif
 
     RefreshMemoryUse();
@@ -122,9 +122,9 @@ bool Shader::EndLoad()
     return true;
 }
 
-ShaderVariation* Shader::GetVariation(ShaderType type, const String& defines)
+ShaderVariation* Shader::GetVariation(ShaderType type, const stl::string& defines)
 {
-    return GetVariation(type, defines.CString());
+    return GetVariation(type, defines.c_str());
 }
 
 ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
@@ -136,7 +136,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
     {
         // If shader not found, normalize the defines (to prevent duplicates) and check again. In that case make an alias
         // so that further queries are faster
-        String normalizedDefines = NormalizeDefines(defines);
+        stl::string normalizedDefines = NormalizeDefines(defines);
         StringHash normalizedHash(normalizedDefines);
 
         i = variations.Find(normalizedHash);
@@ -159,7 +159,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
     return i->second_;
 }
 
-bool Shader::ProcessSource(String& code, Deserializer& source)
+bool Shader::ProcessSource(stl::string& code, Deserializer& source)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 
@@ -168,7 +168,7 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
     if (file && !file->IsPackaged())
     {
         auto* fileSystem = GetSubsystem<FileSystem>();
-        String fullName = cache->GetResourceFileName(file->GetName());
+        stl::string fullName = cache->GetResourceFileName(file->GetName());
         unsigned fileTimeStamp = fileSystem->GetLastModifiedTime(fullName);
         if (fileTimeStamp > timeStamp_)
             timeStamp_ = fileTimeStamp;
@@ -180,11 +180,11 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
 
     while (!source.IsEof())
     {
-        String line = source.ReadLine();
+        stl::string line = source.ReadLine();
 
-        if (line.StartsWith("#include"))
+        if (line.starts_with("#include"))
         {
-            String includeFileName = GetPath(source.GetName()) + line.Substring(9).Replaced("\"", "").Trimmed();
+            stl::string includeFileName = GetPath(source.GetName()) + line.substr(9).replaced("\"", "").trimmed();
 
             stl::shared_ptr<File> includeFile = cache->GetFile(includeFileName);
             if (!includeFile)
@@ -207,17 +207,17 @@ bool Shader::ProcessSource(String& code, Deserializer& source)
     return true;
 }
 
-String Shader::NormalizeDefines(const String& defines)
+stl::string Shader::NormalizeDefines(const stl::string& defines)
 {
-    stl::vector<String> definesVec = defines.ToUpper().Split(' ');
+    stl::vector<stl::string> definesVec = defines.to_upper().split(' ');
     stl::quick_sort(definesVec.begin(), definesVec.end());
-    return String::Joined(definesVec, " ");
+    return stl::string::joined(definesVec, " ");
 }
 
 void Shader::RefreshMemoryUse()
 {
     SetMemoryUse(
-        (unsigned)(sizeof(Shader) + vsSourceCode_.Length() + psSourceCode_.Length() + numVariations_ * sizeof(ShaderVariation)));
+        (unsigned)(sizeof(Shader) + vsSourceCode_.length() + psSourceCode_.length() + numVariations_ * sizeof(ShaderVariation)));
 }
 
 }

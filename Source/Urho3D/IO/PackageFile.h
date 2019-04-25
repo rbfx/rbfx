@@ -47,22 +47,22 @@ public:
     /// Construct.
     explicit PackageFile(Context* context);
     /// Construct and open.
-    PackageFile(Context* context, const String& fileName, unsigned startOffset = 0);
+    PackageFile(Context* context, const stl::string& fileName, unsigned startOffset = 0);
     /// Destruct.
     ~PackageFile() override;
 
     /// Open the package file. Return true if successful.
-    bool Open(const String& fileName, unsigned startOffset = 0);
+    bool Open(const stl::string& fileName, unsigned startOffset = 0);
     /// Check if a file exists within the package file. This will be case-insensitive on Windows and case-sensitive on other platforms.
-    bool Exists(const String& fileName) const;
+    bool Exists(const stl::string& fileName) const;
     /// Return the file entry corresponding to the name, or null if not found. This will be case-insensitive on Windows and case-sensitive on other platforms.
-    const PackageEntry* GetEntry(const String& fileName) const;
+    const PackageEntry* GetEntry(const stl::string& fileName) const;
 
     /// Return all file entries.
-    const HashMap<String, PackageEntry>& GetEntries() const { return entries_; }
+    const HashMap<stl::string, PackageEntry>& GetEntries() const { return entries_; }
 
     /// Return the package file name.
-    const String& GetName() const { return fileName_; }
+    const stl::string& GetName() const { return fileName_; }
 
     /// Return hash of the package file name.
     StringHash GetNameHash() const { return nameHash_; }
@@ -83,28 +83,28 @@ public:
     bool IsCompressed() const { return compressed_; }
 
     /// Return list of file names in the package.
-    const stl::vector<String> GetEntryNames() const { return entries_.Keys(); }
+    const stl::vector<stl::string> GetEntryNames() const { return entries_.Keys(); }
 
     /// Return a file name in the package at the specified index
-    const String& GetEntryName(unsigned index) const 
+    const stl::string& GetEntryName(unsigned index) const
     {
         unsigned nn = 0;
-        for (HashMap<String, PackageEntry>::ConstIterator j = entries_.Begin(); j != entries_.End(); ++j)
+        for (HashMap<stl::string, PackageEntry>::ConstIterator j = entries_.Begin(); j != entries_.End(); ++j)
         {
             if (nn == index) return j->first_;
             nn++;
         }
-        return String::EMPTY; 
+        return EMPTY_STRING;
     }
 
     /// Scan package for specified files.
-    void Scan(stl::vector<String>& result, const String& pathName, const String& filter, bool recursive) const;
+    void Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, bool recursive) const;
 
 private:
     /// File entries.
-    HashMap<String, PackageEntry> entries_;
+    HashMap<stl::string, PackageEntry> entries_;
     /// File name.
-    String fileName_;
+    stl::string fileName_;
     /// Package file name hash.
     StringHash nameHash_;
     /// Package file total size.

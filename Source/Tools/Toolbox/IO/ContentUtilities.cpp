@@ -31,16 +31,16 @@
 namespace Urho3D
 {
 
-const stl::vector<String> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".7z", ".pak"};
-const stl::vector<String> wordExtensions_{".doc", ".docx", ".odt"};
-const stl::vector<String> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
-const stl::vector<String> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
-const stl::vector<String> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
-const stl::vector<String> audioExtensions_{".waw", ".ogg", ".mp3"};
+const stl::vector<stl::string> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".7z", ".pak"};
+const stl::vector<stl::string> wordExtensions_{".doc", ".docx", ".odt"};
+const stl::vector<stl::string> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
+const stl::vector<stl::string> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
+const stl::vector<stl::string> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
+const stl::vector<stl::string> audioExtensions_{".waw", ".ogg", ".mp3"};
 
-FileType GetFileType(const String& fileName)
+FileType GetFileType(const stl::string& fileName)
 {
-    auto extension = GetExtension(fileName).ToLower();
+    auto extension = GetExtension(fileName).to_lower();
     if (archiveExtensions_.contains(extension))
         return FTYPE_ARCHIVE;
     if (wordExtensions_.contains(extension))
@@ -58,7 +58,7 @@ FileType GetFileType(const String& fileName)
     return FTYPE_FILE;
 }
 
-String GetFileIcon(const String& fileName)
+stl::string GetFileIcon(const stl::string& fileName)
 {
     switch (GetFileType(fileName))
     {
@@ -89,9 +89,9 @@ String GetFileIcon(const String& fileName)
     }
 }
 
-ContentType GetContentType(const String& resourcePath)
+ContentType GetContentType(const stl::string& resourcePath)
 {
-    auto extension = GetExtension(resourcePath).ToLower();
+    auto extension = GetExtension(resourcePath).to_lower();
     if (extension == ".xml")
     {
         auto systemUI = (SystemUI*)ui::GetIO().UserData;

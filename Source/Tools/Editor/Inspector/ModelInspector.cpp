@@ -57,7 +57,7 @@ void ModelInspector::RenderInspector(const char* filter)
         {
             if (Model* modelResource = staticModel->GetModel())
             {
-                const char* resourceName = modelResource->GetName().CString();
+                const char* resourceName = modelResource->GetName().c_str();
                 ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
                 ui::TextUnformatted(resourceName);
                 ui::Separator();

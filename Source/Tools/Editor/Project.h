@@ -42,15 +42,15 @@ public:
     /// Destruct.
     ~Project() override;
     /// Load existing project. Returns true if project was successfully loaded.
-    bool LoadProject(const String& projectPath);
+    bool LoadProject(const stl::string& projectPath);
     /// Create a new project. Returns true if successful. Overwrites specified path unconditionally.
     bool SaveProject();
     /// Return project directory.
-    const String& GetProjectPath() const { return projectFileDir_; }
+    const stl::string& GetProjectPath() const { return projectFileDir_; }
     /// Returns path to temporary asset cache.
-    String GetCachePath() const;
+    stl::string GetCachePath() const;
     /// Returns path to permanent asset cache.
-    String GetResourcePath() const;
+    stl::string GetResourcePath() const;
 #if URHO3D_PLUGINS
     /// Returns plugin manager.
     PluginManager* GetPlugins() { return &plugins_; }
@@ -58,23 +58,23 @@ public:
     /// Returns true in very first session of new project.
     bool IsNewProject() const { return isNewProject_; }
     /// Return resource name of scene that will be executed first by the player.
-    const String& GetDefaultSceneName() const { return defaultScene_; }
+    const stl::string& GetDefaultSceneName() const { return defaultScene_; }
     /// Set resource name of scene that will be executed first by the player.
-    void SetDefaultSceneName(const String& defaultScene) { defaultScene_ = defaultScene; }
+    void SetDefaultSceneName(const stl::string& defaultScene) { defaultScene_ = defaultScene; }
     /// Returns a map of default engine settings that will be applied on the start of player application.
-    HashMap<String, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
+    HashMap<stl::string, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
     ///
     Pipeline& GetPipeline() { return pipeline_; }
 
 protected:
     /// Directory containing project.
-    String projectFileDir_;
+    stl::string projectFileDir_;
     ///
     Pipeline pipeline_;
     /// Copy of engine resource paths that get unregistered when project is loaded.
     StringVector cachedEngineResourcePaths_;
     /// Path to imgui settings ini file.
-    String uiConfigPath_;
+    stl::string uiConfigPath_;
 #if URHO3D_PLUGINS
     /// Native plugin manager.
     PluginManager plugins_;
@@ -82,9 +82,9 @@ protected:
     /// Flag indicating that project was just created.
     bool isNewProject_ = true;
     /// Resource name of scene that will be started by player first.
-    String defaultScene_;
+    stl::string defaultScene_;
     ///
-    HashMap<String, Variant> engineParameters_;
+    HashMap<stl::string, Variant> engineParameters_;
     ///
     Timer saveProjectTimer_;
 };

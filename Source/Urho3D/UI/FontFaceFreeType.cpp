@@ -137,14 +137,14 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     if (error)
     {
         FT_Done_Face(face);
-        URHO3D_LOGERROR("Could not set font point size " + String(pointSize));
+        URHO3D_LOGERROR("Could not set font point size " + stl::to_string(pointSize));
         return false;
     }
 
     face_ = face;
 
     auto numGlyphs = (unsigned)face->num_glyphs;
-    URHO3D_LOGDEBUGF("Font face %s (%fpt) has %d glyphs", GetFileName(font_->GetName()).CString(), pointSize, numGlyphs);
+    URHO3D_LOGDEBUGF("Font face %s (%fpt) has %d glyphs", GetFileName(font_->GetName()).c_str(), pointSize, numGlyphs);
 
     stl::vector<unsigned> charCodes(numGlyphs + 1, 0);
 

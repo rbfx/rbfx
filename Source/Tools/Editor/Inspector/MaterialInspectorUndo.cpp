@@ -96,10 +96,10 @@ void TechniqueChangedAction::Undo()
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
-        if (oldValue_.techniqueName_.Empty() && !newValue_.techniqueName_.Empty())
+        if (oldValue_.techniqueName_.empty() && !newValue_.techniqueName_.empty())
             // Was added
             RemoveTechnique();
-        else if (!oldValue_.techniqueName_.Empty() && newValue_.techniqueName_.Empty())
+        else if (!oldValue_.techniqueName_.empty() && newValue_.techniqueName_.empty())
             // Was removed
             AddTechnique(oldValue_);
         else
@@ -115,10 +115,10 @@ void TechniqueChangedAction::Redo()
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
-        if (oldValue_.techniqueName_.Empty() && !newValue_.techniqueName_.Empty())
+        if (oldValue_.techniqueName_.empty() && !newValue_.techniqueName_.empty())
             // Was added
             AddTechnique(newValue_);
-        else if (!oldValue_.techniqueName_.Empty() && newValue_.techniqueName_.Empty())
+        else if (!oldValue_.techniqueName_.empty() && newValue_.techniqueName_.empty())
             // Was removed
             RemoveTechnique();
         else
@@ -130,7 +130,7 @@ void TechniqueChangedAction::Redo()
     }
 }
 
-ShaderParameterChangedAction::ShaderParameterChangedAction(const Material* material, const String& parameterName, const Variant& oldValue, const Variant& newValue)
+ShaderParameterChangedAction::ShaderParameterChangedAction(const Material* material, const stl::string& parameterName, const Variant& oldValue, const Variant& newValue)
     : context_(material->GetContext())
     , materialName_(material->GetName())
     , parameterName_(parameterName)

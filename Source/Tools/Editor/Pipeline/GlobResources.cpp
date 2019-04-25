@@ -31,36 +31,36 @@
 namespace Urho3D
 {
 
-bool MatchesAny(const String& string, const stl::vector<std::regex>& patterns)
+bool MatchesAny(const stl::string& string, const stl::vector<std::regex>& patterns)
 {
     for (const std::regex& regex : patterns)
     {
-        if (std::regex_match(string.CString(), regex))
+        if (std::regex_match(string.c_str(), regex))
             return true;
     }
     return false;
 }
 
-std::regex GlobToRegex(const String& expression)
+std::regex GlobToRegex(const stl::string& expression)
 {
-    String regex = expression;
-    regex.Replace("^", "\\^");
-    regex.Replace("$", "\\$");
-    regex.Replace("{", "\\{");
-    regex.Replace("}", "\\}");
-    regex.Replace("[", "\\[");
-    regex.Replace("]", "\\]");
-    regex.Replace("(", "\\(");
-    regex.Replace(")", "\\)");
-    regex.Replace(".", "\\.");
-    regex.Replace("+", "\\+");
-    regex.Replace("?", "\\?");
-    regex.Replace("<", "\\<");
-    regex.Replace(">", "\\>");
-    regex.Replace("*", "@");
-    regex.Replace("@@", ".*");
-    regex.Replace("@", "[^/]*");
-    return std::regex(regex.CString());
+    stl::string regex = expression;
+    regex.replace("^", "\\^");
+    regex.replace("$", "\\$");
+    regex.replace("{", "\\{");
+    regex.replace("}", "\\}");
+    regex.replace("[", "\\[");
+    regex.replace("]", "\\]");
+    regex.replace("(", "\\(");
+    regex.replace(")", "\\)");
+    regex.replace(".", "\\.");
+    regex.replace("+", "\\+");
+    regex.replace("?", "\\?");
+    regex.replace("<", "\\<");
+    regex.replace(">", "\\>");
+    regex.replace("*", "@");
+    regex.replace("@@", ".*");
+    regex.replace("@", "[^/]*");
+    return std::regex(regex.c_str());
 }
 
 GlobResources::GlobResources(Context* context)
@@ -91,7 +91,7 @@ void GlobResources::Execute(const StringVector& input)
 
 void GlobResources::ConvertGlobToRegex()
 {
-    for (const String& glob : glob_)
+    for (const stl::string& glob : glob_)
         regex_.push_back(GlobToRegex(glob));
 }
 

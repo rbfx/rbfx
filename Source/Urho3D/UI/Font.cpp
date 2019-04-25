@@ -96,7 +96,7 @@ bool Font::BeginLoad(Deserializer& source)
         return false;
     }
 
-    String ext = GetExtension(GetName());
+    stl::string ext = GetExtension(GetName());
     if (ext == ".ttf" || ext == ".otf" || ext == ".woff")
     {
         fontType_ = FONT_FREETYPE;
@@ -111,7 +111,7 @@ bool Font::BeginLoad(Deserializer& source)
     return true;
 }
 
-bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const String& indentation)
+bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const stl::string& indentation)
 {
     FontFace* fontFace = GetFace(pointSize);
     if (!fontFace)
@@ -192,7 +192,7 @@ void Font::ReleaseFaces()
 void Font::LoadParameters()
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    String xmlName = ReplaceExtension(GetName(), ".xml");
+    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
     stl::shared_ptr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
     if (!xml)
         return;

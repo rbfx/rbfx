@@ -75,7 +75,7 @@ FileWatcher::~FileWatcher()
 #endif
 }
 
-bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
+bool FileWatcher::StartWatching(const stl::string& pathName, bool watchSubDirs)
 {
     if (!fileSystem_)
     {
@@ -90,10 +90,10 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
 
 #if defined(URHO3D_FILEWATCHER) && defined(URHO3D_THREADING)
 #ifdef _WIN32
-    String nativePath = GetNativePath(RemoveTrailingSlash(pathName));
+    stl::string nativePath = GetNativePath(RemoveTrailingSlash(pathName));
 
     dirHandle_ = (void*)CreateFileW(
-        WString(nativePath).CString(),
+        WString(nativePath).c_str(),
         FILE_LIST_DIRECTORY,
         FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE,
         nullptr,
@@ -117,7 +117,7 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
     }
 #elif defined(__linux__)
     int flags = IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO;
-    int handle = inotify_add_watch(watchHandle_, pathName.CString(), (unsigned)flags);
+    int handle = inotify_add_watch(watchHandle_, pathName.c_str(), (unsigned)flags);
 
     if (handle < 0)
     {
@@ -133,17 +133,17 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
 
         if (watchSubDirs_)
         {
-            stl::vector<String> subDirs;
+            stl::vector<stl::string> subDirs;
             fileSystem_->ScanDir(subDirs, pathName, "*", SCAN_DIRS, true);
 
             for (unsigned i = 0; i < subDirs.size(); ++i)
             {
-                String subDirFullPath = AddTrailingSlash(path_ + subDirs[i]);
+                stl::string subDirFullPath = AddTrailingSlash(path_ + subDirs[i]);
 
                 // Don't watch ./ or ../ sub-directories
-                if (!subDirFullPath.EndsWith("./"))
+                if (!subDirFullPath.ends_with("./"))
                 {
-                    handle = inotify_add_watch(watchHandle_, subDirFullPath.CString(), (unsigned)flags);
+                    handle = inotify_add_watch(watchHandle_, subDirFullPath.c_str(), (unsigned)flags);
                     if (handle < 0)
                         URHO3D_LOGERROR("Failed to start watching subdirectory path " + subDirFullPath);
                     else
@@ -166,7 +166,7 @@ bool FileWatcher::StartWatching(const String& pathName, bool watchSubDirs)
         return false;
     }
 
-    watcher_ = CreateFileWatcher(pathName.CString(), watchSubDirs);
+    watcher_ = CreateFileWatcher(pathName.c_str(), watchSubDirs);
     if (watcher_)
     {
         path_ = AddTrailingSlash(pathName);
@@ -201,7 +201,7 @@ void FileWatcher::StopWatching()
         // This is only required on Windows platform
         // TODO: Remove this temp write approach as it depends on user write privilege
 #ifdef _WIN32
-        String dummyFileName = path_ + "dummy.tmp";
+        stl::string dummyFileName = path_ + "dummy.tmp";
         File file(context_, dummyFileName, FILE_WRITE);
         file.Close();
         if (fileSystem_)
@@ -216,7 +216,7 @@ void FileWatcher::StopWatching()
 #ifdef _WIN32
         CloseHandle((HANDLE)dirHandle_);
 #elif defined(__linux__)
-        for (HashMap<int, String>::Iterator i = dirHandle_.Begin(); i != dirHandle_.End(); ++i)
+        for (HashMap<int, stl::string>::Iterator i = dirHandle_.Begin(); i != dirHandle_.End(); ++i)
             inotify_rm_watch(watchHandle_, i->first_);
         dirHandle_.Clear();
 #elif defined(__APPLE__) && !defined(IOS) && !defined(TVOS)
@@ -228,7 +228,7 @@ void FileWatcher::StopWatching()
 #endif
 
         URHO3D_LOGDEBUG("Stopped watching path " + path_);
-        path_.Clear();
+        path_.clear();
     }
 }
 
@@ -257,26 +257,26 @@ void FileWatcher::ThreadFunction()
             nullptr))
         {
             unsigned offset = 0;
-            FileChange rename{FILECHANGE_RENAMED, String::EMPTY, String::EMPTY};
+            FileChange rename{FILECHANGE_RENAMED, EMPTY_STRING, EMPTY_STRING};
 
             while (offset < bytesFilled)
             {
                 FILE_NOTIFY_INFORMATION* record = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
 
-                String fileName;
+                stl::string fileName;
                 const wchar_t* src = record->FileName;
                 const wchar_t* end = src + record->FileNameLength / 2;
                 while (src < end)
-                    fileName.AppendUTF8(String::DecodeUTF16(src));
+                    AppendUTF8(fileName, stl::string::DecodeUTF16(src));
 
                 fileName = GetInternalPath(fileName);
 
                 if (record->Action == FILE_ACTION_MODIFIED)
-                    AddChange({ FILECHANGE_MODIFIED, fileName, String::EMPTY });
+                    AddChange({ FILECHANGE_MODIFIED, fileName, EMPTY_STRING });
                 else if (record->Action == FILE_ACTION_ADDED)
-                    AddChange({ FILECHANGE_ADDED, fileName, String::EMPTY });
+                    AddChange({ FILECHANGE_ADDED, fileName, EMPTY_STRING });
                 else if (record->Action == FILE_ACTION_REMOVED)
-                    AddChange({ FILECHANGE_REMOVED, fileName, String::EMPTY });
+                    AddChange({ FILECHANGE_REMOVED, fileName, EMPTY_STRING });
                 else if (record->Action == FILE_ACTION_RENAMED_OLD_NAME)
                     rename.oldFileName_ = fileName;
                 else if (record->Action == FILE_ACTION_RENAMED_NEW_NAME)
@@ -322,14 +322,14 @@ void FileWatcher::ThreadFunction()
 
             if (event->len > 0)
             {
-                String fileName = dirHandle_[event->wd] + event->name;
+                stl::string fileName = dirHandle_[event->wd] + event->name;
 
                 if (event->mask == IN_CREATE)
-                    AddChange({FILECHANGE_ADDED, fileName, String::EMPTY});
+                    AddChange({FILECHANGE_ADDED, fileName, EMPTY_STRING});
                 else if (event->mask & IN_DELETE)
-                    AddChange({FILECHANGE_REMOVED, fileName, String::EMPTY});
+                    AddChange({FILECHANGE_REMOVED, fileName, EMPTY_STRING});
                 else if (event->mask & IN_MODIFY)
-                    AddChange({FILECHANGE_MODIFIED, fileName, String::EMPTY});
+                    AddChange({FILECHANGE_MODIFIED, fileName, EMPTY_STRING});
                 else if (event->mask & IN_MOVE)
                 {
                     auto& entry = renames[event->cookie];
@@ -338,7 +338,7 @@ void FileWatcher::ThreadFunction()
                     else if (event->mask & IN_MOVED_TO)
                         entry.fileName_ = fileName;
 
-                    if (!entry.oldFileName_.Empty() && !entry.fileName_.Empty())
+                    if (!entry.oldFileName_.empty() && !entry.fileName_.empty())
                     {
                         entry.kind_ = FILECHANGE_RENAMED;
                         AddChange(entry);
@@ -354,15 +354,15 @@ void FileWatcher::ThreadFunction()
     {
         Time::Sleep(100);
 
-        String changes = ReadFileWatcher(watcher_);
+        stl::string changes = ReadFileWatcher(watcher_);
         if (!changes.Empty())
         {
-            stl::vector<String> fileChanges = changes.Split('\n');
+            stl::vector<stl::string> fileChanges = changes.Split('\n');
             FileChange change{};
-            for (const String& fileResult : fileChanges)
+            for (const stl::string& fileResult : fileChanges)
             {
                 change.kind_ = (FileChangeKind)fileResult[0];   // First byte is change kind.
-                String fileName = &fileResult.At(1);
+                stl::string fileName = &fileResult.At(1);
                 if (change.kind_ == FILECHANGE_RENAMED)
                 {
                     if (GetSubsystem<FileSystem>()->FileExists(fileName))

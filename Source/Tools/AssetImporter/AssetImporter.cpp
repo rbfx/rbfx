@@ -61,7 +61,7 @@ using namespace Urho3D;
 
 struct OutModel
 {
-    String outName_;
+    stl::string outName_;
     aiNode* rootNode_{};
     stl::hash_set<unsigned> meshIndices_;
     stl::vector<aiMesh*> meshes_;
@@ -78,7 +78,7 @@ struct OutModel
 
 struct OutScene
 {
-    String outName_;
+    stl::string outName_;
     aiNode* rootNode_{};
     stl::vector<OutModel> models_;
     stl::vector<aiNode*> nodes_;
@@ -140,10 +140,10 @@ static const unsigned MAX_CHANNELS = 4;
 stl::shared_ptr<Context> context_(new Context());
 const aiScene* scene_ = nullptr;
 aiNode* rootNode_ = nullptr;
-String inputName_;
-String resourcePath_;
-String outPath_;
-String outName_;
+stl::string inputName_;
+stl::string resourcePath_;
+stl::string outPath_;
+stl::string outName_;
 bool useSubdirs_ = true;
 bool localIDs_ = false;
 bool saveBinary_ = false;
@@ -165,8 +165,8 @@ bool noOverwriteNewerTexture_ = false;
 bool checkUniqueModel_ = true;
 bool moveToBindPose_ = false;
 unsigned maxBones_ = 64;
-stl::vector<String> nonSkinningBoneIncludes_;
-stl::vector<String> nonSkinningBoneExcludes_;
+stl::vector<stl::string> nonSkinningBoneIncludes_;
+stl::vector<stl::string> nonSkinningBoneExcludes_;
 
 stl::hash_set<aiAnimation*> allAnimations_;
 stl::vector<aiAnimation*> sceneAnimations_;
@@ -178,11 +178,11 @@ float importEndTime_ = 0.0f;
 bool suppressFbxPivotNodes_ = true;
 
 int main(int argc, char** argv);
-void Run(const stl::vector<String>& arguments);
+void Run(const stl::vector<stl::string>& arguments);
 void DumpNodes(aiNode* rootNode, unsigned level);
 
-void ExportModel(const String& outName, bool animationOnly);
-void ExportAnimation(const String& outName, bool animationOnly);
+void ExportModel(const stl::string& outName, bool animationOnly);
+void ExportAnimation(const stl::string& outName, bool animationOnly);
 void CollectMeshes(OutModel& model, aiNode* node);
 void CollectBones(OutModel& model, bool animationOnly = false);
 void CollectBonesFinal(stl::vector<aiNode*>& dest, const stl::hash_set<aiNode*>& necessary, aiNode* node);
@@ -192,29 +192,29 @@ void BuildBoneCollisionInfo(OutModel& model);
 void BuildAndSaveModel(OutModel& model);
 void BuildAndSaveAnimations(OutModel* model = nullptr);
 
-void ExportScene(const String& outName, bool asPrefab);
+void ExportScene(const stl::string& outName, bool asPrefab);
 void CollectSceneModels(OutScene& scene, aiNode* node);
 void CreateHierarchy(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& nodeMapping);
 Node* CreateSceneNode(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& nodeMapping);
 void BuildAndSaveScene(OutScene& scene, bool asPrefab);
 
-void ExportMaterials(stl::hash_set<String>& usedTextures);
-void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<String>& usedTextures);
-void CopyTextures(const stl::hash_set<String>& usedTextures, const String& sourcePath);
+void ExportMaterials(stl::hash_set<stl::string>& usedTextures);
+void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& usedTextures);
+void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::string& sourcePath);
 
-void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<String>& modelNames, const String& outName);
+void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::string>& modelNames, const stl::string& outName);
 
 void GetMeshesUnderNode(stl::vector<stl::pair<aiNode*, aiMesh*> >& dest, aiNode* node);
 unsigned GetMeshIndex(aiMesh* mesh);
-unsigned GetBoneIndex(OutModel& model, const String& boneName);
-aiBone* GetMeshBone(OutModel& model, const String& boneName);
-Matrix3x4 GetOffsetMatrix(OutModel& model, const String& boneName);
+unsigned GetBoneIndex(OutModel& model, const stl::string& boneName);
+aiBone* GetMeshBone(OutModel& model, const stl::string& boneName);
+Matrix3x4 GetOffsetMatrix(OutModel& model, const stl::string& boneName);
 void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<unsigned>& boneMappings, stl::vector<stl::vector<unsigned char> >&
     blendIndices, stl::vector<stl::vector<float> >& blendWeights);
-String GetMeshMaterialName(aiMesh* mesh);
-String GetMaterialTextureName(const String& nameIn);
-String GenerateMaterialName(aiMaterial* material);
-String GenerateTextureName(unsigned texIndex);
+stl::string GetMeshMaterialName(aiMesh* mesh);
+stl::string GetMaterialTextureName(const stl::string& nameIn);
+stl::string GenerateMaterialName(aiMaterial* material);
+stl::string GenerateTextureName(unsigned texIndex);
 unsigned GetNumValidFaces(aiMesh* mesh);
 
 void WriteShortIndices(unsigned short*& dest, aiMesh* mesh, unsigned index, unsigned offset);
@@ -224,27 +224,27 @@ void WriteVertex(float*& dest, aiMesh* mesh, unsigned index, bool isSkinned, Bou
     stl::vector<stl::vector<float> >& blendWeights);
 stl::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned);
 
-aiNode* GetNode(const String& name, aiNode* rootNode, bool caseSensitive = true);
+aiNode* GetNode(const stl::string& name, aiNode* rootNode, bool caseSensitive = true);
 aiMatrix4x4 GetDerivedTransform(aiNode* node, aiNode* rootNode, bool rootInclusive = true);
 aiMatrix4x4 GetDerivedTransform(aiMatrix4x4 transform, aiNode* node, aiNode* rootNode, bool rootInclusive = true);
 aiMatrix4x4 GetMeshBakingTransform(aiNode* meshNode, aiNode* modelRootNode);
 void GetPosRotScale(const aiMatrix4x4& transform, Vector3& pos, Quaternion& rot, Vector3& scale);
 
-String FromAIString(const aiString& str);
+stl::string FromAIString(const aiString& str);
 Vector3 ToVector3(const aiVector3D& vec);
 Vector2 ToVector2(const aiVector2D& vec);
 Quaternion ToQuaternion(const aiQuaternion& quat);
 Matrix3x4 ToMatrix3x4(const aiMatrix4x4& mat);
 aiMatrix4x4 ToAIMatrix4x4(const Matrix3x4& mat);
-String SanitateAssetName(const String& name);
+stl::string SanitateAssetName(const stl::string& name);
 
-unsigned GetPivotlessBoneIndex(OutModel& model, const String& boneName);
+unsigned GetPivotlessBoneIndex(OutModel& model, const stl::string& boneName);
 void ExtrapolatePivotlessAnimation(OutModel* model);
 void CollectSceneNodesAsBones(OutModel &model, aiNode* rootNode);
 
 int main(int argc, char** argv)
 {
-    stl::vector<String> arguments;
+    stl::vector<stl::string> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -256,7 +256,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const stl::vector<String>& arguments)
+void Run(const stl::vector<stl::string>& arguments)
 {
     if (arguments.size() < 2)
     {
@@ -319,8 +319,8 @@ void Run(const stl::vector<String>& arguments)
     RegisterPhysicsLibrary(context_);
 #endif
 
-    String command = arguments[0].ToLower();
-    String rootNodeName;
+    stl::string command = arguments[0].to_lower();
+    stl::string rootNodeName;
 
     unsigned flags =
         aiProcess_ConvertToLeftHanded |
@@ -338,10 +338,10 @@ void Run(const stl::vector<String>& arguments)
 
     for (unsigned i = 2; i < arguments.size(); ++i)
     {
-        if (arguments[i].Length() > 1 && arguments[i][0] == '-')
+        if (arguments[i].length() > 1 && arguments[i][0] == '-')
         {
-            String argument = arguments[i].Substring(1).ToLower();
-            String value = i + 1 < arguments.size() ? arguments[i + 1] : String::EMPTY;
+            stl::string argument = arguments[i].substr(1).to_lower();
+            stl::string value = i + 1 < arguments.size() ? arguments[i + 1] : EMPTY_STRING;
 
             if (argument == "b")
                 saveBinary_ = true;
@@ -360,7 +360,7 @@ void Run(const stl::vector<String>& arguments)
                 flags |= aiProcess_CalcTangentSpace;
             else if (argument == "o")
                 flags |= aiProcess_PreTransformVertices;
-            else if (argument.Length() == 2 && argument[0] == 'n')
+            else if (argument.length() == 2 && argument[0] == 'n')
             {
                 switch (tolower(argument[1]))
                 {
@@ -406,24 +406,24 @@ void Run(const stl::vector<String>& arguments)
 
                 }
             }
-            else if (argument == "mb" && !value.Empty())
+            else if (argument == "mb" && !value.empty())
             {
                 maxBones_ = ToUInt(value);
                 if (maxBones_ < 1)
                     maxBones_ = 1;
                 ++i;
             }
-            else if (argument == "p" && !value.Empty())
+            else if (argument == "p" && !value.empty())
             {
                 resourcePath_ = AddTrailingSlash(value);
                 ++i;
             }
-            else if (argument == "r" && !value.Empty())
+            else if (argument == "r" && !value.empty())
             {
                 rootNodeName = value;
                 ++i;
             }
-            else if (argument == "f" && !value.Empty())
+            else if (argument == "f" && !value.empty())
             {
                 defaultTicksPerSecond_ = ToFloat(value);
                 ++i;
@@ -431,13 +431,13 @@ void Run(const stl::vector<String>& arguments)
             else if (argument == "s")
             {
                 includeNonSkinningBones_ = true;
-                if (value.Length() && (value[0] != '-' || value.Length() > 3))
+                if (value.length() && (value[0] != '-' || value.length() > 3))
                 {
-                    stl::vector<String> filters = value.Split(';');
+                    stl::vector<stl::string> filters = value.split(';');
                     for (unsigned i = 0; i < filters.size(); ++i)
                     {
                         if (filters[i][0] == '-')
-                            nonSkinningBoneExcludes_.push_back(filters[i].Substring(1));
+                            nonSkinningBoneExcludes_.push_back(filters[i].substr(1));
                         else
                             nonSkinningBoneIncludes_.push_back(filters[i]);
                     }
@@ -459,8 +459,8 @@ void Run(const stl::vector<String>& arguments)
                 moveToBindPose_ = true;
             else if (argument == "split")
             {
-                String value2 = i + 2 < arguments.size() ? arguments[i + 2] : String::EMPTY;
-                if (value.Length() && value2.Length() && (value[0] != '-') && (value2[0] != '-'))
+                stl::string value2 = i + 2 < arguments.size() ? arguments[i + 2] : EMPTY_STRING;
+                if (value.length() && value2.length() && (value[0] != '-') && (value2[0] != '-'))
                 {
                     importStartTime_ = ToFloat(value);
                     importEndTime_ = ToFloat(value2);
@@ -471,8 +471,8 @@ void Run(const stl::vector<String>& arguments)
 
     if (command == "model" || command == "scene" || command == "anim" || command == "node" || command == "dump")
     {
-        String inFile = arguments[1];
-        String outFile;
+        stl::string inFile = arguments[1];
+        stl::string outFile;
         if (arguments.size() > 2 && arguments[2][0] != '-')
             outFile = GetInternalPath(arguments[2]);
 
@@ -482,22 +482,22 @@ void Run(const stl::vector<String>& arguments)
 
         context_->GetFileSystem()->CreateDirsRecursive(outPath_);
 
-        if (resourcePath_.Empty())
+        if (resourcePath_.empty())
         {
             resourcePath_ = outPath_;
             // If output file already has the Models/ path (model mode), do not take it into the resource path
             if (command == "model")
             {
-                if (resourcePath_.EndsWith("Models/", false))
-                    resourcePath_ = resourcePath_.Substring(0, resourcePath_.Length() - 7);
+                if (resourcePath_.ends_with("Models/", false))
+                    resourcePath_ = resourcePath_.substr(0, resourcePath_.length() - 7);
             }
-            if (resourcePath_.Empty())
+            if (resourcePath_.empty())
                 resourcePath_ = "./";
         }
 
         resourcePath_ = AddTrailingSlash(resourcePath_);
 
-        if (command != "dump" && outFile.Empty())
+        if (command != "dump" && outFile.empty())
             ErrorExit("No output file defined");
 
         if (verboseLog_)
@@ -505,7 +505,7 @@ void Run(const stl::vector<String>& arguments)
 
         PrintLine("Reading file " + inFile);
 
-        if (!inFile.EndsWith(".fbx", false))
+        if (!inFile.ends_with(".fbx", false))
             suppressFbxPivotNodes_ = false;
 
         // Only do this for the "model" command. "anim" command extrapolates animation from the original bone definition
@@ -523,22 +523,22 @@ void Run(const stl::vector<String>& arguments)
             aiSetImportPropertyInteger(aiprops, AI_CONFIG_IMPORT_FBX_PRESERVE_PIVOTS, 0);                //**false, default = true;
             aiSetImportPropertyInteger(aiprops, AI_CONFIG_IMPORT_FBX_OPTIMIZE_EMPTY_ANIMATION_CURVES, 1);//default = true;
 
-            scene_ = aiImportFileExWithProperties(GetNativePath(inFile).CString(), flags, nullptr, aiprops);
+            scene_ = aiImportFileExWithProperties(GetNativePath(inFile).c_str(), flags, nullptr, aiprops);
 
             // prevent processing animation suppression, both cannot work simultaneously
             suppressFbxPivotNodes_ = false;
         }
         else
-            scene_ = aiImportFile(GetNativePath(inFile).CString(), flags);
+            scene_ = aiImportFile(GetNativePath(inFile).c_str(), flags);
 
         if (!scene_)
-            ErrorExit("Could not open or parse input file " + inFile + ": " + String(aiGetErrorString()));
+            ErrorExit("Could not open or parse input file " + inFile + ": " + stl::string(aiGetErrorString()));
 
         if (verboseLog_)
             Assimp::DefaultLogger::kill();
 
         rootNode_ = scene_->mRootNode;
-        if (!rootNodeName.Empty())
+        if (!rootNodeName.empty())
         {
             rootNode_ = GetNode(rootNodeName, rootNode_, false);
             if (!rootNode_)
@@ -570,7 +570,7 @@ void Run(const stl::vector<String>& arguments)
 
         if (!noMaterials_)
         {
-            stl::hash_set<String> usedTextures;
+            stl::hash_set<stl::string> usedTextures;
             ExportMaterials(usedTextures);
             if (!noTextures_)
                 CopyTextures(usedTextures, GetPath(inFile));
@@ -579,8 +579,8 @@ void Run(const stl::vector<String>& arguments)
     else if (command == "lod")
     {
         stl::vector<float> lodDistances;
-        stl::vector<String> modelNames;
-        String outFile;
+        stl::vector<stl::string> modelNames;
+        stl::string outFile;
 
         unsigned numLodArguments = 0;
         for (unsigned i = 1; i < arguments.size(); ++i)
@@ -624,26 +624,26 @@ void DumpNodes(aiNode* rootNode, unsigned level)
     if (!rootNode)
         return;
 
-    String indent(' ', level * 2);
+    stl::string indent(' ', level * 2);
     Vector3 pos, scale;
     Quaternion rot;
     aiMatrix4x4 transform = GetDerivedTransform(rootNode, rootNode_);
     GetPosRotScale(transform, pos, rot, scale);
 
-    PrintLine(indent + "Node " + FromAIString(rootNode->mName) + " pos " + String(pos));
+    PrintLine(indent + "Node " + FromAIString(rootNode->mName) + " pos " + pos.ToString());
 
     if (rootNode->mNumMeshes == 1)
-        PrintLine(indent + "  " + String(rootNode->mNumMeshes) + " geometry");
+        PrintLine(indent + "  " + stl::to_string(rootNode->mNumMeshes) + " geometry");
     if (rootNode->mNumMeshes > 1)
-        PrintLine(indent + "  " + String(rootNode->mNumMeshes) + " geometries");
+        PrintLine(indent + "  " + stl::to_string(rootNode->mNumMeshes) + " geometries");
 
     for (unsigned i = 0; i < rootNode->mNumChildren; ++i)
         DumpNodes(rootNode->mChildren[i], level + 1);
 }
 
-void ExportModel(const String& outName, bool animationOnly)
+void ExportModel(const stl::string& outName, bool animationOnly)
 {
-    if (outName.Empty())
+    if (outName.empty())
         ErrorExit("No output file defined");
 
     OutModel model;
@@ -665,9 +665,9 @@ void ExportModel(const String& outName, bool animationOnly)
     }
 }
 
-void ExportAnimation(const String& outName, bool animationOnly)
+void ExportAnimation(const stl::string& outName, bool animationOnly)
 {
-    if (outName.Empty())
+    if (outName.empty())
         ErrorExit("No output file defined");
 
     OutModel model;
@@ -745,7 +745,7 @@ void CollectBones(OutModel& model, bool animationOnly)
         for (unsigned j = 0; j < mesh->mNumBones; ++j)
         {
             aiBone* bone = mesh->mBones[j];
-            String boneName(FromAIString(bone->mName));
+            stl::string boneName(FromAIString(bone->mName));
             aiNode* boneNode = GetNode(boneName, scene_->mRootNode, true);
             if (!boneNode)
                 ErrorExit("Could not find scene node for bone " + boneName);
@@ -857,7 +857,7 @@ void CollectBones(OutModel& model, bool animationOnly)
 
 void MoveToBindPose(OutModel& model, aiNode* current)
 {
-    String nodeName(FromAIString(current->mName));
+    stl::string nodeName(FromAIString(current->mName));
     Matrix3x4 bindWorldTransform = GetOffsetMatrix(model, nodeName).Inverse();
     // Skip if we get an identity offset matrix (bone lookup failed)
     if (!bindWorldTransform.Equals(Matrix3x4::IDENTITY))
@@ -879,7 +879,7 @@ void MoveToBindPose(OutModel& model, aiNode* current)
 void CollectBonesFinal(stl::vector<aiNode*>& dest, const stl::hash_set<aiNode*>& necessary, aiNode* node)
 {
     bool includeBone = necessary.find(node) != necessary.end();
-    String boneName = FromAIString(node->mName);
+    stl::string boneName = FromAIString(node->mName);
 
     // Check include/exclude filters for non-skinned bones
     if (!includeBone && includeNonSkinningBones_)
@@ -891,7 +891,7 @@ void CollectBonesFinal(stl::vector<aiNode*>& dest, const stl::hash_set<aiNode*>&
         // Check against includes/excludes
         for (unsigned i = 0; i < nonSkinningBoneIncludes_.size(); ++i)
         {
-            if (boneName.Contains(nonSkinningBoneIncludes_[i], false))
+            if (boneName.contains(nonSkinningBoneIncludes_[i], false))
             {
                 includeBone = true;
                 break;
@@ -899,7 +899,7 @@ void CollectBonesFinal(stl::vector<aiNode*>& dest, const stl::hash_set<aiNode*>&
         }
         for (unsigned i = 0; i < nonSkinningBoneExcludes_.size(); ++i)
         {
-            if (boneName.Contains(nonSkinningBoneExcludes_[i], false))
+            if (boneName.contains(nonSkinningBoneExcludes_[i], false))
             {
                 includeBone = false;
                 break;
@@ -932,7 +932,7 @@ void CollectAnimations(OutModel* model)
             for (unsigned j = 0; j < anim->mNumChannels; ++j)
             {
                 aiNodeAnim* channel = anim->mChannels[j];
-                String channelName = FromAIString(channel->mNodeName);
+                stl::string channelName = FromAIString(channel->mNodeName);
                 if (GetBoneIndex(*model, channelName) != M_MAX_UNSIGNED)
                 {
                     modelBoneFound = true;
@@ -963,7 +963,7 @@ void BuildBoneCollisionInfo(OutModel& model)
         for (unsigned j = 0; j < mesh->mNumBones; ++j)
         {
             aiBone* bone = mesh->mBones[j];
-            String boneName = FromAIString(bone->mName);
+            stl::string boneName = FromAIString(bone->mName);
             unsigned boneIndex = GetBoneIndex(model, boneName);
             if (boneIndex == M_MAX_UNSIGNED)
                 continue;
@@ -993,7 +993,7 @@ void BuildAndSaveModel(OutModel& model)
         return;
     }
 
-    String rootNodeName = FromAIString(model.rootNode_->mName);
+    stl::string rootNodeName = FromAIString(model.rootNode_->mName);
     if (!model.meshes_.size())
     {
         PrintLine("No geometries found starting from node " + rootNodeName + ", skipping model save");
@@ -1096,11 +1096,11 @@ void BuildAndSaveModel(OutModel& model)
 
         stl::shared_ptr<Geometry> geom(new Geometry(context_));
 
-        PrintLine("Writing geometry " + String(i) + " with " + String(mesh->mNumVertices) + " vertices " +
-            String(validFaces * 3) + " indices");
+        PrintLine("Writing geometry " + stl::to_string(i) + " with " + stl::to_string(mesh->mNumVertices) + " vertices " +
+            stl::to_string(validFaces * 3) + " indices");
 
         if (model.bones_.size() > 0 && !mesh->HasBones())
-            PrintLine("Warning: model has bones but geometry " + String(i) + " has no skinning information");
+            PrintLine("Warning: model has bones but geometry " + stl::to_string(i) + " has no skinning information");
 
         unsigned char* vertexData = vb->GetShadowData();
         unsigned char* indexData = ib->GetShadowData();
@@ -1172,7 +1172,7 @@ void BuildAndSaveModel(OutModel& model)
     // Build skeleton if necessary
     if (model.bones_.size() && model.rootBone_)
     {
-        PrintLine("Writing skeleton with " + String(model.bones_.size()) + " bones, rootbone " +
+        PrintLine("Writing skeleton with " + stl::to_string(model.bones_.size()) + " bones, rootbone " +
             FromAIString(model.rootBone_->mName));
 
         Skeleton skeleton;
@@ -1181,7 +1181,7 @@ void BuildAndSaveModel(OutModel& model)
         for (unsigned i = 0; i < model.bones_.size(); ++i)
         {
             aiNode* boneNode = model.bones_[i];
-            String boneName(FromAIString(boneNode->mName));
+            stl::string boneName(FromAIString(boneNode->mName));
 
             Bone newBone;
             newBone.name_ = boneName;
@@ -1205,7 +1205,7 @@ void BuildAndSaveModel(OutModel& model)
         // Set the bone hierarchy
         for (unsigned i = 1; i < model.bones_.size(); ++i)
         {
-            String parentName = FromAIString(model.bones_[i]->mParent->mName);
+            stl::string parentName = FromAIString(model.bones_[i]->mParent->mName);
             for (unsigned j = 0; j < bones.size(); ++j)
             {
                 if (bones[j].name_ == parentName)
@@ -1229,7 +1229,7 @@ void BuildAndSaveModel(OutModel& model)
     // If exporting materials, also save material list for use by the editor
     if (!noMaterials_ && saveMaterialList_)
     {
-        String materialListName = ReplaceExtension(model.outName_, ".txt");
+        stl::string materialListName = ReplaceExtension(model.outName_, ".txt");
         File listFile(context_);
         if (listFile.Open(materialListName, FILE_WRITE))
         {
@@ -1254,8 +1254,8 @@ void BuildAndSaveAnimations(OutModel* model)
         aiAnimation* anim = animations[i];
 
         auto duration = (float)anim->mDuration;
-        String animName = FromAIString(anim->mName);
-        String animOutName;
+        stl::string animName = FromAIString(anim->mName);
+        stl::string animOutName;
 
         float thisImportEndTime = importEndTime_;
         float thisImportStartTime = importStartTime_;
@@ -1264,10 +1264,10 @@ void BuildAndSaveAnimations(OutModel* model)
         if (thisImportEndTime == 0.0f)
             thisImportEndTime = duration;
 
-        if (animName.Empty())
-            animName = "Anim" + String(i + 1);
+        if (animName.empty())
+            animName = "Anim" + stl::to_string(i + 1);
 
-        String outName = model ? model->outName_ : outName_;
+        stl::string outName = model ? model->outName_ : outName_;
 
         if (context_->GetFileSystem()->DirExists(outName))
         {
@@ -1306,19 +1306,19 @@ void BuildAndSaveAnimations(OutModel* model)
         outAnim->SetAnimationName(animName);
         outAnim->SetLength(duration * tickConversion);
 
-        PrintLine("Writing animation " + animName + " length " + String(outAnim->GetLength()));
+        PrintLine("Writing animation " + animName + " length " + stl::to_string(outAnim->GetLength()));
         for (unsigned j = 0; j < anim->mNumChannels; ++j)
         {
             aiNodeAnim* channel = anim->mChannels[j];
-            String channelName = FromAIString(channel->mNodeName);
+            stl::string channelName = FromAIString(channel->mNodeName);
             aiNode* boneNode = nullptr;
 
             if (model)
             {
                 unsigned boneIndex;
-                unsigned pos = channelName.Find("_$AssimpFbx$");
+                unsigned pos = channelName.find("_$AssimpFbx$");
 
-                if (!suppressFbxPivotNodes_ || pos == String::NPOS)
+                if (!suppressFbxPivotNodes_ || pos == stl::string::npos)
                 {
                     boneIndex = GetBoneIndex(*model, channelName);
                     if (boneIndex == M_MAX_UNSIGNED)
@@ -1331,7 +1331,7 @@ void BuildAndSaveAnimations(OutModel* model)
                 }
                 else
                 {
-                    channelName = channelName.Substring(0, pos);
+                    channelName = channelName.substr(0, pos);
 
                     // every first $fbx animation channel for a bone will consolidate other $fbx animation to a single channel
                     // skip subsequent $fbx animation channel for the same bone
@@ -1497,7 +1497,7 @@ void BuildAndSaveAnimations(OutModel* model)
     }
 }
 
-void ExportScene(const String& outName, bool asPrefab)
+void ExportScene(const stl::string& outName, bool asPrefab)
 {
     OutScene outScene;
     outScene.outName_ = outName;
@@ -1704,7 +1704,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
                 model.bones_.empty() ? modelNode->CreateComponent<StaticModel>() : modelNode->CreateComponent<AnimatedModel>());
 
         // Create a dummy model so that the reference can be stored
-        String modelName = (useSubdirs_ ? "Models/" : "") + GetFileNameAndExtension(model.outName_);
+        stl::string modelName = (useSubdirs_ ? "Models/" : "") + GetFileNameAndExtension(model.outName_);
         if (!cache->Exists(modelName))
         {
             auto* dummyModel = new Model(context_);
@@ -1717,7 +1717,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
         // Set materials if they are known
         for (unsigned j = 0; j < model.meshes_.size(); ++j)
         {
-            String matName = GetMeshMaterialName(model.meshes_[j]);
+            stl::string matName = GetMeshMaterialName(model.meshes_[j]);
             // Create a dummy material so that the reference can be stored
             if (!cache->Exists(matName))
             {
@@ -1811,7 +1811,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
     }
 }
 
-void ExportMaterials(stl::hash_set<String>& usedTextures)
+void ExportMaterials(stl::hash_set<stl::string>& usedTextures)
 {
     if (useSubdirs_)
         context_->GetSubsystem<FileSystem>()->CreateDir(resourcePath_ + "Materials");
@@ -1820,23 +1820,24 @@ void ExportMaterials(stl::hash_set<String>& usedTextures)
         BuildAndSaveMaterial(scene_->mMaterials[i], usedTextures);
 }
 
-void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<String>& usedTextures)
+void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& usedTextures)
 {
     aiString matNameStr;
     material->Get(AI_MATKEY_NAME, matNameStr);
-    String matName = SanitateAssetName(FromAIString(matNameStr));
-    if (matName.Trimmed().Empty())
+    stl::string matName = SanitateAssetName(FromAIString(matNameStr));
+    matName.trim();
+    if (matName.empty())
         matName = GenerateMaterialName(material);
 
     // Do not actually create a material instance, but instead craft an xml file manually
     XMLFile outMaterial(context_);
     XMLElement materialElem = outMaterial.CreateRoot("material");
 
-    String diffuseTexName;
-    String normalTexName;
-    String specularTexName;
-    String lightmapTexName;
-    String emissiveTexName;
+    stl::string diffuseTexName;
+    stl::string normalTexName;
+    stl::string specularTexName;
+    stl::string lightmapTexName;
+    stl::string emissiveTexName;
     Color diffuseColor = Color::WHITE;
     Color specularColor;
     Color emissiveColor = Color::BLACK;
@@ -1887,18 +1888,18 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<String>& usedTextu
     if (material->Get(AI_MATKEY_TWOSIDED, intVal) == AI_SUCCESS)
         twoSided = (intVal != 0);
 
-    String techniqueName = "Techniques/NoTexture";
-    if (!diffuseTexName.Empty())
+    stl::string techniqueName = "Techniques/NoTexture";
+    if (!diffuseTexName.empty())
     {
         techniqueName = "Techniques/Diff";
-        if (!normalTexName.Empty())
+        if (!normalTexName.empty())
             techniqueName += "Normal";
-        if (!specularTexName.Empty())
+        if (!specularTexName.empty())
             techniqueName += "Spec";
         // For now lightmap does not coexist with normal & specular
-        if (normalTexName.Empty() && specularTexName.Empty() && !lightmapTexName.Empty())
+        if (normalTexName.empty() && specularTexName.empty() && !lightmapTexName.empty())
             techniqueName += "LightMap";
-        if (lightmapTexName.Empty() && !emissiveTexName.Empty())
+        if (lightmapTexName.empty() && !emissiveTexName.empty())
             techniqueName += emissiveAO_ ? "AO" : "Emissive";
     }
     if (hasAlpha)
@@ -1907,35 +1908,35 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<String>& usedTextu
     XMLElement techniqueElem = materialElem.CreateChild("technique");
     techniqueElem.SetString("name", techniqueName + ".xml");
 
-    if (!diffuseTexName.Empty())
+    if (!diffuseTexName.empty())
     {
         XMLElement diffuseElem = materialElem.CreateChild("texture");
         diffuseElem.SetString("unit", "diffuse");
         diffuseElem.SetString("name", GetMaterialTextureName(diffuseTexName));
         usedTextures.insert(diffuseTexName);
     }
-    if (!normalTexName.Empty())
+    if (!normalTexName.empty())
     {
         XMLElement normalElem = materialElem.CreateChild("texture");
         normalElem.SetString("unit", "normal");
         normalElem.SetString("name", GetMaterialTextureName(normalTexName));
         usedTextures.insert(normalTexName);
     }
-    if (!specularTexName.Empty())
+    if (!specularTexName.empty())
     {
         XMLElement specularElem = materialElem.CreateChild("texture");
         specularElem.SetString("unit", "specular");
         specularElem.SetString("name", GetMaterialTextureName(specularTexName));
         usedTextures.insert(specularTexName);
     }
-    if (!lightmapTexName.Empty())
+    if (!lightmapTexName.empty())
     {
         XMLElement lightmapElem = materialElem.CreateChild("texture");
         lightmapElem.SetString("unit", "emissive");
         lightmapElem.SetString("name", GetMaterialTextureName(lightmapTexName));
         usedTextures.insert(lightmapTexName);
     }
-    if (!emissiveTexName.Empty())
+    if (!emissiveTexName.empty())
     {
         XMLElement emissiveElem = materialElem.CreateChild("texture");
         emissiveElem.SetString("unit", "emissive");
@@ -1963,7 +1964,7 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<String>& usedTextu
 
     auto* fileSystem = context_->GetSubsystem<FileSystem>();
 
-    String outFileName = resourcePath_ + (useSubdirs_ ? "Materials/" : "" ) + matName + ".xml";
+    stl::string outFileName = resourcePath_ + (useSubdirs_ ? "Materials/" : "" ) + matName + ".xml";
     if (noOverwriteMaterial_ && fileSystem->FileExists(outFileName))
     {
         PrintLine("Skipping save of existing material " + matName);
@@ -1978,7 +1979,7 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<String>& usedTextu
     outMaterial.Save(outFile);
 }
 
-void CopyTextures(const stl::hash_set<String>& usedTextures, const String& sourcePath)
+void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::string& sourcePath)
 {
     auto* fileSystem = context_->GetSubsystem<FileSystem>();
 
@@ -1988,15 +1989,15 @@ void CopyTextures(const stl::hash_set<String>& usedTextures, const String& sourc
     for (auto i = usedTextures.begin(); i != usedTextures.end(); ++i)
     {
         // Handle assimp embedded textures
-        if (i->Length() && i->At(0) == '*')
+        if (i->length() && i->at(0) == '*')
         {
-            unsigned texIndex = ToInt(i->Substring(1));
+            unsigned texIndex = ToInt(i->substr(1));
             if (texIndex >= scene_->mNumTextures)
-                PrintLine("Skipping out of range texture index " + String(texIndex));
+                PrintLine("Skipping out of range texture index " + stl::to_string(texIndex));
             else
             {
                 aiTexture* tex = scene_->mTextures[texIndex];
-                String fullDestName = resourcePath_ + GenerateTextureName(texIndex);
+                stl::string fullDestName = resourcePath_ + GenerateTextureName(texIndex);
                 bool destExists = fileSystem->FileExists(fullDestName);
                 if (destExists && noOverwriteTexture_)
                 {
@@ -2023,8 +2024,8 @@ void CopyTextures(const stl::hash_set<String>& usedTextures, const String& sourc
         }
         else
         {
-            String fullSourceName = sourcePath + *i;
-            String fullDestName = resourcePath_ + (useSubdirs_ ? "Textures/" : "") + *i;
+            stl::string fullSourceName = sourcePath + *i;
+            stl::string fullDestName = resourcePath_ + (useSubdirs_ ? "Textures/" : "") + *i;
 
             if (!fileSystem->FileExists(fullSourceName))
             {
@@ -2059,13 +2060,13 @@ void CopyTextures(const stl::hash_set<String>& usedTextures, const String& sourc
     }
 }
 
-void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<String>& modelNames, const String& outName)
+void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::string>& modelNames, const stl::string& outName)
 {
     // Load models
     stl::vector<stl::shared_ptr<Model> > srcModels;
     for (unsigned i = 0; i < modelNames.size(); ++i)
     {
-        PrintLine("Reading LOD level " + String(i) + ": model " + modelNames[i] + " distance " + String(lodDistances[i]));
+        PrintLine("Reading LOD level " + stl::to_string(i) + ": model " + modelNames[i] + " distance " + stl::to_string(lodDistances[i]));
         File srcFile(context_);
         srcFile.Open(modelNames[i]);
         stl::shared_ptr<Model> srcModel(new Model(context_));
@@ -2165,7 +2166,7 @@ unsigned GetMeshIndex(aiMesh* mesh)
     return M_MAX_UNSIGNED;
 }
 
-unsigned GetBoneIndex(OutModel& model, const String& boneName)
+unsigned GetBoneIndex(OutModel& model, const stl::string& boneName)
 {
     for (unsigned i = 0; i < model.bones_.size(); ++i)
     {
@@ -2175,7 +2176,7 @@ unsigned GetBoneIndex(OutModel& model, const String& boneName)
     return M_MAX_UNSIGNED;
 }
 
-aiBone* GetMeshBone(OutModel& model, const String& boneName)
+aiBone* GetMeshBone(OutModel& model, const stl::string& boneName)
 {
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
     {
@@ -2190,7 +2191,7 @@ aiBone* GetMeshBone(OutModel& model, const String& boneName)
     return nullptr;
 }
 
-Matrix3x4 GetOffsetMatrix(OutModel& model, const String& boneName)
+Matrix3x4 GetOffsetMatrix(OutModel& model, const stl::string& boneName)
 {
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
     {
@@ -2239,8 +2240,8 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
         if (mesh->mNumBones > maxBones_)
         {
             ErrorExit(
-                "Geometry (submesh) has over " + String(maxBones_) + " bone influences. Try splitting to more submeshes\n"
-                "that each stay at " + String(maxBones_) + " bones or below."
+                "Geometry (submesh) has over " + stl::to_string(maxBones_) + " bone influences. Try splitting to more submeshes\n"
+                "that each stay at " + stl::to_string(maxBones_) + " bones or below."
             );
         }
         if (mesh->mNumBones > 0)
@@ -2249,7 +2250,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 aiBone* bone = mesh->mBones[i];
-                String boneName = FromAIString(bone->mName);
+                stl::string boneName = FromAIString(bone->mName);
                 unsigned globalIndex = GetBoneIndex(model, boneName);
                 if (globalIndex == M_MAX_UNSIGNED)
                     ErrorExit("Bone " + boneName + " not found");
@@ -2265,7 +2266,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
         else
         {
             // If mesh does not have skinning information, implement rigid skinning so that it stays compatible with AnimatedModel
-            String boneName = FromAIString(meshNode->mName);
+            stl::string boneName = FromAIString(meshNode->mName);
             unsigned globalIndex = GetBoneIndex(model, boneName);
             if (globalIndex == M_MAX_UNSIGNED)
                 PrintLine("Warning: bone " + boneName + " not found, skipping rigid skinning");
@@ -2287,7 +2288,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 aiBone* bone = mesh->mBones[i];
-                String boneName = FromAIString(bone->mName);
+                stl::string boneName = FromAIString(bone->mName);
                 unsigned globalIndex = GetBoneIndex(model, boneName);
                 if (globalIndex == M_MAX_UNSIGNED)
                     ErrorExit("Bone " + boneName + " not found");
@@ -2301,7 +2302,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
         }
         else
         {
-            String boneName = FromAIString(meshNode->mName);
+            stl::string boneName = FromAIString(meshNode->mName);
             unsigned globalIndex = GetBoneIndex(model, boneName);
             if (globalIndex == M_MAX_UNSIGNED)
                 PrintLine("Warning: bone " + boneName + " not found, skipping rigid skinning");
@@ -2321,7 +2322,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
     {
         if (blendWeights[i].size() > 4)
         {
-            PrintLine("Warning: more than 4 bone influences in vertex " + String(i));
+            PrintLine("Warning: more than 4 bone influences in vertex " + stl::to_string(i));
 
             while (blendWeights[i].size() > 4)
             {
@@ -2351,53 +2352,54 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
     }
 }
 
-String GetMeshMaterialName(aiMesh* mesh)
+stl::string GetMeshMaterialName(aiMesh* mesh)
 {
     aiMaterial* material = scene_->mMaterials[mesh->mMaterialIndex];
     aiString matNameStr;
     material->Get(AI_MATKEY_NAME, matNameStr);
-    String matName = SanitateAssetName(FromAIString(matNameStr));
-    if (matName.Trimmed().Empty())
+    stl::string matName = SanitateAssetName(FromAIString(matNameStr));
+    matName.trim();
+    if (matName.empty())
         matName = GenerateMaterialName(material);
 
     return (useSubdirs_ ? "Materials/" : "") + matName + ".xml";
 }
 
-String GenerateMaterialName(aiMaterial* material)
+stl::string GenerateMaterialName(aiMaterial* material)
 {
     for (unsigned i = 0; i < scene_->mNumMaterials; ++i)
     {
         if (scene_->mMaterials[i] == material)
-            return inputName_ + "_Material" + String(i);
+            return inputName_ + "_Material" + stl::to_string(i);
     }
 
     // Should not go here
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
-String GetMaterialTextureName(const String& nameIn)
+stl::string GetMaterialTextureName(const stl::string& nameIn)
 {
     // Detect assimp embedded texture
-    if (nameIn.Length() && nameIn[0] == '*')
-        return GenerateTextureName(ToInt(nameIn.Substring(1)));
+    if (nameIn.length() && nameIn[0] == '*')
+        return GenerateTextureName(ToInt(nameIn.substr(1)));
     else
         return (useSubdirs_ ? "Textures/" : "") + nameIn;
 }
 
-String GenerateTextureName(unsigned texIndex)
+stl::string GenerateTextureName(unsigned texIndex)
 {
     if (texIndex < scene_->mNumTextures)
     {
         // If embedded texture contains encoded data, use the format hint for file extension. Else save RGBA8 data as PNG
         aiTexture* tex = scene_->mTextures[texIndex];
         if (!tex->mHeight)
-            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + String(texIndex) + "." + tex->achFormatHint;
+            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + stl::to_string(texIndex) + "." + tex->achFormatHint;
         else
-            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + String(texIndex) + ".png";
+            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + stl::to_string(texIndex) + ".png";
     }
 
     // Should not go here
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 unsigned GetNumValidFaces(aiMesh* mesh)
@@ -2532,11 +2534,11 @@ stl::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned)
     return ret;
 }
 
-aiNode* GetNode(const String& name, aiNode* rootNode, bool caseSensitive)
+aiNode* GetNode(const stl::string& name, aiNode* rootNode, bool caseSensitive)
 {
     if (!rootNode)
         return nullptr;
-    if (!name.Compare(rootNode->mName.data, caseSensitive))
+    if (!Compare(name, rootNode->mName.data, caseSensitive))
         return rootNode;
     for (unsigned i = 0; i < rootNode->mNumChildren; ++i)
     {
@@ -2586,9 +2588,9 @@ void GetPosRotScale(const aiMatrix4x4& transform, Vector3& pos, Quaternion& rot,
 }
 
 
-String FromAIString(const aiString& str)
+stl::string FromAIString(const aiString& str)
 {
-    return String(str.data);
+    return stl::string(str.data);
 }
 
 Vector3 ToVector3(const aiVector3D& vec)
@@ -2620,23 +2622,23 @@ aiMatrix4x4 ToAIMatrix4x4(const Matrix3x4& mat)
     return ret;
 }
 
-String SanitateAssetName(const String& name)
+stl::string SanitateAssetName(const stl::string& name)
 {
-    String fixedName = name;
-    fixedName.Replace("<", "");
-    fixedName.Replace(">", "");
-    fixedName.Replace("?", "");
-    fixedName.Replace("*", "");
-    fixedName.Replace(":", "");
-    fixedName.Replace("\"", "");
-    fixedName.Replace("/", "");
-    fixedName.Replace("\\", "");
-    fixedName.Replace("|", "");
+    stl::string fixedName = name;
+    fixedName.replace("<", "");
+    fixedName.replace(">", "");
+    fixedName.replace("?", "");
+    fixedName.replace("*", "");
+    fixedName.replace(":", "");
+    fixedName.replace("\"", "");
+    fixedName.replace("/", "");
+    fixedName.replace("\\", "");
+    fixedName.replace("|", "");
 
     return fixedName;
 }
 
-unsigned GetPivotlessBoneIndex(OutModel& model, const String& boneName)
+unsigned GetPivotlessBoneIndex(OutModel& model, const stl::string& boneName)
 {
     for (unsigned i = 0; i < model.pivotlessBones_.size(); ++i)
     {
@@ -2646,15 +2648,15 @@ unsigned GetPivotlessBoneIndex(OutModel& model, const String& boneName)
     return M_MAX_UNSIGNED;
 }
 
-void FillChainTransforms(OutModel &model, aiMatrix4x4 *chain, const String& mainBoneName)
+void FillChainTransforms(OutModel &model, aiMatrix4x4 *chain, const stl::string& mainBoneName)
 {
     for (unsigned j = 0; j < TransformationComp_MAXIMUM; ++j)
     {
-        String transfBoneName = mainBoneName + "_$AssimpFbx$_" + String(transformSuffix[j]);
+        stl::string transfBoneName = mainBoneName + "_$AssimpFbx$_" + stl::string(transformSuffix[j]);
 
         for (unsigned k = 0; k < model.bones_.size(); ++k)
         {
-            String boneName = String(model.bones_[k]->mName.data);
+            stl::string boneName = stl::string(model.bones_[k]->mName.data);
 
             if (boneName == transfBoneName)
             {
@@ -2733,19 +2735,19 @@ void ExpandAnimatedChannelKeys(aiAnimation* anim, unsigned mainChannel, const in
     }
 }
 
-void InitAnimatedChainTransformIndices(aiAnimation* anim, unsigned mainChannel, const String& mainBoneName, int *channelIndices)
+void InitAnimatedChainTransformIndices(aiAnimation* anim, unsigned mainChannel, const stl::string& mainBoneName, int *channelIndices)
 {
     int numTransforms = 0;
 
     for (unsigned j = 0; j < TransformationComp_MAXIMUM; ++j)
     {
-        String transfBoneName = mainBoneName + "_$AssimpFbx$_" + String(transformSuffix[j]);
+        stl::string transfBoneName = mainBoneName + "_$AssimpFbx$_" + stl::string(transformSuffix[j]);
         channelIndices[j] = -1;
 
         for (unsigned k = 0; k < anim->mNumChannels; ++k)
         {
             aiNodeAnim* channel = anim->mChannels[k];
-            String channelName = FromAIString(channel->mNodeName);
+            stl::string channelName = FromAIString(channel->mNodeName);
 
             if (channelName == transfBoneName)
             {
@@ -2769,10 +2771,10 @@ void CreatePivotlessFbxBoneStruct(OutModel &model)
 
     for (unsigned i = 0; i < model.bones_.size(); ++i)
     {
-        String mainBoneName = String(model.bones_[i]->mName.data);
+        stl::string mainBoneName = stl::string(model.bones_[i]->mName.data);
 
         // Skip $fbx nodes
-        if (mainBoneName.Find("$AssimpFbx$") != String::NPOS)
+        if (mainBoneName.find("$AssimpFbx$") != stl::string::npos)
             continue;
 
         std::fill_n(chains, static_cast<unsigned int>(TransformationComp_MAXIMUM), aiMatrix4x4());
@@ -2806,20 +2808,20 @@ void ExtrapolatePivotlessAnimation(OutModel* model)
         for (unsigned i = 0; i < animations.size(); ++i)
         {
             aiAnimation* anim = animations[i];
-            stl::vector<String> mainBoneCompleteList;
+            stl::vector<stl::string> mainBoneCompleteList;
             mainBoneCompleteList.clear();
 
             for (unsigned j = 0; j < anim->mNumChannels; ++j)
             {
                 aiNodeAnim* channel = anim->mChannels[j];
-                String channelName = FromAIString(channel->mNodeName);
-                unsigned pos = channelName.Find("_$AssimpFbx$");
+                stl::string channelName = FromAIString(channel->mNodeName);
+                unsigned pos = channelName.find("_$AssimpFbx$");
 
-                if (pos != String::NPOS)
+                if (pos != stl::string::npos)
                 {
                     // Every first $fbx animation channel for a bone will consolidate other $fbx animation to a single channel
                     // skip subsequent $fbx animation channel for the same bone
-                    String mainBoneName = channelName.Substring(0, pos);
+                    stl::string mainBoneName = channelName.substr(0, pos);
 
                     if (mainBoneCompleteList.find(mainBoneName) != mainBoneCompleteList.end())
                         continue;

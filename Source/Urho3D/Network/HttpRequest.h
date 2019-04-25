@@ -46,7 +46,7 @@ class URHO3D_API HttpRequest : public RefCounted, public Deserializer, public Th
 {
 public:
     /// Construct with parameters.
-    HttpRequest(const String& url, const String& verb, const stl::vector<String>& headers, const String& postData);
+    HttpRequest(const stl::string& url, const stl::string& verb, const stl::vector<stl::string>& headers, const stl::string& postData);
     /// Destruct. Release the connection object.
     ~HttpRequest() override;
 
@@ -61,13 +61,13 @@ public:
     bool IsEof() const override;
 
     /// Return URL used in the request.
-    const String& GetURL() const { return url_; }
+    const stl::string& GetURL() const { return url_; }
 
     /// Return verb used in the request. Default GET if empty verb specified on construction.
-    const String& GetVerb() const { return verb_; }
+    const stl::string& GetVerb() const { return verb_; }
 
     /// Return error. Only non-empty in the error state.
-    String GetError() const;
+    stl::string GetError() const;
     /// Return connection state.
     HttpRequestState GetState() const;
     /// Return amount of bytes in the read buffer.
@@ -81,15 +81,15 @@ private:
     stl::pair<unsigned, bool> CheckAvailableSizeAndEof() const;
 
     /// URL.
-    String url_;
+    stl::string url_;
     /// Verb.
-    String verb_;
+    stl::string verb_;
     /// Error string. Empty if no error.
-    String error_;
+    stl::string error_;
     /// Headers.
-    stl::vector<String> headers_;
+    stl::vector<stl::string> headers_;
     /// POST data.
-    String postData_;
+    stl::string postData_;
     /// Connection state.
     HttpRequestState state_;
     /// Mutex for synchronizing the worker and the main thread.

@@ -84,7 +84,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
     textures_.reserve(pages);
 
     auto* resourceCache = font_->GetSubsystem<ResourceCache>();
-    String fontPath = GetPath(font_->GetName());
+    stl::string fontPath = GetPath(font_->GetName());
     unsigned totalTextureSize = 0;
 
     XMLElement pageElem = pagesElem.GetChild("page");
@@ -92,12 +92,12 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
     {
         if (pageElem.IsNull())
         {
-            URHO3D_LOGERROR("Could not find Page element for page: " + String(i));
+            URHO3D_LOGERROR("Could not find Page element for page: " + stl::to_string(i));
             return false;
         }
 
         // Assume the font image is in the same directory as the font description file
-        String textureFile = fontPath + pageElem.GetAttribute("file");
+        stl::string textureFile = fontPath + pageElem.GetAttribute("file");
 
         // Load texture manually to allow controlling the alpha channel mode
         stl::shared_ptr<File> fontFile = resourceCache->GetFile(textureFile);
@@ -160,7 +160,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         }
     }
 
-    URHO3D_LOGDEBUGF("Bitmap font face %s has %d glyphs", GetFileName(font_->GetName()).CString(), count);
+    URHO3D_LOGDEBUGF("Bitmap font face %s has %d glyphs", GetFileName(font_->GetName()).c_str(), count);
 
     font_->SetMemoryUse(font_->GetMemoryUse() + totalTextureSize);
     return true;
@@ -262,7 +262,7 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
     return true;
 }
 
-bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indentation)
+bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const stl::string& indentation)
 {
     Context* context = font_->GetContext();
 
@@ -271,9 +271,9 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
 
     // Information
     XMLElement childElem = rootElem.CreateChild("info");
-    String fileName = GetFileName(font_->GetName());
+    stl::string fileName = GetFileName(font_->GetName());
     childElem.SetAttribute("face", fileName);
-    childElem.SetAttribute("size", String(pointSize));
+    childElem.SetAttribute("size", stl::to_string(pointSize));
 
     // Common
     childElem = rootElem.CreateChild("common");
@@ -282,7 +282,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
     childElem.SetUInt("pages", pages);
 
     // Construct the path to store the texture
-    String pathName;
+    stl::string pathName;
     auto* file = dynamic_cast<File*>(&dest);
     if (file)
         // If serialize to file, use the file's path
@@ -297,7 +297,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const String& indenta
     {
         XMLElement pageElem = childElem.CreateChild("page");
         pageElem.SetInt("id", i);
-        String texFileName = fileName + "_" + String(i) + ".png";
+        stl::string texFileName = fileName + "_" + stl::to_string(i) + ".png";
         pageElem.SetAttribute("file", texFileName);
 
         // Save the font face texture to image file
@@ -365,7 +365,7 @@ stl::shared_ptr<Image> FontFaceBitmap::SaveFaceTexture(Texture2D* texture)
     return image;
 }
 
-bool FontFaceBitmap::SaveFaceTexture(Texture2D* texture, const String& fileName)
+bool FontFaceBitmap::SaveFaceTexture(Texture2D* texture, const stl::string& fileName)
 {
     stl::shared_ptr<Image> image = SaveFaceTexture(texture);
     return image ? image->SavePNG(fileName) : false;

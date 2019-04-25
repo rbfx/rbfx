@@ -99,7 +99,7 @@ struct URHO3D_API AnimationTrack
     void GetKeyFrameIndex(float time, unsigned& index) const;
 
     /// Bone or scene node name.
-    String name_;
+    stl::string name_;
     /// Name hash.
     StringHash nameHash_;
     /// Bitmask of included data (position, rotation, scale.)
@@ -166,13 +166,13 @@ public:
     bool Save(Serializer& dest) const override;
 
     /// Set animation name.
-    void SetAnimationName(const String& name);
+    void SetAnimationName(const stl::string& name);
     /// Set animation length.
     void SetLength(float length);
     /// Create and return a track by name. If track by same name already exists, returns the existing.
-    AnimationTrack* CreateTrack(const String& name);
+    AnimationTrack* CreateTrack(const stl::string& name);
     /// Remove a track by name. Return true if was found and removed successfully. This is unsafe if the animation is currently used in playback.
-    bool RemoveTrack(const String& name);
+    bool RemoveTrack(const stl::string& name);
     /// Remove all tracks. This is unsafe if the animation is currently used in playback.
     void RemoveAllTracks();
     /// Set a trigger point at index.
@@ -188,10 +188,10 @@ public:
     /// Resize trigger point vector.
     void SetNumTriggers(unsigned num);
     /// Clone the animation.
-    stl::shared_ptr<Animation> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Animation> Clone(const stl::string& cloneName = EMPTY_STRING) const;
 
     /// Return animation name.
-    const String& GetAnimationName() const { return animationName_; }
+    const stl::string& GetAnimationName() const { return animationName_; }
 
     /// Return animation name hash.
     StringHash GetAnimationNameHash() const { return animationNameHash_; }
@@ -209,7 +209,7 @@ public:
     AnimationTrack *GetTrack(unsigned index);
 
     /// Return animation track by name.
-    AnimationTrack* GetTrack(const String& name);
+    AnimationTrack* GetTrack(const stl::string& name);
     /// Return animation track by name hash.
     AnimationTrack* GetTrack(StringHash nameHash);
 
@@ -226,7 +226,7 @@ public:
     void SetTracks(const stl::vector<AnimationTrack>& tracks);
 private:
     /// Animation name.
-    String animationName_;
+    stl::string animationName_;
     /// Animation name hash.
     StringHash animationNameHash_;
     /// Animation length.

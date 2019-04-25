@@ -94,13 +94,13 @@ public:
     void OnIndentSet() override;
 
     /// Set font by looking from resource cache by name and font size. Return true if successful.
-    bool SetFont(const String& fontName, float size = DEFAULT_FONT_SIZE);
+    bool SetFont(const stl::string& fontName, float size = DEFAULT_FONT_SIZE);
     /// Set font and font size. Return true if successful.
     bool SetFont(Font* font, float size = DEFAULT_FONT_SIZE);
     /// Set font size only while retaining the existing font. Return true if successful.
     bool SetFontSize(float size);
     /// Set text. Text is assumed to be either ASCII or UTF8-encoded.
-    void SetText(const String& text);
+    void SetText(const stl::string& text);
     /// Set row alignment.
     void SetTextAlignment(HorizontalAlignment align);
     /// Set row spacing, 1.0 for original font spacing.
@@ -131,7 +131,7 @@ public:
     float GetFontSize() const { return fontSize_; }
 
     /// Return text.
-    const String& GetText() const { return text_; }
+    const stl::string& GetText() const { return text_; }
 
     /// Return row alignment.
     HorizontalAlignment GetTextAlignment() const { return textAlignment_; }
@@ -193,9 +193,9 @@ public:
     /// Return font attribute.
     ResourceRef GetFontAttr() const;
     /// Set text attribute.
-    void SetTextAttr(const String& value);
+    void SetTextAttr(const stl::string& value);
     /// Return text attribute.
-    String GetTextAttr() const;
+    stl::string GetTextAttr() const;
 
 protected:
     /// Filter implicit attributes in serialization process.
@@ -220,7 +220,7 @@ protected:
     /// Font size.
     float fontSize_;
     /// UTF-8 encoded text.
-    String text_;
+    stl::string text_;
     /// Row alignment.
     HorizontalAlignment textAlignment_;
     /// Row spacing.
@@ -262,7 +262,7 @@ protected:
     /// The text will be automatically translated.
     bool autoLocalizable_;
     /// Localization string id storage. Used when autoLocalizable flag is set.
-    String stringId_;
+    stl::string stringId_;
     /// Handle change Language.
     void HandleChangeLanguage(StringHash eventType, VariantMap& eventData);
     /// UTF8 to Unicode.

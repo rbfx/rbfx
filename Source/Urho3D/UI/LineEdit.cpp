@@ -219,14 +219,14 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
             unsigned length = text_->GetSelectionLength();
 
             if (text_->GetSelectionLength())
-                GetSubsystem<UI>()->SetClipboardText(line_.SubstringUTF8(start, length));
+                GetSubsystem<UI>()->SetClipboardText(SubstringUTF8(line_, start, length));
 
             if (key == KEY_X && editable_)
             {
-                if (start + length < line_.LengthUTF8())
-                    line_ = line_.SubstringUTF8(0, start) + line_.SubstringUTF8(start + length);
+                if (start + length < LengthUTF8(line_))
+                    line_ = SubstringUTF8(line_, 0, start) + SubstringUTF8(line_, start + length);
                 else
-                    line_ = line_.SubstringUTF8(0, start);
+                    line_ = SubstringUTF8(line_, 0, start);
                 text_->ClearSelection();
                 cursorPosition_ = start;
                 changed = true;
@@ -237,26 +237,26 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
     case KEY_V:
         if (editable_ && textCopyable_ && qualifiers & QUAL_CTRL)
         {
-            const String& clipBoard = GetSubsystem<UI>()->GetClipboardText();
-            if (!clipBoard.Empty())
+            const stl::string& clipBoard = GetSubsystem<UI>()->GetClipboardText();
+            if (!clipBoard.empty())
             {
                 // Remove selected text first
                 if (text_->GetSelectionLength() > 0)
                 {
                     unsigned start = text_->GetSelectionStart();
                     unsigned length = text_->GetSelectionLength();
-                    if (start + length < line_.LengthUTF8())
-                        line_ = line_.SubstringUTF8(0, start) + line_.SubstringUTF8(start + length);
+                    if (start + length < LengthUTF8(line_))
+                        line_ = SubstringUTF8(line_, 0, start) + SubstringUTF8(line_, start + length);
                     else
-                        line_ = line_.SubstringUTF8(0, start);
+                        line_ = SubstringUTF8(line_, 0, start);
                     text_->ClearSelection();
                     cursorPosition_ = start;
                 }
-                if (cursorPosition_ < line_.LengthUTF8())
-                    line_ = line_.SubstringUTF8(0, cursorPosition_) + clipBoard + line_.SubstringUTF8(cursorPosition_);
+                if (cursorPosition_ < LengthUTF8(line_))
+                    line_ = SubstringUTF8(line_, 0, cursorPosition_) + clipBoard + SubstringUTF8(line_, cursorPosition_);
                 else
                     line_ += clipBoard;
-                cursorPosition_ += clipBoard.LengthUTF8();
+                cursorPosition_ += LengthUTF8(clipBoard);
                 changed = true;
             }
         }
@@ -299,13 +299,13 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
         // Fallthru
 
     case KEY_RIGHT:
-        if (cursorMovable_ && cursorPosition_ < line_.LengthUTF8())
+        if (cursorMovable_ && cursorPosition_ < LengthUTF8(line_))
         {
             if (textSelectable_ && qualifiers & QUAL_SHIFT && !text_->GetSelectionLength())
                 dragBeginCursor_ = cursorPosition_;
 
             if (qualifiers & QUAL_CTRL)
-                cursorPosition_ = line_.LengthUTF8();
+                cursorPosition_ = LengthUTF8(line_);
             else if (text_->GetSelectionLength() && !(qualifiers & QUAL_SHIFT))
                 cursorPosition_ = text_->GetSelectionStart() + text_->GetSelectionLength();
             else
@@ -331,9 +331,9 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
         {
             if (!text_->GetSelectionLength())
             {
-                if (cursorPosition_ < line_.LengthUTF8())
+                if (cursorPosition_ < LengthUTF8(line_))
                 {
-                    line_ = line_.SubstringUTF8(0, cursorPosition_) + line_.SubstringUTF8(cursorPosition_ + 1);
+                    line_ = SubstringUTF8(line_, 0, cursorPosition_) + SubstringUTF8(line_, cursorPosition_ + 1);
                     changed = true;
                 }
             }
@@ -342,10 +342,10 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
                 // If a selection exists, erase it
                 unsigned start = text_->GetSelectionStart();
                 unsigned length = text_->GetSelectionLength();
-                if (start + length < line_.LengthUTF8())
-                    line_ = line_.SubstringUTF8(0, start) + line_.SubstringUTF8(start + length);
+                if (start + length < LengthUTF8(line_))
+                    line_ = SubstringUTF8(line_, 0, start) + SubstringUTF8(line_, start + length);
                 else
-                    line_ = line_.SubstringUTF8(0, start);
+                    line_ = SubstringUTF8(line_, 0, start);
                 text_->ClearSelection();
                 cursorPosition_ = start;
                 changed = true;
@@ -374,12 +374,12 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
         {
             if (!text_->GetSelectionLength())
             {
-                if (line_.LengthUTF8() && cursorPosition_)
+                if (LengthUTF8(line_) && cursorPosition_)
                 {
-                    if (cursorPosition_ < line_.LengthUTF8())
-                        line_ = line_.SubstringUTF8(0, cursorPosition_ - 1) + line_.SubstringUTF8(cursorPosition_);
+                    if (cursorPosition_ < LengthUTF8(line_))
+                        line_ = SubstringUTF8(line_, 0, cursorPosition_ - 1) + SubstringUTF8(line_, cursorPosition_);
                     else
-                        line_ = line_.SubstringUTF8(0, cursorPosition_ - 1);
+                        line_ = SubstringUTF8(line_, 0, cursorPosition_ - 1);
                     --cursorPosition_;
                     changed = true;
                 }
@@ -389,10 +389,10 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
                 // If a selection exists, erase it
                 unsigned start = text_->GetSelectionStart();
                 unsigned length = text_->GetSelectionLength();
-                if (start + length < line_.LengthUTF8())
-                    line_ = line_.SubstringUTF8(0, start) + line_.SubstringUTF8(start + length);
+                if (start + length < LengthUTF8(line_))
+                    line_ = SubstringUTF8(line_, 0, start) + SubstringUTF8(line_, start + length);
                 else
-                    line_ = line_.SubstringUTF8(0, start);
+                    line_ = SubstringUTF8(line_, 0, start);
                 text_->ClearSelection();
                 cursorPosition_ = start;
                 changed = true;
@@ -429,7 +429,7 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
         UpdateCursor();
 }
 
-void LineEdit::OnTextInput(const String& text)
+void LineEdit::OnTextInput(const stl::string& text)
 {
     if (!editable_)
         return;
@@ -444,27 +444,27 @@ void LineEdit::OnTextInput(const String& text)
     eventData[P_TEXT] = text;
     SendEvent(E_TEXTENTRY, eventData);
 
-    const String newText = eventData[P_TEXT].GetString().SubstringUTF8(0);
-    if (!newText.Empty() && (!maxLength_ || line_.LengthUTF8() + newText.LengthUTF8() <= maxLength_))
+    const stl::string newText = SubstringUTF8(eventData[P_TEXT].GetString(), 0);
+    if (!newText.empty() && (!maxLength_ || LengthUTF8(line_) + LengthUTF8(newText) <= maxLength_))
     {
         if (!text_->GetSelectionLength())
         {
-            if (cursorPosition_ == line_.LengthUTF8())
+            if (cursorPosition_ == LengthUTF8(line_))
                 line_ += newText;
             else
-                line_ = line_.SubstringUTF8(0, cursorPosition_) + newText + line_.SubstringUTF8(cursorPosition_);
-            cursorPosition_ += newText.LengthUTF8();
+                line_ = SubstringUTF8(line_, 0, cursorPosition_) + newText + SubstringUTF8(line_, cursorPosition_);
+            cursorPosition_ += LengthUTF8(newText);
         }
         else
         {
             // If a selection exists, erase it first
             unsigned start = text_->GetSelectionStart();
             unsigned length = text_->GetSelectionLength();
-            if (start + length < line_.LengthUTF8())
-                line_ = line_.SubstringUTF8(0, start) + newText + line_.SubstringUTF8(start + length);
+            if (start + length < LengthUTF8(line_))
+                line_ = SubstringUTF8(line_, 0, start) + newText + SubstringUTF8(line_, start + length);
             else
-                line_ = line_.SubstringUTF8(0, start) + newText;
-            cursorPosition_ = start + newText.LengthUTF8();
+                line_ = SubstringUTF8(line_, 0, start) + newText;
+            cursorPosition_ = start + LengthUTF8(newText);
         }
         changed = true;
     }
@@ -477,12 +477,12 @@ void LineEdit::OnTextInput(const String& text)
     }
 }
 
-void LineEdit::SetText(const String& text)
+void LineEdit::SetText(const stl::string& text)
 {
     if (text != line_)
     {
         line_ = text;
-        cursorPosition_ = line_.LengthUTF8();
+        cursorPosition_ = LengthUTF8(line_);
         UpdateText();
         UpdateCursor();
     }
@@ -490,8 +490,8 @@ void LineEdit::SetText(const String& text)
 
 void LineEdit::SetCursorPosition(unsigned position)
 {
-    if (position > line_.LengthUTF8() || !cursorMovable_)
-        position = line_.LengthUTF8();
+    if (position > LengthUTF8(line_) || !cursorMovable_)
+        position = LengthUTF8(line_);
 
     if (position != cursorPosition_)
     {
@@ -564,15 +564,15 @@ bool LineEdit::FilterImplicitAttributes(XMLElement& dest) const
 
 void LineEdit::UpdateText()
 {
-    unsigned utf8Length = line_.LengthUTF8();
+    unsigned utf8Length = LengthUTF8(line_);
 
     if (!echoCharacter_)
         text_->SetText(line_);
     else
     {
-        String echoText;
+        stl::string echoText;
         for (unsigned i = 0; i < utf8Length; ++i)
-            echoText.AppendUTF8(echoCharacter_);
+            AppendUTF8(echoText, echoCharacter_);
         text_->SetText(echoText);
     }
     if (cursorPosition_ > utf8Length)
@@ -638,7 +638,7 @@ void LineEdit::HandleFocused(StringHash /*eventType*/, VariantMap& eventData)
 {
     if (eventData[Focused::P_BYKEY].GetBool())
     {
-        cursorPosition_ = line_.LengthUTF8();
+        cursorPosition_ = LengthUTF8(line_);
         text_->SetSelection(0);
     }
     UpdateCursor();

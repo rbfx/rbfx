@@ -167,7 +167,7 @@ bool Animation::BeginLoad(Deserializer& source)
 
     // Optionally read triggers from an XML file
     auto* cache = GetSubsystem<ResourceCache>();
-    String xmlName = ReplaceExtension(GetName(), ".xml");
+    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
 
     stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
@@ -189,7 +189,7 @@ bool Animation::BeginLoad(Deserializer& source)
     }
 
     // Optionally read triggers from a JSON file
-    String jsonName = ReplaceExtension(GetName(), ".json");
+    stl::string jsonName = ReplaceExtension(GetName(), ".json");
 
     stl::shared_ptr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
     if (jsonFile)
@@ -259,7 +259,7 @@ bool Animation::Save(Serializer& dest) const
         auto* destFile = dynamic_cast<File*>(&dest);
         if (destFile)
         {
-            String xmlName = ReplaceExtension(destFile->GetName(), ".xml");
+            stl::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
             stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("animation");
@@ -283,7 +283,7 @@ bool Animation::Save(Serializer& dest) const
     return true;
 }
 
-void Animation::SetAnimationName(const String& name)
+void Animation::SetAnimationName(const stl::string& name)
 {
     animationName_ = name;
     animationNameHash_ = StringHash(name);
@@ -294,7 +294,7 @@ void Animation::SetLength(float length)
     length_ = Max(length, 0.0f);
 }
 
-AnimationTrack* Animation::CreateTrack(const String& name)
+AnimationTrack* Animation::CreateTrack(const stl::string& name)
 {
     /// \todo When tracks / keyframes are created dynamically, memory use is not updated
     StringHash nameHash(name);
@@ -308,7 +308,7 @@ AnimationTrack* Animation::CreateTrack(const String& name)
     return &newTrack;
 }
 
-bool Animation::RemoveTrack(const String& name)
+bool Animation::RemoveTrack(const stl::string& name)
 {
     HashMap<StringHash, AnimationTrack>::Iterator i = tracks_.Find(StringHash(name));
     if (i != tracks_.End())
@@ -368,7 +368,7 @@ void Animation::SetNumTriggers(unsigned num)
     triggers_.resize(num);
 }
 
-stl::shared_ptr<Animation> Animation::Clone(const String& cloneName) const
+stl::shared_ptr<Animation> Animation::Clone(const stl::string& cloneName) const
 {
     stl::shared_ptr<Animation> ret(context_->CreateObject<Animation>());
 
@@ -400,7 +400,7 @@ AnimationTrack* Animation::GetTrack(unsigned index)
     return nullptr;
 }
 
-AnimationTrack* Animation::GetTrack(const String& name)
+AnimationTrack* Animation::GetTrack(const stl::string& name)
 {
     HashMap<StringHash, AnimationTrack>::Iterator i = tracks_.Find(StringHash(name));
     return i != tracks_.End() ? &i->second_ : nullptr;

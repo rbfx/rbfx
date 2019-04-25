@@ -71,7 +71,7 @@ PreviewTab::PreviewTab(Context* context)
 
         if (auto* resource = GetEventSender()->Cast<Resource>())
         {
-            if (resource->GetName().StartsWith("RenderPaths/") || resource->GetName().StartsWith("PostProcess/"))
+            if (resource->GetName().starts_with("RenderPaths/") || resource->GetName().starts_with("PostProcess/"))
             {
                 if (auto* manager = scene->GetOrCreateComponent<SceneMetadata>())
                 {
@@ -121,7 +121,7 @@ PreviewTab::PreviewTab(Context* context)
         {
             // Dim other windows except for preview.
             ImGuiContext& g = *ui::GetCurrentContext();
-            const String& sceneTabName = GetSubsystem<Editor>()->GetTab<SceneTab>()->GetUniqueTitle();
+            const stl::string& sceneTabName = GetSubsystem<Editor>()->GetTab<SceneTab>()->GetUniqueTitle();
             for (int i = 0; i < g.Windows.Size; i++)
             {
                 ImGuiWindow* window = g.Windows[i];
@@ -133,10 +133,10 @@ PreviewTab::PreviewTab(Context* context)
                     if (!window->DockTabIsVisible)
                         continue;
                     // Editor scene viewport is not dimmed.
-                    if (strcmp(window->Name, sceneTabName.CString()) == 0)
+                    if (strcmp(window->Name, sceneTabName.c_str()) == 0)
                         continue;
                     // Game preview viewport is not dimmed.
-                    if (strcmp(window->Name, GetUniqueTitle().CString()) == 0)
+                    if (strcmp(window->Name, GetUniqueTitle().c_str()) == 0)
                         continue;
                     ImDrawList* drawLists = ui::GetOverlayDrawList(window->Viewport);
                     const ImU32 color = ui::GetColorU32(ImGuiCol_ModalWindowDimBg, dim_);

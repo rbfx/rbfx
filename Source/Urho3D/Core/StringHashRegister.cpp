@@ -55,10 +55,10 @@ StringHash StringHashRegister::RegisterString(const StringHash& hash, const char
     {
         map_.Populate(hash, string);
     }
-    else if (iter->second_.Compare(string, false) != 0)
+    else if (iter->second_.comparei(string) != 0)
     {
         URHO3D_LOGWARNINGF("StringHash collision detected! Both \"%s\" and \"%s\" have hash #%s",
-            string, iter->second_.CString(), hash.ToString().CString());
+            string, iter->second_.c_str(), hash.ToString().c_str());
     }
 
     if (mutex_)
@@ -73,12 +73,12 @@ StringHash StringHashRegister::RegisterString(const char* string)
     return RegisterString(hash, string);
 }
 
-String StringHashRegister::GetStringCopy(const StringHash& hash) const
+stl::string StringHashRegister::GetStringCopy(const StringHash& hash) const
 {
     if (mutex_)
         mutex_->Acquire();
 
-    const String copy = GetString(hash);
+    const stl::string copy = GetString(hash);
 
     if (mutex_)
         mutex_->Release();
@@ -99,10 +99,10 @@ bool StringHashRegister::Contains(const StringHash& hash) const
     return contains;
 }
 
-const String& StringHashRegister::GetString(const StringHash& hash) const
+const stl::string& StringHashRegister::GetString(const StringHash& hash) const
 {
     auto iter = map_.Find(hash);
-    return iter == map_.End() ? String::EMPTY : iter->second_;
+    return iter == map_.End() ? EMPTY_STRING : iter->second_;
 }
 
 }

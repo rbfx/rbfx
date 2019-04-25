@@ -76,10 +76,10 @@ void AnimatedSprite2D::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(StaticSprite2D);
     URHO3D_REMOVE_ATTRIBUTE("Sprite");
     URHO3D_ACCESSOR_ATTRIBUTE("Speed", GetSpeed, SetSpeed, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Entity", GetEntity, SetEntity, String, String::EMPTY, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Entity", GetEntity, SetEntity, stl::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animation Set", GetAnimationSetAttr, SetAnimationSetAttr, ResourceRef,
         ResourceRef(AnimatedSprite2D::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Animation", GetAnimation, SetAnimationAttr, String, String::EMPTY, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Animation", GetAnimation, SetAnimationAttr, stl::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Loop Mode", GetLoopMode, SetLoopMode, LoopMode2D, loopModeNames, LM_DEFAULT, AM_DEFAULT);
 }
 
@@ -127,7 +127,7 @@ void AnimatedSprite2D::SetAnimationSet(AnimationSet2D* animationSet)
             // If entity is empty use first skin in spine
             if (entity_.Empty())
                 entity_ = skeleton_->data->skins[0]->name;
-            spSkeleton_setSkinByName(skeleton_, entity_.CString());
+            spSkeleton_setSkinByName(skeleton_, entity_.c_str());
         }
 
         spSkeleton_updateWorldTransform(skeleton_);
@@ -140,18 +140,18 @@ void AnimatedSprite2D::SetAnimationSet(AnimationSet2D* animationSet)
         if (!animationSet_->GetSpriterData()->entities_.empty())
         {
             // If entity is empty use first entity in spriter
-            if (entity_.Empty())
+            if (entity_.empty())
                 entity_ = animationSet_->GetSpriterData()->entities_[0]->name_;
             spriterInstance_->SetEntity(entity_);
         }
     }
 
     // Clear animation name
-    animationName_.Clear();
+    animationName_.clear();
     loopMode_ = LM_DEFAULT;
 }
 
-void AnimatedSprite2D::SetEntity(const String& entity)
+void AnimatedSprite2D::SetEntity(const stl::string& entity)
 {
     if (entity == entity_)
         return;
@@ -160,13 +160,13 @@ void AnimatedSprite2D::SetEntity(const String& entity)
 
 #ifdef URHO3D_SPINE
     if (skeleton_)
-        spSkeleton_setSkinByName(skeleton_, entity_.CString());
+        spSkeleton_setSkinByName(skeleton_, entity_.c_str());
 #endif
     if (spriterInstance_)
-        spriterInstance_->SetEntity(entity_.CString());
+        spriterInstance_->SetEntity(entity_.c_str());
 }
 
-void AnimatedSprite2D::SetAnimation(const String& name, LoopMode2D loopMode)
+void AnimatedSprite2D::SetAnimation(const stl::string& name, LoopMode2D loopMode)
 {
     animationName_ = name;
     loopMode_ = loopMode;
@@ -224,7 +224,7 @@ void AnimatedSprite2D::OnSceneSet(Scene* scene)
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
 }
 
-void AnimatedSprite2D::SetAnimationAttr(const String& name)
+void AnimatedSprite2D::SetAnimationAttr(const stl::string& name)
 {
     animationName_ = name;
     SetAnimation(animationName_, loopMode_);
@@ -284,7 +284,7 @@ void AnimatedSprite2D::SetSpineAnimation()
 
     // Reset slots to setup pose, fix issue #932
     spSkeleton_setSlotsToSetupPose(skeleton_);
-    spAnimationState_setAnimationByName(animationState_, 0, animationName_.CString(), loopMode_ != LM_FORCE_CLAMPED ? true : false);
+    spAnimationState_setAnimationByName(animationState_, 0, animationName_.c_str(), loopMode_ != LM_FORCE_CLAMPED ? true : false);
 
     UpdateAnimation(0.0f);
     MarkNetworkUpdate();
@@ -408,16 +408,16 @@ void AnimatedSprite2D::SetSpriterAnimation()
         spriterInstance_ = new Spriter::SpriterInstance(this, animationSet_->GetSpriterData());
 
     // Use entity is empty first entity
-    if (entity_.Empty())
+    if (entity_.empty())
         entity_ = animationSet_->GetSpriterData()->entities_[0]->name_;
 
-    if (!spriterInstance_->SetEntity(entity_.CString()))
+    if (!spriterInstance_->SetEntity(entity_.c_str()))
     {
         URHO3D_LOGERROR("Set entity failed");
         return;
     }
 
-    if (!spriterInstance_->SetAnimation(animationName_.CString(), (Spriter::LoopMode)loopMode_))
+    if (!spriterInstance_->SetAnimation(animationName_.c_str(), (Spriter::LoopMode)loopMode_))
     {
         URHO3D_LOGERROR("Set animation failed");
         return;

@@ -75,11 +75,11 @@ void Graphics::SetExternalWindow(void* window)
         URHO3D_LOGERROR("Window already opened, can not set external window");
 }
 
-void Graphics::SetWindowTitle(const String& windowTitle)
+void Graphics::SetWindowTitle(const stl::string& windowTitle)
 {
     windowTitle_ = windowTitle;
     if (window_)
-        SDL_SetWindowTitle(window_, windowTitle_.CString());
+        SDL_SetWindowTitle(window_, windowTitle_.c_str());
 }
 
 void Graphics::SetWindowIcon(Image* windowIcon)
@@ -102,10 +102,10 @@ void Graphics::SetWindowPosition(int x, int y)
     SetWindowPosition(IntVector2(x, y));
 }
 
-void Graphics::SetOrientations(const String& orientations)
+void Graphics::SetOrientations(const stl::string& orientations)
 {
-    orientations_ = orientations.Trimmed();
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.CString());
+    orientations_ = orientations.trimmed();
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
 }
 
 bool Graphics::ToggleFullscreen()
@@ -275,7 +275,7 @@ void Graphics::Raise() const
     SDL_RaiseWindow(window_);
 }
 
-void Graphics::BeginDumpShaders(const String& fileName)
+void Graphics::BeginDumpShaders(const stl::string& fileName)
 {
     shaderPrecache_ = new ShaderPrecache(context_, fileName);
 }
@@ -292,10 +292,10 @@ void Graphics::PrecacheShaders(Deserializer& source)
     ShaderPrecache::LoadShaders(this, source);
 }
 
-void Graphics::SetShaderCacheDir(const String& path)
+void Graphics::SetShaderCacheDir(const stl::string& path)
 {
-    String trimmedPath = path.Trimmed();
-    if (trimmedPath.Length())
+    stl::string trimmedPath = path.trimmed();
+    if (trimmedPath.length())
         shaderCacheDir_ = AddTrailingSlash(trimmedPath);
 }
 
@@ -340,7 +340,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
             i->size_ = size;
             i->reserved_ = true;
 
-            URHO3D_LOGTRACE("Resized scratch buffer to size " + String(size));
+            URHO3D_LOGTRACE("Resized scratch buffer to size " + stl::to_string(size));
 
             return i->data_.get();
         }
@@ -353,7 +353,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
     newBuffer.reserved_ = true;
     scratchBuffers_.push_back(newBuffer);
 
-    URHO3D_LOGDEBUG("Allocated scratch buffer with size " + String(size));
+    URHO3D_LOGDEBUG("Allocated scratch buffer with size " + stl::to_string(size));
 
     return newBuffer.data_.get();
 }
@@ -384,7 +384,7 @@ void Graphics::CleanupScratchBuffers()
             i->data_.reset(maxScratchBufferRequest_ > 0 ? (new unsigned char[maxScratchBufferRequest_]) : nullptr);
             i->size_ = maxScratchBufferRequest_;
 
-            URHO3D_LOGTRACE("Resized scratch buffer to size " + String(maxScratchBufferRequest_));
+            URHO3D_LOGTRACE("Resized scratch buffer to size " + stl::to_string(maxScratchBufferRequest_));
         }
     }
 

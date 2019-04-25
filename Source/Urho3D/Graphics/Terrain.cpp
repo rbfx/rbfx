@@ -920,7 +920,7 @@ void Terrain::CreateGeometry()
         for (auto i = oldPatchNodes.begin(); i != oldPatchNodes.end(); ++i)
         {
             bool nodeOk = false;
-            stl::vector<String> coords = (*i)->GetName().Substring(6).Split('_');
+            stl::vector<stl::string> coords = (*i)->GetName().substr(6).split('_');
             if (coords.size() == 2)
             {
                 int x = ToInt(coords[0]);
@@ -1036,7 +1036,7 @@ void Terrain::CreateGeometry()
             {
                 for (int x = 0; x < numPatches_.x_; ++x)
                 {
-                    String nodeName = "Patch_" + String(x) + "_" + String(z);
+                    stl::string nodeName = "Patch_" + stl::to_string(x) + "_" + stl::to_string(z);
                     Node* patchNode = node_->GetChild(nodeName);
 
                     if (!patchNode)

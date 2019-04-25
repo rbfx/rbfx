@@ -84,7 +84,7 @@ bool Tab::RenderWindow()
                 if (tab->GetUniqueTitle() == uniqueTitle_)
                     continue;
 
-                if (auto* window = ui::FindWindowByName(tab->GetUniqueTitle().CString()))
+                if (auto* window = ui::FindWindowByName(tab->GetUniqueTitle().c_str()))
                 {
                     float thisWindowSize = window->Size.x * window->Size.y;
                     if (thisWindowSize > maxSize)
@@ -110,7 +110,7 @@ bool Tab::RenderWindow()
         else
             windowFlags_ &= ~ImGuiWindowFlags_UnsavedDocument;
 
-        ui::Begin(uniqueTitle_.CString(), &open_, windowFlags_);
+        ui::Begin(uniqueTitle_.c_str(), &open_, windowFlags_);
         {
             OnAfterBegin();
             if (!ui::IsWindowFocused(ImGuiFocusedFlags_ChildWindows))
@@ -156,7 +156,7 @@ bool Tab::RenderWindow()
     return open_;
 }
 
-void Tab::SetTitle(const String& title)
+void Tab::SetTitle(const stl::string& title)
 {
     title_ = title;
     UpdateUniqueTitle();
@@ -164,7 +164,7 @@ void Tab::SetTitle(const String& title)
 
 void Tab::UpdateUniqueTitle()
 {
-    uniqueTitle_ = ToString("%s###%s", title_.CString(), id_.CString());
+    uniqueTitle_ = ToString("%s###%s", title_.c_str(), id_.c_str());
 }
 
 IntRect Tab::UpdateViewRect()
@@ -175,15 +175,15 @@ IntRect Tab::UpdateViewRect()
 
 void Tab::OnSaveUISettings(ImGuiTextBuffer* buf)
 {
-    buf->appendf("\n[Project][%s###%s]\n", GetTypeName().CString(), GetID().CString());
+    buf->appendf("\n[Project][%s###%s]\n", GetTypeName().c_str(), GetID().c_str());
 }
 
 void Tab::OnLoadUISettings(const char* name, const char* line)
 {
-    SetID(String(name).Split('#')[1]);
+    SetID(stl::string(name).split('#')[1]);
 }
 
-bool Tab::LoadResource(const String& resourcePath)
+bool Tab::LoadResource(const stl::string& resourcePath)
 {
     // Resource loading is only allowed when scene is not playing.
     if (auto* tab = GetSubsystem<Editor>()->GetTab<PreviewTab>())
@@ -199,7 +199,7 @@ bool Tab::SaveResource()
     return true;
 }
 
-void Tab::SetID(const String& id)
+void Tab::SetID(const stl::string& id)
 {
     id_ = id;
     uniqueName_ = GetTypeName() + "###" + id;

@@ -255,7 +255,7 @@ void Physics::MoveCamera(float timeStep)
     // directory
     if (input->GetKeyPress(KEY_F5))
     {
-        String filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+        stl::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
 #if _MSC_VER
         filePath += "../";
 #endif
@@ -265,7 +265,7 @@ void Physics::MoveCamera(float timeStep)
     }
     if (input->GetKeyPress(KEY_F7))
     {
-        String filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+        stl::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
 #if _MSC_VER
         filePath += "../";
 #endif

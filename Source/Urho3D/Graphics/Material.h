@@ -91,7 +91,7 @@ static const char* fillModeNames[] =
 struct MaterialShaderParameter
 {
     /// Name.
-    String name_;
+    stl::string name_;
     /// Value.
     Variant value_;
 };
@@ -134,14 +134,14 @@ class URHO3D_API ShaderParameterAnimationInfo : public ValueAnimationInfo
 public:
     /// Construct.
     ShaderParameterAnimationInfo
-        (Material* material, const String& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed);
+        (Material* material, const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed);
     /// Copy construct.
     ShaderParameterAnimationInfo(const ShaderParameterAnimationInfo& other);
     /// Destruct.
     ~ShaderParameterAnimationInfo() override;
 
     /// Return shader parameter name.
-    const String& GetName() const { return name_; }
+    const stl::string& GetName() const { return name_; }
 
 protected:
     /// Apply new animation value to the target object. Called by Update().
@@ -149,7 +149,7 @@ protected:
 
 private:
     /// Shader parameter name.
-    String name_;
+    stl::string name_;
 };
 
 /// TextureUnit hash function.
@@ -193,18 +193,18 @@ public:
     /// Set technique.
     void SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel = QUALITY_LOW, float lodDistance = 0.0f);
     /// Set additional vertex shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
-    void SetVertexShaderDefines(const String& defines);
+    void SetVertexShaderDefines(const stl::string& defines);
     /// Set additional pixel shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
-    void SetPixelShaderDefines(const String& defines);
+    void SetPixelShaderDefines(const stl::string& defines);
     /// Set shader parameter.
-    void SetShaderParameter(const String& name, const Variant& value);
+    void SetShaderParameter(const stl::string& name, const Variant& value);
     /// Set shader parameter animation.
     void
-        SetShaderParameterAnimation(const String& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
+        SetShaderParameterAnimation(const stl::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
     /// Set shader parameter animation wrap mode.
-    void SetShaderParameterAnimationWrapMode(const String& name, WrapMode wrapMode);
+    void SetShaderParameterAnimationWrapMode(const stl::string& name, WrapMode wrapMode);
     /// Set shader parameter animation speed.
-    void SetShaderParameterAnimationSpeed(const String& name, float speed);
+    void SetShaderParameterAnimationSpeed(const stl::string& name, float speed);
     /// Set texture.
     void SetTexture(TextureUnit unit, Texture* texture);
     /// Set texture coordinate transform.
@@ -230,11 +230,11 @@ public:
     /// Associate the material with a scene to ensure that shader parameter animation happens in sync with scene update, respecting the scene time scale. If no scene is set, the global update events will be used.
     void SetScene(Scene* scene);
     /// Remove shader parameter.
-    void RemoveShaderParameter(const String& name);
+    void RemoveShaderParameter(const stl::string& name);
     /// Reset all shader pointers.
     void ReleaseShaders();
     /// Clone the material.
-    stl::shared_ptr<Material> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Material> Clone(const stl::string& cloneName = EMPTY_STRING) const;
     /// Ensure that material techniques are listed in correct order.
     void SortTechniques();
     /// Mark material for auxiliary view rendering.
@@ -251,7 +251,7 @@ public:
     /// Return technique by index.
     Technique* GetTechnique(unsigned index) const;
     /// Return pass by technique index and pass name.
-    Pass* GetPass(unsigned index, const String& passName) const;
+    Pass* GetPass(unsigned index, const stl::string& passName) const;
     /// Return texture by unit.
     Texture* GetTexture(TextureUnit unit) const;
 
@@ -259,18 +259,18 @@ public:
     const HashMap<TextureUnit, stl::shared_ptr<Texture> >& GetTextures() const { return textures_; }
 
     /// Return additional vertex shader defines.
-    const String& GetVertexShaderDefines() const { return vertexShaderDefines_; }
+    const stl::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
     /// Return additional pixel shader defines.
-    const String& GetPixelShaderDefines() const { return pixelShaderDefines_; }
+    const stl::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
 
     /// Return shader parameter.
-    const Variant& GetShaderParameter(const String& name) const;
+    const Variant& GetShaderParameter(const stl::string& name) const;
     /// Return shader parameter animation.
-    ValueAnimation* GetShaderParameterAnimation(const String& name) const;
+    ValueAnimation* GetShaderParameterAnimation(const stl::string& name) const;
     /// Return shader parameter animation wrap mode.
-    WrapMode GetShaderParameterAnimationWrapMode(const String& name) const;
+    WrapMode GetShaderParameterAnimationWrapMode(const stl::string& name) const;
     /// Return shader parameter animation speed.
-    float GetShaderParameterAnimationSpeed(const String& name) const;
+    float GetShaderParameterAnimationSpeed(const stl::string& name) const;
 
     /// Return all shader parameters.
     const HashMap<StringHash, MaterialShaderParameter>& GetShaderParameters() const { return shaderParameters_; }
@@ -312,9 +312,9 @@ public:
     unsigned GetShaderParameterHash() const { return shaderParameterHash_; }
 
     /// Return name for texture unit.
-    static String GetTextureUnitName(TextureUnit unit);
+    static stl::string GetTextureUnitName(TextureUnit unit);
     /// Parse a shader parameter value from a string. Retunrs either a bool, a float, or a 2 to 4-component vector.
-    static Variant ParseShaderParameterValue(const String& value);
+    static Variant ParseShaderParameterValue(const stl::string& value);
 
 private:
     /// Helper function for loading JSON files.
@@ -331,7 +331,7 @@ private:
     /// Reapply shader defines to technique index. By default reapply all.
     void ApplyShaderDefines(unsigned index = M_MAX_UNSIGNED);
     /// Return shader parameter animation info.
-    ShaderParameterAnimationInfo* GetShaderParameterAnimationInfo(const String& name) const;
+    ShaderParameterAnimationInfo* GetShaderParameterAnimationInfo(const stl::string& name) const;
     /// Update whether should be subscribed to scene or global update events for shader parameter animation.
     void UpdateEventSubscription();
     /// Update shader parameter animations.
@@ -346,9 +346,9 @@ private:
     /// %Shader parameters animation infos.
     HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
     /// Vertex shader defines.
-    String vertexShaderDefines_;
+    stl::string vertexShaderDefines_;
     /// Pixel shader defines.
-    String pixelShaderDefines_;
+    stl::string pixelShaderDefines_;
     /// Normal culling mode.
     CullMode cullMode_{};
     /// Culling mode for shadow rendering.

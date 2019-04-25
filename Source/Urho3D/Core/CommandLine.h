@@ -25,25 +25,22 @@
 
 #include <sstream>
 #include <EASTL/vector.h>
-
-#include "../Container/Str.h"
+#include <EASTL/string.h>
 
 namespace CLI
 {
 
-template <typename T, typename R>
-std::istringstream &operator>>(std::istringstream &in, Urho3D::String& val)
+inline std::istringstream& operator>>(std::istringstream &in, stl::string& val)
 {
     std::string tmp;
     in >> tmp;
-    val = tmp;
+    val = tmp.c_str();
     return in;
 }
 
-template <typename T, typename R>
-std::stringstream &operator<<(std::stringstream &in, Urho3D::String& val)
+inline std::stringstream& operator<<(std::stringstream &in, stl::string& val)
 {
-    in << val.CString();
+    in << val.c_str();
     return in;
 }
 
@@ -58,7 +55,7 @@ namespace CLI
 namespace detail
 {
 
-template <> constexpr const char *type_name<Urho3D::String>() { return "TEXT"; }
+template <> constexpr const char *type_name<stl::string>() { return "TEXT"; }
 
 }
 

@@ -35,10 +35,10 @@ enum FileDialogResult
     DIALOG_CANCEL
 };
 
-URHO3D_API FileDialogResult OpenDialog(const String& filterList, const String& defaultPath, String& outPath);
-URHO3D_API FileDialogResult OpenDialogMultiple(const String& filterList, const String& defaultPath,
-                                               stl::vector<String>& outPaths);
-URHO3D_API FileDialogResult SaveDialog(const String& filterList, const String& defaultPath, String& outPath);
-URHO3D_API FileDialogResult PickFolder(const String& defaultPath, String& outPath);
+URHO3D_API FileDialogResult OpenDialog(const stl::string& filterList, const stl::string& defaultPath, stl::string& outPath);
+URHO3D_API FileDialogResult OpenDialogMultiple(const stl::string& filterList, const stl::string& defaultPath,
+                                               stl::vector<stl::string>& outPaths);
+URHO3D_API FileDialogResult SaveDialog(const stl::string& filterList, const stl::string& defaultPath, stl::string& outPath);
+URHO3D_API FileDialogResult PickFolder(const stl::string& defaultPath, stl::string& outPath);
 
 }

@@ -349,7 +349,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
         vsync == vsync_ && tripleBuffer == tripleBuffer_ && multiSample == multiSample_)
         return true;
 
-    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.CString());
+    SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
 
     if (!window_)
     {
@@ -484,7 +484,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     if (S_OK == hr)
       URHO3D_LOGINFOF("Adapter used %s", id.Description);
 
-    String msg;
+    stl::string msg;
     msg.AppendWithFormat("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
         msg.Append(" borderless");
@@ -1960,9 +1960,9 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
     }
 }
 
-ShaderVariation* Graphics::GetShader(ShaderType type, const String& name, const String& defines) const
+ShaderVariation* Graphics::GetShader(ShaderType type, const stl::string& name, const stl::string& defines) const
 {
-    return GetShader(type, name.CString(), defines.CString());
+    return GetShader(type, name.c_str(), defines.c_str());
 }
 
 ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const char* defines) const
@@ -1971,7 +1971,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
     {
         ResourceCache* cache = GetSubsystem<ResourceCache>();
 
-        String fullShaderName = shaderPath_ + name + shaderExtension_;
+        stl::string fullShaderName = shaderPath_ + name + shaderExtension_;
         // Try to reduce repeated error log prints because of missing shaders
         if (lastShaderName_ == name && !cache->Exists(fullShaderName))
             return nullptr;
@@ -1988,23 +1988,23 @@ VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
     return index < MAX_VERTEX_STREAMS ? vertexBuffers_[index] : nullptr;
 }
 
-TextureUnit Graphics::GetTextureUnit(const String& name)
+TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 {
-    HashMap<String, TextureUnit>::Iterator i = textureUnits_.Find(name);
+    HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Find(name);
     if (i != textureUnits_.End())
         return i->second_;
     else
         return MAX_TEXTURE_UNITS;
 }
 
-const String& Graphics::GetTextureUnitName(TextureUnit unit)
+const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
-    for (HashMap<String, TextureUnit>::Iterator i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
+    for (HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
     {
         if (i->second_ == unit)
             return i->first_;
     }
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 Texture* Graphics::GetTexture(unsigned index) const
@@ -2198,9 +2198,9 @@ unsigned Graphics::GetReadableDepthFormat()
     return readableDepthFormat;
 }
 
-unsigned Graphics::GetFormat(const String& formatName)
+unsigned Graphics::GetFormat(const stl::string& formatName)
 {
-    String nameLower = formatName.ToLower().Trimmed();
+    stl::string nameLower = formatName.ToLower().Trimmed();
 
     if (nameLower == "a")
         return GetAlphaFormat();
@@ -2279,7 +2279,7 @@ bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless
         if (borderless)
             flags |= SDL_WINDOW_BORDERLESS;
 
-        window_ = SDL_CreateWindow(windowTitle_.CString(), position_.x_, position_.y_, width, height, flags);
+        window_ = SDL_CreateWindow(windowTitle_.c_str(), position_.x_, position_.y_, width, height, flags);
     }
     else
         window_ = SDL_CreateWindowFrom(externalWindow_, 0);

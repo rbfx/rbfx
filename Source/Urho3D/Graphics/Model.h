@@ -67,7 +67,7 @@ struct ModelMorph
     }
 
     /// Morph name.
-    String name_;
+    stl::string name_;
     /// Morph name hash.
     StringHash nameHash_;
     /// Current morph weight.
@@ -159,7 +159,7 @@ public:
     /// Set vertex morphs.
     void SetMorphs(const stl::vector<ModelMorph>& morphs);
     /// Clone the model. The geometry data is deep-copied and can be modified in the clone without affecting the original.
-    stl::shared_ptr<Model> Clone(const String& cloneName = String::EMPTY) const;
+    stl::shared_ptr<Model> Clone(const stl::string& cloneName = EMPTY_STRING) const;
 
     /// Return bounding box.
     const BoundingBox& GetBoundingBox() const { return boundingBox_; }
@@ -206,7 +206,7 @@ public:
     /// Return vertex morph by index.
     const ModelMorph* GetMorph(unsigned index) const;
     /// Return vertex morph by name.
-    const ModelMorph* GetMorph(const String& name) const;
+    const ModelMorph* GetMorph(const stl::string& name) const;
     /// Return vertex morph by name hash.
     const ModelMorph* GetMorph(StringHash nameHash) const;
     /// Return vertex buffer morph range start.

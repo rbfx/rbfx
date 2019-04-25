@@ -75,7 +75,7 @@ void Model::RegisterObject(Context* context)
 bool Model::BeginLoad(Deserializer& source)
 {
     // Check ID
-    String fileID = source.ReadFileID();
+    stl::string fileID = source.ReadFileID();
     if (fileID != "UMDL" && fileID != "UMD2")
     {
         URHO3D_LOGERROR(source.GetName() + " is not a valid model file");
@@ -309,7 +309,7 @@ bool Model::BeginLoad(Deserializer& source)
 
     // Read metadata
     auto* cache = GetSubsystem<ResourceCache>();
-    String xmlName = ReplaceExtension(GetName(), ".xml");
+    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
     stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
         LoadMetadataFromXML(file->GetRoot());
@@ -467,7 +467,7 @@ bool Model::Save(Serializer& dest) const
         auto* destFile = dynamic_cast<File*>(&dest);
         if (destFile)
         {
-            String xmlName = ReplaceExtension(destFile->GetName(), ".xml");
+            stl::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
             stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("model");
@@ -614,7 +614,7 @@ void Model::SetMorphs(const stl::vector<ModelMorph>& morphs)
     morphs_ = morphs;
 }
 
-stl::shared_ptr<Model> Model::Clone(const String& cloneName) const
+stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
 {
     stl::shared_ptr<Model> ret(context_->CreateObject<Model>());
 
@@ -754,7 +754,7 @@ const ModelMorph* Model::GetMorph(unsigned index) const
     return index < morphs_.size() ? &morphs_[index] : nullptr;
 }
 
-const ModelMorph* Model::GetMorph(const String& name) const
+const ModelMorph* Model::GetMorph(const stl::string& name) const
 {
     return GetMorph(StringHash(name));
 }

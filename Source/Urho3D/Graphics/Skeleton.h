@@ -67,7 +67,7 @@ struct Bone
     }
 
     /// Bone name.
-    String name_;
+    stl::string name_;
     /// Bone name hash.
     StringHash nameHash_;
     /// Parent bone index.
@@ -126,7 +126,7 @@ public:
     /// Return root bone.
     Bone* GetRootBone();
     /// Return index of the bone by name. Return M_MAX_UNSIGNED if not found.
-    unsigned GetBoneIndex(const String& boneName) const;
+    unsigned GetBoneIndex(const stl::string& boneName) const;
     /// Return index of the bone by name hash. Return M_MAX_UNSIGNED if not found.
     unsigned GetBoneIndex(const StringHash& boneNameHash) const;
     /// Return index of the bone by the bone pointer. Return M_MAX_UNSIGNED if not found.
@@ -136,7 +136,7 @@ public:
     /// Return bone by index.
     Bone* GetBone(unsigned index);
     /// Return bone by name.
-    Bone* GetBone(const String& name);
+    Bone* GetBone(const stl::string& name);
     /// Return bone by name.
     Bone* GetBone(const char* name);
     /// Return bone by name hash.

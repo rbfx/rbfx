@@ -61,9 +61,9 @@ public:
     /// Do not use.
     void RegisterCommandHandler(int first, int last, void* handler);
     /// Loads specified assembly into script runtime.
-    PluginApplication* LoadAssembly(const String& path) { return reinterpret_cast<PluginApplication*>(Command(ScriptRuntimeCommand::LoadAssembly, path.CString())); }
+    PluginApplication* LoadAssembly(const stl::string& path) { return reinterpret_cast<PluginApplication*>(Command(ScriptRuntimeCommand::LoadAssembly, path.c_str())); }
     /// Checks if specified assembly is loadable by script runtime.
-    bool VerifyAssembly(const String& path) { return Command(ScriptRuntimeCommand::VerifyAssembly, path.CString()) == ScriptCommandSuccess; }
+    bool VerifyAssembly(const stl::string& path) { return Command(ScriptRuntimeCommand::VerifyAssembly, path.c_str()) == ScriptCommandSuccess; }
     ///
     void LoadRuntime() { Command(ScriptRuntimeCommand::LoadRuntime); }
     ///

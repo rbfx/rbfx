@@ -241,7 +241,7 @@ bool Engine::Initialize(const VariantMap& parameters)
         if (HasParameter(parameters, EP_EXTERNAL_WINDOW))
             graphics->SetExternalWindow(GetParameter(parameters, EP_EXTERNAL_WINDOW).GetVoidPtr());
         graphics->SetWindowTitle(GetParameter(parameters, EP_WINDOW_TITLE, "Urho3D").GetString());
-        graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(parameters, EP_WINDOW_ICON, String::EMPTY).GetString()));
+        graphics->SetWindowIcon(cache->GetResource<Image>(GetParameter(parameters, EP_WINDOW_ICON, EMPTY_STRING).GetString()));
         graphics->SetFlushGPU(GetParameter(parameters, EP_FLUSH_GPU, false).GetBool());
         graphics->SetOrientations(GetParameter(parameters, EP_ORIENTATIONS, "LandscapeLeft LandscapeRight").GetString());
 
@@ -273,7 +273,7 @@ bool Engine::Initialize(const VariantMap& parameters)
             GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(), "shadercache")).GetString());
 
         if (HasParameter(parameters, EP_DUMP_SHADERS))
-            graphics->BeginDumpShaders(GetParameter(parameters, EP_DUMP_SHADERS, String::EMPTY).GetString());
+            graphics->BeginDumpShaders(GetParameter(parameters, EP_DUMP_SHADERS, EMPTY_STRING).GetString());
         if (HasParameter(parameters, EP_RENDER_PATH))
             renderer->SetDefaultRenderPath(cache->GetResource<XMLFile>(GetParameter(parameters, EP_RENDER_PATH).GetString()));
 
@@ -335,7 +335,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     // Remove all resource paths and packages
     if (removeOld)
     {
-        stl::vector<String> resourceDirs = cache->GetResourceDirs();
+        stl::vector<stl::string> resourceDirs = cache->GetResourceDirs();
         stl::vector<stl::shared_ptr<PackageFile> > packageFiles = cache->GetPackageFiles();
         for (unsigned i = 0; i < resourceDirs.size(); ++i)
             cache->RemoveResourceDir(resourceDirs[i]);
@@ -344,13 +344,16 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     }
 
     // Add resource paths
-    stl::vector<String> resourcePrefixPaths = GetParameter(parameters, EP_RESOURCE_PREFIX_PATHS, String::EMPTY).GetString().Split(';', true);
+    stl::vector<stl::string> resourcePrefixPaths = GetParameter(parameters, EP_RESOURCE_PREFIX_PATHS,
+        EMPTY_STRING).GetString().split(';', true);
     for (unsigned i = 0; i < resourcePrefixPaths.size(); ++i)
         resourcePrefixPaths[i] = AddTrailingSlash(
             IsAbsolutePath(resourcePrefixPaths[i]) ? resourcePrefixPaths[i] : fileSystem->GetProgramDir() + resourcePrefixPaths[i]);
-    stl::vector<String> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS, "Data;CoreData").GetString().Split(';');
-    stl::vector<String> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().Split(';');
-    stl::vector<String> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().Split(';');
+    stl::vector<stl::string> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS,
+        "Data;CoreData").GetString().split(';');
+    stl::vector<stl::string> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().split(';');
+    stl::vector<stl::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(
+        ';');
 
     for (unsigned i = 0; i < resourcePaths.size(); ++i)
     {
@@ -360,7 +363,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
             unsigned j = 0;
             for (; j < resourcePrefixPaths.size(); ++j)
             {
-                String packageName = resourcePrefixPaths[j] + resourcePaths[i] + ".pak";
+                stl::string packageName = resourcePrefixPaths[j] + resourcePaths[i] + ".pak";
                 if (fileSystem->FileExists(packageName))
                 {
                     if (cache->AddPackageFile(packageName))
@@ -368,7 +371,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                     else
                         return false;   // The root cause of the error should have already been logged
                 }
-                String pathName = resourcePrefixPaths[j] + resourcePaths[i];
+                stl::string pathName = resourcePrefixPaths[j] + resourcePaths[i];
                 if (fileSystem->DirExists(pathName))
                 {
                     if (cache->AddResourceDir(pathName))
@@ -381,13 +384,13 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
             {
                 URHO3D_LOGERRORF(
                     "Failed to add resource path '%s', check the documentation on how to set the 'resource prefix path'",
-                    resourcePaths[i].CString());
+                    resourcePaths[i].c_str());
                 return false;
             }
         }
         else
         {
-            String pathName = resourcePaths[i];
+            stl::string pathName = resourcePaths[i];
             if (fileSystem->DirExists(pathName))
                 if (!cache->AddResourceDir(pathName))
                     return false;
@@ -400,7 +403,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
         unsigned j = 0;
         for (; j < resourcePrefixPaths.size(); ++j)
         {
-            String packageName = resourcePrefixPaths[j] + resourcePackages[i];
+            stl::string packageName = resourcePrefixPaths[j] + resourcePackages[i];
             if (fileSystem->FileExists(packageName))
             {
                 if (cache->AddPackageFile(packageName))
@@ -413,7 +416,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
         {
             URHO3D_LOGERRORF(
                 "Failed to add resource package '%s', check the documentation on how to set the 'resource prefix path'",
-                resourcePackages[i].CString());
+                resourcePackages[i].c_str());
             return false;
         }
     }
@@ -425,7 +428,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
         for (unsigned j = 0; j < resourcePrefixPaths.size(); ++j)
         {
-            String autoLoadPath(autoLoadPaths[i]);
+            stl::string autoLoadPath(autoLoadPaths[i]);
             if (!IsAbsolutePath(autoLoadPath))
                 autoLoadPath = resourcePrefixPaths[j] + autoLoadPath;
 
@@ -434,29 +437,29 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                 autoLoadPathExist = true;
 
                 // Add all the subdirs (non-recursive) as resource directory
-                stl::vector<String> subdirs;
+                stl::vector<stl::string> subdirs;
                 fileSystem->ScanDir(subdirs, autoLoadPath, "*", SCAN_DIRS, false);
                 for (unsigned y = 0; y < subdirs.size(); ++y)
                 {
-                    String dir = subdirs[y];
-                    if (dir.StartsWith("."))
+                    stl::string dir = subdirs[y];
+                    if (dir.starts_with("."))
                         continue;
 
-                    String autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
+                    stl::string autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
                     if (!cache->AddResourceDir(autoResourceDir, 0))
                         return false;
                 }
 
                 // Add all the found package files (non-recursive)
-                stl::vector<String> paks;
+                stl::vector<stl::string> paks;
                 fileSystem->ScanDir(paks, autoLoadPath, "*.pak", SCAN_FILES, false);
                 for (unsigned y = 0; y < paks.size(); ++y)
                 {
-                    String pak = paks[y];
-                    if (pak.StartsWith("."))
+                    stl::string pak = paks[y];
+                    if (pak.starts_with("."))
                         continue;
 
-                    String autoPackageName = autoLoadPath + "/" + pak;
+                    stl::string autoPackageName = autoLoadPath + "/" + pak;
                     if (!cache->AddPackageFile(autoPackageName, 0))
                         return false;
                 }
@@ -471,7 +474,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
         if (!autoLoadPathExist && (autoLoadPaths.size() > 1 || autoLoadPaths[0] != "Autoload"))
             URHO3D_LOGDEBUGF(
                 "Skipped autoload path '%s' as it does not exist, check the documentation on how to set the 'resource prefix path'",
-                autoLoadPaths[i].CString());
+                autoLoadPaths[i].c_str());
     }
 
     return true;
@@ -678,9 +681,9 @@ void Engine::DumpMemory()
         if (block->nBlockUse > 0)
         {
             if (block->szFileName)
-                URHO3D_LOGINFO("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes, file " + String(block->szFileName) + " line " + String(block->nLine));
+                URHO3D_LOGINFO("Block " + stl::string((int)block->lRequest) + ": " + stl::string(block->nDataSize) + " bytes, file " + stl::string(block->szFileName) + " line " + stl::string(block->nLine));
             else
-                URHO3D_LOGINFO("Block " + String((int)block->lRequest) + ": " + String(block->nDataSize) + " bytes");
+                URHO3D_LOGINFO("Block " + stl::string((int)block->lRequest) + ": " + stl::string(block->nDataSize) + " bytes");
 
             total += block->nDataSize;
             ++blocks;
@@ -688,7 +691,7 @@ void Engine::DumpMemory()
         block = block->pBlockHeaderPrev;
     }
 
-    URHO3D_LOGINFO("Total allocated memory " + String(total) + " bytes in " + String(blocks) + " blocks");
+    URHO3D_LOGINFO("Total allocated memory " + stl::string(total) + " bytes in " + stl::string(blocks) + " blocks");
 #else
     URHO3D_LOGINFO("DumpMemory() supported on MSVC debug mode only");
 #endif
@@ -827,7 +830,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return opt;
     };
 
-    auto addFlag = [&](const char* name, const String& param, bool value, const char* description) {
+    auto addFlag = [&](const char* name, const stl::string& param, bool value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
@@ -835,7 +838,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionPrependString = [&](const char* name, const String& param, const String& value, const char* description) {
+    auto addOptionPrependString = [&](const char* name, const stl::string& param, const stl::string& value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value + engineParameters[param].GetString();
             return true;
@@ -843,7 +846,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionSetString = [&](const char* name, const String& param, const String& value, const char* description) {
+    auto addOptionSetString = [&](const char* name, const stl::string& param, const stl::string& value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
@@ -851,7 +854,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionString = [&](const char* name, const String& param, const char* description) {
+    auto addOptionString = [&](const char* name, const stl::string& param, const char* description) {
         CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             engineParameters[param] = res[0].c_str();
             return true;
@@ -861,7 +864,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return opt;
     };
 
-    auto addOptionInt = [&](const char* name, const String& param, const char* description) {
+    auto addOptionInt = [&](const char* name, const stl::string& param, const char* description) {
         CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             int value = 0;
             if (CLI::detail::lexical_cast(res[0], value))
@@ -880,7 +883,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         StringVector items;
         for (unsigned i = 0; options[i]; i++)
             items.push_back(options[i]);
-        return ToString(format, String::Joined(items, "|").ToLower().Replaced('_', '-').CString());
+        return ToString(format, stl::string::joined(items, "|").to_lower().replaced('_', '-').c_str());
     };
 
     addFlag("--headless", EP_HEADLESS, true, "Do not initialize graphics subsystem");
@@ -910,12 +913,12 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addFlag("-s,--resizeable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
     addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
     addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
-        unsigned logLevel = GetStringListIndex(String(res[0].c_str()).ToUpper().CString(), logLevelNames, M_MAX_UNSIGNED);
+        unsigned logLevel = GetStringListIndex(stl::string(res[0].c_str()).to_upper().c_str(), logLevelNames, M_MAX_UNSIGNED);
         if (logLevel == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_LOG_LEVEL] = logLevel;
         return true;
-    })->set_custom_option(createOptions("string in {%s}", logLevelNames).CString());
+    })->set_custom_option(createOptions("string in {%s}", logLevelNames).c_str());
     addOptionString("--log-file", EP_LOG_NAME, "Log output file");
     addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
     addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");
@@ -937,7 +940,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
             return true;
         }
         return false;
-    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).CString());
+    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
     addFlagInternal("--tq", "Texture quality", [&](CLI::results_t res) {
         unsigned value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= QUALITY_LOW && value <= QUALITY_MAX)
@@ -946,14 +949,14 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
             return true;
         }
         return false;
-    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).CString());
+    })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
     addFlagInternal("--tf", "Texture filter mode", [&](CLI::results_t res) {
-        unsigned mode = GetStringListIndex(String(res[0].c_str()).ToUpper().Replaced('-', '_').CString(), textureFilterModeNames, M_MAX_UNSIGNED);
+        unsigned mode = GetStringListIndex(stl::string(res[0].c_str()).to_upper().replaced('-', '_').c_str(), textureFilterModeNames, M_MAX_UNSIGNED);
         if (mode == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_TEXTURE_FILTER_MODE] = mode;
         return true;
-    })->set_custom_option(createOptions("string in {%s}", textureFilterModeNames).CString());
+    })->set_custom_option(createOptions("string in {%s}", textureFilterModeNames).c_str());
     addFlagInternal("--af", "Use anisotropic filtering", [&](CLI::results_t res) {
         int value = 0;
         if (CLI::detail::lexical_cast(res[0], value) && value >= 1)
@@ -970,13 +973,13 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
 #endif
 }
 
-bool Engine::HasParameter(const VariantMap& parameters, const String& parameter)
+bool Engine::HasParameter(const VariantMap& parameters, const stl::string& parameter)
 {
     StringHash nameHash(parameter);
     return parameters.Find(nameHash) != parameters.End();
 }
 
-const Variant& Engine::GetParameter(const VariantMap& parameters, const String& parameter, const Variant& defaultValue)
+const Variant& Engine::GetParameter(const VariantMap& parameters, const stl::string& parameter, const Variant& defaultValue)
 {
     StringHash nameHash(parameter);
     VariantMap::ConstIterator i = parameters.Find(nameHash);

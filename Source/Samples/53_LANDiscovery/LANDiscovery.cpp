@@ -114,7 +114,7 @@ void LANDiscovery::SubscribeToEvents()
     SubscribeToEvent(refreshServerList_, "Released", URHO3D_HANDLER(LANDiscovery, HandleDoNetworkDiscovery));
 }
 
-Button* LANDiscovery::CreateButton(const String& text, int width, IntVector2 position)
+Button* LANDiscovery::CreateButton(const stl::string& text, int width, IntVector2 position)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
@@ -133,7 +133,7 @@ Button* LANDiscovery::CreateButton(const String& text, int width, IntVector2 pos
     return button;
 }
 
-Text* LANDiscovery::CreateLabel(const String& text, IntVector2 pos)
+Text* LANDiscovery::CreateLabel(const stl::string& text, IntVector2 pos)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     // Create log element to view latest logs from the system
@@ -150,9 +150,9 @@ void LANDiscovery::HandleNetworkHostDiscovered(StringHash eventType, VariantMap&
 {
 	using namespace NetworkHostDiscovered;
 	URHO3D_LOGINFO("Server discovered!");
-	String text = serverList_->GetText();
+	stl::string text = serverList_->GetText();
 	VariantMap data = eventData[P_BEACON].GetVariantMap();
-	text += "\n" + data["Name"].GetString() + "(" + String(data["Players"].GetInt()) + ")" + eventData[P_ADDRESS].GetString() + ":" + String(eventData[P_PORT].GetInt());
+	text += "\n" + data["Name"].GetString() + "(" + stl::to_string(data["Players"].GetInt()) + ")" + eventData[P_ADDRESS].GetString() + ":" + stl::to_string(eventData[P_PORT].GetInt());
 	serverList_->SetText(text);
 }
 

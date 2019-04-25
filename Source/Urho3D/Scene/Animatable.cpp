@@ -96,12 +96,12 @@ bool Animatable::LoadXML(const XMLElement& source)
     elem = source.GetChild("attributeanimation");
     while (elem)
     {
-        String name = elem.GetAttribute("name");
+        stl::string name = elem.GetAttribute("name");
         stl::shared_ptr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
         if (!attributeAnimation->LoadXML(elem))
             return false;
 
-        String wrapModeString = source.GetAttribute("wrapmode");
+        stl::string wrapModeString = source.GetAttribute("wrapmode");
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -153,13 +153,13 @@ bool Animatable::LoadJSON(const JSONValue& source)
     const JSONObject& attributeAnimationObject = attributeAnimationValue.GetObject();
     for (JSONObject::ConstIterator it = attributeAnimationObject.Begin(); it != attributeAnimationObject.End(); it++)
     {
-        String name = it->first_;
+        stl::string name = it->first_;
         JSONValue value = it->second_;
         stl::shared_ptr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
         if (!attributeAnimation->LoadJSON(it->second_))
             return false;
 
-        String wrapModeString = value.Get("wrapmode").GetString();
+        stl::string wrapModeString = value.Get("wrapmode").GetString();
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -183,7 +183,7 @@ bool Animatable::SaveXML(XMLElement& dest) const
         return false;
 
     // Object animation without name
-    if (objectAnimation_ && objectAnimation_->GetName().Empty())
+    if (objectAnimation_ && objectAnimation_->GetName().empty())
     {
         XMLElement elem = dest.CreateChild("objectanimation");
         if (!objectAnimation_->SaveXML(elem))
@@ -191,7 +191,7 @@ bool Animatable::SaveXML(XMLElement& dest) const
     }
 
 
-    for (HashMap<String, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
+    for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
          i != attributeAnimationInfos_.End(); ++i)
     {
         ValueAnimation* attributeAnimation = i->second_->GetAnimation();
@@ -217,7 +217,7 @@ bool Animatable::SaveJSON(JSONValue& dest) const
         return false;
 
     // Object animation without name
-    if (objectAnimation_ && objectAnimation_->GetName().Empty())
+    if (objectAnimation_ && objectAnimation_->GetName().empty())
     {
         JSONValue objectAnimationValue;
         if (!objectAnimation_->SaveJSON(objectAnimationValue))
@@ -227,7 +227,7 @@ bool Animatable::SaveJSON(JSONValue& dest) const
 
     JSONValue attributeAnimationValue;
 
-    for (HashMap<String, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
+    for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
          i != attributeAnimationInfos_.End(); ++i)
     {
         ValueAnimation* attributeAnimation = i->second_->GetAnimation();
@@ -258,10 +258,10 @@ void Animatable::SetAnimationEnabled(bool enable)
     {
         // In object animation there may be targets in hierarchy. Set same enable/disable state in all
         stl::hash_set<Animatable*> targets;
-        const HashMap<String, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
-        for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
+        const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
+        for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
         {
-            String outName;
+            stl::string outName;
             Animatable* target = FindAttributeAnimationTarget(i->first_, outName);
             if (target && target != this)
                 targets.insert(target);
@@ -279,10 +279,10 @@ void Animatable::SetAnimationTime(float time)
     if (objectAnimation_)
     {
         // In object animation there may be targets in hierarchy. Set same time in all
-        const HashMap<String, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
-        for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
+        const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
+        for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
         {
-            String outName;
+            stl::string outName;
             Animatable* target = FindAttributeAnimationTarget(i->first_, outName);
             if (target)
                 target->SetAttributeAnimationTime(outName, time);
@@ -290,7 +290,7 @@ void Animatable::SetAnimationTime(float time)
     }
     else
     {
-        for (HashMap<String, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
+        for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
             i != attributeAnimationInfos_.End(); ++i)
             i->second_->SetTime(time);
     }
@@ -318,7 +318,7 @@ void Animatable::SetObjectAnimation(ObjectAnimation* objectAnimation)
     }
 }
 
-void Animatable::SetAttributeAnimation(const String& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
+void Animatable::SetAttributeAnimation(const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
 {
     AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
 
@@ -390,21 +390,21 @@ void Animatable::SetAttributeAnimation(const String& name, ValueAnimation* attri
     }
 }
 
-void Animatable::SetAttributeAnimationWrapMode(const String& name, WrapMode wrapMode)
+void Animatable::SetAttributeAnimationWrapMode(const stl::string& name, WrapMode wrapMode)
 {
     AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     if (info)
         info->SetWrapMode(wrapMode);
 }
 
-void Animatable::SetAttributeAnimationSpeed(const String& name, float speed)
+void Animatable::SetAttributeAnimationSpeed(const stl::string& name, float speed)
 {
     AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     if (info)
         info->SetSpeed(speed);
 }
 
-void Animatable::SetAttributeAnimationTime(const String& name, float time)
+void Animatable::SetAttributeAnimationTime(const stl::string& name, float time)
 {
     AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     if (info)
@@ -416,7 +416,7 @@ void Animatable::RemoveObjectAnimation()
     SetObjectAnimation(nullptr);
 }
 
-void Animatable::RemoveAttributeAnimation(const String& name)
+void Animatable::RemoveAttributeAnimation(const stl::string& name)
 {
     SetAttributeAnimation(name, nullptr);
 }
@@ -426,25 +426,25 @@ ObjectAnimation* Animatable::GetObjectAnimation() const
     return objectAnimation_;
 }
 
-ValueAnimation* Animatable::GetAttributeAnimation(const String& name) const
+ValueAnimation* Animatable::GetAttributeAnimation(const stl::string& name) const
 {
     const AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetAnimation() : nullptr;
 }
 
-WrapMode Animatable::GetAttributeAnimationWrapMode(const String& name) const
+WrapMode Animatable::GetAttributeAnimationWrapMode(const stl::string& name) const
 {
     const AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetWrapMode() : WM_LOOP;
 }
 
-float Animatable::GetAttributeAnimationSpeed(const String& name) const
+float Animatable::GetAttributeAnimationSpeed(const stl::string& name) const
 {
     const AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetSpeed() : 1.0f;
 }
 
-float Animatable::GetAttributeAnimationTime(const String& name) const
+float Animatable::GetAttributeAnimationTime(const stl::string& name) const
 {
     const AttributeAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetTime() : 0.0f;
@@ -452,7 +452,7 @@ float Animatable::GetAttributeAnimationTime(const String& name) const
 
 void Animatable::SetObjectAnimationAttr(const ResourceRef& value)
 {
-    if (!value.name_.Empty())
+    if (!value.name_.empty())
     {
         auto* cache = GetSubsystem<ResourceCache>();
         SetObjectAnimation(cache->GetResource<ObjectAnimation>(value.name_));
@@ -464,16 +464,16 @@ ResourceRef Animatable::GetObjectAnimationAttr() const
     return GetResourceRef(objectAnimation_, ObjectAnimation::GetTypeStatic());
 }
 
-Animatable* Animatable::FindAttributeAnimationTarget(const String& name, String& outName)
+Animatable* Animatable::FindAttributeAnimationTarget(const stl::string& name, stl::string& outName)
 {
     // Base implementation only handles self
     outName = name;
     return this;
 }
 
-void Animatable::SetObjectAttributeAnimation(const String& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
+void Animatable::SetObjectAttributeAnimation(const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
 {
-    String outName;
+    stl::string outName;
     Animatable* target = FindAttributeAnimationTarget(name, outName);
     if (target)
         target->SetAttributeAnimation(outName, attributeAnimation, wrapMode, speed);
@@ -485,11 +485,11 @@ void Animatable::OnObjectAnimationAdded(ObjectAnimation* objectAnimation)
         return;
 
     // Set all attribute animations from the object animation
-    const HashMap<String, stl::shared_ptr<ValueAnimationInfo> >& attributeAnimationInfos = objectAnimation->GetAttributeAnimationInfos();
-    for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos.Begin();
+    const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& attributeAnimationInfos = objectAnimation->GetAttributeAnimationInfos();
+    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos.Begin();
          i != attributeAnimationInfos.End(); ++i)
     {
-        const String& name = i->first_;
+        const stl::string& name = i->first_;
         ValueAnimationInfo* info = i->second_;
         SetObjectAttributeAnimation(name, info->GetAnimation(), info->GetWrapMode(), info->GetSpeed());
     }
@@ -501,8 +501,8 @@ void Animatable::OnObjectAnimationRemoved(ObjectAnimation* objectAnimation)
         return;
 
     // Just remove all attribute animations listed by the object animation
-    const HashMap<String, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation->GetAttributeAnimationInfos();
-    for (HashMap<String, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
+    const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation->GetAttributeAnimationInfos();
+    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
         SetObjectAttributeAnimation(i->first_, nullptr, WM_LOOP, 1.0f);
 }
 
@@ -514,8 +514,8 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
     // Keep weak pointer to self to check for destruction caused by event handling
     stl::weak_ptr<Animatable> self(this);
 
-    stl::vector<String> finishedNames;
-    for (HashMap<String, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
+    stl::vector<stl::string> finishedNames;
+    for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
          i != attributeAnimationInfos_.End(); ++i)
     {
         bool finished = i->second_->Update(timeStep);
@@ -536,9 +536,9 @@ bool Animatable::IsAnimatedNetworkAttribute(const AttributeInfo& attrInfo) const
     return stl::contains(animatedNetworkAttributes_, &attrInfo);
 }
 
-AttributeAnimationInfo* Animatable::GetAttributeAnimationInfo(const String& name) const
+AttributeAnimationInfo* Animatable::GetAttributeAnimationInfo(const stl::string& name) const
 {
-    HashMap<String, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Find(name);
+    HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Find(name);
     if (i != attributeAnimationInfos_.End())
         return i->second_;
 
@@ -551,7 +551,7 @@ void Animatable::HandleAttributeAnimationAdded(StringHash eventType, VariantMap&
         return;
 
     using namespace AttributeAnimationAdded;
-    const String& name = eventData[P_ATTRIBUTEANIMATIONNAME].GetString();
+    const stl::string& name = eventData[P_ATTRIBUTEANIMATIONNAME].GetString();
 
     ValueAnimationInfo* info = objectAnimation_->GetAttributeAnimationInfo(name);
     if (!info)
@@ -566,7 +566,7 @@ void Animatable::HandleAttributeAnimationRemoved(StringHash eventType, VariantMa
         return;
 
     using namespace AttributeAnimationRemoved;
-    const String& name = eventData[P_ATTRIBUTEANIMATIONNAME].GetString();
+    const stl::string& name = eventData[P_ATTRIBUTEANIMATIONNAME].GetString();
 
     SetObjectAttributeAnimation(name, nullptr, WM_LOOP, 1.0f);
 }

@@ -57,7 +57,7 @@ public:
     /// Returns type of the plugin.
     PluginType GetPluginType() const { return type_; }
     /// Returns file name of plugin.
-    String GetName() const { return name_; }
+    stl::string GetName() const { return name_; }
     ///
     PluginFlags GetFlags() const { return flags_; }
     ///
@@ -68,9 +68,9 @@ protected:
     bool Unload();
 
     /// Base plugin file name.
-    String name_;
+    stl::string name_;
     /// Path to plugin dynamic library file.
-    String path_;
+    stl::string path_;
     /// Type of plugin (invalid/native/managed).
     PluginType type_ = PLUGIN_INVALID;
     /// Context of native plugin. Not initialized for managed plugins.
@@ -94,11 +94,11 @@ public:
     /// Unload all plugins an destruct.
     ~PluginManager();
     /// Load a plugin and return true if succeeded.
-    virtual Plugin* Load(const String& name);
+    virtual Plugin* Load(const stl::string& name);
     /// Unload a plugin and return true if succeeded.
     virtual void Unload(Plugin* plugin);
     /// Returns a loaded plugin with specified name.
-    Plugin* GetPlugin(const String& name);
+    Plugin* GetPlugin(const stl::string& name);
     /// Returns a vector containing all loaded plugins.
     const stl::vector<stl::shared_ptr<Plugin>>& GetPlugins() const { return plugins_; }
     /// Tick native plugins.
@@ -106,13 +106,13 @@ public:
     /// Returns list of sorted plugin names that exist in editor directory.
     const StringVector& GetPluginNames();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
-    static String PathToName(const String& path);
+    static stl::string PathToName(const stl::string& path);
 
 protected:
     /// Converts name to a full plugin file path. Returns empty string on error.
-    String NameToPath(const String& name) const;
+    stl::string NameToPath(const stl::string& name) const;
     /// Returns path to folder where temporary copies of plugin files are stored.
-    String GetTemporaryPluginPath() const;
+    stl::string GetTemporaryPluginPath() const;
 
     struct DynamicLibraryInfo
     {
@@ -127,7 +127,7 @@ protected:
     /// Plugin update check timer.
     Timer updateCheckTimer_;
     /// Cached plugin information.
-    HashMap<String, DynamicLibraryInfo> pluginInfoCache_;
+    HashMap<stl::string, DynamicLibraryInfo> pluginInfoCache_;
 
     friend class Plugin;
 };

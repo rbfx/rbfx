@@ -151,7 +151,7 @@ public:
     void InsertChild(unsigned index, UIElement* element)
     {
         // Insert the overlay at the same index position to the overlay container
-        CheckBox* overlay = static_cast<CheckBox*>(overlayContainer_->CreateChild(CheckBox::GetTypeStatic(), String::EMPTY, index));
+        CheckBox* overlay = static_cast<CheckBox*>(overlayContainer_->CreateChild(CheckBox::GetTypeStatic(), EMPTY_STRING, index));
         overlay->SetStyle("HierarchyListViewOverlay");
         int baseIndent = listView_->GetBaseIndent();
         int indent = element->GetIndent() - baseIndent - 1;
@@ -921,14 +921,14 @@ stl::vector<UIElement*> ListView::GetSelectedItems() const
 
 void ListView::CopySelectedItemsToClipboard() const
 {
-    String selectedText;
+    stl::string selectedText;
 
     for (auto i = selections_.begin(); i != selections_.end(); ++i)
     {
         // Only handle Text UI element
         auto* text = dynamic_cast<Text*>(GetItem(*i));
         if (text)
-            selectedText.Append(text->GetText()).Append("\n");
+            selectedText.append(text->GetText()).append("\n");
     }
 
     GetSubsystem<UI>()->SetClipboardText(selectedText);

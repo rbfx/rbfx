@@ -64,7 +64,7 @@ bool SpriterInstance::SetEntity(int index)
     return false;
 }
 
-bool SpriterInstance::SetEntity(const String& entityName)
+bool SpriterInstance::SetEntity(const stl::string& entityName)
 {
     if (!spriterData_)
         return false;
@@ -95,7 +95,7 @@ bool SpriterInstance::SetAnimation(int index, LoopMode loopMode)
     return false;
 }
 
-bool SpriterInstance::SetAnimation(const String& animationName, LoopMode loopMode)
+bool SpriterInstance::SetAnimation(const stl::string& animationName, LoopMode loopMode)
 {
     if (!entity_)
         return false;

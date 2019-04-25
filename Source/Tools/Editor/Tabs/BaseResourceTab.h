@@ -37,7 +37,7 @@ public:
     /// Returns type of resource that this tab can handle.
     virtual StringHash GetResourceType() = 0;
     /// Load resource from cache.
-    bool LoadResource(const String& resourcePath) override;
+    bool LoadResource(const stl::string& resourcePath) override;
     /// Save resource o disk.
     bool SaveResource() override;
     /// Save ui settings.
@@ -45,7 +45,7 @@ public:
     /// Load ui settings.
     void OnLoadUISettings(const char* name, const char* line) override;
     /// Returns name of opened resource.
-    String GetResourceName() const { return resourceName_; }
+    stl::string GetResourceName() const { return resourceName_; }
     /// Returns true when loaded resource was modified.
     bool IsModified() const override;
     /// Closes current tab and unloads it's contents from memory.
@@ -55,16 +55,16 @@ public:
 
 protected:
     /// Set resource name.
-    void SetResourceName(const String& resourceName);
+    void SetResourceName(const stl::string& resourceName);
 
     /// Name of loaded resource.
-    String resourceName_;
+    stl::string resourceName_;
     /// Comparing undo stack size allows determining if open resource was modified during last frame.
     int lastUndoIndex_ = 0;
     /// State change tracker.
     Undo::Manager undo_;
     /// Resource that user would like to open on top of current loaded resource. Used for displaying warning.
-    String pendingLoadResource_;
+    stl::string pendingLoadResource_;
 };
 
 }

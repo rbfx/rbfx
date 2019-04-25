@@ -67,10 +67,10 @@ public:
     /// React to a key press.
     void OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifiers) override;
     /// React to text input event.
-    void OnTextInput(const String& text) override;
+    void OnTextInput(const stl::string& text) override;
 
     /// Set text.
-    void SetText(const String& text);
+    void SetText(const stl::string& text);
     /// Set cursor position.
     void SetCursorPosition(unsigned position);
     /// Set cursor blink rate. 0 disables blinking.
@@ -87,7 +87,7 @@ public:
     void SetTextCopyable(bool enable);
 
     /// Return text.
-    const String& GetText() const { return line_; }
+    const stl::string& GetText() const { return line_; }
 
     /// Return cursor position.
     unsigned GetCursorPosition() const { return cursorPosition_; }
@@ -131,7 +131,7 @@ protected:
     /// Cursor element.
     stl::shared_ptr<BorderImage> cursor_;
     /// Text line.
-    String line_;
+    stl::string line_;
     /// Last used text font.
     Font* lastFont_;
     /// Last used text size.

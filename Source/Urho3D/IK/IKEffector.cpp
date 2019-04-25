@@ -63,7 +63,7 @@ void IKEffector::RegisterObject(Context* context)
 {
     context->RegisterFactory<IKEffector>(IK_CATEGORY);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Target Node", GetTargetName, SetTargetName, String, String::EMPTY, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Target Node", GetTargetName, SetTargetName, stl::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Chain Length", GetChainLength, SetChainLength, unsigned, 0, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Target Position", GetTargetPosition, SetTargetPosition, Vector3, Vector3::ZERO, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Target Rotation", GetTargetRotationEuler, SetTargetRotationEuler, Vector3, Vector3::ZERO, AM_DEFAULT);
@@ -96,13 +96,13 @@ void IKEffector::SetTargetNode(Node* targetNode)
 }
 
 // ----------------------------------------------------------------------------
-const String& IKEffector::GetTargetName() const
+const stl::string& IKEffector::GetTargetName() const
 {
     return targetName_;
 }
 
 // ----------------------------------------------------------------------------
-void IKEffector::SetTargetName(const String& nodeName)
+void IKEffector::SetTargetName(const stl::string& nodeName)
 {
     targetName_ = nodeName;
     targetNode_ = nullptr;
@@ -246,7 +246,7 @@ bool IKEffector::GetFeature(Feature feature) const
 // ----------------------------------------------------------------------------
 void IKEffector::UpdateTargetNodePosition()
 {
-    if (targetNode_ != nullptr || targetName_.Empty())
+    if (targetNode_ != nullptr || targetName_.empty())
         return;
 
     // Try to find a node with the same name as our target name

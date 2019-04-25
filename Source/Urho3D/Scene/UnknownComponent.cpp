@@ -73,10 +73,10 @@ bool UnknownComponent::LoadXML(const XMLElement& source)
         attr.name_ = attrElem.GetAttribute("name");
         attr.type_ = VAR_STRING;
 
-        if (!attr.name_.Empty())
+        if (!attr.name_.empty())
         {
-            String attrValue = attrElem.GetAttribute("value");
-            attr.defaultValue_ = String::EMPTY;
+            stl::string attrValue = attrElem.GetAttribute("value");
+            attr.defaultValue_ = EMPTY_STRING;
             xmlAttributeInfos_.push_back(attr);
             xmlAttributes_.push_back(attrValue);
         }
@@ -109,10 +109,10 @@ bool UnknownComponent::LoadJSON(const JSONValue& source)
         attr.name_ = attrVal.Get("name").GetString();
         attr.type_ = VAR_STRING;
 
-        if (!attr.name_.Empty())
+        if (!attr.name_.empty())
         {
-            String attrValue = attrVal.Get("value").GetString();
-            attr.defaultValue_ = String::EMPTY;
+            stl::string attrValue = attrVal.Get("value").GetString();
+            attr.defaultValue_ = EMPTY_STRING;
             xmlAttributeInfos_.push_back(attr);
             xmlAttributes_.push_back(attrValue);
         }
@@ -193,7 +193,7 @@ bool UnknownComponent::SaveJSON(JSONValue& dest) const
     return true;
 }
 
-void UnknownComponent::SetTypeName(const String& typeName)
+void UnknownComponent::SetTypeName(const stl::string& typeName)
 {
     typeName_ = typeName;
     typeHash_ = typeName;
@@ -207,7 +207,7 @@ void UnknownComponent::SetType(StringHash typeHash)
         typeName_ = registry->GetString(typeHash);
 #endif
 
-    if (typeName_.Empty())
+    if (typeName_.empty())
         typeName_ = typeHash.ToString();
 
     typeHash_ = typeHash;

@@ -179,21 +179,21 @@ bool Serializer::WriteBoundingBox(const BoundingBox& value)
     return success;
 }
 
-bool Serializer::WriteString(const String& value)
+bool Serializer::WriteString(const stl::string& value)
 {
-    const char* chars = value.CString();
+    const char* chars = value.c_str();
     // Count length to the first zero, because ReadString() does the same
-    unsigned length = String::CStringLength(chars);
+    unsigned length = CStringLength(chars);
     return Write(chars, length + 1) == length + 1;
 }
 
-bool Serializer::WriteFileID(const String& value)
+bool Serializer::WriteFileID(const stl::string& value)
 {
     bool success = true;
-    unsigned length = Min(value.Length(), 4U);
+    unsigned length = Min(value.length(), 4U);
 
-    success &= Write(value.CString(), length) == length;
-    for (unsigned i = value.Length(); i < 4; ++i)
+    success &= Write(value.c_str(), length) == length;
+    for (unsigned i = value.length(); i < 4; ++i)
         success &= WriteByte(' ');
     return success;
 }
@@ -399,10 +399,10 @@ bool Serializer::WriteNetID(unsigned value)
     return Write(&value, 3) == 3;
 }
 
-bool Serializer::WriteLine(const String& value)
+bool Serializer::WriteLine(const stl::string& value)
 {
     bool success = true;
-    success &= Write(value.CString(), value.Length()) == value.Length();
+    success &= Write(value.c_str(), value.length()) == value.length();
     success &= WriteUByte(13);
     success &= WriteUByte(10);
     return success;

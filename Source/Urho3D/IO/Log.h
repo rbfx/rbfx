@@ -74,7 +74,7 @@ struct StoredLogMessage
     StoredLogMessage() = default;
 
     /// Construct with parameters.
-    StoredLogMessage(LogLevel level, time_t timestamp, const String& logger, const String& message) :
+    StoredLogMessage(LogLevel level, time_t timestamp, const stl::string& logger, const stl::string& message) :
         level_(level),
         timestamp_(timestamp),
         logger_(logger),
@@ -87,9 +87,9 @@ struct StoredLogMessage
     /// Timestamp when message was logged.
     time_t timestamp_{};
     /// Message text.
-    String logger_{};
+    stl::string logger_{};
     /// Message text.
-    String message_{};
+    stl::string message_{};
 };
 
 class LogImpl;
@@ -112,13 +112,13 @@ public:
     template<typename... Args> void Error(const char* format, Args... args)   { Write(LOG_ERROR, format, args...); }
     template<typename... Args> void Write(LogLevel level, const char* format, Args... args) { WriteFormatted(level, Format(format, args...)); }
 
-    template<typename... Args> void Trace(const String& message)   { Write(LOG_TRACE, message.CString()); }
-    template<typename... Args> void Debug(const String& message)   { Write(LOG_DEBUG, message.CString()); }
-    template<typename... Args> void Info(const String& message)    { Write(LOG_INFO, message.CString()); }
-    template<typename... Args> void Warning(const String& message) { Write(LOG_WARNING, message.CString()); }
-    template<typename... Args> void Error(const String& message)   { Write(LOG_ERROR, message.CString()); }
+    template<typename... Args> void Trace(const stl::string& message)   { Write(LOG_TRACE, message.c_str()); }
+    template<typename... Args> void Debug(const stl::string& message)   { Write(LOG_DEBUG, message.c_str()); }
+    template<typename... Args> void Info(const stl::string& message)    { Write(LOG_INFO, message.c_str()); }
+    template<typename... Args> void Warning(const stl::string& message) { Write(LOG_WARNING, message.c_str()); }
+    template<typename... Args> void Error(const stl::string& message)   { Write(LOG_ERROR, message.c_str()); }
 
-    void WriteFormatted(LogLevel level, const String& message);
+    void WriteFormatted(LogLevel level, const stl::string& message);
 
 protected:
     /// Instance of spdlog logger.
@@ -130,7 +130,7 @@ class URHO3D_API Log : public Object
 {
     URHO3D_OBJECT(Log, Object);
 
-    void SendMessageEvent(LogLevel level, time_t timestamp, const String& logger, const String& message);
+    void SendMessageEvent(LogLevel level, time_t timestamp, const stl::string& logger, const stl::string& message);
 
 public:
     /// Construct.
@@ -139,13 +139,13 @@ public:
     ~Log() override;
 
     /// Open the log file.
-    void Open(const String& fileName);
+    void Open(const stl::string& fileName);
     /// Close the log file.
     void Close();
     /// Set logging level.
     void SetLevel(LogLevel level);
     /// Set whether to timestamp log messages.
-    void SetLogFormat(const String& format);
+    void SetLogFormat(const stl::string& format);
     /// Set quiet mode ie. only print error entries to standard error stream (which is normally redirected to console also). Output to log file is not affected by this mode.
     void SetQuiet(bool quiet);
 
@@ -168,7 +168,7 @@ private:
     /// Implementation hiding spdlog class types from public headers.
     stl::shared_ptr<LogImpl> impl_;
     /// Log format pattern.
-    String formatPattern_{};
+    stl::string formatPattern_{};
     /// Mutex for threaded operation.
     Mutex logMutex_{};
     /// Log messages from other threads.

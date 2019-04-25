@@ -170,7 +170,7 @@ unsigned Skeleton::GetBoneIndex(const Bone* bone) const
     return static_cast<unsigned>(bone - &bones_.front());
 }
 
-unsigned Skeleton::GetBoneIndex(const String& boneName) const
+unsigned Skeleton::GetBoneIndex(const stl::string& boneName) const
 {
     return GetBoneIndex(StringHash(boneName));
 }
@@ -188,7 +188,7 @@ Bone* Skeleton::GetBone(unsigned index)
     return index < bones_.size() ? &bones_[index] : nullptr;
 }
 
-Bone* Skeleton::GetBone(const String& name)
+Bone* Skeleton::GetBone(const stl::string& name)
 {
     return GetBone(StringHash(name));
 }

@@ -66,7 +66,7 @@ public:
     /// Set selection.
     void SetSelection(unsigned index);
     /// Set place holder text. This is the text shown when there is no selection (-1) in drop down list. Note that if the list has items, the default is to show the first item, so the "no selection" state has to be set explicitly.
-    void SetPlaceholderText(const String& text);
+    void SetPlaceholderText(const stl::string& text);
     /// Set whether popup should be automatically resized to match the dropdown button width.
     void SetResizePopup(bool enable);
 
@@ -88,7 +88,7 @@ public:
     UIElement* GetPlaceholder() const { return placeholder_; }
 
     /// Return place holder text.
-    const String& GetPlaceholderText() const;
+    const stl::string& GetPlaceholderText() const;
 
     /// Return whether popup should be automatically resized.
     bool GetResizePopup() const { return resizePopup_; }

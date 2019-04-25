@@ -65,7 +65,7 @@ public:
     const ShaderParameter* GetParameter(StringHash param) const;
 
     /// Return linker output.
-    const String& GetLinkerOutput() const { return linkerOutput_; }
+    const stl::string& GetLinkerOutput() const { return linkerOutput_; }
 
     /// Return semantic to vertex attributes location mappings used by the shader.
     const HashMap<stl::pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
@@ -104,7 +104,7 @@ private:
     /// Remembered shader parameter sources for individual uniform mode.
     const void* parameterSources_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Shader link error string.
-    String linkerOutput_;
+    stl::string linkerOutput_;
     /// Shader parameter source framenumber.
     unsigned frameNumber_{};
 

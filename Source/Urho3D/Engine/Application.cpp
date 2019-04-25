@@ -88,7 +88,7 @@ int Application::Run()
             cliArgs.reserve(rawArguments.size());
             // CLI11 detail - arguments must be in reversed order.
             for (auto i = static_cast<int>(rawArguments.size() - 1); i >= 0; i--)
-                cliArgs.emplace_back(rawArguments[static_cast<unsigned>(i)].CString());
+                cliArgs.emplace_back(rawArguments[static_cast<unsigned>(i)].c_str());
 
             try {
                 commandLine_.parse(cliArgs);
@@ -140,31 +140,31 @@ int Application::Run()
 #endif
 }
 
-void Application::ErrorExit(const String& message)
+void Application::ErrorExit(const stl::string& message)
 {
     engine_->Exit(); // Close the rendering window
     exitCode_ = EXIT_FAILURE;
 
-    std::function<void(const String&)> showError;
+    std::function<void(const stl::string&)> showError;
     if (engineParameters_[EP_HEADLESS].GetBool())
     {
-        showError = [this](const String& message)
+        showError = [this](const stl::string& message)
         {
-            URHO3D_LOGERROR(message.CString());
+            URHO3D_LOGERROR(message.c_str());
         };
     }
     else
     {
-        showError = [this](const String& message)
+        showError = [this](const stl::string& message)
         {
             ErrorDialog(GetTypeName(), message);
         };
     }
 
-    if (!message.Length())
+    if (!message.length())
     {
-        showError(startupErrors_.Length() ?
-            startupErrors_ : String("Application has been terminated due to unexpected error."));
+        showError(startupErrors_.length() ?
+            startupErrors_ : stl::string("Application has been terminated due to unexpected error."));
     }
     else
         showError(message);
@@ -177,10 +177,10 @@ void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
     if (eventData[P_LEVEL].GetInt() == LOG_ERROR)
     {
         // Strip the timestamp if necessary
-        String error = eventData[P_MESSAGE].GetString();
-        unsigned bracketPos = error.Find(']');
-        if (bracketPos != String::NPOS)
-            error = error.Substring(bracketPos + 2);
+        stl::string error = eventData[P_MESSAGE].GetString();
+        unsigned bracketPos = error.find(']');
+        if (bracketPos != stl::string::npos)
+            error = error.substr(bracketPos + 2);
 
         startupErrors_ += error + "\n";
     }

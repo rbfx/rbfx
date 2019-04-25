@@ -35,7 +35,7 @@ public:
     using BaseClassName = Component;
     virtual const Urho3D::TypeInfo* GetTypeInfo() const override { return GetTypeInfoStatic(); }
     static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); }
-    static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); }
+    static const stl::string& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); }
     static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic("UnknownComponent", BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
 
     /// Construct.
@@ -48,7 +48,7 @@ public:
     StringHash GetType() const override { return typeHash_; }
 
     /// Return type name of the stored component.
-    const String& GetTypeName() const override { return typeName_; }
+    const stl::string& GetTypeName() const override { return typeName_; }
 
     /// Return attribute descriptions, or null if none defined.
     const stl::vector<AttributeInfo>* GetAttributes() const override { return &xmlAttributeInfos_; }
@@ -67,12 +67,12 @@ public:
     bool SaveJSON(JSONValue& dest) const override;
 
     /// Initialize the type name. Called by Node when loading.
-    void SetTypeName(const String& typeName);
+    void SetTypeName(const stl::string& typeName);
     /// Initialize the type hash only when type name not known. Called by Node when loading.
     void SetType(StringHash typeHash);
 
     /// Return the XML format attributes. Empty when loaded with binary serialization.
-    const stl::vector<String>& GetXMLAttributes() const { return xmlAttributes_; }
+    const stl::vector<stl::string>& GetXMLAttributes() const { return xmlAttributes_; }
 
     /// Return the binary attributes. Empty when loaded with XML serialization.
     const stl::vector<unsigned char>& GetBinaryAttributes() const { return binaryAttributes_; }
@@ -84,11 +84,11 @@ private:
     /// Type of stored component.
     StringHash typeHash_;
     /// Type name of the stored component.
-    String typeName_;
+    stl::string typeName_;
     /// XML format attribute infos.
     stl::vector<AttributeInfo> xmlAttributeInfos_;
     /// XML format attribute data (as strings)
-    stl::vector<String> xmlAttributes_;
+    stl::vector<stl::string> xmlAttributes_;
     /// Binary attributes.
     stl::vector<unsigned char> binaryAttributes_;
     /// Flag of whether was loaded using XML/JSON data.

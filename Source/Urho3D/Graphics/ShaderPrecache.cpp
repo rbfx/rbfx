@@ -36,7 +36,7 @@
 namespace Urho3D
 {
 
-ShaderPrecache::ShaderPrecache(Context* context, const String& fileName) :
+ShaderPrecache::ShaderPrecache(Context* context, const stl::string& fileName) :
     Object(context),
     fileName_(fileName),
     xmlFile_(context)
@@ -50,7 +50,7 @@ ShaderPrecache::ShaderPrecache(Context* context, const String& fileName) :
         XMLElement shader = xmlFile_.GetRoot().GetChild("shader");
         while (shader)
         {
-            String oldCombination = shader.GetAttribute("vs") + " " + shader.GetAttribute("vsdefines") + " " +
+            stl::string oldCombination = shader.GetAttribute("vs") + " " + shader.GetAttribute("vsdefines") + " " +
                                     shader.GetAttribute("ps") + " " + shader.GetAttribute("psdefines");
             usedCombinations_.insert(oldCombination);
 
@@ -87,13 +87,13 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
         return;
     usedPtrCombinations_.insert(shaderPair);
 
-    String vsName = vs->GetName();
-    String psName = ps->GetName();
-    const String& vsDefines = vs->GetDefines();
-    const String& psDefines = ps->GetDefines();
+    stl::string vsName = vs->GetName();
+    stl::string psName = ps->GetName();
+    const stl::string& vsDefines = vs->GetDefines();
+    const stl::string& psDefines = ps->GetDefines();
 
     // Check for duplicate using strings (needed for combinations loaded from existing file)
-    String newCombination = vsName + " " + vsDefines + " " + psName + " " + psDefines;
+    stl::string newCombination = vsName + " " + vsDefines + " " + psName + " " + psDefines;
     if (stl::contains(usedCombinations_, newCombination))
         return;
     usedCombinations_.insert(newCombination);
@@ -115,8 +115,8 @@ void ShaderPrecache::LoadShaders(Graphics* graphics, Deserializer& source)
     XMLElement shader = xmlFile.GetRoot().GetChild("shader");
     while (shader)
     {
-        String vsDefines = shader.GetAttribute("vsdefines");
-        String psDefines = shader.GetAttribute("psdefines");
+        stl::string vsDefines = shader.GetAttribute("vsdefines");
+        stl::string psDefines = shader.GetAttribute("psdefines");
 
         // Check for illegal variations on OpenGL ES and skip them
 #ifdef GL_ES_VERSION_2_0

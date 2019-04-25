@@ -100,7 +100,7 @@ void ParticleEffect::RegisterObject(Context* context)
 
 bool ParticleEffect::BeginLoad(Deserializer& source)
 {
-    loadMaterialName_.Clear();
+    loadMaterialName_.clear();
 
     XMLFile file(context_);
     if (!file.Load(source))
@@ -120,10 +120,10 @@ bool ParticleEffect::BeginLoad(Deserializer& source)
 bool ParticleEffect::EndLoad()
 {
     // Apply the material now
-    if (!loadMaterialName_.Empty())
+    if (!loadMaterialName_.empty())
     {
         SetMaterial(GetSubsystem<ResourceCache>()->GetResource<Material>(loadMaterialName_));
-        loadMaterialName_.Clear();
+        loadMaterialName_.clear();
     }
 
     return true;
@@ -203,7 +203,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
     if (source.HasChild("emittertype"))
     {
-        String type = source.GetChild("emittertype").GetAttributeLower("value");
+        stl::string type = source.GetChild("emittertype").GetAttributeLower("value");
         if (type == "point")
         {
             // Point emitter type is deprecated, handled as zero sized sphere
@@ -211,7 +211,7 @@ bool ParticleEffect::Load(const XMLElement& source)
             emitterSize_ = Vector3::ZERO;
         }
         else
-            emitterType_ = (EmitterType)GetStringListIndex(type.CString(), emitterTypeNames, EMITTER_SPHERE);
+            emitterType_ = (EmitterType)GetStringListIndex(type.c_str(), emitterTypeNames, EMITTER_SPHERE);
     }
 
     if (source.HasChild("emittersize"))
@@ -268,8 +268,8 @@ bool ParticleEffect::Load(const XMLElement& source)
 
     if (source.HasChild("faceCameraMode"))
     {
-        String type = source.GetChild("faceCameraMode").GetAttributeLower("value");
-        faceCameraMode_ = (FaceCameraMode)GetStringListIndex(type.CString(), faceCameraModeNames, FC_ROTATE_XYZ);
+        stl::string type = source.GetChild("faceCameraMode").GetAttributeLower("value");
+        faceCameraMode_ = (FaceCameraMode)GetStringListIndex(type.c_str(), faceCameraModeNames, FC_ROTATE_XYZ);
     }
 
     if (source.HasChild("sizedelta"))
@@ -733,7 +733,7 @@ void ParticleEffect::SortTextureFrames()
         AddTextureFrame(tf[i]);
 }
 
-stl::shared_ptr<ParticleEffect> ParticleEffect::Clone(const String& cloneName) const
+stl::shared_ptr<ParticleEffect> ParticleEffect::Clone(const stl::string& cloneName) const
 {
     stl::shared_ptr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
 

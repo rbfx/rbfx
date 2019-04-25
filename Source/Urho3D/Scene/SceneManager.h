@@ -42,15 +42,15 @@ class URHO3D_API SceneManager : public Object
     static void RegisterObject(Context* context);
 
     /// Creates and returns empty scene. Returns null if scene already exists.
-    Scene* CreateScene(const String& name=String::EMPTY);
+    Scene* CreateScene(const stl::string& name=EMPTY_STRING);
     /// Returns a previously created scene or null if no scene with specified name was created.
-    Scene* GetScene(const String& name);
+    Scene* GetScene(const stl::string& name);
     /// Returns a previously created scene if it exits or creates a new one.
-    Scene* GetOrCreateScene(const String& name);
+    Scene* GetOrCreateScene(const stl::string& name);
     /// Unload scene from memory.
     void UnloadScene(Scene* scene);
     /// Unload scene from memory.
-    void UnloadScene(const String& name);
+    void UnloadScene(const stl::string& name);
     /// Unloads all scenes from memory.
     void UnloadAll();
     /// Unloads all scenes from memory except active one.
@@ -58,7 +58,7 @@ class URHO3D_API SceneManager : public Object
     /// Set specified scene as active. It will start rendering to viewports set up by scene components.
     void SetActiveScene(Scene* scene);
     /// Set specified scene as active. It will start rendering to viewports set up by scene components.
-    void SetActiveScene(const String& name);
+    void SetActiveScene(const stl::string& name);
     /// Get current active scene. Returns null pointer if no scene is active.
     Scene* GetActiveScene() const { return activeScene_; }
     /// Set surface to which active scene should render. If surface is null then scene will render to main window.

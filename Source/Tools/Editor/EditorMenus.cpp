@@ -91,7 +91,7 @@ void Editor::RenderMenuBar()
                     {
                         // Tabs that can not be closed permanently
                         auto open = tab->IsOpen();
-                        if (ui::MenuItem(tab->GetUniqueTitle().CString(), nullptr, &open))
+                        if (ui::MenuItem(tab->GetUniqueTitle().c_str(), nullptr, &open))
                             tab->SetOpen(open);
                     }
                 }
@@ -152,7 +152,7 @@ void Editor::RenderProjectMenu()
         }
         else
         {
-            for (const String& baseName : pluginNames)
+            for (const stl::string& baseName : pluginNames)
             {
                 PluginManager* plugins = project_->GetPlugins();
                 Plugin* plugin = plugins->GetPlugin(baseName);
@@ -183,7 +183,7 @@ void Editor::RenderProjectMenu()
                 }
                 ui::PopStyleVar();
                 ui::SameLine();
-                ui::TextUnformatted(baseName.CString());
+                ui::TextUnformatted(baseName.c_str());
             }
         }
         ui::PopID();    // Plugins
@@ -206,10 +206,10 @@ void Editor::RenderProjectMenu()
             }
         }
 
-        for (const String& resourceName : *sceneNames)
+        for (const stl::string& resourceName : *sceneNames)
         {
             bool isDefaultScene = resourceName == project_->GetDefaultSceneName();
-            if (ui::Checkbox(resourceName.CString(), &isDefaultScene))
+            if (ui::Checkbox(resourceName.c_str(), &isDefaultScene))
             {
                 if (isDefaultScene)
                     project_->SetDefaultSceneName(resourceName);
@@ -248,51 +248,51 @@ void Editor::RenderProjectMenu()
         static const char* predefinedNames[] = {
             "Select Option Name",
             "Enter Custom",
-            EP_AUTOLOAD_PATHS.CString(),
-            EP_BORDERLESS.CString(),
-            EP_DUMP_SHADERS.CString(),
-            EP_FLUSH_GPU.CString(),
-            EP_FORCE_GL2.CString(),
-            EP_FRAME_LIMITER.CString(),
-            EP_FULL_SCREEN.CString(),
-            EP_HEADLESS.CString(),
-            EP_HIGH_DPI.CString(),
-            EP_LOG_LEVEL.CString(),
-            EP_LOG_NAME.CString(),
-            EP_LOG_QUIET.CString(),
-            EP_LOW_QUALITY_SHADOWS.CString(),
-            EP_MATERIAL_QUALITY.CString(),
-            EP_MONITOR.CString(),
-            EP_MULTI_SAMPLE.CString(),
-            EP_ORGANIZATION_NAME.CString(),
-            EP_ORIENTATIONS.CString(),
-            EP_PACKAGE_CACHE_DIR.CString(),
-            EP_RENDER_PATH.CString(),
-            EP_REFRESH_RATE.CString(),
-            EP_RESOURCE_PACKAGES.CString(),
-            EP_RESOURCE_PATHS.CString(),
-            EP_RESOURCE_PREFIX_PATHS.CString(),
-            EP_SHADER_CACHE_DIR.CString(),
-            EP_SHADOWS.CString(),
-            EP_SOUND.CString(),
-            EP_SOUND_BUFFER.CString(),
-            EP_SOUND_INTERPOLATION.CString(),
-            EP_SOUND_MIX_RATE.CString(),
-            EP_SOUND_STEREO.CString(),
-            EP_TEXTURE_ANISOTROPY.CString(),
-            EP_TEXTURE_FILTER_MODE.CString(),
-            EP_TEXTURE_QUALITY.CString(),
-            EP_TOUCH_EMULATION.CString(),
-            EP_TRIPLE_BUFFER.CString(),
-            EP_VSYNC.CString(),
-            EP_WINDOW_HEIGHT.CString(),
-            EP_WINDOW_ICON.CString(),
-            EP_WINDOW_POSITION_X.CString(),
-            EP_WINDOW_POSITION_Y.CString(),
-            EP_WINDOW_RESIZABLE.CString(),
-            EP_WINDOW_TITLE.CString(),
-            EP_WINDOW_WIDTH.CString(),
-            EP_WORKER_THREADS.CString(),
+            EP_AUTOLOAD_PATHS.c_str(),
+            EP_BORDERLESS.c_str(),
+            EP_DUMP_SHADERS.c_str(),
+            EP_FLUSH_GPU.c_str(),
+            EP_FORCE_GL2.c_str(),
+            EP_FRAME_LIMITER.c_str(),
+            EP_FULL_SCREEN.c_str(),
+            EP_HEADLESS.c_str(),
+            EP_HIGH_DPI.c_str(),
+            EP_LOG_LEVEL.c_str(),
+            EP_LOG_NAME.c_str(),
+            EP_LOG_QUIET.c_str(),
+            EP_LOW_QUALITY_SHADOWS.c_str(),
+            EP_MATERIAL_QUALITY.c_str(),
+            EP_MONITOR.c_str(),
+            EP_MULTI_SAMPLE.c_str(),
+            EP_ORGANIZATION_NAME.c_str(),
+            EP_ORIENTATIONS.c_str(),
+            EP_PACKAGE_CACHE_DIR.c_str(),
+            EP_RENDER_PATH.c_str(),
+            EP_REFRESH_RATE.c_str(),
+            EP_RESOURCE_PACKAGES.c_str(),
+            EP_RESOURCE_PATHS.c_str(),
+            EP_RESOURCE_PREFIX_PATHS.c_str(),
+            EP_SHADER_CACHE_DIR.c_str(),
+            EP_SHADOWS.c_str(),
+            EP_SOUND.c_str(),
+            EP_SOUND_BUFFER.c_str(),
+            EP_SOUND_INTERPOLATION.c_str(),
+            EP_SOUND_MIX_RATE.c_str(),
+            EP_SOUND_STEREO.c_str(),
+            EP_TEXTURE_ANISOTROPY.c_str(),
+            EP_TEXTURE_FILTER_MODE.c_str(),
+            EP_TEXTURE_QUALITY.c_str(),
+            EP_TOUCH_EMULATION.c_str(),
+            EP_TRIPLE_BUFFER.c_str(),
+            EP_VSYNC.c_str(),
+            EP_WINDOW_HEIGHT.c_str(),
+            EP_WINDOW_ICON.c_str(),
+            EP_WINDOW_POSITION_X.c_str(),
+            EP_WINDOW_POSITION_Y.c_str(),
+            EP_WINDOW_RESIZABLE.c_str(),
+            EP_WINDOW_TITLE.c_str(),
+            EP_WINDOW_WIDTH.c_str(),
+            EP_WORKER_THREADS.c_str(),
         };
 
         static VariantType predefinedTypes[] = {
@@ -349,7 +349,7 @@ void Editor::RenderProjectMenu()
 
         struct NewEntryState
         {
-            std::string customName;
+            stl::string customName;
             int customType = 0;
             int predefinedItem = 0;
         };
@@ -358,11 +358,11 @@ void Editor::RenderProjectMenu()
         auto& settings = project_->GetDefaultEngineSettings();
         for (auto it = settings.Begin(); it != settings.End();)
         {
-            const String& settingName = it->first_;
-            ui::IdScope idScope(settingName.CString());
+            const stl::string& settingName = it->first_;
+            ui::IdScope idScope(settingName.c_str());
             Variant& value = it->second_;
             float startPos = ui::GetCursorPosX();
-            ui::TextUnformatted(settingName.CString());
+            ui::TextUnformatted(settingName.c_str());
             ui::SameLine();
             ui::SetCursorPosX(startPos = startPos + 180_dpx + ui::GetStyle().ItemSpacing.x);
             UI_ITEMWIDTH(100_dpx)

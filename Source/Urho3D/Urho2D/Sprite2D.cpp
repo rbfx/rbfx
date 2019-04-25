@@ -53,7 +53,7 @@ void Sprite2D::RegisterObject(Context* context)
 
 bool Sprite2D::BeginLoad(Deserializer& source)
 {
-    if (GetName().Empty())
+    if (GetName().empty())
         SetName(source.GetName());
 
     // Reload
@@ -213,12 +213,12 @@ Sprite2D* Sprite2D::LoadFromResourceRef(Object* object, const ResourceRef& value
     if (value.type_ == SpriteSheet2D::GetTypeStatic())
     {
         // value.name_ include sprite sheet name and sprite name.
-        stl::vector<String> names = value.name_.Split('@');
+        stl::vector<stl::string> names = value.name_.split('@');
         if (names.size() != 2)
             return nullptr;
 
-        const String& spriteSheetName = names[0];
-        const String& spriteName = names[1];
+        const stl::string& spriteSheetName = names[0];
+        const stl::string& spriteName = names[1];
 
         auto* spriteSheet = cache->GetResource<SpriteSheet2D>(spriteSheetName);
         if (!spriteSheet)

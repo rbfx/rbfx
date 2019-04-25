@@ -60,8 +60,8 @@ struct SpriterData
     bool Load(const void* data, size_t size);
 
     int scmlVersion_{};
-    String generator_;
-    String generatorVersion_;
+    stl::string generator_;
+    stl::string generatorVersion_;
     stl::vector<Folder*> folders_;
     stl::vector<Entity*> entities_;
 };
@@ -76,7 +76,7 @@ struct Folder
     bool Load(const pugi::xml_node& node);
 
     int id_{};
-    String name_;
+    stl::string name_;
     stl::vector<File*> files_;
 };
 
@@ -90,7 +90,7 @@ struct File
 
     Folder* folder_{};
     int id_{};
-    String name_;
+    stl::string name_;
     float width_{};
     float height_{};
     float pivotX_{};
@@ -107,7 +107,7 @@ struct Entity
     bool Load(const pugi::xml_node& node);
 
     int id_{};
-    String name_;
+    stl::string name_;
     stl::vector<CharacterMap*> characterMaps_;
     stl::vector<Animation*> animations_;
 };
@@ -122,7 +122,7 @@ struct CharacterMap
     bool Load(const pugi::xml_node& node);
 
     int id_{};
-    String name_;
+    stl::string name_;
     stl::vector<MapInstruction*> maps_;
 };
 
@@ -150,7 +150,7 @@ struct Animation
     bool Load(const pugi::xml_node& node);
 
     int id_{};
-    String name_;
+    stl::string name_;
     float length_{};
     bool looping_{};
     stl::vector<MainlineKey*> mainlineKeys_;
@@ -204,7 +204,7 @@ struct Timeline
     bool Load(const pugi::xml_node& node);
 
     int id_{};
-    String name_;
+    stl::string name_;
     ObjectType objectType_;
     stl::vector<SpatialTimelineKey*> keys_;
 };

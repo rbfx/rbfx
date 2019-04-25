@@ -83,7 +83,7 @@ void Text::RegisterObject(Context* context)
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Use Derived Opacity", false);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Font", GetFontAttr, SetFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic()), AM_FILE);
     URHO3D_ATTRIBUTE("Font Size", float, fontSize_, DEFAULT_FONT_SIZE, AM_FILE);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Text", GetTextAttr, SetTextAttr, String, String::EMPTY, AM_FILE);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Text", GetTextAttr, SetTextAttr, stl::string, EMPTY_STRING, AM_FILE);
     URHO3D_ENUM_ATTRIBUTE("Text Alignment", textAlignment_, horizontalAlignments, HA_LEFT, AM_FILE);
     URHO3D_ATTRIBUTE("Row Spacing", float, rowSpacing_, 1.0f, AM_FILE);
     URHO3D_ATTRIBUTE("Word Wrap", bool, wordWrap_, false, AM_FILE);
@@ -103,7 +103,7 @@ void Text::ApplyAttributes()
     UISelectable::ApplyAttributes();
 
     // Localize now if attributes were loaded out-of-order
-    if (autoLocalizable_ && stringId_.Length())
+    if (autoLocalizable_ && stringId_.length())
     {
         auto* l10n = GetSubsystem<Localization>();
         text_ = l10n->Get(stringId_);
@@ -250,7 +250,7 @@ void Text::OnIndentSet()
     charLocationsDirty_ = true;
 }
 
-bool Text::SetFont(const String& fontName, float size)
+bool Text::SetFont(const stl::string& fontName, float size)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     return SetFont(cache->GetResource<Font>(fontName), size);
@@ -286,11 +286,11 @@ bool Text::SetFontSize(float size)
 void Text::DecodeToUnicode()
 {
     unicodeText_.clear();
-    for (unsigned i = 0; i < text_.Length();)
-        unicodeText_.push_back(text_.NextUTF8Char(i));
+    for (unsigned i = 0; i < text_.length();)
+        unicodeText_.push_back(NextUTF8Char(text_, i));
 }
 
-void Text::SetText(const String& text)
+void Text::SetText(const stl::string& text)
 {
     if (autoLocalizable_)
     {
@@ -451,16 +451,16 @@ ResourceRef Text::GetFontAttr() const
     return GetResourceRef(font_, Font::GetTypeStatic());
 }
 
-void Text::SetTextAttr(const String& value)
+void Text::SetTextAttr(const stl::string& value)
 {
     text_ = value;
     if (autoLocalizable_)
         stringId_ = value;
 }
 
-String Text::GetTextAttr() const
+stl::string Text::GetTextAttr() const
 {
-    if (autoLocalizable_ && stringId_.Length())
+    if (autoLocalizable_ && stringId_.length())
         return stringId_;
     else
         return text_;

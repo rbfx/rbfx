@@ -272,7 +272,7 @@ public:
     Vector3 Column(unsigned j) const { return Vector3(Element(0, j), Element(1, j), Element(2, j)); }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     float m00_;
     float m01_;

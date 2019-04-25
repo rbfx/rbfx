@@ -38,12 +38,12 @@ Packager::Packager(Context* context)
     SetCompress(true);
 }
 
-bool Packager::OpenPackage(const String& path)
+bool Packager::OpenPackage(const stl::string& path)
 {
     return output_.Open(path, FILE_WRITE);
 }
 
-void Packager::AddFile(const String& root, const String& path)
+void Packager::AddFile(const stl::string& root, const stl::string& path)
 {
     FileEntry entry{};
     entry.root_ = root;
@@ -69,7 +69,7 @@ void Packager::Write()
     for (FileEntry& entry : entries_)
     {
         lastOffset = entry.offset_ = output_.GetSize();
-        String fileFullPath = entry.root_ + "/" + entry.name_;
+        stl::string fileFullPath = entry.root_ + "/" + entry.name_;
 
         File srcFile(context_, fileFullPath);
         if (!srcFile.IsOpen())

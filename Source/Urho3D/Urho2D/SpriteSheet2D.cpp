@@ -53,13 +53,13 @@ void SpriteSheet2D::RegisterObject(Context* context)
 
 bool SpriteSheet2D::BeginLoad(Deserializer& source)
 {
-    if (GetName().Empty())
+    if (GetName().empty())
         SetName(source.GetName());
 
-    loadTextureName_.Clear();
+    loadTextureName_.clear();
     spriteMapping_.Clear();
 
-    String extension = GetExtension(source.GetName());
+    stl::string extension = GetExtension(source.GetName());
     if (extension == ".plist")
         return BeginLoadFromPListFile(source);
 
@@ -90,11 +90,11 @@ bool SpriteSheet2D::EndLoad()
 
 void SpriteSheet2D::SetTexture(Texture2D* texture)
 {
-    loadTextureName_.Clear();
+    loadTextureName_.clear();
     texture_ = texture;
 }
 
-void SpriteSheet2D::DefineSprite(const String& name, const IntRect& rectangle, const Vector2& hotSpot, const IntVector2& offset)
+void SpriteSheet2D::DefineSprite(const stl::string& name, const IntRect& rectangle, const Vector2& hotSpot, const IntVector2& offset)
 {
     if (!texture_)
         return;
@@ -113,9 +113,9 @@ void SpriteSheet2D::DefineSprite(const String& name, const IntRect& rectangle, c
     spriteMapping_[name] = sprite;
 }
 
-Sprite2D* SpriteSheet2D::GetSprite(const String& name) const
+Sprite2D* SpriteSheet2D::GetSprite(const stl::string& name) const
 {
-    HashMap<String, stl::shared_ptr<Sprite2D> >::ConstIterator i = spriteMapping_.Find(name);
+    HashMap<stl::string, stl::shared_ptr<Sprite2D> >::ConstIterator i = spriteMapping_.Find(name);
     if (i == spriteMapping_.End())
         return nullptr;
 
@@ -136,7 +136,7 @@ bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
 
     const PListValueMap& root = loadPListFile_->GetRoot();
     const PListValueMap& metadata = root["metadata"]->GetValueMap();
-    const String& textureFileName = metadata["realTextureFileName"]->GetString();
+    const stl::string& textureFileName = metadata["realTextureFileName"]->GetString();
 
     // If we're async loading, request the texture now. Finish during EndLoad().
     loadTextureName_ = GetParentPath(GetName()) + textureFileName;
@@ -154,7 +154,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
     {
         URHO3D_LOGERROR("Could not load texture " + loadTextureName_);
         loadPListFile_.reset();
-        loadTextureName_.Clear();
+        loadTextureName_.clear();
         return false;
     }
 
@@ -162,7 +162,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
     const PListValueMap& frames = root["frames"]->GetValueMap();
     for (PListValueMap::ConstIterator i = frames.Begin(); i != frames.End(); ++i)
     {
-        String name = i->first_.Split('.')[0];
+        stl::string name = i->first_.split('.')[0];
 
         const PListValueMap& frameInfo = i->second_.GetValueMap();
         if (frameInfo["rotated"]->GetBool())
@@ -190,7 +190,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
     }
 
     loadPListFile_.reset();
-    loadTextureName_.Clear();
+    loadTextureName_.clear();
     return true;
 }
 
@@ -230,7 +230,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
     {
         URHO3D_LOGERROR("Could not load texture " + loadTextureName_);
         loadXMLFile_.reset();
-        loadTextureName_.Clear();
+        loadTextureName_.clear();
         return false;
     }
 
@@ -238,7 +238,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
     XMLElement subTextureElem = rootElem.GetChild("SubTexture");
     while (subTextureElem)
     {
-        String name = subTextureElem.GetAttribute("name");
+        stl::string name = subTextureElem.GetAttribute("name");
 
         int x = subTextureElem.GetInt("x");
         int y = subTextureElem.GetInt("y");
@@ -264,7 +264,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
     }
 
     loadXMLFile_.reset();
-    loadTextureName_.Clear();
+    loadTextureName_.clear();
     return true;
 }
 
@@ -304,7 +304,7 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
     {
         URHO3D_LOGERROR("Could not load texture " + loadTextureName_);
         loadJSONFile_.reset();
-        loadTextureName_.Clear();
+        loadTextureName_.clear();
         return false;
     }
 
@@ -314,7 +314,7 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
     for (unsigned i = 0; i < subTextureArray.size(); i++)
     {
         const JSONValue& subTextureVal = subTextureArray.at(i);
-        String name = subTextureVal.Get("name").GetString();
+        stl::string name = subTextureVal.Get("name").GetString();
 
         int x = subTextureVal.Get("x").GetInt();
         int y = subTextureVal.Get("y").GetInt();
@@ -342,7 +342,7 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
     }
 
     loadJSONFile_.reset();
-    loadTextureName_.Clear();
+    loadTextureName_.clear();
     return true;
 }
 

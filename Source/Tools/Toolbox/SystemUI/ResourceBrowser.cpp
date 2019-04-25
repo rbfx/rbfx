@@ -38,7 +38,7 @@
 namespace Urho3D
 {
 
-ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, ResourceBrowserFlags flags)
+ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& selected, ResourceBrowserFlags flags)
 {
     struct State
     {
@@ -46,7 +46,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         bool wasEditing = false;
         bool deletionPending = false;
         char editBuffer[250]{};
-        String editStartItem;
+        stl::string editStartItem;
     };
 
     auto result = RBR_NOOP;
@@ -54,14 +54,14 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
     auto fs = systemUI->GetFileSystem();
     auto& state = *ui::GetUIState<State>();
 
-    if (!selected.Empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
+    if (!selected.empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
     {
         if (fs->GetInput()->GetKeyPress(KEY_F2) || flags & RBF_RENAME_CURRENT)
         {
             state.isEditing = true;
             state.deletionPending = false;
             state.editStartItem = selected;
-            strcpy(state.editBuffer, selected.CString());
+            strcpy(state.editBuffer, selected.c_str());
         }
         if (fs->GetInput()->GetKeyPress(KEY_DELETE) || flags & RBF_DELETE_CURRENT)
         {
@@ -80,7 +80,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
     {
         if (ui::Begin("Delete?", &state.deletionPending))
         {
-            ui::Text("Would you like to delete '%s%s'?", path.CString(), selected.CString());
+            ui::Text("Would you like to delete '%s%s'?", path.c_str(), selected.c_str());
             ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone!");
             ui::NewLine();
 
@@ -94,22 +94,22 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         ui::End();
     }
 
-    stl::vector<String> mergedDirs;
-    stl::vector<String> mergedFiles;
+    stl::vector<stl::string> mergedDirs;
+    stl::vector<stl::string> mergedFiles;
 
-    String cacheDir;
+    stl::string cacheDir;
     for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
     {
-        if (dir.EndsWith("/EditorData/"))
+        if (dir.ends_with("/EditorData/"))
             continue;
 
-        if (dir.EndsWith("/Cache/"))
+        if (dir.ends_with("/Cache/"))
         {
             cacheDir = dir;
             continue;
         }
 
-        stl::vector<String> items;
+        stl::vector<stl::string> items;
         fs->ScanDir(items, dir + path, "", SCAN_FILES, false);
         for (const auto& item: items)
         {
@@ -128,7 +128,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         }
     }
 
-    auto moveFileDropTarget = [&](const String& item) {
+    auto moveFileDropTarget = [&](const stl::string& item) {
         if (ui::BeginDragDropTarget())
         {
             auto dropped = ui::AcceptDragDropVariant("path");
@@ -143,7 +143,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         }
     };
 
-    if (!path.Empty())
+    if (!path.empty())
     {
         switch (ui::DoubleClickSelectable("..", selected == ".."))
         {
@@ -160,11 +160,11 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         moveFileDropTarget(GetParentPath(path));
     }
 
-    auto renameWidget = [&](const String& item, const String& icon) {
+    auto renameWidget = [&](const stl::string& item, const stl::string& icon) {
         if (selected == item && state.isEditing)
         {
             ui::IdScope idScope("Rename");
-            ui::TextUnformatted(icon.CString());
+            ui::TextUnformatted(icon.c_str());
             ui::SameLine();
 
             ui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 0});
@@ -200,14 +200,14 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
             if (flags & RBF_SCROLL_TO_CURRENT && isSelected)
                 ui::SetScrollHereY();
 
-            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).CString(), isSelected))
+            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).c_str(), isSelected))
             {
             case 1:
                 selected = item;
                 break;
             case 2:
                 path += AddTrailingSlash(item);
-                selected.Clear();
+                selected.clear();
                 break;
             default:
                 break;
@@ -220,7 +220,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
                     ui::SetDragDropVariant("path", path + item);
 
                     // TODO: show actual preview of a resource.
-                    ui::Text("%s%s", path.CString(), item.CString());
+                    ui::Text("%s%s", path.c_str(), item.c_str());
 
                     ui::EndDragDropSource();
                 }
@@ -230,14 +230,14 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         }
     }
 
-    auto renderAssetEntry = [&](const String& item) {
+    auto renderAssetEntry = [&](const stl::string& item) {
         auto icon = GetFileIcon(item);
         if (!renameWidget(item, icon))
         {
             if (flags & RBF_SCROLL_TO_CURRENT && selected == item)
                 ui::SetScrollHereY();
             auto title = icon + " " + GetFileNameAndExtension(item);
-            switch (ui::DoubleClickSelectable(title.CString(), selected == item))
+            switch (ui::DoubleClickSelectable(title.c_str(), selected == item))
             {
             case 1:
                 selected = item;
@@ -257,7 +257,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
                     ui::SetDragDropVariant("path", path + item);
 
                     // TODO: show actual preview of a resource.
-                    ui::Text("%s%s", path.CString(), item.CString());
+                    ui::Text("%s%s", path.c_str(), item.c_str());
 
                     ui::EndDragDropSource();
                 }
@@ -271,18 +271,18 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
         if (fs->DirExists(cacheDir + path + item))
         {
             // File is converted asset.
-            std::function<void(const String&)> renderCacheAssetTree = [&](const String& subPath)
+            std::function<void(const stl::string&)> renderCacheAssetTree = [&](const stl::string& subPath)
             {
-                String targetPath = cacheDir + path + subPath;
+                stl::string targetPath = cacheDir + path + subPath;
 
                 if (fs->DirExists(targetPath))
                 {
                     ui::TextUnformatted(ICON_FA_FOLDER_OPEN);
                     ui::SameLine();
-                    if (ui::TreeNode(GetFileNameAndExtension(subPath).CString()))
+                    if (ui::TreeNode(GetFileNameAndExtension(subPath).c_str()))
                     {
-                        stl::vector<String> files;
-                        stl::vector<String> dirs;
+                        stl::vector<stl::string> files;
+                        stl::vector<stl::string> dirs;
                         fs->ScanDir(files, targetPath, "", SCAN_FILES, false);
                         fs->ScanDir(dirs, targetPath, "", SCAN_DIRS, false);
                         dirs.erase_first(".");
@@ -318,7 +318,7 @@ ResourceBrowserResult ResourceBrowserWidget(String& path, String& selected, Reso
 
         if ((ui::IsMouseClicked(MOUSEB_LEFT) || ui::IsMouseClicked(MOUSEB_RIGHT)) && !ui::IsAnyItemHovered())
             // Clicking empty area unselects item.
-            selected.Clear();
+            selected.clear();
     }
 
     state.wasEditing = state.isEditing;

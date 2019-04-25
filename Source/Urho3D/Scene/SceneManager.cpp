@@ -45,11 +45,11 @@ void SceneManager::RegisterObject(Context* context)
     context->RegisterFactory<SceneManager>();
 }
 
-Scene* SceneManager::CreateScene(const String& name)
+Scene* SceneManager::CreateScene(const stl::string& name)
 {
     if (GetScene(name) != nullptr)
     {
-        URHO3D_LOGERRORF("Scene '%s' already exists.", name.CString());
+        URHO3D_LOGERRORF("Scene '%s' already exists.", name.c_str());
         return nullptr;
     }
     stl::shared_ptr<Scene> scene(context_->CreateObject<Scene>());
@@ -60,7 +60,7 @@ Scene* SceneManager::CreateScene(const String& name)
     return scene;
 }
 
-Scene* SceneManager::GetScene(const String& name)
+Scene* SceneManager::GetScene(const stl::string& name)
 {
     for (auto& scene : scenes_)
     {
@@ -70,7 +70,7 @@ Scene* SceneManager::GetScene(const String& name)
     return nullptr;
 }
 
-Scene* SceneManager::GetOrCreateScene(const String& name)
+Scene* SceneManager::GetOrCreateScene(const stl::string& name)
 {
     if (Scene* scene = GetScene(name))
         return scene;
@@ -86,7 +86,7 @@ void SceneManager::UnloadScene(Scene* scene)
         UpdateViewports();
 }
 
-void SceneManager::UnloadScene(const String& name)
+void SceneManager::UnloadScene(const stl::string& name)
 {
     scenes_.erase_first(stl::shared_ptr<Scene>(GetScene(name)));
     if (activeScene_.expired())
@@ -127,7 +127,7 @@ void SceneManager::SetActiveScene(Scene* scene)
     UpdateViewports();
 }
 
-void SceneManager::SetActiveScene(const String& name)
+void SceneManager::SetActiveScene(const stl::string& name)
 {
     SetActiveScene(GetScene(name));
 }
@@ -154,7 +154,7 @@ void SceneManager::UpdateViewports()
         if (!missingMetadataWarned_)
         {
             URHO3D_LOGERRORF("Viewports can not be updated active scene does not have '%s' component.",
-                SceneMetadata::GetTypeNameStatic().CString());
+                SceneMetadata::GetTypeNameStatic().c_str());
             missingMetadataWarned_ = true;
         }
         return;

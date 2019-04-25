@@ -508,13 +508,13 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     // In case we have joined other scenes in this session, remove first all downloaded package files from the resource system
     // to prevent resource conflicts
     auto* cache = GetSubsystem<ResourceCache>();
-    const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
+    const stl::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
     stl::vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
     for (unsigned i = 0; i < packages.size(); ++i)
     {
         PackageFile* package = packages[i];
-        if (!package->GetName().Find(packageCacheDir))
+        if (!package->GetName().find(packageCacheDir))
             cache->RemovePackageFile(package, true);
     }
 
@@ -636,7 +636,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
                 }
             }
             else
-                URHO3D_LOGWARNING("NodeDeltaUpdate message received for missing node " + String(nodeID));
+                URHO3D_LOGWARNING("NodeDeltaUpdate message received for missing node " + stl::to_string(nodeID));
         }
         break;
 
@@ -700,7 +700,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
                 component->ApplyAttributes();
             }
             else
-                URHO3D_LOGWARNING("CreateComponent message received for missing node " + String(nodeID));
+                URHO3D_LOGWARNING("CreateComponent message received for missing node " + stl::to_string(nodeID));
         }
         break;
 
@@ -714,7 +714,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
                 component->ApplyAttributes();
             }
             else
-                URHO3D_LOGWARNING("ComponentDeltaUpdate message received for missing component " + String(componentID));
+                URHO3D_LOGWARNING("ComponentDeltaUpdate message received for missing component " + stl::to_string(componentID));
         }
         break;
 
@@ -763,7 +763,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
         }
         else
         {
-            String name = msg.ReadString();
+            stl::string name = msg.ReadString();
 
             if (!scene_)
             {
@@ -776,8 +776,8 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             for (unsigned i = 0; i < packages.size(); ++i)
             {
                 PackageFile* package = packages[i];
-                const String& packageFullName = package->GetName();
-                if (!GetFileNameAndExtension(packageFullName).Compare(name, false))
+                const stl::string& packageFullName = package->GetName();
+                if (!GetFileNameAndExtension(packageFullName).comparei(name))
                 {
                     StringHash nameHash(name);
 
@@ -1076,9 +1076,9 @@ int Connection::GetPacketsOutPerSec() const
     return packetCounter_.y_;
 }
 
-String Connection::ToString() const
+stl::string Connection::ToString() const
 {
-    return GetAddress() + ":" + String(GetPort());
+    return GetAddress() + ":" + stl::to_string(GetPort());
 }
 
 unsigned Connection::GetNumDownloads() const
@@ -1086,14 +1086,14 @@ unsigned Connection::GetNumDownloads() const
     return downloads_.Size();
 }
 
-const String& Connection::GetDownloadName() const
+const stl::string& Connection::GetDownloadName() const
 {
     for (HashMap<StringHash, PackageDownload>::ConstIterator i = downloads_.Begin(); i != downloads_.End(); ++i)
     {
         if (i->second_.initiated_)
             return i->second_.name_;
     }
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 float Connection::GetDownloadProgress() const
@@ -1124,7 +1124,7 @@ void Connection::SendPackageToClient(PackageFile* package)
 
     msg_.Clear();
 
-    String filename = GetFileNameAndExtension(package->GetName());
+    stl::string filename = GetFileNameAndExtension(package->GetName());
     msg_.WriteString(filename);
     msg_.WriteUInt(package->GetTotalSize());
     msg_.WriteUInt(package->GetChecksum());
@@ -1427,25 +1427,25 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    const String& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
+    const stl::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
     stl::vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
-    stl::vector<String> downloadedPackages;
+    stl::vector<stl::string> downloadedPackages;
     bool packagesScanned = false;
 
     for (unsigned i = 0; i < numPackages; ++i)
     {
-        String name = msg.ReadString();
+        stl::string name = msg.ReadString();
         unsigned fileSize = msg.ReadUInt();
         unsigned checksum = msg.ReadUInt();
-        String checksumString = ToStringHex(checksum);
+        stl::string checksumString = ToStringHex(checksum);
         bool found = false;
 
         // Check first the resource cache
         for (unsigned j = 0; j < packages.size(); ++j)
         {
             PackageFile* package = packages[j];
-            if (!GetFileNameAndExtension(package->GetName()).Compare(name, false) && package->GetTotalSize() == fileSize &&
+            if (!GetFileNameAndExtension(package->GetName()).comparei(name) && package->GetTotalSize() == fileSize &&
                 package->GetChecksum() == checksum)
             {
                 found = true;
@@ -1458,7 +1458,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
 
         if (!packagesScanned)
         {
-            if (packageCacheDir.Empty())
+            if (packageCacheDir.empty())
             {
                 URHO3D_LOGERROR("Can not check/download required packages, as package cache directory is not set");
                 return false;
@@ -1471,9 +1471,9 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
         // Then the download cache
         for (unsigned j = 0; j < downloadedPackages.size(); ++j)
         {
-            const String& fileName = downloadedPackages[j];
+            const stl::string& fileName = downloadedPackages[j];
             // In download cache, package file name format is checksum_packagename
-            if (!fileName.Find(checksumString) && !fileName.Substring(9).Compare(name, false))
+            if (!fileName.find(checksumString) && !fileName.substr(9).comparei(name))
             {
                 // Name matches. Check file size and actual checksum to be sure
                 stl::shared_ptr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
@@ -1495,7 +1495,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
     return true;
 }
 
-void Connection::RequestPackage(const String& name, unsigned fileSize, unsigned checksum)
+void Connection::RequestPackage(const stl::string& name, unsigned fileSize, unsigned checksum)
 {
     StringHash nameHash(name);
     if (downloads_.Contains(nameHash))
@@ -1517,7 +1517,7 @@ void Connection::RequestPackage(const String& name, unsigned fileSize, unsigned 
     }
 }
 
-void Connection::SendPackageError(const String& name)
+void Connection::SendPackageError(const stl::string& name)
 {
     msg_.Clear();
     msg_.WriteStringHash(name);
@@ -1535,7 +1535,7 @@ void Connection::OnSceneLoadFailed()
     SendEvent(E_NETWORKSCENELOADFAILED, eventData);
 }
 
-void Connection::OnPackageDownloadFailed(const String& name)
+void Connection::OnPackageDownloadFailed(const stl::string& name)
 {
     URHO3D_LOGERROR("Download of package " + name + " failed");
     // As one package failed, we can not join the scene in any case. Clear the downloads
@@ -1553,7 +1553,7 @@ void Connection::OnPackagesReady()
     if (sceneLoaded_)
         return;
 
-    if (sceneFileName_.Empty())
+    if (sceneFileName_.empty())
     {
         // If the scene filename is empty, just clear the scene of all existing replicated content, and send the loaded reply
         scene_->Clear(true, false);
@@ -1566,7 +1566,7 @@ void Connection::OnPackagesReady()
     else
     {
         // Otherwise start the async loading process
-        String extension = GetExtension(sceneFileName_);
+        stl::string extension = GetExtension(sceneFileName_);
         stl::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
         bool success;
 
@@ -1594,8 +1594,8 @@ void Connection::ProcessPackageInfo(int msgID, MemoryBuffer& msg)
     RequestNeededPackages(1, msg);
 }
 
-String Connection::GetAddress() const {
-    return String(address_->ToString(false /*write port*/)); 
+stl::string Connection::GetAddress() const {
+    return stl::string(address_->ToString(false /*write port*/));
 }
 
 void Connection::SetAddressOrGUID(const SLNet::AddressOrGUID& addr)

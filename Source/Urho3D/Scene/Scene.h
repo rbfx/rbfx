@@ -117,9 +117,9 @@ public:
     /// Load from a JSON file. Return true if successful.
     bool LoadJSON(Deserializer& source);
     /// Save to an XML file. Return true if successful.
-    bool SaveXML(Serializer& dest, const String& indentation = "\t") const;
+    bool SaveXML(Serializer& dest, const stl::string& indentation = "\t") const;
     /// Save to a JSON file. Return true if successful.
-    bool SaveJSON(Serializer& dest, const String& indentation = "\t") const;
+    bool SaveJSON(Serializer& dest, const stl::string& indentation = "\t") const;
     /// Load from a binary file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.
     bool LoadAsync(File* file, LoadMode mode = LOAD_SCENE_AND_RESOURCES);
     /// Load from an XML file asynchronously. Return true if started successfully. The LOAD_RESOURCES_ONLY mode can also be used to preload resources from object prefab files.
@@ -160,9 +160,9 @@ public:
     /// Clear required package files.
     void ClearRequiredPackageFiles();
     /// Register a node user variable hash reverse mapping (for editing.)
-    void RegisterVar(const String& name);
+    void RegisterVar(const stl::string& name);
     /// Unregister a node user variable hash reverse mapping.
-    void UnregisterVar(const String& name);
+    void UnregisterVar(const stl::string& name);
     /// Clear all registered node user variable hash reverse mappings.
     void UnregisterAllVars();
 
@@ -171,7 +171,7 @@ public:
     /// Return component from the whole scene by ID, or null if not found.
     Component* GetComponent(unsigned id) const;
     /// Get nodes with specific tag from the whole scene, return false if empty.
-    bool GetNodesWithTag(stl::vector<Node*>& dest, const String& tag)  const;
+    bool GetNodesWithTag(stl::vector<Node*>& dest, const stl::string& tag)  const;
 
     /// Return whether updates are enabled.
     bool IsUpdateEnabled() const { return updateEnabled_; }
@@ -186,7 +186,7 @@ public:
     LoadMode GetAsyncLoadMode() const { return asyncProgress_.mode_; }
 
     /// Return source file name.
-    const String& GetFileName() const { return fileName_; }
+    const stl::string& GetFileName() const { return fileName_; }
 
     /// Return source file checksum.
     unsigned GetChecksum() const { return checksum_; }
@@ -210,7 +210,7 @@ public:
     const stl::vector<stl::shared_ptr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
 
     /// Return a node user variable name, or empty if not registered.
-    const String& GetVarName(StringHash hash) const;
+    const stl::string& GetVarName(StringHash hash) const;
 
     /// Update scene. Called by HandleUpdate.
     void Update(float timeStep);
@@ -232,9 +232,9 @@ public:
     static bool IsReplicatedID(unsigned id) { return id < FIRST_LOCAL_ID; }
 
     /// Cache node by tag if tag not zero, no checking if already added. Used internaly in Node::AddTag.
-    void NodeTagAdded(Node* node, const String& tag);
+    void NodeTagAdded(Node* node, const stl::string& tag);
     /// Cache node by tag if tag not zero.
-    void NodeTagRemoved(Node* node, const String& tag);
+    void NodeTagRemoved(Node* node, const stl::string& tag);
 
     /// Node added. Assign scene pointer and add to ID map.
     void NodeAdded(Node* node);
@@ -245,9 +245,9 @@ public:
     /// Component removed. Remove from ID map.
     void ComponentRemoved(Component* component);
     /// Set node user variable reverse mappings.
-    void SetVarNamesAttr(const String& value);
+    void SetVarNamesAttr(const stl::string& value);
     /// Return node user variable reverse mappings.
-    String GetVarNamesAttr() const;
+    stl::string GetVarNamesAttr() const;
     /// Prepare network update by comparing attributes and marking replication states dirty as necessary.
     void PrepareNetworkUpdate();
     /// Clean up all references to a network connection that is about to be removed.
@@ -294,11 +294,11 @@ private:
     /// Node and component ID resolver for asynchronous loading.
     SceneResolver resolver_;
     /// Source file name.
-    mutable String fileName_;
+    mutable stl::string fileName_;
     /// Required package files for networking.
     stl::vector<stl::shared_ptr<PackageFile> > requiredPackageFiles_;
     /// Registered node user variable reverse mappings.
-    HashMap<StringHash, String> varNames_;
+    HashMap<StringHash, stl::string> varNames_;
     /// Nodes to check for attribute changes on the next network update.
     stl::hash_set<unsigned> networkUpdateNodes_;
     /// Components to check for attribute changes on the next network update.

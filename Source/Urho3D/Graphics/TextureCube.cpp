@@ -99,7 +99,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
 
     cache->ResetDependencies(this);
 
-    String texPath, texName, texExt;
+    stl::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
     loadParameters_ = (context_->CreateObject<XMLFile>());
@@ -116,9 +116,9 @@ bool TextureCube::BeginLoad(Deserializer& source)
     // Single image and multiple faces with layout
     if (imageElem)
     {
-        String name = imageElem.GetAttribute("name");
+        stl::string name = imageElem.GetAttribute("name");
         // If path is empty, add the XML file path
-        if (GetPath(name).Empty())
+        if (GetPath(name).empty())
             name = texPath + name;
 
         stl::shared_ptr<Image> image = cache->GetTempResource<Image>(name);
@@ -141,7 +141,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
         {
 
             CubeMapLayout layout =
-                (CubeMapLayout)GetStringListIndex(imageElem.GetAttribute("layout").CString(), cubeMapLayoutNames, CML_HORIZONTAL);
+                (CubeMapLayout)GetStringListIndex(imageElem.GetAttribute("layout").c_str(), cubeMapLayoutNames, CML_HORIZONTAL);
 
             switch (layout)
             {
@@ -209,10 +209,10 @@ bool TextureCube::BeginLoad(Deserializer& source)
         XMLElement faceElem = textureElem.GetChild("face");
         while (faceElem)
         {
-            String name = faceElem.GetAttribute("name");
+            stl::string name = faceElem.GetAttribute("name");
 
             // If path is empty, add the XML file path
-            if (GetPath(name).Empty())
+            if (GetPath(name).empty())
                 name = texPath + name;
 
             loadImages_.push_back(cache->GetTempResource<Image>(name));

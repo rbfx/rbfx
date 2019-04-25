@@ -127,19 +127,19 @@ void Menu::OnShowPopup()
 bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
 {
     // Get style override if defined
-    String styleName = source.GetAttribute("style");
+    stl::string styleName = source.GetAttribute("style");
 
     // Apply the style first, if the style file is available
     if (styleFile)
     {
         // If not defined, use type name
-        if (styleName.Empty())
+        if (styleName.empty())
             styleName = GetTypeName();
 
         SetStyle(styleName, styleFile);
     }
     // The 'style' attribute value in the style file cannot be equals to original's applied style to prevent infinite loop
-    else if (!styleName.Empty() && styleName != appliedStyle_)
+    else if (!styleName.empty() && styleName != appliedStyle_)
     {
         // Attempt to use the default style file
         styleFile = GetDefaultStyle();
@@ -147,7 +147,7 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
         if (styleFile)
         {
             // Remember the original applied style
-            String appliedStyle(appliedStyle_);
+            stl::string appliedStyle(appliedStyle_);
             SetStyle(styleName, styleFile);
             appliedStyle_ = appliedStyle;
         }
@@ -165,8 +165,8 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
     {
         bool internalElem = childElem.GetBool("internal");
         bool popupElem = childElem.GetBool("popup");
-        String typeName = childElem.GetAttribute("type");
-        if (typeName.Empty())
+        stl::string typeName = childElem.GetAttribute("type");
+        if (typeName.empty())
             typeName = "UIElement";
         unsigned index = childElem.HasAttribute("index") ? childElem.GetUInt("index") : M_MAX_UNSIGNED;
         UIElement* child = nullptr;
@@ -174,7 +174,7 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
         if (!internalElem)
         {
             if (!popupElem)
-                child = CreateChild(typeName, String::EMPTY, index);
+                child = CreateChild(typeName, EMPTY_STRING, index);
             else
             {
                 // Do not add the popup element as a child even temporarily, as that can break layouts

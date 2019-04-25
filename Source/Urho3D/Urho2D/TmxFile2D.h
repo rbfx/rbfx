@@ -48,7 +48,7 @@ public:
     TileMapLayerType2D GetType() const { return type_; }
 
     /// Return name.
-    const String& GetName() const { return name_; }
+    const stl::string& GetName() const { return name_; }
 
     /// Return width.
     int GetWidth() const { return width_; }
@@ -60,9 +60,9 @@ public:
     bool IsVisible() const { return visible_; }
 
     /// Return has property (use for script).
-    bool HasProperty(const String& name) const;
+    bool HasProperty(const stl::string& name) const;
     /// Return property value (use for script).
-    const String& GetProperty(const String& name) const;
+    const stl::string& GetProperty(const stl::string& name) const;
 
 
 protected:
@@ -76,7 +76,7 @@ protected:
     /// Layer type.
     TileMapLayerType2D type_;
     /// Name.
-    String name_;
+    stl::string name_;
     /// Width.
     int width_{};
     /// Height.
@@ -139,7 +139,7 @@ public:
     const Vector2& GetPosition() const { return position_; }
 
     /// Return source.
-    const String& GetSource() const { return source_; }
+    const stl::string& GetSource() const { return source_; }
 
     /// Return sprite.
     Sprite2D* GetSprite() const;
@@ -148,7 +148,7 @@ private:
     /// Position.
     Vector2 position_;
     /// Source.
-    String source_;
+    stl::string source_;
     /// Sprite.
     stl::shared_ptr<Sprite2D> sprite_;
 };
@@ -206,14 +206,14 @@ public:
 
 private:
     /// Load TSX file.
-    stl::shared_ptr<XMLFile> LoadTSXFile(const String& source);
+    stl::shared_ptr<XMLFile> LoadTSXFile(const stl::string& source);
     /// Load tile set.
     bool LoadTileSet(const XMLElement& element);
 
     /// XML file used during loading.
     stl::shared_ptr<XMLFile> loadXMLFile_;
     /// TSX name to XML file mapping.
-    HashMap<String, stl::shared_ptr<XMLFile> > tsxXMLFiles_;
+    HashMap<stl::string, stl::shared_ptr<XMLFile> > tsxXMLFiles_;
     /// Tile map information.
     TileMapInfo2D info_{};
     /// Gid to tile sprite mapping.

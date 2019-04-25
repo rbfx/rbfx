@@ -64,7 +64,7 @@ Project::Project(Context* context)
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
         using namespace ResourceBrowserDelete;
         if (args[P_NAME].GetString() == defaultScene_)
-            defaultScene_ = String::EMPTY;
+            defaultScene_ = EMPTY_STRING;
     });
 
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
@@ -96,13 +96,13 @@ Project::~Project()
         editor->UpdateWindowTitle();
 }
 
-bool Project::LoadProject(const String& projectPath)
+bool Project::LoadProject(const stl::string& projectPath)
 {
-    if (!projectFileDir_.Empty())
+    if (!projectFileDir_.empty())
         // Project is already loaded.
         return false;
 
-    if (projectPath.Empty())
+    if (projectPath.empty())
         return false;
 
     projectFileDir_ = AddTrailingSlash(projectPath);
@@ -117,12 +117,12 @@ bool Project::LoadProject(const String& projectPath)
 
         for (const auto& path : GetCache()->GetResourceDirs())
         {
-            if (path.EndsWith("/EditorData/") || path.Contains("/Autoload/"))
+            if (path.ends_with("/EditorData/") || path.contains("/Autoload/"))
                 continue;
 
             StringVector names;
 
-            URHO3D_LOGINFOF("Importing resources from '%s'", path.CString());
+            URHO3D_LOGINFOF("Importing resources from '%s'", path.c_str());
 
             // Copy default resources to the project.
             GetFileSystem()->ScanDir(names, path, "*", SCAN_FILES, false);
@@ -145,7 +145,7 @@ bool Project::LoadProject(const String& projectPath)
     cachedEngineResourcePaths_.clear();
     for (const auto& path : pathsCopy)
     {
-        if (path.StartsWith(enginePrefixPath) && !path.EndsWith("/EditorData/"))
+        if (path.starts_with(enginePrefixPath) && !path.ends_with("/EditorData/"))
         {
             cachedEngineResourcePaths_.emplace_back(path);
             GetCache()->RemoveResourceDir(path);
@@ -155,7 +155,7 @@ bool Project::LoadProject(const String& projectPath)
     if (GetSystemUI())
     {
         uiConfigPath_ = projectFileDir_ + ".ui.ini";
-        ui::GetIO().IniFilename = uiConfigPath_.CString();
+        ui::GetIO().IniFilename = uiConfigPath_.c_str();
 
         ImGuiSettingsHandler handler;
         handler.TypeName = "Project";
@@ -195,7 +195,7 @@ bool Project::LoadProject(const String& projectPath)
                 Tab* tab = editor->GetTabByName(name);
                 if (tab == nullptr)
                 {
-                    StringVector parts = String(name).Split('#');
+                    StringVector parts = stl::string(name).split('#');
                     tab = editor->CreateTab(parts.front());
                 }
                 tab->OnLoadUISettings(name, line);
@@ -222,7 +222,7 @@ bool Project::LoadProject(const String& projectPath)
 #if URHO3D_HASH_DEBUG
     // StringHashNames.json
     {
-        String filePath(projectFileDir_ + "StringHashNames.json");
+        stl::string filePath(projectFileDir_ + "StringHashNames.json");
         if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
@@ -241,7 +241,7 @@ bool Project::LoadProject(const String& projectPath)
 
     // Settings.json
     {
-        String filePath(projectFileDir_ + "Settings.json");
+        stl::string filePath(projectFileDir_ + "Settings.json");
         if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
@@ -258,7 +258,7 @@ bool Project::LoadProject(const String& projectPath)
     GetCache()->AddResourceDir(GetCachePath(), 0);
     GetCache()->AddResourceDir(GetResourcePath(), 1);
 
-    String filePath(projectFileDir_ + "Pipeline.json");
+    stl::string filePath(projectFileDir_ + "Pipeline.json");
     if (GetFileSystem()->Exists(filePath))
     {
         JSONFile file(context_);
@@ -284,7 +284,7 @@ bool Project::LoadProject(const String& projectPath)
 
     // Project.json
     {
-        String filePath(projectFileDir_ + "Project.json");
+        stl::string filePath(projectFileDir_ + "Project.json");
         if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
@@ -299,14 +299,14 @@ bool Project::LoadProject(const String& projectPath)
                 for (const auto& pluginInfoValue : plugins)
                 {
                     const JSONObject& pluginInfo = pluginInfoValue.GetObject();
-                    const String& pluginName = pluginInfo["name"]->GetString();
+                    const stl::string& pluginName = pluginInfo["name"]->GetString();
                     if (Plugin* plugin = plugins_.Load(pluginName))
                     {
                         if (pluginInfo["private"]->GetBool())
                             plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
                     }
                     else
-                        URHO3D_LOGERRORF("Loading plugin '%s' failed.", pluginName.CString());
+                        URHO3D_LOGERRORF("Loading plugin '%s' failed.", pluginName.c_str());
                 }
                 // Tick plugins once to ensure plugins are loaded before loading any possibly open scenes. This makes
                 // plugins register themselves with the engine so that loaded scenes can properly load components
@@ -337,7 +337,7 @@ bool Project::SaveProject()
     // that loop.
     UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
 
-    if (projectFileDir_.Empty())
+    if (projectFileDir_.empty())
     {
         URHO3D_LOGERROR("Unable to save project. Project path is empty.");
         return false;
@@ -360,20 +360,20 @@ bool Project::SaveProject()
                                              {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
             }
             stl::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
-                const String& nameA = a.GetObject()["name"]->GetString();
-                const String& nameB = b.GetObject()["name"]->GetString();
-                return nameA.Compare(nameB);
+                const stl::string& nameA = a.GetObject()["name"]->GetString();
+                const stl::string& nameB = b.GetObject()["name"]->GetString();
+                return nameA.compare(nameB);
             });
             root["plugins"] = plugins;
         }
 #endif
         root["default-scene"] = defaultScene_;
 
-        String filePath(projectFileDir_ + "Project.json");
+        stl::string filePath(projectFileDir_ + "Project.json");
         if (!file.SaveFile(filePath))
         {
-            projectFileDir_.Clear();
-            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
+            projectFileDir_.clear();
+            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.c_str());
             return false;
         }
 
@@ -389,11 +389,11 @@ bool Project::SaveProject()
         for (const auto& pair : engineParameters_)
             root[pair.first_].SetVariant(pair.second_, context_);
 
-        String filePath(projectFileDir_ + "Settings.json");
+        stl::string filePath(projectFileDir_ + "Settings.json");
         if (!file.SaveFile(filePath))
         {
-            projectFileDir_.Clear();
-            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.CString());
+            projectFileDir_.clear();
+            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.c_str());
             return false;
         }
     }
@@ -409,34 +409,34 @@ bool Project::SaveProject()
             names.push_back(string);
         file.GetRoot() = names;
 
-        String filePath(projectFileDir_ + "StringHashNames.json");
+        stl::string filePath(projectFileDir_ + "StringHashNames.json");
         if (!file.SaveFile(filePath))
         {
-            projectFileDir_.Clear();
-            URHO3D_LOGERRORF("Saving StringHash names to '%s' failed", filePath.CString());
+            projectFileDir_.clear();
+            URHO3D_LOGERRORF("Saving StringHash names to '%s' failed", filePath.c_str());
             return false;
         }
     }
 #endif
 
-    ui::SaveIniSettingsToDisk(uiConfigPath_.CString());
+    ui::SaveIniSettingsToDisk(uiConfigPath_.c_str());
 
     SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
 
     return true;
 }
 
-String Project::GetCachePath() const
+stl::string Project::GetCachePath() const
 {
-    if (projectFileDir_.Empty())
-        return String::EMPTY;
+    if (projectFileDir_.empty())
+        return EMPTY_STRING;
     return projectFileDir_ + "Cache/";
 }
 
-String Project::GetResourcePath() const
+stl::string Project::GetResourcePath() const
 {
-    if (projectFileDir_.Empty())
-        return String::EMPTY;
+    if (projectFileDir_.empty())
+        return EMPTY_STRING;
     return projectFileDir_ + "Resources/";
 }
 

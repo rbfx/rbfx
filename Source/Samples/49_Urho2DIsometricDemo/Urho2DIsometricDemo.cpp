@@ -163,7 +163,7 @@ void Urho2DIsometricDemo::HandleCollisionBegin(StringHash eventType, VariantMap&
     auto* hitNode = static_cast<Node*>(eventData[PhysicsBeginContact2D::P_NODEA].GetPtr());
     if (hitNode->GetName() == "Imp")
         hitNode = static_cast<Node*>(eventData[PhysicsBeginContact2D::P_NODEB].GetPtr());
-    String nodeName = hitNode->GetName();
+    stl::string nodeName = hitNode->GetName();
     Node* character2DNode = scene_->GetChild("Imp", true);
 
     // Handle coins picking
@@ -178,7 +178,7 @@ void Urho2DIsometricDemo::HandleCollisionBegin(StringHash eventType, VariantMap&
             instructions->SetText("!!! You have all the coins !!!");
         }
         Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
-        coinsText->SetText(String(character2D_->remainingCoins_)); // Update coins UI counter
+        coinsText->SetText(stl::to_string(character2D_->remainingCoins_)); // Update coins UI counter
         sample2D_->PlaySoundEffect("Powerup.wav");
     }
 
@@ -290,7 +290,7 @@ void Urho2DIsometricDemo::HandlePostRenderUpdate(StringHash eventType, VariantMa
 
 void Urho2DIsometricDemo::ReloadScene(bool reInit)
 {
-    String filename = sample2D_->demoFilename_;
+    stl::string filename = sample2D_->demoFilename_;
     if (!reInit)
         filename += "InGame";
 
@@ -314,11 +314,11 @@ void Urho2DIsometricDemo::ReloadScene(bool reInit)
     // Update lifes UI
     auto* ui = GetSubsystem<UI>();
     Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
-    lifeText->SetText(String(lifes));
+    lifeText->SetText(stl::to_string(lifes));
 
     // Update coins UI
     Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
-    coinsText->SetText(String(coins));
+    coinsText->SetText(stl::to_string(coins));
 }
 
 void Urho2DIsometricDemo::HandlePlayButton(StringHash eventType, VariantMap& eventData)

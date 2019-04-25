@@ -8,7 +8,7 @@ project(EAStdC CXX)
 # Library definition
 #-------------------------------------------------------------------------------------------
 file(GLOB EASTDC_SOURCES "source/*.cpp" "include/EAStdC/*.h")
-add_library(EAStdC ${EASTDC_SOURCES})
+add_library(EAStdC STATIC ${EASTDC_SOURCES})
 
 #-------------------------------------------------------------------------------------------
 # Defines
@@ -26,7 +26,7 @@ include(CommonCppFlags)
 #-------------------------------------------------------------------------------------------
 # Include directories
 #-------------------------------------------------------------------------------------------
-target_include_directories(EAStdC PUBLIC include)
+target_include_directories(EAStdC PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 #-------------------------------------------------------------------------------------------
 # Dependencies

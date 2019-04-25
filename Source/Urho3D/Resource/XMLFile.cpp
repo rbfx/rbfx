@@ -78,7 +78,7 @@ void XMLFile::RegisterObject(Context* context)
 bool XMLFile::BeginLoad(Deserializer& source)
 {
     unsigned dataSize = source.GetSize();
-    if (!dataSize && !source.GetName().Empty())
+    if (!dataSize && !source.GetName().empty())
     {
         URHO3D_LOGERROR("Zero sized XML data in " + source.GetName());
         return false;
@@ -96,8 +96,8 @@ bool XMLFile::BeginLoad(Deserializer& source)
     }
 
     XMLElement rootElem = GetRoot();
-    String inherit = rootElem.GetAttribute("inherit");
-    if (!inherit.Empty())
+    stl::string inherit = rootElem.GetAttribute("inherit");
+    if (!inherit.empty())
     {
         // The existence of this attribute indicates this is an RFC 5261 patch file
         auto* cache = GetSubsystem<ResourceCache>();
@@ -107,7 +107,7 @@ bool XMLFile::BeginLoad(Deserializer& source)
                 cache->GetTempResource<XMLFile>(inherit));
         if (!inheritedXMLFile)
         {
-            URHO3D_LOGERRORF("Could not find inherited XML file: %s", inherit.CString());
+            URHO3D_LOGERRORF("Could not find inherited XML file: %s", inherit.c_str());
             return false;
         }
 
@@ -134,21 +134,21 @@ bool XMLFile::Save(Serializer& dest) const
     return Save(dest, "\t");
 }
 
-bool XMLFile::Save(Serializer& dest, const String& indentation) const
+bool XMLFile::Save(Serializer& dest, const stl::string& indentation) const
 {
     XMLWriter writer(dest);
-    document_->save(writer, indentation.CString());
+    document_->save(writer, indentation.c_str());
     return writer.success_;
 }
 
-XMLElement XMLFile::CreateRoot(const String& name)
+XMLElement XMLFile::CreateRoot(const stl::string& name)
 {
     document_->reset();
-    pugi::xml_node root = document_->append_child(name.CString());
+    pugi::xml_node root = document_->append_child(name.c_str());
     return XMLElement(this, root.internal_object());
 }
 
-XMLElement XMLFile::GetOrCreateRoot(const String& name)
+XMLElement XMLFile::GetOrCreateRoot(const stl::string& name)
 {
     XMLElement root = GetRoot(name);
     if (root.NotNull())
@@ -159,33 +159,33 @@ XMLElement XMLFile::GetOrCreateRoot(const String& name)
     return CreateRoot(name);
 }
 
-bool XMLFile::FromString(const String& source)
+bool XMLFile::FromString(const stl::string& source)
 {
-    if (source.Empty())
+    if (source.empty())
         return false;
 
-    MemoryBuffer buffer(source.CString(), source.Length());
+    MemoryBuffer buffer(source.c_str(), source.length());
     return Load(buffer);
 }
 
-XMLElement XMLFile::GetRoot(const String& name)
+XMLElement XMLFile::GetRoot(const stl::string& name)
 {
     pugi::xml_node root = document_->first_child();
     if (root.empty())
         return XMLElement();
 
-    if (!name.Empty() && name != root.name())
+    if (!name.empty() && name != root.name())
         return XMLElement();
     else
         return XMLElement(this, root.internal_object());
 }
 
-String XMLFile::ToString(const String& indentation) const
+stl::string XMLFile::ToString(const stl::string& indentation) const
 {
     VectorBuffer dest;
     XMLWriter writer(dest);
-    document_->save(writer, indentation.CString());
-    return String((const char*)dest.GetData(), dest.GetSize());
+    document_->save(writer, indentation.c_str());
+    return stl::string((const char*)dest.GetData(), dest.GetSize());
 }
 
 void XMLFile::Patch(XMLFile* patchFile)
@@ -354,10 +354,10 @@ void XMLFile::AddAttribute(const pugi::xml_node& patch, const pugi::xpath_node& 
         return;
     }
 
-    String name(attribute.value());
-    name = name.Substring(1);
+    stl::string name(attribute.value());
+    name = name.substr(1);
 
-    pugi::xml_attribute newAttribute = original.node().append_attribute(name.CString());
+    pugi::xml_attribute newAttribute = original.node().append_attribute(name.c_str());
     newAttribute.set_value(patch.child_value());
 }
 
@@ -370,9 +370,9 @@ bool XMLFile::CombineText(const pugi::xml_node& patch, const pugi::xml_node& ori
         (patch.type() == pugi::node_cdata && original.type() == pugi::node_cdata))
     {
         if (prepend)
-            const_cast<pugi::xml_node&>(original).set_value(Urho3D::ToString("%s%s", patch.value(), original.value()).CString());
+            const_cast<pugi::xml_node&>(original).set_value(Urho3D::ToString("%s%s", patch.value(), original.value()).c_str());
         else
-            const_cast<pugi::xml_node&>(original).set_value(Urho3D::ToString("%s%s", original.value(), patch.value()).CString());
+            const_cast<pugi::xml_node&>(original).set_value(Urho3D::ToString("%s%s", original.value(), patch.value()).c_str());
 
         return true;
     }

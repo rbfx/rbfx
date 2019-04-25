@@ -39,7 +39,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    String GetScreenJoystickPatchString() const override { return
+    stl::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -51,8 +51,8 @@ private:
     stl::shared_ptr<UIElement> uielement_;
 
     void CreateText();
-    stl::shared_ptr<CheckBox> CreateCheckbox(const String& label, EventHandler* handler);
-    stl::shared_ptr<DropDownList> CreateMenu(const String& label, const char** items, EventHandler* handler);
+    stl::shared_ptr<CheckBox> CreateCheckbox(const stl::string& label, EventHandler* handler);
+    stl::shared_ptr<DropDownList> CreateMenu(const stl::string& label, const char** items, EventHandler* handler);
 
     void HandleWhiteBackground(StringHash eventType, VariantMap& eventData);
     void HandleSRGB(StringHash eventType, VariantMap& eventData);

@@ -106,7 +106,7 @@ void MaterialInspector::RenderPreview()
 
     if (Material* material = inspectable_->GetMaterial())
     {
-        const char* resourceName = material->GetName().CString();
+        const char* resourceName = material->GetName().c_str();
         ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
         ui::TextUnformatted(resourceName);
         ui::Separator();
@@ -136,9 +136,9 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             auto* modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry>>();
 
             ui::Columns();
-            String techName = tech.technique_->GetName();
+            stl::string techName = tech.technique_->GetName();
             UI_ITEMWIDTH(material->GetNumTechniques() > 1 ? -44_dpx : -22_dpx)
-                ui::InputText("###techniqueName_", const_cast<char*>(techName.CString()), techName.Length(),
+                ui::InputText("###techniqueName_", const_cast<char*>(techName.c_str()), techName.length(),
                               ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
             if (ui::BeginDragDropTarget())
@@ -263,7 +263,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
     {
         struct ShaderParameterState
         {
-            std::string fieldName_;
+            stl::string fieldName_;
             int variantTypeIndex_ = 0;
             bool insertingNew_ = false;
         };
@@ -279,13 +279,13 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         const auto& parameters = material->GetShaderParameters();
         for (const auto& pair : parameters)
         {
-            const String& parameterName = pair.second_.name_;
-            ui::IdScope id(parameterName.CString());
+            const stl::string& parameterName = pair.second_.name_;
+            ui::IdScope id(parameterName.c_str());
             auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
 
             ui::NewLine();
             ui::SameLine(20_dpx);
-            ui::TextUnformatted(parameterName.CString());
+            ui::TextUnformatted(parameterName.c_str());
             ui::NextColumn();
             Variant value = pair.second_.value_;
 
@@ -475,8 +475,8 @@ void Inspectable::Material::RegisterObject(Context* context)
 
     for (auto i = 0; i < MAX_MATERIAL_TEXTURE_UNITS; i++)
     {
-        String finalName = ToString("%s Texture", textureUnitNames[i]);
-        finalName.ReplaceUTF8(0, ToUpper(finalName.AtUTF8(0)));
+        stl::string finalName = ToString("%s Texture", textureUnitNames[i]);
+        ReplaceUTF8(finalName, 0, ToUpper(AtUTF8(finalName, 0)));
         auto textureUnit = static_cast<TextureUnit>(i);
 
         auto getter = [textureUnit](const Inspectable::Material& inspectable, Variant& value)
@@ -492,7 +492,7 @@ void Inspectable::Material::RegisterObject(Context* context)
             if (auto* texture = inspectable.GetCache()->GetResource(ref.type_, ref.name_)->Cast<Texture>())
                 inspectable.GetMaterial()->SetTexture(textureUnit, texture);
         };
-        URHO3D_CUSTOM_ATTRIBUTE(finalName.CString(), getter, setter, ResourceRef, ResourceRef{Texture2D::GetTypeStatic()}, AM_EDIT);
+        URHO3D_CUSTOM_ATTRIBUTE(finalName.c_str(), getter, setter, ResourceRef, ResourceRef{Texture2D::GetTypeStatic()}, AM_EDIT);
     }
 }
 

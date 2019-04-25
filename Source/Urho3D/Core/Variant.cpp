@@ -294,7 +294,7 @@ Variant::Variant(VariantType type)
         break;
 
     case VAR_STRING:
-        *this = String::EMPTY;
+        *this = EMPTY_STRING;
         break;
 
     case VAR_VOIDPTR:
@@ -342,9 +342,9 @@ Variant::Variant(VariantType type)
     }
 }
 
-void Variant::FromString(const String& type, const String& value)
+void Variant::FromString(const stl::string& type, const stl::string& value)
 {
-    return FromString(GetTypeFromName(type), value.CString());
+    return FromString(GetTypeFromName(type), value.c_str());
 }
 
 void Variant::FromString(const char* type, const char* value)
@@ -352,9 +352,9 @@ void Variant::FromString(const char* type, const char* value)
     return FromString(GetTypeFromName(type), value);
 }
 
-void Variant::FromString(VariantType type, const String& value)
+void Variant::FromString(VariantType type, const stl::string& value)
 {
-    return FromString(type, value.CString());
+    return FromString(type, value.c_str());
 }
 
 void Variant::FromString(VariantType type, const char* value)
@@ -413,7 +413,7 @@ void Variant::FromString(VariantType type, const char* value)
 
     case VAR_RESOURCEREF:
     {
-        StringVector values = String::Split(value, ';');
+        StringVector values = stl::string::split(value, ';');
         if (values.size() == 2)
         {
             SetType(VAR_RESOURCEREF);
@@ -425,7 +425,7 @@ void Variant::FromString(VariantType type, const char* value)
 
     case VAR_RESOURCEREFLIST:
     {
-        StringVector values = String::Split(value, ';', true);
+        StringVector values = stl::string::split(value, ';', true);
         if (values.size() >= 1)
         {
             SetType(VAR_RESOURCEREFLIST);
@@ -522,26 +522,26 @@ VectorBuffer Variant::GetVectorBuffer() const
     return VectorBuffer(type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer);
 }
 
-String Variant::GetTypeName() const
+stl::string Variant::GetTypeName() const
 {
     return typeNames[type_];
 }
 
-String Variant::ToString() const
+stl::string Variant::ToString() const
 {
     switch (type_)
     {
     case VAR_INT:
-        return String(value_.int_);
+        return stl::to_string(value_.int_);
 
     case VAR_INT64:
-        return String(value_.int64_);
+        return stl::to_string(value_.int64_);
 
     case VAR_BOOL:
-        return String(value_.bool_);
+        return stl::to_string(value_.bool_);
 
     case VAR_FLOAT:
-        return String(value_.float_);
+        return stl::to_string(value_.float_);
 
     case VAR_VECTOR2:
         return value_.vector2_.ToString();
@@ -564,7 +564,7 @@ String Variant::ToString() const
     case VAR_BUFFER:
         {
             const stl::vector<unsigned char>& buffer = value_.buffer_;
-            String ret;
+            stl::string ret;
             BufferToString(ret, buffer.data(), buffer.size());
             return ret;
         }
@@ -572,7 +572,7 @@ String Variant::ToString() const
     case VAR_VOIDPTR:
     case VAR_PTR:
         // Pointer serialization not supported (convert to null)
-        return String(0);
+        return stl::string();
 
     case VAR_INTRECT:
         return value_.intRect_.ToString();
@@ -593,7 +593,7 @@ String Variant::ToString() const
         return value_.matrix4_->ToString();
 
     case VAR_DOUBLE:
-        return String(value_.double_);
+        return stl::to_string(value_.double_);
 
     case VAR_RECT:
         return value_.rect_.ToString();
@@ -606,7 +606,7 @@ String Variant::ToString() const
         // VAR_RESOURCEREF, VAR_RESOURCEREFLIST, VAR_VARIANTVECTOR, VAR_STRINGVECTOR, VAR_VARIANTMAP
         // Reference string serialization requires typehash-to-name mapping from the context. Can not support here
         // Also variant map or vector string serialization is not supported. XML or binary save should be used instead
-        return String::EMPTY;
+        return EMPTY_STRING;
     }
 }
 
@@ -643,7 +643,7 @@ bool Variant::IsZero() const
         return value_.color_ == Color::WHITE;
 
     case VAR_STRING:
-        return value_.string_.Empty();
+        return value_.string_.empty();
 
     case VAR_BUFFER:
         return value_.buffer_.empty();
@@ -652,14 +652,14 @@ bool Variant::IsZero() const
         return value_.voidPtr_ == nullptr;
 
     case VAR_RESOURCEREF:
-        return value_.resourceRef_.name_.Empty();
+        return value_.resourceRef_.name_.empty();
 
     case VAR_RESOURCEREFLIST:
     {
         const StringVector& names = value_.resourceRefList_.names_;
         for (auto i = names.begin(); i != names.end(); ++i)
         {
-            if (!i->Empty())
+            if (!i->empty())
                 return false;
         }
         return true;
@@ -718,7 +718,7 @@ void Variant::SetType(VariantType newType)
     switch (type_)
     {
     case VAR_STRING:
-        value_.string_.~String();
+        value_.string_.~basic_string<char>();
         break;
 
     case VAR_BUFFER:
@@ -778,7 +778,7 @@ void Variant::SetType(VariantType newType)
     switch (type_)
     {
     case VAR_STRING:
-        new(&value_.string_) String();
+        new(&value_.string_) stl::string();
         break;
 
     case VAR_BUFFER:
@@ -901,7 +901,7 @@ template <> const Color& Variant::Get<const Color&>() const
     return GetColor();
 }
 
-template <> const String& Variant::Get<const String&>() const
+template <> const stl::string& Variant::Get<const stl::string&>() const
 {
     return GetString();
 }
@@ -1006,7 +1006,7 @@ template <> Color Variant::Get<Color>() const
     return GetColor();
 }
 
-template <> String Variant::Get<String>() const
+template <> stl::string Variant::Get<stl::string>() const
 {
     return GetString();
 }
@@ -1051,14 +1051,14 @@ template <> Matrix4 Variant::Get<Matrix4>() const
     return GetMatrix4();
 }
 
-String Variant::GetTypeName(VariantType type)
+stl::string Variant::GetTypeName(VariantType type)
 {
     return typeNames[type];
 }
 
-VariantType Variant::GetTypeFromName(const String& typeName)
+VariantType Variant::GetTypeFromName(const stl::string& typeName)
 {
-    return GetTypeFromName(typeName.CString());
+    return GetTypeFromName(typeName.c_str());
 }
 
 VariantType Variant::GetTypeFromName(const char* typeName)

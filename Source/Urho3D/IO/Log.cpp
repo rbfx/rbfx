@@ -127,7 +127,7 @@ protected:
     {
         time_t time = std::chrono::system_clock::to_time_t(msg.time);
         logInstance->SendMessageEvent(ConvertLogLevel(msg.level), time,
-            String(msg.logger_name->c_str()), String(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
+            stl::string(msg.logger_name->c_str()), stl::string(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
     }
 
     void flush_() override { }
@@ -141,7 +141,7 @@ Logger::Logger(void* logger)
 {
 }
 
-void Logger::WriteFormatted(LogLevel level, const String& message)
+void Logger::WriteFormatted(LogLevel level, const stl::string& message)
 {
     if (logger_ == nullptr)
         return;
@@ -151,23 +151,23 @@ void Logger::WriteFormatted(LogLevel level, const String& message)
     switch (level)
     {
     case LOG_TRACE:
-        logger->trace(message.CString());
+        logger->trace(message.c_str());
         break;
     case LOG_DEBUG:
-        logger->debug(message.CString());
+        logger->debug(message.c_str());
         break;
     case LOG_INFO:
-        logger->info(message.CString());
+        logger->info(message.c_str());
         break;
     case LOG_WARNING:
-        logger->warn(message.CString());
+        logger->warn(message.c_str());
         break;
     case LOG_ERROR:
-        logger->error(message.CString());
+        logger->error(message.c_str());
         break;
     case LOG_NONE:
     case MAX_LOGLEVELS:
-        logger->warn("(Unknown log level used!) %s", message.CString());
+        logger->warn("(Unknown log level used!) %s", message.c_str());
         break;
     }
 }
@@ -228,10 +228,10 @@ Log::~Log()
     logInstance = nullptr;
 }
 
-void Log::Open(const String& fileName)
+void Log::Open(const stl::string& fileName)
 {
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
-    if (fileName.Empty())
+    if (fileName.empty())
         return;
 
     if (fileName == NULL_DEVICE)
@@ -239,8 +239,8 @@ void Log::Open(const String& fileName)
 
     Close();
 
-    impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.CString());
-    impl_->fileSink_->set_pattern(formatPattern_.CString());
+    impl_->fileSink_ = std::make_shared<spdlog::sinks::basic_file_sink_mt>(fileName.c_str());
+    impl_->fileSink_->set_pattern(formatPattern_.c_str());
     impl_->sinkProxy_->add_sink(impl_->fileSink_);
 #endif
 }
@@ -272,16 +272,16 @@ void Log::SetQuiet(bool quiet)
     impl_->platformSink_->set_level(ConvertLogLevel(quiet ? LOG_NONE : level_));
 }
 
-void Log::SetLogFormat(const String& format)
+void Log::SetLogFormat(const stl::string& format)
 {
     formatPattern_ = format;
 
     if (impl_->platformSink_)
-        impl_->platformSink_->set_pattern(format.CString());
+        impl_->platformSink_->set_pattern(format.c_str());
 
     // May not be opened yet if patter is set from Application::Setup().
     if (impl_->fileSink_)
-        impl_->fileSink_->set_pattern(format.CString());
+        impl_->fileSink_->set_pattern(format.c_str());
 }
 
 Logger Log::GetLogger(const char* name)
@@ -306,7 +306,7 @@ Logger Log::GetLogger(const char* name)
         return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
 }
 
-void Log::SendMessageEvent(LogLevel level, time_t timestamp, const String& logger, const String& message)
+void Log::SendMessageEvent(LogLevel level, time_t timestamp, const stl::string& logger, const stl::string& message)
 {
     // No-op if illegal level
     if (level < LOG_TRACE || level >= LOG_NONE)

@@ -217,7 +217,7 @@ void EditorSceneSettings::SetEditorViewportRenderPath(const ResourceRef& renderP
             RenderPath* path = tab->GetViewport()->GetRenderPath();
             for (auto& command: path->commands_)
             {
-                if (command.pixelShaderName_.StartsWith("PBR"))
+                if (command.pixelShaderName_.starts_with("PBR"))
                 {
                     XMLFile* gammaCorrection = GetCache()->GetResource<XMLFile>(
                         "PostProcess/GammaCorrection.xml");

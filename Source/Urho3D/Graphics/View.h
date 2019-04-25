@@ -191,7 +191,7 @@ public:
     void DrawFullscreenQuad(bool setIdentityProjection = false);
 
     /// Get a named texture from the rendertarget list or from the resource cache, to be either used as a rendertarget or texture binding.
-    Texture* FindNamedTexture(const String& name, bool isRenderTarget, bool isVolumeMap = false);
+    Texture* FindNamedTexture(const stl::string& name, bool isRenderTarget, bool isVolumeMap = false);
 
 private:
     /// Query the octree for drawable objects.

@@ -157,7 +157,7 @@ void Editor::Start()
     // Execute specified subcommand and exit.
     for (stl::shared_ptr<SubCommand>& cmd : subCommands_)
     {
-        if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().CString()))
+        if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
         {
             GetLog()->SetLogFormat("%v");
             ExecuteSubcommand(cmd);
@@ -187,7 +187,7 @@ void Editor::Start()
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
         // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
         // candidate. This subsystem will be recreated.
-        if (!pendingOpenProject_.Empty())
+        if (!pendingOpenProject_.empty())
         {
             CloseProject();
             // Reset SystemUI so that imgui loads it's config proper.
@@ -205,7 +205,7 @@ void Editor::Start()
                 loadDefaultLayout_ = project_->IsNewProject();
             else
                 CloseProject();
-            pendingOpenProject_.Clear();
+            pendingOpenProject_.clear();
         }
     });
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
@@ -223,10 +223,10 @@ void Editor::Start()
         else
             exiting_ = true;
     });
-    if (!defaultProjectPath_.Empty())
+    if (!defaultProjectPath_.empty())
     {
         ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
-        pendingOpenProject_ = defaultProjectPath_.CString();
+        pendingOpenProject_ = defaultProjectPath_.c_str();
     }
     else
         SetupSystemUI();
@@ -234,13 +234,13 @@ void Editor::Start()
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
 {
-    if (!defaultProjectPath_.Empty())
+    if (!defaultProjectPath_.empty())
     {
         project_ = new Project(context_);
         context_->RegisterSubsystem(project_);
         if (!project_->LoadProject(defaultProjectPath_))
         {
-            URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.CString());
+            URHO3D_LOGERRORF("Loading project '%s' failed.", pendingOpenProject_.c_str());
             exitCode_ = EXIT_FAILURE;
             engine_->Exit();
             return;
@@ -383,7 +383,7 @@ Tab* Editor::CreateTab(StringHash type)
     return tab.get();
 }
 
-StringVector Editor::GetObjectsByCategory(const String& category)
+StringVector Editor::GetObjectsByCategory(const stl::string& category)
 {
     StringVector result;
     const auto& factories = context_->GetObjectFactories();
@@ -438,16 +438,16 @@ void Editor::LoadDefaultLayout()
     ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, nullptr, &dock_main_id);
     ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, nullptr, &dock_main_id);
 
-    ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().CString(), dockHierarchy);
-    ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().CString(), dockResources);
-    ImGui::DockBuilderDockWindow(console->GetUniqueTitle().CString(), dockLog);
-    ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().CString(), dock_main_id);
-    ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().CString(), dock_main_id);
-    ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().CString(), dockInspector);
+    ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().c_str(), dockHierarchy);
+    ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().c_str(), dockResources);
+    ImGui::DockBuilderDockWindow(console->GetUniqueTitle().c_str(), dockLog);
+    ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().c_str(), dock_main_id);
+    ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().c_str(), dock_main_id);
+    ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().c_str(), dockInspector);
     ImGui::DockBuilderFinish(dockspaceId_);
 }
 
-void Editor::OpenProject(const String& projectPath)
+void Editor::OpenProject(const stl::string& projectPath)
 {
     pendingOpenProject_ = projectPath;
 }
@@ -489,7 +489,7 @@ void Editor::HandleHotkeys()
     }
 }
 
-Tab* Editor::GetTabByName(const String& uniqueName)
+Tab* Editor::GetTabByName(const stl::string& uniqueName)
 {
     for (auto& tab : tabs_)
     {
@@ -499,7 +499,7 @@ Tab* Editor::GetTabByName(const String& uniqueName)
     return nullptr;
 }
 
-Tab* Editor::GetTabByResource(const String& resourceName)
+Tab* Editor::GetTabByResource(const stl::string& resourceName)
 {
     for (auto& tab : tabs_)
     {
@@ -595,21 +595,21 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
 }
 
-void Editor::UpdateWindowTitle(const String& resourcePath)
+void Editor::UpdateWindowTitle(const stl::string& resourcePath)
 {
     if (GetEngine()->IsHeadless())
         return;
 
     auto* project = GetSubsystem<Project>();
-    String title;
+    stl::string title;
     if (project == nullptr)
         title = "Editor";
     else
     {
-        String projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
-        title = ToString("Editor | %s", projectName.CString());
-        if (!resourcePath.Empty())
-            title += ToString(" | %s", GetFileName(resourcePath).CString());
+        stl::string projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
+        title = ToString("Editor | %s", projectName.c_str());
+        if (!resourcePath.empty())
+            title += ToString(" | %s", GetFileName(resourcePath).c_str());
     }
 
     GetGraphics()->SetWindowTitle(title);
@@ -621,7 +621,7 @@ void Editor::RegisterSubcommand()
     T::RegisterObject(context_);
     stl::shared_ptr<T> cmd(context_->CreateObject<T>());
     subCommands_.push_back(DynamicCast<SubCommand>(cmd));
-    if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().CString()))
+    if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().c_str()))
         cmd->RegisterCommandLine(*subCommand);
     else
         URHO3D_LOGERROR("Sub-command '{}' was not registered due to user error.", T::GetTypeNameStatic());

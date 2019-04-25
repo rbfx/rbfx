@@ -52,11 +52,11 @@ public:
     /// Set current entity.
     bool SetEntity(int index);
     /// Set current entity.
-    bool SetEntity(const String& entityName);
+    bool SetEntity(const stl::string& entityName);
     /// Set current animation.
     bool SetAnimation(int index, LoopMode loopMode = Default);
     /// Set current animation.
-    bool SetAnimation(const String& animationName, LoopMode loopMode = Default);
+    bool SetAnimation(const stl::string& animationName, LoopMode loopMode = Default);
     /// Set root spatial info.
     void setSpatialInfo(const Spriter::SpatialInfo& spatialInfo);
     /// Set root spatial info.

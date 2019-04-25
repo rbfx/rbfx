@@ -28,10 +28,10 @@ namespace Urho3D
 {
 
 // SoundSource type defaults
-static const String SOUND_MASTER = "Master";
-static const String SOUND_EFFECT = "Effect";
-static const String SOUND_AMBIENT = "Ambient";
-static const String SOUND_VOICE = "Voice";
-static const String SOUND_MUSIC = "Music";
+static const stl::string SOUND_MASTER = "Master";
+static const stl::string SOUND_EFFECT = "Effect";
+static const stl::string SOUND_AMBIENT = "Ambient";
+static const stl::string SOUND_VOICE = "Voice";
+static const stl::string SOUND_MUSIC = "Music";
 
 }

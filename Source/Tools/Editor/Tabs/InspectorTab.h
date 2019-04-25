@@ -49,7 +49,7 @@ public:
     IInspectorProvider* GetInspector(InspectorCategory category);
 
 protected:
-    std::string filter_;
+    stl::string filter_;
 
     CachedInterfacePtr<IInspectorProvider> tabInspector_;
     CachedInterfacePtr<IInspectorProvider> inspectables_[IC_MAX];

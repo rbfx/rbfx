@@ -69,7 +69,13 @@ target_include_directories(EASTL
 #-------------------------------------------------------------------------------------------
 # Libraries
 #-------------------------------------------------------------------------------------------
-target_compile_definitions(EASTL PUBLIC -Deastl=stl -DEASTL_RTTI_ENABLED=0 -DEASTL_URHO3D_EXTENSIONS=1 -DEASTL_DEBUG=1 -DEASTL_DEBUGPARAMS_LEVEL=2)
+target_compile_definitions(EASTL PUBLIC -Deastl=stl -DEASTL_RTTI_ENABLED=0 -DEASTL_URHO3D_EXTENSIONS=1)
+# Urho3D uses `unsigned` for sizes all over place. Can not use native size without breaking lots of code.
+target_compile_definitions(EASTL PUBLIC -DEASTL_SIZE_T_32BIT=1)
+
+add_subdirectory(test/packages/EAStdC)      # Provides some sprintf implementations
+add_subdirectory(test/packages/EAAssert)
+target_link_libraries(EASTL PUBLIC EAStdC)
 
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(EASTL PUBLIC -DEASTL_DLL)
@@ -79,5 +85,5 @@ endif ()
 install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
 install (DIRECTORY test/packages/EABase/include/Common/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
 if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS EASTL EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+    install(TARGETS EASTL EAStdC EABase EAAssert EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 endif ()

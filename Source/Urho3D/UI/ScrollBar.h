@@ -96,7 +96,7 @@ protected:
     /// Filter implicit attributes in serialization process.
     bool FilterImplicitAttributes(XMLElement& dest) const override;
     /// Filter implicit attributes in serialization process for internal button.
-    bool FilterButtonImplicitAttributes(XMLElement& dest, const String& name) const;
+    bool FilterButtonImplicitAttributes(XMLElement& dest, const stl::string& name) const;
 
     /// Back button.
     stl::shared_ptr<Button> backButton_;

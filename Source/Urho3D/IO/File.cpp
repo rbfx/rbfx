@@ -81,7 +81,7 @@ File::File(Context* context) :
 {
 }
 
-File::File(Context* context, const String& fileName, FileMode mode) :
+File::File(Context* context, const stl::string& fileName, FileMode mode) :
     Object(context),
     mode_(FILE_READ),
     handle_(nullptr),
@@ -99,7 +99,7 @@ File::File(Context* context, const String& fileName, FileMode mode) :
     Open(fileName, mode);
 }
 
-File::File(Context* context, PackageFile* package, const String& fileName) :
+File::File(Context* context, PackageFile* package, const stl::string& fileName) :
     Object(context),
     mode_(FILE_READ),
     handle_(nullptr),
@@ -122,12 +122,12 @@ File::~File()
     Close();
 }
 
-bool File::Open(const String& fileName, FileMode mode)
+bool File::Open(const stl::string& fileName, FileMode mode)
 {
     return OpenInternal(fileName, mode);
 }
 
-bool File::Open(PackageFile* package, const String& fileName)
+bool File::Open(PackageFile* package, const stl::string& fileName)
 {
     if (!package)
         return false;
@@ -410,7 +410,7 @@ void File::Flush()
         fflush((FILE*)handle_);
 }
 
-void File::SetName(const String& name)
+void File::SetName(const stl::string& name)
 {
     fileName_ = name;
 }
@@ -424,7 +424,7 @@ bool File::IsOpen() const
 #endif
 }
 
-bool File::OpenInternal(const String& fileName, FileMode mode, bool fromPackage)
+bool File::OpenInternal(const stl::string& fileName, FileMode mode, bool fromPackage)
 {
     Close();
 
@@ -435,11 +435,11 @@ bool File::OpenInternal(const String& fileName, FileMode mode, bool fromPackage)
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem && !fileSystem->CheckAccess(GetPath(fileName)))
     {
-        URHO3D_LOGERRORF("Access denied to %s", fileName.CString());
+        URHO3D_LOGERRORF("Access denied to %s", fileName.c_str());
         return false;
     }
 
-    if (fileName.Empty())
+    if (fileName.empty())
     {
         URHO3D_LOGERROR("Could not open file with empty name");
         return false;
@@ -457,7 +457,7 @@ bool File::OpenInternal(const String& fileName, FileMode mode, bool fromPackage)
         assetHandle_ = SDL_RWFromFile(URHO3D_ASSET(fileName), "rb");
         if (!assetHandle_)
         {
-            URHO3D_LOGERRORF("Could not open Android asset file %s", fileName.CString());
+            URHO3D_LOGERRORF("Could not open Android asset file %s", fileName.c_str());
             return false;
         }
         else
@@ -477,24 +477,24 @@ bool File::OpenInternal(const String& fileName, FileMode mode, bool fromPackage)
 #endif
 
 #ifdef _WIN32
-    handle_ = _wfopen(GetWideNativePath(fileName).CString(), openMode[mode]);
+    handle_ = _wfopen(GetWideNativePath(fileName).c_str(), openMode[mode]);
 #else
-    handle_ = fopen(GetNativePath(fileName).CString(), openMode[mode]);
+    handle_ = fopen(GetNativePath(fileName).c_str(), openMode[mode]);
 #endif
 
     // If file did not exist in readwrite mode, retry with write-update mode
     if (mode == FILE_READWRITE && !handle_)
     {
 #ifdef _WIN32
-        handle_ = _wfopen(GetWideNativePath(fileName).CString(), openMode[mode + 1]);
+        handle_ = _wfopen(GetWideNativePath(fileName).c_str(), openMode[mode + 1]);
 #else
-        handle_ = fopen(GetNativePath(fileName).CString(), openMode[mode + 1]);
+        handle_ = fopen(GetNativePath(fileName).c_str(), openMode[mode + 1]);
 #endif
     }
 
     if (!handle_)
     {
-        URHO3D_LOGERRORF("Could not open file %s", fileName.CString());
+        URHO3D_LOGERRORF("Could not open file %s", fileName.c_str());
         return false;
     }
 
@@ -505,7 +505,7 @@ bool File::OpenInternal(const String& fileName, FileMode mode, bool fromPackage)
         fseek((FILE*)handle_, 0, SEEK_SET);
         if (size > M_MAX_UNSIGNED)
         {
-            URHO3D_LOGERRORF("Could not open file %s which is larger than 4GB", fileName.CString());
+            URHO3D_LOGERRORF("Could not open file %s which is larger than 4GB", fileName.c_str());
             Close();
             size_ = 0;
             return false;
@@ -549,16 +549,16 @@ void File::SeekInternal(unsigned newPosition)
         fseek((FILE*)handle_, newPosition, SEEK_SET);
 }
 
-void File::ReadText(String& text)
+void File::ReadText(stl::string& text)
 {
-    text.Clear();
+    text.clear();
 
     if (!size_)
         return;
 
-    text.Resize(size_);
+    text.resize(size_);
 
-    Read((void*)text.CString(), size_);
+    Read((void*)text.c_str(), size_);
 }
 
 bool File::Copy(File* srcFile)

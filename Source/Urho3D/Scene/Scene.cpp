@@ -101,7 +101,7 @@ void Scene::RegisterObject(Context* context)
 {
     context->RegisterFactory<Scene>();
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, String, String::EMPTY, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, stl::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Smoothing Constant", GetSmoothingConstant, SetSmoothingConstant, float, DEFAULT_SMOOTHING_CONSTANT,
         AM_DEFAULT);
@@ -112,7 +112,7 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Next Local Node ID", unsigned, localNodeID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Next Local Component ID", unsigned, localComponentID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, String, String::EMPTY, AM_FILE | AM_NOEDIT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, stl::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
 }
 
 bool Scene::Load(Deserializer& source)
@@ -264,7 +264,7 @@ bool Scene::LoadJSON(Deserializer& source)
         return false;
 }
 
-bool Scene::SaveXML(Serializer& dest, const String& indentation) const
+bool Scene::SaveXML(Serializer& dest, const stl::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneXML");
 
@@ -286,7 +286,7 @@ bool Scene::SaveXML(Serializer& dest, const String& indentation) const
         return false;
 }
 
-bool Scene::SaveJSON(Serializer& dest, const String& indentation) const
+bool Scene::SaveJSON(Serializer& dest, const stl::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneJSON");
 
@@ -627,8 +627,8 @@ void Scene::Clear(bool clearReplicated, bool clearLocal)
     if (clearReplicated && clearLocal)
     {
         UnregisterAllVars();
-        SetName(String::EMPTY);
-        fileName_.Clear();
+        SetName(EMPTY_STRING);
+        fileName_.clear();
         checksum_ = 0;
     }
 
@@ -692,12 +692,12 @@ void Scene::ClearRequiredPackageFiles()
     requiredPackageFiles_.clear();
 }
 
-void Scene::RegisterVar(const String& name)
+void Scene::RegisterVar(const stl::string& name)
 {
     varNames_[name] = name;
 }
 
-void Scene::UnregisterVar(const String& name)
+void Scene::UnregisterVar(const stl::string& name)
 {
     varNames_.Erase(name);
 }
@@ -721,7 +721,7 @@ Node* Scene::GetNode(unsigned id) const
     }
 }
 
-bool Scene::GetNodesWithTag(stl::vector<Node*>& dest, const String& tag) const
+bool Scene::GetNodesWithTag(stl::vector<Node*>& dest, const stl::string& tag) const
 {
     dest.clear();
     auto it = taggedNodes_.Find(tag);
@@ -755,10 +755,10 @@ float Scene::GetAsyncProgress() const
         (float)(asyncProgress_.totalNodes_ + asyncProgress_.totalResources_);
 }
 
-const String& Scene::GetVarName(StringHash hash) const
+const stl::string& Scene::GetVarName(StringHash hash) const
 {
-    HashMap<StringHash, String>::ConstIterator i = varNames_.Find(hash);
-    return i != varNames_.End() ? i->second_ : String::EMPTY;
+    HashMap<StringHash, stl::string>::ConstIterator i = varNames_.Find(hash);
+    return i != varNames_.End() ? i->second_ : EMPTY_STRING;
 }
 
 void Scene::Update(float timeStep)
@@ -934,7 +934,7 @@ void Scene::NodeAdded(Node* node)
         HashMap<unsigned, Node*>::Iterator i = replicatedNodes_.Find(id);
         if (i != replicatedNodes_.End() && i->second_ != node)
         {
-            URHO3D_LOGWARNING("Overwriting node with ID " + String(id));
+            URHO3D_LOGWARNING("Overwriting node with ID " + stl::to_string(id));
             NodeRemoved(i->second_);
         }
 
@@ -948,7 +948,7 @@ void Scene::NodeAdded(Node* node)
         HashMap<unsigned, Node*>::Iterator i = localNodes_.Find(id);
         if (i != localNodes_.End() && i->second_ != node)
         {
-            URHO3D_LOGWARNING("Overwriting node with ID " + String(id));
+            URHO3D_LOGWARNING("Overwriting node with ID " + stl::to_string(id));
             NodeRemoved(i->second_);
         }
         localNodes_[id] = node;
@@ -971,12 +971,12 @@ void Scene::NodeAdded(Node* node)
         NodeAdded(*i);
 }
 
-void Scene::NodeTagAdded(Node* node, const String& tag)
+void Scene::NodeTagAdded(Node* node, const stl::string& tag)
 {
     taggedNodes_[tag].push_back(node);
 }
 
-void Scene::NodeTagRemoved(Node* node, const String& tag)
+void Scene::NodeTagRemoved(Node* node, const stl::string& tag)
 {
     taggedNodes_[tag].erase_first(node);
 }
@@ -1033,7 +1033,7 @@ void Scene::ComponentAdded(Component* component)
         HashMap<unsigned, Component*>::Iterator i = replicatedComponents_.Find(id);
         if (i != replicatedComponents_.End() && i->second_ != component)
         {
-            URHO3D_LOGWARNING("Overwriting component with ID " + String(id));
+            URHO3D_LOGWARNING("Overwriting component with ID " + stl::to_string(id));
             ComponentRemoved(i->second_);
         }
 
@@ -1044,7 +1044,7 @@ void Scene::ComponentAdded(Component* component)
         HashMap<unsigned, Component*>::Iterator i = localComponents_.Find(id);
         if (i != localComponents_.End() && i->second_ != component)
         {
-            URHO3D_LOGWARNING("Overwriting component with ID " + String(id));
+            URHO3D_LOGWARNING("Overwriting component with ID " + stl::to_string(id));
             ComponentRemoved(i->second_);
         }
 
@@ -1069,25 +1069,25 @@ void Scene::ComponentRemoved(Component* component)
     component->OnSceneSet(nullptr);
 }
 
-void Scene::SetVarNamesAttr(const String& value)
+void Scene::SetVarNamesAttr(const stl::string& value)
 {
-    stl::vector<String> varNames = value.Split(';');
+    stl::vector<stl::string> varNames = value.split(';');
 
     varNames_.Clear();
     for (auto i = varNames.begin(); i != varNames.end(); ++i)
         varNames_[*i] = *i;
 }
 
-String Scene::GetVarNamesAttr() const
+stl::string Scene::GetVarNamesAttr() const
 {
-    String ret;
+    stl::string ret;
 
     if (!varNames_.Empty())
     {
-        for (HashMap<StringHash, String>::ConstIterator i = varNames_.Begin(); i != varNames_.End(); ++i)
+        for (HashMap<StringHash, stl::string>::ConstIterator i = varNames_.Begin(); i != varNames_.End(); ++i)
             ret += i->second_ + ";";
 
-        ret.Resize(ret.Length() - 1);
+        ret.resize(ret.length() - 1);
     }
 
     return ret;
@@ -1336,7 +1336,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
                 {
                     const ResourceRef& ref = varValue.GetResourceRef();
                     // Sanitate resource name beforehand so that when we get the background load event, the name matches exactly
-                    String name = cache->SanitateResourceName(ref.name_);
+                    stl::string name = cache->SanitateResourceName(ref.name_);
                     bool success = cache->BackgroundLoadResource(ref.type_, name);
                     if (success)
                     {
@@ -1349,7 +1349,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
                     const ResourceRefList& refList = varValue.GetResourceRefList();
                     for (unsigned k = 0; k < refList.names_.size(); ++k)
                     {
-                        String name = cache->SanitateResourceName(refList.names_[k]);
+                        stl::string name = cache->SanitateResourceName(refList.names_[k]);
                         bool success = cache->BackgroundLoadResource(refList.type_, name);
                         if (success)
                         {
@@ -1379,7 +1379,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
     XMLElement compElem = element.GetChild("component");
     while (compElem)
     {
-        String typeName = compElem.GetAttribute("type");
+        stl::string typeName = compElem.GetAttribute("type");
         const stl::vector<AttributeInfo>* attributes = context_->GetAttributes(StringHash(typeName));
         if (attributes)
         {
@@ -1388,19 +1388,19 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
 
             while (attrElem)
             {
-                String name = attrElem.GetAttribute("name");
+                stl::string name = attrElem.GetAttribute("name");
                 unsigned i = startIndex;
                 unsigned attempts = attributes->size();
 
                 while (attempts)
                 {
                     const AttributeInfo& attr = attributes->at(i);
-                    if ((attr.mode_ & AM_FILE) && !attr.name_.Compare(name, true))
+                    if ((attr.mode_ & AM_FILE) && !attr.name_.compare(name))
                     {
                         if (attr.type_ == VAR_RESOURCEREF)
                         {
                             ResourceRef ref = attrElem.GetVariantValue(attr.type_).GetResourceRef();
-                            String name = cache->SanitateResourceName(ref.name_);
+                            stl::string name = cache->SanitateResourceName(ref.name_);
                             bool success = cache->BackgroundLoadResource(ref.type_, name);
                             if (success)
                             {
@@ -1413,7 +1413,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
                             ResourceRefList refList = attrElem.GetVariantValue(attr.type_).GetResourceRefList();
                             for (unsigned k = 0; k < refList.names_.size(); ++k)
                             {
-                                String name = cache->SanitateResourceName(refList.names_[k]);
+                                stl::string name = cache->SanitateResourceName(refList.names_[k]);
                                 bool success = cache->BackgroundLoadResource(refList.type_, name);
                                 if (success)
                                 {
@@ -1461,7 +1461,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
     for (unsigned i = 0; i < componentArray.size(); i++)
     {
         const JSONValue& compValue = componentArray.at(i);
-        String typeName = compValue.Get("type").GetString();
+        stl::string typeName = compValue.Get("type").GetString();
 
         const stl::vector<AttributeInfo>* attributes = context_->GetAttributes(StringHash(typeName));
         if (attributes)
@@ -1473,19 +1473,19 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
             for (unsigned j = 0; j < attributesArray.size(); j++)
             {
                 const JSONValue& attrVal = attributesArray.at(j);
-                String name = attrVal.Get("name").GetString();
+                stl::string name = attrVal.Get("name").GetString();
                 unsigned i = startIndex;
                 unsigned attempts = attributes->size();
 
                 while (attempts)
                 {
                     const AttributeInfo& attr = attributes->at(i);
-                    if ((attr.mode_ & AM_FILE) && !attr.name_.Compare(name, true))
+                    if ((attr.mode_ & AM_FILE) && !attr.name_.compare(name))
                     {
                         if (attr.type_ == VAR_RESOURCEREF)
                         {
                             ResourceRef ref = attrVal.Get("value").GetVariantValue(attr.type_).GetResourceRef();
-                            String name = cache->SanitateResourceName(ref.name_);
+                            stl::string name = cache->SanitateResourceName(ref.name_);
                             bool success = cache->BackgroundLoadResource(ref.type_, name);
                             if (success)
                             {
@@ -1498,7 +1498,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
                             ResourceRefList refList = attrVal.Get("value").GetVariantValue(attr.type_).GetResourceRefList();
                             for (unsigned k = 0; k < refList.names_.size(); ++k)
                             {
-                                String name = cache->SanitateResourceName(refList.names_[k]);
+                                stl::string name = cache->SanitateResourceName(refList.names_[k]);
                                 bool success = cache->BackgroundLoadResource(refList.type_, name);
                                 if (success)
                                 {

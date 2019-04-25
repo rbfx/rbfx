@@ -150,7 +150,7 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
         GetFileSystem()->ScanDir(cacheFiles, project->GetCachePath(), "*", SCAN_FILES, true);
 
         // Remove cache items that no longer correspond to existing resource
-        for (const String& resourceName : cacheInfo_.Keys())
+        for (const stl::string& resourceName : cacheInfo_.Keys())
         {
             // Source asset may be in resources dir or in cache dir.
             if (!resourceFiles.contains(resourceName) && !cacheFiles.contains(resourceName))
@@ -213,7 +213,7 @@ void Pipeline::DispatchChangedAssets()
         BuildCache(CONVERTER_ALWAYS);
 }
 
-bool Pipeline::IsCacheOutOfDate(const String& resourceName) const
+bool Pipeline::IsCacheOutOfDate(const stl::string& resourceName) const
 {
     auto it = cacheInfo_.Find(resourceName);
     if (it == cacheInfo_.End())
@@ -224,7 +224,7 @@ bool Pipeline::IsCacheOutOfDate(const String& resourceName) const
     if (mtime == 0)
         mtime = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
 
-    for (const String& cachedFile : it->second_.files_)
+    for (const stl::string& cachedFile : it->second_.files_)
     {
         if (!GetFileSystem()->Exists(project->GetCachePath() + cachedFile))
             return true;
@@ -233,7 +233,7 @@ bool Pipeline::IsCacheOutOfDate(const String& resourceName) const
     return it->second_.mtime_ < mtime;
 }
 
-void Pipeline::ClearCache(const String& resourceName)
+void Pipeline::ClearCache(const stl::string& resourceName)
 {
     auto it = cacheInfo_.Find(resourceName);
     if (it == cacheInfo_.End())
@@ -241,12 +241,12 @@ void Pipeline::ClearCache(const String& resourceName)
 
     auto* project = GetSubsystem<Project>();
     const CacheEntry& cacheEntry = it->second_;
-    for (const String& cacheFile : cacheEntry.files_)
+    for (const stl::string& cacheFile : cacheEntry.files_)
     {
-        const String& fullPath = project->GetCachePath() + cacheFile;
+        const stl::string& fullPath = project->GetCachePath() + cacheFile;
         GetFileSystem()->Delete(fullPath);
 
-        for (String parentPath = GetParentPath(fullPath);; parentPath = GetParentPath(parentPath))
+        for (stl::string parentPath = GetParentPath(fullPath);; parentPath = GetParentPath(parentPath))
         {
             if (!GetFileSystem()->DirExists(parentPath))
                 continue;
@@ -264,7 +264,7 @@ void Pipeline::ClearCache(const String& resourceName)
     cacheInfo_.Erase(it);
 }
 
-void Pipeline::AddCacheEntry(const String& resourceName, const String& cacheResourceName)
+void Pipeline::AddCacheEntry(const stl::string& resourceName, const stl::string& cacheResourceName)
 {
     auto* project = GetSubsystem<Project>();
     CacheEntry& entry = cacheInfo_[resourceName];
@@ -274,13 +274,13 @@ void Pipeline::AddCacheEntry(const String& resourceName, const String& cacheReso
     entry.files_.insert(cacheResourceName);
 }
 
-void Pipeline::AddCacheEntry(const String& resourceName, const StringVector& cacheResourceNames)
+void Pipeline::AddCacheEntry(const stl::string& resourceName, const StringVector& cacheResourceNames)
 {
-    for (const String& cacheResourceName : cacheResourceNames)
+    for (const stl::string& cacheResourceName : cacheResourceNames)
         AddCacheEntry(resourceName, cacheResourceName);
 }
 
-ResourcePathLock Pipeline::LockResourcePath(const String& resourcePath)
+ResourcePathLock Pipeline::LockResourcePath(const stl::string& resourcePath)
 {
     ResourcePathLock result(this, resourcePath);
     return std::move(result);
@@ -294,11 +294,11 @@ void Pipeline::SaveCacheInfo()
 
     StringVector keys = cacheInfo_.Keys();
     stl::quick_sort(keys.begin(), keys.end());
-    for (const String& resourceName : keys)
+    for (const stl::string& resourceName : keys)
     {
         const CacheEntry& entry = cacheInfo_[resourceName];
         JSONValue files(JSON_ARRAY);
-        for (const String& fileName : entry.files_)
+        for (const stl::string& fileName : entry.files_)
             files.Push(fileName);
 
         JSONValue en(JSON_OBJECT);
@@ -311,7 +311,7 @@ void Pipeline::SaveCacheInfo()
     file.SaveFile(GetSubsystem<Project>()->GetCachePath() + "CacheInfo.json");
 }
 
-void Pipeline::Reschedule(const String& resourceName)
+void Pipeline::Reschedule(const stl::string& resourceName)
 {
     MutexLock lock(lock_);
     reschedule_.emplace_back(resourceName);
@@ -359,13 +359,13 @@ void Pipeline::CreatePaksAsync()
     GetWorkQueue()->AddWorkItem([this]() {
         struct PackagingEntry
         {
-            String pakName_;
+            stl::string pakName_;
             stl::vector<std::regex> patterns_;
         };
         stl::vector<PackagingEntry> rules;
 
         auto* project = GetSubsystem<Project>();
-        const String& projectPath = GetSubsystem<Project>()->GetProjectPath();
+        const stl::string& projectPath = GetSubsystem<Project>()->GetProjectPath();
         auto logger = Log::GetLogger("packager");
 
         JSONFile file(context_);
@@ -394,7 +394,7 @@ void Pipeline::CreatePaksAsync()
                 PackagingEntry newEntry{};
                 newEntry.pakName_ = entry["output"]->GetString();
 
-                if (newEntry.pakName_.Empty())
+                if (newEntry.pakName_.empty())
                 {
                     logger.Error("Packaging rule must contain a valid output file name.");
                     continue;
@@ -402,8 +402,8 @@ void Pipeline::CreatePaksAsync()
 
                 for (int j = 0; j < patterns.size(); j++)
                 {
-                    const String& pattern = patterns[j].GetString();
-                    if (pattern.Empty())
+                    const stl::string& pattern = patterns[j].GetString();
+                    if (pattern.empty())
                     {
                         logger.Error("Input glob pattern can not be empty.");
                         continue;
@@ -445,9 +445,9 @@ void Pipeline::CreatePaksAsync()
             Packager pkg(context_);
             pkg.OpenPackage(projectPath + "Output/" + rule.pakName_);
 
-            auto gatherFiles = [&](const String& baseDir, const StringVector& resources)
+            auto gatherFiles = [&](const stl::string& baseDir, const StringVector& resources)
             {
-                for (const String& name : resources)
+                for (const stl::string& name : resources)
                 {
                     if (cacheInfo_.Contains(name))
                         logger.Info("{} not included because it has byproducts.", name);
@@ -456,7 +456,7 @@ void Pipeline::CreatePaksAsync()
                         bool matched = false;
                         for (const std::regex& pattern : rule.patterns_)
                         {
-                            if ((matched = std::regex_match(name.CString(), pattern)))
+                            if ((matched = std::regex_match(name.c_str(), pattern)))
                                 break;
                         }
 
@@ -481,7 +481,7 @@ void Pipeline::CreatePaksAsync()
     }, PWP_PACKAGE_FILES);
 }
 
-ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const String& resourcePath)
+ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const stl::string& resourcePath)
     : pipeline_(pipeline)
     , resourcePath_(resourcePath)
 {
@@ -491,9 +491,9 @@ ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const String& resourcePat
     while (isLocked)
     {
         isLocked = false;
-        for (const String& path : pipeline->lockedPaths_)
+        for (const stl::string& path : pipeline->lockedPaths_)
         {
-            if (resourcePath.StartsWith(path))
+            if (resourcePath.starts_with(path))
             {
                 isLocked = true;
                 pipeline->lock_.Release();

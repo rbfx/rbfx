@@ -41,7 +41,7 @@ public:
     VectorBuffer(Deserializer& source, unsigned size);
 
     /// Returns name of this object.
-    const String& GetName() const override;
+    const stl::string& GetName() const override;
 
     /// Read bytes from the buffer. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;

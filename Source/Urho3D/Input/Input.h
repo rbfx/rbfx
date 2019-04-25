@@ -113,7 +113,7 @@ struct URHO3D_API JoystickState
     /// UI element containing the screen joystick.
     UIElement* screenJoystick_{};
     /// Joystick name.
-    String name_;
+    stl::string name_;
     /// Button up/down state.
     stl::vector<bool> buttons_;
     /// Button pressed on this frame.
@@ -214,17 +214,17 @@ public:
     void CenterMousePosition();
 
     /// Return keycode from key name.
-    Key GetKeyFromName(const String& name) const;
+    Key GetKeyFromName(const stl::string& name) const;
     /// Return keycode from scancode.
     Key GetKeyFromScancode(Scancode scancode) const;
     /// Return name of key from keycode.
-    String GetKeyName(Key key) const;
+    stl::string GetKeyName(Key key) const;
     /// Return scancode from keycode.
     Scancode GetScancodeFromKey(Key key) const;
     /// Return scancode from key name.
-    Scancode GetScancodeFromName(const String& name) const;
+    Scancode GetScancodeFromName(const stl::string& name) const;
     /// Return name of key from scancode.
-    String GetScancodeName(Scancode scancode) const;
+    stl::string GetScancodeName(Scancode scancode) const;
     /// Check if a key is held down.
     bool GetKeyDown(Key key) const;
     /// Check if a key has been pressed on this frame.
@@ -270,7 +270,7 @@ public:
     /// Return joystick state by index, or null if does not exist. 0 = first connected joystick.
     JoystickState* GetJoystickByIndex(unsigned index);
     /// Return joystick state by name, or null if does not exist.
-    JoystickState* GetJoystickByName(const String& name);
+    JoystickState* GetJoystickByName(const stl::string& name);
 
     /// Return whether fullscreen toggle is enabled.
     bool GetToggleFullscreen() const { return toggleFullscreen_; }
@@ -383,7 +383,7 @@ private:
     /// Mapping of touch indices
     HashMap<int, int> touchIDMap_;
     /// String for text input.
-    String textInput_;
+    stl::string textInput_;
     /// Opened joysticks.
     HashMap<SDL_JoystickID, JoystickState> joysticks_;
     /// Mouse buttons' down state.

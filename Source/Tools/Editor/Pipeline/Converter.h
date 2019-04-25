@@ -68,7 +68,7 @@ public:
 
 protected:
     ///
-    String comment_{};
+    stl::string comment_{};
     ///
     ConverterKind kind_ = CONVERTER_OFFLINE;
     ///

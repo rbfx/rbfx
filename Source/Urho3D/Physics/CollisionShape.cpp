@@ -1110,7 +1110,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
             assert(shape_);
         }
         else
-            URHO3D_LOGWARNING("Could not find custom geometry component ID " + String(customGeometryID_) +
+            URHO3D_LOGWARNING("Could not find custom geometry component ID " + stl::to_string(customGeometryID_) +
                 " for collision shape creation");
     }
     else if (model_ && model_->GetNumGeometries())

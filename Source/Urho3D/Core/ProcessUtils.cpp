@@ -115,10 +115,10 @@ namespace Urho3D
 #ifdef _WIN32
 static bool consoleOpened = false;
 #endif
-static String currentLine;
-static stl::vector<String> arguments;
-static String miniDumpDir;
-extern String specifiedExecutableFile;
+static stl::string currentLine;
+static stl::vector<stl::string> arguments;
+static stl::string miniDumpDir;
+extern stl::string specifiedExecutableFile;
 
 #if defined(IOS)
 static void GetCPUData(host_basic_info_data_t* data)
@@ -195,16 +195,16 @@ void InitFPU()
 #endif
 }
 
-void ErrorDialog(const String& title, const String& message)
+void ErrorDialog(const stl::string& title, const stl::string& message)
 {
 #ifndef MINI_URHO
-    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.CString(), message.CString(), nullptr);
+    SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.c_str(), message.c_str(), nullptr);
 #endif
 }
 
-void ErrorExit(const String& message, int exitCode)
+void ErrorExit(const stl::string& message, int exitCode)
 {
-    if (!message.Empty())
+    if (!message.empty())
         PrintLine(message, true);
 
     exit(exitCode);
@@ -225,7 +225,7 @@ void OpenConsoleWindow()
 #endif
 }
 
-void PrintUnicode(const String& str, bool error)
+void PrintUnicode(const stl::string& str, bool error)
 {
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
 #ifdef _WIN32
@@ -233,7 +233,7 @@ void PrintUnicode(const String& str, bool error)
     // though it means that proper Unicode output will not work
     FILE* out = error ? stderr : stdout;
     if (!_isatty(_fileno(out)))
-        fprintf(out, "%s", str.CString());
+        fprintf(out, "%s", str.c_str());
     else
     {
         HANDLE stream = GetStdHandle(error ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
@@ -241,22 +241,22 @@ void PrintUnicode(const String& str, bool error)
             return;
         WString strW(str);
         DWORD charsWritten;
-        WriteConsoleW(stream, strW.CString(), strW.Length(), &charsWritten, nullptr);
+        WriteConsoleW(stream, strW.c_str(), strW.Length(), &charsWritten, nullptr);
     }
 #else
-    fprintf(error ? stderr : stdout, "%s", str.CString());
+    fprintf(error ? stderr : stdout, "%s", str.c_str());
 #endif
 #endif
 }
 
-void PrintUnicodeLine(const String& str, bool error)
+void PrintUnicodeLine(const stl::string& str, bool error)
 {
     PrintUnicode(str + "\n", error);
 }
 
-void PrintLine(const String& str, bool error)
+void PrintLine(const stl::string& str, bool error)
 {
-    PrintLine(str.CString(), error);
+    PrintLine(str.c_str(), error);
 }
 
 void PrintLine(const char* str, bool error)
@@ -266,82 +266,86 @@ void PrintLine(const char* str, bool error)
 #endif
 }
 
-const stl::vector<String>& ParseArguments(const String& cmdLine, bool skipFirstArgument)
+const stl::vector<stl::string>& ParseArguments(const stl::string& cmdLine, bool skipFirstArgument)
 {
     arguments.clear();
 
     unsigned cmdStart = 0, cmdEnd = 0;
+    bool inCmd = false;
     bool inQuote = false;
 
-    for (unsigned i = 0; i < cmdLine.Length(); ++i)
+    for (unsigned i = 0; i < cmdLine.length(); ++i)
     {
-        char c = cmdLine[i];
-        if (cmdLine[i] == '"' && (i == 0 || cmdLine[i - 1] != '\\'))
+        if (cmdLine[i] == '\"')
             inQuote = !inQuote;
-        else if (!inQuote)
+        if (cmdLine[i] == ' ' && !inQuote)
         {
-            bool atEnd = i == cmdLine.Length() - 1;
-            if (cmdLine[i] == ' ' || atEnd)
+            if (inCmd)
             {
-                if (!atEnd)
-                    cmdEnd = i;
-                else
-                    cmdEnd = i + 1;
-
-                String argument = cmdLine.Substring(cmdStart, cmdEnd - cmdStart);
-                if (!argument.Empty())  // May be empty when multiple spaces follow one another.
-                    arguments.push_back(argument);
-                cmdStart = i + 1;
+                inCmd = false;
+                cmdEnd = i;
+                // Do not store the first argument (executable name)
+                if (!skipFirstArgument)
+                    arguments.push_back(cmdLine.substr(cmdStart, cmdEnd - cmdStart));
+                skipFirstArgument = false;
             }
         }
+        else
+        {
+            if (!inCmd)
+            {
+                inCmd = true;
+                cmdStart = i;
+            }
+        }
+    }
+    if (inCmd)
+    {
+        cmdEnd = cmdLine.length();
+        if (!skipFirstArgument)
+            arguments.push_back(cmdLine.substr(cmdStart, cmdEnd - cmdStart));
     }
 
     // Strip double quotes from the arguments
     for (unsigned i = 0; i < arguments.size(); ++i)
-        arguments[i].Replace("\"", "");
-
-    specifiedExecutableFile = arguments[0];
-
-    // Do not store the first argument (executable name)
-    if (skipFirstArgument && !arguments.empty())
-        arguments.pop_front();
+        arguments[i].replace("\"", "");
 
     return arguments;
 }
 
-const stl::vector<String>& ParseArguments(const char* cmdLine)
+const stl::vector<stl::string>& ParseArguments(const char* cmdLine)
 {
-    return ParseArguments(String(cmdLine));
+    return ParseArguments(stl::string(cmdLine));
 }
 
-const stl::vector<String>& ParseArguments(const WString& cmdLine)
+const stl::vector<stl::string>& ParseArguments(const stl::wstring& cmdLine)
 {
-    return ParseArguments(String(cmdLine));
+    return ParseArguments(WideToMultiByte(cmdLine.c_str()));
 }
 
-const stl::vector<String>& ParseArguments(const wchar_t* cmdLine)
+const stl::vector<stl::string>& ParseArguments(const wchar_t* cmdLine)
 {
-    return ParseArguments(String(cmdLine));
+    return ParseArguments(WideToMultiByte(cmdLine));
 }
 
-const stl::vector<String>& ParseArguments(int argc, char** argv)
+const stl::vector<stl::string>& ParseArguments(int argc, char** argv)
 {
-    String cmdLine;
+    stl::string cmdLine;
 
     for (int i = 0; i < argc; ++i)
-        cmdLine.AppendWithFormat("\"%s\" ", (const char*)argv[i]);
+        cmdLine.append_sprintf("\"%s\" ", (const char*)argv[i]);
 
     return ParseArguments(cmdLine);
 }
 
-const stl::vector<String>& GetArguments()
+const stl::vector<stl::string>& GetArguments()
 {
     return arguments;
 }
 
-String GetConsoleInput()
+stl::string GetConsoleInput()
 {
-    String ret;
+    stl::string ret;
 #ifdef URHO3D_TESTING
     // When we are running automated tests, reading the console may block. Just return empty in that case
     return ret;
@@ -373,9 +377,9 @@ String GetConsoleInput()
                 if (c == '\b')
                 {
                     PrintUnicode("\b \b");
-                    int length = currentLine.LengthUTF8();
+                    int length = LengthUTF8(currentLine);
                     if (length)
-                        currentLine = currentLine.SubstringUTF8(0, length - 1);
+                        currentLine = SubstringUTF8(currentLine, 0, length - 1);
                 }
                 else if (c == '\r')
                 {
@@ -390,7 +394,7 @@ String GetConsoleInput()
                     wchar_t out = c;
                     DWORD charsWritten;
                     WriteConsoleW(output, &out, 1, &charsWritten, nullptr);
-                    currentLine.AppendUTF8(c);
+                    AppendUTF8(currentLine, c);
                 }
             }
         }
@@ -412,7 +416,7 @@ String GetConsoleInput()
 #endif
 }
 
-String GetPlatform()
+stl::string GetPlatform()
 {
 #if defined(__ANDROID__)
     return "Android";
@@ -502,20 +506,20 @@ unsigned GetNumLogicalCPUs()
 #endif
 }
 
-void SetMiniDumpDir(const String& pathName)
+void SetMiniDumpDir(const stl::string& pathName)
 {
     miniDumpDir = AddTrailingSlash(pathName);
 }
 
-String GetMiniDumpDir()
+stl::string GetMiniDumpDir()
 {
 #ifndef MINI_URHO
-    if (miniDumpDir.Empty())
+    if (miniDumpDir.empty())
     {
         char* pathName = SDL_GetPrefPath("urho3d", "crashdumps");
         if (pathName)
         {
-            String ret(pathName);
+            stl::string ret(pathName);
             SDL_free(pathName);
             return ret;
         }
@@ -548,7 +552,7 @@ unsigned long long GetTotalMemory()
     return 0ull;
 }
 
-String GetLoginName()
+stl::string GetLoginName()
 {
 #if defined(__linux__) && !defined(__ANDROID__)
     struct passwd *p = getpwuid(getuid());
@@ -580,7 +584,7 @@ String GetLoginName()
     return "(?)";
 }
 
-String GetHostName()
+stl::string GetHostName()
 {
 #if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
     char buffer[256];
@@ -611,12 +615,12 @@ static void GetOS(RTL_OSVERSIONINFOW *r)
 }
 #endif
 
-String GetOSVersion()
+stl::string GetOSVersion()
 {
 #if defined(__linux__) && !defined(__ANDROID__)
     struct utsname u{};
     if (uname(&u) == 0)
-        return String(u.sysname) + " " + u.release;
+        return stl::string(u.sysname) + " " + u.release;
 #elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
     RTL_OSVERSIONINFOW r;
     GetOS(&r);
@@ -645,8 +649,8 @@ String GetOSVersion()
 
     if (sysctlbyname("kern.osrelease", &kernel_r, &size, NULL, 0) != -1)
     {
-        stl::vector<String> kernel_version = String(kernel_r).Split('.');
-        String version = "macOS/Mac OS X ";
+        stl::vector<stl::string> kernel_version = stl::string(kernel_r).Split('.');
+        stl::string version = "macOS/Mac OS X ";
         int major = ToInt(kernel_version[0]);
         int minor = ToInt(kernel_version[1]);
 
@@ -747,7 +751,7 @@ String GetOSVersion()
     return "(?)";
 }
 
-String GenerateUUID()
+stl::string GenerateUUID()
 {
 #if _WIN32
     UUID uuid{};
@@ -756,7 +760,7 @@ String GenerateUUID()
     UuidCreate(&uuid);
     UuidToStringA(&uuid, &str);
 
-    String result(reinterpret_cast<const char*>(str));
+    stl::string result(reinterpret_cast<const char*>(str));
     RpcStringFreeA(&str);
     return result;
 #elif ANDROID
@@ -782,7 +786,7 @@ String GenerateUUID()
         (uint8_t)(lower >> 24), (uint8_t)(lower >> 16), (uint8_t)(lower >> 8), (uint8_t)lower
     );
 
-    return String(str);
+    return stl::string(str);
 #elif __APPLE__
     auto guid = CFUUIDCreate(NULL);
     auto bytes = CFUUIDGetUUIDBytes(guid);
@@ -794,14 +798,14 @@ String GenerateUUID()
         bytes.byte8, bytes.byte9, bytes.byte10, bytes.byte11, bytes.byte12, bytes.byte13, bytes.byte14, bytes.byte15
     );
 
-    return String(str);
+    return stl::string(str);
 #else
     uuid_t uuid{};
     char str[37]{};
 
     uuid_generate(uuid);
     uuid_unparse(uuid, str);
-    return String(str);
+    return stl::string(str);
 #endif
 }
 

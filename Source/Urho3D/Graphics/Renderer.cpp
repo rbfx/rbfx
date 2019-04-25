@@ -1080,7 +1080,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         newBuffer->ResetUseTimer();
         screenBuffers_[searchKey].push_back(newBuffer);
 
-        URHO3D_LOGTRACE("Allocated new screen buffer size " + String(width) + "x" + String(height) + " format " + String(format));
+        URHO3D_LOGTRACE("Allocated new screen buffer size " + stl::to_string(width) + "x" + stl::to_string(height) + " format " + stl::to_string(format));
         return newBuffer;
     }
     else
@@ -1279,8 +1279,8 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
     }
 }
 
-void Renderer::SetLightVolumeBatchShaders(Batch& batch, Camera* camera, const String& vsName, const String& psName, const String& vsDefines,
-    const String& psDefines)
+void Renderer::SetLightVolumeBatchShaders(Batch& batch, Camera* camera, const stl::string& vsName, const stl::string& psName, const stl::string& vsDefines,
+    const stl::string& psDefines)
 {
     assert(deferredLightPSVariations_.size());
 
@@ -1323,12 +1323,12 @@ void Renderer::SetLightVolumeBatchShaders(Batch& batch, Camera* camera, const St
         psi += DLPS_ORTHO;
     }
 
-    if (vsDefines.Length())
+    if (vsDefines.length())
         batch.vertexShader_ = graphics_->GetShader(VS, vsName, deferredLightVSVariations[vsi] + vsDefines);
     else
         batch.vertexShader_ = graphics_->GetShader(VS, vsName, deferredLightVSVariations[vsi]);
 
-    if (psDefines.Length())
+    if (psDefines.length())
         batch.pixelShader_ = graphics_->GetShader(PS, psName, deferredLightPSVariations_[psi] + psDefines);
     else
         batch.pixelShader_ = graphics_->GetShader(PS, psName, deferredLightPSVariations_[psi]);
@@ -1364,13 +1364,13 @@ bool Renderer::ResizeInstancingBuffer(unsigned numInstances)
     const stl::vector<VertexElement> instancingBufferElements = CreateInstancingBufferElements(numExtraInstancingBufferElements_);
     if (!instancingBuffer_->SetSize(newSize, instancingBufferElements, true))
     {
-        URHO3D_LOGERROR("Failed to resize instancing buffer to " + String(newSize));
+        URHO3D_LOGERROR("Failed to resize instancing buffer to " + stl::to_string(newSize));
         // If failed, try to restore the old size
         instancingBuffer_->SetSize(oldSize, instancingBufferElements, true);
         return false;
     }
 
-    URHO3D_LOGDEBUG("Resized instancing buffer to " + String(newSize));
+    URHO3D_LOGDEBUG("Resized instancing buffer to " + stl::to_string(newSize));
     return true;
 }
 
@@ -1555,8 +1555,8 @@ void Renderer::RemoveUnusedBuffers()
             Texture* buffer = buffers[j];
             if (buffer->GetUseTimer() > MAX_BUFFER_AGE)
             {
-                URHO3D_LOGTRACE("Removed unused screen buffer size " + String(buffer->GetWidth()) + "x" + String(buffer->GetHeight()) +
-                         " format " + String(buffer->GetFormat()));
+                URHO3D_LOGTRACE("Removed unused screen buffer size " + stl::to_string(buffer->GetWidth()) + "x" + stl::to_string(buffer->GetHeight()) +
+                         " format " + stl::to_string(buffer->GetFormat()));
                 buffers.erase(j);
             }
         }
@@ -1649,22 +1649,22 @@ void Renderer::LoadPassShaders(Pass* pass, stl::vector<stl::shared_ptr<ShaderVar
     vertexShaders.clear();
     pixelShaders.clear();
 
-    String vsDefines = pass->GetEffectiveVertexShaderDefines();
-    String psDefines = pass->GetEffectivePixelShaderDefines();
+    stl::string vsDefines = pass->GetEffectiveVertexShaderDefines();
+    stl::string psDefines = pass->GetEffectivePixelShaderDefines();
 
     // Make sure to end defines with space to allow appending engine's defines
-    if (vsDefines.Length() && !vsDefines.EndsWith(" "))
+    if (vsDefines.length() && !vsDefines.ends_with(" "))
         vsDefines += ' ';
-    if (psDefines.Length() && !psDefines.EndsWith(" "))
+    if (psDefines.length() && !psDefines.ends_with(" "))
         psDefines += ' ';
 
     // Append defines from batch queue (renderpath command) if needed
-    if (queue.vsExtraDefines_.Length())
+    if (queue.vsExtraDefines_.length())
     {
         vsDefines += queue.vsExtraDefines_;
         vsDefines += ' ';
     }
-    if (queue.psExtraDefines_.Length())
+    if (queue.psExtraDefines_.length())
     {
         psDefines += queue.psExtraDefines_;
         psDefines += ' ';
@@ -1914,7 +1914,7 @@ void Renderer::ResetBuffers()
     screenBufferAllocations_.Clear();
 }
 
-String Renderer::GetShadowVariations() const
+stl::string Renderer::GetShadowVariations() const
 {
     switch (shadowQuality_)
     {

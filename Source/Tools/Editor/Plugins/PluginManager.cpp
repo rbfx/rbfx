@@ -114,14 +114,14 @@ PluginManager::PluginManager(Context* context)
 #endif
 }
 
-Plugin* PluginManager::Load(const String& name)
+Plugin* PluginManager::Load(const stl::string& name)
 {
 #if URHO3D_PLUGINS
     if (Plugin* loaded = GetPlugin(name))
         return loaded;
 
-    String pluginPath = NameToPath(name);
-    if (pluginPath.Empty())
+    stl::string pluginPath = NameToPath(name);
+    if (pluginPath.empty())
         return nullptr;
 
     stl::shared_ptr<Plugin> plugin(new Plugin(context_));
@@ -129,13 +129,13 @@ Plugin* PluginManager::Load(const String& name)
 
     if (plugin->type_ == PLUGIN_NATIVE)
     {
-        if (cr_plugin_load(plugin->nativeContext_, pluginPath.CString()))
+        if (cr_plugin_load(plugin->nativeContext_, pluginPath.c_str()))
         {
             plugin->nativeContext_.userdata = context_;
 
-            String pluginTemp = GetTemporaryPluginPath();
+            stl::string pluginTemp = GetTemporaryPluginPath();
             GetFileSystem()->CreateDirsRecursive(pluginTemp);
-            cr_set_temporary_path(plugin->nativeContext_, pluginTemp.CString());
+            cr_set_temporary_path(plugin->nativeContext_, pluginTemp.c_str());
 
             plugin->name_ = name;
             plugin->path_ = pluginPath;
@@ -144,7 +144,7 @@ Plugin* PluginManager::Load(const String& name)
             return plugin.get();
         }
         else
-            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name.CString());
+            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name.c_str());
     }
 #if URHO3D_CSHARP
     else if (plugin->type_ == PLUGIN_MANAGED)
@@ -171,7 +171,7 @@ void PluginManager::Unload(Plugin* plugin)
     auto it = plugins_.find(stl::shared_ptr<Plugin>(plugin));
     if (it == plugins_.end())
     {
-        URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.CString());
+        URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.c_str());
         return;
     }
 
@@ -249,7 +249,7 @@ void PluginManager::OnEndFrame()
                 }
             }
 #endif
-            URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.CString());
+            URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.c_str());
             it = plugins_.erase(it);
         }
         else if (plugin->type_ == PLUGIN_NATIVE && plugin->nativeContext_.userdata)
@@ -276,14 +276,14 @@ void PluginManager::OnEndFrame()
             if (status != 0)
             {
                 URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.",
-                    GetFileNameAndExtension(plugin->name_).CString());
+                    GetFileNameAndExtension(plugin->name_).c_str());
                 cr_plugin_close(plugin->nativeContext_);
                 plugin->nativeContext_.userdata = nullptr;
                 it = plugins_.erase(it);
             }
             else if (reloading && plugin->nativeContext_.userdata != nullptr)
             {
-                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(plugin->name_).CString(),
+                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(plugin->name_).c_str(),
                     plugin->nativeContext_.version);
                 it++;
             }
@@ -299,7 +299,7 @@ void PluginManager::OnEndFrame()
 #endif
 }
 
-Plugin* PluginManager::GetPlugin(const String& name)
+Plugin* PluginManager::GetPlugin(const stl::string& name)
 {
     for (auto it = plugins_.begin(); it != plugins_.end(); it++)
     {
@@ -309,52 +309,52 @@ Plugin* PluginManager::GetPlugin(const String& name)
     return nullptr;
 }
 
-String PluginManager::NameToPath(const String& name) const
+stl::string PluginManager::NameToPath(const stl::string& name) const
 {
     FileSystem* fs = GetFileSystem();
-    String result;
+    stl::string result;
 
 #if __linux__ || __APPLE__
-    result = ToString("%slib%s%s", fs->GetProgramDir().CString(), name.CString(), platformDynamicLibrarySuffix);
+    result = ToString("%slib%s%s", fs->GetProgramDir().c_str(), name.c_str(), platformDynamicLibrarySuffix);
     if (fs->FileExists(result))
         return result;
 #endif
 
 #if !_WIN32
-    result = ToString("%s%s%s", fs->GetProgramDir().CString(), name.CString(), ".dll");
+    result = ToString("%s%s%s", fs->GetProgramDir().c_str(), name.c_str(), ".dll");
     if (fs->FileExists(result))
         return result;
 #endif
 
-    result = ToString("%s%s%s", fs->GetProgramDir().CString(), name.CString(), platformDynamicLibrarySuffix);
+    result = ToString("%s%s%s", fs->GetProgramDir().c_str(), name.c_str(), platformDynamicLibrarySuffix);
     if (fs->FileExists(result))
         return result;
 
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
-String PluginManager::GetTemporaryPluginPath() const
+stl::string PluginManager::GetTemporaryPluginPath() const
 {
     return GetFileSystem()->GetTemporaryDir() + ToString("Urho3D-Editor-Plugins-%d/", GetCurrentProcessID());
 }
 
-String PluginManager::PathToName(const String& path)
+stl::string PluginManager::PathToName(const stl::string& path)
 {
 #if !_WIN32
-    if (path.EndsWith(platformDynamicLibrarySuffix))
+    if (path.ends_with(platformDynamicLibrarySuffix))
     {
-        String name = GetFileName(path);
+        stl::string name = GetFileName(path);
 #if __linux__ || __APPLE__
-        if (name.StartsWith("lib"))
-            name = name.Substring(3);
+        if (name.starts_with("lib"))
+            name = name.substr(3);
 #endif
         return name;
     }
     else
 #endif
-    if (path.EndsWith(".dll"))
+    if (path.ends_with(".dll"))
         return GetFileName(path);
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 PluginManager::~PluginManager()
@@ -384,25 +384,25 @@ const StringVector& PluginManager::GetPluginNames()
         FileSystem* fs = GetFileSystem();
 
         StringVector files;
-        HashMap<String, String> nameToPath;
+        HashMap<stl::string, stl::string> nameToPath;
         fs->ScanDir(files, fs->GetProgramDir(), "*.*", SCAN_FILES, false);
 
         // Remove deleted plugin files.
-        for (const String& key : pluginInfoCache_.Keys())
+        for (const stl::string& key : pluginInfoCache_.Keys())
         {
             if (!files.contains(key))
                 pluginInfoCache_.Erase(key);
         }
 
         // Remove definitely not plugins.
-        for (const String& file : files)
+        for (const stl::string& file : files)
         {
-            String baseName = PluginManager::PathToName(file);
+            stl::string baseName = PluginManager::PathToName(file);
             // Native plugins will rename main file and append version after base name.
-            if (baseName.Empty() || IsDigit(static_cast<unsigned int>(baseName.Back())))
+            if (baseName.empty() || IsDigit(static_cast<unsigned int>(baseName.back())))
                 continue;
 
-            String fullPath = fs->GetProgramDir() + file;
+            stl::string fullPath = fs->GetProgramDir() + file;
             DynamicLibraryInfo& info = pluginInfoCache_[file];
             unsigned currentModificationTime = fs->GetLastModifiedTime(fullPath);
             if (info.mtime_ != currentModificationTime)

@@ -74,7 +74,7 @@ struct PackageDownload
     /// Already received fragments.
     stl::hash_set<unsigned> receivedFragments_;
     /// Package name.
-    String name_;
+    stl::string name_;
     /// Total number of fragments.
     unsigned totalFragments_;
     /// Checksum.
@@ -198,7 +198,7 @@ public:
     bool GetLogStatistics() const { return logStatistics_; }
 
     /// Return remote address.
-    String GetAddress() const;
+    stl::string GetAddress() const;
 
     /// Return remote port.
     unsigned short GetPort() const { return port_; }
@@ -222,11 +222,11 @@ public:
     int GetPacketsOutPerSec() const;
 
     /// Return an address:port string.
-    String ToString() const;
+    stl::string ToString() const;
     /// Return number of package downloads remaining.
     unsigned GetNumDownloads() const;
     /// Return name of current package download, or empty if no downloads.
-    const String& GetDownloadName() const;
+    const stl::string& GetDownloadName() const;
     /// Return progress of current package download, or 1.0 if no downloads.
     float GetDownloadProgress() const;
     /// Trigger client connection to download a package file from the server. Can be used to download additional resource packages when client is already joined in a scene. The package must have been added as a requirement to the scene the client is joined in, or else the eventual download will fail.
@@ -272,13 +272,13 @@ private:
     /// Check a package list received from server and initiate package downloads as necessary. Return true on success, or false if failed to initialze downloads (cache dir not set)
     bool RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg);
     /// Initiate a package download.
-    void RequestPackage(const String& name, unsigned fileSize, unsigned checksum);
+    void RequestPackage(const stl::string& name, unsigned fileSize, unsigned checksum);
     /// Send an error reply for a package download.
-    void SendPackageError(const String& name);
+    void SendPackageError(const stl::string& name);
     /// Handle scene load failure on the server or client.
     void OnSceneLoadFailed();
     /// Handle a package download failure on the client.
-    void OnPackageDownloadFailed(const String& name);
+    void OnPackageDownloadFailed(const stl::string& name);
     /// Handle all packages loaded successfully. Also called directly on MSG_LOADSCENE if there are none.
     void OnPackagesReady();
 
@@ -301,7 +301,7 @@ private:
     /// Queued remote events.
     stl::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.
-    String sceneFileName_;
+    stl::string sceneFileName_;
     /// Statistics timer.
     Timer statsTimer_;
     /// Remote endpoint port.

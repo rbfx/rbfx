@@ -160,9 +160,9 @@ void CameraViewport::RebuildAttributes()
         effects_.Clear();
         for (const auto& dir: GetCache()->GetResourceDirs())
         {
-            stl::vector<String> effects;
-            String resourcePath = "PostProcess/";
-            String scanDir = AddTrailingSlash(dir) + resourcePath;
+            stl::vector<stl::string> effects;
+            stl::string resourcePath = "PostProcess/";
+            stl::string scanDir = AddTrailingSlash(dir) + resourcePath;
             GetFileSystem()->ScanDir(effects, scanDir, "*.xml", SCAN_FILES, false);
 
             for (const auto& effectFileName: effects)
@@ -171,12 +171,12 @@ void CameraViewport::RebuildAttributes()
                 auto* effect = GetCache()->GetResource<XMLFile>(effectPath);
 
                 auto root = effect->GetRoot();
-                String tag;
+                stl::string tag;
                 for (auto command = root.GetChild("command"); command.NotNull(); command = command.GetNext("command"))
                 {
                     tag = command.GetAttribute("tag");
 
-                    if (tag.Empty())
+                    if (tag.empty())
                     {
                         URHO3D_LOGWARNING("Invalid PostProcess effect with empty tag");
                         continue;
@@ -210,7 +210,7 @@ void CameraViewport::RebuildAttributes()
                     path->Append(GetCache()->GetResource<XMLFile>(effect.second_));
                 path->SetEnabled(effect.first_, value.GetBool());
             };
-            URHO3D_CUSTOM_ATTRIBUTE(effect.first_.CString(), getter, setter, bool, false, AM_DEFAULT);
+            URHO3D_CUSTOM_ATTRIBUTE(effect.first_.c_str(), getter, setter, bool, false, AM_DEFAULT);
         }
     }
 
@@ -250,21 +250,21 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
     if (!viewport_ || !GetGraphics())
         return;
 
-    if (!renderPathResource.name_.Empty() && renderPathResource.type_ != XMLFile::GetTypeStatic())
+    if (!renderPathResource.name_.empty() && renderPathResource.type_ != XMLFile::GetTypeStatic())
     {
-        URHO3D_LOGWARNINGF("Incorrect RenderPath file '%s' type.", renderPathResource.name_.CString());
+        URHO3D_LOGWARNINGF("Incorrect RenderPath file '%s' type.", renderPathResource.name_.c_str());
         return;
     }
 
     stl::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
-    const String& renderPathFileName = renderPathResource.name_.Empty() ? defaultRenderPath.name_ : renderPathResource.name_;
+    const stl::string& renderPathFileName = renderPathResource.name_.empty() ? defaultRenderPath.name_ : renderPathResource.name_;
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPathFileName))
     {
         if (!viewport_->SetRenderPath(renderPathFile))
         {
             URHO3D_LOGERRORF("Loading renderpath from %s failed. File probably is not a renderpath.",
-                renderPathFileName.CString());
+                renderPathFileName.c_str());
             return;
         }
         RenderPath* newRenderPath = viewport_->GetRenderPath();
@@ -284,7 +284,7 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
     else
     {
         URHO3D_LOGERRORF("Loading renderpath from %s failed. File is missing or you have no permissions to read it.",
-                         renderPathFileName.CString());
+                         renderPathFileName.c_str());
     }
 }
 

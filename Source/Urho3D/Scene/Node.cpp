@@ -79,7 +79,7 @@ void Node::RegisterObject(Context* context)
     context->RegisterFactory<Node>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, String, String::EMPTY, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, stl::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tags", GetTags, SetTags, StringVector, Variant::emptyStringVector, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE);
@@ -298,7 +298,7 @@ void Node::AddReplicationState(NodeReplicationState* state)
     networkState_->replicationStates_.push_back(state);
 }
 
-bool Node::SaveXML(Serializer& dest, const String& indentation) const
+bool Node::SaveXML(Serializer& dest, const stl::string& indentation) const
 {
     stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("node");
@@ -308,7 +308,7 @@ bool Node::SaveXML(Serializer& dest, const String& indentation) const
     return xml->Save(dest, indentation);
 }
 
-bool Node::SaveJSON(Serializer& dest, const String& indentation) const
+bool Node::SaveJSON(Serializer& dest, const stl::string& indentation) const
 {
     stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue& rootElem = json->GetRoot();
@@ -319,7 +319,7 @@ bool Node::SaveJSON(Serializer& dest, const String& indentation) const
     return json->Save(dest, indentation);
 }
 
-void Node::SetName(const String& name)
+void Node::SetName(const stl::string& name)
 {
     if (name != impl_->name_)
     {
@@ -349,10 +349,10 @@ void Node::SetTags(const StringVector& tags)
     // MarkNetworkUpdate() already called in RemoveAllTags() / AddTags()
 }
 
-void Node::AddTag(const String& tag)
+void Node::AddTag(const stl::string& tag)
 {
     // Check if tag empty or already added
-    if (tag.Empty() || HasTag(tag))
+    if (tag.empty() || HasTag(tag))
         return;
 
     // Add tag
@@ -373,9 +373,9 @@ void Node::AddTag(const String& tag)
     MarkNetworkUpdate();
 }
 
-void Node::AddTags(const String& tags, char separator)
+void Node::AddTags(const stl::string& tags, char separator)
 {
-    StringVector tagVector = tags.Split(separator);
+    StringVector tagVector = tags.split(separator);
     AddTags(tagVector);
 }
 
@@ -386,7 +386,7 @@ void Node::AddTags(const StringVector& tags)
         AddTag(tags[i]);
 }
 
-bool Node::RemoveTag(const String& tag)
+bool Node::RemoveTag(const stl::string& tag)
 {
     auto it = impl_->tags_.find(tag);
 
@@ -785,14 +785,14 @@ void Node::MarkDirty()
     }
 }
 
-Node* Node::CreateChild(const String& name, CreateMode mode, unsigned id, bool temporary)
+Node* Node::CreateChild(const stl::string& name, CreateMode mode, unsigned id, bool temporary)
 {
     Node* newNode = CreateChild(id, mode, temporary);
     newNode->SetName(name);
     return newNode;
 }
 
-Node* Node::CreateTemporaryChild(const String& name, CreateMode mode, unsigned id)
+Node* Node::CreateTemporaryChild(const stl::string& name, CreateMode mode, unsigned id)
 {
     return CreateChild(name, mode, id, true);
 }
@@ -1273,7 +1273,7 @@ stl::vector<Node*> Node::GetChildrenWithComponent(StringHash type, bool recursiv
     return dest;
 }
 
-void Node::GetChildrenWithTag(stl::vector<Node*>& dest, const String& tag, bool recursive /*= true*/) const
+void Node::GetChildrenWithTag(stl::vector<Node*>& dest, const stl::string& tag, bool recursive /*= true*/) const
 {
     dest.clear();
 
@@ -1289,7 +1289,7 @@ void Node::GetChildrenWithTag(stl::vector<Node*>& dest, const String& tag, bool 
         GetChildrenWithTagRecursive(dest, tag);
 }
 
-stl::vector<Node*> Node::GetChildrenWithTag(const String& tag, bool recursive) const
+stl::vector<Node*> Node::GetChildrenWithTag(const stl::string& tag, bool recursive) const
 {
     stl::vector<Node*> dest;
     GetChildrenWithTag(dest, tag, recursive);
@@ -1301,7 +1301,7 @@ Node* Node::GetChild(unsigned index) const
     return index < children_.size() ? children_[index] : nullptr;
 }
 
-Node* Node::GetChild(const String& name, bool recursive) const
+Node* Node::GetChild(const stl::string& name, bool recursive) const
 {
     return GetChild(StringHash(name), recursive);
 }
@@ -1372,7 +1372,7 @@ bool Node::IsReplicated() const
     return Scene::IsReplicatedID(id_);
 }
 
-bool Node::HasTag(const String& tag) const
+bool Node::HasTag(const stl::string& tag) const
 {
     return impl_->tags_.contains(tag);
 }
@@ -1487,7 +1487,7 @@ void Node::SetNetParentAttr(const stl::vector<unsigned char>& value)
     Node* baseNode = scene->GetNode(baseNodeID);
     if (!baseNode)
     {
-        URHO3D_LOGWARNING("Failed to find parent node " + String(baseNodeID));
+        URHO3D_LOGWARNING("Failed to find parent node " + stl::to_string(baseNodeID));
         return;
     }
 
@@ -1562,7 +1562,7 @@ bool Node::Load(Deserializer& source, SceneResolver& resolver, bool loadChildren
         StringHash compType = compBuffer.ReadStringHash();
         unsigned compID = compBuffer.ReadUInt();
 
-        Component* newComponent = SafeCreateComponent(String::EMPTY, compType,
+        Component* newComponent = SafeCreateComponent(EMPTY_STRING, compType,
             (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
         if (newComponent)
         {
@@ -1601,7 +1601,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     XMLElement compElem = source.GetChild("component");
     while (compElem)
     {
-        String typeName = compElem.GetAttribute("type");
+        stl::string typeName = compElem.GetAttribute("type");
         unsigned compID = compElem.GetUInt("id");
         Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
             (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
@@ -1648,7 +1648,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
     for (unsigned i = 0; i < componentsArray.size(); i++)
     {
         const JSONValue& compVal = componentsArray.at(i);
-        String typeName = compVal.Get("type").GetString();
+        stl::string typeName = compVal.Get("type").GetString();
         unsigned compID = compVal.Get("id").GetUInt();
         Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
             (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
@@ -1912,9 +1912,9 @@ void Node::OnAttributeAnimationRemoved()
         UnsubscribeFromEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE);
 }
 
-Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outName)
+Animatable* Node::FindAttributeAnimationTarget(const stl::string& name, stl::string& outName)
 {
-    stl::vector<String> names = name.Split('/');
+    stl::vector<stl::string> names = name.split('/');
     // Only attribute name
     if (names.size() == 1)
     {
@@ -1928,11 +1928,11 @@ Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outNa
         unsigned i = 0;
         for (; i < names.size() - 1; ++i)
         {
-            if (names[i].Front() != '#')
+            if (names[i].front() != '#')
                 break;
 
-            String name = names[i].Substring(1, names[i].Length() - 1);
-            char s = name.Front();
+            stl::string name = names[i].substr(1, names[i].length() - 1);
+            char s = name.front();
             if (s >= '0' && s <= '9')
             {
                 unsigned index = ToUInt(name);
@@ -1956,14 +1956,14 @@ Animatable* Node::FindAttributeAnimationTarget(const String& name, String& outNa
             return node;
         }
 
-        if (i != names.size() - 2 || names[i].Front() != '@')
+        if (i != names.size() - 2 || names[i].front() != '@')
         {
             URHO3D_LOGERROR("Invalid name " + name);
             return nullptr;
         }
 
-        String componentName = names[i].Substring(1, names[i].Length() - 1);
-        stl::vector<String> componentNames = componentName.Split('#');
+        stl::string componentName = names[i].substr(1, names[i].length() - 1);
+        stl::vector<stl::string> componentNames = componentName.split('#');
         if (componentNames.size() == 1)
         {
             Component* component = node->GetComponent(StringHash(componentNames.front()));
@@ -2061,7 +2061,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
     }
 }
 
-Component* Node::SafeCreateComponent(const String& typeName, StringHash type, CreateMode mode, unsigned id)
+Component* Node::SafeCreateComponent(const stl::string& typeName, StringHash type, CreateMode mode, unsigned id)
 {
     // Do not attempt to create replicated components to local nodes, as that may lead to component ID overwrite
     // as replicated components are synced over
@@ -2069,14 +2069,14 @@ Component* Node::SafeCreateComponent(const String& typeName, StringHash type, Cr
         mode = LOCAL;
 
     // First check if factory for type exists
-    if (!context_->GetTypeName(type).Empty())
+    if (!context_->GetTypeName(type).empty())
         return CreateComponent(type, mode, id);
     else
     {
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
         stl::shared_ptr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
-        if (typeName.Empty() || typeName.StartsWith("Unknown", false))
+        if (typeName.empty() || typeName.starts_with("Unknown", false))
             newComponent->SetType(type);
         else
             newComponent->SetTypeName(typeName);
@@ -2168,7 +2168,7 @@ void Node::GetComponentsRecursive(stl::vector<Component*>& dest, StringHash type
         (*i)->GetComponentsRecursive(dest, type);
 }
 
-void Node::GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const String& tag) const
+void Node::GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const stl::string& tag) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {

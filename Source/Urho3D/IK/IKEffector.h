@@ -96,7 +96,7 @@ public:
      * @brief Retrieves the name of the target node. The node doesn't
      * necessarily have to exist in the scene graph.
      */
-    const String& GetTargetName() const;
+    const stl::string& GetTargetName() const;
 
     /*!
      * @brief Sets the name of the target node. The node doesn't necessarily
@@ -104,7 +104,7 @@ public:
      * this name, it is selected as the target.
      * @note This clears the existing target node.
      */
-    void SetTargetName(const String& nodeName);
+    void SetTargetName(const stl::string& nodeName);
 
     /// Returns the current target position in world space.
     const Vector3& GetTargetPosition() const;
@@ -190,7 +190,7 @@ private:
     stl::weak_ptr<IKSolver> solver_;
     ik_node_t* ikEffectorNode_;
 
-    String targetName_;
+    stl::string targetName_;
     Vector3 targetPosition_;
     Quaternion targetRotation_;
     unsigned chainLength_;

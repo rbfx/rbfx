@@ -42,7 +42,7 @@ class TechniqueChangedAction
 public:
     struct TechniqueInfo
     {
-        String techniqueName_;
+        stl::string techniqueName_;
         MaterialQuality qualityLevel_;
         float lodDistance_;
     };
@@ -57,7 +57,7 @@ public:
 
 private:
     Context* context_;
-    String materialName_;
+    stl::string materialName_;
     TechniqueInfo oldValue_;
     TechniqueInfo newValue_;
     unsigned index_;
@@ -71,19 +71,19 @@ class ShaderParameterChangedAction
 public:
     struct ShaderParameterInfo
     {
-        String techniqueName_;
+        stl::string techniqueName_;
         MaterialQuality qualityLevel_;
         float lodDistance_;
     };
 
-    ShaderParameterChangedAction(const Material* material, const String& parameterName, const Variant& oldValue, const Variant& newValue);
+    ShaderParameterChangedAction(const Material* material, const stl::string& parameterName, const Variant& oldValue, const Variant& newValue);
     void Undo() override;
     void Redo() override;
 
 private:
     Context* context_;
-    String materialName_;
-    String parameterName_;
+    stl::string materialName_;
+    stl::string parameterName_;
     Variant oldValue_;
     Variant newValue_;
 };

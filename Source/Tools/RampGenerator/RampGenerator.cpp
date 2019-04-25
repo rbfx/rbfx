@@ -54,7 +54,7 @@ static const float sigma3Kernel9x9[9 * 9] = {
 };
 
 int main(int argc, char** argv);
-void Run(const stl::vector<String>& arguments);
+void Run(const stl::vector<stl::string>& arguments);
 
 bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horizontal, stl::vector<float>& luminance);
 void WriteIES(unsigned char* data, unsigned width, unsigned height, stl::vector<float>& horizontal, stl::vector<float>& vertical, stl::vector<float>& luminance);
@@ -62,7 +62,7 @@ void Blur(unsigned char* data, unsigned width, unsigned height, const float* ker
 
 int main(int argc, char** argv)
 {
-    stl::vector<String> arguments;
+    stl::vector<stl::string> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const stl::vector<String>& arguments)
+void Run(const stl::vector<stl::string>& arguments)
 {
     if (arguments.size() < 3)
         ErrorExit("Usage: RampGenerator <output png file> <width> <power> [dimensions]\n"
@@ -82,8 +82,8 @@ void Run(const stl::vector<String>& arguments)
 
     if (GetExtension(arguments[0]) == ".ies") // Generate an IES light derived ramp
     {
-        String inputFile = arguments[0];
-        String ouputFile = arguments[1];
+        stl::string inputFile = arguments[0];
+        stl::string ouputFile = arguments[1];
         int width = ToInt(arguments[2]);
         int dim = 1;
         if (arguments.size() > 3)
@@ -109,7 +109,7 @@ void Run(const stl::vector<String>& arguments)
         // Apply a blur, simpler than interpolating through the 2 dimensions of coarse samples
         Blur(data.get(), width, height, sigma3Kernel9x9, 9);
 
-        stbi_write_png(arguments[1].CString(), width, height, 1, data.get(), 0);
+        stbi_write_png(arguments[1].c_str(), width, height, 1, data.get(), 0);
     }
     else // Generate a regular power based ramp
     {
@@ -141,7 +141,7 @@ void Run(const stl::vector<String>& arguments)
             data[0] = 255;
             data[width - 1] = 0;
 
-            stbi_write_png(arguments[0].CString(), width, 1, 1, data.get(), 0);
+            stbi_write_png(arguments[0].c_str(), width, 1, 1, data.get(), 0);
         }
 
         if (dimensions == 2)
@@ -174,7 +174,7 @@ void Run(const stl::vector<String>& arguments)
                 data[x * width + (width - 1)] = 0;
             }
 
-            stbi_write_png(arguments[0].CString(), width, width, 1, data.get(), 0);
+            stbi_write_png(arguments[0].c_str(), width, width, 1, data.get(), 0);
         }
     }
 }
@@ -205,10 +205,10 @@ unsigned GetSample(float position, stl::vector<float>& inputs)
     return samplePos;
 }
 
-bool IsWhitespace(const String& string)
+bool IsWhitespace(const stl::string& string)
 {
     bool anyNot = false;
-    for (unsigned i = 0; i < string.Length(); ++i)
+    for (unsigned i = 0; i < string.length(); ++i)
     {
         if (!::isspace(string[i]))
             anyNot = true;
@@ -216,7 +216,7 @@ bool IsWhitespace(const String& string)
     return !anyNot;
 }
 
-float PopFirstFloat(stl::vector<String>& words)
+float PopFirstFloat(stl::vector<stl::string>& words)
 {
     if (words.size() > 0)
     {
@@ -227,7 +227,7 @@ float PopFirstFloat(stl::vector<String>& words)
     return -1.0f; // is < 0 ever valid?
 }
 
-int PopFirstInt(stl::vector<String>& words)
+int PopFirstInt(stl::vector<stl::string>& words)
 {
     if (words.size() > 0)
     {
@@ -240,34 +240,34 @@ int PopFirstInt(stl::vector<String>& words)
 
 bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horizontal, stl::vector<float>& luminance)
 {
-    String line = data->ReadLine();
-    if (!line.Contains("IESNA:LM-63-1995") && !line.Contains("IESNA:LM-63-2002"))
+    stl::string line = data->ReadLine();
+    if (!line.contains("IESNA:LM-63-1995") && !line.contains("IESNA:LM-63-2002"))
         ErrorExit("Unsupported format: " + line);
 
     // Skip over the misc data
     while (!data->IsEof())
     {
         line = data->ReadLine();
-        if (line.Contains("TILT=NONE"))
+        if (line.contains("TILT=NONE"))
             break;
-        else if (line.Contains("TILT=")) // tilt is a whole different ballgame
+        else if (line.contains("TILT=")) // tilt is a whole different ballgame
             ErrorExit("Unsupported tilt: " + line);
-        else if (line.Contains("[")) // eat this line, it's metadata
+        else if (line.contains("[")) // eat this line, it's metadata
             continue;
     }
 
     // Collect everything into a a list to process, we're now reading actual values
-    stl::vector<String> lines;
+    stl::vector<stl::string> lines;
     while (!data->IsEof())
         lines.push_back(data->ReadLine());
-    stl::vector<String> words;
+    stl::vector<stl::string> words;
     for (unsigned i = 0; i < lines.size(); ++i)
-        words.push_back(lines[i].Split(' '));
+        words.push_back(lines[i].split(' '));
 
     // Prune any 'junk' collected
     for (unsigned i = 0; i < words.size(); ++i)
     {
-        if (words[i].Empty() || IsWhitespace(words[i]))
+        if (words[i].empty() || IsWhitespace(words[i]))
         {
             words.erase(i);
             --i;

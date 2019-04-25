@@ -52,17 +52,17 @@ TmxFile2D* TmxLayer2D::GetTmxFile() const
     return tmxFile_;
 }
 
-bool TmxLayer2D::HasProperty(const String& name) const
+bool TmxLayer2D::HasProperty(const stl::string& name) const
 {
     if (!propertySet_)
         return false;
     return propertySet_->HasProperty(name);
 }
 
-const String& TmxLayer2D::GetProperty(const String& name) const
+const stl::string& TmxLayer2D::GetProperty(const stl::string& name) const
 {
     if (!propertySet_)
-        return String::EMPTY;
+        return EMPTY_STRING;
     return propertySet_->GetProperty(name);
 }
 
@@ -114,7 +114,7 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
 
     if (dataElem.HasAttribute("encoding"))
     {
-        String encodingAttribute = dataElem.GetAttribute("encoding");
+        stl::string encodingAttribute = dataElem.GetAttribute("encoding");
         if (encodingAttribute == "xml")
             encoding = XML;
         else if (encodingAttribute == "csv")
@@ -158,14 +158,14 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
     }
     else if (encoding == CSV)
     {
-        String dataValue = dataElem.GetValue();
-        stl::vector<String> gidVector = dataValue.Split(',');
+        stl::string dataValue = dataElem.GetValue();
+        stl::vector<stl::string> gidVector = dataValue.split(',');
         int currentIndex = 0;
         for (int y = 0; y < height_; ++y)
         {
             for (int x = 0; x < width_; ++x)
             {
-                gidVector[currentIndex].Replace("\n", "");
+                gidVector[currentIndex].replace("\n", "");
                 unsigned gid = ToUInt(gidVector[currentIndex]);
                 if (gid > 0)
                 {
@@ -181,11 +181,11 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
     }
     else if (encoding == Base64)
     {
-        String dataValue = dataElem.GetValue();
+        stl::string dataValue = dataElem.GetValue();
         int startPosition = 0;
         while (!IsAlpha(dataValue[startPosition]) && !IsDigit(dataValue[startPosition])
               && dataValue[startPosition] != '+' && dataValue[startPosition] != '/') ++startPosition;
-        dataValue = dataValue.Substring(startPosition);
+        dataValue = dataValue.substr(startPosition);
         stl::vector<unsigned char> buffer = DecodeBase64(dataValue);
         int currentIndex = 0;
         for (int y = 0; y < height_; ++y)
@@ -294,11 +294,11 @@ void TmxObjectGroup2D::StoreObject(const XMLElement& objectElem, const stl::shar
         case OT_POLYGON:
         case OT_POLYLINE:
             {
-                stl::vector<String> points;
+                stl::vector<stl::string> points;
 
                 const char* name = object->objectType_ == OT_POLYGON ? "polygon" : "polyline";
                 XMLElement polygonElem = objectElem.GetChild(name);
-                points = polygonElem.GetAttribute("points").Split(' ');
+                points = polygonElem.GetAttribute("points").split(' ');
 
                 if (points.size() <= 1)
                     return;
@@ -307,7 +307,7 @@ void TmxObjectGroup2D::StoreObject(const XMLElement& objectElem, const stl::shar
 
                 for (unsigned i = 0; i < points.size(); ++i)
                 {
-                    points[i].Replace(',', ' ');
+                    points[i].replace(',', ' ');
                     Vector2 point = position + ToVector2(points[i]);
                     object->points_[i] = info.ConvertPosition(point);
                 }
@@ -347,7 +347,7 @@ bool TmxImageLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
 
     position_ = Vector2(0.0f, info.GetMapHeight());
     source_ = imageElem.GetAttribute("source");
-    String textureFilePath = GetParentPath(tmxFile_->GetName()) + source_;
+    stl::string textureFilePath = GetParentPath(tmxFile_->GetName()) + source_;
     auto* cache = tmxFile_->GetSubsystem<ResourceCache>();
     stl::shared_ptr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
     if (!texture)
@@ -392,7 +392,7 @@ void TmxFile2D::RegisterObject(Context* context)
 
 bool TmxFile2D::BeginLoad(Deserializer& source)
 {
-    if (GetName().Empty())
+    if (GetName().empty())
         SetName(source.GetName());
 
     loadXMLFile_ = context_->CreateObject<XMLFile>();
@@ -419,20 +419,20 @@ bool TmxFile2D::BeginLoad(Deserializer& source)
             // Tile set defined in TSX file
             if (tileSetElem.HasAttribute("source"))
             {
-                String source = tileSetElem.GetAttribute("source");
+                stl::string source = tileSetElem.GetAttribute("source");
                 stl::shared_ptr<XMLFile> tsxXMLFile = LoadTSXFile(source);
                 if (!tsxXMLFile)
                     return false;
 
                 tsxXMLFiles_[source] = tsxXMLFile;
 
-                String textureFilePath =
+                stl::string textureFilePath =
                     GetParentPath(GetName()) + tsxXMLFile->GetRoot("tileset").GetChild("image").GetAttribute("source");
                 GetSubsystem<ResourceCache>()->BackgroundLoadResource<Texture2D>(textureFilePath, true, this);
             }
             else
             {
-                String textureFilePath = GetParentPath(GetName()) + tileSetElem.GetChild("image").GetAttribute("source");
+                stl::string textureFilePath = GetParentPath(GetName()) + tileSetElem.GetChild("image").GetAttribute("source");
                 GetSubsystem<ResourceCache>()->BackgroundLoadResource<Texture2D>(textureFilePath, true, this);
             }
         }
@@ -440,7 +440,7 @@ bool TmxFile2D::BeginLoad(Deserializer& source)
         for (XMLElement imageLayerElem = rootElem.GetChild("imagelayer"); imageLayerElem;
              imageLayerElem = imageLayerElem.GetNext("imagelayer"))
         {
-            String textureFilePath = GetParentPath(GetName()) + imageLayerElem.GetChild("image").GetAttribute("source");
+            stl::string textureFilePath = GetParentPath(GetName()) + imageLayerElem.GetChild("image").GetAttribute("source");
             GetSubsystem<ResourceCache>()->BackgroundLoadResource<Texture2D>(textureFilePath, true, this);
         }
     }
@@ -454,14 +454,14 @@ bool TmxFile2D::EndLoad()
         return false;
 
     XMLElement rootElem = loadXMLFile_->GetRoot("map");
-    String version = rootElem.GetAttribute("version");
+    stl::string version = rootElem.GetAttribute("version");
     if (version != "1.0")
     {
         URHO3D_LOGERROR("Invalid version");
         return false;
     }
 
-    String orientation = rootElem.GetAttribute("orientation");
+    stl::string orientation = rootElem.GetAttribute("orientation");
     if (orientation == "orthogonal")
         info_.orientation_ = O_ORTHOGONAL;
     else if (orientation == "isometric")
@@ -488,7 +488,7 @@ bool TmxFile2D::EndLoad()
     for (XMLElement childElement = rootElem.GetChild(); childElement; childElement = childElement.GetNext())
     {
         bool ret = true;
-        String name = childElement.GetName();
+        stl::string name = childElement.GetName();
         if (name == "tileset")
             ret = LoadTileSet(childElement);
         else if (name == "layer")
@@ -594,9 +594,9 @@ void TmxFile2D::SetSpriteTextureEdgeOffset(float offset)
         i.second_->SetTextureEdgeOffset(offset);
 }
 
-stl::shared_ptr<XMLFile> TmxFile2D::LoadTSXFile(const String& source)
+stl::shared_ptr<XMLFile> TmxFile2D::LoadTSXFile(const stl::string& source)
 {
-    String tsxFilePath = GetParentPath(GetName()) + source;
+    stl::string tsxFilePath = GetParentPath(GetName()) + source;
     stl::shared_ptr<File> tsxFile = GetSubsystem<ResourceCache>()->GetFile(tsxFilePath);
     stl::shared_ptr<XMLFile> tsxXMLFile(context_->CreateObject<XMLFile>());
     if (!tsxFile || !tsxXMLFile->Load(*tsxFile))
@@ -624,8 +624,8 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
     XMLElement tileSetElem;
     if (element.HasAttribute("source"))
     {
-        String source = element.GetAttribute("source");
-        HashMap<String, stl::shared_ptr<XMLFile> >::Iterator i = tsxXMLFiles_.Find(source);
+        stl::string source = element.GetAttribute("source");
+        HashMap<stl::string, stl::shared_ptr<XMLFile> >::Iterator i = tsxXMLFiles_.Find(source);
         if (i == tsxXMLFiles_.End())
         {
             stl::shared_ptr<XMLFile> tsxXMLFile = LoadTSXFile(source);
@@ -657,7 +657,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         // Tileset based on single tileset image
         if (imageElem.NotNull()) {
             isSingleTileSet = true;
-            String textureFilePath = GetParentPath(GetName()) + imageElem.GetAttribute("source");
+            stl::string textureFilePath = GetParentPath(GetName()) + imageElem.GetAttribute("source");
             stl::shared_ptr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
             if (!texture)
             {
@@ -702,7 +702,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         {
             XMLElement imageElem = tileElem.GetChild("image");
             if (imageElem.NotNull()) {
-                String textureFilePath = GetParentPath(GetName()) + imageElem.GetAttribute("source");
+                stl::string textureFilePath = GetParentPath(GetName()) + imageElem.GetAttribute("source");
                 stl::shared_ptr<Image> image(cache->GetResource<Image>(textureFilePath));
                 if (!image)
                 {
@@ -725,7 +725,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
                 stl::shared_ptr<TileMapObject2D> object(new TileMapObject2D());
 
                 // Convert Tiled local position (left top) to Urho3D local position (left bottom)
-                objectElem.SetAttribute("y", String(info_.GetMapHeight() / PIXEL_SIZE - (tileHeight - objectElem.GetFloat("y"))));
+                objectElem.SetAttribute("y", stl::to_string(info_.GetMapHeight() / PIXEL_SIZE - (tileHeight - objectElem.GetFloat("y"))));
 
                 objectGroup.StoreObject(objectElem, object, info_, true);
                 objects.push_back(object);

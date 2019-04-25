@@ -64,7 +64,7 @@ class JSONValue;
 /// JSON array type.
 using JSONArray = stl::vector<JSONValue>;
 /// JSON object type.
-using JSONObject = HashMap<String, JSONValue>;
+using JSONObject = HashMap<stl::string, JSONValue>;
 /// JSON object iterator.
 using JSONObjectIterator = JSONObject::Iterator;
 /// Constant JSON object iterator.
@@ -118,7 +118,7 @@ public:
         *this = value;
     }
     /// Construct with a string.
-    JSONValue(const String& value) :    // NOLINT(google-explicit-constructor)
+    JSONValue(const stl::string& value) :    // NOLINT(google-explicit-constructor)
         type_(0)
     {
         *this = value;
@@ -164,7 +164,7 @@ public:
     /// Assign from a double.
     JSONValue& operator =(double rhs);
     /// Assign from a string.
-    JSONValue& operator =(const String& rhs);
+    JSONValue& operator =(const stl::string& rhs);
     /// Assign from a C string.
     JSONValue& operator =(const char* rhs);
     /// Assign from a JSON array.
@@ -183,9 +183,9 @@ public:
     /// Return number type.
     JSONNumberType GetNumberType() const;
     /// Return value type's name.
-    String GetValueTypeName() const;
+    stl::string GetValueTypeName() const;
     /// Return number type's name.
-    String GetNumberTypeName() const;
+    stl::string GetNumberTypeName() const;
 
     /// Check is null.
     bool IsNull() const { return GetValueType() == JSON_NULL; }
@@ -211,9 +211,9 @@ public:
     /// Return double value.
     double GetDouble() const { return IsNumber() ? numberValue_ : 0.0; }
     /// Return string value.
-    const String& GetString() const { return IsString() ? *stringValue_ : String::EMPTY;}
+    const stl::string& GetString() const { return IsString() ? *stringValue_ : EMPTY_STRING;}
     /// Return C string value.
-    const char* GetCString() const { return IsString() ? stringValue_->CString() : nullptr;}
+    const char* GetCString() const { return IsString() ? stringValue_->c_str() : nullptr;}
     /// Return JSON array value.
     const JSONArray& GetArray() const { return IsArray() ? *arrayValue_ : emptyArray; }
     /// Return JSON object value.
@@ -239,19 +239,19 @@ public:
 
     // JSON object functions
     /// Return JSON value with key.
-    JSONValue& operator [](const String& key);
+    JSONValue& operator [](const stl::string& key);
     /// Return JSON value with key.
-    const JSONValue& operator [](const String& key) const;
+    const JSONValue& operator [](const stl::string& key) const;
     /// Set JSON value with key.
-    void Set(const String& key, const JSONValue& value);
+    void Set(const stl::string& key, const JSONValue& value);
     /// Return JSON value with key.
-    const JSONValue& Get(const String& key) const;
+    const JSONValue& Get(const stl::string& key) const;
     /// Return JSON value with index.
     const JSONValue& Get(int index) const;
     /// Erase a pair by key.
-    bool Erase(const String& key);
+    bool Erase(const stl::string& key);
     /// Return whether contains a pair with key.
-    bool Contains(const String& key) const;
+    bool Contains(const stl::string& key) const;
     /// Return iterator to the beginning.
     JSONObjectIterator Begin();
     /// Return iterator to the beginning.
@@ -292,15 +292,15 @@ public:
     static const JSONObject emptyObject;
 
     /// Return name corresponding to a value type.
-    static String GetValueTypeName(JSONValueType type);
+    static stl::string GetValueTypeName(JSONValueType type);
     /// Return name corresponding to a number type.
-    static String GetNumberTypeName(JSONNumberType type);
+    static stl::string GetNumberTypeName(JSONNumberType type);
     /// Return a value type from name; null if unrecognized.
-    static JSONValueType GetValueTypeFromName(const String& typeName);
+    static JSONValueType GetValueTypeFromName(const stl::string& typeName);
     /// Return a value type from name; null if unrecognized.
     static JSONValueType GetValueTypeFromName(const char* typeName);
     /// Return a number type from name; NaN if unrecognized.
-    static JSONNumberType GetNumberTypeFromName(const String& typeName);
+    static JSONNumberType GetNumberTypeFromName(const stl::string& typeName);
     /// Return a value type from name; NaN if unrecognized.
     static JSONNumberType GetNumberTypeFromName(const char* typeName);
 
@@ -314,7 +314,7 @@ private:
         /// Number value.
         double numberValue_;
         /// String value.
-        String* stringValue_;
+        stl::string* stringValue_;
         /// Array value.
         JSONArray* arrayValue_;
         /// Object value.

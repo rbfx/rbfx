@@ -52,7 +52,7 @@ public:
     /// Initialize the engine and run the main loop, then return the application exit code. Catch out-of-memory exceptions while running.
     int Run();
     /// Show an error message (last log message if empty), terminate the main loop, and set failure exit code.
-    void ErrorExit(const String& message = String::EMPTY);
+    void ErrorExit(const stl::string& message = EMPTY_STRING);
 
 protected:
     /// Handle log message.
@@ -65,7 +65,7 @@ protected:
     /// Engine parameters map.
     VariantMap engineParameters_;
     /// Collected startup error log messages.
-    String startupErrors_;
+    stl::string startupErrors_;
     /// Application exit code.
     int exitCode_;
 };

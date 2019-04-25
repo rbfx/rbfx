@@ -48,9 +48,9 @@ protected:
 };
 
 /// Return true if `string` matches any pattern specified in `patterns` list.
-bool MatchesAny(const String& string, const stl::vector<std::regex>& patterns);
+bool MatchesAny(const stl::string& string, const stl::vector<std::regex>& patterns);
 /// Converts a glob expression to regex pattern. * matches anything except folder separators, ** matches anything
 /// including folder separators.
-std::regex GlobToRegex(const String& expression);
+std::regex GlobToRegex(const stl::string& expression);
 
 }

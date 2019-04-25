@@ -86,7 +86,7 @@ public:
     /// Return type.
     StringHash GetType() const { return type_; }
     /// Return type name.
-    const String& GetTypeName() const { return typeName_;}
+    const stl::string& GetTypeName() const { return typeName_;}
     /// Return base type info.
     const TypeInfo* GetBaseTypeInfo() const { return baseTypeInfo_; }
 
@@ -94,7 +94,7 @@ private:
     /// Type.
     StringHash type_;
     /// Type name.
-    String typeName_;
+    stl::string typeName_;
     /// Base class type info.
     const TypeInfo* baseTypeInfo_;
 };
@@ -104,10 +104,10 @@ private:
         using ClassName = typeName; \
         using BaseClassName = baseTypeName; \
         virtual Urho3D::StringHash GetType() const override { return GetTypeInfoStatic()->GetType(); } \
-        virtual const Urho3D::String& GetTypeName() const override { return GetTypeInfoStatic()->GetTypeName(); } \
+        virtual const stl::string& GetTypeName() const override { return GetTypeInfoStatic()->GetTypeName(); } \
         virtual const Urho3D::TypeInfo* GetTypeInfo() const override { return GetTypeInfoStatic(); } \
         static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); } \
-        static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
+        static const stl::string& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); } \
         static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic(#typeName, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; } \
 
 /// Base class for objects with type identification, subsystem access and event sending/receiving capability.
@@ -124,7 +124,7 @@ public:
     /// Return type hash.
     virtual StringHash GetType() const = 0;
     /// Return type name.
-    virtual const String& GetTypeName() const = 0;
+    virtual const stl::string& GetTypeName() const = 0;
     /// Return type info.
     virtual const TypeInfo* GetTypeInfo() const = 0;
     /// Handle event.
@@ -198,7 +198,7 @@ public:
     /// Template version of returning a subsystem.
     template <class T> T* GetSubsystem() const;
     /// Return object category. Categories are (optionally) registered along with the object factory. Return an empty string if the object category is not registered.
-    const String& GetCategory() const;
+    const stl::string& GetCategory() const;
 
     /// Send event with parameters to all subscribers.
     void SendEvent(StringHash eventType, const VariantMap& eventData);
@@ -302,7 +302,7 @@ public:
     StringHash GetType() const { return typeInfo_->GetType(); }
 
     /// Return type name of objects created by this factory.
-    const String& GetTypeName() const { return typeInfo_->GetTypeName(); }
+    const stl::string& GetTypeName() const { return typeInfo_->GetTypeName(); }
 
 protected:
     /// Execution context.

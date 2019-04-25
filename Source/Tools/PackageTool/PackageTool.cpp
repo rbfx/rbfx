@@ -45,7 +45,7 @@ static const unsigned COMPRESSED_BLOCK_SIZE = 32768;
 
 struct FileEntry
 {
-    String name_;
+    stl::string name_;
     unsigned offset_{};
     unsigned size_{};
     unsigned checksum_{};
@@ -53,27 +53,27 @@ struct FileEntry
 
 stl::shared_ptr<Context> context_(new Context());
 stl::shared_ptr<FileSystem> fileSystem_(new FileSystem(context_));
-String basePath_;
+stl::string basePath_;
 stl::vector<FileEntry> entries_;
 unsigned checksum_ = 0;
 bool compress_ = false;
 bool quiet_ = false;
 unsigned blockSize_ = COMPRESSED_BLOCK_SIZE;
 
-String ignoreExtensions_[] = {
+stl::string ignoreExtensions_[] = {
     ".bak",
     ".rule"
 };
 
 int main(int argc, char** argv);
-void Run(const stl::vector<String>& arguments);
-void ProcessFile(const String& fileName, const String& rootDir);
-void WritePackageFile(const String& fileName, const String& rootDir);
+void Run(const stl::vector<stl::string>& arguments);
+void ProcessFile(const stl::string& fileName, const stl::string& rootDir);
+void WritePackageFile(const stl::string& fileName, const stl::string& rootDir);
 void WriteHeader(File& dest);
 
 int main(int argc, char** argv)
 {
-    stl::vector<String> arguments;
+    stl::vector<stl::string> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -85,7 +85,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const stl::vector<String>& arguments)
+void Run(const stl::vector<stl::string>& arguments)
 {
     if (arguments.size() < 2)
         ErrorExit(
@@ -103,9 +103,9 @@ void Run(const stl::vector<String>& arguments)
             "-L      Similar to -l but also output compression ratio (compressed package file only)\n"
         );
 
-    const String& dirName = arguments[0];
-    const String& packageName = arguments[1];
-    bool isOutputMode = arguments[0].Length() == 2 && arguments[0][0] == '-';
+    const stl::string& dirName = arguments[0];
+    const stl::string& packageName = arguments[1];
+    bool isOutputMode = arguments[0].length() == 2 && arguments[0][0] == '-';
     if (arguments.size() > 2)
     {
         for (unsigned i = 2; i < arguments.size(); ++i)
@@ -114,7 +114,7 @@ void Run(const stl::vector<String>& arguments)
                 basePath_ = AddTrailingSlash(arguments[i]);
             else
             {
-                if (arguments[i].Length() > 1)
+                if (arguments[i].length() > 1)
                 {
                     switch (arguments[i][1])
                     {
@@ -138,7 +138,7 @@ void Run(const stl::vector<String>& arguments)
             PrintLine("Scanning directory " + dirName + " for files");
 
         // Get the file list recursively
-        stl::vector<String> fileNames;
+        stl::vector<stl::string> fileNames;
         fileSystem_->ScanDir(fileNames, dirName, "*", SCAN_FILES, true);
         if (!fileNames.size())
             ErrorExit("No files found");
@@ -146,8 +146,8 @@ void Run(const stl::vector<String>& arguments)
         // Check for extensions to ignore
         for (unsigned i = fileNames.size() - 1; i < fileNames.size(); --i)
         {
-            String extension = GetExtension(fileNames[i]);
-            for (unsigned j = 0; j < ignoreExtensions_[j].Length(); ++j)
+            stl::string extension = GetExtension(fileNames[i]);
+            for (unsigned j = 0; j < ignoreExtensions_[j].length(); ++j)
             {
                 if (extension == ignoreExtensions_[j])
                 {
@@ -168,7 +168,7 @@ void Run(const stl::vector<String>& arguments)
             if (packageFile->GetNumFiles() == fileNames.size())
             {
                 bool filesOutOfDate = false;
-                for (const String& fileName : fileNames)
+                for (const stl::string& fileName : fileNames)
                 {
                     if (fileSystem_->GetLastModifiedTime(fileName) > packageTime)
                     {
@@ -197,11 +197,11 @@ void Run(const stl::vector<String>& arguments)
         switch (arguments[0][1])
         {
         case 'i':
-            PrintLine("Number of files: " + String(packageFile->GetNumFiles()));
-            PrintLine("File data size: " + String(packageFile->GetTotalDataSize()));
-            PrintLine("Package size: " + String(packageFile->GetTotalSize()));
-            PrintLine("Checksum: " + String(packageFile->GetChecksum()));
-            PrintLine("Compressed: " + String(packageFile->IsCompressed() ? "yes" : "no"));
+            PrintLine("Number of files: " + stl::to_string(packageFile->GetNumFiles()));
+            PrintLine("File data size: " + stl::to_string(packageFile->GetTotalDataSize()));
+            PrintLine("Package size: " + stl::to_string(packageFile->GetTotalSize()));
+            PrintLine("Checksum: " + stl::to_string(packageFile->GetChecksum()));
+            PrintLine("Compressed: " + stl::string(packageFile->IsCompressed() ? "yes" : "no"));
             break;
         case 'L':
             if (!packageFile->IsCompressed())
@@ -210,17 +210,17 @@ void Run(const stl::vector<String>& arguments)
             // Fallthrough
         case 'l':
             {
-                const HashMap<String, PackageEntry>& entries = packageFile->GetEntries();
-                for (HashMap<String, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End();)
+                const HashMap<stl::string, PackageEntry>& entries = packageFile->GetEntries();
+                for (HashMap<stl::string, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End();)
                 {
-                    HashMap<String, PackageEntry>::ConstIterator current = i++;
-                    String fileEntry(current->first_);
+                    HashMap<stl::string, PackageEntry>::ConstIterator current = i++;
+                    stl::string fileEntry(current->first_);
                     if (outputCompressionRatio)
                     {
                         unsigned compressedSize =
                             (i == entries.End() ? packageFile->GetTotalSize() - sizeof(unsigned) : i->second_.offset_) -
                             current->second_.offset_;
-                        fileEntry.AppendWithFormat("\tin: %u\tout: %u\tratio: %f", current->second_.size_, compressedSize,
+                        fileEntry.append_sprintf("\tin: %u\tout: %u\tratio: %f", current->second_.size_, compressedSize,
                             compressedSize ? 1.f * current->second_.size_ / compressedSize : 0.f);
                     }
                     PrintLine(fileEntry);
@@ -233,9 +233,9 @@ void Run(const stl::vector<String>& arguments)
     }
 }
 
-void ProcessFile(const String& fileName, const String& rootDir)
+void ProcessFile(const stl::string& fileName, const stl::string& rootDir)
 {
-    String fullPath = rootDir + "/" + fileName;
+    stl::string fullPath = rootDir + "/" + fileName;
     File file(context_);
     if (!file.Open(fullPath))
         ErrorExit("Could not open file " + fileName);
@@ -248,7 +248,7 @@ void ProcessFile(const String& fileName, const String& rootDir)
     entries_.push_back(newEntry);
 }
 
-void WritePackageFile(const String& fileName, const String& rootDir)
+void WritePackageFile(const stl::string& fileName, const stl::string& rootDir)
 {
     if (!quiet_)
         PrintLine("Writing package");
@@ -276,7 +276,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
     for (unsigned i = 0; i < entries_.size(); ++i)
     {
         lastOffset = entries_[i].offset_ = dest.GetSize();
-        String fileFullPath = rootDir + "/" + entries_[i].name_;
+        stl::string fileFullPath = rootDir + "/" + entries_[i].name_;
 
         File srcFile(context_, fileFullPath);
         if (!srcFile.IsOpen())
@@ -299,7 +299,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
         if (!compress_)
         {
             if (!quiet_)
-                PrintLine(entries_[i].name_ + " size " + String(dataSize));
+                PrintLine(entries_[i].name_ + " size " + stl::to_string(dataSize));
             dest.Write(&buffer[0], entries_[i].size_);
         }
         else
@@ -316,7 +316,7 @@ void WritePackageFile(const String& fileName, const String& rootDir)
 
                 auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
                 if (!packedSize)
-                    ErrorExit("LZ4 compression failed for file " + entries_[i].name_ + " at offset " + String(pos));
+                    ErrorExit("LZ4 compression failed for file " + entries_[i].name_ + " at offset " + stl::to_string(pos));
 
                 dest.WriteUShort((unsigned short)unpackedSize);
                 dest.WriteUShort((unsigned short)packedSize);
@@ -328,8 +328,8 @@ void WritePackageFile(const String& fileName, const String& rootDir)
             if (!quiet_)
             {
                 unsigned totalPackedBytes = dest.GetSize() - lastOffset;
-                String fileEntry(entries_[i].name_);
-                fileEntry.AppendWithFormat("\tin: %u\tout: %u\tratio: %f", dataSize, totalPackedBytes,
+                stl::string fileEntry(entries_[i].name_);
+                fileEntry.append_sprintf("\tin: %u\tout: %u\tratio: %f", dataSize, totalPackedBytes,
                     totalPackedBytes ? 1.f * dataSize / totalPackedBytes : 0.f);
                 PrintLine(fileEntry);
             }
@@ -354,11 +354,11 @@ void WritePackageFile(const String& fileName, const String& rootDir)
 
     if (!quiet_)
     {
-        PrintLine("Number of files: " + String(entries_.size()));
-        PrintLine("File data size: " + String(totalDataSize));
-        PrintLine("Package size: " + String(dest.GetSize()));
-        PrintLine("Checksum: " + String(checksum_));
-        PrintLine("Compressed: " + String(compress_ ? "yes" : "no"));
+        PrintLine("Number of files: " + stl::to_string(entries_.size()));
+        PrintLine("File data size: " + stl::to_string(totalDataSize));
+        PrintLine("Package size: " + stl::to_string(dest.GetSize()));
+        PrintLine("Checksum: " + stl::to_string(checksum_));
+        PrintLine("Compressed: " + stl::string(compress_ ? "yes" : "no"));
     }
 }
 

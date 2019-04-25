@@ -132,7 +132,7 @@ static bool IsValidPtr(const stl::vector<unsigned char>& data, const T* p, unsig
            reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
-PluginType GetPluginType(Context* context, const String& path)
+PluginType GetPluginType(Context* context, const stl::string& path)
 {
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
@@ -142,7 +142,7 @@ PluginType GetPluginType(Context* context, const String& path)
 
 #if __linux__
     // ELF magic
-    if (path.EndsWith(".so"))
+    if (path.ends_with(".so"))
     {
         File file(context);
         if (!file.Open(path, FILE_READ))
@@ -209,7 +209,7 @@ PluginType GetPluginType(Context* context, const String& path)
 
             shoff = sectab->sh_offset;
             auto num = sectab->sh_size / sectab->sh_entsize;
-            String funcName;
+            stl::string funcName;
             for (auto i = 0; i < num; i++)
             {
                 Elf_Sym* symbol = reinterpret_cast<Elf_Sym*>(data.data() + shoff);

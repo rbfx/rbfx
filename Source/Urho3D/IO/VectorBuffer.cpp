@@ -29,7 +29,7 @@
 namespace Urho3D
 {
 
-static String vectorBufferName{"VectorBuffer"};
+static stl::string vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 
@@ -169,7 +169,7 @@ void VectorBuffer::Resize(unsigned size)
         position_ = size_;
 }
 
-const String& VectorBuffer::GetName() const
+const stl::string& VectorBuffer::GetName() const
 {
     return vectorBufferName;
 }

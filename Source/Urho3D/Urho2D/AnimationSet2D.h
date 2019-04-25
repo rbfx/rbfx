@@ -62,9 +62,9 @@ public:
     /// Get number of animations.
     unsigned GetNumAnimations() const;
     /// Return animation name.
-    String GetAnimation(unsigned index) const;
+    stl::string GetAnimation(unsigned index) const;
     /// Check has animation.
-    bool HasAnimation(const String& animationName) const;
+    bool HasAnimation(const stl::string& animationName) const;
 
     /// Return sprite.
     Sprite2D* GetSprite() const;
@@ -112,7 +112,7 @@ private:
     /// Has sprite sheet.
     bool hasSpriteSheet_;
     /// Sprite sheet file path.
-    String spriteSheetFilePath_;
+    stl::string spriteSheetFilePath_;
     /// Sprite sheet.
     stl::shared_ptr<SpriteSheet2D> spriteSheet_;
     /// Spriter sprites.

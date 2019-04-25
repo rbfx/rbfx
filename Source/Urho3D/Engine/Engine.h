@@ -122,10 +122,10 @@ public:
     /// Parse the engine startup parameters map from command line arguments.
     static void DefineParameters(CLI::App& commandLine, VariantMap& engineParameters);
     /// Return whether startup parameters contains a specific parameter.
-    static bool HasParameter(const VariantMap& parameters, const String& parameter);
+    static bool HasParameter(const VariantMap& parameters, const stl::string& parameter);
     /// Get an engine startup parameter, with default value if missing.
     static const Variant
-        & GetParameter(const VariantMap& parameters, const String& parameter, const Variant& defaultValue = Variant::EMPTY);
+        & GetParameter(const VariantMap& parameters, const stl::string& parameter, const Variant& defaultValue = Variant::EMPTY);
 
 private:
     /// Handle exit requested event. Auto-exit if enabled.

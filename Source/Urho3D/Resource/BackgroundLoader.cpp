@@ -108,7 +108,7 @@ void BackgroundLoader::ThreadFunction()
     }
 }
 
-bool BackgroundLoader::QueueResource(StringHash type, const String& name, bool sendEventOnFailure, Resource* caller)
+bool BackgroundLoader::QueueResource(StringHash type, const stl::string& name, bool sendEventOnFailure, Resource* caller)
 {
     StringHash nameHash(name);
     stl::pair<StringHash, StringHash> key = stl::make_pair(type, nameHash);
@@ -126,7 +126,7 @@ bool BackgroundLoader::QueueResource(StringHash type, const String& name, bool s
     item.resource_ = DynamicCast<Resource>(owner_->GetContext()->CreateObject(type));
     if (!item.resource_)
     {
-        URHO3D_LOGERROR("Could not load unknown resource type " + String(type));
+        URHO3D_LOGERROR("Could not load unknown resource type " + type.ToString());
 
         if (sendEventOnFailure && Thread::IsMainThread())
         {
@@ -199,7 +199,7 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
             }
 
             if (didWait)
-                URHO3D_LOGDEBUG("Waited " + String(waitTimer.GetUSec(false) / 1000) + " ms for background loaded resource " +
+                URHO3D_LOGDEBUG("Waited " + stl::to_string(waitTimer.GetUSec(false) / 1000) + " ms for background loaded resource " +
                          resource->GetName());
         }
 
@@ -263,7 +263,7 @@ void BackgroundLoader::FinishBackgroundLoading(BackgroundLoadItem& item)
     // If BeginLoad() phase was successful, call EndLoad() and get the final success/failure result
     if (success)
     {
-        URHO3D_PROFILE(String("Finish" + resource->GetTypeName()).CString());
+        URHO3D_PROFILE(stl::string("Finish" + resource->GetTypeName()).c_str());
         URHO3D_LOGDEBUG("Finishing background loaded resource " + resource->GetName());
         success = resource->EndLoad();
     }

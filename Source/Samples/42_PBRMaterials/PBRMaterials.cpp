@@ -187,14 +187,14 @@ void PBRMaterials::HandleRoughnessSliderChanged(StringHash eventType, VariantMap
 {
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
     dynamicMaterial_->SetShaderParameter("Roughness", newValue);
-    roughnessLabel_->SetText("Roughness: " + String(newValue));
+    roughnessLabel_->SetText("Roughness: " + stl::to_string(newValue));
 }
 
 void PBRMaterials::HandleMetallicSliderChanged(StringHash eventType, VariantMap& eventData)
 {
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
     dynamicMaterial_->SetShaderParameter("Metallic", newValue);
-    metallicLabel_->SetText("Metallic: " + String(newValue));
+    metallicLabel_->SetText("Metallic: " + stl::to_string(newValue));
 }
 
 void PBRMaterials::HandleAmbientSliderChanged(StringHash eventType, VariantMap& eventData)
@@ -202,7 +202,7 @@ void PBRMaterials::HandleAmbientSliderChanged(StringHash eventType, VariantMap& 
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
     Color col = Color(0.0, 0.0, 0.0, newValue);
     zone_->SetAmbientColor(col);
-    ambientLabel_->SetText("Ambient HDR Scale: " + String(zone_->GetAmbientColor().a_));
+    ambientLabel_->SetText("Ambient HDR Scale: " + stl::to_string(zone_->GetAmbientColor().a_));
 }
 
 void PBRMaterials::SetupViewport()

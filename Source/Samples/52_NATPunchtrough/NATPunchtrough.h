@@ -53,7 +53,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    String GetScreenJoystickPatchString() const override { return
+    stl::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -70,13 +70,13 @@ private:
     /// Subscribe to log message, UI and network events.
     void SubscribeToEvents();
     /// Create a button to the button container.
-    Button* CreateButton(const String& text, int width, IntVector2 position);
+    Button* CreateButton(const stl::string& text, int width, IntVector2 position);
     /// Create label
-    void CreateLabel(const String& text, IntVector2 pos);
+    void CreateLabel(const stl::string& text, IntVector2 pos);
     /// Create input field
-    LineEdit* CreateLineEdit(const String& placeholder, int width, IntVector2 pos);
+    LineEdit* CreateLineEdit(const stl::string& placeholder, int width, IntVector2 pos);
     /// Print log message.
-    void ShowLogMessage(const String& row);
+    void ShowLogMessage(const stl::string& row);
     /// Save NAT server config
     void HandleSaveNatSettings(StringHash eventType, VariantMap& eventData);
     /// Handle server connection message
@@ -117,7 +117,7 @@ private:
     /// Log history text element
     stl::shared_ptr<Text> logHistoryText_;
     /// Log messages
-    stl::vector<String> logHistory_;
+    stl::vector<stl::string> logHistory_;
     /// Created server GUID field
     stl::shared_ptr<LineEdit> guid_;
 };

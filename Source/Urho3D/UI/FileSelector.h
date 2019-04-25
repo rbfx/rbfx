@@ -42,7 +42,7 @@ class XMLFile;
 struct FileSelectorEntry
 {
     /// Name.
-    String name_;
+    stl::string name_;
     /// Directory flag.
     bool directory_;
 };
@@ -63,15 +63,15 @@ public:
     /// Set fileselector UI style.
     void SetDefaultStyle(XMLFile* style);
     /// Set title text.
-    void SetTitle(const String& text);
+    void SetTitle(const stl::string& text);
     /// Set button texts.
-    void SetButtonTexts(const String& okText, const String& cancelText);
+    void SetButtonTexts(const stl::string& okText, const stl::string& cancelText);
     /// Set current path.
-    void SetPath(const String& path);
+    void SetPath(const stl::string& path);
     /// Set current filename.
-    void SetFileName(const String& fileName);
+    void SetFileName(const stl::string& fileName);
     /// Set filters.
-    void SetFilters(const stl::vector<String>& filters, unsigned defaultIndex);
+    void SetFilters(const stl::vector<stl::string>& filters, unsigned defaultIndex);
     /// Set directory selection mode. Default false.
     void SetDirectoryMode(bool enable);
     /// Update elements to layout properly. Call this after manually adjusting the sub-elements.
@@ -108,15 +108,15 @@ public:
     Button* GetCloseButton() const { return closeButton_; }
 
     /// Return window title.
-    const String& GetTitle() const;
+    const stl::string& GetTitle() const;
 
     /// Return current path.
-    const String& GetPath() const { return path_; }
+    const stl::string& GetPath() const { return path_; }
 
     /// Return current filename.
-    const String& GetFileName() const;
+    const stl::string& GetFileName() const;
     /// Return current filter.
-    const String& GetFilter() const;
+    const stl::string& GetFilter() const;
     /// Return current filter index.
     unsigned GetFilterIndex() const;
 
@@ -125,7 +125,7 @@ public:
 
 private:
     /// Set the text of an edit field and ignore the resulting event.
-    void SetLineEditText(LineEdit* edit, const String& text);
+    void SetLineEditText(LineEdit* edit, const stl::string& text);
     /// Refresh the directory listing.
     void RefreshFiles();
     /// Enter a directory or confirm a file. Return true if a directory entered.
@@ -176,13 +176,13 @@ private:
     /// Button layout.
     stl::shared_ptr<UIElement> buttonLayout_;
     /// Current directory.
-    String path_;
+    stl::string path_;
     /// Filters.
-    stl::vector<String> filters_;
+    stl::vector<stl::string> filters_;
     /// File entries.
     stl::vector<FileSelectorEntry> fileEntries_;
     /// Filter used to get the file list.
-    String lastUsedFilter_;
+    stl::string lastUsedFilter_;
     /// Directory mode flag.
     bool directoryMode_;
     /// Ignore events flag, used when changing line edits manually.

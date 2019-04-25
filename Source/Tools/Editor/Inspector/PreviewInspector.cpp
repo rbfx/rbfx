@@ -63,7 +63,7 @@ void PreviewInspector::SetModel(Model* model)
     node_->SetWorldPosition(node_->GetWorldPosition() - staticModel->GetWorldBoundingBox().Center());
 }
 
-void PreviewInspector::SetModel(const String& resourceName)
+void PreviewInspector::SetModel(const stl::string& resourceName)
 {
     SetModel(GetCache()->GetResource<Model>(resourceName));
 }
@@ -138,7 +138,7 @@ void PreviewInspector::SetEffectSource(RenderPath* renderPath)
     auto* light = view_.GetCamera()->GetComponent<Light>();
     for (auto& command: renderPath->commands_)
     {
-        if (command.pixelShaderName_.StartsWith("PBR"))
+        if (command.pixelShaderName_.starts_with("PBR"))
         {
             // Lights in PBR scenes need modifications, otherwise obects in material preview look very dark
             light->SetUsePhysicalValues(true);

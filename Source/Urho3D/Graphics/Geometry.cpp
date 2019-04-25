@@ -100,8 +100,8 @@ bool Geometry::SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned in
     }
     if (indexBuffer_ && indexStart + indexCount > indexBuffer_->GetIndexCount())
     {
-        URHO3D_LOGERROR("Illegal draw range " + String(indexStart) + " to " + String(indexStart + indexCount - 1) + ", index buffer has " +
-                 String(indexBuffer_->GetIndexCount()) + " indices");
+        URHO3D_LOGERROR("Illegal draw range " + stl::to_string(indexStart) + " to " + stl::to_string(indexStart + indexCount - 1) + ", index buffer has " +
+                 stl::to_string(indexBuffer_->GetIndexCount()) + " indices");
         return false;
     }
 
@@ -135,8 +135,8 @@ bool Geometry::SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned in
         // We can allow setting an illegal draw range now if the caller guarantees to resize / fill the buffer later
         if (checkIllegal && indexStart + indexCount > indexBuffer_->GetIndexCount())
         {
-            URHO3D_LOGERROR("Illegal draw range " + String(indexStart) + " to " + String(indexStart + indexCount - 1) +
-                     ", index buffer has " + String(indexBuffer_->GetIndexCount()) + " indices");
+            URHO3D_LOGERROR("Illegal draw range " + stl::to_string(indexStart) + " to " + stl::to_string(indexStart + indexCount - 1) +
+                     ", index buffer has " + stl::to_string(indexBuffer_->GetIndexCount()) + " indices");
             return false;
         }
     }

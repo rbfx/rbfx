@@ -452,7 +452,7 @@ public:
     const float* Data() const { return &w_; }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     /// W coordinate.
     float w_;

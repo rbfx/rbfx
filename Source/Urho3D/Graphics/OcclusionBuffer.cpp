@@ -112,8 +112,8 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
             break;
     }
 
-    URHO3D_LOGDEBUG("Set occlusion buffer size " + String(width_) + "x" + String(height_) + " with " +
-             String(mipBuffers_.size()) + " mip levels and " + String(numThreadBuffers) + " thread buffers");
+    URHO3D_LOGDEBUG("Set occlusion buffer size " + stl::to_string(width_) + "x" + stl::to_string(height_) + " with " +
+             stl::to_string(mipBuffers_.size()) + " mip levels and " + stl::to_string(numThreadBuffers) + " thread buffers");
 
     CalculateViewport();
     return true;

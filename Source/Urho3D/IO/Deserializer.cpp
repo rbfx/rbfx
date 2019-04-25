@@ -50,9 +50,9 @@ unsigned Deserializer::SeekRelative(int delta)
     return Seek(GetPosition() + delta);
 }
 
-const String& Deserializer::GetName() const
+const stl::string& Deserializer::GetName() const
 {
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
 unsigned Deserializer::GetChecksum()
@@ -244,9 +244,9 @@ BoundingBox Deserializer::ReadBoundingBox()
     return BoundingBox(Vector3(&data[0]), Vector3(&data[3]));
 }
 
-String Deserializer::ReadString()
+stl::string Deserializer::ReadString()
 {
-    String ret;
+    stl::string ret;
 
     while (!IsEof())
     {
@@ -260,10 +260,10 @@ String Deserializer::ReadString()
     return ret;
 }
 
-String Deserializer::ReadFileID()
+stl::string Deserializer::ReadFileID()
 {
-    String ret;
-    ret.Resize(4);
+    stl::string ret;
+    ret.resize(4);
     Read(&ret[0], 4);
     return ret;
 }
@@ -460,9 +460,9 @@ unsigned Deserializer::ReadNetID()
     return ret;
 }
 
-String Deserializer::ReadLine()
+stl::string Deserializer::ReadLine()
 {
-    String ret;
+    stl::string ret;
 
     while (!IsEof())
     {

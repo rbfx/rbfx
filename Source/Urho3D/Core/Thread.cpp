@@ -62,7 +62,7 @@ DWORD WINAPI Thread::ThreadFunctionStatic(void* data)
 
     // Borrowed from SDL_systhread.c
     if (pSetThreadDescription)
-        pSetThreadDescription(GetCurrentThread(), WString(thread->name_).CString());
+        pSetThreadDescription(GetCurrentThread(), WString(thread->name_).c_str());
     else if (IsDebuggerPresent())
     {
         // Presumably some version of Visual Studio will understand SetThreadDescription(),
@@ -77,7 +77,7 @@ DWORD WINAPI Thread::ThreadFunctionStatic(void* data)
             // This magic tells the debugger to name a thread if it's listening.
             SDL_zero(inf);
             inf.dwType = 0x1000;
-            inf.szName = thread->name_.CString();
+            inf.szName = thread->name_.c_str();
             inf.dwThreadID = (DWORD) -1;
             inf.dwFlags = 0;
 
@@ -97,14 +97,14 @@ void* Thread::ThreadFunctionStatic(void* data)
     auto* thread = static_cast<Thread*>(data);
 #if defined(__ANDROID_API__)
 #if __ANDROID_API__ < 26
-    prctl(PR_SET_NAME, thread->name_.CString(), 0, 0, 0);
+    prctl(PR_SET_NAME, thread->name_.c_str(), 0, 0, 0);
 #else
-    pthread_setname_np(pthread_self(), thread->name_.CString(), thread->name_.Length());
+    pthread_setname_np(pthread_self(), thread->name_.c_str(), thread->name_.Length());
 #endif
 #elif defined(__linux__)
-    pthread_setname_np(pthread_self(), thread->name_.CString());
+    pthread_setname_np(pthread_self(), thread->name_.c_str());
 #elif defined(__MACOSX__) || defined(__IPHONEOS__)
-    pthread_setname_np(thread->name_.CString());
+    pthread_setname_np(thread->name_.c_str());
 #endif
 
     thread->ThreadFunction();
@@ -117,7 +117,7 @@ void* Thread::ThreadFunctionStatic(void* data)
 
 ThreadID Thread::mainThreadID;
 
-Thread::Thread(const String& name) :
+Thread::Thread(const stl::string& name) :
     handle_(nullptr),
     shouldRun_(false),
     name_(name)
@@ -213,7 +213,7 @@ bool Thread::IsMainThread()
 #endif // URHO3D_THREADING
 }
 
-void Thread::SetName(const String& name)
+void Thread::SetName(const stl::string& name)
 {
     if (handle_ != nullptr)
     {

@@ -37,9 +37,9 @@ namespace Urho3D
 static const unsigned ERROR_BUFFER_SIZE = 256;
 static const unsigned READ_BUFFER_SIZE = 65536; // Must be a power of two
 
-HttpRequest::HttpRequest(const String& url, const String& verb, const stl::vector<String>& headers, const String& postData) :
-    url_(url.Trimmed()),
-    verb_(!verb.Empty() ? verb : "GET"),
+HttpRequest::HttpRequest(const stl::string& url, const stl::string& verb, const stl::vector<stl::string>& headers, const stl::string& postData) :
+    url_(url.trimmed()),
+    verb_(!verb.empty() ? verb : "GET"),
     headers_(headers),
     postData_(postData),
     state_(HTTP_INITIALIZING),
@@ -69,66 +69,66 @@ HttpRequest::~HttpRequest()
 
 void HttpRequest::ThreadFunction()
 {
-    String protocol = "http";
-    String host;
-    String path = "/";
+    stl::string protocol = "http";
+    stl::string host;
+    stl::string path = "/";
     int port = 80;
 
-    unsigned protocolEnd = url_.Find("://");
-    if (protocolEnd != String::NPOS)
+    unsigned protocolEnd = url_.find("://");
+    if (protocolEnd != stl::string::npos)
     {
-        protocol = url_.Substring(0, protocolEnd);
-        host = url_.Substring(protocolEnd + 3);
+        protocol = url_.substr(0, protocolEnd);
+        host = url_.substr(protocolEnd + 3);
     }
     else
         host = url_;
 
-    unsigned pathStart = host.Find('/');
-    if (pathStart != String::NPOS)
+    unsigned pathStart = host.find('/');
+    if (pathStart != stl::string::npos)
     {
-        path = host.Substring(pathStart);
-        host = host.Substring(0, pathStart);
+        path = host.substr(pathStart);
+        host = host.substr(0, pathStart);
     }
 
-    unsigned portStart = host.Find(':');
-    if (portStart != String::NPOS)
+    unsigned portStart = host.find(':');
+    if (portStart != stl::string::npos)
     {
-        port = ToInt(host.Substring(portStart + 1));
-        host = host.Substring(0, portStart);
+        port = ToInt(host.substr(portStart + 1));
+        host = host.substr(0, portStart);
     }
 
     char errorBuffer[ERROR_BUFFER_SIZE];
     memset(errorBuffer, 0, sizeof(errorBuffer));
 
-    String headersStr;
+    stl::string headersStr;
     for (unsigned i = 0; i < headers_.size(); ++i)
     {
         // Trim and only add non-empty header strings
-        String header = headers_[i].Trimmed();
-        if (header.Length())
+        stl::string header = headers_[i].trimmed();
+        if (header.length())
             headersStr += header + "\r\n";
     }
 
     // Initiate the connection. This may block due to DNS query
     /// \todo SSL mode will not actually work unless Civetweb's SSL mode is initialized with an external SSL DLL
     mg_connection* connection = nullptr;
-    if (postData_.Empty())
+    if (postData_.empty())
     {
-        connection = mg_download(host.CString(), port, protocol.Compare("https", false) ? 0 : 1, errorBuffer, sizeof(errorBuffer),
+        connection = mg_download(host.c_str(), port, protocol.comparei("https") ? 0 : 1, errorBuffer, sizeof(errorBuffer),
             "%s %s HTTP/1.0\r\n"
             "Host: %s\r\n"
             "%s"
-            "\r\n", verb_.CString(), path.CString(), host.CString(), headersStr.CString());
+            "\r\n", verb_.c_str(), path.c_str(), host.c_str(), headersStr.c_str());
     }
     else
     {
-        connection = mg_download(host.CString(), port, protocol.Compare("https", false) ? 0 : 1, errorBuffer, sizeof(errorBuffer),
+        connection = mg_download(host.c_str(), port, protocol.comparei("https") ? 0 : 1, errorBuffer, sizeof(errorBuffer),
             "%s %s HTTP/1.0\r\n"
             "Host: %s\r\n"
             "%s"
             "Content-Length: %d\r\n"
             "\r\n"
-            "%s", verb_.CString(), path.CString(), host.CString(), headersStr.CString(), postData_.Length(), postData_.CString());
+            "%s", verb_.c_str(), path.c_str(), host.c_str(), headersStr.c_str(), postData_.length(), postData_.c_str());
     }
 
     {
@@ -138,7 +138,7 @@ void HttpRequest::ThreadFunction()
         // If no connection could be made, store the error and exit
         if (state_ == HTTP_ERROR)
         {
-            error_ = String(&errorBuffer[0]);
+            error_ = stl::string(&errorBuffer[0]);
             return;
         }
     }
@@ -269,7 +269,7 @@ bool HttpRequest::IsEof() const
     return CheckAvailableSizeAndEof().second;
 }
 
-String HttpRequest::GetError() const
+stl::string HttpRequest::GetError() const
 {
     MutexLock lock(mutex_);
     return error_;

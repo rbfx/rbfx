@@ -46,9 +46,9 @@ void SubprocessExec::RegisterObject(Context* context)
 {
     context->RegisterFactory<SubprocessExec>();
     URHO3D_COPY_BASE_ATTRIBUTES(Converter);
-    URHO3D_ATTRIBUTE("exec", String, executable_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("exec", stl::string, executable_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE("args", StringVector, args_, {}, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("output", String, output_, String::EMPTY, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("output", stl::string, output_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ATTRIBUTE("reschedule", StringVector, reschedule_, {}, AM_DEFAULT);
 }
 
@@ -56,13 +56,13 @@ void SubprocessExec::Execute(const StringVector& input)
 {
     auto* project = GetSubsystem<Project>();
     auto* fs = GetFileSystem();
-    const String& cachePath = project->GetCachePath();
-    String editorExecutable = fs->GetProgramFileName();
-    String executable = executable_;
-    String output, outputRelative;
+    const stl::string& cachePath = project->GetCachePath();
+    stl::string editorExecutable = fs->GetProgramFileName();
+    stl::string executable = executable_;
+    stl::string output, outputRelative;
 
-    auto insertVariables = [&](const String& arg, const String& resourceName=String::EMPTY) {
-        String resourcePath = project->GetResourcePath() + resourceName;
+    auto insertVariables = [&](const stl::string& arg, const stl::string& resourceName=EMPTY_STRING) {
+        stl::string resourcePath = project->GetResourcePath() + resourceName;
         if (!fs->Exists(resourcePath))
             resourcePath = project->GetCachePath() + resourceName;
 
@@ -81,29 +81,29 @@ void SubprocessExec::Execute(const StringVector& input)
     if (!IsAbsolutePath(executable))
         executable = GetPath(fs->GetProgramFileName()) + executable;
 
-    for (const String& resourceName : input)
+    for (const stl::string& resourceName : input)
     {
         StringVector outputFiles;
         output = outputRelative = insertVariables(output_, resourceName);
         output = cachePath + output;
         StringVector args = args_;
         // Insert variables to args
-        for (String& arg : args)
+        for (stl::string& arg : args)
             arg = insertVariables(arg, resourceName);
 
         int result = 0;
-        String logOutput;
-        HashMap<String, unsigned> dirListingBefore;
+        stl::string logOutput;
+        HashMap<stl::string, unsigned> dirListingBefore;
         if (project->GetPipeline().LockResourcePath(output))
         {
             // Scan output path
             StringVector list;
-            if (output.EndsWith("/"))
+            if (output.ends_with("/"))
             {
                 if (fs->DirExists(output))
                 {
                     fs->ScanDir(list, output, "*", SCAN_FILES, true);
-                    for (const String& path : list)
+                    for (const stl::string& path : list)
                         dirListingBefore[path] = fs->GetLastModifiedTime(output + path);
                 }
                 else
@@ -111,7 +111,7 @@ void SubprocessExec::Execute(const StringVector& input)
             }
             else
             {
-                String outputDir = GetParentPath(output);
+                stl::string outputDir = GetParentPath(output);
                 if (!fs->DirExists(outputDir))
                     fs->CreateDirsRecursive(outputDir);
             }
@@ -123,7 +123,7 @@ void SubprocessExec::Execute(const StringVector& input)
             {
                 // Scan output path again
                 fs->ScanDir(list, output, "*", SCAN_FILES, true);
-                for (const String& path : list)
+                for (const stl::string& path : list)
                 {
                     if (!dirListingBefore.Contains(path) ||
                         dirListingBefore[path] < fs->GetLastModifiedTime(output + path))
@@ -137,17 +137,17 @@ void SubprocessExec::Execute(const StringVector& input)
 
         auto logger = Log::GetLogger("pipeline");
 
-        StringVector lines = logOutput.Split('\n');
-        for (const String& line : lines)
+        StringVector lines = logOutput.split('\n');
+        for (const stl::string& line : lines)
         {
             // Likely printing a progress. TODO: what of MacOS?
-            if (line.StartsWith("\b") || line.EndsWith("\r"))
+            if (line.starts_with("\b") || line.ends_with("\r"))
                 continue;
 
             bool blacklisted = false;
             for (const char* blacklistedMsg : subprocessLogMsgBlacklist)
             {
-                if (line.EndsWith(blacklistedMsg))
+                if (line.ends_with(blacklistedMsg))
                 {
                     blacklisted = true;
                     break;
@@ -159,21 +159,21 @@ void SubprocessExec::Execute(const StringVector& input)
         }
 
         if (result != 0)
-            logger.Error("Failed SubprocessExec({}): {} {}", result, executable, String::Joined(args, " "));
+            logger.Error("Failed SubprocessExec({}): {} {}", result, executable, stl::string::joined(args, " "));
 
-        if (!output_.Empty())
+        if (!output_.empty())
             project->GetPipeline().AddCacheEntry(resourceName, outputFiles);
 
         if (!reschedule_.empty())
         {
             stl::vector<std::regex> reschedulePatterns;
-            for (const String& glob : reschedule_)
+            for (const stl::string& glob : reschedule_)
                 reschedulePatterns.push_back(GlobToRegex(insertVariables(glob, resourceName)));
 
             // In some cases processing file may produce extra files that should be once again processed by the pipeline.
             // For example fbx model may contain embedded textures which get extracted to Cache folder upon conversion.
             // We want those textures to be compressed to hardware-supported format.
-            for (const String& outputFile : outputFiles)
+            for (const stl::string& outputFile : outputFiles)
             {
                 if (MatchesAny(outputFile, reschedulePatterns))
                     project->GetPipeline().Reschedule(outputFile);

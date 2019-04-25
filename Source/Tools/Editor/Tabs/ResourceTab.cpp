@@ -43,7 +43,7 @@
 namespace Urho3D
 {
 
-static HashMap<ContentType, String> contentToTabType{
+static HashMap<ContentType, stl::string> contentToTabType{
     {CTYPE_SCENE, "SceneTab"},
     {CTYPE_UILAYOUT, "UITab"},
 };
@@ -75,7 +75,7 @@ ResourceTab::ResourceTab(Context* context)
         if (GetCache()->RenameResource(sourceName, destName))
             resourceSelection_ = GetFileNameAndExtension(destName);
         else
-            URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", sourceName.CString(), destName.CString());
+            URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", sourceName.c_str(), destName.c_str());
     });
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, [&](StringHash, VariantMap& args) {
         using namespace ResourceBrowserDelete;
@@ -93,7 +93,7 @@ bool ResourceTab::RenderWindowContent()
     auto action = ResourceBrowserWidget(resourcePath_, resourceSelection_, flags_);
     if (action == RBR_ITEM_OPEN)
     {
-        String selected = resourcePath_ + resourceSelection_;
+        stl::string selected = resourcePath_ + resourceSelection_;
         auto it = contentToTabType.Find(GetContentType(selected));
         if (it != contentToTabType.End())
         {
@@ -129,7 +129,7 @@ bool ResourceTab::RenderWindowContent()
         else
         {
             // Unknown resources are opened with associated application.
-            String resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
+            stl::string resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
             if (!GetFileSystem()->Exists(resourcePath))
                 resourcePath = GetSubsystem<Project>()->GetCachePath() + selected;
 
@@ -141,7 +141,7 @@ bool ResourceTab::RenderWindowContent()
         ui::OpenPopup("Resource Context Menu");
     else if (action == RBR_ITEM_SELECTED)
     {
-        String selected = resourcePath_ + resourceSelection_;
+        stl::string selected = resourcePath_ + resourceSelection_;
         switch (GetContentType(selected))
         {
 //        case CTYPE_UNKNOWN:break;
@@ -174,15 +174,15 @@ bool ResourceTab::RenderWindowContent()
         {
             if (ui::MenuItem(ICON_FA_FOLDER " Folder"))
             {
-                String newFolderName("New Folder");
-                String path = GetNewResourcePath(resourcePath_ + newFolderName);
+                stl::string newFolderName("New Folder");
+                stl::string path = GetNewResourcePath(resourcePath_ + newFolderName);
                 if (GetFileSystem()->CreateDir(path))
                 {
                     flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
                     resourceSelection_ = newFolderName;
                 }
                 else
-                    URHO3D_LOGERRORF("Failed creating folder '%s'.", path.CString());
+                    URHO3D_LOGERRORF("Failed creating folder '%s'.", path.c_str());
             }
 
             if (ui::MenuItem("Scene"))
@@ -200,7 +200,7 @@ bool ResourceTab::RenderWindowContent()
                     resourceSelection_ = GetFileNameAndExtension(path);
                 }
                 else
-                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
+                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.c_str());
             }
 
             if (ui::MenuItem("Material"))
@@ -217,7 +217,7 @@ bool ResourceTab::RenderWindowContent()
                     resourceSelection_ = GetFileNameAndExtension(path);
                 }
                 else
-                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
+                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.c_str());
             }
 
             if (ui::MenuItem("UI Layout"))
@@ -234,14 +234,14 @@ bool ResourceTab::RenderWindowContent()
                     resourceSelection_ = GetFileNameAndExtension(path);
                 }
                 else
-                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.CString());
+                    URHO3D_LOGERRORF("Failed opening file '%s'.", path.c_str());
             }
 
             ui::EndMenu();
         }
 
         if (ui::MenuItem("Copy Path"))
-            SDL_SetClipboardText((resourcePath_ + resourceSelection_).CString());
+            SDL_SetClipboardText((resourcePath_ + resourceSelection_).c_str());
 
         if (ui::MenuItem("Rename", "F2"))
             flags_ |= RBF_RENAME_CURRENT;
@@ -255,7 +255,7 @@ bool ResourceTab::RenderWindowContent()
     return true;
 }
 
-String ResourceTab::GetNewResourcePath(const String& name)
+stl::string ResourceTab::GetNewResourcePath(const stl::string& name)
 {
     auto* project = GetSubsystem<Project>();
     if (!GetFileSystem()->FileExists(project->GetResourcePath() + name))
@@ -267,7 +267,7 @@ String ResourceTab::GetNewResourcePath(const String& name)
 
     for (auto i = 1; i < M_MAX_INT; i++)
     {
-        auto newName = project->GetResourcePath() + ToString("%s%s %d%s", basePath.CString(), baseName.CString(), i, ext.CString());
+        auto newName = project->GetResourcePath() + ToString("%s%s %d%s", basePath.c_str(), baseName.c_str(), i, ext.c_str());
         if (!GetFileSystem()->FileExists(newName))
             return newName;
     }
@@ -276,7 +276,7 @@ String ResourceTab::GetNewResourcePath(const String& name)
 }
 
 template<typename Inspector, typename TResource>
-void ResourceTab::OpenResourceInspector(const String& resourcePath)
+void ResourceTab::OpenResourceInspector(const stl::string& resourcePath)
 {
     ResourceInspector* inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
     SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, inspector,

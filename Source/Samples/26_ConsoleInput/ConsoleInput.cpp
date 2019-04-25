@@ -107,8 +107,8 @@ void ConsoleInput::HandleConsoleCommand(StringHash eventType, VariantMap& eventD
 void ConsoleInput::HandleUpdate(StringHash eventType, VariantMap& eventData)
 {
     // Check if there is input from stdin
-    String input = GetConsoleInput();
-    if (input.Length())
+    stl::string input = GetConsoleInput();
+    if (input.length())
         HandleInput(input);
 }
 
@@ -134,10 +134,10 @@ void ConsoleInput::StartGame()
     urhoThreat_ = 0;
 }
 
-void ConsoleInput::EndGame(const String& message)
+void ConsoleInput::EndGame(const stl::string& message)
 {
     Print(message);
-    Print("Game over! You survived " + String(numTurns_) + " turns.\n"
+    Print("Game over! You survived " + stl::to_string(numTurns_) + " turns.\n"
           "Do you want to play again (Y/N)?");
 
     gameOn_ = false;
@@ -160,7 +160,7 @@ void ConsoleInput::Advance()
         ++urhoThreat_;
 
     if (urhoThreat_ > 0)
-        Print(String(urhoThreatLevels[urhoThreat_ - 1]) + ".");
+        Print(stl::string(urhoThreatLevels[urhoThreat_ - 1]) + ".");
 
     if ((numTurns_ & 3u) == 0 && !eatenLastTurn_)
     {
@@ -171,7 +171,7 @@ void ConsoleInput::Advance()
             return;
         }
         else
-            Print("You are " + String(hungerLevels[hunger_]) + ".");
+            Print("You are " + stl::string(hungerLevels[hunger_]) + ".");
     }
 
     eatenLastTurn_ = false;
@@ -190,10 +190,12 @@ void ConsoleInput::Advance()
     ++numTurns_;
 }
 
-void ConsoleInput::HandleInput(const String& input)
+void ConsoleInput::HandleInput(const stl::string& input)
 {
-    String inputLower = input.ToLower().Trimmed();
-    if (inputLower.Empty())
+    stl::string inputLower = input.to_lower();
+    inputLower.trim();
+
+    if (inputLower.empty())
     {
         Print("Empty input given!");
         return;
@@ -207,7 +209,7 @@ void ConsoleInput::HandleInput(const String& input)
         if (inputLower == "help")
             Print("The following commands are available: 'eat', 'hide', 'wait', 'score', 'quit'.");
         else if (inputLower == "score")
-            Print("You have survived " + String(numTurns_) + " turns.");
+            Print("You have survived " + stl::to_string(numTurns_) + " turns.");
         else if (inputLower == "eat")
         {
             if (foodAvailable_)
@@ -222,7 +224,7 @@ void ConsoleInput::HandleInput(const String& input)
                     return;
                 }
                 else
-                    Print("You are now " + String(hungerLevels[hunger_]) + ".");
+                    Print("You are now " + stl::string(hungerLevels[hunger_]) + ".");
             }
             else
                 Print("There is no food available.");
@@ -267,7 +269,7 @@ void ConsoleInput::HandleInput(const String& input)
     }
 }
 
-void ConsoleInput::Print(const String& output)
+void ConsoleInput::Print(const stl::string& output)
 {
     // Logging appears both in the engine console and stdout
     URHO3D_LOGRAW(output + "\n");

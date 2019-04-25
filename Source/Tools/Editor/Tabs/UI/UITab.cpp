@@ -86,10 +86,10 @@ void UITab::RenderHierarchy()
 void UITab::RenderNodeTree(UIElement* element)
 {
     stl::shared_ptr<UIElement> elementRef(element);
-    String name = element->GetName();
-    String type = element->GetTypeName();
-    String tooltip = "Type: " + type;
-    if (name.Empty())
+    stl::string name = element->GetName();
+    stl::string type = element->GetTypeName();
+    stl::string tooltip = "Type: " + type;
+    if (name.empty())
         name = type;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
     bool isInternal = element->IsInternal();
@@ -99,7 +99,7 @@ void UITab::RenderNodeTree(UIElement* element)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
     if (showInternal_)
-        tooltip += String("\nInternal: ") + (isInternal ? "true" : "false");
+        tooltip += stl::string("\nInternal: ") + (isInternal ? "true" : "false");
 
     if (element == selectedElement_)
         flags |= ImGuiTreeNodeFlags_Selected;
@@ -107,12 +107,12 @@ void UITab::RenderNodeTree(UIElement* element)
     ui::Image(element->GetTypeName());
     ui::SameLine();
 
-    auto treeExpanded = ui::TreeNodeEx(element, flags, "%s", name.CString());
+    auto treeExpanded = ui::TreeNodeEx(element, flags, "%s", name.c_str());
 
     if (ui::BeginDragDropSource())
     {
         ui::SetDragDropVariant("ptr", (void*)element);
-        ui::Text("%s", name.CString());
+        ui::Text("%s", name.c_str());
         ui::EndDragDropSource();
     }
 
@@ -135,7 +135,7 @@ void UITab::RenderNodeTree(UIElement* element)
     if (treeExpanded)
     {
         if (ui::IsItemHovered())
-            ui::SetTooltip("%s", tooltip.CString());
+            ui::SetTooltip("%s", tooltip.c_str());
 
         if (ui::IsItemHovered())
         {
@@ -325,14 +325,14 @@ IntRect UITab::UpdateViewRect()
     return rect;
 }
 
-bool UITab::LoadResource(const String& resourcePath)
+bool UITab::LoadResource(const stl::string& resourcePath)
 {
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
 
     if (GetContentType(resourcePath) != CTYPE_UILAYOUT)
     {
-        URHO3D_LOGERRORF("%s is not a UI layout.", resourcePath.CString());
+        URHO3D_LOGERRORF("%s is not a UI layout.", resourcePath.c_str());
         return false;
     }
 
@@ -342,13 +342,13 @@ bool UITab::LoadResource(const String& resourcePath)
     rootElement_->RemoveAllChildren();
 
     UIElement* layoutElement = nullptr;
-    if (resourcePath.EndsWith(".xml"))
+    if (resourcePath.ends_with(".xml"))
     {
         stl::shared_ptr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
         if (file)
         {
-            String type = file->GetRoot().GetAttribute("type");
-            if (type.Empty())
+            stl::string type = file->GetRoot().GetAttribute("type");
+            if (type.empty())
                 type = "UIElement";
             auto* child = rootElement_->CreateChild(StringHash(type));
             if (child->LoadXML(file->GetRoot()))
@@ -358,7 +358,7 @@ bool UITab::LoadResource(const String& resourcePath)
         }
         else
         {
-            URHO3D_LOGERRORF("Loading file %s failed.", resourcePath.CString());
+            URHO3D_LOGERRORF("Loading file %s failed.", resourcePath.c_str());
             cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
             return false;
         }
@@ -383,7 +383,7 @@ bool UITab::LoadResource(const String& resourcePath)
     }
     else
     {
-        URHO3D_LOGERRORF("Loading UI layout %s failed.", resourcePath.CString());
+        URHO3D_LOGERRORF("Loading UI layout %s failed.", resourcePath.c_str());
         cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
@@ -407,10 +407,10 @@ bool UITab::SaveResource()
         return false;
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    String savePath = cache->GetResourceFileName(resourceName_);
+    stl::string savePath = cache->GetResourceFileName(resourceName_);
     cache->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_);
 
-    if (resourceName_.EndsWith(".xml"))
+    if (resourceName_.ends_with(".xml"))
     {
         XMLFile xml(context_);
         XMLElement root = xml.CreateRoot("element");
@@ -477,7 +477,7 @@ UIElement* UITab::GetSelected() const
 void UITab::SelectItem(UIElement* current)
 {
     if (current == nullptr)
-        textureSelectorAttribute_.Clear();
+        textureSelectorAttribute_.clear();
 
     selectedElement_ = current;
 }
@@ -489,14 +489,14 @@ void UITab::AutoLoadDefaultStyle()
     auto fs = GetSubsystem<FileSystem>();
     for (const auto& dir: cache->GetResourceDirs())
     {
-        stl::vector<String> items;
+        stl::vector<stl::string> items;
         fs->ScanDir(items, dir + "UI", "", SCAN_FILES, false);
 
         for (const auto& fileName : items)
         {
             auto resourcePath = dir + "UI/" + fileName;
             // Icons file is also a style file. Without this ugly workaround sometimes wrong style gets applied.
-            if (GetContentType(resourcePath) == CTYPE_UISTYLE && !resourcePath.EndsWith("Icons.xml"))
+            if (GetContentType(resourcePath) == CTYPE_UISTYLE && !resourcePath.ends_with("Icons.xml"))
             {
                 auto* style = cache->GetResource<XMLFile>(resourcePath);
                 rootElement_->SetDefaultStyle(style);
@@ -505,8 +505,8 @@ void UITab::AutoLoadDefaultStyle()
                 for (auto i = 0; i < styles.Size(); i++)
                 {
                     auto type = styles[i].GetAttribute("type");
-                    if (type.Length() && !styleNames_.contains(type) &&
-                        styles[i].GetAttribute("auto").ToLower() == "false")
+                    if (type.length() && !styleNames_.contains(type) &&
+                        styles[i].GetAttribute("auto").to_lower() == "false")
                         styleNames_.push_back(type);
                 }
                 break;
@@ -525,18 +525,18 @@ void UITab::RenderElementContextMenu()
             auto components = GetSubsystem<Editor>()->GetObjectsByCategory("UI");
             stl::quick_sort(components.begin(), components.end());
 
-            for (const String& component : components)
+            for (const stl::string& component : components)
             {
                 // TODO: element creation with custom styles more usable.
                 if (GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
                 {
                     ui::Image(component);
                     ui::SameLine();
-                    if (ui::BeginMenu(component.CString()))
+                    if (ui::BeginMenu(component.c_str()))
                     {
                         for (auto j = 0; j < styleNames_.size(); j++)
                         {
-                            if (ui::MenuItem(styleNames_[j].CString()))
+                            if (ui::MenuItem(styleNames_[j].c_str()))
                             {
                                 SelectItem(selectedElement_->CreateChild(StringHash(component)));
                                 selectedElement_->SetStyle(styleNames_[j]);
@@ -549,7 +549,7 @@ void UITab::RenderElementContextMenu()
                 {
                     ui::Image(component);
                     ui::SameLine();
-                    if (ui::MenuItem(component.CString()))
+                    if (ui::MenuItem(component.c_str()))
                     {
                         SelectItem(selectedElement_->CreateChild(StringHash(component)));
                         selectedElement_->SetStyleAuto();
@@ -574,7 +574,7 @@ void UITab::RenderElementContextMenu()
     }
 }
 
-String UITab::GetAppliedStyle(UIElement* element)
+stl::string UITab::GetAppliedStyle(UIElement* element)
 {
     if (element == nullptr)
         element = selectedElement_;
@@ -583,7 +583,7 @@ String UITab::GetAppliedStyle(UIElement* element)
         return "";
 
     auto appliedStyle = selectedElement_->GetAppliedStyle();
-    if (appliedStyle.Empty())
+    if (appliedStyle.empty())
         appliedStyle = selectedElement_->GetTypeName();
     return appliedStyle;
 }
@@ -592,7 +592,7 @@ void UITab::RenderRectSelector()
 {
     auto* selected = GetSelected() ? GetSelected()->Cast<BorderImage>() : nullptr;
 
-    if (textureSelectorAttribute_.Empty() || selected == nullptr)
+    if (textureSelectorAttribute_.empty() || selected == nullptr)
         return;
 
     struct State
@@ -683,7 +683,7 @@ void UITab::RenderRectSelector()
     ui::End();
 
     if (!open)
-        textureSelectorAttribute_.Clear();
+        textureSelectorAttribute_.clear();
 }
 
 Variant UITab::GetVariantFromXML(const XMLElement& attribute, const AttributeInfo& info) const
@@ -726,7 +726,7 @@ void UITab::GetStyleData(const AttributeInfo& info, XMLElement& style, XMLElemen
         attribute = style.SelectSinglePrepared(xpAttribute);
         // Go up in style hierarchy
         styleName = style.GetAttribute("Style");
-    } while (attribute.IsNull() && !styleName.Empty() && !style.IsNull());
+    } while (attribute.IsNull() && !styleName.empty() && !style.IsNull());
 
 
     if (!attribute.IsNull() && attribute.GetAttribute("type") != "None")

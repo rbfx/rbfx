@@ -76,13 +76,13 @@ PasteResult SceneClipboard::Paste(Node* node)
     {
         nodeData.Seek(0);
         auto nodeID = nodeData.ReadUInt();
-        stl::shared_ptr<Node> newNode(node->CreateChild(String::EMPTY, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL));
+        stl::shared_ptr<Node> newNode(node->CreateChild(EMPTY_STRING, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL));
         nodeData.Seek(0);
         if (newNode->Load(nodeData))
         {
             newNode->ApplyAttributes();
-            if (!newNode->GetName().Empty())
-                undo_.Track<Undo::EditAttributeAction>(newNode, "Name", String::EMPTY, newNode->GetName());
+            if (!newNode->GetName().empty())
+                undo_.Track<Undo::EditAttributeAction>(newNode, "Name", EMPTY_STRING, newNode->GetName());
             result.nodes_.push_back(newNode);
         }
         else

@@ -160,7 +160,7 @@ void NATPunchtrough::SubscribeToEvents()
     SubscribeToEvent(connectButton_, "Released", URHO3D_HANDLER(NATPunchtrough, HandleConnect));
 }
 
-Button* NATPunchtrough::CreateButton(const String& text, int width, IntVector2 position)
+Button* NATPunchtrough::CreateButton(const stl::string& text, int width, IntVector2 position)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
@@ -179,7 +179,7 @@ Button* NATPunchtrough::CreateButton(const String& text, int width, IntVector2 p
     return button;
 }
 
-LineEdit* NATPunchtrough::CreateLineEdit(const String& placeholder, int width, IntVector2 pos)
+LineEdit* NATPunchtrough::CreateLineEdit(const stl::string& placeholder, int width, IntVector2 pos)
 {
     auto* textEdit = GetSubsystem<UI>()->GetRoot()->CreateChild<LineEdit>("");
     textEdit->SetStyleAuto();
@@ -190,7 +190,7 @@ LineEdit* NATPunchtrough::CreateLineEdit(const String& placeholder, int width, I
     return textEdit;
 }
 
-void NATPunchtrough::CreateLabel(const String& text, IntVector2 pos)
+void NATPunchtrough::CreateLabel(const stl::string& text, IntVector2 pos)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     // Create log element to view latest logs from the system
@@ -202,13 +202,13 @@ void NATPunchtrough::CreateLabel(const String& text, IntVector2 pos)
     label->SetText(text);
 }
 
-void NATPunchtrough::ShowLogMessage(const String& row)
+void NATPunchtrough::ShowLogMessage(const stl::string& row)
 {
     logHistory_.pop_front();
     logHistory_.push_back(row);
 
     // Concatenate all the rows in history
-    String allRows;
+    stl::string allRows;
     for (unsigned i = 0; i < logHistory_.size(); ++i)
         allRows += logHistory_[i] + "\n";
 
@@ -240,7 +240,7 @@ void NATPunchtrough::HandleConnectFailed(StringHash eventType, VariantMap& event
 void NATPunchtrough::HandleStartServer(StringHash eventType, VariantMap& eventData)
 {
     GetSubsystem<Network>()->StartServer(SERVER_PORT);
-    ShowLogMessage("Server: Server started on port: " + String(SERVER_PORT));
+    ShowLogMessage("Server: Server started on port: " + stl::to_string(SERVER_PORT));
 
     // Connect to the NAT server
     GetSubsystem<Network>()->StartNATClient();

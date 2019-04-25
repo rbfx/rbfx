@@ -39,7 +39,7 @@ class Pipeline;
 
 struct ResourcePathLock
 {
-    explicit ResourcePathLock(Pipeline* pipeline, const String& resourcePath);
+    explicit ResourcePathLock(Pipeline* pipeline, const stl::string& resourcePath);
 
     ~ResourcePathLock();
 
@@ -55,7 +55,7 @@ protected:
     ///
     Pipeline* pipeline_{};
     ///
-    String resourcePath_{};
+    stl::string resourcePath_{};
 };
 
 class Pipeline : public Serializable
@@ -73,24 +73,24 @@ public:
     /// Waits until all scheduled work items are complete.
     void WaitForCompletion();
     /// Returns true when assets in the cache are older than source asset.
-    bool IsCacheOutOfDate(const String& resourceName) const;
+    bool IsCacheOutOfDate(const stl::string& resourceName) const;
     /// Remove any cached assets belonging to specified resource.
-    void ClearCache(const String& resourceName);
+    void ClearCache(const stl::string& resourceName);
     /// Register converted asset with the pipeline.
-    void AddCacheEntry(const String& resourceName, const String& cacheResourceName);
+    void AddCacheEntry(const stl::string& resourceName, const stl::string& cacheResourceName);
     /// Register converted asset with the pipeline.
-    void AddCacheEntry(const String& resourceName, const StringVector& cacheResourceNames);
+    void AddCacheEntry(const stl::string& resourceName, const StringVector& cacheResourceNames);
     /// Acquire lock on resource path. Returns object whose lifetime is controls lifetime of the lock. Subsequent calls
     /// when same `resourcePath` is specified will block until result of this function is destroyed.
     /// This "lock" is used to prevent multiple pipeline converters from writing to same folder at the same time. Reason
     /// is that converter process can be anything and it likely does not output any information of written files.
     /// Pipeline needs to track converted files however and this is done by diffing file trees before and after conversion.
     /// Should be called from workers only.
-    ResourcePathLock LockResourcePath(const String& resourcePath);
+    ResourcePathLock LockResourcePath(const stl::string& resourcePath);
     ///
     void SetSkipUpToDateAssets(bool skip) { skipUpToDateAssets_ = skip; }
     ///
-    void Reschedule(const String& resourceName);
+    void Reschedule(const stl::string& resourceName);
     ///
     void CreatePaksAsync();
 
@@ -114,7 +114,7 @@ protected:
         /// Modification time of source file.
         unsigned mtime_;
         /// List of files that
-        stl::hash_set<String> files_;
+        stl::hash_set<stl::string> files_;
     };
 
     /// Collection of top level converters defined in pipeline.
@@ -122,7 +122,7 @@ protected:
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///
-    HashMap<String, CacheEntry> cacheInfo_{};
+    HashMap<stl::string, CacheEntry> cacheInfo_{};
     ///
     Mutex lock_{};
     ///

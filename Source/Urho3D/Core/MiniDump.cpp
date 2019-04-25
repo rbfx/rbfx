@@ -55,17 +55,17 @@ URHO3D_API int WriteMiniDump(const char* applicationName, void* exceptionPointer
     static time_t sysTime;
     time(&sysTime);
     const char* dateTime = ctime(&sysTime);
-    String dateTimeStr = String(dateTime);
+    stl::string dateTimeStr = stl::string(dateTime);
     dateTimeStr.Replace("\n", "");
     dateTimeStr.Replace(":", "");
     dateTimeStr.Replace("/", "");
     dateTimeStr.Replace(' ', '_');
 
-    String miniDumpDir = GetMiniDumpDir();
-    String miniDumpName = miniDumpDir + String(applicationName) + "_" + dateTimeStr + ".dmp";
+    stl::string miniDumpDir = GetMiniDumpDir();
+    stl::string miniDumpName = miniDumpDir + stl::string(applicationName) + "_" + dateTimeStr + ".dmp";
 
-    CreateDirectoryW(WString(miniDumpDir).CString(), nullptr);
-    HANDLE file = CreateFileW(WString(miniDumpName).CString(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ,
+    CreateDirectoryW(WString(miniDumpDir).c_str(), nullptr);
+    HANDLE file = CreateFileW(WString(miniDumpName).c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ,
         nullptr, CREATE_ALWAYS, 0, nullptr);
 
     BOOL success = MiniDumpWriteDump(GetCurrentProcess(), GetCurrentProcessId(), file, MiniDumpWithDataSegs, &info, nullptr, nullptr);

@@ -95,7 +95,7 @@ ResourceCache::~ResourceCache()
 #endif
 }
 
-bool ResourceCache::AddResourceDir(const String& pathName, unsigned priority)
+bool ResourceCache::AddResourceDir(const stl::string& pathName, unsigned priority)
 {
     MutexLock lock(resourceMutex_);
 
@@ -107,12 +107,12 @@ bool ResourceCache::AddResourceDir(const String& pathName, unsigned priority)
     }
 
     // Convert path to absolute
-    String fixedPath = SanitateResourceDirName(pathName);
+    stl::string fixedPath = SanitateResourceDirName(pathName);
 
     // Check that the same path does not already exist
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
     {
-        if (!resourceDirs_[i].Compare(fixedPath, false))
+        if (!resourceDirs_[i].comparei(fixedPath))
             return true;
     }
 
@@ -140,7 +140,7 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
     // Do not add packages that failed to load
     if (!package || !package->GetNumFiles())
     {
-        URHO3D_LOGERRORF("Could not add package file %s due to load failure", package->GetName().CString());
+        URHO3D_LOGERRORF("Could not add package file %s due to load failure", package->GetName().c_str());
         return false;
     }
 
@@ -153,7 +153,7 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
     return true;
 }
 
-bool ResourceCache::AddPackageFile(const String& fileName, unsigned priority)
+bool ResourceCache::AddPackageFile(const stl::string& fileName, unsigned priority)
 {
     stl::shared_ptr<PackageFile> package(new PackageFile(context_));
     return package->Open(fileName) && AddPackageFile(package, priority);
@@ -167,8 +167,8 @@ bool ResourceCache::AddManualResource(Resource* resource)
         return false;
     }
 
-    const String& name = resource->GetName();
-    if (name.Empty())
+    const stl::string& name = resource->GetName();
+    if (name.empty())
     {
         URHO3D_LOGERROR("Manual resource with empty name, can not add");
         return false;
@@ -180,21 +180,21 @@ bool ResourceCache::AddManualResource(Resource* resource)
     return true;
 }
 
-void ResourceCache::RemoveResourceDir(const String& pathName)
+void ResourceCache::RemoveResourceDir(const stl::string& pathName)
 {
     MutexLock lock(resourceMutex_);
 
-    String fixedPath = SanitateResourceDirName(pathName);
+    stl::string fixedPath = SanitateResourceDirName(pathName);
 
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
     {
-        if (!resourceDirs_[i].Compare(fixedPath, false))
+        if (!resourceDirs_[i].comparei(fixedPath))
         {
             resourceDirs_.erase(i);
             // Remove the filewatcher with the matching path
             for (unsigned j = 0; j < fileWatchers_.size(); ++j)
             {
-                if (!fileWatchers_[j]->GetPath().Compare(fixedPath, false))
+                if (!fileWatchers_[j]->GetPath().comparei(fixedPath))
                 {
                     fileWatchers_.erase(j);
                     break;
@@ -223,16 +223,16 @@ void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResource
     }
 }
 
-void ResourceCache::RemovePackageFile(const String& fileName, bool releaseResources, bool forceRelease)
+void ResourceCache::RemovePackageFile(const stl::string& fileName, bool releaseResources, bool forceRelease)
 {
     MutexLock lock(resourceMutex_);
 
     // Compare the name and extension only, not the path
-    String fileNameNoPath = GetFileNameAndExtension(fileName);
+    stl::string fileNameNoPath = GetFileNameAndExtension(fileName);
 
     for (auto i = packages_.begin(); i != packages_.end(); ++i)
     {
-        if (!GetFileNameAndExtension((*i)->GetName()).Compare(fileNameNoPath, false))
+        if (!GetFileNameAndExtension((*i)->GetName()).comparei(fileNameNoPath))
         {
             if (releaseResources)
                 ReleasePackageResources(i->get(), forceRelease);
@@ -243,7 +243,7 @@ void ResourceCache::RemovePackageFile(const String& fileName, bool releaseResour
     }
 }
 
-void ResourceCache::ReleaseResource(StringHash type, const String& name, bool force)
+void ResourceCache::ReleaseResource(StringHash type, const stl::string& name, bool force)
 {
     StringHash nameHash(name);
     const stl::shared_ptr<Resource>& existingRes = FindResource(type, nameHash);
@@ -282,7 +282,7 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
         UpdateResourceGroup(type);
 }
 
-void ResourceCache::ReleaseResources(StringHash type, const String& partialName, bool force)
+void ResourceCache::ReleaseResources(StringHash type, const stl::string& partialName, bool force)
 {
     bool released = false;
 
@@ -293,7 +293,7 @@ void ResourceCache::ReleaseResources(StringHash type, const String& partialName,
              j != i->second_.resources_.End();)
         {
             HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
-            if (current->second_->GetName().Contains(partialName))
+            if (current->second_->GetName().contains(partialName))
             {
                 // If other references exist, do not release, unless forced
                 if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
@@ -309,7 +309,7 @@ void ResourceCache::ReleaseResources(StringHash type, const String& partialName,
         UpdateResourceGroup(type);
 }
 
-void ResourceCache::ReleaseResources(const String& partialName, bool force)
+void ResourceCache::ReleaseResources(const stl::string& partialName, bool force)
 {
     // Some resources refer to others, like materials to textures. Repeat the release logic as many times as necessary to ensure
     // these get released. This is not necessary if forcing release
@@ -324,7 +324,7 @@ void ResourceCache::ReleaseResources(const String& partialName, bool force)
                  j != i->second_.resources_.End();)
             {
                 HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
-                if (current->second_->GetName().Contains(partialName))
+                if (current->second_->GetName().contains(partialName))
                 {
                     // If other references exist, do not release, unless forced
                     if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
@@ -395,7 +395,7 @@ bool ResourceCache::ReloadResource(Resource* resource)
     return false;
 }
 
-void ResourceCache::ReloadResourceWithDependencies(const String& fileName)
+void ResourceCache::ReloadResourceWithDependencies(const stl::string& fileName)
 {
     StringHash fileNameHash(fileName);
     // If the filename is a resource we keep track of, reload it
@@ -485,14 +485,14 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
     }
 }
 
-stl::shared_ptr<File> ResourceCache::GetFile(const String& name, bool sendEventOnFailure)
+stl::shared_ptr<File> ResourceCache::GetFile(const stl::string& name, bool sendEventOnFailure)
 {
     MutexLock lock(resourceMutex_);
 
-    String sanitatedName = SanitateResourceName(name);
+    stl::string sanitatedName = SanitateResourceName(name);
     RouteResourceName(sanitatedName, RESOURCE_GETFILE);
 
-    if (sanitatedName.Length())
+    if (sanitatedName.length())
     {
         File* file = nullptr;
 
@@ -515,7 +515,7 @@ stl::shared_ptr<File> ResourceCache::GetFile(const String& name, bool sendEventO
 
     if (sendEventOnFailure)
     {
-        if (resourceRouters_.size() && sanitatedName.Empty() && !name.Empty())
+        if (resourceRouters_.size() && sanitatedName.empty() && !name.empty())
             URHO3D_LOGERROR("Resource request " + name + " was blocked");
         else
             URHO3D_LOGERROR("Could not find resource " + sanitatedName);
@@ -525,7 +525,7 @@ stl::shared_ptr<File> ResourceCache::GetFile(const String& name, bool sendEventO
             using namespace ResourceNotFound;
 
             VariantMap& eventData = GetEventDataMap();
-            eventData[P_RESOURCENAME] = sanitatedName.Length() ? sanitatedName : name;
+            eventData[P_RESOURCENAME] = sanitatedName.length() ? sanitatedName : name;
             SendEvent(E_RESOURCENOTFOUND, eventData);
         }
     }
@@ -533,9 +533,9 @@ stl::shared_ptr<File> ResourceCache::GetFile(const String& name, bool sendEventO
     return stl::shared_ptr<File>();
 }
 
-Resource* ResourceCache::GetExistingResource(StringHash type, const String& name)
+Resource* ResourceCache::GetExistingResource(StringHash type, const stl::string& name)
 {
-    String sanitatedName = SanitateResourceName(name);
+    stl::string sanitatedName = SanitateResourceName(name);
 
     if (!Thread::IsMainThread())
     {
@@ -544,7 +544,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const String& name
     }
 
     // If empty name, return null pointer immediately
-    if (sanitatedName.Empty())
+    if (sanitatedName.empty())
         return nullptr;
 
     StringHash nameHash(sanitatedName);
@@ -553,9 +553,9 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const String& name
     return existing;
 }
 
-Resource* ResourceCache::GetResource(StringHash type, const String& name, bool sendEventOnFailure)
+Resource* ResourceCache::GetResource(StringHash type, const stl::string& name, bool sendEventOnFailure)
 {
-    String sanitatedName = SanitateResourceName(name);
+    stl::string sanitatedName = SanitateResourceName(name);
 
     if (!Thread::IsMainThread())
     {
@@ -564,7 +564,7 @@ Resource* ResourceCache::GetResource(StringHash type, const String& name, bool s
     }
 
     // If empty name, return null pointer immediately
-    if (sanitatedName.Empty())
+    if (sanitatedName.empty())
         return nullptr;
 
     StringHash nameHash(sanitatedName);
@@ -583,7 +583,7 @@ Resource* ResourceCache::GetResource(StringHash type, const String& name, bool s
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
     {
-        URHO3D_LOGERROR("Could not load unknown resource type " + String(type));
+        URHO3D_LOGERROR("Could not load unknown resource type " + type.ToString());
 
         if (sendEventOnFailure)
         {
@@ -629,12 +629,12 @@ Resource* ResourceCache::GetResource(StringHash type, const String& name, bool s
     return resource;
 }
 
-bool ResourceCache::BackgroundLoadResource(StringHash type, const String& name, bool sendEventOnFailure, Resource* caller)
+bool ResourceCache::BackgroundLoadResource(StringHash type, const stl::string& name, bool sendEventOnFailure, Resource* caller)
 {
 #ifdef URHO3D_THREADING
     // If empty name, fail immediately
-    String sanitatedName = SanitateResourceName(name);
-    if (sanitatedName.Empty())
+    stl::string sanitatedName = SanitateResourceName(name);
+    if (sanitatedName.empty())
         return false;
 
     // First check if already exists as a loaded resource
@@ -649,12 +649,12 @@ bool ResourceCache::BackgroundLoadResource(StringHash type, const String& name, 
 #endif
 }
 
-stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const String& name, bool sendEventOnFailure)
+stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const stl::string& name, bool sendEventOnFailure)
 {
-    String sanitatedName = SanitateResourceName(name);
+    stl::string sanitatedName = SanitateResourceName(name);
 
     // If empty name, return null pointer immediately
-    if (sanitatedName.Empty())
+    if (sanitatedName.empty())
         return stl::shared_ptr<Resource>();
 
     stl::shared_ptr<Resource> resource;
@@ -662,7 +662,7 @@ stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const 
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
     {
-        URHO3D_LOGERROR("Could not load unknown resource type " + String(type));
+        URHO3D_LOGERROR("Could not load unknown resource type " + type.ToString());
 
         if (sendEventOnFailure)
         {
@@ -723,14 +723,14 @@ void ResourceCache::GetResources(stl::vector<Resource*>& result, StringHash type
     }
 }
 
-bool ResourceCache::Exists(const String& name) const
+bool ResourceCache::Exists(const stl::string& name) const
 {
     MutexLock lock(resourceMutex_);
 
-    String sanitatedName = SanitateResourceName(name);
+    stl::string sanitatedName = SanitateResourceName(name);
     RouteResourceName(sanitatedName, RESOURCE_CHECKEXISTS);
 
-    if (sanitatedName.Empty())
+    if (sanitatedName.empty())
         return false;
 
     for (unsigned i = 0; i < packages_.size(); ++i)
@@ -770,7 +770,7 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
     return total;
 }
 
-String ResourceCache::GetResourceFileName(const String& name) const
+stl::string ResourceCache::GetResourceFileName(const stl::string& name) const
 {
     MutexLock lock(resourceMutex_);
 
@@ -784,7 +784,7 @@ String ResourceCache::GetResourceFileName(const String& name) const
     if (IsAbsolutePath(name) && fileSystem->FileExists(name))
         return name;
     else
-        return String();
+        return stl::string();
 }
 
 ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
@@ -792,9 +792,9 @@ ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
     return index < resourceRouters_.size() ? resourceRouters_[index] : nullptr;
 }
 
-String ResourceCache::GetPreferredResourceDir(const String& path) const
+stl::string ResourceCache::GetPreferredResourceDir(const stl::string& path) const
 {
-    String fixedPath = AddTrailingSlash(path);
+    stl::string fixedPath = AddTrailingSlash(path);
 
     bool pathHasKnownDirs = false;
     bool parentHasKnownDirs = false;
@@ -811,7 +811,7 @@ String ResourceCache::GetPreferredResourceDir(const String& path) const
     }
     if (!pathHasKnownDirs)
     {
-        String parentPath = GetParentPath(fixedPath);
+        stl::string parentPath = GetParentPath(fixedPath);
         for (unsigned i = 0; checkDirs[i] != nullptr; ++i)
         {
             if (fileSystem->DirExists(parentPath + checkDirs[i]))
@@ -828,50 +828,52 @@ String ResourceCache::GetPreferredResourceDir(const String& path) const
     return fixedPath;
 }
 
-String ResourceCache::SanitateResourceName(const String& name) const
+stl::string ResourceCache::SanitateResourceName(const stl::string& name) const
 {
     // Sanitate unsupported constructs from the resource name
-    String sanitatedName = GetInternalPath(name);
-    sanitatedName.Replace("../", "");
-    sanitatedName.Replace("./", "");
+    stl::string sanitatedName = GetInternalPath(name);
+    sanitatedName.replace("../", "");
+    sanitatedName.replace("./", "");
 
     // If the path refers to one of the resource directories, normalize the resource name
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (resourceDirs_.size())
     {
-        String namePath = GetPath(sanitatedName);
-        String exePath = fileSystem->GetProgramDir().Replaced("/./", "/");
+        stl::string namePath = GetPath(sanitatedName);
+        stl::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
         for (unsigned i = 0; i < resourceDirs_.size(); ++i)
         {
-            String relativeResourcePath = resourceDirs_[i];
-            if (relativeResourcePath.StartsWith(exePath))
-                relativeResourcePath = relativeResourcePath.Substring(exePath.Length());
+            stl::string relativeResourcePath = resourceDirs_[i];
+            if (relativeResourcePath.starts_with(exePath))
+                relativeResourcePath = relativeResourcePath.substr(exePath.length());
 
-            if (namePath.StartsWith(resourceDirs_[i], false))
-                namePath = namePath.Substring(resourceDirs_[i].Length());
-            else if (namePath.StartsWith(relativeResourcePath, false))
-                namePath = namePath.Substring(relativeResourcePath.Length());
+            if (namePath.starts_with(resourceDirs_[i], false))
+                namePath = namePath.substr(resourceDirs_[i].length());
+            else if (namePath.starts_with(relativeResourcePath, false))
+                namePath = namePath.substr(relativeResourcePath.length());
         }
 
         sanitatedName = namePath + GetFileNameAndExtension(sanitatedName);
     }
 
-    return sanitatedName.Trimmed();
+    sanitatedName.trim();
+    return sanitatedName;
 }
 
-String ResourceCache::SanitateResourceDirName(const String& name) const
+stl::string ResourceCache::SanitateResourceDirName(const stl::string& name) const
 {
-    String fixedPath = AddTrailingSlash(name);
+    stl::string fixedPath = AddTrailingSlash(name);
     if (!IsAbsolutePath(fixedPath))
         fixedPath = GetSubsystem<FileSystem>()->GetCurrentDir() + fixedPath;
 
     // Sanitate away /./ construct
-    fixedPath.Replace("/./", "/");
+    fixedPath.replace("/./", "/");
 
-    return fixedPath.Trimmed();
+    fixedPath.trim();
+    return fixedPath;
 }
 
-void ResourceCache::StoreResourceDependency(Resource* resource, const String& dependency)
+void ResourceCache::StoreResourceDependency(Resource* resource, const stl::string& dependency)
 {
     if (!resource)
         return;
@@ -903,9 +905,9 @@ void ResourceCache::ResetDependencies(Resource* resource)
     }
 }
 
-String ResourceCache::PrintMemoryUsage() const
+stl::string ResourceCache::PrintMemoryUsage() const
 {
-    String output = "Resource Type                 Cnt       Avg       Max    Budget     Total\n\n";
+    stl::string output = "Resource Type                 Cnt       Avg       Max    Budget     Total\n\n";
     char outputLine[256];
 
     unsigned totalResourceCt = 0;
@@ -932,16 +934,16 @@ String ResourceCache::PrintMemoryUsage() const
 
         totalResourceCt += resourceCt;
 
-        const String countString(cit->second_.resources_.Size());
-        const String memUseString = GetFileSizeString(average);
-        const String memMaxString = GetFileSizeString(largest);
-        const String memBudgetString = GetFileSizeString(cit->second_.memoryBudget_);
-        const String memTotalString = GetFileSizeString(cit->second_.memoryUse_);
-        const String resTypeName = context_->GetTypeName(cit->first_);
+        const stl::string countString = stl::to_string(cit->second_.resources_.Size());
+        const stl::string memUseString = GetFileSizeString(average);
+        const stl::string memMaxString = GetFileSizeString(largest);
+        const stl::string memBudgetString = GetFileSizeString(cit->second_.memoryBudget_);
+        const stl::string memTotalString = GetFileSizeString(cit->second_.memoryUse_);
+        const stl::string resTypeName = context_->GetTypeName(cit->first_);
 
         memset(outputLine, ' ', 256);
         outputLine[255] = 0;
-        sprintf(outputLine, "%-28s %4s %9s %9s %9s %9s\n", resTypeName.CString(), countString.CString(), memUseString.CString(), memMaxString.CString(), memBudgetString.CString(), memTotalString.CString());
+        sprintf(outputLine, "%-28s %4s %9s %9s %9s %9s\n", resTypeName.c_str(), countString.c_str(), memUseString.c_str(), memMaxString.c_str(), memBudgetString.c_str(), memTotalString.c_str());
 
         output += ((const char*)outputLine);
     }
@@ -949,14 +951,14 @@ String ResourceCache::PrintMemoryUsage() const
     if (totalResourceCt > 0)
         totalAverage = totalUse / totalResourceCt;
 
-    const String countString(totalResourceCt);
-    const String memUseString = GetFileSizeString(totalAverage);
-    const String memMaxString = GetFileSizeString(totalLargest);
-    const String memTotalString = GetFileSizeString(totalUse);
+    const stl::string countString = stl::to_string(totalResourceCt);
+    const stl::string memUseString = GetFileSizeString(totalAverage);
+    const stl::string memMaxString = GetFileSizeString(totalLargest);
+    const stl::string memTotalString = GetFileSizeString(totalUse);
 
     memset(outputLine, ' ', 256);
     outputLine[255] = 0;
-    sprintf(outputLine, "%-28s %4s %9s %9s %9s %9s\n", "All", countString.CString(), memUseString.CString(), memMaxString.CString(), "-", memTotalString.CString());
+    sprintf(outputLine, "%-28s %4s %9s %9s %9s %9s\n", "All", countString.c_str(), memUseString.c_str(), memMaxString.c_str(), "-", memTotalString.c_str());
     output += ((const char*)outputLine);
 
     return output;
@@ -994,8 +996,8 @@ void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
 {
     stl::hash_set<StringHash> affectedGroups;
 
-    const HashMap<String, PackageEntry>& entries = package->GetEntries();
-    for (HashMap<String, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End(); ++i)
+    const HashMap<stl::string, PackageEntry>& entries = package->GetEntries();
+    for (HashMap<stl::string, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End(); ++i)
     {
         StringHash nameHash(i->first_);
 
@@ -1095,7 +1097,7 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-File* ResourceCache::SearchResourceDirs(const String& name)
+File* ResourceCache::SearchResourceDirs(const stl::string& name)
 {
     auto* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
@@ -1117,7 +1119,7 @@ File* ResourceCache::SearchResourceDirs(const String& name)
     return nullptr;
 }
 
-File* ResourceCache::SearchPackages(const String& name)
+File* ResourceCache::SearchPackages(const stl::string& name)
 {
     for (unsigned i = 0; i < packages_.size(); ++i)
     {
@@ -1136,9 +1138,9 @@ void RegisterResourceLibrary(Context* context)
     XMLFile::RegisterObject(context);
 }
 
-void ResourceCache::Scan(stl::vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const
+void ResourceCache::Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, unsigned flags, bool recursive) const
 {
-    stl::vector<String> interimResult;
+    stl::vector<stl::string> interimResult;
 
     for (unsigned i = 0; i < packages_.size(); ++i)
     {
@@ -1154,12 +1156,12 @@ void ResourceCache::Scan(stl::vector<String>& result, const String& pathName, co
     }
 }
 
-String ResourceCache::PrintResources(const String& typeName) const
+stl::string ResourceCache::PrintResources(const stl::string& typeName) const
 {
 
     StringHash typeNameHash(typeName);
 
-    String output = "Resource Type         Refs   WeakRefs  Name\n\n";
+    stl::string output = "Resource Type         Refs   WeakRefs  Name\n\n";
 
     for (HashMap<StringHash, ResourceGroup>::ConstIterator cit = resourceGroups_.Begin(); cit != resourceGroups_.End(); ++cit)
     {
@@ -1168,10 +1170,11 @@ String ResourceCache::PrintResources(const String& typeName) const
             Resource* resource = resIt->second_;
 
             // filter
-            if (typeName.Length() && resource->GetType() != typeNameHash)
+            if (typeName.length() && resource->GetType() != typeNameHash)
                 continue;
 
-            output.AppendWithFormat("%s     %i     %i     %s\n",resource->GetTypeName().CString(), resource->Refs(), resource->WeakRefs(), resource->GetName().CString());
+            output.append_sprintf("%s     %i     %i     %s\n", resource->GetTypeName().c_str(), resource->Refs(),
+                resource->WeakRefs(), resource->GetName().c_str());
         }
 
     }
@@ -1179,7 +1182,7 @@ String ResourceCache::PrintResources(const String& typeName) const
     return output;
 }
 
-bool ResourceCache::RenameResource(String source, String destination)
+bool ResourceCache::RenameResource(stl::string source, stl::string destination)
 {
     if (!packages_.empty())
     {
@@ -1215,23 +1218,23 @@ bool ResourceCache::RenameResource(String source, String destination)
 
     if (!fileSystem->Rename(source, destination))
     {
-        URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", source.CString(), destination.CString());
+        URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", source.c_str(), destination.c_str());
         return false;
     }
 
-    String resourceName;
-    String destinationName;
+    stl::string resourceName;
+    stl::string destinationName;
     for (const auto& dir : resourceDirs_)
     {
-        if (source.StartsWith(dir))
-            resourceName = source.Substring(dir.Length());
-        if (destination.StartsWith(dir))
-            destinationName = destination.Substring(dir.Length());
+        if (source.starts_with(dir))
+            resourceName = source.substr(dir.length());
+        if (destination.starts_with(dir))
+            destinationName = destination.substr(dir.length());
     }
 
-    if (resourceName.Empty())
+    if (resourceName.empty())
     {
-        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.CString());
+        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.c_str());
         return false;
     }
 
@@ -1243,7 +1246,7 @@ bool ResourceCache::RenameResource(String source, String destination)
         for (auto& resourcePair : resourcesCopy)
         {
             stl::shared_ptr<Resource> resource = resourcePair.second_;
-            if (resource->GetName().StartsWith(resourceName))
+            if (resource->GetName().starts_with(resourceName))
             {
                 if (autoReloadResources_)
                 {
@@ -1267,7 +1270,7 @@ bool ResourceCache::RenameResource(String source, String destination)
     return true;
 }
 
-void ResourceCache::IgnoreResourceReload(const String& name)
+void ResourceCache::IgnoreResourceReload(const stl::string& name)
 {
     ignoreResourceAutoReload_.emplace_back(name);
 }
@@ -1277,7 +1280,7 @@ void ResourceCache::IgnoreResourceReload(const Resource* resource)
     IgnoreResourceReload(resource->GetName());
 }
 
-void ResourceCache::RouteResourceName(String& name, ResourceRequest requestType) const
+void ResourceCache::RouteResourceName(stl::string& name, ResourceRequest requestType) const
 {
     name = SanitateResourceName(name);
     if (!isRouting_)

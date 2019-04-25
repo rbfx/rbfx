@@ -121,7 +121,7 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     interpolation_ = interpolation;
     clipBuffer_.reset(new int[stereo ? fragmentSize_ << 1u : fragmentSize_]);
 
-    URHO3D_LOGINFO("Set audio mode " + String(mixRate_) + " Hz " + (stereo_ ? "stereo" : "mono") + " " +
+    URHO3D_LOGINFO("Set audio mode " + stl::to_string(mixRate_) + " Hz " + (stereo_ ? "stereo" : "mono") + " " +
             (interpolation_ ? "interpolated" : ""));
 
     return Play();
@@ -160,7 +160,7 @@ void Audio::Stop()
     playing_ = false;
 }
 
-void Audio::SetMasterGain(const String& type, float gain)
+void Audio::SetMasterGain(const stl::string& type, float gain)
 {
     masterGain_[type] = Clamp(gain, 0.0f, 1.0f);
 
@@ -168,13 +168,13 @@ void Audio::SetMasterGain(const String& type, float gain)
         (*i)->UpdateMasterGain();
 }
 
-void Audio::PauseSoundType(const String& type)
+void Audio::PauseSoundType(const stl::string& type)
 {
     MutexLock lock(audioMutex_);
     pausedSoundTypes_.insert(type);
 }
 
-void Audio::ResumeSoundType(const String& type)
+void Audio::ResumeSoundType(const stl::string& type)
 {
     MutexLock lock(audioMutex_);
     pausedSoundTypes_.erase(type);
@@ -204,7 +204,7 @@ void Audio::StopSound(Sound* sound)
     }
 }
 
-float Audio::GetMasterGain(const String& type) const
+float Audio::GetMasterGain(const stl::string& type) const
 {
     // By definition previously unknown types return full volume
     HashMap<StringHash, Variant>::ConstIterator findIt = masterGain_.Find(type);
@@ -214,7 +214,7 @@ float Audio::GetMasterGain(const String& type) const
     return findIt->second_.GetFloat();
 }
 
-bool Audio::IsSoundTypePaused(const String& type) const
+bool Audio::IsSoundTypePaused(const stl::string& type) const
 {
     return stl::contains(pausedSoundTypes_, type);
 }

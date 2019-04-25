@@ -39,16 +39,16 @@ struct URHO3D_API ShaderParameter
     /// Construct with defaults.
     ShaderParameter() = default;
     /// Construct with name, glType and location, leaving the remaining attributes zero-initialized (used only in OpenGL).
-    ShaderParameter(const String& name, unsigned glType, int location);
+    ShaderParameter(const stl::string& name, unsigned glType, int location);
     /// Construct with type, name, offset, size, and buffer, leaving the remaining attributes zero-initialized (used only in Direct3D11).
-    ShaderParameter(ShaderType type, const String& name, unsigned offset, unsigned size, unsigned buffer);
+    ShaderParameter(ShaderType type, const stl::string& name, unsigned offset, unsigned size, unsigned buffer);
     /// Construct with type, name, register, and register count, leaving the remaining attributes zero-initialized (used only in Direct3D9).
-    ShaderParameter(ShaderType type, const String& name, unsigned reg, unsigned regCount);
+    ShaderParameter(ShaderType type, const stl::string& name, unsigned reg, unsigned regCount);
 
     /// %Shader type.
     ShaderType type_{};
     /// Name of the parameter.
-    String name_{};
+    stl::string name_{};
 
     union
     {
@@ -93,9 +93,9 @@ public:
     /// Compile the shader. Return true if successful.
     bool Create();
     /// Set name.
-    void SetName(const String& name);
+    void SetName(const stl::string& name);
     /// Set defines.
-    void SetDefines(const String& defines);
+    void SetDefines(const stl::string& defines);
 
     /// Return the owner resource.
     Shader* GetOwner() const;
@@ -104,10 +104,10 @@ public:
     ShaderType GetShaderType() const { return type_; }
 
     /// Return shader name.
-    const String& GetName() const { return name_; }
+    const stl::string& GetName() const { return name_; }
 
     /// Return full shader name.
-    String GetFullName() const { return name_ + "(" + defines_ + ")"; }
+    stl::string GetFullName() const { return name_ + "(" + defines_ + ")"; }
 
     /// Return whether uses a parameter. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
     bool HasParameter(StringHash param) const { return parameters_.Contains(param); }
@@ -125,29 +125,29 @@ public:
     const stl::vector<unsigned char>& GetByteCode() const { return byteCode_; }
 
     /// Return defines.
-    const String& GetDefines() const { return defines_; }
+    const stl::string& GetDefines() const { return defines_; }
 
     /// Return compile error/warning string.
-    const String& GetCompilerOutput() const { return compilerOutput_; }
+    const stl::string& GetCompilerOutput() const { return compilerOutput_; }
 
     /// Return constant buffer data sizes.
     const unsigned* GetConstantBufferSizes() const { return &constantBufferSizes_[0]; }
 
     /// Return defines with the CLIPPLANE define appended. Used internally on Direct3D11 only, will be empty on other APIs.
-    const String& GetDefinesClipPlane() { return definesClipPlane_; }
+    const stl::string& GetDefinesClipPlane() { return definesClipPlane_; }
 
     /// D3D11 vertex semantic names. Used internally.
     static const char* elementSemanticNames[];
 
 private:
     /// Load bytecode from a file. Return true if successful.
-    bool LoadByteCode(const String& binaryShaderName);
+    bool LoadByteCode(const stl::string& binaryShaderName);
     /// Compile from source. Return true if successful.
     bool Compile();
     /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
     void ParseParameters(unsigned char* bufData, unsigned bufSize);
     /// Save bytecode to a file.
-    void SaveByteCode(const String& binaryShaderName);
+    void SaveByteCode(const stl::string& binaryShaderName);
     /// Calculate constant buffer sizes from parameters.
     void CalculateConstantBufferSizes();
 
@@ -166,13 +166,13 @@ private:
     /// Shader bytecode. Needed for inspecting the input signature and parameters. Not used on OpenGL.
     stl::vector<unsigned char> byteCode_;
     /// Shader name.
-    String name_;
+    stl::string name_;
     /// Defines to use in compiling.
-    String defines_;
+    stl::string defines_;
     /// Defines to use in compiling + CLIPPLANE define appended. Used only on Direct3D11.
-    String definesClipPlane_;
+    stl::string definesClipPlane_;
     /// Shader compile error string.
-    String compilerOutput_;
+    stl::string compilerOutput_;
 };
 
 }

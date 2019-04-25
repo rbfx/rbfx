@@ -32,9 +32,8 @@
 namespace Urho3D
 {
 
-SystemMessageBox::SystemMessageBox(Context* context, const String& messageString, const String& titleString) :
+SystemMessageBox::SystemMessageBox(Context* context, const stl::string& messageString, const stl::string& titleString) :
     Object(context),
-    titleText_(0),
     messageText_(messageString),
     isOpen_(true)
 {
@@ -54,22 +53,22 @@ void SystemMessageBox::RegisterObject(Context* context)
     context->RegisterFactory<SystemMessageBox>();
 }
 
-void SystemMessageBox::SetTitle(const String& text)
+void SystemMessageBox::SetTitle(const stl::string& text)
 {
-    titleText_ = ToString("%s##%p", text.CString(), this);
+    titleText_ = ToString("%s##%p", text.c_str(), this);
 }
 
-void SystemMessageBox::SetMessage(const String& text)
+void SystemMessageBox::SetMessage(const stl::string& text)
 {
     messageText_ = text;
 }
 
-const String& SystemMessageBox::GetTitle() const
+const stl::string& SystemMessageBox::GetTitle() const
 {
     return titleText_;
 }
 
-const String& SystemMessageBox::GetMessage() const
+const stl::string& SystemMessageBox::GetMessage() const
 {
     return messageText_;
 }
@@ -79,10 +78,10 @@ void SystemMessageBox::RenderFrame(StringHash eventType, VariantMap& eventData)
     using namespace MessageACK;
     ImGui::SetNextWindowPos(windowPosition_, ImGuiCond_FirstUseEver);
     ImGui::SetNextWindowSize(windowSize_, ImGuiCond_Always);
-    if (ImGui::Begin(titleText_.CString(), &isOpen_, ImGuiWindowFlags_NoCollapse|
+    if (ImGui::Begin(titleText_.c_str(), &isOpen_, ImGuiWindowFlags_NoCollapse|
                      ImGuiWindowFlags_NoSavedSettings))
     {
-        ImGui::TextUnformatted(messageText_.CString());
+        ImGui::TextUnformatted(messageText_.c_str());
         auto region = ImGui::GetContentRegionAvail();
         ImGui::SetCursorPos(ImVec2(region.x - 100 + 20, region.y + 20));
 

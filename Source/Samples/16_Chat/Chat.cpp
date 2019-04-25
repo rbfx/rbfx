@@ -141,7 +141,7 @@ void Chat::SubscribeToEvents()
     SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
 }
 
-Button* Chat::CreateButton(const String& text, int width)
+Button* Chat::CreateButton(const stl::string& text, int width)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
@@ -158,13 +158,13 @@ Button* Chat::CreateButton(const String& text, int width)
     return button;
 }
 
-void Chat::ShowChatText(const String& row)
+void Chat::ShowChatText(const stl::string& row)
 {
     chatHistory_.pop_front();
     chatHistory_.push_back(row);
 
     // Concatenate all the rows in history
-    String allRows;
+    stl::string allRows;
     for (unsigned i = 0; i < chatHistory_.size(); ++i)
         allRows += chatHistory_[i] + "\n";
 
@@ -193,8 +193,8 @@ void Chat::HandleLogMessage(StringHash /*eventType*/, VariantMap& eventData)
 
 void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
 {
-    String text = textEdit_->GetText();
-    if (text.Empty())
+    stl::string text = textEdit_->GetText();
+    if (text.empty())
         return; // Do not send an empty message
 
     auto* network = GetSubsystem<Network>();
@@ -208,18 +208,19 @@ void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
         // Send the chat message as in-order and reliable
         serverConnection->SendMessage(MSG_CHAT, true, true, msg);
         // Empty the text edit after sending
-        textEdit_->SetText(String::EMPTY);
+        textEdit_->SetText(EMPTY_STRING);
     }
 }
 
 void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
 {
     auto* network = GetSubsystem<Network>();
-    String address = textEdit_->GetText().Trimmed();
-    if (address.Empty())
+    stl::string address = textEdit_->GetText();
+    address.trim();
+    if (address.empty())
         address = "localhost"; // Use localhost to connect if nothing else specified
     // Empty the text edit after reading the address to connect to
-    textEdit_->SetText(String::EMPTY);
+    textEdit_->SetText(EMPTY_STRING);
 
     // Connect to server, do not specify a client scene as we are not using scene replication, just messages.
     // At connect time we could also send identity parameters (such as username) in a VariantMap, but in this
@@ -263,7 +264,7 @@ void Chat::HandleNetworkMessage(StringHash /*eventType*/, VariantMap& eventData)
         const stl::vector<unsigned char>& data = eventData[P_DATA].GetBuffer();
         // Use a MemoryBuffer to read the message data so that there is no unnecessary copying
         MemoryBuffer msg(data);
-        String text = msg.ReadString();
+        stl::string text = msg.ReadString();
 
         // If we are the server, prepend the sender's IP address and port and echo to everyone
         // If we are a client, just display the message

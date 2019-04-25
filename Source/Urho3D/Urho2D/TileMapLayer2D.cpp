@@ -251,7 +251,7 @@ TileMap2D* TileMapLayer2D::GetTileMap() const
     return tileMap_;
 }
 
-bool TileMapLayer2D::HasProperty(const String& name) const
+bool TileMapLayer2D::HasProperty(const stl::string& name) const
 {
     if (!tmxLayer_)
         return false;
@@ -259,10 +259,10 @@ bool TileMapLayer2D::HasProperty(const String& name) const
     return tmxLayer_->HasProperty(name);
 }
 
-const String& TileMapLayer2D::GetProperty(const String& name) const
+const stl::string& TileMapLayer2D::GetProperty(const stl::string& name) const
 {
     if (!tmxLayer_)
-        return String::EMPTY;
+        return EMPTY_STRING;
     return tmxLayer_->GetProperty(name);
 }
 

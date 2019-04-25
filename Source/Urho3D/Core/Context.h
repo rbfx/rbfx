@@ -159,7 +159,7 @@ public:
     const HashMap<StringHash, stl::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
-    const HashMap<String, stl::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
+    const HashMap<stl::string, stl::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
 
     /// Return active event sender. Null outside event handling.
     Object* GetEventSender() const;
@@ -168,7 +168,7 @@ public:
     EventHandler* GetEventHandler() const { return eventHandler_; }
 
     /// Return object type name from hash, or empty if unknown.
-    const String& GetTypeName(StringHash objectType) const;
+    const stl::string& GetTypeName(StringHash objectType) const;
     /// Return a specific attribute description for an object, or null if not found.
     AttributeInfo* GetAttribute(StringHash objectType, const char* name);
     /// Template version of returning a subsystem.
@@ -325,7 +325,7 @@ private:
     /// Active event handler. Not stored in a stack for performance reasons; is needed only in esoteric cases.
     EventHandler* eventHandler_;
     /// Object categories.
-    HashMap<String, stl::vector<StringHash> > objectCategories_;
+    HashMap<stl::string, stl::vector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
 

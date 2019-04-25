@@ -76,7 +76,7 @@ public:
     }
 
     /// Process the resource request and optionally modify the resource name string. Empty name string means the resource is not found or not allowed.
-    virtual void Route(String& name, ResourceRequest requestType) = 0;
+    virtual void Route(stl::string& name, ResourceRequest requestType) = 0;
 };
 
 /// %Resource cache subsystem. Loads resources on demand and stores them for later access.
@@ -91,33 +91,33 @@ public:
     ~ResourceCache() override;
 
     /// Add a resource load directory. Optional priority parameter which will control search order.
-    bool AddResourceDir(const String& pathName, unsigned priority = PRIORITY_LAST);
+    bool AddResourceDir(const stl::string& pathName, unsigned priority = PRIORITY_LAST);
     /// Add a package file for loading resources from. Optional priority parameter which will control search order.
     bool AddPackageFile(PackageFile* package, unsigned priority = PRIORITY_LAST);
     /// Add a package file for loading resources from by name. Optional priority parameter which will control search order.
-    bool AddPackageFile(const String& fileName, unsigned priority = PRIORITY_LAST);
+    bool AddPackageFile(const stl::string& fileName, unsigned priority = PRIORITY_LAST);
     /// Add a manually created resource. Must be uniquely named within its type.
     bool AddManualResource(Resource* resource);
     /// Remove a resource load directory.
-    void RemoveResourceDir(const String& pathName);
+    void RemoveResourceDir(const stl::string& pathName);
     /// Remove a package file. Optionally release the resources loaded from it.
     void RemovePackageFile(PackageFile* package, bool releaseResources = true, bool forceRelease = false);
     /// Remove a package file by name. Optionally release the resources loaded from it.
-    void RemovePackageFile(const String& fileName, bool releaseResources = true, bool forceRelease = false);
+    void RemovePackageFile(const stl::string& fileName, bool releaseResources = true, bool forceRelease = false);
     /// Release a resource by name.
-    void ReleaseResource(StringHash type, const String& name, bool force = false);
+    void ReleaseResource(StringHash type, const stl::string& name, bool force = false);
     /// Release all resources of a specific type.
     void ReleaseResources(StringHash type, bool force = false);
     /// Release resources of a specific type and partial name.
-    void ReleaseResources(StringHash type, const String& partialName, bool force = false);
+    void ReleaseResources(StringHash type, const stl::string& partialName, bool force = false);
     /// Release resources of all types by partial name.
-    void ReleaseResources(const String& partialName, bool force = false);
+    void ReleaseResources(const stl::string& partialName, bool force = false);
     /// Release all resources. When called with the force flag false, releases all currently unused resources.
     void ReleaseAllResources(bool force = false);
     /// Reload a resource. Return true on success. The resource will not be removed from the cache in case of failure.
     bool ReloadResource(Resource* resource);
     /// Reload a resource based on filename. Causes also reload of dependent resources if necessary.
-    void ReloadResourceWithDependencies(const String& fileName);
+    void ReloadResourceWithDependencies(const stl::string& fileName);
     /// Set memory budget for a specific resource type, default 0 is unlimited.
     void SetMemoryBudget(StringHash type, unsigned long long budget);
     /// Enable or disable automatic reloading of resources as files are modified. Default false.
@@ -137,43 +137,43 @@ public:
     void RemoveResourceRouter(ResourceRouter* router);
 
     /// Open and return a file from the resource load paths or from inside a package file. If not found, use a fallback search with absolute path. Return null if fails. Can be called from outside the main thread.
-    stl::shared_ptr<File> GetFile(const String& name, bool sendEventOnFailure = true);
+    stl::shared_ptr<File> GetFile(const stl::string& name, bool sendEventOnFailure = true);
     /// Return a resource by type and name. Load if not loaded yet. Return null if not found or if fails, unless SetReturnFailedResources(true) has been called. Can be called only from the main thread.
-    Resource* GetResource(StringHash type, const String& name, bool sendEventOnFailure = true);
+    Resource* GetResource(StringHash type, const stl::string& name, bool sendEventOnFailure = true);
     /// Load a resource without storing it in the resource cache. Return null if not found or if fails. Can be called from outside the main thread if the resource itself is safe to load completely (it does not possess for example GPU data.)
-    stl::shared_ptr<Resource> GetTempResource(StringHash type, const String& name, bool sendEventOnFailure = true);
+    stl::shared_ptr<Resource> GetTempResource(StringHash type, const stl::string& name, bool sendEventOnFailure = true);
     /// Background load a resource. An event will be sent when complete. Return true if successfully stored to the load queue, false if eg. already exists. Can be called from outside the main thread.
-    bool BackgroundLoadResource(StringHash type, const String& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
+    bool BackgroundLoadResource(StringHash type, const stl::string& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
     /// Return number of pending background-loaded resources.
     unsigned GetNumBackgroundLoadResources() const;
     /// Return all loaded resources of a specific type.
     void GetResources(stl::vector<Resource*>& result, StringHash type) const;
     /// Return an already loaded resource of specific type & name, or null if not found. Will not load if does not exist.
-    Resource* GetExistingResource(StringHash type, const String& name);
+    Resource* GetExistingResource(StringHash type, const stl::string& name);
 
     /// Return all loaded resources.
     const HashMap<StringHash, ResourceGroup>& GetAllResources() const { return resourceGroups_; }
 
     /// Return added resource load directories.
-    const stl::vector<String>& GetResourceDirs() const { return resourceDirs_; }
+    const stl::vector<stl::string>& GetResourceDirs() const { return resourceDirs_; }
 
     /// Return added package files.
     const stl::vector<stl::shared_ptr<PackageFile> >& GetPackageFiles() const { return packages_; }
 
     /// Template version of returning a resource by name.
-    template <class T> T* GetResource(const String& name, bool sendEventOnFailure = true);
+    template <class T> T* GetResource(const stl::string& name, bool sendEventOnFailure = true);
     /// Template version of returning an existing resource by name.
-    template <class T> T* GetExistingResource(const String& name);
+    template <class T> T* GetExistingResource(const stl::string& name);
     /// Template version of loading a resource without storing it to the cache.
-    template <class T> stl::shared_ptr<T> GetTempResource(const String& name, bool sendEventOnFailure = true);
+    template <class T> stl::shared_ptr<T> GetTempResource(const stl::string& name, bool sendEventOnFailure = true);
     /// Template version of releasing a resource by name.
-    template <class T> void ReleaseResource(const String& name, bool force = false);
+    template <class T> void ReleaseResource(const stl::string& name, bool force = false);
     /// Template version of queueing a resource background load.
-    template <class T> bool BackgroundLoadResource(const String& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
+    template <class T> bool BackgroundLoadResource(const stl::string& name, bool sendEventOnFailure = true, Resource* caller = nullptr);
     /// Template version of returning loaded resources of a specific type.
     template <class T> void GetResources(stl::vector<T*>& result) const;
     /// Return whether a file exists in the resource directories or package files. Does not check manually added in-memory resources.
-    bool Exists(const String& name) const;
+    bool Exists(const stl::string& name) const;
     /// Return memory budget for a resource type.
     unsigned long long GetMemoryBudget(StringHash type) const;
     /// Return total memory use for a resource type.
@@ -181,7 +181,7 @@ public:
     /// Return total memory use for all resources.
     unsigned long long GetTotalMemoryUse() const;
     /// Return full absolute file name of resource if possible, or empty if not found.
-    String GetResourceFileName(const String& name) const;
+    stl::string GetResourceFileName(const stl::string& name) const;
 
     /// Return whether automatic resource reloading is enabled.
     bool GetAutoReloadResources() const { return autoReloadResources_; }
@@ -199,36 +199,36 @@ public:
     ResourceRouter* GetResourceRouter(unsigned index) const;
 
     /// Return either the path itself or its parent, based on which of them has recognized resource subdirectories.
-    String GetPreferredResourceDir(const String& path) const;
+    stl::string GetPreferredResourceDir(const stl::string& path) const;
     /// Remove unsupported constructs from the resource name to prevent ambiguity, and normalize absolute filename to resource path relative if possible.
-    String SanitateResourceName(const String& name) const;
+    stl::string SanitateResourceName(const stl::string& name) const;
     /// Remove unnecessary constructs from a resource directory name and ensure it to be an absolute path.
-    String SanitateResourceDirName(const String& name) const;
+    stl::string SanitateResourceDirName(const stl::string& name) const;
     /// Store a dependency for a resource. If a dependency file changes, the resource will be reloaded.
-    void StoreResourceDependency(Resource* resource, const String& dependency);
+    void StoreResourceDependency(Resource* resource, const stl::string& dependency);
     /// Reset dependencies for a resource.
     void ResetDependencies(Resource* resource);
 
     /// Returns a formatted string containing the memory actively used.
-    String PrintMemoryUsage() const;
+    stl::string PrintMemoryUsage() const;
     /// Get the number of resource directories
     unsigned GetNumResourceDirs() const { return resourceDirs_.size(); }
     /// Get resource directory at a given index
-    const String& GetResourceDir(unsigned index) const { return index < resourceDirs_.size() ? resourceDirs_[index] : String::EMPTY; }
+    const stl::string& GetResourceDir(unsigned index) const { return index < resourceDirs_.size() ? resourceDirs_[index] : EMPTY_STRING; }
     
     /// Scan for specified files.
-    void Scan(stl::vector<String>& result, const String& pathName, const String& filter, unsigned flags, bool recursive) const;
+    void Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, unsigned flags, bool recursive) const;
     /// Returns a formatted string containing the currently loaded resources with optional type name filter.
-    String PrintResources(const String& typeName = String::EMPTY) const;
+    stl::string PrintResources(const stl::string& typeName = EMPTY_STRING) const;
     /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
     /// paths to files in resource directories. If destination is a resource name then source file is renamed within same data directory.
-    bool RenameResource(String source, String destination);
+    bool RenameResource(stl::string source, stl::string destination);
     /// When resource auto-reloading is enabled ignore reloading resource once.
-    void IgnoreResourceReload(const String& name);
+    void IgnoreResourceReload(const stl::string& name);
     /// When resource auto-reloading is enabled ignore reloading resource once.
     void IgnoreResourceReload(const Resource* resource);
     /// Pass name through resource routers and return final resource name.
-    void RouteResourceName(String& name, ResourceRequest requestType) const;
+    void RouteResourceName(stl::string& name, ResourceRequest requestType) const;
 
 private:
     /// Find a resource.
@@ -242,16 +242,16 @@ private:
     /// Handle begin frame event. Automatic resource reloads and the finalization of background loaded resources are processed here.
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
     /// Search FileSystem for file.
-    File* SearchResourceDirs(const String& name);
+    File* SearchResourceDirs(const stl::string& name);
     /// Search resource packages for file.
-    File* SearchPackages(const String& name);
+    File* SearchPackages(const stl::string& name);
 
     /// Mutex for thread-safe access to the resource directories, resource packages and resource dependencies.
     mutable Mutex resourceMutex_;
     /// Resources by type.
     HashMap<StringHash, ResourceGroup> resourceGroups_;
     /// Resource load directories.
-    stl::vector<String> resourceDirs_;
+    stl::vector<stl::string> resourceDirs_;
     /// File watchers for resource directories, if automatic reloading enabled.
     stl::vector<stl::shared_ptr<FileWatcher> > fileWatchers_;
     /// Package files.
@@ -273,34 +273,34 @@ private:
     /// How many milliseconds maximum per frame to spend on finishing background loaded resources.
     int finishBackgroundResourcesMs_;
     /// List of resources that will not be auto-reloaded if reloading event triggers.
-    stl::vector<String> ignoreResourceAutoReload_;
+    stl::vector<stl::string> ignoreResourceAutoReload_;
 };
 
-template <class T> T* ResourceCache::GetExistingResource(const String& name)
+template <class T> T* ResourceCache::GetExistingResource(const stl::string& name)
 {
     StringHash type = T::GetTypeStatic();
     return static_cast<T*>(GetExistingResource(type, name));
 }
 
-template <class T> T* ResourceCache::GetResource(const String& name, bool sendEventOnFailure)
+template <class T> T* ResourceCache::GetResource(const stl::string& name, bool sendEventOnFailure)
 {
     StringHash type = T::GetTypeStatic();
     return static_cast<T*>(GetResource(type, name, sendEventOnFailure));
 }
 
-template <class T> void ResourceCache::ReleaseResource(const String& name, bool force)
+template <class T> void ResourceCache::ReleaseResource(const stl::string& name, bool force)
 {
     StringHash type = T::GetTypeStatic();
     ReleaseResource(type, name, force);
 }
 
-template <class T> stl::shared_ptr<T> ResourceCache::GetTempResource(const String& name, bool sendEventOnFailure)
+template <class T> stl::shared_ptr<T> ResourceCache::GetTempResource(const stl::string& name, bool sendEventOnFailure)
 {
     StringHash type = T::GetTypeStatic();
     return StaticCast<T>(GetTempResource(type, name, sendEventOnFailure));
 }
 
-template <class T> bool ResourceCache::BackgroundLoadResource(const String& name, bool sendEventOnFailure, Resource* caller)
+template <class T> bool ResourceCache::BackgroundLoadResource(const stl::string& name, bool sendEventOnFailure, Resource* caller)
 {
     StringHash type = T::GetTypeStatic();
     return BackgroundLoadResource(type, name, sendEventOnFailure, caller);

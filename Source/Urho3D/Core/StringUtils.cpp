@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-static const String base64_chars =
+static const stl::string base64_chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
@@ -41,7 +41,7 @@ unsigned CountElements(const char* buffer, char separator)
     if (!buffer)
         return 0;
 
-    const char* endPos = buffer + String::CStringLength(buffer);
+    const char* endPos = buffer + CStringLength(buffer);
     const char* pos = buffer;
     unsigned ret = 0;
 
@@ -87,14 +87,14 @@ unsigned CountElements(const char* buffer, char separator)
     return ret;
 }
 
-bool ToBool(const String& source)
+bool ToBool(const stl::string& source)
 {
-    return ToBool(source.CString());
+    return ToBool(source.c_str());
 }
 
 bool ToBool(const char* source)
 {
-    unsigned length = String::CStringLength(source);
+    unsigned length = CStringLength(source);
 
     for (unsigned i = 0; i < length; ++i)
     {
@@ -108,9 +108,9 @@ bool ToBool(const char* source)
     return false;
 }
 
-int ToInt(const String& source, int base)
+int ToInt(const stl::string& source, int base)
 {
-    return ToInt(source.CString(), base);
+    return ToInt(source.c_str(), base);
 }
 
 int ToInt(const char* source, int base)
@@ -137,14 +137,14 @@ long long ToInt64(const char* source, int base)
     return strtoll(source, nullptr, base);
 }
 
-long long ToInt64(const String& source, int base)
+long long ToInt64(const stl::string& source, int base)
 {
-    return ToInt64(source.CString(), base);
+    return ToInt64(source.c_str(), base);
 }
 
-unsigned ToUInt(const String& source, int base)
+unsigned ToUInt(const stl::string& source, int base)
 {
-    return ToUInt(source.CString(), base);
+    return ToUInt(source.c_str(), base);
 }
 
 unsigned long long ToUInt64(const char* source, int base)
@@ -159,9 +159,9 @@ unsigned long long ToUInt64(const char* source, int base)
     return strtoull(source, nullptr, base);
 }
 
-unsigned long long ToUInt64(const String& source, int base)
+unsigned long long ToUInt64(const stl::string& source, int base)
 {
-    return ToUInt64(source.CString(), base);
+    return ToUInt64(source.c_str(), base);
 }
 
 unsigned ToUInt(const char* source, int base)
@@ -175,9 +175,9 @@ unsigned ToUInt(const char* source, int base)
     return (unsigned)strtoul(source, nullptr, base);
 }
 
-float ToFloat(const String& source)
+float ToFloat(const stl::string& source)
 {
-    return ToFloat(source.CString());
+    return ToFloat(source.c_str());
 }
 
 float ToFloat(const char* source)
@@ -188,9 +188,9 @@ float ToFloat(const char* source)
     return (float)strtod(source, nullptr);
 }
 
-double ToDouble(const String& source)
+double ToDouble(const stl::string& source)
 {
-    return ToDouble(source.CString());
+    return ToDouble(source.c_str());
 }
 
 double ToDouble(const char* source)
@@ -201,9 +201,9 @@ double ToDouble(const char* source)
     return strtod(source, nullptr);
 }
 
-Color ToColor(const String& source)
+Color ToColor(const stl::string& source)
 {
-    return ToColor(source.CString());
+    return ToColor(source.c_str());
 }
 
 Color ToColor(const char* source)
@@ -224,9 +224,9 @@ Color ToColor(const char* source)
     return ret;
 }
 
-IntRect ToIntRect(const String& source)
+IntRect ToIntRect(const stl::string& source)
 {
-    return ToIntRect(source.CString());
+    return ToIntRect(source.c_str());
 }
 
 IntRect ToIntRect(const char* source)
@@ -246,9 +246,9 @@ IntRect ToIntRect(const char* source)
     return ret;
 }
 
-IntVector2 ToIntVector2(const String& source)
+IntVector2 ToIntVector2(const stl::string& source)
 {
-    return ToIntVector2(source.CString());
+    return ToIntVector2(source.c_str());
 }
 
 IntVector2 ToIntVector2(const char* source)
@@ -266,9 +266,9 @@ IntVector2 ToIntVector2(const char* source)
     return ret;
 }
 
-IntVector3 ToIntVector3(const String& source)
+IntVector3 ToIntVector3(const stl::string& source)
 {
-    return ToIntVector3(source.CString());
+    return ToIntVector3(source.c_str());
 }
 
 IntVector3 ToIntVector3(const char* source)
@@ -287,9 +287,9 @@ IntVector3 ToIntVector3(const char* source)
     return ret;
 }
 
-Rect ToRect(const String& source)
+Rect ToRect(const stl::string& source)
 {
-    return ToRect(source.CString());
+    return ToRect(source.c_str());
 }
 
 Rect ToRect(const char* source)
@@ -309,9 +309,9 @@ Rect ToRect(const char* source)
     return ret;
 }
 
-Quaternion ToQuaternion(const String& source)
+Quaternion ToQuaternion(const stl::string& source)
 {
-    return ToQuaternion(source.CString());
+    return ToQuaternion(source.c_str());
 }
 
 Quaternion ToQuaternion(const char* source)
@@ -344,9 +344,9 @@ Quaternion ToQuaternion(const char* source)
     }
 }
 
-Vector2 ToVector2(const String& source)
+Vector2 ToVector2(const stl::string& source)
 {
-    return ToVector2(source.CString());
+    return ToVector2(source.c_str());
 }
 
 Vector2 ToVector2(const char* source)
@@ -364,9 +364,9 @@ Vector2 ToVector2(const char* source)
     return ret;
 }
 
-Vector3 ToVector3(const String& source)
+Vector3 ToVector3(const stl::string& source)
 {
-    return ToVector3(source.CString());
+    return ToVector3(source.c_str());
 }
 
 Vector3 ToVector3(const char* source)
@@ -385,9 +385,9 @@ Vector3 ToVector3(const char* source)
     return ret;
 }
 
-Vector4 ToVector4(const String& source, bool allowMissingCoords)
+Vector4 ToVector4(const stl::string& source, bool allowMissingCoords)
 {
-    return ToVector4(source.CString(), allowMissingCoords);
+    return ToVector4(source.c_str(), allowMissingCoords);
 }
 
 Vector4 ToVector4(const char* source, bool allowMissingCoords)
@@ -424,9 +424,9 @@ Vector4 ToVector4(const char* source, bool allowMissingCoords)
     }
 }
 
-Variant ToVectorVariant(const String& source)
+Variant ToVectorVariant(const stl::string& source)
 {
-    return ToVectorVariant(source.CString());
+    return ToVectorVariant(source.c_str());
 }
 
 Variant ToVectorVariant(const char* source)
@@ -472,9 +472,9 @@ Variant ToVectorVariant(const char* source)
     return ret;
 }
 
-Matrix3 ToMatrix3(const String& source)
+Matrix3 ToMatrix3(const stl::string& source)
 {
-    return ToMatrix3(source.CString());
+    return ToMatrix3(source.c_str());
 }
 
 Matrix3 ToMatrix3(const char* source)
@@ -499,9 +499,9 @@ Matrix3 ToMatrix3(const char* source)
     return ret;
 }
 
-Matrix3x4 ToMatrix3x4(const String& source)
+Matrix3x4 ToMatrix3x4(const stl::string& source)
 {
-    return ToMatrix3x4(source.CString());
+    return ToMatrix3x4(source.c_str());
 }
 
 Matrix3x4 ToMatrix3x4(const char* source)
@@ -529,9 +529,9 @@ Matrix3x4 ToMatrix3x4(const char* source)
     return ret;
 }
 
-Matrix4 ToMatrix4(const String& source)
+Matrix4 ToMatrix4(const stl::string& source)
 {
-    return ToMatrix4(source.CString());
+    return ToMatrix4(source.c_str());
 }
 
 Matrix4 ToMatrix4(const char* source)
@@ -563,19 +563,19 @@ Matrix4 ToMatrix4(const char* source)
     return ret;
 }
 
-String ToString(void* value)
+stl::string ToString(void* value)
 {
     return ToStringHex((unsigned)(size_t)value);
 }
 
-String ToStringHex(unsigned value)
+stl::string ToStringHex(unsigned value)
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%08x", value);
-    return String(tempBuffer);
+    return stl::string(tempBuffer);
 }
 
-void BufferToString(String& dest, const void* data, unsigned size)
+void BufferToString(stl::string& dest, const void* data, unsigned size)
 {
     // Precalculate needed string size
     const auto* bytes = (const unsigned char*)data;
@@ -595,7 +595,7 @@ void BufferToString(String& dest, const void* data, unsigned size)
             length += 3;
     }
 
-    dest.Resize(length);
+    dest.resize(length);
     unsigned index = 0;
 
     // Convert values
@@ -622,9 +622,9 @@ void BufferToString(String& dest, const void* data, unsigned size)
     }
 }
 
-void StringToBuffer(stl::vector<unsigned char>& dest, const String& source)
+void StringToBuffer(stl::vector<unsigned char>& dest, const stl::string& source)
 {
-    StringToBuffer(dest, source.CString());
+    StringToBuffer(dest, source.c_str());
 }
 
 void StringToBuffer(stl::vector<unsigned char>& dest, const char* source)
@@ -670,18 +670,18 @@ void StringToBuffer(stl::vector<unsigned char>& dest, const char* source)
         dest[index] = (unsigned char)value;
 }
 
-unsigned GetStringListIndex(const String& value, const String* strings, unsigned defaultIndex, bool caseSensitive)
+unsigned GetStringListIndex(const stl::string& value, const stl::string* strings, unsigned defaultIndex, bool caseSensitive)
 {
-    return GetStringListIndex(value.CString(), strings, defaultIndex, caseSensitive);
+    return GetStringListIndex(value.c_str(), strings, defaultIndex, caseSensitive);
 }
 
-unsigned GetStringListIndex(const char* value, const String* strings, unsigned defaultIndex, bool caseSensitive)
+unsigned GetStringListIndex(const char* value, const stl::string* strings, unsigned defaultIndex, bool caseSensitive)
 {
     unsigned i = 0;
 
-    while (!strings[i].Empty())
+    while (!strings[i].empty())
     {
-        if (!strings[i].Compare(value, caseSensitive))
+        if (!Compare(strings[i].c_str(), value, caseSensitive))
             return i;
         ++i;
     }
@@ -695,7 +695,7 @@ unsigned GetStringListIndex(const char* value, const char** strings, unsigned de
 
     while (strings[i])
     {
-        if (!String::Compare(value, strings[i], caseSensitive))
+        if (!Compare(value, strings[i], caseSensitive))
             return i;
         ++i;
     }
@@ -703,12 +703,12 @@ unsigned GetStringListIndex(const char* value, const char** strings, unsigned de
     return defaultIndex;
 }
 
-String ToString(const char* formatString, ...)
+stl::string ToString(const char* formatString, ...)
 {
-    String ret;
+    stl::string ret;
     va_list args;
     va_start(args, formatString);
-    ret.AppendWithFormatArgs(formatString, args);
+    ret.append_sprintf_va_list(formatString, args);
     va_end(args);
     return ret;
 }
@@ -733,15 +733,15 @@ unsigned ToLower(unsigned ch)
     return (unsigned)tolower(ch);
 }
 
-String GetFileSizeString(unsigned long long memorySize)
+stl::string GetFileSizeString(unsigned long long memorySize)
 {
     static const char* memorySizeStrings = "kMGTPE";
 
-    String output;
+    stl::string output;
 
     if (memorySize < 1024)
     {
-        output = String(memorySize) + " b";
+        output = stl::to_string(memorySize) + " b";
     }
     else
     {
@@ -792,9 +792,9 @@ static inline bool IsBase64(char c) {
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-stl::vector<unsigned char> DecodeBase64(String encodedString)
+stl::vector<unsigned char> DecodeBase64(stl::string encodedString)
 {
-    int inLen = encodedString.Length();
+    int inLen = encodedString.length();
     int i = 0;
     int j = 0;
     int in_ = 0;
@@ -809,7 +809,7 @@ stl::vector<unsigned char> DecodeBase64(String encodedString)
         if (i == 4)
         {
             for (i = 0; i < 4; i++)
-                charArray4[i] = base64_chars.Find(charArray4[i]);
+                charArray4[i] = base64_chars.find(charArray4[i]);
 
             charArray3[0] = (charArray4[0] << 2u) + ((charArray4[1] & 0x30u) >> 4u);
             charArray3[1] = ((charArray4[1] & 0xfu) << 4u) + ((charArray4[2] & 0x3cu) >> 2u);
@@ -828,7 +828,7 @@ stl::vector<unsigned char> DecodeBase64(String encodedString)
             charArray4[j] = 0;
 
         for (j = 0; j <4; j++)
-            charArray4[j] = base64_chars.Find(charArray4[j]);
+            charArray4[j] = base64_chars.find(charArray4[j]);
 
         charArray3[0] = (charArray4[0] << 2u) + ((charArray4[1] & 0x30u) >> 4u);
         charArray3[1] = ((charArray4[1] & 0xfu) << 4u) + ((charArray4[2] & 0x3cu) >> 2u);

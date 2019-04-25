@@ -299,10 +299,11 @@ void StaticModel::SetOcclusionLodLevel(unsigned level)
     MarkNetworkUpdate();
 }
 
-void StaticModel::ApplyMaterialList(const String& fileName)
+void StaticModel::ApplyMaterialList(const stl::string& fileName)
 {
-    String useFileName = fileName;
-    if (useFileName.Trimmed().Empty() && model_)
+    stl::string useFileName = fileName;
+    useFileName.trim();
+    if (useFileName.empty() && model_)
         useFileName = ReplaceExtension(model_->GetName(), ".txt");
 
     auto* cache = GetSubsystem<ResourceCache>();

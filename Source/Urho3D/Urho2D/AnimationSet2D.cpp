@@ -124,10 +124,10 @@ bool AnimationSet2D::BeginLoad(Deserializer& source)
 {
     Dispose();
 
-    if (GetName().Empty())
+    if (GetName().empty())
         SetName(source.GetName());
 
-    String extension = GetExtension(source.GetName());
+    stl::string extension = GetExtension(source.GetName());
 #ifdef URHO3D_SPINE
     if (extension == ".json")
         return BeginLoadSpine(source);
@@ -163,10 +163,10 @@ unsigned AnimationSet2D::GetNumAnimations() const
     return 0;
 }
 
-String AnimationSet2D::GetAnimation(unsigned index) const
+stl::string AnimationSet2D::GetAnimation(unsigned index) const
 {
     if (index >= GetNumAnimations())
-        return String::EMPTY;
+        return EMPTY_STRING;
 
 #ifdef URHO3D_SPINE
     if (skeletonData_)
@@ -175,10 +175,10 @@ String AnimationSet2D::GetAnimation(unsigned index) const
     if (spriterData_ && !spriterData_->entities_.empty())
         return spriterData_->entities_[0]->animations_[index]->name_;
 
-    return String::EMPTY;
+    return EMPTY_STRING;
 }
 
-bool AnimationSet2D::HasAnimation(const String& animationName) const
+bool AnimationSet2D::HasAnimation(const stl::string& animationName) const
 {
 #ifdef URHO3D_SPINE
     if (skeletonData_)
@@ -236,8 +236,8 @@ bool AnimationSet2D::EndLoadSpine()
 {
     currentAnimationSet = this;
 
-    String atlasFileName = ReplaceExtension(GetName(), ".atlas");
-    atlas_ = spAtlas_createFromFile(atlasFileName.CString(), 0);
+    stl::string atlasFileName = ReplaceExtension(GetName(), ".atlas");
+    atlas_ = spAtlas_createFromFile(atlasFileName.c_str(), 0);
     if (!atlas_)
     {
         URHO3D_LOGERROR("Create spine atlas failed");
@@ -282,7 +282,7 @@ bool AnimationSet2D::EndLoadSpine()
 bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
 {
     unsigned dataSize = source.GetSize();
-    if (!dataSize && !source.GetName().Empty())
+    if (!dataSize && !source.GetName().empty())
     {
         URHO3D_LOGERROR("Zero sized XML data in " + source.GetName());
         return false;
@@ -300,7 +300,7 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
     }
 
     // Check has sprite sheet
-    String parentPath = GetParentPath(GetName());
+    stl::string parentPath = GetParentPath(GetName());
     auto* cache = GetSubsystem<ResourceCache>();
 
     spriteSheetFilePath_ = parentPath + GetFileName(GetName()) + ".xml";
@@ -323,7 +323,7 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
                 for (unsigned j = 0; j < folder->files_.size(); ++j)
                 {
                     Spriter::File* file = folder->files_[j];
-                    String imagePath = parentPath + file->name_;
+                    stl::string imagePath = parentPath + file->name_;
                     cache->BackgroundLoadResource<Image>(imagePath, true, this);
                 }
             }
@@ -396,7 +396,7 @@ bool AnimationSet2D::EndLoadSpriter()
     else
     {
         stl::vector<SpriteInfo> spriteInfos;
-        String parentPath = GetParentPath(GetName());
+        stl::string parentPath = GetParentPath(GetName());
 
         for (unsigned i = 0; i < spriterData_->folders_.size(); ++i)
         {
@@ -404,7 +404,7 @@ bool AnimationSet2D::EndLoadSpriter()
             for (unsigned j = 0; j < folder->files_.size(); ++j)
             {
                 Spriter::File* file = folder->files_[j];
-                String imagePath = parentPath + file->name_;
+                stl::string imagePath = parentPath + file->name_;
                 stl::shared_ptr<Image> image(cache->GetResource<Image>(imagePath));
                 if (!image)
                 {

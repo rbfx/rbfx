@@ -79,27 +79,27 @@ public:
     /// Load ui settings.
     virtual void OnLoadUISettings(const char* name, const char* line);
     /// Load a file from resource path.
-    virtual bool LoadResource(const String& resourcePath);
+    virtual bool LoadResource(const stl::string& resourcePath);
     /// Save tab contents to a resource file.
     virtual bool SaveResource();
     /// Called when tab focused.
     virtual void OnFocused() { }
     /// Set scene view tab title.
-    void SetTitle(const String& title);
+    void SetTitle(const stl::string& title);
     /// Get scene view tab title.
-    String GetTitle() const { return title_; }
+    stl::string GetTitle() const { return title_; }
     /// Returns title which uniquely identifies scene tab in imgui.
-    String GetUniqueTitle() const { return uniqueTitle_;}
+    stl::string GetUniqueTitle() const { return uniqueTitle_;}
     /// Returns title which uniquely identifies scene tab in imgui.
-    String GetUniqueName() const { return uniqueName_;}
+    stl::string GetUniqueName() const { return uniqueName_;}
     /// Return true if scene tab is active and focused.
     bool IsActive() const { return isActive_; }
     /// Return true if scene view was rendered on this frame.
     bool IsRendered() const { return isRendered_; }
     /// Return unique object id.
-    String GetID() const { return id_; }
+    stl::string GetID() const { return id_; }
     /// Set unique object id.
-    void SetID(const String& id);
+    void SetID(const stl::string& id);
     /// Returns true of tab is utility window.
     bool IsUtility() const { return isUtility_; }
     /// Position tab automatically to most appropriate place.
@@ -122,13 +122,13 @@ protected:
     void UpdateUniqueTitle();
 
     /// Unique scene id.
-    String id_;
+    stl::string id_;
     /// Scene title. Should be unique.
-    String title_;
+    stl::string title_;
     /// Title with id appended to it. Used as unique window name.
-    String uniqueTitle_;
+    stl::string uniqueTitle_;
     /// TYpe name with id appended to it.
-    String uniqueName_;
+    stl::string uniqueName_;
     /// Scene dock is active and window is focused.
     bool isActive_ = false;
     /// Flag set to true when dock contents were visible. Used for tracking "appearing" effect.

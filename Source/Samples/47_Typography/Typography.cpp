@@ -150,14 +150,14 @@ void Typography::CreateText()
     {
         auto size = size2x / 2.f;
         stl::shared_ptr<Text> text(new Text(context_));
-        text->SetText(String("The quick brown fox jumps over the lazy dog (") + String(size) + String("pt)"));
+        text->SetText(stl::string("The quick brown fox jumps over the lazy dog (") + stl::to_string(size) + stl::string("pt)"));
         text->SetFont(font, size);
         text->AddTag(TEXT_TAG);
         container->AddChild(text);
     }
 }
 
-stl::shared_ptr<CheckBox> Typography::CreateCheckbox(const String& label, EventHandler* handler)
+stl::shared_ptr<CheckBox> Typography::CreateCheckbox(const stl::string& label, EventHandler* handler)
 {
     stl::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
@@ -178,7 +178,7 @@ stl::shared_ptr<CheckBox> Typography::CreateCheckbox(const String& label, EventH
     return box;
 }
 
-stl::shared_ptr<DropDownList> Typography::CreateMenu(const String& label, const char** items, EventHandler* handler)
+stl::shared_ptr<DropDownList> Typography::CreateMenu(const stl::string& label, const char** items, EventHandler* handler)
 {
     stl::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);

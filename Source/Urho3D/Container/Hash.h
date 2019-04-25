@@ -23,9 +23,16 @@
 #pragma once
 
 #include <cstddef>
+#include <EASTL/string.h>
 
 namespace Urho3D
 {
+
+/// Temporary
+template <class T> unsigned MakeHash(const stl::basic_string<T>& value)
+{
+    return stl::hash<stl::basic_string<T>>()(value);
+}
 
 /// Pointer hash function.
 template <class T> unsigned MakeHash(T* value)

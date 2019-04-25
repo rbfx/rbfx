@@ -238,7 +238,7 @@ void RaycastVehicle::ApplyAttributes()
         Node* wheelNode = GetScene()->GetNode(node_id);
         if (!wheelNode)
         {
-            URHO3D_LOGERROR("RaycastVehicle: Incorrect node id = " + String(node_id) + " index: " + String(index));
+            URHO3D_LOGERROR("RaycastVehicle: Incorrect node id = " + stl::to_string(node_id) + " index: " + stl::to_string(index));
             continue;
         }
         btRaycastVehicle* vehicle = vehicleData_->Get();
@@ -271,9 +271,9 @@ void RaycastVehicle::ApplyAttributes()
         wheel.m_skidInfo = skidInfo;
         wheelIndex++;
     }
-    URHO3D_LOGDEBUG("maxSideSlipSpeed_ value: " + String(maxSideSlipSpeed_));
-    URHO3D_LOGDEBUG("loaded items: " + String(index));
-    URHO3D_LOGDEBUG("loaded wheels: " + String(GetNumWheels()));
+    URHO3D_LOGDEBUG("maxSideSlipSpeed_ value: " + stl::to_string(maxSideSlipSpeed_));
+    URHO3D_LOGDEBUG("loaded items: " + stl::to_string(index));
+    URHO3D_LOGDEBUG("loaded wheels: " + stl::to_string(GetNumWheels()));
 }
 
 void RaycastVehicle::Init()
@@ -709,7 +709,7 @@ VariantVector RaycastVehicle::GetWheelDataAttr() const
     {
         Node* wNode = GetWheelNode(i);
         int node_id = wNode->GetID();
-        URHO3D_LOGDEBUG("RaycastVehicle: Saving node id = " + String(node_id));
+        URHO3D_LOGDEBUG("RaycastVehicle: Saving node id = " + stl::to_string(node_id));
         ret.push_back(node_id);
         ret.push_back(GetWheelDirection(i));
         ret.push_back(GetWheelAxle(i));
@@ -733,8 +733,8 @@ VariantVector RaycastVehicle::GetWheelDataAttr() const
         ret.push_back(GetBrake(i));
         ret.push_back(GetWheelSkidInfo(i));
     }
-    URHO3D_LOGDEBUG("RaycastVehicle: saved items: " + String(ret.size()));
-    URHO3D_LOGDEBUG("maxSideSlipSpeed_ value save: " + String(maxSideSlipSpeed_));
+    URHO3D_LOGDEBUG("RaycastVehicle: saved items: " + stl::to_string(ret.size()));
+    URHO3D_LOGDEBUG("maxSideSlipSpeed_ value save: " + stl::to_string(maxSideSlipSpeed_));
     return ret;
 }
 

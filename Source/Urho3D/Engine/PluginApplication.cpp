@@ -40,8 +40,8 @@ PluginApplication::~PluginApplication()
 {
     for (const auto& pair : registeredTypes_)
     {
-        if (!pair.second.Empty())
-            context_->RemoveFactory(pair.first, pair.second.CString());
+        if (!pair.second.empty())
+            context_->RemoveFactory(pair.first, pair.second.c_str());
         else
             context_->RemoveFactory(pair.first);
         context_->RemoveAllAttributes(pair.first);
@@ -81,7 +81,7 @@ int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplicatio
         {
             URHO3D_LOGERRORF("Plugin application '%s' has more than one reference remaining. "
                              "This may lead to memory leaks or crashes.",
-                             application->GetTypeName().CString());
+                             application->GetTypeName().c_str());
             assert(false);
         }
         application->ReleaseRef();

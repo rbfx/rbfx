@@ -235,7 +235,7 @@ public:
     Vector4 ToVector4() const { return Vector4(min_.x_, min_.y_, max_.x_, max_.y_); }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     /// Return left-top corner position.
     Vector2 Min() const { return min_; }
@@ -426,7 +426,7 @@ public:
     const int* Data() const { return &left_; }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     /// Return left-top corner position.
     IntVector2 Min() const { return {left_, top_}; }

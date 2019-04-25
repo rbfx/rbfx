@@ -536,8 +536,8 @@ stl::shared_ptr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
         return root;
     }
 
-    String typeName = rootElem.GetAttribute("type");
-    if (typeName.Empty())
+    stl::string typeName = rootElem.GetAttribute("type");
+    if (typeName.empty())
         typeName = "UIElement";
 
     root = DynamicCast<UIElement>(context_->CreateObject(typeName));
@@ -565,11 +565,11 @@ bool UI::SaveLayout(Serializer& dest, UIElement* element)
     return element && element->SaveXML(dest);
 }
 
-void UI::SetClipboardText(const String& text)
+void UI::SetClipboardText(const stl::string& text)
 {
     clipBoard_ = text;
     if (useSystemClipboard_)
-        SDL_SetClipboardText(text.CString());
+        SDL_SetClipboardText(text.c_str());
 }
 
 void UI::SetDoubleClickInterval(float interval)
@@ -819,12 +819,12 @@ UIElement* UI::GetDragElement(unsigned index)
     return dragElementsConfirmed_[index];
 }
 
-const String& UI::GetClipboardText() const
+const stl::string& UI::GetClipboardText() const
 {
     if (useSystemClipboard_)
     {
         char* text = SDL_GetClipboardText();
-        clipBoard_ = String(text);
+        clipBoard_ = stl::string(text);
         if (text)
             SDL_free(text);
     }

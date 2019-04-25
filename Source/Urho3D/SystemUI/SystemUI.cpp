@@ -316,7 +316,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const String& fontPath, const ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const stl::string& fontPath, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
@@ -331,7 +331,7 @@ ImFont* SystemUI::AddFont(const String& fontPath, const ImWchar* ranges, float s
         cfg.MergeMode = merge;
         cfg.FontDataOwnedByAtlas = false;
         cfg.PixelSnapH = true;
-        strncpy(cfg.Name, fontPath.CString(), sizeof(cfg.Name));
+        strncpy(cfg.Name, fontPath.c_str(), sizeof(cfg.Name));
         if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.front(), bytesLen, size, &cfg, ranges))
         {
             ReallocateFontTexture();

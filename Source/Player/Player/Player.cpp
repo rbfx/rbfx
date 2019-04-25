@@ -153,8 +153,8 @@ bool Player::LoadPlugins(const JSONValue& plugins)
         if (plugins[i]["private"].GetBool())
             continue;
 
-        String pluginName = plugins[i]["name"].GetString();
-        String pluginFileName;
+        stl::string pluginName = plugins[i]["name"].GetString();
+        stl::string pluginFileName;
         bool loaded = false;
 #if !_WIN32
         // Native plugins on unixes
@@ -188,7 +188,7 @@ bool Player::LoadPlugins(const JSONValue& plugins)
         {
             pluginFileName = pluginName + ".dll";
 #if ANDROID
-            pluginFileName = String(APK) + "assets/.net/" + pluginFileName;
+            pluginFileName = stl::string(APK) + "assets/.net/" + pluginFileName;
 #endif
             if (GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
@@ -205,7 +205,7 @@ bool Player::LoadPlugins(const JSONValue& plugins)
 
         if (!loaded)
         {
-            URHO3D_LOGERRORF("Loading of '%s' assembly failed.", pluginName.CString());
+            URHO3D_LOGERRORF("Loading of '%s' assembly failed.", pluginName.c_str());
             return false;
         }
     }
@@ -214,14 +214,14 @@ bool Player::LoadPlugins(const JSONValue& plugins)
 }
 
 #if URHO3D_PLUGINS
-bool Player::LoadAssembly(const String& path, PluginType assumeType)
+bool Player::LoadAssembly(const stl::string& path, PluginType assumeType)
 {
     if (assumeType == PLUGIN_INVALID)
         assumeType = GetPluginType(context_, path);
 
     if (assumeType == PLUGIN_NATIVE)
     {
-        auto sharedLibrary = cr_so_load(path.CString());
+        auto sharedLibrary = cr_so_load(path.c_str());
         if (sharedLibrary != nullptr)
         {
             cr_plugin_main_func pluginMain = cr_so_symbol(sharedLibrary);
@@ -271,7 +271,7 @@ BakedResourceRouter::BakedResourceRouter(Context* context)
     }
 }
 
-void BakedResourceRouter::Route(String& name, ResourceRequest requestType)
+void BakedResourceRouter::Route(stl::string& name, ResourceRequest requestType)
 {
     routes_.TryGetValue(name, name);
 }

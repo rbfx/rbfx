@@ -39,7 +39,7 @@ PackageFile::PackageFile(Context* context) :
 {
 }
 
-PackageFile::PackageFile(Context* context, const String& fileName, unsigned startOffset) :
+PackageFile::PackageFile(Context* context, const stl::string& fileName, unsigned startOffset) :
     Object(context),
     totalSize_(0),
     totalDataSize_(0),
@@ -51,7 +51,7 @@ PackageFile::PackageFile(Context* context, const String& fileName, unsigned star
 
 PackageFile::~PackageFile() = default;
 
-bool PackageFile::Open(const String& fileName, unsigned startOffset)
+bool PackageFile::Open(const stl::string& fileName, unsigned startOffset)
 {
     stl::shared_ptr<File> file(new File(context_, fileName));
     if (!file->IsOpen())
@@ -59,7 +59,7 @@ bool PackageFile::Open(const String& fileName, unsigned startOffset)
 
     // Check ID, then read the directory
     file->Seek(startOffset);
-    String id = file->ReadFileID();
+    stl::string id = file->ReadFileID();
     if (id != "UPAK" && id != "ULZ4")
     {
         // If start offset has not been explicitly specified, also try to read package size from the end of file
@@ -94,7 +94,7 @@ bool PackageFile::Open(const String& fileName, unsigned startOffset)
 
     for (unsigned i = 0; i < numFiles; ++i)
     {
-        String entryName = file->ReadString();
+        stl::string entryName = file->ReadString();
         PackageEntry newEntry{};
         newEntry.offset_ = file->ReadUInt() + startOffset;
         totalDataSize_ += (newEntry.size_ = file->ReadUInt());
@@ -111,7 +111,7 @@ bool PackageFile::Open(const String& fileName, unsigned startOffset)
     return true;
 }
 
-bool PackageFile::Exists(const String& fileName) const
+bool PackageFile::Exists(const stl::string& fileName) const
 {
     bool found = entries_.Find(fileName) != entries_.End();
 
@@ -119,7 +119,7 @@ bool PackageFile::Exists(const String& fileName) const
     // On Windows perform a fallback case-insensitive search
     if (!found)
     {
-        for (HashMap<String, PackageEntry>::ConstIterator i = entries_.Begin(); i != entries_.End(); ++i)
+        for (HashMap<stl::string, PackageEntry>::ConstIterator i = entries_.Begin(); i != entries_.End(); ++i)
         {
             if (!i->first_.Compare(fileName, false))
             {
@@ -133,9 +133,9 @@ bool PackageFile::Exists(const String& fileName) const
     return found;
 }
 
-const PackageEntry* PackageFile::GetEntry(const String& fileName) const
+const PackageEntry* PackageFile::GetEntry(const stl::string& fileName) const
 {
-    HashMap<String, PackageEntry>::ConstIterator i = entries_.Find(fileName);
+    HashMap<stl::string, PackageEntry>::ConstIterator i = entries_.Find(fileName);
     if (i != entries_.End())
         return &i->second_;
 
@@ -143,7 +143,7 @@ const PackageEntry* PackageFile::GetEntry(const String& fileName) const
     // On Windows perform a fallback case-insensitive search
     else
     {
-        for (HashMap<String, PackageEntry>::ConstIterator j = entries_.Begin(); j != entries_.End(); ++j)
+        for (HashMap<stl::string, PackageEntry>::ConstIterator j = entries_.Begin(); j != entries_.End(); ++j)
         {
             if (!j->first_.Compare(fileName, false))
                 return &j->second_;
@@ -154,14 +154,14 @@ const PackageEntry* PackageFile::GetEntry(const String& fileName) const
     return nullptr;
 }
 
-void PackageFile::Scan(stl::vector<String>& result, const String& pathName, const String& filter, bool recursive) const
+void PackageFile::Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, bool recursive) const
 {
     result.clear();
 
-    String sanitizedPath = GetSanitizedPath(pathName);
-    String filterExtension = filter.Substring(filter.FindLast('.'));
-    if (filterExtension.Contains('*'))
-        filterExtension.Clear();
+    stl::string sanitizedPath = GetSanitizedPath(pathName);
+    stl::string filterExtension = filter.substr(filter.find_last_of('.'));
+    if (filterExtension.contains('*'))
+        filterExtension.clear();
 
     bool caseSensitive = true;
 #ifdef _WIN32
@@ -172,14 +172,14 @@ void PackageFile::Scan(stl::vector<String>& result, const String& pathName, cons
     const StringVector& entryNames = GetEntryNames();
     for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
     {
-        String entryName = GetSanitizedPath(*i);
-        if ((filterExtension.Empty() || entryName.EndsWith(filterExtension, caseSensitive)) &&
-            entryName.StartsWith(sanitizedPath, caseSensitive))
+        stl::string entryName = GetSanitizedPath(*i);
+        if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
+            entryName.starts_with(sanitizedPath, caseSensitive))
         {
-            String fileName = entryName.Substring(sanitizedPath.Length());
-            if (fileName.StartsWith("\\") || fileName.StartsWith("/"))
-                fileName = fileName.Substring(1, fileName.Length() - 1);
-            if (!recursive && (fileName.Contains("\\") || fileName.Contains("/")))
+            stl::string fileName = entryName.substr(sanitizedPath.length());
+            if (fileName.starts_with("\\") || fileName.starts_with("/"))
+                fileName = fileName.substr(1, fileName.length() - 1);
+            if (!recursive && (fileName.contains("\\") || fileName.contains("/")))
                 continue;
 
             result.push_back(fileName);

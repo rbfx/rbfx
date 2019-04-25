@@ -64,7 +64,7 @@ public:
     float lookSensitivity_ = 1.0f;
     Gizmo gizmo_;
     bool showHelp_ = false;
-    String assetFile_;
+    stl::string assetFile_;
 
     explicit AssetViewer(Context* context)
         : Application(context), gizmo_(context)
@@ -114,8 +114,8 @@ public:
         SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnUpdate, this, _2));
         SubscribeToEvent(E_DROPFILE, std::bind(&AssetViewer::OnFileDrop, this, _2));
 
-        if (!assetFile_.Empty())
-            LoadFile(assetFile_.CString());
+        if (!assetFile_.empty())
+            LoadFile(assetFile_.c_str());
     }
 
     void OnUpdate(VariantMap& args)
@@ -195,17 +195,17 @@ public:
         LoadFile(args[DropFile::P_FILENAME].GetString());
     }
 
-    void LoadFile(const String& file_path)
+    void LoadFile(const stl::string& file_path)
     {
-        if (file_path.EndsWith(".mdl"))
+        if (file_path.ends_with(".mdl"))
             LoadModel(file_path);
-        else if (file_path.EndsWith(".ani"))
+        else if (file_path.ends_with(".ani"))
             LoadAnimation(file_path);
-        else if (file_path.EndsWith(".fbx"))
+        else if (file_path.ends_with(".fbx"))
             LoadFbx(file_path);
     }
 
-    void LoadModel(const String& file_path, const stl::vector<String>& materials = { })
+    void LoadModel(const stl::string& file_path, const stl::vector<stl::string>& materials = { })
     {
         if (node_)
             node_->Remove();
@@ -243,13 +243,13 @@ public:
         }
     }
 
-    void LoadAnimation(const String& file_path)
+    void LoadAnimation(const stl::string& file_path)
     {
         if (animator_)
             animator_->PlayExclusive(file_path, 0, true);
     }
 
-    void LoadFbx(const String& file_path)
+    void LoadFbx(const stl::string& file_path)
     {
         auto fs = GetSubsystem<FileSystem>();
         auto temp = fs->GetTemporaryDir() + "AssetViewer/";
@@ -262,7 +262,7 @@ public:
         auto material_list_file = model_path + "out.txt";
         fs->Delete(model_file);
 
-        unsigned result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.CString(), "-na", "-l"});
+        unsigned result = fs->SystemRun(fs->GetProgramDir() + "AssetImporter", {"model", file_path, model_file.c_str(), "-na", "-l"});
         if (result != 0)
         {
             URHO3D_LOGERROR("Importing model failed.");
@@ -271,7 +271,7 @@ public:
 
         if (fs->FileExists(model_file))
         {
-            stl::vector<String> materials;
+            stl::vector<stl::string> materials;
             File fp(context_, material_list_file);
             if (fp.IsOpen())
             {
@@ -281,7 +281,7 @@ public:
             LoadModel(model_file, materials);
         }
 
-        stl::vector<String> animations;
+        stl::vector<stl::string> animations;
         fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
         for (const auto& filename : animations)
             fs->Delete(animation_path + filename);

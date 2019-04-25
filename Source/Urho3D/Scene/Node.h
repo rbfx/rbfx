@@ -60,7 +60,7 @@ struct URHO3D_API NodeImpl
     /// Network owner connection.
     Connection* owner_;
     /// Name.
-    String name_;
+    stl::string name_;
     /// Tag strings.
     StringVector tags_;
     /// Name hash.
@@ -108,22 +108,22 @@ public:
     virtual void AddReplicationState(NodeReplicationState* state);
 
     /// Save to an XML file. Return true if successful.
-    bool SaveXML(Serializer& dest, const String& indentation = "\t") const;
+    bool SaveXML(Serializer& dest, const stl::string& indentation = "\t") const;
     /// Save to a JSON file. Return true if successful.
-    bool SaveJSON(Serializer& dest, const String& indentation = "\t") const;
+    bool SaveJSON(Serializer& dest, const stl::string& indentation = "\t") const;
     /// Set name of the scene node. Names are not required to be unique.
-    void SetName(const String& name);
+    void SetName(const stl::string& name);
 
     /// Set tags. Old tags are overwritten.
     void SetTags(const StringVector& tags);
     /// Add a tag.
-    void AddTag(const String& tag);
+    void AddTag(const stl::string& tag);
     /// Add tags with the specified separator, by default ;
-    void AddTags(const String& tags, char separator = ';');
+    void AddTags(const stl::string& tags, char separator = ';');
     /// Add tags.
     void AddTags(const StringVector& tags);
     /// Remove tag. Return true if existed.
-    bool RemoveTag(const String& tag);
+    bool RemoveTag(const stl::string& tag);
     /// Remove all tags.
     void RemoveAllTags();
 
@@ -282,9 +282,9 @@ public:
     /// Mark node and child nodes to need world transform recalculation. Notify listener components.
     void MarkDirty();
     /// Create a child scene node (with specified ID if provided).
-    Node* CreateChild(const String& name = String::EMPTY, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
+    Node* CreateChild(const stl::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
     /// Create a temporary child scene node (with specified ID if provided).
-    Node* CreateTemporaryChild(const String& name = String::EMPTY, CreateMode mode = REPLICATED, unsigned id = 0);
+    Node* CreateTemporaryChild(const stl::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0);
     /// Add a child scene node at a specific index. If index is not explicitly specified or is greater than current children size, append the new child at the end.
     void AddChild(Node* node, unsigned index = M_MAX_UNSIGNED);
     /// Remove a child scene node.
@@ -340,7 +340,7 @@ public:
     bool IsReplicated() const;
 
     /// Return name.
-    const String& GetName() const { return impl_->name_; }
+    const stl::string& GetName() const { return impl_->name_; }
 
     /// Return name hash.
     StringHash GetNameHash() const { return impl_->nameHash_; }
@@ -349,7 +349,7 @@ public:
     const StringVector& GetTags() const { return impl_->tags_; }
 
     /// Return whether has a specific tag.
-    bool HasTag(const String& tag) const;
+    bool HasTag(const stl::string& tag) const;
 
     /// Return parent scene node.
     Node* GetParent() const { return parent_; }
@@ -516,14 +516,14 @@ public:
     /// Return child scene nodes with a specific component.
     stl::vector<Node*> GetChildrenWithComponent(StringHash type, bool recursive = false) const;
     /// Return child scene nodes with a specific tag.
-    void GetChildrenWithTag(stl::vector<Node*>& dest, const String& tag, bool recursive = false) const;
+    void GetChildrenWithTag(stl::vector<Node*>& dest, const stl::string& tag, bool recursive = false) const;
     /// Return child scene nodes with a specific tag.
-    stl::vector<Node*> GetChildrenWithTag(const String& tag, bool recursive = false) const;
+    stl::vector<Node*> GetChildrenWithTag(const stl::string& tag, bool recursive = false) const;
 
     /// Return child scene node by index.
     Node* GetChild(unsigned index) const;
     /// Return child scene node by name.
-    Node* GetChild(const String& name, bool recursive = false) const;
+    Node* GetChild(const stl::string& name, bool recursive = false) const;
     /// Return child scene node by name.
     Node* GetChild(const char* name, bool recursive = false) const;
     /// Return child scene node by name hash.
@@ -638,13 +638,13 @@ protected:
     /// Handle attribute animation removed.
     void OnAttributeAnimationRemoved() override;
     /// Find target of an attribute animation from object hierarchy by name.
-    Animatable* FindAttributeAnimationTarget(const String& name, String& outName) override;
+    Animatable* FindAttributeAnimationTarget(const stl::string& name, stl::string& outName) override;
 
 private:
     /// Set enabled/disabled state with optional recursion. Optionally affect the remembered enable state.
     void SetEnabled(bool enable, bool recursive, bool storeSelf);
     /// Create component, allowing UnknownComponent if actual type is not supported. Leave typeName empty if not known.
-    Component* SafeCreateComponent(const String& typeName, StringHash type, CreateMode mode, unsigned id);
+    Component* SafeCreateComponent(const stl::string& typeName, StringHash type, CreateMode mode, unsigned id);
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
@@ -654,7 +654,7 @@ private:
     /// Return child nodes with a specific component recursively.
     void GetChildrenWithComponentRecursive(stl::vector<Node*>& dest, StringHash type) const;
     /// Return child nodes with a specific tag recursively.
-    void GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const String& tag) const;
+    void GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const stl::string& tag) const;
     /// Return specific components recursively.
     void GetComponentsRecursive(stl::vector<Component*>& dest, StringHash type) const;
     /// Clone node recursively.

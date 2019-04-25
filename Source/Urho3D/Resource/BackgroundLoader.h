@@ -64,7 +64,7 @@ public:
     void ThreadFunction() override;
 
     /// Queue loading of a resource. The name must be sanitated to ensure consistent format. Return true if queued (not a duplicate and resource was a known type).
-    bool QueueResource(StringHash type, const String& name, bool sendEventOnFailure, Resource* caller);
+    bool QueueResource(StringHash type, const stl::string& name, bool sendEventOnFailure, Resource* caller);
     /// Wait and finish possible loading of a resource when being requested from the cache.
     void WaitForResource(StringHash type, StringHash nameHash);
     /// Process resources that are ready to finish.

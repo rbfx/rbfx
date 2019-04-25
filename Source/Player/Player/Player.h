@@ -39,11 +39,11 @@ public:
     ///
     explicit BakedResourceRouter(Context* context);
     ///
-    void Route(String& name, ResourceRequest requestType) override;
+    void Route(stl::string& name, ResourceRequest requestType) override;
 
 protected:
     ///
-    HashMap<String, String> routes_;
+    HashMap<stl::string, stl::string> routes_;
 };
 
 class Player : public Application
@@ -63,7 +63,7 @@ protected:
     virtual bool LoadPlugins(const JSONValue& plugins);
 #if URHO3D_PLUGINS
     ///
-    bool LoadAssembly(const String& path, PluginType assumeType=PLUGIN_INVALID);
+    bool LoadAssembly(const stl::string& path, PluginType assumeType=PLUGIN_INVALID);
 #endif
 
     ///

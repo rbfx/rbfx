@@ -50,7 +50,7 @@ public:
     /// Automatically set console to visible when receiving an error log message.
     void SetAutoVisibleOnError(bool enable) { autoVisibleOnError_ = enable; }
     /// Set the command interpreter.
-    void SetCommandInterpreter(const String& interpreter);
+    void SetCommandInterpreter(const stl::string& interpreter);
     /// Set command history maximum size, 0 disables history.
     void SetNumHistoryRows(unsigned rows);
     /// Return whether is visible.
@@ -58,7 +58,7 @@ public:
     /// Return true when console is set to automatically visible when receiving an error log message.
     bool IsAutoVisibleOnError() const { return autoVisibleOnError_; }
     /// Return the last used command interpreter.
-    const String& GetCommandInterpreter() const { return interpreters_[currentInterpreter_]; }
+    const stl::string& GetCommandInterpreter() const { return interpreters_[currentInterpreter_]; }
     /// Return history maximum size.
     unsigned GetNumHistoryRows() const { return historyRows_; }
     /// Remove all rows.
@@ -70,9 +70,9 @@ public:
     /// Returns a set of loggers that exist in console history.
     StringVector GetLoggers() const;
     /// Set visibility of certain loggers in the console.
-    void SetLoggerVisible(const String& loggerName, bool visible);
+    void SetLoggerVisible(const stl::string& loggerName, bool visible);
     /// Get visibility of certain loggers in the console.
-    bool GetLoggerVisible(const String& loggerName) const;
+    bool GetLoggerVisible(const stl::string& loggerName) const;
     /// Set visibility of certain log levels in the console.
     void SetLevelVisible(LogLevel level, bool visible);
     /// Get visibility of certain log levels in the console.
@@ -93,15 +93,15 @@ private:
         /// Time when event was logged.
         time_t timestamp_;
         /// Name of logger.
-        String logger_;
+        stl::string logger_;
         /// Log message.
-        String message_;
+        stl::string message_;
     };
 
     /// Auto visible on error flag.
     bool autoVisibleOnError_ = false;
     /// List of command interpreters.
-    stl::vector<String> interpreters_{};
+    stl::vector<stl::string> interpreters_{};
     /// Pointers to c strings in interpreters_ list for efficient UI rendering.
     stl::vector<const char*> interpretersPointers_{};
     /// Last used command interpreter.
@@ -121,7 +121,7 @@ private:
     ///Flag indicating that console input should be focused on the next frame.
     bool focusInput_ = false;
     /// Set of loggers to be omitted from rendering.
-    stl::hash_set<String> loggersHidden_{};
+    stl::hash_set<stl::string> loggersHidden_{};
     /// Log level visibility flags.
     bool levelVisible_[LOG_NONE]{
         false,  // LOG_TRACE

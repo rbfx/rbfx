@@ -40,7 +40,7 @@ class URHO3D_API ShaderPrecache : public Object
 
 public:
     /// Construct and begin collecting shader combinations. Load existing combinations from XML if the file exists.
-    ShaderPrecache(Context* context, const String& fileName);
+    ShaderPrecache(Context* context, const stl::string& fileName);
     /// Destruct. Write the collected shaders to XML.
     ~ShaderPrecache() override;
 
@@ -52,13 +52,13 @@ public:
 
 private:
     /// XML file name.
-    String fileName_;
+    stl::string fileName_;
     /// XML file.
     XMLFile xmlFile_;
     /// Already encountered shader combinations, pointer version for fast queries.
     stl::hash_set<stl::pair<ShaderVariation*, ShaderVariation*> > usedPtrCombinations_;
     /// Already encountered shader combinations.
-    stl::hash_set<String> usedCombinations_;
+    stl::hash_set<stl::string> usedCombinations_;
 };
 
 }

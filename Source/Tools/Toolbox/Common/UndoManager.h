@@ -103,7 +103,7 @@ public:
             auto nodeID = nodeData.ReadUInt();
             nodeData.Seek(0);
 
-            Node* node = parent->CreateChild(String::EMPTY, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
+            Node* node = parent->CreateChild(EMPTY_STRING, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
             node->Load(nodeData);
             // FocusNode(node);
         }
@@ -351,7 +351,7 @@ static unsigned GetID(Serializable* serializable)
 class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
 {
     unsigned targetID;
-    String attrName;
+    stl::string attrName;
     Variant undoValue;
     Variant redoValue;
     StringHash targetType;
@@ -360,7 +360,7 @@ class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
     stl::weak_ptr<Serializable> target;
 
 public:
-    EditAttributeAction(Serializable* target, const String& name, const Variant& oldValue, const Variant& newValue)
+    EditAttributeAction(Serializable* target, const stl::string& name, const Variant& oldValue, const Variant& newValue)
     {
         attrName = name;
         undoValue = oldValue;
@@ -525,12 +525,12 @@ class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
     Variant parentID;
     XMLFile elementData;
     XMLFile* styleFile;
-    String elementOldStyle;
-    String elementNewStyle;
+    stl::string elementOldStyle;
+    stl::string elementNewStyle;
     stl::weak_ptr<UIElement> root;
 
 public:
-    ApplyUIElementStyleAction(UIElement* element, const String& newStyle)
+    ApplyUIElementStyleAction(UIElement* element, const stl::string& newStyle)
         : elementData(element->GetContext())
     {
         root = element->GetRoot();
@@ -544,7 +544,7 @@ public:
         elementNewStyle = newStyle;
     }
 
-    void ApplyStyle(const String& style)
+    void ApplyStyle(const stl::string& style)
     {
         UIElement* parent = root->GetChild("UIElementID", parentID, true);
         UIElement* element = root->GetChild("UIElementID", elementID, true);

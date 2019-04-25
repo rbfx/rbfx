@@ -435,15 +435,15 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
 
     if (newDecal.vertices_.size() > maxVertices_)
     {
-        URHO3D_LOGWARNING("Can not add decal, vertex count " + String(newDecal.vertices_.size()) + " exceeds maximum " +
-                   String(maxVertices_));
+        URHO3D_LOGWARNING("Can not add decal, vertex count " + stl::to_string(newDecal.vertices_.size()) + " exceeds maximum " +
+                   stl::to_string(maxVertices_));
         decals_.pop_back();
         return false;
     }
     if (newDecal.indices_.size() > maxIndices_)
     {
-        URHO3D_LOGWARNING("Can not add decal, index count " + String(newDecal.indices_.size()) + " exceeds maximum " +
-                   String(maxIndices_));
+        URHO3D_LOGWARNING("Can not add decal, index count " + stl::to_string(newDecal.indices_.size()) + " exceeds maximum " +
+                   stl::to_string(maxIndices_));
         decals_.pop_back();
         return false;
     }
@@ -472,7 +472,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     while (decals_.size() && (numVertices_ > maxVertices_ || numIndices_ > maxIndices_))
         RemoveDecals(1);
 
-    URHO3D_LOGDEBUG("Added decal with " + String(newDecal.vertices_.size()) + " vertices");
+    URHO3D_LOGDEBUG("Added decal with " + stl::to_string(newDecal.vertices_.size()) + " vertices");
 
     // If new decal is time limited, subscribe to scene post-update
     if (newDecal.timeToLive_ > 0.0f && !subscribed_)

@@ -85,10 +85,10 @@ void ConsoleTab::OnAfterBegin()
             };
             auto* state = ui::GetUIState<State>(context_);
             auto* console = GetSubsystem<Console>();
-            for (const String& logger : state->loggers_)
+            for (const stl::string& logger : state->loggers_)
             {
                 bool visible = console->GetLoggerVisible(logger);
-                if (ui::MenuItem(logger.CString(), nullptr, &visible))
+                if (ui::MenuItem(logger.c_str(), nullptr, &visible))
                     console->SetLoggerVisible(logger, visible);
             }
             ui::EndMenu();

@@ -66,7 +66,7 @@ public:
 #endif
     }
     /// Construct from a string.
-    StringHash(const String& str) noexcept;      // NOLINT(google-explicit-constructor)
+    StringHash(const stl::string& str) noexcept;      // NOLINT(google-explicit-constructor)
 
     /// Assign from another hash.
     StringHash& operator =(const StringHash& rhs) noexcept = default;
@@ -105,10 +105,10 @@ public:
     unsigned Value() const { return value_; }
 
     /// Return as string.
-    String ToString() const;
+    stl::string ToString() const;
 
     /// Return string which has specific hash value. Return first string if many (in order of calculation). Use for debug purposes only. Return empty string if URHO3D_HASH_DEBUG is off.
-    String Reverse() const;
+    stl::string Reverse() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return value_; }
