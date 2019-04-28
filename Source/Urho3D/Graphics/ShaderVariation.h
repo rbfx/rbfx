@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashMap.h"
+#include <EASTL/unordered_map.h>
+
 #include "../Container/RefCounted.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
@@ -110,13 +111,13 @@ public:
     stl::string GetFullName() const { return name_ + "(" + defines_ + ")"; }
 
     /// Return whether uses a parameter. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
-    bool HasParameter(StringHash param) const { return parameters_.Contains(param); }
+    bool HasParameter(StringHash param) const { return parameters_.contains(param); }
 
     /// Return whether uses a texture unit (only for pixel shaders.) Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
     bool HasTextureUnit(TextureUnit unit) const { return useTextureUnits_[unit]; }
 
     /// Return all parameter definitions. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
-    const HashMap<StringHash, ShaderParameter>& GetParameters() const { return parameters_; }
+    const stl::unordered_map<StringHash, ShaderParameter>& GetParameters() const { return parameters_; }
 
     /// Return vertex element hash.
     unsigned long long GetElementHash() const { return elementHash_; }
@@ -158,7 +159,7 @@ private:
     /// Vertex element hash for vertex shaders. Zero for pixel shaders. Note that hashing is different than vertex buffers.
     unsigned long long elementHash_{};
     /// Shader parameters.
-    HashMap<StringHash, ShaderParameter> parameters_;
+    stl::unordered_map<StringHash, ShaderParameter> parameters_;
     /// Texture unit use flags.
     bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Constant buffer sizes. 0 if a constant buffer slot is not in use.

@@ -357,24 +357,25 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             if (ui::Button(ICON_FA_PLUS))
                 mapState->insertingNew = true;
 
-            if (!map->Empty())
+            if (!map->empty())
                 ui::NextColumn();
 
             unsigned index = 0;
-            for (auto it = map->Begin(); it != map->End(); it++)
+            unsigned size = map->size();
+            for (auto it = map->begin(); it != map->end(); it++)
             {
-                VariantType type = it->second_.GetType();
+                VariantType type = it->second.GetType();
                 if (type == VAR_RESOURCEREFLIST || type == VAR_VARIANTMAP || type == VAR_VARIANTVECTOR ||
                     type == VAR_BUFFER || type == VAR_VOIDPTR || type == VAR_PTR)
                     // TODO: Support nested collections.
                     continue;
 
 #if URHO3D_HASH_DEBUG
-                const stl::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first_);
+                const stl::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
                 // Column-friendly indent
                 ui::NewLine();
                 ui::SameLine(20_dpx);
-                ui::TextUnformatted((name.empty() ? it->first_.ToString() : name).c_str());
+                ui::TextUnformatted((name.empty() ? it->first.ToString() : name).c_str());
 #else
                 // Column-friendly indent
                 ui::NewLine();
@@ -385,16 +386,16 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 ui::NextColumn();
                 ui::IdScope entryIdScope(index++);
                 UI_ITEMWIDTH(-buttonWidth()) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
-                    modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second_);
-                ui::SameLine(it->second_.GetType());
+                    modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second);
+                ui::SameLine(it->second.GetType());
                 if (ui::Button(ICON_FA_TRASH))
                 {
-                    it = map->Erase(it);
+                    it = map->erase(it);
                     modified |= true;
                     break;
                 }
 
-                if (it->first_ != map->Back().first_)
+                if (--size > 0)
                     ui::NextColumn();
             }
 
@@ -409,9 +410,10 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 ui::SameLine(0, 4_dpx);
                 if (ui::Button(ICON_FA_CHECK))
                 {
-                    if (map->Find(mapState->fieldName.c_str()) == map->End())   // TODO: Show warning about duplicate name
+                    if (map->find(mapState->fieldName.c_str()) == map->end())   // TODO: Show warning about duplicate name
                     {
-                        map->Insert({mapState->fieldName.c_str(), Variant{supportedVariantTypes[mapState->variantTypeIndex]}});
+                        map->insert(
+                            {mapState->fieldName.c_str(), Variant{supportedVariantTypes[mapState->variantTypeIndex]}});
                         mapState->fieldName.clear();
                         mapState->variantTypeIndex = 0;
                         mapState->insertingNew = false;

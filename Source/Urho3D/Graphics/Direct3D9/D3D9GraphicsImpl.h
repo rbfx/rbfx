@@ -35,8 +35,8 @@ namespace Urho3D
 
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 
-using ShaderProgramMap = HashMap<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
-using VertexDeclarationMap = HashMap<unsigned long long, stl::shared_ptr<VertexDeclaration> >;
+using ShaderProgramMap = stl::unordered_map<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
+using VertexDeclarationMap = stl::unordered_map<unsigned long long, stl::shared_ptr<VertexDeclaration> >;
 
 /// %Graphics implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl

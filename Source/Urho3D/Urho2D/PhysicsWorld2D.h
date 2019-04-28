@@ -241,7 +241,7 @@ protected:
     /// Rigid bodies.
     stl::vector<stl::weak_ptr<RigidBody2D> > rigidBodies_;
     /// Delayed (parented) world transform assignments.
-    HashMap<RigidBody2D*, DelayedWorldTransform2D> delayedWorldTransforms_;
+    stl::unordered_map<RigidBody2D*, DelayedWorldTransform2D> delayedWorldTransforms_;
 
     /// Contact info.
     struct ContactInfo

@@ -498,7 +498,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                 }
             }
 
-            if ((subGeometryLodLevel.boneWeights_.Size()) && bones_.size())
+            if ((subGeometryLodLevel.boneWeights_.size()) && bones_.size())
             {
                 vBuf->elementMask_ |= MASK_BLENDWEIGHTS | MASK_BLENDINDICES;
                 bool sorted = false;
@@ -506,67 +506,68 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                 // If amount of bones is larger than supported by HW skinning, must remap per submesh
                 if (bones_.size() > maxBones_)
                 {
-                    HashMap<unsigned, unsigned> usedBoneMap;
+                    stl::unordered_map<unsigned, unsigned> usedBoneMap;
                     unsigned remapIndex = 0;
-                    for (auto i = subGeometryLodLevel.boneWeights_.Begin(); i != subGeometryLodLevel.boneWeights_.End(); ++i)
+                    for (auto i = subGeometryLodLevel.boneWeights_.begin(); i !=
+                        subGeometryLodLevel.boneWeights_.end(); ++i)
                     {
                         // Sort the bone assigns by weight
-                        stl::quick_sort(i->second_.begin(), i->second_.end(), CompareWeights);
+                        stl::quick_sort(i->second.begin(), i->second.end(), CompareWeights);
 
                         // Use only the first 4 weights
-                        for (unsigned j = 0; j < i->second_.size() && j < 4; ++j)
+                        for (unsigned j = 0; j < i->second.size() && j < 4; ++j)
                         {
-                            unsigned originalIndex = i->second_[j].boneIndex_;
-                            if (!usedBoneMap.Contains(originalIndex))
+                            unsigned originalIndex = i->second[j].boneIndex_;
+                            if (!usedBoneMap.contains(originalIndex))
                             {
                                 usedBoneMap[originalIndex] = remapIndex;
                                 remapIndex++;
                             }
-                            i->second_[j].boneIndex_ = usedBoneMap[originalIndex];
+                            i->second[j].boneIndex_ = usedBoneMap[originalIndex];
                         }
                     }
 
                     // If still too many bones in one subgeometry, error
-                    if (usedBoneMap.Size() > maxBones_)
+                    if (usedBoneMap.size() > maxBones_)
                         ErrorExit("Too many bones (limit " + stl::to_string(maxBones_) + ") in submesh " + stl::to_string(subMeshIndex + 1));
 
                     // Write mapping of vertex buffer bone indices to original bone indices
-                    subGeometryLodLevel.boneMapping_.resize(usedBoneMap.Size());
-                    for (HashMap<unsigned, unsigned>::Iterator j = usedBoneMap.Begin(); j != usedBoneMap.End(); ++j)
-                        subGeometryLodLevel.boneMapping_[j->second_] = j->first_;
+                    subGeometryLodLevel.boneMapping_.resize(usedBoneMap.size());
+                    for (auto j = usedBoneMap.begin(); j != usedBoneMap.end(); ++j)
+                        subGeometryLodLevel.boneMapping_[j->second] = j->first;
 
                     sorted = true;
                 }
 
-                for (auto i = subGeometryLodLevel.boneWeights_.Begin(); i != subGeometryLodLevel.boneWeights_.End(); ++i)
+                for (auto i = subGeometryLodLevel.boneWeights_.begin(); i != subGeometryLodLevel.boneWeights_.end(); ++i)
                 {
                     // Sort the bone assigns by weight, if not sorted yet in bone remapping pass
                     if (!sorted)
-                        stl::quick_sort(i->second_.begin(), i->second_.end(), CompareWeights);
+                        stl::quick_sort(i->second.begin(), i->second.end(), CompareWeights);
 
                     float totalWeight = 0.0f;
                     float normalizationFactor = 0.0f;
 
                     // Calculate normalization factor in case there are more than 4 blend weights, or they do not add up to 1
-                    for (unsigned j = 0; j < i->second_.size() && j < 4; ++j)
-                        totalWeight += i->second_[j].weight_;
+                    for (unsigned j = 0; j < i->second.size() && j < 4; ++j)
+                        totalWeight += i->second[j].weight_;
                     if (totalWeight > 0.0f)
                         normalizationFactor = 1.0f / totalWeight;
 
-                    for (unsigned j = 0; j < i->second_.size() && j < 4; ++j)
+                    for (unsigned j = 0; j < i->second.size() && j < 4; ++j)
                     {
-                        vBuf->vertices_[i->first_].blendIndices_[j] = i->second_[j].boneIndex_;
-                        vBuf->vertices_[i->first_].blendWeights_[j] = i->second_[j].weight_ * normalizationFactor;
+                        vBuf->vertices_[i->first].blendIndices_[j] = i->second[j].boneIndex_;
+                        vBuf->vertices_[i->first].blendWeights_[j] = i->second[j].weight_ * normalizationFactor;
                     }
 
                     // If there are less than 4 blend weights, fill rest with zero
-                    for (unsigned j = i->second_.size(); j < 4; ++j)
+                    for (unsigned j = i->second.size(); j < 4; ++j)
                     {
-                        vBuf->vertices_[i->first_].blendIndices_[j] = 0;
-                        vBuf->vertices_[i->first_].blendWeights_[j] = 0.0f;
+                        vBuf->vertices_[i->first].blendIndices_[j] = 0;
+                        vBuf->vertices_[i->first].blendWeights_[j] = 0.0f;
                     }
 
-                    vBuf->vertices_[i->first_].hasBlendWeights_ = true;
+                    vBuf->vertices_[i->first].hasBlendWeights_ = true;
                 }
             }
         }

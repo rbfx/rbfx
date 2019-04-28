@@ -123,33 +123,35 @@ unsigned Resource::GetUseTimer()
 
 void ResourceWithMetadata::AddMetadata(const stl::string& name, const Variant& value)
 {
-    bool exists;
-    metadata_.Insert(stl::make_pair(StringHash(name), value), exists);
+    bool exists = metadata_.insert(stl::make_pair(StringHash(name), value)).second;
     if (!exists)
         metadataKeys_.push_back(name);
 }
 
 void ResourceWithMetadata::RemoveMetadata(const stl::string& name)
 {
-    metadata_.Erase(name);
+    metadata_.erase(name);
     metadataKeys_.erase_first(name);
 }
 
 void ResourceWithMetadata::RemoveAllMetadata()
 {
-    metadata_.Clear();
+    metadata_.clear();
     metadataKeys_.clear();
 }
 
 const Urho3D::Variant& ResourceWithMetadata::GetMetadata(const stl::string& name) const
 {
-    const Variant* value = metadata_[name];
-    return value ? *value : Variant::EMPTY;
+    auto it = metadata_.find(name);
+    if (it != metadata_.end())
+        return it->second;
+
+    return Variant::EMPTY;
 }
 
 bool ResourceWithMetadata::HasMetadata() const
 {
-    return !metadata_.Empty();
+    return !metadata_.empty();
 }
 
 void ResourceWithMetadata::LoadMetadataFromXML(const XMLElement& source)

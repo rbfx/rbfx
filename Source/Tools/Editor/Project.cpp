@@ -249,7 +249,7 @@ bool Project::LoadProject(const stl::string& projectPath)
                 return false;
 
             for (auto& pair : file.GetRoot().GetObject())
-                engineParameters_[pair.first_] = pair.second_.GetVariant();
+                engineParameters_[pair.first] = pair.second.GetVariant();
         }
     }
 
@@ -293,16 +293,25 @@ bool Project::LoadProject(const stl::string& projectPath)
 
             const auto& root = file.GetRoot().GetObject();
 #if URHO3D_PLUGINS
-            if (root.Contains("plugins"))
+            auto pluginsIt = root.find("plugins");
+            if (pluginsIt != root.end())
             {
-                const auto& plugins = root["plugins"]->GetArray();
+                const auto& plugins = pluginsIt->second.GetArray();
                 for (const auto& pluginInfoValue : plugins)
                 {
                     const JSONObject& pluginInfo = pluginInfoValue.GetObject();
-                    const stl::string& pluginName = pluginInfo["name"]->GetString();
+                    auto nameIt = pluginInfo.find("name");
+                    if (nameIt == pluginInfo.end())
+                    {
+                        URHO3D_LOGERRORF("Loading plugin failed: 'name' is missing.");
+                        continue;
+                    }
+
+                    const stl::string& pluginName = nameIt->second.GetString();
                     if (Plugin* plugin = plugins_.Load(pluginName))
                     {
-                        if (pluginInfo["private"]->GetBool())
+                        auto privateIt = pluginInfo.find("private");
+                        if (privateIt != pluginInfo.end() && privateIt->second.GetBool())
                             plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
                     }
                     else
@@ -314,8 +323,9 @@ bool Project::LoadProject(const stl::string& projectPath)
                 plugins_.OnEndFrame();
             }
 #endif
-            if (root.Contains("default-scene"))
-                defaultScene_ = root["default-scene"]->GetString();
+            auto defaultSceneIt = root.find("default-scene");
+            if (defaultSceneIt != root.end())
+                defaultScene_ = defaultSceneIt->second.GetString();
 
             using namespace EditorProjectLoading;
             SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
@@ -360,8 +370,10 @@ bool Project::SaveProject()
                                              {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
             }
             stl::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
-                const stl::string& nameA = a.GetObject()["name"]->GetString();
-                const stl::string& nameB = b.GetObject()["name"]->GetString();
+                auto aNameIt = a.GetObject().find("name");
+                auto bNameIt = b.GetObject().find("name");
+                const stl::string& nameA = aNameIt != a.GetObject().end() ? aNameIt->second.GetString() : EMPTY_STRING;
+                const stl::string& nameB = bNameIt != b.GetObject().end() ? bNameIt->second.GetString() : EMPTY_STRING;
                 return nameA.compare(nameB);
             });
             root["plugins"] = plugins;
@@ -387,7 +399,7 @@ bool Project::SaveProject()
         JSONValue& root = file.GetRoot();
 
         for (const auto& pair : engineParameters_)
-            root[pair.first_].SetVariant(pair.second_, context_);
+            root[pair.first].SetVariant(pair.second, context_);
 
         stl::string filePath(projectFileDir_ + "Settings.json");
         if (!file.SaveFile(filePath))
@@ -401,12 +413,12 @@ bool Project::SaveProject()
 #if URHO3D_HASH_DEBUG
     // StringHashNames.json
     {
-        auto hashNames = StringHash::GetGlobalStringHashRegister()->GetInternalMap().Values();
+        auto hashNames = StringHash::GetGlobalStringHashRegister()->GetInternalMap().values();
         stl::quick_sort(hashNames.begin(), hashNames.end());
         JSONFile file(context_);
         JSONArray names;
         for (const auto& string : hashNames)
-            names.push_back(string);
+            names.push_back(string.ToString());
         file.GetRoot() = names;
 
         stl::string filePath(projectFileDir_ + "StringHashNames.json");

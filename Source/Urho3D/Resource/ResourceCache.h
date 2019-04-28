@@ -55,7 +55,7 @@ struct ResourceGroup
     /// Current memory use.
     unsigned long long memoryUse_;
     /// Resources.
-    HashMap<StringHash, stl::shared_ptr<Resource> > resources_;
+    stl::unordered_map<StringHash, stl::shared_ptr<Resource> > resources_;
 };
 
 /// Resource request types.
@@ -152,7 +152,7 @@ public:
     Resource* GetExistingResource(StringHash type, const stl::string& name);
 
     /// Return all loaded resources.
-    const HashMap<StringHash, ResourceGroup>& GetAllResources() const { return resourceGroups_; }
+    const stl::unordered_map<StringHash, ResourceGroup>& GetAllResources() const { return resourceGroups_; }
 
     /// Return added resource load directories.
     const stl::vector<stl::string>& GetResourceDirs() const { return resourceDirs_; }
@@ -229,6 +229,8 @@ public:
     void IgnoreResourceReload(const Resource* resource);
     /// Pass name through resource routers and return final resource name.
     void RouteResourceName(stl::string& name, ResourceRequest requestType) const;
+    /// Clear all resources from resource cache.
+    void Clear();
 
 private:
     /// Find a resource.
@@ -249,7 +251,7 @@ private:
     /// Mutex for thread-safe access to the resource directories, resource packages and resource dependencies.
     mutable Mutex resourceMutex_;
     /// Resources by type.
-    HashMap<StringHash, ResourceGroup> resourceGroups_;
+    stl::unordered_map<StringHash, ResourceGroup> resourceGroups_;
     /// Resource load directories.
     stl::vector<stl::string> resourceDirs_;
     /// File watchers for resource directories, if automatic reloading enabled.
@@ -257,7 +259,7 @@ private:
     /// Package files.
     stl::vector<stl::shared_ptr<PackageFile> > packages_;
     /// Dependent resources. Only used with automatic reload to eg. trigger reload of a cube texture when any of its faces change.
-    HashMap<StringHash, stl::hash_set<StringHash> > dependentResources_;
+    stl::unordered_map<StringHash, stl::hash_set<StringHash> > dependentResources_;
     /// Resource background loader.
     stl::shared_ptr<BackgroundLoader> backgroundLoader_;
     /// Resource routers.

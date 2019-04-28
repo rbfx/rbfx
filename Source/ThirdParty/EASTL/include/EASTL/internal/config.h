@@ -1859,4 +1859,9 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 	#define EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR 1
 #endif
 
+
+#if EASTL_URHO3D_EXTENSIONS
+namespace stl = eastl;
+#endif
+
 #endif // Header include guard

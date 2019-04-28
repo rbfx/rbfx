@@ -154,7 +154,7 @@ private:
     /// Client's server connection.
     stl::shared_ptr<Connection> serverConnection_;
     /// Server's client connections.
-    HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> > clientConnections_;
+    stl::unordered_map<SLNet::AddressOrGUID, stl::shared_ptr<Connection> > clientConnections_;
     /// Allowed remote events.
     stl::hash_set<StringHash> allowedRemoteEvents_;
     /// Remote event fixed blacklist.

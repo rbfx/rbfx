@@ -253,7 +253,7 @@ void ResourceCache::ReleaseResource(StringHash type, const stl::string& name, bo
     // If other references exist, do not release, unless forced
     if ((existingRes.use_count() == 1 && existingRes.weak_use_count() == 0) || force)
     {
-        resourceGroups_[type].resources_.Erase(nameHash);
+        resourceGroups_[type].resources_.erase(nameHash);
         UpdateResourceGroup(type);
     }
 }
@@ -262,17 +262,17 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
 {
     bool released = false;
 
-    HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
-    if (i != resourceGroups_.End())
+    auto i = resourceGroups_.find(type);
+    if (i != resourceGroups_.end())
     {
-        for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
-             j != i->second_.resources_.End();)
+        for (auto j = i->second.resources_.begin();
+             j != i->second.resources_.end();)
         {
-            HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
+            auto current = j++;
             // If other references exist, do not release, unless forced
-            if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
+            if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
             {
-                i->second_.resources_.Erase(current);
+                i->second.resources_.erase(current);
                 released = true;
             }
         }
@@ -286,19 +286,19 @@ void ResourceCache::ReleaseResources(StringHash type, const stl::string& partial
 {
     bool released = false;
 
-    HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
-    if (i != resourceGroups_.End())
+    auto i = resourceGroups_.find(type);
+    if (i != resourceGroups_.end())
     {
-        for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
-             j != i->second_.resources_.End();)
+        for (auto j = i->second.resources_.begin();
+             j != i->second.resources_.end();)
         {
-            HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
-            if (current->second_->GetName().contains(partialName))
+            auto current = j++;
+            if (current->second->GetName().contains(partialName))
             {
                 // If other references exist, do not release, unless forced
-                if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
+                if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
                 {
-                    i->second_.resources_.Erase(current);
+                    i->second.resources_.erase(current);
                     released = true;
                 }
             }
@@ -318,24 +318,25 @@ void ResourceCache::ReleaseResources(const stl::string& partialName, bool force)
     {
         released = false;
 
-        for (HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Begin(); i != resourceGroups_.End(); ++i)
+        for (auto i = resourceGroups_.begin(); i !=
+            resourceGroups_.end(); ++i)
         {
-            for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
-                 j != i->second_.resources_.End();)
+            for (auto j = i->second.resources_.begin();
+                 j != i->second.resources_.end();)
             {
-                HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
-                if (current->second_->GetName().contains(partialName))
+                auto current = j++;
+                if (current->second->GetName().contains(partialName))
                 {
                     // If other references exist, do not release, unless forced
-                    if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
+                    if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
                     {
-                        i->second_.resources_.Erase(current);
+                        i->second.resources_.erase(current);
                         released = true;
                     }
                 }
             }
             if (released)
-                UpdateResourceGroup(i->first_);
+                UpdateResourceGroup(i->first);
         }
 
     } while (released && !force);
@@ -348,22 +349,22 @@ void ResourceCache::ReleaseAllResources(bool force)
     {
         released = false;
 
-        for (HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Begin();
-             i != resourceGroups_.End(); ++i)
+        for (auto i = resourceGroups_.begin();
+             i != resourceGroups_.end(); ++i)
         {
-            for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
-                 j != i->second_.resources_.End();)
+            for (auto j = i->second.resources_.begin();
+                 j != i->second.resources_.end();)
             {
-                HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator current = j++;
+                auto current = j++;
                 // If other references exist, do not release, unless forced
-                if ((current->second_.use_count() == 1 && current->second_.weak_use_count() == 0) || force)
+                if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
                 {
-                    i->second_.resources_.Erase(current);
+                    i->second.resources_.erase(current);
                     released = true;
                 }
             }
             if (released)
-                UpdateResourceGroup(i->first_);
+                UpdateResourceGroup(i->first);
         }
 
     } while (released && !force);
@@ -409,15 +410,16 @@ void ResourceCache::ReloadResourceWithDependencies(const stl::string& fileName)
     if (!resource || GetExtension(resource->GetName()) == ".xml")
     {
         // Check if this is a dependency resource, reload dependents
-        HashMap<StringHash, stl::hash_set<StringHash> >::ConstIterator j = dependentResources_.Find(fileNameHash);
-        if (j != dependentResources_.End())
+        auto j = dependentResources_.find(
+            fileNameHash);
+        if (j != dependentResources_.end())
         {
             // Reloading a resource may modify the dependency tracking structure. Therefore collect the
             // resources we need to reload first
             stl::vector<stl::shared_ptr<Resource> > dependents;
-            dependents.reserve(j->second_.size());
+            dependents.reserve(j->second.size());
 
-            for (auto k = j->second_.begin(); k != j->second_.end(); ++k)
+            for (auto k = j->second.begin(); k != j->second.end(); ++k)
             {
                 const stl::shared_ptr<Resource>& dependent = FindResource(*k);
                 if (dependent)
@@ -714,12 +716,12 @@ unsigned ResourceCache::GetNumBackgroundLoadResources() const
 void ResourceCache::GetResources(stl::vector<Resource*>& result, StringHash type) const
 {
     result.clear();
-    HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups_.Find(type);
-    if (i != resourceGroups_.End())
+    auto i = resourceGroups_.find(type);
+    if (i != resourceGroups_.end())
     {
-        for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator j = i->second_.resources_.Begin();
-             j != i->second_.resources_.End(); ++j)
-            result.push_back(j->second_.get());
+        for (auto j = i->second.resources_.begin();
+             j != i->second.resources_.end(); ++j)
+            result.push_back(j->second.get());
     }
 }
 
@@ -752,21 +754,22 @@ bool ResourceCache::Exists(const stl::string& name) const
 
 unsigned long long ResourceCache::GetMemoryBudget(StringHash type) const
 {
-    HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups_.Find(type);
-    return i != resourceGroups_.End() ? i->second_.memoryBudget_ : 0;
+    auto i = resourceGroups_.find(type);
+    return i != resourceGroups_.end() ? i->second.memoryBudget_ : 0;
 }
 
 unsigned long long ResourceCache::GetMemoryUse(StringHash type) const
 {
-    HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups_.Find(type);
-    return i != resourceGroups_.End() ? i->second_.memoryUse_ : 0;
+    auto i = resourceGroups_.find(type);
+    return i != resourceGroups_.end() ? i->second.memoryUse_ : 0;
 }
 
 unsigned long long ResourceCache::GetTotalMemoryUse() const
 {
     unsigned long long total = 0;
-    for (HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups_.Begin(); i != resourceGroups_.End(); ++i)
-        total += i->second_.memoryUse_;
+    for (auto i = resourceGroups_.begin(); i !=
+        resourceGroups_.end(); ++i)
+        total += i->second.memoryUse_;
     return total;
 }
 
@@ -894,12 +897,13 @@ void ResourceCache::ResetDependencies(Resource* resource)
 
     StringHash nameHash(resource->GetName());
 
-    for (HashMap<StringHash, stl::hash_set<StringHash> >::Iterator i = dependentResources_.Begin(); i != dependentResources_.End();)
+    for (auto i = dependentResources_.begin(); i !=
+        dependentResources_.end();)
     {
-        stl::hash_set<StringHash>& dependents = i->second_;
+        stl::hash_set<StringHash>& dependents = i->second;
         dependents.erase(nameHash);
         if (dependents.empty())
-            i = dependentResources_.Erase(i);
+            i = dependentResources_.erase(i);
         else
             ++i;
     }
@@ -915,31 +919,32 @@ stl::string ResourceCache::PrintMemoryUsage() const
     unsigned long long totalAverage = 0;
     unsigned long long totalUse = GetTotalMemoryUse();
 
-    for (HashMap<StringHash, ResourceGroup>::ConstIterator cit = resourceGroups_.Begin(); cit != resourceGroups_.End(); ++cit)
+    for (auto cit = resourceGroups_.begin(); cit !=
+        resourceGroups_.end(); ++cit)
     {
-        const unsigned resourceCt = cit->second_.resources_.Size();
+        const unsigned resourceCt = cit->second.resources_.size();
         unsigned long long average = 0;
         if (resourceCt > 0)
-            average = cit->second_.memoryUse_ / resourceCt;
+            average = cit->second.memoryUse_ / resourceCt;
         else
             average = 0;
         unsigned long long largest = 0;
-        for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
+        for (auto resIt = cit->second.resources_.begin(); resIt != cit->second.resources_.end(); ++resIt)
         {
-            if (resIt->second_->GetMemoryUse() > largest)
-                largest = resIt->second_->GetMemoryUse();
+            if (resIt->second->GetMemoryUse() > largest)
+                largest = resIt->second->GetMemoryUse();
             if (largest > totalLargest)
                 totalLargest = largest;
         }
 
         totalResourceCt += resourceCt;
 
-        const stl::string countString = stl::to_string(cit->second_.resources_.Size());
+        const stl::string countString = stl::to_string(cit->second.resources_.size());
         const stl::string memUseString = GetFileSizeString(average);
         const stl::string memMaxString = GetFileSizeString(largest);
-        const stl::string memBudgetString = GetFileSizeString(cit->second_.memoryBudget_);
-        const stl::string memTotalString = GetFileSizeString(cit->second_.memoryUse_);
-        const stl::string resTypeName = context_->GetTypeName(cit->first_);
+        const stl::string memBudgetString = GetFileSizeString(cit->second.memoryBudget_);
+        const stl::string memTotalString = GetFileSizeString(cit->second.memoryUse_);
+        const stl::string resTypeName = context_->GetTypeName(cit->first);
 
         memset(outputLine, ' ', 256);
         outputLine[255] = 0;
@@ -968,25 +973,26 @@ const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, St
 {
     MutexLock lock(resourceMutex_);
 
-    HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
-    if (i == resourceGroups_.End())
+    auto i = resourceGroups_.find(type);
+    if (i == resourceGroups_.end())
         return noResource;
-    HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Find(nameHash);
-    if (j == i->second_.resources_.End())
+    auto j = i->second.resources_.find(nameHash);
+    if (j == i->second.resources_.end())
         return noResource;
 
-    return j->second_;
+    return j->second;
 }
 
 const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
-    for (HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Begin(); i != resourceGroups_.End(); ++i)
+    for (auto i = resourceGroups_.begin(); i !=
+        resourceGroups_.end(); ++i)
     {
-        HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Find(nameHash);
-        if (j != i->second_.resources_.End())
-            return j->second_;
+        auto j = i->second.resources_.find(nameHash);
+        if (j != i->second.resources_.end())
+            return j->second;
     }
 
     return noResource;
@@ -996,22 +1002,23 @@ void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
 {
     stl::hash_set<StringHash> affectedGroups;
 
-    const HashMap<stl::string, PackageEntry>& entries = package->GetEntries();
-    for (HashMap<stl::string, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End(); ++i)
+    const stl::unordered_map<stl::string, PackageEntry>& entries = package->GetEntries();
+    for (auto i = entries.begin(); i != entries.end(); ++i)
     {
-        StringHash nameHash(i->first_);
+        StringHash nameHash(i->first);
 
         // We do not know the actual resource type, so search all type containers
-        for (HashMap<StringHash, ResourceGroup>::Iterator j = resourceGroups_.Begin(); j != resourceGroups_.End(); ++j)
+        for (auto j = resourceGroups_.begin(); j !=
+            resourceGroups_.end(); ++j)
         {
-            HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator k = j->second_.resources_.Find(nameHash);
-            if (k != j->second_.resources_.End())
+            auto k = j->second.resources_.find(nameHash);
+            if (k != j->second.resources_.end())
             {
                 // If other references exist, do not release, unless forced
-                if ((k->second_.use_count() == 1 && k->second_.weak_use_count() == 0) || force)
+                if ((k->second.use_count() == 1 && k->second.weak_use_count() == 0) || force)
                 {
-                    j->second_.resources_.Erase(k);
-                    affectedGroups.insert(j->first_);
+                    j->second.resources_.erase(k);
+                    affectedGroups.insert(j->first);
                 }
                 break;
             }
@@ -1024,21 +1031,21 @@ void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
 
 void ResourceCache::UpdateResourceGroup(StringHash type)
 {
-    HashMap<StringHash, ResourceGroup>::Iterator i = resourceGroups_.Find(type);
-    if (i == resourceGroups_.End())
+    auto i = resourceGroups_.find(type);
+    if (i == resourceGroups_.end())
         return;
 
     for (;;)
     {
         unsigned totalSize = 0;
         unsigned oldestTimer = 0;
-        HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator oldestResource = i->second_.resources_.End();
+        auto oldestResource = i->second.resources_.end();
 
-        for (HashMap<StringHash, stl::shared_ptr<Resource> >::Iterator j = i->second_.resources_.Begin();
-             j != i->second_.resources_.End(); ++j)
+        for (auto j = i->second.resources_.begin();
+             j != i->second.resources_.end(); ++j)
         {
-            totalSize += j->second_->GetMemoryUse();
-            unsigned useTimer = j->second_->GetUseTimer();
+            totalSize += j->second->GetMemoryUse();
+            unsigned useTimer = j->second->GetUseTimer();
             if (useTimer > oldestTimer)
             {
                 oldestTimer = useTimer;
@@ -1046,16 +1053,16 @@ void ResourceCache::UpdateResourceGroup(StringHash type)
             }
         }
 
-        i->second_.memoryUse_ = totalSize;
+        i->second.memoryUse_ = totalSize;
 
         // If memory budget defined and is exceeded, remove the oldest resource and loop again
         // (resources in use always return a zero timer and can not be removed)
-        if (i->second_.memoryBudget_ && i->second_.memoryUse_ > i->second_.memoryBudget_ &&
-            oldestResource != i->second_.resources_.End())
+        if (i->second.memoryBudget_ && i->second.memoryUse_ > i->second.memoryBudget_ &&
+            oldestResource != i->second.resources_.end())
         {
-            URHO3D_LOGDEBUG("Resource group " + oldestResource->second_->GetTypeName() + " over memory budget, releasing resource " +
-                     oldestResource->second_->GetName());
-            i->second_.resources_.Erase(oldestResource);
+            URHO3D_LOGDEBUG("Resource group " + oldestResource->second->GetTypeName() + " over memory budget, releasing resource " +
+                     oldestResource->second->GetName());
+            i->second.resources_.erase(oldestResource);
         }
         else
             break;
@@ -1163,11 +1170,12 @@ stl::string ResourceCache::PrintResources(const stl::string& typeName) const
 
     stl::string output = "Resource Type         Refs   WeakRefs  Name\n\n";
 
-    for (HashMap<StringHash, ResourceGroup>::ConstIterator cit = resourceGroups_.Begin(); cit != resourceGroups_.End(); ++cit)
+    for (auto cit = resourceGroups_.begin(); cit !=
+        resourceGroups_.end(); ++cit)
     {
-        for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator resIt = cit->second_.resources_.Begin(); resIt != cit->second_.resources_.End(); ++resIt)
+        for (auto resIt = cit->second.resources_.begin(); resIt != cit->second.resources_.end(); ++resIt)
         {
-            Resource* resource = resIt->second_;
+            Resource* resource = resIt->second;
 
             // filter
             if (typeName.length() && resource->GetType() != typeNameHash)
@@ -1242,10 +1250,10 @@ bool ResourceCache::RenameResource(stl::string source, stl::string destination)
     for (auto& groupPair : resourceGroups_)
     {
         bool movedAny = false;
-        auto resourcesCopy = groupPair.second_.resources_;
+        auto resourcesCopy = groupPair.second.resources_;
         for (auto& resourcePair : resourcesCopy)
         {
-            stl::shared_ptr<Resource> resource = resourcePair.second_;
+            stl::shared_ptr<Resource> resource = resourcePair.second;
             if (resource->GetName().starts_with(resourceName))
             {
                 if (autoReloadResources_)
@@ -1254,9 +1262,9 @@ bool ResourceCache::RenameResource(stl::string source, stl::string destination)
                     ignoreResourceAutoReload_.emplace_back(resourceName);
                 }
 
-                groupPair.second_.resources_.Erase(resource->GetNameHash());
+                groupPair.second.resources_.erase(resource->GetNameHash());
                 resource->SetName(destinationName);
-                groupPair.second_.resources_[resource->GetNameHash()] = resource;
+                groupPair.second.resources_[resource->GetNameHash()] = resource;
                 movedAny = true;
 
                 using namespace ResourceRenamed;
@@ -1264,7 +1272,7 @@ bool ResourceCache::RenameResource(stl::string source, stl::string destination)
             }
         }
         if (movedAny)
-            UpdateResourceGroup(groupPair.first_);
+            UpdateResourceGroup(groupPair.first);
     }
 
     return true;
@@ -1290,6 +1298,12 @@ void ResourceCache::RouteResourceName(stl::string& name, ResourceRequest request
             resourceRouters_[i]->Route(name, requestType);
         isRouting_ = false;
     }
+}
+
+void ResourceCache::Clear()
+{
+    resourceGroups_.clear();
+    dependentResources_.clear();
 }
 
 }

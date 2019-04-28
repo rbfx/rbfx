@@ -413,10 +413,10 @@ inline float StableRandom(float seed) { return StableRandom(Vector2(seed, seed))
 
 }
 
-namespace stl
+namespace eastl
 {
 
-template <class T> struct hash;
+template <class T, typename Enable> struct hash;
 
 template <> struct hash<Urho3D::IntVector2>
 {

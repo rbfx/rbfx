@@ -447,10 +447,10 @@ bool Serializable::LoadJSON(const JSONValue& source)
 
     unsigned startIndex = 0;
 
-    for (JSONObject::ConstIterator it = attributesObject.Begin(); it != attributesObject.End();)
+    for (auto it = attributesObject.begin(); it != attributesObject.end();)
     {
-        stl::string name = it->first_;
-        const JSONValue& value = it->second_;
+        stl::string name = it->first;
+        const JSONValue& value = it->second;
         unsigned i = startIndex;
         unsigned attempts = attributes->size();
 
@@ -1071,9 +1071,9 @@ Variant Serializable::GetInstanceDefault(const stl::string& name) const
 {
     if (instanceDefaultValues_)
     {
-        VariantMap::ConstIterator i = instanceDefaultValues_->Find(name);
-        if (i != instanceDefaultValues_->End())
-            return i->second_;
+        auto i = instanceDefaultValues_->find(name);
+        if (i != instanceDefaultValues_->end())
+            return i->second;
     }
 
     return Variant::EMPTY;

@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Mutex.h"
@@ -931,61 +930,61 @@ void Input::SetToggleFullscreen(bool enable)
     toggleFullscreen_ = enable;
 }
 
-static void PopulateKeyBindingMap(HashMap<stl::string, int>& keyBindingMap)
+static void PopulateKeyBindingMap(stl::unordered_map<stl::string, int>& keyBindingMap)
 {
-    if (keyBindingMap.Empty())
+    if (keyBindingMap.empty())
     {
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("SPACE", KEY_SPACE));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("LCTRL", KEY_LCTRL));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RCTRL", KEY_RCTRL));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("LSHIFT", KEY_LSHIFT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RSHIFT", KEY_RSHIFT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("LALT", KEY_LALT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RALT", KEY_RALT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("LGUI", KEY_LGUI));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RGUI", KEY_RGUI));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("TAB", KEY_TAB));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RETURN", KEY_RETURN));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RETURN2", KEY_RETURN2));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("ENTER", KEY_KP_ENTER));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("SELECT", KEY_SELECT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("LEFT", KEY_LEFT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("RIGHT", KEY_RIGHT));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("UP", KEY_UP));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("DOWN", KEY_DOWN));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("PAGEUP", KEY_PAGEUP));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("PAGEDOWN", KEY_PAGEDOWN));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F1", KEY_F1));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F2", KEY_F2));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F3", KEY_F3));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F4", KEY_F4));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F5", KEY_F5));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F6", KEY_F6));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F7", KEY_F7));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F8", KEY_F8));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F9", KEY_F9));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F10", KEY_F10));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F11", KEY_F11));
-        keyBindingMap.Insert(stl::make_pair<stl::string, int>("F12", KEY_F12));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("SPACE", KEY_SPACE));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("LCTRL", KEY_LCTRL));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RCTRL", KEY_RCTRL));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("LSHIFT", KEY_LSHIFT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RSHIFT", KEY_RSHIFT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("LALT", KEY_LALT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RALT", KEY_RALT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("LGUI", KEY_LGUI));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RGUI", KEY_RGUI));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("TAB", KEY_TAB));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RETURN", KEY_RETURN));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RETURN2", KEY_RETURN2));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("ENTER", KEY_KP_ENTER));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("SELECT", KEY_SELECT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("LEFT", KEY_LEFT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("RIGHT", KEY_RIGHT));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("UP", KEY_UP));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("DOWN", KEY_DOWN));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("PAGEUP", KEY_PAGEUP));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("PAGEDOWN", KEY_PAGEDOWN));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F1", KEY_F1));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F2", KEY_F2));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F3", KEY_F3));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F4", KEY_F4));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F5", KEY_F5));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F6", KEY_F6));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F7", KEY_F7));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F8", KEY_F8));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F9", KEY_F9));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F10", KEY_F10));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F11", KEY_F11));
+        keyBindingMap.insert(stl::make_pair<stl::string, int>("F12", KEY_F12));
     }
 }
 
-static void PopulateMouseButtonBindingMap(HashMap<stl::string, int>& mouseButtonBindingMap)
+static void PopulateMouseButtonBindingMap(stl::unordered_map<stl::string, int>& mouseButtonBindingMap)
 {
-    if (mouseButtonBindingMap.Empty())
+    if (mouseButtonBindingMap.empty())
     {
-        mouseButtonBindingMap.Insert(stl::make_pair<stl::string, int>("LEFT", SDL_BUTTON_LEFT));
-        mouseButtonBindingMap.Insert(stl::make_pair<stl::string, int>("MIDDLE", SDL_BUTTON_MIDDLE));
-        mouseButtonBindingMap.Insert(stl::make_pair<stl::string, int>("RIGHT", SDL_BUTTON_RIGHT));
-        mouseButtonBindingMap.Insert(stl::make_pair<stl::string, int>("X1", SDL_BUTTON_X1));
-        mouseButtonBindingMap.Insert(stl::make_pair<stl::string, int>("X2", SDL_BUTTON_X2));
+        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("LEFT", SDL_BUTTON_LEFT));
+        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("MIDDLE", SDL_BUTTON_MIDDLE));
+        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("RIGHT", SDL_BUTTON_RIGHT));
+        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("X1", SDL_BUTTON_X1));
+        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("X2", SDL_BUTTON_X2));
     }
 }
 
 SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
 {
-    static HashMap<stl::string, int> keyBindingMap;
-    static HashMap<stl::string, int> mouseButtonBindingMap;
+    static stl::unordered_map<stl::string, int> keyBindingMap;
+    static stl::unordered_map<stl::string, int> mouseButtonBindingMap;
 
     if (!graphics_)
     {
@@ -1013,7 +1012,7 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     // Get an unused ID for the screen joystick
     /// \todo After a real joystick has been plugged in 1073741824 times, the ranges will overlap
     SDL_JoystickID joystickID = SCREEN_JOYSTICK_START_ID;
-    while (joysticks_.Contains(joystickID))
+    while (joysticks_.contains(joystickID))
         ++joystickID;
 
     JoystickState& state = joysticks_[joystickID];
@@ -1046,9 +1045,9 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
                 {
                     PopulateKeyBindingMap(keyBindingMap);
 
-                    HashMap<stl::string, int>::Iterator i = keyBindingMap.Find(key);
-                    if (i != keyBindingMap.End())
-                        keyBinding = i->second_;
+                    auto i = keyBindingMap.find(key);
+                    if (i != keyBindingMap.end())
+                        keyBinding = i->second;
                     else
                     {
                         URHO3D_LOGERRORF("Unsupported key binding: %s", key.c_str());
@@ -1068,9 +1067,9 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
                 const stl::string& mouseButton = text->GetText();
                 PopulateMouseButtonBindingMap(mouseButtonBindingMap);
 
-                HashMap<stl::string, int>::Iterator i = mouseButtonBindingMap.Find(mouseButton);
-                if (i != mouseButtonBindingMap.End())
-                    element->SetVar(VAR_BUTTON_MOUSE_BUTTON_BINDING, i->second_);
+                auto i = mouseButtonBindingMap.find(mouseButton);
+                if (i != mouseButtonBindingMap.end())
+                    element->SetVar(VAR_BUTTON_MOUSE_BUTTON_BINDING, i->second);
                 else
                     URHO3D_LOGERRORF("Unsupported mouse button binding: %s", mouseButton.c_str());
             }
@@ -1111,9 +1110,9 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
                             mappedKeyBinding[j] = keyBindings[j][0];
                         else
                         {
-                            HashMap<stl::string, int>::Iterator i = keyBindingMap.Find(keyBindings[j]);
-                            if (i != keyBindingMap.End())
-                                mappedKeyBinding[j] = i->second_;
+                            auto i = keyBindingMap.find(keyBindings[j]);
+                            if (i != keyBindingMap.end())
+                                mappedKeyBinding[j] = i->second;
                             else
                                 URHO3D_LOGERRORF("%s - %s cannot be mapped, fallback to '%c'", name.c_str(), keyBindings[j].c_str(),
                                     mappedKeyBinding[j]);
@@ -1148,7 +1147,7 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
 
 bool Input::RemoveScreenJoystick(SDL_JoystickID id)
 {
-    if (!joysticks_.Contains(id))
+    if (!joysticks_.contains(id))
     {
         URHO3D_LOGERRORF("Failed to remove non-existing screen joystick ID #%d", id);
         return false;
@@ -1162,14 +1161,14 @@ bool Input::RemoveScreenJoystick(SDL_JoystickID id)
     }
 
     state.screenJoystick_->Remove();
-    joysticks_.Erase(id);
+    joysticks_.erase(id);
 
     return true;
 }
 
 void Input::SetScreenJoystickVisible(SDL_JoystickID id, bool enable)
 {
-    if (joysticks_.Contains(id))
+    if (joysticks_.contains(id))
     {
         JoystickState& state = joysticks_[id];
 
@@ -1334,22 +1333,22 @@ stl::string Input::GetScancodeName(Scancode scancode) const
 
 bool Input::GetKeyDown(Key key) const
 {
-    return stl::contains(keyDown_, SDL_tolower(key));
+    return keyDown_.contains(SDL_tolower(key));
 }
 
 bool Input::GetKeyPress(Key key) const
 {
-    return stl::contains(keyPress_, SDL_tolower(key));
+    return keyPress_.contains(SDL_tolower(key));
 }
 
 bool Input::GetScancodeDown(Scancode scancode) const
 {
-    return stl::contains(scancodeDown_, scancode);
+    return scancodeDown_.contains(scancode);
 }
 
 bool Input::GetScancodePress(Scancode scancode) const
 {
-    return stl::contains(scancodePress_, scancode);
+    return scancodePress_.contains(scancode);
 }
 
 bool Input::GetMouseButtonDown(MouseButtonFlags button) const
@@ -1444,23 +1443,23 @@ int Input::GetMouseMoveY() const
 
 TouchState* Input::GetTouch(unsigned index) const
 {
-    if (index >= touches_.Size())
+    if (index >= touches_.size())
         return nullptr;
 
-    HashMap<int, TouchState>::ConstIterator i = touches_.Begin();
+    auto i = touches_.begin();
     while (index--)
         ++i;
 
-    return const_cast<TouchState*>(&i->second_);
+    return const_cast<TouchState*>(&i->second);
 }
 
 JoystickState* Input::GetJoystickByIndex(unsigned index)
 {
     unsigned compare = 0;
-    for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
+    for (auto i = joysticks_.begin(); i != joysticks_.end(); ++i)
     {
         if (compare++ == index)
-            return &(i->second_);
+            return &(i->second);
     }
 
     return nullptr;
@@ -1468,10 +1467,10 @@ JoystickState* Input::GetJoystickByIndex(unsigned index)
 
 JoystickState* Input::GetJoystickByName(const stl::string& name)
 {
-    for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
+    for (auto i = joysticks_.begin(); i != joysticks_.end(); ++i)
     {
-        if (i->second_.name_ == name)
-            return &(i->second_);
+        if (i->second.name_ == name)
+            return &(i->second);
     }
 
     return nullptr;
@@ -1479,14 +1478,14 @@ JoystickState* Input::GetJoystickByName(const stl::string& name)
 
 JoystickState* Input::GetJoystick(SDL_JoystickID id)
 {
-    HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Find(id);
-    return i != joysticks_.End() ? &(i->second_) : nullptr;
+    auto i = joysticks_.find(id);
+    return i != joysticks_.end() ? &(i->second) : nullptr;
 }
 
 bool Input::IsScreenJoystickVisible(SDL_JoystickID id) const
 {
-    HashMap<SDL_JoystickID, JoystickState>::ConstIterator i = joysticks_.Find(id);
-    return i != joysticks_.End() && i->second_.screenJoystick_ && i->second_.screenJoystick_->IsVisible();
+    auto i = joysticks_.find(id);
+    return i != joysticks_.end() && i->second.screenJoystick_ && i->second.screenJoystick_->IsVisible();
 }
 
 bool Input::GetScreenKeyboardSupport() const
@@ -1563,7 +1562,7 @@ void Input::Initialize()
 
 void Input::ResetJoysticks()
 {
-    joysticks_.Clear();
+    joysticks_.clear();
 
     // Open each detected joystick automatically on startup
     auto size = static_cast<unsigned>(SDL_NumJoysticks());
@@ -1580,16 +1579,16 @@ void Input::ResetInputAccumulation()
     mouseButtonClick_ = MOUSEB_NONE;
     mouseMove_ = IntVector2::ZERO;
     mouseMoveWheel_ = 0;
-    for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
+    for (auto i = joysticks_.begin(); i != joysticks_.end(); ++i)
     {
-        for (unsigned j = 0; j < i->second_.buttonPress_.size(); ++j)
-            i->second_.buttonPress_[j] = false;
+        for (unsigned j = 0; j < i->second.buttonPress_.size(); ++j)
+            i->second.buttonPress_[j] = false;
     }
 
     // Reset touch delta movement
-    for (HashMap<int, TouchState>::Iterator i = touches_.Begin(); i != touches_.End(); ++i)
+    for (auto i = touches_.begin(); i != touches_.end(); ++i)
     {
-        TouchState& state = i->second_;
+        TouchState& state = i->second;
         state.lastPosition_ = state.position_;
         state.delta_ = IntVector2::ZERO;
     }
@@ -1647,8 +1646,8 @@ void Input::ResetState()
     scancodePress_.clear();
 
     /// \todo Check if resetting joystick state on input focus loss is even necessary
-    for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
-        i->second_.Reset();
+    for (auto i = joysticks_.begin(); i != joysticks_.end(); ++i)
+        i->second.Reset();
 
     ResetTouches();
 
@@ -1665,9 +1664,9 @@ void Input::ResetState()
 
 void Input::ResetTouches()
 {
-    for (HashMap<int, TouchState>::Iterator i = touches_.Begin(); i != touches_.End(); ++i)
+    for (auto i = touches_.begin(); i != touches_.end(); ++i)
     {
-        TouchState& state = i->second_;
+        TouchState& state = i->second;
 
         using namespace TouchEnd;
 
@@ -1678,8 +1677,8 @@ void Input::ResetTouches()
         SendEvent(E_TOUCHEND, eventData);
     }
 
-    touches_.Clear();
-    touchIDMap_.Clear();
+    touches_.clear();
+    touchIDMap_.clear();
     availableTouchIDs_.clear();
     for (int i = 0; i < TOUCHID_MAX; i++)
         availableTouchIDs_.push_back(i);
@@ -1688,10 +1687,10 @@ void Input::ResetTouches()
 
 unsigned Input::GetTouchIndexFromID(int touchID)
 {
-    HashMap<int, int>::ConstIterator i = touchIDMap_.Find(touchID);
-    if (i != touchIDMap_.End())
+    auto i = touchIDMap_.find(touchID);
+    if (i != touchIDMap_.end())
     {
-        return (unsigned)i->second_;
+        return (unsigned)i->second;
     }
 
     unsigned index = PopTouchIndex();
@@ -1711,12 +1710,12 @@ unsigned Input::PopTouchIndex()
 
 void Input::PushTouchIndex(int touchID)
 {
-    HashMap<int, int>::ConstIterator ci = touchIDMap_.Find(touchID);
-    if (ci == touchIDMap_.End())
+    auto ci = touchIDMap_.find(touchID);
+    if (ci == touchIDMap_.end())
         return;
 
     int index = touchIDMap_[touchID];
-    touchIDMap_.Erase(touchID);
+    touchIDMap_.erase(touchID);
 
     // Sorted insertion
     bool inserted = false;
@@ -1792,7 +1791,7 @@ void Input::SetKey(Key key, Scancode scancode, bool newState)
         scancodeDown_.insert(scancode);
         scancodePress_.insert(scancode);
 
-        if (!stl::contains(keyDown_, key))
+        if (!keyDown_.contains(key))
         {
             keyDown_.insert(key);
             keyPress_.insert(key);
@@ -2031,7 +2030,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             }
         }
         // Only the left mouse button "finger" moves along with the mouse movement
-        else if (touchEmulation_ && touches_.Contains(0))
+        else if (touchEmulation_ && touches_.contains(0))
         {
             int x, y;
             SDL_GetMouseState(&x, &y);
@@ -2101,7 +2100,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             // Add touch index back to list of available touch Ids
             PushTouchIndex(evt.tfinger.fingerId & 0x7ffffffu);
 
-            touches_.Erase(touchID);
+            touches_.erase(touchID);
         }
         break;
 
@@ -2110,7 +2109,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
         {
             int touchID = GetTouchIndexFromID(evt.tfinger.fingerId & 0x7ffffffu);
             // We don't want this event to create a new touches_ event if it doesn't exist (touchEmulation)
-            if (touchEmulation_ && !touches_.Contains(touchID))
+            if (touchEmulation_ && !touches_.contains(touchID))
                 break;
             TouchState& state = touches_[touchID];
             state.touchID_ = touchID;
@@ -2190,7 +2189,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
         {
             using namespace JoystickDisconnected;
 
-            joysticks_.Erase(evt.jdevice.which);
+            joysticks_.erase(evt.jdevice.which);
 
             VariantMap& eventData = GetEventDataMap();
             eventData[P_JOYSTICKID] = evt.jdevice.which;
@@ -2417,9 +2416,9 @@ void Input::HandleScreenMode(StringHash eventType, VariantMap& eventData)
     windowID_ = SDL_GetWindowID(window);
 
     // Resize screen joysticks to new screen size
-    for (HashMap<SDL_JoystickID, JoystickState>::Iterator i = joysticks_.Begin(); i != joysticks_.End(); ++i)
+    for (auto i = joysticks_.begin(); i != joysticks_.end(); ++i)
     {
-        UIElement* screenjoystick = i->second_.screenJoystick_;
+        UIElement* screenjoystick = i->second.screenJoystick_;
         if (screenjoystick)
             screenjoystick->SetSize(graphics_->GetWidth(), graphics_->GetHeight());
     }

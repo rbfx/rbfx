@@ -99,7 +99,7 @@ private:
     void HandleClientObjectID(StringHash eventType, VariantMap& eventData);
 
     /// Mapping from client connections to controllable objects.
-    HashMap<Connection*, stl::weak_ptr<Node> > serverObjects_;
+    stl::unordered_map<Connection*, stl::weak_ptr<Node> > serverObjects_;
     /// Button container element.
     stl::shared_ptr<UIElement> buttonContainer_;
     /// Server address line editor element.

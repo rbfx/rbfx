@@ -99,8 +99,8 @@ void ShaderProgram::Release()
 
         object_.name_ = 0;
         linkerOutput_.clear();
-        shaderParameters_.Clear();
-        vertexAttributes_.Clear();
+        shaderParameters_.clear();
+        vertexAttributes_.clear();
         usedVertexAttributes_ = 0;
 
         for (bool& useTextureUnit : useTextureUnits_)
@@ -189,7 +189,7 @@ bool ShaderProgram::Link()
 
     // Check for constant buffers
 #ifndef GL_ES_VERSION_2_0
-    HashMap<unsigned, unsigned> blockToBinding;
+    stl::unordered_map<unsigned, unsigned> blockToBinding;
 
     if (Graphics::GetGL3Support())
     {
@@ -311,8 +311,8 @@ bool ShaderProgram::Link()
     }
 
     // Rehash the parameter & vertex attributes maps to ensure minimal load factor
-    vertexAttributes_.Rehash(NextPowerOfTwo(vertexAttributes_.Size()));
-    shaderParameters_.Rehash(NextPowerOfTwo(shaderParameters_.Size()));
+    vertexAttributes_.rehash(NextPowerOfTwo(vertexAttributes_.size()));
+    shaderParameters_.rehash(NextPowerOfTwo(shaderParameters_.size()));
 
     return true;
 }
@@ -329,14 +329,14 @@ ShaderVariation* ShaderProgram::GetPixelShader() const
 
 bool ShaderProgram::HasParameter(StringHash param) const
 {
-    return shaderParameters_.Find(param) != shaderParameters_.End();
+    return shaderParameters_.find(param) != shaderParameters_.end();
 }
 
 const ShaderParameter* ShaderProgram::GetParameter(StringHash param) const
 {
-    HashMap<StringHash, ShaderParameter>::ConstIterator i = shaderParameters_.Find(param);
-    if (i != shaderParameters_.End())
-        return &i->second_;
+    auto i = shaderParameters_.find(param);
+    if (i != shaderParameters_.end())
+        return &i->second;
     else
         return nullptr;
 }

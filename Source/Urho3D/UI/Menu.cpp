@@ -321,7 +321,7 @@ void Menu::ShowPopup(bool enable)
         }
 
         static_cast<Window*>(popup_.get())->SetModal(false);
-        const_cast<VariantMap&>(popup_->GetVars()).Erase(VAR_ORIGIN);
+        const_cast<VariantMap&>(popup_->GetVars()).erase(VAR_ORIGIN);
 
         popup_->SetVisible(false);
         popup_->Remove();

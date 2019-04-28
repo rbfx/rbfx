@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashMap.h"
+#include <EASTL/unordered_map.h>
+
 #include "../Core/Variant.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/StringHash.h"

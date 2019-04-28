@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../../Container/HashMap.h"
+#include <EASTL/unordered_map.h>
+
 #include "../../Core/Timer.h"
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/ShaderProgram.h"
@@ -93,8 +94,8 @@ namespace Urho3D
 
 class Context;
 
-using ConstantBufferMap = HashMap<unsigned, stl::shared_ptr<ConstantBuffer> >;
-using ShaderProgramMap = HashMap<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
+using ConstantBufferMap = stl::unordered_map<unsigned, stl::shared_ptr<ConstantBuffer> >;
+using ShaderProgramMap = stl::unordered_map<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
 
 /// Cached state of a frame buffer object
 struct FrameBufferObject
@@ -137,7 +138,7 @@ private:
     /// Vertex attribute instancing bitmask for keeping track of divisors.
     unsigned instancingVertexAttributes_{};
     /// Current mapping of vertex attribute locations by semantic. The map is owned by the shader program, so care must be taken to switch a null shader program when it's destroyed.
-    const HashMap<stl::pair<unsigned char, unsigned char>, unsigned>* vertexAttributes_{};
+    const stl::unordered_map<stl::pair<unsigned char, unsigned char>, unsigned>* vertexAttributes_{};
     /// Currently bound frame buffer object.
     unsigned boundFBO_{};
     /// Currently bound vertex buffer object.
@@ -151,7 +152,7 @@ private:
     /// Current pixel format.
     int pixelFormat_{};
     /// Map for FBO's per resolution and format.
-    HashMap<unsigned long long, FrameBufferObject> frameBuffers_;
+    stl::unordered_map<unsigned long long, FrameBufferObject> frameBuffers_;
     /// OpenGL texture types in use.
     unsigned textureTypes_[MAX_TEXTURE_UNITS]{};
     /// Constant buffer search map.
@@ -163,7 +164,7 @@ private:
     /// Last used instance data offset.
     unsigned lastInstanceOffset_{};
     /// Map for additional depth textures, to emulate Direct3D9 ability to mix render texture and backbuffer rendering.
-    HashMap<unsigned, stl::shared_ptr<Texture2D> > depthTextures_;
+    stl::unordered_map<unsigned, stl::shared_ptr<Texture2D> > depthTextures_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_{};
     /// Linked shader programs.

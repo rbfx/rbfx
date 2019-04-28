@@ -26,12 +26,13 @@
 #define URHO3D_PCH_INCLUDED
 
 #include <EASTL/hash_set.h>
-#include <EASTL/unique_ptr.h>
+#include <EASTL/map.h>
 #include <EASTL/shared_ptr.h>
-
-#include "Container/HashMap.h"
-#include "Container/Sort.h"
-#include "Container/Str.h"
+#include <EASTL/string.h>
+#include <EASTL/vector.h>
+#include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_map.h>
+#include <EASTL/utility.h>
 
 #endif
 

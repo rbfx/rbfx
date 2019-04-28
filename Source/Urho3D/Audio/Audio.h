@@ -100,7 +100,7 @@ public:
     const stl::vector<SoundSource*>& GetSoundSources() const { return soundSources_; }
 
     /// Return whether the specified master gain has been defined.
-    bool HasMasterGain(const stl::string& type) const { return masterGain_.Contains(type); }
+    bool HasMasterGain(const stl::string& type) const { return masterGain_.contains(type); }
 
     /// Add a sound source to keep track of. Called by SoundSource.
     void AddSoundSource(SoundSource* soundSource);
@@ -143,7 +143,7 @@ private:
     /// Playing flag.
     bool playing_{};
     /// Master gain by sound source type.
-    HashMap<StringHash, Variant> masterGain_;
+    stl::unordered_map<StringHash, Variant> masterGain_;
     /// Paused sound types.
     stl::hash_set<StringHash> pausedSoundTypes_;
     /// Sound sources.

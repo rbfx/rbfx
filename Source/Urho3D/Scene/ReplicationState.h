@@ -22,11 +22,11 @@
 
 #pragma once
 
+#include <EASTL/shared_ptr.h>
 #include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_map.h>
 
 #include "../Core/Attribute.h"
-#include "../Container/HashMap.h"
-#include <EASTL/shared_ptr.h>
 #include "../Math/StringHash.h"
 
 #include <cstring>
@@ -165,7 +165,7 @@ struct URHO3D_API NodeReplicationState : public ReplicationState
     /// Dirty user vars.
     stl::hash_set<StringHash> dirtyVars_;
     /// Components by ID.
-    HashMap<unsigned, ComponentReplicationState> componentStates_;
+    stl::unordered_map<unsigned, ComponentReplicationState> componentStates_;
     /// Interest management priority accumulator.
     float priorityAcc_{};
     /// Whether exists in the SceneState's dirty set.
@@ -176,13 +176,13 @@ struct URHO3D_API NodeReplicationState : public ReplicationState
 struct URHO3D_API SceneReplicationState : public ReplicationState
 {
     /// Nodes by ID.
-    HashMap<unsigned, NodeReplicationState> nodeStates_;
+    stl::unordered_map<unsigned, NodeReplicationState> nodeStates_;
     /// Dirty node IDs.
     stl::hash_set<unsigned> dirtyNodes_;
 
     void Clear()
     {
-        nodeStates_.Clear();
+        nodeStates_.clear();
         dirtyNodes_.clear();
     }
 };

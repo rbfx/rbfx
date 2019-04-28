@@ -101,7 +101,7 @@ private:
     /// The path being watched.
     stl::string path_;
     /// Pending changes. These will be returned and removed from the list when their timer has exceeded the delay.
-    HashMap<stl::string, TimedFileChange> changes_;
+    stl::unordered_map<stl::string, TimedFileChange> changes_;
     /// Mutex for the change buffer.
     Mutex changesMutex_;
     /// Delay in seconds for notifying changes.
@@ -117,7 +117,7 @@ private:
 #elif __linux__
 
     /// HashMap for the directory and sub-directories (needed for inotify's int handles).
-    HashMap<int, stl::string> dirHandle_;
+    stl::unordered_map<int, stl::string> dirHandle_;
     /// Linux inotify needs a handle.
     int watchHandle_;
 

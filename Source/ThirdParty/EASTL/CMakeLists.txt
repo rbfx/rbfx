@@ -69,7 +69,7 @@ target_include_directories(EASTL
 #-------------------------------------------------------------------------------------------
 # Libraries
 #-------------------------------------------------------------------------------------------
-target_compile_definitions(EASTL PUBLIC -Deastl=stl -DEASTL_RTTI_ENABLED=0 -DEASTL_URHO3D_EXTENSIONS=1)
+target_compile_definitions(EASTL PUBLIC -DEASTL_RTTI_ENABLED=0 -DEASTL_URHO3D_EXTENSIONS=1)
 # Urho3D uses `unsigned` for sizes all over place. Can not use native size without breaking lots of code.
 target_compile_definitions(EASTL PUBLIC -DEASTL_SIZE_T_32BIT=1)
 

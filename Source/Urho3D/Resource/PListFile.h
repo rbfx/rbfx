@@ -44,7 +44,7 @@ enum PListValueType
 class PListValue;
 
 /// PList value map.
-using PListValueMap = HashMap<stl::string, PListValue>;
+using PListValueMap = stl::unordered_map<stl::string, PListValue>;
 
 /// Vector of PList value.
 using PListValueVector = stl::vector<PListValue>;

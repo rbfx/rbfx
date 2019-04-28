@@ -47,7 +47,7 @@ public:
 
 protected:
     /// Editor icon cache.
-    HashMap<stl::string, IconData> iconCache_;
+    stl::unordered_map<stl::string, IconData> iconCache_;
 };
 
 }

@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../../Container/HashMap.h"
+#include "../../Container/stl::unordered_map.h"
 #include "../../Math/MathDefs.h"
 #include "../../Graphics/ShaderVariation.h"
 
@@ -36,20 +36,20 @@ public:
     /// Construct.
     ShaderProgram(ShaderVariation* vertexShader, ShaderVariation* pixelShader)
     {
-        const HashMap<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
-        for (HashMap<StringHash, ShaderParameter>::ConstIterator i = vsParams.Begin(); i != vsParams.End(); ++i)
-            parameters_[i->first_] = i->second_;
+        const stl::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
+        for (auto i = vsParams.Begin(); i != vsParams.End(); ++i)
+            parameters_[i->first] = i->second;
 
-        const HashMap<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
-        for (HashMap<StringHash, ShaderParameter>::ConstIterator i = psParams.Begin(); i != psParams.End(); ++i)
-            parameters_[i->first_] = i->second_;
+        const stl::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
+        for (auto i = psParams.Begin(); i != psParams.End(); ++i)
+            parameters_[i->first] = i->second;
 
         // Optimize shader parameter lookup by rehashing to next power of two
         parameters_.Rehash(NextPowerOfTwo(parameters_.Size()));
     }
 
     /// Combined parameters from the vertex and pixel shader.
-    HashMap<StringHash, ShaderParameter> parameters_;
+    stl::unordered_map<StringHash, ShaderParameter> parameters_;
 };
 
 }

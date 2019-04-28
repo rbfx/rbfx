@@ -24,8 +24,9 @@
 
 #include <Urho3D/Urho3D.h>
 
-#include <EASTL/vector.h>
 #include <EASTL/string.h>
+#include <EASTL/vector.h>
+#include <EASTL/unordered_map.h>
 
 #include <cstdarg>
 #include <cstring>
@@ -35,6 +36,8 @@
 #include <fmt/ostream.h>
 #include <fmt/format.h>
 
+#include "../Container/Hash.h"
+
 namespace Urho3D
 {
 
@@ -43,10 +46,9 @@ static const int MATRIX_CONVERSION_BUFFER_LENGTH = 256;
 
 
 class StringHash;
-template <class T, class U> class HashMap;
 
 /// Map of strings.
-using StringMap = HashMap<StringHash, stl::string>;
+using StringMap = stl::unordered_map<StringHash, stl::string>;
 
 /// Return length of a C string.
 URHO3D_API unsigned CStringLength(const char* str);
@@ -87,11 +89,11 @@ URHO3D_API stl::string WideToMultiByte(const wchar_t* string);
 /// Converts multibyte utf-8 string to wide string (encoding is platform-dependent).
 URHO3D_API stl::wstring MultiByteToWide(const char* string);
 
-extern const stl::string EMPTY_STRING;
+URHO3D_API extern const stl::string EMPTY_STRING;
 
 }
 
-namespace stl
+namespace eastl
 {
 
 /// Make fmt library aware of String type for inputs.

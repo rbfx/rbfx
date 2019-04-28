@@ -1104,15 +1104,15 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         pixelShader_ = ps;
 
         stl::pair<ShaderVariation*, ShaderVariation*> combination(vs, ps);
-        ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Find(combination);
+        auto i = impl_->shaderPrograms_.find(combination);
 
-        if (i != impl_->shaderPrograms_.End())
+        if (i != impl_->shaderPrograms_.end())
         {
             // Use the existing linked program
-            if (i->second_->GetGPUObjectName())
+            if (i->second->GetGPUObjectName())
             {
-                glUseProgram(i->second_->GetGPUObjectName());
-                impl_->shaderProgram_ = i->second_;
+                glUseProgram(i->second->GetGPUObjectName());
+                impl_->shaderProgram_ = i->second;
             }
             else
             {
@@ -1727,9 +1727,10 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
         if (width <= width_ && height <= height_)
         {
             unsigned searchKey = (width << 16u) | height;
-            HashMap<unsigned, stl::shared_ptr<Texture2D> >::Iterator i = impl_->depthTextures_.Find(searchKey);
-            if (i != impl_->depthTextures_.End())
-                depthStencil = i->second_->GetRenderSurface();
+            auto i = impl_->depthTextures_.find(
+                searchKey);
+            if (i != impl_->depthTextures_.end())
+                depthStencil = i->second->GetRenderSurface();
             else
             {
                 stl::shared_ptr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
@@ -2194,19 +2195,19 @@ ShaderProgram* Graphics::GetShaderProgram() const
 
 TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 {
-    HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Find(name);
-    if (i != textureUnits_.End())
-        return i->second_;
+    auto i = textureUnits_.find(name);
+    if (i != textureUnits_.end())
+        return i->second;
     else
         return MAX_TEXTURE_UNITS;
 }
 
 const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
-    for (HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
+    for (auto i = textureUnits_.begin(); i != textureUnits_.end(); ++i)
     {
-        if (i->second_ == unit)
-            return i->first_;
+        if (i->second == unit)
+            return i->first;
     }
     return EMPTY_STRING;
 }
@@ -2315,34 +2316,34 @@ void Graphics::CleanupRenderSurface(RenderSurface* surface)
     unsigned currentFBO = impl_->boundFBO_;
 
     // Go through all FBOs and clean up the surface from them
-    for (HashMap<unsigned long long, FrameBufferObject>::Iterator i = impl_->frameBuffers_.Begin();
-         i != impl_->frameBuffers_.End(); ++i)
+    for (auto i = impl_->frameBuffers_.begin();
+         i != impl_->frameBuffers_.end(); ++i)
     {
         for (unsigned j = 0; j < MAX_RENDERTARGETS; ++j)
         {
-            if (i->second_.colorAttachments_[j] == surface)
+            if (i->second.colorAttachments_[j] == surface)
             {
-                if (currentFBO != i->second_.fbo_)
+                if (currentFBO != i->second.fbo_)
                 {
-                    BindFramebuffer(i->second_.fbo_);
-                    currentFBO = i->second_.fbo_;
+                    BindFramebuffer(i->second.fbo_);
+                    currentFBO = i->second.fbo_;
                 }
                 BindColorAttachment(j, GL_TEXTURE_2D, 0, false);
-                i->second_.colorAttachments_[j] = nullptr;
+                i->second.colorAttachments_[j] = nullptr;
                 // Mark drawbuffer bits to need recalculation
-                i->second_.drawBuffers_ = M_MAX_UNSIGNED;
+                i->second.drawBuffers_ = M_MAX_UNSIGNED;
             }
         }
-        if (i->second_.depthAttachment_ == surface)
+        if (i->second.depthAttachment_ == surface)
         {
-            if (currentFBO != i->second_.fbo_)
+            if (currentFBO != i->second.fbo_)
             {
-                BindFramebuffer(i->second_.fbo_);
-                currentFBO = i->second_.fbo_;
+                BindFramebuffer(i->second.fbo_);
+                currentFBO = i->second.fbo_;
             }
             BindDepthAttachment(0, false);
             BindStencilAttachment(0, false);
-            i->second_.depthAttachment_ = nullptr;
+            i->second.depthAttachment_ = nullptr;
         }
     }
 
@@ -2353,10 +2354,10 @@ void Graphics::CleanupRenderSurface(RenderSurface* surface)
 
 void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
-    for (ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Begin(); i != impl_->shaderPrograms_.End();)
+    for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
     {
-        if (i->second_->GetVertexShader() == variation || i->second_->GetPixelShader() == variation)
-            i = impl_->shaderPrograms_.Erase(i);
+        if (i->second->GetVertexShader() == variation || i->second->GetPixelShader() == variation)
+            i = impl_->shaderPrograms_.erase(i);
         else
             ++i;
     }
@@ -2371,13 +2372,14 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     // for PS constant buffers
 
     unsigned key = (index << 16u) | size;
-    HashMap<unsigned, stl::shared_ptr<ConstantBuffer> >::Iterator i = impl_->allConstantBuffers_.Find(key);
-    if (i == impl_->allConstantBuffers_.End())
+    auto i = impl_->allConstantBuffers_.find(key);
+    if (i == impl_->allConstantBuffers_.end())
     {
-        i = impl_->allConstantBuffers_.Insert(stl::make_pair(key, stl::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>())));
-        i->second_->SetSize(size);
+        i = impl_->allConstantBuffers_.insert(
+            stl::make_pair(key, stl::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>()))).first;
+        i->second->SetSize(size);
     }
-    return i->second_;
+    return i->second;
 }
 
 void Graphics::Release(bool clearGPUObjects, bool closeWindow)
@@ -2392,7 +2394,7 @@ void Graphics::Release(bool clearGPUObjects, bool closeWindow)
         {
             // Shutting down: release all GPU objects that still exist
             // Shader programs are also GPU objects; clear them first to avoid list modification during iteration
-            impl_->shaderPrograms_.Clear();
+            impl_->shaderPrograms_.clear();
 
             for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
                 (*i)->Release();
@@ -2406,14 +2408,14 @@ void Graphics::Release(bool clearGPUObjects, bool closeWindow)
 
             // In this case clear shader programs last so that they do not attempt to delete their OpenGL program
             // from a context that may no longer exist
-            impl_->shaderPrograms_.Clear();
+            impl_->shaderPrograms_.clear();
 
             SendEvent(E_DEVICELOST);
         }
     }
 
     CleanupFramebuffers();
-    impl_->depthTextures_.Clear();
+    impl_->depthTextures_.clear();
 
     // End fullscreen mode first to counteract transition and getting stuck problems on OS X
 #if defined(__APPLE__) && !defined(IOS) && !defined(TVOS)
@@ -2964,26 +2966,26 @@ void Graphics::PrepareDraw()
             format = depthStencil_->GetParentTexture()->GetFormat();
 
         auto fboKey = (unsigned long long)format << 32u | rtSize.x_ << 16u | rtSize.y_;
-        HashMap<unsigned long long, FrameBufferObject>::Iterator i = impl_->frameBuffers_.Find(fboKey);
-        if (i == impl_->frameBuffers_.End())
+        auto i = impl_->frameBuffers_.find(fboKey);
+        if (i == impl_->frameBuffers_.end())
         {
             FrameBufferObject newFbo;
             newFbo.fbo_ = CreateFramebuffer();
-            i = impl_->frameBuffers_.Insert(stl::make_pair(fboKey, newFbo));
+            i = impl_->frameBuffers_.insert(stl::make_pair(fboKey, newFbo)).first;
         }
 
-        if (impl_->boundFBO_ != i->second_.fbo_)
+        if (impl_->boundFBO_ != i->second.fbo_)
         {
-            BindFramebuffer(i->second_.fbo_);
-            impl_->boundFBO_ = i->second_.fbo_;
+            BindFramebuffer(i->second.fbo_);
+            impl_->boundFBO_ = i->second.fbo_;
         }
 
 #ifndef GL_ES_VERSION_2_0
         // Setup readbuffers & drawbuffers if needed
-        if (i->second_.readBuffers_ != GL_NONE)
+        if (i->second.readBuffers_ != GL_NONE)
         {
             glReadBuffer(GL_NONE);
-            i->second_.readBuffers_ = GL_NONE;
+            i->second.readBuffers_ = GL_NONE;
         }
 
         // Calculate the bit combination of non-zero color rendertargets to first check if the combination changed
@@ -2994,7 +2996,7 @@ void Graphics::PrepareDraw()
                 newDrawBuffers |= 1u << j;
         }
 
-        if (newDrawBuffers != i->second_.drawBuffers_)
+        if (newDrawBuffers != i->second.drawBuffers_)
         {
             // Check for no color rendertargets (depth rendering only)
             if (!newDrawBuffers)
@@ -3017,7 +3019,7 @@ void Graphics::PrepareDraw()
                 glDrawBuffers(drawBufferCount, (const GLenum*)drawBufferIds);
             }
 
-            i->second_.drawBuffers_ = newDrawBuffers;
+            i->second.drawBuffers_ = newDrawBuffers;
         }
 #endif
 
@@ -3039,27 +3041,27 @@ void Graphics::PrepareDraw()
                         SetTexture(0, nullptr);
                     }
 
-                    if (i->second_.colorAttachments_[j] != renderTargets_[j])
+                    if (i->second.colorAttachments_[j] != renderTargets_[j])
                     {
                         BindColorAttachment(j, renderTargets_[j]->GetTarget(), texture->GetGPUObjectName(), false);
-                        i->second_.colorAttachments_[j] = renderTargets_[j];
+                        i->second.colorAttachments_[j] = renderTargets_[j];
                     }
                 }
                 else
                 {
-                    if (i->second_.colorAttachments_[j] != renderTargets_[j])
+                    if (i->second.colorAttachments_[j] != renderTargets_[j])
                     {
                         BindColorAttachment(j, renderTargets_[j]->GetTarget(), renderBufferID, true);
-                        i->second_.colorAttachments_[j] = renderTargets_[j];
+                        i->second.colorAttachments_[j] = renderTargets_[j];
                     }
                 }
             }
             else
             {
-                if (i->second_.colorAttachments_[j])
+                if (i->second.colorAttachments_[j])
                 {
                     BindColorAttachment(j, GL_TEXTURE_2D, 0, false);
-                    i->second_.colorAttachments_[j] = nullptr;
+                    i->second.colorAttachments_[j] = nullptr;
                 }
             }
         }
@@ -3084,30 +3086,30 @@ void Graphics::PrepareDraw()
                     SetTexture(0, nullptr);
                 }
 
-                if (i->second_.depthAttachment_ != depthStencil_)
+                if (i->second.depthAttachment_ != depthStencil_)
                 {
                     BindDepthAttachment(texture->GetGPUObjectName(), false);
                     BindStencilAttachment(hasStencil ? texture->GetGPUObjectName() : 0, false);
-                    i->second_.depthAttachment_ = depthStencil_;
+                    i->second.depthAttachment_ = depthStencil_;
                 }
             }
             else
             {
-                if (i->second_.depthAttachment_ != depthStencil_)
+                if (i->second.depthAttachment_ != depthStencil_)
                 {
                     BindDepthAttachment(renderBufferID, true);
                     BindStencilAttachment(hasStencil ? renderBufferID : 0, true);
-                    i->second_.depthAttachment_ = depthStencil_;
+                    i->second.depthAttachment_ = depthStencil_;
                 }
             }
         }
         else
         {
-            if (i->second_.depthAttachment_)
+            if (i->second.depthAttachment_)
             {
                 BindDepthAttachment(0, false);
                 BindStencilAttachment(0, false);
-                i->second_.depthAttachment_ = nullptr;
+                i->second.depthAttachment_ = nullptr;
             }
         }
 
@@ -3147,12 +3149,12 @@ void Graphics::PrepareDraw()
             for (auto j = elements.begin(); j != elements.end(); ++j)
             {
                 const VertexElement& element = *j;
-                HashMap<stl::pair<unsigned char, unsigned char>, unsigned>::ConstIterator k =
-                    impl_->vertexAttributes_->Find(stl::make_pair((unsigned char)element.semantic_, element.index_));
+                auto k = impl_->vertexAttributes_->find(
+                    stl::make_pair((unsigned char) element.semantic_, element.index_));
 
-                if (k != impl_->vertexAttributes_->End())
+                if (k != impl_->vertexAttributes_->end())
                 {
-                    unsigned location = k->second_;
+                    unsigned location = k->second;
                     unsigned locationMask = 1u << location;
                     if (assignedLocations & locationMask)
                         continue; // Already assigned by higher index vertex buffer
@@ -3219,9 +3221,9 @@ void Graphics::CleanupFramebuffers()
         impl_->boundFBO_ = impl_->systemFBO_;
         impl_->fboDirty_ = true;
 
-        for (HashMap<unsigned long long, FrameBufferObject>::Iterator i = impl_->frameBuffers_.Begin();
-             i != impl_->frameBuffers_.End(); ++i)
-            DeleteFramebuffer(i->second_.fbo_);
+        for (auto i = impl_->frameBuffers_.begin();
+             i != impl_->frameBuffers_.end(); ++i)
+            DeleteFramebuffer(i->second.fbo_);
 
         if (impl_->resolveSrcFBO_)
             DeleteFramebuffer(impl_->resolveSrcFBO_);
@@ -3234,7 +3236,7 @@ void Graphics::CleanupFramebuffers()
     impl_->resolveSrcFBO_ = 0;
     impl_->resolveDestFBO_ = 0;
 
-    impl_->frameBuffers_.Clear();
+    impl_->frameBuffers_.clear();
 }
 
 void Graphics::ResetCachedState()

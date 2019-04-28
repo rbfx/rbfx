@@ -170,7 +170,7 @@ private:
     /// Streaming distance.
     int streamingDistance_;
     /// Tile data.
-    HashMap<IntVector2, stl::vector<unsigned char> > tileData_;
+    stl::unordered_map<IntVector2, stl::vector<unsigned char> > tileData_;
     /// Added tiles.
     stl::hash_set<IntVector2> addedTiles_;
 };

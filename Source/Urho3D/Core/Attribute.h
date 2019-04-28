@@ -118,8 +118,8 @@ struct AttributeInfo
     /// Get attribute metadata.
     const Variant& GetMetadata(const StringHash& key) const
     {
-        auto elem = metadata_.Find(key);
-        return elem != metadata_.End() ? elem->second_ : Variant::EMPTY;
+        auto elem = metadata_.find(key);
+        return elem != metadata_.end() ? elem->second : Variant::EMPTY;
     }
 
     /// Get attribute metadata of specified type.

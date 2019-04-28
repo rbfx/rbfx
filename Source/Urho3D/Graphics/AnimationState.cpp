@@ -72,16 +72,17 @@ AnimationState::AnimationState(Node* node, Animation* animation) :
         // Setup animation track to scene node mapping
         if (node_)
         {
-            const HashMap<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
+            const stl::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
             stateTracks_.clear();
 
-            for (HashMap<StringHash, AnimationTrack>::ConstIterator i = tracks.Begin(); i != tracks.End(); ++i)
+            for (auto i = tracks.begin(); i !=
+                tracks.end(); ++i)
             {
-                const StringHash& nameHash = i->second_.nameHash_;
+                const StringHash& nameHash = i->second.nameHash_;
                 AnimationStateTrack stateTrack;
-                stateTrack.track_ = &i->second_;
+                stateTrack.track_ = &i->second;
 
-                if (node_->GetNameHash() == nameHash || tracks.Size() == 1)
+                if (node_->GetNameHash() == nameHash || tracks.size() == 1)
                     stateTrack.node_ = node_;
                 else
                 {
@@ -89,7 +90,7 @@ AnimationState::AnimationState(Node* node, Animation* animation) :
                     if (targetNode)
                         stateTrack.node_ = targetNode;
                     else
-                        URHO3D_LOGWARNING("Node " + i->second_.name_ + " not found for node animation " + animation_->GetName());
+                        URHO3D_LOGWARNING("Node " + i->second.name_ + " not found for node animation " + animation_->GetName());
                 }
 
                 if (stateTrack.node_)
@@ -122,20 +123,20 @@ void AnimationState::SetStartBone(Bone* startBone)
 
     startBone_ = startBone;
 
-    const HashMap<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
+    const stl::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
     stateTracks_.clear();
 
     if (!startBone->node_)
         return;
 
-    for (HashMap<StringHash, AnimationTrack>::ConstIterator i = tracks.Begin(); i != tracks.End(); ++i)
+    for (auto i = tracks.begin(); i != tracks.end(); ++i)
     {
         AnimationStateTrack stateTrack;
-        stateTrack.track_ = &i->second_;
+        stateTrack.track_ = &i->second;
 
         // Include those tracks that are either the start bone itself, or its children
         Bone* trackBone = nullptr;
-        const StringHash& nameHash = i->second_.nameHash_;
+        const StringHash& nameHash = i->second.nameHash_;
 
         if (nameHash == startBone->nameHash_)
             trackBone = startBone;
@@ -329,7 +330,7 @@ void AnimationState::AddTime(float delta)
             }
         }
         if (oldTime > time)
-            Swap(oldTime, time);
+            stl::swap(oldTime, time);
 
         const stl::vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
         for (auto i = triggers.begin(); i != triggers.end(); ++i)

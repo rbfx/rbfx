@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <EASTL/map.h>
+
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
@@ -90,7 +92,7 @@ private:
     void RenderUi(VariantMap& eventData);
 
     /// Hashmap containing application specific stats.
-    HashMap<stl::string, stl::string> appStats_;
+    stl::map<stl::string, stl::string> appStats_;
     /// Profiler max block depth.
     unsigned profilerMaxDepth_;
     /// Profiler accumulation interval.

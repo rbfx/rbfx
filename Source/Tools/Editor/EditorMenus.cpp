@@ -356,11 +356,11 @@ void Editor::RenderProjectMenu()
 
         auto* state = ui::GetUIState<NewEntryState>();
         auto& settings = project_->GetDefaultEngineSettings();
-        for (auto it = settings.Begin(); it != settings.End();)
+        for (auto it = settings.begin(); it != settings.end();)
         {
-            const stl::string& settingName = it->first_;
+            const stl::string& settingName = it->first;
             ui::IdScope idScope(settingName.c_str());
-            Variant& value = it->second_;
+            Variant& value = it->second;
             float startPos = ui::GetCursorPosX();
             ui::TextUnformatted(settingName.c_str());
             ui::SameLine();
@@ -370,7 +370,7 @@ void Editor::RenderProjectMenu()
             ui::SameLine();
             ui::SetCursorPosX(startPos + 100_dpx + ui::GetStyle().ItemSpacing.x);
             if (ui::Button(ICON_FA_TRASH))
-                it = settings.Erase(it);
+                it = settings.erase(it);
             else
                 ++it;
         }
@@ -387,19 +387,21 @@ void Editor::RenderProjectMenu()
         {
             if (state->customName.empty())
                 cantSubmitHelpText = "Custom name can not be empty.";
-            else if (settings.Find(state->customName.c_str()) != settings.End())
+            else if (settings.find(state->customName.c_str()) != settings.end())
                 cantSubmitHelpText = "Parameter with same name is already added.";
         }
-        else if (state->predefinedItem > 1 && settings.Find(predefinedNames[state->predefinedItem]) != settings.End())
+        else if (state->predefinedItem > 1 && settings.find(predefinedNames[state->predefinedItem]) !=
+                                                  settings.end())
             cantSubmitHelpText = "Parameter with same name is already added.";
 
         ui::PushStyleColor(ImGuiCol_Button, ui::GetStyle().Colors[cantSubmitHelpText == nullptr ? ImGuiCol_Button : ImGuiCol_TextDisabled]);
         if (ui::Button(ICON_FA_CHECK) && cantSubmitHelpText == nullptr)
         {
             if (state->predefinedItem == 1)
-                settings.Insert({state->customName.c_str(), Variant{variantTypes[state->customType]}});
+                settings.insert({state->customName.c_str(), Variant{variantTypes[state->customType]}});
             else
-                settings.Insert({predefinedNames[state->predefinedItem], Variant{predefinedTypes[state->predefinedItem]}});
+                settings.insert(
+                    {predefinedNames[state->predefinedItem], Variant{predefinedTypes[state->predefinedItem]}});
             state->customName.clear();
             state->customType = 0;
         }

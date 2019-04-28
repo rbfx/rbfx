@@ -23,7 +23,6 @@
 
 #include <EASTL/sort.h>
 
-#include "Urho3D/Container/Utilities.h"
 #include "Urho3D/Core/Context.h"
 #include "Urho3D/Core/CoreEvents.h"
 #include "Urho3D/Engine/EngineEvents.h"
@@ -153,7 +152,7 @@ void Console::RenderContent()
         if (!levelVisible_[row.level_])
             continue;
 
-        if (stl::contains(loggersHidden_, row.logger_))
+        if (loggersHidden_.contains(row.logger_))
             continue;
 
         ImColor color;
@@ -316,7 +315,7 @@ void Console::SetLoggerVisible(const stl::string& loggerName, bool visible)
 
 bool Console::GetLoggerVisible(const stl::string& loggerName) const
 {
-    return !stl::contains(loggersHidden_, loggerName);
+    return !loggersHidden_.contains(loggerName);
 }
 
 void Console::SetLevelVisible(LogLevel level, bool visible)

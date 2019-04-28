@@ -73,7 +73,7 @@ struct ModelMorph
     /// Current morph weight.
     float weight_;
     /// Morph data per vertex buffer.
-    HashMap<unsigned, VertexBufferMorph> buffers_;
+    stl::unordered_map<unsigned, VertexBufferMorph> buffers_;
 };
 
 /// Description of vertex buffer data for asynchronous loading.

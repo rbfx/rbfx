@@ -277,9 +277,10 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         bool modified = false;
 
         const auto& parameters = material->GetShaderParameters();
+        unsigned parametersLeft = parameters.size();
         for (const auto& pair : parameters)
         {
-            const stl::string& parameterName = pair.second_.name_;
+            const stl::string& parameterName = pair.second.name_;
             ui::IdScope id(parameterName.c_str());
             auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
 
@@ -287,7 +288,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SameLine(20_dpx);
             ui::TextUnformatted(parameterName.c_str());
             ui::NextColumn();
-            Variant value = pair.second_.value_;
+            Variant value = pair.second.value_;
 
             UI_ITEMWIDTH(-22_dpx)
             {
@@ -304,13 +305,13 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SameLine(value.GetType());
             if (ui::Button(ICON_FA_TRASH))
             {
-                undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second_.value_, Variant{});
+                undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second.value_, Variant{});
                 material->RemoveShaderParameter(parameterName);
                 modified = true;
                 break;
             }
 
-            if (parameters.Back().first_ != pair.first_)
+            if (--parametersLeft > 0)
                 ui::NextColumn();
         }
 

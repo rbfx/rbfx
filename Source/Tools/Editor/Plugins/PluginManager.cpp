@@ -384,14 +384,14 @@ const StringVector& PluginManager::GetPluginNames()
         FileSystem* fs = GetFileSystem();
 
         StringVector files;
-        HashMap<stl::string, stl::string> nameToPath;
+        stl::unordered_map<stl::string, stl::string> nameToPath;
         fs->ScanDir(files, fs->GetProgramDir(), "*.*", SCAN_FILES, false);
 
         // Remove deleted plugin files.
-        for (const stl::string& key : pluginInfoCache_.Keys())
+        for (const stl::string& key : pluginInfoCache_.keys())
         {
             if (!files.contains(key))
-                pluginInfoCache_.Erase(key);
+                pluginInfoCache_.erase(key);
         }
 
         // Remove definitely not plugins.

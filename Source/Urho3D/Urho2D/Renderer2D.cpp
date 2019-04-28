@@ -129,10 +129,11 @@ void Renderer2D::UpdateBatches(const FrameInfo& frame)
 void Renderer2D::UpdateGeometry(const FrameInfo& frame)
 {
     unsigned indexCount = 0;
-    for (HashMap<Camera*, ViewBatchInfo2D>::ConstIterator i = viewBatchInfos_.Begin(); i != viewBatchInfos_.End(); ++i)
+    for (auto i = viewBatchInfos_.begin(); i !=
+        viewBatchInfos_.end(); ++i)
     {
-        if (i->second_.batchUpdatedFrameNumber_ == frame_.frameNumber_)
-            indexCount = Max(indexCount, i->second_.indexCount_);
+        if (i->second.batchUpdatedFrameNumber_ == frame_.frameNumber_)
+            indexCount = Max(indexCount, i->second.indexCount_);
     }
 
     // Fill index buffer
@@ -245,18 +246,19 @@ Material* Renderer2D::GetMaterial(Texture2D* texture, BlendMode blendMode)
     if (!texture)
         return material_;
 
-    HashMap<Texture2D*, HashMap<int, stl::shared_ptr<Material> > >::Iterator t = cachedMaterials_.Find(texture);
-    if (t == cachedMaterials_.End())
+    auto t = cachedMaterials_.find(
+        texture);
+    if (t == cachedMaterials_.end())
     {
         stl::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
         cachedMaterials_[texture][blendMode] = newMaterial;
         return newMaterial;
     }
 
-    HashMap<int, stl::shared_ptr<Material> >& materials = t->second_;
-    HashMap<int, stl::shared_ptr<Material> >::Iterator b = materials.Find(blendMode);
-    if (b != materials.End())
-        return b->second_;
+    stl::unordered_map<int, stl::shared_ptr<Material> >& materials = t->second;
+    auto b = materials.find(blendMode);
+    if (b != materials.end())
+        return b->second;
 
     stl::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
     materials[blendMode] = newMaterial;
@@ -284,8 +286,8 @@ stl::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMo
 {
     stl::shared_ptr<Material> newMaterial = material_->Clone();
 
-    HashMap<int, stl::shared_ptr<Technique> >::Iterator techIt = cachedTechniques_.Find((int)blendMode);
-    if (techIt == cachedTechniques_.End())
+    auto techIt = cachedTechniques_.find((int) blendMode);
+    if (techIt == cachedTechniques_.end())
     {
         stl::shared_ptr<Technique> tech(context_->CreateObject<Technique>());
         Pass* pass = tech->CreatePass("alpha");
@@ -293,10 +295,10 @@ stl::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMo
         pass->SetPixelShader("Urho2D");
         pass->SetDepthWrite(false);
         pass->SetBlendMode(blendMode);
-        techIt = cachedTechniques_.Insert(stl::make_pair((int)blendMode, tech));
+        techIt = cachedTechniques_.insert(stl::make_pair((int) blendMode, tech)).first;
     }
 
-    newMaterial->SetTechnique(0, techIt->second_.get());
+    newMaterial->SetTechnique(0, techIt->second.get());
     newMaterial->SetName(texture->GetName() + "_" + blendModeNames[blendMode]);
     newMaterial->SetTexture(TU_DIFFUSE, texture);
 

@@ -152,12 +152,6 @@ private:
     stl::string name_;
 };
 
-/// TextureUnit hash function.
-template <> inline unsigned MakeHash(const TextureUnit& value)
-{
-    return (unsigned)value;
-}
-
 /// Describes how to render 3D geometries.
 class URHO3D_API Material : public Resource
 {
@@ -256,7 +250,7 @@ public:
     Texture* GetTexture(TextureUnit unit) const;
 
     /// Return all textures.
-    const HashMap<TextureUnit, stl::shared_ptr<Texture> >& GetTextures() const { return textures_; }
+    const stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> >& GetTextures() const { return textures_; }
 
     /// Return additional vertex shader defines.
     const stl::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
@@ -273,7 +267,7 @@ public:
     float GetShaderParameterAnimationSpeed(const stl::string& name) const;
 
     /// Return all shader parameters.
-    const HashMap<StringHash, MaterialShaderParameter>& GetShaderParameters() const { return shaderParameters_; }
+    const stl::unordered_map<StringHash, MaterialShaderParameter>& GetShaderParameters() const { return shaderParameters_; }
 
     /// Return normal culling mode.
     CullMode GetCullMode() const { return cullMode_; }
@@ -340,11 +334,11 @@ private:
     /// Techniques.
     stl::vector<TechniqueEntry> techniques_;
     /// Textures.
-    HashMap<TextureUnit, stl::shared_ptr<Texture> > textures_;
+    stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> > textures_;
     /// %Shader parameters.
-    HashMap<StringHash, MaterialShaderParameter> shaderParameters_;
+    stl::unordered_map<StringHash, MaterialShaderParameter> shaderParameters_;
     /// %Shader parameters animation infos.
-    HashMap<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
+    stl::unordered_map<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
     /// Vertex shader defines.
     stl::string vertexShaderDefines_;
     /// Pixel shader defines.

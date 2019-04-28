@@ -116,13 +116,13 @@ void EventReceiverGroup::Remove(Object* object)
         receivers_.erase_first(object);
 }
 
-void RemoveNamedAttribute(HashMap<StringHash, stl::vector<AttributeInfo> >& attributes, StringHash objectType, const char* name)
+void RemoveNamedAttribute(stl::unordered_map<StringHash, stl::vector<AttributeInfo> >& attributes, StringHash objectType, const char* name)
 {
-    auto i = attributes.Find(objectType);
-    if (i == attributes.End())
+    auto i = attributes.find(objectType);
+    if (i == attributes.end())
         return;
 
-    stl::vector<AttributeInfo>& infos = i->second_;
+    stl::vector<AttributeInfo>& infos = i->second;
 
     for (auto j = infos.begin(); j != infos.end(); ++j)
     {
@@ -135,7 +135,7 @@ void RemoveNamedAttribute(HashMap<StringHash, stl::vector<AttributeInfo> >& attr
 
     // If the vector became empty, erase the object type from the map
     if (infos.empty())
-        attributes.Erase(i);
+        attributes.erase(i);
 }
 
 Context::Context() :
@@ -152,6 +152,11 @@ Context::Context() :
 
 Context::~Context()
 {
+    // Destroying resource cache does clear it, however some resources depend on resource cache being available when
+    // destructor executes.
+    if (auto* cache = GetSubsystem<ResourceCache>())
+        cache->Clear();
+
     // Remove subsystems that use SDL in reverse order of construction, so that Graphics can shut down SDL last
     /// \todo Context should not need to know about subsystems
     RemoveSubsystem("Audio");
@@ -162,8 +167,8 @@ Context::~Context()
     RemoveSubsystem("Renderer");
     RemoveSubsystem("Graphics");
 
-    subsystems_.Clear();
-    factories_.Clear();
+    subsystems_.clear();
+    factories_.clear();
 
     // Delete allocated event data maps
     for (auto i = eventDataMaps_.begin(); i != eventDataMaps_.end(); ++i)
@@ -173,9 +178,9 @@ Context::~Context()
 
 stl::shared_ptr<Object> Context::CreateObject(StringHash objectType)
 {
-    HashMap<StringHash, stl::shared_ptr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
-    if (i != factories_.End())
-        return i->second_->CreateObject();
+    auto i = factories_.find(objectType);
+    if (i != factories_.end())
+        return i->second->CreateObject();
     else
         return stl::shared_ptr<Object>();
 }
@@ -185,11 +190,11 @@ void Context::RegisterFactory(ObjectFactory* factory)
     if (!factory)
         return;
 
-    auto it = factories_.Find(factory->GetType());
-    if (it != factories_.End())
+    auto it = factories_.find(factory->GetType());
+    if (it != factories_.end())
     {
         URHO3D_LOGERRORF("Failed to register '%s' because type '%s' is already registered with same type hash.",
-            factory->GetTypeName().c_str(), it->second_->GetTypeName().c_str());
+            factory->GetTypeName().c_str(), it->second->GetTypeName().c_str());
         assert(false);
         return;
     }
@@ -208,7 +213,7 @@ void Context::RegisterFactory(ObjectFactory* factory, const char* category)
 
 void Context::RemoveFactory(StringHash type)
 {
-    factories_.Erase(type);
+    factories_.erase(type);
 }
 
 void Context::RemoveFactory(StringHash type, const char* category)
@@ -228,9 +233,9 @@ void Context::RegisterSubsystem(Object* object)
 
 void Context::RemoveSubsystem(StringHash objectType)
 {
-    HashMap<StringHash, stl::shared_ptr<Object> >::Iterator i = subsystems_.Find(objectType);
-    if (i != subsystems_.End())
-        subsystems_.Erase(i);
+    auto i = subsystems_.find(objectType);
+    if (i != subsystems_.end())
+        subsystems_.erase(i);
 }
 
 AttributeHandle Context::RegisterAttribute(StringHash objectType, const AttributeInfo& attr)
@@ -267,8 +272,8 @@ void Context::RemoveAttribute(StringHash objectType, const char* name)
 
 void Context::RemoveAllAttributes(StringHash objectType)
 {
-    attributes_.Erase(objectType);
-    networkAttributes_.Erase(objectType);
+    attributes_.erase(objectType);
+    networkAttributes_.erase(objectType);
 }
 
 void Context::UpdateAttributeDefaultValue(StringHash objectType, const char* name, const Variant& defaultValue)
@@ -285,7 +290,7 @@ VariantMap& Context::GetEventDataMap()
         eventDataMaps_.push_back(new VariantMap());
 
     VariantMap& ret = *eventDataMaps_[nestingLevel];
-    ret.Clear();
+    ret.clear();
     return ret;
 }
 
@@ -393,17 +398,17 @@ void Context::CopyBaseAttributes(StringHash baseType, StringHash derivedType)
 
 Object* Context::GetSubsystem(StringHash type) const
 {
-    HashMap<StringHash, stl::shared_ptr<Object> >::ConstIterator i = subsystems_.Find(type);
-    if (i != subsystems_.End())
-        return i->second_;
+    auto i = subsystems_.find(type);
+    if (i != subsystems_.end())
+        return i->second;
     else
         return nullptr;
 }
 
 const Variant& Context::GetGlobalVar(StringHash key) const
 {
-    VariantMap::ConstIterator i = globalVars_.Find(key);
-    return i != globalVars_.End() ? i->second_ : Variant::EMPTY;
+    auto i = globalVars_.find(key);
+    return i != globalVars_.end() ? i->second : Variant::EMPTY;
 }
 
 void Context::SetGlobalVar(StringHash key, const Variant& value)
@@ -422,17 +427,17 @@ Object* Context::GetEventSender() const
 const stl::string& Context::GetTypeName(StringHash objectType) const
 {
     // Search factories to find the hash-to-name mapping
-    HashMap<StringHash, stl::shared_ptr<ObjectFactory> >::ConstIterator i = factories_.Find(objectType);
-    return i != factories_.End() ? i->second_->GetTypeName() : EMPTY_STRING;
+    auto i = factories_.find(objectType);
+    return i != factories_.end() ? i->second->GetTypeName() : EMPTY_STRING;
 }
 
 AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 {
-    auto i = attributes_.Find(objectType);
-    if (i == attributes_.End())
+    auto i = attributes_.find(objectType);
+    if (i == attributes_.end())
         return nullptr;
 
-    stl::vector<AttributeInfo>& infos = i->second_;
+    stl::vector<AttributeInfo>& infos = i->second;
 
     for (auto j = infos.begin(); j != infos.end(); ++j)
     {
@@ -461,20 +466,21 @@ void Context::AddEventReceiver(Object* receiver, Object* sender, StringHash even
 
 void Context::RemoveEventSender(Object* sender)
 {
-    HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > >::Iterator i = specificEventReceivers_.Find(sender);
-    if (i != specificEventReceivers_.End())
+    auto i = specificEventReceivers_.find(
+        sender);
+    if (i != specificEventReceivers_.end())
     {
-        for (HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator j = i->second_.Begin(); j != i->second_.End(); ++j)
+        for (auto j = i->second.begin(); j != i->second.end(); ++j)
         {
-            for (auto k = j->second_->receivers_.begin(); k !=
-                j->second_->receivers_.end(); ++k)
+            for (auto k = j->second->receivers_.begin(); k !=
+                j->second->receivers_.end(); ++k)
             {
                 Object* receiver = *k;
                 if (receiver)
                     receiver->RemoveEventSender(sender);
             }
         }
-        specificEventReceivers_.Erase(i);
+        specificEventReceivers_.erase(i);
     }
 }
 

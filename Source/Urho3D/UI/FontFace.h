@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include "../Container/HashMap.h"
 #include <EASTL/shared_ptr.h>
+#include <EASTL/unordered_map.h>
+
 #include "../Math/AreaAllocator.h"
 
 namespace Urho3D
@@ -103,9 +104,9 @@ protected:
     /// Parent font.
     Font* font_{};
     /// Glyph mapping.
-    HashMap<unsigned, FontGlyph> glyphMapping_;
+    stl::unordered_map<unsigned, FontGlyph> glyphMapping_;
     /// Kerning mapping.
-    HashMap<unsigned, float> kerningMapping_;
+    stl::unordered_map<unsigned, float> kerningMapping_;
     /// Glyph texture pages.
     stl::vector<stl::shared_ptr<Texture2D> > textures_;
     /// Point size.

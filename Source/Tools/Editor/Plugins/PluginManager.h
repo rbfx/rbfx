@@ -127,7 +127,7 @@ protected:
     /// Plugin update check timer.
     Timer updateCheckTimer_;
     /// Cached plugin information.
-    HashMap<stl::string, DynamicLibraryInfo> pluginInfoCache_;
+    stl::unordered_map<stl::string, DynamicLibraryInfo> pluginInfoCache_;
 
     friend class Plugin;
 };

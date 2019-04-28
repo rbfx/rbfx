@@ -4071,8 +4071,11 @@ namespace eastl
 	///    #include <EASTL/hash_set.h>
 	///    hash_set<string> stringHashSet;
 	///
+#if EASTL_URHO3D_EXTENSIONS
+	template <typename T, typename Enable> struct hash;
+#else
 	template <typename T> struct hash;
-
+#endif
 	template <>
 	struct hash<string>
 	{

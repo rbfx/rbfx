@@ -385,11 +385,11 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
     file->WriteShort(3);
 
     file->WriteUInt(parameters_.Size());
-    for (HashMap<StringHash, ShaderParameter>::ConstIterator i = parameters_.Begin(); i != parameters_.End(); ++i)
+    for (auto i = parameters_.Begin(); i != parameters_.End(); ++i)
     {
-        file->WriteString(i->second_.name_);
-        file->WriteUByte((unsigned char)i->second_.register_);
-        file->WriteUByte((unsigned char)i->second_.regCount_);
+        file->WriteString(i->second.name_);
+        file->WriteUByte((unsigned char)i->second.register_);
+        file->WriteUByte((unsigned char)i->second.regCount_);
     }
 
     unsigned usedTextureUnits = 0;

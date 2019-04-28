@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Container/Hash.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Resource/Resource.h"
 
@@ -211,9 +212,9 @@ private:
     /// Pixel shaders.
     stl::vector<stl::shared_ptr<ShaderVariation> > pixelShaders_;
     /// Vertex shaders with extra defines from the renderpath.
-    HashMap<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraVertexShaders_;
+    stl::unordered_map<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraVertexShaders_;
     /// Pixel shaders with extra defines from the renderpath.
-    HashMap<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraPixelShaders_;
+    stl::unordered_map<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraPixelShaders_;
     /// Pass name.
     stl::string name_;
 };
@@ -313,10 +314,10 @@ private:
     /// Passes.
     stl::vector<stl::shared_ptr<Pass> > passes_;
     /// Cached clones with added shader compilation defines.
-    HashMap<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
+    stl::unordered_map<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
 
     /// Pass index assignments.
-    static HashMap<stl::string, unsigned> passIndices;
+    static stl::unordered_map<stl::string, unsigned> passIndices;
 };
 
 }

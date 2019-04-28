@@ -70,7 +70,7 @@ protected:
     int lastUse_ = 0;
 };
 
-static HashMap<ImGuiID, UIStateWrapper> uiState_;
+static stl::unordered_map<ImGuiID, UIStateWrapper> uiState_;
 static int uiStateLastGcFrame_ = 0;
 
 void SetUIStateP(void* state, void(*deleter)(void*))
@@ -83,20 +83,20 @@ void* GetUIStateP()
 {
     void* result = nullptr;
     auto id = ui::GetCurrentWindow()->IDStack.back();
-    auto it = uiState_.Find(id);
-    if (it != uiState_.End())
-        result = it->second_.Get();
+    auto it = uiState_.find(id);
+    if (it != uiState_.end())
+        result = it->second.Get();
 
     int currentFrame = ui::GetCurrentContext()->FrameCount;
     if (uiStateLastGcFrame_ != currentFrame)
     {
         uiStateLastGcFrame_ = currentFrame;
-        for (auto jt = uiState_.Begin(); jt != uiState_.End();)
+        for (auto jt = uiState_.begin(); jt != uiState_.end();)
         {
-            if (jt->second_.IsExpired())
+            if (jt->second.IsExpired())
             {
-                jt->second_.Unset();
-                jt = uiState_.Erase(jt);
+                jt->second.Unset();
+                jt = uiState_.erase(jt);
             }
             else
                 ++jt;
@@ -108,11 +108,11 @@ void* GetUIStateP()
 
 void ExpireUIStateP()
 {
-    auto it = uiState_.Find(ui::GetCurrentWindow()->IDStack.back());
-    if (it != uiState_.End())
+    auto it = uiState_.find(ui::GetCurrentWindow()->IDStack.back());
+    if (it != uiState_.end())
     {
-        it->second_.Unset();
-        uiState_.Erase(it);
+        it->second.Unset();
+        uiState_.erase(it);
     }
 }
 
@@ -249,7 +249,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
         /// A flag indicating type of resize action currently in progress
         TransformResizeTypeFlags resizing_ = RESIZE_NONE;
         /// A cache of system cursors
-        HashMap<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
+        stl::unordered_map<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
         /// Default cursor shape
         SDL_Cursor* cursorArrow_;
         /// Flag indicating that this selector set cursor handle
@@ -271,7 +271,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
         {
             SDL_FreeCursor(cursorArrow_);
             for (const auto& it : cursors_)
-                SDL_FreeCursor(it.second_);
+                SDL_FreeCursor(it.second);
         }
     };
 

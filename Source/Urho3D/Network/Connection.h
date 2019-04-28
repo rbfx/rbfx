@@ -40,6 +40,24 @@ namespace SLNet
     class RakPeerInterface;
 }
 
+#include <slikenet/types.h>
+
+
+namespace eastl
+{
+
+template <class T, typename Enable> struct hash;
+
+template<> struct hash<SLNet::AddressOrGUID>
+{
+    size_t operator()(const SLNet::AddressOrGUID& value) const
+    {
+        return value.ToHash();
+    }
+};
+
+}   // namespace eastl
+
 namespace Urho3D
 {
 
@@ -287,13 +305,13 @@ private:
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.
-    HashMap<StringHash, PackageDownload> downloads_;
+    stl::unordered_map<StringHash, PackageDownload> downloads_;
     /// Ongoing package send transfers.
-    HashMap<StringHash, PackageUpload> uploads_;
+    stl::unordered_map<StringHash, PackageUpload> uploads_;
     /// Pending latest data for not yet received nodes.
-    HashMap<unsigned, stl::vector<unsigned char> > nodeLatestData_;
+    stl::unordered_map<unsigned, stl::vector<unsigned char> > nodeLatestData_;
     /// Pending latest data for not yet received components.
-    HashMap<unsigned, stl::vector<unsigned char> > componentLatestData_;
+    stl::unordered_map<unsigned, stl::vector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
     stl::hash_set<unsigned> nodesToProcess_;
     /// Reusable message buffer.

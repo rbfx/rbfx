@@ -22,7 +22,9 @@
 
 #pragma once
 
-#include "../Container/HashMap.h"
+#include <EASTL/unordered_map.h>
+#include <EASTL/vector.h>
+
 #include "../Container/RefCounted.h"
 #include "../Math/Color.h"
 #include "../Math/Matrix3.h"
@@ -81,7 +83,7 @@ using VariantVector = stl::vector<Variant>;
 using StringVector = stl::vector<stl::string>;
 
 /// Map of variants.
-using VariantMap = HashMap<StringHash, Variant>;
+using VariantMap = stl::unordered_map<StringHash, Variant>;
 
 /// Typed resource reference.
 struct URHO3D_API ResourceRef
@@ -301,7 +303,7 @@ union VariantValue
     stl::string string_;
     StringVector stringVector_;
     VariantVector variantVector_;
-    VariantMap variantMap_;
+    VariantMap* variantMap_;
     stl::vector<unsigned char> buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
@@ -316,7 +318,7 @@ union VariantValue
     ~VariantValue() { }     // NOLINT(modernize-use-equals-default)
 };
 
-static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
+// TODO: static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
 
 /// Variable that supports a fixed set of types.
 class URHO3D_API Variant
@@ -741,7 +743,7 @@ public:
     Variant& operator =(const VariantMap& rhs)
     {
         SetType(VAR_VARIANTMAP);
-        value_.variantMap_ = rhs;
+        *value_.variantMap_ = rhs;
         return *this;
     }
 
@@ -920,7 +922,7 @@ public:
     /// Test for equality with a variant map. To return true, both the type and value must match.
     bool operator ==(const VariantMap& rhs) const
     {
-        return type_ == VAR_VARIANTMAP ? value_.variantMap_ == rhs : false;
+        return type_ == VAR_VARIANTMAP ? *value_.variantMap_ == rhs : false;
     }
 
     /// Test for equality with a rect. To return true, both the type and value must match.
@@ -1244,7 +1246,7 @@ public:
     /// Return a variant map or empty on type mismatch.
     const VariantMap& GetVariantMap() const
     {
-        return type_ == VAR_VARIANTMAP ? value_.variantMap_ : emptyVariantMap;
+        return type_ == VAR_VARIANTMAP ? *value_.variantMap_ : emptyVariantMap;
     }
 
     /// Return a rect or empty on type mismatch.
@@ -1358,7 +1360,7 @@ public:
     StringVector* GetStringVectorPtr() { return type_ == VAR_STRINGVECTOR ? &value_.stringVector_ : nullptr; }
 
     /// Return a pointer to a modifiable variant map or null on type mismatch.
-    VariantMap* GetVariantMapPtr() { return type_ == VAR_VARIANTMAP ? &value_.variantMap_ : nullptr; }
+    VariantMap* GetVariantMapPtr() { return type_ == VAR_VARIANTMAP ? value_.variantMap_ : nullptr; }
 
     /// Return a pointer to a modifiable custom variant value or null on type mismatch.
     template <class T> T* GetCustomPtr()

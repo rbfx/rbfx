@@ -387,14 +387,14 @@ StringVector Editor::GetObjectsByCategory(const stl::string& category)
 {
     StringVector result;
     const auto& factories = context_->GetObjectFactories();
-    auto it = context_->GetObjectCategories().Find(category);
-    if (it != context_->GetObjectCategories().End())
+    auto it = context_->GetObjectCategories().find(category);
+    if (it != context_->GetObjectCategories().end())
     {
-        for (const StringHash& type : it->second_)
+        for (const StringHash& type : it->second)
         {
-            auto jt = factories.Find(type);
-            if (jt != factories.End())
-                result.push_back(jt->second_->GetTypeName());
+            auto jt = factories.find(type);
+            if (jt != factories.end())
+                result.push_back(jt->second->GetTypeName());
         }
     }
     return result;
@@ -473,18 +473,18 @@ void Editor::HandleHotkeys()
             VariantMap args;
             args[Undo::P_TIME] = M_MAX_UNSIGNED;
             SendEvent(E_REDO, args);
-            Variant manager;
-            if (args.TryGetValue(Undo::P_MANAGER, manager))
-                ((Undo::Manager*)manager.GetPtr())->Redo();
+            auto it = args.find(Undo::P_MANAGER);
+            if (it != args.end())
+                ((Undo::Manager*)it->second.GetPtr())->Redo();
         }
         else if (input->GetKeyPress(KEY_Z))
         {
             VariantMap args;
             args[Undo::P_TIME] = 0;
             SendEvent(E_UNDO, args);
-            Variant manager;
-            if (args.TryGetValue(Undo::P_MANAGER, manager))
-                ((Undo::Manager*)manager.GetPtr())->Undo();
+            auto it = args.find(Undo::P_MANAGER);
+            if (it != args.end())
+                ((Undo::Manager*)it->second.GetPtr())->Undo();
         }
     }
 }

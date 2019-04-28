@@ -89,12 +89,12 @@ Cursor::Cursor(Context* context) :
 
 Cursor::~Cursor()
 {
-    for (HashMap<stl::string, CursorShapeInfo>::Iterator i = shapeInfos_.Begin(); i != shapeInfos_.End(); ++i)
+    for (auto i = shapeInfos_.begin(); i != shapeInfos_.end(); ++i)
     {
-        if (i->second_.osCursor_)
+        if (i->second.osCursor_)
         {
-            SDL_FreeCursor(i->second_.osCursor_);
-            i->second_.osCursor_ = nullptr;
+            SDL_FreeCursor(i->second.osCursor_);
+            i->second.osCursor_ = nullptr;
         }
     }
 }
@@ -141,7 +141,7 @@ void Cursor::DefineShape(const stl::string& shape, Image* image, const IntRect& 
 
     auto* cache = GetSubsystem<ResourceCache>();
 
-    if (!shapeInfos_.Contains(shape))
+    if (!shapeInfos_.contains(shape))
         shapeInfos_[shape] = CursorShapeInfo();
 
     CursorShapeInfo& info = shapeInfos_[shape];
@@ -177,7 +177,7 @@ void Cursor::DefineShape(const stl::string& shape, Image* image, const IntRect& 
 
 void Cursor::SetShape(const stl::string& shape)
 {
-    if (shape == EMPTY_STRING || shape.empty() || shape_ == shape || !shapeInfos_.Contains(shape))
+    if (shape == EMPTY_STRING || shape.empty() || shape_ == shape || !shapeInfos_.contains(shape))
         return;
 
     shape_ = shape;
@@ -236,16 +236,16 @@ VariantVector Cursor::GetShapesAttr() const
 {
     VariantVector ret;
 
-    for (HashMap<stl::string, CursorShapeInfo>::ConstIterator i = shapeInfos_.Begin(); i != shapeInfos_.End(); ++i)
+    for (auto i = shapeInfos_.begin(); i != shapeInfos_.end(); ++i)
     {
-        if (i->second_.imageRect_ != IntRect::ZERO)
+        if (i->second.imageRect_ != IntRect::ZERO)
         {
             // Could use a map but this simplifies the UI xml.
             VariantVector shape;
-            shape.push_back(i->first_);
-            shape.push_back(GetResourceRef(i->second_.texture_, Texture2D::GetTypeStatic()));
-            shape.push_back(i->second_.imageRect_);
-            shape.push_back(i->second_.hotSpot_);
+            shape.push_back(i->first);
+            shape.push_back(GetResourceRef(i->second.texture_, Texture2D::GetTypeStatic()));
+            shape.push_back(i->second.imageRect_);
+            shape.push_back(i->second.hotSpot_);
             ret.push_back(shape);
         }
     }

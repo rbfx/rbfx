@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
@@ -451,10 +450,11 @@ void Renderer::SetMaxShadowMaps(int shadowMaps)
         return;
 
     maxShadowMaps_ = shadowMaps;
-    for (HashMap<int, stl::vector<stl::shared_ptr<Texture2D> > >::Iterator i = shadowMaps_.Begin(); i != shadowMaps_.End(); ++i)
+    for (auto i = shadowMaps_.begin(); i !=
+        shadowMaps_.end(); ++i)
     {
-        if ((int) i->second_.size() > maxShadowMaps_)
-            i->second_.resize((unsigned) maxShadowMaps_);
+        if ((int) i->second.size() > maxShadowMaps_)
+            i->second.resize((unsigned) maxShadowMaps_);
     }
 }
 
@@ -651,7 +651,7 @@ void Renderer::Update(float timeStep)
     URHO3D_PROFILE("UpdateViews");
 
     views_.clear();
-    preparedViews_.Clear();
+    preparedViews_.clear();
 
     // If device lost, do not perform update. This is because any dynamic vertex/index buffer updates happen already here,
     // and if the device is lost, the updates queue up, causing memory use to rise constantly
@@ -777,7 +777,7 @@ void Renderer::DrawDebugGeometry(bool depthTest)
 
         for (unsigned i = 0; i < geometries.size(); ++i)
         {
-            if (!stl::contains(processedGeometries, geometries[i]))
+            if (!processedGeometries.contains(geometries[i]))
             {
                 geometries[i]->DrawDebugGeometry(debug, depthTest);
                 processedGeometries.insert(geometries[i]);
@@ -785,7 +785,7 @@ void Renderer::DrawDebugGeometry(bool depthTest)
         }
         for (unsigned i = 0; i < lights.size(); ++i)
         {
-            if (!stl::contains(processedLights, lights[i]))
+            if (!processedLights.contains(lights[i]))
             {
                 lights[i]->DrawDebugGeometry(debug, depthTest);
                 processedLights.insert(lights[i]);
@@ -895,7 +895,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     }
 
     int searchKey = width << 16u | height;
-    if (shadowMaps_.Contains(searchKey))
+    if (shadowMaps_.contains(searchKey))
     {
         // If shadow maps are reused, always return the first
         if (reuseShadowMaps_)
@@ -974,7 +974,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
             if (shadowMapUsage == TEXTURE_DEPTHSTENCIL && dummyColorFormat)
             {
                 // If no dummy color rendertarget for this size exists yet, create one now
-                if (!colorShadowMaps_.Contains(searchKey))
+                if (!colorShadowMaps_.contains(searchKey))
                 {
                     colorShadowMaps_[searchKey] = context_->CreateObject<Texture2D>();
                     colorShadowMaps_[searchKey]->SetNumLevels(1);
@@ -1030,7 +1030,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         searchKey += (unsigned long long)persistentKey << 32u;
 
     // If new size or format, initialize the allocation stats
-    if (screenBuffers_.Find(searchKey) == screenBuffers_.End())
+    if (screenBuffers_.find(searchKey) == screenBuffers_.end())
         screenBufferAllocations_[searchKey] = 0;
 
     // Reuse depth-stencil buffers whenever the size matches, instead of allocating new
@@ -1152,8 +1152,8 @@ void Renderer::StorePreparedView(View* view, Camera* camera)
 
 View* Renderer::GetPreparedView(Camera* camera)
 {
-    HashMap<Camera*, stl::weak_ptr<View> >::Iterator i = preparedViews_.Find(camera);
-    return i != preparedViews_.End() ? i->second_.get() : nullptr;
+    auto i = preparedViews_.find(camera);
+    return i != preparedViews_.end() ? i->second.get() : nullptr;
 }
 
 View* Renderer::GetActualView(View* view)
@@ -1271,7 +1271,7 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
     // Log error if shaders could not be assigned, but only once per technique
     if (!batch.vertexShader_ || !batch.pixelShader_)
     {
-        if (!stl::contains(shaderErrorDisplayed_, tech))
+        if (!shaderErrorDisplayed_.contains(tech))
         {
             shaderErrorDisplayed_.insert(tech);
             URHO3D_LOGERROR("Technique " + tech->GetName() + " has missing shaders");
@@ -1457,9 +1457,9 @@ const Rect& Renderer::GetLightScissor(Light* light, Camera* camera)
 {
     stl::pair<Light*, Camera*> combination(light, camera);
 
-    HashMap<stl::pair<Light*, Camera*>, Rect>::Iterator i = lightScissorCache_.Find(combination);
-    if (i != lightScissorCache_.End())
-        return i->second_;
+    auto i = lightScissorCache_.find(combination);
+    if (i != lightScissorCache_.end())
+        return i->second;
 
     const Matrix3x4& view = camera->GetView();
     const Matrix4& projection = camera->GetProjection();
@@ -1507,7 +1507,7 @@ void Renderer::UpdateQueuedViewport(unsigned index)
 
     // Update octree (perform early update for drawables which need that, and reinsert moved drawables.)
     // However, if the same scene is viewed from multiple cameras, update the octree only once
-    if (!stl::contains(updatedOctrees_, octree))
+    if (!updatedOctrees_.contains(octree))
     {
         frame_.camera_ = viewport->GetCamera();
         frame_.viewSize_ = viewRect.Size();
@@ -1531,7 +1531,7 @@ void Renderer::UpdateQueuedViewport(unsigned index)
 void Renderer::PrepareViewRender()
 {
     ResetScreenBufferAllocations();
-    lightScissorCache_.Clear();
+    lightScissorCache_.clear();
     lightStencilValue_ = 1;
 }
 
@@ -1546,10 +1546,11 @@ void Renderer::RemoveUnusedBuffers()
         }
     }
 
-    for (HashMap<unsigned long long, stl::vector<stl::shared_ptr<Texture> > >::Iterator i = screenBuffers_.Begin(); i != screenBuffers_.End();)
+    for (auto i = screenBuffers_.begin(); i !=
+        screenBuffers_.end();)
     {
-        HashMap<unsigned long long, stl::vector<stl::shared_ptr<Texture> > >::Iterator current = i++;
-        stl::vector<stl::shared_ptr<Texture> >& buffers = current->second_;
+        auto current = i++;
+        stl::vector<stl::shared_ptr<Texture> >& buffers = current->second;
         for (unsigned j = buffers.size() - 1; j < buffers.size(); --j)
         {
             Texture* buffer = buffers[j];
@@ -1562,22 +1563,23 @@ void Renderer::RemoveUnusedBuffers()
         }
         if (buffers.empty())
         {
-            screenBufferAllocations_.Erase(current->first_);
-            screenBuffers_.Erase(current);
+            screenBufferAllocations_.erase(current->first);
+            screenBuffers_.erase(current);
         }
     }
 }
 
 void Renderer::ResetShadowMapAllocations()
 {
-    for (auto i = shadowMapAllocations_.Begin(); i != shadowMapAllocations_.End(); ++i)
-        i->second_.clear();
+    for (auto i = shadowMapAllocations_.begin(); i != shadowMapAllocations_.end(); ++i)
+        i->second.clear();
 }
 
 void Renderer::ResetScreenBufferAllocations()
 {
-    for (HashMap<unsigned long long, unsigned>::Iterator i = screenBufferAllocations_.Begin(); i != screenBufferAllocations_.End(); ++i)
-        i->second_ = 0;
+    for (auto i = screenBufferAllocations_.begin(); i !=
+        screenBufferAllocations_.end(); ++i)
+        i->second = 0;
 }
 
 void Renderer::Initialize()
@@ -1902,16 +1904,16 @@ void Renderer::CreateInstancingBuffer()
 
 void Renderer::ResetShadowMaps()
 {
-    shadowMaps_.Clear();
-    shadowMapAllocations_.Clear();
-    colorShadowMaps_.Clear();
+    shadowMaps_.clear();
+    shadowMapAllocations_.clear();
+    colorShadowMaps_.clear();
 }
 
 void Renderer::ResetBuffers()
 {
     occlusionBuffers_.clear();
-    screenBuffers_.Clear();
-    screenBufferAllocations_.Clear();
+    screenBuffers_.clear();
+    screenBufferAllocations_.clear();
 }
 
 stl::string Renderer::GetShadowVariations() const

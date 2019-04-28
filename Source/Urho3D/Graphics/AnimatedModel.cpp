@@ -382,9 +382,9 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
             newMorph.nameHash_ = morphs[i].nameHash_;
             newMorph.weight_ = 0.0f;
             newMorph.buffers_ = morphs[i].buffers_;
-            for (HashMap<unsigned, VertexBufferMorph>::ConstIterator j = morphs[i].buffers_.Begin();
-                 j != morphs[i].buffers_.End(); ++j)
-                morphElementMask_ |= j->second_.elementMask_;
+            for (auto j = morphs[i].buffers_.begin();
+                 j != morphs[i].buffers_.end(); ++j)
+                morphElementMask_ |= j->second.elementMask_;
             morphs_.push_back(newMorph);
         }
 
@@ -1107,7 +1107,7 @@ void AnimatedModel::MarkMorphsDirty()
 void AnimatedModel::CloneGeometries()
 {
     const stl::vector<stl::shared_ptr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
-    HashMap<VertexBuffer*, stl::shared_ptr<VertexBuffer> > clonedVertexBuffers;
+    stl::unordered_map<VertexBuffer*, stl::shared_ptr<VertexBuffer> > clonedVertexBuffers;
     morphVertexBuffers_.resize(originalVertexBuffers.size());
 
     for (unsigned i = 0; i < originalVertexBuffers.size(); ++i)
@@ -1146,7 +1146,7 @@ void AnimatedModel::CloneGeometries()
             for (unsigned k = 0; k < originalBuffers.size(); ++k)
             {
                 VertexBuffer* originalBuffer = originalBuffers[k];
-                if (clonedVertexBuffers.Contains(originalBuffer))
+                if (clonedVertexBuffers.contains(originalBuffer))
                     ++totalBuf;
             }
             clone->SetNumVertexBuffers(totalBuf);
@@ -1156,7 +1156,7 @@ void AnimatedModel::CloneGeometries()
             {
                 VertexBuffer* originalBuffer = originalBuffers[k];
 
-                if (clonedVertexBuffers.Contains(originalBuffer))
+                if (clonedVertexBuffers.contains(originalBuffer))
                 {
                     VertexBuffer* clonedBuffer = clonedVertexBuffers[originalBuffer];
                     clone->SetVertexBuffer(l++, originalBuffer);
@@ -1371,9 +1371,9 @@ void AnimatedModel::UpdateMorphs()
                     {
                         if (morphs_[j].weight_ != 0.0f)
                         {
-                            HashMap<unsigned, VertexBufferMorph>::Iterator k = morphs_[j].buffers_.Find(i);
-                            if (k != morphs_[j].buffers_.End())
-                                ApplyMorph(buffer, dest, morphStart, k->second_, morphs_[j].weight_);
+                            auto k = morphs_[j].buffers_.find(i);
+                            if (k != morphs_[j].buffers_.end())
+                                ApplyMorph(buffer, dest, morphStart, k->second, morphs_[j].weight_);
                         }
                     }
 

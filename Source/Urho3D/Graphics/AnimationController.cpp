@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/AnimatedModel.h"
@@ -702,7 +701,7 @@ void AnimationController::SetNetAnimationsAttr(const stl::vector<unsigned char>&
     // Set any extra animations to fade out
     for (auto i = animations_.begin(); i != animations_.end(); ++i)
     {
-        if (!stl::contains(processedAnimations, i->hash_))
+        if (!processedAnimations.contains(i->hash_))
         {
             i->targetWeight_ = 0.0f;
             i->fadeTime_ = EXTRA_ANIM_FADEOUT_TIME;

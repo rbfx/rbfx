@@ -77,7 +77,7 @@ bool ObjectAnimation::Save(Serializer& dest) const
 
 bool ObjectAnimation::LoadXML(const XMLElement& source)
 {
-    attributeAnimationInfos_.Clear();
+    attributeAnimationInfos_.clear();
 
     XMLElement animElem;
     animElem = source.GetChild("attributeanimation");
@@ -111,13 +111,13 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
 
 bool ObjectAnimation::SaveXML(XMLElement& dest) const
 {
-    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
-         i != attributeAnimationInfos_.End(); ++i)
+    for (auto i = attributeAnimationInfos_.begin();
+         i != attributeAnimationInfos_.end(); ++i)
     {
         XMLElement animElem = dest.CreateChild("attributeanimation");
-        animElem.SetAttribute("name", i->first_);
+        animElem.SetAttribute("name", i->first);
 
-        const ValueAnimationInfo* info = i->second_;
+        const ValueAnimationInfo* info = i->second;
         if (!info->GetAnimation()->SaveXML(animElem))
             return false;
 
@@ -130,7 +130,7 @@ bool ObjectAnimation::SaveXML(XMLElement& dest) const
 
 bool ObjectAnimation::LoadJSON(const JSONValue& source)
 {
-    attributeAnimationInfos_.Clear();
+    attributeAnimationInfos_.clear();
 
     JSONValue attributeAnimationsValue = source.Get("attributeanimations");
     if (attributeAnimationsValue.IsNull())
@@ -140,10 +140,10 @@ bool ObjectAnimation::LoadJSON(const JSONValue& source)
 
     const JSONObject& attributeAnimationsObject = attributeAnimationsValue.GetObject();
 
-    for (JSONObject::ConstIterator it = attributeAnimationsObject.Begin(); it != attributeAnimationsObject.End(); it++)
+    for (auto it = attributeAnimationsObject.begin(); it != attributeAnimationsObject.end(); it++)
     {
-        stl::string name = it->first_;
-        JSONValue value = it->second_;
+        stl::string name = it->first;
+        JSONValue value = it->second;
         stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(value))
             return false;
@@ -170,20 +170,20 @@ bool ObjectAnimation::SaveJSON(JSONValue& dest) const
 {
     JSONValue attributeAnimationsValue;
 
-    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
-         i != attributeAnimationInfos_.End(); ++i)
+    for (auto i = attributeAnimationInfos_.begin();
+         i != attributeAnimationInfos_.end(); ++i)
     {
         JSONValue animValue;
-        animValue.Set("name", i->first_);
+        animValue.Set("name", i->first);
 
-        const ValueAnimationInfo* info = i->second_;
+        const ValueAnimationInfo* info = i->second;
         if (!info->GetAnimation()->SaveJSON(animValue))
             return false;
 
         animValue.Set("wrapmode", wrapModeNames[info->GetWrapMode()]);
         animValue.Set("speed", (float) info->GetSpeed());
 
-        attributeAnimationsValue.Set(i->first_, animValue);
+        attributeAnimationsValue.Set(i->first, animValue);
     }
 
     dest.Set("attributeanimations", attributeAnimationsValue);
@@ -203,13 +203,14 @@ void ObjectAnimation::AddAttributeAnimation(const stl::string& name, ValueAnimat
 
 void ObjectAnimation::RemoveAttributeAnimation(const stl::string& name)
 {
-    HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::Iterator i = attributeAnimationInfos_.Find(name);
-    if (i != attributeAnimationInfos_.End())
+    auto i = attributeAnimationInfos_.find(
+        name);
+    if (i != attributeAnimationInfos_.end())
     {
         SendAttributeAnimationRemovedEvent(name);
 
-        i->second_->GetAnimation()->SetOwner(nullptr);
-        attributeAnimationInfos_.Erase(i);
+        i->second->GetAnimation()->SetOwner(nullptr);
+        attributeAnimationInfos_.erase(i);
     }
 }
 
@@ -218,15 +219,15 @@ void ObjectAnimation::RemoveAttributeAnimation(ValueAnimation* attributeAnimatio
     if (!attributeAnimation)
         return;
 
-    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::Iterator i = attributeAnimationInfos_.Begin();
-         i != attributeAnimationInfos_.End(); ++i)
+    for (auto i = attributeAnimationInfos_.begin();
+         i != attributeAnimationInfos_.end(); ++i)
     {
-        if (i->second_->GetAnimation() == attributeAnimation)
+        if (i->second->GetAnimation() == attributeAnimation)
         {
-            SendAttributeAnimationRemovedEvent(i->first_);
+            SendAttributeAnimationRemovedEvent(i->first);
 
             attributeAnimation->SetOwner(nullptr);
-            attributeAnimationInfos_.Erase(i);
+            attributeAnimationInfos_.erase(i);
             return;
         }
     }
@@ -252,9 +253,10 @@ float ObjectAnimation::GetAttributeAnimationSpeed(const stl::string& name) const
 
 ValueAnimationInfo* ObjectAnimation::GetAttributeAnimationInfo(const stl::string& name) const
 {
-    HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Find(name);
-    if (i != attributeAnimationInfos_.End())
-        return i->second_;
+    auto i = attributeAnimationInfos_.find(
+        name);
+    if (i != attributeAnimationInfos_.end())
+        return i->second;
     return nullptr;
 }
 

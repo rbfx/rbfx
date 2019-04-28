@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../../Container/HashMap.h"
+#include "../../Container/stl::unordered_map.h"
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/ShaderVariation.h"
@@ -53,18 +53,18 @@ public:
         }
 
         // Copy parameters, add direct links to constant buffers
-        const HashMap<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
-        for (HashMap<StringHash, ShaderParameter>::ConstIterator i = vsParams.Begin(); i != vsParams.End(); ++i)
+        const stl::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
+        for (auto i = vsParams.Begin(); i != vsParams.End(); ++i)
         {
-            parameters_[i->first_] = i->second_;
-            parameters_[i->first_].bufferPtr_ = vsConstantBuffers_[i->second_.buffer_].Get();
+            parameters_[i->first] = i->second;
+            parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].Get();
         }
 
-        const HashMap<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
-        for (HashMap<StringHash, ShaderParameter>::ConstIterator i = psParams.Begin(); i != psParams.End(); ++i)
+        const stl::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
+        for (auto i = psParams.Begin(); i != psParams.End(); ++i)
         {
-            parameters_[i->first_] = i->second_;
-            parameters_[i->first_].bufferPtr_ = psConstantBuffers_[i->second_.buffer_].Get();
+            parameters_[i->first] = i->second;
+            parameters_[i->first].bufferPtr_ = psConstantBuffers_[i->second.buffer_].Get();
         }
 
         // Optimize shader parameter lookup by rehashing to next power of two
@@ -78,7 +78,7 @@ public:
     }
 
     /// Combined parameters from the vertex and pixel shader.
-    HashMap<StringHash, ShaderParameter> parameters_;
+    stl::unordered_map<StringHash, ShaderParameter> parameters_;
     /// Vertex shader constant buffers.
     stl::shared_ptr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Pixel shader constant buffers.

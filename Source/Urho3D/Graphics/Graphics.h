@@ -726,7 +726,7 @@ private:
     /// Textures in use.
     Texture* textures_[MAX_TEXTURE_UNITS]{};
     /// Texture unit mappings.
-    HashMap<stl::string, TextureUnit> textureUnits_;
+    stl::unordered_map<stl::string, TextureUnit> textureUnits_;
     /// Rendertargets in use.
     RenderSurface* renderTargets_[MAX_RENDERTARGETS]{};
     /// Depth-stencil surface in use.

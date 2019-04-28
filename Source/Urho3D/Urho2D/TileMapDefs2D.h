@@ -115,7 +115,7 @@ public:
 
 protected:
     /// Property name to property value mapping.
-    HashMap<stl::string, stl::string> nameToValueMapping_;
+    stl::unordered_map<stl::string, stl::string> nameToValueMapping_;
 };
 
 /// Tile flipping flags.

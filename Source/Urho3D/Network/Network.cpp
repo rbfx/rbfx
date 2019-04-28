@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
@@ -275,7 +274,7 @@ Network::~Network()
     Disconnect(100);
     serverConnection_.reset();
 
-    clientConnections_.Clear();
+    clientConnections_.clear();
 
     delete natPunchthroughServerClient_;
     natPunchthroughServerClient_ = nullptr;
@@ -334,10 +333,10 @@ void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
 void Network::ClientDisconnected(const SLNet::AddressOrGUID& connection)
 {
     // Remove the client connection that corresponds to this MessageConnection
-    HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Find(connection);
-    if (i != clientConnections_.End())
+    auto i = clientConnections_.find(connection);
+    if (i != clientConnections_.end())
     {
-        Connection* connection = i->second_;
+        Connection* connection = i->second;
         URHO3D_LOGINFO("Client " + connection->ToString() + " disconnected");
 
         using namespace ClientDisconnected;
@@ -346,7 +345,7 @@ void Network::ClientDisconnected(const SLNet::AddressOrGUID& connection)
         eventData[P_CONNECTION] = connection;
         connection->SendEvent(E_CLIENTDISCONNECTED, eventData);
 
-        clientConnections_.Erase(i);
+        clientConnections_.erase(i);
     }
 }
 
@@ -454,7 +453,7 @@ bool Network::StartServer(unsigned short port)
 
 void Network::StopServer()
 {
-    clientConnections_.Clear();
+    clientConnections_.clear();
 
     if (!rakPeer_)
         return;
@@ -545,17 +544,18 @@ void Network::BroadcastMessage(int msgID, bool reliable, bool inOrder, const uns
 
 void Network::BroadcastRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
-    for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin(); i != clientConnections_.End(); ++i)
-        i->second_->SendRemoteEvent(eventType, inOrder, eventData);
+    for (auto i = clientConnections_.begin(); i !=
+        clientConnections_.end(); ++i)
+        i->second->SendRemoteEvent(eventType, inOrder, eventData);
 }
 
 void Network::BroadcastRemoteEvent(Scene* scene, StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
-    for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin();
-         i != clientConnections_.End(); ++i)
+    for (auto i = clientConnections_.begin();
+         i != clientConnections_.end(); ++i)
     {
-        if (i->second_->GetScene() == scene)
-            i->second_->SendRemoteEvent(eventType, inOrder, eventData);
+        if (i->second->GetScene() == scene)
+            i->second->SendRemoteEvent(eventType, inOrder, eventData);
     }
 }
 
@@ -573,11 +573,11 @@ void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrde
     }
 
     Scene* scene = node->GetScene();
-    for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin();
-         i != clientConnections_.End(); ++i)
+    for (auto i = clientConnections_.begin();
+         i != clientConnections_.end(); ++i)
     {
-        if (i->second_->GetScene() == scene)
-            i->second_->SendRemoteEvent(node, eventType, inOrder, eventData);
+        if (i->second->GetScene() == scene)
+            i->second->SendRemoteEvent(node, eventType, inOrder, eventData);
     }
 }
 
@@ -639,11 +639,11 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
         return;
     }
 
-    for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin();
-         i != clientConnections_.End(); ++i)
+    for (auto i = clientConnections_.begin();
+         i != clientConnections_.end(); ++i)
     {
-        if (i->second_->GetScene() == scene)
-            i->second_->SendPackageToClient(package);
+        if (i->second->GetScene() == scene)
+            i->second->SendPackageToClient(package);
     }
 }
 
@@ -668,9 +668,10 @@ Connection* Network::GetConnection(const SLNet::AddressOrGUID& connection) const
         return serverConnection_;
     else
     {
-        HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::ConstIterator i = clientConnections_.Find(connection);
-        if (i != clientConnections_.End())
-            return i->second_;
+        auto i = clientConnections_.find(
+            connection);
+        if (i != clientConnections_.end())
+            return i->second;
         else
             return nullptr;
     }
@@ -684,9 +685,9 @@ Connection* Network::GetServerConnection() const
 stl::vector<stl::shared_ptr<Connection> > Network::GetClientConnections() const
 {
     stl::vector<stl::shared_ptr<Connection> > ret;
-    for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::ConstIterator i = clientConnections_.Begin();
-         i != clientConnections_.End(); ++i)
-        ret.push_back(i->second_);
+    for (auto i = clientConnections_.begin();
+         i != clientConnections_.end(); ++i)
+        ret.push_back(i->second);
 
     return ret;
 }
@@ -700,7 +701,7 @@ bool Network::IsServerRunning() const
 
 bool Network::CheckRemoteEvent(StringHash eventType) const
 {
-    return stl::contains(allowedRemoteEvents_, eventType);
+    return allowedRemoteEvents_.contains(eventType);
 }
 
 void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
@@ -939,10 +940,10 @@ void Network::PostUpdate(float timeStep)
                 URHO3D_PROFILE("PrepareServerUpdate");
 
                 networkScenes_.clear();
-                for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin();
-                     i != clientConnections_.End(); ++i)
+                for (auto i = clientConnections_.begin();
+                     i != clientConnections_.end(); ++i)
                 {
-                    Scene* scene = i->second_->GetScene();
+                    Scene* scene = i->second->GetScene();
                     if (scene)
                         networkScenes_.insert(scene);
                 }
@@ -955,12 +956,12 @@ void Network::PostUpdate(float timeStep)
                 URHO3D_PROFILE("SendServerUpdate");
 
                 // Then send server updates for each client connection
-                for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin();
-                     i != clientConnections_.End(); ++i)
+                for (auto i = clientConnections_.begin();
+                     i != clientConnections_.end(); ++i)
                 {
-                    i->second_->SendServerUpdate();
-                    i->second_->SendRemoteEvents();
-                    i->second_->SendPackages();
+                    i->second->SendServerUpdate();
+                    i->second->SendRemoteEvents();
+                    i->second->SendPackages();
                 }
             }
         }
@@ -1028,9 +1029,9 @@ void Network::ConfigureNetworkSimulator()
     if (serverConnection_)
         serverConnection_->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
 
-    for (HashMap<SLNet::AddressOrGUID, stl::shared_ptr<Connection> >::Iterator i = clientConnections_.Begin();
-         i != clientConnections_.End(); ++i)
-        i->second_->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
+    for (auto i = clientConnections_.begin();
+         i != clientConnections_.end(); ++i)
+        i->second->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
 }
 
 void RegisterNetworkLibrary(Context* context)

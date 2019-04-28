@@ -242,7 +242,7 @@ public:
     Integer& AsInteger() { return value_; }
 
     /// Return hash value.
-    unsigned ToHash() const { return MakeHash(value_); }
+    unsigned ToHash() const { return (unsigned)value_; }
 
 protected:
     /// Value

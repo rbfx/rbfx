@@ -24,10 +24,8 @@
 
 #include <EASTL/sort.h>
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
-#include "../Container/Sort.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Scene/ObjectAnimation.h"
@@ -1281,7 +1279,7 @@ void UIElement::BringToFront()
         ptr->SetPriority(maxPriority);
 
         int minPriority = maxPriority;
-        while (stl::contains(usedPriorities, minPriority))
+        while (usedPriorities.contains(minPriority))
             --minPriority;
 
         for (auto i = rootChildren.begin(); i !=
@@ -1720,8 +1718,8 @@ const Color& UIElement::GetDerivedColor() const
 
 const Variant& UIElement::GetVar(const StringHash& key) const
 {
-    VariantMap::ConstIterator i = vars_.Find(key);
-    return i != vars_.End() ? i->second_ : Variant::EMPTY;
+    auto i = vars_.find(key);
+    return i != vars_.end() ? i->second : Variant::EMPTY;
 }
 
 bool UIElement::HasTag(const stl::string& tag) const
@@ -1903,13 +1901,13 @@ IntVector2 UIElement::GetEffectiveMinSize() const
 
 void UIElement::OnAttributeAnimationAdded()
 {
-    if (attributeAnimationInfos_.Size() == 1)
+    if (attributeAnimationInfos_.size() == 1)
         SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UIElement, HandlePostUpdate));
 }
 
 void UIElement::OnAttributeAnimationRemoved()
 {
-    if (attributeAnimationInfos_.Empty())
+    if (attributeAnimationInfos_.empty())
         UnsubscribeFromEvent(E_POSTUPDATE);
 }
 

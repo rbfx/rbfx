@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2017-2019 the Rokas Kupstys project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,19 +20,17 @@
 // THE SOFTWARE.
 //
 
-#include "../Precompiled.h"
+#pragma once
 
-namespace Urho3D
+#include <cstddef>
+
+namespace eastl
 {
 
-template <> void Swap<VectorBase>(VectorBase& first, VectorBase& second)
+template<typename T, typename U>
+inline bool contains(const T& container, const U& value)
 {
-    first.Swap(second);
-}
-
-template <> void Swap<HashBase>(HashBase& first, HashBase& second)
-{
-    first.Swap(second);
+    return container.find(value) != container.end();
 }
 
 }

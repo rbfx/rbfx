@@ -148,16 +148,16 @@ void PropertySet2D::Load(const XMLElement& element)
 
 bool PropertySet2D::HasProperty(const stl::string& name) const
 {
-    return nameToValueMapping_.Find(name) != nameToValueMapping_.End();
+    return nameToValueMapping_.find(name) != nameToValueMapping_.end();
 }
 
 const stl::string& PropertySet2D::GetProperty(const stl::string& name) const
 {
-    HashMap<stl::string, stl::string>::ConstIterator i = nameToValueMapping_.Find(name);
-    if (i == nameToValueMapping_.End())
+    auto i = nameToValueMapping_.find(name);
+    if (i == nameToValueMapping_.end())
         return EMPTY_STRING;
 
-    return i->second_;
+    return i->second;
 }
 
 Tile2D::Tile2D() :

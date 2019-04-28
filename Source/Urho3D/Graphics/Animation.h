@@ -200,10 +200,10 @@ public:
     float GetLength() const { return length_; }
 
     /// Return all animation tracks.
-    const HashMap<StringHash, AnimationTrack>& GetTracks() const { return tracks_; }
+    const stl::unordered_map<StringHash, AnimationTrack>& GetTracks() const { return tracks_; }
 
     /// Return number of animation tracks.
-    unsigned GetNumTracks() const { return tracks_.Size(); }
+    unsigned GetNumTracks() const { return tracks_.size(); }
 
     /// Return animation track by index.
     AnimationTrack *GetTrack(unsigned index);
@@ -232,7 +232,7 @@ private:
     /// Animation length.
     float length_;
     /// Animation tracks.
-    HashMap<StringHash, AnimationTrack> tracks_;
+    stl::unordered_map<StringHash, AnimationTrack> tracks_;
     /// Animation trigger points.
     stl::vector<AnimationTriggerPoint> triggers_;
 };

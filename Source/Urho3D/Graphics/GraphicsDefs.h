@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
-#include "../Container/HashBase.h"
 #include "../Math/StringHash.h"
 
 namespace Urho3D

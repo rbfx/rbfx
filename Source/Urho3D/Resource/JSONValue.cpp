@@ -281,7 +281,7 @@ unsigned JSONValue::Size() const
     if (GetValueType() == JSON_ARRAY)
         return arrayValue_->size();
     else if (GetValueType() == JSON_OBJECT)
-        return objectValue_->Size();
+        return objectValue_->size();
 
     return 0;
 }
@@ -315,11 +315,11 @@ const JSONValue& JSONValue::Get(const stl::string& key) const
     if (GetValueType() != JSON_OBJECT)
         return EMPTY;
 
-    JSONObject::ConstIterator i = objectValue_->Find(key);
-    if (i == objectValue_->End())
+    auto i = objectValue_->find(key);
+    if (i == objectValue_->end())
         return EMPTY;
 
-    return i->second_;
+    return i->second;
 }
 
 const JSONValue& JSONValue::Get(int index) const
@@ -338,7 +338,7 @@ bool JSONValue::Erase(const stl::string& key)
     if (GetValueType() != JSON_OBJECT)
         return false;
 
-    return objectValue_->Erase(key);
+    return objectValue_->erase(key);
 }
 
 bool JSONValue::Contains(const stl::string& key) const
@@ -346,39 +346,7 @@ bool JSONValue::Contains(const stl::string& key) const
     if  (GetValueType() != JSON_OBJECT)
         return false;
 
-    return objectValue_->Contains(key);
-}
-
-JSONObjectIterator JSONValue::Begin()
-{
-    // Convert to object type.
-    SetType(JSON_OBJECT);
-
-    return objectValue_->Begin();
-}
-
-ConstJSONObjectIterator JSONValue::Begin() const
-{
-    if (GetValueType() != JSON_OBJECT)
-        return emptyObject.Begin();
-
-    return objectValue_->Begin();
-}
-
-JSONObjectIterator JSONValue::End()
-{
-    // Convert to object type.
-    SetType(JSON_OBJECT);
-
-    return objectValue_->End();
-}
-
-ConstJSONObjectIterator JSONValue::End() const
-{
-    if (GetValueType() != JSON_OBJECT)
-        return emptyObject.End();
-
-    return objectValue_->End();
+    return objectValue_->contains(key);
 }
 
 void JSONValue::Clear()
@@ -386,7 +354,7 @@ void JSONValue::Clear()
     if (GetValueType() == JSON_ARRAY)
         arrayValue_->clear();
     else if (GetValueType() == JSON_OBJECT)
-        objectValue_->Clear();
+        objectValue_->clear();
 }
 
 void JSONValue::SetType(JSONValueType valueType, JSONNumberType numberType)
@@ -614,8 +582,8 @@ Variant JSONValue::GetVariantValue(VariantType type) const
 void JSONValue::SetVariantMap(const VariantMap& variantMap, Context* context)
 {
     SetType(JSON_OBJECT);
-    for (VariantMap::ConstIterator i = variantMap.Begin(); i != variantMap.End(); ++i)
-        (*this)[i->first_.ToString()].SetVariant(i->second_);
+    for (auto i = variantMap.begin(); i != variantMap.end(); ++i)
+        (*this)[i->first.ToString()].SetVariant(i->second);
 }
 
 VariantMap JSONValue::GetVariantMap() const
@@ -627,11 +595,11 @@ VariantMap JSONValue::GetVariantMap() const
         return variantMap;
     }
 
-    for (ConstJSONObjectIterator i = Begin(); i != End(); ++i)
+    for (const auto& i : *this)
     {
         /// \todo Ideally this should allow any strings, but for now the convention is that the keys need to be hexadecimal StringHashes
-        StringHash key(ToUInt(i->first_, 16));
-        Variant variant = i->second_.GetVariant();
+        StringHash key(ToUInt(i.first, 16));
+        Variant variant = i.second.GetVariant();
         variantMap[key] = variant;
     }
 
@@ -696,6 +664,38 @@ JSONNumberType JSONValue::GetNumberTypeFromName(const stl::string& typeName)
 JSONNumberType JSONValue::GetNumberTypeFromName(const char* typeName)
 {
     return (JSONNumberType)GetStringListIndex(typeName, numberTypeNames, JSONNT_NAN);
+}
+
+JSONObjectIterator begin(JSONValue& value)
+{
+    // Convert to object type.
+    value.SetType(JSON_OBJECT);
+
+    return value.objectValue_->begin();
+}
+
+ConstJSONObjectIterator begin(const JSONValue& value)
+{
+    if (value.GetValueType() != JSON_OBJECT)
+        return JSONValue::emptyObject.begin();
+
+    return value.objectValue_->begin();
+}
+
+JSONObjectIterator end(JSONValue& value)
+{
+    // Convert to object type.
+    value.SetType(JSON_OBJECT);
+
+    return value.objectValue_->end();
+}
+
+ConstJSONObjectIterator end(const JSONValue& value)
+{
+    if (value.GetValueType() != JSON_OBJECT)
+        return JSONValue::emptyObject.end();
+
+    return value.objectValue_->end();
 }
 
 }

@@ -72,10 +72,10 @@ EditorIconCache::EditorIconCache(Context* context)
 
 EditorIconCache::IconData* EditorIconCache::GetIconData(const stl::string& name)
 {
-    auto it = iconCache_.Find(name);
-    if (it != iconCache_.End())
-        return &it->second_;
-    return &iconCache_.Find("Unknown")->second_;
+    auto it = iconCache_.find(name);
+    if (it != iconCache_.end())
+        return &it->second;
+    return &iconCache_.find("Unknown")->second;
 }
 
 }

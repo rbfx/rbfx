@@ -22,9 +22,11 @@
 
 #include "../Precompiled.h"
 
+#ifdef URHO3D_HASH_DEBUG
+#include "../Core/StringHashRegister.h"
+#endif
 #include "../Math/MathDefs.h"
 #include "../Math/StringHash.h"
-#include "../Container/HashMap.h"
 #include "../IO/Log.h"
 
 #include <cstdio>
@@ -50,6 +52,14 @@ static StringHashRegister& GetGlobalStringHashRegister()
 #endif
 
 const StringHash StringHash::ZERO;
+
+StringHash::StringHash(const char* str) noexcept :      // NOLINT(google-explicit-constructor)
+    value_(Calculate(str))
+{
+#ifdef URHO3D_HASH_DEBUG
+    GetGlobalStringHashRegister()->RegisterString(*this, str);
+#endif
+}
 
 StringHash::StringHash(const stl::string& str) noexcept :
     value_(Calculate(str.c_str()))

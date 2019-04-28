@@ -448,10 +448,10 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
                 }
             }
 
-            HashMap<unsigned, BatchQueue>::Iterator j = batchQueues_.Find(info.passIndex_);
-            if (j == batchQueues_.End())
-                j = batchQueues_.Insert(stl::pair<unsigned, BatchQueue>(info.passIndex_, BatchQueue()));
-            info.batchQueue_ = &j->second_;
+            auto j = batchQueues_.find(info.passIndex_);
+            if (j == batchQueues_.end())
+                j = batchQueues_.insert(stl::pair<unsigned, BatchQueue>(info.passIndex_, BatchQueue())).first;
+            info.batchQueue_ = &j->second;
             SetQueueShaderDefines(*info.batchQueue_, command);
 
             scenePasses_.push_back(info);
@@ -550,15 +550,15 @@ void View::Update(const FrameInfo& frame)
     int maxSortedInstances = renderer_->GetMaxSortedInstances();
 
     // Clear buffers, geometry, light, occluder & batch list
-    renderTargets_.Clear();
+    renderTargets_.clear();
     geometries_.clear();
     lights_.clear();
     zones_.clear();
     occluders_.clear();
     activeOccluders_ = 0;
-    vertexLightQueues_.Clear();
-    for (HashMap<unsigned, BatchQueue>::Iterator i = batchQueues_.Begin(); i != batchQueues_.End(); ++i)
-        i->second_.Clear(maxSortedInstances);
+    vertexLightQueues_.clear();
+    for (auto i = batchQueues_.begin(); i != batchQueues_.end(); ++i)
+        i->second.Clear(maxSortedInstances);
 
     if (hasScenePasses_ && (!cullCamera_ || !octree_))
     {
@@ -761,9 +761,9 @@ void View::SetCameraShaderParameters(Camera* camera)
 
 void View::SetCommandShaderParameters(const RenderPathCommand& command)
 {
-    const HashMap<StringHash, Variant>& parameters = command.shaderParameters_;
-    for (HashMap<StringHash, Variant>::ConstIterator k = parameters.Begin(); k != parameters.End(); ++k)
-        graphics_->SetShaderParameter(k->first_, k->second_);
+    const stl::unordered_map<StringHash, Variant>& parameters = command.shaderParameters_;
+    for (auto k = parameters.begin(); k != parameters.end(); ++k)
+        graphics_->SetShaderParameter(k->first, k->second);
 }
 
 void View::SetGBufferShaderParameters(const IntVector2& texSize, const IntRect& viewRect)
@@ -942,8 +942,8 @@ void View::GetDrawables()
         PerThreadSceneResult& result = sceneResults_[0];
         minZ_ = result.minZ_;
         maxZ_ = result.maxZ_;
-        Swap(geometries_, result.geometries_);
-        Swap(lights_, result.lights_);
+        stl::swap(geometries_, result.geometries_);
+        stl::swap(lights_, result.lights_);
     }
 
     if (minZ_ == M_INFINITY)
@@ -1001,7 +1001,7 @@ void View::ProcessLights()
 
 void View::GetLightBatches()
 {
-    BatchQueue* alphaQueue = batchQueues_.Contains(alphaPassIndex_) ? &batchQueues_[alphaPassIndex_] : nullptr;
+    BatchQueue* alphaQueue = batchQueues_.contains(alphaPassIndex_) ? &batchQueues_[alphaPassIndex_] : nullptr;
 
     // Build light queues and lit batches
     {
@@ -1254,16 +1254,17 @@ void View::GetBaseBatches()
                     {
                         // Find a vertex light queue. If not found, create new
                         unsigned long long hash = GetVertexLightQueueHash(drawableVertexLights);
-                        HashMap<unsigned long long, LightBatchQueue>::Iterator i = vertexLightQueues_.Find(hash);
-                        if (i == vertexLightQueues_.End())
+                        auto i = vertexLightQueues_.find(
+                            hash);
+                        if (i == vertexLightQueues_.end())
                         {
-                            i = vertexLightQueues_.Insert(stl::make_pair(hash, LightBatchQueue()));
-                            i->second_.light_ = nullptr;
-                            i->second_.shadowMap_ = nullptr;
-                            i->second_.vertexLights_ = drawableVertexLights;
+                            i = vertexLightQueues_.insert(stl::make_pair(hash, LightBatchQueue())).first;
+                            i->second.light_ = nullptr;
+                            i->second.shadowMap_ = nullptr;
+                            i->second.vertexLights_ = drawableVertexLights;
                         }
 
-                        destBatch.lightQueue_ = &(i->second_);
+                        destBatch.lightQueue_ = &(i->second);
                     }
                 }
                 else
@@ -1593,7 +1594,7 @@ void View::ExecuteRenderPathCommands()
                         graphics_->SetClipPlane(camera_->GetUseClipping(), camera_->GetClipPlane(), camera_->GetView(),
                             camera_->GetGPUProjection());
 
-                        if (command.shaderParameters_.Size())
+                        if (command.shaderParameters_.size())
                         {
                             // If pass defines shader parameters, reset parameter sources now to ensure they all will be set
                             // (will be set after camera shader parameters)
@@ -1640,7 +1641,7 @@ void View::ExecuteRenderPathCommands()
                         graphics_->SetClipPlane(camera_->GetUseClipping(), camera_->GetClipPlane(), camera_->GetView(),
                             camera_->GetGPUProjection());
 
-                        if (command.shaderParameters_.Size())
+                        if (command.shaderParameters_.size())
                         {
                             graphics_->ClearParameterSources();
                             passCommand_ = &command;
@@ -1685,7 +1686,7 @@ void View::ExecuteRenderPathCommands()
 
                         SetTextures(command);
 
-                        if (command.shaderParameters_.Size())
+                        if (command.shaderParameters_.size())
                         {
                             graphics_->ClearParameterSources();
                             passCommand_ = &command;
@@ -1875,7 +1876,7 @@ void View::RenderQuad(RenderPathCommand& command)
             continue;
 
         StringHash nameHash(rtInfo.name_);
-        if (!renderTargets_.Contains(nameHash))
+        if (!renderTargets_.contains(nameHash))
             continue;
 
         stl::string invSizeName = rtInfo.name_ + "InvSize";
@@ -2853,11 +2854,12 @@ Technique* View::GetTechnique(Drawable* drawable, Material* material)
 
 void View::CheckMaterialForAuxView(Material* material)
 {
-    const HashMap<TextureUnit, stl::shared_ptr<Texture> >& textures = material->GetTextures();
+    const stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> >& textures = material->GetTextures();
 
-    for (HashMap<TextureUnit, stl::shared_ptr<Texture> >::ConstIterator i = textures.Begin(); i != textures.End(); ++i)
+    for (auto i = textures.begin(); i !=
+        textures.end(); ++i)
     {
-        Texture* texture = i->second_;
+        Texture* texture = i->second;
         if (texture && texture->GetUsage() == TEXTURE_RENDERTARGET)
         {
             // Have to check cube & 2D textures separately
@@ -2914,8 +2916,8 @@ void View::AddBatchToQueue(BatchQueue& queue, Batch& batch, Technique* tech, boo
     {
         BatchGroupKey key(batch);
 
-        HashMap<BatchGroupKey, BatchGroup>::Iterator i = queue.batchGroups_.Find(key);
-        if (i == queue.batchGroups_.End())
+        auto i = queue.batchGroups_.find(key);
+        if (i == queue.batchGroups_.end())
         {
             // Create a new group based on the batch
             // In case the group remains below the instancing limit, do not enable instancing shaders yet
@@ -2923,17 +2925,17 @@ void View::AddBatchToQueue(BatchQueue& queue, Batch& batch, Technique* tech, boo
             newGroup.geometryType_ = GEOM_STATIC;
             renderer_->SetBatchShaders(newGroup, tech, allowShadows, queue);
             newGroup.CalculateSortKey();
-            i = queue.batchGroups_.Insert(stl::make_pair(key, newGroup));
+            i = queue.batchGroups_.insert(stl::make_pair(key, newGroup)).first;
         }
 
-        int oldSize = i->second_.instances_.size();
-        i->second_.AddTransforms(batch);
+        int oldSize = i->second.instances_.size();
+        i->second.AddTransforms(batch);
         // Convert to using instancing shaders when the instancing limit is reached
-        if (oldSize < minInstances_ && (int) i->second_.instances_.size() >= minInstances_)
+        if (oldSize < minInstances_ && (int) i->second.instances_.size() >= minInstances_)
         {
-            i->second_.geometryType_ = GEOM_INSTANCED;
-            renderer_->SetBatchShaders(i->second_, tech, allowShadows, queue);
-            i->second_.CalculateSortKey();
+            i->second.geometryType_ = GEOM_INSTANCED;
+            renderer_->SetBatchShaders(i->second, tech, allowShadows, queue);
+            i->second.CalculateSortKey();
         }
     }
     else
@@ -2972,8 +2974,8 @@ void View::PrepareInstancingBuffer()
 
     unsigned totalInstances = 0;
 
-    for (HashMap<unsigned, BatchQueue>::Iterator i = batchQueues_.Begin(); i != batchQueues_.End(); ++i)
-        totalInstances += i->second_.GetNumInstances();
+    for (auto i = batchQueues_.begin(); i != batchQueues_.end(); ++i)
+        totalInstances += i->second.GetNumInstances();
 
     for (auto i = lightQueues_.begin(); i != lightQueues_.end(); ++i)
     {
@@ -2993,8 +2995,8 @@ void View::PrepareInstancingBuffer()
         return;
 
     const unsigned stride = instancingBuffer->GetVertexSize();
-    for (HashMap<unsigned, BatchQueue>::Iterator i = batchQueues_.Begin(); i != batchQueues_.End(); ++i)
-        i->second_.SetInstancingData(dest, stride, freeIndex);
+    for (auto i = batchQueues_.begin(); i != batchQueues_.end(); ++i)
+        i->second.SetInstancingData(dest, stride, freeIndex);
 
     for (auto i = lightQueues_.begin(); i != lightQueues_.end(); ++i)
     {
@@ -3191,7 +3193,7 @@ Texture* View::FindNamedTexture(const stl::string& name, bool isRenderTarget, bo
 {
     // Check rendertargets first
     StringHash nameHash(name);
-    if (renderTargets_.Contains(nameHash))
+    if (renderTargets_.contains(nameHash))
         return renderTargets_[nameHash];
 
     // Then the resource system

@@ -210,18 +210,18 @@ void Run(const stl::vector<stl::string>& arguments)
             // Fallthrough
         case 'l':
             {
-                const HashMap<stl::string, PackageEntry>& entries = packageFile->GetEntries();
-                for (HashMap<stl::string, PackageEntry>::ConstIterator i = entries.Begin(); i != entries.End();)
+                const stl::unordered_map<stl::string, PackageEntry>& entries = packageFile->GetEntries();
+                for (auto i = entries.begin(); i != entries.end();)
                 {
-                    HashMap<stl::string, PackageEntry>::ConstIterator current = i++;
-                    stl::string fileEntry(current->first_);
+                    auto current = i++;
+                    stl::string fileEntry(current->first);
                     if (outputCompressionRatio)
                     {
                         unsigned compressedSize =
-                            (i == entries.End() ? packageFile->GetTotalSize() - sizeof(unsigned) : i->second_.offset_) -
-                            current->second_.offset_;
-                        fileEntry.append_sprintf("\tin: %u\tout: %u\tratio: %f", current->second_.size_, compressedSize,
-                            compressedSize ? 1.f * current->second_.size_ / compressedSize : 0.f);
+                            (i == entries.end() ? packageFile->GetTotalSize() - sizeof(unsigned) : i->second.offset_) -
+                            current->second.offset_;
+                        fileEntry.append_sprintf("\tin: %u\tout: %u\tratio: %f", current->second.size_, compressedSize,
+                            compressedSize ? 1.f * current->second.size_ / compressedSize : 0.f);
                     }
                     PrintLine(fileEntry);
                 }

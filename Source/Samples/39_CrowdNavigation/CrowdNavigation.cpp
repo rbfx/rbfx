@@ -524,7 +524,7 @@ void CrowdNavigation::UpdateStreaming()
         for (int x = beginTile.x_; x <= endTile.x_; ++x)
         {
             const IntVector2 tileIdx(x, z);
-            if (!navMesh->HasTile(tileIdx) && tileData_.Contains(tileIdx))
+            if (!navMesh->HasTile(tileIdx) && tileData_.contains(tileIdx))
             {
                 addedTiles_.insert(tileIdx);
                 navMesh->AddTile(tileData_[tileIdx]);
@@ -535,7 +535,7 @@ void CrowdNavigation::UpdateStreaming()
 void CrowdNavigation::SaveNavigationData()
 {
     auto* navMesh = scene_->GetComponent<DynamicNavigationMesh>();
-    tileData_.Clear();
+    tileData_.clear();
     addedTiles_.clear();
     const IntVector2 numTiles = navMesh->GetNumTiles();
     for (int z = 0; z < numTiles.y_; ++z)

@@ -166,7 +166,7 @@ bool LineEdit::OnDragDropTest(UIElement* source)
 {
     if (source && editable_)
     {
-        if (source->GetVars().Contains(VAR_DRAGDROPCONTENT))
+        if (source->GetVars().contains(VAR_DRAGDROPCONTENT))
             return true;
         StringHash sourceType = source->GetType();
         return sourceType == LineEdit::GetTypeStatic() || sourceType == Text::GetTypeStatic();
@@ -180,7 +180,7 @@ bool LineEdit::OnDragDropFinish(UIElement* source)
     if (source && editable_)
     {
         // If the UI element in question has a drag-and-drop content string defined, use it instead of element text
-        if (source->GetVars().Contains(VAR_DRAGDROPCONTENT))
+        if (source->GetVars().contains(VAR_DRAGDROPCONTENT))
         {
             SetText(source->GetVar(VAR_DRAGDROPCONTENT).GetString());
             return true;

@@ -22,18 +22,15 @@
 
 #pragma once
 
-#include "../Container/Str.h"
+#include <EASTL/string.h>
+
+#include "../Container/Hash.h"
 #include "../Math/MathDefs.h"
-#ifdef URHO3D_HASH_DEBUG
-#include "../Core/StringHashRegister.h"
-#endif
 
 namespace Urho3D
 {
 
-#ifndef URHO3D_HASH_DEBUG
 class StringHashRegister;
-#endif
 
 /// 32-bit hash value for a string.
 class URHO3D_API StringHash
@@ -58,13 +55,7 @@ public:
 #ifndef URHO3D_HASH_DEBUG
     constexpr
 #endif
-    StringHash(const char* str) noexcept :      // NOLINT(google-explicit-constructor)
-        value_(Calculate(str))
-    {
-#ifdef URHO3D_HASH_DEBUG
-        GetGlobalStringHashRegister()->RegisterString(*this, str);
-#endif
-    }
+    StringHash(const char* str) noexcept;      // NOLINT(google-explicit-constructor)
     /// Construct from a string.
     StringHash(const stl::string& str) noexcept;      // NOLINT(google-explicit-constructor)
 
@@ -137,13 +128,5 @@ private:
 };
 
 static_assert(sizeof(StringHash) == sizeof(unsigned), "Unexpected StringHash size.");
-
-}
-
-namespace stl
-{
-
-template <class T> struct hash;
-template <> struct hash<Urho3D::StringHash> { size_t operator()(const Urho3D::StringHash& s) const { return s.ToHash(); } };
 
 }

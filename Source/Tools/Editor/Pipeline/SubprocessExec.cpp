@@ -93,7 +93,7 @@ void SubprocessExec::Execute(const StringVector& input)
 
         int result = 0;
         stl::string logOutput;
-        HashMap<stl::string, unsigned> dirListingBefore;
+        stl::unordered_map<stl::string, unsigned> dirListingBefore;
         if (project->GetPipeline().LockResourcePath(output))
         {
             // Scan output path
@@ -125,7 +125,7 @@ void SubprocessExec::Execute(const StringVector& input)
                 fs->ScanDir(list, output, "*", SCAN_FILES, true);
                 for (const stl::string& path : list)
                 {
-                    if (!dirListingBefore.Contains(path) ||
+                    if (!dirListingBefore.contains(path) ||
                         dirListingBefore[path] < fs->GetLastModifiedTime(output + path))
                         // Record new or changed files
                         outputFiles.emplace_back(outputRelative + path);

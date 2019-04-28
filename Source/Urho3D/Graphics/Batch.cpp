@@ -600,16 +600,18 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     {
         if (graphics->NeedParameterUpdate(SP_MATERIAL, reinterpret_cast<const void*>(material_->GetShaderParameterHash())))
         {
-            const HashMap<StringHash, MaterialShaderParameter>& parameters = material_->GetShaderParameters();
-            for (HashMap<StringHash, MaterialShaderParameter>::ConstIterator i = parameters.Begin(); i != parameters.End(); ++i)
-                graphics->SetShaderParameter(i->first_, i->second_.value_);
+            const stl::unordered_map<StringHash, MaterialShaderParameter>& parameters = material_->GetShaderParameters();
+            for (auto i = parameters.begin(); i !=
+                parameters.end(); ++i)
+                graphics->SetShaderParameter(i->first, i->second.value_);
         }
 
-        const HashMap<TextureUnit, stl::shared_ptr<Texture> >& textures = material_->GetTextures();
-        for (HashMap<TextureUnit, stl::shared_ptr<Texture> >::ConstIterator i = textures.Begin(); i != textures.End(); ++i)
+        const stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> >& textures = material_->GetTextures();
+        for (auto i = textures.begin(); i !=
+            textures.end(); ++i)
         {
-            if (graphics->HasTextureUnit(i->first_))
-                graphics->SetTexture(i->first_, i->second_.get());
+            if (graphics->HasTextureUnit(i->first))
+                graphics->SetTexture(i->first, i->second.get());
         }
     }
 
@@ -723,7 +725,7 @@ void BatchQueue::Clear(int maxSortedInstances)
 {
     batches_.clear();
     sortedBatches_.clear();
-    batchGroups_.Clear();
+    batchGroups_.clear();
     maxSortedInstances_ = (unsigned)maxSortedInstances;
 }
 
@@ -736,11 +738,11 @@ void BatchQueue::SortBackToFront()
 
     stl::quick_sort(sortedBatches_.begin(), sortedBatches_.end(), CompareBatchesBackToFront);
 
-    sortedBatchGroups_.resize(batchGroups_.Size());
+    sortedBatchGroups_.resize(batchGroups_.size());
 
     unsigned index = 0;
-    for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
-        sortedBatchGroups_[index++] = &i->second_;
+    for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
+        sortedBatchGroups_[index++] = &i->second;
 
     stl::quick_sort(sortedBatchGroups_.begin(), sortedBatchGroups_.end(), CompareBatchGroupOrder);
 }
@@ -755,29 +757,29 @@ void BatchQueue::SortFrontToBack()
     SortFrontToBack2Pass(sortedBatches_);
 
     // Sort each group front to back
-    for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
+    for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
     {
-        if (i->second_.instances_.size() <= maxSortedInstances_)
+        if (i->second.instances_.size() <= maxSortedInstances_)
         {
-            stl::quick_sort(i->second_.instances_.begin(), i->second_.instances_.end(), CompareInstancesFrontToBack);
-            if (i->second_.instances_.size())
-                i->second_.distance_ = i->second_.instances_[0].distance_;
+            stl::quick_sort(i->second.instances_.begin(), i->second.instances_.end(), CompareInstancesFrontToBack);
+            if (i->second.instances_.size())
+                i->second.distance_ = i->second.instances_[0].distance_;
         }
         else
         {
             float minDistance = M_INFINITY;
-            for (auto j = i->second_.instances_.begin(); j !=
-                i->second_.instances_.end(); ++j)
+            for (auto j = i->second.instances_.begin(); j !=
+                i->second.instances_.end(); ++j)
                 minDistance = Min(minDistance, j->distance_);
-            i->second_.distance_ = minDistance;
+            i->second.distance_ = minDistance;
         }
     }
 
-    sortedBatchGroups_.resize(batchGroups_.Size());
+    sortedBatchGroups_.resize(batchGroups_.size());
 
     unsigned index = 0;
-    for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
-        sortedBatchGroups_[index++] = &i->second_;
+    for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
+        sortedBatchGroups_[index++] = &i->second;
 
     SortFrontToBack2Pass(reinterpret_cast<stl::vector<Batch*>& >(sortedBatchGroups_));
 }
@@ -801,9 +803,9 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
         Batch* batch = *i;
 
         auto shaderID = (unsigned)(batch->sortKey_ >> 32u);
-        HashMap<unsigned, unsigned>::ConstIterator j = shaderRemapping_.Find(shaderID);
-        if (j != shaderRemapping_.End())
-            shaderID = j->second_;
+        auto j = shaderRemapping_.find(shaderID);
+        if (j != shaderRemapping_.end())
+            shaderID = j->second;
         else
         {
             shaderID = shaderRemapping_[shaderID] = freeShaderID | (shaderID & 0x80000000);
@@ -811,9 +813,9 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
         }
 
         auto materialID = (unsigned short)((batch->sortKey_ & 0xffff0000) >> 16u);
-        HashMap<unsigned short, unsigned short>::ConstIterator k = materialRemapping_.Find(materialID);
-        if (k != materialRemapping_.End())
-            materialID = k->second_;
+        auto k = materialRemapping_.find(materialID);
+        if (k != materialRemapping_.end())
+            materialID = k->second;
         else
         {
             materialID = materialRemapping_[materialID] = freeMaterialID;
@@ -821,9 +823,9 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
         }
 
         auto geometryID = (unsigned short)(batch->sortKey_ & 0xffffu);
-        HashMap<unsigned short, unsigned short>::ConstIterator l = geometryRemapping_.Find(geometryID);
-        if (l != geometryRemapping_.End())
-            geometryID = l->second_;
+        auto l = geometryRemapping_.find(geometryID);
+        if (l != geometryRemapping_.end())
+            geometryID = l->second;
         else
         {
             geometryID = geometryRemapping_[geometryID] = freeGeometryID;
@@ -833,9 +835,9 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
         batch->sortKey_ = (((unsigned long long)shaderID) << 32u) | (((unsigned long long)materialID) << 16u) | geometryID;
     }
 
-    shaderRemapping_.Clear();
-    materialRemapping_.Clear();
-    geometryRemapping_.Clear();
+    shaderRemapping_.clear();
+    materialRemapping_.clear();
+    geometryRemapping_.clear();
 
     // Finally sort again with the rewritten ID's
     stl::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
@@ -844,8 +846,8 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
 
 void BatchQueue::SetInstancingData(void* lockedData, unsigned stride, unsigned& freeIndex)
 {
-    for (HashMap<BatchGroupKey, BatchGroup>::Iterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
-        i->second_.SetInstancingData(lockedData, stride, freeIndex);
+    for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
+        i->second.SetInstancingData(lockedData, stride, freeIndex);
 }
 
 void BatchQueue::Draw(View* view, Camera* camera, bool markToStencil, bool usingLightOptimization, bool allowDepthWrite) const
@@ -895,10 +897,11 @@ unsigned BatchQueue::GetNumInstances() const
 {
     unsigned total = 0;
 
-    for (HashMap<BatchGroupKey, BatchGroup>::ConstIterator i = batchGroups_.Begin(); i != batchGroups_.End(); ++i)
+    for (auto i = batchGroups_.begin(); i !=
+        batchGroups_.end(); ++i)
     {
-        if (i->second_.geometryType_ == GEOM_INSTANCED)
-            total += i->second_.instances_.size();
+        if (i->second.geometryType_ == GEOM_INSTANCED)
+            total += i->second.instances_.size();
     }
 
     return total;

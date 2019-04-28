@@ -43,6 +43,10 @@
 #include <EASTL/tuple.h>
 #include <string.h>
 
+#ifdef URHO3D_HASH_DEBUG
+#include <EASTL/vector.h>
+#endif
+
 EA_DISABLE_ALL_VC_WARNINGS()
 	#include <new>
 	#include <stddef.h>
@@ -1171,6 +1175,31 @@ namespace eastl
 
 		bool validate() const;
 		int  validate_iterator(const_iterator i) const;
+
+#ifdef URHO3D_HASH_DEBUG
+		bool contains(const key_type& key) const
+		{
+			return find(key) != end();
+		}
+
+		eastl::vector<key_type> keys() const
+		{
+			eastl::vector<key_type> result{};
+			result.reserve(size());
+			for (const auto& pair : *this)
+				result.emplace_back(pair.first);
+			return result;
+		}
+
+		eastl::vector<key_type> values() const
+		{
+			eastl::vector<key_type> result{};
+			result.reserve(size());
+			for (const auto& pair : *this)
+				result.emplace_back(pair.second);
+			return result;
+		}
+#endif
 
 	protected:
 		// We must remove one of the 'DoGetResultIterator' overloads from the overload-set (via SFINAE) because both can

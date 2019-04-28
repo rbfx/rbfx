@@ -22,7 +22,6 @@
 
 #include <EASTL/sort.h>
 
-#include <Urho3D/Container/Utilities.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Graphics/BillboardSet.h>
 #include <Urho3D/Graphics/Camera.h>
@@ -483,7 +482,7 @@ void SceneTab::ToggleSelection(Component* component)
         return;
 
     stl::weak_ptr<Component> componentPtr(component);
-    if (stl::contains(selectedComponents_, componentPtr))
+    if (selectedComponents_.contains(componentPtr))
         selectedComponents_.erase(componentPtr);
     else
         selectedComponents_.insert(componentPtr);
@@ -573,7 +572,7 @@ bool SceneTab::IsSelected(Component* component) const
     if (component == nullptr)
         return false;
 
-    return stl::contains(selectedComponents_, stl::weak_ptr<Component>(component));
+    return selectedComponents_.contains(stl::weak_ptr<Component>(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
@@ -725,7 +724,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 ui::Image(component->GetTypeName());
                 ui::SameLine();
 
-                bool selected = stl::contains(selectedComponents_, component);
+                bool selected = selectedComponents_.contains(component);
                 ui::Selectable(component->GetTypeName().c_str(), selected);
 
                 if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
@@ -984,7 +983,7 @@ void SceneTab::RenderNodeContextMenu()
             if (ui::BeginMenu(alternative ? "Create Component (Local)" : "Create Component"))
             {
                 auto* editor = GetSubsystem<Editor>();
-                auto categories = context_->GetObjectCategories().Keys();
+                auto categories = context_->GetObjectCategories().keys();
                 categories.erase_first("UI");
 
                 for (const stl::string& category : categories)

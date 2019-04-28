@@ -436,7 +436,7 @@ void Navigation::UpdateStreaming()
         for (int x = beginTile.x_; x <= endTile.x_; ++x)
         {
             const IntVector2 tileIdx(x, z);
-            if (!navMesh->HasTile(tileIdx) && tileData_.Contains(tileIdx))
+            if (!navMesh->HasTile(tileIdx) && tileData_.contains(tileIdx))
             {
                 addedTiles_.insert(tileIdx);
                 navMesh->AddTile(tileData_[tileIdx]);
@@ -447,7 +447,7 @@ void Navigation::UpdateStreaming()
 void Navigation::SaveNavigationData()
 {
     auto* navMesh = scene_->GetComponent<NavigationMesh>();
-    tileData_.Clear();
+    tileData_.clear();
     addedTiles_.clear();
     const IntVector2 numTiles = navMesh->GetNumTiles();
     for (int z = 0; z < numTiles.y_; ++z)

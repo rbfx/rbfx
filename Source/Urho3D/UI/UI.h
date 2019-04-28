@@ -328,7 +328,7 @@ private:
     /// Handle rendering to a texture.
     void HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData);
     /// Remove drag data and return next iterator.
-    HashMap<stl::weak_ptr<UIElement>, DragData*>::Iterator DragElementErase(HashMap<stl::weak_ptr<UIElement>, DragData*>::Iterator i);
+    stl::unordered_map<stl::weak_ptr<UIElement>, DragData*>::iterator DragElementErase(stl::unordered_map<stl::weak_ptr<UIElement>, DragData*>::iterator i);
     /// Handle clean up on a drag cancel.
     void ProcessDragCancel();
     /// Sum touch positions and return the begin position ready to send.
@@ -415,15 +415,15 @@ private:
     /// Max screen distance the first click in a double click can be from the second click in a double click.
     float maxDoubleClickDist_;
     /// Currently hovered elements.
-    HashMap<stl::weak_ptr<UIElement>, bool> hoveredElements_;
+    stl::unordered_map<stl::weak_ptr<UIElement>, bool> hoveredElements_;
     /// Currently dragged elements.
-    HashMap<stl::weak_ptr<UIElement>, DragData*> dragElements_;
+    stl::unordered_map<stl::weak_ptr<UIElement>, DragData*> dragElements_;
     /// Number of elements in dragElements_.
     int dragElementsCount_;
     /// Number of elements in dragElements_ with dragPending = false.
     int dragConfirmedCount_;
     /// UI elements that are being touched with touch input.
-    HashMap<stl::weak_ptr<UIElement>, MouseButtonFlags> touchDragElements_;
+    stl::unordered_map<stl::weak_ptr<UIElement>, MouseButtonFlags> touchDragElements_;
     /// Confirmed drag elements cache.
     stl::vector<UIElement*> dragElementsConfirmed_;
     /// Current scale of UI.

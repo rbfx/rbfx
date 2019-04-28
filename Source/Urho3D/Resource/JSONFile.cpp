@@ -194,11 +194,11 @@ static void ToRapidjsonValue(rapidjson::Value& rapidjsonValue, const JSONValue& 
             const JSONObject& jsonObject = jsonValue.GetObject();
 
             rapidjsonValue.SetObject();
-            for (JSONObject::ConstIterator i = jsonObject.Begin(); i != jsonObject.End(); ++i)
+            for (auto i = jsonObject.begin(); i != jsonObject.end(); ++i)
             {
-                const char* name = i->first_.c_str();
+                const char* name = i->first.c_str();
                 rapidjson::Value value;
-                ToRapidjsonValue(value, i->second_, allocator);
+                ToRapidjsonValue(value, i->second, allocator);
                 rapidjsonValue.AddMember(StringRef(name), value, allocator);
             }
         }

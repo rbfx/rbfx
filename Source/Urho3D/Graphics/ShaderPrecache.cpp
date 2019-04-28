@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/ShaderPrecache.h"
@@ -83,7 +82,7 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Check for duplicate using pointers first (fast)
     stl::pair<ShaderVariation*, ShaderVariation*> shaderPair = stl::make_pair(vs, ps);
-    if (stl::contains(usedPtrCombinations_, shaderPair))
+    if (usedPtrCombinations_.contains(shaderPair))
         return;
     usedPtrCombinations_.insert(shaderPair);
 
@@ -94,7 +93,7 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Check for duplicate using strings (needed for combinations loaded from existing file)
     stl::string newCombination = vsName + " " + vsDefines + " " + psName + " " + psDefines;
-    if (stl::contains(usedCombinations_, newCombination))
+    if (usedCombinations_.contains(newCombination))
         return;
     usedCombinations_.insert(newCombination);
 

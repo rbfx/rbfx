@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <cassert>
+
 #include "../Container/RefCounted.h"
 
 #include "../DebugNew.h"

@@ -63,7 +63,7 @@ public:
     Sprite2D* GetSprite(const stl::string& name) const;
 
     /// Return sprite mapping.
-    const HashMap<stl::string, stl::shared_ptr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
+    const stl::unordered_map<stl::string, stl::shared_ptr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
 
 private:
     /// Begin load from PList file.
@@ -83,7 +83,7 @@ private:
     /// Texture.
     stl::shared_ptr<Texture2D> texture_;
     /// Sprite mapping.
-    HashMap<stl::string, stl::shared_ptr<Sprite2D> > spriteMapping_;
+    stl::unordered_map<stl::string, stl::shared_ptr<Sprite2D> > spriteMapping_;
     /// PList file used while loading.
     stl::shared_ptr<PListFile> loadPListFile_;
     /// XML file used while loading.

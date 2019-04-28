@@ -59,7 +59,7 @@ public:
     const PackageEntry* GetEntry(const stl::string& fileName) const;
 
     /// Return all file entries.
-    const HashMap<stl::string, PackageEntry>& GetEntries() const { return entries_; }
+    const stl::unordered_map<stl::string, PackageEntry>& GetEntries() const { return entries_; }
 
     /// Return the package file name.
     const stl::string& GetName() const { return fileName_; }
@@ -68,7 +68,7 @@ public:
     StringHash GetNameHash() const { return nameHash_; }
 
     /// Return number of files.
-    unsigned GetNumFiles() const { return entries_.Size(); }
+    unsigned GetNumFiles() const { return entries_.size(); }
 
     /// Return total size of the package file.
     unsigned GetTotalSize() const { return totalSize_; }
@@ -83,15 +83,15 @@ public:
     bool IsCompressed() const { return compressed_; }
 
     /// Return list of file names in the package.
-    const stl::vector<stl::string> GetEntryNames() const { return entries_.Keys(); }
+    const stl::vector<stl::string> GetEntryNames() const { return entries_.keys(); }
 
     /// Return a file name in the package at the specified index
     const stl::string& GetEntryName(unsigned index) const
     {
         unsigned nn = 0;
-        for (HashMap<stl::string, PackageEntry>::ConstIterator j = entries_.Begin(); j != entries_.End(); ++j)
+        for (auto j = entries_.begin(); j != entries_.end(); ++j)
         {
-            if (nn == index) return j->first_;
+            if (nn == index) return j->first;
             nn++;
         }
         return EMPTY_STRING;
@@ -102,7 +102,7 @@ public:
 
 private:
     /// File entries.
-    HashMap<stl::string, PackageEntry> entries_;
+    stl::unordered_map<stl::string, PackageEntry> entries_;
     /// File name.
     stl::string fileName_;
     /// Package file name hash.

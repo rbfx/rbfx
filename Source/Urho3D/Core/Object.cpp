@@ -413,11 +413,11 @@ bool Object::HasSubscribedToEvent(Object* sender, StringHash eventType) const
 
 const stl::string& Object::GetCategory() const
 {
-    const HashMap<stl::string, stl::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
-    for (auto i = objectCategories.Begin(); i != objectCategories.End(); ++i)
+    const stl::unordered_map<stl::string, stl::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
+    for (auto i = objectCategories.begin(); i != objectCategories.end(); ++i)
     {
-        if (i->second_.contains(GetType()))
-            return i->first_;
+        if (i->second.contains(GetType()))
+            return i->first;
     }
 
     return EMPTY_STRING;

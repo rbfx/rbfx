@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Engine/Engine.h"
@@ -133,20 +135,21 @@ void DebugHud::SetAppStats(const stl::string& label, const Variant& stats)
 
 void DebugHud::SetAppStats(const stl::string& label, const stl::string& stats)
 {
-    bool newLabel = !appStats_.Contains(label);
+    bool newLabel = appStats_.find(label) == appStats_.end();
     appStats_[label] = stats;
-    if (newLabel)
-        appStats_.Sort();
+    // TODO: sorting
+    // if (newLabel)
+    //     stl::quick_sort(appStats_.begin(), appStats_.end());
 }
 
 bool DebugHud::ResetAppStats(const stl::string& label)
 {
-    return appStats_.Erase(label);
+    return appStats_.erase(label);
 }
 
 void DebugHud::ClearAppStats()
 {
-    appStats_.Clear();
+    appStats_.clear();
 }
 
 void DebugHud::RenderUi(VariantMap& eventData)
@@ -191,8 +194,9 @@ void DebugHud::RenderUi(VariantMap& eventData)
             ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps(true));
             ui::Text("Occluders %u", renderer->GetNumOccluders(true));
 
-            for (HashMap<stl::string, stl::string>::ConstIterator i = appStats_.Begin(); i != appStats_.End(); ++i)
-                ui::Text("%s %s", i->first_.c_str(), i->second_.c_str());
+            for (auto i = appStats_.begin(); i !=
+                appStats_.end(); ++i)
+                ui::Text("%s %s", i->first.c_str(), i->second.c_str());
         }
 
         if (mode_ & DEBUGHUD_SHOW_MODE)

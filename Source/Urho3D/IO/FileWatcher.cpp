@@ -216,9 +216,9 @@ void FileWatcher::StopWatching()
 #ifdef _WIN32
         CloseHandle((HANDLE)dirHandle_);
 #elif defined(__linux__)
-        for (HashMap<int, stl::string>::Iterator i = dirHandle_.Begin(); i != dirHandle_.End(); ++i)
-            inotify_rm_watch(watchHandle_, i->first_);
-        dirHandle_.Clear();
+        for (auto i = dirHandle_.begin(); i != dirHandle_.end(); ++i)
+            inotify_rm_watch(watchHandle_, i->first);
+        dirHandle_.clear();
 #elif defined(__APPLE__) && !defined(IOS) && !defined(TVOS)
         CloseFileWatcher(watcher_);
 #endif
@@ -315,7 +315,7 @@ void FileWatcher::ThreadFunction()
         if (length < 0)
             return;
 
-        HashMap<unsigned, FileChange> renames;
+        stl::unordered_map<unsigned, FileChange> renames;
         while (i < length)
         {
             auto* event = (inotify_event*)&buffer[i];
@@ -393,12 +393,12 @@ void FileWatcher::AddChange(const FileChange& change)
 {
     MutexLock lock(changesMutex_);
 
-    auto it = changes_.Find(change.fileName_);
-    if (it == changes_.End())
+    auto it = changes_.find(change.fileName_);
+    if (it == changes_.end())
         changes_[change.fileName_].change_ = change;
     else
         // Reset the timer associated with the filename. Will be notified once timer exceeds the delay
-        it->second_.timer_.Reset();
+        it->second.timer_.Reset();
 }
 
 bool FileWatcher::GetNextChange(FileChange& dest)
@@ -407,16 +407,16 @@ bool FileWatcher::GetNextChange(FileChange& dest)
 
     auto delayMsec = (unsigned)(delay_ * 1000.0f);
 
-    if (changes_.Empty())
+    if (changes_.empty())
         return false;
     else
     {
-        for (auto i = changes_.Begin(); i != changes_.End(); ++i)
+        for (auto i = changes_.begin(); i != changes_.end(); ++i)
         {
-            if (i->second_.timer_.GetMSec(false) >= delayMsec)
+            if (i->second.timer_.GetMSec(false) >= delayMsec)
             {
-                dest = i->second_.change_;
-                changes_.Erase(i);
+                dest = i->second.change_;
+                changes_.erase(i);
                 return true;
             }
         }

@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
@@ -91,10 +90,10 @@ Scene::~Scene()
     RemoveAllChildren();
 
     // Remove scene reference and owner from all nodes that still exist
-    for (HashMap<unsigned, Node*>::Iterator i = replicatedNodes_.Begin(); i != replicatedNodes_.End(); ++i)
-        i->second_->ResetScene();
-    for (HashMap<unsigned, Node*>::Iterator i = localNodes_.Begin(); i != localNodes_.End(); ++i)
-        i->second_->ResetScene();
+    for (auto i = replicatedNodes_.begin(); i != replicatedNodes_.end(); ++i)
+        i->second->ResetScene();
+    for (auto i = localNodes_.begin(); i != localNodes_.end(); ++i)
+        i->second->ResetScene();
 }
 
 void Scene::RegisterObject(Context* context)
@@ -214,8 +213,9 @@ void Scene::AddReplicationState(NodeReplicationState* state)
     Node::AddReplicationState(state);
 
     // This is the first update for a new connection. Mark all replicated nodes dirty
-    for (HashMap<unsigned, Node*>::ConstIterator i = replicatedNodes_.Begin(); i != replicatedNodes_.End(); ++i)
-        state->sceneState_->dirtyNodes_.insert(i->first_);
+    for (auto i = replicatedNodes_.begin(); i !=
+        replicatedNodes_.end(); ++i)
+        state->sceneState_->dirtyNodes_.insert(i->first);
 }
 
 bool Scene::LoadXML(Deserializer& source)
@@ -699,35 +699,35 @@ void Scene::RegisterVar(const stl::string& name)
 
 void Scene::UnregisterVar(const stl::string& name)
 {
-    varNames_.Erase(name);
+    varNames_.erase(name);
 }
 
 void Scene::UnregisterAllVars()
 {
-    varNames_.Clear();
+    varNames_.clear();
 }
 
 Node* Scene::GetNode(unsigned id) const
 {
     if (IsReplicatedID(id))
     {
-        HashMap<unsigned, Node*>::ConstIterator i = replicatedNodes_.Find(id);
-        return i != replicatedNodes_.End() ? i->second_ : nullptr;
+        auto i = replicatedNodes_.find(id);
+        return i != replicatedNodes_.end() ? i->second : nullptr;
     }
     else
     {
-        HashMap<unsigned, Node*>::ConstIterator i = localNodes_.Find(id);
-        return i != localNodes_.End() ? i->second_ : nullptr;
+        auto i = localNodes_.find(id);
+        return i != localNodes_.end() ? i->second : nullptr;
     }
 }
 
 bool Scene::GetNodesWithTag(stl::vector<Node*>& dest, const stl::string& tag) const
 {
     dest.clear();
-    auto it = taggedNodes_.Find(tag);
-    if (it != taggedNodes_.End())
+    auto it = taggedNodes_.find(tag);
+    if (it != taggedNodes_.end())
     {
-        dest = it->second_;
+        dest = it->second;
         return true;
     }
     else
@@ -738,13 +738,13 @@ Component* Scene::GetComponent(unsigned id) const
 {
     if (IsReplicatedID(id))
     {
-        HashMap<unsigned, Component*>::ConstIterator i = replicatedComponents_.Find(id);
-        return i != replicatedComponents_.End() ? i->second_ : nullptr;
+        auto i = replicatedComponents_.find(id);
+        return i != replicatedComponents_.end() ? i->second : nullptr;
     }
     else
     {
-        HashMap<unsigned, Component*>::ConstIterator i = localComponents_.Find(id);
-        return i != localComponents_.End() ? i->second_ : nullptr;
+        auto i = localComponents_.find(id);
+        return i != localComponents_.end() ? i->second : nullptr;
     }
 }
 
@@ -757,8 +757,8 @@ float Scene::GetAsyncProgress() const
 
 const stl::string& Scene::GetVarName(StringHash hash) const
 {
-    HashMap<StringHash, stl::string>::ConstIterator i = varNames_.Find(hash);
-    return i != varNames_.End() ? i->second_ : EMPTY_STRING;
+    auto i = varNames_.find(hash);
+    return i != varNames_.end() ? i->second : EMPTY_STRING;
 }
 
 void Scene::Update(float timeStep)
@@ -856,7 +856,7 @@ unsigned Scene::GetFreeNodeID(CreateMode mode)
             else
                 replicatedNodeID_ = FIRST_REPLICATED_ID;
 
-            if (!replicatedNodes_.Contains(ret))
+            if (!replicatedNodes_.contains(ret))
                 return ret;
         }
     }
@@ -870,7 +870,7 @@ unsigned Scene::GetFreeNodeID(CreateMode mode)
             else
                 localNodeID_ = FIRST_LOCAL_ID;
 
-            if (!localNodes_.Contains(ret))
+            if (!localNodes_.contains(ret))
                 return ret;
         }
     }
@@ -888,7 +888,7 @@ unsigned Scene::GetFreeComponentID(CreateMode mode)
             else
                 replicatedComponentID_ = FIRST_REPLICATED_ID;
 
-            if (!replicatedComponents_.Contains(ret))
+            if (!replicatedComponents_.contains(ret))
                 return ret;
         }
     }
@@ -902,7 +902,7 @@ unsigned Scene::GetFreeComponentID(CreateMode mode)
             else
                 localComponentID_ = FIRST_LOCAL_ID;
 
-            if (!localComponents_.Contains(ret))
+            if (!localComponents_.contains(ret))
                 return ret;
         }
     }
@@ -931,11 +931,11 @@ void Scene::NodeAdded(Node* node)
     // If node with same ID exists, remove the scene reference from it and overwrite with the new node
     if (IsReplicatedID(id))
     {
-        HashMap<unsigned, Node*>::Iterator i = replicatedNodes_.Find(id);
-        if (i != replicatedNodes_.End() && i->second_ != node)
+        auto i = replicatedNodes_.find(id);
+        if (i != replicatedNodes_.end() && i->second != node)
         {
             URHO3D_LOGWARNING("Overwriting node with ID " + stl::to_string(id));
-            NodeRemoved(i->second_);
+            NodeRemoved(i->second);
         }
 
         replicatedNodes_[id] = node;
@@ -945,11 +945,11 @@ void Scene::NodeAdded(Node* node)
     }
     else
     {
-        HashMap<unsigned, Node*>::Iterator i = localNodes_.Find(id);
-        if (i != localNodes_.End() && i->second_ != node)
+        auto i = localNodes_.find(id);
+        if (i != localNodes_.end() && i->second != node)
         {
             URHO3D_LOGWARNING("Overwriting node with ID " + stl::to_string(id));
-            NodeRemoved(i->second_);
+            NodeRemoved(i->second);
         }
         localNodes_[id] = node;
     }
@@ -989,11 +989,11 @@ void Scene::NodeRemoved(Node* node)
     unsigned id = node->GetID();
     if (Scene::IsReplicatedID(id))
     {
-        replicatedNodes_.Erase(id);
+        replicatedNodes_.erase(id);
         MarkReplicationDirty(node);
     }
     else
-        localNodes_.Erase(id);
+        localNodes_.erase(id);
 
     node->ResetScene();
 
@@ -1030,22 +1030,22 @@ void Scene::ComponentAdded(Component* component)
 
     if (IsReplicatedID(id))
     {
-        HashMap<unsigned, Component*>::Iterator i = replicatedComponents_.Find(id);
-        if (i != replicatedComponents_.End() && i->second_ != component)
+        auto i = replicatedComponents_.find(id);
+        if (i != replicatedComponents_.end() && i->second != component)
         {
             URHO3D_LOGWARNING("Overwriting component with ID " + stl::to_string(id));
-            ComponentRemoved(i->second_);
+            ComponentRemoved(i->second);
         }
 
         replicatedComponents_[id] = component;
     }
     else
     {
-        HashMap<unsigned, Component*>::Iterator i = localComponents_.Find(id);
-        if (i != localComponents_.End() && i->second_ != component)
+        auto i = localComponents_.find(id);
+        if (i != localComponents_.end() && i->second != component)
         {
             URHO3D_LOGWARNING("Overwriting component with ID " + stl::to_string(id));
-            ComponentRemoved(i->second_);
+            ComponentRemoved(i->second);
         }
 
         localComponents_[id] = component;
@@ -1061,9 +1061,9 @@ void Scene::ComponentRemoved(Component* component)
 
     unsigned id = component->GetID();
     if (Scene::IsReplicatedID(id))
-        replicatedComponents_.Erase(id);
+        replicatedComponents_.erase(id);
     else
-        localComponents_.Erase(id);
+        localComponents_.erase(id);
 
     component->SetID(0);
     component->OnSceneSet(nullptr);
@@ -1073,7 +1073,7 @@ void Scene::SetVarNamesAttr(const stl::string& value)
 {
     stl::vector<stl::string> varNames = value.split(';');
 
-    varNames_.Clear();
+    varNames_.clear();
     for (auto i = varNames.begin(); i != varNames.end(); ++i)
         varNames_[*i] = *i;
 }
@@ -1082,10 +1082,10 @@ stl::string Scene::GetVarNamesAttr() const
 {
     stl::string ret;
 
-    if (!varNames_.Empty())
+    if (!varNames_.empty())
     {
-        for (HashMap<StringHash, stl::string>::ConstIterator i = varNames_.Begin(); i != varNames_.End(); ++i)
-            ret += i->second_ + ";";
+        for (auto i = varNames_.begin(); i != varNames_.end(); ++i)
+            ret += i->second + ";";
 
         ret.resize(ret.length() - 1);
     }
@@ -1117,11 +1117,12 @@ void Scene::CleanupConnection(Connection* connection)
 {
     Node::CleanupConnection(connection);
 
-    for (HashMap<unsigned, Node*>::Iterator i = replicatedNodes_.Begin(); i != replicatedNodes_.End(); ++i)
-        i->second_->CleanupConnection(connection);
+    for (auto i = replicatedNodes_.begin(); i != replicatedNodes_.end(); ++i)
+        i->second->CleanupConnection(connection);
 
-    for (HashMap<unsigned, Component*>::Iterator i = replicatedComponents_.Begin(); i != replicatedComponents_.End(); ++i)
-        i->second_->CleanupConnection(connection);
+    for (auto i = replicatedComponents_.begin(); i !=
+        replicatedComponents_.end(); ++i)
+        i->second->CleanupConnection(connection);
 }
 
 void Scene::MarkNetworkUpdate(Node* node)
@@ -1181,7 +1182,7 @@ void Scene::HandleResourceBackgroundLoaded(StringHash eventType, VariantMap& eve
     if (asyncLoading_)
     {
         auto* resource = static_cast<Resource*>(eventData[P_RESOURCE].GetPtr());
-        if (stl::contains(asyncProgress_.resources_, resource->GetNameHash()))
+        if (asyncProgress_.resources_.contains(resource->GetNameHash()))
         {
             asyncProgress_.resources_.erase(resource->GetNameHash());
             ++asyncProgress_.loadedResources_;

@@ -213,15 +213,15 @@ private:
     /// XML file used during loading.
     stl::shared_ptr<XMLFile> loadXMLFile_;
     /// TSX name to XML file mapping.
-    HashMap<stl::string, stl::shared_ptr<XMLFile> > tsxXMLFiles_;
+    stl::unordered_map<stl::string, stl::shared_ptr<XMLFile> > tsxXMLFiles_;
     /// Tile map information.
     TileMapInfo2D info_{};
     /// Gid to tile sprite mapping.
-    HashMap<unsigned, stl::shared_ptr<Sprite2D> > gidToSpriteMapping_;
+    stl::unordered_map<unsigned, stl::shared_ptr<Sprite2D> > gidToSpriteMapping_;
     /// Gid to tile property set mapping.
-    HashMap<unsigned, stl::shared_ptr<PropertySet2D> > gidToPropertySetMapping_;
+    stl::unordered_map<unsigned, stl::shared_ptr<PropertySet2D> > gidToPropertySetMapping_;
     /// Gid to tile collision shape mapping.
-    HashMap<unsigned, stl::vector<stl::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
+    stl::unordered_map<unsigned, stl::vector<stl::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
     /// Layers.
     stl::vector<TmxLayer2D*> layers_;
     /// Texture edge offset.

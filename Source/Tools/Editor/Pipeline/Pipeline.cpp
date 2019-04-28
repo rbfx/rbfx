@@ -84,7 +84,7 @@ bool Pipeline::LoadJSON(const JSONValue& source)
 
     // CacheInfo.json
     {
-        cacheInfo_.Clear();
+        cacheInfo_.clear();
         /*
          * Expected cache format:
          * {
@@ -109,16 +109,16 @@ bool Pipeline::LoadJSON(const JSONValue& source)
         }
 
         const auto& root = file.GetRoot().GetObject();
-        for (auto it = root.Begin(); it != root.End(); it++)
+        for (auto it = root.begin(); it != root.end(); it++)
         {
-            if (!it->second_.Contains("mtime") || !it->second_.Contains("files"))
+            if (!it->second.Contains("mtime") || !it->second.Contains("files"))
                 continue;
 
-            cacheInfo_[it->first_] = CacheEntry();
-            auto& entry = cacheInfo_[it->first_];
+            cacheInfo_[it->first] = CacheEntry();
+            auto& entry = cacheInfo_[it->first];
 
-            entry.mtime_ = it->second_["mtime"].GetUInt();
-            const auto& files = it->second_["files"];
+            entry.mtime_ = it->second["mtime"].GetUInt();
+            const auto& files = it->second["files"];
             for (unsigned i = 0, size = files.Size(); i < size; i++)
                 entry.files_.insert(files[i].GetString());
         }
@@ -150,7 +150,7 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
         GetFileSystem()->ScanDir(cacheFiles, project->GetCachePath(), "*", SCAN_FILES, true);
 
         // Remove cache items that no longer correspond to existing resource
-        for (const stl::string& resourceName : cacheInfo_.Keys())
+        for (const stl::string& resourceName : cacheInfo_.keys())
         {
             // Source asset may be in resources dir or in cache dir.
             if (!resourceFiles.contains(resourceName) && !cacheFiles.contains(resourceName))
@@ -215,8 +215,8 @@ void Pipeline::DispatchChangedAssets()
 
 bool Pipeline::IsCacheOutOfDate(const stl::string& resourceName) const
 {
-    auto it = cacheInfo_.Find(resourceName);
-    if (it == cacheInfo_.End())
+    auto it = cacheInfo_.find(resourceName);
+    if (it == cacheInfo_.end())
         return true;
 
     auto* project = GetSubsystem<Project>();
@@ -224,23 +224,23 @@ bool Pipeline::IsCacheOutOfDate(const stl::string& resourceName) const
     if (mtime == 0)
         mtime = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
 
-    for (const stl::string& cachedFile : it->second_.files_)
+    for (const stl::string& cachedFile : it->second.files_)
     {
         if (!GetFileSystem()->Exists(project->GetCachePath() + cachedFile))
             return true;
     }
 
-    return it->second_.mtime_ < mtime;
+    return it->second.mtime_ < mtime;
 }
 
 void Pipeline::ClearCache(const stl::string& resourceName)
 {
-    auto it = cacheInfo_.Find(resourceName);
-    if (it == cacheInfo_.End())
+    auto it = cacheInfo_.find(resourceName);
+    if (it == cacheInfo_.end())
         return;
 
     auto* project = GetSubsystem<Project>();
-    const CacheEntry& cacheEntry = it->second_;
+    const CacheEntry& cacheEntry = it->second;
     for (const stl::string& cacheFile : cacheEntry.files_)
     {
         const stl::string& fullPath = project->GetCachePath() + cacheFile;
@@ -261,7 +261,7 @@ void Pipeline::ClearCache(const stl::string& resourceName)
         }
     }
 
-    cacheInfo_.Erase(it);
+    cacheInfo_.erase(it);
 }
 
 void Pipeline::AddCacheEntry(const stl::string& resourceName, const stl::string& cacheResourceName)
@@ -292,7 +292,7 @@ void Pipeline::SaveCacheInfo()
     JSONValue& root = file.GetRoot();
     root = JSONValue(JSON_OBJECT);
 
-    StringVector keys = cacheInfo_.Keys();
+    StringVector keys = cacheInfo_.keys();
     stl::quick_sort(keys.begin(), keys.end());
     for (const stl::string& resourceName : keys)
     {
@@ -377,22 +377,24 @@ void Pipeline::CreatePaksAsync()
             {
                 const JSONObject& entry = entries[i].GetObject();
 
-                if (!entry.Contains("output"))
-                {
-                    logger.Error("Packaging rule must contain 'output' file name.");
-                    continue;
-                }
-
-                if (!entry.Contains("input"))
+                auto inputIt = entry.find("input");
+                if (inputIt == entry.end())
                 {
                     logger.Error("Packaging rule must contain 'input' with a list of glob expressions.");
                     continue;
                 }
 
-                const JSONArray& patterns = entry["input"]->GetArray();
+                auto outputIt = entry.find("output");
+                if (outputIt == entry.end())
+                {
+                    logger.Error("Packaging rule must contain 'output' file name.");
+                    continue;
+                }
+
+                const JSONArray& patterns = inputIt->second.GetArray();
 
                 PackagingEntry newEntry{};
-                newEntry.pakName_ = entry["output"]->GetString();
+                newEntry.pakName_ = outputIt->second.GetString();
 
                 if (newEntry.pakName_.empty())
                 {
@@ -449,7 +451,7 @@ void Pipeline::CreatePaksAsync()
             {
                 for (const stl::string& name : resources)
                 {
-                    if (cacheInfo_.Contains(name))
+                    if (cacheInfo_.contains(name))
                         logger.Info("{} not included because it has byproducts.", name);
                     else
                     {

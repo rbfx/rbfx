@@ -35,6 +35,8 @@ using ThreadID = pthread_t;
 using ThreadID = unsigned;
 #endif
 
+#include "../Container/Str.h"
+
 namespace Urho3D
 {
 

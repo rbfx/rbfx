@@ -154,7 +154,7 @@ protected:
     /// Animated network attribute set.
     stl::hash_set<const AttributeInfo*> animatedNetworkAttributes_;
     /// Attribute animation infos.
-    HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> > attributeAnimationInfos_;
+    stl::unordered_map<stl::string, stl::shared_ptr<AttributeAnimationInfo> > attributeAnimationInfos_;
 };
 
 }

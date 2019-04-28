@@ -24,9 +24,11 @@
 
 
 #include <EASTL/shared_ptr.h>
-#include <functional>
+#include <EASTL/weak_ptr.h>
 
 #include <Urho3D/Urho3D.h>
+
+#include "../Container/Hash.h"
 
 namespace Urho3D
 {

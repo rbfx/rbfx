@@ -102,7 +102,7 @@ protected:
     /// Current coordinate space to operate in. World or local.
     TransformSpace transformSpace_ = TS_WORLD;
     /// Saved node scale on operation start.
-    HashMap<Node*, Vector3> nodeScaleStart_;
+    stl::unordered_map<Node*, Vector3> nodeScaleStart_;
     /// Current operation origin. This is center point between all nodes that are being manipulated.
     Matrix4 currentOrigin_;
     /// Current node selection. Nodes removed from the scene are automatically unselected.
@@ -116,7 +116,7 @@ protected:
     /// Flag indicating that gizmo was active on the last frame.
     bool wasActive_ = false;
     /// A map of initial transforms.
-    HashMap<Node*, Matrix3x4> initialTransforms_;
+    stl::unordered_map<Node*, Matrix3x4> initialTransforms_;
 };
 
 }

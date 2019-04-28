@@ -116,7 +116,7 @@ private:
     /// Sprite sheet.
     stl::shared_ptr<SpriteSheet2D> spriteSheet_;
     /// Spriter sprites.
-    HashMap<unsigned, stl::shared_ptr<Sprite2D> > spriterFileSprites_;
+    stl::unordered_map<unsigned, stl::shared_ptr<Sprite2D> > spriterFileSprites_;
 };
 
 }

@@ -211,9 +211,9 @@ Sprite2D* AnimationSet2D::GetSprite() const
 Sprite2D* AnimationSet2D::GetSpriterFileSprite(int folderId, int fileId) const
 {
     unsigned key = folderId << 16u | fileId;
-    HashMap<unsigned, stl::shared_ptr<Sprite2D> >::ConstIterator i = spriterFileSprites_.Find(key);
-    if (i != spriterFileSprites_.End())
-        return i->second_;
+    auto i = spriterFileSprites_.find(key);
+    if (i != spriterFileSprites_.end())
+        return i->second;
 
     return nullptr;
 }
@@ -524,7 +524,7 @@ void AnimationSet2D::Dispose()
 
     sprite_.reset();
     spriteSheet_.reset();
-    spriterFileSprites_.Clear();
+    spriterFileSprites_.clear();
 }
 
 }

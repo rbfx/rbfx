@@ -174,7 +174,7 @@ private:
     void ExecuteTasks(StringHash eventType);
 
     /// Task schedulers for each scene event.
-    HashMap<StringHash, stl::shared_ptr<TaskScheduler> > taskSchedulers_;
+    stl::unordered_map<StringHash, stl::shared_ptr<TaskScheduler> > taskSchedulers_;
 };
 
 void RegisterTasksLibrary(Context* context);

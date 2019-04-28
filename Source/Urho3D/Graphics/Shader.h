@@ -72,9 +72,9 @@ private:
     /// Source code adapted for pixel shader.
     stl::string psSourceCode_;
     /// Vertex shader variations.
-    HashMap<StringHash, stl::shared_ptr<ShaderVariation> > vsVariations_;
+    stl::unordered_map<StringHash, stl::shared_ptr<ShaderVariation> > vsVariations_;
     /// Pixel shader variations.
-    HashMap<StringHash, stl::shared_ptr<ShaderVariation> > psVariations_;
+    stl::unordered_map<StringHash, stl::shared_ptr<ShaderVariation> > psVariations_;
     /// Source code timestamp.
     unsigned timeStamp_;
     /// Number of unique variations so far.

@@ -43,7 +43,7 @@ public:
 
 protected:
     ///
-    HashMap<stl::string, stl::string> routes_;
+    stl::unordered_map<stl::string, stl::string> routes_;
 };
 
 class Player : public Application

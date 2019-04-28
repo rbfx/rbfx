@@ -26,7 +26,6 @@
 #include "../Audio/Sound.h"
 #include "../Audio/SoundListener.h"
 #include "../Audio/SoundSource3D.h"
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/ProcessUtils.h"
@@ -207,16 +206,16 @@ void Audio::StopSound(Sound* sound)
 float Audio::GetMasterGain(const stl::string& type) const
 {
     // By definition previously unknown types return full volume
-    HashMap<StringHash, Variant>::ConstIterator findIt = masterGain_.Find(type);
-    if (findIt == masterGain_.End())
+    auto findIt = masterGain_.find(type);
+    if (findIt == masterGain_.end())
         return 1.0f;
 
-    return findIt->second_.GetFloat();
+    return findIt->second.GetFloat();
 }
 
 bool Audio::IsSoundTypePaused(const stl::string& type) const
 {
-    return stl::contains(pausedSoundTypes_, type);
+    return pausedSoundTypes_.contains(type);
 }
 
 SoundListener* Audio::GetListener() const
@@ -242,17 +241,17 @@ void Audio::RemoveSoundSource(SoundSource* soundSource)
 
 float Audio::GetSoundSourceMasterGain(StringHash typeHash) const
 {
-    HashMap<StringHash, Variant>::ConstIterator masterIt = masterGain_.Find(SOUND_MASTER_HASH);
+    auto masterIt = masterGain_.find(SOUND_MASTER_HASH);
 
     if (!typeHash)
-        return masterIt->second_.GetFloat();
+        return masterIt->second.GetFloat();
 
-    HashMap<StringHash, Variant>::ConstIterator typeIt = masterGain_.Find(typeHash);
+    auto typeIt = masterGain_.find(typeHash);
 
-    if (typeIt == masterGain_.End() || typeIt == masterIt)
-        return masterIt->second_.GetFloat();
+    if (typeIt == masterGain_.end() || typeIt == masterIt)
+        return masterIt->second.GetFloat();
 
-    return masterIt->second_.GetFloat() * typeIt->second_.GetFloat();
+    return masterIt->second.GetFloat() * typeIt->second.GetFloat();
 }
 
 void SDLAudioCallback(void* userdata, Uint8* stream, int len)
@@ -292,7 +291,7 @@ void Audio::MixOutput(void* dest, unsigned samples)
             // Check for pause if necessary
             if (!pausedSoundTypes_.empty())
             {
-                if (stl::contains(pausedSoundTypes_, source->GetSoundType()))
+                if (pausedSoundTypes_.contains(source->GetSoundType()))
                     continue;
             }
 
@@ -338,7 +337,7 @@ void Audio::UpdateInternal(float timeStep)
         // Check for pause if necessary; do not update paused sound sources
         if (!pausedSoundTypes_.empty())
         {
-            if (stl::contains(pausedSoundTypes_, source->GetSoundType()))
+            if (pausedSoundTypes_.contains(source->GetSoundType()))
                 continue;
         }
 

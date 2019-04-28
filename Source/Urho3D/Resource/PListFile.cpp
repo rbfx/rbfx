@@ -327,7 +327,7 @@ bool PListFile::BeginLoad(Deserializer& source)
         return false;
     }
 
-    root_.Clear();
+    root_.clear();
 
     XMLElement dictElem = plistElem.GetChild("dict");
     if (!LoadDict(root_, dictElem))

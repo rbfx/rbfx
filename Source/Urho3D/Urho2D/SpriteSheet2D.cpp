@@ -57,7 +57,7 @@ bool SpriteSheet2D::BeginLoad(Deserializer& source)
         SetName(source.GetName());
 
     loadTextureName_.clear();
-    spriteMapping_.Clear();
+    spriteMapping_.clear();
 
     stl::string extension = GetExtension(source.GetName());
     if (extension == ".plist")
@@ -115,11 +115,11 @@ void SpriteSheet2D::DefineSprite(const stl::string& name, const IntRect& rectang
 
 Sprite2D* SpriteSheet2D::GetSprite(const stl::string& name) const
 {
-    HashMap<stl::string, stl::shared_ptr<Sprite2D> >::ConstIterator i = spriteMapping_.Find(name);
-    if (i == spriteMapping_.End())
+    auto i = spriteMapping_.find(name);
+    if (i == spriteMapping_.end())
         return nullptr;
 
-    return i->second_;
+    return i->second;
 }
 
 bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
@@ -135,8 +135,23 @@ bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
     SetMemoryUse(source.GetSize());
 
     const PListValueMap& root = loadPListFile_->GetRoot();
-    const PListValueMap& metadata = root["metadata"]->GetValueMap();
-    const stl::string& textureFileName = metadata["realTextureFileName"]->GetString();
+
+    auto rootIt = root.find("metadata");
+    if (rootIt != root.end())
+    {
+        URHO3D_LOGERROR("Sprite sheet does not have metadata");
+        return false;
+    }
+
+    const PListValueMap& metadata = rootIt->second.GetValueMap();
+    auto metadataIt = metadata.find("realTextureFileName");
+    if (metadataIt != metadata.end())
+    {
+        URHO3D_LOGERROR("Sprite sheet does not have realTextureFileName");
+        return false;
+    }
+
+    const stl::string& textureFileName = metadataIt->second.GetString();
 
     // If we're async loading, request the texture now. Finish during EndLoad().
     loadTextureName_ = GetParentPath(GetName()) + textureFileName;
@@ -159,29 +174,58 @@ bool SpriteSheet2D::EndLoadFromPListFile()
     }
 
     const PListValueMap& root = loadPListFile_->GetRoot();
-    const PListValueMap& frames = root["frames"]->GetValueMap();
-    for (PListValueMap::ConstIterator i = frames.Begin(); i != frames.End(); ++i)
+    auto framesIt = root.find("frames");
+    if (framesIt == root.end())
     {
-        stl::string name = i->first_.split('.')[0];
+        URHO3D_LOGWARNING("Sprite does not have frames section");
+        return false;
+    }
 
-        const PListValueMap& frameInfo = i->second_.GetValueMap();
-        if (frameInfo["rotated"]->GetBool())
+    const PListValueMap& frames = framesIt->second.GetValueMap();
+    for (auto i = frames.begin(); i != frames.end(); ++i)
+    {
+        stl::string name = i->first.split('.')[0];
+
+        const PListValueMap& frameInfo = i->second.GetValueMap();
+        auto rotatedIt = frameInfo.find("rotated");
+        if (rotatedIt != frameInfo.end() && rotatedIt->second.GetBool())
         {
             URHO3D_LOGWARNING("Rotated sprite is not support now");
             continue;
         }
 
-        IntRect rectangle = frameInfo["frame"]->GetIntRect();
+        auto frameIt = frameInfo.find("frame");
+        if (frameIt == frameInfo.end())
+        {
+            URHO3D_LOGERROR("Sprite is missing frame section");
+            continue;
+        }
+
+        IntRect rectangle = frameIt->second.GetIntRect();
         Vector2 hotSpot(0.5f, 0.5f);
         IntVector2 offset(0, 0);
 
-        IntRect sourceColorRect = frameInfo["sourceColorRect"]->GetIntRect();
+        auto sourceColorRectIt = frameInfo.find("sourceColorRect");
+        if (sourceColorRectIt == frameInfo.end())
+        {
+            URHO3D_LOGERROR("Sprite is missing sourceColorRect section");
+            continue;
+        }
+
+        IntRect sourceColorRect = sourceColorRectIt->second.GetIntRect();
         if (sourceColorRect.left_ != 0 && sourceColorRect.top_ != 0)
         {
             offset.x_ = -sourceColorRect.left_;
             offset.y_ = -sourceColorRect.top_;
 
-            IntVector2 sourceSize = frameInfo["sourceSize"]->GetIntVector2();
+            auto sourceSizeIt = frameInfo.find("sourceSize");
+            if (sourceSizeIt == frameInfo.end())
+            {
+                URHO3D_LOGERROR("Sprite is missing sourceSizeIt section");
+                continue;
+            }
+
+            IntVector2 sourceSize = sourceSizeIt->second.GetIntVector2();
             hotSpot.x_ = (offset.x_ + sourceSize.x_ / 2.f) / rectangle.Width();
             hotSpot.y_ = 1.0f - (offset.y_ + sourceSize.y_ / 2.f) / rectangle.Height();
         }

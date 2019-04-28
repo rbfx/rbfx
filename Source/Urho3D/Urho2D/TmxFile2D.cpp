@@ -517,13 +517,13 @@ bool TmxFile2D::EndLoad()
         if (!ret)
         {
             loadXMLFile_.reset();
-            tsxXMLFiles_.Clear();
+            tsxXMLFiles_.clear();
             return false;
         }
     }
 
     loadXMLFile_.reset();
-    tsxXMLFiles_.Clear();
+    tsxXMLFiles_.clear();
     return true;
 }
 
@@ -554,29 +554,30 @@ void TmxFile2D::AddLayer(TmxLayer2D *layer)
 
 Sprite2D* TmxFile2D::GetTileSprite(unsigned gid) const
 {
-    HashMap<unsigned, stl::shared_ptr<Sprite2D> >::ConstIterator i = gidToSpriteMapping_.Find(gid);
-    if (i == gidToSpriteMapping_.End())
+    auto i = gidToSpriteMapping_.find(gid);
+    if (i == gidToSpriteMapping_.end())
         return nullptr;
 
-    return i->second_;
+    return i->second;
 }
 
 stl::vector<stl::shared_ptr<TileMapObject2D> > TmxFile2D::GetTileCollisionShapes(unsigned gid) const
 {
     stl::vector<stl::shared_ptr<TileMapObject2D> > tileShapes;
-    HashMap<unsigned, stl::vector<stl::shared_ptr<TileMapObject2D> > >::ConstIterator i = gidToCollisionShapeMapping_.Find(gid);
-    if (i == gidToCollisionShapeMapping_.End())
+    auto i = gidToCollisionShapeMapping_.find(
+        gid);
+    if (i == gidToCollisionShapeMapping_.end())
         return tileShapes;
 
-    return i->second_;
+    return i->second;
 }
 
 PropertySet2D* TmxFile2D::GetTilePropertySet(unsigned gid) const
 {
-    HashMap<unsigned, stl::shared_ptr<PropertySet2D> >::ConstIterator i = gidToPropertySetMapping_.Find(gid);
-    if (i == gidToPropertySetMapping_.End())
+    auto i = gidToPropertySetMapping_.find(gid);
+    if (i == gidToPropertySetMapping_.end())
         return nullptr;
-    return i->second_;
+    return i->second;
 }
 
 const TmxLayer2D* TmxFile2D::GetLayer(unsigned index) const
@@ -591,7 +592,7 @@ void TmxFile2D::SetSpriteTextureEdgeOffset(float offset)
 {
     edgeOffset_ = offset;
     for (auto& i : gidToSpriteMapping_)
-        i.second_->SetTextureEdgeOffset(offset);
+        i.second->SetTextureEdgeOffset(offset);
 }
 
 stl::shared_ptr<XMLFile> TmxFile2D::LoadTSXFile(const stl::string& source)
@@ -625,8 +626,8 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
     if (element.HasAttribute("source"))
     {
         stl::string source = element.GetAttribute("source");
-        HashMap<stl::string, stl::shared_ptr<XMLFile> >::Iterator i = tsxXMLFiles_.Find(source);
-        if (i == tsxXMLFiles_.End())
+        auto i = tsxXMLFiles_.find(source);
+        if (i == tsxXMLFiles_.end())
         {
             stl::shared_ptr<XMLFile> tsxXMLFile = LoadTSXFile(source);
             if (!tsxXMLFile)
@@ -638,7 +639,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             tileSetElem = tsxXMLFile->GetRoot("tileset");
         }
         else
-            tileSetElem = i->second_->GetRoot("tileset");
+            tileSetElem = i->second->GetRoot("tileset");
     }
     else
         tileSetElem = element;

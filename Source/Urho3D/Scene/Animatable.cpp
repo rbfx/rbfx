@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
@@ -81,7 +80,7 @@ bool Animatable::LoadXML(const XMLElement& source)
         return false;
 
     SetObjectAnimation(nullptr);
-    attributeAnimationInfos_.Clear();
+    attributeAnimationInfos_.clear();
 
     XMLElement elem = source.GetChild("objectanimation");
     if (elem)
@@ -127,7 +126,7 @@ bool Animatable::LoadJSON(const JSONValue& source)
         return false;
 
     SetObjectAnimation(nullptr);
-    attributeAnimationInfos_.Clear();
+    attributeAnimationInfos_.clear();
 
     JSONValue value = source.Get("objectanimation");
     if (!value.IsNull())
@@ -151,12 +150,12 @@ bool Animatable::LoadJSON(const JSONValue& source)
     }
 
     const JSONObject& attributeAnimationObject = attributeAnimationValue.GetObject();
-    for (JSONObject::ConstIterator it = attributeAnimationObject.Begin(); it != attributeAnimationObject.End(); it++)
+    for (auto it = attributeAnimationObject.begin(); it != attributeAnimationObject.end(); it++)
     {
-        stl::string name = it->first_;
-        JSONValue value = it->second_;
+        stl::string name = it->first;
+        JSONValue value = it->second;
         stl::shared_ptr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
-        if (!attributeAnimation->LoadJSON(it->second_))
+        if (!attributeAnimation->LoadJSON(it->second))
             return false;
 
         stl::string wrapModeString = value.Get("wrapmode").GetString();
@@ -191,21 +190,21 @@ bool Animatable::SaveXML(XMLElement& dest) const
     }
 
 
-    for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
-         i != attributeAnimationInfos_.End(); ++i)
+    for (auto i = attributeAnimationInfos_.begin();
+         i != attributeAnimationInfos_.end(); ++i)
     {
-        ValueAnimation* attributeAnimation = i->second_->GetAnimation();
+        ValueAnimation* attributeAnimation = i->second->GetAnimation();
         if (attributeAnimation->GetOwner())
             continue;
 
-        const AttributeInfo& attr = i->second_->GetAttributeInfo();
+        const AttributeInfo& attr = i->second->GetAttributeInfo();
         XMLElement elem = dest.CreateChild("attributeanimation");
         elem.SetAttribute("name", attr.name_);
         if (!attributeAnimation->SaveXML(elem))
             return false;
 
-        elem.SetAttribute("wrapmode", wrapModeNames[i->second_->GetWrapMode()]);
-        elem.SetFloat("speed", i->second_->GetSpeed());
+        elem.SetAttribute("wrapmode", wrapModeNames[i->second->GetWrapMode()]);
+        elem.SetFloat("speed", i->second->GetSpeed());
     }
 
     return true;
@@ -227,21 +226,21 @@ bool Animatable::SaveJSON(JSONValue& dest) const
 
     JSONValue attributeAnimationValue;
 
-    for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
-         i != attributeAnimationInfos_.End(); ++i)
+    for (auto i = attributeAnimationInfos_.begin();
+         i != attributeAnimationInfos_.end(); ++i)
     {
-        ValueAnimation* attributeAnimation = i->second_->GetAnimation();
+        ValueAnimation* attributeAnimation = i->second->GetAnimation();
         if (attributeAnimation->GetOwner())
             continue;
 
-        const AttributeInfo& attr = i->second_->GetAttributeInfo();
+        const AttributeInfo& attr = i->second->GetAttributeInfo();
         JSONValue attributeValue;
         attributeValue.Set("name", attr.name_);
         if (!attributeAnimation->SaveJSON(attributeValue))
             return false;
 
-        attributeValue.Set("wrapmode", wrapModeNames[i->second_->GetWrapMode()]);
-        attributeValue.Set("speed", (float) i->second_->GetSpeed());
+        attributeValue.Set("wrapmode", wrapModeNames[i->second->GetWrapMode()]);
+        attributeValue.Set("speed", (float) i->second->GetSpeed());
 
         attributeAnimationValue.Set(attr.name_, attributeValue);
     }
@@ -258,11 +257,12 @@ void Animatable::SetAnimationEnabled(bool enable)
     {
         // In object animation there may be targets in hierarchy. Set same enable/disable state in all
         stl::hash_set<Animatable*> targets;
-        const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
-        for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
+        const stl::unordered_map<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
+        for (auto i = infos.begin(); i !=
+            infos.end(); ++i)
         {
             stl::string outName;
-            Animatable* target = FindAttributeAnimationTarget(i->first_, outName);
+            Animatable* target = FindAttributeAnimationTarget(i->first, outName);
             if (target && target != this)
                 targets.insert(target);
         }
@@ -279,20 +279,21 @@ void Animatable::SetAnimationTime(float time)
     if (objectAnimation_)
     {
         // In object animation there may be targets in hierarchy. Set same time in all
-        const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
-        for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
+        const stl::unordered_map<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
+        for (auto i = infos.begin(); i !=
+            infos.end(); ++i)
         {
             stl::string outName;
-            Animatable* target = FindAttributeAnimationTarget(i->first_, outName);
+            Animatable* target = FindAttributeAnimationTarget(i->first, outName);
             if (target)
                 target->SetAttributeAnimationTime(outName, time);
         }
     }
     else
     {
-        for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
-            i != attributeAnimationInfos_.End(); ++i)
-            i->second_->SetTime(time);
+        for (auto i = attributeAnimationInfos_.begin();
+            i != attributeAnimationInfos_.end(); ++i)
+            i->second->SetTime(time);
     }
 }
 
@@ -385,7 +386,7 @@ void Animatable::SetAttributeAnimation(const stl::string& name, ValueAnimation* 
         if (info->GetAttributeInfo().mode_ & AM_NET)
             animatedNetworkAttributes_.erase(&info->GetAttributeInfo());
 
-        attributeAnimationInfos_.Erase(name);
+        attributeAnimationInfos_.erase(name);
         OnAttributeAnimationRemoved();
     }
 }
@@ -485,12 +486,12 @@ void Animatable::OnObjectAnimationAdded(ObjectAnimation* objectAnimation)
         return;
 
     // Set all attribute animations from the object animation
-    const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& attributeAnimationInfos = objectAnimation->GetAttributeAnimationInfos();
-    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = attributeAnimationInfos.Begin();
-         i != attributeAnimationInfos.End(); ++i)
+    const stl::unordered_map<stl::string, stl::shared_ptr<ValueAnimationInfo> >& attributeAnimationInfos = objectAnimation->GetAttributeAnimationInfos();
+    for (auto i = attributeAnimationInfos.begin();
+         i != attributeAnimationInfos.end(); ++i)
     {
-        const stl::string& name = i->first_;
-        ValueAnimationInfo* info = i->second_;
+        const stl::string& name = i->first;
+        ValueAnimationInfo* info = i->second;
         SetObjectAttributeAnimation(name, info->GetAnimation(), info->GetWrapMode(), info->GetSpeed());
     }
 }
@@ -501,9 +502,10 @@ void Animatable::OnObjectAnimationRemoved(ObjectAnimation* objectAnimation)
         return;
 
     // Just remove all attribute animations listed by the object animation
-    const HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation->GetAttributeAnimationInfos();
-    for (HashMap<stl::string, stl::shared_ptr<ValueAnimationInfo> >::ConstIterator i = infos.Begin(); i != infos.End(); ++i)
-        SetObjectAttributeAnimation(i->first_, nullptr, WM_LOOP, 1.0f);
+    const stl::unordered_map<stl::string, stl::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation->GetAttributeAnimationInfos();
+    for (auto i = infos.begin(); i !=
+        infos.end(); ++i)
+        SetObjectAttributeAnimation(i->first, nullptr, WM_LOOP, 1.0f);
 }
 
 void Animatable::UpdateAttributeAnimations(float timeStep)
@@ -515,16 +517,16 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
     stl::weak_ptr<Animatable> self(this);
 
     stl::vector<stl::string> finishedNames;
-    for (HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Begin();
-         i != attributeAnimationInfos_.End(); ++i)
+    for (auto i = attributeAnimationInfos_.begin();
+         i != attributeAnimationInfos_.end(); ++i)
     {
-        bool finished = i->second_->Update(timeStep);
+        bool finished = i->second->Update(timeStep);
         // If self deleted as a result of an event sent during animation playback, nothing more to do
         if (self.expired())
             return;
 
         if (finished)
-            finishedNames.push_back(i->second_->GetAttributeInfo().name_);
+            finishedNames.push_back(i->second->GetAttributeInfo().name_);
     }
 
     for (unsigned i = 0; i < finishedNames.size(); ++i)
@@ -533,14 +535,15 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
 
 bool Animatable::IsAnimatedNetworkAttribute(const AttributeInfo& attrInfo) const
 {
-    return stl::contains(animatedNetworkAttributes_, &attrInfo);
+    return animatedNetworkAttributes_.contains(&attrInfo);
 }
 
 AttributeAnimationInfo* Animatable::GetAttributeAnimationInfo(const stl::string& name) const
 {
-    HashMap<stl::string, stl::shared_ptr<AttributeAnimationInfo> >::ConstIterator i = attributeAnimationInfos_.Find(name);
-    if (i != attributeAnimationInfos_.End())
-        return i->second_;
+    auto i = attributeAnimationInfos_.find(
+        name);
+    if (i != attributeAnimationInfos_.end())
+        return i->second;
 
     return nullptr;
 }

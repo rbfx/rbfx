@@ -50,15 +50,15 @@ StringHash StringHashRegister::RegisterString(const StringHash& hash, const char
     if (mutex_)
         mutex_->Acquire();
 
-    auto iter = map_.Find(hash);
-    if (iter == map_.End())
+    auto iter = map_.find(hash);
+    if (iter == map_.end())
     {
-        map_.Populate(hash, string);
+        map_.populate(hash, string);
     }
-    else if (iter->second_.comparei(string) != 0)
+    else if (iter->second.comparei(string) != 0)
     {
         URHO3D_LOGWARNINGF("StringHash collision detected! Both \"%s\" and \"%s\" have hash #%s",
-            string, iter->second_.c_str(), hash.ToString().c_str());
+            string, iter->second.c_str(), hash.ToString().c_str());
     }
 
     if (mutex_)
@@ -91,7 +91,7 @@ bool StringHashRegister::Contains(const StringHash& hash) const
     if (mutex_)
         mutex_->Acquire();
 
-    const bool contains = map_.Contains(hash);
+    const bool contains = map_.contains(hash);
 
     if (mutex_)
         mutex_->Release();
@@ -101,8 +101,8 @@ bool StringHashRegister::Contains(const StringHash& hash) const
 
 const stl::string& StringHashRegister::GetString(const StringHash& hash) const
 {
-    auto iter = map_.Find(hash);
-    return iter == map_.End() ? EMPTY_STRING : iter->second_;
+    auto iter = map_.find(hash);
+    return iter == map_.end() ? EMPTY_STRING : iter->second;
 }
 
 }

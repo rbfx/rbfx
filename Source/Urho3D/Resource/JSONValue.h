@@ -61,15 +61,6 @@ enum JSONNumberType
 
 class JSONValue;
 
-/// JSON array type.
-using JSONArray = stl::vector<JSONValue>;
-/// JSON object type.
-using JSONObject = HashMap<stl::string, JSONValue>;
-/// JSON object iterator.
-using JSONObjectIterator = JSONObject::Iterator;
-/// Constant JSON object iterator.
-using ConstJSONObjectIterator = JSONObject::ConstIterator;
-
 /// JSON value class.
 class URHO3D_API JSONValue
 {
@@ -130,13 +121,13 @@ public:
         *this = value;
     }
     /// Construct with a JSON array.
-    JSONValue(const JSONArray& value) :     // NOLINT(google-explicit-constructor)
+    JSONValue(const stl::vector<JSONValue>& value) :     // NOLINT(google-explicit-constructor)
         type_(0)
     {
         *this = value;
     }
     /// Construct with a JSON object.
-    JSONValue(const JSONObject& value) :    // NOLINT(google-explicit-constructor)
+    JSONValue(const stl::unordered_map<stl::string, JSONValue>& value) :    // NOLINT(google-explicit-constructor)
         type_(0)
     {
         *this = value;
@@ -168,9 +159,9 @@ public:
     /// Assign from a C string.
     JSONValue& operator =(const char* rhs);
     /// Assign from a JSON array.
-    JSONValue& operator =(const JSONArray& rhs);
+    JSONValue& operator =(const stl::vector<JSONValue>& rhs);
     /// Assign from a JSON object.
-    JSONValue& operator =(const JSONObject& rhs);
+    JSONValue& operator =(const stl::unordered_map<stl::string, JSONValue>& rhs);
     /// Assign from another JSON value.
     JSONValue& operator =(const JSONValue& rhs);
     /// Value equality operator.
@@ -215,9 +206,9 @@ public:
     /// Return C string value.
     const char* GetCString() const { return IsString() ? stringValue_->c_str() : nullptr;}
     /// Return JSON array value.
-    const JSONArray& GetArray() const { return IsArray() ? *arrayValue_ : emptyArray; }
+    const stl::vector<JSONValue>& GetArray() const { return IsArray() ? *arrayValue_ : emptyArray; }
     /// Return JSON object value.
-    const JSONObject& GetObject() const { return IsObject() ? *objectValue_ : emptyObject; }
+    const stl::unordered_map<stl::string, JSONValue>& GetObject() const { return IsObject() ? *objectValue_ : emptyObject; }
 
     // JSON array functions
     /// Return JSON value at index.
@@ -252,14 +243,6 @@ public:
     bool Erase(const stl::string& key);
     /// Return whether contains a pair with key.
     bool Contains(const stl::string& key) const;
-    /// Return iterator to the beginning.
-    JSONObjectIterator Begin();
-    /// Return iterator to the beginning.
-    ConstJSONObjectIterator Begin() const;
-    /// Return iterator to the end.
-    JSONObjectIterator End();
-    /// Return iterator to the beginning.
-    ConstJSONObjectIterator End() const;
 
     /// Clear array or object.
     void Clear();
@@ -287,9 +270,9 @@ public:
     /// Empty JSON value.
     static const JSONValue EMPTY;
     /// Empty JSON array.
-    static const JSONArray emptyArray;
+    static const stl::vector<JSONValue> emptyArray;
     /// Empty JSON object.
-    static const JSONObject emptyObject;
+    static const stl::unordered_map<stl::string, JSONValue> emptyObject;
 
     /// Return name corresponding to a value type.
     static stl::string GetValueTypeName(JSONValueType type);
@@ -304,7 +287,7 @@ public:
     /// Return a value type from name; NaN if unrecognized.
     static JSONNumberType GetNumberTypeFromName(const char* typeName);
 
-private:
+//private:
     /// type.
     unsigned type_;
     union
@@ -316,10 +299,28 @@ private:
         /// String value.
         stl::string* stringValue_;
         /// Array value.
-        JSONArray* arrayValue_;
+        stl::vector<JSONValue>* arrayValue_;
         /// Object value.
-        JSONObject* objectValue_;
+        stl::unordered_map<stl::string, JSONValue>* objectValue_;
     };
 };
+
+/// Return iterator to the beginning.
+stl::unordered_map<stl::string, JSONValue>::iterator begin(JSONValue& value);
+/// Return iterator to the beginning.
+stl::unordered_map<stl::string, JSONValue>::const_iterator begin(const JSONValue& value);
+/// Return iterator to the end.
+stl::unordered_map<stl::string, JSONValue>::iterator end(JSONValue& value);
+/// Return iterator to the beginning.
+stl::unordered_map<stl::string, JSONValue>::const_iterator end(const JSONValue& value);
+
+/// JSON array type.
+using JSONArray = stl::vector<JSONValue>;
+/// JSON object type.
+using JSONObject = stl::unordered_map<stl::string, JSONValue>;
+/// JSON object iterator.
+using JSONObjectIterator = stl::unordered_map<stl::string, JSONValue>::iterator;
+/// Constant JSON object iterator.
+using ConstJSONObjectIterator = stl::unordered_map<stl::string, JSONValue>::const_iterator;
 
 }

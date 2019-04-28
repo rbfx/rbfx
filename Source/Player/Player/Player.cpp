@@ -77,7 +77,7 @@ void Player::Setup()
         return;
 
     for (auto& pair : file.GetRoot().GetObject())
-        engineParameters_[pair.first_] = pair.second_.GetVariant();
+        engineParameters_[pair.first] = pair.second.GetVariant();
 }
 
 void Player::Start()
@@ -262,18 +262,20 @@ BakedResourceRouter::BakedResourceRouter(Context* context)
     if (file)
     {
         const auto& info = file->GetRoot().GetObject();
-        for (auto it = info.Begin(); it != info.End(); it++)
+        for (auto it = info.begin(); it != info.end(); it++)
         {
-            const JSONArray& files = it->second_["files"].GetArray();
+            const JSONArray& files = it->second["files"].GetArray();
             if (files.size() == 1)
-                routes_[it->first_] = files[0].GetString();
+                routes_[it->first] = files[0].GetString();
         }
     }
 }
 
 void BakedResourceRouter::Route(stl::string& name, ResourceRequest requestType)
 {
-    routes_.TryGetValue(name, name);
+    auto it = routes_.find(name);
+    if (it != routes_.end())
+        name = it->second;
 }
 
 }

@@ -248,7 +248,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
 
         // Convert big endian to little endian
         for (unsigned i = 0; i < kerningTableSize; i += 2)
-            Swap(kerningTable[i], kerningTable[i + 1]);
+            stl::swap(kerningTable[i], kerningTable[i + 1]);
         MemoryBuffer deserializer(kerningTable.get(), (unsigned)kerningTableSize);
 
         unsigned short version = deserializer.ReadUShort();
@@ -307,20 +307,20 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
 
 const FontGlyph* FontFaceFreeType::GetGlyph(unsigned c)
 {
-    HashMap<unsigned, FontGlyph>::Iterator i = glyphMapping_.Find(c);
-    if (i != glyphMapping_.End())
+    auto i = glyphMapping_.find(c);
+    if (i != glyphMapping_.end())
     {
-        FontGlyph& glyph = i->second_;
+        FontGlyph& glyph = i->second;
         glyph.used_ = true;
         return &glyph;
     }
 
     if (LoadCharGlyph(c))
     {
-        HashMap<unsigned, FontGlyph>::Iterator i = glyphMapping_.Find(c);
-        if (i != glyphMapping_.End())
+        auto i = glyphMapping_.find(c);
+        if (i != glyphMapping_.end())
         {
-            FontGlyph& glyph = i->second_;
+            FontGlyph& glyph = i->second;
             glyph.used_ = true;
             return &glyph;
         }

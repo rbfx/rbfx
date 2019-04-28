@@ -639,17 +639,19 @@ void Engine::DumpResources(bool dumpFileName)
         return;
 
     auto* cache = GetSubsystem<ResourceCache>();
-    const HashMap<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
+    const stl::unordered_map<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
     if (dumpFileName)
     {
         URHO3D_LOGINFO("Used resources:");
-        for (HashMap<StringHash, ResourceGroup>::ConstIterator i = resourceGroups.Begin(); i != resourceGroups.End(); ++i)
+        for (auto i = resourceGroups.begin(); i !=
+            resourceGroups.end(); ++i)
         {
-            const HashMap<StringHash, stl::shared_ptr<Resource> >& resources = i->second_.resources_;
+            const stl::unordered_map<StringHash, stl::shared_ptr<Resource> >& resources = i->second.resources_;
             if (dumpFileName)
             {
-                for (HashMap<StringHash, stl::shared_ptr<Resource> >::ConstIterator j = resources.Begin(); j != resources.End(); ++j)
-                    URHO3D_LOGINFO(j->second_->GetName());
+                for (auto j = resources.begin(); j !=
+                    resources.end(); ++j)
+                    URHO3D_LOGINFO(j->second->GetName());
             }
         }
     }
@@ -976,14 +978,14 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
 bool Engine::HasParameter(const VariantMap& parameters, const stl::string& parameter)
 {
     StringHash nameHash(parameter);
-    return parameters.Find(nameHash) != parameters.End();
+    return parameters.find(nameHash) != parameters.end();
 }
 
 const Variant& Engine::GetParameter(const VariantMap& parameters, const stl::string& parameter, const Variant& defaultValue)
 {
     StringHash nameHash(parameter);
-    VariantMap::ConstIterator i = parameters.Find(nameHash);
-    return i != parameters.End() ? i->second_ : defaultValue;
+    auto i = parameters.find(nameHash);
+    return i != parameters.end() ? i->second : defaultValue;
 }
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)

@@ -25,7 +25,6 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
-#include "../Container/Sort.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/Shader.h"
@@ -280,8 +279,8 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
         modalElement->SetParent(static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
             modalElement->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
         auto& vars = const_cast<VariantMap&>(modalElement->GetVars());
-        vars.Erase(VAR_ORIGINAL_PARENT);
-        vars.Erase(VAR_ORIGINAL_CHILD_INDEX);
+        vars.erase(VAR_ORIGINAL_PARENT);
+        vars.erase(VAR_ORIGINAL_CHILD_INDEX);
 
         // If it is a popup element, revert back its top-level parent
         auto* originElement = static_cast<UIElement*>(modalElement->GetVar(VAR_ORIGIN).GetPtr());
@@ -290,12 +289,12 @@ bool UI::SetModalElement(UIElement* modalElement, bool enable)
             auto* element = static_cast<UIElement*>(originElement->GetVar(VAR_PARENT_CHANGED).GetPtr());
             if (element)
             {
-                const_cast<VariantMap&>(originElement->GetVars()).Erase(VAR_PARENT_CHANGED);
+                const_cast<VariantMap&>(originElement->GetVars()).erase(VAR_PARENT_CHANGED);
                 element->SetParent(static_cast<UIElement*>(element->GetVar(VAR_ORIGINAL_PARENT).GetPtr()),
                     element->GetVar(VAR_ORIGINAL_CHILD_INDEX).GetUInt());
                 vars = const_cast<VariantMap&>(element->GetVars());
-                vars.Erase(VAR_ORIGINAL_PARENT);
-                vars.Erase(VAR_ORIGINAL_CHILD_INDEX);
+                vars.erase(VAR_ORIGINAL_PARENT);
+                vars.erase(VAR_ORIGINAL_CHILD_INDEX);
             }
         }
 
@@ -323,8 +322,9 @@ void UI::Update(float timeStep)
     URHO3D_PROFILE("UpdateUI");
 
     // Expire hovers
-    for (HashMap<stl::weak_ptr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End(); ++i)
-        i->second_ = false;
+    for (auto i = hoveredElements_.begin(); i !=
+        hoveredElements_.end(); ++i)
+        i->second = false;
 
     auto* input = GetSubsystem<Input>();
     bool mouseGrabbed = input->IsMouseGrabbed();
@@ -336,10 +336,11 @@ void UI::Update(float timeStep)
     // Drag begin based on time
     if (dragElementsCount_ > 0 && !mouseGrabbed)
     {
-        for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+        for (auto i = dragElements_.begin(); i !=
+            dragElements_.end();)
         {
-            stl::weak_ptr<UIElement> dragElement = i->first_;
-            UI::DragData* dragData = i->second_;
+            stl::weak_ptr<UIElement> dragElement = i->first;
+            UI::DragData* dragData = i->second;
 
             if (!dragElement)
             {
@@ -398,11 +399,12 @@ void UI::Update(float timeStep)
 #endif
 
     // End hovers that expired without refreshing
-    for (HashMap<stl::weak_ptr<UIElement>, bool>::Iterator i = hoveredElements_.Begin(); i != hoveredElements_.End();)
+    for (auto i = hoveredElements_.begin(); i !=
+        hoveredElements_.end();)
     {
-        if (i->first_.expired() || !i->second_)
+        if (i->first.expired() || !i->second)
         {
-            UIElement* element = i->first_;
+            UIElement* element = i->first;
             if (element)
             {
                 using namespace HoverEnd;
@@ -411,7 +413,7 @@ void UI::Update(float timeStep)
                 eventData[P_ELEMENT] = element;
                 element->SendEvent(E_HOVEREND, eventData);
             }
-            i = hoveredElements_.Erase(i);
+            i = hoveredElements_.erase(i);
         }
         else
             ++i;
@@ -790,10 +792,11 @@ const stl::vector<UIElement*>& UI::GetDragElements()
     if (!dragElementsConfirmed_.empty())
         return dragElementsConfirmed_;
 
-    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (auto i = dragElements_.begin(); i !=
+        dragElements_.end();)
     {
-        stl::weak_ptr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
+        stl::weak_ptr<UIElement> dragElement = i->first;
+        UI::DragData* dragData = i->second;
 
         if (!dragElement)
         {
@@ -1207,10 +1210,11 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags button
     IntVector2 cursorPos;
     stl::weak_ptr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
 
-    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (auto i = dragElements_.begin(); i !=
+        dragElements_.end();)
     {
-        stl::weak_ptr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
+        stl::weak_ptr<UIElement> dragElement = i->first;
+        UI::DragData* dragData = i->second;
 
         if (!dragElement)
         {
@@ -1234,7 +1238,7 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags button
                 element->OnHover(element->ScreenToElement(cursorPos), cursorPos, buttons, qualifiers, cursor);
 
                 // Begin hover event
-                if (!hoveredElements_.Contains(element))
+                if (!hoveredElements_.contains(element))
                 {
                     SendDragOrHoverEvent(E_HOVERBEGIN, element, cursorPos, IntVector2::ZERO, nullptr);
                     // Exit if element is destroyed by the event handling
@@ -1279,7 +1283,7 @@ void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags button
             element->OnHover(element->ScreenToElement(cursorPos), cursorPos, buttons, qualifiers, cursor);
 
             // Begin hover event
-            if (!hoveredElements_.Contains(element))
+            if (!hoveredElements_.contains(element))
             {
                 SendDragOrHoverEvent(E_HOVERBEGIN, element, cursorPos, IntVector2::ZERO, nullptr);
                 // Exit if element is destroyed by the event handling
@@ -1334,7 +1338,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
             }
 
             // Handle start of drag. Click handling may have caused destruction of the element, so check the pointer again
-            bool dragElementsContain = dragElements_.Contains(element);
+            bool dragElementsContain = dragElements_.contains(element);
             if (element && !dragElementsContain)
             {
                 auto* dragData = new DragData();
@@ -1347,7 +1351,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
                 dragData->numDragButtons = CountSetBits((unsigned)dragData->dragButtons);
                 dragElementsCount_++;
 
-                dragElementsContain = dragElements_.Contains(element);
+                dragElementsContain = dragElements_.contains(element);
             }
             else if (element && dragElementsContain && newButton)
             {
@@ -1381,10 +1385,11 @@ void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, 
         element = GetElementAt(cursorPos, true, &cursorPos);
 
     // Handle end of drag
-    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (auto i = dragElements_.begin(); i !=
+        dragElements_.end();)
     {
-        stl::weak_ptr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
+        stl::weak_ptr<UIElement> dragElement = i->first;
+        UI::DragData* dragData = i->second;
 
         if (!dragElement || !cursorVisible)
         {
@@ -1449,10 +1454,11 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
 
         auto* input = GetSubsystem<Input>();
         bool mouseGrabbed = input->IsMouseGrabbed();
-        for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+        for (auto i = dragElements_.begin(); i !=
+            dragElements_.end();)
         {
-            stl::weak_ptr<UIElement> dragElement = i->first_;
-            UI::DragData* dragData = i->second_;
+            stl::weak_ptr<UIElement> dragElement = i->first;
+            UI::DragData* dragData = i->second;
 
             if (!dragElement)
             {
@@ -1809,11 +1815,11 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
     stl::weak_ptr<UIElement> element(GetElementAt(pos));
 
     // Clear any drag events that were using the touch id
-    for (auto i = touchDragElements_.Begin(); i != touchDragElements_.End();)
+    for (auto i = touchDragElements_.begin(); i != touchDragElements_.end();)
     {
-        const MouseButtonFlags touches = i->second_;
+        const MouseButtonFlags touches = i->second;
         if (touches & touchId)
-            i = touchDragElements_.Erase(i);
+            i = touchDragElements_.erase(i);
         else
             ++i;
     }
@@ -1872,7 +1878,7 @@ void UI::HandleKeyDown(StringHash eventType, VariantMap& eventData)
     if (key == KEY_ESCAPE && HasModalElement())
     {
         UIElement* element = rootModalElement_->GetChild(rootModalElement_->GetNumChildren() - 1);
-        if (element->GetVars().Contains(VAR_ORIGIN))
+        if (element->GetVars().contains(VAR_ORIGIN))
             // If it is a popup, dismiss by defocusing it
             SetFocusElement(nullptr);
         else
@@ -2020,19 +2026,19 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
     }
 }
 
-HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator UI::DragElementErase(HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i)
+stl::unordered_map<stl::weak_ptr<UIElement>, UI::DragData*>::iterator UI::DragElementErase(stl::unordered_map<stl::weak_ptr<UIElement>, DragData*>::iterator i)
 {
     // If running the engine frame in response to an event (re-entering UI frame logic) the dragElements_ may already be empty
-    if (dragElements_.Empty())
-        return dragElements_.End();
+    if (dragElements_.empty())
+        return dragElements_.end();
 
     dragElementsConfirmed_.clear();
 
-    DragData* dragData = i->second_;
+    DragData* dragData = i->second;
 
     if (!dragData->dragBeginPending)
         --dragConfirmedCount_;
-    i = dragElements_.Erase(i);
+    i = dragElements_.erase(i);
     --dragElementsCount_;
 
     delete dragData;
@@ -2049,10 +2055,11 @@ void UI::ProcessDragCancel()
     bool cursorVisible;
     GetCursorPositionAndVisible(cursorPos, cursorVisible);
 
-    for (HashMap<stl::weak_ptr<UIElement>, UI::DragData*>::Iterator i = dragElements_.Begin(); i != dragElements_.End();)
+    for (auto i = dragElements_.begin(); i !=
+        dragElements_.end();)
     {
-        stl::weak_ptr<UIElement> dragElement = i->first_;
-        UI::DragData* dragData = i->second_;
+        stl::weak_ptr<UIElement> dragElement = i->first;
+        UI::DragData* dragData = i->second;
 
         if (dragElement && dragElement->IsEnabled() && dragElement->IsVisible() && !dragData->dragBeginPending)
         {

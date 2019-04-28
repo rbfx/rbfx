@@ -32,3 +32,9 @@
 #endif
 
 #define URHO3D_ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))
+
+#if __cplusplus >= 201703L
+#   define URHO3D_FALLTHROUGH [[fallthrough]]
+#else
+#   define URHO3D_FALLTHROUGH
+#endif

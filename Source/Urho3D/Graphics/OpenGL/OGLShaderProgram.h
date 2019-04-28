@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../../Container/HashMap.h"
+#include <EASTL/unordered_map.h>
+
 #include "../../Container/RefCounted.h"
 #include "../../Graphics/GPUObject.h"
 #include "../../Graphics/GraphicsDefs.h"
@@ -68,7 +69,7 @@ public:
     const stl::string& GetLinkerOutput() const { return linkerOutput_; }
 
     /// Return semantic to vertex attributes location mappings used by the shader.
-    const HashMap<stl::pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
+    const stl::unordered_map<stl::pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
 
     /// Return attribute location use bitmask.
     unsigned GetUsedVertexAttributes() const { return usedVertexAttributes_; }
@@ -92,11 +93,11 @@ private:
     /// Pixel shader.
     stl::weak_ptr<ShaderVariation> pixelShader_;
     /// Shader parameters.
-    HashMap<StringHash, ShaderParameter> shaderParameters_;
+    stl::unordered_map<StringHash, ShaderParameter> shaderParameters_;
     /// Texture unit use.
     bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Vertex attributes.
-    HashMap<stl::pair<unsigned char, unsigned char>, unsigned> vertexAttributes_;
+    stl::unordered_map<stl::pair<unsigned char, unsigned char>, unsigned> vertexAttributes_;
     /// Used vertex attribute location bitmask.
     unsigned usedVertexAttributes_{};
     /// Constant buffers by binding index.

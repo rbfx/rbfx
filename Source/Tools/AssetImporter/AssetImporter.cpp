@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Container/Utilities.h>
+#include <Urho3D/Container/Utility.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -194,8 +194,8 @@ void BuildAndSaveAnimations(OutModel* model = nullptr);
 
 void ExportScene(const stl::string& outName, bool asPrefab);
 void CollectSceneModels(OutScene& scene, aiNode* node);
-void CreateHierarchy(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& nodeMapping);
-Node* CreateSceneNode(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& nodeMapping);
+void CreateHierarchy(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping);
+Node* CreateSceneNode(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping);
 void BuildAndSaveScene(OutScene& scene, bool asPrefab);
 
 void ExportMaterials(stl::hash_set<stl::string>& usedTextures);
@@ -923,7 +923,7 @@ void CollectAnimations(OutModel* model)
     for (unsigned i = 0; i < scene->mNumAnimations; ++i)
     {
         aiAnimation* anim = scene->mAnimations[i];
-        if (stl::contains(allAnimations_, anim))
+        if (allAnimations_.contains(anim))
             continue;
 
         if (model)
@@ -1582,16 +1582,16 @@ void CollectSceneModels(OutScene& scene, aiNode* node)
         CollectSceneModels(scene, node->mChildren[i]);
 }
 
-void CreateHierarchy(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& nodeMapping)
+void CreateHierarchy(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping)
 {
     CreateSceneNode(scene, srcNode, nodeMapping);
     for (unsigned i = 0; i < srcNode->mNumChildren; ++i)
         CreateHierarchy(scene, srcNode->mChildren[i], nodeMapping);
 }
 
-Node* CreateSceneNode(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& nodeMapping)
+Node* CreateSceneNode(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping)
 {
-    if (nodeMapping.Contains(srcNode))
+    if (nodeMapping.contains(srcNode))
         return nodeMapping[srcNode];
     // Flatten hierarchy if requested
     if (noHierarchy_)
@@ -1620,7 +1620,7 @@ Node* CreateSceneNode(Scene* scene, aiNode* srcNode, HashMap<aiNode*, Node*>& no
     else
     {
         // Ensure the existence of the parent chain as in the original file
-        if (!nodeMapping.Contains(srcNode->mParent))
+        if (!nodeMapping.contains(srcNode->mParent))
             CreateSceneNode(scene, srcNode->mParent, nodeMapping);
 
         Node* parent = nodeMapping[srcNode->mParent];
@@ -1676,7 +1676,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
 
     auto* cache = context_->GetSubsystem<ResourceCache>();
 
-    HashMap<aiNode*, Node*> nodeMapping;
+    stl::unordered_map<aiNode*, Node*> nodeMapping;
 
     Node* outRootNode = nullptr;
     if (asPrefab)

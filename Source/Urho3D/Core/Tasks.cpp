@@ -270,34 +270,34 @@ void Tasks::Add(StringHash eventType, Task* task)
         return;
     }
 
-    auto it = taskSchedulers_.Find(eventType);
+    auto it = taskSchedulers_.find(eventType);
     stl::shared_ptr<TaskScheduler> scheduler;
-    if (it == taskSchedulers_.End())
+    if (it == taskSchedulers_.end())
     {
         taskSchedulers_[eventType] = scheduler = context_->CreateObject<TaskScheduler>();
         SubscribeToEvent(eventType, [&](StringHash eventType_, VariantMap&) { ExecuteTasks(eventType_); });
     }
     else
-        scheduler = it->second_;
+        scheduler = it->second;
     scheduler->Add(task);
 }
 
 void Tasks::ExecuteTasks(StringHash eventType)
 {
-    auto it = taskSchedulers_.Find(eventType);
-    if (it == taskSchedulers_.End())
+    auto it = taskSchedulers_.find(eventType);
+    if (it == taskSchedulers_.end())
     {
         URHO3D_LOGWARNING("Tasks subsystem received event it was not supposed to handle.");
         return;
     }
-    it->second_->ExecuteTasks();
+    it->second->ExecuteTasks();
 }
 
 unsigned Tasks::GetActiveTaskCount() const
 {
     unsigned activeTasks = 0;
     for (const auto& scheduler: taskSchedulers_)
-        activeTasks += scheduler.second_->GetActiveTaskCount();
+        activeTasks += scheduler.second->GetActiveTaskCount();
     return activeTasks;
 }
 

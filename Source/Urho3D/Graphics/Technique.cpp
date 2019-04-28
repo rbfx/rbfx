@@ -137,8 +137,8 @@ void Pass::ReleaseShaders()
 {
     vertexShaders_.clear();
     pixelShaders_.clear();
-    extraVertexShaders_.Clear();
-    extraPixelShaders_.Clear();
+    extraVertexShaders_.clear();
+    extraPixelShaders_.clear();
 }
 
 void Pass::MarkShadersLoaded(unsigned frameNumber)
@@ -200,7 +200,7 @@ unsigned Technique::litBasePassIndex = 0;
 unsigned Technique::litAlphaPassIndex = 0;
 unsigned Technique::shadowPassIndex = 0;
 
-HashMap<stl::string, unsigned> Technique::passIndices;
+stl::unordered_map<stl::string, unsigned> Technique::passIndices;
 
 Technique::Technique(Context* context) :
     Resource(context),
@@ -223,7 +223,7 @@ void Technique::RegisterObject(Context* context)
 bool Technique::BeginLoad(Deserializer& source)
 {
     passes_.clear();
-    cloneTechniques_.Clear();
+    cloneTechniques_.clear();
 
     SetMemoryUse(sizeof(Technique));
 
@@ -389,32 +389,32 @@ Pass* Technique::CreatePass(const stl::string& name)
 
 void Technique::RemovePass(const stl::string& name)
 {
-    HashMap<stl::string, unsigned>::ConstIterator i = passIndices.Find(name.to_lower());
-    if (i == passIndices.End())
+    auto i = passIndices.find(name.to_lower());
+    if (i == passIndices.end())
         return;
-    else if (i->second_ < passes_.size() && passes_[i->second_].get())
+    else if (i->second < passes_.size() && passes_[i->second].get())
     {
-        passes_[i->second_].reset();
+        passes_[i->second].reset();
         SetMemoryUse((unsigned)(sizeof(Technique) + GetNumPasses() * sizeof(Pass)));
     }
 }
 
 bool Technique::HasPass(const stl::string& name) const
 {
-    HashMap<stl::string, unsigned>::ConstIterator i = passIndices.Find(name.to_lower());
-    return i != passIndices.End() ? HasPass(i->second_) : false;
+    auto i = passIndices.find(name.to_lower());
+    return i != passIndices.end() ? HasPass(i->second) : false;
 }
 
 Pass* Technique::GetPass(const stl::string& name) const
 {
-    HashMap<stl::string, unsigned>::ConstIterator i = passIndices.Find(name.to_lower());
-    return i != passIndices.End() ? GetPass(i->second_) : nullptr;
+    auto i = passIndices.find(name.to_lower());
+    return i != passIndices.end() ? GetPass(i->second) : nullptr;
 }
 
 Pass* Technique::GetSupportedPass(const stl::string& name) const
 {
-    HashMap<stl::string, unsigned>::ConstIterator i = passIndices.Find(name.to_lower());
-    return i != passIndices.End() ? GetSupportedPass(i->second_) : nullptr;
+    auto i = passIndices.find(name.to_lower());
+    return i != passIndices.end() ? GetSupportedPass(i->second) : nullptr;
 }
 
 unsigned Technique::GetNumPasses() const
@@ -467,15 +467,15 @@ stl::shared_ptr<Technique> Technique::CloneWithDefines(const stl::string& vsDefi
     stl::pair<StringHash, StringHash> key = stl::make_pair(StringHash(vsDefines), StringHash(psDefines));
 
     // Return existing if possible
-    HashMap<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> >::Iterator i = cloneTechniques_.Find(key);
-    if (i != cloneTechniques_.End())
-        return i->second_;
+    auto i = cloneTechniques_.find(key);
+    if (i != cloneTechniques_.end())
+        return i->second;
 
     // Set same name as the original for the clones to ensure proper serialization of the material. This should not be a problem
     // since the clones are never stored to the resource cache
-    i = cloneTechniques_.Insert(stl::make_pair(key, Clone(GetName())));
+    i = cloneTechniques_.insert(stl::make_pair(key, Clone(GetName()))).first;
 
-    for (auto j = i->second_->passes_.begin(); j != i->second_->passes_.end(); ++j)
+    for (auto j = i->second->passes_.begin(); j != i->second->passes_.end(); ++j)
     {
         Pass* pass = (*j);
         if (!pass)
@@ -487,13 +487,13 @@ stl::shared_ptr<Technique> Technique::CloneWithDefines(const stl::string& vsDefi
             pass->SetPixelShaderDefines(pass->GetPixelShaderDefines() + " " + psDefines);
     }
 
-    return i->second_;
+    return i->second;
 }
 
 unsigned Technique::GetPassIndex(const stl::string& passName)
 {
     // Initialize built-in pass indices on first call
-    if (passIndices.Empty())
+    if (passIndices.empty())
     {
         basePassIndex = passIndices["base"] = 0;
         alphaPassIndex = passIndices["alpha"] = 1;
@@ -506,12 +506,12 @@ unsigned Technique::GetPassIndex(const stl::string& passName)
     }
 
     stl::string nameLower = passName.to_lower();
-    HashMap<stl::string, unsigned>::Iterator i = passIndices.Find(nameLower);
-    if (i != passIndices.End())
-        return i->second_;
+    auto i = passIndices.find(nameLower);
+    if (i != passIndices.end())
+        return i->second;
     else
     {
-        unsigned newPassIndex = passIndices.Size();
+        unsigned newPassIndex = passIndices.size();
         passIndices[nameLower] = newPassIndex;
         return newPassIndex;
     }

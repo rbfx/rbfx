@@ -170,7 +170,7 @@ public:
     /// Send event with variadic parameter pairs to all subscribers. The parameter pairs is a list of paramID and paramValue separated by comma, one pair after another.
     template <typename... Args> void SendEvent(StringHash eventType, Args... args)
     {
-        SendEvent(eventType, GetEventDataMap().Populate(args...));
+        SendEvent(eventType, GetEventDataMap().populate(args...));
     }
 
     /// Return execution context.

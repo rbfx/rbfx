@@ -508,13 +508,13 @@ bool XMLElement::SetVariantMap(const VariantMap& value)
     if (!RemoveChildren("variant"))
         return false;
 
-    for (VariantMap::ConstIterator i = value.Begin(); i != value.End(); ++i)
+    for (auto i = value.begin(); i != value.end(); ++i)
     {
         XMLElement variantElem = CreateChild("variant");
         if (!variantElem)
             return false;
-        variantElem.SetUInt("hash", i->first_.Value());
-        variantElem.SetVariant(i->second_);
+        variantElem.SetUInt("hash", i->first.Value());
+        variantElem.SetVariant(i->second);
     }
 
     return true;

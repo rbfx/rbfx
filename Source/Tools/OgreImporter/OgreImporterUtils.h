@@ -237,6 +237,6 @@ struct ModelSubGeometryLodLevel
     unsigned indexBuffer_{};
     unsigned indexStart_{};
     unsigned indexCount_{};
-    HashMap<unsigned, stl::vector<BoneWeightAssignment> > boneWeights_;
+    stl::unordered_map<unsigned, stl::vector<BoneWeightAssignment> > boneWeights_;
     stl::vector<unsigned> boneMapping_;
 };

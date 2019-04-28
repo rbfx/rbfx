@@ -22,8 +22,8 @@
 
 #pragma once
 
-#include "../Container/HashMap.h"
 #include <EASTL/shared_ptr.h>
+#include <EASTL/unordered_map.h>
 
 namespace Urho3D
 {
@@ -51,9 +51,9 @@ public:
 
 private:
     /// Nodes.
-    HashMap<unsigned, stl::weak_ptr<Node> > nodes_;
+    stl::unordered_map<unsigned, stl::weak_ptr<Node> > nodes_;
     /// Components.
-    HashMap<unsigned, stl::weak_ptr<Component> > components_;
+    stl::unordered_map<unsigned, stl::weak_ptr<Component> > components_;
 };
 
 }

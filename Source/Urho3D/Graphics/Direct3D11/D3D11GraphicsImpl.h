@@ -38,9 +38,9 @@ namespace Urho3D
 
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 
-using ShaderProgramMap = HashMap<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
-using VertexDeclarationMap = HashMap<unsigned long long, stl::shared_ptr<VertexDeclaration> >;
-using ConstantBufferMap = HashMap<unsigned, stl::shared_ptr<ConstantBuffer> >;
+using ShaderProgramMap = stl::unordered_map<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
+using VertexDeclarationMap = stl::unordered_map<unsigned long long, stl::shared_ptr<VertexDeclaration> >;
+using ConstantBufferMap = stl::unordered_map<unsigned, stl::shared_ptr<ConstantBuffer> >;
 
 /// %Graphics implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
@@ -84,11 +84,11 @@ private:
     /// Current depth-stencil view.
     ID3D11DepthStencilView* depthStencilView_;
     /// Created blend state objects.
-    HashMap<unsigned, ID3D11BlendState*> blendStates_;
+    stl::unordered_map<unsigned, ID3D11BlendState*> blendStates_;
     /// Created depth state objects.
-    HashMap<unsigned, ID3D11DepthStencilState*> depthStates_;
+    stl::unordered_map<unsigned, ID3D11DepthStencilState*> depthStates_;
     /// Created rasterizer state objects.
-    HashMap<unsigned, ID3D11RasterizerState*> rasterizerStates_;
+    stl::unordered_map<unsigned, ID3D11RasterizerState*> rasterizerStates_;
     /// Intermediate texture for multisampled screenshots and less than whole viewport multisampled resolve, created on demand.
     ID3D11Texture2D* resolveTexture_;
     /// Bound shader resource views.

@@ -427,27 +427,27 @@ bool Model::Save(Serializer& dest) const
     for (unsigned i = 0; i < morphs_.size(); ++i)
     {
         dest.WriteString(morphs_[i].name_);
-        dest.WriteUInt(morphs_[i].buffers_.Size());
+        dest.WriteUInt(morphs_[i].buffers_.size());
 
         // Write morph vertex buffers
-        for (HashMap<unsigned, VertexBufferMorph>::ConstIterator j = morphs_[i].buffers_.Begin();
-             j != morphs_[i].buffers_.End(); ++j)
+        for (auto j = morphs_[i].buffers_.begin();
+             j != morphs_[i].buffers_.end(); ++j)
         {
-            dest.WriteUInt(j->first_);
-            dest.WriteUInt(j->second_.elementMask_);
-            dest.WriteUInt(j->second_.vertexCount_);
+            dest.WriteUInt(j->first);
+            dest.WriteUInt(j->second.elementMask_);
+            dest.WriteUInt(j->second.vertexCount_);
 
             // Base size: size of each vertex index
             unsigned vertexSize = sizeof(unsigned);
             // Add size of individual elements
-            if (j->second_.elementMask_ & MASK_POSITION)
+            if (j->second.elementMask_ & MASK_POSITION)
                 vertexSize += sizeof(Vector3);
-            if (j->second_.elementMask_ & MASK_NORMAL)
+            if (j->second.elementMask_ & MASK_NORMAL)
                 vertexSize += sizeof(Vector3);
-            if (j->second_.elementMask_ & MASK_TANGENT)
+            if (j->second.elementMask_ & MASK_TANGENT)
                 vertexSize += sizeof(Vector3);
 
-            dest.Write(j->second_.morphData_.get(), vertexSize * j->second_.vertexCount_);
+            dest.Write(j->second.morphData_.get(), vertexSize * j->second.vertexCount_);
         }
     }
 
@@ -628,7 +628,7 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
     ret->morphRangeCounts_ = morphRangeCounts_;
 
     // Deep copy vertex/index buffers
-    HashMap<VertexBuffer*, VertexBuffer*> vbMapping;
+    stl::unordered_map<VertexBuffer*, VertexBuffer*> vbMapping;
     for (auto i = vertexBuffers_.begin(); i != vertexBuffers_.end(); ++i)
     {
         VertexBuffer* origBuffer = *i;
@@ -655,7 +655,7 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
         ret->vertexBuffers_.push_back(cloneBuffer);
     }
 
-    HashMap<IndexBuffer*, IndexBuffer*> ibMapping;
+    stl::unordered_map<IndexBuffer*, IndexBuffer*> ibMapping;
     for (auto i = indexBuffers_.begin(); i != indexBuffers_.end(); ++i)
     {
         IndexBuffer* origBuffer = *i;
@@ -716,9 +716,10 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
     for (auto i = ret->morphs_.begin(); i != ret->morphs_.end(); ++i)
     {
         ModelMorph& morph = *i;
-        for (HashMap<unsigned, VertexBufferMorph>::Iterator j = morph.buffers_.Begin(); j != morph.buffers_.End(); ++j)
+        for (auto j = morph.buffers_.begin(); j !=
+            morph.buffers_.end(); ++j)
         {
-            VertexBufferMorph& vbMorph = j->second_;
+            VertexBufferMorph& vbMorph = j->second;
             if (vbMorph.dataSize_)
             {
                 stl::shared_array<unsigned char> cloneData(new unsigned char[vbMorph.dataSize_]);

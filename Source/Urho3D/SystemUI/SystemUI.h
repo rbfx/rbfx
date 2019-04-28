@@ -22,9 +22,10 @@
 #pragma once
 
 
+#include <EASTL/unordered_map.h>
+
 #include "Urho3D/Core/Object.h"
 #include "Urho3D/Math/StringHash.h"
-#include "Urho3D/Container/HashMap.h"
 #include "Urho3D/Graphics/VertexBuffer.h"
 #include "Urho3D/Graphics/IndexBuffer.h"
 #include "Urho3D/Math/Matrix4.h"

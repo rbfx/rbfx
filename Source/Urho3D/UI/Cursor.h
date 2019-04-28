@@ -135,7 +135,7 @@ protected:
     /// Current shape definition.
     stl::string shape_;
     /// Shape definitions.
-    HashMap<stl::string, CursorShapeInfo> shapeInfos_;
+    stl::unordered_map<stl::string, CursorShapeInfo> shapeInfos_;
     /// Use system default shapes flag.
     bool useSystemShapes_;
     /// OS cursor shape needs update flag.

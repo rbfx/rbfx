@@ -21,6 +21,8 @@
 //
 
 #include "../Precompiled.h"
+
+#include "../Container/Allocator.h"
 #include "../Core/Profiler.h"
 
 #include "../DebugNew.h"

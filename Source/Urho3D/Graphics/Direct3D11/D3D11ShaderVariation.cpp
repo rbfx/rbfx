@@ -364,7 +364,7 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
         elementHash_ <<= 32;
     }
 
-    HashMap<stl::string, unsigned> cbRegisterMap;
+    stl::unordered_map<stl::string, unsigned> cbRegisterMap;
 
     for (unsigned i = 0; i < shaderDesc.BoundResources; ++i)
     {
@@ -430,12 +430,12 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
     file->WriteUInt(elementHash_ >> 32);
 
     file->WriteUInt(parameters_.Size());
-    for (HashMap<StringHash, ShaderParameter>::ConstIterator i = parameters_.Begin(); i != parameters_.End(); ++i)
+    for (auto i = parameters_.Begin(); i != parameters_.End(); ++i)
     {
-        file->WriteString(i->second_.name_);
-        file->WriteUByte((unsigned char)i->second_.buffer_);
-        file->WriteUInt(i->second_.offset_);
-        file->WriteUInt(i->second_.size_);
+        file->WriteString(i->second.name_);
+        file->WriteUByte((unsigned char)i->second.buffer_);
+        file->WriteUInt(i->second.offset_);
+        file->WriteUInt(i->second.size_);
     }
 
     unsigned usedTextureUnits = 0;
@@ -464,14 +464,14 @@ void ShaderVariation::CalculateConstantBufferSizes()
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
         constantBufferSizes_[i] = 0;
 
-    for (HashMap<StringHash, ShaderParameter>::ConstIterator i = parameters_.Begin(); i != parameters_.End(); ++i)
+    for (auto i = parameters_.Begin(); i != parameters_.End(); ++i)
     {
-        if (i->second_.buffer_ < MAX_SHADER_PARAMETER_GROUPS)
+        if (i->second.buffer_ < MAX_SHADER_PARAMETER_GROUPS)
         {
-            unsigned oldSize = constantBufferSizes_[i->second_.buffer_];
-            unsigned paramEnd = i->second_.offset_ + i->second_.size_;
+            unsigned oldSize = constantBufferSizes_[i->second.buffer_];
+            unsigned paramEnd = i->second.offset_ + i->second.size_;
             if (paramEnd > oldSize)
-                constantBufferSizes_[i->second_.buffer_] = paramEnd;
+                constantBufferSizes_[i->second.buffer_] = paramEnd;
         }
     }
 }

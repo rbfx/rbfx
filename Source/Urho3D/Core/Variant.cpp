@@ -113,7 +113,7 @@ Variant& Variant::operator =(const Variant& rhs)
         break;
 
     case VAR_VARIANTMAP:
-        value_.variantMap_ = rhs.value_.variantMap_;
+        *value_.variantMap_ = *rhs.value_.variantMap_;
         break;
 
     case VAR_PTR:
@@ -204,7 +204,7 @@ bool Variant::operator ==(const Variant& rhs) const
         return value_.stringVector_ == rhs.value_.stringVector_;
 
     case VAR_VARIANTMAP:
-        return value_.variantMap_ == rhs.value_.variantMap_;
+        return *value_.variantMap_ == *rhs.value_.variantMap_;
 
     case VAR_INTRECT:
         return value_.intRect_ == rhs.value_.intRect_;
@@ -672,7 +672,7 @@ bool Variant::IsZero() const
         return value_.stringVector_.empty();
 
     case VAR_VARIANTMAP:
-        return value_.variantMap_.Empty();
+        return value_.variantMap_->empty();
 
     case VAR_INTRECT:
         return value_.intRect_ == IntRect::ZERO;
@@ -742,7 +742,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_VARIANTMAP:
-        value_.variantMap_.~VariantMap();
+        value_.variantMap_->~VariantMap();
         break;
 
     case VAR_PTR:
@@ -802,7 +802,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_VARIANTMAP:
-        new(&value_.variantMap_) VariantMap();
+        value_.variantMap_ = new VariantMap();
         break;
 
     case VAR_PTR:

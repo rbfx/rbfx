@@ -24,7 +24,6 @@
 
 #include <EASTL/sort.h>
 
-#include "../Container/Sort.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/Animation.h"
@@ -136,7 +135,7 @@ bool Animation::BeginLoad(Deserializer& source)
     animationName_ = source.ReadString();
     animationNameHash_ = animationName_;
     length_ = source.ReadFloat();
-    tracks_.Clear();
+    tracks_.clear();
 
     unsigned tracks = source.ReadUInt();
     memoryUse += tracks * sizeof(AnimationTrack);
@@ -231,10 +230,10 @@ bool Animation::Save(Serializer& dest) const
     dest.WriteFloat(length_);
 
     // Write tracks
-    dest.WriteUInt(tracks_.Size());
-    for (HashMap<StringHash, AnimationTrack>::ConstIterator i = tracks_.Begin(); i != tracks_.End(); ++i)
+    dest.WriteUInt(tracks_.size());
+    for (auto i = tracks_.begin(); i != tracks_.end(); ++i)
     {
-        const AnimationTrack& track = i->second_;
+        const AnimationTrack& track = i->second;
         dest.WriteString(track.name_);
         dest.WriteUByte(track.channelMask_);
         dest.WriteUInt(track.keyFrames_.size());
@@ -310,10 +309,10 @@ AnimationTrack* Animation::CreateTrack(const stl::string& name)
 
 bool Animation::RemoveTrack(const stl::string& name)
 {
-    HashMap<StringHash, AnimationTrack>::Iterator i = tracks_.Find(StringHash(name));
-    if (i != tracks_.End())
+    auto i = tracks_.find(StringHash(name));
+    if (i != tracks_.end())
     {
-        tracks_.Erase(i);
+        tracks_.erase(i);
         return true;
     }
     else
@@ -322,7 +321,7 @@ bool Animation::RemoveTrack(const stl::string& name)
 
 void Animation::RemoveAllTracks()
 {
-    tracks_.Clear();
+    tracks_.clear();
 }
 
 void Animation::SetTrigger(unsigned index, const AnimationTriggerPoint& trigger)
@@ -389,10 +388,10 @@ AnimationTrack* Animation::GetTrack(unsigned index)
         return nullptr;
 
     int j = 0;
-    for(HashMap<StringHash, AnimationTrack>::Iterator i = tracks_.Begin(); i != tracks_.End(); ++i)
+    for(auto i = tracks_.begin(); i != tracks_.end(); ++i)
     {
         if (j == index)
-            return &i->second_;
+            return &i->second;
 
         ++j;
     }
@@ -402,14 +401,14 @@ AnimationTrack* Animation::GetTrack(unsigned index)
 
 AnimationTrack* Animation::GetTrack(const stl::string& name)
 {
-    HashMap<StringHash, AnimationTrack>::Iterator i = tracks_.Find(StringHash(name));
-    return i != tracks_.End() ? &i->second_ : nullptr;
+    auto i = tracks_.find(StringHash(name));
+    return i != tracks_.end() ? &i->second : nullptr;
 }
 
 AnimationTrack* Animation::GetTrack(StringHash nameHash)
 {
-    HashMap<StringHash, AnimationTrack>::Iterator i = tracks_.Find(nameHash);
-    return i != tracks_.End() ? &i->second_ : nullptr;
+    auto i = tracks_.find(nameHash);
+    return i != tracks_.end() ? &i->second : nullptr;
 }
 
 AnimationTriggerPoint* Animation::GetTrigger(unsigned index)
@@ -419,7 +418,7 @@ AnimationTriggerPoint* Animation::GetTrigger(unsigned index)
 
 void Animation::SetTracks(const stl::vector<AnimationTrack>& tracks)
 {
-    tracks_.Clear();
+    tracks_.clear();
 
     for (auto itr = tracks.begin(); itr != tracks.end(); itr++)
     {

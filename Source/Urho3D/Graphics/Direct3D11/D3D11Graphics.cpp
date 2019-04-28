@@ -228,22 +228,22 @@ Graphics::~Graphics()
     impl_->vertexDeclarations_.Clear();
     impl_->allConstantBuffers_.Clear();
 
-    for (HashMap<unsigned, ID3D11BlendState*>::Iterator i = impl_->blendStates_.Begin(); i != impl_->blendStates_.End(); ++i)
+    for (auto i = impl_->blendStates_.Begin(); i != impl_->blendStates_.End(); ++i)
     {
-        URHO3D_SAFE_RELEASE(i->second_);
+        URHO3D_SAFE_RELEASE(i->second);
     }
     impl_->blendStates_.Clear();
 
-    for (HashMap<unsigned, ID3D11DepthStencilState*>::Iterator i = impl_->depthStates_.Begin(); i != impl_->depthStates_.End(); ++i)
+    for (auto i = impl_->depthStates_.Begin(); i != impl_->depthStates_.End(); ++i)
     {
-        URHO3D_SAFE_RELEASE(i->second_);
+        URHO3D_SAFE_RELEASE(i->second);
     }
     impl_->depthStates_.Clear();
 
-    for (HashMap<unsigned, ID3D11RasterizerState*>::Iterator i = impl_->rasterizerStates_.Begin();
+    for (auto i = impl_->rasterizerStates_.Begin();
          i != impl_->rasterizerStates_.End(); ++i)
     {
-        URHO3D_SAFE_RELEASE(i->second_);
+        URHO3D_SAFE_RELEASE(i->second);
     }
     impl_->rasterizerStates_.Clear();
 
@@ -1034,9 +1034,9 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     if (vertexShader_ && pixelShader_)
     {
         stl::pair<ShaderVariation*, ShaderVariation*> key = stl::make_pair(vertexShader_, pixelShader_);
-        ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Find(key);
+        auto i = impl_->shaderPrograms_.Find(key);
         if (i != impl_->shaderPrograms_.End())
-            impl_->shaderProgram_ = i->second_.Get();
+            impl_->shaderProgram_ = i->second.Get();
         else
         {
             ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
@@ -1086,134 +1086,134 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, (unsigned)(count * sizeof(float)), data);
+    buffer->SetParameter(i->second.offset_, (unsigned)(count * sizeof(float)), data);
 }
 
 void Graphics::SetShaderParameter(StringHash param, float value)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(float), &value);
+    buffer->SetParameter(i->second.offset_, sizeof(float), &value);
 }
 
 void Graphics::SetShaderParameter(StringHash param, int value)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(int), &value);
+    buffer->SetParameter(i->second.offset_, sizeof(int), &value);
 }
 
 void Graphics::SetShaderParameter(StringHash param, bool value)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(bool), &value);
+    buffer->SetParameter(i->second.offset_, sizeof(bool), &value);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Color& color)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(Color), &color);
+    buffer->SetParameter(i->second.offset_, sizeof(Color), &color);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(Vector2), &vector);
+    buffer->SetParameter(i->second.offset_, sizeof(Vector2), &vector);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetVector3ArrayParameter(i->second_.offset_, 3, &matrix);
+    buffer->SetVector3ArrayParameter(i->second.offset_, 3, &matrix);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(Vector3), &vector);
+    buffer->SetParameter(i->second.offset_, sizeof(Vector3), &vector);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(Matrix4), &matrix);
+    buffer->SetParameter(i->second.offset_, sizeof(Matrix4), &matrix);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(Vector4), &vector);
+    buffer->SetParameter(i->second.offset_, sizeof(Vector4), &vector);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
 {
-    HashMap<StringHash, ShaderParameter>::Iterator i;
+    auto i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
         return;
 
-    ConstantBuffer* buffer = i->second_.bufferPtr_;
+    ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
         impl_->dirtyConstantBuffers_.Push(buffer);
-    buffer->SetParameter(i->second_.offset_, sizeof(Matrix3x4), &matrix);
+    buffer->SetParameter(i->second.offset_, sizeof(Matrix3x4), &matrix);
 }
 
 bool Graphics::NeedParameterUpdate(ShaderParameterGroup group, const void* source)
@@ -1753,19 +1753,19 @@ ShaderProgram* Graphics::GetShaderProgram() const
 
 TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 {
-    HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Find(name);
+    auto i = textureUnits_.Find(name);
     if (i != textureUnits_.End())
-        return i->second_;
+        return i->second;
     else
         return MAX_TEXTURE_UNITS;
 }
 
 const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
-    for (HashMap<stl::string, TextureUnit>::Iterator i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
+    for (auto i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
     {
-        if (i->second_ == unit)
-            return i->first_;
+        if (i->second == unit)
+            return i->first;
     }
     return EMPTY_STRING;
 }
@@ -1871,9 +1871,9 @@ void Graphics::OnWindowMoved()
 
 void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
-    for (ShaderProgramMap::Iterator i = impl_->shaderPrograms_.Begin(); i != impl_->shaderPrograms_.End();)
+    for (auto i = impl_->shaderPrograms_.Begin(); i != impl_->shaderPrograms_.End();)
     {
-        if (i->first_.first_ == variation || i->first_.second_ == variation)
+        if (i->first.first == variation || i->first.second == variation)
             i = impl_->shaderPrograms_.Erase(i);
         else
             ++i;
@@ -1892,9 +1892,9 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
 {
     // Ensure that different shader types and index slots get unique buffers, even if the size is same
     unsigned key = type | (index << 1) | (size << 4);
-    ConstantBufferMap::Iterator i = impl_->allConstantBuffers_.Find(key);
+    auto i = impl_->allConstantBuffers_.Find(key);
     if (i != impl_->allConstantBuffers_.End())
-        return i->second_.Get();
+        return i->second.Get();
     else
     {
         stl::shared_ptr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
@@ -2442,14 +2442,13 @@ void Graphics::PrepareDraw()
             newVertexDeclarationHash += vertexShader_->GetElementHash();
             if (newVertexDeclarationHash != vertexDeclarationHash_)
             {
-                VertexDeclarationMap::Iterator i =
-                    impl_->vertexDeclarations_.Find(newVertexDeclarationHash);
+                auto i = impl_->vertexDeclarations_.Find(newVertexDeclarationHash);
                 if (i == impl_->vertexDeclarations_.End())
                 {
                     stl::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
                     i = impl_->vertexDeclarations_.Insert(stl::make_pair(newVertexDeclarationHash, newVertexDeclaration));
                 }
-                impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second_->GetInputLayout());
+                impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second->GetInputLayout());
                 vertexDeclarationHash_ = newVertexDeclarationHash;
             }
         }
@@ -2462,7 +2461,7 @@ void Graphics::PrepareDraw()
         unsigned newBlendStateHash = (unsigned)((colorWrite_ ? 1 : 0) | (alphaToCoverage_ ? 2 : 0) | (blendMode_ << 2));
         if (newBlendStateHash != impl_->blendStateHash_)
         {
-            HashMap<unsigned, ID3D11BlendState*>::Iterator i = impl_->blendStates_.Find(newBlendStateHash);
+            auto i = impl_->blendStates_.Find(newBlendStateHash);
             if (i == impl_->blendStates_.End())
             {
                 URHO3D_PROFILE("CreateBlendState");
@@ -2491,7 +2490,7 @@ void Graphics::PrepareDraw()
                 i = impl_->blendStates_.Insert(stl::make_pair(newBlendStateHash, newBlendState));
             }
 
-            impl_->deviceContext_->OMSetBlendState(i->second_, nullptr, M_MAX_UNSIGNED);
+            impl_->deviceContext_->OMSetBlendState(i->second, nullptr, M_MAX_UNSIGNED);
             impl_->blendStateHash_ = newBlendStateHash;
         }
 
@@ -2506,7 +2505,7 @@ void Graphics::PrepareDraw()
             ((stencilFail_ + stencilZFail_ * 5 + stencilPass_ * 25) << 24);
         if (newDepthStateHash != impl_->depthStateHash_ || impl_->stencilRefDirty_)
         {
-            HashMap<unsigned, ID3D11DepthStencilState*>::Iterator i = impl_->depthStates_.Find(newDepthStateHash);
+            auto i = impl_->depthStates_.Find(newDepthStateHash);
             if (i == impl_->depthStates_.End())
             {
                 URHO3D_PROFILE("CreateDepthState");
@@ -2539,7 +2538,7 @@ void Graphics::PrepareDraw()
                 i = impl_->depthStates_.Insert(stl::make_pair(newDepthStateHash, newDepthState));
             }
 
-            impl_->deviceContext_->OMSetDepthStencilState(i->second_, stencilRef_);
+            impl_->deviceContext_->OMSetDepthStencilState(i->second, stencilRef_);
             impl_->depthStateHash_ = newDepthStateHash;
         }
 
@@ -2559,7 +2558,7 @@ void Graphics::PrepareDraw()
             ((scaledDepthBias & 0x1fff) << 6) | (((int)(slopeScaledDepthBias_ * 100.0f) & 0x1fff) << 19);
         if (newRasterizerStateHash != impl_->rasterizerStateHash_)
         {
-            HashMap<unsigned, ID3D11RasterizerState*>::Iterator i = impl_->rasterizerStates_.Find(newRasterizerStateHash);
+            auto i = impl_->rasterizerStates_.Find(newRasterizerStateHash);
             if (i == impl_->rasterizerStates_.End())
             {
                 URHO3D_PROFILE("CreateRasterizerState");
@@ -2588,7 +2587,7 @@ void Graphics::PrepareDraw()
                 i = impl_->rasterizerStates_.Insert(stl::make_pair(newRasterizerStateHash, newRasterizerState));
             }
 
-            impl_->deviceContext_->RSSetState(i->second_);
+            impl_->deviceContext_->RSSetState(i->second);
             impl_->rasterizerStateHash_ = newRasterizerStateHash;
         }
 

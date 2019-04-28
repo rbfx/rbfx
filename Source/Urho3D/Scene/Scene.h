@@ -280,15 +280,15 @@ private:
     void PreloadResourcesJSON(const JSONValue& value);
 
     /// Replicated scene nodes by ID.
-    HashMap<unsigned, Node*> replicatedNodes_;
+    stl::unordered_map<unsigned, Node*> replicatedNodes_;
     /// Local scene nodes by ID.
-    HashMap<unsigned, Node*> localNodes_;
+    stl::unordered_map<unsigned, Node*> localNodes_;
     /// Replicated components by ID.
-    HashMap<unsigned, Component*> replicatedComponents_;
+    stl::unordered_map<unsigned, Component*> replicatedComponents_;
     /// Local components by ID.
-    HashMap<unsigned, Component*> localComponents_;
+    stl::unordered_map<unsigned, Component*> localComponents_;
     /// Cached tagged nodes by tag.
-    HashMap<StringHash, stl::vector<Node*> > taggedNodes_;
+    stl::unordered_map<StringHash, stl::vector<Node*> > taggedNodes_;
     /// Asynchronous loading progress.
     AsyncProgress asyncProgress_;
     /// Node and component ID resolver for asynchronous loading.
@@ -298,7 +298,7 @@ private:
     /// Required package files for networking.
     stl::vector<stl::shared_ptr<PackageFile> > requiredPackageFiles_;
     /// Registered node user variable reverse mappings.
-    HashMap<StringHash, stl::string> varNames_;
+    stl::unordered_map<StringHash, stl::string> varNames_;
     /// Nodes to check for attribute changes on the next network update.
     stl::hash_set<unsigned> networkUpdateNodes_;
     /// Components to check for attribute changes on the next network update.

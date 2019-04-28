@@ -153,13 +153,13 @@ public:
     void SetGlobalVar(StringHash key, const Variant& value);
 
     /// Return all subsystems.
-    const HashMap<StringHash, stl::shared_ptr<Object> >& GetSubsystems() const { return subsystems_; }
+    const stl::unordered_map<StringHash, stl::shared_ptr<Object> >& GetSubsystems() const { return subsystems_; }
 
     /// Return all object factories.
-    const HashMap<StringHash, stl::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
+    const stl::unordered_map<StringHash, stl::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
-    const HashMap<stl::string, stl::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
+    const stl::unordered_map<stl::string, stl::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
 
     /// Return active event sender. Null outside event handling.
     Object* GetEventSender() const;
@@ -179,28 +179,29 @@ public:
     /// Return attribute descriptions for an object type, or null if none defined.
     const stl::vector<AttributeInfo>* GetAttributes(StringHash type) const
     {
-        auto i = attributes_.Find(type);
-        return i != attributes_.End() ? &i->second_ : nullptr;
+        auto i = attributes_.find(type);
+        return i != attributes_.end() ? &i->second : nullptr;
     }
 
     /// Return network replication attribute descriptions for an object type, or null if none defined.
     const stl::vector<AttributeInfo>* GetNetworkAttributes(StringHash type) const
     {
-        auto i = networkAttributes_.Find(type);
-        return i != networkAttributes_.End() ? &i->second_ : nullptr;
+        auto i = networkAttributes_.find(type);
+        return i != networkAttributes_.end() ? &i->second : nullptr;
     }
 
     /// Return all registered attributes.
-    const HashMap<StringHash, stl::vector<AttributeInfo> >& GetAllAttributes() const { return attributes_; }
+    const stl::unordered_map<StringHash, stl::vector<AttributeInfo> >& GetAllAttributes() const { return attributes_; }
 
     /// Return event receivers for a sender and event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(Object* sender, StringHash eventType)
     {
-        HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > >::Iterator i = specificEventReceivers_.Find(sender);
-        if (i != specificEventReceivers_.End())
+        auto i = specificEventReceivers_.find(
+            sender);
+        if (i != specificEventReceivers_.end())
         {
-            HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator j = i->second_.Find(eventType);
-            return j != i->second_.End() ? j->second_ : nullptr;
+            auto j = i->second.find(eventType);
+            return j != i->second.end() ? j->second : nullptr;
         }
         else
             return nullptr;
@@ -209,8 +210,9 @@ public:
     /// Return event receivers for an event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(StringHash eventType)
     {
-        HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> >::Iterator i = eventReceivers_.Find(eventType);
-        return i != eventReceivers_.End() ? i->second_ : nullptr;
+        auto i = eventReceivers_.find(
+            eventType);
+        return i != eventReceivers_.end() ? i->second : nullptr;
     }
 
     /// Return engine subsystem.
@@ -307,17 +309,17 @@ private:
     void SetEventHandler(EventHandler* handler) { eventHandler_ = handler; }
 
     /// Object factories.
-    HashMap<StringHash, stl::shared_ptr<ObjectFactory> > factories_;
+    stl::unordered_map<StringHash, stl::shared_ptr<ObjectFactory> > factories_;
     /// Subsystems.
-    HashMap<StringHash, stl::shared_ptr<Object> > subsystems_;
+    stl::unordered_map<StringHash, stl::shared_ptr<Object> > subsystems_;
     /// Attribute descriptions per object type.
-    HashMap<StringHash, stl::vector<AttributeInfo> > attributes_;
+    stl::unordered_map<StringHash, stl::vector<AttributeInfo> > attributes_;
     /// Network replication attribute descriptions per object type.
-    HashMap<StringHash, stl::vector<AttributeInfo> > networkAttributes_;
+    stl::unordered_map<StringHash, stl::vector<AttributeInfo> > networkAttributes_;
     /// Event receivers for non-specific events.
-    HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > eventReceivers_;
+    stl::unordered_map<StringHash, stl::shared_ptr<EventReceiverGroup> > eventReceivers_;
     /// Event receivers for specific senders' events.
-    HashMap<Object*, HashMap<StringHash, stl::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
+    stl::unordered_map<Object*, stl::unordered_map<StringHash, stl::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
     /// Event sender stack.
     stl::vector<Object*> eventSenders_;
     /// Event data stack.
@@ -325,7 +327,7 @@ private:
     /// Active event handler. Not stored in a stack for performance reasons; is needed only in esoteric cases.
     EventHandler* eventHandler_;
     /// Object categories.
-    HashMap<stl::string, stl::vector<StringHash> > objectCategories_;
+    stl::unordered_map<stl::string, stl::vector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
 

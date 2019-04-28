@@ -500,21 +500,21 @@ private:
     /// Reusable occlusion buffers.
     stl::vector<stl::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
     /// Shadow maps by resolution.
-    HashMap<int, stl::vector<stl::shared_ptr<Texture2D> > > shadowMaps_;
+    stl::unordered_map<int, stl::vector<stl::shared_ptr<Texture2D> > > shadowMaps_;
     /// Shadow map dummy color buffers by resolution.
-    HashMap<int, stl::shared_ptr<Texture2D> > colorShadowMaps_;
+    stl::unordered_map<int, stl::shared_ptr<Texture2D> > colorShadowMaps_;
     /// Shadow map allocations by resolution.
-    HashMap<int, stl::vector<Light*> > shadowMapAllocations_;
+    stl::unordered_map<int, stl::vector<Light*> > shadowMapAllocations_;
     /// Instance of shadow map filter
     Object* shadowMapFilterInstance_{};
     /// Function pointer of shadow map filter
     ShadowMapFilter shadowMapFilter_{};
     /// Screen buffers by resolution and format.
-    HashMap<unsigned long long, stl::vector<stl::shared_ptr<Texture> > > screenBuffers_;
+    stl::unordered_map<unsigned long long, stl::vector<stl::shared_ptr<Texture> > > screenBuffers_;
     /// Current screen buffer allocations by resolution and format.
-    HashMap<unsigned long long, unsigned> screenBufferAllocations_;
+    stl::unordered_map<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
-    HashMap<stl::pair<Light*, Camera*>, Rect> lightScissorCache_;
+    stl::unordered_map<stl::pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
     stl::vector<stl::shared_ptr<Viewport> > viewports_;
     /// Render surface viewports queued for update.
@@ -522,7 +522,7 @@ private:
     /// Views that have been processed this frame.
     stl::vector<stl::weak_ptr<View> > views_;
     /// Prepared views by culling camera.
-    HashMap<Camera*, stl::weak_ptr<View> > preparedViews_;
+    stl::unordered_map<Camera*, stl::weak_ptr<View> > preparedViews_;
     /// Octrees that have been updated during the frame.
     stl::hash_set<Octree*> updatedOctrees_;
     /// Techniques for which missing shader error has been displayed.

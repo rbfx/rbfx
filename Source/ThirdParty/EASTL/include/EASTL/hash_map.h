@@ -285,7 +285,21 @@ namespace eastl
 			return (*base_type::DoInsertKey(true_type(), eastl::move(key)).first).second;
 		}
 
+#ifdef URHO3D_HASH_DEBUG
+		/// Populate the map using variadic template. This handles the base case.
+		this_type& populate(const key_type& key, const mapped_type& value)
+		{
+			this->operator [](key) = value;
+			return *this;
+		}
 
+		/// Populate the map using variadic template.
+		template <typename... Args> this_type& populate(const key_type& key, const mapped_type& value, const Args&... args)
+		{
+			this->operator [](key) = value;
+			return populate(args...);
+		}
+#endif
 	}; // hash_map
 
 

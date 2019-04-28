@@ -22,11 +22,11 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-
-#include "../Container/HashMap.h"
-#include "../Core/Mutex.h"
 #include <EASTL/shared_ptr.h>
+#include <EASTL/unique_ptr.h>
+#include <EASTL/unordered_map.h>
+
+#include "../Core/Mutex.h"
 #include "../Container/RefCounted.h"
 #include "../Core/Thread.h"
 #include "../Math/StringHash.h"
@@ -82,7 +82,7 @@ private:
     /// Mutex for thread-safe access to the background load queue.
     mutable Mutex backgroundLoadMutex_;
     /// Resources that are queued for background loading.
-    HashMap<stl::pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
+    stl::unordered_map<stl::pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
 };
 
 }

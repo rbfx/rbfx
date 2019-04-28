@@ -23,93 +23,53 @@
 #pragma once
 
 #include <cstddef>
-#include <EASTL/string.h>
 
-namespace Urho3D
+#include <EASTL/utility.h>
+#include <EASTL/weak_ptr.h>
+
+namespace eastl
 {
 
-/// Temporary
-template <class T> unsigned MakeHash(const stl::basic_string<T>& value)
+template <class T, class Enabled> struct hash;
+
+namespace detail
 {
-    return stl::hash<stl::basic_string<T>>()(value);
+template<typename T, typename = void> struct is_hashable : std::false_type { };
+template<typename T> struct is_hashable<T, decltype(void(&T::ToHash))> : std::true_type { };
 }
 
-/// Pointer hash function.
-template <class T> unsigned MakeHash(T* value)
+template <typename T>
+struct hash<T, typename enable_if<detail::is_hashable<T>::value>::type>
 {
-    return (unsigned)((size_t)value / sizeof(T));
-}
+    size_t operator()(const T& value) const
+    {
+        return value.ToHash();
+    }
+};
 
-/// Const pointer hash function.
-template <class T> unsigned MakeHash(const T* value)
+template <class T, class U, class Enabled> struct hash<pair<T, U>, Enabled>
 {
-    return (unsigned)((size_t)value / sizeof(T));
-}
+    size_t operator()(const pair<T, U>& s) const
+    {
+        return hash<T>()(s.first) ^ hash<U>()(s.second) * 16777619;
+    }
+};
 
-/// Generic hash function.
-template <class T> unsigned MakeHash(const T& value)
+template <class U>
+struct hash<weak_ptr<U>>
 {
-    return value.ToHash();
-}
+    size_t operator()(const weak_ptr<U>& value) const
+    {
+        return (size_t)(void*)value.get();
+    }
+};
 
-/// Void pointer hash function.
-template <> inline unsigned MakeHash(void* value)
+template <class T, class U> struct hash<pair<T, U>>
 {
-    return (unsigned)(size_t)value;
-}
-
-/// Const void pointer hash function.
-template <> inline unsigned MakeHash(const void* value)
+size_t operator()(const pair<T, U>& s) const
 {
-    return (unsigned)(size_t)value;
+    return hash<T>()(s.first) ^ hash<U>()(s.second) * 16777619;
 }
-
-/// Long long hash function.
-template <> inline unsigned MakeHash(const long long& value)
-{
-    return (unsigned)((value >> 32u) | (value & 0xffffffffu));
-}
-
-/// Unsigned long long hash function.
-template <> inline unsigned MakeHash(const unsigned long long& value)
-{
-    return (unsigned)((value >> 32u) | (value & 0xffffffffu));
-}
-
-/// Int hash function.
-template <> inline unsigned MakeHash(const int& value)
-{
-    return (unsigned)value;
-}
-
-/// Unsigned hash function.
-template <> inline unsigned MakeHash(const unsigned& value)
-{
-    return value;
-}
-
-/// Short hash function.
-template <> inline unsigned MakeHash(const short& value)
-{
-    return (unsigned)value;
-}
-
-/// Unsigned short hash function.
-template <> inline unsigned MakeHash(const unsigned short& value)
-{
-    return value;
-}
-
-/// Char hash function.
-template <> inline unsigned MakeHash(const char& value)
-{
-    return (unsigned)value;
-}
-
-/// Unsigned char hash function.
-template <> inline unsigned MakeHash(const unsigned char& value)
-{
-    return value;
-}
+};
 
 }

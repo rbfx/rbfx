@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../Graphics/DebugRenderer.h"
@@ -1009,7 +1008,7 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
     bool recursive)
 {
     // Make sure nodes are not included twice
-    if (stl::contains(processedNodes, node))
+    if (processedNodes.contains(node))
         return;
     // Exclude obstacles and crowd agents from consideration
     if (node->HasComponent<Obstacle>() || node->HasComponent<CrowdAgent>())

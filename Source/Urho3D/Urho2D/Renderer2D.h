@@ -122,15 +122,15 @@ private:
     /// View frame info for current frame.
     FrameInfo frame_;
     /// View batch info.
-    HashMap<Camera*, ViewBatchInfo2D> viewBatchInfos_;
+    stl::unordered_map<Camera*, ViewBatchInfo2D> viewBatchInfos_;
     /// Frustum for current frame.
     Frustum frustum_;
     /// View mask of current camera for visibility checking.
     unsigned viewMask_;
     /// Cached materials.
-    HashMap<Texture2D*, HashMap<int, stl::shared_ptr<Material> > > cachedMaterials_;
+    stl::unordered_map<Texture2D*, stl::unordered_map<int, stl::shared_ptr<Material> > > cachedMaterials_;
     /// Cached techniques per blend mode.
-    HashMap<int, stl::shared_ptr<Technique> > cachedTechniques_;
+    stl::unordered_map<int, stl::shared_ptr<Technique> > cachedTechniques_;
 };
 
 }

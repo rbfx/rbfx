@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../Container/Utilities.h"
+#include "Container/Utility.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../IO/File.h"
@@ -351,27 +351,27 @@ void Connection::SendRemoteEvents()
 
 void Connection::SendPackages()
 {
-    while (!uploads_.Empty())
+    while (!uploads_.empty())
     {
         unsigned char buffer[PACKAGE_FRAGMENT_SIZE];
 
-        for (HashMap<StringHash, PackageUpload>::Iterator i = uploads_.Begin(); i != uploads_.End();)
+        for (auto i = uploads_.begin(); i != uploads_.end();)
         {
-            HashMap<StringHash, PackageUpload>::Iterator current = i++;
-            PackageUpload& upload = current->second_;
+            auto current = i++;
+            PackageUpload& upload = current->second;
             auto fragmentSize =
                 (unsigned)Min((int)(upload.file_->GetSize() - upload.file_->GetPosition()), (int)PACKAGE_FRAGMENT_SIZE);
             upload.file_->Read(buffer, fragmentSize);
 
             msg_.Clear();
-            msg_.WriteStringHash(current->first_);
+            msg_.WriteStringHash(current->first);
             msg_.WriteUInt(upload.fragment_++);
             msg_.Write(buffer, fragmentSize);
             SendMessage(MSG_PACKAGEDATA, true, false, msg_);
 
             // Check if upload finished
             if (upload.fragment_ == upload.totalFragments_)
-                uploads_.Erase(current);
+                uploads_.erase(current);
         }
     }
 }
@@ -382,33 +382,33 @@ void Connection::ProcessPendingLatestData()
         return;
 
     // Iterate through pending node data and see if we can find the nodes now
-    for (auto i = nodeLatestData_.Begin(); i != nodeLatestData_.End();)
+    for (auto i = nodeLatestData_.begin(); i != nodeLatestData_.end();)
     {
         auto current = i++;
-        Node* node = scene_->GetNode(current->first_);
+        Node* node = scene_->GetNode(current->first);
         if (node)
         {
-            MemoryBuffer msg(current->second_);
+            MemoryBuffer msg(current->second);
             msg.ReadNetID(); // Skip the node ID
             node->ReadLatestDataUpdate(msg);
             // ApplyAttributes() is deliberately skipped, as Node has no attributes that require late applying.
             // Furthermore it would propagate to components and child nodes, which is not desired in this case
-            nodeLatestData_.Erase(current);
+            nodeLatestData_.erase(current);
         }
     }
 
     // Iterate through pending component data and see if we can find the components now
-    for (auto i = componentLatestData_.Begin(); i != componentLatestData_.End();)
+    for (auto i = componentLatestData_.begin(); i != componentLatestData_.end();)
     {
         auto current = i++;
-        Component* component = scene_->GetComponent(current->first_);
+        Component* component = scene_->GetComponent(current->first);
         if (component)
         {
-            MemoryBuffer msg(current->second_);
+            MemoryBuffer msg(current->second);
             msg.ReadNetID(); // Skip the component ID
             if (component->ReadLatestDataUpdate(msg))
                 component->ApplyAttributes();
-            componentLatestData_.Erase(current);
+            componentLatestData_.erase(current);
         }
     }
 }
@@ -501,9 +501,9 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     sceneFileName_ = msg.ReadString();
 
     // Clear previous pending latest data and package downloads if any
-    nodeLatestData_.Clear();
-    componentLatestData_.Clear();
-    downloads_.Clear();
+    nodeLatestData_.clear();
+    componentLatestData_.clear();
+    downloads_.clear();
 
     // In case we have joined other scenes in this session, remove first all downloaded package files from the resource system
     // to prevent resource conflicts
@@ -527,7 +527,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     }
 
     // If no downloads were queued, can load the scene directly
-    if (downloads_.Empty())
+    if (downloads_.empty())
         OnPackagesReady();
 }
 
@@ -666,7 +666,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
             Node* node = scene_->GetNode(nodeID);
             if (node)
                 node->Remove();
-            nodeLatestData_.Erase(nodeID);
+            nodeLatestData_.erase(nodeID);
         }
         break;
 
@@ -743,7 +743,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
             Component* component = scene_->GetComponent(componentID);
             if (component)
                 component->Remove();
-            componentLatestData_.Erase(componentID);
+            componentLatestData_.erase(componentID);
         }
         break;
 
@@ -782,7 +782,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     StringHash nameHash(name);
 
                     // Do not restart upload if already exists
-                    if (uploads_.Contains(nameHash))
+                    if (uploads_.contains(nameHash))
                     {
                         URHO3D_LOGWARNING("Received a request for package " + name + " already in transfer");
                         return;
@@ -823,13 +823,13 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
         {
             StringHash nameHash = msg.ReadStringHash();
 
-            HashMap<StringHash, PackageDownload>::Iterator i = downloads_.Find(nameHash);
+            auto i = downloads_.find(nameHash);
             // In case of being unable to create the package file into the cache, we will still receive all data from the server.
             // Simply disregard it
-            if (i == downloads_.End())
+            if (i == downloads_.end())
                 return;
 
-            PackageDownload& download = i->second_;
+            PackageDownload& download = i->second;
 
             // If no further data, this is an error reply
             if (msg.IsEof())
@@ -871,12 +871,12 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                 GetSubsystem<ResourceCache>()->AddPackageFile(download.file_->GetName(), 0);
 
                 // Then start the next download if there are more
-                downloads_.Erase(i);
-                if (downloads_.Empty())
+                downloads_.erase(i);
+                if (downloads_.empty())
                     OnPackagesReady();
                 else
                 {
-                    PackageDownload& nextDownload = downloads_.Begin()->second_;
+                    PackageDownload& nextDownload = downloads_.begin()->second;
 
                     URHO3D_LOGINFO("Requesting package " + nextDownload.name_ + " from server");
                     msg_.Clear();
@@ -1083,25 +1083,27 @@ stl::string Connection::ToString() const
 
 unsigned Connection::GetNumDownloads() const
 {
-    return downloads_.Size();
+    return downloads_.size();
 }
 
 const stl::string& Connection::GetDownloadName() const
 {
-    for (HashMap<StringHash, PackageDownload>::ConstIterator i = downloads_.Begin(); i != downloads_.End(); ++i)
+    for (auto i = downloads_.begin(); i !=
+        downloads_.end(); ++i)
     {
-        if (i->second_.initiated_)
-            return i->second_.name_;
+        if (i->second.initiated_)
+            return i->second.name_;
     }
     return EMPTY_STRING;
 }
 
 float Connection::GetDownloadProgress() const
 {
-    for (HashMap<StringHash, PackageDownload>::ConstIterator i = downloads_.Begin(); i != downloads_.End(); ++i)
+    for (auto i = downloads_.begin(); i !=
+        downloads_.end(); ++i)
     {
-        if (i->second_.initiated_)
-            return (float)i->second_.receivedFragments_.size() / (float)i->second_.totalFragments_;
+        if (i->second.initiated_)
+            return (float)i->second.receivedFragments_.size() / (float)i->second.totalFragments_;
     }
     return 1.0f;
 }
@@ -1156,11 +1158,11 @@ void Connection::ProcessNode(unsigned nodeID)
         return;
 
     // Find replication state for the node
-    HashMap<unsigned, NodeReplicationState>::Iterator i = sceneState_.nodeStates_.Find(nodeID);
-    if (i != sceneState_.nodeStates_.End())
+    auto i = sceneState_.nodeStates_.find(nodeID);
+    if (i != sceneState_.nodeStates_.end())
     {
         // Replication state found: the node is either be existing or removed
-        Node* node = i->second_.node_;
+        Node* node = i->second.node_;
         if (!node)
         {
             msg_.Clear();
@@ -1170,10 +1172,10 @@ void Connection::ProcessNode(unsigned nodeID)
             // would be enough. However, this may be better due to the client not possibly having updated parenting
             // information at the time of receiving this message
             SendMessage(MSG_REMOVENODE, true, true, msg_);
-            sceneState_.nodeStates_.Erase(nodeID);
+            sceneState_.nodeStates_.erase(nodeID);
         }
         else
-            ProcessExistingNode(node, i->second_);
+            ProcessExistingNode(node, i->second);
     }
     else
     {
@@ -1214,11 +1216,11 @@ void Connection::ProcessNewNode(Node* node)
 
     // Write node's user variables
     const VariantMap& vars = node->GetVars();
-    msg_.WriteVLE(vars.Size());
-    for (VariantMap::ConstIterator i = vars.Begin(); i != vars.End(); ++i)
+    msg_.WriteVLE(vars.size());
+    for (auto i = vars.begin(); i != vars.end(); ++i)
     {
-        msg_.WriteStringHash(i->first_);
-        msg_.WriteVariant(i->second_);
+        msg_.WriteStringHash(i->first);
+        msg_.WriteVariant(i->second);
     }
 
     // Write node's components
@@ -1307,11 +1309,11 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             const VariantMap& vars = node->GetVars();
             for (auto i = nodeState.dirtyVars_.begin(); i != nodeState.dirtyVars_.end(); ++i)
             {
-                VariantMap::ConstIterator j = vars.Find(*i);
-                if (j != vars.End())
+                auto j = vars.find(*i);
+                if (j != vars.end())
                 {
-                    msg_.WriteStringHash(j->first_);
-                    msg_.WriteVariant(j->second_);
+                    msg_.WriteStringHash(j->first);
+                    msg_.WriteVariant(j->second);
                 }
                 else
                 {
@@ -1330,20 +1332,20 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     }
 
     // Check for removed or changed components
-    for (HashMap<unsigned, ComponentReplicationState>::Iterator i = nodeState.componentStates_.Begin();
-         i != nodeState.componentStates_.End();)
+    for (auto i = nodeState.componentStates_.begin();
+         i != nodeState.componentStates_.end();)
     {
-        HashMap<unsigned, ComponentReplicationState>::Iterator current = i++;
-        ComponentReplicationState& componentState = current->second_;
+        auto current = i++;
+        ComponentReplicationState& componentState = current->second;
         Component* component = componentState.component_;
         if (!component)
         {
             // Removed component
             msg_.Clear();
-            msg_.WriteNetID(current->first_);
+            msg_.WriteNetID(current->first);
 
             SendMessage(MSG_REMOVECOMPONENT, true, true, msg_);
-            nodeState.componentStates_.Erase(current);
+            nodeState.componentStates_.erase(current);
         }
         else
         {
@@ -1389,7 +1391,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     }
 
     // Check for new components
-    if (nodeState.componentStates_.Size() != node->GetNumNetworkComponents())
+    if (nodeState.componentStates_.size() != node->GetNumNetworkComponents())
     {
         const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
         for (unsigned i = 0; i < components.size(); ++i)
@@ -1399,8 +1401,9 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             if (!component->IsReplicated())
                 continue;
 
-            HashMap<unsigned, ComponentReplicationState>::Iterator j = nodeState.componentStates_.Find(component->GetID());
-            if (j == nodeState.componentStates_.End())
+            auto j = nodeState.componentStates_.find(
+                component->GetID());
+            if (j == nodeState.componentStates_.end())
             {
                 // New component
                 ComponentReplicationState& componentState = nodeState.componentStates_[component->GetID()];
@@ -1498,7 +1501,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
 void Connection::RequestPackage(const stl::string& name, unsigned fileSize, unsigned checksum)
 {
     StringHash nameHash(name);
-    if (downloads_.Contains(nameHash))
+    if (downloads_.contains(nameHash))
         return; // Download already exists
 
     PackageDownload& download = downloads_[nameHash];
@@ -1507,7 +1510,7 @@ void Connection::RequestPackage(const stl::string& name, unsigned fileSize, unsi
     download.checksum_ = checksum;
 
     // Start download now only if no existing downloads, else wait for the existing ones to finish
-    if (downloads_.Size() == 1)
+    if (downloads_.size() == 1)
     {
         URHO3D_LOGINFO("Requesting package " + name + " from server");
         msg_.Clear();
@@ -1539,7 +1542,7 @@ void Connection::OnPackageDownloadFailed(const stl::string& name)
 {
     URHO3D_LOGERROR("Download of package " + name + " failed");
     // As one package failed, we can not join the scene in any case. Clear the downloads
-    downloads_.Clear();
+    downloads_.clear();
     OnSceneLoadFailed();
 }
 

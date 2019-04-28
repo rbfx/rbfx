@@ -181,7 +181,7 @@ struct URHO3D_API RenderPathCommand
     /// Textures.
     stl::string textureNames_[MAX_TEXTURE_UNITS];
     /// %Shader parameters.
-    HashMap<StringHash, Variant> shaderParameters_;
+    stl::unordered_map<StringHash, Variant> shaderParameters_;
     /// Output rendertarget names and faces.
     stl::vector<stl::pair<stl::string, CubeMapFace> > outputs_;
     /// Depth-stencil output name.

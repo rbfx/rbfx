@@ -47,8 +47,8 @@ struct ResourcePathLock
 
     ResourcePathLock(ResourcePathLock&& other) noexcept
     {
-        Swap(pipeline_, other.pipeline_);
-        Swap(resourcePath_, other.resourcePath_);
+        stl::swap(pipeline_, other.pipeline_);
+        stl::swap(resourcePath_, other.resourcePath_);
     }
 
 protected:
@@ -122,7 +122,7 @@ protected:
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///
-    HashMap<stl::string, CacheEntry> cacheInfo_{};
+    stl::unordered_map<stl::string, CacheEntry> cacheInfo_{};
     ///
     Mutex lock_{};
     ///

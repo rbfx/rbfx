@@ -43,7 +43,7 @@
 namespace Urho3D
 {
 
-static HashMap<ContentType, stl::string> contentToTabType{
+static stl::unordered_map<ContentType, stl::string> contentToTabType{
     {CTYPE_SCENE, "SceneTab"},
     {CTYPE_UILAYOUT, "UITab"},
 };
@@ -94,10 +94,10 @@ bool ResourceTab::RenderWindowContent()
     if (action == RBR_ITEM_OPEN)
     {
         stl::string selected = resourcePath_ + resourceSelection_;
-        auto it = contentToTabType.Find(GetContentType(selected));
-        if (it != contentToTabType.End())
+        auto it = contentToTabType.find(GetContentType(selected));
+        if (it != contentToTabType.end())
         {
-            if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second_))
+            if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second))
             {
                 if (tab->IsUtility())
                 {
@@ -110,7 +110,7 @@ bool ResourceTab::RenderWindowContent()
                     // Tabs that can be opened multiple times.
                     if ((tab = GetSubsystem<Editor>()->GetTabByResource(selected)))
                         tab->Activate();
-                    else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
+                    else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second)))
                     {
                         tab->LoadResource(selected);
                         tab->AutoPlace();
@@ -118,7 +118,7 @@ bool ResourceTab::RenderWindowContent()
                     }
                 }
             }
-            else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second_)))
+            else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second)))
             {
                 // Tabs that can be opened multiple times.
                 tab->LoadResource(selected);

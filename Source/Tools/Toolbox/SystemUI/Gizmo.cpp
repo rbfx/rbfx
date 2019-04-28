@@ -153,7 +153,7 @@ bool Gizmo::Manipulate(const Camera* camera, const stl::vector<stl::weak_ptr<Nod
             if (operation_ == GIZMOOP_SCALE)
             {
                 // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
-                if (!nodeScaleStart_.Contains(node))
+                if (!nodeScaleStart_.contains(node))
                     nodeScaleStart_[node] = node->GetScale();
                 node->SetScale(nodeScaleStart_[node] * delta.Scale());
             }
@@ -183,22 +183,22 @@ bool Gizmo::Manipulate(const Camera* camera, const stl::vector<stl::weak_ptr<Nod
                     continue;
                 }
 
-                auto it = initialTransforms_.Find(node.get());
-                if (it == initialTransforms_.End())
+                auto it = initialTransforms_.find(node.get());
+                if (it == initialTransforms_.end())
                 {
                     URHO3D_LOGWARNINGF("Gizmo has no record of initial node transform. List of transformed nodes "
                         "changed mid-manipulation?");
                     continue;
                 }
 
-                SendEvent(E_GIZMONODEMODIFIED, P_NODE, node.get(), P_OLDTRANSFORM, it->second_,
+                SendEvent(E_GIZMONODEMODIFIED, P_NODE, node.get(), P_OLDTRANSFORM, it->second,
                     P_NEWTRANSFORM, node->GetTransform());
             }
         }
         wasActive_ = false;
-        initialTransforms_.Clear();
-        if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.Empty())
-            nodeScaleStart_.Clear();
+        initialTransforms_.clear();
+        if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.empty())
+            nodeScaleStart_.clear();
     }
     return false;
 }

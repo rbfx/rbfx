@@ -155,7 +155,7 @@ void Localization::Reset()
 {
     languages_.clear();
     languageIndex_ = -1;
-    strings_.Clear();
+    strings_.clear();
 }
 
 void Localization::LoadJSONFile(const stl::string& name, const stl::string language)
@@ -174,27 +174,27 @@ void Localization::LoadJSONFile(const stl::string& name, const stl::string langu
 
 void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
 {
-    for (JSONObject::ConstIterator i = source.Begin(); i != source.End(); ++i)
+    for (const auto& i : source)
     {
-        stl::string id = i->first_;
+        stl::string id = i.first;
         if (id.empty())
         {
             URHO3D_LOGWARNING("Localization::LoadMultipleLanguageJSON(source): string ID is empty");
             continue;
         }
-        const JSONValue& value = i->second_;
+        const JSONValue& value = i.second;
         if (value.IsObject())
         {
-            for (JSONObject::ConstIterator j = value.Begin(); j != value.End(); ++j)
+            for (const auto& j : value)
             {
-                const stl::string &lang = j->first_;
+                const stl::string &lang = j.first;
                 if (lang.empty())
                 {
                     URHO3D_LOGWARNING(
                             "Localization::LoadMultipleLanguageJSON(source): language name is empty, string ID=\"" + id + "\"");
                     continue;
                 }
-                const stl::string &string = j->second_.GetString();
+                const stl::string &string = j.second.GetString();
                 if (string.empty())
                 {
                     URHO3D_LOGWARNING(
@@ -222,15 +222,15 @@ void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
 
 void Localization::LoadSingleLanguageJSON(const JSONValue& source, const stl::string& language)
 {
-    for (JSONObject::ConstIterator i = source.Begin(); i != source.End(); ++i)
+    for (const auto& i : source)
     {
-        stl::string id = i->first_;
+        stl::string id = i.first;
         if (id.empty())
         {
             URHO3D_LOGWARNING("Localization::LoadSingleLanguageJSON(source, language): string ID is empty");
             continue;
         }
-        const JSONValue& value = i->second_;
+        const JSONValue& value = i.second;
         if (value.IsString())
         {
             if (value.GetString().empty())

@@ -157,7 +157,7 @@ void CameraViewport::RebuildAttributes()
 
     // PostProcess effects are special. One file may contain multiple effects that can be enabled or disabled.
     {
-        effects_.Clear();
+        effects_.clear();
         for (const auto& dir: GetCache()->GetResourceDirs())
         {
             stl::vector<stl::string> effects;
@@ -182,7 +182,7 @@ void CameraViewport::RebuildAttributes()
                         continue;
                     }
 
-                    if (effects_.Find(tag) != effects_.End())
+                    if (effects_.find(tag) != effects_.end())
                         continue;
 
                     effects_[tag] = resourcePath + effectFileName;
@@ -190,14 +190,14 @@ void CameraViewport::RebuildAttributes()
             }
         }
 
-        StringVector tags = effects_.Keys();
+        StringVector tags = effects_.keys();
         stl::quick_sort(tags.begin(), tags.end());
 
         for (auto& effect : effects_)
         {
             auto getter = [this, &effect](const CameraViewport&, Variant& value) {
                 if (RenderPath* renderPath = viewport_->GetRenderPath())
-                    value = renderPath->IsEnabled(effect.first_);
+                    value = renderPath->IsEnabled(effect.first);
                 else
                     value = false;
             };
@@ -206,11 +206,11 @@ void CameraViewport::RebuildAttributes()
                 RenderPath* path = viewport_->GetRenderPath();
                 if (!path)
                     return;
-                if (!path->IsAdded(effect.first_))
-                    path->Append(GetCache()->GetResource<XMLFile>(effect.second_));
-                path->SetEnabled(effect.first_, value.GetBool());
+                if (!path->IsAdded(effect.first))
+                    path->Append(GetCache()->GetResource<XMLFile>(effect.second));
+                path->SetEnabled(effect.first, value.GetBool());
             };
-            URHO3D_CUSTOM_ATTRIBUTE(effect.first_.c_str(), getter, setter, bool, false, AM_DEFAULT);
+            URHO3D_CUSTOM_ATTRIBUTE(effect.first.c_str(), getter, setter, bool, false, AM_DEFAULT);
         }
     }
 
@@ -231,11 +231,11 @@ RenderPath* CameraViewport::RebuildRenderPath()
 
         for (const auto& effect : effects_)
         {
-            if (oldRenderPath->IsEnabled(effect.first_))
+            if (oldRenderPath->IsEnabled(effect.first))
             {
-                if (!newRenderPath->IsAdded(effect.first_))
-                    newRenderPath->Append(GetCache()->GetResource<XMLFile>(effect.second_));
-                newRenderPath->SetEnabled(effect.first_, true);
+                if (!newRenderPath->IsAdded(effect.first))
+                    newRenderPath->Append(GetCache()->GetResource<XMLFile>(effect.second));
+                newRenderPath->SetEnabled(effect.first, true);
             }
         }
 
@@ -271,11 +271,11 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
 
         for (const auto& effect : effects_)
         {
-            if (oldRenderPath->IsEnabled(effect.first_))
+            if (oldRenderPath->IsEnabled(effect.first))
             {
-                if (!newRenderPath->IsAdded(effect.first_))
-                    newRenderPath->Append(GetCache()->GetResource<XMLFile>(effect.second_));
-                newRenderPath->SetEnabled(effect.first_, true);
+                if (!newRenderPath->IsAdded(effect.first))
+                    newRenderPath->Append(GetCache()->GetResource<XMLFile>(effect.second));
+                newRenderPath->SetEnabled(effect.first, true);
             }
         }
 

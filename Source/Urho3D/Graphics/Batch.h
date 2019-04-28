@@ -242,16 +242,16 @@ public:
     unsigned GetNumInstances() const;
 
     /// Return whether the batch group is empty.
-    bool IsEmpty() const { return batches_.empty() && batchGroups_.Empty(); }
+    bool IsEmpty() const { return batches_.empty() && batchGroups_.empty(); }
 
     /// Instanced draw calls.
-    HashMap<BatchGroupKey, BatchGroup> batchGroups_;
+    stl::unordered_map<BatchGroupKey, BatchGroup> batchGroups_;
     /// Shader remapping table for 2-pass state and distance sort.
-    HashMap<unsigned, unsigned> shaderRemapping_;
+    stl::unordered_map<unsigned, unsigned> shaderRemapping_;
     /// Material remapping table for 2-pass state and distance sort.
-    HashMap<unsigned short, unsigned short> materialRemapping_;
+    stl::unordered_map<unsigned short, unsigned short> materialRemapping_;
     /// Geometry remapping table for 2-pass state and distance sort.
-    HashMap<unsigned short, unsigned short> geometryRemapping_;
+    stl::unordered_map<unsigned short, unsigned short> geometryRemapping_;
 
     /// Unsorted non-instanced draw calls.
     stl::vector<Batch> batches_;

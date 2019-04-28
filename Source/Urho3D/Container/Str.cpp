@@ -22,12 +22,12 @@
 
 #include "../Precompiled.h"
 
+#include "../Container/Str.h"
 #include "../IO/Log.h"
 
 #include <cstdio>
 
 #include "../DebugNew.h"
-#include "Str.h"
 
 
 #ifdef _MSC_VER

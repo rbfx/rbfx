@@ -24,8 +24,9 @@
 
 #include <EASTL/unique_ptr.h>
 
-#include "../Container/HashMap.h"
 #include "../Container/Str.h"
+#include "../Core/Variant.h"
+#include "../Math/StringHash.h"
 
 namespace Urho3D
 {

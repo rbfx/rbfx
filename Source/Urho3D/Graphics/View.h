@@ -404,7 +404,7 @@ private:
     /// Drawables that limit their maximum light count.
     stl::hash_set<Drawable*> maxLightsDrawables_;
     /// Rendertargets defined by the renderpath.
-    HashMap<StringHash, Texture*> renderTargets_;
+    stl::unordered_map<StringHash, Texture*> renderTargets_;
     /// Intermediate light processing results.
     stl::vector<LightQueryResult> lightQueryResults_;
     /// Info for scene render passes defined by the renderpath.
@@ -412,9 +412,9 @@ private:
     /// Per-pixel light queues.
     stl::vector<LightBatchQueue> lightQueues_;
     /// Per-vertex light queues.
-    HashMap<unsigned long long, LightBatchQueue> vertexLightQueues_;
+    stl::unordered_map<unsigned long long, LightBatchQueue> vertexLightQueues_;
     /// Batch queues by pass index.
-    HashMap<unsigned, BatchQueue> batchQueues_;
+    stl::unordered_map<unsigned, BatchQueue> batchQueues_;
     /// Index of the GBuffer pass.
     unsigned gBufferPassIndex_{};
     /// Index of the opaque forward base pass.

@@ -62,7 +62,7 @@ public:
     /// Set resource name of scene that will be executed first by the player.
     void SetDefaultSceneName(const stl::string& defaultScene) { defaultScene_ = defaultScene; }
     /// Returns a map of default engine settings that will be applied on the start of player application.
-    HashMap<stl::string, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
+    stl::unordered_map<stl::string, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
     ///
     Pipeline& GetPipeline() { return pipeline_; }
 
@@ -84,7 +84,7 @@ protected:
     /// Resource name of scene that will be started by player first.
     stl::string defaultScene_;
     ///
-    HashMap<stl::string, Variant> engineParameters_;
+    stl::unordered_map<stl::string, Variant> engineParameters_;
     ///
     Timer saveProjectTimer_;
 };

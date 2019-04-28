@@ -27,7 +27,6 @@
 
 #include "../Audio/SoundStream.h"
 #include "../Core/Mutex.h"
-#include "../Container/Pair.h"
 
 namespace Urho3D
 {

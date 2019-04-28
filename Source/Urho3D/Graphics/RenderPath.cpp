@@ -245,7 +245,7 @@ void RenderPathCommand::SetShaderParameter(const stl::string& name, const Varian
 
 void RenderPathCommand::RemoveShaderParameter(const stl::string& name)
 {
-    shaderParameters_.Erase(name);
+    shaderParameters_.erase(name);
 }
 
 void RenderPathCommand::SetNumOutputs(unsigned num)
@@ -291,8 +291,8 @@ const stl::string& RenderPathCommand::GetTextureName(TextureUnit unit) const
 
 const Variant& RenderPathCommand::GetShaderParameter(const stl::string& name) const
 {
-    HashMap<StringHash, Variant>::ConstIterator i = shaderParameters_.Find(name);
-    return i != shaderParameters_.End() ? i->second_ : Variant::EMPTY;
+    auto i = shaderParameters_.find(name);
+    return i != shaderParameters_.end() ? i->second : Variant::EMPTY;
 }
 
 const stl::string& RenderPathCommand::GetOutputName(unsigned index) const
@@ -500,9 +500,9 @@ void RenderPath::SetShaderParameter(const stl::string& name, const Variant& valu
 
     for (unsigned i = 0; i < commands_.size(); ++i)
     {
-        HashMap<StringHash, Variant>::Iterator j = commands_[i].shaderParameters_.Find(nameHash);
-        if (j != commands_[i].shaderParameters_.End())
-            j->second_ = value;
+        auto j = commands_[i].shaderParameters_.find(nameHash);
+        if (j != commands_[i].shaderParameters_.end())
+            j->second = value;
     }
 }
 
@@ -512,9 +512,9 @@ const Variant& RenderPath::GetShaderParameter(const stl::string& name) const
 
     for (unsigned i = 0; i < commands_.size(); ++i)
     {
-        HashMap<StringHash, Variant>::ConstIterator j = commands_[i].shaderParameters_.Find(nameHash);
-        if (j != commands_[i].shaderParameters_.End())
-            return j->second_;
+        auto j = commands_[i].shaderParameters_.find(nameHash);
+        if (j != commands_[i].shaderParameters_.end())
+            return j->second;
     }
 
     return Variant::EMPTY;

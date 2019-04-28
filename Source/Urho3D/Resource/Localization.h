@@ -72,7 +72,7 @@ private:
     /// Index of current language.
     int languageIndex_;
     /// Storage strings: <Language <StringId, Value> >.
-    HashMap<StringHash, HashMap<StringHash, stl::string> > strings_;
+    stl::unordered_map<StringHash, stl::unordered_map<StringHash, stl::string> > strings_;
 };
 
 }

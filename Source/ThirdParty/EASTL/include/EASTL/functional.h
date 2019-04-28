@@ -1006,8 +1006,15 @@ namespace eastl
 	///////////////////////////////////////////////////////////////////////
 	// hash
 	///////////////////////////////////////////////////////////////////////
-	namespace Internal
+#if EASTL_URHO3D_EXTENSIONS
+	template <typename T, typename Enable = void> struct hash;
+
+	template <typename T>
+	struct hash<T, typename enable_if<is_enum_v<T>>::type>
 	{
+		size_t operator()(T p) const { return size_t(p); }
+	};
+#else
 		// utility to disable the generic template specialization that is
 		// used for enum types only.
 		template <typename T, bool Enabled>
@@ -1030,7 +1037,7 @@ namespace eastl
 	{
 		size_t operator()(T p) const { return size_t(p); }
 	};
-
+#endif
 	template <typename T> struct hash<T*> // Note that we use the pointer as-is and don't divide by sizeof(T*). This is because the table is of a prime size and this division doesn't benefit distribution.
 		{ size_t operator()(T* p) const { return size_t(uintptr_t(p)); } };
 
