@@ -276,7 +276,11 @@ namespace eastl
 #ifndef EASTL_API // If the build file hasn't already defined this to be dllexport...
 	#if EASTL_DLL
 		#if defined(_MSC_VER)
-			#define EASTL_API      __declspec(dllimport)
+			#if defined(EASTL_EXPORTS) || defined(Urho3D_EXPORTS)
+				#define EASTL_API      __declspec(dllexport)
+			#else
+				#define EASTL_API      __declspec(dllimport)
+			#endif
 			#define EASTL_LOCAL
 		#elif defined(__CYGWIN__)
 			#define EASTL_API      __attribute__((dllimport))
@@ -303,7 +307,11 @@ namespace eastl
 #ifndef EASTL_EASTDC_API
 	#if EASTL_DLL
 		#if defined(_MSC_VER)
-			#define EASTL_EASTDC_API      __declspec(dllimport)
+			#if defined(EASTL_EXPORTS) || defined(Urho3D_EXPORTS)
+				#define EASTL_EASTDC_API      __declspec(dllexport)
+			#else
+				#define EASTL_EASTDC_API      __declspec(dllimport)
+			#endif
 			#define EASTL_EASTDC_LOCAL
 		#elif defined(__CYGWIN__)
 			#define EASTL_EASTDC_API      __attribute__((dllimport))

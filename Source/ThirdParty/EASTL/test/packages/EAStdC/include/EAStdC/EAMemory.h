@@ -12,7 +12,7 @@
 
 #include <string.h>
 
-#define EASTDC_API
+#include "EAStdCAPI.h"
 
 namespace EA {
 namespace StdC {

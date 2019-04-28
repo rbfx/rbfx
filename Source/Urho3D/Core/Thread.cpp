@@ -62,7 +62,7 @@ DWORD WINAPI Thread::ThreadFunctionStatic(void* data)
 
     // Borrowed from SDL_systhread.c
     if (pSetThreadDescription)
-        pSetThreadDescription(GetCurrentThread(), WString(thread->name_).c_str());
+        pSetThreadDescription(GetCurrentThread(), MultiByteToWide(thread->name_).c_str());
     else if (IsDebuggerPresent())
     {
         // Presumably some version of Visual Studio will understand SetThreadDescription(),

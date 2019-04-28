@@ -239,9 +239,9 @@ void PrintUnicode(const stl::string& str, bool error)
         HANDLE stream = GetStdHandle(error ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
         if (stream == INVALID_HANDLE_VALUE)
             return;
-        WString strW(str);
+        stl::wstring strW = MultiByteToWide(str);
         DWORD charsWritten;
-        WriteConsoleW(stream, strW.c_str(), strW.Length(), &charsWritten, nullptr);
+        WriteConsoleW(stream, strW.c_str(), strW.length(), &charsWritten, nullptr);
     }
 #else
     fprintf(error ? stderr : stdout, "%s", str.c_str());
@@ -320,7 +320,7 @@ const stl::vector<stl::string>& ParseArguments(const char* cmdLine)
 
 const stl::vector<stl::string>& ParseArguments(const stl::wstring& cmdLine)
 {
-    return ParseArguments(WideToMultiByte(cmdLine.c_str()));
+    return ParseArguments(WideToMultiByte(cmdLine));
 }
 
 const stl::vector<stl::string>& ParseArguments(const wchar_t* cmdLine)
@@ -385,7 +385,7 @@ stl::string GetConsoleInput()
                 {
                     PrintUnicode("\n");
                     ret = currentLine;
-                    currentLine.Clear();
+                    currentLine.clear();
                     return ret;
                 }
                 else

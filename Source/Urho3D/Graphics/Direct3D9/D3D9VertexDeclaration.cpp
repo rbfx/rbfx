@@ -62,7 +62,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
 {
     stl::vector<VertexDeclarationElement> elements;
 
-    for (unsigned i = 0; i < srcElements.Size(); ++i)
+    for (unsigned i = 0; i < srcElements.size(); ++i)
     {
         const VertexElement& srcElement = srcElements[i];
 
@@ -78,7 +78,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
         element.index_ = srcElement.index_;
         element.streamIndex_ = 0;
         element.offset_ = srcElement.offset_;
-        elements.Push(element);
+        elements.emplace_back(element);
     }
 
     Create(graphics, elements);
@@ -90,7 +90,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
     stl::vector<VertexDeclarationElement> elements;
     unsigned prevBufferElements = 0;
 
-    for (unsigned i = 0; i < buffers.Size(); ++i)
+    for (unsigned i = 0; i < buffers.size(); ++i)
     {
         if (!buffers[i])
             continue;
@@ -98,7 +98,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
         const stl::vector<VertexElement>& srcElements = buffers[i]->GetElements();
         bool isExisting = false;
 
-        for (unsigned j = 0; j < srcElements.Size(); ++j)
+        for (unsigned j = 0; j < srcElements.size(); ++j)
         {
             const VertexElement& srcElement = srcElements[j];
 
@@ -129,10 +129,10 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
             element.index_ = srcElement.index_;
             element.streamIndex_ = i;
             element.offset_ = srcElement.offset_;
-            elements.Push(element);
+            elements.emplace_back(element);
         }
 
-        prevBufferElements = elements.Size();
+        prevBufferElements = elements.size();
     }
 
     Create(graphics, elements);
@@ -144,7 +144,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<stl::
     stl::vector<VertexDeclarationElement> elements;
     unsigned prevBufferElements = 0;
 
-    for (unsigned i = 0; i < buffers.Size(); ++i)
+    for (unsigned i = 0; i < buffers.size(); ++i)
     {
         if (!buffers[i])
             continue;
@@ -152,7 +152,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<stl::
         const stl::vector<VertexElement>& srcElements = buffers[i]->GetElements();
         bool isExisting = false;
 
-        for (unsigned j = 0; j < srcElements.Size(); ++j)
+        for (unsigned j = 0; j < srcElements.size(); ++j)
         {
             const VertexElement& srcElement = srcElements[j];
 
@@ -183,10 +183,10 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<stl::
             element.index_ = srcElement.index_;
             element.streamIndex_ = i;
             element.offset_ = srcElement.offset_;
-            elements.Push(element);
+            elements.emplace_back(element);
         }
 
-        prevBufferElements = elements.Size();
+        prevBufferElements = elements.size();
     }
 
     Create(graphics, elements);
@@ -199,10 +199,10 @@ VertexDeclaration::~VertexDeclaration()
 
 void VertexDeclaration::Create(Graphics* graphics, const stl::vector<VertexDeclarationElement>& elements)
 {
-    stl::shared_array<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.Size() + 1]);
+    stl::shared_array<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.size() + 1]);
 
-    D3DVERTEXELEMENT9* dest = elementArray;
-    for (auto i = elements.Begin(); i != elements.End(); ++i)
+    D3DVERTEXELEMENT9* dest = elementArray.get();
+    for (auto i = elements.begin(); i != elements.end(); ++i)
     {
         dest->Stream = (WORD)i->streamIndex_;
         dest->Offset = (WORD)i->offset_;
@@ -221,7 +221,7 @@ void VertexDeclaration::Create(Graphics* graphics, const stl::vector<VertexDecla
     dest->UsageIndex = 0;
 
     IDirect3DDevice9* device = graphics->GetImpl()->GetDevice();
-    HRESULT hr = device->CreateVertexDeclaration(elementArray, &declaration_);
+    HRESULT hr = device->CreateVertexDeclaration(elementArray.get(), &declaration_);
     if (FAILED(hr))
     {
         URHO3D_SAFE_RELEASE(declaration_);

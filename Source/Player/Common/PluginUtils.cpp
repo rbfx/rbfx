@@ -229,14 +229,14 @@ PluginType GetPluginType(Context* context, const stl::string& path)
 #endif
 
 #if _WIN32 || URHO3D_CSHARP
-    if (path.EndsWith(".dll"))
+    if (path.ends_with(".dll"))
     {
         File file(context);
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        data.Resize(file.GetSize());
-        if (file.Read(data.data(), data.Size()) != data.Size())
+        data.resize(file.GetSize());
+        if (file.Read(data.data(), data.size()) != data.size())
             return PLUGIN_INVALID;
 
         PIMAGE_DOS_HEADER dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.data());

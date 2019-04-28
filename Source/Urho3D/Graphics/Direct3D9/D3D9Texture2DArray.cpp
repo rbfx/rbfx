@@ -256,7 +256,7 @@ bool Texture2DArray::SetData(unsigned layer, Image* image, bool useAlpha)
     }
 
     layerMemoryUse_[layer] = memoryUse;
-    unsigned totalMemoryUse = sizeof(Texture2DArray) + layerMemoryUse_.Capacity() * sizeof(unsigned);
+    unsigned totalMemoryUse = sizeof(Texture2DArray) + layerMemoryUse_.capacity() * sizeof(unsigned);
     for (unsigned i = 0; i < layers_; ++i)
         totalMemoryUse += layerMemoryUse_[i];
     SetMemoryUse(totalMemoryUse);

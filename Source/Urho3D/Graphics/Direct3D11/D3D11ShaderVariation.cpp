@@ -90,9 +90,9 @@ bool ShaderVariation::Create()
     ID3D11Device* device = graphics_->GetImpl()->GetDevice();
     if (type_ == VS)
     {
-        if (device && byteCode_.Size())
+        if (device && byteCode_.size())
         {
-            HRESULT hr = device->CreateVertexShader(&byteCode_[0], byteCode_.Size(), nullptr, (ID3D11VertexShader**)&object_.ptr_);
+            HRESULT hr = device->CreateVertexShader(&byteCode_[0], byteCode_.size(), nullptr, (ID3D11VertexShader**)&object_.ptr_);
             if (FAILED(hr))
             {
                 URHO3D_SAFE_RELEASE(object_.ptr_);
@@ -104,9 +104,9 @@ bool ShaderVariation::Create()
     }
     else
     {
-        if (device && byteCode_.Size())
+        if (device && byteCode_.size())
         {
-            HRESULT hr = device->CreatePixelShader(&byteCode_[0], byteCode_.Size(), nullptr, (ID3D11PixelShader**)&object_.ptr_);
+            HRESULT hr = device->CreatePixelShader(&byteCode_[0], byteCode_.size(), nullptr, (ID3D11PixelShader**)&object_.ptr_);
             if (FAILED(hr))
             {
                 URHO3D_SAFE_RELEASE(object_.ptr_);
@@ -143,14 +143,14 @@ void ShaderVariation::Release()
         URHO3D_SAFE_RELEASE(object_.ptr_);
     }
 
-    compilerOutput_.Clear();
+    compilerOutput_.clear();
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
         useTextureUnits_[i] = false;
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
         constantBufferSizes_[i] = 0;
-    parameters_.Clear();
-    byteCode_.Clear();
+    parameters_.clear();
+    byteCode_.clear();
     elementHash_ = 0;
 }
 
@@ -160,7 +160,7 @@ void ShaderVariation::SetDefines(const stl::string& defines)
 
     // Internal mechanism for appending the CLIPPLANE define, prevents runtime (every frame) string manipulation
     definesClipPlane_ = defines;
-    if (!definesClipPlane_.EndsWith(" CLIPPLANE"))
+    if (!definesClipPlane_.ends_with(" CLIPPLANE"))
         definesClipPlane_ += " CLIPPLANE";
 }
 
@@ -214,7 +214,7 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
     unsigned byteCodeSize = file->ReadUInt();
     if (byteCodeSize)
     {
-        byteCode_.Resize(byteCodeSize);
+        byteCode_.resize(byteCodeSize);
         file->Read(&byteCode_[0], byteCodeSize);
 
         if (type_ == VS)
@@ -235,56 +235,56 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
 bool ShaderVariation::Compile()
 {
     const stl::string& sourceCode = owner_->GetSourceCode(type_);
-    stl::vector<stl::string> defines = defines_.Split(' ');
+    stl::vector<stl::string> defines = defines_.split(' ');
 
     // Set the entrypoint, profile and flags according to the shader being compiled
     const char* entryPoint = nullptr;
     const char* profile = nullptr;
     unsigned flags = D3DCOMPILE_OPTIMIZATION_LEVEL3;
 
-    defines.Push("D3D11");
+    defines.emplace_back("D3D11");
 
     if (type_ == VS)
     {
         entryPoint = "VS";
-        defines.Push("COMPILEVS");
+        defines.emplace_back("COMPILEVS");
         profile = "vs_4_0";
     }
     else
     {
         entryPoint = "PS";
-        defines.Push("COMPILEPS");
+        defines.emplace_back("COMPILEPS");
         profile = "ps_4_0";
         flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
     }
 
-    defines.Push("MAXBONES=" + stl::string(Graphics::GetMaxBones()));
+    defines.emplace_back("MAXBONES=" + stl::to_string(Graphics::GetMaxBones()));
 
     // Collect defines into macros
     stl::vector<stl::string> defineValues;
     stl::vector<D3D_SHADER_MACRO> macros;
 
-    for (unsigned i = 0; i < defines.Size(); ++i)
+    for (unsigned i = 0; i < defines.size(); ++i)
     {
-        unsigned equalsPos = defines[i].Find('=');
+        unsigned equalsPos = defines[i].find('=');
         if (equalsPos != stl::string::npos)
         {
-            defineValues.Push(defines[i].Substring(equalsPos + 1));
-            defines[i].Resize(equalsPos);
+            defineValues.emplace_back(defines[i].substr(equalsPos + 1));
+            defines[i].resize(equalsPos);
         }
         else
-            defineValues.Push("1");
+            defineValues.emplace_back("1");
     }
-    for (unsigned i = 0; i < defines.Size(); ++i)
+    for (unsigned i = 0; i < defines.size(); ++i)
     {
         D3D_SHADER_MACRO macro;
         macro.Name = defines[i].c_str();
         macro.Definition = defineValues[i].c_str();
-        macros.Push(macro);
+        macros.emplace_back(macro);
 
         // In debug mode, check that all defines are referenced by the shader code
 #ifdef _DEBUG
-        if (sourceCode.Find(defines[i]) == stl::string::npos)
+        if (sourceCode.find(defines[i]) == stl::string::npos)
             URHO3D_LOGWARNING("Shader " + GetFullName() + " does not use the define " + defines[i]);
 #endif
     }
@@ -292,13 +292,13 @@ bool ShaderVariation::Compile()
     D3D_SHADER_MACRO endMacro;
     endMacro.Name = nullptr;
     endMacro.Definition = nullptr;
-    macros.Push(endMacro);
+    macros.emplace_back(endMacro);
 
     // Compile using D3DCompile
     ID3DBlob* shaderCode = nullptr;
     ID3DBlob* errorMsgs = nullptr;
 
-    HRESULT hr = D3DCompile(sourceCode.c_str(), sourceCode.Length(), owner_->GetName().c_str(), &macros.Front(), nullptr,
+    HRESULT hr = D3DCompile(sourceCode.c_str(), sourceCode.length(), owner_->GetName().c_str(), &macros.front(), nullptr,
         entryPoint, profile, flags, 0, &shaderCode, &errorMsgs);
     if (FAILED(hr))
     {
@@ -322,15 +322,15 @@ bool ShaderVariation::Compile()
         ID3DBlob* strippedCode = nullptr;
         D3DStripShader(bufData, bufSize,
             D3DCOMPILER_STRIP_REFLECTION_DATA | D3DCOMPILER_STRIP_DEBUG_INFO | D3DCOMPILER_STRIP_TEST_BLOBS, &strippedCode);
-        byteCode_.Resize((unsigned)strippedCode->GetBufferSize());
-        memcpy(&byteCode_[0], strippedCode->GetBufferPointer(), byteCode_.Size());
+        byteCode_.resize((unsigned)strippedCode->GetBufferSize());
+        memcpy(&byteCode_[0], strippedCode->GetBufferPointer(), byteCode_.size());
         strippedCode->Release();
     }
 
     URHO3D_SAFE_RELEASE(shaderCode);
     URHO3D_SAFE_RELEASE(errorMsgs);
 
-    return !byteCode_.Empty();
+    return !byteCode_.empty();
 }
 
 void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
@@ -392,7 +392,7 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
             stl::string varName(varDesc.Name);
             if (varName[0] == 'c')
             {
-                varName = varName.Substring(1); // Strip the c to follow Urho3D constant naming convention
+                varName = varName.substr(1); // Strip the c to follow Urho3D constant naming convention
                 parameters_[varName] = ShaderParameter{type_, varName, varDesc.StartOffset, varDesc.Size, cbRegister};
             }
         }
@@ -412,9 +412,9 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
     {
         // If not absolute, use the resource dir of the shader
         stl::string shaderFileName = cache->GetResourceFileName(owner_->GetName());
-        if (shaderFileName.Empty())
+        if (shaderFileName.empty())
             return;
-        fullName = shaderFileName.Substring(0, shaderFileName.Find(owner_->GetName())) + binaryShaderName;
+        fullName = shaderFileName.substr(0, shaderFileName.find(owner_->GetName())) + binaryShaderName;
     }
     stl::string path = GetPath(fullName);
     if (!fileSystem->DirExists(path))
@@ -429,8 +429,8 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
     file->WriteShort(4);
     file->WriteUInt(elementHash_ >> 32);
 
-    file->WriteUInt(parameters_.Size());
-    for (auto i = parameters_.Begin(); i != parameters_.End(); ++i)
+    file->WriteUInt(parameters_.size());
+    for (auto i = parameters_.begin(); i != parameters_.end(); ++i)
     {
         file->WriteString(i->second.name_);
         file->WriteUByte((unsigned char)i->second.buffer_);
@@ -454,9 +454,9 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
         }
     }
 
-    file->WriteUInt(byteCode_.Size());
-    if (byteCode_.Size())
-        file->Write(&byteCode_[0], byteCode_.Size());
+    file->WriteUInt(byteCode_.size());
+    if (byteCode_.size())
+        file->Write(&byteCode_[0], byteCode_.size());
 }
 
 void ShaderVariation::CalculateConstantBufferSizes()
@@ -464,7 +464,7 @@ void ShaderVariation::CalculateConstantBufferSizes()
     for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
         constantBufferSizes_[i] = 0;
 
-    for (auto i = parameters_.Begin(); i != parameters_.End(); ++i)
+    for (auto i = parameters_.begin(); i != parameters_.end(); ++i)
     {
         if (i->second.buffer_ < MAX_SHADER_PARAMETER_GROUPS)
         {

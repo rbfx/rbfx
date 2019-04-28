@@ -34,3 +34,6 @@ target_include_directories(EAStdC PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURC
 target_link_libraries(EAStdC EABase)
 target_link_libraries(EAStdC EAAssert)
 
+if (BUILD_SHARED_LIBS)
+    target_compile_definitions(EAStdC PUBLIC -DEASTDC_DLL PRIVATE -DEASTDC_EXPORTS)
+endif ()

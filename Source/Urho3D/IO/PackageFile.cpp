@@ -119,9 +119,9 @@ bool PackageFile::Exists(const stl::string& fileName) const
     // On Windows perform a fallback case-insensitive search
     if (!found)
     {
-        for (auto i = entries_.Begin(); i != entries_.End(); ++i)
+        for (auto i = entries_.begin(); i != entries_.end(); ++i)
         {
-            if (!i->first.Compare(fileName, false))
+            if (!i->first.comparei(fileName))
             {
                 found = true;
                 break;
@@ -143,9 +143,9 @@ const PackageEntry* PackageFile::GetEntry(const stl::string& fileName) const
     // On Windows perform a fallback case-insensitive search
     else
     {
-        for (auto j = entries_.Begin(); j != entries_.End(); ++j)
+        for (auto j = entries_.begin(); j != entries_.end(); ++j)
         {
-            if (!j->first.Compare(fileName, false))
+            if (!j->first.comparei(fileName))
                 return &j->second;
         }
     }

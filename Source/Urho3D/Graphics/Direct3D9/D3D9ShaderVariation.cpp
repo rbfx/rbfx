@@ -44,7 +44,7 @@ void CopyStrippedCode(stl::vector<unsigned char>& byteCode, unsigned char* bufDa
     unsigned const D3DSIO_COMMENT = 0xFFFE;
     unsigned* srcWords = (unsigned*)bufData;
     unsigned srcWordSize = bufSize >> 2;
-    byteCode.Clear();
+    byteCode.clear();
 
     for (unsigned i = 0; i < srcWordSize; ++i)
     {
@@ -61,8 +61,8 @@ void CopyStrippedCode(stl::vector<unsigned char>& byteCode, unsigned char* bufDa
         else
         {
             // Not a comment, copy the data
-            unsigned destPos = byteCode.Size();
-            byteCode.Resize(destPos + sizeof(unsigned));
+            unsigned destPos = byteCode.size();
+            byteCode.resize(destPos + sizeof(unsigned));
             unsigned* dest = (unsigned*)&byteCode[destPos];
             *dest = srcWords[i];
         }
@@ -130,8 +130,8 @@ bool ShaderVariation::Create()
     }
 
     // The bytecode is not needed on Direct3D9 after creation, so delete it to save memory
-    byteCode_.Clear();
-    byteCode_.Reserve(0);
+    byteCode_.clear();
+    byteCode_.reserve(0);
 
     return object_.ptr_ != nullptr;
 }
@@ -156,11 +156,11 @@ void ShaderVariation::Release()
 
     URHO3D_SAFE_RELEASE(object_.ptr_);
 
-    compilerOutput_.Clear();
+    compilerOutput_.clear();
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
         useTextureUnits_[i] = false;
-    parameters_.Clear();
+    parameters_.clear();
 }
 
 void ShaderVariation::SetDefines(const stl::string& defines)
@@ -215,7 +215,7 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
     unsigned byteCodeSize = file->ReadUInt();
     if (byteCodeSize)
     {
-        byteCode_.Resize(byteCodeSize);
+        byteCode_.resize(byteCodeSize);
         file->Read(&byteCode_[0], byteCodeSize);
 
         if (type_ == VS)
@@ -235,7 +235,7 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
 bool ShaderVariation::Compile()
 {
     const stl::string& sourceCode = owner_->GetSourceCode(type_);
-    stl::vector<stl::string> defines = defines_.Split(' ');
+    stl::vector<stl::string> defines = defines_.split(' ');
 
     // Set the entrypoint, profile and flags according to the shader being compiled
     const char* entryPoint = nullptr;
@@ -245,44 +245,44 @@ bool ShaderVariation::Compile()
     if (type_ == VS)
     {
         entryPoint = "VS";
-        defines.Push("COMPILEVS");
+        defines.emplace_back("COMPILEVS");
         profile = "vs_3_0";
     }
     else
     {
         entryPoint = "PS";
-        defines.Push("COMPILEPS");
+        defines.emplace_back("COMPILEPS");
         profile = "ps_3_0";
         flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
     }
 
-    defines.Push("MAXBONES=" + stl::string(Graphics::GetMaxBones()));
+    defines.emplace_back("MAXBONES=" + stl::to_string(Graphics::GetMaxBones()));
 
     // Collect defines into macros
     stl::vector<stl::string> defineValues;
     stl::vector<D3D_SHADER_MACRO> macros;
 
-    for (unsigned i = 0; i < defines.Size(); ++i)
+    for (unsigned i = 0; i < defines.size(); ++i)
     {
-        unsigned equalsPos = defines[i].Find('=');
+        unsigned equalsPos = defines[i].find('=');
         if (equalsPos != stl::string::npos)
         {
-            defineValues.Push(defines[i].Substring(equalsPos + 1));
-            defines[i].Resize(equalsPos);
+            defineValues.emplace_back(defines[i].substr(equalsPos + 1));
+            defines[i].resize(equalsPos);
         }
         else
-            defineValues.Push("1");
+            defineValues.emplace_back("1");
     }
-    for (unsigned i = 0; i < defines.Size(); ++i)
+    for (unsigned i = 0; i < defines.size(); ++i)
     {
         D3D_SHADER_MACRO macro;
         macro.Name = defines[i].c_str();
         macro.Definition = defineValues[i].c_str();
-        macros.Push(macro);
+        macros.emplace_back(macro);
 
         // In debug mode, check that all defines are referenced by the shader code
 #ifdef _DEBUG
-        if (sourceCode.Find(defines[i]) == stl::string::npos)
+        if (sourceCode.find(defines[i]) == stl::string::npos)
             URHO3D_LOGWARNING("Shader " + GetFullName() + " does not use the define " + defines[i]);
 #endif
     }
@@ -290,13 +290,13 @@ bool ShaderVariation::Compile()
     D3D_SHADER_MACRO endMacro;
     endMacro.Name = nullptr;
     endMacro.Definition = nullptr;
-    macros.Push(endMacro);
+    macros.emplace_back(endMacro);
 
     // Compile using D3DCompile
     ID3DBlob* shaderCode = nullptr;
     ID3DBlob* errorMsgs = nullptr;
 
-    HRESULT hr = D3DCompile(sourceCode.c_str(), sourceCode.Length(), owner_->GetName().c_str(), &macros.Front(), nullptr,
+    HRESULT hr = D3DCompile(sourceCode.c_str(), sourceCode.length(), owner_->GetName().c_str(), &macros.front(), nullptr,
         entryPoint, profile, flags, 0, &shaderCode, &errorMsgs);
     if (FAILED(hr))
     {
@@ -320,7 +320,7 @@ bool ShaderVariation::Compile()
     URHO3D_SAFE_RELEASE(shaderCode);
     URHO3D_SAFE_RELEASE(errorMsgs);
 
-    return !byteCode_.Empty();
+    return !byteCode_.empty();
 }
 
 void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
@@ -337,7 +337,7 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
 
         // Check if the parameter is a constant or a texture sampler
         bool isSampler = (name[0] == 's');
-        name = name.Substring(1);
+        name = name.substr(1);
 
         if (isSampler)
         {
@@ -368,9 +368,9 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
     {
         // If not absolute, use the resource dir of the shader
         stl::string shaderFileName = cache->GetResourceFileName(owner_->GetName());
-        if (shaderFileName.Empty())
+        if (shaderFileName.empty())
             return;
-        fullName = shaderFileName.Substring(0, shaderFileName.Find(owner_->GetName())) + binaryShaderName;
+        fullName = shaderFileName.substr(0, shaderFileName.find(owner_->GetName())) + binaryShaderName;
     }
     stl::string path = GetPath(fullName);
     if (!fileSystem->DirExists(path))
@@ -384,8 +384,8 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
     file->WriteShort((unsigned short)type_);
     file->WriteShort(3);
 
-    file->WriteUInt(parameters_.Size());
-    for (auto i = parameters_.Begin(); i != parameters_.End(); ++i)
+    file->WriteUInt(parameters_.size());
+    for (auto i = parameters_.begin(); i != parameters_.end(); ++i)
     {
         file->WriteString(i->second.name_);
         file->WriteUByte((unsigned char)i->second.register_);
@@ -408,7 +408,7 @@ void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
         }
     }
 
-    unsigned dataSize = byteCode_.Size();
+    unsigned dataSize = byteCode_.size();
     file->WriteUInt(dataSize);
     if (dataSize)
         file->Write(&byteCode_[0], dataSize);

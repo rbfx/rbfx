@@ -9,8 +9,7 @@
 
 #include <EABase/eabase.h>
 
-#define EASTDC_API
-#define EASTDC_LOCAL
+#include "EAStdCAPI.h"
 
 namespace EA {
 namespace StdC {

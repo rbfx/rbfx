@@ -9,7 +9,7 @@
 
 #include <chrono>
 
-#define EASTDC_API
+#include "EAStdCAPI.h"
 
 namespace EA {
 namespace StdC {

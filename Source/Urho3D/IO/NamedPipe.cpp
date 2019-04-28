@@ -91,7 +91,7 @@ bool NamedPipe::Open(const stl::string& pipeName, bool isServer)
 
     if (isServer)
     {
-        handle_ = CreateNamedPipeW(WString(pipePath + pipeName).c_str(),
+        handle_ = CreateNamedPipeW(MultiByteToWide(pipePath + pipeName).c_str(),
             PIPE_ACCESS_DUPLEX,
             PIPE_TYPE_BYTE | PIPE_READMODE_BYTE | PIPE_NOWAIT,
             1,
@@ -117,7 +117,7 @@ bool NamedPipe::Open(const stl::string& pipeName, bool isServer)
     else
     {
         handle_ = CreateFileW(
-            WString(pipePath + pipeName).c_str(),
+            MultiByteToWide(pipePath + pipeName).c_str(),
             GENERIC_READ | GENERIC_WRITE,
             0,
             nullptr,
@@ -178,7 +178,7 @@ void NamedPipe::Close()
 
         CloseHandle(handle_);
         handle_ = INVALID_HANDLE_VALUE;
-        pipeName_.Clear();
+        pipeName_.clear();
 
         URHO3D_LOGDEBUG("Closed named pipe " + pipeName_);
     }

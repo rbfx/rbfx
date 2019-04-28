@@ -7,8 +7,7 @@
 #ifndef EASTDC_EASTOPWATCH_H
 #define EASTDC_EASTOPWATCH_H
 
-#define EASTDC_API
-#define EASTDC_LOCAL
+#include "EAStdCAPI.h"
 
 #include <EABase/eabase.h>
 

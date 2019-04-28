@@ -7,7 +7,7 @@
 #ifndef EASTDC_EATEXTUTIL_H
 #define EASTDC_EATEXTUTIL_H
 
-#define EASTDC_API
+#include "EAStdCAPI.h"
 
 namespace EA {
 namespace StdC {

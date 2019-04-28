@@ -27,6 +27,7 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"

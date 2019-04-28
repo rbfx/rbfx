@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../../Container/stl::unordered_map.h"
+#include <EASTL/unordered_map.h>
+
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/ShaderVariation.h"
@@ -54,21 +55,21 @@ public:
 
         // Copy parameters, add direct links to constant buffers
         const stl::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
-        for (auto i = vsParams.Begin(); i != vsParams.End(); ++i)
+        for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
         {
             parameters_[i->first] = i->second;
-            parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].Get();
+            parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].get();
         }
 
         const stl::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
-        for (auto i = psParams.Begin(); i != psParams.End(); ++i)
+        for (auto i = psParams.begin(); i != psParams.end(); ++i)
         {
             parameters_[i->first] = i->second;
-            parameters_[i->first].bufferPtr_ = psConstantBuffers_[i->second.buffer_].Get();
+            parameters_[i->first].bufferPtr_ = psConstantBuffers_[i->second.buffer_].get();
         }
 
         // Optimize shader parameter lookup by rehashing to next power of two
-        parameters_.Rehash(NextPowerOfTwo(parameters_.Size()));
+        parameters_.rehash(NextPowerOfTwo(parameters_.size()));
 
     }
 

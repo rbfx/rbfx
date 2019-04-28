@@ -22,7 +22,8 @@
 
 #pragma once
 
-#include "../../Container/stl::unordered_map.h"
+#include <EASTL/unordered_map.h>
+
 #include "../../Math/MathDefs.h"
 #include "../../Graphics/ShaderVariation.h"
 
@@ -37,15 +38,15 @@ public:
     ShaderProgram(ShaderVariation* vertexShader, ShaderVariation* pixelShader)
     {
         const stl::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
-        for (auto i = vsParams.Begin(); i != vsParams.End(); ++i)
+        for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
             parameters_[i->first] = i->second;
 
         const stl::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
-        for (auto i = psParams.Begin(); i != psParams.End(); ++i)
+        for (auto i = psParams.begin(); i != psParams.end(); ++i)
             parameters_[i->first] = i->second;
 
         // Optimize shader parameter lookup by rehashing to next power of two
-        parameters_.Rehash(NextPowerOfTwo(parameters_.Size()));
+        parameters_.rehash(NextPowerOfTwo(parameters_.size()));
     }
 
     /// Combined parameters from the vertex and pixel shader.

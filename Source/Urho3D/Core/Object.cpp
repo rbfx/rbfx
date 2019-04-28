@@ -295,7 +295,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 #if URHO3D_PROFILING
     URHO3D_PROFILE_C("SendEvent", PROFILER_COLOR_EVENTS);
     const auto& eventName = GetEventNameRegister().GetString(eventType);
-    URHO3D_PROFILE_ZONENAME(eventName.c_str(), eventName.Length());
+    URHO3D_PROFILE_ZONENAME(eventName.c_str(), eventName.length());
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling

@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../../Container/Ptr.h"
-#include "../../Container/Vector.h"
 #include "../../Graphics/GraphicsDefs.h"
 
 #include <d3d9.h>

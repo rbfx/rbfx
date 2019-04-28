@@ -683,9 +683,9 @@ void Engine::DumpMemory()
         if (block->nBlockUse > 0)
         {
             if (block->szFileName)
-                URHO3D_LOGINFO("Block " + stl::string((int)block->lRequest) + ": " + stl::string(block->nDataSize) + " bytes, file " + stl::string(block->szFileName) + " line " + stl::string(block->nLine));
+                URHO3D_LOGINFO("Block {}: {} bytes, file {} line {}", block->lRequest, block->nDataSize, block->szFileName, block->nLine);
             else
-                URHO3D_LOGINFO("Block " + stl::string((int)block->lRequest) + ": " + stl::string(block->nDataSize) + " bytes");
+                URHO3D_LOGINFO("Block {}: {} bytes", block->lRequest, block->nDataSize);
 
             total += block->nDataSize;
             ++blocks;
@@ -693,7 +693,7 @@ void Engine::DumpMemory()
         block = block->pBlockHeaderPrev;
     }
 
-    URHO3D_LOGINFO("Total allocated memory " + stl::string(total) + " bytes in " + stl::string(blocks) + " blocks");
+    URHO3D_LOGINFO("Total allocated memory {} bytes in {} blocks", total, blocks);
 #else
     URHO3D_LOGINFO("DumpMemory() supported on MSVC debug mode only");
 #endif

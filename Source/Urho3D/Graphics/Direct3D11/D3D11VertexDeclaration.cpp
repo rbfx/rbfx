@@ -59,7 +59,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
         const stl::vector<VertexElement>& srcElements = vertexBuffers[i]->GetElements();
         bool isExisting = false;
 
-        for (unsigned j = 0; j < srcElements.Size(); ++j)
+        for (unsigned j = 0; j < srcElements.size(); ++j)
         {
             const VertexElement& srcElement = srcElements[j];
             const char* semanticName = ShaderVariation::elementSemanticNames[srcElement.semantic_];
@@ -89,19 +89,19 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
             newDesc.AlignedByteOffset = srcElement.offset_;
             newDesc.InputSlotClass = srcElement.perInstance_ ? D3D11_INPUT_PER_INSTANCE_DATA : D3D11_INPUT_PER_VERTEX_DATA;
             newDesc.InstanceDataStepRate = srcElement.perInstance_ ? 1 : 0;
-            elementDescs.Push(newDesc);
+            elementDescs.push_back(newDesc);
         }
 
-        prevBufferDescs = elementDescs.Size();
+        prevBufferDescs = elementDescs.size();
     }
 
-    if (elementDescs.Empty())
+    if (elementDescs.empty())
         return;
 
     const stl::vector<unsigned char>& byteCode = vertexShader->GetByteCode();
 
-    HRESULT hr = graphics->GetImpl()->GetDevice()->CreateInputLayout(&elementDescs[0], (UINT)elementDescs.Size(), &byteCode[0],
-        byteCode.Size(), (ID3D11InputLayout**)&inputLayout_);
+    HRESULT hr = graphics->GetImpl()->GetDevice()->CreateInputLayout(&elementDescs[0], (UINT)elementDescs.size(), &byteCode[0],
+        byteCode.size(), (ID3D11InputLayout**)&inputLayout_);
     if (FAILED(hr))
     {
         URHO3D_SAFE_RELEASE(inputLayout_);

@@ -163,18 +163,18 @@ int DoSystemRun(const stl::string& fileName, const stl::vector<stl::string>& arg
 
 #ifdef _WIN32
     // Add .exe extension if no extension defined
-    if (GetExtension(fixedFileName).Empty())
+    if (GetExtension(fixedFileName).empty())
         fixedFileName += ".exe";
 
     stl::string commandLine = "\"" + fixedFileName + "\"";
-    for (unsigned i = 0; i < arguments.Size(); ++i)
+    for (unsigned i = 0; i < arguments.size(); ++i)
         commandLine += " \"" + arguments[i] + "\"";
 
     STARTUPINFOW startupInfo{};
     PROCESS_INFORMATION processInfo{};
     startupInfo.cb = sizeof(startupInfo);
 
-    WString commandLineW(commandLine);
+    stl::wstring commandLineW = MultiByteToWide(commandLine);
     DWORD processFlags = 0;
     if (flags & SR_WAIT_FOR_EXIT)
         // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
@@ -225,8 +225,8 @@ int DoSystemRun(const stl::string& fileName, const stl::vector<stl::string>& arg
                 break;
             auto err = GetLastError();
 
-            unsigned start = output.Length();
-            output.Resize(start + bytesRead);
+            unsigned start = output.length();
+            output.resize(start + bytesRead);
             memcpy(&output[start], buf, bytesRead);
         }
 
@@ -564,7 +564,7 @@ bool FileSystem::SystemOpen(const stl::string& fileName, const stl::string& mode
         }
 
 #ifdef _WIN32
-        bool success = (size_t)ShellExecuteW(nullptr, !mode.Empty() ? WString(mode).c_str() : nullptr,
+        bool success = (size_t)ShellExecuteW(nullptr, !mode.empty() ? MultiByteToWide(mode).c_str() : nullptr,
             GetWideNativePath(fileName).c_str(), nullptr, nullptr, SW_SHOW) > 32;
 #else
         stl::vector<stl::string> arguments;
@@ -657,7 +657,7 @@ stl::string FileSystem::GetCurrentDir() const
     wchar_t path[MAX_PATH];
     path[0] = 0;
     GetCurrentDirectoryW(MAX_PATH, path);
-    return AddTrailingSlash(stl::string(path));
+    return AddTrailingSlash(WideToMultiByte(path));
 #else
     char path[MAX_PATH];
     path[0] = 0;
@@ -731,7 +731,7 @@ bool FileSystem::FileExists(const stl::string& fileName) const
     stl::string fixedName = GetNativePath(RemoveTrailingSlash(fileName));
 
 #ifdef _WIN32
-    DWORD attributes = GetFileAttributesW(WString(fixedName).c_str());
+    DWORD attributes = GetFileAttributesW(MultiByteToWide(fixedName).c_str());
     if (attributes == INVALID_FILE_ATTRIBUTES || attributes & FILE_ATTRIBUTE_DIRECTORY)
         return false;
 #else
@@ -785,7 +785,7 @@ bool FileSystem::DirExists(const stl::string& pathName) const
 #endif
 
 #ifdef _WIN32
-    DWORD attributes = GetFileAttributesW(WString(fixedName).c_str());
+    DWORD attributes = GetFileAttributesW(MultiByteToWide(fixedName).c_str());
     if (attributes == INVALID_FILE_ATTRIBUTES || !(attributes & FILE_ATTRIBUTE_DIRECTORY))
         return false;
 #else
@@ -837,7 +837,7 @@ stl::string FileSystem::GetInterpreterFileName() const
     wchar_t exeName[MAX_PATH];
     exeName[0] = 0;
     GetModuleFileNameW(nullptr, exeName, MAX_PATH);
-    return stl::string(exeName);
+    return WideToMultiByte(exeName);
 #elif defined(__APPLE__)
     char exeName[MAX_PATH];
     memset(exeName, 0, MAX_PATH);
@@ -866,7 +866,7 @@ stl::string FileSystem::GetUserDocumentsDir() const
     wchar_t pathName[MAX_PATH];
     pathName[0] = 0;
     SHGetSpecialFolderPathW(nullptr, pathName, CSIDL_PERSONAL, 0);
-    return AddTrailingSlash(stl::string(pathName));
+    return AddTrailingSlash(WideToMultiByte(pathName));
 #else
     char pathName[MAX_PATH];
     pathName[0] = 0;
@@ -976,27 +976,27 @@ void FileSystem::ScanDirInternal(stl::vector<stl::string>& result, stl::string p
 #endif
 #ifdef _WIN32
     WIN32_FIND_DATAW info;
-    HANDLE handle = FindFirstFileW(WString(path + "*").c_str(), &info);
+    HANDLE handle = FindFirstFileW(MultiByteToWide((path + "*")).c_str(), &info);
     if (handle != INVALID_HANDLE_VALUE)
     {
         do
         {
-            stl::string fileName(info.cFileName);
-            if (!fileName.Empty())
+            stl::string fileName = WideToMultiByte(info.cFileName);
+            if (!fileName.empty())
             {
                 if (info.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN && !(flags & SCAN_HIDDEN))
                     continue;
                 if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
                 {
                     if (flags & SCAN_DIRS)
-                        result.Push(deltaPath + fileName);
+                        result.emplace_back(deltaPath + fileName);
                     if (recursive && fileName != "." && fileName != "..")
                         ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
                 }
                 else if (flags & SCAN_FILES)
                 {
-                    if (filterExtension.Empty() || fileName.EndsWith(filterExtension))
-                        result.Push(deltaPath + fileName);
+                    if (filterExtension.empty() || fileName.ends_with(filterExtension))
+                        result.emplace_back(deltaPath + fileName);
                 }
             }
         }
@@ -1170,7 +1170,7 @@ stl::string GetInternalPath(const stl::string& pathName)
 stl::string GetNativePath(const stl::string& pathName)
 {
 #ifdef _WIN32
-    return pathName.Replaced('/', '\\');
+    return pathName.replaced('/', '\\');
 #else
     return pathName;
 #endif
@@ -1178,7 +1178,7 @@ stl::string GetNativePath(const stl::string& pathName)
 
 stl::wstring GetWideNativePath(const stl::string& pathName)
 {
-    stl::wstring result = MultiByteToWide(pathName.c_str());
+    stl::wstring result = MultiByteToWide(pathName);
 #ifdef _WIN32
     result.replace(L'/', L'\\');
 #endif
@@ -1196,7 +1196,7 @@ bool IsAbsolutePath(const stl::string& pathName)
         return true;
 
 #ifdef _WIN32
-    if (path.Length() > 1 && IsAlpha(path[0]) && path[1] == ':')
+    if (path.length() > 1 && IsAlpha(path[0]) && path[1] == ':')
         return true;
 #endif
 
@@ -1386,7 +1386,7 @@ stl::string GetSanitizedPath(const stl::string& path)
 
 #else
 
-    sanitized = String::Joined(parts, "/");
+    sanitized = stl::string::joined(parts, "/");
 
 #endif
 
@@ -1464,7 +1464,7 @@ stl::string FileSystem::GetTemporaryDir() const
     wchar_t pathName[MAX_PATH];
     pathName[0] = 0;
     GetTempPathW(SDL_arraysize(pathName), pathName);
-    return AddTrailingSlash(stl::string(pathName));
+    return AddTrailingSlash(WideToMultiByte(pathName));
 #endif
 #else
     if (char* pathName = getenv("TMPDIR"))

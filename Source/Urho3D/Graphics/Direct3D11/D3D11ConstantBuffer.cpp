@@ -41,7 +41,7 @@ void ConstantBuffer::Release()
 {
     URHO3D_SAFE_RELEASE(object_.ptr_);
 
-    shadowData_.Reset();
+    shadowData_.reset();
     size_ = 0;
 }
 
@@ -61,8 +61,8 @@ bool ConstantBuffer::SetSize(unsigned size)
 
     size_ = size;
     dirty_ = false;
-    shadowData_ = new unsigned char[size_];
-    memset(shadowData_.Get(), 0, size_);
+    shadowData_ = stl::unique_ptr<unsigned char[]>(new unsigned char[size_]);
+    memset(shadowData_.get(), 0, size_);
 
     if (graphics_)
     {
@@ -90,7 +90,7 @@ void ConstantBuffer::Apply()
 {
     if (dirty_ && object_.ptr_)
     {
-        graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Buffer*)object_.ptr_, 0, 0, shadowData_.Get(), 0, 0);
+        graphics_->GetImpl()->GetDeviceContext()->UpdateSubresource((ID3D11Buffer*)object_.ptr_, 0, 0, shadowData_.get(), 0, 0);
         dirty_ = false;
     }
 }

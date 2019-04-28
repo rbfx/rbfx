@@ -41,7 +41,9 @@ namespace SLNet
 }
 
 #include <slikenet/types.h>
-
+#ifdef SendMessage
+#   undef SendMessage
+#endif
 
 namespace eastl
 {

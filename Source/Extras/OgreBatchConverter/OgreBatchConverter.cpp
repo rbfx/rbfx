@@ -27,7 +27,7 @@ int main(int argc, char** argv)
     fileSystem->ScanDir(files, currentDir, "*.xml", SCAN_FILES, true);
     printf("\nFound %d files\n", files.size());
     #ifdef WIN32
-    if (files.Size()) fileSystem->SystemCommand("pause");
+    if (files.size()) fileSystem->SystemCommand("pause");
     #endif
 
     for (unsigned i = 0 ; i < files.size(); i++)

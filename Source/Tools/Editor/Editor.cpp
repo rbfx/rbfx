@@ -97,7 +97,7 @@ void Editor::Setup()
         else
         {
 #if WIN32
-            if (coreResourcePrefixPath_.Length() <= 3)   // Root path of any drive
+            if (coreResourcePrefixPath_.length() <= 3)   // Root path of any drive
 #else
             if (coreResourcePrefixPath_ == "/")          // Filesystem root
 #endif

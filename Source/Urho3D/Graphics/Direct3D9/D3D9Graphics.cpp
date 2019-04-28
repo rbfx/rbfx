@@ -273,12 +273,12 @@ Graphics::~Graphics()
         MutexLock lock(gpuObjectMutex_);
 
         // Release all GPU objects that still exist
-        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
             (*i)->Release();
-        gpuObjects_.Clear();
+        gpuObjects_.clear();
     }
 
-    impl_->vertexDeclarations_.Clear();
+    impl_->vertexDeclarations_.clear();
 
     URHO3D_SAFE_RELEASE(impl_->defaultColorSurface_);
     URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilSurface_);
@@ -372,12 +372,12 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     if (fullscreen)
     {
         stl::vector<IntVector3> resolutions = GetResolutions(monitor);
-        if (resolutions.Size())
+        if (resolutions.size())
         {
             unsigned best = 0;
             unsigned bestError = M_MAX_UNSIGNED;
 
-            for (unsigned i = 0; i < resolutions.Size(); ++i)
+            for (unsigned i = 0; i < resolutions.size(); ++i)
             {
                 unsigned error = (unsigned)(Abs(resolutions[i].x_ - width) + Abs(resolutions[i].y_ - height));
                 if (error < bestError)
@@ -485,13 +485,13 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
       URHO3D_LOGINFOF("Adapter used %s", id.Description);
 
     stl::string msg;
-    msg.AppendWithFormat("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
+    msg.append_sprintf("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
-        msg.Append(" borderless");
+        msg.append(" borderless");
     if (resizable_)
-        msg.Append(" resizable");
+        msg.append(" resizable");
     if (multiSample > 1)
-        msg.AppendWithFormat(" multisample %d", multiSample);
+        msg.append_sprintf(" multisample %d", multiSample);
     URHO3D_LOGINFO(msg);
 #endif
 
@@ -975,7 +975,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         {
             const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
-            if (elements.Size() && elements[0].perInstance_)
+            if (elements.size() && elements[0].perInstance_)
                 SetStreamFrequency(i, D3DSTREAMSOURCE_INSTANCEDATA | 1u);
             else
                 SetStreamFrequency(i, D3DSTREAMSOURCE_INDEXEDDATA | instanceCount);
@@ -1005,7 +1005,7 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         {
             const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
-            if (elements.Size() && elements[0].perInstance_)
+            if (elements.size() && elements[0].perInstance_)
                 SetStreamFrequency(i, D3DSTREAMSOURCE_INSTANCEDATA | 1u);
             else
                 SetStreamFrequency(i, D3DSTREAMSOURCE_INDEXEDDATA | instanceCount);
@@ -1030,14 +1030,35 @@ void Graphics::SetVertexBuffer(VertexBuffer* buffer)
     SetVertexBuffers(vertexBuffers);
 }
 
-bool Graphics::SetVertexBuffers(const auto i = impl_->vertexDeclarations_.Find(hash);
-        if (i == impl_->vertexDeclarations_.End())
+bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
+{
+    if (buffers.size() > MAX_VERTEX_STREAMS)
+    {
+        URHO3D_LOGERROR("Too many vertex buffers");
+        return false;
+    }
+
+    // Build vertex declaration hash code out of the buffers
+    unsigned long long hash = 0;
+    for (unsigned i = 0; i < buffers.size(); ++i)
+    {
+        if (!buffers[i])
+            continue;
+
+        hash |= buffers[i]->GetBufferHash(i);
+    }
+
+    if (hash)
+    {
+        // If no previous vertex declaration for that hash, create new
+        auto i = impl_->vertexDeclarations_.find(hash);
+        if (i == impl_->vertexDeclarations_.end())
         {
             stl::shared_ptr<VertexDeclaration> newDeclaration(new VertexDeclaration(this, buffers));
             if (!newDeclaration->GetDeclaration())
                 return false;
 
-            i = impl_->vertexDeclarations_.Insert(stl::make_pair(hash, newDeclaration));
+            i = impl_->vertexDeclarations_.insert(stl::make_pair(hash, newDeclaration)).first;
         }
 
         VertexDeclaration* declaration = i->second;
@@ -1053,12 +1074,12 @@ bool Graphics::SetVertexBuffers(const auto i = impl_->vertexDeclarations_.Find(h
         VertexBuffer* buffer = nullptr;
         unsigned offset = 0;
 
-        if (i < buffers.Size() && buffers[i])
+        if (i < buffers.size() && buffers[i])
         {
             buffer = buffers[i];
             const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data; add instance offset in that case
-            if (elements.Size() && elements[0].perInstance_)
+            if (elements.size() && elements[0].perInstance_)
                 offset = instanceOffset * buffer->GetVertexSize();
         }
 
@@ -1080,7 +1101,11 @@ bool Graphics::SetVertexBuffers(const auto i = impl_->vertexDeclarations_.Find(h
 
 bool Graphics::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    return SetVertexBuffers(reinterpret_cast<const stl::vector<VertexBuffer*>&>(buffers), instanceOffset);
+    stl::vector<VertexBuffer*> bufferPointers;
+    bufferPointers.reserve(buffers.size());
+    for (auto& buffer : buffers)
+        bufferPointers.push_back(buffer.get());
+    return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
@@ -1108,7 +1133,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         // Create the shader now if not yet created. If already attempted, do not retry
         if (vs && !vs->GetGPUObject())
         {
-            if (vs->GetCompilerOutput().Empty())
+            if (vs->GetCompilerOutput().empty())
             {
                 URHO3D_PROFILE("CompileVertexShader");
 
@@ -1138,7 +1163,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     {
         if (ps && !ps->GetGPUObject())
         {
-            if (ps->GetCompilerOutput().Empty())
+            if (ps->GetCompilerOutput().empty())
             {
                 URHO3D_PROFILE("CompilePixelShader");
 
@@ -1168,9 +1193,9 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     if (vertexShader_ && pixelShader_)
     {
         stl::pair<ShaderVariation*, ShaderVariation*> key = stl::make_pair(vertexShader_, pixelShader_);
-        auto i = impl_->shaderPrograms_.Find(key);
-        if (i != impl_->shaderPrograms_.End())
-            impl_->shaderProgram_ = i->second.Get();
+        auto i = impl_->shaderPrograms_.find(key);
+        if (i != impl_->shaderPrograms_.end())
+            impl_->shaderProgram_ = i->second.get();
         else
         {
             ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(vertexShader_, pixelShader_);
@@ -1187,8 +1212,8 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     if (i->second.type_ == VS)
@@ -1199,8 +1224,8 @@ void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned 
 
 void Graphics::SetShaderParameter(StringHash param, float value)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     static Vector4 data(Vector4::ZERO);
@@ -1215,8 +1240,8 @@ void Graphics::SetShaderParameter(StringHash param, float value)
 void Graphics::SetShaderParameter(StringHash param, int value)
 {
     /// \todo Int constants seem to have no effect on Direct3D9
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     if (i->second.type_ == VS)
@@ -1228,8 +1253,8 @@ void Graphics::SetShaderParameter(StringHash param, int value)
 void Graphics::SetShaderParameter(StringHash param, bool value)
 {
     /// \todo Bool constants seem to have no effect on Direct3D9
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     BOOL data = value;
@@ -1242,8 +1267,8 @@ void Graphics::SetShaderParameter(StringHash param, bool value)
 
 void Graphics::SetShaderParameter(StringHash param, const Color& color)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     if (i->second.type_ == VS)
@@ -1254,8 +1279,8 @@ void Graphics::SetShaderParameter(StringHash param, const Color& color)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     static Vector4 data(Vector4::ZERO);
@@ -1270,8 +1295,8 @@ void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     static Matrix3x4 data(Matrix3x4::ZERO);
@@ -1293,8 +1318,8 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     static Vector4 data(Vector4::ZERO);
@@ -1310,8 +1335,8 @@ void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     if (i->second.type_ == VS)
@@ -1322,8 +1347,8 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     if (i->second.type_ == VS)
@@ -1334,8 +1359,8 @@ void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     if (i->second.type_ == VS)
@@ -1357,7 +1382,7 @@ bool Graphics::NeedParameterUpdate(ShaderParameterGroup group, const void* sourc
 
 bool Graphics::HasShaderParameter(StringHash param)
 {
-    return impl_->shaderProgram_ && impl_->shaderProgram_->parameters_.Find(param) != impl_->shaderProgram_->parameters_.End();
+    return impl_->shaderProgram_ && impl_->shaderProgram_->parameters_.find(param) != impl_->shaderProgram_->parameters_.end();
 }
 
 bool Graphics::HasTextureUnit(TextureUnit unit)
@@ -1921,7 +1946,7 @@ stl::vector<int> Graphics::GetMultiSampleLevels() const
 {
     stl::vector<int> ret;
     // No multisampling always supported
-    ret.Push(1);
+    ret.push_back(1);
 
     if (!impl_->interface_)
         return ret;
@@ -1933,7 +1958,7 @@ stl::vector<int> Graphics::GetMultiSampleLevels() const
     for (int i = (int)D3DMULTISAMPLE_2_SAMPLES; i < (int)D3DMULTISAMPLE_16_SAMPLES; ++i)
     {
         if (impl_->CheckMultiSampleSupport(fullscreenFormat, i))
-            ret.Push(i);
+            ret.push_back(i);
     }
 
     return ret;
@@ -1990,8 +2015,8 @@ VertexBuffer* Graphics::GetVertexBuffer(unsigned index) const
 
 TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 {
-    auto i = textureUnits_.Find(name);
-    if (i != textureUnits_.End())
+    auto i = textureUnits_.find(name);
+    if (i != textureUnits_.end())
         return i->second;
     else
         return MAX_TEXTURE_UNITS;
@@ -1999,7 +2024,7 @@ TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 
 const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
-    for (auto i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
+    for (auto i = textureUnits_.begin(); i != textureUnits_.end(); ++i)
     {
         if (i->second == unit)
             return i->first;
@@ -2106,10 +2131,10 @@ void Graphics::OnWindowMoved()
 
 void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
-    for (auto i = impl_->shaderPrograms_.Begin(); i != impl_->shaderPrograms_.End();)
+    for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
     {
         if (i->first.first == variation || i->first.second == variation)
-            i = impl_->shaderPrograms_.Erase(i);
+            i = impl_->shaderPrograms_.erase(i);
         else
             ++i;
     }
@@ -2200,7 +2225,8 @@ unsigned Graphics::GetReadableDepthFormat()
 
 unsigned Graphics::GetFormat(const stl::string& formatName)
 {
-    stl::string nameLower = formatName.ToLower().Trimmed();
+    stl::string nameLower = formatName.to_lower();
+    nameLower.trimmed();
 
     if (nameLower == "a")
         return GetAlphaFormat();
@@ -2523,7 +2549,7 @@ void Graphics::OnDeviceLost()
     {
         MutexLock lock(gpuObjectMutex_);
 
-        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
             (*i)->OnDeviceLost();
     }
 
@@ -2535,7 +2561,7 @@ void Graphics::OnDeviceReset()
     {
         MutexLock lock(gpuObjectMutex_);
 
-        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
             (*i)->OnDeviceReset();
     }
 

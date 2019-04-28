@@ -93,7 +93,7 @@ bool FileWatcher::StartWatching(const stl::string& pathName, bool watchSubDirs)
     stl::string nativePath = GetNativePath(RemoveTrailingSlash(pathName));
 
     dirHandle_ = (void*)CreateFileW(
-        WString(nativePath).c_str(),
+        MultiByteToWide(nativePath).c_str(),
         FILE_LIST_DIRECTORY,
         FILE_SHARE_WRITE | FILE_SHARE_READ | FILE_SHARE_DELETE,
         nullptr,
@@ -267,7 +267,7 @@ void FileWatcher::ThreadFunction()
                 const wchar_t* src = record->FileName;
                 const wchar_t* end = src + record->FileNameLength / 2;
                 while (src < end)
-                    AppendUTF8(fileName, stl::string::DecodeUTF16(src));
+                    AppendUTF8(fileName, DecodeUTF16(src));
 
                 fileName = GetInternalPath(fileName);
 
@@ -282,7 +282,7 @@ void FileWatcher::ThreadFunction()
                 else if (record->Action == FILE_ACTION_RENAMED_NEW_NAME)
                     rename.oldFileName_ = fileName;
 
-                if (!rename.oldFileName_.Empty() && !rename.fileName_.Empty())
+                if (!rename.oldFileName_.empty() && !rename.fileName_.empty())
                 {
                     AddChange(rename);
                     rename = {};

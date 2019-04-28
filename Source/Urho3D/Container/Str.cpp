@@ -284,7 +284,7 @@ unsigned DecodeUTF8(const char*& src)
     }
 }
 
-void EncodeUTF16(char16_t*& dest, unsigned unicodeChar)
+void EncodeUTF16(WideChar*& dest, unsigned unicodeChar)
 {
     if (unicodeChar < 0x10000)
         *dest++ = unicodeChar;
@@ -296,7 +296,7 @@ void EncodeUTF16(char16_t*& dest, unsigned unicodeChar)
     }
 }
 
-unsigned DecodeUTF16(const char16_t*& src)
+unsigned DecodeUTF16(const WideChar*& src)
 {
     if (src == nullptr)
         return 0;
@@ -327,7 +327,7 @@ unsigned DecodeUTF16(const char16_t*& src)
 }
 
 
-stl::string Ucs2ToUtf8(const char16_t* string)
+stl::string Ucs2ToUtf8(const WideChar* string)
 {
     stl::string result{};
     char temp[7];
@@ -346,17 +346,17 @@ stl::string Ucs2ToUtf8(const char16_t* string)
     return result;
 }
 
-stl::string16 Utf8ToUcs2(const char* string)
+WideString Utf8ToUcs2(const char* string)
 {
-    stl::string16 result{};
+    WideString result{};
     unsigned neededSize = 0;
-    char16_t temp[3];
+    WideChar temp[3];
 
     unsigned byteOffset = 0;
     auto length = CStringLength(string);
     while (byteOffset < length)
     {
-        char16_t* dest = temp;
+        WideChar* dest = temp;
         EncodeUTF16(dest, NextUTF8Char(string, byteOffset));
         neededSize += dest - temp;
     }
@@ -364,7 +364,7 @@ stl::string16 Utf8ToUcs2(const char* string)
     result.resize(neededSize);
 
     byteOffset = 0;
-    char16_t* dest = &result[0];
+    WideChar* dest = &result[0];
     while (byteOffset < length)
         EncodeUTF16(dest, NextUTF8Char(string, byteOffset));
 

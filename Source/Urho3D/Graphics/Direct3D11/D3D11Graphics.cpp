@@ -220,32 +220,32 @@ Graphics::~Graphics()
         MutexLock lock(gpuObjectMutex_);
 
         // Release all GPU objects that still exist
-        for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+        for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
             (*i)->Release();
-        gpuObjects_.Clear();
+        gpuObjects_.clear();
     }
 
-    impl_->vertexDeclarations_.Clear();
-    impl_->allConstantBuffers_.Clear();
+    impl_->vertexDeclarations_.clear();
+    impl_->allConstantBuffers_.clear();
 
-    for (auto i = impl_->blendStates_.Begin(); i != impl_->blendStates_.End(); ++i)
+    for (auto i = impl_->blendStates_.begin(); i != impl_->blendStates_.end(); ++i)
     {
         URHO3D_SAFE_RELEASE(i->second);
     }
-    impl_->blendStates_.Clear();
+    impl_->blendStates_.clear();
 
-    for (auto i = impl_->depthStates_.Begin(); i != impl_->depthStates_.End(); ++i)
+    for (auto i = impl_->depthStates_.begin(); i != impl_->depthStates_.end(); ++i)
     {
         URHO3D_SAFE_RELEASE(i->second);
     }
-    impl_->depthStates_.Clear();
+    impl_->depthStates_.clear();
 
-    for (auto i = impl_->rasterizerStates_.Begin();
-         i != impl_->rasterizerStates_.End(); ++i)
+    for (auto i = impl_->rasterizerStates_.begin();
+         i != impl_->rasterizerStates_.end(); ++i)
     {
         URHO3D_SAFE_RELEASE(i->second);
     }
-    impl_->rasterizerStates_.Clear();
+    impl_->rasterizerStates_.clear();
 
     URHO3D_SAFE_RELEASE(impl_->defaultRenderTargetView_);
     URHO3D_SAFE_RELEASE(impl_->defaultDepthStencilView_);
@@ -282,7 +282,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     if (monitor >= monitors || monitor < 0)
         monitor = 0; // this monitor is not present, use first monitor
 
-    // Find out the full screen mode display format (match desktop color depth)
+    // find out the full screen mode display format (match desktop color depth)
     SDL_DisplayMode mode;
     SDL_GetDesktopDisplayMode(monitor, &mode);
     DXGI_FORMAT fullscreenFormat = SDL_BITSPERPIXEL(mode.format) == 16 ? DXGI_FORMAT_B5G6R5_UNORM : DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -328,12 +328,12 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     if (fullscreen)
     {
         stl::vector<IntVector3> resolutions = GetResolutions(monitor);
-        if (resolutions.Size())
+        if (resolutions.size())
         {
             unsigned best = 0;
             unsigned bestError = M_MAX_UNSIGNED;
 
-            for (unsigned i = 0; i < resolutions.Size(); ++i)
+            for (unsigned i = 0; i < resolutions.size(); ++i)
             {
                 unsigned error = (unsigned)(Abs(resolutions[i].x_ - width) + Abs(resolutions[i].y_ - height));
                 if (error < bestError)
@@ -376,13 +376,13 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 
 #ifdef URHO3D_LOGGING
     stl::string msg;
-    msg.AppendWithFormat("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
+    msg.append_sprintf("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
-        msg.Append(" borderless");
+        msg.append(" borderless");
     if (resizable_)
-        msg.Append(" resizable");
+        msg.append(" resizable");
     if (multiSample > 1)
-        msg.AppendWithFormat(" multisample %d", multiSample);
+        msg.append_sprintf(" multisample %d", multiSample);
     URHO3D_LOGINFO(msg);
 #endif
 
@@ -893,7 +893,7 @@ void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 
 bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
-    if (buffers.Size() > MAX_VERTEX_STREAMS)
+    if (buffers.size() > MAX_VERTEX_STREAMS)
     {
         URHO3D_LOGERROR("Too many vertex buffers");
         return false;
@@ -904,12 +904,12 @@ bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsig
         VertexBuffer* buffer = nullptr;
         bool changed = false;
 
-        buffer = i < buffers.Size() ? buffers[i] : nullptr;
+        buffer = i < buffers.size() ? buffers[i] : nullptr;
         if (buffer)
         {
             const stl::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
-            bool hasInstanceData = elements.Size() && elements[0].perInstance_;
+            bool hasInstanceData = elements.size() && elements[0].perInstance_;
             unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
 
             if (buffer != vertexBuffers_[i] || offset != impl_->vertexOffsets_[i])
@@ -951,7 +951,11 @@ bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsig
 
 bool Graphics::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    return SetVertexBuffers(reinterpret_cast<const stl::vector<VertexBuffer*>&>(buffers), instanceOffset);
+    stl::vector<VertexBuffer*> bufferPointers;
+    bufferPointers.reserve(buffers.size());
+    for (auto& buffer : buffers)
+        bufferPointers.push_back(buffer.get());
+    return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
 void Graphics::SetIndexBuffer(IndexBuffer* buffer)
@@ -987,7 +991,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         // Create the shader now if not yet created. If already attempted, do not retry
         if (vs && !vs->GetGPUObject())
         {
-            if (vs->GetCompilerOutput().Empty())
+            if (vs->GetCompilerOutput().empty())
             {
                 URHO3D_PROFILE("CompileVertexShader");
 
@@ -1011,7 +1015,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     {
         if (ps && !ps->GetGPUObject())
         {
-            if (ps->GetCompilerOutput().Empty())
+            if (ps->GetCompilerOutput().empty())
             {
                 URHO3D_PROFILE("CompilePixelShader");
 
@@ -1034,9 +1038,9 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     if (vertexShader_ && pixelShader_)
     {
         stl::pair<ShaderVariation*, ShaderVariation*> key = stl::make_pair(vertexShader_, pixelShader_);
-        auto i = impl_->shaderPrograms_.Find(key);
-        if (i != impl_->shaderPrograms_.End())
-            impl_->shaderProgram_ = i->second.Get();
+        auto i = impl_->shaderPrograms_.find(key);
+        if (i != impl_->shaderPrograms_.end())
+            impl_->shaderProgram_ = i->second.get();
         else
         {
             ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
@@ -1086,133 +1090,133 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, (unsigned)(count * sizeof(float)), data);
 }
 
 void Graphics::SetShaderParameter(StringHash param, float value)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(float), &value);
 }
 
 void Graphics::SetShaderParameter(StringHash param, int value)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(int), &value);
 }
 
 void Graphics::SetShaderParameter(StringHash param, bool value)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(bool), &value);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Color& color)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(Color), &color);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(Vector2), &vector);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetVector3ArrayParameter(i->second.offset_, 3, &matrix);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(Vector3), &vector);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(Matrix4), &matrix);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(Vector4), &vector);
 }
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
 {
-    auto i;
-    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.Find(param)) == impl_->shaderProgram_->parameters_.End())
+    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
     ConstantBuffer* buffer = i->second.bufferPtr_;
     if (!buffer->IsDirty())
-        impl_->dirtyConstantBuffers_.Push(buffer);
+        impl_->dirtyConstantBuffers_.emplace_back(buffer);
     buffer->SetParameter(i->second.offset_, sizeof(Matrix3x4), &matrix);
 }
 
@@ -1229,7 +1233,7 @@ bool Graphics::NeedParameterUpdate(ShaderParameterGroup group, const void* sourc
 
 bool Graphics::HasShaderParameter(StringHash param)
 {
-    return impl_->shaderProgram_ && impl_->shaderProgram_->parameters_.Find(param) != impl_->shaderProgram_->parameters_.End();
+    return impl_->shaderProgram_ && impl_->shaderProgram_->parameters_.find(param) != impl_->shaderProgram_->parameters_.end();
 }
 
 bool Graphics::HasTextureUnit(TextureUnit unit)
@@ -1339,7 +1343,7 @@ void Graphics::SetTextureParametersDirty()
 {
     MutexLock lock(gpuObjectMutex_);
 
-    for (auto i = gpuObjects_.Begin(); i != gpuObjects_.End(); ++i)
+    for (auto i = gpuObjects_.begin(); i != gpuObjects_.end(); ++i)
     {
         Texture* texture = dynamic_cast<Texture*>(*i);
         if (texture)
@@ -1683,14 +1687,14 @@ bool Graphics::IsInitialized() const
 stl::vector<int> Graphics::GetMultiSampleLevels() const
 {
     stl::vector<int> ret;
-    ret.Push(1);
+    ret.emplace_back(1);
 
     if (impl_->device_)
     {
         for (unsigned i = 2; i <= 16; ++i)
         {
             if (impl_->CheckMultiSampleSupport(sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM, i))
-                ret.Push(i);
+                ret.emplace_back(i);
         }
     }
 
@@ -1753,8 +1757,8 @@ ShaderProgram* Graphics::GetShaderProgram() const
 
 TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 {
-    auto i = textureUnits_.Find(name);
-    if (i != textureUnits_.End())
+    auto i = textureUnits_.find(name);
+    if (i != textureUnits_.end())
         return i->second;
     else
         return MAX_TEXTURE_UNITS;
@@ -1762,7 +1766,7 @@ TextureUnit Graphics::GetTextureUnit(const stl::string& name)
 
 const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
-    for (auto i = textureUnits_.Begin(); i != textureUnits_.End(); ++i)
+    for (auto i = textureUnits_.begin(); i != textureUnits_.end(); ++i)
     {
         if (i->second == unit)
             return i->first;
@@ -1871,10 +1875,10 @@ void Graphics::OnWindowMoved()
 
 void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
-    for (auto i = impl_->shaderPrograms_.Begin(); i != impl_->shaderPrograms_.End();)
+    for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
     {
         if (i->first.first == variation || i->first.second == variation)
-            i = impl_->shaderPrograms_.Erase(i);
+            i = impl_->shaderPrograms_.erase(i);
         else
             ++i;
     }
@@ -1892,15 +1896,15 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
 {
     // Ensure that different shader types and index slots get unique buffers, even if the size is same
     unsigned key = type | (index << 1) | (size << 4);
-    auto i = impl_->allConstantBuffers_.Find(key);
-    if (i != impl_->allConstantBuffers_.End())
-        return i->second.Get();
+    auto i = impl_->allConstantBuffers_.find(key);
+    if (i != impl_->allConstantBuffers_.end())
+        return i->second.get();
     else
     {
         stl::shared_ptr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
-        return newConstantBuffer.Get();
+        return newConstantBuffer.get();
     }
 }
 
@@ -1988,7 +1992,8 @@ unsigned Graphics::GetReadableDepthFormat()
 
 unsigned Graphics::GetFormat(const stl::string& formatName)
 {
-    stl::string nameLower = formatName.ToLower().Trimmed();
+    stl::string nameLower = formatName.to_lower();
+    nameLower.trim();
 
     if (nameLower == "a")
         return GetAlphaFormat();
@@ -2134,7 +2139,7 @@ bool Graphics::CreateDevice(int width, int height, int multiSample)
 
     // Check that multisample level is supported
     stl::vector<int> multiSampleLevels = GetMultiSampleLevels();
-    if (!multiSampleLevels.Contains(multiSample))
+    if (!multiSampleLevels.contains(multiSample))
         multiSample = 1;
 
     // Create swap chain. Release old if necessary
@@ -2171,7 +2176,7 @@ bool Graphics::CreateDevice(int width, int height, int multiSample)
 #ifdef URHO3D_LOGGING
     DXGI_ADAPTER_DESC desc;
     dxgiAdapter->GetDesc(&desc);
-    stl::string adapterDesc(desc.Description);
+    stl::string adapterDesc = WideToMultiByte(desc.Description);
     URHO3D_LOGINFO("Adapter used " + adapterDesc);
 #endif
 
@@ -2373,7 +2378,7 @@ void Graphics::ResetCachedState()
     impl_->rasterizerStateHash_ = M_MAX_UNSIGNED;
     impl_->firstDirtyTexture_ = impl_->lastDirtyTexture_ = M_MAX_UNSIGNED;
     impl_->firstDirtyVB_ = impl_->lastDirtyVB_ = M_MAX_UNSIGNED;
-    impl_->dirtyConstantBuffers_.Clear();
+    impl_->dirtyConstantBuffers_.clear();
 }
 
 void Graphics::PrepareDraw()
@@ -2419,7 +2424,7 @@ void Graphics::PrepareDraw()
         impl_->texturesDirty_ = false;
     }
 
-    if (impl_->vertexDeclarationDirty_ && vertexShader_ && vertexShader_->GetByteCode().Size())
+    if (impl_->vertexDeclarationDirty_ && vertexShader_ && vertexShader_->GetByteCode().size())
     {
         if (impl_->firstDirtyVB_ < M_MAX_UNSIGNED)
         {
@@ -2442,11 +2447,11 @@ void Graphics::PrepareDraw()
             newVertexDeclarationHash += vertexShader_->GetElementHash();
             if (newVertexDeclarationHash != vertexDeclarationHash_)
             {
-                auto i = impl_->vertexDeclarations_.Find(newVertexDeclarationHash);
-                if (i == impl_->vertexDeclarations_.End())
+                auto i = impl_->vertexDeclarations_.find(newVertexDeclarationHash);
+                if (i == impl_->vertexDeclarations_.end())
                 {
                     stl::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
-                    i = impl_->vertexDeclarations_.Insert(stl::make_pair(newVertexDeclarationHash, newVertexDeclaration));
+                    i = impl_->vertexDeclarations_.insert(stl::make_pair(newVertexDeclarationHash, newVertexDeclaration)).first;
                 }
                 impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second->GetInputLayout());
                 vertexDeclarationHash_ = newVertexDeclarationHash;
@@ -2461,8 +2466,8 @@ void Graphics::PrepareDraw()
         unsigned newBlendStateHash = (unsigned)((colorWrite_ ? 1 : 0) | (alphaToCoverage_ ? 2 : 0) | (blendMode_ << 2));
         if (newBlendStateHash != impl_->blendStateHash_)
         {
-            auto i = impl_->blendStates_.Find(newBlendStateHash);
-            if (i == impl_->blendStates_.End())
+            auto i = impl_->blendStates_.find(newBlendStateHash);
+            if (i == impl_->blendStates_.end())
             {
                 URHO3D_PROFILE("CreateBlendState");
 
@@ -2487,7 +2492,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create blend state", hr);
                 }
 
-                i = impl_->blendStates_.Insert(stl::make_pair(newBlendStateHash, newBlendState));
+                i = impl_->blendStates_.insert(stl::make_pair(newBlendStateHash, newBlendState)).first;
             }
 
             impl_->deviceContext_->OMSetBlendState(i->second, nullptr, M_MAX_UNSIGNED);
@@ -2505,8 +2510,8 @@ void Graphics::PrepareDraw()
             ((stencilFail_ + stencilZFail_ * 5 + stencilPass_ * 25) << 24);
         if (newDepthStateHash != impl_->depthStateHash_ || impl_->stencilRefDirty_)
         {
-            auto i = impl_->depthStates_.Find(newDepthStateHash);
-            if (i == impl_->depthStates_.End())
+            auto i = impl_->depthStates_.find(newDepthStateHash);
+            if (i == impl_->depthStates_.end())
             {
                 URHO3D_PROFILE("CreateDepthState");
 
@@ -2535,7 +2540,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create depth state", hr);
                 }
 
-                i = impl_->depthStates_.Insert(stl::make_pair(newDepthStateHash, newDepthState));
+                i = impl_->depthStates_.insert(stl::make_pair(newDepthStateHash, newDepthState)).first;
             }
 
             impl_->deviceContext_->OMSetDepthStencilState(i->second, stencilRef_);
@@ -2558,8 +2563,8 @@ void Graphics::PrepareDraw()
             ((scaledDepthBias & 0x1fff) << 6) | (((int)(slopeScaledDepthBias_ * 100.0f) & 0x1fff) << 19);
         if (newRasterizerStateHash != impl_->rasterizerStateHash_)
         {
-            auto i = impl_->rasterizerStates_.Find(newRasterizerStateHash);
-            if (i == impl_->rasterizerStates_.End())
+            auto i = impl_->rasterizerStates_.find(newRasterizerStateHash);
+            if (i == impl_->rasterizerStates_.end())
             {
                 URHO3D_PROFILE("CreateRasterizerState");
 
@@ -2584,7 +2589,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create rasterizer state", hr);
                 }
 
-                i = impl_->rasterizerStates_.Insert(stl::make_pair(newRasterizerStateHash, newRasterizerState));
+                i = impl_->rasterizerStates_.insert(stl::make_pair(newRasterizerStateHash, newRasterizerState)).first;
             }
 
             impl_->deviceContext_->RSSetState(i->second);
@@ -2605,9 +2610,9 @@ void Graphics::PrepareDraw()
         impl_->scissorRectDirty_ = false;
     }
 
-    for (unsigned i = 0; i < impl_->dirtyConstantBuffers_.Size(); ++i)
+    for (unsigned i = 0; i < impl_->dirtyConstantBuffers_.size(); ++i)
         impl_->dirtyConstantBuffers_[i]->Apply();
-    impl_->dirtyConstantBuffers_.Clear();
+    impl_->dirtyConstantBuffers_.clear();
 }
 
 void Graphics::CreateResolveTexture()

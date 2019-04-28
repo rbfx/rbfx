@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../../Container/RefCounted.h"
-#include "../../Container/Vector.h"
 #include "../../Graphics/GraphicsDefs.h"
 
 namespace Urho3D

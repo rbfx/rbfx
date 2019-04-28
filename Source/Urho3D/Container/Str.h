@@ -44,8 +44,17 @@ namespace Urho3D
 static const int CONVERSION_BUFFER_LENGTH = 128;
 static const int MATRIX_CONVERSION_BUFFER_LENGTH = 256;
 
-
 class StringHash;
+
+#if _WIN32
+using WideChar = wchar_t;
+using WideString = stl::wstring;
+#else
+using WideChar = char16_t;
+using WideString = stl::string16;
+#endif
+
+static_assert(sizeof(WideChar) == 2, "Incorrect wide char size.");
 
 /// Map of strings.
 using StringMap = stl::unordered_map<StringHash, stl::string>;
@@ -77,17 +86,21 @@ URHO3D_API void EncodeUTF8(char*& dest, unsigned unicodeChar);
 /// Decode Unicode character from UTF8. Pointer will be incremented.
 URHO3D_API unsigned DecodeUTF8(const char*& src);
 /// Encode Unicode character to UTF16. Pointer will be incremented.
-URHO3D_API void EncodeUTF16(char16_t*& dest, unsigned unicodeChar);
+URHO3D_API void EncodeUTF16(WideChar*& dest, unsigned unicodeChar);
 /// Decode Unicode character from UTF16. Pointer will be incremented.
-URHO3D_API unsigned DecodeUTF16(const char16_t*& src);
+URHO3D_API unsigned DecodeUTF16(const WideChar*& src);
 /// Converts ucs2 string to utf-8 string.
-URHO3D_API stl::string Ucs2ToUtf8(const char16_t* string);
+URHO3D_API stl::string Ucs2ToUtf8(const WideChar* string);
 /// Converts utf-8 string to ucs2 string.
-URHO3D_API stl::string16 Utf8ToUcs2(const char* string);
+URHO3D_API WideString Utf8ToUcs2(const char* string);
 /// Converts wide string (encoding is platform-dependent) to multibyte utf-8 string.
 URHO3D_API stl::string WideToMultiByte(const wchar_t* string);
+/// Converts wide string (encoding is platform-dependent) to multibyte utf-8 string.
+inline stl::string WideToMultiByte(const stl::wstring& string) { return WideToMultiByte(string.c_str());  }
 /// Converts multibyte utf-8 string to wide string (encoding is platform-dependent).
 URHO3D_API stl::wstring MultiByteToWide(const char* string);
+/// Converts multibyte utf-8 string to wide string (encoding is platform-dependent).
+inline stl::wstring MultiByteToWide(const stl::string& string) { return MultiByteToWide(string.c_str()); }
 
 URHO3D_API extern const stl::string EMPTY_STRING;
 

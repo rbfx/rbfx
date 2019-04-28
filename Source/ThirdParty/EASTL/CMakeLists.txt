@@ -78,7 +78,7 @@ add_subdirectory(test/packages/EAAssert)
 target_link_libraries(EASTL PUBLIC EAStdC)
 
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(EASTL PUBLIC -DEASTL_DLL)
+    target_compile_definitions(EASTL PUBLIC -DEASTL_DLL PRIVATE -DEASTL_EXPORTS)
 endif ()
 
 # Urho3D:
