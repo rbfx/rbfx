@@ -55,7 +55,7 @@ class String;
 }%}
 
 %wrapper %{
-    SWIGEXPORT void SWIGSTDCALL CSharp_Urho3D_String_Set(Urho3D::String* str, const char* val) { *str = val; }
+    SWIGEXPORT void SWIGSTDCALL CSharp_Urho3D_String_Set(eastl::string* str, const char* val) { *str = val; }
 %}
 
 // String

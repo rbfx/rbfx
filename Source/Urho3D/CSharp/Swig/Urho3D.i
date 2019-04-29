@@ -1,5 +1,8 @@
 %module(directors="1", dirprot="1", allprotected="1", naturalvar=1) Urho3D
 
+namespace eastl{}
+namespace ea = eastl;
+
 #ifndef URHO3D_STATIC
 #   define URHO3D_STATIC
 #endif
@@ -17,6 +20,8 @@
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
+#include <EASTL/shared_ptr.h>
+#include <EASTL/unordered_map.h>
 %}
 
 %typemap(csvarout) void* VOID_INT_PTR %{
@@ -43,6 +48,7 @@
 }
 
 %apply void* { std::uintptr_t };
+%apply unsigned { time_t };
 
 // Speed boost
 %pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
@@ -61,7 +67,7 @@
 %ignore Urho3D::XMLElement::GetBuffer;
 
 %include "StringHash.i"
-%include "String.i"
+%include "eastl_string.i"
 
 // --------------------------------------- Math ---------------------------------------
 %include "Math.i"
@@ -112,8 +118,11 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 %ignore Urho3D::M_DEGTORAD_2;
 %ignore Urho3D::M_RADTODEG;
 
+%ignore Urho3D::begin;
+%ignore Urho3D::end;
+
 // These should be implemented in C# anyway.
-%ignore Urho3D::Polyhedron::Polyhedron(const Vector<PODVector<Vector3> >& faces);
+%ignore Urho3D::Polyhedron::Polyhedron(const Vector<eastl::vector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
 
 %apply float *INOUT        { float& sin, float& cos, float& accumulator };
@@ -145,11 +154,11 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray);
 %include "RefCounted.i"
 %include "Vector.i"
 %include "HashMap.i"
-%include "Urho3D/Math/Polyhedron.h"
-%include "Urho3D/Math/Frustum.h"
-
 // Declare inheritable classes in this file
 %include "Context.i"
+
+%include "Urho3D/Math/Polyhedron.h"
+%include "Urho3D/Math/Frustum.h"
 
 %ignore Urho3D::GPUObject::OnDeviceLost;
 %ignore Urho3D::GPUObject::OnDeviceReset;
@@ -262,6 +271,7 @@ namespace SDL
 
 // --------------------------------------- IO ---------------------------------------
 %ignore Urho3D::GetWideNativePath;
+%ignore Urho3D::logLevelNames;
 
 %interface_custom("%s", "I%s", Urho3D::Serializer);
 %include "Urho3D/IO/Serializer.h"
@@ -290,21 +300,20 @@ namespace SDL
 %ignore Urho3D::XPathQuery::GetXPathQuery;
 %ignore Urho3D::XPathQuery::GetXPathVariableSet;
 
-%ignore Urho3D::Image::GetLevels(PODVector<Image*>& levels);
-%ignore Urho3D::Image::GetLevels(PODVector<Image const*>& levels) const;
+%ignore Urho3D::Image::GetLevels(ea::vector<Image*>& levels);
+%ignore Urho3D::Image::GetLevels(ea::vector<const Image*>& levels) const;
+
 namespace Urho3D { class Image; }
 %extend Urho3D::Image {
 public:
-	PODVector<Image*> GetLevels() {
-		PODVector<Image*> result{};
+	eastl::vector<Image*> GetLevels() {
+		eastl::vector<Image*> result{};
 		$self->GetLevels(result);
 		return result;
 	}
 }
 
 // These expose iterators of underlying collection. Iterate object through GetObject() instead.
-%ignore Urho3D::JSONValue::Begin;
-%ignore Urho3D::JSONValue::End;
 %ignore Urho3D::BackgroundLoadItem;
 %ignore Urho3D::BackgroundLoader::ThreadFunction;
 
@@ -359,8 +368,8 @@ public:
 %typemap(cstype) int *dest "ref int[]"
 %typemap(imtype) int *dest "global::System.IntPtr"
 %csmethodmodifiers Urho3D::SoundSource::Mix "public unsafe";
-%ignore Urho3D::BufferedSoundStream::AddData(const stl::shared_array<signed char>& data, unsigned numBytes);
-%ignore Urho3D::BufferedSoundStream::AddData(const stl::shared_array<signed short>& data, unsigned numBytes);
+%ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
+%ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed short>& data, unsigned numBytes);
 %ignore Urho3D::Sound::GetData;
 
 %include "Urho3D/Audio/AudioDefs.h"
@@ -404,7 +413,7 @@ public:
 %ignore Urho3D::IndexBufferDesc;
 %ignore Urho3D::VertexBufferDesc;
 %ignore Urho3D::GPUObject::GetGraphics;
-%ignore Urho3D::Terrain::GetHeightData; // stl::shared_array<float>
+%ignore Urho3D::Terrain::GetHeightData; // eastl::shared_array<float>
 %ignore Urho3D::Geometry::GetRawData;
 %ignore Urho3D::Geometry::SetRawVertexData;
 %ignore Urho3D::Geometry::SetRawIndexData;
@@ -500,7 +509,7 @@ public:
 
 // --------------------------------------- Navigation ---------------------------------------
 #if defined(URHO3D_NAVIGATION)
-%template(CrowdAgentArray)       Urho3D::PODVector<Urho3D::CrowdAgent*>;
+%template(CrowdAgentArray)       eastl::vector<Urho3D::CrowdAgent*>;
 
 %apply void* VOID_INT_PTR {
 	rcContext*,
@@ -534,7 +543,7 @@ public:
 %ignore Urho3D::PackageDownload;
 %ignore Urho3D::PackageUpload;
 
-%template(ConnectionVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Connection>>;
+%template(ConnectionVector) eastl::vector<eastl::shared_ptr<Urho3D::Connection>>;
 
 // These methods use forward-declared types from SLikeNet.
 %ignore Urho3D::Connection::Connection;
@@ -635,11 +644,11 @@ public:
 
 // --------------------------------------- Urho2D ---------------------------------------
 #if URHO3D_URHO2D
-%template(Sprite2DMap) Urho3D::HashMap<Urho3D::String, Urho3D::SharedPtr<Urho3D::Sprite2D>>;
-%template(PhysicsRaycastResult2DArray) Urho3D::PODVector<Urho3D::PhysicsRaycastResult2D>;
-%template(RigitBody2DArray) Urho3D::PODVector<Urho3D::RigidBody2D*>;
-%template(MaterialVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::Material>>;
-%template(TileMapObject2DVector) Urho3D::Vector<Urho3D::SharedPtr<Urho3D::TileMapObject2D>>;
+%template(Sprite2DMap) eastl::unordered_map<eastl::string, eastl::shared_ptr<Urho3D::Sprite2D>>;
+%template(PhysicsRaycastResult2DArray) eastl::vector<Urho3D::PhysicsRaycastResult2D>;
+%template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
+%template(MaterialVector) eastl::vector<eastl::shared_ptr<Urho3D::Material>>;
+%template(TileMapObject2DVector) eastl::vector<eastl::shared_ptr<Urho3D::TileMapObject2D>>;
 
 %ignore Urho3D::AnimationSet2D::GetSpriterData;
 %ignore Urho3D::PhysicsWorld2D::DrawTransform;

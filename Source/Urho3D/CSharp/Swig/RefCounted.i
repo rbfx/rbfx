@@ -1,7 +1,5 @@
-
-%ignore Urho3D::RefCounted::SetDeleter;
-%ignore Urho3D::RefCounted::GetDeleter;
-
+// This could be optimized by modifying shared_ptr<> typemaps to store a raw pointer instead of new shared_ptr instance
+// and increment/decrement refcount manually.
 %define URHO3D_REFCOUNTED(TYPE)
     %typemap(csbody) TYPE %{
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
@@ -71,46 +69,46 @@
     %refobject   TYPE "$this->AddRef();"  // Added in typemap above on object construction
     %unrefobject TYPE "$this->ReleaseRef();"
 
-    %typemap(ctype)  Urho3D::SharedPtr<TYPE> "TYPE*"                               // c layer type
-    %typemap(imtype) Urho3D::SharedPtr<TYPE> "global::System.IntPtr"               // pinvoke type
-    %typemap(cstype) Urho3D::SharedPtr<TYPE> "$typemap(cstype, TYPE*)"             // c# type
-    %typemap(in)     Urho3D::SharedPtr<TYPE> %{ $1 = Urho3D::SharedPtr<TYPE>($input); %}    // c to cpp
-    %typemap(out)    Urho3D::SharedPtr<TYPE> %{ $result = $1.Detach(); %}          // cpp to c
+    %typemap(ctype)  eastl::shared_ptr<TYPE> "TYPE*"                               // c layer type
+    %typemap(imtype) eastl::shared_ptr<TYPE> "global::System.IntPtr"               // pinvoke type
+    %typemap(cstype) eastl::shared_ptr<TYPE> "$typemap(cstype, TYPE*)"             // c# type
+    %typemap(in)     eastl::shared_ptr<TYPE> %{ $1 = eastl::shared_ptr<TYPE>($input); %}    // c to cpp
+    %typemap(out)    eastl::shared_ptr<TYPE> %{ $result = $1.detach(); %}          // cpp to c
     %typemap(out)    TYPE*          %{ $result = $1;                   %}          // cpp to c
-    %typemap(csin)   Urho3D::SharedPtr<TYPE> "$typemap(cstype, TYPE*).getCPtr($csinput).Handle"      // convert C# to pinvoke
-    %typemap(csout, excode=SWIGEXCODE) Urho3D::SharedPtr<TYPE> {                   // convert pinvoke to C#
+    %typemap(csin)   eastl::shared_ptr<TYPE> "$typemap(cstype, TYPE*).getCPtr($csinput).Handle"      // convert C# to pinvoke
+    %typemap(csout, excode=SWIGEXCODE) eastl::shared_ptr<TYPE> {                   // convert pinvoke to C#
         var ret = $typemap(cstype, TYPE*).wrap($imcall, true);$excode
         return ret;
     }
-    %typemap(directorin)  Urho3D::SharedPtr<TYPE> "$iminput"
-    %typemap(directorout) Urho3D::SharedPtr<TYPE> "$cscall"
+    %typemap(directorin)  eastl::shared_ptr<TYPE> "$iminput"
+    %typemap(directorout) eastl::shared_ptr<TYPE> "$cscall"
 
-    %typemap(csvarin, excode=SWIGEXCODE2) Urho3D::SharedPtr<TYPE> & %{
+    %typemap(csvarin, excode=SWIGEXCODE2) eastl::shared_ptr<TYPE> & %{
     set {
         $imcall;$excode
     }
     %}
-    %typemap(csvarout, excode=SWIGEXCODE2) Urho3D::SharedPtr<TYPE> & %{
+    %typemap(csvarout, excode=SWIGEXCODE2) eastl::shared_ptr<TYPE> & %{
     get {
         var ret = $typemap(cstype, TYPE*).wrap($imcall, true);$excode
         return ret;
     }
     %}
 
-    %apply Urho3D::SharedPtr<TYPE> { Urho3D::SharedPtr<TYPE>& }
+    %apply eastl::shared_ptr<TYPE> { eastl::shared_ptr<TYPE>& }
 
-    %typemap(in) Urho3D::SharedPtr<TYPE> & %{
+    %typemap(in) eastl::shared_ptr<TYPE> & %{
         $*1_ltype $1Ref($input);
         $1 = &$1Ref;
     %}
-    %typemap(out) Urho3D::SharedPtr<TYPE> & %{ $result = $1->Detach(); %}          // cpp to c
+    %typemap(out) eastl::shared_ptr<TYPE> & %{ $result = $1->detach(); %}          // cpp to c
 
     // WeakPtr
-    %apply Urho3D::SharedPtr<TYPE>  { Urho3D::WeakPtr<TYPE>  }
-    %apply Urho3D::SharedPtr<TYPE>& { Urho3D::WeakPtr<TYPE>& }
-    %typemap(out) Urho3D::WeakPtr<TYPE> %{ $result = $1.Get();          %}         // cpp to c
-    %typemap(out) Urho3D::WeakPtr<TYPE> & %{ $result = $1->Get(); %}               // cpp to c
-    %typemap(in) Urho3D::WeakPtr<TYPE> & %{
+    %apply eastl::shared_ptr<TYPE>  { eastl::weak_ptr<TYPE>  }
+    %apply eastl::shared_ptr<TYPE>& { eastl::weak_ptr<TYPE>& }
+    %typemap(out) eastl::weak_ptr<TYPE> %{ $result = $1.get();          %}         // cpp to c
+    %typemap(out) eastl::weak_ptr<TYPE> & %{ $result = $1->get(); %}               // cpp to c
+    %typemap(in) eastl::weak_ptr<TYPE> & %{
         $*1_ltype $1Ref($input);
         $1 = &$1Ref;
     %}
@@ -119,17 +117,16 @@
       ~$csclassname() {
         lock (this) {
           if (swigCMemOwn) {
-            if (Urho3DNet.Context.Instance.GetSubsystem<Urho3DNet.Script>().QueueReleaseRef(this as RefCounted)) {
+            if (Urho3DNet.Context.Instance.GetSubsystem<Urho3DNet.Script>().ReleaseRefOnMainThread(this as RefCounted)) {
               swigCMemOwn = false;
             }
           }
           Dispose();
         }
       }
-    %}
-%enddef
+    %}%enddef
 
 %include "_refcounted.i"
+
 //%interface_custom("%s", "I%s", Urho3D::RefCounted);
 %include "Urho3D/Container/RefCounted.h"
-%include "Urho3D/Container/Ptr.h"

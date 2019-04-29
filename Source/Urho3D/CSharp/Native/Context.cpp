@@ -57,10 +57,8 @@ public:
         : ObjectFactory(context)
         , baseType_(baseType)
         , managedType_(typeName)
-        , eventReceiver_(context)
     {
         typeInfo_ = new TypeInfo(typeName, Urho3DGetDirectorTypeInfo(baseType));
-        eventReceiver_.SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
     }
 
     ~ManagedObjectFactory() override
@@ -68,56 +66,17 @@ public:
         delete typeInfo_;
     }
 
-    SharedPtr<Object> CreateObject() override
+    ea::shared_ptr<Object> CreateObject() override
     {
-        SharedPtr<Object> result((Object*)Urho3D_CSharpCreateObject(context_, managedType_.Value()));
-        auto deleter = result->GetDeleter();
-        result->SetDeleter([this, deleter](RefCounted* instance)
-        {
-            if (Thread::IsMainThread())
-            {
-                // It is safe to delete objects on the main thread
-                if (deleter)
-                    // Objects may have a custom deleter (set by default factory for example).
-                    deleter(instance);
-                else
-                    delete instance;
-            }
-            else
-            {
-                MutexLock lock(mutex_);
-                deletionQueue_.Push({instance, deleter});
-            }
-        });
+        ea::shared_ptr<Object> result((Object*)Urho3D_CSharpCreateObject(context_, managedType_.Value()));
         return result;
     }
 
 protected:
-    /// Delete one queued object per frame.
-    void OnEndFrame()
-    {
-        MutexLock lock(mutex_);
-        if (deletionQueue_.Empty())
-            return;
-
-        auto& pair = deletionQueue_.Back();
-        if (pair.second_)
-            pair.second_(pair.first_);
-        else
-            delete pair.first_;
-        deletionQueue_.Pop();
-    }
-
     /// Hash of base type (SWIG director class).
     StringHash baseType_;
     /// Hash of managed type. This is different from `baseType_`.
     StringHash managedType_;
-    /// Helper object for receiving E_ENDFRAME event.
-    ManagedObjectFactoryEventSubscriber eventReceiver_;
-    /// Lock for synchronizing `deletionQueue_` access.
-    Mutex mutex_;
-    /// LIFO deletion queue for objects that would otherwise get deleted by GC thread.
-    stl::vector<stl::pair<RefCounted*, std::function<void(RefCounted*)>>> deletionQueue_;
 };
 
 extern "C"

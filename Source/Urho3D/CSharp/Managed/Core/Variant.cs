@@ -116,7 +116,7 @@ namespace Urho3DNet
             return new Variant(value);
         }
 
-        public static implicit operator Variant(VariantVector value)
+        public static implicit operator Variant(VariantList value)
         {
             return new Variant(value);
         }
@@ -126,7 +126,7 @@ namespace Urho3DNet
             return new Variant(value);
         }
 
-        public static implicit operator Variant(StringVector value)
+        public static implicit operator Variant(StringList value)
         {
             return new Variant(value);
         }
@@ -199,7 +199,7 @@ namespace Urho3DNet
                 return VariantType.VarResourceref;
             if (type == typeof(ResourceRefList))
                 return VariantType.VarResourcereflist;
-            if (type == typeof(VariantVector))
+            if (type == typeof(VariantList))
                 return VariantType.VarVariantvector;
             if (type == typeof(VariantMap))
                 return VariantType.VarVariantmap;
@@ -219,7 +219,7 @@ namespace Urho3DNet
                 return VariantType.VarMatrix4;
             if (type == typeof(double))
                 return VariantType.VarDouble;
-            if (type == typeof(StringVector))
+            if (type == typeof(StringList))
                 return VariantType.VarStringvector;
             if (type == typeof(Rect))
                 return VariantType.VarRect;

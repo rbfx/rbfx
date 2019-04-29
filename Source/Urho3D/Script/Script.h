@@ -69,7 +69,7 @@ public:
     ///
     void UnloadRuntime() { Command(ScriptRuntimeCommand::UnloadRuntime); }
     /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread therefore this method queues them to run at the end of next frame on the main thread.
-    bool QueueReleaseRef(RefCounted* object);
+    bool ReleaseRefOnMainThread(RefCounted* object);
 
 protected:
     ///

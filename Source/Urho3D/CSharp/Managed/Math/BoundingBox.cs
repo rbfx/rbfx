@@ -212,7 +212,7 @@ namespace Urho3DNet
 //        {
 //            for (unsigned i = 0; i < poly.faces_.Size(); ++i)
 //            {
-//                const stl::vector<Vector3>& face = poly.faces_[i];
+//                const ea::vector<Vector3>& face = poly.faces_[i];
 //                if (!face.Empty())
 //                    Merge(&face[0], face.Size());
 //            }

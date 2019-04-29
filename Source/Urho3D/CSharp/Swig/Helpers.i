@@ -62,7 +62,7 @@ int strlen(const char* void_ptr_string);
     using ClassName = SwigDirector_##CTYPE;
     using BaseClassName = NS::CTYPE;
     static Urho3D::StringHash GetTypeStatic() { return GetTypeInfoStatic()->GetType(); }
-    static const Urho3D::String& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); }
+    static const eastl::string& GetTypeNameStatic() { return GetTypeInfoStatic()->GetTypeName(); }
     static const Urho3D::TypeInfo* GetTypeInfoStatic() { static const Urho3D::TypeInfo typeInfoStatic("SwigDirector_" #CTYPE, BaseClassName::GetTypeInfoStatic()); return &typeInfoStatic; }
   %}
 %enddef

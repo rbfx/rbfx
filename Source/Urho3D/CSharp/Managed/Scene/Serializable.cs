@@ -98,7 +98,7 @@ namespace Urho3DNet
                     dest.Set((ResourceRefList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarVariantvector:
-                    dest.Set((VariantVector) _field.GetValue(ptr));
+                    dest.Set((VariantList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarVariantmap:
                     dest.Set((VariantMap) _field.GetValue(ptr));
@@ -125,7 +125,7 @@ namespace Urho3DNet
                     dest.Set((double) _field.GetValue(ptr));
                     break;
                 case VariantType.VarStringvector:
-                    dest.Set((StringVector) _field.GetValue(ptr));
+                    dest.Set((StringList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarRect:
                     dest.Set((Rect) _field.GetValue(ptr));
@@ -240,7 +240,7 @@ namespace Urho3DNet
 
     public partial class Serializable
     {
-        private static StringVector _emptyStringVector = new StringVector();
+        private static StringList _emptyStringList = new StringList();
 
         protected void OnSetupInstance()
         {
@@ -285,10 +285,10 @@ namespace Urho3DNet
                 if (variantType == VariantType.VarVoidptr)
                     continue;
 
-                var enumNames = _emptyStringVector;
+                var enumNames = _emptyStringList;
                 if (field.FieldType.IsEnum)
                 {
-                    enumNames = new StringVector();
+                    enumNames = new StringList();
                     foreach (var name in field.FieldType.GetEnumNames())
                         enumNames.Add(name);
                 }

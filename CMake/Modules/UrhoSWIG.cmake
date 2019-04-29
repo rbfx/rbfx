@@ -206,6 +206,7 @@ macro(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
       ${swig_include_dirs}
       -o "${swig_generated_file_fullname}"
       "${swig_source_file_fullname}"
+#      -debug-tmsearch > ${CMAKE_CURRENT_BINARY_DIR}/swig.log
       MAIN_DEPENDENCY "${swig_source_file_fullname}"
       DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS} swig
       COMMENT "Swig source")

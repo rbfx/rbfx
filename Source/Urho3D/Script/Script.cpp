@@ -22,6 +22,7 @@
 
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
+#include "../Core/Thread.h"
 #include "../Script/Script.h"
 
 
@@ -32,30 +33,36 @@ Script::Script(Context* context)
     : Object(context)
 {
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
-        if (destructionQueue_.Empty())
+        if (destructionQueue_.empty())
             return;
 
         URHO3D_PROFILE("ReleaseFinalizedObjects");
         MutexLock lock(destructionQueueLock_);
-        URHO3D_PROFILE_VALUE("Queued finalizers count", (int64_t)destructionQueue_.Size());
-        for (RefCounted* object : destructionQueue_)
-            object->ReleaseRef();
-        destructionQueue_.Clear();
+        if (!destructionQueue_.empty())
+        {
+            destructionQueue_.back()->ReleaseRef();
+            destructionQueue_.pop_back();
+        }
     });
 }
 
 void Script::RegisterCommandHandler(int first, int last, void* handler)
 {
-    commandHandlers_.Push({ScriptCommandRange{first, last}, reinterpret_cast<ScriptRuntimeCommandHandler>(handler)});
+    commandHandlers_.emplace_back(ea::make_pair(ScriptCommandRange{first, last}, reinterpret_cast<ScriptRuntimeCommandHandler>(handler)));
 }
 
-bool Script::QueueReleaseRef(RefCounted* object)
+bool Script::ReleaseRefOnMainThread(RefCounted* object)
 {
     if (object == nullptr)
         return false;
 
-    MutexLock lock(destructionQueueLock_);
-    destructionQueue_.Push(object);
+    if (Thread::IsMainThread())
+        object->ReleaseRef();
+    else
+    {
+        MutexLock lock(destructionQueueLock_);
+        destructionQueue_.push_back(object);
+    }
     return true;
 }
 

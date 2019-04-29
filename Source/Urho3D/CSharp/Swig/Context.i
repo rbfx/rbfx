@@ -20,14 +20,14 @@
 }
 
 %wrapper %{
-  SWIGEXPORT Urho3D::HashMap<Urho3D::StringHash, const Urho3D::TypeInfo*> Urho3DDirectorTypes;
+  SWIGEXPORT eastl::unordered_map<Urho3D::StringHash, const Urho3D::TypeInfo*> Urho3DDirectorTypes;
   #ifdef __cplusplus
   extern "C"
   #endif
   SWIGEXPORT const Urho3D::TypeInfo* Urho3DGetDirectorTypeInfo(Urho3D::StringHash type) {
-    auto it = Urho3DDirectorTypes.Find(type);
-    if (it != Urho3DDirectorTypes.End())
-      return it->second_;
+    auto it = Urho3DDirectorTypes.find(type);
+    if (it != Urho3DDirectorTypes.end())
+      return it->second;
     return nullptr;
   }
 

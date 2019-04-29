@@ -135,11 +135,7 @@ void DebugHud::SetAppStats(const ea::string& label, const Variant& stats)
 
 void DebugHud::SetAppStats(const ea::string& label, const ea::string& stats)
 {
-    bool newLabel = appStats_.find(label) == appStats_.end();
     appStats_[label] = stats;
-    // TODO: sorting
-    // if (newLabel)
-    //     ea::quick_sort(appStats_.begin(), appStats_.end());
 }
 
 bool DebugHud::ResetAppStats(const ea::string& label)

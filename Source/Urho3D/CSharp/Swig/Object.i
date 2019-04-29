@@ -12,7 +12,7 @@ IGNORE_SUBSYSTEM(Tasks)
     return new $typemap(cstype, Urho3D::StringHash)(GetType().Name);
 }
 
-%typemap(csout, excode=SWIGEXCODE) const Urho3D::String& GetTypeName, const Urho3D::String& GetTypeName {
+%typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName, const eastl::string& GetTypeName {
     return GetType().Name;
 }
 

@@ -2,8 +2,8 @@
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody) SWIGTYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
-  private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
   protected bool swigCMemOwn;
+  private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
