@@ -71,7 +71,7 @@ void Polyhedron::Define(const Frustum& frustum)
 void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2)
 {
     faces_.resize(faces_.size() + 1);
-    stl::vector<Vector3>& face = faces_[faces_.size() - 1];
+    ea::vector<Vector3>& face = faces_[faces_.size() - 1];
     face.resize(3);
     face[0] = v0;
     face[1] = v1;
@@ -81,7 +81,7 @@ void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2
 void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3)
 {
     faces_.resize(faces_.size() + 1);
-    stl::vector<Vector3>& face = faces_[faces_.size() - 1];
+    ea::vector<Vector3>& face = faces_[faces_.size() - 1];
     face.resize(4);
     face[0] = v0;
     face[1] = v1;
@@ -89,7 +89,7 @@ void Polyhedron::AddFace(const Vector3& v0, const Vector3& v1, const Vector3& v2
     face[3] = v3;
 }
 
-void Polyhedron::AddFace(const stl::vector<Vector3>& face)
+void Polyhedron::AddFace(const ea::vector<Vector3>& face)
 {
     faces_.push_back(face);
 }
@@ -100,7 +100,7 @@ void Polyhedron::Clip(const Plane& plane)
 
     for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        stl::vector<Vector3>& face = faces_[i];
+        ea::vector<Vector3>& face = faces_[i];
         Vector3 lastVertex;
         float lastDistance = 0.0f;
 
@@ -238,7 +238,7 @@ void Polyhedron::Transform(const Matrix3& transform)
 {
     for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        stl::vector<Vector3>& face = faces_[i];
+        ea::vector<Vector3>& face = faces_[i];
         for (unsigned j = 0; j < face.size(); ++j)
             face[j] = transform * face[j];
     }
@@ -248,7 +248,7 @@ void Polyhedron::Transform(const Matrix3x4& transform)
 {
     for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        stl::vector<Vector3>& face = faces_[i];
+        ea::vector<Vector3>& face = faces_[i];
         for (unsigned j = 0; j < face.size(); ++j)
             face[j] = transform * face[j];
     }
@@ -261,8 +261,8 @@ Polyhedron Polyhedron::Transformed(const Matrix3& transform) const
 
     for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        const stl::vector<Vector3>& face = faces_[i];
-        stl::vector<Vector3>& newFace = ret.faces_[i];
+        const ea::vector<Vector3>& face = faces_[i];
+        ea::vector<Vector3>& newFace = ret.faces_[i];
         newFace.resize(face.size());
 
         for (unsigned j = 0; j < face.size(); ++j)
@@ -279,8 +279,8 @@ Polyhedron Polyhedron::Transformed(const Matrix3x4& transform) const
 
     for (unsigned i = 0; i < faces_.size(); ++i)
     {
-        const stl::vector<Vector3>& face = faces_[i];
-        stl::vector<Vector3>& newFace = ret.faces_[i];
+        const ea::vector<Vector3>& face = faces_[i];
+        ea::vector<Vector3>& newFace = ret.faces_[i];
         newFace.resize(face.size());
 
         for (unsigned j = 0; j < face.size(); ++j)
@@ -292,7 +292,7 @@ Polyhedron Polyhedron::Transformed(const Matrix3x4& transform) const
 
 void Polyhedron::SetFace(unsigned index, const Vector3& v0, const Vector3& v1, const Vector3& v2)
 {
-    stl::vector<Vector3>& face = faces_[index];
+    ea::vector<Vector3>& face = faces_[index];
     face.resize(3);
     face[0] = v0;
     face[1] = v1;
@@ -301,7 +301,7 @@ void Polyhedron::SetFace(unsigned index, const Vector3& v0, const Vector3& v1, c
 
 void Polyhedron::SetFace(unsigned index, const Vector3& v0, const Vector3& v1, const Vector3& v2, const Vector3& v3)
 {
-    stl::vector<Vector3>& face = faces_[index];
+    ea::vector<Vector3>& face = faces_[index];
     face.resize(4);
     face[0] = v0;
     face[1] = v1;

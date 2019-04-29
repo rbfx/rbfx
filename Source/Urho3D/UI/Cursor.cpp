@@ -109,7 +109,7 @@ void Cursor::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Shapes", GetShapesAttr, SetShapesAttr, VariantVector, Variant::emptyVariantVector, AM_FILE);
 }
 
-void Cursor::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void Cursor::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     unsigned initialSize = vertexData.size();
     const IntVector2& offset = shapeInfos_[shape_].hotSpot_;
@@ -134,7 +134,7 @@ void Cursor::DefineShape(CursorShape shape, Image* image, const IntRect& imageRe
     DefineShape(shapeNames[shape], image, imageRect, hotSpot);
 }
 
-void Cursor::DefineShape(const stl::string& shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot)
+void Cursor::DefineShape(const ea::string& shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot)
 {
     if (!image)
         return;
@@ -175,7 +175,7 @@ void Cursor::DefineShape(const stl::string& shape, Image* image, const IntRect& 
 }
 
 
-void Cursor::SetShape(const stl::string& shape)
+void Cursor::SetShape(const ea::string& shape)
 {
     if (shape == EMPTY_STRING || shape.empty() || shape_ == shape || !shapeInfos_.contains(shape))
         return;
@@ -222,7 +222,7 @@ void Cursor::SetShapesAttr(const VariantVector& value)
         const VariantVector& shapeVector = i->GetVariantVector();
         if (shapeVector.size() >= 4)
         {
-            stl::string shape = shapeVector[0].GetString();
+            ea::string shape = shapeVector[0].GetString();
             ResourceRef ref = shapeVector[1].GetResourceRef();
             IntRect imageRect = shapeVector[2].GetIntRect();
             IntVector2 hotSpot = shapeVector[3].GetIntVector2();

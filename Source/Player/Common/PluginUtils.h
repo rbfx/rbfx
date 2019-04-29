@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 /// Checks specified file and recognizes it's plugin type.
-PluginType GetPluginType(Context* context, const stl::string& path);
+PluginType GetPluginType(Context* context, const ea::string& path);
 
 
 }

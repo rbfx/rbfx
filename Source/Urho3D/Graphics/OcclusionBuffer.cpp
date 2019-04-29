@@ -106,14 +106,14 @@ bool OcclusionBuffer::SetSize(int width, int height, bool threaded)
         width = (width + 1) / 2;
         height = (height + 1) / 2;
 
-        mipBuffers_.push_back(stl::shared_array<DepthValue>(new DepthValue[width * height]));
+        mipBuffers_.push_back(ea::shared_array<DepthValue>(new DepthValue[width * height]));
 
         if (width <= OCCLUSION_MIN_SIZE && height <= OCCLUSION_MIN_SIZE)
             break;
     }
 
-    URHO3D_LOGDEBUG("Set occlusion buffer size " + stl::to_string(width_) + "x" + stl::to_string(height_) + " with " +
-             stl::to_string(mipBuffers_.size()) + " mip levels and " + stl::to_string(numThreadBuffers) + " thread buffers");
+    URHO3D_LOGDEBUG("Set occlusion buffer size " + ea::to_string(width_) + "x" + ea::to_string(height_) + " with " +
+             ea::to_string(mipBuffers_.size()) + " mip levels and " + ea::to_string(numThreadBuffers) + " thread buffers");
 
     CalculateViewport();
     return true;
@@ -221,7 +221,7 @@ void OcclusionBuffer::DrawTriangles()
 
         for (auto i = batches_.begin(); i != batches_.end(); ++i)
         {
-            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = DrawOcclusionBatchWork;
             item->aux_ = this;

@@ -113,7 +113,7 @@ void Drawable::OnSetEnabled()
         RemoveFromOctree();
 }
 
-void Drawable::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void Drawable::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     float distance = query.ray_.HitDistance(GetWorldBoundingBox());
     if (distance < query.maxDistance_)
@@ -329,7 +329,7 @@ void Drawable::LimitLights()
     for (unsigned i = 0; i < lights_.size(); ++i)
         lights_[i]->SetIntensitySortValue(box);
 
-    stl::quick_sort(lights_.begin(), lights_.end(), CompareDrawables);
+    ea::quick_sort(lights_.begin(), lights_.end(), CompareDrawables);
     vertexLights_.insert(vertexLights_.end(), lights_.begin() + maxLights_, lights_.end());
     lights_.resize(maxLights_);
 }
@@ -352,7 +352,7 @@ void Drawable::LimitVertexLights(bool removeConvertedLights)
     for (unsigned i = 0; i < vertexLights_.size(); ++i)
         vertexLights_[i]->SetIntensitySortValue(box);
 
-    stl::quick_sort(vertexLights_.begin(), vertexLights_.end(), CompareDrawables);
+    ea::quick_sort(vertexLights_.begin(), vertexLights_.end(), CompareDrawables);
     vertexLights_.resize(MAX_VERTEX_LIGHTS);
 }
 
@@ -418,7 +418,7 @@ void Drawable::RemoveFromOctree()
     }
 }
 
-bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)
+bool WriteDrawablesToOBJ(ea::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV)
 {
     // Must track indices independently to deal with potential mismatching of drawables vertex attributes (ie. one with UV, another without, then another with)
     unsigned currentPositionIndex = 1;
@@ -443,7 +443,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
         Matrix3 normalMat = Matrix3(n.m00_, n.m01_, n.m02_, n.m10_, n.m11_, n.m12_, n.m20_, n.m21_, n.m22_);
         normalMat = normalMat.Transpose();
 
-        const stl::vector<SourceBatch>& batches = drawable->GetBatches();
+        const ea::vector<SourceBatch>& batches = drawable->GetBatches();
         for (unsigned geoIndex = 0; geoIndex < batches.size(); ++geoIndex)
         {
             Geometry* geo = drawable->GetLodGeometry(geoIndex, 0);
@@ -462,7 +462,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
             const unsigned char* vertexData;
             const unsigned char* indexData;
             unsigned elementSize, indexSize;
-            const stl::vector<VertexElement>* elements;
+            const ea::vector<VertexElement>* elements;
             geo->GetRawData(vertexData, elementSize, indexData, indexSize, elements);
             if (!vertexData || !elements)
                 continue;
@@ -488,7 +488,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
 
                 // Name NodeID DrawableType DrawableID GeometryIndex ("Geo" is included for clarity as StaticModel_32_2 could easily be misinterpreted or even quickly misread as 322)
                 // Generated object name example: Node_5_StaticModel_32_Geo_0 ... or ... Bob_5_StaticModel_32_Geo_0
-                outputFile->WriteLine(stl::string("o ").append_sprintf("%s_%u_%s_%u_Geo_%u",
+                outputFile->WriteLine(ea::string("o ").append_sprintf("%s_%u_%s_%u_Geo_%u",
                     node->GetName().length() > 0 ? node->GetName().c_str() : "Node", node->GetID(),
                     drawable->GetTypeName().c_str(), drawable->GetID(), geoIndex));
 
@@ -547,7 +547,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                 }
 
                 // If we don't have UV but have normals then must write a double-slash to indicate the absence of UV coords, otherwise use a single slash
-                const stl::string slashCharacter = hasNormals ? "//" : "/";
+                const ea::string slashCharacter = hasNormals ? "//" : "/";
 
                 // Amount by which to offset indices in the OBJ vs their values in the Urho3D geometry, basically the lowest index value
                 // Compensates for the above vertex writing which doesn't write ALL vertices, just the used ones
@@ -583,7 +583,7 @@ bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, boo
                         longIndices[2] = indices[2] - indexOffset;
                     }
 
-                    stl::string output = "f ";
+                    ea::string output = "f ";
                     if (hasNormals)
                     {
                         output.append_sprintf("%l/%l/%l %l/%l/%l %l/%l/%l", currentPositionIndex + longIndices[0],

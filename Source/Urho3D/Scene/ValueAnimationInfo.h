@@ -81,12 +81,12 @@ protected:
     /// Calculate scaled time.
     float CalculateScaledTime(float currentTime, bool& finished) const;
     /// Return event frames.
-    void GetEventFrames(float beginTime, float endTime, stl::vector<const VAnimEventFrame*>& eventFrames);
+    void GetEventFrames(float beginTime, float endTime, ea::vector<const VAnimEventFrame*>& eventFrames);
 
     /// Target object.
-    stl::weak_ptr<Object> target_;
+    ea::weak_ptr<Object> target_;
     /// Attribute animation.
-    stl::shared_ptr<ValueAnimation> animation_;
+    ea::shared_ptr<ValueAnimation> animation_;
     /// Wrap mode.
     WrapMode wrapMode_;
     /// Animation speed.

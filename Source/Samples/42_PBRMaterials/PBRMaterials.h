@@ -82,5 +82,5 @@ private:
     /// Ambient HDR scale label.
     Text* ambientLabel_;
     /// Zone component in scene.
-    stl::weak_ptr<Zone> zone_;
+    ea::weak_ptr<Zone> zone_;
 };

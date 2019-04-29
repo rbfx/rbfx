@@ -47,22 +47,22 @@ public:
     /// Construct.
     explicit PackageFile(Context* context);
     /// Construct and open.
-    PackageFile(Context* context, const stl::string& fileName, unsigned startOffset = 0);
+    PackageFile(Context* context, const ea::string& fileName, unsigned startOffset = 0);
     /// Destruct.
     ~PackageFile() override;
 
     /// Open the package file. Return true if successful.
-    bool Open(const stl::string& fileName, unsigned startOffset = 0);
+    bool Open(const ea::string& fileName, unsigned startOffset = 0);
     /// Check if a file exists within the package file. This will be case-insensitive on Windows and case-sensitive on other platforms.
-    bool Exists(const stl::string& fileName) const;
+    bool Exists(const ea::string& fileName) const;
     /// Return the file entry corresponding to the name, or null if not found. This will be case-insensitive on Windows and case-sensitive on other platforms.
-    const PackageEntry* GetEntry(const stl::string& fileName) const;
+    const PackageEntry* GetEntry(const ea::string& fileName) const;
 
     /// Return all file entries.
-    const stl::unordered_map<stl::string, PackageEntry>& GetEntries() const { return entries_; }
+    const ea::unordered_map<ea::string, PackageEntry>& GetEntries() const { return entries_; }
 
     /// Return the package file name.
-    const stl::string& GetName() const { return fileName_; }
+    const ea::string& GetName() const { return fileName_; }
 
     /// Return hash of the package file name.
     StringHash GetNameHash() const { return nameHash_; }
@@ -83,10 +83,10 @@ public:
     bool IsCompressed() const { return compressed_; }
 
     /// Return list of file names in the package.
-    const stl::vector<stl::string> GetEntryNames() const { return entries_.keys(); }
+    const ea::vector<ea::string> GetEntryNames() const { return entries_.keys(); }
 
     /// Return a file name in the package at the specified index
-    const stl::string& GetEntryName(unsigned index) const
+    const ea::string& GetEntryName(unsigned index) const
     {
         unsigned nn = 0;
         for (auto j = entries_.begin(); j != entries_.end(); ++j)
@@ -98,13 +98,13 @@ public:
     }
 
     /// Scan package for specified files.
-    void Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, bool recursive) const;
+    void Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const;
 
 private:
     /// File entries.
-    stl::unordered_map<stl::string, PackageEntry> entries_;
+    ea::unordered_map<ea::string, PackageEntry> entries_;
     /// File name.
-    stl::string fileName_;
+    ea::string fileName_;
     /// Package file name hash.
     StringHash nameHash_;
     /// Package file total size.

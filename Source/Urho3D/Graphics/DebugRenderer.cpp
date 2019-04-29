@@ -265,7 +265,7 @@ void DebugRenderer::AddPolyhedron(const Polyhedron& poly, const Color& color, bo
 
     for (unsigned i = 0; i < poly.faces_.size(); ++i)
     {
-        const stl::vector<Vector3>& face = poly.faces_[i];
+        const ea::vector<Vector3>& face = poly.faces_[i];
         if (face.size() >= 3)
         {
             for (unsigned j = 0; j < face.size(); ++j)
@@ -370,7 +370,7 @@ void DebugRenderer::AddCylinder(const Vector3& position, float radius, float hei
 
 void DebugRenderer::AddSkeleton(const Skeleton& skeleton, const Color& color, bool depthTest)
 {
-    const stl::vector<Bone>& bones = skeleton.GetBones();
+    const ea::vector<Bone>& bones = skeleton.GetBones();
     if (!bones.size())
         return;
 

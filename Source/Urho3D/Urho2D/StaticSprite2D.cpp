@@ -280,7 +280,7 @@ void StaticSprite2D::OnWorldBoundingBoxUpdate()
     boundingBox_.Clear();
     worldBoundingBox_.Clear();
 
-    const stl::vector<SourceBatch2D>& sourceBatches = GetSourceBatches();
+    const ea::vector<SourceBatch2D>& sourceBatches = GetSourceBatches();
     for (unsigned i = 0; i < sourceBatches[0].vertices_.size(); ++i)
         worldBoundingBox_.Merge(sourceBatches[0].vertices_[i].position_);
 
@@ -297,7 +297,7 @@ void StaticSprite2D::UpdateSourceBatches()
     if (!sourceBatchesDirty_)
         return;
 
-    stl::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
+    ea::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
     vertices.clear();
 
     if (!sprite_)

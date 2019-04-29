@@ -27,7 +27,7 @@
 namespace Urho3D
 {
 
-FileDialogResult OpenDialog(const stl::string& filterList, const stl::string& defaultPath, stl::string& outPath)
+FileDialogResult OpenDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath)
 {
     nfdchar_t* output = nullptr;
     auto result = NFD_OpenDialog(filterList.c_str(), defaultPath.c_str(), &output);
@@ -39,7 +39,7 @@ FileDialogResult OpenDialog(const stl::string& filterList, const stl::string& de
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult OpenDialogMultiple(const stl::string& filterList, const stl::string& defaultPath, stl::vector<stl::string>& outPaths)
+FileDialogResult OpenDialogMultiple(const ea::string& filterList, const ea::string& defaultPath, ea::vector<ea::string>& outPaths)
 {
     nfdpathset_t output{};
     auto result = NFD_OpenDialogMultiple(filterList.c_str(), defaultPath.c_str(), &output);
@@ -52,7 +52,7 @@ FileDialogResult OpenDialogMultiple(const stl::string& filterList, const stl::st
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult SaveDialog(const stl::string& filterList, const stl::string& defaultPath, stl::string& outPath)
+FileDialogResult SaveDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath)
 {
     nfdchar_t* output = nullptr;
     auto result = NFD_SaveDialog(filterList.c_str(), defaultPath.c_str(), &output);
@@ -64,7 +64,7 @@ FileDialogResult SaveDialog(const stl::string& filterList, const stl::string& de
     return static_cast<FileDialogResult>(result);
 }
 
-FileDialogResult PickFolder(const stl::string& defaultPath, stl::string& outPath)
+FileDialogResult PickFolder(const ea::string& defaultPath, ea::string& outPath)
 {
     nfdchar_t* output = nullptr;
     auto result = NFD_PickFolder(defaultPath.c_str(), &output);

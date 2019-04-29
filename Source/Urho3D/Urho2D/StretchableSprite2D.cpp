@@ -93,7 +93,7 @@ void prepareVertices(Vertex2D vtx[4][4], const float xs[4], const float ys[4], c
     }
 }
 
-void pushVertices(stl::vector<Vertex2D>& target, const Vertex2D source[4][4])
+void pushVertices(ea::vector<Vertex2D>& target, const Vertex2D source[4][4])
 {
     for (unsigned i = 0; i < 3; ++i) // iterate over 3 columns
     {
@@ -169,7 +169,7 @@ void StretchableSprite2D::UpdateSourceBatches()
     if (!sourceBatchesDirty_ || !sprite_ || (!useTextureRect_ && !sprite_->GetTextureRectangle(textureRect_, flipX_, flipY_)))
         return;
 
-    stl::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
+    ea::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
     vertices.clear();
 
     auto effectiveBorder = calcEffectiveBorder(border_, drawRect_.Size());

@@ -37,14 +37,14 @@
 namespace Urho3D
 {
 
-const stl::string EMPTY_STRING{};
+const ea::string EMPTY_STRING{};
 
 unsigned CStringLength(const char* str)
 {
     return str ? (unsigned)strlen(str) : 0;
 }
 
-int Compare(const stl::string_view& a, const stl::string_view& b, bool caseSensitive)
+int Compare(const ea::string_view& a, const ea::string_view& b, bool caseSensitive)
 {
     if (a.data() == b.data())
         return true;
@@ -57,14 +57,14 @@ int Compare(const stl::string_view& a, const stl::string_view& b, bool caseSensi
 
     int cmp = 0;
     if (caseSensitive)
-        cmp = stl::Compare(a.data(), b.data(), stl::min(a.length(), b.length()));
+        cmp = ea::Compare(a.data(), b.data(), ea::min(a.length(), b.length()));
     else
-        cmp = stl::CompareI(a.data(), b.data(), stl::min(a.length(), b.length()));
+        cmp = ea::CompareI(a.data(), b.data(), ea::min(a.length(), b.length()));
 
     return (cmp != 0 ? cmp : (a.length() < b.length() ? -1 : (a.length() > b.length() ? 1 : 0)));
 }
 
-unsigned LengthUTF8(const stl::string_view& string)
+unsigned LengthUTF8(const ea::string_view& string)
 {
     unsigned ret = 0;
     const char* src = string.data();
@@ -80,7 +80,7 @@ unsigned LengthUTF8(const stl::string_view& string)
     return ret;
 }
 
-unsigned ByteOffsetUTF8(const stl::string_view& string, unsigned index)
+unsigned ByteOffsetUTF8(const ea::string_view& string, unsigned index)
 {
     if (string.empty())
         return 0;
@@ -97,10 +97,10 @@ unsigned ByteOffsetUTF8(const stl::string_view& string, unsigned index)
     return byteOffset;
 }
 
-unsigned NextUTF8Char(const stl::string_view& string, unsigned& byteOffset)
+unsigned NextUTF8Char(const ea::string_view& string, unsigned& byteOffset)
 {
     if (string.empty())
-        return stl::string::npos;
+        return ea::string::npos;
 
     const char* src = string.data() + byteOffset;
     unsigned ret = DecodeUTF8(src);
@@ -109,13 +109,13 @@ unsigned NextUTF8Char(const stl::string_view& string, unsigned& byteOffset)
     return ret;
 }
 
-unsigned AtUTF8(const stl::string_view& string, unsigned index)
+unsigned AtUTF8(const ea::string_view& string, unsigned index)
 {
     unsigned byteOffset = ByteOffsetUTF8(string, index);
     return NextUTF8Char(string, byteOffset);
 }
 
-void ReplaceUTF8(stl::string& string, unsigned index, unsigned unicodeChar)
+void ReplaceUTF8(ea::string& string, unsigned index, unsigned unicodeChar)
 {
     unsigned utfPos = 0;
     unsigned byteOffset = 0;
@@ -140,7 +140,7 @@ void ReplaceUTF8(stl::string& string, unsigned index, unsigned unicodeChar)
     string.replace(beginCharPos, byteOffset - beginCharPos, temp, (unsigned)(dest - temp));
 }
 
-stl::string& AppendUTF8(stl::string& string, unsigned unicodeChar)
+ea::string& AppendUTF8(ea::string& string, unsigned unicodeChar)
 {
     char temp[7];
     char* dest = temp;
@@ -149,11 +149,11 @@ stl::string& AppendUTF8(stl::string& string, unsigned unicodeChar)
     return string.append(temp);
 }
 
-stl::string SubstringUTF8(const stl::string_view& string, unsigned pos)
+ea::string SubstringUTF8(const ea::string_view& string, unsigned pos)
 {
     unsigned utf8Length = LengthUTF8(string);
     unsigned byteOffset = ByteOffsetUTF8(string, pos);
-    stl::string ret;
+    ea::string ret;
 
     while (pos < utf8Length)
     {
@@ -164,12 +164,12 @@ stl::string SubstringUTF8(const stl::string_view& string, unsigned pos)
     return ret;
 }
 
-stl::string SubstringUTF8(const stl::string_view& string, unsigned pos, unsigned length)
+ea::string SubstringUTF8(const ea::string_view& string, unsigned pos, unsigned length)
 {
     unsigned utf8Length = LengthUTF8(string);
     unsigned byteOffset = ByteOffsetUTF8(string, pos);
     unsigned endPos = pos + length;
-    stl::string ret;
+    ea::string ret;
 
     while (pos < endPos && pos < utf8Length)
     {
@@ -327,9 +327,9 @@ unsigned DecodeUTF16(const WideChar*& src)
 }
 
 
-stl::string Ucs2ToUtf8(const WideChar* string)
+ea::string Ucs2ToUtf8(const WideChar* string)
 {
-    stl::string result{};
+    ea::string result{};
     char temp[7];
 
     if (!string)
@@ -371,12 +371,12 @@ WideString Utf8ToUcs2(const char* string)
     return result;
 }
 
-stl::string WideToMultiByte(const wchar_t* string)
+ea::string WideToMultiByte(const wchar_t* string)
 {
 #if _WIN32
     return Ucs2ToUtf8(string);
 #else
-    stl::string result{};
+    ea::string result{};
     char temp[7];
     while (*string)
     {
@@ -389,12 +389,12 @@ stl::string WideToMultiByte(const wchar_t* string)
 #endif
 }
 
-stl::wstring MultiByteToWide(const char* string)
+ea::wstring MultiByteToWide(const char* string)
 {
 #if _WIN32
     return Utf8ToUcs2(string);
 #else
-    stl::wstring result{};
+    ea::wstring result{};
     result.resize(LengthUTF8(string));
 
     unsigned byteOffset = 0;

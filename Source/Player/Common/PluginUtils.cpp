@@ -119,25 +119,25 @@ namespace Urho3D
 {
 
 template<typename T>
-static bool IsValidPtr(const stl::vector<unsigned char>& data, const T* p)
+static bool IsValidPtr(const ea::vector<unsigned char>& data, const T* p)
 {
     return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.data()) &&
            reinterpret_cast<std::uintptr_t>(p) + sizeof(T) <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
 template<typename T>
-static bool IsValidPtr(const stl::vector<unsigned char>& data, const T* p, unsigned len)
+static bool IsValidPtr(const ea::vector<unsigned char>& data, const T* p, unsigned len)
 {
     return reinterpret_cast<std::uintptr_t>(p) >= reinterpret_cast<std::uintptr_t>(data.data()) &&
            reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
-PluginType GetPluginType(Context* context, const stl::string& path)
+PluginType GetPluginType(Context* context, const ea::string& path)
 {
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
-    stl::vector<unsigned char> data;
+    ea::vector<unsigned char> data;
     const char pluginEntryPoint[] = "cr_main";
 
 #if __linux__
@@ -209,7 +209,7 @@ PluginType GetPluginType(Context* context, const stl::string& path)
 
             shoff = sectab->sh_offset;
             auto num = sectab->sh_size / sectab->sh_entsize;
-            stl::string funcName;
+            ea::string funcName;
             for (auto i = 0; i < num; i++)
             {
                 Elf_Sym* symbol = reinterpret_cast<Elf_Sym*>(data.data() + shoff);

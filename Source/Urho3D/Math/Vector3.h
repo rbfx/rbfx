@@ -147,7 +147,7 @@ public:
     const int* Data() const { return &x_; }
 
     /// Return as string.
-    stl::string ToString() const;
+    ea::string ToString() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const { return (unsigned)x_ * 31 * 31 + (unsigned)y_ * 31 + (unsigned)z_; }
@@ -433,7 +433,7 @@ public:
     const float* Data() const { return &x_; }
 
     /// Return as string.
-    stl::string ToString() const;
+    ea::string ToString() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const

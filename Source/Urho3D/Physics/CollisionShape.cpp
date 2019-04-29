@@ -101,11 +101,11 @@ public:
                 continue;
             }
 
-            stl::shared_array<unsigned char> vertexData;
-            stl::shared_array<unsigned char> indexData;
+            ea::shared_array<unsigned char> vertexData;
+            ea::shared_array<unsigned char> indexData;
             unsigned vertexSize;
             unsigned indexSize;
-            const stl::vector<VertexElement>* elements;
+            const ea::vector<VertexElement>* elements;
 
             geometry->GetRawDataShared(vertexData, vertexSize, indexData, indexSize, elements);
             if (!vertexData || !indexData || !elements || VertexBuffer::GetElementOffset(*elements, TYPE_VECTOR3, SEM_POSITION) != 0)
@@ -143,7 +143,7 @@ public:
     explicit TriangleMeshInterface(CustomGeometry* custom) :
         btTriangleIndexVertexArray()
     {
-        const stl::vector<stl::vector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
+        const ea::vector<ea::vector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
         unsigned totalVertexCount = 0;
         unsigned totalTriangles = 0;
 
@@ -153,8 +153,8 @@ public:
         if (totalVertexCount)
         {
             // CustomGeometry vertex data is unindexed, so build index data here
-            stl::shared_array<unsigned char> vertexData(new unsigned char[totalVertexCount * sizeof(Vector3)]);
-            stl::shared_array<unsigned char> indexData(new unsigned char[totalVertexCount * sizeof(unsigned)]);
+            ea::shared_array<unsigned char> vertexData(new unsigned char[totalVertexCount * sizeof(Vector3)]);
+            ea::shared_array<unsigned char> indexData(new unsigned char[totalVertexCount * sizeof(unsigned)]);
             dataArrays_.push_back(vertexData);
             dataArrays_.push_back(indexData);
 
@@ -193,7 +193,7 @@ public:
 
 private:
     /// Shared vertex/index data used in the collision
-    stl::vector<stl::shared_array<unsigned char> > dataArrays_;
+    ea::vector<ea::shared_array<unsigned char> > dataArrays_;
 };
 
 TriangleMeshData::TriangleMeshData(Model* model, unsigned lodLevel)
@@ -226,7 +226,7 @@ GImpactMeshData::GImpactMeshData(CustomGeometry* custom)
 
 ConvexData::ConvexData(Model* model, unsigned lodLevel)
 {
-    stl::vector<Vector3> vertices;
+    ea::vector<Vector3> vertices;
     unsigned numGeometries = model->GetNumGeometries();
 
     for (unsigned i = 0; i < numGeometries; ++i)
@@ -242,7 +242,7 @@ ConvexData::ConvexData(Model* model, unsigned lodLevel)
         const unsigned char* indexData;
         unsigned vertexSize;
         unsigned indexSize;
-        const stl::vector<VertexElement>* elements;
+        const ea::vector<VertexElement>* elements;
 
         geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
         if (!vertexData || VertexBuffer::GetElementOffset(*elements, TYPE_VECTOR3, SEM_POSITION) != 0)
@@ -267,8 +267,8 @@ ConvexData::ConvexData(Model* model, unsigned lodLevel)
 
 ConvexData::ConvexData(CustomGeometry* custom)
 {
-    const stl::vector<stl::vector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
-    stl::vector<Vector3> vertices;
+    const ea::vector<ea::vector<CustomGeometryVertex> >& srcVertices = custom->GetVertices();
+    ea::vector<Vector3> vertices;
 
     for (unsigned i = 0; i < srcVertices.size(); ++i)
     {
@@ -279,7 +279,7 @@ ConvexData::ConvexData(CustomGeometry* custom)
     BuildHull(vertices);
 }
 
-void ConvexData::BuildHull(const stl::vector<Vector3>& vertices)
+void ConvexData::BuildHull(const ea::vector<Vector3>& vertices)
 {
     if (vertices.size())
     {
@@ -344,7 +344,7 @@ HeightfieldData::HeightfieldData(Terrain* terrain, unsigned lodLevel) :
                     break;
             }
 
-            stl::shared_array<float> lodHeightData(new float[lodSize.x_ * lodSize.y_]);
+            ea::shared_array<float> lodHeightData(new float[lodSize.x_ * lodSize.y_]);
             for (int y = 0, dY = 0; y < size_.y_ && dY < lodSize.y_; y += skip, ++dY)
             {
                 for (int x = 0, dX = 0; x < size_.x_ && dX < lodSize.x_; x += skip, ++dX)
@@ -1110,13 +1110,13 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
             assert(shape_);
         }
         else
-            URHO3D_LOGWARNING("Could not find custom geometry component ID " + stl::to_string(customGeometryID_) +
+            URHO3D_LOGWARNING("Could not find custom geometry component ID " + ea::to_string(customGeometryID_) +
                 " for collision shape creation");
     }
     else if (model_ && model_->GetNumGeometries())
     {
         // Check the geometry cache
-        stl::pair<Model*, unsigned> id = stl::make_pair(model_.get(), lodLevel_);
+        ea::pair<Model*, unsigned> id = ea::make_pair(model_.get(), lodLevel_);
         auto cachedGeometry = cache.find(id);
         if (cachedGeometry != cache.end())
             geometry_ = cachedGeometry->second;

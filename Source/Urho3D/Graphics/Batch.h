@@ -169,7 +169,7 @@ struct BatchGroup : public Batch
     void Draw(View* view, Camera* camera, bool allowDepthWrite) const;
 
     /// Instance data.
-    stl::vector<InstanceData> instances_;
+    ea::vector<InstanceData> instances_;
     /// Instance stream start index, or M_MAX_UNSIGNED if transforms not pre-set.
     unsigned startIndex_;
 };
@@ -233,7 +233,7 @@ public:
     /// Sort instanced and non-instanced draw calls front to back.
     void SortFrontToBack();
     /// Sort batches front to back while also maintaining state sorting.
-    void SortFrontToBack2Pass(stl::vector<Batch*>& batches);
+    void SortFrontToBack2Pass(ea::vector<Batch*>& batches);
     /// Pre-set instance data of all groups. The vertex buffer must be big enough to hold all data.
     void SetInstancingData(void* lockedData, unsigned stride, unsigned& freeIndex);
     /// Draw.
@@ -245,28 +245,28 @@ public:
     bool IsEmpty() const { return batches_.empty() && batchGroups_.empty(); }
 
     /// Instanced draw calls.
-    stl::unordered_map<BatchGroupKey, BatchGroup> batchGroups_;
+    ea::unordered_map<BatchGroupKey, BatchGroup> batchGroups_;
     /// Shader remapping table for 2-pass state and distance sort.
-    stl::unordered_map<unsigned, unsigned> shaderRemapping_;
+    ea::unordered_map<unsigned, unsigned> shaderRemapping_;
     /// Material remapping table for 2-pass state and distance sort.
-    stl::unordered_map<unsigned short, unsigned short> materialRemapping_;
+    ea::unordered_map<unsigned short, unsigned short> materialRemapping_;
     /// Geometry remapping table for 2-pass state and distance sort.
-    stl::unordered_map<unsigned short, unsigned short> geometryRemapping_;
+    ea::unordered_map<unsigned short, unsigned short> geometryRemapping_;
 
     /// Unsorted non-instanced draw calls.
-    stl::vector<Batch> batches_;
+    ea::vector<Batch> batches_;
     /// Sorted non-instanced draw calls.
-    stl::vector<Batch*> sortedBatches_;
+    ea::vector<Batch*> sortedBatches_;
     /// Sorted instanced draw calls.
-    stl::vector<BatchGroup*> sortedBatchGroups_;
+    ea::vector<BatchGroup*> sortedBatchGroups_;
     /// Maximum sorted instances.
     unsigned maxSortedInstances_;
     /// Whether the pass command contains extra shader defines.
     bool hasExtraDefines_;
     /// Vertex shader extra defines.
-    stl::string vsExtraDefines_;
+    ea::string vsExtraDefines_;
     /// Pixel shader extra defines.
-    stl::string psExtraDefines_;
+    ea::string psExtraDefines_;
     /// Hash for vertex shader extra defines.
     StringHash vsExtraDefinesHash_;
     /// Hash for pixel shader extra defines.
@@ -302,11 +302,11 @@ struct LightBatchQueue
     /// Lit geometry draw calls, non-base (additive)
     BatchQueue litBatches_;
     /// Shadow map split queues.
-    stl::vector<ShadowBatchQueue> shadowSplits_;
+    ea::vector<ShadowBatchQueue> shadowSplits_;
     /// Per-vertex lights.
-    stl::vector<Light*> vertexLights_;
+    ea::vector<Light*> vertexLights_;
     /// Light volume draw calls.
-    stl::vector<Batch> volumeBatches_;
+    ea::vector<Batch> volumeBatches_;
 };
 
 }

@@ -72,7 +72,7 @@ AnimationState::AnimationState(Node* node, Animation* animation) :
         // Setup animation track to scene node mapping
         if (node_)
         {
-            const stl::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
+            const ea::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
             stateTracks_.clear();
 
             for (auto i = tracks.begin(); i !=
@@ -123,7 +123,7 @@ void AnimationState::SetStartBone(Bone* startBone)
 
     startBone_ = startBone;
 
-    const stl::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
+    const ea::unordered_map<StringHash, AnimationTrack>& tracks = animation_->GetTracks();
     stateTracks_.clear();
 
     if (!startBone->node_)
@@ -222,7 +222,7 @@ void AnimationState::SetBoneWeight(unsigned index, float weight, bool recursive)
         Node* boneNode = stateTracks_[index].node_;
         if (boneNode)
         {
-            const stl::vector<stl::shared_ptr<Node> >& children = boneNode->GetChildren();
+            const ea::vector<ea::shared_ptr<Node> >& children = boneNode->GetChildren();
             for (unsigned i = 0; i < children.size(); ++i)
             {
                 unsigned childTrackIndex = GetTrackIndex(children[i]);
@@ -233,7 +233,7 @@ void AnimationState::SetBoneWeight(unsigned index, float weight, bool recursive)
     }
 }
 
-void AnimationState::SetBoneWeight(const stl::string& name, float weight, bool recursive)
+void AnimationState::SetBoneWeight(const ea::string& name, float weight, bool recursive)
 {
     SetBoneWeight(GetTrackIndex(name), weight, recursive);
 }
@@ -293,8 +293,8 @@ void AnimationState::AddTime(float delta)
     {
         using namespace AnimationFinished;
 
-        stl::weak_ptr<AnimationState> self(this);
-        stl::weak_ptr<Node> senderNode(model_ ? model_->GetNode() : node_.get());
+        ea::weak_ptr<AnimationState> self(this);
+        ea::weak_ptr<Node> senderNode(model_ ? model_->GetNode() : node_.get());
 
         VariantMap& eventData = senderNode->GetEventDataMap();
         eventData[P_NODE] = senderNode;
@@ -330,9 +330,9 @@ void AnimationState::AddTime(float delta)
             }
         }
         if (oldTime > time)
-            stl::swap(oldTime, time);
+            ea::swap(oldTime, time);
 
-        const stl::vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
+        const ea::vector<AnimationTriggerPoint>& triggers = animation_->GetTriggers();
         for (auto i = triggers.begin(); i != triggers.end(); ++i)
         {
             float frameTime = i->time_;
@@ -343,8 +343,8 @@ void AnimationState::AddTime(float delta)
             {
                 using namespace AnimationTrigger;
 
-                stl::weak_ptr<AnimationState> self(this);
-                stl::weak_ptr<Node> senderNode(model_ ? model_->GetNode() : node_.get());
+                ea::weak_ptr<AnimationState> self(this);
+                ea::weak_ptr<Node> senderNode(model_ ? model_->GetNode() : node_.get());
 
                 VariantMap& eventData = senderNode->GetEventDataMap();
                 eventData[P_NODE] = senderNode;
@@ -392,7 +392,7 @@ float AnimationState::GetBoneWeight(unsigned index) const
     return index < stateTracks_.size() ? stateTracks_[index].weight_ : 0.0f;
 }
 
-float AnimationState::GetBoneWeight(const stl::string& name) const
+float AnimationState::GetBoneWeight(const ea::string& name) const
 {
     return GetBoneWeight(GetTrackIndex(name));
 }
@@ -402,7 +402,7 @@ float AnimationState::GetBoneWeight(StringHash nameHash) const
     return GetBoneWeight(GetTrackIndex(nameHash));
 }
 
-unsigned AnimationState::GetTrackIndex(const stl::string& name) const
+unsigned AnimationState::GetTrackIndex(const ea::string& name) const
 {
     for (unsigned i = 0; i < stateTracks_.size(); ++i)
     {

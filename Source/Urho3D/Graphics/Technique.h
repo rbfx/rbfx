@@ -78,7 +78,7 @@ class URHO3D_API Pass : public RefCounted
 {
 public:
     /// Construct.
-    explicit Pass(const stl::string& name);
+    explicit Pass(const ea::string& name);
     /// Destruct.
     ~Pass() override;
 
@@ -97,24 +97,24 @@ public:
     /// Set whether requires desktop level hardware.
     void SetIsDesktop(bool enable);
     /// Set vertex shader name.
-    void SetVertexShader(const stl::string& name);
+    void SetVertexShader(const ea::string& name);
     /// Set pixel shader name.
-    void SetPixelShader(const stl::string& name);
+    void SetPixelShader(const ea::string& name);
     /// Set vertex shader defines. Separate multiple defines with spaces.
-    void SetVertexShaderDefines(const stl::string& defines);
+    void SetVertexShaderDefines(const ea::string& defines);
     /// Set pixel shader defines. Separate multiple defines with spaces.
-    void SetPixelShaderDefines(const stl::string& defines);
+    void SetPixelShaderDefines(const ea::string& defines);
     /// Set vertex shader define excludes. Use to mark defines that the shader code will not recognize, to prevent compiling redundant shader variations.
-    void SetVertexShaderDefineExcludes(const stl::string& excludes);
+    void SetVertexShaderDefineExcludes(const ea::string& excludes);
     /// Set pixel shader define excludes. Use to mark defines that the shader code will not recognize, to prevent compiling redundant shader variations.
-    void SetPixelShaderDefineExcludes(const stl::string& excludes);
+    void SetPixelShaderDefineExcludes(const ea::string& excludes);
     /// Reset shader pointers.
     void ReleaseShaders();
     /// Mark shaders loaded this frame.
     void MarkShadersLoaded(unsigned frameNumber);
 
     /// Return pass name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
     /// Return pass index. This is used for optimal render-time pass queries that avoid map lookups.
     unsigned GetIndex() const { return index_; }
@@ -144,37 +144,37 @@ public:
     bool IsDesktop() const { return isDesktop_; }
 
     /// Return vertex shader name.
-    const stl::string& GetVertexShader() const { return vertexShaderName_; }
+    const ea::string& GetVertexShader() const { return vertexShaderName_; }
 
     /// Return pixel shader name.
-    const stl::string& GetPixelShader() const { return pixelShaderName_; }
+    const ea::string& GetPixelShader() const { return pixelShaderName_; }
 
     /// Return vertex shader defines.
-    const stl::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
+    const ea::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
 
     /// Return pixel shader defines.
-    const stl::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
+    const ea::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
 
     /// Return vertex shader define excludes.
-    const stl::string& GetVertexShaderDefineExcludes() const { return vertexShaderDefineExcludes_; }
+    const ea::string& GetVertexShaderDefineExcludes() const { return vertexShaderDefineExcludes_; }
 
     /// Return pixel shader define excludes.
-    const stl::string& GetPixelShaderDefineExcludes() const { return pixelShaderDefineExcludes_; }
+    const ea::string& GetPixelShaderDefineExcludes() const { return pixelShaderDefineExcludes_; }
 
     /// Return vertex shaders.
-    stl::vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
+    ea::vector<ea::shared_ptr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
 
     /// Return pixel shaders.
-    stl::vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
+    ea::vector<ea::shared_ptr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
 
     /// Return vertex shaders with extra defines from the renderpath.
-    stl::vector<stl::shared_ptr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
+    ea::vector<ea::shared_ptr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
     /// Return pixel shaders with extra defines from the renderpath.
-    stl::vector<stl::shared_ptr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
+    ea::vector<ea::shared_ptr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
     /// Return the effective vertex shader defines, accounting for excludes. Called internally by Renderer.
-    stl::string GetEffectiveVertexShaderDefines() const;
+    ea::string GetEffectiveVertexShaderDefines() const;
     /// Return the effective pixel shader defines, accounting for excludes. Called internally by Renderer.
-    stl::string GetEffectivePixelShaderDefines() const;
+    ea::string GetEffectivePixelShaderDefines() const;
 
 private:
     /// Pass index.
@@ -196,27 +196,27 @@ private:
     /// Require desktop level hardware flag.
     bool isDesktop_;
     /// Vertex shader name.
-    stl::string vertexShaderName_;
+    ea::string vertexShaderName_;
     /// Pixel shader name.
-    stl::string pixelShaderName_;
+    ea::string pixelShaderName_;
     /// Vertex shader defines.
-    stl::string vertexShaderDefines_;
+    ea::string vertexShaderDefines_;
     /// Pixel shader defines.
-    stl::string pixelShaderDefines_;
+    ea::string pixelShaderDefines_;
     /// Vertex shader define excludes.
-    stl::string vertexShaderDefineExcludes_;
+    ea::string vertexShaderDefineExcludes_;
     /// Pixel shader define excludes.
-    stl::string pixelShaderDefineExcludes_;
+    ea::string pixelShaderDefineExcludes_;
     /// Vertex shaders.
-    stl::vector<stl::shared_ptr<ShaderVariation> > vertexShaders_;
+    ea::vector<ea::shared_ptr<ShaderVariation> > vertexShaders_;
     /// Pixel shaders.
-    stl::vector<stl::shared_ptr<ShaderVariation> > pixelShaders_;
+    ea::vector<ea::shared_ptr<ShaderVariation> > pixelShaders_;
     /// Vertex shaders with extra defines from the renderpath.
-    stl::unordered_map<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraVertexShaders_;
+    ea::unordered_map<StringHash, ea::vector<ea::shared_ptr<ShaderVariation> > > extraVertexShaders_;
     /// Pixel shaders with extra defines from the renderpath.
-    stl::unordered_map<StringHash, stl::vector<stl::shared_ptr<ShaderVariation> > > extraPixelShaders_;
+    ea::unordered_map<StringHash, ea::vector<ea::shared_ptr<ShaderVariation> > > extraPixelShaders_;
     /// Pass name.
-    stl::string name_;
+    ea::string name_;
 };
 
 /// %Material technique. Consists of several passes.
@@ -240,13 +240,13 @@ public:
     /// Set whether requires desktop level hardware.
     void SetIsDesktop(bool enable);
     /// Create a new pass.
-    Pass* CreatePass(const stl::string& name);
+    Pass* CreatePass(const ea::string& name);
     /// Remove a pass.
-    void RemovePass(const stl::string& name);
+    void RemovePass(const ea::string& name);
     /// Reset shader pointers in all passes.
     void ReleaseShaders();
     /// Clone the technique. Passes will be deep copied to allow independent modification.
-    stl::shared_ptr<Technique> Clone(const stl::string& cloneName = EMPTY_STRING) const;
+    ea::shared_ptr<Technique> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return whether requires desktop level hardware.
     bool IsDesktop() const { return isDesktop_; }
@@ -258,13 +258,13 @@ public:
     bool HasPass(unsigned passIndex) const { return passIndex < passes_.size() && passes_[passIndex] != nullptr; }
 
     /// Return whether has a pass by name. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    bool HasPass(const stl::string& name) const;
+    bool HasPass(const ea::string& name) const;
 
     /// Return a pass, or null if not found.
     Pass* GetPass(unsigned passIndex) const { return passIndex < passes_.size() ? passes_[passIndex] : nullptr; }
 
     /// Return a pass by name, or null if not found. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    Pass* GetPass(const stl::string& name) const;
+    Pass* GetPass(const ea::string& name) const;
 
     /// Return a pass that is supported for rendering, or null if not found.
     Pass* GetSupportedPass(unsigned passIndex) const
@@ -274,20 +274,20 @@ public:
     }
 
     /// Return a supported pass by name. This overload should not be called in time-critical rendering loops; use a pre-acquired pass index instead.
-    Pass* GetSupportedPass(const stl::string& name) const;
+    Pass* GetSupportedPass(const ea::string& name) const;
 
     /// Return number of passes.
     unsigned GetNumPasses() const;
     /// Return all pass names.
-    stl::vector<stl::string> GetPassNames() const;
+    ea::vector<ea::string> GetPassNames() const;
     /// Return all passes.
-    stl::vector<Pass*> GetPasses() const;
+    ea::vector<Pass*> GetPasses() const;
 
     /// Return a clone with added shader compilation defines. Called internally by Material.
-    stl::shared_ptr<Technique> CloneWithDefines(const stl::string& vsDefines, const stl::string& psDefines);
+    ea::shared_ptr<Technique> CloneWithDefines(const ea::string& vsDefines, const ea::string& psDefines);
 
     /// Return a pass type index by name. Allocate new if not used yet.
-    static unsigned GetPassIndex(const stl::string& passName);
+    static unsigned GetPassIndex(const ea::string& passName);
 
     /// Index for base pass. Initialized once GetPassIndex() has been called for the first time.
     static unsigned basePassIndex;
@@ -312,12 +312,12 @@ private:
     /// Cached desktop GPU support flag.
     bool desktopSupport_;
     /// Passes.
-    stl::vector<stl::shared_ptr<Pass> > passes_;
+    ea::vector<ea::shared_ptr<Pass> > passes_;
     /// Cached clones with added shader compilation defines.
-    stl::unordered_map<stl::pair<StringHash, StringHash>, stl::shared_ptr<Technique> > cloneTechniques_;
+    ea::unordered_map<ea::pair<StringHash, StringHash>, ea::shared_ptr<Technique> > cloneTechniques_;
 
     /// Pass index assignments.
-    static stl::unordered_map<stl::string, unsigned> passIndices;
+    static ea::unordered_map<ea::string, unsigned> passIndices;
 };
 
 }

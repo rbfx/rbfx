@@ -264,9 +264,9 @@ void Zone::UpdateAmbientGradient()
         Vector3 minZPosition = worldTransform * Vector3(center.x_, center.y_, boundingBox_.min_.z_);
         Vector3 maxZPosition = worldTransform * Vector3(center.x_, center.y_, boundingBox_.max_.z_);
 
-        stl::vector<Zone*> result;
+        ea::vector<Zone*> result;
         {
-            PointOctreeQuery query(reinterpret_cast<stl::vector<Drawable*>&>(result), minZPosition, DRAWABLE_ZONE);
+            PointOctreeQuery query(reinterpret_cast<ea::vector<Drawable*>&>(result), minZPosition, DRAWABLE_ZONE);
             octant_->GetRoot()->GetDrawables(query);
         }
 
@@ -292,7 +292,7 @@ void Zone::UpdateAmbientGradient()
 
         // Do the same for gradient end position
         {
-            PointOctreeQuery query(reinterpret_cast<stl::vector<Drawable*>&>(result), maxZPosition, DRAWABLE_ZONE);
+            PointOctreeQuery query(reinterpret_cast<ea::vector<Drawable*>&>(result), maxZPosition, DRAWABLE_ZONE);
             octant_->GetRoot()->GetDrawables(query);
         }
         bestPriority = M_MIN_INT;
@@ -326,7 +326,7 @@ void Zone::ClearDrawablesZone()
 {
     if (octant_ && lastWorldBoundingBox_.Defined())
     {
-        stl::vector<Drawable*> result;
+        ea::vector<Drawable*> result;
         BoxOctreeQuery query(result, lastWorldBoundingBox_, DRAWABLE_GEOMETRY | DRAWABLE_ZONE);
         octant_->GetRoot()->GetDrawables(query);
 

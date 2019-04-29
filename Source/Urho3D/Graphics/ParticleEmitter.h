@@ -131,9 +131,9 @@ private:
     void HandleEffectReloadFinished(StringHash eventType, VariantMap& eventData);
 
     /// Particle effect.
-    stl::shared_ptr<ParticleEffect> effect_;
+    ea::shared_ptr<ParticleEffect> effect_;
     /// Particles.
-    stl::vector<Particle> particles_;
+    ea::vector<Particle> particles_;
     /// Active/inactive period timer.
     float periodTimer_;
     /// New particle emission timer.

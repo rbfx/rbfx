@@ -103,7 +103,7 @@ bool Sound::BeginLoad(Deserializer& source)
 bool Sound::LoadOggVorbis(Deserializer& source)
 {
     unsigned dataSize = source.GetSize();
-    stl::shared_array<signed char> data(new signed char[dataSize]);
+    ea::shared_array<signed char> data(new signed char[dataSize]);
     source.Read(data.get(), dataSize);
 
     // Check for validity of data
@@ -310,9 +310,9 @@ void Sound::FixInterpolation()
     }
 }
 
-stl::shared_ptr<SoundStream> Sound::GetDecoderStream() const
+ea::shared_ptr<SoundStream> Sound::GetDecoderStream() const
 {
-    return compressed_ ? stl::shared_ptr<SoundStream>(new OggVorbisSoundStream(this)) : stl::shared_ptr<SoundStream>();
+    return compressed_ ? ea::shared_ptr<SoundStream>(new OggVorbisSoundStream(this)) : ea::shared_ptr<SoundStream>();
 }
 
 float Sound::GetLength() const
@@ -341,9 +341,9 @@ unsigned Sound::GetSampleSize() const
 void Sound::LoadParameters()
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
+    ea::string xmlName = ReplaceExtension(GetName(), ".xml");
 
-    stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    ea::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (!file)
         return;
 
@@ -352,7 +352,7 @@ void Sound::LoadParameters()
 
     for (XMLElement paramElem = rootElem.GetChild(); paramElem; paramElem = paramElem.GetNext())
     {
-        stl::string name = paramElem.GetName();
+        ea::string name = paramElem.GetName();
 
         if (name == "format" && !compressed_)
         {

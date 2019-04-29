@@ -94,7 +94,7 @@ void Player::Start()
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
-    stl::shared_ptr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
+    ea::shared_ptr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
     if (!projectFile)
     {
         projectFile = new JSONFile(context_);
@@ -153,8 +153,8 @@ bool Player::LoadPlugins(const JSONValue& plugins)
         if (plugins[i]["private"].GetBool())
             continue;
 
-        stl::string pluginName = plugins[i]["name"].GetString();
-        stl::string pluginFileName;
+        ea::string pluginName = plugins[i]["name"].GetString();
+        ea::string pluginFileName;
         bool loaded = false;
 #if !_WIN32
         // Native plugins on unixes
@@ -188,7 +188,7 @@ bool Player::LoadPlugins(const JSONValue& plugins)
         {
             pluginFileName = pluginName + ".dll";
 #if ANDROID
-            pluginFileName = stl::string(APK) + "assets/.net/" + pluginFileName;
+            pluginFileName = ea::string(APK) + "assets/.net/" + pluginFileName;
 #endif
             if (GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
@@ -214,7 +214,7 @@ bool Player::LoadPlugins(const JSONValue& plugins)
 }
 
 #if URHO3D_PLUGINS
-bool Player::LoadAssembly(const stl::string& path, PluginType assumeType)
+bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
 {
     if (assumeType == PLUGIN_INVALID)
         assumeType = GetPluginType(context_, path);
@@ -232,7 +232,7 @@ bool Player::LoadAssembly(const stl::string& path, PluginType assumeType)
                 if (pluginMain(&dummy, CR_LOAD) == 0)
                 {
                     plugins_.push_back(
-                        stl::shared_ptr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
+                        ea::shared_ptr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
                     return true;
                 }
             }
@@ -245,7 +245,7 @@ bool Player::LoadAssembly(const stl::string& path, PluginType assumeType)
         {
             if (PluginApplication* plugin = script->LoadAssembly(path))
             {
-                plugins_.Push(stl::shared_ptr<PluginApplication>(plugin));
+                plugins_.emplace_back(ea::shared_ptr<PluginApplication>(plugin));
                 return true;
             }
         }
@@ -258,7 +258,7 @@ bool Player::LoadAssembly(const stl::string& path, PluginType assumeType)
 BakedResourceRouter::BakedResourceRouter(Context* context)
     : ResourceRouter(context)
 {
-    stl::shared_ptr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
+    ea::shared_ptr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
     if (file)
     {
         const auto& info = file->GetRoot().GetObject();
@@ -271,7 +271,7 @@ BakedResourceRouter::BakedResourceRouter(Context* context)
     }
 }
 
-void BakedResourceRouter::Route(stl::string& name, ResourceRequest requestType)
+void BakedResourceRouter::Route(ea::string& name, ResourceRequest requestType)
 {
     auto it = routes_.find(name);
     if (it != routes_.end())

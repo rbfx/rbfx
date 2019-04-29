@@ -46,33 +46,33 @@ public:
     int GetLanguageIndex() const { return languageIndex_; }
 
     /// Return the index number of language. The index is determined by the order of loading.
-    int GetLanguageIndex(const stl::string& language);
+    int GetLanguageIndex(const ea::string& language);
     /// Return the name of current language.
-    stl::string GetLanguage();
+    ea::string GetLanguage();
     /// Return the name of language.
-    stl::string GetLanguage(int index);
+    ea::string GetLanguage(int index);
     /// Set current language.
     void SetLanguage(int index);
     /// Set current language.
-    void SetLanguage(const stl::string& language);
+    void SetLanguage(const ea::string& language);
     /// Return a string in the current language. Returns EMPTY_STRING if id is empty. Returns id if translation is not found and logs a warning.
-    stl::string Get(const stl::string& id, int index=-1);
+    ea::string Get(const ea::string& id, int index=-1);
     /// Clear all loaded strings.
     void Reset();
     /// Load strings from JSONFile. The file should be UTF8 without BOM.
-    void LoadJSONFile(const stl::string& name, const stl::string language = EMPTY_STRING);
+    void LoadJSONFile(const ea::string& name, const ea::string language = EMPTY_STRING);
     /// Load strings from JSONValue.
     void LoadMultipleLanguageJSON(const JSONValue& source);
     /// Load strings from JSONValue for specific language.
-    void LoadSingleLanguageJSON(const JSONValue& source, const stl::string& language = EMPTY_STRING);
+    void LoadSingleLanguageJSON(const JSONValue& source, const ea::string& language = EMPTY_STRING);
 
 private:
     /// Language names.
-    stl::vector<stl::string> languages_;
+    ea::vector<ea::string> languages_;
     /// Index of current language.
     int languageIndex_;
     /// Storage strings: <Language <StringId, Value> >.
-    stl::unordered_map<StringHash, stl::unordered_map<StringHash, stl::string> > strings_;
+    ea::unordered_map<StringHash, ea::unordered_map<StringHash, ea::string> > strings_;
 };
 
 }

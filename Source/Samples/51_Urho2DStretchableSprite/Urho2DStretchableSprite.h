@@ -49,7 +49,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <remove sel=\"/element/element[./attribute[@name='Name' and @value='Button0']]/attribute[@name='Is Visible']\" />"
         "    <replace sel=\"/element/element[./attribute[@name='Name' and @value='Button0']]/element[./attribute[@name='Name' and @value='Label']]/attribute[@name='Text']/@value\">TAB</replace>"
@@ -91,9 +91,9 @@ private:
     void ScaleSprites(float timeStep);
 
     /// Reference (static) sprite node.
-    stl::shared_ptr<Node> refSpriteNode_;
+    ea::shared_ptr<Node> refSpriteNode_;
     /// Stretchable sprite node.
-    stl::shared_ptr<Node> stretchSpriteNode_;
+    ea::shared_ptr<Node> stretchSpriteNode_;
     /// Transform mode tracking index.
     unsigned selectTransform_ = 0;
 };

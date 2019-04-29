@@ -54,15 +54,15 @@ static const float sigma3Kernel9x9[9 * 9] = {
 };
 
 int main(int argc, char** argv);
-void Run(const stl::vector<stl::string>& arguments);
+void Run(const ea::vector<ea::string>& arguments);
 
-bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horizontal, stl::vector<float>& luminance);
-void WriteIES(unsigned char* data, unsigned width, unsigned height, stl::vector<float>& horizontal, stl::vector<float>& vertical, stl::vector<float>& luminance);
+bool ReadIES(File* data, ea::vector<float>& vertical, ea::vector<float>& horizontal, ea::vector<float>& luminance);
+void WriteIES(unsigned char* data, unsigned width, unsigned height, ea::vector<float>& horizontal, ea::vector<float>& vertical, ea::vector<float>& luminance);
 void Blur(unsigned char* data, unsigned width, unsigned height, const float* kernel, unsigned kernelWidth);
 
 int main(int argc, char** argv)
 {
-    stl::vector<stl::string> arguments;
+    ea::vector<ea::string> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -74,7 +74,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const stl::vector<stl::string>& arguments)
+void Run(const ea::vector<ea::string>& arguments)
 {
     if (arguments.size() < 3)
         ErrorExit("Usage: RampGenerator <output png file> <width> <power> [dimensions]\n"
@@ -82,8 +82,8 @@ void Run(const stl::vector<stl::string>& arguments)
 
     if (GetExtension(arguments[0]) == ".ies") // Generate an IES light derived ramp
     {
-        stl::string inputFile = arguments[0];
-        stl::string ouputFile = arguments[1];
+        ea::string inputFile = arguments[0];
+        ea::string ouputFile = arguments[1];
         int width = ToInt(arguments[2]);
         int dim = 1;
         if (arguments.size() > 3)
@@ -98,12 +98,12 @@ void Run(const stl::vector<stl::string>& arguments)
         File file(&context);
         file.Open(inputFile);
 
-        stl::vector<float> horizontal;
-        stl::vector<float> vertical;
-        stl::vector<float> luminance;
+        ea::vector<float> horizontal;
+        ea::vector<float> vertical;
+        ea::vector<float> luminance;
         ReadIES(&file, vertical, horizontal, luminance);
 
-        stl::unique_ptr<unsigned char[]> data(new unsigned char[width * height]);
+        ea::unique_ptr<unsigned char[]> data(new unsigned char[width * height]);
         WriteIES(data.get(), width, height, vertical, horizontal, luminance);
 
         // Apply a blur, simpler than interpolating through the 2 dimensions of coarse samples
@@ -128,7 +128,7 @@ void Run(const stl::vector<stl::string>& arguments)
 
         if (dimensions == 1)
         {
-            stl::unique_ptr<unsigned char[]> data(new unsigned char[width]);
+            ea::unique_ptr<unsigned char[]> data(new unsigned char[width]);
 
             for (int i = 0; i < width; ++i)
             {
@@ -146,7 +146,7 @@ void Run(const stl::vector<stl::string>& arguments)
 
         if (dimensions == 2)
         {
-            stl::unique_ptr<unsigned char[]> data(new unsigned char[width * width]);
+            ea::unique_ptr<unsigned char[]> data(new unsigned char[width * width]);
 
             for (int y = 0; y < width; ++y)
             {
@@ -179,7 +179,7 @@ void Run(const stl::vector<stl::string>& arguments)
     }
 }
 
-unsigned GetSample(float position, stl::vector<float>& inputs)
+unsigned GetSample(float position, ea::vector<float>& inputs)
 {
     unsigned pos = 0;
     // Early outs
@@ -205,7 +205,7 @@ unsigned GetSample(float position, stl::vector<float>& inputs)
     return samplePos;
 }
 
-bool IsWhitespace(const stl::string& string)
+bool IsWhitespace(const ea::string& string)
 {
     bool anyNot = false;
     for (unsigned i = 0; i < string.length(); ++i)
@@ -216,7 +216,7 @@ bool IsWhitespace(const stl::string& string)
     return !anyNot;
 }
 
-float PopFirstFloat(stl::vector<stl::string>& words)
+float PopFirstFloat(ea::vector<ea::string>& words)
 {
     if (words.size() > 0)
     {
@@ -227,7 +227,7 @@ float PopFirstFloat(stl::vector<stl::string>& words)
     return -1.0f; // is < 0 ever valid?
 }
 
-int PopFirstInt(stl::vector<stl::string>& words)
+int PopFirstInt(ea::vector<ea::string>& words)
 {
     if (words.size() > 0)
     {
@@ -238,9 +238,9 @@ int PopFirstInt(stl::vector<stl::string>& words)
     return -1; // < 0 ever valid?
 }
 
-bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horizontal, stl::vector<float>& luminance)
+bool ReadIES(File* data, ea::vector<float>& vertical, ea::vector<float>& horizontal, ea::vector<float>& luminance)
 {
-    stl::string line = data->ReadLine();
+    ea::string line = data->ReadLine();
     if (!line.contains("IESNA:LM-63-1995") && !line.contains("IESNA:LM-63-2002"))
         ErrorExit("Unsupported format: " + line);
 
@@ -257,10 +257,10 @@ bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horiz
     }
 
     // Collect everything into a a list to process, we're now reading actual values
-    stl::vector<stl::string> lines;
+    ea::vector<ea::string> lines;
     while (!data->IsEof())
         lines.push_back(data->ReadLine());
-    stl::vector<stl::string> words;
+    ea::vector<ea::string> words;
     for (unsigned i = 0; i < lines.size(); ++i)
         words.push_back(lines[i].split(' '));
 
@@ -309,7 +309,7 @@ bool ReadIES(File* data, stl::vector<float>& vertical, stl::vector<float>& horiz
     return true;
 }
 
-void WriteIES(unsigned char* data, unsigned width, unsigned height, stl::vector<float>& horizontal, stl::vector<float>& vertical, stl::vector<float>& luminance)
+void WriteIES(unsigned char* data, unsigned width, unsigned height, ea::vector<float>& horizontal, ea::vector<float>& vertical, ea::vector<float>& luminance)
 {
     // Find maximum luminance value
     float maximum = -1;

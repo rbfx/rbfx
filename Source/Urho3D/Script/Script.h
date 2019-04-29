@@ -38,7 +38,7 @@ namespace Urho3D
 /// Script runtime command handler callback type.
 typedef std::uintptr_t(*ScriptRuntimeCommandHandler)(int command, void** args);
 ///
-using ScriptCommandRange = stl::pair<int, int>;
+using ScriptCommandRange = ea::pair<int, int>;
 /// Value indicating failure.
 static const std::uintptr_t ScriptCommandFailed = ~0U;
 /// Value indicating success.
@@ -61,9 +61,9 @@ public:
     /// Do not use.
     void RegisterCommandHandler(int first, int last, void* handler);
     /// Loads specified assembly into script runtime.
-    PluginApplication* LoadAssembly(const stl::string& path) { return reinterpret_cast<PluginApplication*>(Command(ScriptRuntimeCommand::LoadAssembly, path.c_str())); }
+    PluginApplication* LoadAssembly(const ea::string& path) { return reinterpret_cast<PluginApplication*>(Command(ScriptRuntimeCommand::LoadAssembly, path.c_str())); }
     /// Checks if specified assembly is loadable by script runtime.
-    bool VerifyAssembly(const stl::string& path) { return Command(ScriptRuntimeCommand::VerifyAssembly, path.c_str()) == ScriptCommandSuccess; }
+    bool VerifyAssembly(const ea::string& path) { return Command(ScriptRuntimeCommand::VerifyAssembly, path.c_str()) == ScriptCommandSuccess; }
     ///
     void LoadRuntime() { Command(ScriptRuntimeCommand::LoadRuntime); }
     ///
@@ -77,7 +77,7 @@ protected:
     std::uintptr_t Command(unsigned command, const Args&... args)
     {
         unsigned index = 0;
-        stl::vector<void*> runtimeArgs;
+        ea::vector<void*> runtimeArgs;
         runtimeArgs.resize(sizeof...(args));
         ConvertArguments(runtimeArgs, index, std::forward<const Args&>(args)...);
         std::uintptr_t result = ScriptCommandFailed;
@@ -92,13 +92,13 @@ protected:
     }
     ///
     template<typename T, typename... Args>
-    void ConvertArguments(stl::vector<void*>& runtimeArgs, unsigned index, T arg, Args... args)
+    void ConvertArguments(ea::vector<void*>& runtimeArgs, unsigned index, T arg, Args... args)
     {
         runtimeArgs[index] = ConvertArgument(arg);
         if (sizeof...(args) > 0)
             ConvertArguments(runtimeArgs, ++index, std::forward<Args>(args)...);
     }
-    void ConvertArguments(stl::vector<void*>& runtimeArgs, unsigned index) { }
+    void ConvertArguments(ea::vector<void*>& runtimeArgs, unsigned index) { }
     template<typename T>
     void* ConvertArgument(T value) { return const_cast<void*>(reinterpret_cast<const void*>(value)); }
     ///
@@ -107,11 +107,11 @@ protected:
         return range.first <= command && command <= range.second;
     }
     ///
-    stl::vector<stl::pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
+    ea::vector<ea::pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
     ///
     Mutex destructionQueueLock_;
     ///
-    stl::vector<RefCounted*> destructionQueue_;
+    ea::vector<RefCounted*> destructionQueue_;
 };
 
 

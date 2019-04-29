@@ -94,7 +94,7 @@ void Urho2DTileMap::CreateScene()
     if (!tmxFile)
         return;
 
-    stl::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
+    ea::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
     tileMapNode->SetPosition(Vector3(0.0f, 0.0f, -1.0f));
 
     auto* tileMap = tileMapNode->CreateComponent<TileMap2D>();
@@ -129,7 +129,7 @@ void Urho2DTileMap::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

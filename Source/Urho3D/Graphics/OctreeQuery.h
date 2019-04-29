@@ -39,7 +39,7 @@ class URHO3D_API OctreeQuery
 {
 public:
     /// Construct with query parameters.
-    OctreeQuery(stl::vector<Drawable*>& result, DrawableFlags drawableFlags, unsigned viewMask) :
+    OctreeQuery(ea::vector<Drawable*>& result, DrawableFlags drawableFlags, unsigned viewMask) :
         result_(result),
         drawableFlags_(drawableFlags),
         viewMask_(viewMask)
@@ -60,7 +60,7 @@ public:
     virtual void TestDrawables(Drawable** start, Drawable** end, bool inside) = 0;
 
     /// Result vector reference.
-    stl::vector<Drawable*>& result_;
+    ea::vector<Drawable*>& result_;
     /// Drawable flags to include.
     DrawableFlags drawableFlags_;
     /// Drawable layers to include.
@@ -72,7 +72,7 @@ class URHO3D_API PointOctreeQuery : public OctreeQuery
 {
 public:
     /// Construct with point and query parameters.
-    PointOctreeQuery(stl::vector<Drawable*>& result, const Vector3& point, DrawableFlags drawableFlags = DRAWABLE_ANY,
+    PointOctreeQuery(ea::vector<Drawable*>& result, const Vector3& point, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         OctreeQuery(result, drawableFlags, viewMask),
         point_(point)
@@ -93,7 +93,7 @@ class URHO3D_API SphereOctreeQuery : public OctreeQuery
 {
 public:
     /// Construct with sphere and query parameters.
-    SphereOctreeQuery(stl::vector<Drawable*>& result, const Sphere& sphere, DrawableFlags drawableFlags = DRAWABLE_ANY,
+    SphereOctreeQuery(ea::vector<Drawable*>& result, const Sphere& sphere, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         OctreeQuery(result, drawableFlags, viewMask),
         sphere_(sphere)
@@ -114,7 +114,7 @@ class URHO3D_API BoxOctreeQuery : public OctreeQuery
 {
 public:
     /// Construct with bounding box and query parameters.
-    BoxOctreeQuery(stl::vector<Drawable*>& result, const BoundingBox& box, DrawableFlags drawableFlags = DRAWABLE_ANY,
+    BoxOctreeQuery(ea::vector<Drawable*>& result, const BoundingBox& box, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         OctreeQuery(result, drawableFlags, viewMask),
         box_(box)
@@ -135,7 +135,7 @@ class URHO3D_API FrustumOctreeQuery : public OctreeQuery
 {
 public:
     /// Construct with frustum and query parameters.
-    FrustumOctreeQuery(stl::vector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
+    FrustumOctreeQuery(ea::vector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         OctreeQuery(result, drawableFlags, viewMask),
         frustum_(frustum)
@@ -222,7 +222,7 @@ class URHO3D_API RayOctreeQuery
 {
 public:
     /// Construct with ray and query parameters.
-    RayOctreeQuery(stl::vector<RayQueryResult>& result, const Ray& ray, RayQueryLevel level = RAY_TRIANGLE,
+    RayOctreeQuery(ea::vector<RayQueryResult>& result, const Ray& ray, RayQueryLevel level = RAY_TRIANGLE,
         float maxDistance = M_INFINITY, DrawableFlags drawableFlags = DRAWABLE_ANY, unsigned viewMask = DEFAULT_VIEWMASK) :
         result_(result),
         ray_(ray),
@@ -250,7 +250,7 @@ public:
     RayOctreeQuery& operator =(const RayOctreeQuery& rhs) = delete;
 
     /// Result vector reference.
-    stl::vector<RayQueryResult>& result_;
+    ea::vector<RayQueryResult>& result_;
     /// Ray.
     Ray ray_;
     /// Drawable flags to include.
@@ -263,14 +263,14 @@ public:
     RayQueryLevel level_;
 private:
     /// Builtin result storage.
-    stl::vector<RayQueryResult> resultStorage_;
+    ea::vector<RayQueryResult> resultStorage_;
 };
 
 class URHO3D_API AllContentOctreeQuery : public OctreeQuery
 {
 public:
     /// Construct.
-    AllContentOctreeQuery(stl::vector<Drawable*>& result, DrawableFlags drawableFlags, unsigned viewMask) :
+    AllContentOctreeQuery(ea::vector<Drawable*>& result, DrawableFlags drawableFlags, unsigned viewMask) :
         OctreeQuery(result, drawableFlags, viewMask)
     {
     }

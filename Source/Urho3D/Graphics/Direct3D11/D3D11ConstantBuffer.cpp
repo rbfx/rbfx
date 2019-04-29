@@ -61,7 +61,7 @@ bool ConstantBuffer::SetSize(unsigned size)
 
     size_ = size;
     dirty_ = false;
-    shadowData_ = stl::unique_ptr<unsigned char[]>(new unsigned char[size_]);
+    shadowData_ = ea::unique_ptr<unsigned char[]>(new unsigned char[size_]);
     memset(shadowData_.get(), 0, size_);
 
     if (graphics_)

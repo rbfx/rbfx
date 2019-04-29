@@ -31,14 +31,14 @@
 namespace Urho3D
 {
 
-const stl::vector<stl::string> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".7z", ".pak"};
-const stl::vector<stl::string> wordExtensions_{".doc", ".docx", ".odt"};
-const stl::vector<stl::string> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
-const stl::vector<stl::string> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
-const stl::vector<stl::string> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
-const stl::vector<stl::string> audioExtensions_{".waw", ".ogg", ".mp3"};
+const ea::vector<ea::string> archiveExtensions_{".rar", ".zip", ".tar", ".gz", ".xz", ".7z", ".pak"};
+const ea::vector<ea::string> wordExtensions_{".doc", ".docx", ".odt"};
+const ea::vector<ea::string> codeExtensions_{".c", ".cpp", ".h", ".hpp", ".hxx", ".py", ".py3", ".js", ".cs"};
+const ea::vector<ea::string> imagesExtensions_{".png", ".jpg", ".jpeg", ".gif", ".ttf", ".dds", ".psd"};
+const ea::vector<ea::string> textExtensions_{".xml", ".json", ".txt", ".yml", ".scene", ".material", ".ui", ".uistyle", ".node", ".particle"};
+const ea::vector<ea::string> audioExtensions_{".waw", ".ogg", ".mp3"};
 
-FileType GetFileType(const stl::string& fileName)
+FileType GetFileType(const ea::string& fileName)
 {
     auto extension = GetExtension(fileName).to_lower();
     if (archiveExtensions_.contains(extension))
@@ -58,7 +58,7 @@ FileType GetFileType(const stl::string& fileName)
     return FTYPE_FILE;
 }
 
-stl::string GetFileIcon(const stl::string& fileName)
+ea::string GetFileIcon(const ea::string& fileName)
 {
     switch (GetFileType(fileName))
     {
@@ -89,13 +89,13 @@ stl::string GetFileIcon(const stl::string& fileName)
     }
 }
 
-ContentType GetContentType(const stl::string& resourcePath)
+ContentType GetContentType(const ea::string& resourcePath)
 {
     auto extension = GetExtension(resourcePath).to_lower();
     if (extension == ".xml")
     {
         auto systemUI = (SystemUI*)ui::GetIO().UserData;
-        stl::shared_ptr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
+        ea::shared_ptr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
         if (!xml)
             return CTYPE_UNKNOWN;
 

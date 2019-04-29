@@ -62,7 +62,7 @@ PListValue::PListValue(float value) :                       // NOLINT(hicpp-memb
     SetFloat(value);
 }
 
-PListValue::PListValue(const stl::string& value) :               // NOLINT(hicpp-member-init)
+PListValue::PListValue(const ea::string& value) :               // NOLINT(hicpp-member-init)
     type_(PLVT_NONE)
 {
     SetString(value);
@@ -153,13 +153,13 @@ void PListValue::SetFloat(float value)
     float_ = value;
 }
 
-void PListValue::SetString(const stl::string& value)
+void PListValue::SetString(const ea::string& value)
 {
     if (type_ != PLVT_STRING)
     {
         Reset();
         type_ = PLVT_STRING;
-        string_ = new stl::string();
+        string_ = new ea::string();
     }
 
     *string_ = value;
@@ -204,7 +204,7 @@ float PListValue::GetFloat() const
     return type_ == PLVT_FLOAT ? float_ : 0.0f;
 }
 
-const stl::string& PListValue::GetString() const
+const ea::string& PListValue::GetString() const
 {
     return type_ == PLVT_STRING ? *string_ : EMPTY_STRING;
 }
@@ -347,7 +347,7 @@ bool PListFile::LoadDict(PListValueMap& dict, const XMLElement& dictElem)
     XMLElement valueElem = keyElem.GetNext();
     while (keyElem && valueElem)
     {
-        stl::string key = keyElem.GetValue();
+        ea::string key = keyElem.GetValue();
         valueElem = keyElem.GetNext();
 
         PListValue value;
@@ -383,7 +383,7 @@ bool PListFile::LoadArray(PListValueVector& array, const XMLElement& arrayElem)
 
 bool PListFile::LoadValue(PListValue& value, const XMLElement& valueElem)
 {
-    stl::string valueType = valueElem.GetName();
+    ea::string valueType = valueElem.GetName();
 
     if (valueType == "string")
         value.SetString(valueElem.GetValue());

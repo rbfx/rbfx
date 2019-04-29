@@ -37,7 +37,7 @@ namespace Urho3D
 static const unsigned ERROR_BUFFER_SIZE = 256;
 static const unsigned READ_BUFFER_SIZE = 65536; // Must be a power of two
 
-HttpRequest::HttpRequest(const stl::string& url, const stl::string& verb, const stl::vector<stl::string>& headers, const stl::string& postData) :
+HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers, const ea::string& postData) :
     url_(url.trimmed()),
     verb_(!verb.empty() ? verb : "GET"),
     headers_(headers),
@@ -69,13 +69,13 @@ HttpRequest::~HttpRequest()
 
 void HttpRequest::ThreadFunction()
 {
-    stl::string protocol = "http";
-    stl::string host;
-    stl::string path = "/";
+    ea::string protocol = "http";
+    ea::string host;
+    ea::string path = "/";
     int port = 80;
 
     unsigned protocolEnd = url_.find("://");
-    if (protocolEnd != stl::string::npos)
+    if (protocolEnd != ea::string::npos)
     {
         protocol = url_.substr(0, protocolEnd);
         host = url_.substr(protocolEnd + 3);
@@ -84,14 +84,14 @@ void HttpRequest::ThreadFunction()
         host = url_;
 
     unsigned pathStart = host.find('/');
-    if (pathStart != stl::string::npos)
+    if (pathStart != ea::string::npos)
     {
         path = host.substr(pathStart);
         host = host.substr(0, pathStart);
     }
 
     unsigned portStart = host.find(':');
-    if (portStart != stl::string::npos)
+    if (portStart != ea::string::npos)
     {
         port = ToInt(host.substr(portStart + 1));
         host = host.substr(0, portStart);
@@ -100,11 +100,11 @@ void HttpRequest::ThreadFunction()
     char errorBuffer[ERROR_BUFFER_SIZE];
     memset(errorBuffer, 0, sizeof(errorBuffer));
 
-    stl::string headersStr;
+    ea::string headersStr;
     for (unsigned i = 0; i < headers_.size(); ++i)
     {
         // Trim and only add non-empty header strings
-        stl::string header = headers_[i].trimmed();
+        ea::string header = headers_[i].trimmed();
         if (header.length())
             headersStr += header + "\r\n";
     }
@@ -138,7 +138,7 @@ void HttpRequest::ThreadFunction()
         // If no connection could be made, store the error and exit
         if (state_ == HTTP_ERROR)
         {
-            error_ = stl::string(&errorBuffer[0]);
+            error_ = ea::string(&errorBuffer[0]);
             return;
         }
     }
@@ -208,7 +208,7 @@ unsigned HttpRequest::Read(void* dest, unsigned size)
 
     for (;;)
     {
-        stl::pair<unsigned, bool> status{};
+        ea::pair<unsigned, bool> status{};
 
         for (;;)
         {
@@ -269,7 +269,7 @@ bool HttpRequest::IsEof() const
     return CheckAvailableSizeAndEof().second;
 }
 
-stl::string HttpRequest::GetError() const
+ea::string HttpRequest::GetError() const
 {
     MutexLock lock(mutex_);
     return error_;
@@ -287,7 +287,7 @@ unsigned HttpRequest::GetAvailableSize() const
     return CheckAvailableSizeAndEof().first;
 }
 
-stl::pair<unsigned, bool> HttpRequest::CheckAvailableSizeAndEof() const
+ea::pair<unsigned, bool> HttpRequest::CheckAvailableSizeAndEof() const
 {
     unsigned size = (writePosition_ - readPosition_) & (READ_BUFFER_SIZE - 1);
     return {size, (state_ == HTTP_ERROR || (state_ == HTTP_CLOSED && !size))};

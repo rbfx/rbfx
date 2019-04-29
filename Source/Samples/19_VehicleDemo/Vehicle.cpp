@@ -145,7 +145,7 @@ void Vehicle::Init()
     GetWheelComponents();
 }
 
-void Vehicle::InitWheel(const stl::string& name, const Vector3& offset, stl::weak_ptr<Node>& wheelNode, unsigned& wheelNodeID)
+void Vehicle::InitWheel(const ea::string& name, const Vector3& offset, ea::weak_ptr<Node>& wheelNode, unsigned& wheelNodeID)
 {
     auto* cache = GetSubsystem<ResourceCache>();
 

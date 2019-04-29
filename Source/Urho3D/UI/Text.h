@@ -87,20 +87,20 @@ public:
     /// Apply attribute changes that can not be applied immediately.
     void ApplyAttributes() override;
     /// Return UI rendering batches.
-    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor) override;
+    void GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor) override;
     /// React to resize.
     void OnResize(const IntVector2& newSize, const IntVector2& delta) override;
     /// React to indent change.
     void OnIndentSet() override;
 
     /// Set font by looking from resource cache by name and font size. Return true if successful.
-    bool SetFont(const stl::string& fontName, float size = DEFAULT_FONT_SIZE);
+    bool SetFont(const ea::string& fontName, float size = DEFAULT_FONT_SIZE);
     /// Set font and font size. Return true if successful.
     bool SetFont(Font* font, float size = DEFAULT_FONT_SIZE);
     /// Set font size only while retaining the existing font. Return true if successful.
     bool SetFontSize(float size);
     /// Set text. Text is assumed to be either ASCII or UTF8-encoded.
-    void SetText(const stl::string& text);
+    void SetText(const ea::string& text);
     /// Set row alignment.
     void SetTextAlignment(HorizontalAlignment align);
     /// Set row spacing, 1.0 for original font spacing.
@@ -131,7 +131,7 @@ public:
     float GetFontSize() const { return fontSize_; }
 
     /// Return text.
-    const stl::string& GetText() const { return text_; }
+    const ea::string& GetText() const { return text_; }
 
     /// Return row alignment.
     HorizontalAlignment GetTextAlignment() const { return textAlignment_; }
@@ -193,9 +193,9 @@ public:
     /// Return font attribute.
     ResourceRef GetFontAttr() const;
     /// Set text attribute.
-    void SetTextAttr(const stl::string& value);
+    void SetTextAttr(const ea::string& value);
     /// Return text attribute.
-    stl::string GetTextAttr() const;
+    ea::string GetTextAttr() const;
 
 protected:
     /// Filter implicit attributes in serialization process.
@@ -210,17 +210,17 @@ protected:
     int GetRowStartPosition(unsigned rowIndex) const;
     /// Construct batch.
     void ConstructBatch
-        (UIBatch& pageBatch, const stl::vector<GlyphLocation>& pageGlyphLocation, float dx = 0, float dy = 0, Color* color = nullptr,
+        (UIBatch& pageBatch, const ea::vector<GlyphLocation>& pageGlyphLocation, float dx = 0, float dy = 0, Color* color = nullptr,
             float depthBias = 0.0f);
 
     /// Font.
-    stl::shared_ptr<Font> font_;
+    ea::shared_ptr<Font> font_;
     /// Current face.
-    stl::weak_ptr<FontFace> fontFace_;
+    ea::weak_ptr<FontFace> fontFace_;
     /// Font size.
     float fontSize_;
     /// UTF-8 encoded text.
-    stl::string text_;
+    ea::string text_;
     /// Row alignment.
     HorizontalAlignment textAlignment_;
     /// Row spacing.
@@ -248,21 +248,21 @@ protected:
     /// Row height.
     float rowHeight_;
     /// Text as Unicode characters.
-    stl::vector<unsigned> unicodeText_;
+    ea::vector<unsigned> unicodeText_;
     /// Text modified into printed form.
-    stl::vector<unsigned> printText_;
+    ea::vector<unsigned> printText_;
     /// Mapping of printed form back to original char indices.
-    stl::vector<unsigned> printToText_;
+    ea::vector<unsigned> printToText_;
     /// Row widths.
-    stl::vector<float> rowWidths_;
+    ea::vector<float> rowWidths_;
     /// Glyph locations per each texture in the font.
-    stl::vector<stl::vector<GlyphLocation> > pageGlyphLocations_;
+    ea::vector<ea::vector<GlyphLocation> > pageGlyphLocations_;
     /// Cached locations of each character in the text.
-    stl::vector<CharLocation> charLocations_;
+    ea::vector<CharLocation> charLocations_;
     /// The text will be automatically translated.
     bool autoLocalizable_;
     /// Localization string id storage. Used when autoLocalizable flag is set.
-    stl::string stringId_;
+    ea::string stringId_;
     /// Handle change Language.
     void HandleChangeLanguage(StringHash eventType, VariantMap& eventData);
     /// UTF8 to Unicode.

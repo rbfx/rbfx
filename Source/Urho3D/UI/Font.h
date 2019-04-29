@@ -59,7 +59,7 @@ public:
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
     /// Save resource as a new bitmap font type in XML format. Return true if successful.
-    bool SaveXML(Serializer& dest, int pointSize, bool usedGlyphs = false, const stl::string& indentation = "\t");
+    bool SaveXML(Serializer& dest, int pointSize, bool usedGlyphs = false, const ea::string& indentation = "\t");
     /// Set absolute (in pixels) position adjustment for glyphs.
     void SetAbsoluteGlyphOffset(const IntVector2& offset);
     /// Set point size scaled position adjustment for glyphs.
@@ -95,9 +95,9 @@ private:
     FontFace* GetFaceBitmap(float pointSize);
 
     /// Created faces.
-    stl::unordered_map<int, stl::shared_ptr<FontFace> > faces_;
+    ea::unordered_map<int, ea::shared_ptr<FontFace> > faces_;
     /// Font data.
-    stl::shared_array<unsigned char> fontData_;
+    ea::shared_array<unsigned char> fontData_;
     /// Size of font data.
     unsigned fontDataSize_;
     /// Absolute position adjustment for glyphs.

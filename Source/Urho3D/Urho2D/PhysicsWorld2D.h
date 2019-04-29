@@ -146,7 +146,7 @@ public:
     void AddDelayedWorldTransform(const DelayedWorldTransform2D& transform);
 
     /// Perform a physics world raycast and return all hits.
-    void Raycast(stl::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, const Vector2& endPoint,
+    void Raycast(ea::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, const Vector2& endPoint,
         unsigned collisionMask = M_MAX_UNSIGNED);
     /// Perform a physics world raycast and return the closest hit.
     void RaycastSingle(PhysicsRaycastResult2D& result, const Vector2& startPoint, const Vector2& endPoint,
@@ -156,7 +156,7 @@ public:
     /// Return rigid body at screen point.
     RigidBody2D* GetRigidBody(int screenX, int screenY, unsigned collisionMask = M_MAX_UNSIGNED);
     /// Return rigid bodies by a box query.
-    void GetRigidBodies(stl::vector<RigidBody2D*>& results, const Rect& aabb, unsigned collisionMask = M_MAX_UNSIGNED);
+    void GetRigidBodies(ea::vector<RigidBody2D*>& results, const Rect& aabb, unsigned collisionMask = M_MAX_UNSIGNED);
 
     /// Return whether physics world will automatically simulate during scene update.
     bool IsUpdateEnabled() const { return updateEnabled_; }
@@ -217,7 +217,7 @@ protected:
     void SendEndContactEvents();
 
     /// Box2D physics world.
-    stl::unique_ptr<b2World> world_;
+    ea::unique_ptr<b2World> world_;
     /// Gravity.
     Vector2 gravity_;
     /// Velocity iterations.
@@ -226,7 +226,7 @@ protected:
     int positionIterations_{};
 
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
-    stl::weak_ptr<Scene> scene_;
+    ea::weak_ptr<Scene> scene_;
     /// Debug renderer.
     DebugRenderer* debugRenderer_{};
     /// Debug draw depth test mode.
@@ -239,9 +239,9 @@ protected:
     /// Applying transforms.
     bool applyingTransforms_{};
     /// Rigid bodies.
-    stl::vector<stl::weak_ptr<RigidBody2D> > rigidBodies_;
+    ea::vector<ea::weak_ptr<RigidBody2D> > rigidBodies_;
     /// Delayed (parented) world transform assignments.
-    stl::unordered_map<RigidBody2D*, DelayedWorldTransform2D> delayedWorldTransforms_;
+    ea::unordered_map<RigidBody2D*, DelayedWorldTransform2D> delayedWorldTransforms_;
 
     /// Contact info.
     struct ContactInfo
@@ -251,20 +251,20 @@ protected:
         /// Construct.
         explicit ContactInfo(b2Contact* contact);
         /// Write contact info to buffer.
-        const stl::vector<unsigned char>& Serialize(VectorBuffer& buffer) const;
+        const ea::vector<unsigned char>& Serialize(VectorBuffer& buffer) const;
 
         /// Rigid body A.
-        stl::shared_ptr<RigidBody2D> bodyA_;
+        ea::shared_ptr<RigidBody2D> bodyA_;
         /// Rigid body B.
-        stl::shared_ptr<RigidBody2D> bodyB_;
+        ea::shared_ptr<RigidBody2D> bodyB_;
         /// Node A.
-        stl::shared_ptr<Node> nodeA_;
+        ea::shared_ptr<Node> nodeA_;
         /// Node B.
-        stl::shared_ptr<Node> nodeB_;
+        ea::shared_ptr<Node> nodeB_;
         /// Shape A.
-        stl::shared_ptr<CollisionShape2D> shapeA_;
+        ea::shared_ptr<CollisionShape2D> shapeA_;
         /// Shape B.
-        stl::shared_ptr<CollisionShape2D> shapeB_;
+        ea::shared_ptr<CollisionShape2D> shapeB_;
         /// Number of contact points.
         int numPoints_{};
         /// Contact normal in world space.
@@ -275,9 +275,9 @@ protected:
         float separations_[b2_maxManifoldPoints]{};
     };
     /// Begin contact infos.
-    stl::vector<ContactInfo> beginContactInfos_;
+    ea::vector<ContactInfo> beginContactInfos_;
     /// End contact infos.
-    stl::vector<ContactInfo> endContactInfos_;
+    ea::vector<ContactInfo> endContactInfos_;
     /// Temporary buffer with contact data.
     VectorBuffer contacts_;
 };

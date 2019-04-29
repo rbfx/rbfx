@@ -179,10 +179,10 @@ bool Sprite2D::GetTextureRectangle(Rect& rect, bool flipX, bool flipY) const
     rect.max_.y_ = ((float)rectangle_.top_ + edgeOffset_) * invHeight;
 
     if (flipX)
-        stl::swap(rect.min_.x_, rect.max_.x_);
+        ea::swap(rect.min_.x_, rect.max_.x_);
 
     if (flipY)
-        stl::swap(rect.min_.y_, rect.max_.y_);
+        ea::swap(rect.min_.y_, rect.max_.y_);
 
     return true;
 }
@@ -213,12 +213,12 @@ Sprite2D* Sprite2D::LoadFromResourceRef(Object* object, const ResourceRef& value
     if (value.type_ == SpriteSheet2D::GetTypeStatic())
     {
         // value.name_ include sprite sheet name and sprite name.
-        stl::vector<stl::string> names = value.name_.split('@');
+        ea::vector<ea::string> names = value.name_.split('@');
         if (names.size() != 2)
             return nullptr;
 
-        const stl::string& spriteSheetName = names[0];
-        const stl::string& spriteName = names[1];
+        const ea::string& spriteSheetName = names[0];
+        const ea::string& spriteName = names[1];
 
         auto* spriteSheet = cache->GetResource<SpriteSheet2D>(spriteSheetName);
         if (!spriteSheet)

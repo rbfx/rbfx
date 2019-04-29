@@ -76,7 +76,7 @@ void Graphics::SetExternalWindow(void* window)
         URHO3D_LOGERROR("Window already opened, can not set external window");
 }
 
-void Graphics::SetWindowTitle(const stl::string& windowTitle)
+void Graphics::SetWindowTitle(const ea::string& windowTitle)
 {
     windowTitle_ = windowTitle;
     if (window_)
@@ -103,7 +103,7 @@ void Graphics::SetWindowPosition(int x, int y)
     SetWindowPosition(IntVector2(x, y));
 }
 
-void Graphics::SetOrientations(const stl::string& orientations)
+void Graphics::SetOrientations(const ea::string& orientations)
 {
     orientations_ = orientations.trimmed();
     SDL_SetHint(SDL_HINT_ORIENTATIONS, orientations_.c_str());
@@ -161,7 +161,7 @@ void Graphics::SetShaderParameter(StringHash param, const Variant& value)
 
     case VAR_BUFFER:
         {
-            const stl::vector<unsigned char>& buffer = value.GetBuffer();
+            const ea::vector<unsigned char>& buffer = value.GetBuffer();
             if (buffer.size() >= sizeof(float))
                 SetShaderParameter(param, reinterpret_cast<const float*>(&buffer[0]), buffer.size() / sizeof(float));
         }
@@ -184,9 +184,9 @@ IntVector2 Graphics::GetWindowPosition() const
     return position_;
 }
 
-stl::vector<IntVector3> Graphics::GetResolutions(int monitor) const
+ea::vector<IntVector3> Graphics::GetResolutions(int monitor) const
 {
-    stl::vector<IntVector3> ret;
+    ea::vector<IntVector3> ret;
     // Emscripten is not able to return a valid list
 #ifndef __EMSCRIPTEN__
     auto numModes = (unsigned)SDL_GetNumDisplayModes(monitor);
@@ -276,7 +276,7 @@ void Graphics::Raise() const
     SDL_RaiseWindow(window_);
 }
 
-void Graphics::BeginDumpShaders(const stl::string& fileName)
+void Graphics::BeginDumpShaders(const ea::string& fileName)
 {
     shaderPrecache_ = new ShaderPrecache(context_, fileName);
 }
@@ -293,9 +293,9 @@ void Graphics::PrecacheShaders(Deserializer& source)
     ShaderPrecache::LoadShaders(this, source);
 }
 
-void Graphics::SetShaderCacheDir(const stl::string& path)
+void Graphics::SetShaderCacheDir(const ea::string& path)
 {
-    stl::string trimmedPath = path.trimmed();
+    ea::string trimmedPath = path.trimmed();
     if (trimmedPath.length())
         shaderCacheDir_ = AddTrailingSlash(trimmedPath);
 }
@@ -341,7 +341,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
             i->size_ = size;
             i->reserved_ = true;
 
-            URHO3D_LOGTRACE("Resized scratch buffer to size " + stl::to_string(size));
+            URHO3D_LOGTRACE("Resized scratch buffer to size " + ea::to_string(size));
 
             return i->data_.get();
         }
@@ -354,7 +354,7 @@ void* Graphics::ReserveScratchBuffer(unsigned size)
     newBuffer.reserved_ = true;
     scratchBuffers_.push_back(newBuffer);
 
-    URHO3D_LOGDEBUG("Allocated scratch buffer with size " + stl::to_string(size));
+    URHO3D_LOGDEBUG("Allocated scratch buffer with size " + ea::to_string(size));
 
     return newBuffer.data_.get();
 }
@@ -385,7 +385,7 @@ void Graphics::CleanupScratchBuffers()
             i->data_.reset(maxScratchBufferRequest_ > 0 ? (new unsigned char[maxScratchBufferRequest_]) : nullptr);
             i->size_ = maxScratchBufferRequest_;
 
-            URHO3D_LOGTRACE("Resized scratch buffer to size " + stl::to_string(maxScratchBufferRequest_));
+            URHO3D_LOGTRACE("Resized scratch buffer to size " + ea::to_string(maxScratchBufferRequest_));
         }
     }
 

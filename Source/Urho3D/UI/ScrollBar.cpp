@@ -235,7 +235,7 @@ bool ScrollBar::FilterImplicitAttributes(XMLElement& dest) const
         return false;
     if (!RemoveChildXML(childElem, "Name", "SB_Slider"))
         return false;
-    if (!RemoveChildXML(childElem, "Repeat Rate", stl::to_string(DEFAULT_REPEAT_RATE)))
+    if (!RemoveChildXML(childElem, "Repeat Rate", ea::to_string(DEFAULT_REPEAT_RATE)))
         return false;
     if (!RemoveChildXML(childElem, "Orientation"))
         return false;
@@ -249,15 +249,15 @@ bool ScrollBar::FilterImplicitAttributes(XMLElement& dest) const
 
 }
 
-bool ScrollBar::FilterButtonImplicitAttributes(XMLElement& dest, const stl::string& name) const
+bool ScrollBar::FilterButtonImplicitAttributes(XMLElement& dest, const ea::string& name) const
 {
     if (!dest)
         return false;
     if (!RemoveChildXML(dest, "Name", name))
         return false;
-    if (!RemoveChildXML(dest, "Repeat Delay", stl::to_string(DEFAULT_REPEAT_DELAY)))
+    if (!RemoveChildXML(dest, "Repeat Delay", ea::to_string(DEFAULT_REPEAT_DELAY)))
         return false;
-    if (!RemoveChildXML(dest, "Repeat Rate", stl::to_string(DEFAULT_REPEAT_RATE)))
+    if (!RemoveChildXML(dest, "Repeat Rate", ea::to_string(DEFAULT_REPEAT_RATE)))
         return false;
     if (!RemoveChildXML(dest, "Image Rect"))
         return false;

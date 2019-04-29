@@ -31,14 +31,14 @@
 namespace Urho3D
 {
 
-ShaderParameter::ShaderParameter(const stl::string& name, unsigned glType, int location) :   // NOLINT(hicpp-member-init)
+ShaderParameter::ShaderParameter(const ea::string& name, unsigned glType, int location) :   // NOLINT(hicpp-member-init)
     name_{name},
     glType_{glType},
     location_{location}
 {
 }
 
-ShaderParameter::ShaderParameter(ShaderType type, const stl::string& name, unsigned offset, unsigned size, unsigned buffer) :    // NOLINT(hicpp-member-init)
+ShaderParameter::ShaderParameter(ShaderType type, const ea::string& name, unsigned offset, unsigned size, unsigned buffer) :    // NOLINT(hicpp-member-init)
     type_{type},
     name_{name},
     offset_{offset},
@@ -47,7 +47,7 @@ ShaderParameter::ShaderParameter(ShaderType type, const stl::string& name, unsig
 {
 }
 
-ShaderParameter::ShaderParameter(ShaderType type, const stl::string& name, unsigned reg, unsigned regCount) :    // NOLINT(hicpp-member-init)
+ShaderParameter::ShaderParameter(ShaderType type, const ea::string& name, unsigned reg, unsigned regCount) :    // NOLINT(hicpp-member-init)
     type_{type},
     name_{name},
     register_{reg},
@@ -67,7 +67,7 @@ ShaderVariation::~ShaderVariation()
     Release();
 }
 
-void ShaderVariation::SetName(const stl::string& name)
+void ShaderVariation::SetName(const ea::string& name)
 {
     name_ = name;
 }

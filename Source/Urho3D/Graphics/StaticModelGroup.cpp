@@ -89,7 +89,7 @@ void StaticModelGroup::ApplyAttributes()
             Node* node = scene->GetNode(nodeIDsAttr_[i].GetUInt());
             if (node)
             {
-                stl::weak_ptr<Node> instanceWeak(node);
+                ea::weak_ptr<Node> instanceWeak(node);
                 node->AddListener(this);
                 instanceNodes_.push_back(instanceWeak);
             }
@@ -103,7 +103,7 @@ void StaticModelGroup::ApplyAttributes()
     OnMarkedDirty(GetNode());
 }
 
-void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void StaticModelGroup::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     // If no bones or no bone-level testing, use the Drawable test
     RayQueryLevel level = query.level_;
@@ -251,7 +251,7 @@ bool StaticModelGroup::DrawOcclusion(OcclusionBuffer* buffer)
             unsigned vertexSize;
             const unsigned char* indexData;
             unsigned indexSize;
-            const stl::vector<VertexElement>* elements;
+            const ea::vector<VertexElement>* elements;
 
             geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
             // Check for valid geometry data
@@ -275,7 +275,7 @@ void StaticModelGroup::AddInstanceNode(Node* node)
     if (!node)
         return;
 
-    stl::weak_ptr<Node> instanceWeak(node);
+    ea::weak_ptr<Node> instanceWeak(node);
     if (instanceNodes_.contains(instanceWeak))
         return;
 
@@ -290,7 +290,7 @@ void StaticModelGroup::RemoveInstanceNode(Node* node)
     if (!node)
         return;
 
-    stl::weak_ptr<Node> instanceWeak(node);
+    ea::weak_ptr<Node> instanceWeak(node);
     auto i = instanceNodes_.find(instanceWeak);
     if (i == instanceNodes_.end())
         return;

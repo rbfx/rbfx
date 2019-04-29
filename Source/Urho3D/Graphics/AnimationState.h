@@ -73,7 +73,7 @@ struct URHO3D_API AnimationStateTrack
     /// Bone pointer.
     Bone* bone_;
     /// Scene node pointer.
-    stl::weak_ptr<Node> node_;
+    ea::weak_ptr<Node> node_;
     /// Blending weight.
     float weight_;
     /// Last key frame.
@@ -104,7 +104,7 @@ public:
     /// Set per-bone blending weight by track index. Default is 1.0 (full), is multiplied  with the state's blending weight when applying the animation. Optionally recurses to child bones.
     void SetBoneWeight(unsigned index, float weight, bool recursive = false);
     /// Set per-bone blending weight by name.
-    void SetBoneWeight(const stl::string& name, float weight, bool recursive = false);
+    void SetBoneWeight(const ea::string& name, float weight, bool recursive = false);
     /// Set per-bone blending weight by name hash.
     void SetBoneWeight(StringHash nameHash, float weight, bool recursive = false);
     /// Modify blending weight.
@@ -126,13 +126,13 @@ public:
     /// Return per-bone blending weight by track index.
     float GetBoneWeight(unsigned index) const;
     /// Return per-bone blending weight by name.
-    float GetBoneWeight(const stl::string& name) const;
+    float GetBoneWeight(const ea::string& name) const;
     /// Return per-bone blending weight by name.
     float GetBoneWeight(StringHash nameHash) const;
     /// Return track index with matching bone node, or M_MAX_UNSIGNED if not found.
     unsigned GetTrackIndex(Node* node) const;
     /// Return track index by bone name, or M_MAX_UNSIGNED if not found.
-    unsigned GetTrackIndex(const stl::string& name) const;
+    unsigned GetTrackIndex(const ea::string& name) const;
     /// Return track index by bone name hash, or M_MAX_UNSIGNED if not found.
     unsigned GetTrackIndex(StringHash nameHash) const;
 
@@ -169,15 +169,15 @@ private:
     void ApplyTrack(AnimationStateTrack& stateTrack, float weight, bool silent);
 
     /// Animated model (model mode.)
-    stl::weak_ptr<AnimatedModel> model_;
+    ea::weak_ptr<AnimatedModel> model_;
     /// Root scene node (node hierarchy mode.)
-    stl::weak_ptr<Node> node_;
+    ea::weak_ptr<Node> node_;
     /// Animation.
-    stl::shared_ptr<Animation> animation_;
+    ea::shared_ptr<Animation> animation_;
     /// Start bone.
     Bone* startBone_;
     /// Per-track data.
-    stl::vector<AnimationStateTrack> stateTracks_;
+    ea::vector<AnimationStateTrack> stateTracks_;
     /// Looped flag.
     bool looped_;
     /// Blending weight.

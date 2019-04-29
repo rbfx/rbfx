@@ -53,7 +53,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -70,13 +70,13 @@ private:
     /// Subscribe to log message, UI and network events.
     void SubscribeToEvents();
     /// Create a button to the button container.
-    Button* CreateButton(const stl::string& text, int width, IntVector2 position);
+    Button* CreateButton(const ea::string& text, int width, IntVector2 position);
     /// Create label
-    void CreateLabel(const stl::string& text, IntVector2 pos);
+    void CreateLabel(const ea::string& text, IntVector2 pos);
     /// Create input field
-    LineEdit* CreateLineEdit(const stl::string& placeholder, int width, IntVector2 pos);
+    LineEdit* CreateLineEdit(const ea::string& placeholder, int width, IntVector2 pos);
     /// Print log message.
-    void ShowLogMessage(const stl::string& row);
+    void ShowLogMessage(const ea::string& row);
     /// Save NAT server config
     void HandleSaveNatSettings(StringHash eventType, VariantMap& eventData);
     /// Handle server connection message
@@ -103,21 +103,21 @@ private:
     void HandleClientDisconnected(StringHash eventType, VariantMap& eventData);
 
     /// NAT master server address
-    stl::shared_ptr<LineEdit> natServerAddress_;
+    ea::shared_ptr<LineEdit> natServerAddress_;
     /// NAT master server port
-    stl::shared_ptr<LineEdit> natServerPort_;
+    ea::shared_ptr<LineEdit> natServerPort_;
     /// Save NAT settings button
-    stl::shared_ptr<Button> saveNatSettingsButton_;
+    ea::shared_ptr<Button> saveNatSettingsButton_;
     /// Start server button
-    stl::shared_ptr<Button> startServerButton_;
+    ea::shared_ptr<Button> startServerButton_;
     /// Remote server GUID input field
-    stl::shared_ptr<LineEdit> serverGuid_;
+    ea::shared_ptr<LineEdit> serverGuid_;
     /// Connect button
-    stl::shared_ptr<Button> connectButton_;
+    ea::shared_ptr<Button> connectButton_;
     /// Log history text element
-    stl::shared_ptr<Text> logHistoryText_;
+    ea::shared_ptr<Text> logHistoryText_;
     /// Log messages
-    stl::vector<stl::string> logHistory_;
+    ea::vector<ea::string> logHistory_;
     /// Created server GUID field
-    stl::shared_ptr<LineEdit> guid_;
+    ea::shared_ptr<LineEdit> guid_;
 };

@@ -94,8 +94,8 @@ namespace Urho3D
 
 class Context;
 
-using ConstantBufferMap = stl::unordered_map<unsigned, stl::shared_ptr<ConstantBuffer> >;
-using ShaderProgramMap = stl::unordered_map<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
+using ConstantBufferMap = ea::unordered_map<unsigned, ea::shared_ptr<ConstantBuffer> >;
+using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, ea::shared_ptr<ShaderProgram> >;
 
 /// Cached state of a frame buffer object
 struct FrameBufferObject
@@ -138,7 +138,7 @@ private:
     /// Vertex attribute instancing bitmask for keeping track of divisors.
     unsigned instancingVertexAttributes_{};
     /// Current mapping of vertex attribute locations by semantic. The map is owned by the shader program, so care must be taken to switch a null shader program when it's destroyed.
-    const stl::unordered_map<stl::pair<unsigned char, unsigned char>, unsigned>* vertexAttributes_{};
+    const ea::unordered_map<ea::pair<unsigned char, unsigned char>, unsigned>* vertexAttributes_{};
     /// Currently bound frame buffer object.
     unsigned boundFBO_{};
     /// Currently bound vertex buffer object.
@@ -152,7 +152,7 @@ private:
     /// Current pixel format.
     int pixelFormat_{};
     /// Map for FBO's per resolution and format.
-    stl::unordered_map<unsigned long long, FrameBufferObject> frameBuffers_;
+    ea::unordered_map<unsigned long long, FrameBufferObject> frameBuffers_;
     /// OpenGL texture types in use.
     unsigned textureTypes_[MAX_TEXTURE_UNITS]{};
     /// Constant buffer search map.
@@ -160,11 +160,11 @@ private:
     /// Currently bound constant buffers.
     ConstantBuffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS * 2]{};
     /// Dirty constant buffers.
-    stl::vector<ConstantBuffer*> dirtyConstantBuffers_;
+    ea::vector<ConstantBuffer*> dirtyConstantBuffers_;
     /// Last used instance data offset.
     unsigned lastInstanceOffset_{};
     /// Map for additional depth textures, to emulate Direct3D9 ability to mix render texture and backbuffer rendering.
-    stl::unordered_map<unsigned, stl::shared_ptr<Texture2D> > depthTextures_;
+    ea::unordered_map<unsigned, ea::shared_ptr<Texture2D> > depthTextures_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_{};
     /// Linked shader programs.

@@ -177,7 +177,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Visualize the component as debug geometry.
@@ -379,9 +379,9 @@ private:
     /// Custom world transform for the light volume.
     Matrix3x4 volumeTransform_;
     /// Range attenuation texture.
-    stl::shared_ptr<Texture> rampTexture_;
+    ea::shared_ptr<Texture> rampTexture_;
     /// Spotlight attenuation texture.
-    stl::shared_ptr<Texture> shapeTexture_;
+    ea::shared_ptr<Texture> shapeTexture_;
     /// Light queue.
     LightBatchQueue* lightQueue_;
     /// Specular intensity.

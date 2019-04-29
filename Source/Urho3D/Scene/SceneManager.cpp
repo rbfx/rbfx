@@ -45,14 +45,14 @@ void SceneManager::RegisterObject(Context* context)
     context->RegisterFactory<SceneManager>();
 }
 
-Scene* SceneManager::CreateScene(const stl::string& name)
+Scene* SceneManager::CreateScene(const ea::string& name)
 {
     if (GetScene(name) != nullptr)
     {
         URHO3D_LOGERRORF("Scene '%s' already exists.", name.c_str());
         return nullptr;
     }
-    stl::shared_ptr<Scene> scene(context_->CreateObject<Scene>());
+    ea::shared_ptr<Scene> scene(context_->CreateObject<Scene>());
     scene->SetName(name);
     scene->GetOrCreateComponent<Octree>();
     scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
@@ -60,7 +60,7 @@ Scene* SceneManager::CreateScene(const stl::string& name)
     return scene;
 }
 
-Scene* SceneManager::GetScene(const stl::string& name)
+Scene* SceneManager::GetScene(const ea::string& name)
 {
     for (auto& scene : scenes_)
     {
@@ -70,7 +70,7 @@ Scene* SceneManager::GetScene(const stl::string& name)
     return nullptr;
 }
 
-Scene* SceneManager::GetOrCreateScene(const stl::string& name)
+Scene* SceneManager::GetOrCreateScene(const ea::string& name)
 {
     if (Scene* scene = GetScene(name))
         return scene;
@@ -79,16 +79,16 @@ Scene* SceneManager::GetOrCreateScene(const stl::string& name)
 
 void SceneManager::UnloadScene(Scene* scene)
 {
-    auto it = scenes_.find(stl::shared_ptr<Scene>(scene));
+    auto it = scenes_.find(ea::shared_ptr<Scene>(scene));
     if (it != scenes_.end())
         scenes_.erase(it);
     if (activeScene_.expired())
         UpdateViewports();
 }
 
-void SceneManager::UnloadScene(const stl::string& name)
+void SceneManager::UnloadScene(const ea::string& name)
 {
-    scenes_.erase_first(stl::shared_ptr<Scene>(GetScene(name)));
+    scenes_.erase_first(ea::shared_ptr<Scene>(GetScene(name)));
     if (activeScene_.expired())
         UpdateViewports();
 }
@@ -127,7 +127,7 @@ void SceneManager::SetActiveScene(Scene* scene)
     UpdateViewports();
 }
 
-void SceneManager::SetActiveScene(const stl::string& name)
+void SceneManager::SetActiveScene(const ea::string& name)
 {
     SetActiveScene(GetScene(name));
 }

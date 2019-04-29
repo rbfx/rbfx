@@ -201,7 +201,7 @@ void Physics::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -255,7 +255,7 @@ void Physics::MoveCamera(float timeStep)
     // directory
     if (input->GetKeyPress(KEY_F5))
     {
-        stl::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+        ea::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
 #if _MSC_VER
         filePath += "../";
 #endif
@@ -265,7 +265,7 @@ void Physics::MoveCamera(float timeStep)
     }
     if (input->GetKeyPress(KEY_F7))
     {
-        stl::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
+        ea::string filePath = GetSubsystem<FileSystem>()->GetProgramDir();
 #if _MSC_VER
         filePath += "../";
 #endif

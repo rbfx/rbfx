@@ -48,7 +48,7 @@ public:
     TileMapLayerType2D GetType() const { return type_; }
 
     /// Return name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
     /// Return width.
     int GetWidth() const { return width_; }
@@ -60,9 +60,9 @@ public:
     bool IsVisible() const { return visible_; }
 
     /// Return has property (use for script).
-    bool HasProperty(const stl::string& name) const;
+    bool HasProperty(const ea::string& name) const;
     /// Return property value (use for script).
-    const stl::string& GetProperty(const stl::string& name) const;
+    const ea::string& GetProperty(const ea::string& name) const;
 
 
 protected:
@@ -72,11 +72,11 @@ protected:
     void LoadPropertySet(const XMLElement& element);
 
     /// Tmx file.
-    stl::weak_ptr<TmxFile2D> tmxFile_;
+    ea::weak_ptr<TmxFile2D> tmxFile_;
     /// Layer type.
     TileMapLayerType2D type_;
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Width.
     int width_{};
     /// Height.
@@ -84,7 +84,7 @@ protected:
     /// Visible.
     bool visible_{};
     /// Property set.
-    stl::shared_ptr<PropertySet2D> propertySet_;
+    ea::shared_ptr<PropertySet2D> propertySet_;
 };
 
 /// Tmx tile layer.
@@ -100,7 +100,7 @@ public:
 
 protected:
     /// Tiles.
-    stl::vector<stl::shared_ptr<Tile2D> > tiles_;
+    ea::vector<ea::shared_ptr<Tile2D> > tiles_;
 };
 
 /// Tmx objects layer.
@@ -113,7 +113,7 @@ public:
     bool Load(const XMLElement& element, const TileMapInfo2D& info);
 
     /// Store object.
-    void StoreObject(const XMLElement& objectElem, const stl::shared_ptr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile = false);
+    void StoreObject(const XMLElement& objectElem, const ea::shared_ptr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile = false);
 
     /// Return number of objects.
     unsigned GetNumObjects() const { return objects_.size(); }
@@ -123,7 +123,7 @@ public:
 
 private:
     /// Objects.
-    stl::vector<stl::shared_ptr<TileMapObject2D> > objects_;
+    ea::vector<ea::shared_ptr<TileMapObject2D> > objects_;
 };
 
 /// Tmx image layer.
@@ -139,7 +139,7 @@ public:
     const Vector2& GetPosition() const { return position_; }
 
     /// Return source.
-    const stl::string& GetSource() const { return source_; }
+    const ea::string& GetSource() const { return source_; }
 
     /// Return sprite.
     Sprite2D* GetSprite() const;
@@ -148,9 +148,9 @@ private:
     /// Position.
     Vector2 position_;
     /// Source.
-    stl::string source_;
+    ea::string source_;
     /// Sprite.
-    stl::shared_ptr<Sprite2D> sprite_;
+    ea::shared_ptr<Sprite2D> sprite_;
 };
 
 /// Tile map file.
@@ -187,7 +187,7 @@ public:
     Sprite2D* GetTileSprite(unsigned gid) const;
 
     /// Return tile collision shapes for a given gid.
-    stl::vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
+    ea::vector<ea::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
 
     /// Return tile property set by gid, if not exist return 0.
     PropertySet2D* GetTilePropertySet(unsigned gid) const;
@@ -206,24 +206,24 @@ public:
 
 private:
     /// Load TSX file.
-    stl::shared_ptr<XMLFile> LoadTSXFile(const stl::string& source);
+    ea::shared_ptr<XMLFile> LoadTSXFile(const ea::string& source);
     /// Load tile set.
     bool LoadTileSet(const XMLElement& element);
 
     /// XML file used during loading.
-    stl::shared_ptr<XMLFile> loadXMLFile_;
+    ea::shared_ptr<XMLFile> loadXMLFile_;
     /// TSX name to XML file mapping.
-    stl::unordered_map<stl::string, stl::shared_ptr<XMLFile> > tsxXMLFiles_;
+    ea::unordered_map<ea::string, ea::shared_ptr<XMLFile> > tsxXMLFiles_;
     /// Tile map information.
     TileMapInfo2D info_{};
     /// Gid to tile sprite mapping.
-    stl::unordered_map<unsigned, stl::shared_ptr<Sprite2D> > gidToSpriteMapping_;
+    ea::unordered_map<unsigned, ea::shared_ptr<Sprite2D> > gidToSpriteMapping_;
     /// Gid to tile property set mapping.
-    stl::unordered_map<unsigned, stl::shared_ptr<PropertySet2D> > gidToPropertySetMapping_;
+    ea::unordered_map<unsigned, ea::shared_ptr<PropertySet2D> > gidToPropertySetMapping_;
     /// Gid to tile collision shape mapping.
-    stl::unordered_map<unsigned, stl::vector<stl::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
+    ea::unordered_map<unsigned, ea::vector<ea::shared_ptr<TileMapObject2D> > > gidToCollisionShapeMapping_;
     /// Layers.
-    stl::vector<TmxLayer2D*> layers_;
+    ea::vector<TmxLayer2D*> layers_;
     /// Texture edge offset.
     float edgeOffset_;
 };

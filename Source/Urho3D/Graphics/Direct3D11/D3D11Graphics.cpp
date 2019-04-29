@@ -327,7 +327,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     // Check fullscreen mode validity. Use a closest match if not found
     if (fullscreen)
     {
-        stl::vector<IntVector3> resolutions = GetResolutions(monitor);
+        ea::vector<IntVector3> resolutions = GetResolutions(monitor);
         if (resolutions.size())
         {
             unsigned best = 0;
@@ -375,7 +375,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
     impl_->swapChain_->Present(0, 0);
 
 #ifdef URHO3D_LOGGING
-    stl::string msg;
+    ea::string msg;
     msg.append_sprintf("Set screen mode %dx%d %s monitor %d", width_, height_, (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
         msg.append(" borderless");
@@ -886,12 +886,12 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
     // Note: this is not multi-instance safe
-    static stl::vector<VertexBuffer*> vertexBuffers(1);
+    static ea::vector<VertexBuffer*> vertexBuffers(1);
     vertexBuffers[0] = buffer;
     SetVertexBuffers(vertexBuffers);
 }
 
-bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
     if (buffers.size() > MAX_VERTEX_STREAMS)
     {
@@ -907,7 +907,7 @@ bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsig
         buffer = i < buffers.size() ? buffers[i] : nullptr;
         if (buffer)
         {
-            const stl::vector<VertexElement>& elements = buffer->GetElements();
+            const ea::vector<VertexElement>& elements = buffer->GetElements();
             // Check if buffer has per-instance data
             bool hasInstanceData = elements.size() && elements[0].perInstance_;
             unsigned offset = hasInstanceData ? instanceOffset * buffer->GetVertexSize() : 0;
@@ -949,9 +949,9 @@ bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsig
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    stl::vector<VertexBuffer*> bufferPointers;
+    ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
         bufferPointers.push_back(buffer.get());
@@ -1037,7 +1037,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     // Update current shader parameters & constant buffers
     if (vertexShader_ && pixelShader_)
     {
-        stl::pair<ShaderVariation*, ShaderVariation*> key = stl::make_pair(vertexShader_, pixelShader_);
+        ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
         auto i = impl_->shaderPrograms_.find(key);
         if (i != impl_->shaderPrograms_.end())
             impl_->shaderProgram_ = i->second.get();
@@ -1090,7 +1090,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
 void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1102,7 +1102,7 @@ void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned 
 
 void Graphics::SetShaderParameter(StringHash param, float value)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1114,7 +1114,7 @@ void Graphics::SetShaderParameter(StringHash param, float value)
 
 void Graphics::SetShaderParameter(StringHash param, int value)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1126,7 +1126,7 @@ void Graphics::SetShaderParameter(StringHash param, int value)
 
 void Graphics::SetShaderParameter(StringHash param, bool value)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1138,7 +1138,7 @@ void Graphics::SetShaderParameter(StringHash param, bool value)
 
 void Graphics::SetShaderParameter(StringHash param, const Color& color)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1150,7 +1150,7 @@ void Graphics::SetShaderParameter(StringHash param, const Color& color)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1162,7 +1162,7 @@ void Graphics::SetShaderParameter(StringHash param, const Vector2& vector)
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1174,7 +1174,7 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix3& matrix)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1186,7 +1186,7 @@ void Graphics::SetShaderParameter(StringHash param, const Vector3& vector)
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1198,7 +1198,7 @@ void Graphics::SetShaderParameter(StringHash param, const Matrix4& matrix)
 
 void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1210,7 +1210,7 @@ void Graphics::SetShaderParameter(StringHash param, const Vector4& vector)
 
 void Graphics::SetShaderParameter(StringHash param, const Matrix3x4& matrix)
 {
-    stl::unordered_map<StringHash, ShaderParameter>::iterator i;
+    ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())
         return;
 
@@ -1684,9 +1684,9 @@ bool Graphics::IsInitialized() const
     return window_ != nullptr && impl_->GetDevice() != nullptr;
 }
 
-stl::vector<int> Graphics::GetMultiSampleLevels() const
+ea::vector<int> Graphics::GetMultiSampleLevels() const
 {
-    stl::vector<int> ret;
+    ea::vector<int> ret;
     ret.emplace_back(1);
 
     if (impl_->device_)
@@ -1722,7 +1722,7 @@ unsigned Graphics::GetFormat(CompressedFormat format) const
     }
 }
 
-ShaderVariation* Graphics::GetShader(ShaderType type, const stl::string& name, const stl::string& defines) const
+ShaderVariation* Graphics::GetShader(ShaderType type, const ea::string& name, const ea::string& defines) const
 {
     return GetShader(type, name.c_str(), defines.c_str());
 }
@@ -1733,7 +1733,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
     {
         ResourceCache* cache = GetSubsystem<ResourceCache>();
 
-        stl::string fullShaderName = shaderPath_ + name + shaderExtension_;
+        ea::string fullShaderName = shaderPath_ + name + shaderExtension_;
         // Try to reduce repeated error log prints because of missing shaders
         if (lastShaderName_ == name && !cache->Exists(fullShaderName))
             return nullptr;
@@ -1755,7 +1755,7 @@ ShaderProgram* Graphics::GetShaderProgram() const
     return impl_->shaderProgram_;
 }
 
-TextureUnit Graphics::GetTextureUnit(const stl::string& name)
+TextureUnit Graphics::GetTextureUnit(const ea::string& name)
 {
     auto i = textureUnits_.find(name);
     if (i != textureUnits_.end())
@@ -1764,7 +1764,7 @@ TextureUnit Graphics::GetTextureUnit(const stl::string& name)
         return MAX_TEXTURE_UNITS;
 }
 
-const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
+const ea::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
     for (auto i = textureUnits_.begin(); i != textureUnits_.end(); ++i)
     {
@@ -1901,7 +1901,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
         return i->second.get();
     else
     {
-        stl::shared_ptr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
+        ea::shared_ptr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
         return newConstantBuffer.get();
@@ -1990,9 +1990,9 @@ unsigned Graphics::GetReadableDepthFormat()
     return DXGI_FORMAT_R24G8_TYPELESS;
 }
 
-unsigned Graphics::GetFormat(const stl::string& formatName)
+unsigned Graphics::GetFormat(const ea::string& formatName)
 {
-    stl::string nameLower = formatName.to_lower();
+    ea::string nameLower = formatName.to_lower();
     nameLower.trim();
 
     if (nameLower == "a")
@@ -2138,7 +2138,7 @@ bool Graphics::CreateDevice(int width, int height, int multiSample)
     }
 
     // Check that multisample level is supported
-    stl::vector<int> multiSampleLevels = GetMultiSampleLevels();
+    ea::vector<int> multiSampleLevels = GetMultiSampleLevels();
     if (!multiSampleLevels.contains(multiSample))
         multiSample = 1;
 
@@ -2176,7 +2176,7 @@ bool Graphics::CreateDevice(int width, int height, int multiSample)
 #ifdef URHO3D_LOGGING
     DXGI_ADAPTER_DESC desc;
     dxgiAdapter->GetDesc(&desc);
-    stl::string adapterDesc = WideToMultiByte(desc.Description);
+    ea::string adapterDesc = WideToMultiByte(desc.Description);
     URHO3D_LOGINFO("Adapter used " + adapterDesc);
 #endif
 
@@ -2450,8 +2450,8 @@ void Graphics::PrepareDraw()
                 auto i = impl_->vertexDeclarations_.find(newVertexDeclarationHash);
                 if (i == impl_->vertexDeclarations_.end())
                 {
-                    stl::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
-                    i = impl_->vertexDeclarations_.insert(stl::make_pair(newVertexDeclarationHash, newVertexDeclaration)).first;
+                    ea::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
+                    i = impl_->vertexDeclarations_.insert(ea::make_pair(newVertexDeclarationHash, newVertexDeclaration)).first;
                 }
                 impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second->GetInputLayout());
                 vertexDeclarationHash_ = newVertexDeclarationHash;
@@ -2492,7 +2492,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create blend state", hr);
                 }
 
-                i = impl_->blendStates_.insert(stl::make_pair(newBlendStateHash, newBlendState)).first;
+                i = impl_->blendStates_.insert(ea::make_pair(newBlendStateHash, newBlendState)).first;
             }
 
             impl_->deviceContext_->OMSetBlendState(i->second, nullptr, M_MAX_UNSIGNED);
@@ -2540,7 +2540,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create depth state", hr);
                 }
 
-                i = impl_->depthStates_.insert(stl::make_pair(newDepthStateHash, newDepthState)).first;
+                i = impl_->depthStates_.insert(ea::make_pair(newDepthStateHash, newDepthState)).first;
             }
 
             impl_->deviceContext_->OMSetDepthStencilState(i->second, stencilRef_);
@@ -2589,7 +2589,7 @@ void Graphics::PrepareDraw()
                     URHO3D_LOGD3DERROR("Failed to create rasterizer state", hr);
                 }
 
-                i = impl_->rasterizerStates_.insert(stl::make_pair(newRasterizerStateHash, newRasterizerState)).first;
+                i = impl_->rasterizerStates_.insert(ea::make_pair(newRasterizerStateHash, newRasterizerState)).first;
             }
 
             impl_->deviceContext_->RSSetState(i->second);

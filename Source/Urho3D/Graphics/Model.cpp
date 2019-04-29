@@ -40,7 +40,7 @@
 namespace Urho3D
 {
 
-unsigned LookupVertexBuffer(VertexBuffer* buffer, const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers)
+unsigned LookupVertexBuffer(VertexBuffer* buffer, const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -50,7 +50,7 @@ unsigned LookupVertexBuffer(VertexBuffer* buffer, const stl::vector<stl::shared_
     return 0;
 }
 
-unsigned LookupIndexBuffer(IndexBuffer* buffer, const stl::vector<stl::shared_ptr<IndexBuffer> >& buffers)
+unsigned LookupIndexBuffer(IndexBuffer* buffer, const ea::vector<ea::shared_ptr<IndexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -75,7 +75,7 @@ void Model::RegisterObject(Context* context)
 bool Model::BeginLoad(Deserializer& source)
 {
     // Check ID
-    stl::string fileID = source.ReadFileID();
+    ea::string fileID = source.ReadFileID();
     if (fileID != "UMDL" && fileID != "UMD2")
     {
         URHO3D_LOGERROR(source.GetName() + " is not a valid model file");
@@ -127,7 +127,7 @@ bool Model::BeginLoad(Deserializer& source)
         morphRangeStarts_[i] = source.ReadUInt();
         morphRangeCounts_[i] = source.ReadUInt();
 
-        stl::shared_ptr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
+        ea::shared_ptr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
@@ -161,7 +161,7 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexCount = source.ReadUInt();
         unsigned indexSize = source.ReadUInt();
 
-        stl::shared_ptr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
+        ea::shared_ptr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
 
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
@@ -197,13 +197,13 @@ bool Model::BeginLoad(Deserializer& source)
     {
         // Read bone mappings
         unsigned boneMappingCount = source.ReadUInt();
-        stl::vector<unsigned> boneMapping(boneMappingCount);
+        ea::vector<unsigned> boneMapping(boneMappingCount);
         for (unsigned j = 0; j < boneMappingCount; ++j)
             boneMapping[j] = source.ReadUInt();
         geometryBoneMappings_.push_back(boneMapping);
 
         unsigned numLodLevels = source.ReadUInt();
-        stl::vector<stl::shared_ptr<Geometry> > geometryLodLevels;
+        ea::vector<ea::shared_ptr<Geometry> > geometryLodLevels;
         geometryLodLevels.reserve(numLodLevels);
         loadGeometries_[i].resize(numLodLevels);
 
@@ -234,7 +234,7 @@ bool Model::BeginLoad(Deserializer& source)
                 return false;
             }
 
-            stl::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
+            ea::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
             geometry->SetLodDistance(distance);
 
             // Prepare geometry to be defined during EndLoad()
@@ -309,8 +309,8 @@ bool Model::BeginLoad(Deserializer& source)
 
     // Read metadata
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
-    stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    ea::string xmlName = ReplaceExtension(GetName(), ".xml");
+    ea::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
         LoadMetadataFromXML(file->GetRoot());
 
@@ -377,7 +377,7 @@ bool Model::Save(Serializer& dest) const
     {
         VertexBuffer* buffer = vertexBuffers_[i];
         dest.WriteUInt(buffer->GetVertexCount());
-        const stl::vector<VertexElement>& elements = buffer->GetElements();
+        const ea::vector<VertexElement>& elements = buffer->GetElements();
         dest.WriteUInt(elements.size());
         for (unsigned j = 0; j < elements.size(); ++j)
         {
@@ -467,9 +467,9 @@ bool Model::Save(Serializer& dest) const
         auto* destFile = dynamic_cast<File*>(&dest);
         if (destFile)
         {
-            stl::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
+            ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
@@ -488,8 +488,8 @@ void Model::SetBoundingBox(const BoundingBox& box)
     boundingBox_ = box;
 }
 
-bool Model::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, const stl::vector<unsigned>& morphRangeStarts,
-    const stl::vector<unsigned>& morphRangeCounts)
+bool Model::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, const ea::vector<unsigned>& morphRangeStarts,
+    const ea::vector<unsigned>& morphRangeCounts)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -519,7 +519,7 @@ bool Model::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& 
     return true;
 }
 
-bool Model::SetIndexBuffers(const stl::vector<stl::shared_ptr<IndexBuffer> >& buffers)
+bool Model::SetIndexBuffers(const ea::vector<ea::shared_ptr<IndexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -604,19 +604,19 @@ void Model::SetSkeleton(const Skeleton& skeleton)
     skeleton_ = skeleton;
 }
 
-void Model::SetGeometryBoneMappings(const stl::vector<stl::vector<unsigned> >& geometryBoneMappings)
+void Model::SetGeometryBoneMappings(const ea::vector<ea::vector<unsigned> >& geometryBoneMappings)
 {
     geometryBoneMappings_ = geometryBoneMappings;
 }
 
-void Model::SetMorphs(const stl::vector<ModelMorph>& morphs)
+void Model::SetMorphs(const ea::vector<ModelMorph>& morphs)
 {
     morphs_ = morphs;
 }
 
-stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
+ea::shared_ptr<Model> Model::Clone(const ea::string& cloneName) const
 {
-    stl::shared_ptr<Model> ret(context_->CreateObject<Model>());
+    ea::shared_ptr<Model> ret(context_->CreateObject<Model>());
 
     ret->SetName(cloneName);
     ret->boundingBox_ = boundingBox_;
@@ -628,11 +628,11 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
     ret->morphRangeCounts_ = morphRangeCounts_;
 
     // Deep copy vertex/index buffers
-    stl::unordered_map<VertexBuffer*, VertexBuffer*> vbMapping;
+    ea::unordered_map<VertexBuffer*, VertexBuffer*> vbMapping;
     for (auto i = vertexBuffers_.begin(); i != vertexBuffers_.end(); ++i)
     {
         VertexBuffer* origBuffer = *i;
-        stl::shared_ptr<VertexBuffer> cloneBuffer;
+        ea::shared_ptr<VertexBuffer> cloneBuffer;
 
         if (origBuffer)
         {
@@ -655,11 +655,11 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
         ret->vertexBuffers_.push_back(cloneBuffer);
     }
 
-    stl::unordered_map<IndexBuffer*, IndexBuffer*> ibMapping;
+    ea::unordered_map<IndexBuffer*, IndexBuffer*> ibMapping;
     for (auto i = indexBuffers_.begin(); i != indexBuffers_.end(); ++i)
     {
         IndexBuffer* origBuffer = *i;
-        stl::shared_ptr<IndexBuffer> cloneBuffer;
+        ea::shared_ptr<IndexBuffer> cloneBuffer;
 
         if (origBuffer)
         {
@@ -690,7 +690,7 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
         ret->geometries_[i].resize(geometries_[i].size());
         for (unsigned j = 0; j < geometries_[i].size(); ++j)
         {
-            stl::shared_ptr<Geometry> cloneGeometry;
+            ea::shared_ptr<Geometry> cloneGeometry;
             Geometry* origGeometry = geometries_[i][j];
 
             if (origGeometry)
@@ -722,7 +722,7 @@ stl::shared_ptr<Model> Model::Clone(const stl::string& cloneName) const
             VertexBufferMorph& vbMorph = j->second;
             if (vbMorph.dataSize_)
             {
-                stl::shared_array<unsigned char> cloneData(new unsigned char[vbMorph.dataSize_]);
+                ea::shared_array<unsigned char> cloneData(new unsigned char[vbMorph.dataSize_]);
                 memcpy(cloneData.get(), vbMorph.morphData_.get(), vbMorph.dataSize_);
                 vbMorph.morphData_ = cloneData;
             }
@@ -755,7 +755,7 @@ const ModelMorph* Model::GetMorph(unsigned index) const
     return index < morphs_.size() ? &morphs_[index] : nullptr;
 }
 
-const ModelMorph* Model::GetMorph(const stl::string& name) const
+const ModelMorph* Model::GetMorph(const ea::string& name) const
 {
     return GetMorph(StringHash(name));
 }

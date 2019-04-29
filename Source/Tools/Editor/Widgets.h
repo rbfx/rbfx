@@ -27,8 +27,8 @@ namespace ImGui
 {
 
 /// Displays editor icon by it's name.
-void Image(const stl::string& name);
+void Image(const ea::string& name);
 /// Creates a button with editor icon obtained by it's name. Returns true if button was pressed.
-bool ImageButton(const stl::string& name);
+bool ImageButton(const ea::string& name);
 
 }

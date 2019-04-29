@@ -43,7 +43,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -62,5 +62,5 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Vector to store the sprites for iterating through them.
-    stl::vector<stl::shared_ptr<Sprite> > sprites_;
+    ea::vector<ea::shared_ptr<Sprite> > sprites_;
 };

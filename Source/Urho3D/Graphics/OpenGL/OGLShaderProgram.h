@@ -66,16 +66,16 @@ public:
     const ShaderParameter* GetParameter(StringHash param) const;
 
     /// Return linker output.
-    const stl::string& GetLinkerOutput() const { return linkerOutput_; }
+    const ea::string& GetLinkerOutput() const { return linkerOutput_; }
 
     /// Return semantic to vertex attributes location mappings used by the shader.
-    const stl::unordered_map<stl::pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
+    const ea::unordered_map<ea::pair<unsigned char, unsigned char>, unsigned>& GetVertexAttributes() const { return vertexAttributes_; }
 
     /// Return attribute location use bitmask.
     unsigned GetUsedVertexAttributes() const { return usedVertexAttributes_; }
 
     /// Return all constant buffers.
-    const stl::shared_ptr<ConstantBuffer>* GetConstantBuffers() const { return &constantBuffers_[0]; }
+    const ea::shared_ptr<ConstantBuffer>* GetConstantBuffers() const { return &constantBuffers_[0]; }
 
     /// Check whether a shader parameter group needs update. Does not actually check whether parameters exist in the shaders.
     bool NeedParameterUpdate(ShaderParameterGroup group, const void* source);
@@ -89,23 +89,23 @@ public:
 
 private:
     /// Vertex shader.
-    stl::weak_ptr<ShaderVariation> vertexShader_;
+    ea::weak_ptr<ShaderVariation> vertexShader_;
     /// Pixel shader.
-    stl::weak_ptr<ShaderVariation> pixelShader_;
+    ea::weak_ptr<ShaderVariation> pixelShader_;
     /// Shader parameters.
-    stl::unordered_map<StringHash, ShaderParameter> shaderParameters_;
+    ea::unordered_map<StringHash, ShaderParameter> shaderParameters_;
     /// Texture unit use.
     bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Vertex attributes.
-    stl::unordered_map<stl::pair<unsigned char, unsigned char>, unsigned> vertexAttributes_;
+    ea::unordered_map<ea::pair<unsigned char, unsigned char>, unsigned> vertexAttributes_;
     /// Used vertex attribute location bitmask.
     unsigned usedVertexAttributes_{};
     /// Constant buffers by binding index.
-    stl::shared_ptr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS * 2];
+    ea::shared_ptr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS * 2];
     /// Remembered shader parameter sources for individual uniform mode.
     const void* parameterSources_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Shader link error string.
-    stl::string linkerOutput_;
+    ea::string linkerOutput_;
     /// Shader parameter source framenumber.
     unsigned frameNumber_{};
 

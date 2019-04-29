@@ -49,7 +49,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element\">"
         "        <element type=\"Button\">"
@@ -111,7 +111,7 @@ private:
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Rear-facing camera scene node.
-    stl::shared_ptr<Node> rearCameraNode_;
+    ea::shared_ptr<Node> rearCameraNode_;
     /// Flag for drawing debug geometry.
     bool drawDebug_;
 };

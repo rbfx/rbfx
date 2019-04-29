@@ -48,12 +48,12 @@ public:
     /// Register string for hash reverse mapping.
     StringHash RegisterString(const char* string);
     /// Return string for given StringHash. Return empty string if not found.
-    stl::string GetStringCopy(const StringHash& hash) const;
+    ea::string GetStringCopy(const StringHash& hash) const;
     /// Return whether the string in contained in the register.
     bool Contains(const StringHash& hash) const;
 
     /// Return String for given StringHash. Return value is unsafe to use if RegisterString is called from other threads.
-    const stl::string& GetString(const StringHash& hash) const;
+    const ea::string& GetString(const StringHash& hash) const;
     /// Return map of hashes. Return value is unsafe to use if RegisterString is called from other threads.
     const StringMap& GetInternalMap() const { return map_; }
 
@@ -61,7 +61,7 @@ private:
     /// Hash to string map.
     StringMap map_;
     /// Mutex.
-    stl::unique_ptr<Mutex> mutex_;
+    ea::unique_ptr<Mutex> mutex_;
 };
 
 }

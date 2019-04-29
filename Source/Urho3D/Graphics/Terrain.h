@@ -157,7 +157,7 @@ public:
     Terrain* GetEastNeighbor() const { return east_; }
 
     /// Return raw height data.
-    stl::shared_array<float> GetHeightData() const { return heightData_; }
+    ea::shared_array<float> GetHeightData() const { return heightData_; }
 
     /// Return draw distance.
     float GetDrawDistance() const { return drawDistance_; }
@@ -245,27 +245,27 @@ private:
     void MarkTerrainDirty() { recreateTerrain_ = true; }
 
     /// Shared index buffer.
-    stl::shared_ptr<IndexBuffer> indexBuffer_;
+    ea::shared_ptr<IndexBuffer> indexBuffer_;
     /// Heightmap image.
-    stl::shared_ptr<Image> heightMap_;
+    ea::shared_ptr<Image> heightMap_;
     /// Height data.
-    stl::shared_array<float> heightData_;
+    ea::shared_array<float> heightData_;
     /// Source height data for smoothing.
-    stl::shared_array<float> sourceHeightData_;
+    ea::shared_array<float> sourceHeightData_;
     /// Material.
-    stl::shared_ptr<Material> material_;
+    ea::shared_ptr<Material> material_;
     /// Terrain patches.
-    stl::vector<stl::weak_ptr<TerrainPatch> > patches_;
+    ea::vector<ea::weak_ptr<TerrainPatch> > patches_;
     /// Draw ranges for different LODs and stitching combinations.
-    stl::vector<stl::pair<unsigned, unsigned> > drawRanges_;
+    ea::vector<ea::pair<unsigned, unsigned> > drawRanges_;
     /// North neighbor terrain.
-    stl::weak_ptr<Terrain> north_;
+    ea::weak_ptr<Terrain> north_;
     /// South neighbor terrain.
-    stl::weak_ptr<Terrain> south_;
+    ea::weak_ptr<Terrain> south_;
     /// West neighbor terrain.
-    stl::weak_ptr<Terrain> west_;
+    ea::weak_ptr<Terrain> west_;
     /// East neighbor terrain.
-    stl::weak_ptr<Terrain> east_;
+    ea::weak_ptr<Terrain> east_;
     /// Vertex and height spacing.
     Vector3 spacing_;
     /// Vertex and height sacing at the time of last update.

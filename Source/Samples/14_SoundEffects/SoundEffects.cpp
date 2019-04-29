@@ -130,7 +130,7 @@ void SoundEffects::CreateUI()
     SubscribeToEvent(slider, E_SLIDERCHANGED, URHO3D_HANDLER(SoundEffects, HandleMusicVolume));
 }
 
-Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const stl::string& text)
+Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const ea::string& text)
 {
     UIElement* root = GetSubsystem<UI>()->GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
@@ -150,7 +150,7 @@ Button* SoundEffects::CreateButton(int x, int y, int xSize, int ySize, const stl
     return button;
 }
 
-Slider* SoundEffects::CreateSlider(int x, int y, int xSize, int ySize, const stl::string& text)
+Slider* SoundEffects::CreateSlider(int x, int y, int xSize, int ySize, const ea::string& text)
 {
     UIElement* root = GetSubsystem<UI>()->GetRoot();
     auto* cache = GetSubsystem<ResourceCache>();
@@ -175,7 +175,7 @@ Slider* SoundEffects::CreateSlider(int x, int y, int xSize, int ySize, const stl
 void SoundEffects::HandlePlaySound(StringHash eventType, VariantMap& eventData)
 {
     auto* button = static_cast<Button*>(GetEventSender());
-    const stl::string& soundResourceName = button->GetVar(VAR_SOUNDRESOURCE).GetString();
+    const ea::string& soundResourceName = button->GetVar(VAR_SOUNDRESOURCE).GetString();
 
     // Get the sound resource
     auto* cache = GetSubsystem<ResourceCache>();

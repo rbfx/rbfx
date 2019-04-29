@@ -107,7 +107,7 @@ protected:
     /// Return drawable objects by a ray query, called internally.
     void GetDrawablesInternal(RayOctreeQuery& query) const;
     /// Return drawable objects only for a threaded ray query, called internally.
-    void GetDrawablesOnlyInternal(RayOctreeQuery& query, stl::vector<Drawable*>& drawables) const;
+    void GetDrawablesOnlyInternal(RayOctreeQuery& query, ea::vector<Drawable*>& drawables) const;
 
     /// Increase drawable object count recursively.
     void IncDrawableCount()
@@ -138,7 +138,7 @@ protected:
     /// Bounding box used for drawable object fitting.
     BoundingBox cullingBox_;
     /// Drawable objects.
-    stl::vector<Drawable*> drawables_;
+    ea::vector<Drawable*> drawables_;
     /// Child octants.
     Octant* children_[NUM_OCTANTS]{};
     /// World bounding box center.
@@ -206,13 +206,13 @@ private:
     void UpdateOctreeSize() { SetSize(worldBoundingBox_, numLevels_); }
 
     /// Drawable objects that require update.
-    stl::vector<Drawable*> drawableUpdates_;
+    ea::vector<Drawable*> drawableUpdates_;
     /// Drawable objects that were inserted during threaded update phase.
-    stl::vector<Drawable*> threadedDrawableUpdates_;
+    ea::vector<Drawable*> threadedDrawableUpdates_;
     /// Mutex for octree reinsertions.
     Mutex octreeMutex_;
     /// Ray query temporary list of drawables.
-    mutable stl::vector<Drawable*> rayQueryDrawables_;
+    mutable ea::vector<Drawable*> rayQueryDrawables_;
     /// Subdivision level.
     unsigned numLevels_;
 };

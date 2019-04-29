@@ -930,61 +930,61 @@ void Input::SetToggleFullscreen(bool enable)
     toggleFullscreen_ = enable;
 }
 
-static void PopulateKeyBindingMap(stl::unordered_map<stl::string, int>& keyBindingMap)
+static void PopulateKeyBindingMap(ea::unordered_map<ea::string, int>& keyBindingMap)
 {
     if (keyBindingMap.empty())
     {
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("SPACE", KEY_SPACE));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("LCTRL", KEY_LCTRL));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RCTRL", KEY_RCTRL));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("LSHIFT", KEY_LSHIFT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RSHIFT", KEY_RSHIFT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("LALT", KEY_LALT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RALT", KEY_RALT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("LGUI", KEY_LGUI));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RGUI", KEY_RGUI));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("TAB", KEY_TAB));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RETURN", KEY_RETURN));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RETURN2", KEY_RETURN2));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("ENTER", KEY_KP_ENTER));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("SELECT", KEY_SELECT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("LEFT", KEY_LEFT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("RIGHT", KEY_RIGHT));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("UP", KEY_UP));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("DOWN", KEY_DOWN));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("PAGEUP", KEY_PAGEUP));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("PAGEDOWN", KEY_PAGEDOWN));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F1", KEY_F1));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F2", KEY_F2));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F3", KEY_F3));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F4", KEY_F4));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F5", KEY_F5));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F6", KEY_F6));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F7", KEY_F7));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F8", KEY_F8));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F9", KEY_F9));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F10", KEY_F10));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F11", KEY_F11));
-        keyBindingMap.insert(stl::make_pair<stl::string, int>("F12", KEY_F12));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("SPACE", KEY_SPACE));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("LCTRL", KEY_LCTRL));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RCTRL", KEY_RCTRL));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("LSHIFT", KEY_LSHIFT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RSHIFT", KEY_RSHIFT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("LALT", KEY_LALT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RALT", KEY_RALT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("LGUI", KEY_LGUI));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RGUI", KEY_RGUI));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("TAB", KEY_TAB));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RETURN", KEY_RETURN));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RETURN2", KEY_RETURN2));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("ENTER", KEY_KP_ENTER));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("SELECT", KEY_SELECT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("LEFT", KEY_LEFT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("RIGHT", KEY_RIGHT));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("UP", KEY_UP));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("DOWN", KEY_DOWN));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("PAGEUP", KEY_PAGEUP));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("PAGEDOWN", KEY_PAGEDOWN));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F1", KEY_F1));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F2", KEY_F2));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F3", KEY_F3));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F4", KEY_F4));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F5", KEY_F5));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F6", KEY_F6));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F7", KEY_F7));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F8", KEY_F8));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F9", KEY_F9));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F10", KEY_F10));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F11", KEY_F11));
+        keyBindingMap.insert(ea::make_pair<ea::string, int>("F12", KEY_F12));
     }
 }
 
-static void PopulateMouseButtonBindingMap(stl::unordered_map<stl::string, int>& mouseButtonBindingMap)
+static void PopulateMouseButtonBindingMap(ea::unordered_map<ea::string, int>& mouseButtonBindingMap)
 {
     if (mouseButtonBindingMap.empty())
     {
-        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("LEFT", SDL_BUTTON_LEFT));
-        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("MIDDLE", SDL_BUTTON_MIDDLE));
-        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("RIGHT", SDL_BUTTON_RIGHT));
-        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("X1", SDL_BUTTON_X1));
-        mouseButtonBindingMap.insert(stl::make_pair<stl::string, int>("X2", SDL_BUTTON_X2));
+        mouseButtonBindingMap.insert(ea::make_pair<ea::string, int>("LEFT", SDL_BUTTON_LEFT));
+        mouseButtonBindingMap.insert(ea::make_pair<ea::string, int>("MIDDLE", SDL_BUTTON_MIDDLE));
+        mouseButtonBindingMap.insert(ea::make_pair<ea::string, int>("RIGHT", SDL_BUTTON_RIGHT));
+        mouseButtonBindingMap.insert(ea::make_pair<ea::string, int>("X1", SDL_BUTTON_X1));
+        mouseButtonBindingMap.insert(ea::make_pair<ea::string, int>("X2", SDL_BUTTON_X2));
     }
 }
 
 SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
 {
-    static stl::unordered_map<stl::string, int> keyBindingMap;
-    static stl::unordered_map<stl::string, int> mouseButtonBindingMap;
+    static ea::unordered_map<ea::string, int> keyBindingMap;
+    static ea::unordered_map<ea::string, int> mouseButtonBindingMap;
 
     if (!graphics_)
     {
@@ -1002,7 +1002,7 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     }
 
     auto* ui = GetSubsystem<UI>();
-    stl::shared_ptr<UIElement> screenJoystick = ui->LoadLayout(layoutFile, styleFile);
+    ea::shared_ptr<UIElement> screenJoystick = ui->LoadLayout(layoutFile, styleFile);
     if (!screenJoystick)     // Error is already logged
         return -1;
 
@@ -1023,11 +1023,11 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     unsigned numButtons = 0;
     unsigned numAxes = 0;
     unsigned numHats = 0;
-    const stl::vector<stl::shared_ptr<UIElement> >& children = state.screenJoystick_->GetChildren();
+    const ea::vector<ea::shared_ptr<UIElement> >& children = state.screenJoystick_->GetChildren();
     for (auto iter = children.begin(); iter != children.end(); ++iter)
     {
         UIElement* element = iter->get();
-        stl::string name = element->GetName();
+        ea::string name = element->GetName();
         if (name.starts_with("Button"))
         {
             ++numButtons;
@@ -1037,7 +1037,7 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
             if (text)
             {
                 text->SetVisible(false);
-                const stl::string& key = text->GetText();
+                const ea::string& key = text->GetText();
                 int keyBinding;
                 if (key.length() == 1)
                     keyBinding = key[0];
@@ -1064,7 +1064,7 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
             if (text)
             {
                 text->SetVisible(false);
-                const stl::string& mouseButton = text->GetText();
+                const ea::string& mouseButton = text->GetText();
                 PopulateMouseButtonBindingMap(mouseButtonBindingMap);
 
                 auto i = mouseButtonBindingMap.find(mouseButton);
@@ -1089,9 +1089,9 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
             if (text)
             {
                 text->SetVisible(false);
-                stl::string keyBinding = text->GetText();
+                ea::string keyBinding = text->GetText();
                 int mappedKeyBinding[4] = {KEY_W, KEY_S, KEY_A, KEY_D};
-                stl::vector<stl::string> keyBindings;
+                ea::vector<ea::string> keyBindings;
                 if (keyBinding.contains(' '))   // e.g.: "UP DOWN LEFT RIGHT"
                     keyBindings = keyBinding.split(' ');    // Attempt to split the text using ' ' as separator
                 else if (keyBinding.length() == 4)
@@ -1129,7 +1129,7 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     }
 
     // Make sure all the children are non-focusable so they do not mistakenly to be considered as active UI input controls by application
-    stl::vector<UIElement*> allChildren;
+    ea::vector<UIElement*> allChildren;
     state.screenJoystick_->GetChildren(allChildren, true);
     for (auto iter = allChildren.begin(); iter != allChildren.end(); ++iter)
         (*iter)->SetFocusMode(FM_NOTFOCUSABLE);
@@ -1301,7 +1301,7 @@ SDL_JoystickID Input::OpenJoystick(unsigned index)
     return joystickID;
 }
 
-Key Input::GetKeyFromName(const stl::string& name) const
+Key Input::GetKeyFromName(const ea::string& name) const
 {
     return (Key)SDL_GetKeyFromName(name.c_str());
 }
@@ -1311,9 +1311,9 @@ Key Input::GetKeyFromScancode(Scancode scancode) const
     return (Key)SDL_GetKeyFromScancode((SDL_Scancode)scancode);
 }
 
-stl::string Input::GetKeyName(Key key) const
+ea::string Input::GetKeyName(Key key) const
 {
-    return stl::string(SDL_GetKeyName(key));
+    return ea::string(SDL_GetKeyName(key));
 }
 
 Scancode Input::GetScancodeFromKey(Key key) const
@@ -1321,12 +1321,12 @@ Scancode Input::GetScancodeFromKey(Key key) const
     return (Scancode)SDL_GetScancodeFromKey(key);
 }
 
-Scancode Input::GetScancodeFromName(const stl::string& name) const
+Scancode Input::GetScancodeFromName(const ea::string& name) const
 {
     return (Scancode)SDL_GetScancodeFromName(name.c_str());
 }
 
-stl::string Input::GetScancodeName(Scancode scancode) const
+ea::string Input::GetScancodeName(Scancode scancode) const
 {
     return SDL_GetScancodeName((SDL_Scancode)scancode);
 }
@@ -1465,7 +1465,7 @@ JoystickState* Input::GetJoystickByIndex(unsigned index)
     return nullptr;
 }
 
-JoystickState* Input::GetJoystickByName(const stl::string& name)
+JoystickState* Input::GetJoystickByName(const ea::string& name)
 {
     for (auto i = joysticks_.begin(); i != joysticks_.end(); ++i)
     {
@@ -2390,7 +2390,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
             using namespace DropFile;
 
             VariantMap& eventData = GetEventDataMap();
-            eventData[P_FILENAME] = GetInternalPath(stl::string(evt.drop.file));
+            eventData[P_FILENAME] = GetInternalPath(ea::string(evt.drop.file));
             SDL_free(evt.drop.file);
 
             SendEvent(E_DROPFILE, eventData);
@@ -2484,7 +2484,7 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
     // Prepare a fake SDL event
     SDL_Event evt;
 
-    const stl::string& name = element->GetName();
+    const ea::string& name = element->GetName();
     if (name.starts_with("Button"))
     {
         if (eventType == E_TOUCHMOVE)

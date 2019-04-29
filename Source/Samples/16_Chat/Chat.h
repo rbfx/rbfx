@@ -51,7 +51,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -68,9 +68,9 @@ private:
     /// Subscribe to log message, UI and network events.
     void SubscribeToEvents();
     /// Create a button to the button container.
-    Button* CreateButton(const stl::string& text, int width);
+    Button* CreateButton(const ea::string& text, int width);
     /// Print chat text.
-    void ShowChatText(const stl::string& row);
+    void ShowChatText(const ea::string& row);
     /// Update visibility of buttons according to connection and server status.
     void UpdateButtons();
     /// Handle log message event; pipe it also to the chat display.
@@ -88,19 +88,19 @@ private:
     /// Handle connection status change (just update the buttons that should be shown.)
     void HandleConnectionStatus(StringHash eventType, VariantMap& eventData);
     /// Strings printed so far.
-    stl::vector<stl::string> chatHistory_;
+    ea::vector<ea::string> chatHistory_;
     /// Chat text element.
-    stl::shared_ptr<Text> chatHistoryText_;
+    ea::shared_ptr<Text> chatHistoryText_;
     /// Button container element.
-    stl::shared_ptr<UIElement> buttonContainer_;
+    ea::shared_ptr<UIElement> buttonContainer_;
     /// Server address / chat message line editor element.
-    stl::shared_ptr<LineEdit> textEdit_;
+    ea::shared_ptr<LineEdit> textEdit_;
     /// Send button.
-    stl::shared_ptr<Button> sendButton_;
+    ea::shared_ptr<Button> sendButton_;
     /// Connect button.
-    stl::shared_ptr<Button> connectButton_;
+    ea::shared_ptr<Button> connectButton_;
     /// Disconnect button.
-    stl::shared_ptr<Button> disconnectButton_;
+    ea::shared_ptr<Button> disconnectButton_;
     /// Start server button.
-    stl::shared_ptr<Button> startServerButton_;
+    ea::shared_ptr<Button> startServerButton_;
 };

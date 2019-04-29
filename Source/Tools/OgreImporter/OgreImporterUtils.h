@@ -47,7 +47,7 @@ struct Triangle
 
 struct ModelBone
 {
-    stl::string name_;
+    ea::string name_;
     unsigned parentIndex_;
     Vector3 bindPosition_;
     Quaternion bindRotation_;
@@ -64,9 +64,9 @@ struct ModelBone
 
 struct ModelAnimation
 {
-    stl::string name_;
+    ea::string name_;
     float length_;
-    stl::vector<AnimationTrack> tracks_;
+    ea::vector<AnimationTrack> tracks_;
 };
 
 struct BoneWeightAssignment
@@ -114,7 +114,7 @@ struct ModelVertexBuffer
     VertexMaskFlags elementMask_;
     unsigned morphStart_;
     unsigned morphCount_;
-    stl::vector<ModelVertex> vertices_;
+    ea::vector<ModelVertex> vertices_;
 
     ModelVertexBuffer() :
         elementMask_(MASK_NONE),
@@ -127,7 +127,7 @@ struct ModelVertexBuffer
     {
         dest.WriteUInt(vertices_.size());
 
-        stl::vector<VertexElement> elements = VertexBuffer::GetElements(elementMask_);
+        ea::vector<VertexElement> elements = VertexBuffer::GetElements(elementMask_);
         dest.WriteUInt(elements.size());
         for (unsigned j = 0; j < elements.size(); ++j)
         {
@@ -170,13 +170,13 @@ struct ModelMorphBuffer
 {
     unsigned vertexBuffer_;
     unsigned elementMask_;
-    stl::vector<stl::pair<unsigned, ModelVertex> > vertices_;
+    ea::vector<ea::pair<unsigned, ModelVertex> > vertices_;
 };
 
 struct ModelMorph
 {
-    stl::string name_;
-    stl::vector<ModelMorphBuffer> buffers_;
+    ea::string name_;
+    ea::vector<ModelMorphBuffer> buffers_;
 
     void WriteData(Serializer& dest)
     {
@@ -207,7 +207,7 @@ struct ModelMorph
 struct ModelIndexBuffer
 {
     unsigned indexSize_;
-    stl::vector<unsigned> indices_;
+    ea::vector<unsigned> indices_;
 
     ModelIndexBuffer() :
         indexSize_(sizeof(unsigned short))
@@ -237,6 +237,6 @@ struct ModelSubGeometryLodLevel
     unsigned indexBuffer_{};
     unsigned indexStart_{};
     unsigned indexCount_{};
-    stl::unordered_map<unsigned, stl::vector<BoneWeightAssignment> > boneWeights_;
-    stl::vector<unsigned> boneMapping_;
+    ea::unordered_map<unsigned, ea::vector<BoneWeightAssignment> > boneWeights_;
+    ea::vector<unsigned> boneMapping_;
 };

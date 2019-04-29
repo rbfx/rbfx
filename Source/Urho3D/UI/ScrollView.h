@@ -137,7 +137,7 @@ protected:
     /// Filter implicit attributes in serialization process.
     bool FilterImplicitAttributes(XMLElement& dest) const override;
     /// Filter implicit attributes in serialization process for internal scroll bar.
-    bool FilterScrollBarImplicitAttributes(XMLElement& dest, const stl::string& name) const;
+    bool FilterScrollBarImplicitAttributes(XMLElement& dest, const ea::string& name) const;
     /// Resize panel based on scrollbar visibility.
     void UpdatePanelSize();
     /// Recalculate view size, validate view position and update scrollbars.
@@ -148,13 +148,13 @@ protected:
     void UpdateView(const IntVector2& position);
 
     /// Content element.
-    stl::shared_ptr<UIElement> contentElement_;
+    ea::shared_ptr<UIElement> contentElement_;
     /// Horizontal scroll bar.
-    stl::shared_ptr<ScrollBar> horizontalScrollBar_;
+    ea::shared_ptr<ScrollBar> horizontalScrollBar_;
     /// Vertical scroll bar.
-    stl::shared_ptr<ScrollBar> verticalScrollBar_;
+    ea::shared_ptr<ScrollBar> verticalScrollBar_;
     /// Scroll panel element.
-    stl::shared_ptr<BorderImage> scrollPanel_;
+    ea::shared_ptr<BorderImage> scrollPanel_;
     /// Current view offset from the top-left corner.
     IntVector2 viewPosition_;
     /// Total view size.

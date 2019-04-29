@@ -34,7 +34,7 @@ namespace Urho3D
 {
 
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
-class URHO3D_API RefCounted : public stl::enable_shared_from_this<RefCounted>
+class URHO3D_API RefCounted : public ea::enable_shared_from_this<RefCounted>
 {
 public:
     /// Construct. Allocate the reference count structure and set an initial self weak reference.
@@ -47,9 +47,9 @@ public:
     /// Prevent assignment.
     RefCounted& operator =(const RefCounted& rhs) = delete;
 
-    /// Increment reference count. Can also be called outside of a stl::shared_ptr for traditional reference counting.
+    /// Increment reference count. Can also be called outside of a ea::shared_ptr for traditional reference counting.
     void AddRef();
-    /// Decrement reference count and delete self if no more references. Can also be called outside of a stl::shared_ptr for traditional reference counting.
+    /// Decrement reference count and delete self if no more references. Can also be called outside of a ea::shared_ptr for traditional reference counting.
     void ReleaseRef();
     /// Return reference count.
     int Refs() const;

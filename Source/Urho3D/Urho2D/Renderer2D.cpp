@@ -101,7 +101,7 @@ static inline bool CompareRayQueryResults(const RayQueryResult& lr, const RayQue
     return lhs->GetID() > rhs->GetID();
 }
 
-void Renderer2D::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void Renderer2D::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     unsigned resultSize = results.size();
     for (unsigned i = 0; i < drawables_.size(); ++i)
@@ -111,7 +111,7 @@ void Renderer2D::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQue
     }
 
     if (results.size() != resultSize)
-        stl::quick_sort(results.begin() + resultSize, results.end(), CompareRayQueryResults);
+        ea::quick_sort(results.begin() + resultSize, results.end(), CompareRayQueryResults);
 }
 
 void Renderer2D::UpdateBatches(const FrameInfo& frame)
@@ -201,10 +201,10 @@ void Renderer2D::UpdateGeometry(const FrameInfo& frame)
             auto* dest = reinterpret_cast<Vertex2D*>(vertexBuffer->Lock(0, vertexCount, true));
             if (dest)
             {
-                const stl::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
+                const ea::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
                 for (unsigned b = 0; b < sourceBatches.size(); ++b)
                 {
-                    const stl::vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
+                    const ea::vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
                     for (unsigned i = 0; i < vertices.size(); ++i)
                         dest[i] = vertices[i];
                     dest += vertices.size();
@@ -250,17 +250,17 @@ Material* Renderer2D::GetMaterial(Texture2D* texture, BlendMode blendMode)
         texture);
     if (t == cachedMaterials_.end())
     {
-        stl::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
+        ea::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
         cachedMaterials_[texture][blendMode] = newMaterial;
         return newMaterial;
     }
 
-    stl::unordered_map<int, stl::shared_ptr<Material> >& materials = t->second;
+    ea::unordered_map<int, ea::shared_ptr<Material> >& materials = t->second;
     auto b = materials.find(blendMode);
     if (b != materials.end())
         return b->second;
 
-    stl::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
+    ea::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
     materials[blendMode] = newMaterial;
 
     return newMaterial;
@@ -282,20 +282,20 @@ void Renderer2D::OnWorldBoundingBoxUpdate()
     worldBoundingBox_ = boundingBox_;
 }
 
-stl::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode blendMode)
+ea::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode blendMode)
 {
-    stl::shared_ptr<Material> newMaterial = material_->Clone();
+    ea::shared_ptr<Material> newMaterial = material_->Clone();
 
     auto techIt = cachedTechniques_.find((int) blendMode);
     if (techIt == cachedTechniques_.end())
     {
-        stl::shared_ptr<Technique> tech(context_->CreateObject<Technique>());
+        ea::shared_ptr<Technique> tech(context_->CreateObject<Technique>());
         Pass* pass = tech->CreatePass("alpha");
         pass->SetVertexShader("Urho2D");
         pass->SetPixelShader("Urho2D");
         pass->SetDepthWrite(false);
         pass->SetBlendMode(blendMode);
-        techIt = cachedTechniques_.insert(stl::make_pair((int) blendMode, tech)).first;
+        techIt = cachedTechniques_.insert(ea::make_pair((int) blendMode, tech)).first;
     }
 
     newMaterial->SetTechnique(0, techIt->second.get());
@@ -347,7 +347,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
         auto start = drawables_.begin();
         for (int i = 0; i < numWorkItems; ++i)
         {
-            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = CheckDrawableVisibilityWork;
             item->aux_ = this;
@@ -387,12 +387,12 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
     }
 }
 
-void Renderer2D::GetDrawables(stl::vector<Drawable2D*>& drawables, Node* node)
+void Renderer2D::GetDrawables(ea::vector<Drawable2D*>& drawables, Node* node)
 {
     if (!node || !node->IsEnabled())
         return;
 
-    const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
     for (auto i = components.begin(); i != components.end(); ++i)
     {
         auto* drawable = dynamic_cast<Drawable2D*>(i->get());
@@ -400,7 +400,7 @@ void Renderer2D::GetDrawables(stl::vector<Drawable2D*>& drawables, Node* node)
             drawables.push_back(drawable);
     }
 
-    const stl::vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
         GetDrawables(drawables, i->get());
 }
@@ -425,14 +425,14 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
     if (viewBatchInfo.batchUpdatedFrameNumber_ == frame_.frameNumber_)
         return;
 
-    stl::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
+    ea::vector<const SourceBatch2D*>& sourceBatches = viewBatchInfo.sourceBatches_;
     sourceBatches.clear();
     for (unsigned d = 0; d < drawables_.size(); ++d)
     {
         if (!drawables_[d]->IsInView(camera))
             continue;
 
-        const stl::vector<SourceBatch2D>& batches = drawables_[d]->GetSourceBatches();
+        const ea::vector<SourceBatch2D>& batches = drawables_[d]->GetSourceBatches();
         for (unsigned b = 0; b < batches.size(); ++b)
         {
             if (batches[b].material_ && !batches[b].vertices_.empty())
@@ -450,7 +450,7 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
         }
     }
 
-    stl::quick_sort(sourceBatches.begin(), sourceBatches.end(), CompareSourceBatch2Ds);
+    ea::quick_sort(sourceBatches.begin(), sourceBatches.end(), CompareSourceBatch2Ds);
 
     viewBatchInfo.batchCount_ = 0;
     Material* currMaterial = nullptr;
@@ -464,7 +464,7 @@ void Renderer2D::UpdateViewBatchInfo(ViewBatchInfo2D& viewBatchInfo, Camera* cam
     {
         distance = Min(distance, sourceBatches[b]->distance_);
         Material* material = sourceBatches[b]->material_;
-        const stl::vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
+        const ea::vector<Vertex2D>& vertices = sourceBatches[b]->vertices_;
 
         // When new material encountered, finish the current batch and start new
         if (currMaterial != material)
@@ -512,7 +512,7 @@ void Renderer2D::AddViewBatch(ViewBatchInfo2D& viewBatchInfo, Material* material
     // Allocate new geometry if necessary
     if (viewBatchInfo.geometries_.size() <= viewBatchInfo.batchCount_)
     {
-        stl::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
+        ea::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetVertexBuffer(0, viewBatchInfo.vertexBuffer_);
 

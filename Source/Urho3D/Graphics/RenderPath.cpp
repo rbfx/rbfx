@@ -58,7 +58,7 @@ static const char* sortModeNames[] =
     nullptr
 };
 
-TextureUnit ParseTextureUnitName(stl::string name);
+TextureUnit ParseTextureUnitName(ea::string name);
 
 void RenderTargetInfo::Load(const XMLElement& element)
 {
@@ -69,7 +69,7 @@ void RenderTargetInfo::Load(const XMLElement& element)
     if (element.HasAttribute("cubemap"))
         cubemap_ = element.GetBool("cubemap");
 
-    stl::string formatName = element.GetAttribute("format");
+    ea::string formatName = element.GetAttribute("format");
     format_ = Graphics::GetFormat(formatName);
 
     if (element.HasAttribute("filter"))
@@ -167,7 +167,7 @@ void RenderPathCommand::Load(const XMLElement& element)
 
         if (type_ == CMD_QUAD && element.HasAttribute("blend"))
         {
-            stl::string blend = element.GetAttributeLower("blend");
+            ea::string blend = element.GetAttributeLower("blend");
             blendMode_ = ((BlendMode)GetStringListIndex(blend.c_str(), blendModeNames, BLEND_REPLACE));
         }
         break;
@@ -182,7 +182,7 @@ void RenderPathCommand::Load(const XMLElement& element)
 
     // By default use 1 output, which is the viewport
     outputs_.resize(1);
-    outputs_[0] = stl::make_pair(stl::string("viewport"), FACE_POSITIVE_X);
+    outputs_[0] = ea::make_pair(ea::string("viewport"), FACE_POSITIVE_X);
     if (element.HasAttribute("output"))
         outputs_[0].first = element.GetAttribute("output");
     if (element.HasAttribute("face"))
@@ -210,7 +210,7 @@ void RenderPathCommand::Load(const XMLElement& element)
     XMLElement parameterElem = element.GetChild("parameter");
     while (parameterElem)
     {
-        stl::string name = parameterElem.GetAttribute("name");
+        ea::string name = parameterElem.GetAttribute("name");
         shaderParameters_[name] = Material::ParseShaderParameterValue(parameterElem.GetAttribute("value"));
         parameterElem = parameterElem.GetNext("parameter");
     }
@@ -224,7 +224,7 @@ void RenderPathCommand::Load(const XMLElement& element)
             unit = ParseTextureUnitName(textureElem.GetAttribute("unit"));
         if (unit < MAX_TEXTURE_UNITS)
         {
-            stl::string name = textureElem.GetAttribute("name");
+            ea::string name = textureElem.GetAttribute("name");
             textureNames_[unit] = name;
         }
 
@@ -232,18 +232,18 @@ void RenderPathCommand::Load(const XMLElement& element)
     }
 }
 
-void RenderPathCommand::SetTextureName(TextureUnit unit, const stl::string& name)
+void RenderPathCommand::SetTextureName(TextureUnit unit, const ea::string& name)
 {
     if (unit < MAX_TEXTURE_UNITS)
         textureNames_[unit] = name;
 }
 
-void RenderPathCommand::SetShaderParameter(const stl::string& name, const Variant& value)
+void RenderPathCommand::SetShaderParameter(const ea::string& name, const Variant& value)
 {
     shaderParameters_[name] = value;
 }
 
-void RenderPathCommand::RemoveShaderParameter(const stl::string& name)
+void RenderPathCommand::RemoveShaderParameter(const ea::string& name)
 {
     shaderParameters_.erase(name);
 }
@@ -254,20 +254,20 @@ void RenderPathCommand::SetNumOutputs(unsigned num)
     outputs_.resize(num);
 }
 
-void RenderPathCommand::SetOutput(unsigned index, const stl::string& name, CubeMapFace face)
+void RenderPathCommand::SetOutput(unsigned index, const ea::string& name, CubeMapFace face)
 {
     if (index < outputs_.size())
-        outputs_[index] = stl::make_pair(name, face);
+        outputs_[index] = ea::make_pair(name, face);
     else if (index == outputs_.size() && index < MAX_RENDERTARGETS)
-        outputs_.push_back(stl::make_pair(name, face));
+        outputs_.push_back(ea::make_pair(name, face));
 }
 
-void RenderPathCommand::SetOutputName(unsigned index, const stl::string& name)
+void RenderPathCommand::SetOutputName(unsigned index, const ea::string& name)
 {
     if (index < outputs_.size())
         outputs_[index].first = name;
     else if (index == outputs_.size() && index < MAX_RENDERTARGETS)
-        outputs_.push_back(stl::make_pair(name, FACE_POSITIVE_X));
+        outputs_.push_back(ea::make_pair(name, FACE_POSITIVE_X));
 }
 
 void RenderPathCommand::SetOutputFace(unsigned index, CubeMapFace face)
@@ -275,27 +275,27 @@ void RenderPathCommand::SetOutputFace(unsigned index, CubeMapFace face)
     if (index < outputs_.size())
         outputs_[index].second = face;
     else if (index == outputs_.size() && index < MAX_RENDERTARGETS)
-        outputs_.push_back(stl::make_pair(EMPTY_STRING, face));
+        outputs_.push_back(ea::make_pair(EMPTY_STRING, face));
 }
 
 
-void RenderPathCommand::SetDepthStencilName(const stl::string& name)
+void RenderPathCommand::SetDepthStencilName(const ea::string& name)
 {
     depthStencilName_ = name;
 }
 
-const stl::string& RenderPathCommand::GetTextureName(TextureUnit unit) const
+const ea::string& RenderPathCommand::GetTextureName(TextureUnit unit) const
 {
     return unit < MAX_TEXTURE_UNITS ? textureNames_[unit] : EMPTY_STRING;
 }
 
-const Variant& RenderPathCommand::GetShaderParameter(const stl::string& name) const
+const Variant& RenderPathCommand::GetShaderParameter(const ea::string& name) const
 {
     auto i = shaderParameters_.find(name);
     return i != shaderParameters_.end() ? i->second : Variant::EMPTY;
 }
 
-const stl::string& RenderPathCommand::GetOutputName(unsigned index) const
+const ea::string& RenderPathCommand::GetOutputName(unsigned index) const
 {
     return index < outputs_.size() ? outputs_[index].first : EMPTY_STRING;
 }
@@ -309,9 +309,9 @@ RenderPath::RenderPath() = default;
 
 RenderPath::~RenderPath() = default;
 
-stl::shared_ptr<RenderPath> RenderPath::Clone()
+ea::shared_ptr<RenderPath> RenderPath::Clone()
 {
-    stl::shared_ptr<RenderPath> newRenderPath(new RenderPath());
+    ea::shared_ptr<RenderPath> newRenderPath(new RenderPath());
     newRenderPath->renderTargets_ = renderTargets_;
     newRenderPath->commands_ = commands_;
     return newRenderPath;
@@ -359,7 +359,7 @@ bool RenderPath::Append(XMLFile* file)
     return true;
 }
 
-void RenderPath::SetEnabled(const stl::string& tag, bool active)
+void RenderPath::SetEnabled(const ea::string& tag, bool active)
 {
     for (unsigned i = 0; i < renderTargets_.size(); ++i)
     {
@@ -374,7 +374,7 @@ void RenderPath::SetEnabled(const stl::string& tag, bool active)
     }
 }
 
-bool RenderPath::IsEnabled(const stl::string& tag) const
+bool RenderPath::IsEnabled(const ea::string& tag) const
 {
     for (unsigned i = 0; i < renderTargets_.size(); ++i)
     {
@@ -391,7 +391,7 @@ bool RenderPath::IsEnabled(const stl::string& tag) const
     return false;
 }
 
-bool RenderPath::IsAdded(const stl::string& tag) const
+bool RenderPath::IsAdded(const ea::string& tag) const
 {
     for (unsigned i = 0; i < renderTargets_.size(); ++i)
     {
@@ -408,7 +408,7 @@ bool RenderPath::IsAdded(const stl::string& tag) const
     return false;
 }
 
-void RenderPath::ToggleEnabled(const stl::string& tag)
+void RenderPath::ToggleEnabled(const ea::string& tag)
 {
     for (unsigned i = 0; i < renderTargets_.size(); ++i)
     {
@@ -441,7 +441,7 @@ void RenderPath::RemoveRenderTarget(unsigned index)
     renderTargets_.erase(index);
 }
 
-void RenderPath::RemoveRenderTarget(const stl::string& name)
+void RenderPath::RemoveRenderTarget(const ea::string& name)
 {
     for (unsigned i = 0; i < renderTargets_.size(); ++i)
     {
@@ -453,7 +453,7 @@ void RenderPath::RemoveRenderTarget(const stl::string& name)
     }
 }
 
-void RenderPath::RemoveRenderTargets(const stl::string& tag)
+void RenderPath::RemoveRenderTargets(const ea::string& tag)
 {
     for (unsigned i = renderTargets_.size() - 1; i < renderTargets_.size(); --i)
     {
@@ -485,7 +485,7 @@ void RenderPath::RemoveCommand(unsigned index)
     commands_.erase(index);
 }
 
-void RenderPath::RemoveCommands(const stl::string& tag)
+void RenderPath::RemoveCommands(const ea::string& tag)
 {
     for (unsigned i = commands_.size() - 1; i < commands_.size(); --i)
     {
@@ -494,7 +494,7 @@ void RenderPath::RemoveCommands(const stl::string& tag)
     }
 }
 
-void RenderPath::SetShaderParameter(const stl::string& name, const Variant& value)
+void RenderPath::SetShaderParameter(const ea::string& name, const Variant& value)
 {
     StringHash nameHash(name);
 
@@ -506,7 +506,7 @@ void RenderPath::SetShaderParameter(const stl::string& name, const Variant& valu
     }
 }
 
-const Variant& RenderPath::GetShaderParameter(const stl::string& name) const
+const Variant& RenderPath::GetShaderParameter(const ea::string& name) const
 {
     StringHash nameHash(name);
 

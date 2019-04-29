@@ -61,7 +61,7 @@ void HelloWorld::CreateText()
     auto* cache = GetSubsystem<ResourceCache>();
 
     // Construct new Text object
-    stl::shared_ptr<Text> helloText(new Text(context_));
+    ea::shared_ptr<Text> helloText(new Text(context_));
 
     // Set String to display
     helloText->SetText("Hello World from Urho3D!");

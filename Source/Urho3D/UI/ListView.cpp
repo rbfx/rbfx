@@ -139,9 +139,9 @@ public:
         auto* overlay = static_cast<UIElement*>(eventData[UIMouseClick::P_ELEMENT].GetPtr());
         if (overlay)
         {
-            const stl::vector<stl::shared_ptr<UIElement> >& children = overlayContainer_->GetChildren();
+            const ea::vector<ea::shared_ptr<UIElement> >& children = overlayContainer_->GetChildren();
             auto i = children.find(
-                stl::shared_ptr<UIElement>(overlay));
+                ea::shared_ptr<UIElement>(overlay));
             if (i != children.end())
                 listView_->ToggleExpand((unsigned)(i - children.begin()));
         }
@@ -518,16 +518,16 @@ void ListView::RemoveAllItems()
 
 void ListView::SetSelection(unsigned index)
 {
-    stl::vector<unsigned> indices;
+    ea::vector<unsigned> indices;
     indices.push_back(index);
     SetSelections(indices);
     EnsureItemVisibility(index);
 }
 
-void ListView::SetSelections(const stl::vector<unsigned>& indices)
+void ListView::SetSelections(const ea::vector<unsigned>& indices)
 {
     // Make a weak pointer to self to check for destruction as a response to events
-    stl::weak_ptr<ListView> self(this);
+    ea::weak_ptr<ListView> self(this);
 
     unsigned numItems = GetNumItems();
 
@@ -589,7 +589,7 @@ void ListView::SetSelections(const stl::vector<unsigned>& indices)
 
     // Re-sort selections if necessary
     if (added)
-        stl::quick_sort(selections_.begin(), selections_.end());
+        ea::quick_sort(selections_.begin(), selections_.end());
 
     UpdateSelectionEffect();
     SendEvent(E_SELECTIONCHANGED);
@@ -598,7 +598,7 @@ void ListView::SetSelections(const stl::vector<unsigned>& indices)
 void ListView::AddSelection(unsigned index)
 {
     // Make a weak pointer to self to check for destruction as a response to events
-    stl::weak_ptr<ListView> self(this);
+    ea::weak_ptr<ListView> self(this);
 
     if (!multiselect_)
         SetSelection(index);
@@ -621,7 +621,7 @@ void ListView::AddSelection(unsigned index)
             if (self.expired())
                 return;
 
-            stl::quick_sort(selections_.begin(), selections_.end());
+            ea::quick_sort(selections_.begin(), selections_.end());
         }
 
         EnsureItemVisibility(index);
@@ -681,7 +681,7 @@ void ListView::ChangeSelection(int delta, bool additive)
     int direction = delta > 0 ? 1 : -1;
     unsigned newSelection = selection;
     unsigned okSelection = selection;
-    stl::vector<unsigned> indices = selections_;
+    ea::vector<unsigned> indices = selections_;
 
     while (delta != 0)
     {
@@ -705,7 +705,7 @@ void ListView::ChangeSelection(int delta, bool additive)
 
 void ListView::ClearSelection()
 {
-    SetSelections(stl::vector<unsigned>());
+    SetSelections(ea::vector<unsigned>());
 }
 
 void ListView::SetHighlightMode(HighlightMode mode)
@@ -725,7 +725,7 @@ void ListView::SetHierarchyMode(bool enable)
         return;
 
     hierarchyMode_ = enable;
-    stl::shared_ptr<UIElement> container;
+    ea::shared_ptr<UIElement> container;
     if (enable)
     {
         overlayContainer_ = context_->CreateObject<UIElement>();
@@ -794,7 +794,7 @@ void ListView::Expand(unsigned index, bool enable, bool recursive)
     SetItemExpanded(item, enable);
     int baseIndent = item->GetIndent();
 
-    stl::vector<bool> expanded((unsigned)(baseIndent + 1));
+    ea::vector<bool> expanded((unsigned)(baseIndent + 1));
     expanded[baseIndent] = enable;
 
     contentElement_->DisableLayoutUpdate();
@@ -846,9 +846,9 @@ UIElement* ListView::GetItem(unsigned index) const
     return contentElement_->GetChild(index);
 }
 
-stl::vector<UIElement*> ListView::GetItems() const
+ea::vector<UIElement*> ListView::GetItems() const
 {
-    stl::vector<UIElement*> items;
+    ea::vector<UIElement*> items;
     contentElement_->GetChildren(items);
     return items;
 }
@@ -862,7 +862,7 @@ unsigned ListView::FindItem(UIElement* item) const
     if (item->GetParent() != contentElement_)
         return M_MAX_UNSIGNED;
 
-    const stl::vector<stl::shared_ptr<UIElement> >& children = contentElement_->GetChildren();
+    const ea::vector<ea::shared_ptr<UIElement> >& children = contentElement_->GetChildren();
 
     // Binary search for list item based on screen coordinate Y
     if (contentElement_->GetLayoutMode() == LM_VERTICAL && item->GetHeight())
@@ -905,9 +905,9 @@ UIElement* ListView::GetSelectedItem() const
     return contentElement_->GetChild(GetSelection());
 }
 
-stl::vector<UIElement*> ListView::GetSelectedItems() const
+ea::vector<UIElement*> ListView::GetSelectedItems() const
 {
-    stl::vector<UIElement*> ret;
+    ea::vector<UIElement*> ret;
 
     for (auto i = selections_.begin(); i != selections_.end(); ++i)
     {
@@ -921,7 +921,7 @@ stl::vector<UIElement*> ListView::GetSelectedItems() const
 
 void ListView::CopySelectedItemsToClipboard() const
 {
-    stl::string selectedText;
+    ea::string selectedText;
 
     for (auto i = selections_.begin(); i != selections_.end(); ++i)
     {
@@ -1067,7 +1067,7 @@ void ListView::HandleUIMouseClick(StringHash eventType, VariantMap& eventData)
                 {
                     unsigned first = selections_.front();
                     unsigned last = selections_.back();
-                    stl::vector<unsigned> newSelections = selections_;
+                    ea::vector<unsigned> newSelections = selections_;
                     if (i == first || i == last)
                     {
                         for (unsigned j = first; j <= last; ++j)

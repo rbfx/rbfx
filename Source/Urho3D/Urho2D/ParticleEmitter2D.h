@@ -142,9 +142,9 @@ private:
     void UpdateParticle(Particle2D& particle, float timeStep, const Vector3& worldPosition, float worldScale);
 
     /// Particle effect.
-    stl::shared_ptr<ParticleEffect2D> effect_;
+    ea::shared_ptr<ParticleEffect2D> effect_;
     /// Sprite.
-    stl::shared_ptr<Sprite2D> sprite_;
+    ea::shared_ptr<Sprite2D> sprite_;
     /// Blend mode.
     BlendMode blendMode_;
     /// Nummber of particles.
@@ -156,7 +156,7 @@ private:
     /// Currently emitting flag.
     bool emitting_;
     /// Particles.
-    stl::vector<Particle2D> particles_;
+    ea::vector<Particle2D> particles_;
     /// Bounding box min point.
     Vector3 boundingBoxMinPoint_;
     /// Bounding box max point.

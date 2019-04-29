@@ -128,9 +128,9 @@ TaskScheduler::TaskScheduler(Context* context)
 
 TaskScheduler::~TaskScheduler() = default;
 
-stl::shared_ptr<Task> TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
+ea::shared_ptr<Task> TaskScheduler::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    if (stl::shared_ptr<Task> task = GetTasks()->Create(taskFunction, stackSize))
+    if (ea::shared_ptr<Task> task = GetTasks()->Create(taskFunction, stackSize))
     {
         Add(task.get());
         return task;
@@ -140,14 +140,14 @@ stl::shared_ptr<Task> TaskScheduler::Create(const std::function<void()>& taskFun
 
 void TaskScheduler::Add(Task* task)
 {
-    tasks_.push_back(stl::shared_ptr<Task>(task));   // TODO: verify!!!
+    tasks_.push_back(ea::shared_ptr<Task>(task));   // TODO: verify!!!
 }
 
 void TaskScheduler::ExecuteTasks()
 {
     // Tasks with smallest next runtime value end up at the beginning of the list. Null pointers end up at the end of
     // the list.
-    stl::quick_sort(tasks_.begin(), tasks_.end(), [](const stl::shared_ptr<Task>& a, const stl::shared_ptr<Task>& b) {
+    ea::quick_sort(tasks_.begin(), tasks_.end(), [](const ea::shared_ptr<Task>& a, const ea::shared_ptr<Task>& b) {
         if (!a)
             return false;
         if (!b)
@@ -244,17 +244,17 @@ Tasks::Tasks(Context* context) : Object(context)
     RegisterTasksLibrary(context);
 }
 
-stl::shared_ptr<Task> Tasks::Create(const std::function<void()>& taskFunction, unsigned stackSize)
+ea::shared_ptr<Task> Tasks::Create(const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    stl::shared_ptr<Task> task = context_->CreateObject<Task>();
+    ea::shared_ptr<Task> task = context_->CreateObject<Task>();
     if (task->Initialize(taskFunction, stackSize))
         return task;
     return nullptr;
 }
 
-stl::shared_ptr<Task> Tasks::Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize)
+ea::shared_ptr<Task> Tasks::Create(StringHash eventType, const std::function<void()>& taskFunction, unsigned stackSize)
 {
-    if (stl::shared_ptr<Task> task = Create(taskFunction, stackSize))
+    if (ea::shared_ptr<Task> task = Create(taskFunction, stackSize))
     {
         Add(eventType, task.get());
         return task;
@@ -271,7 +271,7 @@ void Tasks::Add(StringHash eventType, Task* task)
     }
 
     auto it = taskSchedulers_.find(eventType);
-    stl::shared_ptr<TaskScheduler> scheduler;
+    ea::shared_ptr<TaskScheduler> scheduler;
     if (it == taskSchedulers_.end())
     {
         taskSchedulers_[eventType] = scheduler = context_->CreateObject<TaskScheduler>();

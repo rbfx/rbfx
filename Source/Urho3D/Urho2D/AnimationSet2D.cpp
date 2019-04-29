@@ -80,7 +80,7 @@ char* _spUtil_readFile(const char* path, int* length)
         return 0;
 
     ResourceCache* cache = currentAnimationSet->GetSubsystem<ResourceCache>();
-    stl::shared_ptr<File> file = cache->GetFile(path);
+    ea::shared_ptr<File> file = cache->GetFile(path);
     if (!file)
         return 0;
 
@@ -127,7 +127,7 @@ bool AnimationSet2D::BeginLoad(Deserializer& source)
     if (GetName().empty())
         SetName(source.GetName());
 
-    stl::string extension = GetExtension(source.GetName());
+    ea::string extension = GetExtension(source.GetName());
 #ifdef URHO3D_SPINE
     if (extension == ".json")
         return BeginLoadSpine(source);
@@ -163,7 +163,7 @@ unsigned AnimationSet2D::GetNumAnimations() const
     return 0;
 }
 
-stl::string AnimationSet2D::GetAnimation(unsigned index) const
+ea::string AnimationSet2D::GetAnimation(unsigned index) const
 {
     if (index >= GetNumAnimations())
         return EMPTY_STRING;
@@ -178,7 +178,7 @@ stl::string AnimationSet2D::GetAnimation(unsigned index) const
     return EMPTY_STRING;
 }
 
-bool AnimationSet2D::HasAnimation(const stl::string& animationName) const
+bool AnimationSet2D::HasAnimation(const ea::string& animationName) const
 {
 #ifdef URHO3D_SPINE
     if (skeletonData_)
@@ -192,7 +192,7 @@ bool AnimationSet2D::HasAnimation(const stl::string& animationName) const
 #endif
     if (spriterData_ && !spriterData_->entities_.empty())
     {
-        const stl::vector<Spriter::Animation*>& animations = spriterData_->entities_[0]->animations_;
+        const ea::vector<Spriter::Animation*>& animations = spriterData_->entities_[0]->animations_;
         for (unsigned i = 0; i < animations.size(); ++i)
         {
             if (animationName == animations[i]->name_)
@@ -236,7 +236,7 @@ bool AnimationSet2D::EndLoadSpine()
 {
     currentAnimationSet = this;
 
-    stl::string atlasFileName = ReplaceExtension(GetName(), ".atlas");
+    ea::string atlasFileName = ReplaceExtension(GetName(), ".atlas");
     atlas_ = spAtlas_createFromFile(atlasFileName.c_str(), 0);
     if (!atlas_)
     {
@@ -288,7 +288,7 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
         return false;
     }
 
-    stl::shared_array<char> buffer(new char[dataSize]);
+    ea::shared_array<char> buffer(new char[dataSize]);
     if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
 
@@ -300,7 +300,7 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
     }
 
     // Check has sprite sheet
-    stl::string parentPath = GetParentPath(GetName());
+    ea::string parentPath = GetParentPath(GetName());
     auto* cache = GetSubsystem<ResourceCache>();
 
     spriteSheetFilePath_ = parentPath + GetFileName(GetName()) + ".xml";
@@ -323,7 +323,7 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
                 for (unsigned j = 0; j < folder->files_.size(); ++j)
                 {
                     Spriter::File* file = folder->files_[j];
-                    stl::string imagePath = parentPath + file->name_;
+                    ea::string imagePath = parentPath + file->name_;
                     cache->BackgroundLoadResource<Image>(imagePath, true, this);
                 }
             }
@@ -341,7 +341,7 @@ struct SpriteInfo
     int x{};
     int y{};
     Spriter::File* file_{};
-    stl::shared_ptr<Image> image_;
+    ea::shared_ptr<Image> image_;
 };
 
 bool AnimationSet2D::EndLoadSpriter()
@@ -362,7 +362,7 @@ bool AnimationSet2D::EndLoadSpriter()
             for (unsigned j = 0; j < folder->files_.size(); ++j)
             {
                 Spriter::File* file = folder->files_[j];
-                stl::shared_ptr<Sprite2D> sprite(spriteSheet_->GetSprite(GetFileName(file->name_)));
+                ea::shared_ptr<Sprite2D> sprite(spriteSheet_->GetSprite(GetFileName(file->name_)));
                 if (!sprite)
                 {
                     URHO3D_LOGERROR("Could not load sprite " + file->name_);
@@ -395,8 +395,8 @@ bool AnimationSet2D::EndLoadSpriter()
     }
     else
     {
-        stl::vector<SpriteInfo> spriteInfos;
-        stl::string parentPath = GetParentPath(GetName());
+        ea::vector<SpriteInfo> spriteInfos;
+        ea::string parentPath = GetParentPath(GetName());
 
         for (unsigned i = 0; i < spriterData_->folders_.size(); ++i)
         {
@@ -404,8 +404,8 @@ bool AnimationSet2D::EndLoadSpriter()
             for (unsigned j = 0; j < folder->files_.size(); ++j)
             {
                 Spriter::File* file = folder->files_[j];
-                stl::string imagePath = parentPath + file->name_;
-                stl::shared_ptr<Image> image(cache->GetResource<Image>(imagePath));
+                ea::string imagePath = parentPath + file->name_;
+                ea::shared_ptr<Image> image(cache->GetResource<Image>(imagePath));
                 if (!image)
                 {
                     URHO3D_LOGERROR("Could not load image");
@@ -448,13 +448,13 @@ bool AnimationSet2D::EndLoadSpriter()
                 }
             }
 
-            stl::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            ea::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
             texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
 
             auto textureDataSize = (unsigned)allocator.GetWidth() * allocator.GetHeight() * 4;
-            stl::shared_array<unsigned char> textureData(new unsigned char[textureDataSize]);
+            ea::shared_array<unsigned char> textureData(new unsigned char[textureDataSize]);
             memset(textureData.get(), 0, textureDataSize);
 
             sprite_ = context_->CreateObject<Sprite2D>();
@@ -471,7 +471,7 @@ bool AnimationSet2D::EndLoadSpriter()
                         image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
                 }
 
-                stl::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+                ea::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
                 sprite->SetTexture(texture);
                 sprite->SetRectangle(IntRect(info.x, info.y, info.x + image->GetWidth(), info.y + image->GetHeight()));
                 sprite->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));
@@ -484,7 +484,7 @@ bool AnimationSet2D::EndLoadSpriter()
         }
         else
         {
-            stl::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            ea::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
 

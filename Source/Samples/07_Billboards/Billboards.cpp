@@ -235,7 +235,7 @@ void Billboards::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -289,8 +289,8 @@ void Billboards::MoveCamera(float timeStep)
 void Billboards::AnimateScene(float timeStep)
 {
     // Get the light and billboard scene nodes
-    stl::vector<Node*> lightNodes;
-    stl::vector<Node*> billboardNodes;
+    ea::vector<Node*> lightNodes;
+    ea::vector<Node*> billboardNodes;
     scene_->GetChildrenWithComponent<Light>(lightNodes);
     scene_->GetChildrenWithComponent<BillboardSet>(billboardNodes);
 

@@ -156,7 +156,7 @@ bool Tab::RenderWindow()
     return open_;
 }
 
-void Tab::SetTitle(const stl::string& title)
+void Tab::SetTitle(const ea::string& title)
 {
     title_ = title;
     UpdateUniqueTitle();
@@ -180,10 +180,10 @@ void Tab::OnSaveUISettings(ImGuiTextBuffer* buf)
 
 void Tab::OnLoadUISettings(const char* name, const char* line)
 {
-    SetID(stl::string(name).split('#')[1]);
+    SetID(ea::string(name).split('#')[1]);
 }
 
-bool Tab::LoadResource(const stl::string& resourcePath)
+bool Tab::LoadResource(const ea::string& resourcePath)
 {
     // Resource loading is only allowed when scene is not playing.
     if (auto* tab = GetSubsystem<Editor>()->GetTab<PreviewTab>())
@@ -199,7 +199,7 @@ bool Tab::SaveResource()
     return true;
 }
 
-void Tab::SetID(const stl::string& id)
+void Tab::SetID(const ea::string& id)
 {
     id_ = id;
     uniqueName_ = GetTypeName() + "###" + id;

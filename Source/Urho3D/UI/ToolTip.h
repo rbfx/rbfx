@@ -52,7 +52,7 @@ public:
 
 private:
     /// The element that is being tracked for hovering. Normally the parent element.
-    stl::weak_ptr<UIElement> target_;
+    ea::weak_ptr<UIElement> target_;
     /// Delay from hover start to displaying the tooltip.
     float delay_;
     /// Point at which the parent was hovered.

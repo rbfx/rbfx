@@ -38,12 +38,12 @@ namespace Urho3D
 SceneView::SceneView(Context* context, const IntRect& rect)
     : rect_(rect)
 {
-    scene_ = stl::shared_ptr<Scene>(new Scene(context));
+    scene_ = ea::shared_ptr<Scene>(new Scene(context));
     scene_->CreateComponent<Octree>();
-    viewport_ = stl::shared_ptr<Viewport>(new Viewport(context, scene_, nullptr));
+    viewport_ = ea::shared_ptr<Viewport>(new Viewport(context, scene_, nullptr));
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect_.Size()));
     CreateObjects();
-    texture_ = stl::shared_ptr<Texture2D>(new Texture2D(context));
+    texture_ = ea::shared_ptr<Texture2D>(new Texture2D(context));
     // Make sure viewport is not using default renderpath. That would cause issues when renderpath
     // is shared with other viewports (like in resource inspector).
     viewport_->SetRenderPath(viewport_->GetRenderPath()->Clone());

@@ -38,7 +38,7 @@ UIBatch::UIBatch()
     SetDefaultColor();
 }
 
-UIBatch::UIBatch(UIElement* element, BlendMode blendMode, const IntRect& scissor, Texture* texture, stl::vector<float>* vertexData) :     // NOLINT(modernize-pass-by-value)
+UIBatch::UIBatch(UIElement* element, BlendMode blendMode, const IntRect& scissor, Texture* texture, ea::vector<float>* vertexData) :     // NOLINT(modernize-pass-by-value)
     element_(element),
     blendMode_(blendMode),
     scissor_(scissor),
@@ -438,7 +438,7 @@ unsigned UIBatch::GetInterpolatedColor(float x, float y)
     }
 }
 
-void UIBatch::AddOrMerge(const UIBatch& batch, stl::vector<UIBatch>& batches)
+void UIBatch::AddOrMerge(const UIBatch& batch, ea::vector<UIBatch>& batches)
 {
     if (batch.vertexEnd_ == batch.vertexStart_)
         return;

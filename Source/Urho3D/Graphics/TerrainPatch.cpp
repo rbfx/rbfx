@@ -70,7 +70,7 @@ void TerrainPatch::RegisterObject(Context* context)
     context->RegisterFactory<TerrainPatch>();
 }
 
-void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void TerrainPatch::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     RayQueryLevel level = query.level_;
 
@@ -194,7 +194,7 @@ bool TerrainPatch::DrawOcclusion(OcclusionBuffer* buffer)
     unsigned vertexSize;
     const unsigned char* indexData;
     unsigned indexSize;
-    const stl::vector<VertexElement>* elements;
+    const ea::vector<VertexElement>* elements;
 
     occlusionGeometry_->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
     // Check for valid geometry data

@@ -81,7 +81,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
 
     cache->ResetDependencies(this);
 
-    stl::string texPath, texName, texExt;
+    ea::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
     loadParameters_ = (context_->CreateObject<XMLFile>());
@@ -97,7 +97,7 @@ bool Texture2DArray::BeginLoad(Deserializer& source)
     XMLElement layerElem = textureElem.GetChild("layer");
     while (layerElem)
     {
-        stl::string name = layerElem.GetAttribute("name");
+        ea::string name = layerElem.GetAttribute("name");
 
         // If path is empty, add the XML file path
         if (GetPath(name).empty())

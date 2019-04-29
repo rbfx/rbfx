@@ -49,32 +49,32 @@ public:
     bool EndLoad() override;
 
     /// Return a variation with defines. Separate multiple defines with spaces.
-    ShaderVariation* GetVariation(ShaderType type, const stl::string& defines);
+    ShaderVariation* GetVariation(ShaderType type, const ea::string& defines);
     /// Return a variation with defines. Separate multiple defines with spaces.
     ShaderVariation* GetVariation(ShaderType type, const char* defines);
 
     /// Return either vertex or pixel shader source code.
-    const stl::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : psSourceCode_; }
+    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : psSourceCode_; }
 
     /// Return the latest timestamp of the shader code and its includes.
     unsigned GetTimeStamp() const { return timeStamp_; }
 
 private:
     /// Process source code and include files. Return true if successful.
-    bool ProcessSource(stl::string& code, Deserializer& source);
+    bool ProcessSource(ea::string& code, Deserializer& source);
     /// Sort the defines and strip extra spaces to prevent creation of unnecessary duplicate shader variations.
-    stl::string NormalizeDefines(const stl::string& defines);
+    ea::string NormalizeDefines(const ea::string& defines);
     /// Recalculate the memory used by the shader.
     void RefreshMemoryUse();
 
     /// Source code adapted for vertex shader.
-    stl::string vsSourceCode_;
+    ea::string vsSourceCode_;
     /// Source code adapted for pixel shader.
-    stl::string psSourceCode_;
+    ea::string psSourceCode_;
     /// Vertex shader variations.
-    stl::unordered_map<StringHash, stl::shared_ptr<ShaderVariation> > vsVariations_;
+    ea::unordered_map<StringHash, ea::shared_ptr<ShaderVariation> > vsVariations_;
     /// Pixel shader variations.
-    stl::unordered_map<StringHash, stl::shared_ptr<ShaderVariation> > psVariations_;
+    ea::unordered_map<StringHash, ea::shared_ptr<ShaderVariation> > psVariations_;
     /// Source code timestamp.
     unsigned timeStamp_;
     /// Number of unique variations so far.

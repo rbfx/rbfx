@@ -79,7 +79,7 @@ void Node::RegisterObject(Context* context)
     context->RegisterFactory<Node>();
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, stl::string, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Tags", GetTags, SetTags, StringVector, Variant::emptyStringVector, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector3, Vector3::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Rotation", GetRotation, SetRotation, Quaternion, Quaternion::IDENTITY, AM_FILE);
@@ -87,9 +87,9 @@ void Node::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
     URHO3D_ACCESSOR_ATTRIBUTE("Network Position", GetNetPositionAttr, SetNetPositionAttr, Vector3, Vector3::ZERO,
         AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Rotation", GetNetRotationAttr, SetNetRotationAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Rotation", GetNetRotationAttr, SetNetRotationAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_NET | AM_LATESTDATA | AM_NOEDIT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Parent Node", GetNetParentAttr, SetNetParentAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Parent Node", GetNetParentAttr, SetNetParentAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_NET | AM_NOEDIT);
 }
 
@@ -298,9 +298,9 @@ void Node::AddReplicationState(NodeReplicationState* state)
     networkState_->replicationStates_.push_back(state);
 }
 
-bool Node::SaveXML(Serializer& dest, const stl::string& indentation) const
+bool Node::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("node");
     if (!SaveXML(rootElem))
         return false;
@@ -308,9 +308,9 @@ bool Node::SaveXML(Serializer& dest, const stl::string& indentation) const
     return xml->Save(dest, indentation);
 }
 
-bool Node::SaveJSON(Serializer& dest, const stl::string& indentation) const
+bool Node::SaveJSON(Serializer& dest, const ea::string& indentation) const
 {
-    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue& rootElem = json->GetRoot();
 
     if (!SaveJSON(rootElem))
@@ -319,7 +319,7 @@ bool Node::SaveJSON(Serializer& dest, const stl::string& indentation) const
     return json->Save(dest, indentation);
 }
 
-void Node::SetName(const stl::string& name)
+void Node::SetName(const ea::string& name)
 {
     if (name != impl_->name_)
     {
@@ -349,7 +349,7 @@ void Node::SetTags(const StringVector& tags)
     // MarkNetworkUpdate() already called in RemoveAllTags() / AddTags()
 }
 
-void Node::AddTag(const stl::string& tag)
+void Node::AddTag(const ea::string& tag)
 {
     // Check if tag empty or already added
     if (tag.empty() || HasTag(tag))
@@ -373,7 +373,7 @@ void Node::AddTag(const stl::string& tag)
     MarkNetworkUpdate();
 }
 
-void Node::AddTags(const stl::string& tags, char separator)
+void Node::AddTags(const ea::string& tags, char separator)
 {
     StringVector tagVector = tags.split(separator);
     AddTags(tagVector);
@@ -386,7 +386,7 @@ void Node::AddTags(const StringVector& tags)
         AddTag(tags[i]);
 }
 
-bool Node::RemoveTag(const stl::string& tag)
+bool Node::RemoveTag(const ea::string& tag)
 {
     auto it = impl_->tags_.find(tag);
 
@@ -785,14 +785,14 @@ void Node::MarkDirty()
     }
 }
 
-Node* Node::CreateChild(const stl::string& name, CreateMode mode, unsigned id, bool temporary)
+Node* Node::CreateChild(const ea::string& name, CreateMode mode, unsigned id, bool temporary)
 {
     Node* newNode = CreateChild(id, mode, temporary);
     newNode->SetName(name);
     return newNode;
 }
 
-Node* Node::CreateTemporaryChild(const stl::string& name, CreateMode mode, unsigned id)
+Node* Node::CreateTemporaryChild(const ea::string& name, CreateMode mode, unsigned id)
 {
     return CreateChild(name, mode, id, true);
 }
@@ -807,7 +807,7 @@ void Node::AddChild(Node* node, unsigned index)
         return;
 
     // Keep a shared ptr to the node while transferring
-    stl::shared_ptr<Node> nodeShared(node);
+    ea::shared_ptr<Node> nodeShared(node);
     Node* oldParent = node->parent_;
     if (oldParent)
     {
@@ -916,7 +916,7 @@ Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
         mode = LOCAL;
 
     // Check that creation succeeds and that the object in fact is a component
-    stl::shared_ptr<Component> newComponent = DynamicCast<Component>(context_->CreateObject(type));
+    ea::shared_ptr<Component> newComponent = DynamicCast<Component>(context_->CreateObject(type));
     if (!newComponent)
     {
         URHO3D_LOGERROR("Could not create unknown component type " + type.ToString());
@@ -962,8 +962,8 @@ Component* Node::CloneComponent(Component* component, CreateMode mode, unsigned 
         return nullptr;
     }
 
-    const stl::vector<AttributeInfo>* compAttributes = component->GetAttributes();
-    const stl::vector<AttributeInfo>* cloneAttributes = cloneComponent->GetAttributes();
+    const ea::vector<AttributeInfo>* compAttributes = component->GetAttributes();
+    const ea::vector<AttributeInfo>* cloneAttributes = cloneComponent->GetAttributes();
 
     if (compAttributes)
     {
@@ -1087,7 +1087,7 @@ void Node::ReorderComponent(Component* component, unsigned index)
         if (i->get() == component)
         {
             // Need shared ptr to insert. Also, prevent destruction when removing first
-            stl::shared_ptr<Component> componentShared(component);
+            ea::shared_ptr<Component> componentShared(component);
             components_.erase(i);
             components_.insert(index, componentShared);
             return;
@@ -1158,7 +1158,7 @@ void Node::AddListener(Component* component)
             return;
     }
 
-    listeners_.push_back(stl::weak_ptr<Component>(component));
+    listeners_.push_back(ea::weak_ptr<Component>(component));
     // If the node is currently dirty, notify immediately
     if (dirty_)
         component->OnMarkedDirty(this);
@@ -1230,7 +1230,7 @@ unsigned Node::GetNumChildren(bool recursive) const
     }
 }
 
-void Node::GetChildren(stl::vector<Node*>& dest, bool recursive) const
+void Node::GetChildren(ea::vector<Node*>& dest, bool recursive) const
 {
     dest.clear();
 
@@ -1243,14 +1243,14 @@ void Node::GetChildren(stl::vector<Node*>& dest, bool recursive) const
         GetChildrenRecursive(dest);
 }
 
-stl::vector<Node*> Node::GetChildren(bool recursive) const
+ea::vector<Node*> Node::GetChildren(bool recursive) const
 {
-    stl::vector<Node*> dest;
+    ea::vector<Node*> dest;
     GetChildren(dest, recursive);
     return dest;
 }
 
-void Node::GetChildrenWithComponent(stl::vector<Node*>& dest, StringHash type, bool recursive) const
+void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, StringHash type, bool recursive) const
 {
     dest.clear();
 
@@ -1266,14 +1266,14 @@ void Node::GetChildrenWithComponent(stl::vector<Node*>& dest, StringHash type, b
         GetChildrenWithComponentRecursive(dest, type);
 }
 
-stl::vector<Node*> Node::GetChildrenWithComponent(StringHash type, bool recursive) const
+ea::vector<Node*> Node::GetChildrenWithComponent(StringHash type, bool recursive) const
 {
-    stl::vector<Node*> dest;
+    ea::vector<Node*> dest;
     GetChildrenWithComponent(dest, type, recursive);
     return dest;
 }
 
-void Node::GetChildrenWithTag(stl::vector<Node*>& dest, const stl::string& tag, bool recursive /*= true*/) const
+void Node::GetChildrenWithTag(ea::vector<Node*>& dest, const ea::string& tag, bool recursive /*= true*/) const
 {
     dest.clear();
 
@@ -1289,9 +1289,9 @@ void Node::GetChildrenWithTag(stl::vector<Node*>& dest, const stl::string& tag, 
         GetChildrenWithTagRecursive(dest, tag);
 }
 
-stl::vector<Node*> Node::GetChildrenWithTag(const stl::string& tag, bool recursive) const
+ea::vector<Node*> Node::GetChildrenWithTag(const ea::string& tag, bool recursive) const
 {
-    stl::vector<Node*> dest;
+    ea::vector<Node*> dest;
     GetChildrenWithTag(dest, tag, recursive);
     return dest;
 }
@@ -1301,7 +1301,7 @@ Node* Node::GetChild(unsigned index) const
     return index < children_.size() ? children_[index] : nullptr;
 }
 
-Node* Node::GetChild(const stl::string& name, bool recursive) const
+Node* Node::GetChild(const ea::string& name, bool recursive) const
 {
     return GetChild(StringHash(name), recursive);
 }
@@ -1341,7 +1341,7 @@ unsigned Node::GetNumNetworkComponents() const
     return num;
 }
 
-void Node::GetComponents(stl::vector<Component*>& dest, StringHash type, bool recursive) const
+void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive) const
 {
     dest.clear();
 
@@ -1372,7 +1372,7 @@ bool Node::IsReplicated() const
     return Scene::IsReplicatedID(id_);
 }
 
-bool Node::HasTag(const stl::string& tag) const
+bool Node::HasTag(const ea::string& tag) const
 {
     return impl_->tags_.contains(tag);
 }
@@ -1459,7 +1459,7 @@ void Node::SetNetPositionAttr(const Vector3& value)
         SetPosition(value);
 }
 
-void Node::SetNetRotationAttr(const stl::vector<unsigned char>& value)
+void Node::SetNetRotationAttr(const ea::vector<unsigned char>& value)
 {
     MemoryBuffer buf(value);
     auto* transform = GetComponent<SmoothedTransform>();
@@ -1469,7 +1469,7 @@ void Node::SetNetRotationAttr(const stl::vector<unsigned char>& value)
         SetRotation(buf.ReadPackedQuaternion());
 }
 
-void Node::SetNetParentAttr(const stl::vector<unsigned char>& value)
+void Node::SetNetParentAttr(const ea::vector<unsigned char>& value)
 {
     Scene* scene = GetScene();
     if (!scene)
@@ -1487,7 +1487,7 @@ void Node::SetNetParentAttr(const stl::vector<unsigned char>& value)
     Node* baseNode = scene->GetNode(baseNodeID);
     if (!baseNode)
     {
-        URHO3D_LOGWARNING("Failed to find parent node " + stl::to_string(baseNodeID));
+        URHO3D_LOGWARNING("Failed to find parent node " + ea::to_string(baseNodeID));
         return;
     }
 
@@ -1511,14 +1511,14 @@ const Vector3& Node::GetNetPositionAttr() const
     return position_;
 }
 
-const stl::vector<unsigned char>& Node::GetNetRotationAttr() const
+const ea::vector<unsigned char>& Node::GetNetRotationAttr() const
 {
     impl_->attrBuffer_.Clear();
     impl_->attrBuffer_.WritePackedQuaternion(rotation_);
     return impl_->attrBuffer_.GetBuffer();
 }
 
-const stl::vector<unsigned char>& Node::GetNetParentAttr() const
+const ea::vector<unsigned char>& Node::GetNetParentAttr() const
 {
     impl_->attrBuffer_.Clear();
     Scene* scene = GetScene();
@@ -1601,7 +1601,7 @@ bool Node::LoadXML(const XMLElement& source, SceneResolver& resolver, bool loadC
     XMLElement compElem = source.GetChild("component");
     while (compElem)
     {
-        stl::string typeName = compElem.GetAttribute("type");
+        ea::string typeName = compElem.GetAttribute("type");
         unsigned compID = compElem.GetUInt("id");
         Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
             (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
@@ -1648,7 +1648,7 @@ bool Node::LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadC
     for (unsigned i = 0; i < componentsArray.size(); i++)
     {
         const JSONValue& compVal = componentsArray.at(i);
-        stl::string typeName = compVal.Get("type").GetString();
+        ea::string typeName = compVal.Get("type").GetString();
         unsigned compID = compVal.Get("id").GetUInt();
         Component* newComponent = SafeCreateComponent(typeName, StringHash(typeName),
             (mode == REPLICATED && Scene::IsReplicatedID(compID)) ? REPLICATED : LOCAL, rewriteIDs ? 0 : compID);
@@ -1706,7 +1706,7 @@ void Node::PrepareNetworkUpdate()
     if (!networkState_)
         AllocateNetworkState();
 
-    const stl::vector<AttributeInfo>* attributes = networkState_->attributes_;
+    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
     unsigned numAttributes = attributes->size();
 
     // Check for attribute changes
@@ -1801,7 +1801,7 @@ void Node::MarkReplicationDirty()
 
 Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
 {
-    stl::shared_ptr<Node> newNode(context_->CreateObject<Node>());
+    ea::shared_ptr<Node> newNode(context_->CreateObject<Node>());
     newNode->SetTemporary(temporary);
 
     // If zero ID specified, or the ID is already taken, let the scene assign
@@ -1823,7 +1823,7 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
     if (!component)
         return;
 
-    components_.push_back(stl::shared_ptr<Component>(component));
+    components_.push_back(ea::shared_ptr<Component>(component));
 
     if (component->GetNode())
         URHO3D_LOGWARNING("Component " + component->GetTypeName() + " already belongs to a node!");
@@ -1912,9 +1912,9 @@ void Node::OnAttributeAnimationRemoved()
         UnsubscribeFromEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE);
 }
 
-Animatable* Node::FindAttributeAnimationTarget(const stl::string& name, stl::string& outName)
+Animatable* Node::FindAttributeAnimationTarget(const ea::string& name, ea::string& outName)
 {
-    stl::vector<stl::string> names = name.split('/');
+    ea::vector<ea::string> names = name.split('/');
     // Only attribute name
     if (names.size() == 1)
     {
@@ -1931,7 +1931,7 @@ Animatable* Node::FindAttributeAnimationTarget(const stl::string& name, stl::str
             if (names[i].front() != '#')
                 break;
 
-            stl::string name = names[i].substr(1, names[i].length() - 1);
+            ea::string name = names[i].substr(1, names[i].length() - 1);
             char s = name.front();
             if (s >= '0' && s <= '9')
             {
@@ -1962,8 +1962,8 @@ Animatable* Node::FindAttributeAnimationTarget(const stl::string& name, stl::str
             return nullptr;
         }
 
-        stl::string componentName = names[i].substr(1, names[i].length() - 1);
-        stl::vector<stl::string> componentNames = componentName.split('#');
+        ea::string componentName = names[i].substr(1, names[i].length() - 1);
+        ea::vector<ea::string> componentNames = componentName.split('#');
         if (componentNames.size() == 1)
         {
             Component* component = node->GetComponent(StringHash(componentNames.front()));
@@ -1979,7 +1979,7 @@ Animatable* Node::FindAttributeAnimationTarget(const stl::string& name, stl::str
         else
         {
             unsigned index = ToUInt(componentNames[1]);
-            stl::vector<Component*> components;
+            ea::vector<Component*> components;
             node->GetComponents(components, StringHash(componentNames.front()));
             if (index >= components.size())
             {
@@ -2061,7 +2061,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
     }
 }
 
-Component* Node::SafeCreateComponent(const stl::string& typeName, StringHash type, CreateMode mode, unsigned id)
+Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type, CreateMode mode, unsigned id)
 {
     // Do not attempt to create replicated components to local nodes, as that may lead to component ID overwrite
     // as replicated components are synced over
@@ -2075,7 +2075,7 @@ Component* Node::SafeCreateComponent(const stl::string& typeName, StringHash typ
     {
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
-        stl::shared_ptr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
+        ea::shared_ptr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
         if (typeName.empty() || typeName.starts_with("Unknown", false))
             newComponent->SetType(type);
         else
@@ -2105,12 +2105,12 @@ void Node::UpdateWorldTransform() const
     dirty_ = false;
 }
 
-void Node::RemoveChild(stl::vector<stl::shared_ptr<Node> >::iterator i)
+void Node::RemoveChild(ea::vector<ea::shared_ptr<Node> >::iterator i)
 {
     // Keep a shared pointer to the child about to be removed, to make sure the erase from container completes first. Otherwise
     // it would be possible that other child nodes get removed as part of the node's components' cleanup, causing a re-entrant
     // erase and a crash
-    stl::shared_ptr<Node> child(*i);
+    ea::shared_ptr<Node> child(*i);
 
     // Send change event. Do not send when this node is already being destroyed
     if (Refs() > 0 && scene_)
@@ -2134,7 +2134,7 @@ void Node::RemoveChild(stl::vector<stl::shared_ptr<Node> >::iterator i)
     children_.erase(i);
 }
 
-void Node::GetChildrenRecursive(stl::vector<Node*>& dest) const
+void Node::GetChildrenRecursive(ea::vector<Node*>& dest) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
@@ -2145,7 +2145,7 @@ void Node::GetChildrenRecursive(stl::vector<Node*>& dest) const
     }
 }
 
-void Node::GetChildrenWithComponentRecursive(stl::vector<Node*>& dest, StringHash type) const
+void Node::GetChildrenWithComponentRecursive(ea::vector<Node*>& dest, StringHash type) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
@@ -2157,7 +2157,7 @@ void Node::GetChildrenWithComponentRecursive(stl::vector<Node*>& dest, StringHas
     }
 }
 
-void Node::GetComponentsRecursive(stl::vector<Component*>& dest, StringHash type) const
+void Node::GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
@@ -2168,7 +2168,7 @@ void Node::GetComponentsRecursive(stl::vector<Component*>& dest, StringHash type
         (*i)->GetComponentsRecursive(dest, type);
 }
 
-void Node::GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const stl::string& tag) const
+void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
@@ -2187,7 +2187,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     resolver.AddNode(id_, cloneNode);
 
     // Copy attributes
-    const stl::vector<AttributeInfo>* attributes = GetAttributes();
+    const ea::vector<AttributeInfo>* attributes = GetAttributes();
     for (unsigned j = 0; j < attributes->size(); ++j)
     {
         const AttributeInfo& attr = attributes->at(j);
@@ -2238,7 +2238,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     return cloneNode;
 }
 
-void Node::RemoveComponent(stl::vector<stl::shared_ptr<Component> >::iterator i)
+void Node::RemoveComponent(ea::vector<ea::shared_ptr<Component> >::iterator i)
 {
     // Send node change event. Do not send when already being destroyed
     if (Refs() > 0 && scene_)

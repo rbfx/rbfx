@@ -71,14 +71,14 @@ public:
     /// Set application-specific stats.
     /// \param label a title of stat to be displayed.
     /// \param stats a variant value to be displayed next to the specified label.
-    void SetAppStats(const stl::string& label, const Variant& stats);
+    void SetAppStats(const ea::string& label, const Variant& stats);
     /// Set application-specific stats.
     /// \param label a title of stat to be displayed.
     /// \param stats a string value to be displayed next to the specified label.
-    void SetAppStats(const stl::string& label, const stl::string& stats);
+    void SetAppStats(const ea::string& label, const ea::string& stats);
     /// Reset application-specific stats. Return true if it was erased successfully.
     /// \param label a title of stat to be reset.
-    bool ResetAppStats(const stl::string& label);
+    bool ResetAppStats(const ea::string& label);
     /// Clear all application-specific stats.
     void ClearAppStats();
     /// Limit rendering area of debug hud.
@@ -92,7 +92,7 @@ private:
     void RenderUi(VariantMap& eventData);
 
     /// Hashmap containing application specific stats.
-    stl::map<stl::string, stl::string> appStats_;
+    ea::map<ea::string, ea::string> appStats_;
     /// Profiler max block depth.
     unsigned profilerMaxDepth_;
     /// Profiler accumulation interval.

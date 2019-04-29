@@ -73,9 +73,9 @@ struct URHO3D_API CursorShapeInfo
     }
 
     /// Image.
-    stl::shared_ptr<Image> image_;
+    ea::shared_ptr<Image> image_;
     /// Texture.
-    stl::shared_ptr<Texture> texture_;
+    ea::shared_ptr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Hotspot coordinates.
@@ -102,21 +102,21 @@ public:
     static void RegisterObject(Context* context);
 
     /// Return UI rendering batches.
-    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor) override;
+    void GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor) override;
 
     /// Define a shape.
-    void DefineShape(const stl::string& shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot);
+    void DefineShape(const ea::string& shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot);
     /// Define a shape.
     void DefineShape(CursorShape shape, Image* image, const IntRect& imageRect, const IntVector2& hotSpot);
     /// Set current shape.
-    void SetShape(const stl::string& shape);
+    void SetShape(const ea::string& shape);
     /// Set current shape.
     void SetShape(CursorShape shape);
     /// Set whether to use system default shapes. Is only possible when the OS mouse cursor has been set visible from the Input subsystem.
     void SetUseSystemShapes(bool enable);
 
     /// Get current shape.
-    const stl::string& GetShape() const { return shape_; }
+    const ea::string& GetShape() const { return shape_; }
 
     /// Return whether is using system default shapes.
     bool GetUseSystemShapes() const { return useSystemShapes_; }
@@ -133,9 +133,9 @@ protected:
     void HandleMouseVisibleChanged(StringHash eventType, VariantMap& eventData);
 
     /// Current shape definition.
-    stl::string shape_;
+    ea::string shape_;
     /// Shape definitions.
-    stl::unordered_map<stl::string, CursorShapeInfo> shapeInfos_;
+    ea::unordered_map<ea::string, CursorShapeInfo> shapeInfos_;
     /// Use system default shapes flag.
     bool useSystemShapes_;
     /// OS cursor shape needs update flag.

@@ -112,7 +112,7 @@ void Viewport::SetRenderPath(RenderPath* renderPath)
 
 bool Viewport::SetRenderPath(XMLFile* file)
 {
-    stl::shared_ptr<RenderPath> newRenderPath(new RenderPath());
+    ea::shared_ptr<RenderPath> newRenderPath(new RenderPath());
     if (newRenderPath->Load(file))
     {
         renderPath_ = newRenderPath;

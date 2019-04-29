@@ -41,11 +41,11 @@ class ResourceCache;
 struct URHO3D_API BackgroundLoadItem
 {
     /// Resource.
-    stl::shared_ptr<Resource> resource_;
+    ea::shared_ptr<Resource> resource_;
     /// Resources depended on for loading.
-    stl::hash_set<stl::pair<StringHash, StringHash> > dependencies_;
+    ea::hash_set<ea::pair<StringHash, StringHash> > dependencies_;
     /// Resources that depend on this resource's loading.
-    stl::hash_set<stl::pair<StringHash, StringHash> > dependents_;
+    ea::hash_set<ea::pair<StringHash, StringHash> > dependents_;
     /// Whether to send failure event.
     bool sendEventOnFailure_;
 };
@@ -64,7 +64,7 @@ public:
     void ThreadFunction() override;
 
     /// Queue loading of a resource. The name must be sanitated to ensure consistent format. Return true if queued (not a duplicate and resource was a known type).
-    bool QueueResource(StringHash type, const stl::string& name, bool sendEventOnFailure, Resource* caller);
+    bool QueueResource(StringHash type, const ea::string& name, bool sendEventOnFailure, Resource* caller);
     /// Wait and finish possible loading of a resource when being requested from the cache.
     void WaitForResource(StringHash type, StringHash nameHash);
     /// Process resources that are ready to finish.
@@ -82,7 +82,7 @@ private:
     /// Mutex for thread-safe access to the background load queue.
     mutable Mutex backgroundLoadMutex_;
     /// Resources that are queued for background loading.
-    stl::unordered_map<stl::pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
+    ea::unordered_map<ea::pair<StringHash, StringHash>, BackgroundLoadItem> backgroundLoadQueue_;
 };
 
 }

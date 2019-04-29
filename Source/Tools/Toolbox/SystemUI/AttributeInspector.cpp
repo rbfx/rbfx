@@ -113,9 +113,9 @@ static const float buttonWidth()
     return 26_dpx;  // TODO: this should not exist
 }
 
-bool RenderResourceRef(Object* eventNamespace, StringHash type, const stl::string& name, stl::string& result)
+bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string& name, ea::string& result)
 {
-    stl::shared_ptr<Resource> resource;
+    ea::shared_ptr<Resource> resource;
     auto returnValue = false;
 
     UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-buttonWidth()))
@@ -276,8 +276,8 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         }
         case VAR_STRING:
         {
-            auto& v = const_cast<stl::string&>(value.GetString());
-            auto* buffer = ui::GetUIState<stl::string>(v.c_str());
+            auto& v = const_cast<ea::string&>(value.GetString());
+            auto* buffer = ui::GetUIState<ea::string>(v.c_str());
             bool dirty = v.compare(buffer->c_str()) != 0;
             if (dirty)
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
@@ -301,7 +301,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             if (refType == StringHash::ZERO && info)
                 refType = info->defaultValue_.GetResourceRef().type_;
 
-            stl::string result;
+            ea::string result;
             if (RenderResourceRef(eventNamespace, refType, ref.name_, result))
             {
                 value = ResourceRef(refType, result);
@@ -316,7 +316,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             {
                 UI_ID(i)
                 {
-                    stl::string result;
+                    ea::string result;
 
                     auto refType = refList.type_;
                     if (refType == StringHash::ZERO && info)
@@ -345,7 +345,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         {
             struct VariantMapState
             {
-                stl::string fieldName;
+                ea::string fieldName;
                 int variantTypeIndex = 0;
                 bool insertingNew = false;
             };
@@ -371,7 +371,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                     continue;
 
 #if URHO3D_HASH_DEBUG
-                const stl::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
+                const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
                 // Column-friendly indent
                 ui::NewLine();
                 ui::SameLine(20_dpx);
@@ -486,7 +486,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
             // Insert new item.
             {
-                auto* buffer = ui::GetUIState<stl::string>();
+                auto* buffer = ui::GetUIState<ea::string>();
                 if (ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue))
                 {
                     v.push_back(*buffer);
@@ -495,7 +495,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
                     // Expire buffer of this new item just in case other item already used it.
                     UI_ID(v.size())
-                        ui::ExpireUIState<stl::string>();
+                        ui::ExpireUIState<ea::string>();
                 }
                 if (ui::IsItemHovered())
                     ui::SetTooltip("Press [Enter] to insert new item.");
@@ -505,21 +505,21 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             unsigned index = 0;
             for (auto it = v.begin(); it != v.end();)
             {
-                stl::string& sv = *it;
+                ea::string& sv = *it;
 
                 ui::IdScope idScope(++index);
-                auto* buffer = ui::GetUIState<stl::string>(sv.c_str());
+                auto* buffer = ui::GetUIState<ea::string>(sv.c_str());
                 if (ui::Button(ICON_FA_TRASH))
                 {
                     it = v.erase(it);
                     modified = true;
-                    ui::ExpireUIState<stl::string>();
+                    ui::ExpireUIState<ea::string>();
                 }
                 else if (modified)
                 {
                     // After modification of the vector all buffers are expired and recreated because their indexes
                     // changed. Index is used as id in this loop.
-                    ui::ExpireUIState<stl::string>();
+                    ui::ExpireUIState<ea::string>();
                     ++it;
                 }
                 else
@@ -590,7 +590,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
     auto isOpen = ui::CollapsingHeader(item->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
     if (isOpen)
     {
-        const stl::vector<AttributeInfo>* attributes = item->GetAttributes();
+        const ea::vector<AttributeInfo>* attributes = item->GetAttributes();
         if (attributes == nullptr)
             return false;
 
@@ -615,7 +615,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
             bool hidden = false;
             Color color = Color::WHITE;
-            stl::string tooltip;
+            ea::string tooltip;
 
             Variant value = item->GetAttribute(info.name_);
 
@@ -710,7 +710,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             // Buffers have to be expired outside of popup, because popup has it's own id stack. Careful when pushing
             // new IDs in code below, buffer expiring will break!
             if (expireBuffers)
-                ui::ExpireUIState<stl::string>();
+                ui::ExpireUIState<ea::string>();
 
             ui::NextColumn();
 

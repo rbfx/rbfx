@@ -55,7 +55,7 @@ public:
     void Remove(Object* object);
 
     /// Receivers. May contain holes during sending.
-    stl::vector<Object*> receivers_;
+    ea::vector<Object*> receivers_;
 
 private:
     /// "In send" recursion counter.
@@ -76,12 +76,12 @@ public:
     ~Context() override;
 
     /// Create an object by type. Return pointer to it or null if no factory found.
-    template <class T> inline stl::shared_ptr<T> CreateObject()
+    template <class T> inline ea::shared_ptr<T> CreateObject()
     {
         return StaticCast<T>(CreateObject(T::GetTypeStatic()));
     }
     /// Create an object by type hash. Return pointer to it or null if no factory found.
-    stl::shared_ptr<Object> CreateObject(StringHash objectType);
+    ea::shared_ptr<Object> CreateObject(StringHash objectType);
     /// Register a factory for an object type.
     void RegisterFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
@@ -153,13 +153,13 @@ public:
     void SetGlobalVar(StringHash key, const Variant& value);
 
     /// Return all subsystems.
-    const stl::unordered_map<StringHash, stl::shared_ptr<Object> >& GetSubsystems() const { return subsystems_; }
+    const ea::unordered_map<StringHash, ea::shared_ptr<Object> >& GetSubsystems() const { return subsystems_; }
 
     /// Return all object factories.
-    const stl::unordered_map<StringHash, stl::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
+    const ea::unordered_map<StringHash, ea::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
-    const stl::unordered_map<stl::string, stl::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
+    const ea::unordered_map<ea::string, ea::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
 
     /// Return active event sender. Null outside event handling.
     Object* GetEventSender() const;
@@ -168,7 +168,7 @@ public:
     EventHandler* GetEventHandler() const { return eventHandler_; }
 
     /// Return object type name from hash, or empty if unknown.
-    const stl::string& GetTypeName(StringHash objectType) const;
+    const ea::string& GetTypeName(StringHash objectType) const;
     /// Return a specific attribute description for an object, or null if not found.
     AttributeInfo* GetAttribute(StringHash objectType, const char* name);
     /// Template version of returning a subsystem.
@@ -177,21 +177,21 @@ public:
     template <class T> AttributeInfo* GetAttribute(const char* name);
 
     /// Return attribute descriptions for an object type, or null if none defined.
-    const stl::vector<AttributeInfo>* GetAttributes(StringHash type) const
+    const ea::vector<AttributeInfo>* GetAttributes(StringHash type) const
     {
         auto i = attributes_.find(type);
         return i != attributes_.end() ? &i->second : nullptr;
     }
 
     /// Return network replication attribute descriptions for an object type, or null if none defined.
-    const stl::vector<AttributeInfo>* GetNetworkAttributes(StringHash type) const
+    const ea::vector<AttributeInfo>* GetNetworkAttributes(StringHash type) const
     {
         auto i = networkAttributes_.find(type);
         return i != networkAttributes_.end() ? &i->second : nullptr;
     }
 
     /// Return all registered attributes.
-    const stl::unordered_map<StringHash, stl::vector<AttributeInfo> >& GetAllAttributes() const { return attributes_; }
+    const ea::unordered_map<StringHash, ea::vector<AttributeInfo> >& GetAllAttributes() const { return attributes_; }
 
     /// Return event receivers for a sender and event type, or null if they do not exist.
     EventReceiverGroup* GetEventReceivers(Object* sender, StringHash eventType)
@@ -309,65 +309,65 @@ private:
     void SetEventHandler(EventHandler* handler) { eventHandler_ = handler; }
 
     /// Object factories.
-    stl::unordered_map<StringHash, stl::shared_ptr<ObjectFactory> > factories_;
+    ea::unordered_map<StringHash, ea::shared_ptr<ObjectFactory> > factories_;
     /// Subsystems.
-    stl::unordered_map<StringHash, stl::shared_ptr<Object> > subsystems_;
+    ea::unordered_map<StringHash, ea::shared_ptr<Object> > subsystems_;
     /// Attribute descriptions per object type.
-    stl::unordered_map<StringHash, stl::vector<AttributeInfo> > attributes_;
+    ea::unordered_map<StringHash, ea::vector<AttributeInfo> > attributes_;
     /// Network replication attribute descriptions per object type.
-    stl::unordered_map<StringHash, stl::vector<AttributeInfo> > networkAttributes_;
+    ea::unordered_map<StringHash, ea::vector<AttributeInfo> > networkAttributes_;
     /// Event receivers for non-specific events.
-    stl::unordered_map<StringHash, stl::shared_ptr<EventReceiverGroup> > eventReceivers_;
+    ea::unordered_map<StringHash, ea::shared_ptr<EventReceiverGroup> > eventReceivers_;
     /// Event receivers for specific senders' events.
-    stl::unordered_map<Object*, stl::unordered_map<StringHash, stl::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
+    ea::unordered_map<Object*, ea::unordered_map<StringHash, ea::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
     /// Event sender stack.
-    stl::vector<Object*> eventSenders_;
+    ea::vector<Object*> eventSenders_;
     /// Event data stack.
-    stl::vector<VariantMap*> eventDataMaps_;
+    ea::vector<VariantMap*> eventDataMaps_;
     /// Active event handler. Not stored in a stack for performance reasons; is needed only in esoteric cases.
     EventHandler* eventHandler_;
     /// Object categories.
-    stl::unordered_map<stl::string, stl::vector<StringHash> > objectCategories_;
+    ea::unordered_map<ea::string, ea::vector<StringHash> > objectCategories_;
     /// Variant map for global variables that can persist throughout application execution.
     VariantMap globalVars_;
 
     /// Cached pointer of engine susbsystem.
-    stl::weak_ptr<Engine> engine_;
+    ea::weak_ptr<Engine> engine_;
     /// Cached pointer of time susbsystem.
-    stl::weak_ptr<Time> time_;
+    ea::weak_ptr<Time> time_;
     /// Cached pointer of work queue susbsystem.
-    stl::weak_ptr<WorkQueue> workQueue_;
+    ea::weak_ptr<WorkQueue> workQueue_;
     /// Cached pointer of file system susbsystem.
-    stl::weak_ptr<FileSystem> fileSystem_;
+    ea::weak_ptr<FileSystem> fileSystem_;
 #if URHO3D_LOGGING
     /// Cached pointer of logging susbsystem.
-    stl::weak_ptr<Log> log_;
+    ea::weak_ptr<Log> log_;
 #endif
     /// Cached pointer of resource cache susbsystem.
-    stl::weak_ptr<ResourceCache> cache_;
+    ea::weak_ptr<ResourceCache> cache_;
     /// Cached pointer of internationalization susbsystem.
-    stl::weak_ptr<Localization> l18n_;
+    ea::weak_ptr<Localization> l18n_;
 #if URHO3D_NETWORK
     /// Cached pointer of network susbsystem.
-    stl::weak_ptr<Network> network_;
+    ea::weak_ptr<Network> network_;
 #endif
     /// Cached pointer of input susbsystem.
-    stl::weak_ptr<Input> input_;
+    ea::weak_ptr<Input> input_;
     /// Cached pointer of audio susbsystem.
-    stl::weak_ptr<Audio> audio_;
+    ea::weak_ptr<Audio> audio_;
     /// Cached pointer of UI susbsystem.
-    stl::weak_ptr<UI> ui_;
+    ea::weak_ptr<UI> ui_;
 #if URHO3D_SYSTEMUI
     /// Cached pointer of system UI susbsystem.
-    stl::weak_ptr<SystemUI> systemUi_;
+    ea::weak_ptr<SystemUI> systemUi_;
 #endif
     /// Cached pointer of graphics susbsystem.
-    stl::weak_ptr<Graphics> graphics_;
+    ea::weak_ptr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
-    stl::weak_ptr<Renderer> renderer_;
+    ea::weak_ptr<Renderer> renderer_;
 #if URHO3D_TASKS
     /// Cached pointer to tasks subsystem.
-    stl::weak_ptr<Tasks> tasks_;
+    ea::weak_ptr<Tasks> tasks_;
 #endif
     friend class Engine;
 };

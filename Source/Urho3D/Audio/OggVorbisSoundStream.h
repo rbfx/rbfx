@@ -50,7 +50,7 @@ protected:
     /// Decoder state.
     void* decoder_;
     /// Compressed sound data.
-    stl::shared_array<signed char> data_;
+    ea::shared_array<signed char> data_;
     /// Compressed sound data size in bytes.
     unsigned dataSize_;
 };

@@ -155,7 +155,7 @@ void Editor::Setup()
 void Editor::Start()
 {
     // Execute specified subcommand and exit.
-    for (stl::shared_ptr<SubCommand>& cmd : subCommands_)
+    for (ea::shared_ptr<SubCommand>& cmd : subCommands_)
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
         {
@@ -378,12 +378,12 @@ void Editor::OnUpdate(VariantMap& args)
 
 Tab* Editor::CreateTab(StringHash type)
 {
-    stl::shared_ptr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
+    ea::shared_ptr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
     tabs_.push_back(tab);
     return tab.get();
 }
 
-StringVector Editor::GetObjectsByCategory(const stl::string& category)
+StringVector Editor::GetObjectsByCategory(const ea::string& category)
 {
     StringVector result;
     const auto& factories = context_->GetObjectFactories();
@@ -447,7 +447,7 @@ void Editor::LoadDefaultLayout()
     ImGui::DockBuilderFinish(dockspaceId_);
 }
 
-void Editor::OpenProject(const stl::string& projectPath)
+void Editor::OpenProject(const ea::string& projectPath)
 {
     pendingOpenProject_ = projectPath;
 }
@@ -489,7 +489,7 @@ void Editor::HandleHotkeys()
     }
 }
 
-Tab* Editor::GetTabByName(const stl::string& uniqueName)
+Tab* Editor::GetTabByName(const ea::string& uniqueName)
 {
     for (auto& tab : tabs_)
     {
@@ -499,7 +499,7 @@ Tab* Editor::GetTabByName(const stl::string& uniqueName)
     return nullptr;
 }
 
-Tab* Editor::GetTabByResource(const stl::string& resourceName)
+Tab* Editor::GetTabByResource(const ea::string& resourceName)
 {
     for (auto& tab : tabs_)
     {
@@ -595,18 +595,18 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
 }
 
-void Editor::UpdateWindowTitle(const stl::string& resourcePath)
+void Editor::UpdateWindowTitle(const ea::string& resourcePath)
 {
     if (GetEngine()->IsHeadless())
         return;
 
     auto* project = GetSubsystem<Project>();
-    stl::string title;
+    ea::string title;
     if (project == nullptr)
         title = "Editor";
     else
     {
-        stl::string projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
+        ea::string projectName = GetFileName(RemoveTrailingSlash(project->GetProjectPath()));
         title = ToString("Editor | %s", projectName.c_str());
         if (!resourcePath.empty())
             title += ToString(" | %s", GetFileName(resourcePath).c_str());
@@ -619,7 +619,7 @@ template<typename T>
 void Editor::RegisterSubcommand()
 {
     T::RegisterObject(context_);
-    stl::shared_ptr<T> cmd(context_->CreateObject<T>());
+    ea::shared_ptr<T> cmd(context_->CreateObject<T>());
     subCommands_.push_back(DynamicCast<SubCommand>(cmd));
     if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().c_str()))
         cmd->RegisterCommandLine(*subCommand);

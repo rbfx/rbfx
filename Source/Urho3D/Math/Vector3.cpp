@@ -49,18 +49,18 @@ const IntVector3 IntVector3::FORWARD(0, 0, 1);
 const IntVector3 IntVector3::BACK(0, 0, -1);
 const IntVector3 IntVector3::ONE(1, 1, 1);
 
-stl::string Vector3::ToString() const
+ea::string Vector3::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g", x_, y_, z_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
-stl::string IntVector3::ToString() const
+ea::string IntVector3::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%d %d %d", x_, y_, z_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
 }

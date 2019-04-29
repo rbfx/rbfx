@@ -56,9 +56,9 @@ public:
     /// Handle attribute read access. Default implementation reads the variable at offset, or invokes the get accessor.
     virtual void OnGetAttribute(const AttributeInfo& attr, Variant& dest) const;
     /// Return attribute descriptions, or null if none defined.
-    virtual const stl::vector<AttributeInfo>* GetAttributes() const;
+    virtual const ea::vector<AttributeInfo>* GetAttributes() const;
     /// Return network replication attribute descriptions, or null if none defined.
-    virtual const stl::vector<AttributeInfo>* GetNetworkAttributes() const;
+    virtual const ea::vector<AttributeInfo>* GetNetworkAttributes() const;
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);
     /// Save as binary data. Return true if successful.
@@ -72,13 +72,13 @@ public:
     /// Save as JSON data. Return true if successful.
     virtual bool SaveJSON(JSONValue& dest) const;
     /// Load from binary resource.
-    virtual bool Load(const stl::string& resourceName);
+    virtual bool Load(const ea::string& resourceName);
     /// Load from XML resource.
-    virtual bool LoadXML(const stl::string& resourceName);
+    virtual bool LoadXML(const ea::string& resourceName);
     /// Load from JSON resource.
-    virtual bool LoadJSON(const stl::string& resourceName);
+    virtual bool LoadJSON(const ea::string& resourceName);
     /// Load from resource of automatically detected type.
-    virtual bool LoadFile(const stl::string& resourceName);
+    virtual bool LoadFile(const ea::string& resourceName);
 
     /// Apply attribute changes that can not be applied immediately. Called after scene load or a network update.
     virtual void ApplyAttributes() { }
@@ -92,7 +92,7 @@ public:
     /// Set attribute by index. Return true if successfully set.
     bool SetAttribute(unsigned index, const Variant& value);
     /// Set attribute by name. Return true if successfully set.
-    bool SetAttribute(const stl::string& name, const Variant& value);
+    bool SetAttribute(const ea::string& name, const Variant& value);
     /// Set instance-level default flag.
     void SetInstanceDefault(bool enable) { setInstanceDefault_ = enable; }
     /// Reset all editable attributes to their default values.
@@ -102,7 +102,7 @@ public:
     /// Set temporary flag. Temporary objects will not be saved.
     void SetTemporary(bool enable);
     /// Enable interception of an attribute from network updates. Intercepted attributes are sent as events instead of applying directly. This can be used to implement client side prediction.
-    void SetInterceptNetworkUpdate(const stl::string& attributeName, bool enable);
+    void SetInterceptNetworkUpdate(const ea::string& attributeName, bool enable);
     /// Allocate network attribute state.
     void AllocateNetworkState();
     /// Write initial delta network update.
@@ -119,11 +119,11 @@ public:
     /// Return attribute value by index. Return empty if illegal index.
     Variant GetAttribute(unsigned index) const;
     /// Return attribute value by name. Return empty if not found.
-    Variant GetAttribute(const stl::string& name) const;
+    Variant GetAttribute(const ea::string& name) const;
     /// Return attribute default value by index. Return empty if illegal index.
     Variant GetAttributeDefault(unsigned index) const;
     /// Return attribute default value by name. Return empty if not found.
-    Variant GetAttributeDefault(const stl::string& name) const;
+    Variant GetAttributeDefault(const ea::string& name) const;
     /// Return number of attributes.
     unsigned GetNumAttributes() const;
     /// Return number of network replication attributes.
@@ -133,23 +133,23 @@ public:
     bool IsTemporary() const { return temporary_; }
 
     /// Return whether an attribute's network updates are being intercepted.
-    bool GetInterceptNetworkUpdate(const stl::string& attributeName) const;
+    bool GetInterceptNetworkUpdate(const ea::string& attributeName) const;
 
     /// Return the network attribute state, if allocated.
     NetworkState* GetNetworkState() const { return networkState_.get(); }
 
 protected:
     /// Network attribute state.
-    stl::unique_ptr<NetworkState> networkState_;
+    ea::unique_ptr<NetworkState> networkState_;
 
 private:
     /// Set instance-level default value. Allocate the internal data structure as necessary.
-    void SetInstanceDefault(const stl::string& name, const Variant& defaultValue);
+    void SetInstanceDefault(const ea::string& name, const Variant& defaultValue);
     /// Get instance-level default value.
-    Variant GetInstanceDefault(const stl::string& name) const;
+    Variant GetInstanceDefault(const ea::string& name) const;
 
     /// Attribute default value at each instance level.
-    stl::unique_ptr<VariantMap> instanceDefaultValues_;
+    ea::unique_ptr<VariantMap> instanceDefaultValues_;
     /// When true, store the attribute value as instance's default value (internal use only).
     bool setInstanceDefault_;
     /// Temporary flag.
@@ -192,9 +192,9 @@ private:
 /// \tparam TGetFunction Functional object with call signature `void getFunction(const TClassType& self, Variant& value)`
 /// \tparam TSetFunction Functional object with call signature `void setFunction(TClassType& self, const Variant& value)`
 template <class TClassType, class TGetFunction, class TSetFunction>
-stl::shared_ptr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFunction, TSetFunction setFunction)
+ea::shared_ptr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFunction, TSetFunction setFunction)
 {
-    return stl::shared_ptr<AttributeAccessor>(new VariantAttributeAccessorImpl<TClassType, TGetFunction, TSetFunction>(getFunction, setFunction));
+    return ea::shared_ptr<AttributeAccessor>(new VariantAttributeAccessorImpl<TClassType, TGetFunction, TSetFunction>(getFunction, setFunction));
 }
 
 /// Make member attribute accessor.

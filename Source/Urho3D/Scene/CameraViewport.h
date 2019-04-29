@@ -68,7 +68,7 @@ public:
     void OnSceneSet(Scene* scene) override;
 
     /// Returns custom list of attributes that are different per instance.
-    const stl::vector<AttributeInfo>* GetAttributes() const override;
+    const ea::vector<AttributeInfo>* GetAttributes() const override;
 
     ///
     void SetScreenRect(const IntRect& rect) { screenRect_ = rect; }
@@ -90,16 +90,16 @@ protected:
     ///
     IntRect screenRect_;
     /// Viewport used for rendering.
-    stl::shared_ptr<Viewport> viewport_;
+    ea::shared_ptr<Viewport> viewport_;
     /// Current selected renderpath.
     ResourceRef renderPath_;
 
     /// Flag that triggers rebuilding of attributes.
     bool attributesDirty_ = true;
     /// List of attributes available at the moment.
-    stl::vector<AttributeInfo> attributes_;
+    ea::vector<AttributeInfo> attributes_;
     /// Maping of effect tag to effect file.
-    stl::unordered_map<stl::string, stl::string> effects_;
+    ea::unordered_map<ea::string, ea::string> effects_;
 };
 
 }

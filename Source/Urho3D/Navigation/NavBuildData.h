@@ -62,19 +62,19 @@ struct URHO3D_API NavBuildData
     /// World-space bounding box of the navigation mesh tile.
     BoundingBox worldBoundingBox_;
     /// Vertices from geometries.
-    stl::vector<Vector3> vertices_;
+    ea::vector<Vector3> vertices_;
     /// Triangle indices from geometries.
-    stl::vector<int> indices_;
+    ea::vector<int> indices_;
     /// Offmesh connection vertices.
-    stl::vector<Vector3> offMeshVertices_;
+    ea::vector<Vector3> offMeshVertices_;
     /// Offmesh connection radii.
-    stl::vector<float> offMeshRadii_;
+    ea::vector<float> offMeshRadii_;
     /// Offmesh connection flags.
-    stl::vector<unsigned short> offMeshFlags_;
+    ea::vector<unsigned short> offMeshFlags_;
     /// Offmesh connection areas.
-    stl::vector<unsigned char> offMeshAreas_;
+    ea::vector<unsigned char> offMeshAreas_;
     /// Offmesh connection direction.
-    stl::vector<unsigned char> offMeshDir_;
+    ea::vector<unsigned char> offMeshDir_;
     /// Recast context.
     rcContext* ctx_;
     /// Recast heightfield.
@@ -82,7 +82,7 @@ struct URHO3D_API NavBuildData
     /// Recast compact heightfield.
     rcCompactHeightfield* compactHeightField_;
     /// Pretransformed navigation areas, no correlation to the geometry above.
-    stl::vector<NavAreaStub> navAreas_;
+    ea::vector<NavAreaStub> navAreas_;
 };
 
 struct URHO3D_API SimpleNavBuildData : public NavBuildData

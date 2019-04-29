@@ -40,7 +40,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    virtual stl::string GetScreenJoystickPatchString() const override { return
+    virtual ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -59,7 +59,7 @@ private:
     void CreateScene();
 
     /// Reference holding message box.
-    stl::shared_ptr<SystemMessageBox> messageBox_;
+    ea::shared_ptr<SystemMessageBox> messageBox_;
     /// Flag controlling display of imgui demo window.
     bool demoOpen_ = false;
 };

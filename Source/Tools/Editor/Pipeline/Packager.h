@@ -32,8 +32,8 @@ namespace Urho3D
 
 struct FileEntry
 {
-    stl::string root_;
-    stl::string name_;
+    ea::string root_;
+    ea::string name_;
     unsigned offset_{};
     unsigned size_{};
     unsigned checksum_{};
@@ -46,9 +46,9 @@ public:
     ///
     explicit Packager(Context* context);
     ///
-    bool OpenPackage(const stl::string& path);
+    bool OpenPackage(const ea::string& path);
     ///
-    void AddFile(const stl::string& root, const stl::string& path);
+    void AddFile(const ea::string& root, const ea::string& path);
     ///
     void Write();
     ///
@@ -68,7 +68,7 @@ protected:
         unsigned checksum_;
     } header_{};
     ///
-    stl::vector<FileEntry> entries_{};
+    ea::vector<FileEntry> entries_{};
     ///
     bool compress_ = false;
 

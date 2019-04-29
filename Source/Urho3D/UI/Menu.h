@@ -87,7 +87,7 @@ protected:
     /// Filter implicit attributes in serialization process.
     virtual bool FilterPopupImplicitAttributes(XMLElement& dest) const;
     /// Popup element.
-    stl::shared_ptr<UIElement> popup_;
+    ea::shared_ptr<UIElement> popup_;
     /// Popup element offset.
     IntVector2 popupOffset_;
     /// Show popup flag.

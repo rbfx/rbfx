@@ -52,8 +52,8 @@ Gizmo::~Gizmo()
 
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
 {
-    stl::vector<stl::weak_ptr<Node>> nodes;
-    nodes.push_back(stl::weak_ptr<Node>(node));
+    ea::vector<ea::weak_ptr<Node>> nodes;
+    nodes.push_back(ea::weak_ptr<Node>(node));
     return Manipulate(camera, nodes);
 }
 
@@ -62,7 +62,7 @@ bool Gizmo::IsActive() const
     return ImGuizmo::IsUsing();
 }
 
-bool Gizmo::Manipulate(const Camera* camera, const stl::vector<stl::weak_ptr<Node>>& nodes)
+bool Gizmo::Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>>& nodes)
 {
     if (nodes.empty())
         return false;
@@ -244,7 +244,7 @@ void Gizmo::RenderUI()
 
 bool Gizmo::Select(Node* node)
 {
-    stl::weak_ptr<Node> weakNode(node);
+    ea::weak_ptr<Node> weakNode(node);
     if (nodeSelection_.contains(weakNode))
         return false;
     nodeSelection_.push_back(weakNode);
@@ -252,12 +252,12 @@ bool Gizmo::Select(Node* node)
     return true;
 }
 
-bool Gizmo::Select(stl::vector<Node*> nodes)
+bool Gizmo::Select(ea::vector<Node*> nodes)
 {
     bool selectedAny = false;
     for (auto* node : nodes)
     {
-        stl::weak_ptr<Node> weakNode(node);
+        ea::weak_ptr<Node> weakNode(node);
         if (!nodeSelection_.contains(weakNode))
         {
             nodeSelection_.push_back(weakNode);
@@ -272,7 +272,7 @@ bool Gizmo::Select(stl::vector<Node*> nodes)
 
 bool Gizmo::Unselect(Node* node)
 {
-    stl::weak_ptr<Node> weakNode(node);
+    ea::weak_ptr<Node> weakNode(node);
     if (!nodeSelection_.contains(weakNode))
         return false;
     nodeSelection_.erase_first(weakNode);
@@ -299,7 +299,7 @@ bool Gizmo::UnselectAll()
 
 bool Gizmo::IsSelected(Node* node) const
 {
-    stl::weak_ptr<Node> pNode(node);
+    ea::weak_ptr<Node> pNode(node);
     return nodeSelection_.contains(pNode);
 }
 

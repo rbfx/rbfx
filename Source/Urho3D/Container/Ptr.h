@@ -32,15 +32,15 @@ namespace Urho3D
 {
 
 /// Perform a static cast from one shared pointer type to another.
-template <class T, class U> stl::shared_ptr<T> StaticCast(const stl::shared_ptr<U>& ptr)
+template <class T, class U> ea::shared_ptr<T> StaticCast(const ea::shared_ptr<U>& ptr)
 {
-    return stl::shared_ptr<T>(static_cast<T*>(ptr.get()));
+    return ea::shared_ptr<T>(static_cast<T*>(ptr.get()));
 }
 
 /// Perform a dynamic cast from one weak pointer type to another.
-template <class T, class U> stl::shared_ptr<T> DynamicCast(const stl::shared_ptr<U>& ptr)
+template <class T, class U> ea::shared_ptr<T> DynamicCast(const ea::shared_ptr<U>& ptr)
 {
-    return stl::shared_ptr<T>(dynamic_cast<T*>(ptr.get()));
+    return ea::shared_ptr<T>(dynamic_cast<T*>(ptr.get()));
 }
 
 }

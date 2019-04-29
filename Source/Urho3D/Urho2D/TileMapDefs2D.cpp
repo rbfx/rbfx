@@ -146,12 +146,12 @@ void PropertySet2D::Load(const XMLElement& element)
         nameToValueMapping_[propertyElem.GetAttribute("name")] = propertyElem.GetAttribute("value");
 }
 
-bool PropertySet2D::HasProperty(const stl::string& name) const
+bool PropertySet2D::HasProperty(const ea::string& name) const
 {
     return nameToValueMapping_.find(name) != nameToValueMapping_.end();
 }
 
-const stl::string& PropertySet2D::GetProperty(const stl::string& name) const
+const ea::string& PropertySet2D::GetProperty(const ea::string& name) const
 {
     auto i = nameToValueMapping_.find(name);
     if (i == nameToValueMapping_.end())
@@ -170,14 +170,14 @@ Sprite2D* Tile2D::GetSprite() const
     return sprite_;
 }
 
-bool Tile2D::HasProperty(const stl::string& name) const
+bool Tile2D::HasProperty(const ea::string& name) const
 {
     if (!propertySet_)
         return false;
     return propertySet_->HasProperty(name);
 }
 
-const stl::string& Tile2D::GetProperty(const stl::string& name) const
+const ea::string& Tile2D::GetProperty(const ea::string& name) const
 {
     if (!propertySet_)
         return EMPTY_STRING;
@@ -205,14 +205,14 @@ Sprite2D* TileMapObject2D::GetTileSprite() const
     return sprite_;
 }
 
-bool TileMapObject2D::HasProperty(const stl::string& name) const
+bool TileMapObject2D::HasProperty(const ea::string& name) const
 {
     if (!propertySet_)
         return false;
     return propertySet_->HasProperty(name);
 }
 
-const stl::string& TileMapObject2D::GetProperty(const stl::string& name) const
+const ea::string& TileMapObject2D::GetProperty(const ea::string& name) const
 {
     if (!propertySet_)
         return EMPTY_STRING;

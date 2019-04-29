@@ -119,7 +119,7 @@ void RigidBody::RegisterObject(Context* context)
         AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("CCD Radius", GetCcdRadius, SetCcdRadius, float, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("CCD Motion Threshold", GetCcdMotionThreshold, SetCcdMotionThreshold, float, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Angular Velocity", GetNetAngularVelocityAttr, SetNetAngularVelocityAttr, stl::vector<unsigned char>,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Angular Velocity", GetNetAngularVelocityAttr, SetNetAngularVelocityAttr, ea::vector<unsigned char>,
         Variant::emptyBuffer, AM_NET | AM_LATESTDATA | AM_NOEDIT);
     URHO3D_ENUM_ATTRIBUTE_EX("Collision Event Mode", collisionEventMode_, MarkBodyDirty, collisionEventModeNames, COLLISION_ACTIVE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Use Gravity", GetUseGravity, SetUseGravity, bool, true, AM_DEFAULT);
@@ -697,7 +697,7 @@ bool RigidBody::IsActive() const
     return body_ ? body_->isActive() : false;
 }
 
-void RigidBody::GetCollidingBodies(stl::vector<RigidBody*>& result) const
+void RigidBody::GetCollidingBodies(ea::vector<RigidBody*>& result) const
 {
     if (physicsWorld_)
         physicsWorld_->GetCollidingBodies(result, this);
@@ -746,7 +746,7 @@ void RigidBody::UpdateMass()
     auto numShapes = (unsigned)compoundShape_->getNumChildShapes();
     if (numShapes)
     {
-        stl::vector<float> masses(numShapes);
+        ea::vector<float> masses(numShapes);
         for (unsigned i = 0; i < numShapes; ++i)
         {
             // The actual mass does not matter, divide evenly between child shapes
@@ -842,14 +842,14 @@ void RigidBody::UpdateGravity()
     }
 }
 
-void RigidBody::SetNetAngularVelocityAttr(const stl::vector<unsigned char>& value)
+void RigidBody::SetNetAngularVelocityAttr(const ea::vector<unsigned char>& value)
 {
     float maxVelocity = physicsWorld_ ? physicsWorld_->GetMaxNetworkAngularVelocity() : DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
     MemoryBuffer buf(value);
     SetAngularVelocity(buf.ReadPackedVector3(maxVelocity));
 }
 
-const stl::vector<unsigned char>& RigidBody::GetNetAngularVelocityAttr() const
+const ea::vector<unsigned char>& RigidBody::GetNetAngularVelocityAttr() const
 {
     float maxVelocity = physicsWorld_ ? physicsWorld_->GetMaxNetworkAngularVelocity() : DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY;
     attrBuffer_.Clear();
@@ -875,7 +875,7 @@ void RigidBody::ReleaseBody()
     {
         // Release all constraints which refer to this body
         // Make a copy for iteration
-        stl::vector<Constraint*> constraints = constraints_;
+        ea::vector<Constraint*> constraints = constraints_;
         for (auto i = constraints.begin(); i != constraints.end(); ++i)
             (*i)->ReleaseConstraint();
 
@@ -976,14 +976,14 @@ void RigidBody::AddBodyToWorld()
 
         // Check if CollisionShapes already exist in the node and add them to the compound shape.
         // Do not update mass yet, but do it once all shapes have been added
-        stl::vector<CollisionShape*> shapes;
+        ea::vector<CollisionShape*> shapes;
         node_->GetComponents<CollisionShape>(shapes);
         for (auto i = shapes.begin(); i != shapes.end(); ++i)
             (*i)->NotifyRigidBody(false);
 
         // Check if this node contains Constraint components that were waiting for the rigid body to be created, and signal them
         // to create themselves now
-        stl::vector<Constraint*> constraints;
+        ea::vector<Constraint*> constraints;
         node_->GetComponents<Constraint>(constraints);
         for (auto i = constraints.begin(); i != constraints.end(); ++i)
             (*i)->CreateConstraint();

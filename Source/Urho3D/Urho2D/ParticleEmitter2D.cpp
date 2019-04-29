@@ -209,7 +209,7 @@ void ParticleEmitter2D::UpdateSourceBatches()
     if (!sourceBatchesDirty_)
         return;
 
-    stl::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
+    ea::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
     vertices.clear();
 
     if (!sprite_)
@@ -283,7 +283,7 @@ void ParticleEmitter2D::HandleScenePostUpdate(StringHash eventType, VariantMap& 
     if (emitting && emissionTime_ == 0.0f)
     {
         // Make a weak pointer to self to check for destruction during event handling
-        stl::weak_ptr<ParticleEmitter2D> self(this);
+        ea::weak_ptr<ParticleEmitter2D> self(this);
         using namespace ParticlesDuration;
 
         VariantMap& eventData = GetEventDataMap();

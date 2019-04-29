@@ -128,21 +128,21 @@ void DebugHud::ToggleAll()
     Toggle(DEBUGHUD_SHOW_ALL);
 }
 
-void DebugHud::SetAppStats(const stl::string& label, const Variant& stats)
+void DebugHud::SetAppStats(const ea::string& label, const Variant& stats)
 {
     SetAppStats(label, stats.ToString());
 }
 
-void DebugHud::SetAppStats(const stl::string& label, const stl::string& stats)
+void DebugHud::SetAppStats(const ea::string& label, const ea::string& stats)
 {
     bool newLabel = appStats_.find(label) == appStats_.end();
     appStats_[label] = stats;
     // TODO: sorting
     // if (newLabel)
-    //     stl::quick_sort(appStats_.begin(), appStats_.end());
+    //     ea::quick_sort(appStats_.begin(), appStats_.end());
 }
 
-bool DebugHud::ResetAppStats(const stl::string& label)
+bool DebugHud::ResetAppStats(const ea::string& label)
 {
     return appStats_.erase(label);
 }
@@ -173,7 +173,7 @@ void DebugHud::RenderUi(VariantMap& eventData)
                 fpsTimer_.Reset();
             }
 
-            stl::string stats;
+            ea::string stats;
             unsigned primitives, batches;
             if (!useRendererStats_)
             {

@@ -48,7 +48,7 @@ static const DXGI_FORMAT d3dElementFormats[] =
 VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertexShader, VertexBuffer** vertexBuffers) :
     inputLayout_(nullptr)
 {
-    stl::vector<D3D11_INPUT_ELEMENT_DESC> elementDescs;
+    ea::vector<D3D11_INPUT_ELEMENT_DESC> elementDescs;
     unsigned prevBufferDescs = 0;
 
     for (unsigned i = 0; i < MAX_VERTEX_STREAMS; ++i)
@@ -56,7 +56,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
         if (!vertexBuffers[i])
             continue;
 
-        const stl::vector<VertexElement>& srcElements = vertexBuffers[i]->GetElements();
+        const ea::vector<VertexElement>& srcElements = vertexBuffers[i]->GetElements();
         bool isExisting = false;
 
         for (unsigned j = 0; j < srcElements.size(); ++j)
@@ -98,7 +98,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, ShaderVariation* vertex
     if (elementDescs.empty())
         return;
 
-    const stl::vector<unsigned char>& byteCode = vertexShader->GetByteCode();
+    const ea::vector<unsigned char>& byteCode = vertexShader->GetByteCode();
 
     HRESULT hr = graphics->GetImpl()->GetDevice()->CreateInputLayout(&elementDescs[0], (UINT)elementDescs.size(), &byteCode[0],
         byteCode.size(), (ID3D11InputLayout**)&inputLayout_);

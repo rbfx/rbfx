@@ -55,14 +55,14 @@ URHO3D_API int WriteMiniDump(const char* applicationName, void* exceptionPointer
     static time_t sysTime;
     time(&sysTime);
     const char* dateTime = ctime(&sysTime);
-    stl::string dateTimeStr = stl::string(dateTime);
+    ea::string dateTimeStr = ea::string(dateTime);
     dateTimeStr.replace("\n", "");
     dateTimeStr.replace(":", "");
     dateTimeStr.replace("/", "");
     dateTimeStr.replace(' ', '_');
 
-    stl::string miniDumpDir = GetMiniDumpDir();
-    stl::string miniDumpName = miniDumpDir + stl::string(applicationName) + "_" + dateTimeStr + ".dmp";
+    ea::string miniDumpDir = GetMiniDumpDir();
+    ea::string miniDumpName = miniDumpDir + ea::string(applicationName) + "_" + dateTimeStr + ".dmp";
 
     CreateDirectoryW(MultiByteToWide(miniDumpDir).c_str(), nullptr);
     HANDLE file = CreateFileW(MultiByteToWide(miniDumpName).c_str(), GENERIC_READ | GENERIC_WRITE, FILE_SHARE_WRITE | FILE_SHARE_READ,

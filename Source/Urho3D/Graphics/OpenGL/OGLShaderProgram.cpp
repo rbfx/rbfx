@@ -44,7 +44,7 @@ static const char* shaderParameterGroups[] = {
     "custom"
 };
 
-static unsigned NumberPostfix(const stl::string& str)
+static unsigned NumberPostfix(const ea::string& str)
 {
     for (unsigned i = 0; i < str.length(); ++i)
     {
@@ -158,7 +158,7 @@ bool ShaderProgram::Link()
     {
         glGetActiveAttrib(object_.name_, i, (GLsizei)MAX_NAME_LENGTH, &nameLength, &elementCount, &type, nameBuffer);
 
-        stl::string name = stl::string(nameBuffer, nameLength);
+        ea::string name = ea::string(nameBuffer, nameLength);
         VertexElementSemantic semantic = MAX_VERTEX_ELEMENT_SEMANTICS;
         unsigned char semanticIndex = 0;
 
@@ -183,13 +183,13 @@ bool ShaderProgram::Link()
         }
 
         int location = glGetAttribLocation(object_.name_, name.c_str());
-        vertexAttributes_[stl::make_pair((unsigned char)semantic, semanticIndex)] = location;
+        vertexAttributes_[ea::make_pair((unsigned char)semantic, semanticIndex)] = location;
         usedVertexAttributes_ |= (1u << location);
     }
 
     // Check for constant buffers
 #ifndef GL_ES_VERSION_2_0
-    stl::unordered_map<unsigned, unsigned> blockToBinding;
+    ea::unordered_map<unsigned, unsigned> blockToBinding;
 
     if (Graphics::GetGL3Support())
     {
@@ -200,7 +200,7 @@ bool ShaderProgram::Link()
         {
             glGetActiveUniformBlockName(object_.name_, (GLuint)i, MAX_NAME_LENGTH, &nameLength, nameBuffer);
 
-            stl::string name(nameBuffer, (unsigned)nameLength);
+            ea::string name(nameBuffer, (unsigned)nameLength);
 
             unsigned blockIndex = glGetUniformBlockIndex(object_.name_, name.c_str());
             unsigned group = M_MAX_UNSIGNED;
@@ -258,12 +258,12 @@ bool ShaderProgram::Link()
         int location = glGetUniformLocation(object_.name_, nameBuffer);
 
         // Check for array index included in the name and strip it
-        stl::string name(nameBuffer);
+        ea::string name(nameBuffer);
         unsigned index = name.find('[');
-        if (index != stl::string::npos)
+        if (index != ea::string::npos)
         {
             // If not the first index, skip
-            if (name.find("[0]", index) == stl::string::npos)
+            if (name.find("[0]", index) == ea::string::npos)
                 continue;
 
             name = name.substr(0, index);
@@ -272,7 +272,7 @@ bool ShaderProgram::Link()
         if (name[0] == 'c')
         {
             // Store constant uniform
-            stl::string paramName = name.substr(1);
+            ea::string paramName = name.substr(1);
             ShaderParameter parameter{paramName, type, location};
             bool store = location >= 0;
 

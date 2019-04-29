@@ -103,13 +103,13 @@ public:
     void SetObstacleAvoidanceParams(unsigned obstacleAvoidanceType, const CrowdObstacleAvoidanceParams& params);
 
     /// Get all the crowd agent components in the specified node hierarchy. If the node is not specified then use scene node. When inCrowdFilter is set to true then only get agents that are in the crowd.
-    stl::vector<CrowdAgent*> GetAgents(Node* node = nullptr, bool inCrowdFilter = true) const;
+    ea::vector<CrowdAgent*> GetAgents(Node* node = nullptr, bool inCrowdFilter = true) const;
     /// Find the nearest point on the navigation mesh to a given point using the crowd initialized query extent (based on maxAgentRadius) and the specified query filter type.
     Vector3 FindNearestPoint(const Vector3& point, int queryFilterType, dtPolyRef* nearestRef = nullptr);
     /// Try to move along the surface from one point to another using the crowd initialized query extent (based on maxAgentRadius) and the specified query filter type.
     Vector3 MoveAlongSurface(const Vector3& start, const Vector3& end, int queryFilterType, int maxVisited = 3);
     /// Find a path between world space points using the crowd initialized query extent (based on maxAgentRadius) and the specified query filter type. Return non-empty list of points if successful.
-    void FindPath(stl::vector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType);
+    void FindPath(ea::vector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType);
     /// Return a random point on the navigation mesh using the crowd initialized query extent (based on maxAgentRadius) and the specified query filter type.
     Vector3 GetRandomPoint(int queryFilterType, dtPolyRef* randomRef = nullptr);
     /// Return a random point on the navigation mesh within a circle using the crowd initialized query extent (based on maxAgentRadius) and the specified query filter type. The circle radius is only a guideline and in practice the returned point may be further away.
@@ -182,7 +182,7 @@ private:
     /// Internal Detour crowd object.
     dtCrowd* crowd_{};
     /// NavigationMesh for which the crowd was created.
-    stl::weak_ptr<NavigationMesh> navigationMesh_;
+    ea::weak_ptr<NavigationMesh> navigationMesh_;
     /// The NavigationMesh component Id for pending crowd creation.
     unsigned navigationMeshId_{};
     /// The maximum number of agents the crowd can manage.
@@ -192,7 +192,7 @@ private:
     /// Number of query filter types configured in the crowd. Limit to DT_CROWD_MAX_QUERY_FILTER_TYPE.
     unsigned numQueryFilterTypes_{};
     /// Number of configured area in each filter type. Limit to DT_MAX_AREAS.
-    stl::vector<unsigned> numAreas_;
+    ea::vector<unsigned> numAreas_;
     /// Number of obstacle avoidance types configured in the crowd. Limit to DT_CROWD_MAX_OBSTAVOIDANCE_PARAMS.
     unsigned numObstacleAvoidanceTypes_{};
 };

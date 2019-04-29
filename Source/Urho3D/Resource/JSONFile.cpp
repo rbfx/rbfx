@@ -99,7 +99,7 @@ static void ToJSONValue(JSONValue& jsonValue, const rapidjson::Value& rapidjsonV
             jsonValue.SetType(JSON_OBJECT);
             for (rapidjson::Value::ConstMemberIterator i = rapidjsonValue.MemberBegin(); i != rapidjsonValue.MemberEnd(); ++i)
             {
-                JSONValue& value = jsonValue[stl::string(i->name.GetString())];
+                JSONValue& value = jsonValue[ea::string(i->name.GetString())];
                 ToJSONValue(value, i->value);
             }
         }
@@ -119,7 +119,7 @@ bool JSONFile::BeginLoad(Deserializer& source)
         return false;
     }
 
-    stl::shared_array<char> buffer(new char[dataSize + 1]);
+    ea::shared_array<char> buffer(new char[dataSize + 1]);
     if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
     buffer[dataSize] = '\0';
@@ -214,7 +214,7 @@ bool JSONFile::Save(Serializer& dest) const
     return Save(dest, "\t");
 }
 
-bool JSONFile::Save(Serializer& dest, const stl::string& indendation) const
+bool JSONFile::Save(Serializer& dest, const ea::string& indendation) const
 {
     rapidjson::Document document;
     ToRapidjsonValue(document, root_, document.GetAllocator());
@@ -228,7 +228,7 @@ bool JSONFile::Save(Serializer& dest, const stl::string& indendation) const
     return dest.Write(buffer.GetString(), size) == size;
 }
 
-bool JSONFile::FromString(const stl::string & source)
+bool JSONFile::FromString(const ea::string & source)
 {
     if (source.empty())
         return false;
@@ -237,7 +237,7 @@ bool JSONFile::FromString(const stl::string & source)
     return Load(buffer);
 }
 
-bool JSONFile::ParseJSON(const stl::string& json, JSONValue& value, bool reportError)
+bool JSONFile::ParseJSON(const ea::string& json, JSONValue& value, bool reportError)
 {
     rapidjson::Document document;
     if (document.Parse<0>(json.c_str()).HasParseError())
@@ -251,7 +251,7 @@ bool JSONFile::ParseJSON(const stl::string& json, JSONValue& value, bool reportE
     return true;
 }
 
-stl::string JSONFile::ToString(const stl::string& indendation) const
+ea::string JSONFile::ToString(const ea::string& indendation) const
 {
     rapidjson::Document document;
     ToRapidjsonValue(document, root_, document.GetAllocator());

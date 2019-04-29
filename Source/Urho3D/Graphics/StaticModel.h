@@ -52,7 +52,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Return the geometry for a specific LOD level.
@@ -71,7 +71,7 @@ public:
     /// Set occlusion LOD level. By default (M_MAX_UNSIGNED) same as visible.
     void SetOcclusionLodLevel(unsigned level);
     /// Apply default materials from a material list file. If filename is empty (default), the model's resource name with extension .txt will be used.
-    void ApplyMaterialList(const stl::string& fileName = EMPTY_STRING);
+    void ApplyMaterialList(const ea::string& fileName = EMPTY_STRING);
 
     /// Return model.
     Model* GetModel() const { return model_; }
@@ -114,11 +114,11 @@ protected:
     void CalculateLodLevels();
 
     /// Extra per-geometry data.
-    stl::vector<StaticModelGeometryData> geometryData_;
+    ea::vector<StaticModelGeometryData> geometryData_;
     /// All geometries.
-    stl::vector<stl::vector<stl::shared_ptr<Geometry> > > geometries_;
+    ea::vector<ea::vector<ea::shared_ptr<Geometry> > > geometries_;
     /// Model.
-    stl::shared_ptr<Model> model_;
+    ea::shared_ptr<Model> model_;
     /// Occlusion LOD level.
     unsigned occlusionLodLevel_;
     /// Material list attribute.

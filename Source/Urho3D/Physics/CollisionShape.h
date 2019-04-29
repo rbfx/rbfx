@@ -69,7 +69,7 @@ struct CollisionGeometryData : public RefCounted
 
 /// Cache of collision geometry data.
 /// \todo Remove duplicate declaration
-using CollisionGeometryDataCache = stl::unordered_map<stl::pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, ea::shared_ptr<CollisionGeometryData> >;
 
 /// Triangle mesh geometry data.
 struct TriangleMeshData : public CollisionGeometryData
@@ -80,11 +80,11 @@ struct TriangleMeshData : public CollisionGeometryData
     explicit TriangleMeshData(CustomGeometry* custom);
 
     /// Bullet triangle mesh interface.
-    stl::unique_ptr<TriangleMeshInterface> meshInterface_;
+    ea::unique_ptr<TriangleMeshInterface> meshInterface_;
     /// Bullet triangle mesh collision shape.
-    stl::unique_ptr<btBvhTriangleMeshShape> shape_;
+    ea::unique_ptr<btBvhTriangleMeshShape> shape_;
     /// Bullet triangle info map.
-    stl::unique_ptr<btTriangleInfoMap> infoMap_;
+    ea::unique_ptr<btTriangleInfoMap> infoMap_;
 };
 
 /// Triangle mesh geometry data.
@@ -96,7 +96,7 @@ struct GImpactMeshData : public CollisionGeometryData
     explicit GImpactMeshData(CustomGeometry* custom);
 
     /// Bullet triangle mesh interface.
-    stl::unique_ptr<TriangleMeshInterface> meshInterface_;
+    ea::unique_ptr<TriangleMeshInterface> meshInterface_;
 };
 
 /// Convex hull geometry data.
@@ -108,14 +108,14 @@ struct ConvexData : public CollisionGeometryData
     explicit ConvexData(CustomGeometry* custom);
 
     /// Build the convex hull from vertices.
-    void BuildHull(const stl::vector<Vector3>& vertices);
+    void BuildHull(const ea::vector<Vector3>& vertices);
 
     /// Vertex data.
-    stl::shared_array<Vector3> vertexData_;
+    ea::shared_array<Vector3> vertexData_;
     /// Number of vertices.
     unsigned vertexCount_{};
     /// Index data.
-    stl::shared_array<unsigned> indexData_;
+    ea::shared_array<unsigned> indexData_;
     /// Number of indices.
     unsigned indexCount_{};
 };
@@ -127,7 +127,7 @@ struct HeightfieldData : public CollisionGeometryData
     HeightfieldData(Terrain* terrain, unsigned lodLevel);
 
     /// Height data. On LOD level 0 the original height data will be used.
-    stl::shared_array<float> heightData_;
+    ea::shared_array<float> heightData_;
     /// Vertex spacing.
     Vector3 spacing_;
     /// Heightmap size.
@@ -286,15 +286,15 @@ private:
     void MarkShapeDirty() { recreateShape_ = true; }
 
     /// Physics world.
-    stl::weak_ptr<PhysicsWorld> physicsWorld_;
+    ea::weak_ptr<PhysicsWorld> physicsWorld_;
     /// Rigid body.
-    stl::weak_ptr<RigidBody> rigidBody_;
+    ea::weak_ptr<RigidBody> rigidBody_;
     /// Model.
-    stl::shared_ptr<Model> model_;
+    ea::shared_ptr<Model> model_;
     /// Shared geometry data.
-    stl::shared_ptr<CollisionGeometryData> geometry_;
+    ea::shared_ptr<CollisionGeometryData> geometry_;
     /// Bullet collision shape.
-    stl::unique_ptr<btCollisionShape> shape_;
+    ea::unique_ptr<btCollisionShape> shape_;
     /// Collision shape type.
     ShapeType shapeType_;
     /// Offset position.

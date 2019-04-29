@@ -37,11 +37,11 @@ public:
     /// Construct.
     ShaderProgram(ShaderVariation* vertexShader, ShaderVariation* pixelShader)
     {
-        const stl::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
+        const ea::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
         for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
             parameters_[i->first] = i->second;
 
-        const stl::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
+        const ea::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
         for (auto i = psParams.begin(); i != psParams.end(); ++i)
             parameters_[i->first] = i->second;
 
@@ -50,7 +50,7 @@ public:
     }
 
     /// Combined parameters from the vertex and pixel shader.
-    stl::unordered_map<StringHash, ShaderParameter> parameters_;
+    ea::unordered_map<StringHash, ShaderParameter> parameters_;
 };
 
 }

@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-static const stl::string base64_chars =
+static const ea::string base64_chars =
     "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
     "abcdefghijklmnopqrstuvwxyz"
     "0123456789+/";
@@ -87,7 +87,7 @@ unsigned CountElements(const char* buffer, char separator)
     return ret;
 }
 
-bool ToBool(const stl::string& source)
+bool ToBool(const ea::string& source)
 {
     return ToBool(source.c_str());
 }
@@ -108,7 +108,7 @@ bool ToBool(const char* source)
     return false;
 }
 
-int ToInt(const stl::string& source, int base)
+int ToInt(const ea::string& source, int base)
 {
     return ToInt(source.c_str(), base);
 }
@@ -137,12 +137,12 @@ long long ToInt64(const char* source, int base)
     return strtoll(source, nullptr, base);
 }
 
-long long ToInt64(const stl::string& source, int base)
+long long ToInt64(const ea::string& source, int base)
 {
     return ToInt64(source.c_str(), base);
 }
 
-unsigned ToUInt(const stl::string& source, int base)
+unsigned ToUInt(const ea::string& source, int base)
 {
     return ToUInt(source.c_str(), base);
 }
@@ -159,7 +159,7 @@ unsigned long long ToUInt64(const char* source, int base)
     return strtoull(source, nullptr, base);
 }
 
-unsigned long long ToUInt64(const stl::string& source, int base)
+unsigned long long ToUInt64(const ea::string& source, int base)
 {
     return ToUInt64(source.c_str(), base);
 }
@@ -175,7 +175,7 @@ unsigned ToUInt(const char* source, int base)
     return (unsigned)strtoul(source, nullptr, base);
 }
 
-float ToFloat(const stl::string& source)
+float ToFloat(const ea::string& source)
 {
     return ToFloat(source.c_str());
 }
@@ -188,7 +188,7 @@ float ToFloat(const char* source)
     return (float)strtod(source, nullptr);
 }
 
-double ToDouble(const stl::string& source)
+double ToDouble(const ea::string& source)
 {
     return ToDouble(source.c_str());
 }
@@ -201,7 +201,7 @@ double ToDouble(const char* source)
     return strtod(source, nullptr);
 }
 
-Color ToColor(const stl::string& source)
+Color ToColor(const ea::string& source)
 {
     return ToColor(source.c_str());
 }
@@ -224,7 +224,7 @@ Color ToColor(const char* source)
     return ret;
 }
 
-IntRect ToIntRect(const stl::string& source)
+IntRect ToIntRect(const ea::string& source)
 {
     return ToIntRect(source.c_str());
 }
@@ -246,7 +246,7 @@ IntRect ToIntRect(const char* source)
     return ret;
 }
 
-IntVector2 ToIntVector2(const stl::string& source)
+IntVector2 ToIntVector2(const ea::string& source)
 {
     return ToIntVector2(source.c_str());
 }
@@ -266,7 +266,7 @@ IntVector2 ToIntVector2(const char* source)
     return ret;
 }
 
-IntVector3 ToIntVector3(const stl::string& source)
+IntVector3 ToIntVector3(const ea::string& source)
 {
     return ToIntVector3(source.c_str());
 }
@@ -287,7 +287,7 @@ IntVector3 ToIntVector3(const char* source)
     return ret;
 }
 
-Rect ToRect(const stl::string& source)
+Rect ToRect(const ea::string& source)
 {
     return ToRect(source.c_str());
 }
@@ -309,7 +309,7 @@ Rect ToRect(const char* source)
     return ret;
 }
 
-Quaternion ToQuaternion(const stl::string& source)
+Quaternion ToQuaternion(const ea::string& source)
 {
     return ToQuaternion(source.c_str());
 }
@@ -344,7 +344,7 @@ Quaternion ToQuaternion(const char* source)
     }
 }
 
-Vector2 ToVector2(const stl::string& source)
+Vector2 ToVector2(const ea::string& source)
 {
     return ToVector2(source.c_str());
 }
@@ -364,7 +364,7 @@ Vector2 ToVector2(const char* source)
     return ret;
 }
 
-Vector3 ToVector3(const stl::string& source)
+Vector3 ToVector3(const ea::string& source)
 {
     return ToVector3(source.c_str());
 }
@@ -385,7 +385,7 @@ Vector3 ToVector3(const char* source)
     return ret;
 }
 
-Vector4 ToVector4(const stl::string& source, bool allowMissingCoords)
+Vector4 ToVector4(const ea::string& source, bool allowMissingCoords)
 {
     return ToVector4(source.c_str(), allowMissingCoords);
 }
@@ -424,7 +424,7 @@ Vector4 ToVector4(const char* source, bool allowMissingCoords)
     }
 }
 
-Variant ToVectorVariant(const stl::string& source)
+Variant ToVectorVariant(const ea::string& source)
 {
     return ToVectorVariant(source.c_str());
 }
@@ -472,7 +472,7 @@ Variant ToVectorVariant(const char* source)
     return ret;
 }
 
-Matrix3 ToMatrix3(const stl::string& source)
+Matrix3 ToMatrix3(const ea::string& source)
 {
     return ToMatrix3(source.c_str());
 }
@@ -499,7 +499,7 @@ Matrix3 ToMatrix3(const char* source)
     return ret;
 }
 
-Matrix3x4 ToMatrix3x4(const stl::string& source)
+Matrix3x4 ToMatrix3x4(const ea::string& source)
 {
     return ToMatrix3x4(source.c_str());
 }
@@ -529,7 +529,7 @@ Matrix3x4 ToMatrix3x4(const char* source)
     return ret;
 }
 
-Matrix4 ToMatrix4(const stl::string& source)
+Matrix4 ToMatrix4(const ea::string& source)
 {
     return ToMatrix4(source.c_str());
 }
@@ -563,19 +563,19 @@ Matrix4 ToMatrix4(const char* source)
     return ret;
 }
 
-stl::string ToString(void* value)
+ea::string ToString(void* value)
 {
     return ToStringHex((unsigned)(size_t)value);
 }
 
-stl::string ToStringHex(unsigned value)
+ea::string ToStringHex(unsigned value)
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%08x", value);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
-void BufferToString(stl::string& dest, const void* data, unsigned size)
+void BufferToString(ea::string& dest, const void* data, unsigned size)
 {
     // Precalculate needed string size
     const auto* bytes = (const unsigned char*)data;
@@ -622,12 +622,12 @@ void BufferToString(stl::string& dest, const void* data, unsigned size)
     }
 }
 
-void StringToBuffer(stl::vector<unsigned char>& dest, const stl::string& source)
+void StringToBuffer(ea::vector<unsigned char>& dest, const ea::string& source)
 {
     StringToBuffer(dest, source.c_str());
 }
 
-void StringToBuffer(stl::vector<unsigned char>& dest, const char* source)
+void StringToBuffer(ea::vector<unsigned char>& dest, const char* source)
 {
     if (!source)
     {
@@ -670,12 +670,12 @@ void StringToBuffer(stl::vector<unsigned char>& dest, const char* source)
         dest[index] = (unsigned char)value;
 }
 
-unsigned GetStringListIndex(const stl::string& value, const stl::string* strings, unsigned defaultIndex, bool caseSensitive)
+unsigned GetStringListIndex(const ea::string& value, const ea::string* strings, unsigned defaultIndex, bool caseSensitive)
 {
     return GetStringListIndex(value.c_str(), strings, defaultIndex, caseSensitive);
 }
 
-unsigned GetStringListIndex(const char* value, const stl::string* strings, unsigned defaultIndex, bool caseSensitive)
+unsigned GetStringListIndex(const char* value, const ea::string* strings, unsigned defaultIndex, bool caseSensitive)
 {
     unsigned i = 0;
 
@@ -703,9 +703,9 @@ unsigned GetStringListIndex(const char* value, const char** strings, unsigned de
     return defaultIndex;
 }
 
-stl::string ToString(const char* formatString, ...)
+ea::string ToString(const char* formatString, ...)
 {
-    stl::string ret;
+    ea::string ret;
     va_list args;
     va_start(args, formatString);
     ret.append_sprintf_va_list(formatString, args);
@@ -733,15 +733,15 @@ unsigned ToLower(unsigned ch)
     return (unsigned)tolower(ch);
 }
 
-stl::string GetFileSizeString(unsigned long long memorySize)
+ea::string GetFileSizeString(unsigned long long memorySize)
 {
     static const char* memorySizeStrings = "kMGTPE";
 
-    stl::string output;
+    ea::string output;
 
     if (memorySize < 1024)
     {
-        output = stl::to_string(memorySize) + " b";
+        output = ea::to_string(memorySize) + " b";
     }
     else
     {
@@ -792,14 +792,14 @@ static inline bool IsBase64(char c) {
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
-stl::vector<unsigned char> DecodeBase64(stl::string encodedString)
+ea::vector<unsigned char> DecodeBase64(ea::string encodedString)
 {
     int inLen = encodedString.length();
     int i = 0;
     int j = 0;
     int in_ = 0;
     unsigned char charArray4[4], charArray3[3];
-    stl::vector<unsigned char> ret;
+    ea::vector<unsigned char> ret;
 
     while (inLen-- && (encodedString[in_] != '=') && IsBase64(encodedString[in_]))
     {

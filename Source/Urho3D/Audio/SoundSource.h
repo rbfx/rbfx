@@ -63,7 +63,7 @@ public:
     /// Stop playback.
     void Stop();
     /// Set sound type, determines the master gain group.
-    void SetSoundType(const stl::string& type);
+    void SetSoundType(const ea::string& type);
     /// Set frequency.
     void SetFrequency(float frequency);
     /// Set gain. 0.0 is silence, 1.0 is full volume.
@@ -84,7 +84,7 @@ public:
     volatile signed char* GetPlayPosition() const { return position_; }
 
     /// Return sound type, determines the master gain group.
-    stl::string GetSoundType() const { return soundType_; }
+    ea::string GetSoundType() const { return soundType_; }
 
     /// Return playback time position.
     float GetTimePosition() const { return timePosition_; }
@@ -127,9 +127,9 @@ public:
 
 protected:
     /// Audio subsystem.
-    stl::weak_ptr<Audio> audio_;
+    ea::weak_ptr<Audio> audio_;
     /// SoundSource type, determines the master gain group.
-    stl::string soundType_;
+    ea::string soundType_;
     /// SoundSource type hash.
     StringHash soundTypeHash_;
     /// Frequency.
@@ -151,7 +151,7 @@ private:
     /// Play a sound without locking the audio mutex. Called internally.
     void PlayLockless(Sound* sound);
     /// Play a sound stream without locking the audio mutex. Called internally.
-    void PlayLockless(const stl::shared_ptr<SoundStream>& stream);
+    void PlayLockless(const ea::shared_ptr<SoundStream>& stream);
     /// Stop sound without locking the audio mutex. Called internally.
     void StopLockless();
     /// Set new playback position without locking the audio mutex. Called internally.
@@ -178,9 +178,9 @@ private:
     void MixNull(float timeStep);
 
     /// Sound that is being played.
-    stl::shared_ptr<Sound> sound_;
+    ea::shared_ptr<Sound> sound_;
     /// Sound stream that is being played.
-    stl::shared_ptr<SoundStream> soundStream_;
+    ea::shared_ptr<SoundStream> soundStream_;
     /// Playback position.
     volatile signed char* position_;
     /// Playback fractional position.
@@ -188,7 +188,7 @@ private:
     /// Playback time position.
     volatile float timePosition_;
     /// Decode buffer.
-    stl::shared_ptr<Sound> streamBuffer_;
+    ea::shared_ptr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
 };

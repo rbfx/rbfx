@@ -81,7 +81,7 @@ File::File(Context* context) :
 {
 }
 
-File::File(Context* context, const stl::string& fileName, FileMode mode) :
+File::File(Context* context, const ea::string& fileName, FileMode mode) :
     Object(context),
     mode_(FILE_READ),
     handle_(nullptr),
@@ -99,7 +99,7 @@ File::File(Context* context, const stl::string& fileName, FileMode mode) :
     Open(fileName, mode);
 }
 
-File::File(Context* context, PackageFile* package, const stl::string& fileName) :
+File::File(Context* context, PackageFile* package, const ea::string& fileName) :
     Object(context),
     mode_(FILE_READ),
     handle_(nullptr),
@@ -122,12 +122,12 @@ File::~File()
     Close();
 }
 
-bool File::Open(const stl::string& fileName, FileMode mode)
+bool File::Open(const ea::string& fileName, FileMode mode)
 {
     return OpenInternal(fileName, mode);
 }
 
-bool File::Open(PackageFile* package, const stl::string& fileName)
+bool File::Open(PackageFile* package, const ea::string& fileName)
 {
     if (!package)
         return false;
@@ -410,7 +410,7 @@ void File::Flush()
         fflush((FILE*)handle_);
 }
 
-void File::SetName(const stl::string& name)
+void File::SetName(const ea::string& name)
 {
     fileName_ = name;
 }
@@ -424,7 +424,7 @@ bool File::IsOpen() const
 #endif
 }
 
-bool File::OpenInternal(const stl::string& fileName, FileMode mode, bool fromPackage)
+bool File::OpenInternal(const ea::string& fileName, FileMode mode, bool fromPackage)
 {
     Close();
 
@@ -549,7 +549,7 @@ void File::SeekInternal(unsigned newPosition)
         fseek((FILE*)handle_, newPosition, SEEK_SET);
 }
 
-void File::ReadText(stl::string& text)
+void File::ReadText(ea::string& text)
 {
     text.clear();
 
@@ -570,7 +570,7 @@ bool File::Copy(File* srcFile)
         return false;
 
     unsigned fileSize = srcFile->GetSize();
-    stl::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
+    ea::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
 
     unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
     unsigned bytesWritten = Write(buffer.get(), fileSize);

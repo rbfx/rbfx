@@ -63,7 +63,7 @@ bool AreaAllocator::Allocate(int width, int height, int& x, int& y)
     if (height < 0)
         height = 0;
 
-    stl::vector<IntRect>::iterator best;
+    ea::vector<IntRect>::iterator best;
     int bestFreeArea;
 
     for (;;)

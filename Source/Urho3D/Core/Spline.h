@@ -52,7 +52,7 @@ public:
     /// Constructor setting interpolation mode.
     explicit Spline(InterpolationMode mode);
     /// Constructor setting knots and interpolation mode.
-    explicit Spline(const stl::vector<Variant>& knots, InterpolationMode mode = BEZIER_CURVE);
+    explicit Spline(const ea::vector<Variant>& knots, InterpolationMode mode = BEZIER_CURVE);
     /// Copy constructor.
     Spline(const Spline& rhs) = default;
 
@@ -87,7 +87,7 @@ public:
     void SetInterpolationMode(InterpolationMode interpolationMode) { interpolationMode_ = interpolationMode; }
 
     /// Set the knots of the spline.
-    void SetKnots(const stl::vector<Variant>& knots) { knots_ = knots; }
+    void SetKnots(const ea::vector<Variant>& knots) { knots_ = knots; }
 
     /// Set the value of an existing knot.
     void SetKnot(const Variant& knot, unsigned index);
@@ -107,11 +107,11 @@ public:
 
 private:
     /// Perform Bezier interpolation on the spline.
-    Variant BezierInterpolation(const stl::vector<Variant>& knots, float t) const;
+    Variant BezierInterpolation(const ea::vector<Variant>& knots, float t) const;
     /// Perform Spline interpolation on the spline.
-    Variant CatmullRomInterpolation(const stl::vector<Variant>& knots, float t) const;
+    Variant CatmullRomInterpolation(const ea::vector<Variant>& knots, float t) const;
     /// Perform linear interpolation on the spline.
-    Variant LinearInterpolation(const stl::vector<Variant>& knots, float t) const;
+    Variant LinearInterpolation(const ea::vector<Variant>& knots, float t) const;
     /// Linear interpolation between two Variants based on underlying type.
     Variant LinearInterpolation(const Variant& lhs, const Variant& rhs, float t) const;
 

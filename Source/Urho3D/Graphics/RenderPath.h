@@ -83,9 +83,9 @@ struct URHO3D_API RenderTargetInfo
     }
 
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Tag name.
-    stl::string tag_;
+    ea::string tag_;
     /// Texture format.
     unsigned format_{};
     /// Absolute size or multiplier.
@@ -114,37 +114,37 @@ struct URHO3D_API RenderPathCommand
     /// Read from an XML element.
     void Load(const XMLElement& element);
     /// Set a texture resource name. Can also refer to a rendertarget defined in the rendering path.
-    void SetTextureName(TextureUnit unit, const stl::string& name);
+    void SetTextureName(TextureUnit unit, const ea::string& name);
     /// Set a shader parameter.
-    void SetShaderParameter(const stl::string& name, const Variant& value);
+    void SetShaderParameter(const ea::string& name, const Variant& value);
     /// Remove a shader parameter.
-    void RemoveShaderParameter(const stl::string& name);
+    void RemoveShaderParameter(const ea::string& name);
     /// Set number of output rendertargets.
     void SetNumOutputs(unsigned num);
     /// Set output rendertarget name and face index for cube maps.
-    void SetOutput(unsigned index, const stl::string& name, CubeMapFace face = FACE_POSITIVE_X);
+    void SetOutput(unsigned index, const ea::string& name, CubeMapFace face = FACE_POSITIVE_X);
     /// Set output rendertarget name.
-    void SetOutputName(unsigned index, const stl::string& name);
+    void SetOutputName(unsigned index, const ea::string& name);
     /// Set output rendertarget face index for cube maps.
     void SetOutputFace(unsigned index, CubeMapFace face);
     /// Set depth-stencil output name. When empty, will assign a depth-stencil buffer automatically.
-    void SetDepthStencilName(const stl::string& name);
+    void SetDepthStencilName(const ea::string& name);
 
     /// Return texture resource name.
-    const stl::string& GetTextureName(TextureUnit unit) const;
+    const ea::string& GetTextureName(TextureUnit unit) const;
     /// Return shader parameter.
-    const Variant& GetShaderParameter(const stl::string& name) const;
+    const Variant& GetShaderParameter(const ea::string& name) const;
 
     /// Return number of output rendertargets.
     unsigned GetNumOutputs() const { return outputs_.size(); }
 
     /// Return output rendertarget name.
-    const stl::string& GetOutputName(unsigned index) const;
+    const ea::string& GetOutputName(unsigned index) const;
     /// Return output rendertarget face index.
     CubeMapFace GetOutputFace(unsigned index) const;
 
     /// Return depth-stencil output name.
-    const stl::string& GetDepthStencilName() const { return depthStencilName_; }
+    const ea::string& GetDepthStencilName() const { return depthStencilName_; }
 
     /// Instance equality operator.
     bool operator ==(const RenderPathCommand& rhs) const
@@ -159,33 +159,33 @@ struct URHO3D_API RenderPathCommand
     }
 
     /// Tag name.
-    stl::string tag_;
+    ea::string tag_;
     /// Command type.
     RenderCommandType type_{};
     /// Sorting mode.
     RenderCommandSortMode sortMode_{};
     /// Scene pass name.
-    stl::string pass_;
+    ea::string pass_;
     /// Scene pass index. Filled by View.
     unsigned passIndex_{};
     /// Command/pass metadata.
-    stl::string metadata_;
+    ea::string metadata_;
     /// Vertex shader name.
-    stl::string vertexShaderName_;
+    ea::string vertexShaderName_;
     /// Pixel shader name.
-    stl::string pixelShaderName_;
+    ea::string pixelShaderName_;
     /// Vertex shader defines.
-    stl::string vertexShaderDefines_;
+    ea::string vertexShaderDefines_;
     /// Pixel shader defines.
-    stl::string pixelShaderDefines_;
+    ea::string pixelShaderDefines_;
     /// Textures.
-    stl::string textureNames_[MAX_TEXTURE_UNITS];
+    ea::string textureNames_[MAX_TEXTURE_UNITS];
     /// %Shader parameters.
-    stl::unordered_map<StringHash, Variant> shaderParameters_;
+    ea::unordered_map<StringHash, Variant> shaderParameters_;
     /// Output rendertarget names and faces.
-    stl::vector<stl::pair<stl::string, CubeMapFace> > outputs_;
+    ea::vector<ea::pair<ea::string, CubeMapFace> > outputs_;
     /// Depth-stencil output name.
-    stl::string depthStencilName_;
+    ea::string depthStencilName_;
     /// Clear flags. Affects clear command only.
     ClearTargetFlags clearFlags_{};
     /// Clear color. Affects clear command only.
@@ -207,7 +207,7 @@ struct URHO3D_API RenderPathCommand
     /// Vertex lights flag.
     bool vertexLights_{};
     /// Event name.
-    stl::string eventName_;
+    ea::string eventName_;
 };
 
 /// Rendering path definition. A sequence of commands (e.g. clear screen, draw objects with specific pass) that yields the scene rendering result.
@@ -220,19 +220,19 @@ public:
     ~RenderPath() override;
 
     /// Clone the rendering path.
-    stl::shared_ptr<RenderPath> Clone();
+    ea::shared_ptr<RenderPath> Clone();
     /// Clear existing data and load from an XML file. Return true if successful.
     bool Load(XMLFile* file);
     /// Append data from an XML file. Return true if successful.
     bool Append(XMLFile* file);
     /// Enable/disable commands and rendertargets by tag.
-    void SetEnabled(const stl::string& tag, bool active);
+    void SetEnabled(const ea::string& tag, bool active);
     /// Return true of any of render targets or commands with specified tag are enabled.
-    bool IsEnabled(const stl::string& tag) const;
+    bool IsEnabled(const ea::string& tag) const;
     /// Return true if renderpath or command with given tag exists.
-    bool IsAdded(const stl::string& tag) const;
+    bool IsAdded(const ea::string& tag) const;
     /// Toggle enabled state of commands and rendertargets by tag.
-    void ToggleEnabled(const stl::string& tag);
+    void ToggleEnabled(const ea::string& tag);
     /// Assign rendertarget at index.
     void SetRenderTarget(unsigned index, const RenderTargetInfo& info);
     /// Add a rendertarget.
@@ -240,9 +240,9 @@ public:
     /// Remove a rendertarget by index.
     void RemoveRenderTarget(unsigned index);
     /// Remove a rendertarget by name.
-    void RemoveRenderTarget(const stl::string& name);
+    void RemoveRenderTarget(const ea::string& name);
     /// Remove rendertargets by tag name.
-    void RemoveRenderTargets(const stl::string& tag);
+    void RemoveRenderTargets(const ea::string& tag);
     /// Assign command at index.
     void SetCommand(unsigned index, const RenderPathCommand& command);
     /// Add a command to the end of the list.
@@ -252,9 +252,9 @@ public:
     /// Remove a command by index.
     void RemoveCommand(unsigned index);
     /// Remove commands by tag name.
-    void RemoveCommands(const stl::string& tag);
+    void RemoveCommands(const ea::string& tag);
     /// Set a shader parameter in all commands that define it.
-    void SetShaderParameter(const stl::string& name, const Variant& value);
+    void SetShaderParameter(const ea::string& name, const Variant& value);
 
     /// Return number of rendertargets.
     unsigned GetNumRenderTargets() const { return renderTargets_.size(); }
@@ -266,12 +266,12 @@ public:
     RenderPathCommand* GetCommand(unsigned index) { return index < commands_.size() ? &commands_[index] : nullptr; }
 
     /// Return a shader parameter (first appearance in any command.)
-    const Variant& GetShaderParameter(const stl::string& name) const;
+    const Variant& GetShaderParameter(const ea::string& name) const;
 
     /// Rendertargets.
-    stl::vector<RenderTargetInfo> renderTargets_;
+    ea::vector<RenderTargetInfo> renderTargets_;
     /// Rendering commands.
-    stl::vector<RenderPathCommand> commands_;
+    ea::vector<RenderPathCommand> commands_;
 };
 
 }

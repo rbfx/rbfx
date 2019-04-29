@@ -41,7 +41,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
 
@@ -50,7 +50,7 @@ protected:
     void OnWorldBoundingBoxUpdate() override;
 
     /// Custom world transform per camera.
-    stl::unordered_map<Camera*, Matrix3x4> customWorldTransforms_;
+    ea::unordered_map<Camera*, Matrix3x4> customWorldTransforms_;
     /// Last frame counter for knowing when to erase the custom world transforms of previous frame.
     unsigned lastFrame_;
 };

@@ -101,7 +101,7 @@ void Console::RefreshInterpreters()
     if (!group || group->receivers_.empty())
         return;
 
-    stl::string currentInterpreterName;
+    ea::string currentInterpreterName;
     if (currentInterpreter_ < interpreters_.size())
         currentInterpreterName = interpreters_[currentInterpreter_];
 
@@ -114,7 +114,7 @@ void Console::RefreshInterpreters()
             interpretersPointers_.push_back(interpreters_.back().c_str());
         }
     }
-    stl::quick_sort(interpreters_.begin(), interpreters_.end());
+    ea::quick_sort(interpreters_.begin(), interpreters_.end());
 
     currentInterpreter_ = interpreters_.index_of(currentInterpreterName);
     if (currentInterpreter_ == interpreters_.size())
@@ -127,11 +127,11 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 
     auto level = (LogLevel)eventData[P_LEVEL].GetInt();
     time_t timestamp = eventData[P_TIME].GetUInt();
-    const stl::string& logger = eventData[P_LOGGER].GetString();
-    const stl::string& message = eventData[P_MESSAGE].GetString();
+    const ea::string& logger = eventData[P_LOGGER].GetString();
+    const ea::string& message = eventData[P_MESSAGE].GetString();
 
     // The message may be multi-line, so split to rows in that case
-    stl::vector<stl::string> rows = message.split('\n');
+    ea::vector<ea::string> rows = message.split('\n');
     for (const auto& row : rows)
         history_.push_back(LogEntry{level, timestamp, logger, row});
     scrollToEnd_ = true;
@@ -215,7 +215,7 @@ void Console::RenderContent()
         if (ui::InputText("##ConsoleInput", inputBuffer_, sizeof(inputBuffer_), ImGuiInputTextFlags_EnterReturnsTrue))
         {
             focusInput_ = true;
-            stl::string line(inputBuffer_);
+            ea::string line(inputBuffer_);
             if (line.length() && currentInterpreter_ < interpreters_.size())
             {
                 // Store to history, then clear the lineedit
@@ -272,7 +272,7 @@ void Console::Clear()
     history_.clear();
 }
 
-void Console::SetCommandInterpreter(const stl::string& interpreter)
+void Console::SetCommandInterpreter(const ea::string& interpreter)
 {
     RefreshInterpreters();
 
@@ -291,20 +291,20 @@ void Console::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 
 StringVector Console::GetLoggers() const
 {
-    stl::hash_set<stl::string> loggers;
+    ea::hash_set<ea::string> loggers;
     StringVector loggersVector;
 
     for (const auto& row : history_)
         loggers.insert(row.logger_);
 
-    for (const stl::string& logger : loggers)
+    for (const ea::string& logger : loggers)
         loggersVector.emplace_back(logger);
 
-    stl::quick_sort(loggersVector.begin(), loggersVector.end());
+    ea::quick_sort(loggersVector.begin(), loggersVector.end());
     return loggersVector;
 }
 
-void Console::SetLoggerVisible(const stl::string& loggerName, bool visible)
+void Console::SetLoggerVisible(const ea::string& loggerName, bool visible)
 {
     scrollToEnd_ = true;
     if (visible)
@@ -313,7 +313,7 @@ void Console::SetLoggerVisible(const stl::string& loggerName, bool visible)
         loggersHidden_.insert(loggerName);
 }
 
-bool Console::GetLoggerVisible(const stl::string& loggerName) const
+bool Console::GetLoggerVisible(const ea::string& loggerName) const
 {
     return !loggersHidden_.contains(loggerName);
 }

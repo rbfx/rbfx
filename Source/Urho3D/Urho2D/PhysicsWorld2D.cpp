@@ -432,7 +432,7 @@ void PhysicsWorld2D::AddRigidBody(RigidBody2D* rigidBody)
     if (!rigidBody)
         return;
 
-    stl::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
+    ea::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
     if (rigidBodies_.contains(rigidBodyPtr))
         return;
 
@@ -444,7 +444,7 @@ void PhysicsWorld2D::RemoveRigidBody(RigidBody2D* rigidBody)
     if (!rigidBody)
         return;
 
-    stl::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
+    ea::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
     rigidBodies_.erase_first(rigidBodyPtr);
 }
 
@@ -458,7 +458,7 @@ class RayCastCallback : public b2RayCastCallback
 {
 public:
     // Construct.
-    RayCastCallback(stl::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, unsigned collisionMask) :
+    RayCastCallback(ea::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, unsigned collisionMask) :
         results_(results),
         startPoint_(startPoint),
         collisionMask_(collisionMask)
@@ -487,14 +487,14 @@ public:
 
 protected:
     // Physics raycast results.
-    stl::vector<PhysicsRaycastResult2D>& results_;
+    ea::vector<PhysicsRaycastResult2D>& results_;
     // Start point.
     Vector2 startPoint_;
     // Collision mask.
     unsigned collisionMask_;
 };
 
-void PhysicsWorld2D::Raycast(stl::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, const Vector2& endPoint,
+void PhysicsWorld2D::Raycast(ea::vector<PhysicsRaycastResult2D>& results, const Vector2& startPoint, const Vector2& endPoint,
     unsigned collisionMask)
 {
     results.clear();
@@ -638,7 +638,7 @@ class AabbQueryCallback : public b2QueryCallback
 {
 public:
     // Construct.
-    AabbQueryCallback(stl::vector<RigidBody2D*>& results, unsigned collisionMask) :
+    AabbQueryCallback(ea::vector<RigidBody2D*>& results, unsigned collisionMask) :
         results_(results),
         collisionMask_(collisionMask)
     {
@@ -660,12 +660,12 @@ public:
 
 private:
     // Results.
-    stl::vector<RigidBody2D*>& results_;
+    ea::vector<RigidBody2D*>& results_;
     // Collision mask.
     unsigned collisionMask_;
 };
 
-void PhysicsWorld2D::GetRigidBodies(stl::vector<RigidBody2D*>& results, const Rect& aabb, unsigned collisionMask)
+void PhysicsWorld2D::GetRigidBodies(ea::vector<RigidBody2D*>& results, const Rect& aabb, unsigned collisionMask)
 {
     AabbQueryCallback callback(results, collisionMask);
 
@@ -846,7 +846,7 @@ PhysicsWorld2D::ContactInfo::ContactInfo(b2Contact* contact)
     }
 }
 
-const stl::vector<unsigned char>& PhysicsWorld2D::ContactInfo::Serialize(VectorBuffer& buffer) const
+const ea::vector<unsigned char>& PhysicsWorld2D::ContactInfo::Serialize(VectorBuffer& buffer) const
 {
     buffer.Clear();
     for (int i = 0; i < numPoints_; ++i)

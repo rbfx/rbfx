@@ -66,8 +66,8 @@ struct CachedInterfacePtr
     T* operator &() { return interface_; }
 
 protected:
-    stl::weak_ptr<RefCounted> lastInstance_;
-    stl::weak_ptr<RefCounted> interfaceInstance_;
+    ea::weak_ptr<RefCounted> lastInstance_;
+    ea::weak_ptr<RefCounted> interfaceInstance_;
     T* interface_;
 };
 

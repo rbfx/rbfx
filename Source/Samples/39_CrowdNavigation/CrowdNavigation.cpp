@@ -197,7 +197,7 @@ void CrowdNavigation::CreateUI()
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will point the raycast target
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
-    stl::shared_ptr<Cursor> cursor(new Cursor(context_));
+    ea::shared_ptr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto(style);
     ui->SetCursor(cursor);
 
@@ -231,7 +231,7 @@ void CrowdNavigation::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -257,7 +257,7 @@ void CrowdNavigation::SubscribeToEvents()
 void CrowdNavigation::SpawnJack(const Vector3& pos, Node* jackGroup)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::shared_ptr<Node> jackNode(jackGroup->CreateChild("Jack"));
+    ea::shared_ptr<Node> jackNode(jackGroup->CreateChild("Jack"));
     jackNode->SetPosition(pos);
     auto* modelObject = jackNode->CreateComponent<AnimatedModel>();
     modelObject->SetModel(cache->GetResource<Model>("Models/Jack.mdl"));
@@ -293,7 +293,7 @@ void CrowdNavigation::CreateMushroom(const Vector3& pos)
 
 void CrowdNavigation::CreateBoxOffMeshConnections(DynamicNavigationMesh* navMesh, Node* boxGroup)
 {
-    const stl::vector<stl::shared_ptr<Node> >& boxes = boxGroup->GetChildren();
+    const ea::vector<ea::shared_ptr<Node> >& boxes = boxGroup->GetChildren();
     for (unsigned i=0; i < boxes.size(); ++i)
     {
         Node* box = boxes[i];
@@ -389,7 +389,7 @@ bool CrowdNavigation::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hit
     auto* camera = cameraNode_->GetComponent<Camera>();
     Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-    stl::vector<RayQueryResult> results;
+    ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
     scene_->GetComponent<Octree>()->RaycastSingle(query);
     if (results.size())

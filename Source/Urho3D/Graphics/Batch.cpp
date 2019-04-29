@@ -537,7 +537,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                  graphics->NeedParameterUpdate(SP_LIGHT, lightQueue_))
         {
             Vector4 vertexLights[MAX_VERTEX_LIGHTS * 3];
-            const stl::vector<Light*>& lights = lightQueue_->vertexLights_;
+            const ea::vector<Light*>& lights = lightQueue_->vertexLights_;
 
             for (unsigned i = 0; i < lights.size(); ++i)
             {
@@ -600,13 +600,13 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     {
         if (graphics->NeedParameterUpdate(SP_MATERIAL, reinterpret_cast<const void*>(material_->GetShaderParameterHash())))
         {
-            const stl::unordered_map<StringHash, MaterialShaderParameter>& parameters = material_->GetShaderParameters();
+            const ea::unordered_map<StringHash, MaterialShaderParameter>& parameters = material_->GetShaderParameters();
             for (auto i = parameters.begin(); i !=
                 parameters.end(); ++i)
                 graphics->SetShaderParameter(i->first, i->second.value_);
         }
 
-        const stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> >& textures = material_->GetTextures();
+        const ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> >& textures = material_->GetTextures();
         for (auto i = textures.begin(); i !=
             textures.end(); ++i)
         {
@@ -700,9 +700,9 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
 
             // Get the geometry vertex buffers, then add the instancing stream buffer
             // Hack: use a const_cast to avoid dynamic allocation of new temp vectors
-            auto& vertexBuffers = const_cast<stl::vector<stl::shared_ptr<VertexBuffer> >&>(
+            auto& vertexBuffers = const_cast<ea::vector<ea::shared_ptr<VertexBuffer> >&>(
                 geometry_->GetVertexBuffers());
-            vertexBuffers.push_back(stl::shared_ptr<VertexBuffer>(instanceBuffer));
+            vertexBuffers.push_back(ea::shared_ptr<VertexBuffer>(instanceBuffer));
 
             graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
             graphics->SetVertexBuffers(vertexBuffers, startIndex_);
@@ -736,7 +736,7 @@ void BatchQueue::SortBackToFront()
     for (unsigned i = 0; i < batches_.size(); ++i)
         sortedBatches_[i] = &batches_[i];
 
-    stl::quick_sort(sortedBatches_.begin(), sortedBatches_.end(), CompareBatchesBackToFront);
+    ea::quick_sort(sortedBatches_.begin(), sortedBatches_.end(), CompareBatchesBackToFront);
 
     sortedBatchGroups_.resize(batchGroups_.size());
 
@@ -744,7 +744,7 @@ void BatchQueue::SortBackToFront()
     for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
         sortedBatchGroups_[index++] = &i->second;
 
-    stl::quick_sort(sortedBatchGroups_.begin(), sortedBatchGroups_.end(), CompareBatchGroupOrder);
+    ea::quick_sort(sortedBatchGroups_.begin(), sortedBatchGroups_.end(), CompareBatchGroupOrder);
 }
 
 void BatchQueue::SortFrontToBack()
@@ -761,7 +761,7 @@ void BatchQueue::SortFrontToBack()
     {
         if (i->second.instances_.size() <= maxSortedInstances_)
         {
-            stl::quick_sort(i->second.instances_.begin(), i->second.instances_.end(), CompareInstancesFrontToBack);
+            ea::quick_sort(i->second.instances_.begin(), i->second.instances_.end(), CompareInstancesFrontToBack);
             if (i->second.instances_.size())
                 i->second.distance_ = i->second.instances_[0].distance_;
         }
@@ -781,10 +781,10 @@ void BatchQueue::SortFrontToBack()
     for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
         sortedBatchGroups_[index++] = &i->second;
 
-    SortFrontToBack2Pass(reinterpret_cast<stl::vector<Batch*>& >(sortedBatchGroups_));
+    SortFrontToBack2Pass(reinterpret_cast<ea::vector<Batch*>& >(sortedBatchGroups_));
 }
 
-void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
+void BatchQueue::SortFrontToBack2Pass(ea::vector<Batch*>& batches)
 {
     // Mobile devices likely use a tiled deferred approach, with which front-to-back sorting is irrelevant. The 2-pass
     // method is also time consuming, so just sort with state having priority
@@ -792,7 +792,7 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
     Sort(batches.Begin(), batches.End(), CompareBatchesState);
 #else
     // For desktop, first sort by distance and remap shader/material/geometry IDs in the sort key
-    stl::quick_sort(batches.begin(), batches.end(), CompareBatchesFrontToBack);
+    ea::quick_sort(batches.begin(), batches.end(), CompareBatchesFrontToBack);
 
     unsigned freeShaderID = 0;
     unsigned short freeMaterialID = 0;
@@ -840,7 +840,7 @@ void BatchQueue::SortFrontToBack2Pass(stl::vector<Batch*>& batches)
     geometryRemapping_.clear();
 
     // Finally sort again with the rewritten ID's
-    stl::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
+    ea::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
 #endif
 }
 

@@ -76,10 +76,10 @@ void AnimatedSprite2D::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(StaticSprite2D);
     URHO3D_REMOVE_ATTRIBUTE("Sprite");
     URHO3D_ACCESSOR_ATTRIBUTE("Speed", GetSpeed, SetSpeed, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Entity", GetEntity, SetEntity, stl::string, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Entity", GetEntity, SetEntity, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animation Set", GetAnimationSetAttr, SetAnimationSetAttr, ResourceRef,
         ResourceRef(AnimatedSprite2D::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Animation", GetAnimation, SetAnimationAttr, stl::string, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Animation", GetAnimation, SetAnimationAttr, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Loop Mode", GetLoopMode, SetLoopMode, LoopMode2D, loopModeNames, LM_DEFAULT, AM_DEFAULT);
 }
 
@@ -151,7 +151,7 @@ void AnimatedSprite2D::SetAnimationSet(AnimationSet2D* animationSet)
     loopMode_ = LM_DEFAULT;
 }
 
-void AnimatedSprite2D::SetEntity(const stl::string& entity)
+void AnimatedSprite2D::SetEntity(const ea::string& entity)
 {
     if (entity == entity_)
         return;
@@ -166,7 +166,7 @@ void AnimatedSprite2D::SetEntity(const stl::string& entity)
         spriterInstance_->SetEntity(entity_.c_str());
 }
 
-void AnimatedSprite2D::SetAnimation(const stl::string& name, LoopMode2D loopMode)
+void AnimatedSprite2D::SetAnimation(const ea::string& name, LoopMode2D loopMode)
 {
     animationName_ = name;
     loopMode_ = loopMode;
@@ -224,7 +224,7 @@ void AnimatedSprite2D::OnSceneSet(Scene* scene)
         UnsubscribeFromEvent(E_SCENEPOSTUPDATE);
 }
 
-void AnimatedSprite2D::SetAnimationAttr(const stl::string& name)
+void AnimatedSprite2D::SetAnimationAttr(const ea::string& name)
 {
     animationName_ = name;
     SetAnimation(animationName_, loopMode_);
@@ -438,7 +438,7 @@ void AnimatedSprite2D::UpdateSourceBatchesSpriter()
 {
     const Matrix3x4& nodeWorldTransform = GetNode()->GetWorldTransform();
 
-    stl::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
+    ea::vector<Vertex2D>& vertices = sourceBatches_[0].vertices_;
     vertices.clear();
 
     Rect drawRect;
@@ -450,7 +450,7 @@ void AnimatedSprite2D::UpdateSourceBatchesSpriter()
     Vertex2D vertex2;
     Vertex2D vertex3;
 
-    const stl::vector<Spriter::SpatialTimelineKey*>& timelineKeys = spriterInstance_->GetTimelineKeys();
+    const ea::vector<Spriter::SpatialTimelineKey*>& timelineKeys = spriterInstance_->GetTimelineKeys();
     for (unsigned i = 0; i < timelineKeys.size(); ++i)
     {
         if (timelineKeys[i]->GetObjectType() != Spriter::SPRITE)

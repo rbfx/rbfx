@@ -83,13 +83,13 @@ public:
     /// Debug draw a UI element.
     void DebugDraw(UIElement* element);
     /// Load a UI layout from an XML file. Optionally specify another XML file for element style. Return the root element.
-    stl::shared_ptr<UIElement> LoadLayout(Deserializer& source, XMLFile* styleFile = nullptr);
+    ea::shared_ptr<UIElement> LoadLayout(Deserializer& source, XMLFile* styleFile = nullptr);
     /// Load a UI layout from an XML file. Optionally specify another XML file for element style. Return the root element.
-    stl::shared_ptr<UIElement> LoadLayout(XMLFile* file, XMLFile* styleFile = nullptr);
+    ea::shared_ptr<UIElement> LoadLayout(XMLFile* file, XMLFile* styleFile = nullptr);
     /// Save a UI layout to an XML file. Return true if successful.
     bool SaveLayout(Serializer& dest, UIElement* element);
     /// Set clipboard text.
-    void SetClipboardText(const stl::string& text);
+    void SetClipboardText(const ea::string& text);
     /// Set UI element double click interval in seconds.
     void SetDoubleClickInterval(float interval);
     /// Set max screen distance in pixels between double click clicks.
@@ -157,7 +157,7 @@ public:
     /// Return topmost enabled root-level non-modal element.
     UIElement* GetFrontElement() const;
     /// Return currently dragged elements.
-    const stl::vector<UIElement*>& GetDragElements();
+    const ea::vector<UIElement*>& GetDragElements();
 
     /// Return the number of currently dragged elements.
     unsigned GetNumDragElements() const { return (unsigned)dragConfirmedCount_; }
@@ -165,7 +165,7 @@ public:
     /// Return the drag element at index.
     UIElement* GetDragElement(unsigned index);
     /// Return clipboard text.
-    const stl::string& GetClipboardText() const;
+    const ea::string& GetClipboardText() const;
 
     /// Return UI element double click interval in seconds.
     float GetDoubleClickInterval() const { return doubleClickInterval_; }
@@ -257,11 +257,11 @@ private:
     /// Update UI element logic recursively.
     void Update(float timeStep, UIElement* element);
     /// Upload UI geometry into a vertex buffer.
-    void SetVertexData(VertexBuffer* dest, const stl::vector<float>& vertexData);
+    void SetVertexData(VertexBuffer* dest, const ea::vector<float>& vertexData);
     /// Render UI batches to the current rendertarget. Geometry must have been uploaded first.
-    void Render(VertexBuffer* buffer, const stl::vector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd);
+    void Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsigned batchStart, unsigned batchEnd);
     /// Generate batches from an UI element recursively. Skip the cursor element.
-    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, UIElement* element, IntRect currentScissor);
+    void GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, UIElement* element, IntRect currentScissor);
     /// Return UI element at global screen coordinates. Return position converted to element's screen coordinates.
     UIElement* GetElementAt(const IntVector2& position, bool enabledOnly, IntVector2* elementScreenPosition);
     /// Return UI element at screen position recursively.
@@ -328,7 +328,7 @@ private:
     /// Handle rendering to a texture.
     void HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData);
     /// Remove drag data and return next iterator.
-    stl::unordered_map<stl::weak_ptr<UIElement>, DragData*>::iterator DragElementErase(stl::unordered_map<stl::weak_ptr<UIElement>, DragData*>::iterator i);
+    ea::unordered_map<ea::weak_ptr<UIElement>, DragData*>::iterator DragElementErase(ea::unordered_map<ea::weak_ptr<UIElement>, DragData*>::iterator i);
     /// Handle clean up on a drag cancel.
     void ProcessDragCancel();
     /// Sum touch positions and return the begin position ready to send.
@@ -341,31 +341,31 @@ private:
     bool ShouldIgnoreInput() const;
 
     /// Graphics subsystem.
-    stl::weak_ptr<Graphics> graphics_;
+    ea::weak_ptr<Graphics> graphics_;
     /// UI root element.
-    stl::shared_ptr<UIElement> rootElement_;
+    ea::shared_ptr<UIElement> rootElement_;
     /// UI root modal element.
-    stl::shared_ptr<UIElement> rootModalElement_;
+    ea::shared_ptr<UIElement> rootModalElement_;
     /// Cursor.
-    stl::shared_ptr<Cursor> cursor_;
+    ea::shared_ptr<Cursor> cursor_;
     /// Currently focused element.
-    stl::weak_ptr<UIElement> focusElement_;
+    ea::weak_ptr<UIElement> focusElement_;
     /// UI rendering batches.
-    stl::vector<UIBatch> batches_;
+    ea::vector<UIBatch> batches_;
     /// UI rendering vertex data.
-    stl::vector<float> vertexData_;
+    ea::vector<float> vertexData_;
     /// UI rendering batches for debug draw.
-    stl::vector<UIBatch> debugDrawBatches_;
+    ea::vector<UIBatch> debugDrawBatches_;
     /// UI rendering vertex data for debug draw.
-    stl::vector<float> debugVertexData_;
+    ea::vector<float> debugVertexData_;
     /// UI vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// UI debug geometry vertex buffer.
-    stl::shared_ptr<VertexBuffer> debugVertexBuffer_;
+    ea::shared_ptr<VertexBuffer> debugVertexBuffer_;
     /// UI element query vector.
-    stl::vector<UIElement*> tempElements_;
+    ea::vector<UIElement*> tempElements_;
     /// Clipboard text.
-    mutable stl::string clipBoard_;
+    mutable ea::string clipBoard_;
     /// Seconds between clicks to register a double click.
     float doubleClickInterval_;
     /// Seconds from mouse button down to begin a drag if there has been no movement exceeding pixel threshold.
@@ -409,29 +409,29 @@ private:
     /// Timer used to trigger double click.
     Timer clickTimer_;
     /// UI element last clicked for tracking double clicks.
-    stl::weak_ptr<UIElement> doubleClickElement_;
+    ea::weak_ptr<UIElement> doubleClickElement_;
     /// Screen position of first mouse click for double click distance checking.
     IntVector2 doubleClickFirstPos_;
     /// Max screen distance the first click in a double click can be from the second click in a double click.
     float maxDoubleClickDist_;
     /// Currently hovered elements.
-    stl::unordered_map<stl::weak_ptr<UIElement>, bool> hoveredElements_;
+    ea::unordered_map<ea::weak_ptr<UIElement>, bool> hoveredElements_;
     /// Currently dragged elements.
-    stl::unordered_map<stl::weak_ptr<UIElement>, DragData*> dragElements_;
+    ea::unordered_map<ea::weak_ptr<UIElement>, DragData*> dragElements_;
     /// Number of elements in dragElements_.
     int dragElementsCount_;
     /// Number of elements in dragElements_ with dragPending = false.
     int dragConfirmedCount_;
     /// UI elements that are being touched with touch input.
-    stl::unordered_map<stl::weak_ptr<UIElement>, MouseButtonFlags> touchDragElements_;
+    ea::unordered_map<ea::weak_ptr<UIElement>, MouseButtonFlags> touchDragElements_;
     /// Confirmed drag elements cache.
-    stl::vector<UIElement*> dragElementsConfirmed_;
+    ea::vector<UIElement*> dragElementsConfirmed_;
     /// Current scale of UI.
     float uiScale_;
     /// Root element custom size. 0,0 for automatic resizing (default.)
     IntVector2 customSize_;
     /// Texture that UI will be rendered into.
-    stl::weak_ptr<Texture2D> texture_;
+    ea::weak_ptr<Texture2D> texture_;
     /// Color which will be used to clear target texture.
     Color clearColor_ = Color::TRANSPARENT_BLACK;
     /// Flag indicating that UI should process input when mouse cursor hovers SystemUI elements.

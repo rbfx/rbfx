@@ -52,7 +52,7 @@ public:
     /// Initialize the engine and run the main loop, then return the application exit code. Catch out-of-memory exceptions while running.
     int Run();
     /// Show an error message (last log message if empty), terminate the main loop, and set failure exit code.
-    void ErrorExit(const stl::string& message = EMPTY_STRING);
+    void ErrorExit(const ea::string& message = EMPTY_STRING);
 
 protected:
     /// Handle log message.
@@ -61,11 +61,11 @@ protected:
     CLI::App& GetCommandLineParser();
 
     /// Urho3D engine.
-    stl::shared_ptr<Engine> engine_;
+    ea::shared_ptr<Engine> engine_;
     /// Engine parameters map.
     VariantMap engineParameters_;
     /// Collected startup error log messages.
-    stl::string startupErrors_;
+    ea::string startupErrors_;
     /// Application exit code.
     int exitCode_;
 };
@@ -75,13 +75,13 @@ protected:
 #define URHO3D_DEFINE_APPLICATION_MAIN(className) \
 int RunApplication() \
 { \
-    stl::shared_ptr<Urho3D::Context> context(new Urho3D::Context()); \
-    stl::shared_ptr<className> application(new className(context)); \
+    ea::shared_ptr<Urho3D::Context> context(new Urho3D::Context()); \
+    ea::shared_ptr<className> application(new className(context)); \
     return application->Run(); \
 } \
 URHO3D_DEFINE_MAIN(RunApplication());
 #else
-// On iOS/tvOS we will let this function exit, so do not hold the context and application in stl::shared_ptr's
+// On iOS/tvOS we will let this function exit, so do not hold the context and application in ea::shared_ptr's
 #define URHO3D_DEFINE_APPLICATION_MAIN(className) \
 int RunApplication() \
 { \

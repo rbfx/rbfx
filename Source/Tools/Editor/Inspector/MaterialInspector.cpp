@@ -136,7 +136,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             auto* modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry>>();
 
             ui::Columns();
-            stl::string techName = tech.technique_->GetName();
+            ea::string techName = tech.technique_->GetName();
             UI_ITEMWIDTH(material->GetNumTechniques() > 1 ? -44_dpx : -22_dpx)
                 ui::InputText("###techniqueName_", const_cast<char*>(techName.c_str()), techName.length(),
                               ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
@@ -263,7 +263,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
     {
         struct ShaderParameterState
         {
-            stl::string fieldName_;
+            ea::string fieldName_;
             int variantTypeIndex_ = 0;
             bool insertingNew_ = false;
         };
@@ -280,7 +280,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         unsigned parametersLeft = parameters.size();
         for (const auto& pair : parameters)
         {
-            const stl::string& parameterName = pair.second.name_;
+            const ea::string& parameterName = pair.second.name_;
             ui::IdScope id(parameterName.c_str());
             auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
 
@@ -476,7 +476,7 @@ void Inspectable::Material::RegisterObject(Context* context)
 
     for (auto i = 0; i < MAX_MATERIAL_TEXTURE_UNITS; i++)
     {
-        stl::string finalName = ToString("%s Texture", textureUnitNames[i]);
+        ea::string finalName = ToString("%s Texture", textureUnitNames[i]);
         ReplaceUTF8(finalName, 0, ToUpper(AtUTF8(finalName, 0)));
         auto textureUnit = static_cast<TextureUnit>(i);
 

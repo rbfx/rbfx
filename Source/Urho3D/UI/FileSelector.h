@@ -42,7 +42,7 @@ class XMLFile;
 struct FileSelectorEntry
 {
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Directory flag.
     bool directory_;
 };
@@ -63,15 +63,15 @@ public:
     /// Set fileselector UI style.
     void SetDefaultStyle(XMLFile* style);
     /// Set title text.
-    void SetTitle(const stl::string& text);
+    void SetTitle(const ea::string& text);
     /// Set button texts.
-    void SetButtonTexts(const stl::string& okText, const stl::string& cancelText);
+    void SetButtonTexts(const ea::string& okText, const ea::string& cancelText);
     /// Set current path.
-    void SetPath(const stl::string& path);
+    void SetPath(const ea::string& path);
     /// Set current filename.
-    void SetFileName(const stl::string& fileName);
+    void SetFileName(const ea::string& fileName);
     /// Set filters.
-    void SetFilters(const stl::vector<stl::string>& filters, unsigned defaultIndex);
+    void SetFilters(const ea::vector<ea::string>& filters, unsigned defaultIndex);
     /// Set directory selection mode. Default false.
     void SetDirectoryMode(bool enable);
     /// Update elements to layout properly. Call this after manually adjusting the sub-elements.
@@ -108,15 +108,15 @@ public:
     Button* GetCloseButton() const { return closeButton_; }
 
     /// Return window title.
-    const stl::string& GetTitle() const;
+    const ea::string& GetTitle() const;
 
     /// Return current path.
-    const stl::string& GetPath() const { return path_; }
+    const ea::string& GetPath() const { return path_; }
 
     /// Return current filename.
-    const stl::string& GetFileName() const;
+    const ea::string& GetFileName() const;
     /// Return current filter.
-    const stl::string& GetFilter() const;
+    const ea::string& GetFilter() const;
     /// Return current filter index.
     unsigned GetFilterIndex() const;
 
@@ -125,7 +125,7 @@ public:
 
 private:
     /// Set the text of an edit field and ignore the resulting event.
-    void SetLineEditText(LineEdit* edit, const stl::string& text);
+    void SetLineEditText(LineEdit* edit, const ea::string& text);
     /// Refresh the directory listing.
     void RefreshFiles();
     /// Enter a directory or confirm a file. Return true if a directory entered.
@@ -146,43 +146,43 @@ private:
     void HandleCancelPressed(StringHash eventType, VariantMap& eventData);
 
     /// Fileselector window.
-    stl::shared_ptr<Window> window_;
+    ea::shared_ptr<Window> window_;
     /// Title layout.
-    stl::shared_ptr<UIElement> titleLayout;
+    ea::shared_ptr<UIElement> titleLayout;
     /// Window title text.
-    stl::shared_ptr<Text> titleText_;
+    ea::shared_ptr<Text> titleText_;
     /// File list.
-    stl::shared_ptr<ListView> fileList_;
+    ea::shared_ptr<ListView> fileList_;
     /// Path editor.
-    stl::shared_ptr<LineEdit> pathEdit_;
+    ea::shared_ptr<LineEdit> pathEdit_;
     /// Filename editor.
-    stl::shared_ptr<LineEdit> fileNameEdit_;
+    ea::shared_ptr<LineEdit> fileNameEdit_;
     /// Filter dropdown.
-    stl::shared_ptr<DropDownList> filterList_;
+    ea::shared_ptr<DropDownList> filterList_;
     /// OK button.
-    stl::shared_ptr<Button> okButton_;
+    ea::shared_ptr<Button> okButton_;
     /// OK button text.
-    stl::shared_ptr<Text> okButtonText_;
+    ea::shared_ptr<Text> okButtonText_;
     /// Cancel button.
-    stl::shared_ptr<Button> cancelButton_;
+    ea::shared_ptr<Button> cancelButton_;
     /// Cancel button text.
-    stl::shared_ptr<Text> cancelButtonText_;
+    ea::shared_ptr<Text> cancelButtonText_;
     /// Close button.
-    stl::shared_ptr<Button> closeButton_;
+    ea::shared_ptr<Button> closeButton_;
     /// Filename and filter layout.
-    stl::shared_ptr<UIElement> fileNameLayout_;
+    ea::shared_ptr<UIElement> fileNameLayout_;
     /// Separator layout.
-    stl::shared_ptr<UIElement> separatorLayout_;
+    ea::shared_ptr<UIElement> separatorLayout_;
     /// Button layout.
-    stl::shared_ptr<UIElement> buttonLayout_;
+    ea::shared_ptr<UIElement> buttonLayout_;
     /// Current directory.
-    stl::string path_;
+    ea::string path_;
     /// Filters.
-    stl::vector<stl::string> filters_;
+    ea::vector<ea::string> filters_;
     /// File entries.
-    stl::vector<FileSelectorEntry> fileEntries_;
+    ea::vector<FileSelectorEntry> fileEntries_;
     /// Filter used to get the file list.
-    stl::string lastUsedFilter_;
+    ea::string lastUsedFilter_;
     /// Directory mode flag.
     bool directoryMode_;
     /// Ignore events flag, used when changing line edits manually.

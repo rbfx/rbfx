@@ -105,7 +105,7 @@ void PBRMaterials::CreateScene()
 
     // Load scene content prepared in the editor (XML format). GetFile() returns an open file from the resource system
     // which scene.LoadXML() will read
-    stl::shared_ptr<File> file = cache->GetFile("Scenes/PBRExample.xml");
+    ea::shared_ptr<File> file = cache->GetFile("Scenes/PBRExample.xml");
     scene_->LoadXML(*file);
 
     Node* sphereWithDynamicMatNode = scene_->GetChild("SphereWithDynamicMat");
@@ -136,7 +136,7 @@ void PBRMaterials::CreateUI()
 
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will interact with the UI
-    stl::shared_ptr<Cursor> cursor(new Cursor(context_));
+    ea::shared_ptr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto();
     ui->SetCursor(cursor);
     // Set starting position of the cursor at the rendering window center
@@ -187,14 +187,14 @@ void PBRMaterials::HandleRoughnessSliderChanged(StringHash eventType, VariantMap
 {
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
     dynamicMaterial_->SetShaderParameter("Roughness", newValue);
-    roughnessLabel_->SetText("Roughness: " + stl::to_string(newValue));
+    roughnessLabel_->SetText("Roughness: " + ea::to_string(newValue));
 }
 
 void PBRMaterials::HandleMetallicSliderChanged(StringHash eventType, VariantMap& eventData)
 {
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
     dynamicMaterial_->SetShaderParameter("Metallic", newValue);
-    metallicLabel_->SetText("Metallic: " + stl::to_string(newValue));
+    metallicLabel_->SetText("Metallic: " + ea::to_string(newValue));
 }
 
 void PBRMaterials::HandleAmbientSliderChanged(StringHash eventType, VariantMap& eventData)
@@ -202,7 +202,7 @@ void PBRMaterials::HandleAmbientSliderChanged(StringHash eventType, VariantMap& 
     float newValue = eventData[SliderChanged::P_VALUE].GetFloat();
     Color col = Color(0.0, 0.0, 0.0, newValue);
     zone_->SetAmbientColor(col);
-    ambientLabel_->SetText("Ambient HDR Scale: " + stl::to_string(zone_->GetAmbientColor().a_));
+    ambientLabel_->SetText("Ambient HDR Scale: " + ea::to_string(zone_->GetAmbientColor().a_));
 }
 
 void PBRMaterials::SetupViewport()
@@ -213,11 +213,11 @@ void PBRMaterials::SetupViewport()
     renderer->SetHDRRendering(true);
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Add post-processing effects appropriate with the example scene
-    stl::shared_ptr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
+    ea::shared_ptr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/FXAA2.xml"));
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/GammaCorrection.xml"));
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/Tonemap.xml"));

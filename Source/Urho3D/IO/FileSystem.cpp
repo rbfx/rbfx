@@ -86,9 +86,9 @@ const char* SDL_IOS_GetDocumentsDir();
 namespace Urho3D
 {
 
-stl::string specifiedExecutableFile;
+ea::string specifiedExecutableFile;
 
-int DoSystemCommand(const stl::string& commandLine, bool redirectToLog, Context* context)
+int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* context)
 {
 #if defined(TVOS) || defined(IOS)
     return -1;
@@ -100,12 +100,12 @@ int DoSystemCommand(const stl::string& commandLine, bool redirectToLog, Context*
 
 #if !defined(__EMSCRIPTEN__) && !defined(MINI_URHO)
     // Get a platform-agnostic temporary file name for stderr redirection
-    stl::string stderrFilename;
-    stl::string adjustedCommandLine(commandLine);
+    ea::string stderrFilename;
+    ea::string adjustedCommandLine(commandLine);
     char* prefPath = SDL_GetPrefPath("urho3d", "temp");
     if (prefPath)
     {
-        stderrFilename = stl::string(prefPath) + "command-stderr";
+        stderrFilename = ea::string(prefPath) + "command-stderr";
         adjustedCommandLine += " 2>" + stderrFilename;
         SDL_free(prefPath);
     }
@@ -125,19 +125,19 @@ int DoSystemCommand(const stl::string& commandLine, bool redirectToLog, Context*
     while (!feof(file))
     {
         if (fgets(buffer, sizeof(buffer), file))
-            URHO3D_LOGRAW(stl::string(buffer));
+            URHO3D_LOGRAW(ea::string(buffer));
     }
     int exitCode = pclose(file);
 
     // Capture the standard error stream
     if (!stderrFilename.empty())
     {
-        stl::shared_ptr<File> errFile(new File(context, stderrFilename, FILE_READ));
+        ea::shared_ptr<File> errFile(new File(context, stderrFilename, FILE_READ));
         while (!errFile->IsEof())
         {
             unsigned numRead = errFile->Read(buffer, sizeof(buffer));
             if (numRead)
-                URHO3D_LOGERROR(stl::string(buffer, numRead));
+                URHO3D_LOGERROR(ea::string(buffer, numRead));
         }
     }
 
@@ -154,19 +154,19 @@ enum SystemRunFlag
 };
 URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
-int DoSystemRun(const stl::string& fileName, const stl::vector<stl::string>& arguments, SystemRunFlags flags, stl::string& output)
+int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, SystemRunFlags flags, ea::string& output)
 {
 #if defined(TVOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
     return -1;
 #else
-    stl::string fixedFileName = GetNativePath(fileName);
+    ea::string fixedFileName = GetNativePath(fileName);
 
 #ifdef _WIN32
     // Add .exe extension if no extension defined
     if (GetExtension(fixedFileName).empty())
         fixedFileName += ".exe";
 
-    stl::string commandLine = "\"" + fixedFileName + "\"";
+    ea::string commandLine = "\"" + fixedFileName + "\"";
     for (unsigned i = 0; i < arguments.size(); ++i)
         commandLine += " \"" + arguments[i] + "\"";
 
@@ -174,7 +174,7 @@ int DoSystemRun(const stl::string& fileName, const stl::vector<stl::string>& arg
     PROCESS_INFORMATION processInfo{};
     startupInfo.cb = sizeof(startupInfo);
 
-    stl::wstring commandLineW = MultiByteToWide(commandLine);
+    ea::wstring commandLineW = MultiByteToWide(commandLine);
     DWORD processFlags = 0;
     if (flags & SR_WAIT_FOR_EXIT)
         // If we are waiting for process result we are likely reading stdout, in that case we probably do not want to see a console window.
@@ -249,7 +249,7 @@ int DoSystemRun(const stl::string& fileName, const stl::vector<stl::string>& arg
         fcntl(desc[1], F_SETFL, O_NONBLOCK);
     }
 
-    stl::vector<const char*> argPtrs;
+    ea::vector<const char*> argPtrs;
     argPtrs.push_back(fixedFileName.c_str());
     for (unsigned i = 0; i < arguments.size(); ++i)
         argPtrs.push_back(arguments[i].c_str());
@@ -335,7 +335,7 @@ class AsyncSystemCommand : public AsyncExecRequest
 {
 public:
     /// Construct and run.
-    AsyncSystemCommand(unsigned requestID, const stl::string& commandLine) :
+    AsyncSystemCommand(unsigned requestID, const ea::string& commandLine) :
         AsyncExecRequest(requestID),
         commandLine_(commandLine)
     {
@@ -351,7 +351,7 @@ public:
 
 private:
     /// Command line.
-    stl::string commandLine_;
+    ea::string commandLine_;
 };
 
 /// Async system run operation.
@@ -359,7 +359,7 @@ class AsyncSystemRun : public AsyncExecRequest
 {
 public:
     /// Construct and run.
-    AsyncSystemRun(unsigned requestID, const stl::string& fileName, const stl::vector<stl::string>& arguments) :
+    AsyncSystemRun(unsigned requestID, const ea::string& fileName, const ea::vector<ea::string>& arguments) :
         AsyncExecRequest(requestID),
         fileName_(fileName),
         arguments_(arguments)
@@ -370,16 +370,16 @@ public:
     /// The function to run in the thread.
     void ThreadFunction() override
     {
-        stl::string output;
+        ea::string output;
         exitCode_ = DoSystemRun(fileName_, arguments_, SR_WAIT_FOR_EXIT, output);
         completed_ = true;
     }
 
 private:
     /// File to run.
-    stl::string fileName_;
+    ea::string fileName_;
     /// Command line split in arguments.
-    const stl::vector<stl::string>& arguments_;
+    const ea::vector<ea::string>& arguments_;
 };
 
 FileSystem::FileSystem(Context* context) :
@@ -400,7 +400,7 @@ FileSystem::~FileSystem()
     }
 }
 
-bool FileSystem::SetCurrentDir(const stl::string& pathName)
+bool FileSystem::SetCurrentDir(const ea::string& pathName)
 {
     if (!CheckAccess(pathName))
     {
@@ -424,7 +424,7 @@ bool FileSystem::SetCurrentDir(const stl::string& pathName)
     return true;
 }
 
-bool FileSystem::CreateDir(const stl::string& pathName)
+bool FileSystem::CreateDir(const ea::string& pathName)
 {
     if (!CheckAccess(pathName))
     {
@@ -433,7 +433,7 @@ bool FileSystem::CreateDir(const stl::string& pathName)
     }
 
     // Create each of the parents if necessary
-    stl::string parentPath = GetParentPath(pathName);
+    ea::string parentPath = GetParentPath(pathName);
     if (parentPath.length() > 1 && !DirExists(parentPath))
     {
         if (!CreateDir(parentPath))
@@ -467,7 +467,7 @@ void FileSystem::SetExecuteConsoleCommands(bool enable)
         UnsubscribeFromEvent(E_CONSOLECOMMAND);
 }
 
-int FileSystem::SystemCommand(const stl::string& commandLine, bool redirectStdOutToLog)
+int FileSystem::SystemCommand(const ea::string& commandLine, bool redirectStdOutToLog)
 {
     if (allowedPaths_.empty())
         return DoSystemCommand(commandLine, redirectStdOutToLog, context_);
@@ -478,7 +478,7 @@ int FileSystem::SystemCommand(const stl::string& commandLine, bool redirectStdOu
     }
 }
 
-int FileSystem::SystemRun(const stl::string& fileName, const stl::vector<stl::string>& arguments, stl::string& output)
+int FileSystem::SystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, ea::string& output)
 {
     if (allowedPaths_.empty())
         return DoSystemRun(fileName, arguments, SR_READ_OUTPUT, output);
@@ -489,15 +489,15 @@ int FileSystem::SystemRun(const stl::string& fileName, const stl::vector<stl::st
     }
 }
 
-int FileSystem::SystemRun(const stl::string& fileName, const stl::vector<stl::string>& arguments)
+int FileSystem::SystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments)
 {
-    stl::string output;
+    ea::string output;
     return SystemRun(fileName, arguments, output);
 }
 
-int FileSystem::SystemSpawn(const stl::string& fileName, const stl::vector<stl::string>& arguments)
+int FileSystem::SystemSpawn(const ea::string& fileName, const ea::vector<ea::string>& arguments)
 {
-    stl::string output;
+    ea::string output;
     if (allowedPaths_.empty())
         return DoSystemRun(fileName, arguments, SR_DEFAULT, output);
     else
@@ -507,7 +507,7 @@ int FileSystem::SystemSpawn(const stl::string& fileName, const stl::vector<stl::
     }
 }
 
-unsigned FileSystem::SystemCommandAsync(const stl::string& commandLine)
+unsigned FileSystem::SystemCommandAsync(const ea::string& commandLine)
 {
 #ifdef URHO3D_THREADING
     if (allowedPaths_.empty())
@@ -528,7 +528,7 @@ unsigned FileSystem::SystemCommandAsync(const stl::string& commandLine)
 #endif
 }
 
-unsigned FileSystem::SystemRunAsync(const stl::string& fileName, const stl::vector<stl::string>& arguments)
+unsigned FileSystem::SystemRunAsync(const ea::string& fileName, const ea::vector<ea::string>& arguments)
 {
 #ifdef URHO3D_THREADING
     if (allowedPaths_.empty())
@@ -549,7 +549,7 @@ unsigned FileSystem::SystemRunAsync(const stl::string& fileName, const stl::vect
 #endif
 }
 
-bool FileSystem::SystemOpen(const stl::string& fileName, const stl::string& mode)
+bool FileSystem::SystemOpen(const ea::string& fileName, const ea::string& mode)
 {
     if (allowedPaths_.empty())
     {
@@ -567,7 +567,7 @@ bool FileSystem::SystemOpen(const stl::string& fileName, const stl::string& mode
         bool success = (size_t)ShellExecuteW(nullptr, !mode.empty() ? MultiByteToWide(mode).c_str() : nullptr,
             GetWideNativePath(fileName).c_str(), nullptr, nullptr, SW_SHOW) > 32;
 #else
-        stl::vector<stl::string> arguments;
+        ea::vector<ea::string> arguments;
         arguments.push_back(fileName);
         bool success = SystemRun(
 #if defined(__APPLE__)
@@ -588,7 +588,7 @@ bool FileSystem::SystemOpen(const stl::string& fileName, const stl::string& mode
     }
 }
 
-bool FileSystem::Copy(const stl::string& srcFileName, const stl::string& destFileName)
+bool FileSystem::Copy(const ea::string& srcFileName, const ea::string& destFileName)
 {
     if (!CheckAccess(GetPath(srcFileName)))
     {
@@ -601,22 +601,22 @@ bool FileSystem::Copy(const stl::string& srcFileName, const stl::string& destFil
         return false;
     }
 
-    stl::shared_ptr<File> srcFile(new File(context_, srcFileName, FILE_READ));
+    ea::shared_ptr<File> srcFile(new File(context_, srcFileName, FILE_READ));
     if (!srcFile->IsOpen())
         return false;
-    stl::shared_ptr<File> destFile(new File(context_, destFileName, FILE_WRITE));
+    ea::shared_ptr<File> destFile(new File(context_, destFileName, FILE_WRITE));
     if (!destFile->IsOpen())
         return false;
 
     unsigned fileSize = srcFile->GetSize();
-    stl::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
+    ea::shared_array<unsigned char> buffer(new unsigned char[fileSize]);
 
     unsigned bytesRead = srcFile->Read(buffer.get(), fileSize);
     unsigned bytesWritten = destFile->Write(buffer.get(), fileSize);
     return bytesRead == fileSize && bytesWritten == fileSize;
 }
 
-bool FileSystem::Rename(const stl::string& srcFileName, const stl::string& destFileName)
+bool FileSystem::Rename(const ea::string& srcFileName, const ea::string& destFileName)
 {
     if (!CheckAccess(GetPath(srcFileName)))
     {
@@ -636,7 +636,7 @@ bool FileSystem::Rename(const stl::string& srcFileName, const stl::string& destF
 #endif
 }
 
-bool FileSystem::Delete(const stl::string& fileName)
+bool FileSystem::Delete(const ea::string& fileName)
 {
     if (!CheckAccess(GetPath(fileName)))
     {
@@ -651,7 +651,7 @@ bool FileSystem::Delete(const stl::string& fileName)
 #endif
 }
 
-stl::string FileSystem::GetCurrentDir() const
+ea::string FileSystem::GetCurrentDir() const
 {
 #ifdef _WIN32
     wchar_t path[MAX_PATH];
@@ -662,13 +662,13 @@ stl::string FileSystem::GetCurrentDir() const
     char path[MAX_PATH];
     path[0] = 0;
     getcwd(path, MAX_PATH);
-    return AddTrailingSlash(stl::string(path));
+    return AddTrailingSlash(ea::string(path));
 #endif
 }
 
-bool FileSystem::CheckAccess(const stl::string& pathName) const
+bool FileSystem::CheckAccess(const ea::string& pathName) const
 {
-    stl::string fixedPath = AddTrailingSlash(pathName);
+    ea::string fixedPath = AddTrailingSlash(pathName);
 
     // If no allowed directories defined, succeed always
     if (allowedPaths_.empty())
@@ -689,7 +689,7 @@ bool FileSystem::CheckAccess(const stl::string& pathName) const
     return false;
 }
 
-unsigned FileSystem::GetLastModifiedTime(const stl::string& fileName) const
+unsigned FileSystem::GetLastModifiedTime(const ea::string& fileName) const
 {
     if (fileName.empty() || !CheckAccess(fileName))
         return 0;
@@ -709,7 +709,7 @@ unsigned FileSystem::GetLastModifiedTime(const stl::string& fileName) const
 #endif
 }
 
-bool FileSystem::FileExists(const stl::string& fileName) const
+bool FileSystem::FileExists(const ea::string& fileName) const
 {
     if (!CheckAccess(GetPath(fileName)))
         return false;
@@ -728,7 +728,7 @@ bool FileSystem::FileExists(const stl::string& fileName) const
     }
 #endif
 
-    stl::string fixedName = GetNativePath(RemoveTrailingSlash(fileName));
+    ea::string fixedName = GetNativePath(RemoveTrailingSlash(fileName));
 
 #ifdef _WIN32
     DWORD attributes = GetFileAttributesW(MultiByteToWide(fixedName).c_str());
@@ -743,7 +743,7 @@ bool FileSystem::FileExists(const stl::string& fileName) const
     return true;
 }
 
-bool FileSystem::DirExists(const stl::string& pathName) const
+bool FileSystem::DirExists(const ea::string& pathName) const
 {
     if (!CheckAccess(pathName))
         return false;
@@ -754,16 +754,16 @@ bool FileSystem::DirExists(const stl::string& pathName) const
         return true;
 #endif
 
-    stl::string fixedName = GetNativePath(RemoveTrailingSlash(pathName));
+    ea::string fixedName = GetNativePath(RemoveTrailingSlash(pathName));
 
 #ifdef __ANDROID__
     if (URHO3D_IS_ASSET(fixedName))
     {
         // Split the pathname into two components: the longest parent directory path and the last name component
-        stl::string assetPath(URHO3D_ASSET((fixedName + "/")));
-        stl::string parentPath;
+        ea::string assetPath(URHO3D_ASSET((fixedName + "/")));
+        ea::string parentPath;
         unsigned pos = assetPath.FindLast('/', assetPath.Length() - 2);
-        if (pos != stl::string::npos)
+        if (pos != ea::string::npos)
         {
             parentPath = assetPath.Substring(0, pos);
             assetPath = assetPath.Substring(pos + 1);
@@ -797,18 +797,18 @@ bool FileSystem::DirExists(const stl::string& pathName) const
     return true;
 }
 
-void FileSystem::ScanDir(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, unsigned flags, bool recursive) const
+void FileSystem::ScanDir(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
 {
     result.clear();
 
     if (CheckAccess(pathName))
     {
-        stl::string initialPath = AddTrailingSlash(pathName);
+        ea::string initialPath = AddTrailingSlash(pathName);
         ScanDirInternal(result, initialPath, initialPath, filter, flags, recursive);
     }
 }
 
-stl::string FileSystem::GetProgramDir() const
+ea::string FileSystem::GetProgramDir() const
 {
 #if defined(__ANDROID__)
     // This is an internal directory specifier pointing to the assets in the .apk
@@ -823,7 +823,7 @@ stl::string FileSystem::GetProgramDir() const
 #endif
 }
 #if DESKTOP
-stl::string FileSystem::GetProgramFileName() const
+ea::string FileSystem::GetProgramFileName() const
 {
     if (!specifiedExecutableFile.empty())
         return specifiedExecutableFile;
@@ -831,7 +831,7 @@ stl::string FileSystem::GetProgramFileName() const
     return GetInterpreterFileName();
 }
 
-stl::string FileSystem::GetInterpreterFileName() const
+ea::string FileSystem::GetInterpreterFileName() const
 {
 #if defined(_WIN32)
     wchar_t exeName[MAX_PATH];
@@ -843,20 +843,20 @@ stl::string FileSystem::GetInterpreterFileName() const
     memset(exeName, 0, MAX_PATH);
     unsigned size = MAX_PATH;
     _NSGetExecutablePath(exeName, &size);
-    return stl::string(exeName);
+    return ea::string(exeName);
 #elif defined(__linux__)
     char exeName[MAX_PATH];
     memset(exeName, 0, MAX_PATH);
     pid_t pid = getpid();
-    stl::string link(stl::string::CtorSprintf{}, "/proc/%d/exe", pid);
+    ea::string link(ea::string::CtorSprintf{}, "/proc/%d/exe", pid);
     readlink(link.c_str(), exeName, MAX_PATH);
-    return stl::string(exeName);
+    return ea::string(exeName);
 #else
-    return stl::string();
+    return ea::string();
 #endif
 }
 #endif
-stl::string FileSystem::GetUserDocumentsDir() const
+ea::string FileSystem::GetUserDocumentsDir() const
 {
 #if defined(__ANDROID__)
     return AddTrailingSlash(SDL_Android_GetFilesDir());
@@ -871,18 +871,18 @@ stl::string FileSystem::GetUserDocumentsDir() const
     char pathName[MAX_PATH];
     pathName[0] = 0;
     strcpy(pathName, getenv("HOME"));
-    return AddTrailingSlash(stl::string(pathName));
+    return AddTrailingSlash(ea::string(pathName));
 #endif
 }
 
-stl::string FileSystem::GetAppPreferencesDir(const stl::string& org, const stl::string& app) const
+ea::string FileSystem::GetAppPreferencesDir(const ea::string& org, const ea::string& app) const
 {
-    stl::string dir;
+    ea::string dir;
 #ifndef MINI_URHO
     char* prefPath = SDL_GetPrefPath(org.c_str(), app.c_str());
     if (prefPath)
     {
-        dir = GetInternalPath(stl::string(prefPath));
+        dir = GetInternalPath(ea::string(prefPath));
         SDL_free(prefPath);
     }
     else
@@ -892,7 +892,7 @@ stl::string FileSystem::GetAppPreferencesDir(const stl::string& org, const stl::
     return dir;
 }
 
-void FileSystem::RegisterPath(const stl::string& pathName)
+void FileSystem::RegisterPath(const ea::string& pathName)
 {
     if (pathName.empty())
         return;
@@ -900,7 +900,7 @@ void FileSystem::RegisterPath(const stl::string& pathName)
     allowedPaths_.insert(AddTrailingSlash(pathName));
 }
 
-bool FileSystem::SetLastModifiedTime(const stl::string& fileName, unsigned newTime)
+bool FileSystem::SetLastModifiedTime(const ea::string& fileName, unsigned newTime)
 {
     if (fileName.empty() || !CheckAccess(fileName))
         return false;
@@ -924,17 +924,17 @@ bool FileSystem::SetLastModifiedTime(const stl::string& fileName, unsigned newTi
 #endif
 }
 
-void FileSystem::ScanDirInternal(stl::vector<stl::string>& result, stl::string path, const stl::string& startPath,
-    const stl::string& filter, unsigned flags, bool recursive) const
+void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path, const ea::string& startPath,
+    const ea::string& filter, unsigned flags, bool recursive) const
 {
     path = AddTrailingSlash(path);
-    stl::string deltaPath;
+    ea::string deltaPath;
     if (path.length() > startPath.length())
         deltaPath = path.substr(startPath.length());
 
-    stl::string filterExtension;
+    ea::string filterExtension;
     unsigned dotPos = filter.find_last_of('.');
-    if (dotPos != stl::string::npos)
+    if (dotPos != ea::string::npos)
         filterExtension = filter.substr(dotPos);
     if (filterExtension.contains('*'))
         filterExtension.clear();
@@ -942,13 +942,13 @@ void FileSystem::ScanDirInternal(stl::vector<stl::string>& result, stl::string p
 #ifdef __ANDROID__
     if (URHO3D_IS_ASSET(path))
     {
-        stl::string assetPath(URHO3D_ASSET(path));
+        ea::string assetPath(URHO3D_ASSET(path));
         assetPath.Resize(assetPath.Length() - 1);       // AssetManager.list() does not like trailing slash
         int count;
         char** list = SDL_Android_GetFileList(assetPath.c_str(), &count);
         for (int i = 0; i < count; ++i)
         {
-            stl::string fileName(list[i]);
+            ea::string fileName(list[i]);
             if (!(flags & SCAN_HIDDEN) && fileName.StartsWith("."))
                 continue;
 
@@ -981,7 +981,7 @@ void FileSystem::ScanDirInternal(stl::vector<stl::string>& result, stl::string p
     {
         do
         {
-            stl::string fileName = WideToMultiByte(info.cFileName);
+            ea::string fileName = WideToMultiByte(info.cFileName);
             if (!fileName.empty())
             {
                 if (info.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN && !(flags & SCAN_HIDDEN))
@@ -1014,11 +1014,11 @@ void FileSystem::ScanDirInternal(stl::vector<stl::string>& result, stl::string p
         while ((de = readdir(dir)))
         {
             /// \todo Filename may be unnormalized Unicode on Mac OS X. Re-normalize as necessary
-            stl::string fileName(de->d_name);
+            ea::string fileName(de->d_name);
             bool normalEntry = fileName != "." && fileName != "..";
             if (normalEntry && !(flags & SCAN_HIDDEN) && fileName.starts_with("."))
                 continue;
-            stl::string pathAndName = path + fileName;
+            ea::string pathAndName = path + fileName;
             if (!stat(pathAndName.c_str(), &st))
             {
                 if (st.st_mode & S_IFDIR)
@@ -1070,14 +1070,14 @@ void FileSystem::HandleConsoleCommand(StringHash eventType, VariantMap& eventDat
         SystemCommand(eventData[P_COMMAND].GetString(), true);
 }
 
-void SplitPath(const stl::string& fullPath, stl::string& pathName, stl::string& fileName, stl::string& extension, bool lowercaseExtension)
+void SplitPath(const ea::string& fullPath, ea::string& pathName, ea::string& fileName, ea::string& extension, bool lowercaseExtension)
 {
-    stl::string fullPathCopy = GetInternalPath(fullPath);
+    ea::string fullPathCopy = GetInternalPath(fullPath);
 
     unsigned extPos = fullPathCopy.find_last_of('.');
     unsigned pathPos = fullPathCopy.find_last_of('/');
 
-    if (extPos != stl::string::npos && (pathPos == stl::string::npos || extPos > pathPos))
+    if (extPos != ea::string::npos && (pathPos == ea::string::npos || extPos > pathPos))
     {
         extension = fullPathCopy.substr(extPos);
         if (lowercaseExtension)
@@ -1088,7 +1088,7 @@ void SplitPath(const stl::string& fullPath, stl::string& pathName, stl::string& 
         extension.clear();
 
     pathPos = fullPathCopy.find_last_of('/');
-    if (pathPos != stl::string::npos)
+    if (pathPos != ea::string::npos)
     {
         fileName = fullPathCopy.substr(pathPos + 1);
         pathName = fullPathCopy.substr(0, pathPos + 1);
@@ -1100,74 +1100,74 @@ void SplitPath(const stl::string& fullPath, stl::string& pathName, stl::string& 
     }
 }
 
-stl::string GetPath(const stl::string& fullPath)
+ea::string GetPath(const ea::string& fullPath)
 {
-    stl::string path, file, extension;
+    ea::string path, file, extension;
     SplitPath(fullPath, path, file, extension);
     return path;
 }
 
-stl::string GetFileName(const stl::string& fullPath)
+ea::string GetFileName(const ea::string& fullPath)
 {
-    stl::string path, file, extension;
+    ea::string path, file, extension;
     SplitPath(fullPath, path, file, extension);
     return file;
 }
 
-stl::string GetExtension(const stl::string& fullPath, bool lowercaseExtension)
+ea::string GetExtension(const ea::string& fullPath, bool lowercaseExtension)
 {
-    stl::string path, file, extension;
+    ea::string path, file, extension;
     SplitPath(fullPath, path, file, extension, lowercaseExtension);
     return extension;
 }
 
-stl::string GetFileNameAndExtension(const stl::string& fileName, bool lowercaseExtension)
+ea::string GetFileNameAndExtension(const ea::string& fileName, bool lowercaseExtension)
 {
-    stl::string path, file, extension;
+    ea::string path, file, extension;
     SplitPath(fileName, path, file, extension, lowercaseExtension);
     return file + extension;
 }
 
-stl::string ReplaceExtension(const stl::string& fullPath, const stl::string& newExtension)
+ea::string ReplaceExtension(const ea::string& fullPath, const ea::string& newExtension)
 {
-    stl::string path, file, extension;
+    ea::string path, file, extension;
     SplitPath(fullPath, path, file, extension);
     return path + file + newExtension;
 }
 
-stl::string AddTrailingSlash(const stl::string& pathName)
+ea::string AddTrailingSlash(const ea::string& pathName)
 {
-    stl::string ret = pathName.trimmed();
+    ea::string ret = pathName.trimmed();
     ret.replace('\\', '/');
     if (!ret.empty() && ret.back() != '/')
         ret += '/';
     return ret;
 }
 
-stl::string RemoveTrailingSlash(const stl::string& pathName)
+ea::string RemoveTrailingSlash(const ea::string& pathName)
 {
-    stl::string ret = pathName.trimmed();
+    ea::string ret = pathName.trimmed();
     ret.replace('\\', '/');
     if (!ret.empty() && ret.back() == '/')
         ret.resize(ret.length() - 1);
     return ret;
 }
 
-stl::string GetParentPath(const stl::string& path)
+ea::string GetParentPath(const ea::string& path)
 {
     unsigned pos = RemoveTrailingSlash(path).find_last_of('/');
-    if (pos != stl::string::npos)
+    if (pos != ea::string::npos)
         return path.substr(0, pos + 1);
     else
-        return stl::string();
+        return ea::string();
 }
 
-stl::string GetInternalPath(const stl::string& pathName)
+ea::string GetInternalPath(const ea::string& pathName)
 {
     return pathName.replaced('\\', '/');
 }
 
-stl::string GetNativePath(const stl::string& pathName)
+ea::string GetNativePath(const ea::string& pathName)
 {
 #ifdef _WIN32
     return pathName.replaced('/', '\\');
@@ -1176,21 +1176,21 @@ stl::string GetNativePath(const stl::string& pathName)
 #endif
 }
 
-stl::wstring GetWideNativePath(const stl::string& pathName)
+ea::wstring GetWideNativePath(const ea::string& pathName)
 {
-    stl::wstring result = MultiByteToWide(pathName);
+    ea::wstring result = MultiByteToWide(pathName);
 #ifdef _WIN32
     result.replace(L'/', L'\\');
 #endif
     return result;
 }
 
-bool IsAbsolutePath(const stl::string& pathName)
+bool IsAbsolutePath(const ea::string& pathName)
 {
     if (pathName.empty())
         return false;
 
-    stl::string path = GetInternalPath(pathName);
+    ea::string path = GetInternalPath(pathName);
 
     if (path[0] == '/')
         return true;
@@ -1203,11 +1203,11 @@ bool IsAbsolutePath(const stl::string& pathName)
     return false;
 }
 
-bool FileSystem::CreateDirs(const stl::string& root, const stl::string& subdirectory)
+bool FileSystem::CreateDirs(const ea::string& root, const ea::string& subdirectory)
 {
-    stl::string folder = AddTrailingSlash(GetInternalPath(root));
-    stl::string sub = GetInternalPath(subdirectory);
-    stl::vector<stl::string> subs = sub.split('/');
+    ea::string folder = AddTrailingSlash(GetInternalPath(root));
+    ea::string sub = GetInternalPath(subdirectory);
+    ea::vector<ea::string> subs = sub.split('/');
 
     for (unsigned i = 0; i < subs.size(); i++)
     {
@@ -1227,9 +1227,9 @@ bool FileSystem::CreateDirs(const stl::string& root, const stl::string& subdirec
 
 }
 
-bool FileSystem::CreateDirsRecursive(const stl::string& directoryIn)
+bool FileSystem::CreateDirsRecursive(const ea::string& directoryIn)
 {
-    stl::string directory = AddTrailingSlash(GetInternalPath(directoryIn));
+    ea::string directory = AddTrailingSlash(GetInternalPath(directoryIn));
 
     if (DirExists(directory))
         return true;
@@ -1237,9 +1237,9 @@ bool FileSystem::CreateDirsRecursive(const stl::string& directoryIn)
     if (FileExists(directory))
         return false;
 
-    stl::string parentPath = directory;
+    ea::string parentPath = directory;
 
-    stl::vector<stl::string> paths;
+    ea::vector<ea::string> paths;
 
     paths.push_back(directory);
 
@@ -1258,7 +1258,7 @@ bool FileSystem::CreateDirsRecursive(const stl::string& directoryIn)
 
     for (auto i = (int) (paths.size() - 1); i >= 0; i--)
     {
-        const stl::string& pathName = paths[i];
+        const ea::string& pathName = paths[i];
 
         if (FileExists(pathName))
             return false;
@@ -1279,14 +1279,14 @@ bool FileSystem::CreateDirsRecursive(const stl::string& directoryIn)
 
 }
 
-bool FileSystem::RemoveDir(const stl::string& directoryIn, bool recursive)
+bool FileSystem::RemoveDir(const ea::string& directoryIn, bool recursive)
 {
-    stl::string directory = AddTrailingSlash(directoryIn);
+    ea::string directory = AddTrailingSlash(directoryIn);
 
     if (!DirExists(directory))
         return false;
 
-    stl::vector<stl::string> results;
+    ea::vector<ea::string> results;
 
     // ensure empty if not recursive
     if (!recursive)
@@ -1329,20 +1329,20 @@ bool FileSystem::RemoveDir(const stl::string& directoryIn, bool recursive)
 
 }
 
-bool FileSystem::CopyDir(const stl::string& directoryIn, const stl::string& directoryOut)
+bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& directoryOut)
 {
     if (FileExists(directoryOut))
         return false;
 
-    stl::vector<stl::string> results;
+    ea::vector<ea::string> results;
     ScanDir(results, directoryIn, "*", SCAN_FILES, true );
 
     for (unsigned i = 0; i < results.size(); i++)
     {
-        stl::string srcFile = directoryIn + "/" + results[i];
-        stl::string dstFile = directoryOut + "/" + results[i];
+        ea::string srcFile = directoryIn + "/" + results[i];
+        ea::string dstFile = directoryOut + "/" + results[i];
 
-        stl::string dstPath = GetPath(dstFile);
+        ea::string dstPath = GetPath(dstFile);
 
         if (!CreateDirsRecursive(dstPath))
             return false;
@@ -1356,13 +1356,13 @@ bool FileSystem::CopyDir(const stl::string& directoryIn, const stl::string& dire
 
 }
 
-bool IsAbsoluteParentPath(const stl::string& absParentPath, const stl::string& fullPath)
+bool IsAbsoluteParentPath(const ea::string& absParentPath, const ea::string& fullPath)
 {
     if (!IsAbsolutePath(absParentPath) || !IsAbsolutePath(fullPath))
         return false;
 
-    stl::string path1 = AddTrailingSlash(GetSanitizedPath(absParentPath));
-    stl::string path2 = AddTrailingSlash(GetSanitizedPath(GetPath(fullPath)));
+    ea::string path1 = AddTrailingSlash(GetSanitizedPath(absParentPath));
+    ea::string path2 = AddTrailingSlash(GetSanitizedPath(GetPath(fullPath)));
 
     if (path2.starts_with(path1))
         return true;
@@ -1370,9 +1370,9 @@ bool IsAbsoluteParentPath(const stl::string& absParentPath, const stl::string& f
     return false;
 }
 
-stl::string GetSanitizedPath(const stl::string& path)
+ea::string GetSanitizedPath(const ea::string& path)
 {
-    stl::string sanitized = GetInternalPath(path);
+    ea::string sanitized = GetInternalPath(path);
     StringVector parts = sanitized.split('/');
 
     bool hasTrailingSlash = path.ends_with("/") || path.ends_with("\\");
@@ -1380,13 +1380,13 @@ stl::string GetSanitizedPath(const stl::string& path)
 #ifndef _WIN32
 
     bool absolute = IsAbsolutePath(path);
-    sanitized = stl::string::joined(parts, "/");
+    sanitized = ea::string::joined(parts, "/");
     if (absolute)
         sanitized = "/" + sanitized;
 
 #else
 
-    sanitized = stl::string::joined(parts, "/");
+    sanitized = ea::string::joined(parts, "/");
 
 #endif
 
@@ -1397,12 +1397,12 @@ stl::string GetSanitizedPath(const stl::string& path)
 
 }
 
-bool GetRelativePath(const stl::string& fromPath, const stl::string& toPath, stl::string& output)
+bool GetRelativePath(const ea::string& fromPath, const ea::string& toPath, ea::string& output)
 {
     output = EMPTY_STRING;
 
-    stl::string from = GetSanitizedPath(fromPath);
-    stl::string to = GetSanitizedPath(toPath);
+    ea::string from = GetSanitizedPath(fromPath);
+    ea::string to = GetSanitizedPath(toPath);
 
     StringVector fromParts = from.split('/');
     StringVector toParts = to.split('/');
@@ -1455,7 +1455,7 @@ bool GetRelativePath(const stl::string& fromPath, const stl::string& toPath, stl
 
 }
 
-stl::string FileSystem::GetTemporaryDir() const
+ea::string FileSystem::GetTemporaryDir() const
 {
 #if defined(_WIN32)
 #if defined(MINI_URHO)
@@ -1477,9 +1477,9 @@ stl::string FileSystem::GetTemporaryDir() const
 #endif
 }
 
-stl::string GetAbsolutePath(const stl::string& path)
+ea::string GetAbsolutePath(const ea::string& path)
 {
-    stl::vector<stl::string> parts;
+    ea::vector<ea::string> parts;
 #if !_WIN32
     parts.push_back("");
 #endif
@@ -1498,7 +1498,7 @@ stl::string GetAbsolutePath(const stl::string& path)
             ++index;
     }
 
-    return stl::string::joined(parts, "/");
+    return ea::string::joined(parts, "/");
 }
 
 }

@@ -122,10 +122,10 @@ public:
     /// Parse the engine startup parameters map from command line arguments.
     static void DefineParameters(CLI::App& commandLine, VariantMap& engineParameters);
     /// Return whether startup parameters contains a specific parameter.
-    static bool HasParameter(const VariantMap& parameters, const stl::string& parameter);
+    static bool HasParameter(const VariantMap& parameters, const ea::string& parameter);
     /// Get an engine startup parameter, with default value if missing.
     static const Variant
-        & GetParameter(const VariantMap& parameters, const stl::string& parameter, const Variant& defaultValue = Variant::EMPTY);
+        & GetParameter(const VariantMap& parameters, const ea::string& parameter, const Variant& defaultValue = Variant::EMPTY);
 
 private:
     /// Handle exit requested event. Auto-exit if enabled.
@@ -136,7 +136,7 @@ private:
     /// Frame update timer.
     HiresTimer frameTimer_;
     /// Previous timesteps for smoothing.
-    stl::vector<float> lastTimeSteps_;
+    ea::vector<float> lastTimeSteps_;
     /// Next frame timestep in seconds.
     float timeStep_;
     /// How many frames to average for the smoothed timestep.

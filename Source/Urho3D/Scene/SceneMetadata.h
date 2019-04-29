@@ -45,14 +45,14 @@ public:
     void UnregisterComponent(Component* component);
 
     /// Returns a list of existing CameraViewport components.
-    const stl::vector<stl::weak_ptr<CameraViewport>>& GetCameraViewportComponents() const { return viewportComponents_; }
+    const ea::vector<ea::weak_ptr<CameraViewport>>& GetCameraViewportComponents() const { return viewportComponents_; }
 
     /// Register object with the engine.
     static void RegisterObject(Context* context);
 
 protected:
     /// A list of components.
-    stl::vector<stl::weak_ptr<CameraViewport>> viewportComponents_;
+    ea::vector<ea::weak_ptr<CameraViewport>> viewportComponents_;
 };
 
 }

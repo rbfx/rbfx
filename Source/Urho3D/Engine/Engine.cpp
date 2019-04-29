@@ -335,8 +335,8 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     // Remove all resource paths and packages
     if (removeOld)
     {
-        stl::vector<stl::string> resourceDirs = cache->GetResourceDirs();
-        stl::vector<stl::shared_ptr<PackageFile> > packageFiles = cache->GetPackageFiles();
+        ea::vector<ea::string> resourceDirs = cache->GetResourceDirs();
+        ea::vector<ea::shared_ptr<PackageFile> > packageFiles = cache->GetPackageFiles();
         for (unsigned i = 0; i < resourceDirs.size(); ++i)
             cache->RemoveResourceDir(resourceDirs[i]);
         for (unsigned i = 0; i < packageFiles.size(); ++i)
@@ -344,15 +344,15 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     }
 
     // Add resource paths
-    stl::vector<stl::string> resourcePrefixPaths = GetParameter(parameters, EP_RESOURCE_PREFIX_PATHS,
+    ea::vector<ea::string> resourcePrefixPaths = GetParameter(parameters, EP_RESOURCE_PREFIX_PATHS,
         EMPTY_STRING).GetString().split(';', true);
     for (unsigned i = 0; i < resourcePrefixPaths.size(); ++i)
         resourcePrefixPaths[i] = AddTrailingSlash(
             IsAbsolutePath(resourcePrefixPaths[i]) ? resourcePrefixPaths[i] : fileSystem->GetProgramDir() + resourcePrefixPaths[i]);
-    stl::vector<stl::string> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS,
+    ea::vector<ea::string> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS,
         "Data;CoreData").GetString().split(';');
-    stl::vector<stl::string> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().split(';');
-    stl::vector<stl::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(
+    ea::vector<ea::string> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().split(';');
+    ea::vector<ea::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(
         ';');
 
     for (unsigned i = 0; i < resourcePaths.size(); ++i)
@@ -363,7 +363,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
             unsigned j = 0;
             for (; j < resourcePrefixPaths.size(); ++j)
             {
-                stl::string packageName = resourcePrefixPaths[j] + resourcePaths[i] + ".pak";
+                ea::string packageName = resourcePrefixPaths[j] + resourcePaths[i] + ".pak";
                 if (fileSystem->FileExists(packageName))
                 {
                     if (cache->AddPackageFile(packageName))
@@ -371,7 +371,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                     else
                         return false;   // The root cause of the error should have already been logged
                 }
-                stl::string pathName = resourcePrefixPaths[j] + resourcePaths[i];
+                ea::string pathName = resourcePrefixPaths[j] + resourcePaths[i];
                 if (fileSystem->DirExists(pathName))
                 {
                     if (cache->AddResourceDir(pathName))
@@ -390,7 +390,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
         }
         else
         {
-            stl::string pathName = resourcePaths[i];
+            ea::string pathName = resourcePaths[i];
             if (fileSystem->DirExists(pathName))
                 if (!cache->AddResourceDir(pathName))
                     return false;
@@ -403,7 +403,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
         unsigned j = 0;
         for (; j < resourcePrefixPaths.size(); ++j)
         {
-            stl::string packageName = resourcePrefixPaths[j] + resourcePackages[i];
+            ea::string packageName = resourcePrefixPaths[j] + resourcePackages[i];
             if (fileSystem->FileExists(packageName))
             {
                 if (cache->AddPackageFile(packageName))
@@ -428,7 +428,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 
         for (unsigned j = 0; j < resourcePrefixPaths.size(); ++j)
         {
-            stl::string autoLoadPath(autoLoadPaths[i]);
+            ea::string autoLoadPath(autoLoadPaths[i]);
             if (!IsAbsolutePath(autoLoadPath))
                 autoLoadPath = resourcePrefixPaths[j] + autoLoadPath;
 
@@ -437,29 +437,29 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
                 autoLoadPathExist = true;
 
                 // Add all the subdirs (non-recursive) as resource directory
-                stl::vector<stl::string> subdirs;
+                ea::vector<ea::string> subdirs;
                 fileSystem->ScanDir(subdirs, autoLoadPath, "*", SCAN_DIRS, false);
                 for (unsigned y = 0; y < subdirs.size(); ++y)
                 {
-                    stl::string dir = subdirs[y];
+                    ea::string dir = subdirs[y];
                     if (dir.starts_with("."))
                         continue;
 
-                    stl::string autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
+                    ea::string autoResourceDir = AddTrailingSlash(autoLoadPath) + dir;
                     if (!cache->AddResourceDir(autoResourceDir, 0))
                         return false;
                 }
 
                 // Add all the found package files (non-recursive)
-                stl::vector<stl::string> paks;
+                ea::vector<ea::string> paks;
                 fileSystem->ScanDir(paks, autoLoadPath, "*.pak", SCAN_FILES, false);
                 for (unsigned y = 0; y < paks.size(); ++y)
                 {
-                    stl::string pak = paks[y];
+                    ea::string pak = paks[y];
                     if (pak.starts_with("."))
                         continue;
 
-                    stl::string autoPackageName = autoLoadPath + "/" + pak;
+                    ea::string autoPackageName = autoLoadPath + "/" + pak;
                     if (!cache->AddPackageFile(autoPackageName, 0))
                         return false;
                 }
@@ -639,14 +639,14 @@ void Engine::DumpResources(bool dumpFileName)
         return;
 
     auto* cache = GetSubsystem<ResourceCache>();
-    const stl::unordered_map<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
+    const ea::unordered_map<StringHash, ResourceGroup>& resourceGroups = cache->GetAllResources();
     if (dumpFileName)
     {
         URHO3D_LOGINFO("Used resources:");
         for (auto i = resourceGroups.begin(); i !=
             resourceGroups.end(); ++i)
         {
-            const stl::unordered_map<StringHash, stl::shared_ptr<Resource> >& resources = i->second.resources_;
+            const ea::unordered_map<StringHash, ea::shared_ptr<Resource> >& resources = i->second.resources_;
             if (dumpFileName)
             {
                 for (auto j = resources.begin(); j !=
@@ -832,7 +832,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return opt;
     };
 
-    auto addFlag = [&](const char* name, const stl::string& param, bool value, const char* description) {
+    auto addFlag = [&](const char* name, const ea::string& param, bool value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
@@ -840,7 +840,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionPrependString = [&](const char* name, const stl::string& param, const stl::string& value, const char* description) {
+    auto addOptionPrependString = [&](const char* name, const ea::string& param, const ea::string& value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value + engineParameters[param].GetString();
             return true;
@@ -848,7 +848,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionSetString = [&](const char* name, const stl::string& param, const stl::string& value, const char* description) {
+    auto addOptionSetString = [&](const char* name, const ea::string& param, const ea::string& value, const char* description) {
         CLI::callback_t fun = [&engineParameters, param, value](CLI::results_t) {
             engineParameters[param] = value;
             return true;
@@ -856,7 +856,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return addFlagInternal(name, description, fun);
     };
 
-    auto addOptionString = [&](const char* name, const stl::string& param, const char* description) {
+    auto addOptionString = [&](const char* name, const ea::string& param, const char* description) {
         CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             engineParameters[param] = res[0].c_str();
             return true;
@@ -866,7 +866,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return opt;
     };
 
-    auto addOptionInt = [&](const char* name, const stl::string& param, const char* description) {
+    auto addOptionInt = [&](const char* name, const ea::string& param, const char* description) {
         CLI::callback_t fun = [&engineParameters, param](CLI::results_t res) {
             int value = 0;
             if (CLI::detail::lexical_cast(res[0], value))
@@ -885,7 +885,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         StringVector items;
         for (unsigned i = 0; options[i]; i++)
             items.push_back(options[i]);
-        return ToString(format, stl::string::joined(items, "|").to_lower().replaced('_', '-').c_str());
+        return ToString(format, ea::string::joined(items, "|").to_lower().replaced('_', '-').c_str());
     };
 
     addFlag("--headless", EP_HEADLESS, true, "Do not initialize graphics subsystem");
@@ -915,7 +915,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addFlag("-s,--resizeable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
     addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
     addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
-        unsigned logLevel = GetStringListIndex(stl::string(res[0].c_str()).to_upper().c_str(), logLevelNames, M_MAX_UNSIGNED);
+        unsigned logLevel = GetStringListIndex(ea::string(res[0].c_str()).to_upper().c_str(), logLevelNames, M_MAX_UNSIGNED);
         if (logLevel == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_LOG_LEVEL] = logLevel;
@@ -953,7 +953,7 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return false;
     })->set_custom_option(ToString("int {%d-%d}", QUALITY_LOW, QUALITY_MAX).c_str());
     addFlagInternal("--tf", "Texture filter mode", [&](CLI::results_t res) {
-        unsigned mode = GetStringListIndex(stl::string(res[0].c_str()).to_upper().replaced('-', '_').c_str(), textureFilterModeNames, M_MAX_UNSIGNED);
+        unsigned mode = GetStringListIndex(ea::string(res[0].c_str()).to_upper().replaced('-', '_').c_str(), textureFilterModeNames, M_MAX_UNSIGNED);
         if (mode == M_MAX_UNSIGNED)
             return false;
         engineParameters[EP_TEXTURE_FILTER_MODE] = mode;
@@ -975,13 +975,13 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
 #endif
 }
 
-bool Engine::HasParameter(const VariantMap& parameters, const stl::string& parameter)
+bool Engine::HasParameter(const VariantMap& parameters, const ea::string& parameter)
 {
     StringHash nameHash(parameter);
     return parameters.find(nameHash) != parameters.end();
 }
 
-const Variant& Engine::GetParameter(const VariantMap& parameters, const stl::string& parameter, const Variant& defaultValue)
+const Variant& Engine::GetParameter(const VariantMap& parameters, const ea::string& parameter, const Variant& defaultValue)
 {
     StringHash nameHash(parameter);
     auto i = parameters.find(nameHash);

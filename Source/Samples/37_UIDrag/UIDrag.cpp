@@ -43,7 +43,7 @@ void UIDrag::Start()
     Sample::Start();
 
     // Set mouse visible
-    stl::string platform = GetPlatform();
+    ea::string platform = GetPlatform();
     if (platform != "Android" && platform != "iOS")
         GetSubsystem<Input>()->SetMouseVisible(true);
 
@@ -100,7 +100,7 @@ void UIDrag::CreateGUI()
         auto* t = new Text(context_);
         root->AddChild(t);
         t->SetStyleAuto();
-        t->SetName("Touch "+ stl::to_string(i));
+        t->SetName("Touch "+ ea::to_string(i));
         t->SetVisible(false);
         t->SetPriority(100);     // Make sure it has higher priority than the buttons
     }
@@ -153,10 +153,10 @@ void UIDrag::HandleDragBegin(StringHash eventType, VariantMap& eventData)
     element->SetVar("BUTTONS", buttons);
 
     auto* t = element->GetChildStaticCast<Text>("Text", false);
-    t->SetText("Drag Begin Buttons: " + stl::to_string(buttons));
+    t->SetText("Drag Begin Buttons: " + ea::to_string(buttons));
 
     t = element->GetChildStaticCast<Text>("Num Touch", false);
-    t->SetText("Number of buttons: " + stl::to_string(eventData[P_NUMBUTTONS].GetInt()));
+    t->SetText("Number of buttons: " + ea::to_string(eventData[P_NUMBUTTONS].GetInt()));
 }
 
 void UIDrag::HandleDragMove(StringHash eventType, VariantMap& eventData)
@@ -170,7 +170,7 @@ void UIDrag::HandleDragMove(StringHash eventType, VariantMap& eventData)
     int BUTTONS = element->GetVar("BUTTONS").GetInt();
 
     auto* t = element->GetChildStaticCast<Text>("Event Touch", false);
-    t->SetText("Drag Move Buttons: " + stl::to_string(buttons));
+    t->SetText("Drag Move Buttons: " + ea::to_string(buttons));
 
     if (buttons == BUTTONS)
         element->SetPosition(IntVector2(X, Y));
@@ -194,9 +194,9 @@ void UIDrag::HandleUpdate(StringHash eventType, VariantMap& eventData)
     unsigned n = input->GetNumTouches();
     for (unsigned i = 0; i < n; i++)
     {
-        Text* t = (Text*)root->GetChild("Touch " + stl::to_string(i));
+        Text* t = (Text*)root->GetChild("Touch " + ea::to_string(i));
         TouchState* ts = input->GetTouch(i);
-        t->SetText("Touch " + stl::to_string(ts->touchID_));
+        t->SetText("Touch " + ea::to_string(ts->touchID_));
 
         IntVector2 pos = ts->position_;
         pos.y_ -= 30;
@@ -207,13 +207,13 @@ void UIDrag::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
     for (unsigned i = n; i < 10; i++)
     {
-        Text* t = (Text*)root->GetChild("Touch " + stl::to_string(i));
+        Text* t = (Text*)root->GetChild("Touch " + ea::to_string(i));
         t->SetVisible(false);
     }
 
     if (input->GetKeyPress(KEY_SPACE))
     {
-        stl::vector<UIElement*> elements;
+        ea::vector<UIElement*> elements;
         root->GetChildrenWithTag(elements, "SomeTag");
         for (auto i = elements.begin(); i != elements.end(); ++i)
         {

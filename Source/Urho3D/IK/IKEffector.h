@@ -96,7 +96,7 @@ public:
      * @brief Retrieves the name of the target node. The node doesn't
      * necessarily have to exist in the scene graph.
      */
-    const stl::string& GetTargetName() const;
+    const ea::string& GetTargetName() const;
 
     /*!
      * @brief Sets the name of the target node. The node doesn't necessarily
@@ -104,7 +104,7 @@ public:
      * this name, it is selected as the target.
      * @note This clears the existing target node.
      */
-    void SetTargetName(const stl::string& nodeName);
+    void SetTargetName(const ea::string& nodeName);
 
     /// Returns the current target position in world space.
     const Vector3& GetTargetPosition() const;
@@ -186,11 +186,11 @@ public:
     void SetINHERIT_PARENT_ROTATION(bool enable);
 
 private:
-    stl::weak_ptr<Node> targetNode_;
-    stl::weak_ptr<IKSolver> solver_;
+    ea::weak_ptr<Node> targetNode_;
+    ea::weak_ptr<IKSolver> solver_;
     ik_node_t* ikEffectorNode_;
 
-    stl::string targetName_;
+    ea::string targetName_;
     Vector3 targetPosition_;
     Quaternion targetRotation_;
     unsigned chainLength_;

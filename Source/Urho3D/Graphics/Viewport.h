@@ -101,17 +101,17 @@ public:
 
 private:
     /// Scene pointer.
-    stl::weak_ptr<Scene> scene_;
+    ea::weak_ptr<Scene> scene_;
     /// Camera pointer.
-    stl::weak_ptr<Camera> camera_;
+    ea::weak_ptr<Camera> camera_;
     /// Culling camera pointer.
-    stl::weak_ptr<Camera> cullCamera_;
+    ea::weak_ptr<Camera> cullCamera_;
     /// Viewport rectangle.
     IntRect rect_;
     /// Rendering path.
-    stl::shared_ptr<RenderPath> renderPath_;
+    ea::shared_ptr<RenderPath> renderPath_;
     /// Internal rendering structure.
-    stl::shared_ptr<View> view_;
+    ea::shared_ptr<View> view_;
     /// Debug draw flag.
     bool drawDebug_;
 };

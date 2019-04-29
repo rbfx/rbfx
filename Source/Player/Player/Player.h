@@ -39,11 +39,11 @@ public:
     ///
     explicit BakedResourceRouter(Context* context);
     ///
-    void Route(stl::string& name, ResourceRequest requestType) override;
+    void Route(ea::string& name, ResourceRequest requestType) override;
 
 protected:
     ///
-    stl::unordered_map<stl::string, stl::string> routes_;
+    ea::unordered_map<ea::string, ea::string> routes_;
 };
 
 class Player : public Application
@@ -63,11 +63,11 @@ protected:
     virtual bool LoadPlugins(const JSONValue& plugins);
 #if URHO3D_PLUGINS
     ///
-    bool LoadAssembly(const stl::string& path, PluginType assumeType=PLUGIN_INVALID);
+    bool LoadAssembly(const ea::string& path, PluginType assumeType=PLUGIN_INVALID);
 #endif
 
     ///
-    stl::vector<stl::shared_ptr<PluginApplication>> plugins_;
+    ea::vector<ea::shared_ptr<PluginApplication>> plugins_;
 };
 
 }

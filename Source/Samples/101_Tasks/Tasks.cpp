@@ -83,7 +83,7 @@ void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
     // Check if task is alive
     {
         URHO3D_LOGINFO("==== Check if task is alive ====");
-        stl::shared_ptr<Task> task(taskScheduler.Create([&]() {
+        ea::shared_ptr<Task> task(taskScheduler.Create([&]() {
             // Do nothing
             SuspendTask(2.f);
             URHO3D_LOGINFO("Task1 finished.");
@@ -102,8 +102,8 @@ void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
     // Terminate task (performant way)
     {
         URHO3D_LOGINFO("==== Terminate task (performant way) ====");
-        stl::shared_ptr<Task> task;
-        task = stl::shared_ptr<Task>(taskScheduler.Create([&]() {
+        ea::shared_ptr<Task> task;
+        task = ea::shared_ptr<Task>(taskScheduler.Create([&]() {
             for (;;)
             {
                 // Keep executing until task termination is requested and then return from the function manually
@@ -129,7 +129,7 @@ void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
     // Terminate task (convenient way)
     {
         URHO3D_LOGINFO("==== Terminate task (convenient way) ====");
-        stl::shared_ptr<Task> task(taskScheduler.Create([&]() {
+        ea::shared_ptr<Task> task(taskScheduler.Create([&]() {
             struct DummyStruct
             {
                 ~DummyStruct()
@@ -159,7 +159,7 @@ void MultithreadedTasksWork(const WorkItem* item, unsigned threadIndex)
     // Manual task scheduling
     {
         URHO3D_LOGINFO("==== Manual task scheduling ====");
-        stl::shared_ptr<Task> task1, task2;
+        ea::shared_ptr<Task> task1, task2;
 
         task1 = context->GetTasks()->Create([&]() {
             URHO3D_LOGINFO("Task1 executing");
@@ -273,7 +273,7 @@ void TasksSample::CreateScene()
 
     // Create a worker that executes tasks in a separate thread.
 #if URHO3D_THREADING
-    stl::shared_ptr<WorkItem> workItem(GetWorkQueue()->GetFreeItem());
+    ea::shared_ptr<WorkItem> workItem(GetWorkQueue()->GetFreeItem());
     workItem->aux_ = context_;
     workItem->workFunction_ = &MultithreadedTasksWork;
     GetWorkQueue()->AddWorkItem(workItem);
@@ -299,7 +299,7 @@ void TasksSample::MushroomAI()
     };
 
     // This task runs as long as title node exists in a scene.
-    stl::weak_ptr<Node> titleNode(scene_->GetChild("MushroomTitle", true));
+    ea::weak_ptr<Node> titleNode(scene_->GetChild("MushroomTitle", true));
     for (;!titleNode.expired();)
     {
         auto index = Random(0, SDL_arraysize(mushroomText) / 2);
@@ -331,7 +331,7 @@ void TasksSample::SetupViewport()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

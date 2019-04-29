@@ -179,13 +179,13 @@ private:
     void HandleEndFrame(StringHash eventType, VariantMap& eventData);
 
     /// Lines rendered with depth test.
-    stl::vector<DebugLine> lines_;
+    ea::vector<DebugLine> lines_;
     /// Lines rendered without depth test.
-    stl::vector<DebugLine> noDepthLines_;
+    ea::vector<DebugLine> noDepthLines_;
     /// Triangles rendered with depth test.
-    stl::vector<DebugTriangle> triangles_;
+    ea::vector<DebugTriangle> triangles_;
     /// Triangles rendered without depth test.
-    stl::vector<DebugTriangle> noDepthTriangles_;
+    ea::vector<DebugTriangle> noDepthTriangles_;
     /// View transform.
     Matrix3x4 view_;
     /// Projection transform.
@@ -195,11 +195,11 @@ private:
     /// View frustum.
     Frustum frustum_;
     /// Vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Line antialiasing flag.
     bool lineAntiAlias_;
     /// Active camera.
-    stl::weak_ptr<Camera> camera_;
+    ea::weak_ptr<Camera> camera_;
 };
 
 }

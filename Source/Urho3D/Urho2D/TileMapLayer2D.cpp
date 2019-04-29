@@ -75,7 +75,7 @@ void TileMapLayer2D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
             {
             case OT_RECTANGLE:
                 {
-                    stl::vector<Vector2> points;
+                    ea::vector<Vector2> points;
 
                     switch (info.orientation_)
                     {
@@ -251,7 +251,7 @@ TileMap2D* TileMapLayer2D::GetTileMap() const
     return tileMap_;
 }
 
-bool TileMapLayer2D::HasProperty(const stl::string& name) const
+bool TileMapLayer2D::HasProperty(const ea::string& name) const
 {
     if (!tmxLayer_)
         return false;
@@ -259,7 +259,7 @@ bool TileMapLayer2D::HasProperty(const stl::string& name) const
     return tmxLayer_->HasProperty(name);
 }
 
-const stl::string& TileMapLayer2D::GetProperty(const stl::string& name) const
+const ea::string& TileMapLayer2D::GetProperty(const ea::string& name) const
 {
     if (!tmxLayer_)
         return EMPTY_STRING;
@@ -352,7 +352,7 @@ void TileMapLayer2D::SetTileLayer(const TmxTileLayer2D* tileLayer)
             if (!tile)
                 continue;
 
-            stl::shared_ptr<Node> tileNode(GetNode()->CreateTemporaryChild("Tile"));
+            ea::shared_ptr<Node> tileNode(GetNode()->CreateTemporaryChild("Tile"));
             tileNode->SetPosition(Vector3(info.TileIndexToPosition(x, y)));
 
             auto* staticSprite = tileNode->CreateComponent<StaticSprite2D>();
@@ -378,7 +378,7 @@ void TileMapLayer2D::SetObjectGroup(const TmxObjectGroup2D* objectGroup)
         const TileMapObject2D* object = objectGroup->GetObject(i);
 
         // Create dummy node for all object
-        stl::shared_ptr<Node> objectNode(GetNode()->CreateTemporaryChild("Object"));
+        ea::shared_ptr<Node> objectNode(GetNode()->CreateTemporaryChild("Object"));
         objectNode->SetPosition(Vector3(object->GetPosition()));
 
         // If object is tile, create static sprite component
@@ -408,7 +408,7 @@ void TileMapLayer2D::SetImageLayer(const TmxImageLayer2D* imageLayer)
     if (!imageLayer->GetSprite())
         return;
 
-    stl::shared_ptr<Node> imageNode(GetNode()->CreateTemporaryChild("Tile"));
+    ea::shared_ptr<Node> imageNode(GetNode()->CreateTemporaryChild("Tile"));
     imageNode->SetPosition(Vector3(imageLayer->GetPosition()));
 
     auto* staticSprite = imageNode->CreateComponent<StaticSprite2D>();

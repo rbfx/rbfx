@@ -76,9 +76,9 @@ public:
     bool IsVisible() const { return visible_; }
 
     /// Return has property
-    bool HasProperty(const stl::string& name) const;
+    bool HasProperty(const ea::string& name) const;
     /// Return property.
-    const stl::string& GetProperty(const stl::string& name) const;
+    const ea::string& GetProperty(const ea::string& name) const;
     /// Return layer type.
     TileMapLayerType2D GetLayerType() const;
 
@@ -110,7 +110,7 @@ private:
     void SetImageLayer(const TmxImageLayer2D* imageLayer);
 
     /// Tile map.
-    stl::weak_ptr<TileMap2D> tileMap_;
+    ea::weak_ptr<TileMap2D> tileMap_;
     /// Tmx layer.
     const TmxLayer2D* tmxLayer_{};
     /// Tile layer.
@@ -124,7 +124,7 @@ private:
     /// Visible.
     bool visible_{true};
     /// Tile node or image nodes.
-    stl::vector<stl::shared_ptr<Node> > nodes_;
+    ea::vector<ea::shared_ptr<Node> > nodes_;
 };
 
 }

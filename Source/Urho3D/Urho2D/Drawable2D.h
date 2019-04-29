@@ -65,15 +65,15 @@ struct SourceBatch2D
     SourceBatch2D();
 
     /// Owner.
-    stl::weak_ptr<Drawable2D> owner_;
+    ea::weak_ptr<Drawable2D> owner_;
     /// Distance to camera.
     mutable float distance_;
     /// Draw order.
     int drawOrder_;
     /// Material.
-    stl::shared_ptr<Material> material_;
+    ea::shared_ptr<Material> material_;
     /// Vertices.
-    stl::vector<Vertex2D> vertices_;
+    ea::vector<Vertex2D> vertices_;
 
     /// Equality comparison operator.
     bool operator==(const SourceBatch2D& other) const
@@ -122,7 +122,7 @@ public:
     int GetOrderInLayer() const { return orderInLayer_; }
 
     /// Return all source batches (called by Renderer2D).
-    const stl::vector<SourceBatch2D>& GetSourceBatches();
+    const ea::vector<SourceBatch2D>& GetSourceBatches();
 
 protected:
     /// Handle scene being assigned.
@@ -142,11 +142,11 @@ protected:
     /// Order in layer.
     int orderInLayer_;
     /// Source batches.
-    stl::vector<SourceBatch2D> sourceBatches_;
+    ea::vector<SourceBatch2D> sourceBatches_;
     /// Source batches dirty flag.
     bool sourceBatchesDirty_;
     /// Renderer2D.
-    stl::weak_ptr<Renderer2D> renderer_;
+    ea::weak_ptr<Renderer2D> renderer_;
 };
 
 }

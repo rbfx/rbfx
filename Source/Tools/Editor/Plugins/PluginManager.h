@@ -57,7 +57,7 @@ public:
     /// Returns type of the plugin.
     PluginType GetPluginType() const { return type_; }
     /// Returns file name of plugin.
-    stl::string GetName() const { return name_; }
+    ea::string GetName() const { return name_; }
     ///
     PluginFlags GetFlags() const { return flags_; }
     ///
@@ -68,9 +68,9 @@ protected:
     bool Unload();
 
     /// Base plugin file name.
-    stl::string name_;
+    ea::string name_;
     /// Path to plugin dynamic library file.
-    stl::string path_;
+    ea::string path_;
     /// Type of plugin (invalid/native/managed).
     PluginType type_ = PLUGIN_INVALID;
     /// Context of native plugin. Not initialized for managed plugins.
@@ -94,25 +94,25 @@ public:
     /// Unload all plugins an destruct.
     ~PluginManager();
     /// Load a plugin and return true if succeeded.
-    virtual Plugin* Load(const stl::string& name);
+    virtual Plugin* Load(const ea::string& name);
     /// Unload a plugin and return true if succeeded.
     virtual void Unload(Plugin* plugin);
     /// Returns a loaded plugin with specified name.
-    Plugin* GetPlugin(const stl::string& name);
+    Plugin* GetPlugin(const ea::string& name);
     /// Returns a vector containing all loaded plugins.
-    const stl::vector<stl::shared_ptr<Plugin>>& GetPlugins() const { return plugins_; }
+    const ea::vector<ea::shared_ptr<Plugin>>& GetPlugins() const { return plugins_; }
     /// Tick native plugins.
     void OnEndFrame();
     /// Returns list of sorted plugin names that exist in editor directory.
     const StringVector& GetPluginNames();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
-    static stl::string PathToName(const stl::string& path);
+    static ea::string PathToName(const ea::string& path);
 
 protected:
     /// Converts name to a full plugin file path. Returns empty string on error.
-    stl::string NameToPath(const stl::string& name) const;
+    ea::string NameToPath(const ea::string& name) const;
     /// Returns path to folder where temporary copies of plugin files are stored.
-    stl::string GetTemporaryPluginPath() const;
+    ea::string GetTemporaryPluginPath() const;
 
     struct DynamicLibraryInfo
     {
@@ -123,11 +123,11 @@ protected:
     };
 
     /// Loaded plugins.
-    stl::vector<stl::shared_ptr<Plugin>> plugins_;
+    ea::vector<ea::shared_ptr<Plugin>> plugins_;
     /// Plugin update check timer.
     Timer updateCheckTimer_;
     /// Cached plugin information.
-    stl::unordered_map<stl::string, DynamicLibraryInfo> pluginInfoCache_;
+    ea::unordered_map<ea::string, DynamicLibraryInfo> pluginInfoCache_;
 
     friend class Plugin;
 };

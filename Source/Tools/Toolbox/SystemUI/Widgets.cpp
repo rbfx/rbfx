@@ -70,7 +70,7 @@ protected:
     int lastUse_ = 0;
 };
 
-static stl::unordered_map<ImGuiID, UIStateWrapper> uiState_;
+static ea::unordered_map<ImGuiID, UIStateWrapper> uiState_;
 static int uiStateLastGcFrame_ = 0;
 
 void SetUIStateP(void* state, void(*deleter)(void*))
@@ -249,7 +249,7 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
         /// A flag indicating type of resize action currently in progress
         TransformResizeTypeFlags resizing_ = RESIZE_NONE;
         /// A cache of system cursors
-        stl::unordered_map<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
+        ea::unordered_map<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
         /// Default cursor shape
         SDL_Cursor* cursorArrow_;
         /// Flag indicating that this selector set cursor handle

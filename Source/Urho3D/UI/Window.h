@@ -56,7 +56,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Return UI rendering batches.
-    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor) override;
+    void GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor) override;
 
     /// React to mouse hover.
     void OnHover(const IntVector2& position, const IntVector2& screenPosition, int buttons, int qualifiers, Cursor* cursor) override;

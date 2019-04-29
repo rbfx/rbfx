@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 const Variant Variant::EMPTY { };
-const stl::vector<unsigned char> Variant::emptyBuffer { };
+const ea::vector<unsigned char> Variant::emptyBuffer { };
 const ResourceRef Variant::emptyResourceRef { };
 const ResourceRefList Variant::emptyResourceRefList { };
 const VariantMap Variant::emptyVariantMap;
@@ -235,10 +235,10 @@ bool Variant::operator ==(const Variant& rhs) const
     }
 }
 
-bool Variant::operator ==(const stl::vector<unsigned char>& rhs) const
+bool Variant::operator ==(const ea::vector<unsigned char>& rhs) const
 {
-    // Use strncmp() instead of stl::vector<unsigned char>::operator ==()
-    const stl::vector<unsigned char>& buffer = value_.buffer_;
+    // Use strncmp() instead of ea::vector<unsigned char>::operator ==()
+    const ea::vector<unsigned char>& buffer = value_.buffer_;
     return type_ == VAR_BUFFER && buffer.size() == rhs.size() ?
         strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(&rhs[0]), buffer.size()) == 0 :
         false;
@@ -246,7 +246,7 @@ bool Variant::operator ==(const stl::vector<unsigned char>& rhs) const
 
 bool Variant::operator ==(const VectorBuffer& rhs) const
 {
-    const stl::vector<unsigned char>& buffer = value_.buffer_;
+    const ea::vector<unsigned char>& buffer = value_.buffer_;
     return type_ == VAR_BUFFER && buffer.size() == rhs.GetSize() ?
         strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(rhs.GetData()), buffer.size()) == 0 :
         false;
@@ -342,7 +342,7 @@ Variant::Variant(VariantType type)
     }
 }
 
-void Variant::FromString(const stl::string& type, const stl::string& value)
+void Variant::FromString(const ea::string& type, const ea::string& value)
 {
     return FromString(GetTypeFromName(type), value.c_str());
 }
@@ -352,7 +352,7 @@ void Variant::FromString(const char* type, const char* value)
     return FromString(GetTypeFromName(type), value);
 }
 
-void Variant::FromString(VariantType type, const stl::string& value)
+void Variant::FromString(VariantType type, const ea::string& value)
 {
     return FromString(type, value.c_str());
 }
@@ -413,7 +413,7 @@ void Variant::FromString(VariantType type, const char* value)
 
     case VAR_RESOURCEREF:
     {
-        StringVector values = stl::string::split(value, ';');
+        StringVector values = ea::string::split(value, ';');
         if (values.size() == 2)
         {
             SetType(VAR_RESOURCEREF);
@@ -425,7 +425,7 @@ void Variant::FromString(VariantType type, const char* value)
 
     case VAR_RESOURCEREFLIST:
     {
-        StringVector values = stl::string::split(value, ';', true);
+        StringVector values = ea::string::split(value, ';', true);
         if (values.size() >= 1)
         {
             SetType(VAR_RESOURCEREFLIST);
@@ -485,7 +485,7 @@ void Variant::SetBuffer(const void* data, unsigned size)
         size = 0;
 
     SetType(VAR_BUFFER);
-    stl::vector<unsigned char>& buffer = value_.buffer_;
+    ea::vector<unsigned char>& buffer = value_.buffer_;
     buffer.resize(size);
     if (size)
         memcpy(&buffer[0], data, size);
@@ -522,26 +522,26 @@ VectorBuffer Variant::GetVectorBuffer() const
     return VectorBuffer(type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer);
 }
 
-stl::string Variant::GetTypeName() const
+ea::string Variant::GetTypeName() const
 {
     return typeNames[type_];
 }
 
-stl::string Variant::ToString() const
+ea::string Variant::ToString() const
 {
     switch (type_)
     {
     case VAR_INT:
-        return stl::to_string(value_.int_);
+        return ea::to_string(value_.int_);
 
     case VAR_INT64:
-        return stl::to_string(value_.int64_);
+        return ea::to_string(value_.int64_);
 
     case VAR_BOOL:
-        return stl::to_string(value_.bool_);
+        return ea::to_string(value_.bool_);
 
     case VAR_FLOAT:
-        return stl::to_string(value_.float_);
+        return ea::to_string(value_.float_);
 
     case VAR_VECTOR2:
         return value_.vector2_.ToString();
@@ -563,8 +563,8 @@ stl::string Variant::ToString() const
 
     case VAR_BUFFER:
         {
-            const stl::vector<unsigned char>& buffer = value_.buffer_;
-            stl::string ret;
+            const ea::vector<unsigned char>& buffer = value_.buffer_;
+            ea::string ret;
             BufferToString(ret, buffer.data(), buffer.size());
             return ret;
         }
@@ -572,7 +572,7 @@ stl::string Variant::ToString() const
     case VAR_VOIDPTR:
     case VAR_PTR:
         // Pointer serialization not supported (convert to null)
-        return stl::string();
+        return ea::string();
 
     case VAR_INTRECT:
         return value_.intRect_.ToString();
@@ -593,7 +593,7 @@ stl::string Variant::ToString() const
         return value_.matrix4_->ToString();
 
     case VAR_DOUBLE:
-        return stl::to_string(value_.double_);
+        return ea::to_string(value_.double_);
 
     case VAR_RECT:
         return value_.rect_.ToString();
@@ -778,11 +778,11 @@ void Variant::SetType(VariantType newType)
     switch (type_)
     {
     case VAR_STRING:
-        new(&value_.string_) stl::string();
+        new(&value_.string_) ea::string();
         break;
 
     case VAR_BUFFER:
-        new(&value_.buffer_) stl::vector<unsigned char>();
+        new(&value_.buffer_) ea::vector<unsigned char>();
         break;
 
     case VAR_RESOURCEREF:
@@ -806,7 +806,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_PTR:
-        new(&value_.weakPtr_) stl::weak_ptr<RefCounted>();
+        new(&value_.weakPtr_) ea::weak_ptr<RefCounted>();
         break;
 
     case VAR_MATRIX3:
@@ -901,7 +901,7 @@ template <> const Color& Variant::Get<const Color&>() const
     return GetColor();
 }
 
-template <> const stl::string& Variant::Get<const stl::string&>() const
+template <> const ea::string& Variant::Get<const ea::string&>() const
 {
     return GetString();
 }
@@ -926,7 +926,7 @@ template <> const IntVector3& Variant::Get<const IntVector3&>() const
     return GetIntVector3();
 }
 
-template <> const stl::vector<unsigned char>& Variant::Get<const stl::vector<unsigned char>&>() const
+template <> const ea::vector<unsigned char>& Variant::Get<const ea::vector<unsigned char>&>() const
 {
     return GetBuffer();
 }
@@ -1006,7 +1006,7 @@ template <> Color Variant::Get<Color>() const
     return GetColor();
 }
 
-template <> stl::string Variant::Get<stl::string>() const
+template <> ea::string Variant::Get<ea::string>() const
 {
     return GetString();
 }
@@ -1031,7 +1031,7 @@ template <> IntVector3 Variant::Get<IntVector3>() const
     return GetIntVector3();
 }
 
-template <> stl::vector<unsigned char> Variant::Get<stl::vector<unsigned char> >() const
+template <> ea::vector<unsigned char> Variant::Get<ea::vector<unsigned char> >() const
 {
     return GetBuffer();
 }
@@ -1051,12 +1051,12 @@ template <> Matrix4 Variant::Get<Matrix4>() const
     return GetMatrix4();
 }
 
-stl::string Variant::GetTypeName(VariantType type)
+ea::string Variant::GetTypeName(VariantType type)
 {
     return typeNames[type];
 }
 
-VariantType Variant::GetTypeFromName(const stl::string& typeName)
+VariantType Variant::GetTypeFromName(const ea::string& typeName)
 {
     return GetTypeFromName(typeName.c_str());
 }

@@ -71,18 +71,18 @@ void IntRect::Merge(const IntRect& rect)
     }
 }
 
-stl::string Rect::ToString() const
+ea::string Rect::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g %g", min_.x_, min_.y_, max_.x_, max_.y_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
-stl::string IntRect::ToString() const
+ea::string IntRect::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%d %d %d %d", left_, top_, right_, bottom_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
 void Rect::Clip(const Rect& rect)

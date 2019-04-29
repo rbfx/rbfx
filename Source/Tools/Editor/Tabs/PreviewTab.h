@@ -90,7 +90,7 @@ protected:
     /// Last view rectangle.
     IntRect viewRect_{};
     /// Texture used to display preview.
-    stl::shared_ptr<Texture2D> view_{};
+    ea::shared_ptr<Texture2D> view_{};
 
     /// Flag controlling scene updates in the viewport.
     SceneSimulationStatus simulationStatus_ = SCENE_SIMULATION_STOPPED;

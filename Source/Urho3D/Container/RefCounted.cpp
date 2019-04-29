@@ -32,16 +32,16 @@ namespace Urho3D
 {
 
 RefCounted::RefCounted() :
-    stl::enable_shared_from_this<RefCounted>()
+    ea::enable_shared_from_this<RefCounted>()
 {
     {
         // Creates refcount object early so assigning this object in subclass constructor to smart pointers works.
-        stl::shared_ptr<RefCounted> ptr(this);
+        ea::shared_ptr<RefCounted> ptr(this);
         // Ensure that shared pointer destructor does not free this object
-        stl::Internal::atomic_increment(&mWeakPtr.get_refcount_pointer()->mRefCount);
+        ea::Internal::atomic_increment(&mWeakPtr.get_refcount_pointer()->mRefCount);
     }
     // Restore proper refcount. Object may have 0 references and yet be alive when it is not managed by smart pointer.
-    stl::Internal::atomic_decrement(&mWeakPtr.get_refcount_pointer()->mRefCount);
+    ea::Internal::atomic_decrement(&mWeakPtr.get_refcount_pointer()->mRefCount);
 }
 
 RefCounted::~RefCounted()

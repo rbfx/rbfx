@@ -401,7 +401,7 @@ void RigidBody2D::ReleaseBody()
         return;
 
     // Make a copy for iteration
-    stl::vector<stl::weak_ptr<Constraint2D> > constraints = constraints_;
+    ea::vector<ea::weak_ptr<Constraint2D> > constraints = constraints_;
     for (unsigned i = 0; i < constraints.size(); ++i)
     {
         if (constraints[i])
@@ -470,7 +470,7 @@ void RigidBody2D::AddCollisionShape2D(CollisionShape2D* collisionShape)
     if (!collisionShape)
         return;
 
-    stl::weak_ptr<CollisionShape2D> collisionShapePtr(collisionShape);
+    ea::weak_ptr<CollisionShape2D> collisionShapePtr(collisionShape);
     if (collisionShapes_.contains(collisionShapePtr))
         return;
 
@@ -482,7 +482,7 @@ void RigidBody2D::RemoveCollisionShape2D(CollisionShape2D* collisionShape)
     if (!collisionShape)
         return;
 
-    stl::weak_ptr<CollisionShape2D> collisionShapePtr(collisionShape);
+    ea::weak_ptr<CollisionShape2D> collisionShapePtr(collisionShape);
     collisionShapes_.erase_first(collisionShapePtr);
 }
 
@@ -491,7 +491,7 @@ void RigidBody2D::AddConstraint2D(Constraint2D* constraint)
     if (!constraint)
         return;
 
-    stl::weak_ptr<Constraint2D> constraintPtr(constraint);
+    ea::weak_ptr<Constraint2D> constraintPtr(constraint);
     if (constraints_.contains(constraintPtr))
         return;
     constraints_.push_back(constraintPtr);
@@ -502,7 +502,7 @@ void RigidBody2D::RemoveConstraint2D(Constraint2D* constraint)
     if (!constraint)
         return;
 
-    stl::weak_ptr<Constraint2D> constraintPtr(constraint);
+    ea::weak_ptr<Constraint2D> constraintPtr(constraint);
     constraints_.erase_first(constraintPtr);
 }
 
@@ -551,7 +551,7 @@ void RigidBody2D::OnNodeSet(Node* node)
     {
         node->AddListener(this);
 
-        stl::vector<CollisionShape2D*> shapes;
+        ea::vector<CollisionShape2D*> shapes;
         node_->GetDerivedComponents<CollisionShape2D>(shapes);
 
         for (auto i = shapes.begin(); i != shapes.end(); ++i)

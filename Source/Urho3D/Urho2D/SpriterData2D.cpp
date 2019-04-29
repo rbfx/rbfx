@@ -359,7 +359,7 @@ bool Timeline::Load(const pugi::xml_node& node)
     id_ = node.attribute("id").as_int();
     name_ = node.attribute("name").as_string();
 
-    stl::string typeString;
+    ea::string typeString;
     xml_attribute typeAttr = node.attribute("type");
     if (typeAttr.empty())
         typeString = node.attribute("object_type").as_string("sprite");
@@ -408,7 +408,7 @@ bool TimelineKey::Load(const pugi::xml_node& node)
     id_ = node.attribute("id").as_int();
     time_ = node.attribute("time").as_float() * 0.001f;
 
-    stl::string curveType = node.attribute("curve_type").as_string("linear");
+    ea::string curveType = node.attribute("curve_type").as_string("linear");
     if (curveType == "instant")
         curveType_ = INSTANT;
     else if (curveType == "linear")

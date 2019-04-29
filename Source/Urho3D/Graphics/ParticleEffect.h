@@ -220,7 +220,7 @@ public:
     /// Remove color frame at index
     void RemoveColorFrame(unsigned index);
     /// Set color animation of particles.
-    void SetColorFrames(const stl::vector<ColorFrame>& colorFrames);
+    void SetColorFrames(const ea::vector<ColorFrame>& colorFrames);
     /// Set color animation frame at index. If index is greater than number of color frames, new color frames are added.
     void SetColorFrame(unsigned index, const ColorFrame& colorFrame);
     /// Set number of color frames.
@@ -235,7 +235,7 @@ public:
     /// Remove texture frame at index
     void RemoveTextureFrame(unsigned index);
     /// Set particle texture animation.
-    void SetTextureFrames(const stl::vector<TextureFrame>& textureFrames);
+    void SetTextureFrames(const ea::vector<TextureFrame>& textureFrames);
     /// Set number of texture animation frames.
     void SetTextureFrame(unsigned index, const TextureFrame& textureFrame);
     /// Set number of texture frames.
@@ -243,7 +243,7 @@ public:
     /// Sort the list of texture frames based on time.
     void SortTextureFrames();
     /// Clone the particle effect.
-    stl::shared_ptr<ParticleEffect> Clone(const stl::string& cloneName = EMPTY_STRING) const;
+    ea::shared_ptr<ParticleEffect> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return material.
     Material* GetMaterial() const { return material_; }
@@ -336,7 +336,7 @@ public:
     float GetSizeMul() const { return sizeMul_; }
 
     /// Return all color animation frames.
-    const stl::vector<ColorFrame>& GetColorFrames() const { return colorFrames_; }
+    const ea::vector<ColorFrame>& GetColorFrames() const { return colorFrames_; }
 
     /// Return number of color animation frames.
     unsigned GetNumColorFrames() const { return colorFrames_.size(); }
@@ -345,7 +345,7 @@ public:
     const ColorFrame* GetColorFrame(unsigned index) const;
 
     /// Return all texture animation frames.
-    const stl::vector<TextureFrame>& GetTextureFrames() const { return textureFrames_; }
+    const ea::vector<TextureFrame>& GetTextureFrames() const { return textureFrames_; }
 
     /// Return number of texture animation frames.
     unsigned GetNumTextureFrames() const { return textureFrames_.size(); }
@@ -378,7 +378,7 @@ private:
     void GetVector3MinMax(const XMLElement& element, Vector3& minValue, Vector3& maxValue);
 
     /// Material.
-    stl::shared_ptr<Material> material_;
+    ea::shared_ptr<Material> material_;
     /// Number of particles.
     unsigned numParticles_;
     /// Update when invisible flag.
@@ -438,11 +438,11 @@ private:
     /// Particle size multiplicative parameter.
     float sizeMul_;
     /// Particle color animation frames.
-    stl::vector<ColorFrame> colorFrames_;
+    ea::vector<ColorFrame> colorFrames_;
     /// Texture animation frames.
-    stl::vector<TextureFrame> textureFrames_;
+    ea::vector<TextureFrame> textureFrames_;
     /// Material name acquired during BeginLoad().
-    stl::string loadMaterialName_;
+    ea::string loadMaterialName_;
     /// Particle rotation mode in relation to the camera.
     FaceCameraMode faceCameraMode_;
 };

@@ -215,7 +215,7 @@ bool SceneTab::RenderWindowContent()
 
         Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
         // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-        stl::vector<RayQueryResult> results;
+        ea::vector<RayQueryResult> results;
 
         RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, M_INFINITY, DRAWABLE_GEOMETRY);
         GetScene()->GetComponent<Octree>()->RaycastSingle(query);
@@ -230,7 +230,7 @@ bool SceneTab::RenderWindowContent()
         if (results.size() && results[0].drawable_->GetNode() != nullptr)
         {
             StringHash componentType;
-            stl::weak_ptr<Node> clickNode(results[0].drawable_->GetNode());
+            ea::weak_ptr<Node> clickNode(results[0].drawable_->GetNode());
 
             if (clickNode->HasTag("DebugIcon"))
                 componentType = clickNode->GetVar("ComponentType").GetStringHash();
@@ -320,7 +320,7 @@ void SceneTab::OnAfterEnd()
     ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
-bool SceneTab::LoadResource(const stl::string& resourcePath)
+bool SceneTab::LoadResource(const ea::string& resourcePath)
 {
     Undo::SetTrackingScoped noTrack(undo_, false);
 
@@ -425,12 +425,12 @@ void SceneTab::Select(Component* component)
     if (component == nullptr)
         return;
 
-    selectedComponents_.insert(stl::weak_ptr<Component>(component));
+    selectedComponents_.insert(ea::weak_ptr<Component>(component));
     using namespace EditorSelectionChanged;
     SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
 
-void SceneTab::Select(stl::vector<Node*> nodes)
+void SceneTab::Select(ea::vector<Node*> nodes)
 {
     if (nodes.empty())
         return;
@@ -459,7 +459,7 @@ void SceneTab::Unselect(Component* component)
     if (component == nullptr)
         return;
 
-    if (selectedComponents_.erase(stl::weak_ptr<Component>(component)))
+    if (selectedComponents_.erase(ea::weak_ptr<Component>(component)))
     {
         using namespace EditorSelectionChanged;
         SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
@@ -481,7 +481,7 @@ void SceneTab::ToggleSelection(Component* component)
     if (component == nullptr)
         return;
 
-    stl::weak_ptr<Component> componentPtr(component);
+    ea::weak_ptr<Component> componentPtr(component);
     if (selectedComponents_.contains(componentPtr))
         selectedComponents_.erase(componentPtr);
     else
@@ -502,7 +502,7 @@ void SceneTab::UnselectAll()
     }
 }
 
-const stl::vector<stl::weak_ptr<Node>>& SceneTab::GetSelection() const
+const ea::vector<ea::weak_ptr<Node>>& SceneTab::GetSelection() const
 {
     return gizmo_.GetSelection();
 }
@@ -572,7 +572,7 @@ bool SceneTab::IsSelected(Component* component) const
     if (component == nullptr)
         return false;
 
-    return selectedComponents_.contains(stl::weak_ptr<Component>(component));
+    return selectedComponents_.contains(ea::weak_ptr<Component>(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
@@ -632,7 +632,7 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node == scrollTo_.get())
         ui::SetScrollHereY();
 
-    stl::string name = node->GetName().empty() ? ToString("%s %d", node->GetTypeName().c_str(), node->GetID()) : node->GetName();
+    ea::string name = node->GetName().empty() ? ToString("%s %d", node->GetTypeName().c_str(), node->GetID()) : node->GetName();
     bool isSelected = IsSelected(node);
 
     if (isSelected)
@@ -665,7 +665,7 @@ void SceneTab::RenderNodeTree(Node* node)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            stl::shared_ptr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
+            ea::shared_ptr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
             if (child && child != node)
             {
                 node->AddChild(child);
@@ -686,7 +686,7 @@ void SceneTab::RenderNodeTree(Node* node)
     }
 
     // Popup may delete node. Weak reference will convey that information.
-    stl::weak_ptr<Node> nodeRef(node);
+    ea::weak_ptr<Node> nodeRef(node);
 
     if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
     {
@@ -713,7 +713,7 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (!nodeRef.expired())
         {
-            stl::vector<stl::shared_ptr<Component>> components = node->GetComponents();
+            ea::vector<ea::shared_ptr<Component>> components = node->GetComponents();
             for (const auto& component: components)
             {
                 if (component->IsTemporary())
@@ -753,7 +753,7 @@ void SceneTab::RenderNodeTree(Node* node)
             }
 
             // Do not use element->GetChildren() because child may be deleted during this loop.
-            stl::vector<Node*> children;
+            ea::vector<Node*> children;
             node->GetChildren(children);
             for (Node* child : children) 
             {
@@ -964,7 +964,7 @@ void SceneTab::RenderNodeContextMenu()
 
             if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
             {
-                stl::vector<Node*> newNodes;
+                ea::vector<Node*> newNodes;
                 for (auto& selectedNode : GetSelection())
                 {
                     if (!selectedNode.expired())
@@ -986,7 +986,7 @@ void SceneTab::RenderNodeContextMenu()
                 auto categories = context_->GetObjectCategories().keys();
                 categories.erase_first("UI");
 
-                for (const stl::string& category : categories)
+                for (const ea::string& category : categories)
                 {
                     auto components = editor->GetObjectsByCategory(category);
                     if (components.empty())
@@ -994,9 +994,9 @@ void SceneTab::RenderNodeContextMenu()
 
                     if (ui::BeginMenu(category.c_str()))
                     {
-                        stl::quick_sort(components.begin(), components.end());
+                        ea::quick_sort(components.begin(), components.end());
 
-                        for (const stl::string& component : components)
+                        for (const ea::string& component : components)
                         {
                             ui::Image(component);
                             ui::SameLine();
@@ -1288,7 +1288,7 @@ void SceneTab::PasteNextToSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.insert(stl::weak_ptr<Component>(component));
+        selectedComponents_.insert(ea::weak_ptr<Component>(component));
 }
 
 void SceneTab::PasteIntoSelection()
@@ -1306,7 +1306,7 @@ void SceneTab::PasteIntoSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.insert(stl::weak_ptr<Component>(component));
+        selectedComponents_.insert(ea::weak_ptr<Component>(component));
 }
 
 void SceneTab::PasteIntuitive()
@@ -1371,11 +1371,11 @@ void SceneTab::RenderDebugInfo()
         }
     }
 
-    stl::vector<Node*> debugNodes;
+    ea::vector<Node*> debugNodes;
     scene->GetNodesWithTag(debugNodes, "DebugInfoAlways");
     for (Node* node : debugNodes)
     {
-        if (selection.contains(stl::weak_ptr<Node>(node)))
+        if (selection.contains(ea::weak_ptr<Node>(node)))
             continue;
 
         for (auto& component: node->GetComponents())

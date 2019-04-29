@@ -57,9 +57,9 @@ struct LightQueryResult
     /// Light.
     Light* light_;
     /// Lit geometries.
-    stl::vector<Drawable*> litGeometries_;
+    ea::vector<Drawable*> litGeometries_;
     /// Shadow casters.
-    stl::vector<Drawable*> shadowCasters_;
+    ea::vector<Drawable*> shadowCasters_;
     /// Shadow cameras.
     Camera* shadowCameras_[MAX_LIGHT_SPLITS];
     /// Shadow caster start indices.
@@ -95,9 +95,9 @@ struct ScenePassInfo
 struct PerThreadSceneResult
 {
     /// Geometry objects.
-    stl::vector<Drawable*> geometries_;
+    ea::vector<Drawable*> geometries_;
     /// Lights.
-    stl::vector<Light*> lights_;
+    ea::vector<Light*> lights_;
     /// Scene minimum Z value.
     float minZ_;
     /// Scene maximum Z value.
@@ -158,16 +158,16 @@ public:
     const IntVector2& GetViewSize() const { return viewSize_; }
 
     /// Return geometry objects.
-    const stl::vector<Drawable*>& GetGeometries() const { return geometries_; }
+    const ea::vector<Drawable*>& GetGeometries() const { return geometries_; }
 
     /// Return occluder objects.
-    const stl::vector<Drawable*>& GetOccluders() const { return occluders_; }
+    const ea::vector<Drawable*>& GetOccluders() const { return occluders_; }
 
     /// Return lights.
-    const stl::vector<Light*>& GetLights() const { return lights_; }
+    const ea::vector<Light*>& GetLights() const { return lights_; }
 
     /// Return light batch queues.
-    const stl::vector<LightBatchQueue>& GetLightQueues() const { return lightQueues_; }
+    const ea::vector<LightBatchQueue>& GetLightQueues() const { return lightQueues_; }
 
     /// Return the last used software occlusion buffer.
     OcclusionBuffer* GetOcclusionBuffer() const { return occlusionBuffer_; }
@@ -191,7 +191,7 @@ public:
     void DrawFullscreenQuad(bool setIdentityProjection = false);
 
     /// Get a named texture from the rendertarget list or from the resource cache, to be either used as a rendertarget or texture binding.
-    Texture* FindNamedTexture(const stl::string& name, bool isRenderTarget, bool isVolumeMap = false);
+    Texture* FindNamedTexture(const ea::string& name, bool isRenderTarget, bool isVolumeMap = false);
 
 private:
     /// Query the octree for drawable objects.
@@ -229,13 +229,13 @@ private:
     /// Blit the viewport from one surface to another.
     void BlitFramebuffer(Texture* source, RenderSurface* destination, bool depthWrite);
     /// Query for occluders as seen from a camera.
-    void UpdateOccluders(stl::vector<Drawable*>& occluders, Camera* camera);
+    void UpdateOccluders(ea::vector<Drawable*>& occluders, Camera* camera);
     /// Draw occluders to occlusion buffer.
-    void DrawOccluders(OcclusionBuffer* buffer, const stl::vector<Drawable*>& occluders);
+    void DrawOccluders(OcclusionBuffer* buffer, const ea::vector<Drawable*>& occluders);
     /// Query for lit geometries and shadow casters for a light.
     void ProcessLight(LightQueryResult& query, unsigned threadIndex);
     /// Process shadow casters' visibilities and build their combined view- or projection-space bounding box.
-    void ProcessShadowCasters(LightQueryResult& query, const stl::vector<Drawable*>& drawables, unsigned splitIndex);
+    void ProcessShadowCasters(LightQueryResult& query, const ea::vector<Drawable*>& drawables, unsigned splitIndex);
     /// Set up initial shadow camera view(s).
     void SetupShadowCameras(LightQueryResult& query);
     /// Set up a directional light shadow camera
@@ -298,7 +298,7 @@ private:
     }
 
     /// Return hash code for a vertex light queue.
-    unsigned long long GetVertexLightQueueHash(const stl::vector<Light*>& vertexLights)
+    unsigned long long GetVertexLightQueueHash(const ea::vector<Light*>& vertexLights)
     {
         unsigned long long hash = 0;
         for (auto i = vertexLights.begin(); i != vertexLights.end(); ++i)
@@ -307,9 +307,9 @@ private:
     }
 
     /// Graphics subsystem.
-    stl::weak_ptr<Graphics> graphics_;
+    ea::weak_ptr<Graphics> graphics_;
     /// Renderer subsystem.
-    stl::weak_ptr<Renderer> renderer_;
+    ea::weak_ptr<Renderer> renderer_;
     /// Scene to use.
     Scene* scene_{};
     /// Octree to use.
@@ -319,7 +319,7 @@ private:
     /// Culling camera. Usually same as the viewport camera.
     Camera* cullCamera_{};
     /// Shared source view. Null if this view is using its own culling.
-    stl::weak_ptr<View> sourceView_;
+    ea::weak_ptr<View> sourceView_;
     /// Zone the camera is inside, or default zone if not assigned.
     Zone* cameraZone_{};
     /// Zone at far clip plane.
@@ -383,38 +383,38 @@ private:
     /// Renderpath.
     RenderPath* renderPath_{};
     /// Per-thread octree query results.
-    stl::vector<stl::vector<Drawable*> > tempDrawables_;
+    ea::vector<ea::vector<Drawable*> > tempDrawables_;
     /// Per-thread geometries, lights and Z range collection results.
-    stl::vector<PerThreadSceneResult> sceneResults_;
+    ea::vector<PerThreadSceneResult> sceneResults_;
     /// Visible zones.
-    stl::vector<Zone*> zones_;
+    ea::vector<Zone*> zones_;
     /// Visible geometry objects.
-    stl::vector<Drawable*> geometries_;
+    ea::vector<Drawable*> geometries_;
     /// Geometry objects that will be updated in the main thread.
-    stl::vector<Drawable*> nonThreadedGeometries_;
+    ea::vector<Drawable*> nonThreadedGeometries_;
     /// Geometry objects that will be updated in worker threads.
-    stl::vector<Drawable*> threadedGeometries_;
+    ea::vector<Drawable*> threadedGeometries_;
     /// Occluder objects.
-    stl::vector<Drawable*> occluders_;
+    ea::vector<Drawable*> occluders_;
     /// Lights.
-    stl::vector<Light*> lights_;
+    ea::vector<Light*> lights_;
     /// Number of active occluders.
     unsigned activeOccluders_{};
 
     /// Drawables that limit their maximum light count.
-    stl::hash_set<Drawable*> maxLightsDrawables_;
+    ea::hash_set<Drawable*> maxLightsDrawables_;
     /// Rendertargets defined by the renderpath.
-    stl::unordered_map<StringHash, Texture*> renderTargets_;
+    ea::unordered_map<StringHash, Texture*> renderTargets_;
     /// Intermediate light processing results.
-    stl::vector<LightQueryResult> lightQueryResults_;
+    ea::vector<LightQueryResult> lightQueryResults_;
     /// Info for scene render passes defined by the renderpath.
-    stl::vector<ScenePassInfo> scenePasses_;
+    ea::vector<ScenePassInfo> scenePasses_;
     /// Per-pixel light queues.
-    stl::vector<LightBatchQueue> lightQueues_;
+    ea::vector<LightBatchQueue> lightQueues_;
     /// Per-vertex light queues.
-    stl::unordered_map<unsigned long long, LightBatchQueue> vertexLightQueues_;
+    ea::unordered_map<unsigned long long, LightBatchQueue> vertexLightQueues_;
     /// Batch queues by pass index.
-    stl::unordered_map<unsigned, BatchQueue> batchQueues_;
+    ea::unordered_map<unsigned, BatchQueue> batchQueues_;
     /// Index of the GBuffer pass.
     unsigned gBufferPassIndex_{};
     /// Index of the opaque forward base pass.

@@ -55,7 +55,7 @@ protected:
     SoundSource* musicSource_;
 
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -70,9 +70,9 @@ private:
     /// Create the UI and subscribes to UI events.
     void CreateUI();
     /// Create a button at position with specified text in it.
-    Button* CreateButton(int x, int y, int xSize, int ySize, const stl::string& text);
+    Button* CreateButton(int x, int y, int xSize, int ySize, const ea::string& text);
     /// Create a horizontal slider with specified text above it.
-    Slider* CreateSlider(int x, int y, int xSize, int ySize, const stl::string& text);
+    Slider* CreateSlider(int x, int y, int xSize, int ySize, const ea::string& text);
     /// Handle a sound effect button click.
     void HandlePlaySound(StringHash eventType, VariantMap& eventData);
     /// Handle "play music" button click.

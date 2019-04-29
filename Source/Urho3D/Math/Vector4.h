@@ -198,7 +198,7 @@ public:
     const float* Data() const { return &x_; }
 
     /// Return as string.
-    stl::string ToString() const;
+    ea::string ToString() const;
 
     /// Return hash value for HashSet & HashMap.
     unsigned ToHash() const

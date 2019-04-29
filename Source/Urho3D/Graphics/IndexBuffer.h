@@ -89,7 +89,7 @@ public:
     unsigned char* GetShadowData() const { return shadowData_.get(); }
 
     /// Return shared array pointer to the CPU memory shadow data.
-    stl::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
+    ea::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
 
 private:
     /// Create buffer.
@@ -102,7 +102,7 @@ private:
     void UnmapBuffer();
 
     /// Shadow data.
-    stl::shared_array<unsigned char> shadowData_;
+    ea::shared_array<unsigned char> shadowData_;
     /// Number of indices.
     unsigned indexCount_;
     /// Index size.

@@ -46,7 +46,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -79,17 +79,17 @@ private:
     void Init3DUI();
 
     /// The Scene.
-    stl::shared_ptr<Scene> scene_;
+    ea::shared_ptr<Scene> scene_;
     /// The Window.
-    stl::shared_ptr<Window> window_;
+    ea::shared_ptr<Window> window_;
     /// The UI's root UIElement.
-    stl::shared_ptr<UIElement> uiRoot_;
+    ea::shared_ptr<UIElement> uiRoot_;
     /// Remembered drag begin position.
     IntVector2 dragBeginPosition_;
     /// Root UI element of texture.
-    stl::shared_ptr<UIElement> textureRoot_;
+    ea::shared_ptr<UIElement> textureRoot_;
     /// UI element with instructions.
-    stl::shared_ptr<Text> instructions_;
+    ea::shared_ptr<Text> instructions_;
     /// Enable or disable cube rotation.
     bool animateCube_;
     /// Enable or disable rendering to texture.
@@ -97,7 +97,7 @@ private:
     /// Draw debug information of last clicked element.
     bool drawDebug_;
     /// Last clicked UI element.
-    stl::weak_ptr<UIElement> current_;
+    ea::weak_ptr<UIElement> current_;
 };
 
 

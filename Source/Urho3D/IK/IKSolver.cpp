@@ -326,7 +326,7 @@ bool IKSolver::BuildTreeToEffector(IKEffector* effector)
      */
     const Node* iterNode = effector->GetNode();
     ik_node_t* ikNode;
-    stl::vector<const Node*> missingNodes;
+    ea::vector<const Node*> missingNodes;
     while ((ikNode = ik_node_find_child(solver_->tree, iterNode->GetID())) == nullptr)
     {
         missingNodes.push_back(iterNode);
@@ -656,7 +656,7 @@ void IKSolver::HandleNodeAdded(StringHash eventType, VariantMap& eventData)
 
     auto* node = static_cast<Node*>(eventData[P_NODE].GetPtr());
 
-    stl::vector<IKEffector*> effectors;
+    ea::vector<IKEffector*> effectors;
     node->GetComponents<IKEffector>(effectors, true);
     for (auto it = effectors.begin(); it != effectors.end(); ++it)
     {
@@ -667,7 +667,7 @@ void IKSolver::HandleNodeAdded(StringHash eventType, VariantMap& eventData)
         effectorList_.push_back(*it);
     }
 
-    stl::vector<IKConstraint*> constraints;
+    ea::vector<IKConstraint*> constraints;
     node->GetComponents<IKConstraint>(constraints, true);
     for (auto it = constraints.begin(); it != constraints.end(); ++it)
     {
@@ -689,7 +689,7 @@ void IKSolver::HandleNodeRemoved(StringHash eventType, VariantMap& eventData)
     auto* node = static_cast<Node*>(eventData[P_NODE].GetPtr());
 
     // Remove cached IKEffectors from our list
-    stl::vector<IKEffector*> effectors;
+    ea::vector<IKEffector*> effectors;
     node->GetComponents<IKEffector>(effectors, true);
     for (auto it = effectors.begin(); it != effectors.end(); ++it)
     {
@@ -697,7 +697,7 @@ void IKSolver::HandleNodeRemoved(StringHash eventType, VariantMap& eventData)
         effectorList_.erase_first_unsorted(*it);
     }
 
-    stl::vector<IKConstraint*> constraints;
+    ea::vector<IKConstraint*> constraints;
     node->GetComponents<IKConstraint>(constraints, true);
     for (auto it = constraints.begin(); it != constraints.end(); ++it)
     {

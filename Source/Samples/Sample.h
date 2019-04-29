@@ -67,7 +67,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    virtual stl::string GetScreenJoystickPatchString() const { return EMPTY_STRING; }
+    virtual ea::string GetScreenJoystickPatchString() const { return EMPTY_STRING; }
     /// Initialize touch input on mobile platform.
     void InitTouchInput();
     /// Initialize mouse mode on non-web platform.
@@ -76,11 +76,11 @@ protected:
     void SetLogoVisible(bool enable);
 
     /// Logo sprite.
-    stl::shared_ptr<Sprite> logoSprite_;
+    ea::shared_ptr<Sprite> logoSprite_;
     /// Scene.
-    stl::shared_ptr<Scene> scene_;
+    ea::shared_ptr<Scene> scene_;
     /// Camera scene node.
-    stl::shared_ptr<Node> cameraNode_;
+    ea::shared_ptr<Node> cameraNode_;
     /// Camera yaw angle.
     float yaw_;
     /// Camera pitch angle.

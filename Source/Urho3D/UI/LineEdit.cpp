@@ -237,7 +237,7 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
     case KEY_V:
         if (editable_ && textCopyable_ && qualifiers & QUAL_CTRL)
         {
-            const stl::string& clipBoard = GetSubsystem<UI>()->GetClipboardText();
+            const ea::string& clipBoard = GetSubsystem<UI>()->GetClipboardText();
             if (!clipBoard.empty())
             {
                 // Remove selected text first
@@ -429,7 +429,7 @@ void LineEdit::OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifier
         UpdateCursor();
 }
 
-void LineEdit::OnTextInput(const stl::string& text)
+void LineEdit::OnTextInput(const ea::string& text)
 {
     if (!editable_)
         return;
@@ -444,7 +444,7 @@ void LineEdit::OnTextInput(const stl::string& text)
     eventData[P_TEXT] = text;
     SendEvent(E_TEXTENTRY, eventData);
 
-    const stl::string newText = SubstringUTF8(eventData[P_TEXT].GetString(), 0);
+    const ea::string newText = SubstringUTF8(eventData[P_TEXT].GetString(), 0);
     if (!newText.empty() && (!maxLength_ || LengthUTF8(line_) + LengthUTF8(newText) <= maxLength_))
     {
         if (!text_->GetSelectionLength())
@@ -477,7 +477,7 @@ void LineEdit::OnTextInput(const stl::string& text)
     }
 }
 
-void LineEdit::SetText(const stl::string& text)
+void LineEdit::SetText(const ea::string& text)
 {
     if (text != line_)
     {
@@ -570,7 +570,7 @@ void LineEdit::UpdateText()
         text_->SetText(line_);
     else
     {
-        stl::string echoText;
+        ea::string echoText;
         for (unsigned i = 0; i < utf8Length; ++i)
             AppendUTF8(echoText, echoCharacter_);
         text_->SetText(echoText);

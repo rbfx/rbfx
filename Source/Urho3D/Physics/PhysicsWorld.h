@@ -123,7 +123,7 @@ static const int DEFAULT_FPS = 60;
 static const float DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY = 100.0f;
 
 /// Cache of collision geometry data.
-using CollisionGeometryDataCache = stl::unordered_map<stl::pair<Model*, unsigned>, stl::shared_ptr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, ea::shared_ptr<CollisionGeometryData> >;
 
 /// Physics simulation world component. Should be added only to the root scene node.
 class URHO3D_API PhysicsWorld : public Component, public btIDebugDraw
@@ -186,7 +186,7 @@ public:
     void SetMaxNetworkAngularVelocity(float velocity);
     /// Perform a physics world raycast and return all hits.
     void Raycast
-        (stl::vector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask = M_MAX_UNSIGNED);
+        (ea::vector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask = M_MAX_UNSIGNED);
     /// Perform a physics world raycast and return the closest hit.
     void RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, unsigned collisionMask = M_MAX_UNSIGNED);
     /// Perform a physics world segmented raycast and return the closest hit. Useful for big scenes with many bodies.
@@ -204,13 +204,13 @@ public:
     /// Invalidate cached collision geometry for a model.
     void RemoveCachedGeometry(Model* model);
     /// Return rigid bodies by a sphere query.
-    void GetRigidBodies(stl::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask = M_MAX_UNSIGNED);
+    void GetRigidBodies(ea::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask = M_MAX_UNSIGNED);
     /// Return rigid bodies by a box query.
-    void GetRigidBodies(stl::vector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask = M_MAX_UNSIGNED);
+    void GetRigidBodies(ea::vector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask = M_MAX_UNSIGNED);
     /// Return rigid bodies by contact test with the specified body. It needs to be active to return all contacts reliably.
-    void GetRigidBodies(stl::vector<RigidBody*>& result, const RigidBody* body);
+    void GetRigidBodies(ea::vector<RigidBody*>& result, const RigidBody* body);
     /// Return rigid bodies that have been in collision with the specified body on the last simulation step. Only returns collisions that were sent as events (depends on collision event mode) and excludes e.g. static-static collisions.
-    void GetCollidingBodies(stl::vector<RigidBody*>& result, const RigidBody* body);
+    void GetCollidingBodies(ea::vector<RigidBody*>& result, const RigidBody* body);
 
     /// Return gravity.
     Vector3 GetGravity() const;
@@ -304,27 +304,27 @@ private:
     /// Bullet collision configuration.
     btCollisionConfiguration* collisionConfiguration_{};
     /// Bullet collision dispatcher.
-    stl::unique_ptr<btDispatcher> collisionDispatcher_;
+    ea::unique_ptr<btDispatcher> collisionDispatcher_;
     /// Bullet collision broadphase.
-    stl::unique_ptr<btBroadphaseInterface> broadphase_;
+    ea::unique_ptr<btBroadphaseInterface> broadphase_;
     /// Bullet constraint solver.
-    stl::unique_ptr<btConstraintSolver> solver_;
+    ea::unique_ptr<btConstraintSolver> solver_;
     /// Bullet physics world.
-    stl::unique_ptr<btDiscreteDynamicsWorld> world_;
+    ea::unique_ptr<btDiscreteDynamicsWorld> world_;
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
-    stl::weak_ptr<Scene> scene_;
+    ea::weak_ptr<Scene> scene_;
     /// Rigid bodies in the world.
-    stl::vector<RigidBody*> rigidBodies_;
+    ea::vector<RigidBody*> rigidBodies_;
     /// Collision shapes in the world.
-    stl::vector<CollisionShape*> collisionShapes_;
+    ea::vector<CollisionShape*> collisionShapes_;
     /// Constraints in the world.
-    stl::vector<Constraint*> constraints_;
+    ea::vector<Constraint*> constraints_;
     /// Collision pairs on this frame.
-    stl::unordered_map<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair> currentCollisions_;
+    ea::unordered_map<ea::pair<ea::weak_ptr<RigidBody>, ea::weak_ptr<RigidBody> >, ManifoldPair> currentCollisions_;
     /// Collision pairs on the previous frame. Used to check if a collision is "new." Manifolds are not guaranteed to exist anymore.
-    stl::unordered_map<stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> >, ManifoldPair> previousCollisions_;
+    ea::unordered_map<ea::pair<ea::weak_ptr<RigidBody>, ea::weak_ptr<RigidBody> >, ManifoldPair> previousCollisions_;
     /// Delayed (parented) world transform assignments.
-    stl::unordered_map<RigidBody*, DelayedWorldTransform> delayedWorldTransforms_;
+    ea::unordered_map<RigidBody*, DelayedWorldTransform> delayedWorldTransforms_;
     /// Cache for trimesh geometry data by model and LOD level.
     CollisionGeometryDataCache triMeshCache_;
     /// Cache for convex geometry data by model and LOD level.

@@ -69,7 +69,7 @@ struct URHO3D_API TouchState
     /// Finger pressure.
     float pressure_;
     /// Last touched UI element from screen joystick.
-    stl::weak_ptr<UIElement> touchedElement_;
+    ea::weak_ptr<UIElement> touchedElement_;
 };
 
 /// %Input state for a joystick.
@@ -113,15 +113,15 @@ struct URHO3D_API JoystickState
     /// UI element containing the screen joystick.
     UIElement* screenJoystick_{};
     /// Joystick name.
-    stl::string name_;
+    ea::string name_;
     /// Button up/down state.
-    stl::vector<bool> buttons_;
+    ea::vector<bool> buttons_;
     /// Button pressed on this frame.
-    stl::vector<bool> buttonPress_;
+    ea::vector<bool> buttonPress_;
     /// Axis position from -1 to 1.
-    stl::vector<float> axes_;
+    ea::vector<float> axes_;
     /// POV hat bits.
-    stl::vector<int> hats_;
+    ea::vector<int> hats_;
 };
 
 #ifdef __EMSCRIPTEN__
@@ -214,17 +214,17 @@ public:
     void CenterMousePosition();
 
     /// Return keycode from key name.
-    Key GetKeyFromName(const stl::string& name) const;
+    Key GetKeyFromName(const ea::string& name) const;
     /// Return keycode from scancode.
     Key GetKeyFromScancode(Scancode scancode) const;
     /// Return name of key from keycode.
-    stl::string GetKeyName(Key key) const;
+    ea::string GetKeyName(Key key) const;
     /// Return scancode from keycode.
     Scancode GetScancodeFromKey(Key key) const;
     /// Return scancode from key name.
-    Scancode GetScancodeFromName(const stl::string& name) const;
+    Scancode GetScancodeFromName(const ea::string& name) const;
     /// Return name of key from scancode.
-    stl::string GetScancodeName(Scancode scancode) const;
+    ea::string GetScancodeName(Scancode scancode) const;
     /// Check if a key is held down.
     bool GetKeyDown(Key key) const;
     /// Check if a key has been pressed on this frame.
@@ -270,7 +270,7 @@ public:
     /// Return joystick state by index, or null if does not exist. 0 = first connected joystick.
     JoystickState* GetJoystickByIndex(unsigned index);
     /// Return joystick state by name, or null if does not exist.
-    JoystickState* GetJoystickByName(const stl::string& name);
+    JoystickState* GetJoystickByName(const ea::string& name);
 
     /// Return whether fullscreen toggle is enabled.
     bool GetToggleFullscreen() const { return toggleFullscreen_; }
@@ -367,25 +367,25 @@ private:
 #endif
 
     /// Graphics subsystem.
-    stl::weak_ptr<Graphics> graphics_;
+    ea::weak_ptr<Graphics> graphics_;
     /// Key down state.
-    stl::hash_set<int> keyDown_;
+    ea::hash_set<int> keyDown_;
     /// Key pressed state.
-    stl::hash_set<int> keyPress_;
+    ea::hash_set<int> keyPress_;
     /// Key down state by scancode.
-    stl::hash_set<int> scancodeDown_;
+    ea::hash_set<int> scancodeDown_;
     /// Key pressed state by scancode.
-    stl::hash_set<int> scancodePress_;
+    ea::hash_set<int> scancodePress_;
     /// Active finger touches.
-    stl::unordered_map<int, TouchState> touches_;
+    ea::unordered_map<int, TouchState> touches_;
     /// List that maps between event touch IDs and normalised touch IDs
-    stl::list<int> availableTouchIDs_;
+    ea::list<int> availableTouchIDs_;
     /// Mapping of touch indices
-    stl::unordered_map<int, int> touchIDMap_;
+    ea::unordered_map<int, int> touchIDMap_;
     /// String for text input.
-    stl::string textInput_;
+    ea::string textInput_;
     /// Opened joysticks.
-    stl::unordered_map<SDL_JoystickID, JoystickState> joysticks_;
+    ea::unordered_map<SDL_JoystickID, JoystickState> joysticks_;
     /// Mouse buttons' down state.
     MouseButtonFlags mouseButtonDown_;
     /// Mouse buttons' pressed state.
@@ -443,7 +443,7 @@ private:
 
 #ifdef __EMSCRIPTEN__
     /// Emscripten Input glue instance.
-    stl::unique_ptr<EmscriptenInput> emscriptenInput_;
+    ea::unique_ptr<EmscriptenInput> emscriptenInput_;
     /// Flag used to detect mouse jump when exiting pointer-lock.
     bool emscriptenExitingPointerLock_;
     /// Flag used to detect mouse jump on initial mouse click when entering pointer-lock.

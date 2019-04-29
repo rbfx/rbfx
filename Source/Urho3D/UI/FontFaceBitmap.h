@@ -44,15 +44,15 @@ public:
     /// Load from existed font face, pack used glyphs into smallest texture size and smallest number of texture.
     bool Load(FontFace* fontFace, bool usedGlyphs);
     /// Save as a new bitmap font type in XML format. Return true if successful.
-    bool Save(Serializer& dest, int pointSize, const stl::string& indentation = "\t");
+    bool Save(Serializer& dest, int pointSize, const ea::string& indentation = "\t");
 
 private:
     /// Convert graphics format to number of components.
     unsigned ConvertFormatToNumComponents(unsigned format);
     /// Save font face texture as image resource.
-    stl::shared_ptr<Image> SaveFaceTexture(Texture2D* texture);
+    ea::shared_ptr<Image> SaveFaceTexture(Texture2D* texture);
     /// Save font face texture as image file.
-    bool SaveFaceTexture(Texture2D* texture, const stl::string& fileName);
+    bool SaveFaceTexture(Texture2D* texture, const ea::string& fileName);
     /// Blit.
     void Blit(Image* dest, int x, int y, int width, int height, Image* source, int sourceX, int sourceY, int components);
 };

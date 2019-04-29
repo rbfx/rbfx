@@ -64,7 +64,7 @@ bool SpriterInstance::SetEntity(int index)
     return false;
 }
 
-bool SpriterInstance::SetEntity(const stl::string& entityName)
+bool SpriterInstance::SetEntity(const ea::string& entityName)
 {
     if (!spriterData_)
         return false;
@@ -95,7 +95,7 @@ bool SpriterInstance::SetAnimation(int index, LoopMode loopMode)
     return false;
 }
 
-bool SpriterInstance::SetAnimation(const stl::string& animationName, LoopMode loopMode)
+bool SpriterInstance::SetAnimation(const ea::string& animationName, LoopMode loopMode)
 {
     if (!entity_)
         return false;
@@ -237,7 +237,7 @@ void SpriterInstance::UpdateTimelineKeys()
 
 void SpriterInstance::UpdateMainlineKey()
 {
-    const stl::vector<MainlineKey*>& mainlineKeys = animation_->mainlineKeys_;
+    const ea::vector<MainlineKey*>& mainlineKeys = animation_->mainlineKeys_;
     for (unsigned i = 0; i < mainlineKeys.size(); ++i)
     {
         if (mainlineKeys[i]->time_ <= currentTime_)

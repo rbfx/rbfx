@@ -107,9 +107,9 @@ struct URHO3D_API Decal
     /// Local-space bounding box.
     BoundingBox boundingBox_;
     /// Decal vertices.
-    stl::vector<DecalVertex> vertices_;
+    ea::vector<DecalVertex> vertices_;
     /// Decal indices.
-    stl::vector<unsigned short> indices_;
+    ea::vector<unsigned short> indices_;
 };
 
 /// %Decal renderer component.
@@ -130,7 +130,7 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
@@ -179,11 +179,11 @@ public:
     /// Set material attribute.
     void SetMaterialAttr(const ResourceRef& value);
     /// Set decals attribute.
-    void SetDecalsAttr(const stl::vector<unsigned char>& value);
+    void SetDecalsAttr(const ea::vector<unsigned char>& value);
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
     /// Return decals attribute.
-    stl::vector<unsigned char> GetDecalsAttr() const;
+    ea::vector<unsigned char> GetDecalsAttr() const;
 
 protected:
     /// Recalculate the world-space bounding box.
@@ -193,11 +193,11 @@ protected:
 
 private:
     /// Get triangle faces from the target geometry.
-    void GetFaces(stl::vector<stl::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, const Frustum& frustum,
+    void GetFaces(ea::vector<ea::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, const Frustum& frustum,
         const Vector3& decalNormal, float normalCutoff);
     /// Get triangle face from the target geometry.
     void GetFace
-        (stl::vector<stl::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, unsigned i0, unsigned i1, unsigned i2,
+        (ea::vector<ea::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, unsigned i0, unsigned i1, unsigned i2,
             const unsigned char* positionData, const unsigned char* normalData, const unsigned char* skinningData,
             unsigned positionStride, unsigned normalStride, unsigned skinningStride, const Frustum& frustum,
             const Vector3& decalNormal, float normalCutoff);
@@ -210,7 +210,7 @@ private:
     /// Transform decal's vertices from the target geometry to the decal set local space.
     void TransformVertices(Decal& decal, const Matrix3x4& transform);
     /// Remove a decal by iterator and return iterator to the next decal.
-    stl::list<Decal>::iterator RemoveDecal(stl::list<Decal>::iterator i);
+    ea::list<Decal>::iterator RemoveDecal(ea::list<Decal>::iterator i);
     /// Mark decals and the bounding box dirty.
     void MarkDecalsDirty();
     /// Recalculate the local-space bounding box.
@@ -229,17 +229,17 @@ private:
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Geometry.
-    stl::shared_ptr<Geometry> geometry_;
+    ea::shared_ptr<Geometry> geometry_;
     /// Vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Index buffer.
-    stl::shared_ptr<IndexBuffer> indexBuffer_;
+    ea::shared_ptr<IndexBuffer> indexBuffer_;
     /// Decals.
-    stl::list<Decal> decals_;
+    ea::list<Decal> decals_;
     /// Bones used for skinned decals.
-    stl::vector<Bone> bones_;
+    ea::vector<Bone> bones_;
     /// Skinning matrices.
-    stl::vector<Matrix3x4> skinMatrices_;
+    ea::vector<Matrix3x4> skinMatrices_;
     /// Vertices in the current decals.
     unsigned numVertices_;
     /// Indices in the current decals.

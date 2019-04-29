@@ -71,7 +71,7 @@ struct ScratchBuffer
     }
 
     /// Buffer data.
-    stl::shared_array<unsigned char> data_;
+    ea::shared_array<unsigned char> data_;
     /// Data size.
     unsigned size_;
     /// Reserved flag.
@@ -92,7 +92,7 @@ public:
     /// Set external window handle. Only effective before setting the initial screen mode.
     void SetExternalWindow(void* window);
     /// Set window title.
-    void SetWindowTitle(const stl::string& windowTitle);
+    void SetWindowTitle(const ea::string& windowTitle);
     /// Set window icon.
     void SetWindowIcon(Image* windowIcon);
     /// Set window position. Sets initial position if window is not created yet.
@@ -114,7 +114,7 @@ public:
     /// Set forced use of OpenGL 2 even if OpenGL 3 is available. Must be called before setting the screen mode for the first time. Default false. No effect on Direct3D9 & 11.
     void SetForceGL2(bool enable);
     /// Set allowed screen orientations as a space-separated list of "LandscapeLeft", "LandscapeRight", "Portrait" and "PortraitUpsideDown". Affects currently only iOS platform.
-    void SetOrientations(const stl::string& orientations);
+    void SetOrientations(const ea::string& orientations);
     /// Toggle between full screen and windowed mode. Return true if successful.
     bool ToggleFullscreen();
     /// Close the window.
@@ -148,9 +148,9 @@ public:
     /// Set vertex buffer.
     void SetVertexBuffer(VertexBuffer* buffer);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
@@ -245,13 +245,13 @@ public:
     void SetClipPlane(bool enable, const Plane& clipPlane = Plane::UP, const Matrix3x4& view = Matrix3x4::IDENTITY,
         const Matrix4& projection = Matrix4::IDENTITY);
     /// Begin dumping shader variation names to an XML file for precaching.
-    void BeginDumpShaders(const stl::string& fileName);
+    void BeginDumpShaders(const ea::string& fileName);
     /// End dumping shader variations names.
     void EndDumpShaders();
     /// Precache shader variations from an XML file generated with BeginDumpShaders().
     void PrecacheShaders(Deserializer& source);
     /// Set shader cache directory, Direct3D only. This can either be an absolute path or a path within the resource system.
-    void SetShaderCacheDir(const stl::string& path);
+    void SetShaderCacheDir(const ea::string& path);
 
     /// Return whether rendering initialized.
     bool IsInitialized() const;
@@ -266,10 +266,10 @@ public:
     SDL_Window* GetWindow() const { return window_; }
 
     /// Return window title.
-    const stl::string& GetWindowTitle() const { return windowTitle_; }
+    const ea::string& GetWindowTitle() const { return windowTitle_; }
 
     /// Return graphics API name.
-    const stl::string& GetApiName() const { return apiName_; }
+    const ea::string& GetApiName() const { return apiName_; }
 
     /// Return window position.
     IntVector2 GetWindowPosition() const;
@@ -323,7 +323,7 @@ public:
     bool GetForceGL2() const { return forceGL2_; }
 
     /// Return allowed screen orientations.
-    const stl::string& GetOrientations() const { return orientations_; }
+    const ea::string& GetOrientations() const { return orientations_; }
 
     /// Return whether graphics context is lost and can not render or load GPU resources.
     bool IsDeviceLost() const;
@@ -368,9 +368,9 @@ public:
     bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
 
     /// Return supported fullscreen resolutions (third component is refreshRate). Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
-    stl::vector<IntVector3> GetResolutions(int monitor) const;
+    ea::vector<IntVector3> GetResolutions(int monitor) const;
     /// Return supported multisampling levels.
-    stl::vector<int> GetMultiSampleLevels() const;
+    ea::vector<int> GetMultiSampleLevels() const;
     /// Return the desktop resolution.
     IntVector2 GetDesktopResolution(int monitor) const;
     /// Return the number of currently connected monitors.
@@ -385,7 +385,7 @@ public:
     /// Return hardware format for a compressed image format, or 0 if unsupported.
     unsigned GetFormat(CompressedFormat format) const;
     /// Return a shader variation by name and defines.
-    ShaderVariation* GetShader(ShaderType type, const stl::string& name, const stl::string& defines = EMPTY_STRING) const;
+    ShaderVariation* GetShader(ShaderType type, const ea::string& name, const ea::string& defines = EMPTY_STRING) const;
     /// Return a shader variation by name and defines.
     ShaderVariation* GetShader(ShaderType type, const char* name, const char* defines) const;
     /// Return current vertex buffer by index.
@@ -404,9 +404,9 @@ public:
     ShaderProgram* GetShaderProgram() const;
 
     /// Return texture unit index by name.
-    TextureUnit GetTextureUnit(const stl::string& name);
+    TextureUnit GetTextureUnit(const ea::string& name);
     /// Return texture unit name by index.
-    const stl::string& GetTextureUnitName(TextureUnit unit);
+    const ea::string& GetTextureUnitName(TextureUnit unit);
     /// Return current texture by texture unit index.
     Texture* GetTexture(unsigned index) const;
 
@@ -489,7 +489,7 @@ public:
     bool GetUseClipPlane() const { return useClipPlane_; }
 
     /// Return shader cache directory, Direct3D only.
-    const stl::string& GetShaderCacheDir() const { return shaderCacheDir_; }
+    const ea::string& GetShaderCacheDir() const { return shaderCacheDir_; }
 
     /// Return current rendertarget width and height.
     IntVector2 GetRenderTargetDimensions() const;
@@ -562,7 +562,7 @@ public:
     /// Return the API-specific readable hardware depth format, or 0 if not supported.
     static unsigned GetReadableDepthFormat();
     /// Return the API-specific texture format from a textual description, for example "rgb".
-    static unsigned GetFormat(const stl::string& formatName);
+    static unsigned GetFormat(const ea::string& formatName);
 
     /// Return UV offset required for pixel perfect rendering.
     static const Vector2& GetPixelUVOffset() { return pixelUVOffset; }
@@ -638,9 +638,9 @@ private:
     /// SDL window.
     SDL_Window* window_{};
     /// Window title.
-    stl::string windowTitle_;
+    ea::string windowTitle_;
     /// Window icon image.
-    stl::weak_ptr<Image> windowIcon_;
+    ea::weak_ptr<Image> windowIcon_;
     /// External window, null if not in use (default.)
     void* externalWindow_{};
     /// Window width in pixels.
@@ -702,9 +702,9 @@ private:
     /// Largest scratch buffer request this frame.
     unsigned maxScratchBufferRequest_{};
     /// GPU objects.
-    stl::vector<GPUObject*> gpuObjects_;
+    ea::vector<GPUObject*> gpuObjects_;
     /// Scratch buffers.
-    stl::vector<ScratchBuffer> scratchBuffers_;
+    ea::vector<ScratchBuffer> scratchBuffers_;
     /// Shadow map dummy color texture format.
     unsigned dummyColorFormat_{};
     /// Shadow map depth texture format.
@@ -726,7 +726,7 @@ private:
     /// Textures in use.
     Texture* textures_[MAX_TEXTURE_UNITS]{};
     /// Texture unit mappings.
-    stl::unordered_map<stl::string, TextureUnit> textureUnits_;
+    ea::unordered_map<ea::string, TextureUnit> textureUnits_;
     /// Rendertargets in use.
     RenderSurface* renderTargets_[MAX_RENDERTARGETS]{};
     /// Depth-stencil surface in use.
@@ -784,21 +784,21 @@ private:
     /// Remembered shader parameter sources.
     const void* shaderParameterSources_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Base directory for shaders.
-    stl::string shaderPath_;
+    ea::string shaderPath_;
     /// Cache directory for Direct3D binary shaders.
-    stl::string shaderCacheDir_;
+    ea::string shaderCacheDir_;
     /// File extension for shaders.
-    stl::string shaderExtension_;
+    ea::string shaderExtension_;
     /// Last used shader in shader variation query.
-    mutable stl::weak_ptr<Shader> lastShader_;
+    mutable ea::weak_ptr<Shader> lastShader_;
     /// Last used shader name in shader variation query.
-    mutable stl::string lastShaderName_;
+    mutable ea::string lastShaderName_;
     /// Shader precache utility.
-    stl::shared_ptr<ShaderPrecache> shaderPrecache_;
+    ea::shared_ptr<ShaderPrecache> shaderPrecache_;
     /// Allowed screen orientations.
-    stl::string orientations_;
+    ea::string orientations_;
     /// Graphics API name.
-    stl::string apiName_;
+    ea::string apiName_;
 
     /// Pixel perfect UV offset.
     static const Vector2 pixelUVOffset;

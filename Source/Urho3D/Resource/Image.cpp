@@ -263,7 +263,7 @@ void Image::RegisterObject(Context* context)
 bool Image::BeginLoad(Deserializer& source)
 {
     // Check for DDS, KTX or PVR compressed format
-    stl::string fileID = source.ReadFileID();
+    ea::string fileID = source.ReadFileID();
 
     if (fileID == "DDS ")
     {
@@ -433,7 +433,7 @@ bool Image::BeginLoad(Deserializer& source)
             if (faceIndex < imageChainCount - 1)
             {
                 // Build the image chain
-                stl::shared_ptr<Image> nextImage(context_->CreateObject<Image>());
+                ea::shared_ptr<Image> nextImage(context_->CreateObject<Image>());
                 currentImage->nextSibling_ = nextImage;
                 currentImage = nextImage;
             }
@@ -474,7 +474,7 @@ bool Image::BeginLoad(Deserializer& source)
                 ADJUSTSHIFT(bMask, bShiftL, bShiftR)
                 ADJUSTSHIFT(aMask, aShiftL, aShiftR)
 
-                stl::shared_array<unsigned char> rgbaData(new unsigned char[numPixels * 4]);
+                ea::shared_array<unsigned char> rgbaData(new unsigned char[numPixels * 4]);
 
                 switch (sourcePixelByteSize)
                 {
@@ -800,7 +800,7 @@ bool Image::BeginLoad(Deserializer& source)
 
         // Read the file to buffer.
         size_t dataSize(source.GetSize());
-        stl::shared_array<uint8_t> data(new uint8_t[dataSize]);
+        ea::shared_array<uint8_t> data(new uint8_t[dataSize]);
 
         memset(data.get(), 0, sizeof(uint8_t) * dataSize);
         source.Seek(0);
@@ -815,7 +815,7 @@ bool Image::BeginLoad(Deserializer& source)
         }
 
         size_t imgSize = (size_t)features.width * features.height * (features.has_alpha ? 4 : 3);
-        stl::shared_array<uint8_t> pixelData(new uint8_t[imgSize]);
+        ea::shared_array<uint8_t> pixelData(new uint8_t[imgSize]);
 
         bool decodeError(false);
         if (features.has_alpha)
@@ -845,7 +845,7 @@ bool Image::BeginLoad(Deserializer& source)
         unsigned char* pixelData = GetImageData(source, width, height, components);
         if (!pixelData)
         {
-            URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + stl::string(stbi_failure_reason()));
+            URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + ea::string(stbi_failure_reason()));
             return false;
         }
         SetSize(width, height, components);
@@ -879,7 +879,7 @@ bool Image::Save(Serializer& dest) const
     return success;
 }
 
-bool Image::SaveFile(const stl::string& fileName) const
+bool Image::SaveFile(const ea::string& fileName) const
 {
     if (fileName.ends_with(".dds", false))
         return SaveDDS(fileName);
@@ -990,7 +990,7 @@ void Image::SetData(const unsigned char* pixelData)
 
 bool Image::LoadColorLUT(Deserializer& source)
 {
-    stl::string fileID = source.ReadFileID();
+    ea::string fileID = source.ReadFileID();
 
     if (fileID == "DDS " || fileID == "\253KTX" || fileID == "PVR\3")
     {
@@ -1004,7 +1004,7 @@ bool Image::LoadColorLUT(Deserializer& source)
     unsigned char* pixelDataIn = GetImageData(source, width, height, components);
     if (!pixelDataIn)
     {
-        URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + stl::string(stbi_failure_reason()));
+        URHO3D_LOGERROR("Could not load image " + source.GetName() + ": " + ea::string(stbi_failure_reason()));
         return false;
     }
     if (components != 3)
@@ -1052,7 +1052,7 @@ bool Image::FlipHorizontal()
 
     if (!IsCompressed())
     {
-        stl::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
+        ea::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
         unsigned rowSize = width_ * components_;
 
         for (int y = 0; y < height_; ++y)
@@ -1075,7 +1075,7 @@ bool Image::FlipHorizontal()
         }
 
         // Memory use = combined size of the compressed mip levels
-        stl::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
+        ea::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
         unsigned dataOffset = 0;
 
         for (unsigned i = 0; i < numCompressedLevels_; ++i)
@@ -1119,7 +1119,7 @@ bool Image::FlipVertical()
 
     if (!IsCompressed())
     {
-        stl::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
+        ea::shared_array<unsigned char> newData(new unsigned char[width_ * height_ * components_]);
         unsigned rowSize = width_ * components_;
 
         for (int y = 0; y < height_; ++y)
@@ -1136,7 +1136,7 @@ bool Image::FlipVertical()
         }
 
         // Memory use = combined size of the compressed mip levels
-        stl::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
+        ea::shared_array<unsigned char> newData(new unsigned char[GetMemoryUse()]);
         unsigned dataOffset = 0;
 
         for (unsigned i = 0; i < numCompressedLevels_; ++i)
@@ -1186,7 +1186,7 @@ bool Image::Resize(int width, int height)
         return false;
 
     /// \todo Reducing image size does not sample all needed pixels
-    stl::shared_array<unsigned char> newData(new unsigned char[width * height * components_]);
+    ea::shared_array<unsigned char> newData(new unsigned char[width * height * components_]);
     for (int y = 0; y < height; ++y)
     {
         for (int x = 0; x < width; ++x)
@@ -1257,7 +1257,7 @@ void Image::ClearInt(unsigned uintColor)
     }
 }
 
-bool Image::SaveBMP(const stl::string& fileName) const
+bool Image::SaveBMP(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageBMP");
 
@@ -1280,7 +1280,7 @@ bool Image::SaveBMP(const stl::string& fileName) const
         return false;
 }
 
-bool Image::SavePNG(const stl::string& fileName) const
+bool Image::SavePNG(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImagePNG");
 
@@ -1291,7 +1291,7 @@ bool Image::SavePNG(const stl::string& fileName) const
         return false;
 }
 
-bool Image::SaveTGA(const stl::string& fileName) const
+bool Image::SaveTGA(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageTGA");
 
@@ -1314,7 +1314,7 @@ bool Image::SaveTGA(const stl::string& fileName) const
         return false;
 }
 
-bool Image::SaveJPG(const stl::string& fileName, int quality) const
+bool Image::SaveJPG(const ea::string& fileName, int quality) const
 {
     URHO3D_PROFILE("SaveImageJPG");
 
@@ -1337,7 +1337,7 @@ bool Image::SaveJPG(const stl::string& fileName, int quality) const
         return false;
 }
 
-bool Image::SaveDDS(const stl::string& fileName) const
+bool Image::SaveDDS(const ea::string& fileName) const
 {
     URHO3D_PROFILE("SaveImageDDS");
 
@@ -1361,7 +1361,7 @@ bool Image::SaveDDS(const stl::string& fileName) const
     }
 
     // Write image
-    stl::vector<const Image*> levels;
+    ea::vector<const Image*> levels;
     GetLevels(levels);
 
     outFile.WriteFileID("DDS ");
@@ -1389,7 +1389,7 @@ bool Image::SaveDDS(const stl::string& fileName) const
     return true;
 }
 
-bool Image::SaveWEBP(const stl::string& fileName, float compression /* = 0.0f */) const
+bool Image::SaveWEBP(const ea::string& fileName, float compression /* = 0.0f */) const
 {
 #ifdef URHO3D_WEBP
     URHO3D_PROFILE("SaveImageWEBP");
@@ -1411,7 +1411,7 @@ bool Image::SaveWEBP(const stl::string& fileName, float compression /* = 0.0f */
 
     if (height_ > WEBP_MAX_DIMENSION || width_ > WEBP_MAX_DIMENSION)
     {
-        URHO3D_LOGERROR("Maximum dimension supported by WebP is " + stl::to_string(WEBP_MAX_DIMENSION));
+        URHO3D_LOGERROR("Maximum dimension supported by WebP is " + ea::to_string(WEBP_MAX_DIMENSION));
         return false;
     }
 
@@ -1599,17 +1599,17 @@ Color Image::GetPixelTrilinear(float x, float y, float z) const
     return colorNear.Lerp(colorFar, zF);
 }
 
-stl::shared_ptr<Image> Image::GetNextLevel() const
+ea::shared_ptr<Image> Image::GetNextLevel() const
 {
     if (IsCompressed())
     {
         URHO3D_LOGERROR("Can not generate mip level from compressed data");
-        return stl::shared_ptr<Image>();
+        return ea::shared_ptr<Image>();
     }
     if (components_ < 1 || components_ > 4)
     {
         URHO3D_LOGERROR("Illegal number of image components for mip level generation");
-        return stl::shared_ptr<Image>();
+        return ea::shared_ptr<Image>();
     }
 
     if (nextLevel_)
@@ -1628,7 +1628,7 @@ stl::shared_ptr<Image> Image::GetNextLevel() const
     if (depthOut < 1)
         depthOut = 1;
 
-    stl::shared_ptr<Image> mipImage(context_->CreateObject<Image>());
+    ea::shared_ptr<Image> mipImage(context_->CreateObject<Image>());
 
     if (depth_ > 1)
         mipImage->SetSize(widthOut, heightOut, depthOut, components_);
@@ -1900,29 +1900,29 @@ stl::shared_ptr<Image> Image::GetNextLevel() const
     return mipImage;
 }
 
-stl::shared_ptr<Image> Image::ConvertToRGBA() const
+ea::shared_ptr<Image> Image::ConvertToRGBA() const
 {
     if (IsCompressed())
     {
         URHO3D_LOGERROR("Can not convert compressed image to RGBA");
-        return stl::shared_ptr<Image>();
+        return ea::shared_ptr<Image>();
     }
     if (components_ < 1 || components_ > 4)
     {
         URHO3D_LOGERROR("Illegal number of image components for conversion to RGBA");
-        return stl::shared_ptr<Image>();
+        return ea::shared_ptr<Image>();
     }
     if (!data_)
     {
         URHO3D_LOGERROR("Can not convert image without data to RGBA");
-        return stl::shared_ptr<Image>();
+        return ea::shared_ptr<Image>();
     }
 
     // Already RGBA?
     if (components_ == 4)
-        return stl::shared_ptr<Image>(const_cast<Image*>(this));
+        return ea::shared_ptr<Image>(const_cast<Image*>(this));
 
-    stl::shared_ptr<Image> ret(context_->CreateObject<Image>());
+    ea::shared_ptr<Image> ret(context_->CreateObject<Image>());
     ret->SetSize(width_, height_, depth_, 4);
 
     const unsigned char* src = data_.get();
@@ -2012,8 +2012,8 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 
             if (offset + level.dataSize_ > GetMemoryUse())
             {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + stl::to_string(offset) + " Size: " + stl::to_string(level.dataSize_) +
-                         " Datasize: " + stl::to_string(GetMemoryUse()));
+                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + ea::to_string(offset) + " Size: " + ea::to_string(level.dataSize_) +
+                         " Datasize: " + ea::to_string(GetMemoryUse()));
                 level.data_ = nullptr;
                 return level;
             }
@@ -2050,8 +2050,8 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 
             if (offset + level.dataSize_ > GetMemoryUse())
             {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + stl::to_string(offset) + " Size: " + stl::to_string(level.dataSize_) +
-                         " Datasize: " + stl::to_string(GetMemoryUse()));
+                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + ea::to_string(offset) + " Size: " + ea::to_string(level.dataSize_) +
+                         " Datasize: " + ea::to_string(GetMemoryUse()));
                 level.data_ = nullptr;
                 return level;
             }
@@ -2088,8 +2088,8 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
 
             if (offset + level.dataSize_ > GetMemoryUse())
             {
-                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + stl::to_string(offset) + " Size: " + stl::to_string(level.dataSize_) +
-                         " Datasize: " + stl::to_string(GetMemoryUse()));
+                URHO3D_LOGERROR("Compressed level is outside image data. Offset: " + ea::to_string(offset) + " Size: " + ea::to_string(level.dataSize_) +
+                         " Datasize: " + ea::to_string(GetMemoryUse()));
                 level.data_ = nullptr;
                 return level;
             }
@@ -2105,7 +2105,7 @@ CompressedLevel Image::GetCompressedLevel(unsigned index) const
     }
 }
 
-stl::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
+ea::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
 {
     if (!data_)
         return nullptr;
@@ -2153,7 +2153,7 @@ stl::shared_ptr<Image> Image::GetSubimage(const IntRect& rect) const
         paddedRect.bottom_ = (rect.bottom_ / 4) * 4;
         IntRect currentRect = paddedRect;
 
-        stl::vector<unsigned char> subimageData;
+        ea::vector<unsigned char> subimageData;
         unsigned subimageLevels = 0;
 
         // Save as many mips as possible until the next mip would cross a block boundary
@@ -2290,7 +2290,7 @@ void Image::PrecalculateLevels()
 
     if (width_ > 1 || height_ > 1)
     {
-        stl::shared_ptr<Image> current = GetNextLevel();
+        ea::shared_ptr<Image> current = GetNextLevel();
         nextLevel_ = current;
         while (current && (current->width_ > 1 || current->height_ > 1))
         {
@@ -2305,7 +2305,7 @@ void Image::CleanupLevels()
     nextLevel_.reset();
 }
 
-void Image::GetLevels(stl::vector<Image*>& levels)
+void Image::GetLevels(ea::vector<Image*>& levels)
 {
     levels.clear();
 
@@ -2317,7 +2317,7 @@ void Image::GetLevels(stl::vector<Image*>& levels)
     }
 }
 
-void Image::GetLevels(stl::vector<const Image*>& levels) const
+void Image::GetLevels(ea::vector<const Image*>& levels) const
 {
     levels.clear();
 
@@ -2333,7 +2333,7 @@ unsigned char* Image::GetImageData(Deserializer& source, int& width, int& height
 {
     unsigned dataSize = source.GetSize();
 
-    stl::shared_array<unsigned char> buffer(new unsigned char[dataSize]);
+    ea::shared_array<unsigned char> buffer(new unsigned char[dataSize]);
     source.Read(buffer.get(), dataSize);
     return stbi_load_from_memory(buffer.get(), dataSize, &width, &height, (int*)&components, 0);
 }

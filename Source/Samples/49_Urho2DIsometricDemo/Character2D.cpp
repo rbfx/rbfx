@@ -150,7 +150,7 @@ void Character2D::HandleWoundedState(float timeStep)
         remainingLifes_ -= 1;
         auto* ui = GetSubsystem<UI>();
         Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
-        lifeText->SetText(stl::to_string(remainingLifes_)); // Update lifes UI counter
+        lifeText->SetText(ea::to_string(remainingLifes_)); // Update lifes UI counter
 
         // Reset wounded state
         wounded_ = false;

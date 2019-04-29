@@ -52,9 +52,9 @@ static const char* cubeMapLayoutNames[] = {
     nullptr
 };
 
-static stl::shared_ptr<Image> GetTileImage(Image* src, int tileX, int tileY, int tileWidth, int tileHeight)
+static ea::shared_ptr<Image> GetTileImage(Image* src, int tileX, int tileY, int tileWidth, int tileHeight)
 {
-    return stl::shared_ptr<Image>(
+    return ea::shared_ptr<Image>(
         src->GetSubimage(IntRect(tileX * tileWidth, tileY * tileHeight, (tileX + 1) * tileWidth, (tileY + 1) * tileHeight)));
 }
 
@@ -99,7 +99,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
 
     cache->ResetDependencies(this);
 
-    stl::string texPath, texName, texExt;
+    ea::string texPath, texName, texExt;
     SplitPath(GetName(), texPath, texName, texExt);
 
     loadParameters_ = (context_->CreateObject<XMLFile>());
@@ -116,12 +116,12 @@ bool TextureCube::BeginLoad(Deserializer& source)
     // Single image and multiple faces with layout
     if (imageElem)
     {
-        stl::string name = imageElem.GetAttribute("name");
+        ea::string name = imageElem.GetAttribute("name");
         // If path is empty, add the XML file path
         if (GetPath(name).empty())
             name = texPath + name;
 
-        stl::shared_ptr<Image> image = cache->GetTempResource<Image>(name);
+        ea::shared_ptr<Image> image = cache->GetTempResource<Image>(name);
         if (!image)
             return false;
 
@@ -209,7 +209,7 @@ bool TextureCube::BeginLoad(Deserializer& source)
         XMLElement faceElem = textureElem.GetChild("face");
         while (faceElem)
         {
-            stl::string name = faceElem.GetAttribute("name");
+            ea::string name = faceElem.GetAttribute("name");
 
             // If path is empty, add the XML file path
             if (GetPath(name).empty())
@@ -313,12 +313,12 @@ bool TextureCube::SetSize(int size, unsigned format, TextureUsage usage, int mul
     return Create();
 }
 
-stl::shared_ptr<Image> TextureCube::GetImage(CubeMapFace face) const
+ea::shared_ptr<Image> TextureCube::GetImage(CubeMapFace face) const
 {
     if (format_ != Graphics::GetRGBAFormat() && format_ != Graphics::GetRGBFormat())
     {
         URHO3D_LOGERROR("Unsupported texture format, can not convert to Image");
-        return stl::shared_ptr<Image>();
+        return ea::shared_ptr<Image>();
     }
 
     auto rawImage = context_->CreateObject<Image>();
@@ -330,7 +330,7 @@ stl::shared_ptr<Image> TextureCube::GetImage(CubeMapFace face) const
         assert(false);
 
     GetData(face, 0, rawImage->GetData());
-    return stl::shared_ptr<Image>(rawImage);
+    return ea::shared_ptr<Image>(rawImage);
 }
 
 void TextureCube::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)

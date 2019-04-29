@@ -63,7 +63,7 @@ void BorderImage::RegisterObject(Context* context)
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Blend Mode", GetBlendMode, SetBlendMode, BlendMode, blendModeNames, 0, AM_FILE);
 }
 
-void BorderImage::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void BorderImage::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     GetBatches(batches, vertexData, currentScissor, hovering_ || selected_ || HasFocus() ? hoverOffset_ : IntVector2::ZERO);
 }
@@ -123,7 +123,7 @@ void BorderImage::SetTiled(bool enable)
     tiled_ = enable;
 }
 
-void BorderImage::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor,
+void BorderImage::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor,
     const IntVector2& offset)
 {
     bool allOpaque = true;

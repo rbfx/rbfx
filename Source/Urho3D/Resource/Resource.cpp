@@ -44,7 +44,7 @@ bool Resource::Load(Deserializer& source)
     // Because BeginLoad() / EndLoad() can be called from worker threads, where profiling would be a no-op,
     // create a type name -based profile block here
     URHO3D_PROFILE_C("Load", PROFILER_COLOR_RESOURCES);
-    stl::string eventName = ToString("%s::Load(\"%s\")", GetTypeName().c_str(), GetName().c_str());
+    ea::string eventName = ToString("%s::Load(\"%s\")", GetTypeName().c_str(), GetName().c_str());
     URHO3D_PROFILE_ZONENAME(eventName.c_str(), eventName.length());
 
     // If we are loading synchronously in a non-main thread, behave as if async loading (for example use
@@ -76,19 +76,19 @@ bool Resource::Save(Serializer& dest) const
     return false;
 }
 
-bool Resource::LoadFile(const stl::string& fileName)
+bool Resource::LoadFile(const ea::string& fileName)
 {
     File file(context_);
     return file.Open(fileName, FILE_READ) && Load(file);
 }
 
-bool Resource::SaveFile(const stl::string& fileName) const
+bool Resource::SaveFile(const ea::string& fileName) const
 {
     File file(context_);
     return file.Open(fileName, FILE_WRITE) && Save(file);
 }
 
-void Resource::SetName(const stl::string& name)
+void Resource::SetName(const ea::string& name)
 {
     name_ = name;
     nameHash_ = name;
@@ -121,14 +121,14 @@ unsigned Resource::GetUseTimer()
         return useTimer_.GetMSec(false);
 }
 
-void ResourceWithMetadata::AddMetadata(const stl::string& name, const Variant& value)
+void ResourceWithMetadata::AddMetadata(const ea::string& name, const Variant& value)
 {
-    bool exists = metadata_.insert(stl::make_pair(StringHash(name), value)).second;
+    bool exists = metadata_.insert(ea::make_pair(StringHash(name), value)).second;
     if (!exists)
         metadataKeys_.push_back(name);
 }
 
-void ResourceWithMetadata::RemoveMetadata(const stl::string& name)
+void ResourceWithMetadata::RemoveMetadata(const ea::string& name)
 {
     metadata_.erase(name);
     metadataKeys_.erase_first(name);
@@ -140,7 +140,7 @@ void ResourceWithMetadata::RemoveAllMetadata()
     metadataKeys_.clear();
 }
 
-const Urho3D::Variant& ResourceWithMetadata::GetMetadata(const stl::string& name) const
+const Urho3D::Variant& ResourceWithMetadata::GetMetadata(const ea::string& name) const
 {
     auto it = metadata_.find(name);
     if (it != metadata_.end())

@@ -94,7 +94,7 @@ public:
     /// Save the image to a stream. Regardless of original format, the image is saved as png. Compressed image data is not supported. Return true if successful.
     bool Save(Serializer& dest) const override;
     /// Save the image to a file. Format of the image is determined by file extension. JPG is saved with maximum quality.
-    bool SaveFile(const stl::string& fileName) const override;
+    bool SaveFile(const ea::string& fileName) const override;
 
     /// Set 2D size and number of color components. Old image data will be destroyed and new data is undefined. Return true if successful.
     bool SetSize(int width, int height, unsigned components);
@@ -123,17 +123,17 @@ public:
     /// Clear the image with an integer color. R component is in the 8 lowest bits.
     void ClearInt(unsigned uintColor);
     /// Save in BMP format. Return true if successful.
-    bool SaveBMP(const stl::string& fileName) const;
+    bool SaveBMP(const ea::string& fileName) const;
     /// Save in PNG format. Return true if successful.
-    bool SavePNG(const stl::string& fileName) const;
+    bool SavePNG(const ea::string& fileName) const;
     /// Save in TGA format. Return true if successful.
-    bool SaveTGA(const stl::string& fileName) const;
+    bool SaveTGA(const ea::string& fileName) const;
     /// Save in JPG format with specified quality. Return true if successful.
-    bool SaveJPG(const stl::string& fileName, int quality) const;
+    bool SaveJPG(const ea::string& fileName, int quality) const;
     /// Save in DDS format. Only uncompressed RGBA images are supported. Return true if successful.
-    bool SaveDDS(const stl::string& fileName) const;
+    bool SaveDDS(const ea::string& fileName) const;
     /// Save in WebP format with minimum (fastest) or specified compression. Return true if successful. Fails always if WebP support is not compiled in.
-    bool SaveWEBP(const stl::string& fileName, float compression = 0.0f) const;
+    bool SaveWEBP(const ea::string& fileName, float compression = 0.0f) const;
     /// Whether this texture is detected as a cubemap, only relevant for DDS.
     bool IsCubemap() const { return cubemap_; }
     /// Whether this texture has been detected as a volume, only relevant for DDS.
@@ -179,15 +179,15 @@ public:
     unsigned GetNumCompressedLevels() const { return numCompressedLevels_; }
 
     /// Return next mip level by bilinear filtering. Note that if the image is already 1x1x1, will keep returning an image of that size.
-    stl::shared_ptr<Image> GetNextLevel() const;
+    ea::shared_ptr<Image> GetNextLevel() const;
     /// Return the next sibling image of an array or cubemap.
-    stl::shared_ptr<Image> GetNextSibling() const { return nextSibling_;  }
+    ea::shared_ptr<Image> GetNextSibling() const { return nextSibling_;  }
     /// Return image converted to 4-component (RGBA) to circumvent modern rendering API's not supporting e.g. the luminance-alpha format.
-    stl::shared_ptr<Image> ConvertToRGBA() const;
+    ea::shared_ptr<Image> ConvertToRGBA() const;
     /// Return a compressed mip level.
     CompressedLevel GetCompressedLevel(unsigned index) const;
     /// Return subimage from the image by the defined rect or null if failed. 3D images are not supported. You must free the subimage yourself.
-    stl::shared_ptr<Image> GetSubimage(const IntRect& rect) const;
+    ea::shared_ptr<Image> GetSubimage(const IntRect& rect) const;
     /// Return an SDL surface from the image, or null if failed. Only RGB images are supported. Specify rect to only return partial image. You must free the surface yourself.
     SDL_Surface* GetSDLSurface(const IntRect& rect = IntRect::ZERO) const;
     /// Precalculate the mip levels. Used by asynchronous texture loading.
@@ -199,9 +199,9 @@ public:
     /// Clean up the mip levels.
     void CleanupLevels();
     /// Get all stored mip levels starting from this.
-    void GetLevels(stl::vector<Image*>& levels);
+    void GetLevels(ea::vector<Image*>& levels);
     /// Get all stored mip levels starting from this.
-    void GetLevels(stl::vector<const Image*>& levels) const;
+    void GetLevels(ea::vector<const Image*>& levels) const;
 
 private:
     /// Decode an image using stb_image.
@@ -228,11 +228,11 @@ private:
     /// Compressed format.
     CompressedFormat compressedFormat_{CF_NONE};
     /// Pixel data.
-    stl::shared_array<unsigned char> data_;
+    ea::shared_array<unsigned char> data_;
     /// Precalculated mip level image.
-    stl::shared_ptr<Image> nextLevel_;
+    ea::shared_ptr<Image> nextLevel_;
     /// Next texture array or cube map image.
-    stl::shared_ptr<Image> nextSibling_;
+    ea::shared_ptr<Image> nextSibling_;
 };
 
 }

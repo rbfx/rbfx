@@ -116,7 +116,7 @@ private:
     /// Wheel roll influence (how much car will turn sidewise)
     float rollInfluence_;
     /// Emitter data for saving.
-    stl::vector<Node*> particleEmitterNodeList_;
+    ea::vector<Node*> particleEmitterNodeList_;
     /// Value to calculate acceleration.
     Vector3 prevVelocity_;
     /// Storing points for emitters

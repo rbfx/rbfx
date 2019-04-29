@@ -45,18 +45,18 @@ const IntVector2 IntVector2::UP(0, 1);
 const IntVector2 IntVector2::DOWN(0, -1);
 const IntVector2 IntVector2::ONE(1, 1);
 
-stl::string Vector2::ToString() const
+ea::string Vector2::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g", x_, y_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
-stl::string IntVector2::ToString() const
+ea::string IntVector2::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%d %d", x_, y_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
 }

@@ -44,15 +44,15 @@ public:
 
 protected:
     /// Constructs a name for newly created resource based on specified template name.
-    stl::string GetNewResourcePath(const stl::string& name);
+    ea::string GetNewResourcePath(const ea::string& name);
     /// Sends a notification to inspector tab to show inspector of specified resource.
     template<typename TInspector, typename TResource>
-    void OpenResourceInspector(const stl::string& resourcePath);
+    void OpenResourceInspector(const ea::string& resourcePath);
 
     /// Current open resource path.
-    stl::string resourcePath_;
+    ea::string resourcePath_;
     /// Current selected resource file name.
-    stl::string resourceSelection_;
+    ea::string resourceSelection_;
     /// Resource browser flags.
     ResourceBrowserFlags flags_{RBF_NONE};
 };

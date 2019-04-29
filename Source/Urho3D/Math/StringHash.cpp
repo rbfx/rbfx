@@ -61,7 +61,7 @@ StringHash::StringHash(const char* str) noexcept :      // NOLINT(google-explici
 #endif
 }
 
-StringHash::StringHash(const stl::string& str) noexcept :
+StringHash::StringHash(const ea::string& str) noexcept :
     value_(Calculate(str.c_str()))
 {
 #ifdef URHO3D_HASH_DEBUG
@@ -104,14 +104,14 @@ StringHashRegister* StringHash::GetGlobalStringHashRegister()
 #endif
 }
 
-stl::string StringHash::ToString() const
+ea::string StringHash::ToString() const
 {
     char tempBuffer[CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%08X", value_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
-stl::string StringHash::Reverse() const
+ea::string StringHash::Reverse() const
 {
 #ifdef URHO3D_HASH_DEBUG
     return Urho3D::GetGlobalStringHashRegister().GetStringCopy(*this);

@@ -51,7 +51,7 @@ public:
 
 protected:
     /// Attached material.
-    stl::shared_ptr<Urho3D::Material> material_;
+    ea::shared_ptr<Urho3D::Material> material_;
 };
 
 }
@@ -77,13 +77,13 @@ protected:
     void RenderCustomWidgets(VariantMap& args);
 
     /// Material which is being previewed.
-    stl::shared_ptr<Inspectable::Material> inspectable_;
+    ea::shared_ptr<Inspectable::Material> inspectable_;
     /// Material attribute inspector namespace.
     AttributeInspector attributeInspector_;
     /// Index of current figure displaying material.
     unsigned figureIndex_ = 0;
     /// A list of figures between which material view can be toggled.
-    stl::vector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
+    ea::vector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
 };
 
 }

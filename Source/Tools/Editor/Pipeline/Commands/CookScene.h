@@ -43,9 +43,9 @@ public:
 
 protected:
     ///
-    stl::string input_;
+    ea::string input_;
     ///
-    stl::string output_;
+    ea::string output_;
 };
 
 }

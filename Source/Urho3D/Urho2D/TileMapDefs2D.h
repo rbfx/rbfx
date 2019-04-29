@@ -109,13 +109,13 @@ public:
     /// Load from XML element.
     void Load(const XMLElement& element);
     /// Return has property.
-    bool HasProperty(const stl::string& name) const;
+    bool HasProperty(const ea::string& name) const;
     /// Return property value.
-    const stl::string& GetProperty(const stl::string& name) const;
+    const ea::string& GetProperty(const ea::string& name) const;
 
 protected:
     /// Property name to property value mapping.
-    stl::unordered_map<stl::string, stl::string> nameToValueMapping_;
+    ea::unordered_map<ea::string, ea::string> nameToValueMapping_;
 };
 
 /// Tile flipping flags.
@@ -144,9 +144,9 @@ public:
     /// Return sprite.
     Sprite2D* GetSprite() const;
     /// Return has property.
-    bool HasProperty(const stl::string& name) const;
+    bool HasProperty(const ea::string& name) const;
     /// Return property.
-    const stl::string& GetProperty(const stl::string& name) const;
+    const ea::string& GetProperty(const ea::string& name) const;
 
 private:
     friend class TmxTileLayer2D;
@@ -154,9 +154,9 @@ private:
     /// Gid.
     unsigned gid_;
     /// Sprite.
-    stl::shared_ptr<Sprite2D> sprite_;
+    ea::shared_ptr<Sprite2D> sprite_;
     /// Property set.
-    stl::shared_ptr<PropertySet2D> propertySet_;
+    ea::shared_ptr<PropertySet2D> propertySet_;
 };
 
 /// Tile map object.
@@ -169,10 +169,10 @@ public:
     TileMapObjectType2D GetObjectType() const { return objectType_; }
 
     /// Return name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
     /// Return type.
-    const stl::string& GetType() const { return type_; }
+    const ea::string& GetType() const { return type_; }
 
     /// Return position.
     const Vector2& GetPosition() const { return position_; }
@@ -197,9 +197,9 @@ public:
     /// Return tile sprite.
     Sprite2D* GetTileSprite() const;
     /// Return has property.
-    bool HasProperty(const stl::string& name) const;
+    bool HasProperty(const ea::string& name) const;
     /// Return property value.
-    const stl::string& GetProperty(const stl::string& name) const;
+    const ea::string& GetProperty(const ea::string& name) const;
 
 private:
     friend class TmxObjectGroup2D;
@@ -207,21 +207,21 @@ private:
     /// Object type.
     TileMapObjectType2D objectType_{};
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Type.
-    stl::string type_;
+    ea::string type_;
     /// Position.
     Vector2 position_;
     /// Size (for rectangle and ellipse).
     Vector2 size_;
     /// Points(for polygon and polyline).
-    stl::vector<Vector2> points_;
+    ea::vector<Vector2> points_;
     /// Gid (for tile).
     unsigned gid_{};
     /// Sprite (for tile).
-    stl::shared_ptr<Sprite2D> sprite_;
+    ea::shared_ptr<Sprite2D> sprite_;
     /// Property set.
-    stl::shared_ptr<PropertySet2D> propertySet_;
+    ea::shared_ptr<PropertySet2D> propertySet_;
 };
 
 }

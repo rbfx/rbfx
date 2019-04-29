@@ -70,5 +70,5 @@ private:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// The controllable vehicle component.
-    stl::weak_ptr<Vehicle> vehicle_;
+    ea::weak_ptr<Vehicle> vehicle_;
 };

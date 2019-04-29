@@ -70,11 +70,11 @@ bool ShaderVariation::Create()
     }
 
     // Check for up-to-date bytecode on disk
-    stl::string path, name, extension;
+    ea::string path, name, extension;
     SplitPath(owner_->GetName(), path, name, extension);
     extension = type_ == VS ? ".vs4" : ".ps4";
 
-    stl::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
+    ea::string binaryShaderName = graphics_->GetShaderCacheDir() + name + "_" + StringHash(defines_).ToString() + extension;
 
     if (!LoadByteCode(binaryShaderName))
     {
@@ -154,7 +154,7 @@ void ShaderVariation::Release()
     elementHash_ = 0;
 }
 
-void ShaderVariation::SetDefines(const stl::string& defines)
+void ShaderVariation::SetDefines(const ea::string& defines)
 {
     defines_ = defines;
 
@@ -164,7 +164,7 @@ void ShaderVariation::SetDefines(const stl::string& defines)
         definesClipPlane_ += " CLIPPLANE";
 }
 
-bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
+bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
 {
     ResourceCache* cache = owner_->GetSubsystem<ResourceCache>();
     if (!cache->Exists(binaryShaderName))
@@ -177,7 +177,7 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
     if (sourceTimeStamp && fileSystem->GetLastModifiedTime(cache->GetResourceFileName(binaryShaderName)) < sourceTimeStamp)
         return false;
 
-    stl::shared_ptr<File> file = cache->GetFile(binaryShaderName);
+    ea::shared_ptr<File> file = cache->GetFile(binaryShaderName);
     if (!file || file->ReadFileID() != "USHD")
     {
         URHO3D_LOGERROR(binaryShaderName + " is not a valid shader bytecode file");
@@ -193,7 +193,7 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
     unsigned numParameters = file->ReadUInt();
     for (unsigned i = 0; i < numParameters; ++i)
     {
-        stl::string name = file->ReadString();
+        ea::string name = file->ReadString();
         unsigned buffer = file->ReadUByte();
         unsigned offset = file->ReadUInt();
         unsigned size = file->ReadUInt();
@@ -234,8 +234,8 @@ bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName)
 
 bool ShaderVariation::Compile()
 {
-    const stl::string& sourceCode = owner_->GetSourceCode(type_);
-    stl::vector<stl::string> defines = defines_.split(' ');
+    const ea::string& sourceCode = owner_->GetSourceCode(type_);
+    ea::vector<ea::string> defines = defines_.split(' ');
 
     // Set the entrypoint, profile and flags according to the shader being compiled
     const char* entryPoint = nullptr;
@@ -258,16 +258,16 @@ bool ShaderVariation::Compile()
         flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
     }
 
-    defines.emplace_back("MAXBONES=" + stl::to_string(Graphics::GetMaxBones()));
+    defines.emplace_back("MAXBONES=" + ea::to_string(Graphics::GetMaxBones()));
 
     // Collect defines into macros
-    stl::vector<stl::string> defineValues;
-    stl::vector<D3D_SHADER_MACRO> macros;
+    ea::vector<ea::string> defineValues;
+    ea::vector<D3D_SHADER_MACRO> macros;
 
     for (unsigned i = 0; i < defines.size(); ++i)
     {
         unsigned equalsPos = defines[i].find('=');
-        if (equalsPos != stl::string::npos)
+        if (equalsPos != ea::string::npos)
         {
             defineValues.emplace_back(defines[i].substr(equalsPos + 1));
             defines[i].resize(equalsPos);
@@ -284,7 +284,7 @@ bool ShaderVariation::Compile()
 
         // In debug mode, check that all defines are referenced by the shader code
 #ifdef _DEBUG
-        if (sourceCode.find(defines[i]) == stl::string::npos)
+        if (sourceCode.find(defines[i]) == ea::string::npos)
             URHO3D_LOGWARNING("Shader " + GetFullName() + " does not use the define " + defines[i]);
 #endif
     }
@@ -303,7 +303,7 @@ bool ShaderVariation::Compile()
     if (FAILED(hr))
     {
         // Do not include end zero unnecessarily
-        compilerOutput_ = stl::string((const char*)errorMsgs->GetBufferPointer(), (unsigned)errorMsgs->GetBufferSize() - 1);
+        compilerOutput_ = ea::string((const char*)errorMsgs->GetBufferPointer(), (unsigned)errorMsgs->GetBufferSize() - 1);
     }
     else
     {
@@ -364,13 +364,13 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
         elementHash_ <<= 32;
     }
 
-    stl::unordered_map<stl::string, unsigned> cbRegisterMap;
+    ea::unordered_map<ea::string, unsigned> cbRegisterMap;
 
     for (unsigned i = 0; i < shaderDesc.BoundResources; ++i)
     {
         D3D11_SHADER_INPUT_BIND_DESC resourceDesc;
         reflection->GetResourceBindingDesc(i, &resourceDesc);
-        stl::string resourceName(resourceDesc.Name);
+        ea::string resourceName(resourceDesc.Name);
         if (resourceDesc.Type == D3D_SIT_CBUFFER)
             cbRegisterMap[resourceName] = resourceDesc.BindPoint;
         else if (resourceDesc.Type == D3D_SIT_SAMPLER && resourceDesc.BindPoint < MAX_TEXTURE_UNITS)
@@ -382,14 +382,14 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
         ID3D11ShaderReflectionConstantBuffer* cb = reflection->GetConstantBufferByIndex(i);
         D3D11_SHADER_BUFFER_DESC cbDesc;
         cb->GetDesc(&cbDesc);
-        unsigned cbRegister = cbRegisterMap[stl::string(cbDesc.Name)];
+        unsigned cbRegister = cbRegisterMap[ea::string(cbDesc.Name)];
 
         for (unsigned j = 0; j < cbDesc.Variables; ++j)
         {
             ID3D11ShaderReflectionVariable* var = cb->GetVariableByIndex(j);
             D3D11_SHADER_VARIABLE_DESC varDesc;
             var->GetDesc(&varDesc);
-            stl::string varName(varDesc.Name);
+            ea::string varName(varDesc.Name);
             if (varName[0] == 'c')
             {
                 varName = varName.substr(1); // Strip the c to follow Urho3D constant naming convention
@@ -401,26 +401,26 @@ void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize)
     reflection->Release();
 }
 
-void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName)
+void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName)
 {
     ResourceCache* cache = owner_->GetSubsystem<ResourceCache>();
     FileSystem* fileSystem = owner_->GetSubsystem<FileSystem>();
 
     // Filename may or may not be inside the resource system
-    stl::string fullName = binaryShaderName;
+    ea::string fullName = binaryShaderName;
     if (!IsAbsolutePath(fullName))
     {
         // If not absolute, use the resource dir of the shader
-        stl::string shaderFileName = cache->GetResourceFileName(owner_->GetName());
+        ea::string shaderFileName = cache->GetResourceFileName(owner_->GetName());
         if (shaderFileName.empty())
             return;
         fullName = shaderFileName.substr(0, shaderFileName.find(owner_->GetName())) + binaryShaderName;
     }
-    stl::string path = GetPath(fullName);
+    ea::string path = GetPath(fullName);
     if (!fileSystem->DirExists(path))
         fileSystem->CreateDir(path);
 
-    stl::shared_ptr<File> file(new File(owner_->GetContext(), fullName, FILE_WRITE));
+    ea::shared_ptr<File> file(new File(owner_->GetContext(), fullName, FILE_WRITE));
     if (!file->IsOpen())
         return;
 

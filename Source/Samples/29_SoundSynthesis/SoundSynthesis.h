@@ -50,7 +50,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -90,11 +90,11 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Scene node for the sound component.
-    stl::shared_ptr<Node> node_;
+    ea::shared_ptr<Node> node_;
     /// Sound stream that we update.
-    stl::shared_ptr<BufferedSoundStream> soundStream_;
+    ea::shared_ptr<BufferedSoundStream> soundStream_;
     /// Instruction text.
-    stl::shared_ptr<Text> instructionText_;
+    ea::shared_ptr<Text> instructionText_;
     /// Filter coefficient for the sound.
     float filter_;
     /// Synthesis accumulator.

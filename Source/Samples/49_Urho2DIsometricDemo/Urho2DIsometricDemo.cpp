@@ -118,7 +118,7 @@ void Urho2DIsometricDemo::CreateScene()
     camera->SetZoom(2.0f * Min((float)graphics->GetWidth() / 1280.0f, (float)graphics->GetHeight() / 800.0f)); // Set zoom according to user's resolution to ensure full visibility (initial zoom (2.0) is set for full visibility at 1280x800 resolution)
 
     // Setup the viewport for displaying the scene
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
     renderer->SetViewport(0, viewport);
 
@@ -126,7 +126,7 @@ void Urho2DIsometricDemo::CreateScene()
 
     // Create tile map from tmx file
     auto* tmxFile = cache->GetResource<TmxFile2D>("Urho2D/Tilesets/atrium.tmx");
-    stl::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
+    ea::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
     auto* tileMap = tileMapNode->CreateComponent<TileMap2D>();
     tileMap->SetTmxFile(tmxFile);
     const TileMapInfo2D& info = tileMap->GetInfo();
@@ -163,7 +163,7 @@ void Urho2DIsometricDemo::HandleCollisionBegin(StringHash eventType, VariantMap&
     auto* hitNode = static_cast<Node*>(eventData[PhysicsBeginContact2D::P_NODEA].GetPtr());
     if (hitNode->GetName() == "Imp")
         hitNode = static_cast<Node*>(eventData[PhysicsBeginContact2D::P_NODEB].GetPtr());
-    stl::string nodeName = hitNode->GetName();
+    ea::string nodeName = hitNode->GetName();
     Node* character2DNode = scene_->GetChild("Imp", true);
 
     // Handle coins picking
@@ -178,7 +178,7 @@ void Urho2DIsometricDemo::HandleCollisionBegin(StringHash eventType, VariantMap&
             instructions->SetText("!!! You have all the coins !!!");
         }
         Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
-        coinsText->SetText(stl::to_string(character2D_->remainingCoins_)); // Update coins UI counter
+        coinsText->SetText(ea::to_string(character2D_->remainingCoins_)); // Update coins UI counter
         sample2D_->PlaySoundEffect("Powerup.wav");
     }
 
@@ -290,7 +290,7 @@ void Urho2DIsometricDemo::HandlePostRenderUpdate(StringHash eventType, VariantMa
 
 void Urho2DIsometricDemo::ReloadScene(bool reInit)
 {
-    stl::string filename = sample2D_->demoFilename_;
+    ea::string filename = sample2D_->demoFilename_;
     if (!reInit)
         filename += "InGame";
 
@@ -314,11 +314,11 @@ void Urho2DIsometricDemo::ReloadScene(bool reInit)
     // Update lifes UI
     auto* ui = GetSubsystem<UI>();
     Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
-    lifeText->SetText(stl::to_string(lifes));
+    lifeText->SetText(ea::to_string(lifes));
 
     // Update coins UI
     Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
-    coinsText->SetText(stl::to_string(coins));
+    coinsText->SetText(ea::to_string(coins));
 }
 
 void Urho2DIsometricDemo::HandlePlayButton(StringHash eventType, VariantMap& eventData)

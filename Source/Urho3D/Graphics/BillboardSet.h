@@ -83,7 +83,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
@@ -119,7 +119,7 @@ public:
     unsigned GetNumBillboards() const { return billboards_.size(); }
 
     /// Return all billboards.
-    stl::vector<Billboard>& GetBillboards() { return billboards_; }
+    ea::vector<Billboard>& GetBillboards() { return billboards_; }
 
     /// Return billboard by index.
     Billboard* GetBillboard(unsigned index);
@@ -150,13 +150,13 @@ public:
     /// Set billboards attribute.
     void SetBillboardsAttr(const VariantVector& value);
     /// Set billboards attribute for network replication.
-    void SetNetBillboardsAttr(const stl::vector<unsigned char>& value);
+    void SetNetBillboardsAttr(const ea::vector<unsigned char>& value);
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
     /// Return billboards attribute.
     VariantVector GetBillboardsAttr() const;
     /// Return billboards attribute for network replication.
-    const stl::vector<unsigned char>& GetNetBillboardsAttr() const;
+    const ea::vector<unsigned char>& GetNetBillboardsAttr() const;
 
 protected:
     /// Recalculate the world-space bounding box.
@@ -165,7 +165,7 @@ protected:
     void MarkPositionsDirty();
 
     /// Billboards.
-    stl::vector<Billboard> billboards_;
+    ea::vector<Billboard> billboards_;
     /// Animation LOD bias.
     float animationLodBias_;
     /// Animation LOD timer.
@@ -192,11 +192,11 @@ private:
     void CalculateFixedScreenSize(const FrameInfo& frame);
 
     /// Geometry.
-    stl::shared_ptr<Geometry> geometry_;
+    ea::shared_ptr<Geometry> geometry_;
     /// Vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Index buffer.
-    stl::shared_ptr<IndexBuffer> indexBuffer_;
+    ea::shared_ptr<IndexBuffer> indexBuffer_;
     /// Transform matrices for position and billboard orientation.
     Matrix3x4 transforms_[2];
     /// Buffers need resize flag.
@@ -216,7 +216,7 @@ private:
     /// Previous offset to camera for determining whether sorting is necessary.
     Vector3 previousOffset_;
     /// Billboard pointers for sorting.
-    stl::vector<Billboard*> sortedBillboards_;
+    ea::vector<Billboard*> sortedBillboards_;
     /// Attribute buffer for network replication.
     mutable VectorBuffer attrBuffer_;
 };

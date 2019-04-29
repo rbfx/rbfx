@@ -367,8 +367,8 @@ public:
     void SetAUTO_SOLVE(bool enable);
 
 private:
-    stl::vector<IKEffector*> effectorList_;
-    stl::vector<IKConstraint*> constraintList_;
+    ea::vector<IKEffector*> effectorList_;
+    ea::vector<IKConstraint*> constraintList_;
     ik_solver_t* solver_;
     Algorithm algorithm_;
     unsigned features_;

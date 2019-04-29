@@ -57,7 +57,7 @@ public:
     /// Enable shadowing in CPU memory. Shadowing is forced on if the graphics subsystem does not exist.
     void SetShadowed(bool enable);
     /// Set size, vertex elements and dynamic mode. Previous data will be lost.
-    bool SetSize(unsigned vertexCount, const stl::vector<VertexElement>& elements, bool dynamic = false);
+    bool SetSize(unsigned vertexCount, const ea::vector<VertexElement>& elements, bool dynamic = false);
     /// Set size and vertex elements and dynamic mode using legacy element bitmask. Previous data will be lost.
     bool SetSize(unsigned vertexCount, unsigned elementMask, bool dynamic = false);
     /// Set all data in the buffer.
@@ -85,7 +85,7 @@ public:
     unsigned GetVertexSize() const { return vertexSize_; }
 
     /// Return vertex elements.
-    const stl::vector<VertexElement>& GetElements() const { return elements_; }
+    const ea::vector<VertexElement>& GetElements() const { return elements_; }
 
     /// Return vertex element, or null if does not exist.
     const VertexElement* GetElement(VertexElementSemantic semantic, unsigned char index = 0) const;
@@ -112,31 +112,31 @@ public:
     unsigned char* GetShadowData() const { return shadowData_.get(); }
 
     /// Return shared array pointer to the CPU memory shadow data.
-    stl::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
+    ea::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
 
     /// Return buffer hash for building vertex declarations. Used internally.
     unsigned long long GetBufferHash(unsigned streamIndex) { return elementHash_ << (streamIndex * 16); }
 
     /// Return element with specified type and semantic from a vertex element list, or null if does not exist.
-    static const VertexElement* GetElement(const stl::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
+    static const VertexElement* GetElement(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
 
     /// Return whether element list has a specified element type and semantic.
-    static bool HasElement(const stl::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
+    static bool HasElement(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
 
     /// Return element offset for specified type and semantic from a vertex element list, or M_MAX_UNSIGNED if does not exist.
-    static unsigned GetElementOffset(const stl::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
+    static unsigned GetElementOffset(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
 
     /// Return a vertex element list from a legacy element bitmask.
-    static stl::vector<VertexElement> GetElements(unsigned elementMask);
+    static ea::vector<VertexElement> GetElements(unsigned elementMask);
 
     /// Return vertex size from an element list.
-    static unsigned GetVertexSize(const stl::vector<VertexElement>& elements);
+    static unsigned GetVertexSize(const ea::vector<VertexElement>& elements);
 
     /// Return vertex size for a legacy vertex element bitmask.
     static unsigned GetVertexSize(unsigned elementMask);
 
     /// Update offsets of vertex elements.
-    static void UpdateOffsets(stl::vector<VertexElement>& elements);
+    static void UpdateOffsets(ea::vector<VertexElement>& elements);
 
 private:
     /// Update offsets of vertex elements.
@@ -151,13 +151,13 @@ private:
     void UnmapBuffer();
 
     /// Shadow data.
-    stl::shared_array<unsigned char> shadowData_;
+    ea::shared_array<unsigned char> shadowData_;
     /// Number of vertices.
     unsigned vertexCount_{};
     /// Vertex size.
     unsigned vertexSize_{};
     /// Vertex elements.
-    stl::vector<VertexElement> elements_;
+    ea::vector<VertexElement> elements_;
     /// Vertex element hash.
     unsigned long long elementHash_{};
     /// Vertex element legacy bitmask.

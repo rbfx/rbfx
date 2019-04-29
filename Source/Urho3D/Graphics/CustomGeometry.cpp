@@ -64,7 +64,7 @@ void CustomGeometry::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Dynamic Vertex Buffer", bool, dynamic_, false, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Geometry Data", GetGeometryDataAttr, SetGeometryDataAttr, stl::vector<unsigned char>,
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Geometry Data", GetGeometryDataAttr, SetGeometryDataAttr, ea::vector<unsigned char>,
         Variant::emptyBuffer, AM_FILE | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Materials", GetMaterialsAttr, SetMaterialsAttr, ResourceRefList, ResourceRefList(Material::GetTypeStatic()),
         AM_DEFAULT);
@@ -77,7 +77,7 @@ void CustomGeometry::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
 }
 
-void CustomGeometry::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void CustomGeometry::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     RayQueryLevel level = query.level_;
 
@@ -186,7 +186,7 @@ bool CustomGeometry::DrawOcclusion(OcclusionBuffer* buffer)
         unsigned vertexSize;
         const unsigned char* indexData;
         unsigned indexSize;
-        const stl::vector<VertexElement>* elements;
+        const ea::vector<VertexElement>* elements;
 
         geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
         // Check for valid geometry data
@@ -446,7 +446,7 @@ CustomGeometryVertex* CustomGeometry::GetVertex(unsigned geometryIndex, unsigned
            &vertices_[geometryIndex][vertexNum] : nullptr;
 }
 
-void CustomGeometry::SetGeometryDataAttr(const stl::vector<unsigned char>& value)
+void CustomGeometry::SetGeometryDataAttr(const ea::vector<unsigned char>& value)
 {
     if (value.empty())
         return;
@@ -487,7 +487,7 @@ void CustomGeometry::SetMaterialsAttr(const ResourceRefList& value)
         SetMaterial(i, cache->GetResource<Material>(value.names_[i]));
 }
 
-stl::vector<unsigned char> CustomGeometry::GetGeometryDataAttr() const
+ea::vector<unsigned char> CustomGeometry::GetGeometryDataAttr() const
 {
     VectorBuffer ret;
 

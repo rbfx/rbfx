@@ -96,7 +96,7 @@ bool Font::BeginLoad(Deserializer& source)
         return false;
     }
 
-    stl::string ext = GetExtension(GetName());
+    ea::string ext = GetExtension(GetName());
     if (ext == ".ttf" || ext == ".otf" || ext == ".woff")
     {
         fontType_ = FONT_FREETYPE;
@@ -111,7 +111,7 @@ bool Font::BeginLoad(Deserializer& source)
     return true;
 }
 
-bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const stl::string& indentation)
+bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const ea::string& indentation)
 {
     FontFace* fontFace = GetFace(pointSize);
     if (!fontFace)
@@ -119,7 +119,7 @@ bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const stl::
 
     URHO3D_PROFILE("FontSaveXML");
 
-    stl::shared_ptr<FontFaceBitmap> packedFontFace(new FontFaceBitmap(this));
+    ea::shared_ptr<FontFaceBitmap> packedFontFace(new FontFaceBitmap(this));
     if (!packedFontFace->Load(fontFace, usedGlyphs))
         return false;
 
@@ -192,8 +192,8 @@ void Font::ReleaseFaces()
 void Font::LoadParameters()
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
-    stl::shared_ptr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
+    ea::string xmlName = ReplaceExtension(GetName(), ".xml");
+    ea::shared_ptr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
     if (!xml)
         return;
 
@@ -222,7 +222,7 @@ void Font::LoadParameters()
 
 FontFace* Font::GetFaceFreeType(float pointSize)
 {
-    stl::shared_ptr<FontFace> newFace(new FontFaceFreeType(this));
+    ea::shared_ptr<FontFace> newFace(new FontFaceFreeType(this));
     if (!newFace->Load(&fontData_[0], fontDataSize_, pointSize))
         return nullptr;
 
@@ -233,7 +233,7 @@ FontFace* Font::GetFaceFreeType(float pointSize)
 
 FontFace* Font::GetFaceBitmap(float pointSize)
 {
-    stl::shared_ptr<FontFace> newFace(new FontFaceBitmap(this));
+    ea::shared_ptr<FontFace> newFace(new FontFaceBitmap(this));
     if (!newFace->Load(&fontData_[0], fontDataSize_, pointSize))
         return nullptr;
 

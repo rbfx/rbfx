@@ -127,7 +127,7 @@ protected:
     {
         time_t time = std::chrono::system_clock::to_time_t(msg.time);
         logInstance->SendMessageEvent(ConvertLogLevel(msg.level), time,
-            stl::string(msg.logger_name->c_str()), stl::string(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
+            ea::string(msg.logger_name->c_str()), ea::string(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
     }
 
     void flush_() override { }
@@ -141,7 +141,7 @@ Logger::Logger(void* logger)
 {
 }
 
-void Logger::WriteFormatted(LogLevel level, const stl::string& message)
+void Logger::WriteFormatted(LogLevel level, const ea::string& message)
 {
     if (logger_ == nullptr)
         return;
@@ -228,7 +228,7 @@ Log::~Log()
     logInstance = nullptr;
 }
 
-void Log::Open(const stl::string& fileName)
+void Log::Open(const ea::string& fileName)
 {
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
     if (fileName.empty())
@@ -272,7 +272,7 @@ void Log::SetQuiet(bool quiet)
     impl_->platformSink_->set_level(ConvertLogLevel(quiet ? LOG_NONE : level_));
 }
 
-void Log::SetLogFormat(const stl::string& format)
+void Log::SetLogFormat(const ea::string& format)
 {
     formatPattern_ = format;
 
@@ -306,7 +306,7 @@ Logger Log::GetLogger(const char* name)
         return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
 }
 
-void Log::SendMessageEvent(LogLevel level, time_t timestamp, const stl::string& logger, const stl::string& message)
+void Log::SendMessageEvent(LogLevel level, time_t timestamp, const ea::string& logger, const ea::string& message)
 {
     // No-op if illegal level
     if (level < LOG_TRACE || level >= LOG_NONE)

@@ -109,7 +109,7 @@ FileSelector::FileSelector(Context* context) :
 
     window_->AddChild(buttonLayout_.get());
 
-    stl::vector<stl::string> defaultFilters;
+    ea::vector<ea::string> defaultFilters;
     defaultFilters.push_back("*.*");
     SetFilters(defaultFilters, 0);
     auto* fileSystem = GetSubsystem<FileSystem>();
@@ -171,29 +171,29 @@ void FileSelector::SetDefaultStyle(XMLFile* style)
     okButton_->SetStyle("FileSelectorButton");
     cancelButton_->SetStyle("FileSelectorButton");
 
-    const stl::vector<stl::shared_ptr<UIElement> >& filterTexts = filterList_->GetListView()->GetContentElement()->GetChildren();
+    const ea::vector<ea::shared_ptr<UIElement> >& filterTexts = filterList_->GetListView()->GetContentElement()->GetChildren();
     for (unsigned i = 0; i < filterTexts.size(); ++i)
         filterTexts[i]->SetStyle("FileSelectorFilterText");
 
-    const stl::vector<stl::shared_ptr<UIElement> >& listTexts = fileList_->GetContentElement()->GetChildren();
+    const ea::vector<ea::shared_ptr<UIElement> >& listTexts = fileList_->GetContentElement()->GetChildren();
     for (unsigned i = 0; i < listTexts.size(); ++i)
         listTexts[i]->SetStyle("FileSelectorListText");
 
     UpdateElements();
 }
 
-void FileSelector::SetTitle(const stl::string& text)
+void FileSelector::SetTitle(const ea::string& text)
 {
     titleText_->SetText(text);
 }
 
-void FileSelector::SetButtonTexts(const stl::string& okText, const stl::string& cancelText)
+void FileSelector::SetButtonTexts(const ea::string& okText, const ea::string& cancelText)
 {
     okButtonText_->SetText(okText);
     cancelButtonText_->SetText(cancelText);
 }
 
-void FileSelector::SetPath(const stl::string& path)
+void FileSelector::SetPath(const ea::string& path)
 {
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (fileSystem->DirExists(path))
@@ -210,12 +210,12 @@ void FileSelector::SetPath(const stl::string& path)
     }
 }
 
-void FileSelector::SetFileName(const stl::string& fileName)
+void FileSelector::SetFileName(const ea::string& fileName)
 {
     SetLineEditText(fileNameEdit_, fileName);
 }
 
-void FileSelector::SetFilters(const stl::vector<stl::string>& filters, unsigned defaultIndex)
+void FileSelector::SetFilters(const ea::vector<ea::string>& filters, unsigned defaultIndex)
 {
     if (filters.empty())
         return;
@@ -256,17 +256,17 @@ XMLFile* FileSelector::GetDefaultStyle() const
     return window_->GetDefaultStyle(false);
 }
 
-const stl::string& FileSelector::GetTitle() const
+const ea::string& FileSelector::GetTitle() const
 {
     return titleText_->GetText();
 }
 
-const stl::string& FileSelector::GetFileName() const
+const ea::string& FileSelector::GetFileName() const
 {
     return fileNameEdit_->GetText();
 }
 
-const stl::string& FileSelector::GetFilter() const
+const ea::string& FileSelector::GetFilter() const
 {
     auto* selectedFilter = static_cast<Text*>(filterList_->GetSelectedItem());
     if (selectedFilter)
@@ -280,7 +280,7 @@ unsigned FileSelector::GetFilterIndex() const
     return filterList_->GetSelection();
 }
 
-void FileSelector::SetLineEditText(LineEdit* edit, const stl::string& text)
+void FileSelector::SetLineEditText(LineEdit* edit, const ea::string& text)
 {
     ignoreEvents_ = true;
     edit->SetText(text);
@@ -296,8 +296,8 @@ void FileSelector::RefreshFiles()
     fileList_->RemoveAllItems();
     fileEntries_.clear();
 
-    stl::vector<stl::string> directories;
-    stl::vector<stl::string> files;
+    ea::vector<ea::string> directories;
+    ea::vector<ea::string> files;
     fileSystem->ScanDir(directories, path_, "*", SCAN_DIRS, false);
     fileSystem->ScanDir(files, path_, GetFilter(), SCAN_FILES, false);
 
@@ -321,12 +321,12 @@ void FileSelector::RefreshFiles()
 
     // Sort and add to the list view
     // While items are being added, disable layout update for performance optimization
-    stl::quick_sort(fileEntries_.begin(), fileEntries_.end(), CompareEntries);
+    ea::quick_sort(fileEntries_.begin(), fileEntries_.end(), CompareEntries);
     UIElement* listContent = fileList_->GetContentElement();
     listContent->DisableLayoutUpdate();
     for (unsigned i = 0; i < fileEntries_.size(); ++i)
     {
-        stl::string displayName;
+        ea::string displayName;
         if (fileEntries_[i].directory_)
             displayName = "<DIR> " + fileEntries_[i].name_;
         else
@@ -356,12 +356,12 @@ bool FileSelector::EnterFile()
     if (fileEntries_[index].directory_)
     {
         // If a directory double clicked, enter it. Recognize . and .. as a special case
-        const stl::string& newPath = fileEntries_[index].name_;
+        const ea::string& newPath = fileEntries_[index].name_;
         if ((newPath != ".") && (newPath != ".."))
             SetPath(path_ + newPath);
         else if (newPath == "..")
         {
-            stl::string parentPath = GetParentPath(path_);
+            ea::string parentPath = GetParentPath(path_);
             SetPath(parentPath);
         }
 
@@ -447,7 +447,7 @@ void FileSelector::HandleOKPressed(StringHash eventType, VariantMap& eventData)
     if (ignoreEvents_)
         return;
 
-    const stl::string& fileName = GetFileName();
+    const ea::string& fileName = GetFileName();
 
     if (!directoryMode_)
     {

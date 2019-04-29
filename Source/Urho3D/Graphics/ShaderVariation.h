@@ -40,16 +40,16 @@ struct URHO3D_API ShaderParameter
     /// Construct with defaults.
     ShaderParameter() = default;
     /// Construct with name, glType and location, leaving the remaining attributes zero-initialized (used only in OpenGL).
-    ShaderParameter(const stl::string& name, unsigned glType, int location);
+    ShaderParameter(const ea::string& name, unsigned glType, int location);
     /// Construct with type, name, offset, size, and buffer, leaving the remaining attributes zero-initialized (used only in Direct3D11).
-    ShaderParameter(ShaderType type, const stl::string& name, unsigned offset, unsigned size, unsigned buffer);
+    ShaderParameter(ShaderType type, const ea::string& name, unsigned offset, unsigned size, unsigned buffer);
     /// Construct with type, name, register, and register count, leaving the remaining attributes zero-initialized (used only in Direct3D9).
-    ShaderParameter(ShaderType type, const stl::string& name, unsigned reg, unsigned regCount);
+    ShaderParameter(ShaderType type, const ea::string& name, unsigned reg, unsigned regCount);
 
     /// %Shader type.
     ShaderType type_{};
     /// Name of the parameter.
-    stl::string name_{};
+    ea::string name_{};
 
     union
     {
@@ -94,9 +94,9 @@ public:
     /// Compile the shader. Return true if successful.
     bool Create();
     /// Set name.
-    void SetName(const stl::string& name);
+    void SetName(const ea::string& name);
     /// Set defines.
-    void SetDefines(const stl::string& defines);
+    void SetDefines(const ea::string& defines);
 
     /// Return the owner resource.
     Shader* GetOwner() const;
@@ -105,10 +105,10 @@ public:
     ShaderType GetShaderType() const { return type_; }
 
     /// Return shader name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
     /// Return full shader name.
-    stl::string GetFullName() const { return name_ + "(" + defines_ + ")"; }
+    ea::string GetFullName() const { return name_ + "(" + defines_ + ")"; }
 
     /// Return whether uses a parameter. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
     bool HasParameter(StringHash param) const { return parameters_.contains(param); }
@@ -117,63 +117,63 @@ public:
     bool HasTextureUnit(TextureUnit unit) const { return useTextureUnits_[unit]; }
 
     /// Return all parameter definitions. Not applicable on OpenGL, where this information is contained in ShaderProgram instead.
-    const stl::unordered_map<StringHash, ShaderParameter>& GetParameters() const { return parameters_; }
+    const ea::unordered_map<StringHash, ShaderParameter>& GetParameters() const { return parameters_; }
 
     /// Return vertex element hash.
     unsigned long long GetElementHash() const { return elementHash_; }
 
     /// Return shader bytecode. Stored persistently on Direct3D11 only.
-    const stl::vector<unsigned char>& GetByteCode() const { return byteCode_; }
+    const ea::vector<unsigned char>& GetByteCode() const { return byteCode_; }
 
     /// Return defines.
-    const stl::string& GetDefines() const { return defines_; }
+    const ea::string& GetDefines() const { return defines_; }
 
     /// Return compile error/warning string.
-    const stl::string& GetCompilerOutput() const { return compilerOutput_; }
+    const ea::string& GetCompilerOutput() const { return compilerOutput_; }
 
     /// Return constant buffer data sizes.
     const unsigned* GetConstantBufferSizes() const { return &constantBufferSizes_[0]; }
 
     /// Return defines with the CLIPPLANE define appended. Used internally on Direct3D11 only, will be empty on other APIs.
-    const stl::string& GetDefinesClipPlane() { return definesClipPlane_; }
+    const ea::string& GetDefinesClipPlane() { return definesClipPlane_; }
 
     /// D3D11 vertex semantic names. Used internally.
     static const char* elementSemanticNames[];
 
 private:
     /// Load bytecode from a file. Return true if successful.
-    bool LoadByteCode(const stl::string& binaryShaderName);
+    bool LoadByteCode(const ea::string& binaryShaderName);
     /// Compile from source. Return true if successful.
     bool Compile();
     /// Inspect the constant parameters and input layout (if applicable) from the shader bytecode.
     void ParseParameters(unsigned char* bufData, unsigned bufSize);
     /// Save bytecode to a file.
-    void SaveByteCode(const stl::string& binaryShaderName);
+    void SaveByteCode(const ea::string& binaryShaderName);
     /// Calculate constant buffer sizes from parameters.
     void CalculateConstantBufferSizes();
 
     /// Shader this variation belongs to.
-    stl::weak_ptr<Shader> owner_;
+    ea::weak_ptr<Shader> owner_;
     /// Shader type.
     ShaderType type_;
     /// Vertex element hash for vertex shaders. Zero for pixel shaders. Note that hashing is different than vertex buffers.
     unsigned long long elementHash_{};
     /// Shader parameters.
-    stl::unordered_map<StringHash, ShaderParameter> parameters_;
+    ea::unordered_map<StringHash, ShaderParameter> parameters_;
     /// Texture unit use flags.
     bool useTextureUnits_[MAX_TEXTURE_UNITS]{};
     /// Constant buffer sizes. 0 if a constant buffer slot is not in use.
     unsigned constantBufferSizes_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Shader bytecode. Needed for inspecting the input signature and parameters. Not used on OpenGL.
-    stl::vector<unsigned char> byteCode_;
+    ea::vector<unsigned char> byteCode_;
     /// Shader name.
-    stl::string name_;
+    ea::string name_;
     /// Defines to use in compiling.
-    stl::string defines_;
+    ea::string defines_;
     /// Defines to use in compiling + CLIPPLANE define appended. Used only on Direct3D11.
-    stl::string definesClipPlane_;
+    ea::string definesClipPlane_;
     /// Shader compile error string.
-    stl::string compilerOutput_;
+    ea::string compilerOutput_;
 };
 
 }

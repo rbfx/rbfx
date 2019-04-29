@@ -129,7 +129,7 @@ public:
     /// Set rotation end variance.
     void SetRotationEndVariance(float rotationEndVariance);
     /// Clone the 2D particle effect.
-    stl::shared_ptr<ParticleEffect2D> Clone(const stl::string& cloneName = EMPTY_STRING) const;
+    ea::shared_ptr<ParticleEffect2D> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return sprite.
     Sprite2D* GetSprite() const { return sprite_; }
@@ -238,24 +238,24 @@ public:
 
 private:
     /// Read integer.
-    int ReadInt(const XMLElement& element, const stl::string& name) const;
+    int ReadInt(const XMLElement& element, const ea::string& name) const;
     /// Read float.
-    float ReadFloat(const XMLElement& element, const stl::string& name) const;
+    float ReadFloat(const XMLElement& element, const ea::string& name) const;
     /// Read Color.
-    Color ReadColor(const XMLElement& element, const stl::string& name) const;
+    Color ReadColor(const XMLElement& element, const ea::string& name) const;
     /// Read Vector2.
-    Vector2 ReadVector2(const XMLElement& element, const stl::string& name) const;
+    Vector2 ReadVector2(const XMLElement& element, const ea::string& name) const;
     /// Write integer.
-    void WriteInt(XMLElement& element, const stl::string& name, int value) const;
+    void WriteInt(XMLElement& element, const ea::string& name, int value) const;
     /// Write float.
-    void WriteFloat(XMLElement& element, const stl::string& name, float value) const;
+    void WriteFloat(XMLElement& element, const ea::string& name, float value) const;
     /// Write Color.
-    void WriteColor(XMLElement& element, const stl::string& name, const Color& color) const;
+    void WriteColor(XMLElement& element, const ea::string& name, const Color& color) const;
     /// Write Vector2.
-    void WriteVector2(XMLElement& element, const stl::string& name, const Vector2& value) const;
+    void WriteVector2(XMLElement& element, const ea::string& name, const Vector2& value) const;
 
     /// Sprite.
-    stl::shared_ptr<Sprite2D> sprite_;
+    ea::shared_ptr<Sprite2D> sprite_;
     /// Source position variance.
     Vector2 sourcePositionVariance_;
     /// Speed.
@@ -325,7 +325,7 @@ private:
     /// Rotation end variance.
     float rotationEndVariance_;
     /// Sprite name acquired during BeginLoad().
-    stl::string loadSpriteName_;
+    ea::string loadSpriteName_;
 };
 
 }

@@ -42,15 +42,15 @@ class URHO3D_API SceneManager : public Object
     static void RegisterObject(Context* context);
 
     /// Creates and returns empty scene. Returns null if scene already exists.
-    Scene* CreateScene(const stl::string& name=EMPTY_STRING);
+    Scene* CreateScene(const ea::string& name=EMPTY_STRING);
     /// Returns a previously created scene or null if no scene with specified name was created.
-    Scene* GetScene(const stl::string& name);
+    Scene* GetScene(const ea::string& name);
     /// Returns a previously created scene if it exits or creates a new one.
-    Scene* GetOrCreateScene(const stl::string& name);
+    Scene* GetOrCreateScene(const ea::string& name);
     /// Unload scene from memory.
     void UnloadScene(Scene* scene);
     /// Unload scene from memory.
-    void UnloadScene(const stl::string& name);
+    void UnloadScene(const ea::string& name);
     /// Unloads all scenes from memory.
     void UnloadAll();
     /// Unloads all scenes from memory except active one.
@@ -58,7 +58,7 @@ class URHO3D_API SceneManager : public Object
     /// Set specified scene as active. It will start rendering to viewports set up by scene components.
     void SetActiveScene(Scene* scene);
     /// Set specified scene as active. It will start rendering to viewports set up by scene components.
-    void SetActiveScene(const stl::string& name);
+    void SetActiveScene(const ea::string& name);
     /// Get current active scene. Returns null pointer if no scene is active.
     Scene* GetActiveScene() const { return activeScene_; }
     /// Set surface to which active scene should render. If surface is null then scene will render to main window.
@@ -69,11 +69,11 @@ protected:
     void UpdateViewports();
 
     /// Current loaded scenes.
-    stl::vector<stl::shared_ptr<Scene>> scenes_;
+    ea::vector<ea::shared_ptr<Scene>> scenes_;
     /// Current active scene.
-    stl::weak_ptr<Scene> activeScene_;
+    ea::weak_ptr<Scene> activeScene_;
     /// Surface for rendering active scene into.
-    stl::weak_ptr<RenderSurface> renderSurface_;
+    ea::weak_ptr<RenderSurface> renderSurface_;
     ///
     bool missingMetadataWarned_ = false;
 };

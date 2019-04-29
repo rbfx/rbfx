@@ -68,7 +68,7 @@ public:
     /// Get data from a face's mip level. The destination buffer must be big enough. Return true if successful.
     bool GetData(CubeMapFace face, unsigned level, void* dest) const;
     /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
-    stl::shared_ptr<Image> GetImage(CubeMapFace face) const;
+    ea::shared_ptr<Image> GetImage(CubeMapFace face) const;
 
     /// Return render surface for one face.
     RenderSurface* GetRenderSurface(CubeMapFace face) const { return renderSurfaces_[face]; }
@@ -82,13 +82,13 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Render surfaces.
-    stl::shared_ptr<RenderSurface> renderSurfaces_[MAX_CUBEMAP_FACES];
+    ea::shared_ptr<RenderSurface> renderSurfaces_[MAX_CUBEMAP_FACES];
     /// Memory use per face.
     unsigned faceMemoryUse_[MAX_CUBEMAP_FACES]{};
     /// Face image files acquired during BeginLoad.
-    stl::vector<stl::shared_ptr<Image> > loadImages_;
+    ea::vector<ea::shared_ptr<Image> > loadImages_;
     /// Parameter file acquired during BeginLoad.
-    stl::shared_ptr<XMLFile> loadParameters_;
+    ea::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

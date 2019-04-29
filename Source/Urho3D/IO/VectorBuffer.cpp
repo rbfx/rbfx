@@ -29,11 +29,11 @@
 namespace Urho3D
 {
 
-static stl::string vectorBufferName{"VectorBuffer"};
+static ea::string vectorBufferName{"VectorBuffer"};
 
 VectorBuffer::VectorBuffer() = default;
 
-VectorBuffer::VectorBuffer(const stl::vector<unsigned char>& data)
+VectorBuffer::VectorBuffer(const ea::vector<unsigned char>& data)
 {
     SetData(data);
 }
@@ -123,7 +123,7 @@ unsigned VectorBuffer::Write(const void* data, unsigned size)
     return size;
 }
 
-void VectorBuffer::SetData(const stl::vector<unsigned char>& data)
+void VectorBuffer::SetData(const ea::vector<unsigned char>& data)
 {
     buffer_ = data;
     position_ = 0;
@@ -169,7 +169,7 @@ void VectorBuffer::Resize(unsigned size)
         position_ = size_;
 }
 
-const stl::string& VectorBuffer::GetName() const
+const ea::string& VectorBuffer::GetName() const
 {
     return vectorBufferName;
 }

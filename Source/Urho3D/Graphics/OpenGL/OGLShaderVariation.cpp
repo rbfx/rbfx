@@ -101,13 +101,13 @@ bool ShaderVariation::Create()
         return false;
     }
 
-    const stl::string& originalShaderCode = owner_->GetSourceCode(type_);
-    stl::string shaderCode;
+    const ea::string& originalShaderCode = owner_->GetSourceCode(type_);
+    ea::string shaderCode;
 
     // Check if the shader code contains a version define
     unsigned verStart = originalShaderCode.find('#');
     unsigned verEnd = 0;
-    if (verStart != stl::string::npos)
+    if (verStart != ea::string::npos)
     {
         if (originalShaderCode.substr(verStart + 1, 7) == "version")
         {
@@ -120,7 +120,7 @@ bool ShaderVariation::Create()
                     break;
             }
             // If version define found, insert it first
-            stl::string versionDefine = originalShaderCode.substr(verStart, verEnd - verStart);
+            ea::string versionDefine = originalShaderCode.substr(verStart, verEnd - verStart);
             shaderCode += versionDefine + "\n";
         }
     }
@@ -143,20 +143,20 @@ bool ShaderVariation::Create()
     shaderCode += type_ == VS ? "#define COMPILEVS\n" : "#define COMPILEPS\n";
 
     // Add define for the maximum number of supported bones
-    shaderCode += "#define MAXBONES " + stl::to_string(Graphics::GetMaxBones()) + "\n";
+    shaderCode += "#define MAXBONES " + ea::to_string(Graphics::GetMaxBones()) + "\n";
 
     // Prepend the defines to the shader code
-    stl::vector<stl::string> defineVec = defines_.split(' ');
+    ea::vector<ea::string> defineVec = defines_.split(' ');
     for (unsigned i = 0; i < defineVec.size(); ++i)
     {
         // Add extra space for the checking code below
-        stl::string defineString = "#define " + defineVec[i].replaced('=', ' ') + " \n";
+        ea::string defineString = "#define " + defineVec[i].replaced('=', ' ') + " \n";
         shaderCode += defineString;
 
         // In debug mode, check that all defines are referenced by the shader code
 #ifdef _DEBUG
-        stl::string defineCheck = defineString.Substring(8, defineString.Find(' ', 8) - 8);
-        if (originalShaderCode.Find(defineCheck) == stl::string::npos)
+        ea::string defineCheck = defineString.Substring(8, defineString.Find(' ', 8) - 8);
+        if (originalShaderCode.Find(defineCheck) == ea::string::npos)
             URHO3D_LOGWARNING("Shader " + GetFullName() + " does not use the define " + defineCheck);
 #endif
     }
@@ -198,16 +198,16 @@ bool ShaderVariation::Create()
     return object_.name_ != 0;
 }
 
-void ShaderVariation::SetDefines(const stl::string& defines)
+void ShaderVariation::SetDefines(const ea::string& defines)
 {
     defines_ = defines;
 }
 
 // These methods are no-ops for OpenGL
-bool ShaderVariation::LoadByteCode(const stl::string& binaryShaderName) { return false; }
+bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName) { return false; }
 bool ShaderVariation::Compile() { return false; }
 void ShaderVariation::ParseParameters(unsigned char* bufData, unsigned bufSize) {}
-void ShaderVariation::SaveByteCode(const stl::string& binaryShaderName) {}
+void ShaderVariation::SaveByteCode(const ea::string& binaryShaderName) {}
 void ShaderVariation::CalculateConstantBufferSizes() {}
 
 }

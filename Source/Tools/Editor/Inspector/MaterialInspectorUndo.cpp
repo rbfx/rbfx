@@ -130,7 +130,7 @@ void TechniqueChangedAction::Redo()
     }
 }
 
-ShaderParameterChangedAction::ShaderParameterChangedAction(const Material* material, const stl::string& parameterName, const Variant& oldValue, const Variant& newValue)
+ShaderParameterChangedAction::ShaderParameterChangedAction(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue)
     : context_(material->GetContext())
     , materialName_(material->GetName())
     , parameterName_(parameterName)

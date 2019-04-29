@@ -44,13 +44,13 @@ protected:
     void ConvertGlobToRegex();
 
     StringVector glob_;
-    stl::vector<std::regex> regex_;
+    ea::vector<std::regex> regex_;
 };
 
 /// Return true if `string` matches any pattern specified in `patterns` list.
-bool MatchesAny(const stl::string& string, const stl::vector<std::regex>& patterns);
+bool MatchesAny(const ea::string& string, const ea::vector<std::regex>& patterns);
 /// Converts a glob expression to regex pattern. * matches anything except folder separators, ** matches anything
 /// including folder separators.
-std::regex GlobToRegex(const stl::string& expression);
+std::regex GlobToRegex(const ea::string& expression);
 
 }

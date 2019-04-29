@@ -64,9 +64,9 @@ public:
     /// Create a new tab of specified type.
     Tab* CreateTab(StringHash type);
     ///
-    Tab* GetTabByName(const stl::string& uniqueName);
+    Tab* GetTabByName(const ea::string& uniqueName);
     ///
-    Tab* GetTabByResource(const stl::string& resourceName);
+    Tab* GetTabByResource(const ea::string& resourceName);
     /// Returns first tab of specified type.
     Tab* GetTab(StringHash type);
     /// Returns first tab of specified type.
@@ -75,17 +75,17 @@ public:
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
-    const stl::vector<stl::shared_ptr<Tab>>& GetSceneViews() const { return tabs_; }
+    const ea::vector<ea::shared_ptr<Tab>>& GetSceneViews() const { return tabs_; }
     /// Return a map of names and type hashes from specified category.
-    StringVector GetObjectsByCategory(const stl::string& category);
+    StringVector GetObjectsByCategory(const ea::string& category);
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
-    const stl::vector<stl::shared_ptr<Tab>>& GetContentTabs() const { return tabs_; }
+    const ea::vector<ea::shared_ptr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
-    void OpenProject(const stl::string& projectPath);
+    void OpenProject(const ea::string& projectPath);
     /// Close current project.
     void CloseProject();
     /// Return path containing data directories of engine.
-    const stl::string& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
+    const ea::string& GetCoreResourcePrefixPath() const { return coreResourcePrefixPath_; }
     /// Create tabs that are open by default and persist through entire lifetime of editor.
     void CreateDefaultTabs();
     /// Load default tab layout.
@@ -95,7 +95,7 @@ public:
     ///
     ImFont* GetMonoSpaceFont() const { return monoFont_; }
     ///
-    void UpdateWindowTitle(const stl::string& resourcePath=EMPTY_STRING);
+    void UpdateWindowTitle(const ea::string& resourcePath=EMPTY_STRING);
     ///
     VariantMap& GetEngineParameters() { return engineParameters_; }
 
@@ -112,17 +112,17 @@ protected:
     template<typename T> void RegisterSubcommand();
 
     /// List of active scene tabs.
-    stl::vector<stl::shared_ptr<Tab>> tabs_;
+    ea::vector<ea::shared_ptr<Tab>> tabs_;
     /// Last focused scene tab.
-    stl::weak_ptr<Tab> activeTab_;
+    ea::weak_ptr<Tab> activeTab_;
     /// Prefix path of CoreData and EditorData.
-    stl::string coreResourcePrefixPath_;
+    ea::string coreResourcePrefixPath_;
     /// Currently loaded project.
-    stl::shared_ptr<Project> project_;
+    ea::shared_ptr<Project> project_;
     /// ID of dockspace root.
     ImGuiID dockspaceId_;
     /// Path to a project that editor should open on the end of the frame.
-    stl::string pendingOpenProject_;
+    ea::string pendingOpenProject_;
     /// Flag indicating that editor should create and load default layout.
     bool loadDefaultLayout_ = false;
     ///
@@ -130,9 +130,9 @@ protected:
     ///
     bool exiting_ = false;
     ///
-    stl::string defaultProjectPath_;
+    ea::string defaultProjectPath_;
     ///
-    stl::vector<stl::shared_ptr<SubCommand>> subCommands_;
+    ea::vector<ea::shared_ptr<SubCommand>> subCommands_;
 };
 
 }

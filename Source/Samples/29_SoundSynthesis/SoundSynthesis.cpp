@@ -103,7 +103,7 @@ void SoundSynthesis::UpdateSound()
 
     // Allocate a new buffer and fill it with a simple two-oscillator algorithm. The sound is over-amplified
     // (distorted), clamped to the 16-bit range, and finally lowpass-filtered according to the coefficient
-    stl::shared_array<signed short> newData(new signed short[numSamples]);
+    ea::shared_array<signed short> newData(new signed short[numSamples]);
     for (unsigned i = 0; i < numSamples; ++i)
     {
         osc1_ = fmodf(osc1_ + 1.0f, 360.0f);
@@ -157,7 +157,7 @@ void SoundSynthesis::HandleUpdate(StringHash eventType, VariantMap& eventData)
     filter_ = Clamp(filter_, 0.01f, 1.0f);
 
     instructionText_->SetText("Use cursor up and down to control sound filtering\n"
-        "Coefficient: " + stl::to_string(filter_));
+        "Coefficient: " + ea::to_string(filter_));
 
     UpdateSound();
 }

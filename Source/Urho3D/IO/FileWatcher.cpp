@@ -75,7 +75,7 @@ FileWatcher::~FileWatcher()
 #endif
 }
 
-bool FileWatcher::StartWatching(const stl::string& pathName, bool watchSubDirs)
+bool FileWatcher::StartWatching(const ea::string& pathName, bool watchSubDirs)
 {
     if (!fileSystem_)
     {
@@ -90,7 +90,7 @@ bool FileWatcher::StartWatching(const stl::string& pathName, bool watchSubDirs)
 
 #if defined(URHO3D_FILEWATCHER) && defined(URHO3D_THREADING)
 #ifdef _WIN32
-    stl::string nativePath = GetNativePath(RemoveTrailingSlash(pathName));
+    ea::string nativePath = GetNativePath(RemoveTrailingSlash(pathName));
 
     dirHandle_ = (void*)CreateFileW(
         MultiByteToWide(nativePath).c_str(),
@@ -133,12 +133,12 @@ bool FileWatcher::StartWatching(const stl::string& pathName, bool watchSubDirs)
 
         if (watchSubDirs_)
         {
-            stl::vector<stl::string> subDirs;
+            ea::vector<ea::string> subDirs;
             fileSystem_->ScanDir(subDirs, pathName, "*", SCAN_DIRS, true);
 
             for (unsigned i = 0; i < subDirs.size(); ++i)
             {
-                stl::string subDirFullPath = AddTrailingSlash(path_ + subDirs[i]);
+                ea::string subDirFullPath = AddTrailingSlash(path_ + subDirs[i]);
 
                 // Don't watch ./ or ../ sub-directories
                 if (!subDirFullPath.ends_with("./"))
@@ -201,7 +201,7 @@ void FileWatcher::StopWatching()
         // This is only required on Windows platform
         // TODO: Remove this temp write approach as it depends on user write privilege
 #ifdef _WIN32
-        stl::string dummyFileName = path_ + "dummy.tmp";
+        ea::string dummyFileName = path_ + "dummy.tmp";
         File file(context_, dummyFileName, FILE_WRITE);
         file.Close();
         if (fileSystem_)
@@ -263,7 +263,7 @@ void FileWatcher::ThreadFunction()
             {
                 FILE_NOTIFY_INFORMATION* record = (FILE_NOTIFY_INFORMATION*)&buffer[offset];
 
-                stl::string fileName;
+                ea::string fileName;
                 const wchar_t* src = record->FileName;
                 const wchar_t* end = src + record->FileNameLength / 2;
                 while (src < end)
@@ -315,14 +315,14 @@ void FileWatcher::ThreadFunction()
         if (length < 0)
             return;
 
-        stl::unordered_map<unsigned, FileChange> renames;
+        ea::unordered_map<unsigned, FileChange> renames;
         while (i < length)
         {
             auto* event = (inotify_event*)&buffer[i];
 
             if (event->len > 0)
             {
-                stl::string fileName = dirHandle_[event->wd] + event->name;
+                ea::string fileName = dirHandle_[event->wd] + event->name;
 
                 if (event->mask == IN_CREATE)
                     AddChange({FILECHANGE_ADDED, fileName, EMPTY_STRING});
@@ -354,15 +354,15 @@ void FileWatcher::ThreadFunction()
     {
         Time::Sleep(100);
 
-        stl::string changes = ReadFileWatcher(watcher_);
+        ea::string changes = ReadFileWatcher(watcher_);
         if (!changes.Empty())
         {
-            stl::vector<stl::string> fileChanges = changes.Split('\n');
+            ea::vector<ea::string> fileChanges = changes.Split('\n');
             FileChange change{};
-            for (const stl::string& fileResult : fileChanges)
+            for (const ea::string& fileResult : fileChanges)
             {
                 change.kind_ = (FileChangeKind)fileResult[0];   // First byte is change kind.
-                stl::string fileName = &fileResult.At(1);
+                ea::string fileName = &fileResult.At(1);
                 if (change.kind_ == FILECHANGE_RENAMED)
                 {
                     if (GetSubsystem<FileSystem>()->FileExists(fileName))

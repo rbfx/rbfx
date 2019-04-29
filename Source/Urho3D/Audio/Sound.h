@@ -66,10 +66,10 @@ public:
     void SetLoop(unsigned repeatOffset, unsigned endOffset);
 
     /// Return a new instance of a decoder sound stream. Used by compressed sounds.
-    stl::shared_ptr<SoundStream> GetDecoderStream() const;
+    ea::shared_ptr<SoundStream> GetDecoderStream() const;
 
     /// Return shared sound data.
-    stl::shared_array<signed char> GetData() const { return data_; }
+    ea::shared_array<signed char> GetData() const { return data_; }
 
     /// Return sound data start.
     signed char* GetStart() const { return data_.get(); }
@@ -115,7 +115,7 @@ private:
     void LoadParameters();
 
     /// Sound data.
-    stl::shared_array<signed char> data_;
+    ea::shared_array<signed char> data_;
     /// Loop start.
     signed char* repeat_;
     /// Sound data end.

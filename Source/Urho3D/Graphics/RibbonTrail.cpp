@@ -127,7 +127,7 @@ void RibbonTrail::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Sort By Distance", IsSorted, SetSorted, bool, false, AM_DEFAULT);
 }
 
-void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void RibbonTrail::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     // If no trail-level testing, use the Drawable test
     if (query.level_ < RAY_TRIANGLE)
@@ -358,7 +358,7 @@ void RibbonTrail::SetTailColumn(unsigned tailColumn)
 {
     if (tailColumn > MAX_TAIL_COLUMN)
     {
-        URHO3D_LOGWARNING("Max ribbon trail tail column is " + stl::to_string(MAX_TAIL_COLUMN));
+        URHO3D_LOGWARNING("Max ribbon trail tail column is " + ea::to_string(MAX_TAIL_COLUMN));
         tailColumn_ = MAX_TAIL_COLUMN;
     }
     else if (tailColumn < 1)
@@ -560,7 +560,7 @@ void RibbonTrail::UpdateVertexBuffer(const FrameInfo& frame)
 
     // Sort points
     if (sorted_)
-        stl::quick_sort(sortedPoints_.begin(), sortedPoints_.end(), CompareTails);
+        ea::quick_sort(sortedPoints_.begin(), sortedPoints_.end(), CompareTails);
 
     // Update individual trail elapsed length
     float trailLength = 0.0f;

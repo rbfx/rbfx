@@ -134,7 +134,7 @@ void SoundSource::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Sound", GetSoundAttr, SetSoundAttr, ResourceRef, ResourceRef(Sound::GetTypeStatic()), AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Type", GetSoundType, SetSoundType, stl::string, SOUND_EFFECT, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Type", GetSoundType, SetSoundType, ea::string, SOUND_EFFECT, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Frequency", float, frequency_, 0.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Gain", float, gain_, 1.0f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Attenuation", float, attenuation_, 1.0f, AM_DEFAULT);
@@ -233,7 +233,7 @@ void SoundSource::Play(SoundStream* stream)
     if (frequency_ == 0.0f && stream)
         SetFrequency(stream->GetFrequency());
 
-    stl::shared_ptr<SoundStream> streamPtr(stream);
+    ea::shared_ptr<SoundStream> streamPtr(stream);
 
     // If sound source is currently playing, have to lock the audio mutex. When stream playback is explicitly
     // requested, clear the existing sound if any
@@ -269,7 +269,7 @@ void SoundSource::Stop()
     MarkNetworkUpdate();
 }
 
-void SoundSource::SetSoundType(const stl::string& type)
+void SoundSource::SetSoundType(const ea::string& type)
 {
     if (type == SOUND_MASTER)
         return;
@@ -346,7 +346,7 @@ void SoundSource::Update(float timeStep)
         sendFinishedEvent_ = false;
 
         // Make a weak pointer to self to check for destruction during event handling
-        stl::weak_ptr<SoundSource> self(this);
+        ea::weak_ptr<SoundSource> self(this);
 
         using namespace SoundFinished;
 
@@ -545,7 +545,7 @@ void SoundSource::PlayLockless(Sound* sound)
     sound_.reset();
 }
 
-void SoundSource::PlayLockless(const stl::shared_ptr<SoundStream>& stream)
+void SoundSource::PlayLockless(const ea::shared_ptr<SoundStream>& stream)
 {
     // Reset the time position in any case
     timePosition_ = 0.0f;

@@ -213,7 +213,7 @@ void HelloGUI::HandleControlClicked(StringHash eventType, VariantMap& eventData)
     // Get control that was clicked
     auto* clicked = static_cast<UIElement*>(eventData[UIMouseClick::P_ELEMENT].GetPtr());
 
-    stl::string name = "...?";
+    ea::string name = "...?";
     if (clicked)
     {
         // Get the name of the control that was clicked

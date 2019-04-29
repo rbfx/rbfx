@@ -68,11 +68,11 @@ public:
 
 protected:
     ///
-    stl::string comment_{};
+    ea::string comment_{};
     ///
     ConverterKind kind_ = CONVERTER_OFFLINE;
     ///
-    stl::vector<stl::shared_ptr<Converter>> converters_;
+    ea::vector<ea::shared_ptr<Converter>> converters_;
 };
 
 }

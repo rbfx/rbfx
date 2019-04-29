@@ -36,7 +36,7 @@
 namespace Urho3D
 {
 
-MessageBox::MessageBox(Context* context, const stl::string& messageString, const stl::string& titleString, XMLFile* layoutFile,
+MessageBox::MessageBox(Context* context, const ea::string& messageString, const ea::string& titleString, XMLFile* layoutFile,
     XMLFile* styleFile) :
     Object(context),
     window_(nullptr),
@@ -56,11 +56,11 @@ MessageBox::MessageBox(Context* context, const stl::string& messageString, const
     auto* ui = GetSubsystem<UI>();
     UIElement* root = ui->GetRoot();
     {
-        stl::shared_ptr<UIElement> holder = ui->LoadLayout(layoutFile, styleFile);
+        ea::shared_ptr<UIElement> holder = ui->LoadLayout(layoutFile, styleFile);
         if (!holder)    // Error is already logged
             return;
         window_ = holder;
-        root->AddChild(window_);    // Take ownership of the object before stl::shared_ptr goes out of scope
+        root->AddChild(window_);    // Take ownership of the object before ea::shared_ptr goes out of scope
     }
 
     // Set the title and message strings if they are given
@@ -111,24 +111,24 @@ void MessageBox::RegisterObject(Context* context)
     context->RegisterFactory<MessageBox>();
 }
 
-void MessageBox::SetTitle(const stl::string& text)
+void MessageBox::SetTitle(const ea::string& text)
 {
     if (titleText_)
         titleText_->SetText(text);
 }
 
-void MessageBox::SetMessage(const stl::string& text)
+void MessageBox::SetMessage(const ea::string& text)
 {
     if (messageText_)
         messageText_->SetText(text);
 }
 
-const stl::string& MessageBox::GetTitle() const
+const ea::string& MessageBox::GetTitle() const
 {
     return titleText_ ? titleText_->GetText() : EMPTY_STRING;
 }
 
-const stl::string& MessageBox::GetMessage() const
+const ea::string& MessageBox::GetMessage() const
 {
     return messageText_ ? messageText_->GetText() : EMPTY_STRING;
 }

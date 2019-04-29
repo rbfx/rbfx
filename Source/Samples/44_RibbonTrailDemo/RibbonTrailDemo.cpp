@@ -155,19 +155,19 @@ void RibbonTrailDemo::CreateScene()
     Node* boxTextNode1 = scene_->CreateChild("BoxText1");
     boxTextNode1->SetPosition(Vector3(-1.0f, 2.0f, 0.0f));
     auto* boxText1 = boxTextNode1->CreateComponent<Text3D>();
-    boxText1->SetText(stl::string("Face Camera Trail (4 Column)"));
+    boxText1->SetText(ea::string("Face Camera Trail (4 Column)"));
     boxText1->SetFont(cache->GetResource<Font>("Fonts/BlueHighway.sdf"), 24);
 
     Node* boxTextNode2 = scene_->CreateChild("BoxText2");
     boxTextNode2->SetPosition(Vector3(-6.0f, 2.0f, 0.0f));
     auto* boxText2 = boxTextNode2->CreateComponent<Text3D>();
-    boxText2->SetText(stl::string("Face Camera Trail (1 Column)"));
+    boxText2->SetText(ea::string("Face Camera Trail (1 Column)"));
     boxText2->SetFont(cache->GetResource<Font>("Fonts/BlueHighway.sdf"), 24);
 
     Node* ninjaTextNode2 = scene_->CreateChild("NinjaText");
     ninjaTextNode2->SetPosition(Vector3(4.0f, 2.5f, 0.0f));
     auto* ninjaText = ninjaTextNode2->CreateComponent<Text3D>();
-    ninjaText->SetText(stl::string("Bone Trail (4 Column)"));
+    ninjaText->SetText(ea::string("Bone Trail (4 Column)"));
     ninjaText->SetFont(cache->GetResource<Font>("Fonts/BlueHighway.sdf"), 24);
 
     // Create the camera.
@@ -201,7 +201,7 @@ void RibbonTrailDemo::SetupViewport()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -267,7 +267,7 @@ void RibbonTrailDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
         Quaternion());
 
     // Get elapsed attack animation time.
-    float swordAnimTime = ninjaAnimCtrl_->GetAnimationState(stl::string("Models/NinjaSnowWar/Ninja_Attack3.ani"))->GetTime();
+    float swordAnimTime = ninjaAnimCtrl_->GetAnimationState(ea::string("Models/NinjaSnowWar/Ninja_Attack3.ani"))->GetTime();
 
     // Stop emitting trail when sword is finished slashing.
     if (!swordTrail_->IsEmitting() && swordAnimTime > swordTrailStartTime_ && swordAnimTime < swordTrailEndTime_)

@@ -85,13 +85,13 @@ private:
     /// Texture array layers number.
     unsigned layers_{};
     /// Render surface.
-    stl::shared_ptr<RenderSurface> renderSurface_;
+    ea::shared_ptr<RenderSurface> renderSurface_;
     /// Memory use per layer.
-    stl::vector<unsigned> layerMemoryUse_;
+    ea::vector<unsigned> layerMemoryUse_;
     /// Layer image files acquired during BeginLoad.
-    stl::vector<stl::shared_ptr<Image> > loadImages_;
+    ea::vector<ea::shared_ptr<Image> > loadImages_;
     /// Parameter file acquired during BeginLoad.
-    stl::shared_ptr<XMLFile> loadParameters_;
+    ea::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

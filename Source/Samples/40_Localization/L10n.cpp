@@ -104,15 +104,15 @@ void L10n::CreateGUI()
     window->AddChild(windowTitle);
 
     // In this place the current language is "en" because it was found first when loading the JSON files
-    stl::string langName = l10n->GetLanguage();
+    ea::string langName = l10n->GetLanguage();
     // Languages are numbered in the loading order
     int langIndex = l10n->GetLanguageIndex(); // == 0 at the beginning
     // Get string with identifier "title" in the current language
-    stl::string localizedString = l10n->Get("title");
+    ea::string localizedString = l10n->Get("title");
     // Localization::Get returns EMPTY_STRING if the id is empty.
     // Localization::Get returns the id if translation is not found and will be added a warning into the log.
 
-    windowTitle->SetText(localizedString + " (" + stl::to_string(langIndex) + " " + langName + ")");
+    windowTitle->SetText(localizedString + " (" + ea::to_string(langIndex) + " " + langName + ")");
 
     auto* b = new Button(context_);
     window->AddChild(b);
@@ -189,7 +189,7 @@ void L10n::CreateScene()
     text3DNode->SetScale(15);
 
     auto* renderer = GetSubsystem<Renderer>();
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(L10n, HandleUpdate));
@@ -232,7 +232,7 @@ void L10n::HandleChangeLanguage(StringHash eventType, VariantMap& eventData)
     UIElement* uiRoot = GetSubsystem<UI>()->GetRoot();
 
     auto* windowTitle = uiRoot->GetChildStaticCast<Text>("WindowTitle", true);
-    windowTitle->SetText(l10n->Get("title") + " (" + stl::to_string(l10n->GetLanguageIndex()) + " " + l10n->GetLanguage() + ")");
+    windowTitle->SetText(l10n->Get("title") + " (" + ea::to_string(l10n->GetLanguageIndex()) + " " + l10n->GetLanguage() + ")");
 
     auto* buttonText = uiRoot->GetChildStaticCast<Text>("ButtonTextQuit", true);
     buttonText->SetText(l10n->Get("quit"));

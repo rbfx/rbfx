@@ -54,7 +54,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -72,7 +72,7 @@ private:
     /// Subscribe to update, UI and network events.
     void SubscribeToEvents();
     /// Create a button to the button container.
-    Button* CreateButton(const stl::string& text, int width);
+    Button* CreateButton(const ea::string& text, int width);
     /// Update visibility of buttons according to connection and server status.
     void UpdateButtons();
     /// Create a controllable ball object and return its scene node.
@@ -99,19 +99,19 @@ private:
     void HandleClientObjectID(StringHash eventType, VariantMap& eventData);
 
     /// Mapping from client connections to controllable objects.
-    stl::unordered_map<Connection*, stl::weak_ptr<Node> > serverObjects_;
+    ea::unordered_map<Connection*, ea::weak_ptr<Node> > serverObjects_;
     /// Button container element.
-    stl::shared_ptr<UIElement> buttonContainer_;
+    ea::shared_ptr<UIElement> buttonContainer_;
     /// Server address line editor element.
-    stl::shared_ptr<LineEdit> textEdit_;
+    ea::shared_ptr<LineEdit> textEdit_;
     /// Connect button.
-    stl::shared_ptr<Button> connectButton_;
+    ea::shared_ptr<Button> connectButton_;
     /// Disconnect button.
-    stl::shared_ptr<Button> disconnectButton_;
+    ea::shared_ptr<Button> disconnectButton_;
     /// Start server button.
-    stl::shared_ptr<Button> startServerButton_;
+    ea::shared_ptr<Button> startServerButton_;
     /// Instructions text.
-    stl::shared_ptr<Text> instructionsText_;
+    ea::shared_ptr<Text> instructionsText_;
     /// ID of own controllable object (client only.)
     unsigned clientObjectID_{};
 };

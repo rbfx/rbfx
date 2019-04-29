@@ -54,7 +54,7 @@ void Sprite::RegisterObject(Context* context)
 {
     context->RegisterFactory<Sprite>(UI_CATEGORY);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, stl::string, EMPTY_STRING, AM_FILE);
+    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Position", GetPosition, SetPosition, Vector2, Vector2::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Size", GetSize, SetSize, IntVector2, IntVector2::ZERO, AM_FILE);
     URHO3D_ACCESSOR_ATTRIBUTE("Hotspot", GetHotSpot, SetHotSpot, IntVector2, IntVector2::ZERO, AM_FILE);
@@ -107,7 +107,7 @@ IntVector2 Sprite::ElementToScreen(const IntVector2& position)
     return IntVector2((int)transformedPos.x_, (int)transformedPos.y_);
 }
 
-void Sprite::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void Sprite::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     bool allOpaque = true;
     if (GetDerivedOpacity() < 1.0f || colors_[C_TOPLEFT].a_ < 1.0f || colors_[C_TOPRIGHT].a_ < 1.0f ||

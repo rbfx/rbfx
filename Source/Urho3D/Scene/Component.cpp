@@ -109,7 +109,7 @@ void Component::MarkNetworkUpdate()
     }
 }
 
-void Component::GetDependencyNodes(stl::vector<Node*>& dest)
+void Component::GetDependencyNodes(ea::vector<Node*>& dest)
 {
 }
 
@@ -170,7 +170,7 @@ void Component::PrepareNetworkUpdate()
     if (!networkState_)
         AllocateNetworkState();
 
-    const stl::vector<AttributeInfo>* attributes = networkState_->attributes_;
+    const ea::vector<AttributeInfo>* attributes = networkState_->attributes_;
     if (!attributes)
         return;
 
@@ -272,7 +272,7 @@ bool Component::IsEnabledEffective() const
     return enabled_ && node_ && node_->IsEnabled();
 }
 
-void Component::GetComponents(stl::vector<Component*>& dest, StringHash type) const
+void Component::GetComponents(ea::vector<Component*>& dest, StringHash type) const
 {
     if (node_)
         node_->GetComponents(dest, type);

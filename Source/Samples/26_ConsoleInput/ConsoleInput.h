@@ -42,7 +42,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -63,13 +63,13 @@ private:
     /// Print intro message and initialize the game state.
     void StartGame();
     /// Print game over message.
-    void EndGame(const stl::string& message);
+    void EndGame(const ea::string& message);
     /// Advance the game state.
     void Advance();
     /// Handle user input either from the engine console or standard input.
-    void HandleInput(const stl::string& input);
+    void HandleInput(const ea::string& input);
     /// Print text to the engine console and standard output.
-    void Print(const stl::string& output);
+    void Print(const ea::string& output);
 
     /// Game on flag.
     bool gameOn_{};

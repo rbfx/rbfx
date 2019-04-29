@@ -94,7 +94,7 @@ void SplinePath::ApplyAttributes()
             Node* node = scene->GetNode(controlPointIdsAttr_[i].GetUInt());
             if (node)
             {
-                stl::weak_ptr<Node> controlPoint(node);
+                ea::weak_ptr<Node> controlPoint(node);
                 node->AddListener(this);
                 controlPoints_.push_back(controlPoint);
                 spline_.AddKnot(node->GetWorldPosition());
@@ -104,7 +104,7 @@ void SplinePath::ApplyAttributes()
         Node* node = scene->GetNode(controlledIdAttr_);
         if (node)
         {
-            stl::weak_ptr<Node> controlled(node);
+            ea::weak_ptr<Node> controlled(node);
             controlledNode_ = controlled;
         }
     }
@@ -141,7 +141,7 @@ void SplinePath::AddControlPoint(Node* point, unsigned index)
     if (!point)
         return;
 
-    stl::weak_ptr<Node> controlPoint(point);
+    ea::weak_ptr<Node> controlPoint(point);
 
     point->AddListener(this);
     controlPoints_.insert(index, controlPoint);
@@ -156,7 +156,7 @@ void SplinePath::RemoveControlPoint(Node* point)
     if (!point)
         return;
 
-    stl::weak_ptr<Node> controlPoint(point);
+    ea::weak_ptr<Node> controlPoint(point);
 
     point->RemoveListener(this);
 
@@ -193,7 +193,7 @@ void SplinePath::ClearControlPoints()
 void SplinePath::SetControlledNode(Node* controlled)
 {
     if (controlled)
-        controlledNode_ = stl::weak_ptr<Node>(controlled);
+        controlledNode_ = ea::weak_ptr<Node>(controlled);
 }
 
 void SplinePath::SetInterpolationMode(InterpolationMode interpolationMode)
@@ -287,7 +287,7 @@ void SplinePath::OnMarkedDirty(Node* point)
     if (!point)
         return;
 
-    stl::weak_ptr<Node> controlPoint(point);
+    ea::weak_ptr<Node> controlPoint(point);
 
     for (unsigned i = 0; i < controlPoints_.size(); ++i)
     {
@@ -306,7 +306,7 @@ void SplinePath::OnNodeSetEnabled(Node* point)
     if (!point)
         return;
 
-    stl::weak_ptr<Node> controlPoint(point);
+    ea::weak_ptr<Node> controlPoint(point);
 
     for (unsigned i = 0; i < controlPoints_.size(); ++i)
     {

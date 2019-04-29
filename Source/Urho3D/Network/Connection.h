@@ -90,11 +90,11 @@ struct PackageDownload
     PackageDownload();
 
     /// Destination file.
-    stl::shared_ptr<File> file_;
+    ea::shared_ptr<File> file_;
     /// Already received fragments.
-    stl::hash_set<unsigned> receivedFragments_;
+    ea::hash_set<unsigned> receivedFragments_;
     /// Package name.
-    stl::string name_;
+    ea::string name_;
     /// Total number of fragments.
     unsigned totalFragments_;
     /// Checksum.
@@ -110,7 +110,7 @@ struct PackageUpload
     PackageUpload();
 
     /// Source file.
-    stl::shared_ptr<File> file_;
+    ea::shared_ptr<File> file_;
     /// Current fragment index.
     unsigned fragment_;
     /// Total number of fragments
@@ -218,7 +218,7 @@ public:
     bool GetLogStatistics() const { return logStatistics_; }
 
     /// Return remote address.
-    stl::string GetAddress() const;
+    ea::string GetAddress() const;
 
     /// Return remote port.
     unsigned short GetPort() const { return port_; }
@@ -242,11 +242,11 @@ public:
     int GetPacketsOutPerSec() const;
 
     /// Return an address:port string.
-    stl::string ToString() const;
+    ea::string ToString() const;
     /// Return number of package downloads remaining.
     unsigned GetNumDownloads() const;
     /// Return name of current package download, or empty if no downloads.
-    const stl::string& GetDownloadName() const;
+    const ea::string& GetDownloadName() const;
     /// Return progress of current package download, or 1.0 if no downloads.
     float GetDownloadProgress() const;
     /// Trigger client connection to download a package file from the server. Can be used to download additional resource packages when client is already joined in a scene. The package must have been added as a requirement to the scene the client is joined in, or else the eventual download will fail.
@@ -292,36 +292,36 @@ private:
     /// Check a package list received from server and initiate package downloads as necessary. Return true on success, or false if failed to initialze downloads (cache dir not set)
     bool RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg);
     /// Initiate a package download.
-    void RequestPackage(const stl::string& name, unsigned fileSize, unsigned checksum);
+    void RequestPackage(const ea::string& name, unsigned fileSize, unsigned checksum);
     /// Send an error reply for a package download.
-    void SendPackageError(const stl::string& name);
+    void SendPackageError(const ea::string& name);
     /// Handle scene load failure on the server or client.
     void OnSceneLoadFailed();
     /// Handle a package download failure on the client.
-    void OnPackageDownloadFailed(const stl::string& name);
+    void OnPackageDownloadFailed(const ea::string& name);
     /// Handle all packages loaded successfully. Also called directly on MSG_LOADSCENE if there are none.
     void OnPackagesReady();
 
     /// Scene.
-    stl::weak_ptr<Scene> scene_;
+    ea::weak_ptr<Scene> scene_;
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.
-    stl::unordered_map<StringHash, PackageDownload> downloads_;
+    ea::unordered_map<StringHash, PackageDownload> downloads_;
     /// Ongoing package send transfers.
-    stl::unordered_map<StringHash, PackageUpload> uploads_;
+    ea::unordered_map<StringHash, PackageUpload> uploads_;
     /// Pending latest data for not yet received nodes.
-    stl::unordered_map<unsigned, stl::vector<unsigned char> > nodeLatestData_;
+    ea::unordered_map<unsigned, ea::vector<unsigned char> > nodeLatestData_;
     /// Pending latest data for not yet received components.
-    stl::unordered_map<unsigned, stl::vector<unsigned char> > componentLatestData_;
+    ea::unordered_map<unsigned, ea::vector<unsigned char> > componentLatestData_;
     /// Node ID's to process during a replication update.
-    stl::hash_set<unsigned> nodesToProcess_;
+    ea::hash_set<unsigned> nodesToProcess_;
     /// Reusable message buffer.
     VectorBuffer msg_;
     /// Queued remote events.
-    stl::vector<RemoteEvent> remoteEvents_;
+    ea::vector<RemoteEvent> remoteEvents_;
     /// Scene file to load once all packages (if any) have been downloaded.
-    stl::string sceneFileName_;
+    ea::string sceneFileName_;
     /// Statistics timer.
     Timer statsTimer_;
     /// Remote endpoint port.

@@ -84,7 +84,7 @@ bool XMLFile::BeginLoad(Deserializer& source)
         return false;
     }
 
-    stl::shared_array<char> buffer(new char[dataSize]);
+    ea::shared_array<char> buffer(new char[dataSize]);
     if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
 
@@ -96,14 +96,14 @@ bool XMLFile::BeginLoad(Deserializer& source)
     }
 
     XMLElement rootElem = GetRoot();
-    stl::string inherit = rootElem.GetAttribute("inherit");
+    ea::string inherit = rootElem.GetAttribute("inherit");
     if (!inherit.empty())
     {
         // The existence of this attribute indicates this is an RFC 5261 patch file
         auto* cache = GetSubsystem<ResourceCache>();
         // If being async loaded, GetResource() is not safe, so use GetTempResource() instead
-        stl::shared_ptr<XMLFile> inheritedXMLFile(
-            GetAsyncLoadState() == ASYNC_DONE ? stl::shared_ptr<XMLFile>(cache->GetResource<XMLFile>(inherit)) :
+        ea::shared_ptr<XMLFile> inheritedXMLFile(
+            GetAsyncLoadState() == ASYNC_DONE ? ea::shared_ptr<XMLFile>(cache->GetResource<XMLFile>(inherit)) :
                 cache->GetTempResource<XMLFile>(inherit));
         if (!inheritedXMLFile)
         {
@@ -112,7 +112,7 @@ bool XMLFile::BeginLoad(Deserializer& source)
         }
 
         // Patch this XMLFile and leave the original inherited XMLFile as it is
-        stl::unique_ptr<pugi::xml_document> patchDocument(document_.detach());
+        ea::unique_ptr<pugi::xml_document> patchDocument(document_.detach());
         document_ = new pugi::xml_document();
         document_->reset(*inheritedXMLFile->document_);
         Patch(rootElem);
@@ -134,21 +134,21 @@ bool XMLFile::Save(Serializer& dest) const
     return Save(dest, "\t");
 }
 
-bool XMLFile::Save(Serializer& dest, const stl::string& indentation) const
+bool XMLFile::Save(Serializer& dest, const ea::string& indentation) const
 {
     XMLWriter writer(dest);
     document_->save(writer, indentation.c_str());
     return writer.success_;
 }
 
-XMLElement XMLFile::CreateRoot(const stl::string& name)
+XMLElement XMLFile::CreateRoot(const ea::string& name)
 {
     document_->reset();
     pugi::xml_node root = document_->append_child(name.c_str());
     return XMLElement(this, root.internal_object());
 }
 
-XMLElement XMLFile::GetOrCreateRoot(const stl::string& name)
+XMLElement XMLFile::GetOrCreateRoot(const ea::string& name)
 {
     XMLElement root = GetRoot(name);
     if (root.NotNull())
@@ -159,7 +159,7 @@ XMLElement XMLFile::GetOrCreateRoot(const stl::string& name)
     return CreateRoot(name);
 }
 
-bool XMLFile::FromString(const stl::string& source)
+bool XMLFile::FromString(const ea::string& source)
 {
     if (source.empty())
         return false;
@@ -168,7 +168,7 @@ bool XMLFile::FromString(const stl::string& source)
     return Load(buffer);
 }
 
-XMLElement XMLFile::GetRoot(const stl::string& name)
+XMLElement XMLFile::GetRoot(const ea::string& name)
 {
     pugi::xml_node root = document_->first_child();
     if (root.empty())
@@ -180,12 +180,12 @@ XMLElement XMLFile::GetRoot(const stl::string& name)
         return XMLElement(this, root.internal_object());
 }
 
-stl::string XMLFile::ToString(const stl::string& indentation) const
+ea::string XMLFile::ToString(const ea::string& indentation) const
 {
     VectorBuffer dest;
     XMLWriter writer(dest);
     document_->save(writer, indentation.c_str());
-    return stl::string((const char*)dest.GetData(), dest.GetSize());
+    return ea::string((const char*)dest.GetData(), dest.GetSize());
 }
 
 void XMLFile::Patch(XMLFile* patchFile)
@@ -354,7 +354,7 @@ void XMLFile::AddAttribute(const pugi::xml_node& patch, const pugi::xpath_node& 
         return;
     }
 
-    stl::string name(attribute.value());
+    ea::string name(attribute.value());
     name = name.substr(1);
 
     pugi::xml_attribute newAttribute = original.node().append_attribute(name.c_str());

@@ -83,7 +83,7 @@ void Text::RegisterObject(Context* context)
     URHO3D_UPDATE_ATTRIBUTE_DEFAULT_VALUE("Use Derived Opacity", false);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Font", GetFontAttr, SetFontAttr, ResourceRef, ResourceRef(Font::GetTypeStatic()), AM_FILE);
     URHO3D_ATTRIBUTE("Font Size", float, fontSize_, DEFAULT_FONT_SIZE, AM_FILE);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Text", GetTextAttr, SetTextAttr, stl::string, EMPTY_STRING, AM_FILE);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Text", GetTextAttr, SetTextAttr, ea::string, EMPTY_STRING, AM_FILE);
     URHO3D_ENUM_ATTRIBUTE("Text Alignment", textAlignment_, horizontalAlignments, HA_LEFT, AM_FILE);
     URHO3D_ATTRIBUTE("Row Spacing", float, rowSpacing_, 1.0f, AM_FILE);
     URHO3D_ATTRIBUTE("Word Wrap", bool, wordWrap_, false, AM_FILE);
@@ -117,7 +117,7 @@ void Text::ApplyAttributes()
     UpdateText();
 }
 
-void Text::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void Text::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     FontFace* face = font_ ? font_->GetFace(fontSize_) : nullptr;
     if (!face)
@@ -176,13 +176,13 @@ void Text::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexD
 
     // Text batch
     TextEffect textEffect = font_->IsSDFFont() ? TE_NONE : textEffect_;
-    const stl::vector<stl::shared_ptr<Texture2D> >& textures = face->GetTextures();
+    const ea::vector<ea::shared_ptr<Texture2D> >& textures = face->GetTextures();
     for (unsigned n = 0; n < textures.size() && n < pageGlyphLocations_.size(); ++n)
     {
         // One batch per texture/page
         UIBatch pageBatch(this, BLEND_ALPHA, currentScissor, textures[n], &vertexData);
 
-        const stl::vector<GlyphLocation>& pageGlyphLocation = pageGlyphLocations_[n];
+        const ea::vector<GlyphLocation>& pageGlyphLocation = pageGlyphLocations_[n];
 
         switch (textEffect)
         {
@@ -250,7 +250,7 @@ void Text::OnIndentSet()
     charLocationsDirty_ = true;
 }
 
-bool Text::SetFont(const stl::string& fontName, float size)
+bool Text::SetFont(const ea::string& fontName, float size)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     return SetFont(cache->GetResource<Font>(fontName), size);
@@ -290,7 +290,7 @@ void Text::DecodeToUnicode()
         unicodeText_.push_back(NextUTF8Char(text_, i));
 }
 
-void Text::SetText(const stl::string& text)
+void Text::SetText(const ea::string& text)
 {
     if (autoLocalizable_)
     {
@@ -451,14 +451,14 @@ ResourceRef Text::GetFontAttr() const
     return GetResourceRef(font_, Font::GetTypeStatic());
 }
 
-void Text::SetTextAttr(const stl::string& value)
+void Text::SetTextAttr(const ea::string& value)
 {
     text_ = value;
     if (autoLocalizable_)
         stringId_ = value;
 }
 
-stl::string Text::GetTextAttr() const
+ea::string Text::GetTextAttr() const
 {
     if (autoLocalizable_ && stringId_.length())
         return stringId_;
@@ -784,7 +784,7 @@ int Text::GetRowStartPosition(unsigned rowIndex) const
     return ret;
 }
 
-void Text::ConstructBatch(UIBatch& pageBatch, const stl::vector<GlyphLocation>& pageGlyphLocation, float dx, float dy, Color* color,
+void Text::ConstructBatch(UIBatch& pageBatch, const ea::vector<GlyphLocation>& pageGlyphLocation, float dx, float dy, Color* color,
     float depthBias)
 {
     unsigned startDataSize = pageBatch.vertexData_->size();

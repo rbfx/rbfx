@@ -38,9 +38,9 @@ namespace Urho3D
 
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 
-using ShaderProgramMap = stl::unordered_map<stl::pair<ShaderVariation*, ShaderVariation*>, stl::shared_ptr<ShaderProgram> >;
-using VertexDeclarationMap = stl::unordered_map<unsigned long long, stl::shared_ptr<VertexDeclaration> >;
-using ConstantBufferMap = stl::unordered_map<unsigned, stl::shared_ptr<ConstantBuffer> >;
+using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, ea::shared_ptr<ShaderProgram> >;
+using VertexDeclarationMap = ea::unordered_map<unsigned long long, ea::shared_ptr<VertexDeclaration> >;
+using ConstantBufferMap = ea::unordered_map<unsigned, ea::shared_ptr<ConstantBuffer> >;
 
 /// %Graphics implementation. Holds API-specific objects.
 class URHO3D_API GraphicsImpl
@@ -84,11 +84,11 @@ private:
     /// Current depth-stencil view.
     ID3D11DepthStencilView* depthStencilView_;
     /// Created blend state objects.
-    stl::unordered_map<unsigned, ID3D11BlendState*> blendStates_;
+    ea::unordered_map<unsigned, ID3D11BlendState*> blendStates_;
     /// Created depth state objects.
-    stl::unordered_map<unsigned, ID3D11DepthStencilState*> depthStates_;
+    ea::unordered_map<unsigned, ID3D11DepthStencilState*> depthStates_;
     /// Created rasterizer state objects.
-    stl::unordered_map<unsigned, ID3D11RasterizerState*> rasterizerStates_;
+    ea::unordered_map<unsigned, ID3D11RasterizerState*> rasterizerStates_;
     /// Intermediate texture for multisampled screenshots and less than whole viewport multisampled resolve, created on demand.
     ID3D11Texture2D* resolveTexture_;
     /// Bound shader resource views.
@@ -138,7 +138,7 @@ private:
     /// Constant buffer search map.
     ConstantBufferMap allConstantBuffers_;
     /// Currently dirty constant buffers.
-    stl::vector<ConstantBuffer*> dirtyConstantBuffers_;
+    ea::vector<ConstantBuffer*> dirtyConstantBuffers_;
     /// Shader programs.
     ShaderProgramMap shaderPrograms_;
     /// Shader program in use.

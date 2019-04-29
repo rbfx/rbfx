@@ -70,9 +70,9 @@ protected:
 
 private:
     /// Image file acquired during BeginLoad.
-    stl::shared_ptr<Image> loadImage_;
+    ea::shared_ptr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.
-    stl::shared_ptr<XMLFile> loadParameters_;
+    ea::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

@@ -48,7 +48,7 @@ public:
     /// Update window when it is active.
     void OnActiveUpdate() override;
     /// Load UI layout from resource path.
-    bool LoadResource(const stl::string& resourcePath) override;
+    bool LoadResource(const ea::string& resourcePath) override;
     /// Save scene to a resource file.
     bool SaveResource() override;
     ///
@@ -74,7 +74,7 @@ protected:
     ///
     Variant GetVariantFromXML(const XMLElement& attribute, const AttributeInfo& info) const;
     ///
-    stl::string GetAppliedStyle(UIElement* element = nullptr);
+    ea::string GetAppliedStyle(UIElement* element = nullptr);
     ///
     void GetStyleData(const AttributeInfo& info, XMLElement& style, XMLElement& attribute, Variant& value);
     ///
@@ -83,18 +83,18 @@ protected:
     void AttributeCustomize(VariantMap& args);
 
     ///
-    stl::shared_ptr<UI> offScreenUI_;
+    ea::shared_ptr<UI> offScreenUI_;
     /// Root element which contains edited UI.
-    stl::shared_ptr<RootUIElement> rootElement_;
+    ea::shared_ptr<RootUIElement> rootElement_;
     /// Texture that UIElement will be rendered into.
-    stl::shared_ptr<Texture2D> texture_;
+    ea::shared_ptr<Texture2D> texture_;
     /// Flag enabling display of internal elements.
     bool showInternal_ = false;
 
-    stl::weak_ptr<UIElement> selectedElement_;
+    ea::weak_ptr<UIElement> selectedElement_;
     bool hideResizeHandles_ = false;
-    stl::vector<stl::string> styleNames_;
-    stl::string textureSelectorAttribute_;
+    ea::vector<ea::string> styleNames_;
+    ea::string textureSelectorAttribute_;
 };
 
 }

@@ -75,7 +75,7 @@ struct AttributeInfo
     AttributeInfo() = default;
 #ifndef SWIG
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const stl::shared_ptr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
+    AttributeInfo(VariantType type, const char* name, const ea::shared_ptr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(enumNames),
@@ -86,7 +86,7 @@ struct AttributeInfo
     }
 #endif
     /// Construct attribute.
-    AttributeInfo(VariantType type, const char* name, const stl::shared_ptr<AttributeAccessor>& accessor, const stl::vector<stl::string>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
+    AttributeInfo(VariantType type, const char* name, const ea::shared_ptr<AttributeAccessor>& accessor, const ea::vector<ea::string>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
         enumNames_(nullptr),
@@ -143,11 +143,11 @@ struct AttributeInfo
     /// Attribute type.
     VariantType type_ = VAR_NONE;
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Enum names.
     const char** enumNames_ = nullptr;
     /// Helper object for accessor mode.
-    stl::shared_ptr<AttributeAccessor> accessor_;
+    ea::shared_ptr<AttributeAccessor> accessor_;
     /// Default value for network replication.
     Variant defaultValue_;
     /// Attribute mode: whether to use for serialization, network replication, or both.
@@ -157,9 +157,9 @@ struct AttributeInfo
     /// Attribute data pointer if elsewhere than in the Serializable.
     void* ptr_ = nullptr;
     /// List of enum names. Used when names can not be stored externally.
-    stl::vector<stl::string> enumNamesStorage_;
+    ea::vector<ea::string> enumNamesStorage_;
     /// List of enum name pointers. Front of this vector will be assigned to enumNames_ when enumNamesStorage_ is in use.
-    stl::vector<const char*> enumNamesPointers_;
+    ea::vector<const char*> enumNamesPointers_;
 
 private:
     void InitializeEnumNamesFromStorage()

@@ -117,7 +117,7 @@ void* Thread::ThreadFunctionStatic(void* data)
 
 ThreadID Thread::mainThreadID;
 
-Thread::Thread(const stl::string& name) :
+Thread::Thread(const ea::string& name) :
     handle_(nullptr),
     shouldRun_(false),
     name_(name)
@@ -213,7 +213,7 @@ bool Thread::IsMainThread()
 #endif // URHO3D_THREADING
 }
 
-void Thread::SetName(const stl::string& name)
+void Thread::SetName(const ea::string& name)
 {
     if (handle_ != nullptr)
     {

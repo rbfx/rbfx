@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <EASTL/map.h>
+
 #include "../Core/Variant.h"
 
 namespace Urho3D
@@ -109,7 +111,7 @@ public:
         *this = value;
     }
     /// Construct with a string.
-    JSONValue(const stl::string& value) :    // NOLINT(google-explicit-constructor)
+    JSONValue(const ea::string& value) :    // NOLINT(google-explicit-constructor)
         type_(0)
     {
         *this = value;
@@ -121,13 +123,13 @@ public:
         *this = value;
     }
     /// Construct with a JSON array.
-    JSONValue(const stl::vector<JSONValue>& value) :     // NOLINT(google-explicit-constructor)
+    JSONValue(const ea::vector<JSONValue>& value) :     // NOLINT(google-explicit-constructor)
         type_(0)
     {
         *this = value;
     }
     /// Construct with a JSON object.
-    JSONValue(const stl::unordered_map<stl::string, JSONValue>& value) :    // NOLINT(google-explicit-constructor)
+    JSONValue(const ea::map<ea::string, JSONValue>& value) :    // NOLINT(google-explicit-constructor)
         type_(0)
     {
         *this = value;
@@ -155,13 +157,13 @@ public:
     /// Assign from a double.
     JSONValue& operator =(double rhs);
     /// Assign from a string.
-    JSONValue& operator =(const stl::string& rhs);
+    JSONValue& operator =(const ea::string& rhs);
     /// Assign from a C string.
     JSONValue& operator =(const char* rhs);
     /// Assign from a JSON array.
-    JSONValue& operator =(const stl::vector<JSONValue>& rhs);
+    JSONValue& operator =(const ea::vector<JSONValue>& rhs);
     /// Assign from a JSON object.
-    JSONValue& operator =(const stl::unordered_map<stl::string, JSONValue>& rhs);
+    JSONValue& operator =(const ea::map<ea::string, JSONValue>& rhs);
     /// Assign from another JSON value.
     JSONValue& operator =(const JSONValue& rhs);
     /// Value equality operator.
@@ -174,9 +176,9 @@ public:
     /// Return number type.
     JSONNumberType GetNumberType() const;
     /// Return value type's name.
-    stl::string GetValueTypeName() const;
+    ea::string GetValueTypeName() const;
     /// Return number type's name.
-    stl::string GetNumberTypeName() const;
+    ea::string GetNumberTypeName() const;
 
     /// Check is null.
     bool IsNull() const { return GetValueType() == JSON_NULL; }
@@ -202,13 +204,13 @@ public:
     /// Return double value.
     double GetDouble() const { return IsNumber() ? numberValue_ : 0.0; }
     /// Return string value.
-    const stl::string& GetString() const { return IsString() ? *stringValue_ : EMPTY_STRING;}
+    const ea::string& GetString() const { return IsString() ? *stringValue_ : EMPTY_STRING;}
     /// Return C string value.
     const char* GetCString() const { return IsString() ? stringValue_->c_str() : nullptr;}
     /// Return JSON array value.
-    const stl::vector<JSONValue>& GetArray() const { return IsArray() ? *arrayValue_ : emptyArray; }
+    const ea::vector<JSONValue>& GetArray() const { return IsArray() ? *arrayValue_ : emptyArray; }
     /// Return JSON object value.
-    const stl::unordered_map<stl::string, JSONValue>& GetObject() const { return IsObject() ? *objectValue_ : emptyObject; }
+    const ea::map<ea::string, JSONValue>& GetObject() const { return IsObject() ? *objectValue_ : emptyObject; }
 
     // JSON array functions
     /// Return JSON value at index.
@@ -230,19 +232,19 @@ public:
 
     // JSON object functions
     /// Return JSON value with key.
-    JSONValue& operator [](const stl::string& key);
+    JSONValue& operator [](const ea::string& key);
     /// Return JSON value with key.
-    const JSONValue& operator [](const stl::string& key) const;
+    const JSONValue& operator [](const ea::string& key) const;
     /// Set JSON value with key.
-    void Set(const stl::string& key, const JSONValue& value);
+    void Set(const ea::string& key, const JSONValue& value);
     /// Return JSON value with key.
-    const JSONValue& Get(const stl::string& key) const;
+    const JSONValue& Get(const ea::string& key) const;
     /// Return JSON value with index.
     const JSONValue& Get(int index) const;
     /// Erase a pair by key.
-    bool Erase(const stl::string& key);
+    bool Erase(const ea::string& key);
     /// Return whether contains a pair with key.
-    bool Contains(const stl::string& key) const;
+    bool Contains(const ea::string& key) const;
 
     /// Clear array or object.
     void Clear();
@@ -270,20 +272,20 @@ public:
     /// Empty JSON value.
     static const JSONValue EMPTY;
     /// Empty JSON array.
-    static const stl::vector<JSONValue> emptyArray;
+    static const ea::vector<JSONValue> emptyArray;
     /// Empty JSON object.
-    static const stl::unordered_map<stl::string, JSONValue> emptyObject;
+    static const ea::map<ea::string, JSONValue> emptyObject;
 
     /// Return name corresponding to a value type.
-    static stl::string GetValueTypeName(JSONValueType type);
+    static ea::string GetValueTypeName(JSONValueType type);
     /// Return name corresponding to a number type.
-    static stl::string GetNumberTypeName(JSONNumberType type);
+    static ea::string GetNumberTypeName(JSONNumberType type);
     /// Return a value type from name; null if unrecognized.
-    static JSONValueType GetValueTypeFromName(const stl::string& typeName);
+    static JSONValueType GetValueTypeFromName(const ea::string& typeName);
     /// Return a value type from name; null if unrecognized.
     static JSONValueType GetValueTypeFromName(const char* typeName);
     /// Return a number type from name; NaN if unrecognized.
-    static JSONNumberType GetNumberTypeFromName(const stl::string& typeName);
+    static JSONNumberType GetNumberTypeFromName(const ea::string& typeName);
     /// Return a value type from name; NaN if unrecognized.
     static JSONNumberType GetNumberTypeFromName(const char* typeName);
 
@@ -297,30 +299,30 @@ public:
         /// Number value.
         double numberValue_;
         /// String value.
-        stl::string* stringValue_;
+        ea::string* stringValue_;
         /// Array value.
-        stl::vector<JSONValue>* arrayValue_;
+        ea::vector<JSONValue>* arrayValue_;
         /// Object value.
-        stl::unordered_map<stl::string, JSONValue>* objectValue_;
+        ea::map<ea::string, JSONValue>* objectValue_;
     };
 };
 
 /// Return iterator to the beginning.
-stl::unordered_map<stl::string, JSONValue>::iterator begin(JSONValue& value);
+ea::map<ea::string, JSONValue>::iterator begin(JSONValue& value);
 /// Return iterator to the beginning.
-stl::unordered_map<stl::string, JSONValue>::const_iterator begin(const JSONValue& value);
+ea::map<ea::string, JSONValue>::const_iterator begin(const JSONValue& value);
 /// Return iterator to the end.
-stl::unordered_map<stl::string, JSONValue>::iterator end(JSONValue& value);
+ea::map<ea::string, JSONValue>::iterator end(JSONValue& value);
 /// Return iterator to the beginning.
-stl::unordered_map<stl::string, JSONValue>::const_iterator end(const JSONValue& value);
+ea::map<ea::string, JSONValue>::const_iterator end(const JSONValue& value);
 
 /// JSON array type.
-using JSONArray = stl::vector<JSONValue>;
+using JSONArray = ea::vector<JSONValue>;
 /// JSON object type.
-using JSONObject = stl::unordered_map<stl::string, JSONValue>;
+using JSONObject = ea::map<ea::string, JSONValue>;
 /// JSON object iterator.
-using JSONObjectIterator = stl::unordered_map<stl::string, JSONValue>::iterator;
+using JSONObjectIterator = ea::map<ea::string, JSONValue>::iterator;
 /// Constant JSON object iterator.
-using ConstJSONObjectIterator = stl::unordered_map<stl::string, JSONValue>::const_iterator;
+using ConstJSONObjectIterator = ea::map<ea::string, JSONValue>::const_iterator;
 
 }

@@ -39,7 +39,7 @@ PackageFile::PackageFile(Context* context) :
 {
 }
 
-PackageFile::PackageFile(Context* context, const stl::string& fileName, unsigned startOffset) :
+PackageFile::PackageFile(Context* context, const ea::string& fileName, unsigned startOffset) :
     Object(context),
     totalSize_(0),
     totalDataSize_(0),
@@ -51,15 +51,15 @@ PackageFile::PackageFile(Context* context, const stl::string& fileName, unsigned
 
 PackageFile::~PackageFile() = default;
 
-bool PackageFile::Open(const stl::string& fileName, unsigned startOffset)
+bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
 {
-    stl::shared_ptr<File> file(new File(context_, fileName));
+    ea::shared_ptr<File> file(new File(context_, fileName));
     if (!file->IsOpen())
         return false;
 
     // Check ID, then read the directory
     file->Seek(startOffset);
-    stl::string id = file->ReadFileID();
+    ea::string id = file->ReadFileID();
     if (id != "UPAK" && id != "ULZ4")
     {
         // If start offset has not been explicitly specified, also try to read package size from the end of file
@@ -94,7 +94,7 @@ bool PackageFile::Open(const stl::string& fileName, unsigned startOffset)
 
     for (unsigned i = 0; i < numFiles; ++i)
     {
-        stl::string entryName = file->ReadString();
+        ea::string entryName = file->ReadString();
         PackageEntry newEntry{};
         newEntry.offset_ = file->ReadUInt() + startOffset;
         totalDataSize_ += (newEntry.size_ = file->ReadUInt());
@@ -111,7 +111,7 @@ bool PackageFile::Open(const stl::string& fileName, unsigned startOffset)
     return true;
 }
 
-bool PackageFile::Exists(const stl::string& fileName) const
+bool PackageFile::Exists(const ea::string& fileName) const
 {
     bool found = entries_.find(fileName) != entries_.end();
 
@@ -133,7 +133,7 @@ bool PackageFile::Exists(const stl::string& fileName) const
     return found;
 }
 
-const PackageEntry* PackageFile::GetEntry(const stl::string& fileName) const
+const PackageEntry* PackageFile::GetEntry(const ea::string& fileName) const
 {
     auto i = entries_.find(fileName);
     if (i != entries_.end())
@@ -154,12 +154,12 @@ const PackageEntry* PackageFile::GetEntry(const stl::string& fileName) const
     return nullptr;
 }
 
-void PackageFile::Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, bool recursive) const
+void PackageFile::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, bool recursive) const
 {
     result.clear();
 
-    stl::string sanitizedPath = GetSanitizedPath(pathName);
-    stl::string filterExtension = filter.substr(filter.find_last_of('.'));
+    ea::string sanitizedPath = GetSanitizedPath(pathName);
+    ea::string filterExtension = filter.substr(filter.find_last_of('.'));
     if (filterExtension.contains('*'))
         filterExtension.clear();
 
@@ -172,11 +172,11 @@ void PackageFile::Scan(stl::vector<stl::string>& result, const stl::string& path
     const StringVector& entryNames = GetEntryNames();
     for (auto i = entryNames.begin(); i != entryNames.end(); ++i)
     {
-        stl::string entryName = GetSanitizedPath(*i);
+        ea::string entryName = GetSanitizedPath(*i);
         if ((filterExtension.empty() || entryName.ends_with(filterExtension, caseSensitive)) &&
             entryName.starts_with(sanitizedPath, caseSensitive))
         {
-            stl::string fileName = entryName.substr(sanitizedPath.length());
+            ea::string fileName = entryName.substr(sanitizedPath.length());
             if (fileName.starts_with("\\") || fileName.starts_with("/"))
                 fileName = fileName.substr(1, fileName.length() - 1);
             if (!recursive && (fileName.contains("\\") || fileName.contains("/")))

@@ -91,7 +91,7 @@ static const char* fillModeNames[] =
 struct MaterialShaderParameter
 {
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Value.
     Variant value_;
 };
@@ -119,9 +119,9 @@ struct URHO3D_API TechniqueEntry
     }
 
     /// Technique.
-    stl::shared_ptr<Technique> technique_;
+    ea::shared_ptr<Technique> technique_;
     /// Original technique, in case the material adds shader compilation defines. The modified clones are requested from it.
-    stl::shared_ptr<Technique> original_;
+    ea::shared_ptr<Technique> original_;
     /// Quality level.
     MaterialQuality qualityLevel_;
     /// LOD distance.
@@ -134,14 +134,14 @@ class URHO3D_API ShaderParameterAnimationInfo : public ValueAnimationInfo
 public:
     /// Construct.
     ShaderParameterAnimationInfo
-        (Material* material, const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed);
+        (Material* material, const ea::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed);
     /// Copy construct.
     ShaderParameterAnimationInfo(const ShaderParameterAnimationInfo& other);
     /// Destruct.
     ~ShaderParameterAnimationInfo() override;
 
     /// Return shader parameter name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
 protected:
     /// Apply new animation value to the target object. Called by Update().
@@ -149,7 +149,7 @@ protected:
 
 private:
     /// Shader parameter name.
-    stl::string name_;
+    ea::string name_;
 };
 
 /// Describes how to render 3D geometries.
@@ -187,18 +187,18 @@ public:
     /// Set technique.
     void SetTechnique(unsigned index, Technique* tech, MaterialQuality qualityLevel = QUALITY_LOW, float lodDistance = 0.0f);
     /// Set additional vertex shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
-    void SetVertexShaderDefines(const stl::string& defines);
+    void SetVertexShaderDefines(const ea::string& defines);
     /// Set additional pixel shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
-    void SetPixelShaderDefines(const stl::string& defines);
+    void SetPixelShaderDefines(const ea::string& defines);
     /// Set shader parameter.
-    void SetShaderParameter(const stl::string& name, const Variant& value);
+    void SetShaderParameter(const ea::string& name, const Variant& value);
     /// Set shader parameter animation.
     void
-        SetShaderParameterAnimation(const stl::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
+        SetShaderParameterAnimation(const ea::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
     /// Set shader parameter animation wrap mode.
-    void SetShaderParameterAnimationWrapMode(const stl::string& name, WrapMode wrapMode);
+    void SetShaderParameterAnimationWrapMode(const ea::string& name, WrapMode wrapMode);
     /// Set shader parameter animation speed.
-    void SetShaderParameterAnimationSpeed(const stl::string& name, float speed);
+    void SetShaderParameterAnimationSpeed(const ea::string& name, float speed);
     /// Set texture.
     void SetTexture(TextureUnit unit, Texture* texture);
     /// Set texture coordinate transform.
@@ -224,11 +224,11 @@ public:
     /// Associate the material with a scene to ensure that shader parameter animation happens in sync with scene update, respecting the scene time scale. If no scene is set, the global update events will be used.
     void SetScene(Scene* scene);
     /// Remove shader parameter.
-    void RemoveShaderParameter(const stl::string& name);
+    void RemoveShaderParameter(const ea::string& name);
     /// Reset all shader pointers.
     void ReleaseShaders();
     /// Clone the material.
-    stl::shared_ptr<Material> Clone(const stl::string& cloneName = EMPTY_STRING) const;
+    ea::shared_ptr<Material> Clone(const ea::string& cloneName = EMPTY_STRING) const;
     /// Ensure that material techniques are listed in correct order.
     void SortTechniques();
     /// Mark material for auxiliary view rendering.
@@ -238,36 +238,36 @@ public:
     unsigned GetNumTechniques() const { return techniques_.size(); }
 
     /// Return all techniques.
-    const stl::vector<TechniqueEntry>& GetTechniques() const { return techniques_; }
+    const ea::vector<TechniqueEntry>& GetTechniques() const { return techniques_; }
 
     /// Return technique entry by index.
     const TechniqueEntry& GetTechniqueEntry(unsigned index) const;
     /// Return technique by index.
     Technique* GetTechnique(unsigned index) const;
     /// Return pass by technique index and pass name.
-    Pass* GetPass(unsigned index, const stl::string& passName) const;
+    Pass* GetPass(unsigned index, const ea::string& passName) const;
     /// Return texture by unit.
     Texture* GetTexture(TextureUnit unit) const;
 
     /// Return all textures.
-    const stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> >& GetTextures() const { return textures_; }
+    const ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> >& GetTextures() const { return textures_; }
 
     /// Return additional vertex shader defines.
-    const stl::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
+    const ea::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
     /// Return additional pixel shader defines.
-    const stl::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
+    const ea::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
 
     /// Return shader parameter.
-    const Variant& GetShaderParameter(const stl::string& name) const;
+    const Variant& GetShaderParameter(const ea::string& name) const;
     /// Return shader parameter animation.
-    ValueAnimation* GetShaderParameterAnimation(const stl::string& name) const;
+    ValueAnimation* GetShaderParameterAnimation(const ea::string& name) const;
     /// Return shader parameter animation wrap mode.
-    WrapMode GetShaderParameterAnimationWrapMode(const stl::string& name) const;
+    WrapMode GetShaderParameterAnimationWrapMode(const ea::string& name) const;
     /// Return shader parameter animation speed.
-    float GetShaderParameterAnimationSpeed(const stl::string& name) const;
+    float GetShaderParameterAnimationSpeed(const ea::string& name) const;
 
     /// Return all shader parameters.
-    const stl::unordered_map<StringHash, MaterialShaderParameter>& GetShaderParameters() const { return shaderParameters_; }
+    const ea::unordered_map<StringHash, MaterialShaderParameter>& GetShaderParameters() const { return shaderParameters_; }
 
     /// Return normal culling mode.
     CullMode GetCullMode() const { return cullMode_; }
@@ -306,9 +306,9 @@ public:
     unsigned GetShaderParameterHash() const { return shaderParameterHash_; }
 
     /// Return name for texture unit.
-    static stl::string GetTextureUnitName(TextureUnit unit);
+    static ea::string GetTextureUnitName(TextureUnit unit);
     /// Parse a shader parameter value from a string. Retunrs either a bool, a float, or a 2 to 4-component vector.
-    static Variant ParseShaderParameterValue(const stl::string& value);
+    static Variant ParseShaderParameterValue(const ea::string& value);
 
 private:
     /// Helper function for loading JSON files.
@@ -325,24 +325,24 @@ private:
     /// Reapply shader defines to technique index. By default reapply all.
     void ApplyShaderDefines(unsigned index = M_MAX_UNSIGNED);
     /// Return shader parameter animation info.
-    ShaderParameterAnimationInfo* GetShaderParameterAnimationInfo(const stl::string& name) const;
+    ShaderParameterAnimationInfo* GetShaderParameterAnimationInfo(const ea::string& name) const;
     /// Update whether should be subscribed to scene or global update events for shader parameter animation.
     void UpdateEventSubscription();
     /// Update shader parameter animations.
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Techniques.
-    stl::vector<TechniqueEntry> techniques_;
+    ea::vector<TechniqueEntry> techniques_;
     /// Textures.
-    stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> > textures_;
+    ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> > textures_;
     /// %Shader parameters.
-    stl::unordered_map<StringHash, MaterialShaderParameter> shaderParameters_;
+    ea::unordered_map<StringHash, MaterialShaderParameter> shaderParameters_;
     /// %Shader parameters animation infos.
-    stl::unordered_map<StringHash, stl::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
+    ea::unordered_map<StringHash, ea::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
     /// Vertex shader defines.
-    stl::string vertexShaderDefines_;
+    ea::string vertexShaderDefines_;
     /// Pixel shader defines.
-    stl::string pixelShaderDefines_;
+    ea::string pixelShaderDefines_;
     /// Normal culling mode.
     CullMode cullMode_{};
     /// Culling mode for shadow rendering.
@@ -370,11 +370,11 @@ private:
     /// Flag to suppress parameter hash and memory use recalculation when setting multiple shader parameters (loading or resetting the material.)
     bool batchedParameterUpdate_{};
     /// XML file used while loading.
-    stl::shared_ptr<XMLFile> loadXMLFile_;
+    ea::shared_ptr<XMLFile> loadXMLFile_;
     /// JSON file used while loading.
-    stl::shared_ptr<JSONFile> loadJSONFile_;
+    ea::shared_ptr<JSONFile> loadJSONFile_;
     /// Associated scene for shader parameter animation updates.
-    stl::weak_ptr<Scene> scene_;
+    ea::weak_ptr<Scene> scene_;
 };
 
 }

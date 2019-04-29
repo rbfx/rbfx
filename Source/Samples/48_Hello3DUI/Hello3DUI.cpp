@@ -215,7 +215,7 @@ void Hello3DUI::InitScene()
 
     // Set up a viewport so 3D scene can be visible.
     auto* renderer = GetSubsystem<Renderer>();
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Subscribe to update event and animate cube and handle input.
@@ -286,7 +286,7 @@ void Hello3DUI::HandleControlClicked(StringHash eventType, VariantMap& eventData
     // Get control that was clicked
     auto* clicked = static_cast<UIElement*>(eventData[UIMouseClick::P_ELEMENT].GetPtr());
 
-    stl::string name = "...?";
+    ea::string name = "...?";
     if (clicked)
     {
         // Get the name of the control that was clicked

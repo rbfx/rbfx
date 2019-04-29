@@ -147,9 +147,9 @@ public:
     /// Update and return screen position.
     virtual const IntVector2& GetScreenPosition() const;
     /// Return UI rendering batches.
-    virtual void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor);
+    virtual void GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor);
     /// Return UI rendering batches for debug draw.
-    virtual void GetDebugDrawBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor);
+    virtual void GetDebugDrawBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor);
     /// React to mouse hover.
     virtual void OnHover(const IntVector2& position, const IntVector2& screenPosition, int buttons, int qualifiers, Cursor* cursor);
     /// React to mouse click begin.
@@ -184,7 +184,7 @@ public:
     /// React to a key press.
     virtual void OnKey(Key key, MouseButtonFlags buttons, QualifierFlags qualifiers) { }
     /// React to text input event.
-    virtual void OnTextInput(const stl::string& text) { }
+    virtual void OnTextInput(const ea::string& text) { }
 
     /// React to resize.
     virtual void OnResize(const IntVector2& newSize, const IntVector2& delta) { }
@@ -209,12 +209,12 @@ public:
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
     /// Save to an XML file. Return true if successful.
-    bool SaveXML(Serializer& dest, const stl::string& indentation = "\t") const;
+    bool SaveXML(Serializer& dest, const ea::string& indentation = "\t") const;
     /// Filter attributes in serialization process.
     bool FilterAttributes(XMLElement& dest) const;
 
     /// Set name.
-    void SetName(const stl::string& name);
+    void SetName(const ea::string& name);
     /// Set position.
     void SetPosition(const IntVector2& position);
     /// Set position.
@@ -316,7 +316,7 @@ public:
     /// Set drag and drop flags.
     void SetDragDropMode(DragAndDropModeFlags mode);
     /// Set style from an XML file. Find the style element by name. If the style file is not explicitly provided, use the default style from parental chain. Return true if the style is applied successfully. See also \ref UI_Programmatic.
-    bool SetStyle(const stl::string& styleName, XMLFile* file = nullptr);
+    bool SetStyle(const ea::string& styleName, XMLFile* file = nullptr);
     /// Set style from an XML element. Return true if the style is applied successfully.
     bool SetStyle(const XMLElement& element);
     /// Set style from an XML file. Find the style element automatically by using the element's typename. If the style file is not explicitly provided, use the default style from parental chain. Return true if the style is applied successfully. See also \ref UI_Programmatic.
@@ -346,7 +346,7 @@ public:
     /// Bring UI element to front.
     void BringToFront();
     /// Create and add a child element and return it.
-    UIElement* CreateChild(StringHash type, const stl::string& name = EMPTY_STRING, unsigned index = M_MAX_UNSIGNED);
+    UIElement* CreateChild(StringHash type, const ea::string& name = EMPTY_STRING, unsigned index = M_MAX_UNSIGNED);
     /// Add a child element.
     void AddChild(UIElement* element);
     /// Insert a child element into a specific position in the child list.
@@ -375,33 +375,33 @@ public:
     /// Set tags. Old tags are overwritten.
     void SetTags(const StringVector& tags);
     /// Add a tag.
-    void AddTag(const stl::string& tag);
+    void AddTag(const ea::string& tag);
     /// Add tags with the specified separator, by default ;
-    void AddTags(const stl::string& tags, char separator = ';');
+    void AddTags(const ea::string& tags, char separator = ';');
     /// Add tags.
     void AddTags(const StringVector& tags);
     /// Remove specific tag. Return true if existed.
-    bool RemoveTag(const stl::string& tag);
+    bool RemoveTag(const ea::string& tag);
     /// Remove all tags.
     void RemoveAllTags();
 
     /// Template version of creating a child element.
-    template <class T> T* CreateChild(const stl::string& name = EMPTY_STRING, unsigned index = M_MAX_UNSIGNED);
+    template <class T> T* CreateChild(const ea::string& name = EMPTY_STRING, unsigned index = M_MAX_UNSIGNED);
     /// Template version of returning child element by index using static cast.
     template <class T> T* GetChildStaticCast(unsigned index) const;
     /// Template version of returning child element by name using static cast.
-    template <class T> T* GetChildStaticCast(const stl::string& name, bool recursive = false) const;
+    template <class T> T* GetChildStaticCast(const ea::string& name, bool recursive = false) const;
     /// Template version of returning child element by variable using static cast. If only key is provided, return the first child having the matching variable key. If value is also provided then the actual variable value would also be checked against.
     template <class T> T* GetChildStaticCast(const StringHash& key, const Variant& value = Variant::EMPTY, bool recursive = false) const;
     /// Template version of returning child element by index using dynamic cast. May return 0 when casting failed.
     template <class T> T* GetChildDynamicCast(unsigned index) const;
     /// Template version of returning child element by name using dynamic cast. May return 0 when casting failed.
-    template <class T> T* GetChildDynamicCast(const stl::string& name, bool recursive = false) const;
+    template <class T> T* GetChildDynamicCast(const ea::string& name, bool recursive = false) const;
     /// Template version of returning child element by variable. If only key is provided, return the first child having the matching variable key. If value is also provided then the actual variable value would also be checked against using dynamic cast. May return 0 when casting failed.
     template <class T> T* GetChildDynamicCast(const StringHash& key, const Variant& value = Variant::EMPTY, bool recursive = false) const;
 
     /// Return name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
     /// Return position.
     const IntVector2& GetPosition() const { return position_; }
@@ -539,7 +539,7 @@ public:
     DragAndDropModeFlags GetDragDropMode() const { return dragDropMode_; }
 
     /// Return applied style name. Return an empty string when the applied style is an 'auto' style (i.e. style derived from instance's type).
-    const stl::string& GetAppliedStyle() const;
+    const ea::string& GetAppliedStyle() const;
     /// Return default style.
     XMLFile* GetDefaultStyle(bool recursiveUp = true) const;
 
@@ -560,15 +560,15 @@ public:
     /// Return child element by index.
     UIElement* GetChild(unsigned index) const;
     /// Return child element by name.
-    UIElement* GetChild(const stl::string& name, bool recursive = false) const;
+    UIElement* GetChild(const ea::string& name, bool recursive = false) const;
     /// Return child element by variable. If only key is provided, return the first child having the matching variable key. If value is also provided then the actual variable value would also be checked against.
     UIElement* GetChild(const StringHash& key, const Variant& value = Variant::EMPTY, bool recursive = false) const;
 
     /// Return immediate child elements.
-    const stl::vector<stl::shared_ptr<UIElement> >& GetChildren() const { return children_; }
+    const ea::vector<ea::shared_ptr<UIElement> >& GetChildren() const { return children_; }
 
     /// Return child elements either recursively or non-recursively.
-    void GetChildren(stl::vector<UIElement*>& dest, bool recursive = false) const;
+    void GetChildren(ea::vector<UIElement*>& dest, bool recursive = false) const;
 
     /// Return parent element.
     UIElement* GetParent() const { return parent_; }
@@ -584,16 +584,16 @@ public:
     const VariantMap& GetVars() const { return vars_; }
 
     /// Return whether element is tagged by a specific tag.
-    bool HasTag(const stl::string& tag) const;
+    bool HasTag(const ea::string& tag) const;
 
     /// Return all tags.
     const StringVector& GetTags() const { return tags_; }
 
     /// Return child elements with a specific tag either recursively or non-recursively.
-    void GetChildrenWithTag(stl::vector<UIElement*>& dest, const stl::string& tag, bool recursive = false) const;
+    void GetChildrenWithTag(ea::vector<UIElement*>& dest, const ea::string& tag, bool recursive = false) const;
 
     /// Return child elements with a specific tag either recursively or non-recursively.
-    stl::vector<UIElement*> GetChildrenWithTag(const stl::string& tag, bool recursive = false) const;
+    ea::vector<UIElement*> GetChildrenWithTag(const ea::string& tag, bool recursive = false) const;
 
     /// Return the drag button combo if this element is being dragged.
     int GetDragButtonCombo() const { return dragButtonCombo_; }
@@ -629,7 +629,7 @@ public:
     /// Adjust scissor for rendering.
     void AdjustScissor(IntRect& currentScissor);
     /// Get UI rendering batches with a specified offset. Also recurse to child elements.
-    void GetBatchesWithOffset(IntVector2& offset, stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, IntRect currentScissor);
+    void GetBatchesWithOffset(IntVector2& offset, ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, IntRect currentScissor);
 
     /// Return color attribute. Uses just the top-left color.
     const Color& GetColorAttr() const { return colors_[0]; }
@@ -652,13 +652,13 @@ protected:
     /// Handle attribute animation removed.
     void OnAttributeAnimationRemoved() override;
     /// Find target of an attribute animation from object hierarchy by name.
-    Animatable* FindAttributeAnimationTarget(const stl::string& name, stl::string& outName) override;
+    Animatable* FindAttributeAnimationTarget(const ea::string& name, ea::string& outName) override;
     /// Mark screen position as needing an update.
     void MarkDirty();
     /// Remove child XML element by matching attribute name.
-    bool RemoveChildXML(XMLElement& parent, const stl::string& name) const;
+    bool RemoveChildXML(XMLElement& parent, const ea::string& name) const;
     /// Remove child XML element by matching attribute name and value.
-    bool RemoveChildXML(XMLElement& parent, const stl::string& name, const stl::string& value) const;
+    bool RemoveChildXML(XMLElement& parent, const ea::string& name, const ea::string& value) const;
     /// Filter UI-style attributes in serialization process.
     bool FilterUIStyleAttributes(XMLElement& dest, const XMLElement& styleElem) const;
     /// Filter implicit attributes in serialization process.
@@ -667,9 +667,9 @@ protected:
     void UpdateAnchoring();
 
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Child elements.
-    stl::vector<stl::shared_ptr<UIElement> > children_;
+    ea::vector<ea::shared_ptr<UIElement> > children_;
     /// Parent element.
     UIElement* parent_{};
     /// Child element clipping border.
@@ -733,7 +733,7 @@ protected:
     /// Screen position dirty flag.
     mutable bool positionDirty_{true};
     /// Applied style.
-    stl::string appliedStyle_;
+    ea::string appliedStyle_;
     /// Drag button combo.
     int dragButtonCombo_{};
     /// Drag button count.
@@ -741,17 +741,17 @@ protected:
 
 private:
     /// Return child elements recursively.
-    void GetChildrenRecursive(stl::vector<UIElement*>& dest) const;
+    void GetChildrenRecursive(ea::vector<UIElement*>& dest) const;
     /// Return child elements with a specific tag recursively.
-    void GetChildrenWithTagRecursive(stl::vector<UIElement*>& dest, const stl::string& tag) const;
+    void GetChildrenWithTagRecursive(ea::vector<UIElement*>& dest, const ea::string& tag) const;
     /// Recursively apply style to a child element hierarchy when adding to an element.
     void ApplyStyleRecursive(UIElement* element);
     /// Calculate layout width for resizing the parent element.
-    int CalculateLayoutParentSize(const stl::vector<int>& sizes, int begin, int end, int spacing);
+    int CalculateLayoutParentSize(const ea::vector<int>& sizes, int begin, int end, int spacing);
     /// Calculate child widths/positions in the layout.
     void CalculateLayout
-        (stl::vector<int>& positions, stl::vector<int>& sizes, const stl::vector<int>& minSizes, const stl::vector<int>& maxSizes,
-            const stl::vector<float>& flexScales, int targetSize, int begin, int end, int spacing);
+        (ea::vector<int>& positions, ea::vector<int>& sizes, const ea::vector<int>& minSizes, const ea::vector<int>& maxSizes,
+            const ea::vector<float>& flexScales, int targetSize, int begin, int end, int spacing);
     /// Get child element constant position in a layout.
     IntVector2 GetLayoutChildPosition(UIElement* child);
     /// Detach from parent.
@@ -800,11 +800,11 @@ private:
     /// Has color gradient flag.
     bool colorGradient_{};
     /// Default style file.
-    stl::shared_ptr<XMLFile> defaultStyle_;
+    ea::shared_ptr<XMLFile> defaultStyle_;
     /// Last applied style file.
-    stl::weak_ptr<XMLFile> appliedStyleFile_;
+    ea::weak_ptr<XMLFile> appliedStyleFile_;
     /// Style resource name which is loaded by default.
-    stl::string defaultStyleFileName_;
+    ea::string defaultStyleFileName_;
     /// Traversal mode for rendering.
     TraversalMode traversalMode_{TM_BREADTH_FIRST};
     /// Flag whether node should send child added / removed events by itself.
@@ -815,7 +815,7 @@ private:
     StringVector tags_;
 };
 
-template <class T> T* UIElement::CreateChild(const stl::string& name, unsigned index)
+template <class T> T* UIElement::CreateChild(const ea::string& name, unsigned index)
 {
     return static_cast<T*>(CreateChild(T::GetTypeStatic(), name, index));
 }
@@ -825,7 +825,7 @@ template <class T> T* UIElement::GetChildStaticCast(unsigned index) const
     return static_cast<T*>(GetChild(index));
 }
 
-template <class T> T* UIElement::GetChildStaticCast(const stl::string& name, bool recursive) const
+template <class T> T* UIElement::GetChildStaticCast(const ea::string& name, bool recursive) const
 {
     return static_cast<T*>(GetChild(name, recursive));
 }
@@ -840,7 +840,7 @@ template <class T> T* UIElement::GetChildDynamicCast(unsigned index) const
     return dynamic_cast<T*>(GetChild(index));
 }
 
-template <class T> T* UIElement::GetChildDynamicCast(const stl::string& name, bool recursive) const
+template <class T> T* UIElement::GetChildDynamicCast(const ea::string& name, bool recursive) const
 {
     return dynamic_cast<T*>(GetChild(name, recursive));
 }

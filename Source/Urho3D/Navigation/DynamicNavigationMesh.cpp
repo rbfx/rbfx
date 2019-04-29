@@ -92,11 +92,11 @@ struct TileCompressor : public dtTileCacheCompressor
 struct MeshProcess : public dtTileCacheMeshProcess
 {
     DynamicNavigationMesh* owner_;
-    stl::vector<Vector3> offMeshVertices_;
-    stl::vector<float> offMeshRadii_;
-    stl::vector<unsigned short> offMeshFlags_;
-    stl::vector<unsigned char> offMeshAreas_;
-    stl::vector<unsigned char> offMeshDir_;
+    ea::vector<Vector3> offMeshVertices_;
+    ea::vector<float> offMeshRadii_;
+    ea::vector<unsigned short> offMeshFlags_;
+    ea::vector<unsigned char> offMeshAreas_;
+    ea::vector<unsigned char> offMeshDir_;
 
     inline explicit MeshProcess(DynamicNavigationMesh* owner) :
         owner_(owner)
@@ -118,7 +118,7 @@ struct MeshProcess : public dtTileCacheMeshProcess
         rcVcopy(&bounds.max_.x_, params->bmin);
 
         // collect off-mesh connections
-        stl::vector<OffMeshConnection*> offMeshConnections = owner_->CollectOffMeshConnections(bounds);
+        ea::vector<OffMeshConnection*> offMeshConnections = owner_->CollectOffMeshConnections(bounds);
 
         if (offMeshConnections.size() > 0)
         {
@@ -313,10 +313,10 @@ bool DynamicNavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned ma
         return false;
     }
 
-    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + stl::to_string(maxTiles) + " tiles");
+    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + ea::to_string(maxTiles) + " tiles");
 
     // Scan for obstacles to insert into us
-    stl::vector<Node*> obstacles;
+    ea::vector<Node*> obstacles;
     GetScene()->GetChildrenWithComponent<Obstacle>(obstacles, true);
     for (unsigned i = 0; i < obstacles.size(); ++i)
     {
@@ -348,7 +348,7 @@ bool DynamicNavigationMesh::Build()
     if (!node_->GetWorldScale().Equals(Vector3::ONE))
         URHO3D_LOGWARNING("Navigation mesh root node has scaling. Agent parameters may not work as intended");
 
-    stl::vector<NavigationGeometryInfo> geometryList;
+    ea::vector<NavigationGeometryInfo> geometryList;
     CollectGeometries(geometryList);
 
     if (geometryList.empty())
@@ -456,7 +456,7 @@ bool DynamicNavigationMesh::Build()
         // not doing so will cause dependent components to crash, like CrowdManager
         tileCache_->update(0, navMesh_);
 
-        URHO3D_LOGDEBUG("Built navigation mesh with " + stl::to_string(numTiles) + " tiles");
+        URHO3D_LOGDEBUG("Built navigation mesh with " + ea::to_string(numTiles) + " tiles");
 
         // Send a notification event to concerned parties that we've been fully rebuilt
         {
@@ -468,7 +468,7 @@ bool DynamicNavigationMesh::Build()
         }
 
         // Scan for obstacles to insert into us
-        stl::vector<Node*> obstacles;
+        ea::vector<Node*> obstacles;
         GetScene()->GetChildrenWithComponent<Obstacle>(obstacles, true);
         for (unsigned i = 0; i < obstacles.size(); ++i)
         {
@@ -501,7 +501,7 @@ bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 
     float tileEdgeLength = (float)tileSize_ * cellSize_;
 
-    stl::vector<NavigationGeometryInfo> geometryList;
+    ea::vector<NavigationGeometryInfo> geometryList;
     CollectGeometries(geometryList);
 
     int sx = Clamp((int)((localSpaceBox.min_.x_ - boundingBox_.min_.x_) / tileEdgeLength), 0, numTilesX_ - 1);
@@ -511,7 +511,7 @@ bool DynamicNavigationMesh::Build(const BoundingBox& boundingBox)
 
     unsigned numTiles = BuildTiles(geometryList, IntVector2(sx, sz), IntVector2(ex, ez));
 
-    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + ea::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
@@ -531,16 +531,16 @@ bool DynamicNavigationMesh::Build(const IntVector2& from, const IntVector2& to)
     if (!node_->GetWorldScale().Equals(Vector3::ONE))
         URHO3D_LOGWARNING("Navigation mesh root node has scaling. Agent parameters may not work as intended");
 
-    stl::vector<NavigationGeometryInfo> geometryList;
+    ea::vector<NavigationGeometryInfo> geometryList;
     CollectGeometries(geometryList);
 
     unsigned numTiles = BuildTiles(geometryList, from, to);
 
-    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + ea::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
-stl::vector<unsigned char> DynamicNavigationMesh::GetTileData(const IntVector2& tile) const
+ea::vector<unsigned char> DynamicNavigationMesh::GetTileData(const IntVector2& tile) const
 {
     VectorBuffer ret;
     WriteTiles(ret, tile.x_, tile.y_);
@@ -554,7 +554,7 @@ bool DynamicNavigationMesh::IsObstacleInTile(Obstacle* obstacle, const IntVector
     return tileBoundingBox.DistanceToPoint(obstaclePosition) < obstacle->GetRadius();
 }
 
-bool DynamicNavigationMesh::AddTile(const stl::vector<unsigned char>& tileData)
+bool DynamicNavigationMesh::AddTile(const ea::vector<unsigned char>& tileData)
 {
     MemoryBuffer buffer(tileData);
     return ReadTiles(buffer, false);
@@ -625,7 +625,7 @@ void DynamicNavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTe
         // Draw Obstacle components
         if (drawObstacles_)
         {
-            stl::vector<Node*> obstacles;
+            ea::vector<Node*> obstacles;
             scene->GetChildrenWithComponent<Obstacle>(obstacles, true);
             for (unsigned i = 0; i < obstacles.size(); ++i)
             {
@@ -638,7 +638,7 @@ void DynamicNavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTe
         // Draw OffMeshConnection components
         if (drawOffMeshConnections_)
         {
-            stl::vector<Node*> connections;
+            ea::vector<Node*> connections;
             scene->GetChildrenWithComponent<OffMeshConnection>(connections, true);
             for (unsigned i = 0; i < connections.size(); ++i)
             {
@@ -651,7 +651,7 @@ void DynamicNavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTe
         // Draw NavArea components
         if (drawNavAreas_)
         {
-            stl::vector<Node*> areas;
+            ea::vector<Node*> areas;
             scene->GetChildrenWithComponent<NavArea>(areas, true);
             for (unsigned i = 0; i < areas.size(); ++i)
             {
@@ -674,7 +674,7 @@ void DynamicNavigationMesh::DrawDebugGeometry(bool depthTest)
     }
 }
 
-void DynamicNavigationMesh::SetNavigationDataAttr(const stl::vector<unsigned char>& value)
+void DynamicNavigationMesh::SetNavigationDataAttr(const ea::vector<unsigned char>& value)
 {
     ReleaseNavigationMesh();
 
@@ -724,7 +724,7 @@ void DynamicNavigationMesh::SetNavigationDataAttr(const stl::vector<unsigned cha
     // \todo Shall we send E_NAVIGATION_MESH_REBUILT here?
 }
 
-stl::vector<unsigned char> DynamicNavigationMesh::GetNavigationDataAttr() const
+ea::vector<unsigned char> DynamicNavigationMesh::GetNavigationDataAttr() const
 {
     VectorBuffer ret;
     if (navMesh_ && tileCache_)
@@ -819,7 +819,7 @@ bool DynamicNavigationMesh::ReadTiles(Deserializer& source, bool silent)
     return true;
 }
 
-int DynamicNavigationMesh::BuildTile(stl::vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles)
+int DynamicNavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z, TileCacheData* tiles)
 {
     URHO3D_PROFILE("BuildNavigationMeshTile");
 
@@ -877,7 +877,7 @@ int DynamicNavigationMesh::BuildTile(stl::vector<NavigationGeometryInfo>& geomet
     }
 
     unsigned numTriangles = build.indices_.size() / 3;
-    stl::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
+    ea::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
     memset(triAreas.get(), 0, numTriangles);
 
     rcMarkWalkableTriangles(build.ctx_, cfg.walkableSlopeAngle, &build.vertices_[0].x_, build.vertices_.size(),
@@ -998,7 +998,7 @@ int DynamicNavigationMesh::BuildTile(stl::vector<NavigationGeometryInfo>& geomet
     return retCt;
 }
 
-unsigned DynamicNavigationMesh::BuildTiles(stl::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
+unsigned DynamicNavigationMesh::BuildTiles(ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
 {
     unsigned numTiles = 0;
 
@@ -1038,9 +1038,9 @@ unsigned DynamicNavigationMesh::BuildTiles(stl::vector<NavigationGeometryInfo>& 
     return numTiles;
 }
 
-stl::vector<OffMeshConnection*> DynamicNavigationMesh::CollectOffMeshConnections(const BoundingBox& bounds)
+ea::vector<OffMeshConnection*> DynamicNavigationMesh::CollectOffMeshConnections(const BoundingBox& bounds)
 {
-    stl::vector<OffMeshConnection*> connections;
+    ea::vector<OffMeshConnection*> connections;
     node_->GetComponents<OffMeshConnection>(connections, true);
     for (unsigned i = 0; i < connections.size(); ++i)
     {

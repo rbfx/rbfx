@@ -71,7 +71,7 @@ void StaticModel::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
 }
 
-void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     RayQueryLevel level = query.level_;
 
@@ -209,7 +209,7 @@ bool StaticModel::DrawOcclusion(OcclusionBuffer* buffer)
         unsigned vertexSize;
         const unsigned char* indexData;
         unsigned indexSize;
-        const stl::vector<VertexElement>* elements;
+        const ea::vector<VertexElement>* elements;
 
         geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
         // Check for valid geometry data
@@ -250,8 +250,8 @@ void StaticModel::SetModel(Model* model)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const stl::vector<stl::vector<stl::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
-        const stl::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
+        const ea::vector<ea::vector<ea::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
+        const ea::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
         const Matrix3x4* worldTransform = node_ ? &node_->GetWorldTransform() : nullptr;
         for (unsigned i = 0; i < geometries.size(); ++i)
         {
@@ -299,15 +299,15 @@ void StaticModel::SetOcclusionLodLevel(unsigned level)
     MarkNetworkUpdate();
 }
 
-void StaticModel::ApplyMaterialList(const stl::string& fileName)
+void StaticModel::ApplyMaterialList(const ea::string& fileName)
 {
-    stl::string useFileName = fileName;
+    ea::string useFileName = fileName;
     useFileName.trim();
     if (useFileName.empty() && model_)
         useFileName = ReplaceExtension(model_->GetName(), ".txt");
 
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::shared_ptr<File> file = cache->GetFile(useFileName, false);
+    ea::shared_ptr<File> file = cache->GetFile(useFileName, false);
     if (!file)
         return;
 
@@ -422,7 +422,7 @@ void StaticModel::CalculateLodLevels()
 {
     for (unsigned i = 0; i < batches_.size(); ++i)
     {
-        const stl::vector<stl::shared_ptr<Geometry> >& batchGeometries = geometries_[i];
+        const ea::vector<ea::shared_ptr<Geometry> >& batchGeometries = geometries_[i];
         // If only one LOD geometry, no reason to go through the LOD calculation
         if (batchGeometries.size() <= 1)
             continue;

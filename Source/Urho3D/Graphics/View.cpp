@@ -65,7 +65,7 @@ class ShadowCasterOctreeQuery : public FrustumOctreeQuery
 {
 public:
     /// Construct with frustum and query parameters.
-    ShadowCasterOctreeQuery(stl::vector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
+    ShadowCasterOctreeQuery(ea::vector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         FrustumOctreeQuery(result, frustum, drawableFlags, viewMask)
     {
@@ -93,7 +93,7 @@ class ZoneOccluderOctreeQuery : public FrustumOctreeQuery
 {
 public:
     /// Construct with frustum and query parameters.
-    ZoneOccluderOctreeQuery(stl::vector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
+    ZoneOccluderOctreeQuery(ea::vector<Drawable*>& result, const Frustum& frustum, DrawableFlags drawableFlags = DRAWABLE_ANY,
         unsigned viewMask = DEFAULT_VIEWMASK) :
         FrustumOctreeQuery(result, frustum, drawableFlags, viewMask)
     {
@@ -122,7 +122,7 @@ class OccludedFrustumOctreeQuery : public FrustumOctreeQuery
 {
 public:
     /// Construct with frustum, occlusion buffer and query parameters.
-    OccludedFrustumOctreeQuery(stl::vector<Drawable*>& result, const Frustum& frustum, OcclusionBuffer* buffer,
+    OccludedFrustumOctreeQuery(ea::vector<Drawable*>& result, const Frustum& frustum, OcclusionBuffer* buffer,
                                DrawableFlags drawableFlags = DRAWABLE_ANY, unsigned viewMask = DEFAULT_VIEWMASK) :
         FrustumOctreeQuery(result, frustum, drawableFlags, viewMask),
         buffer_(buffer)
@@ -289,7 +289,7 @@ void SortShadowQueueWork(const WorkItem* item, unsigned threadIndex)
         start->shadowSplits_[i].shadowBatches_.SortFrontToBack();
 }
 
-StringHash ParseTextureTypeXml(ResourceCache* cache, const stl::string& filename);
+StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename);
 
 View::View(Context* context) :
     Object(context),
@@ -450,7 +450,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
 
             auto j = batchQueues_.find(info.passIndex_);
             if (j == batchQueues_.end())
-                j = batchQueues_.insert(stl::pair<unsigned, BatchQueue>(info.passIndex_, BatchQueue())).first;
+                j = batchQueues_.insert(ea::pair<unsigned, BatchQueue>(info.passIndex_, BatchQueue())).first;
             info.batchQueue_ = &j->second;
             SetQueueShaderDefines(*info.batchQueue_, command);
 
@@ -761,7 +761,7 @@ void View::SetCameraShaderParameters(Camera* camera)
 
 void View::SetCommandShaderParameters(const RenderPathCommand& command)
 {
-    const stl::unordered_map<StringHash, Variant>& parameters = command.shaderParameters_;
+    const ea::unordered_map<StringHash, Variant>& parameters = command.shaderParameters_;
     for (auto k = parameters.begin(); k != parameters.end(); ++k)
         graphics_->SetShaderParameter(k->first, k->second);
 }
@@ -796,7 +796,7 @@ void View::GetDrawables()
     URHO3D_PROFILE("GetDrawables");
 
     auto* queue = GetSubsystem<WorkQueue>();
-    stl::vector<Drawable*>& tempDrawables = tempDrawables_[0];
+    ea::vector<Drawable*>& tempDrawables = tempDrawables_[0];
 
     // Get zones and occluders first
     {
@@ -900,7 +900,7 @@ void View::GetDrawables()
         // Create a work item for each thread
         for (int i = 0; i < numWorkItems; ++i)
         {
-            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = CheckVisibilityWork;
             item->aux_ = this;
@@ -942,8 +942,8 @@ void View::GetDrawables()
         PerThreadSceneResult& result = sceneResults_[0];
         minZ_ = result.minZ_;
         maxZ_ = result.maxZ_;
-        stl::swap(geometries_, result.geometries_);
-        stl::swap(lights_, result.lights_);
+        ea::swap(geometries_, result.geometries_);
+        ea::swap(lights_, result.lights_);
     }
 
     if (minZ_ == M_INFINITY)
@@ -957,7 +957,7 @@ void View::GetDrawables()
         light->SetLightQueue(nullptr);
     }
 
-    stl::quick_sort(lights_.begin(), lights_.end(), CompareLights);
+    ea::quick_sort(lights_.begin(), lights_.end(), CompareLights);
 }
 
 void View::GetBatches()
@@ -983,7 +983,7 @@ void View::ProcessLights()
 
     for (unsigned i = 0; i < lightQueryResults_.size(); ++i)
     {
-        stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+        ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
         item->priority_ = M_MAX_UNSIGNED;
         item->workFunction_ = ProcessLightWork;
         item->aux_ = this;
@@ -1096,7 +1096,7 @@ void View::GetLightBatches()
                                 threadedGeometries_.push_back(drawable);
                         }
 
-                        const stl::vector<SourceBatch>& batches = drawable->GetBatches();
+                        const ea::vector<SourceBatch>& batches = drawable->GetBatches();
 
                         for (unsigned l = 0; l < batches.size(); ++l)
                         {
@@ -1177,7 +1177,7 @@ void View::GetLightBatches()
         {
             Drawable* drawable = *i;
             drawable->LimitLights();
-            const stl::vector<Light*>& lights = drawable->GetLights();
+            const ea::vector<Light*>& lights = drawable->GetLights();
 
             for (unsigned i = 0; i < lights.size(); ++i)
             {
@@ -1204,7 +1204,7 @@ void View::GetBaseBatches()
         else if (type == UPDATE_WORKER_THREAD)
             threadedGeometries_.push_back(drawable);
 
-        const stl::vector<SourceBatch>& batches = drawable->GetBatches();
+        const ea::vector<SourceBatch>& batches = drawable->GetBatches();
         bool vertexLightsProcessed = false;
 
         for (unsigned j = 0; j < batches.size(); ++j)
@@ -1240,7 +1240,7 @@ void View::GetBaseBatches()
 
                 if (info.vertexLights_)
                 {
-                    const stl::vector<Light*>& drawableVertexLights = drawable->GetVertexLights();
+                    const ea::vector<Light*>& drawableVertexLights = drawable->GetVertexLights();
                     if (drawableVertexLights.size() && !vertexLightsProcessed)
                     {
                         // Limit vertex lights. If this is a deferred opaque batch, remove converted per-pixel lights,
@@ -1258,7 +1258,7 @@ void View::GetBaseBatches()
                             hash);
                         if (i == vertexLightQueues_.end())
                         {
-                            i = vertexLightQueues_.insert(stl::make_pair(hash, LightBatchQueue())).first;
+                            i = vertexLightQueues_.insert(ea::make_pair(hash, LightBatchQueue())).first;
                             i->second.light_ = nullptr;
                             i->second.shadowMap_ = nullptr;
                             i->second.vertexLights_ = drawableVertexLights;
@@ -1303,7 +1303,7 @@ void View::UpdateGeometries()
 
             if (command.type_ == CMD_SCENEPASS)
             {
-                stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+                ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
                 item->priority_ = M_MAX_UNSIGNED;
                 item->workFunction_ =
                     command.sortMode_ == SORT_FRONTTOBACK ? SortBatchQueueFrontToBackWork : SortBatchQueueBackToFrontWork;
@@ -1314,7 +1314,7 @@ void View::UpdateGeometries()
 
         for (auto i = lightQueues_.begin(); i != lightQueues_.end(); ++i)
         {
-            stl::shared_ptr<WorkItem> lightItem = queue->GetFreeItem();
+            ea::shared_ptr<WorkItem> lightItem = queue->GetFreeItem();
             lightItem->priority_ = M_MAX_UNSIGNED;
             lightItem->workFunction_ = SortLightQueueWork;
             lightItem->start_ = &(*i);
@@ -1322,7 +1322,7 @@ void View::UpdateGeometries()
 
             if (i->shadowSplits_.size())
             {
-                stl::shared_ptr<WorkItem> shadowItem = queue->GetFreeItem();
+                ea::shared_ptr<WorkItem> shadowItem = queue->GetFreeItem();
                 shadowItem->priority_ = M_MAX_UNSIGNED;
                 shadowItem->workFunction_ = SortShadowQueueWork;
                 shadowItem->start_ = &(*i);
@@ -1357,7 +1357,7 @@ void View::UpdateGeometries()
                 if (i < numWorkItems - 1 && end - start > drawablesPerItem)
                     end = start + drawablesPerItem;
 
-                stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+                ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
                 item->priority_ = M_MAX_UNSIGNED;
                 item->workFunction_ = UpdateDrawableGeometriesWork;
                 item->aux_ = const_cast<FrameInfo*>(&frame_);
@@ -1384,7 +1384,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 {
     Light* light = lightQueue.light_;
     Zone* zone = GetZone(drawable);
-    const stl::vector<SourceBatch>& batches = drawable->GetBatches();
+    const ea::vector<SourceBatch>& batches = drawable->GetBatches();
 
     bool allowLitBase =
         useLitBase_ && !lightQueue.negative_ && light == drawable->GetFirstLight() &&
@@ -1879,8 +1879,8 @@ void View::RenderQuad(RenderPathCommand& command)
         if (!renderTargets_.contains(nameHash))
             continue;
 
-        stl::string invSizeName = rtInfo.name_ + "InvSize";
-        stl::string offsetsName = rtInfo.name_ + "Offsets";
+        ea::string invSizeName = rtInfo.name_ + "InvSize";
+        ea::string offsetsName = rtInfo.name_ + "Offsets";
         auto width = (float)renderTargets_[nameHash]->GetWidth();
         auto height = (float)renderTargets_[nameHash]->GetHeight();
 
@@ -2176,7 +2176,7 @@ void View::DrawFullscreenQuad(bool setIdentityProjection)
     geometry->Draw(graphics_);
 }
 
-void View::UpdateOccluders(stl::vector<Drawable*>& occluders, Camera* camera)
+void View::UpdateOccluders(ea::vector<Drawable*>& occluders, Camera* camera)
 {
     float occluderSizeThreshold_ = renderer_->GetOccluderSizeThreshold();
     float halfViewSize = camera->GetHalfViewSize();
@@ -2233,10 +2233,10 @@ void View::UpdateOccluders(stl::vector<Drawable*>& occluders, Camera* camera)
 
     // Sort occluders so that if triangle budget is exceeded, best occluders have been drawn
     if (occluders.size())
-        stl::quick_sort(occluders.begin(), occluders.end(), CompareDrawables);
+        ea::quick_sort(occluders.begin(), occluders.end(), CompareDrawables);
 }
 
-void View::DrawOccluders(OcclusionBuffer* buffer, const stl::vector<Drawable*>& occluders)
+void View::DrawOccluders(OcclusionBuffer* buffer, const ea::vector<Drawable*>& occluders)
 {
     buffer->SetMaxTriangles((unsigned)maxOccluderTriangles_);
     buffer->Clear();
@@ -2299,7 +2299,7 @@ void View::ProcessLight(LightQueryResult& query, unsigned threadIndex)
         isShadowed = false;
 #endif
     // Get lit geometries. They must match the light mask and be inside the main camera frustum to be considered
-    stl::vector<Drawable*>& tempDrawables = tempDrawables_[threadIndex];
+    ea::vector<Drawable*>& tempDrawables = tempDrawables_[threadIndex];
     query.litGeometries_.clear();
 
     switch (type)
@@ -2384,7 +2384,7 @@ void View::ProcessLight(LightQueryResult& query, unsigned threadIndex)
         query.numSplits_ = 0;
 }
 
-void View::ProcessShadowCasters(LightQueryResult& query, const stl::vector<Drawable*>& drawables, unsigned splitIndex)
+void View::ProcessShadowCasters(LightQueryResult& query, const ea::vector<Drawable*>& drawables, unsigned splitIndex)
 {
     Light* light = query.light_;
     unsigned lightMask = light->GetLightMask();
@@ -2823,7 +2823,7 @@ Technique* View::GetTechnique(Drawable* drawable, Material* material)
     if (!material)
         return renderer_->GetDefaultMaterial()->GetTechniques()[0].technique_;
 
-    const stl::vector<TechniqueEntry>& techniques = material->GetTechniques();
+    const ea::vector<TechniqueEntry>& techniques = material->GetTechniques();
     // If only one technique, no choice
     if (techniques.size() == 1)
         return techniques[0].technique_;
@@ -2854,7 +2854,7 @@ Technique* View::GetTechnique(Drawable* drawable, Material* material)
 
 void View::CheckMaterialForAuxView(Material* material)
 {
-    const stl::unordered_map<TextureUnit, stl::shared_ptr<Texture> >& textures = material->GetTextures();
+    const ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> >& textures = material->GetTextures();
 
     for (auto i = textures.begin(); i !=
         textures.end(); ++i)
@@ -2889,8 +2889,8 @@ void View::CheckMaterialForAuxView(Material* material)
 
 void View::SetQueueShaderDefines(BatchQueue& queue, const RenderPathCommand& command)
 {
-    stl::string vsDefines = command.vertexShaderDefines_.trimmed();
-    stl::string psDefines = command.pixelShaderDefines_.trimmed();
+    ea::string vsDefines = command.vertexShaderDefines_.trimmed();
+    ea::string psDefines = command.pixelShaderDefines_.trimmed();
     if (vsDefines.length() || psDefines.length())
     {
         queue.hasExtraDefines_ = true;
@@ -2925,7 +2925,7 @@ void View::AddBatchToQueue(BatchQueue& queue, Batch& batch, Technique* tech, boo
             newGroup.geometryType_ = GEOM_STATIC;
             renderer_->SetBatchShaders(newGroup, tech, allowShadows, queue);
             newGroup.CalculateSortKey();
-            i = queue.batchGroups_.insert(stl::make_pair(key, newGroup)).first;
+            i = queue.batchGroups_.insert(ea::make_pair(key, newGroup)).first;
         }
 
         int oldSize = i->second.instances_.size();
@@ -3189,7 +3189,7 @@ void View::SendViewEvent(StringHash eventType)
     renderer_->SendEvent(eventType, eventData);
 }
 
-Texture* View::FindNamedTexture(const stl::string& name, bool isRenderTarget, bool isVolumeMap)
+Texture* View::FindNamedTexture(const ea::string& name, bool isRenderTarget, bool isVolumeMap)
 {
     // Check rendertargets first
     StringHash nameHash(name);

@@ -67,12 +67,12 @@ public:
     virtual bool Save(Serializer& dest) const;
 
     /// Load resource from file.
-    bool LoadFile(const stl::string& fileName);
+    bool LoadFile(const ea::string& fileName);
     /// Save resource to file.
-    virtual bool SaveFile(const stl::string& fileName) const;
+    virtual bool SaveFile(const ea::string& fileName) const;
 
     /// Set name.
-    void SetName(const stl::string& name);
+    void SetName(const ea::string& name);
     /// Set memory use in bytes, possibly approximate.
     void SetMemoryUse(unsigned size);
     /// Reset last used timer.
@@ -81,7 +81,7 @@ public:
     void SetAsyncLoadState(AsyncLoadState newState);
 
     /// Return name.
-    const stl::string& GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
 
     /// Return name hash.
     StringHash GetNameHash() const { return nameHash_; }
@@ -97,7 +97,7 @@ public:
 
 private:
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Name hash.
     StringHash nameHash_;
     /// Last used timer.
@@ -118,13 +118,13 @@ public:
     explicit ResourceWithMetadata(Context* context) : Resource(context) {}
 
     /// Add new metadata variable or overwrite old value.
-    void AddMetadata(const stl::string& name, const Variant& value);
+    void AddMetadata(const ea::string& name, const Variant& value);
     /// Remove metadata variable.
-    void RemoveMetadata(const stl::string& name);
+    void RemoveMetadata(const ea::string& name);
     /// Remove all metadata variables.
     void RemoveAllMetadata();
     /// Return metadata variable.
-    const Variant& GetMetadata(const stl::string& name) const;
+    const Variant& GetMetadata(const ea::string& name) const;
     /// Return whether the resource has metadata.
     bool HasMetadata() const;
 
@@ -145,7 +145,7 @@ private:
     StringVector metadataKeys_;
 };
 
-inline const stl::string& GetResourceName(Resource* resource)
+inline const ea::string& GetResourceName(Resource* resource)
 {
     return resource ? resource->GetName() : EMPTY_STRING;
 }
@@ -160,16 +160,16 @@ inline ResourceRef GetResourceRef(Resource* resource, StringHash defaultType)
     return ResourceRef(GetResourceType(resource, defaultType), GetResourceName(resource));
 }
 
-template <class T> stl::vector<stl::string> GetResourceNames(const stl::vector<stl::shared_ptr<T> >& resources)
+template <class T> ea::vector<ea::string> GetResourceNames(const ea::vector<ea::shared_ptr<T> >& resources)
 {
-    stl::vector<stl::string> ret(resources.size());
+    ea::vector<ea::string> ret(resources.size());
     for (unsigned i = 0; i < resources.size(); ++i)
         ret[i] = GetResourceName(resources[i]);
 
     return ret;
 }
 
-template <class T> ResourceRefList GetResourceRefList(const stl::vector<stl::shared_ptr<T> >& resources)
+template <class T> ResourceRefList GetResourceRefList(const ea::vector<ea::shared_ptr<T> >& resources)
 {
     return ResourceRefList(T::GetTypeStatic(), GetResourceNames(resources));
 }

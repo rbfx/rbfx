@@ -190,7 +190,7 @@ void CrowdManager::SetCrowdTarget(const Vector3& position, Node* node)
     if (!crowd_)
         return;
 
-    stl::vector<CrowdAgent*> agents = GetAgents(node, false);     // Get all crowd agent components
+    ea::vector<CrowdAgent*> agents = GetAgents(node, false);     // Get all crowd agent components
     Vector3 moveTarget(position);
     for (unsigned i = 0; i < agents.size(); ++i)
     {
@@ -218,7 +218,7 @@ void CrowdManager::SetCrowdVelocity(const Vector3& velocity, Node* node)
     if (!crowd_)
         return;
 
-    stl::vector<CrowdAgent*> agents = GetAgents(node, true);      // Get only crowd agent components already in the crowd
+    ea::vector<CrowdAgent*> agents = GetAgents(node, true);      // Get only crowd agent components already in the crowd
     for (unsigned i = 0; i < agents.size(); ++i)
         agents[i]->SetTargetVelocity(velocity);
 }
@@ -228,7 +228,7 @@ void CrowdManager::ResetCrowdTarget(Node* node)
     if (!crowd_)
         return;
 
-    stl::vector<CrowdAgent*> agents = GetAgents(node, true);
+    ea::vector<CrowdAgent*> agents = GetAgents(node, true);
     for (unsigned i = 0; i < agents.size(); ++i)
         agents[i]->ResetTarget();
 }
@@ -402,7 +402,7 @@ Vector3 CrowdManager::MoveAlongSurface(const Vector3& start, const Vector3& end,
         end;
 }
 
-void CrowdManager::FindPath(stl::vector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType)
+void CrowdManager::FindPath(ea::vector<Vector3>& dest, const Vector3& start, const Vector3& end, int queryFilterType)
 {
     if (crowd_ && navigationMesh_)
         navigationMesh_->FindPath(dest, start, end, Vector3(crowd_->getQueryExtents()), crowd_->getFilter(queryFilterType));
@@ -545,11 +545,11 @@ const CrowdObstacleAvoidanceParams& CrowdManager::GetObstacleAvoidanceParams(uns
     return params ? *reinterpret_cast<const CrowdObstacleAvoidanceParams*>(params) : EMPTY_PARAMS;
 }
 
-stl::vector<CrowdAgent*> CrowdManager::GetAgents(Node* node, bool inCrowdFilter) const
+ea::vector<CrowdAgent*> CrowdManager::GetAgents(Node* node, bool inCrowdFilter) const
 {
     if (!node)
         node = GetScene();
-    stl::vector<CrowdAgent*> agents;
+    ea::vector<CrowdAgent*> agents;
     node->GetComponents<CrowdAgent>(agents, true);
     if (inCrowdFilter)
     {
@@ -597,7 +597,7 @@ bool CrowdManager::CreateCrowd()
         SetObstacleAvoidanceTypesAttr(obstacleAvoidanceTypeConfiguration);
 
         // Re-add the existing crowd agents
-        stl::vector<CrowdAgent*> agents = GetAgents();
+        ea::vector<CrowdAgent*> agents = GetAgents();
         for (unsigned i = 0; i < agents.size(); ++i)
         {
             // Keep adding until the crowd cannot take it anymore

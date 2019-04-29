@@ -67,7 +67,7 @@ struct Bone
     }
 
     /// Bone name.
-    stl::string name_;
+    ea::string name_;
     /// Bone name hash.
     StringHash nameHash_;
     /// Parent bone index.
@@ -89,7 +89,7 @@ struct Bone
     /// Local-space bounding box.
     BoundingBox boundingBox_;
     /// Scene node.
-    stl::weak_ptr<Node> node_;
+    ea::weak_ptr<Node> node_;
 };
 
 /// Hierarchical collection of bones.
@@ -115,10 +115,10 @@ public:
     void Reset();
 
     /// Return all bones.
-    const stl::vector<Bone>& GetBones() const { return bones_; }
+    const ea::vector<Bone>& GetBones() const { return bones_; }
 
     /// Return modifiable bones.
-    stl::vector<Bone>& GetModifiableBones() { return bones_; }
+    ea::vector<Bone>& GetModifiableBones() { return bones_; }
 
     /// Return number of bones.
     unsigned GetNumBones() const { return bones_.size(); }
@@ -126,7 +126,7 @@ public:
     /// Return root bone.
     Bone* GetRootBone();
     /// Return index of the bone by name. Return M_MAX_UNSIGNED if not found.
-    unsigned GetBoneIndex(const stl::string& boneName) const;
+    unsigned GetBoneIndex(const ea::string& boneName) const;
     /// Return index of the bone by name hash. Return M_MAX_UNSIGNED if not found.
     unsigned GetBoneIndex(const StringHash& boneNameHash) const;
     /// Return index of the bone by the bone pointer. Return M_MAX_UNSIGNED if not found.
@@ -136,7 +136,7 @@ public:
     /// Return bone by index.
     Bone* GetBone(unsigned index);
     /// Return bone by name.
-    Bone* GetBone(const stl::string& name);
+    Bone* GetBone(const ea::string& name);
     /// Return bone by name.
     Bone* GetBone(const char* name);
     /// Return bone by name hash.
@@ -147,7 +147,7 @@ public:
 
 private:
     /// Bones.
-    stl::vector<Bone> bones_;
+    ea::vector<Bone> bones_;
     /// Root bone index.
     unsigned rootBoneIndex_;
 };

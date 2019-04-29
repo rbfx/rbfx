@@ -216,7 +216,7 @@ void CharacterDemo::CreateCharacter()
     shape->SetCapsule(0.7f, 1.8f, Vector3(0.0f, 0.9f, 0.0f));
 
     // Create the character logic component, which takes care of steering the rigidbody
-    // Remember it so that we can set the controls. Use a stl::weak_ptr because the scene hierarchy already owns it
+    // Remember it so that we can set the controls. Use a ea::weak_ptr because the scene hierarchy already owns it
     // and keeps it alive as long as it's not removed from the hierarchy
     character_ = objectNode->CreateComponent<Character>();
 }

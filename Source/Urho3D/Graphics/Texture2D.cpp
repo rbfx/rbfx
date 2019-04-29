@@ -85,7 +85,7 @@ bool Texture2D::BeginLoad(Deserializer& source)
 
     // Load the optional parameters file
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
+    ea::string xmlName = ReplaceExtension(GetName(), ".xml");
     loadParameters_ = cache->GetTempResource<XMLFile>(xmlName, false);
 
     return true;
@@ -173,9 +173,9 @@ bool Texture2D::GetImage(Image& image) const
     return true;
 }
 
-stl::shared_ptr<Image> Texture2D::GetImage() const
+ea::shared_ptr<Image> Texture2D::GetImage() const
 {
-    auto rawImage = stl::make_shared<Image>(context_);
+    auto rawImage = ea::make_shared<Image>(context_);
     if (!GetImage(*rawImage))
         return nullptr;
     return rawImage;

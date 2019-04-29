@@ -49,13 +49,13 @@ const int PACKER_NUM_NODES = 4096;
 const int MAX_TEXTURE_SIZE = 2048;
 
 int main(int argc, char** argv);
-void Run(stl::vector<stl::string>& arguments);
+void Run(ea::vector<ea::string>& arguments);
 
 class PackerInfo : public RefCounted
 {
 public:
-    stl::string path;
-    stl::string name;
+    ea::string path;
+    ea::string name;
     int x{};
     int y{};
     int offsetX{};
@@ -65,7 +65,7 @@ public:
     int frameWidth{};
     int frameHeight{};
 
-    PackerInfo(const stl::string& path_, const stl::string& name_) :
+    PackerInfo(const ea::string& path_, const ea::string& name_) :
         path(path_),
         name(name_)
     {
@@ -93,7 +93,7 @@ void Help()
 
 int main(int argc, char** argv)
 {
-    stl::vector<stl::string> arguments;
+    ea::vector<ea::string> arguments;
 
 #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -105,19 +105,19 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(stl::vector<stl::string>& arguments)
+void Run(ea::vector<ea::string>& arguments)
 {
     if (arguments.size() < 2)
         Help();
 
-    stl::shared_ptr<Context> context(new Context());
+    ea::shared_ptr<Context> context(new Context());
     context->RegisterSubsystem(new FileSystem(context));
     context->RegisterSubsystem(new Log(context));
     auto* fileSystem = context->GetSubsystem<FileSystem>();
 
-    stl::vector<stl::string> inputFiles;
-    stl::string outputFile;
-    stl::string spriteSheetFileName;
+    ea::vector<ea::string> inputFiles;
+    ea::string outputFile;
+    ea::string spriteSheetFileName;
     bool debug = false;
     unsigned padX = 0;
     unsigned padY = 0;
@@ -130,7 +130,7 @@ void Run(stl::vector<stl::string>& arguments)
 
     while (arguments.size() > 0)
     {
-        stl::string arg = arguments[0];
+        ea::string arg = arguments[0];
         arguments.pop_front();
 
         if (arg.empty())
@@ -196,12 +196,12 @@ void Run(stl::vector<stl::string>& arguments)
     offsetX = Min((int)offsetX, (int)padX);
     offsetY = Min((int)offsetY, (int)padY);
 
-    stl::vector<stl::shared_ptr<PackerInfo > > packerInfos;
+    ea::vector<ea::shared_ptr<PackerInfo > > packerInfos;
 
     for (unsigned i = 0; i < inputFiles.size(); ++i)
     {
-        stl::string path = inputFiles[i];
-        stl::string name = ReplaceExtension(GetFileName(path), "");
+        ea::string path = inputFiles[i];
+        ea::string name = ReplaceExtension(GetFileName(path), "");
         File file(context, path);
         Image image(context);
 
@@ -211,7 +211,7 @@ void Run(stl::vector<stl::string>& arguments)
         if (image.IsCompressed())
             ErrorExit(path + " is compressed. Compressed images are not allowed.");
 
-        stl::shared_ptr<PackerInfo> packerInfo(new PackerInfo(path, name));
+        ea::shared_ptr<PackerInfo> packerInfo(new PackerInfo(path, name));
         int imageWidth = image.GetWidth();
         int imageHeight = image.GetHeight();
         int trimOffsetX = 0;
@@ -267,7 +267,7 @@ void Run(stl::vector<stl::string>& arguments)
     int packedHeight = MAX_TEXTURE_SIZE;
     {
         // fill up an list of tries in increasing size and take the first win
-        stl::vector<IntVector2> tries;
+        ea::vector<IntVector2> tries;
         for(unsigned x=2; x<11; ++x)
         {
             for(unsigned y=2; y<11; ++y)
@@ -328,7 +328,7 @@ void Run(stl::vector<stl::string>& arguments)
         }
         delete[] packerRects;
         if (!success)
-            ErrorExit("Could not allocate for all images.  The max sprite sheet texture size is " + stl::to_string(MAX_TEXTURE_SIZE) + "x" + stl::to_string(MAX_TEXTURE_SIZE) + ".");
+            ErrorExit("Could not allocate for all images.  The max sprite sheet texture size is " + ea::to_string(MAX_TEXTURE_SIZE) + "x" + ea::to_string(MAX_TEXTURE_SIZE) + ".");
     }
 
     // create image for spritesheet
@@ -344,7 +344,7 @@ void Run(stl::vector<stl::string>& arguments)
 
     for (unsigned i = 0; i < packerInfos.size(); ++i)
     {
-        stl::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
+        ea::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
         XMLElement subTexture = root.CreateChild("SubTexture");
         subTexture.SetString("name", packerInfo->name);
         subTexture.SetInt("x", packerInfo->x + offsetX);
@@ -387,7 +387,7 @@ void Run(stl::vector<stl::string>& arguments)
         URHO3D_LOGINFO("Drawing debug information.");
         for (unsigned i = 0; i < packerInfos.size(); ++i)
         {
-            stl::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
+            ea::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
 
             // Draw outer bounds
             for (int x = 0; x < packerInfo->frameWidth; ++x)

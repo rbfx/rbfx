@@ -199,7 +199,7 @@ private:
     /// Remove agent from crowd.
     void RemoveAgentFromCrowd();
     /// Crowd manager.
-    stl::weak_ptr<CrowdManager> crowdManager_;
+    ea::weak_ptr<CrowdManager> crowdManager_;
     /// Crowd manager reference to this agent.
     int agentCrowdId_;
     /// Requested target position.

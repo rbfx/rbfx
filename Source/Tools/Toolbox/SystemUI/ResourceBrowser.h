@@ -60,6 +60,6 @@ URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
 }
 
 /// Create resource browser ui inside another window.
-URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& selected, ResourceBrowserFlags flags=RBF_NONE);
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& selected, ResourceBrowserFlags flags=RBF_NONE);
 
 }

@@ -45,14 +45,14 @@ MemoryBuffer::MemoryBuffer(const void* data, unsigned size) :
         size_ = 0;
 }
 
-MemoryBuffer::MemoryBuffer(stl::vector<unsigned char>& data) :
+MemoryBuffer::MemoryBuffer(ea::vector<unsigned char>& data) :
     AbstractFile(data.size()),
     buffer_(data.data()),
     readOnly_(false)
 {
 }
 
-MemoryBuffer::MemoryBuffer(const stl::vector<unsigned char>& data) :
+MemoryBuffer::MemoryBuffer(const ea::vector<unsigned char>& data) :
     AbstractFile(data.size()),
     buffer_(const_cast<unsigned char*>(data.data())),
     readOnly_(true)

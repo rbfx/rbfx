@@ -295,7 +295,7 @@ void Sample2D::PopulateMovingEntities(TileMapLayer2D* movingEntitiesLayer)
             auto* mover = movingClone->CreateComponent<Mover>();
 
             // Set path from points
-            stl::vector<Vector2> path = CreatePathFromPoints(movingObject, offset);
+            ea::vector<Vector2> path = CreatePathFromPoints(movingObject, offset);
             mover->path_ = path;
 
             // Override default speed
@@ -374,15 +374,15 @@ float Sample2D::Zoom(Camera* camera)
     return zoom_;
 }
 
-stl::vector<Vector2> Sample2D::CreatePathFromPoints(TileMapObject2D* object, Vector2 offset)
+ea::vector<Vector2> Sample2D::CreatePathFromPoints(TileMapObject2D* object, Vector2 offset)
 {
-    stl::vector<Vector2> path;
+    ea::vector<Vector2> path;
     for (int i=0; i < object->GetNumPoints(); ++i)
         path.push_back(object->GetPoint(i) + offset);
     return path;
 }
 
-void Sample2D::CreateUIContent(const stl::string& demoTitle, int remainingLifes, int remainingCoins)
+void Sample2D::CreateUIContent(const ea::string& demoTitle, int remainingLifes, int remainingCoins)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* ui = GetSubsystem<UI>();
@@ -404,7 +404,7 @@ void Sample2D::CreateUIContent(const stl::string& demoTitle, int remainingLifes,
     coinsText->SetAlignment(HA_CENTER, VA_CENTER);
     coinsText->SetFont(font, 24);
     coinsText->SetTextEffect(TE_SHADOW);
-    coinsText->SetText(stl::to_string(remainingCoins));
+    coinsText->SetText(ea::to_string(remainingCoins));
 
     // Create the UI for displaying the remaining lifes
     auto* lifeUI = ui->GetRoot()->CreateChild<BorderImage>("Life");
@@ -416,7 +416,7 @@ void Sample2D::CreateUIContent(const stl::string& demoTitle, int remainingLifes,
     lifeText->SetAlignment(HA_CENTER, VA_CENTER);
     lifeText->SetFont(font, 24);
     lifeText->SetTextEffect(TE_SHADOW);
-    lifeText->SetText(stl::to_string(remainingLifes));
+    lifeText->SetText(ea::to_string(remainingLifes));
 
     // Create the fullscreen UI for start/end
     auto* fullUI = ui->GetRoot()->CreateChild<Window>("FullUI");
@@ -489,14 +489,14 @@ void Sample2D::HandleExitButton(StringHash eventType, VariantMap& eventData)
 
 void Sample2D::SaveScene(bool initial)
 {
-    stl::string filename = demoFilename_;
+    ea::string filename = demoFilename_;
     if (!initial)
         filename += "InGame";
     File saveFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_WRITE);
     scene_->SaveXML(saveFile);
 }
 
-void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const stl::string& texture, bool animate)
+void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const ea::string& texture, bool animate)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     Node* node = scene_->CreateChild("Background");
@@ -510,7 +510,7 @@ void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const stl
     // Create rotation animation
     if (animate)
     {
-        stl::shared_ptr<ValueAnimation> animation(new ValueAnimation(context_));
+        ea::shared_ptr<ValueAnimation> animation(new ValueAnimation(context_));
         animation->SetKeyFrame(0, Variant(Quaternion(0.0f, 0.0f, 0.0f)));
         animation->SetKeyFrame(1, Variant(Quaternion(0.0f, 0.0f, 180.0f)));
         animation->SetKeyFrame(2, Variant(Quaternion(0.0f, 0.0f, 0.0f)));
@@ -528,7 +528,7 @@ void Sample2D::SpawnEffect(Node* node)
     particleEmitter->SetEffect(cache->GetResource<ParticleEffect2D>("Urho2D/sun.pex"));
 }
 
-void Sample2D::PlaySoundEffect(const stl::string& soundName)
+void Sample2D::PlaySoundEffect(const ea::string& soundName)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* source = scene_->CreateComponent<SoundSource>();

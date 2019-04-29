@@ -69,7 +69,7 @@ void ConstraintGear2D::SetOwnerConstraint(Constraint2D* constraint)
 
 void ConstraintGear2D::SetOtherConstraint(Constraint2D* constraint)
 {
-    stl::weak_ptr<Constraint2D> constraintPtr(constraint);
+    ea::weak_ptr<Constraint2D> constraintPtr(constraint);
     if (constraintPtr == otherConstraint_)
         return;
 

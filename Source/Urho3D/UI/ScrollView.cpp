@@ -125,7 +125,7 @@ void ScrollView::Update(float timeStep)
 
     if (GetSubsystem<UI>()->IsDragging())
     {
-        const stl::vector<UIElement*>& dragElements = GetSubsystem<UI>()->GetDragElements();
+        const ea::vector<UIElement*>& dragElements = GetSubsystem<UI>()->GetDragElements();
 
         for (unsigned i = 0; i < dragElements.size(); i++)
         {
@@ -408,7 +408,7 @@ bool ScrollView::FilterImplicitAttributes(XMLElement& dest) const
     return true;
 }
 
-bool ScrollView::FilterScrollBarImplicitAttributes(XMLElement& dest, const stl::string& name) const
+bool ScrollView::FilterScrollBarImplicitAttributes(XMLElement& dest, const ea::string& name) const
 {
     if (!dest)
         return false;

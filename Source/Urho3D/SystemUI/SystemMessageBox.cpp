@@ -32,7 +32,7 @@
 namespace Urho3D
 {
 
-SystemMessageBox::SystemMessageBox(Context* context, const stl::string& messageString, const stl::string& titleString) :
+SystemMessageBox::SystemMessageBox(Context* context, const ea::string& messageString, const ea::string& titleString) :
     Object(context),
     messageText_(messageString),
     isOpen_(true)
@@ -53,22 +53,22 @@ void SystemMessageBox::RegisterObject(Context* context)
     context->RegisterFactory<SystemMessageBox>();
 }
 
-void SystemMessageBox::SetTitle(const stl::string& text)
+void SystemMessageBox::SetTitle(const ea::string& text)
 {
     titleText_ = ToString("%s##%p", text.c_str(), this);
 }
 
-void SystemMessageBox::SetMessage(const stl::string& text)
+void SystemMessageBox::SetMessage(const ea::string& text)
 {
     messageText_ = text;
 }
 
-const stl::string& SystemMessageBox::GetTitle() const
+const ea::string& SystemMessageBox::GetTitle() const
 {
     return titleText_;
 }
 
-const stl::string& SystemMessageBox::GetMessage() const
+const ea::string& SystemMessageBox::GetMessage() const
 {
     return messageText_;
 }

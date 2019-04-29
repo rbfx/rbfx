@@ -46,7 +46,7 @@ class URHO3D_API HttpRequest : public RefCounted, public Deserializer, public Th
 {
 public:
     /// Construct with parameters.
-    HttpRequest(const stl::string& url, const stl::string& verb, const stl::vector<stl::string>& headers, const stl::string& postData);
+    HttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers, const ea::string& postData);
     /// Destruct. Release the connection object.
     ~HttpRequest() override;
 
@@ -61,13 +61,13 @@ public:
     bool IsEof() const override;
 
     /// Return URL used in the request.
-    const stl::string& GetURL() const { return url_; }
+    const ea::string& GetURL() const { return url_; }
 
     /// Return verb used in the request. Default GET if empty verb specified on construction.
-    const stl::string& GetVerb() const { return verb_; }
+    const ea::string& GetVerb() const { return verb_; }
 
     /// Return error. Only non-empty in the error state.
-    stl::string GetError() const;
+    ea::string GetError() const;
     /// Return connection state.
     HttpRequestState GetState() const;
     /// Return amount of bytes in the read buffer.
@@ -78,26 +78,26 @@ public:
 
 private:
     /// Check for available read data in buffer and whether end has been reached. Must only be called when the mutex is held by the main thread.
-    stl::pair<unsigned, bool> CheckAvailableSizeAndEof() const;
+    ea::pair<unsigned, bool> CheckAvailableSizeAndEof() const;
 
     /// URL.
-    stl::string url_;
+    ea::string url_;
     /// Verb.
-    stl::string verb_;
+    ea::string verb_;
     /// Error string. Empty if no error.
-    stl::string error_;
+    ea::string error_;
     /// Headers.
-    stl::vector<stl::string> headers_;
+    ea::vector<ea::string> headers_;
     /// POST data.
-    stl::string postData_;
+    ea::string postData_;
     /// Connection state.
     HttpRequestState state_;
     /// Mutex for synchronizing the worker and the main thread.
     mutable Mutex mutex_;
     /// Read buffer for the worker thread.
-    stl::shared_array<unsigned char> httpReadBuffer_;
+    ea::shared_array<unsigned char> httpReadBuffer_;
     /// Read buffer for the main thread.
-    stl::shared_array<unsigned char> readBuffer_;
+    ea::shared_array<unsigned char> readBuffer_;
     /// Read buffer read cursor.
     unsigned readPosition_;
     /// Read buffer write cursor.

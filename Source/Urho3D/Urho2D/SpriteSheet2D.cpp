@@ -59,7 +59,7 @@ bool SpriteSheet2D::BeginLoad(Deserializer& source)
     loadTextureName_.clear();
     spriteMapping_.clear();
 
-    stl::string extension = GetExtension(source.GetName());
+    ea::string extension = GetExtension(source.GetName());
     if (extension == ".plist")
         return BeginLoadFromPListFile(source);
 
@@ -94,7 +94,7 @@ void SpriteSheet2D::SetTexture(Texture2D* texture)
     texture_ = texture;
 }
 
-void SpriteSheet2D::DefineSprite(const stl::string& name, const IntRect& rectangle, const Vector2& hotSpot, const IntVector2& offset)
+void SpriteSheet2D::DefineSprite(const ea::string& name, const IntRect& rectangle, const Vector2& hotSpot, const IntVector2& offset)
 {
     if (!texture_)
         return;
@@ -102,7 +102,7 @@ void SpriteSheet2D::DefineSprite(const stl::string& name, const IntRect& rectang
     if (GetSprite(name))
         return;
 
-    stl::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+    ea::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
     sprite->SetName(name);
     sprite->SetTexture(texture_);
     sprite->SetRectangle(rectangle);
@@ -113,7 +113,7 @@ void SpriteSheet2D::DefineSprite(const stl::string& name, const IntRect& rectang
     spriteMapping_[name] = sprite;
 }
 
-Sprite2D* SpriteSheet2D::GetSprite(const stl::string& name) const
+Sprite2D* SpriteSheet2D::GetSprite(const ea::string& name) const
 {
     auto i = spriteMapping_.find(name);
     if (i == spriteMapping_.end())
@@ -151,7 +151,7 @@ bool SpriteSheet2D::BeginLoadFromPListFile(Deserializer& source)
         return false;
     }
 
-    const stl::string& textureFileName = metadataIt->second.GetString();
+    const ea::string& textureFileName = metadataIt->second.GetString();
 
     // If we're async loading, request the texture now. Finish during EndLoad().
     loadTextureName_ = GetParentPath(GetName()) + textureFileName;
@@ -184,7 +184,7 @@ bool SpriteSheet2D::EndLoadFromPListFile()
     const PListValueMap& frames = framesIt->second.GetValueMap();
     for (auto i = frames.begin(); i != frames.end(); ++i)
     {
-        stl::string name = i->first.split('.')[0];
+        ea::string name = i->first.split('.')[0];
 
         const PListValueMap& frameInfo = i->second.GetValueMap();
         auto rotatedIt = frameInfo.find("rotated");
@@ -282,7 +282,7 @@ bool SpriteSheet2D::EndLoadFromXMLFile()
     XMLElement subTextureElem = rootElem.GetChild("SubTexture");
     while (subTextureElem)
     {
-        stl::string name = subTextureElem.GetAttribute("name");
+        ea::string name = subTextureElem.GetAttribute("name");
 
         int x = subTextureElem.GetInt("x");
         int y = subTextureElem.GetInt("y");
@@ -358,7 +358,7 @@ bool SpriteSheet2D::EndLoadFromJSONFile()
     for (unsigned i = 0; i < subTextureArray.size(); i++)
     {
         const JSONValue& subTextureVal = subTextureArray.at(i);
-        stl::string name = subTextureVal.Get("name").GetString();
+        ea::string name = subTextureVal.Get("name").GetString();
 
         int x = subTextureVal.Get("x").GetInt();
         int y = subTextureVal.Get("y").GetInt();

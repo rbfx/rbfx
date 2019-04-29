@@ -44,10 +44,10 @@ enum PListValueType
 class PListValue;
 
 /// PList value map.
-using PListValueMap = stl::unordered_map<stl::string, PListValue>;
+using PListValueMap = ea::unordered_map<ea::string, PListValue>;
 
 /// Vector of PList value.
-using PListValueVector = stl::vector<PListValue>;
+using PListValueVector = ea::vector<PListValue>;
 
 /// PList value.
 class URHO3D_API PListValue
@@ -62,7 +62,7 @@ public:
     /// Construct from float.
     explicit PListValue(float value);
     /// Construct from string.
-    explicit PListValue(const stl::string& value);
+    explicit PListValue(const ea::string& value);
     /// Construct from value map.
     explicit PListValue(PListValueMap& valueMap);
     /// Construct from value vector.
@@ -85,7 +85,7 @@ public:
     /// Set float.
     void SetFloat(float value);
     /// Set string.
-    void SetString(const stl::string& value);
+    void SetString(const ea::string& value);
     /// Set value map.
     void SetValueMap(const PListValueMap& valueMap);
     /// Set value vector.
@@ -101,7 +101,7 @@ public:
     /// Return float.
     float GetFloat() const;
     /// Return string.
-    const stl::string& GetString() const;
+    const ea::string& GetString() const;
     /// Return IntRect, for string type.
     IntRect GetIntRect() const;
     /// Return IntVector2, for string type.
@@ -163,7 +163,7 @@ private:
         int int_;
         bool bool_;
         float float_;
-        stl::string* string_;
+        ea::string* string_;
         PListValueMap* valueMap_;
         PListValueVector* valueVector_;
     };

@@ -121,7 +121,7 @@ PreviewTab::PreviewTab(Context* context)
         {
             // Dim other windows except for preview.
             ImGuiContext& g = *ui::GetCurrentContext();
-            const stl::string& sceneTabName = GetSubsystem<Editor>()->GetTab<SceneTab>()->GetUniqueTitle();
+            const ea::string& sceneTabName = GetSubsystem<Editor>()->GetTab<SceneTab>()->GetUniqueTitle();
             for (int i = 0; i < g.Windows.Size; i++)
             {
                 ImGuiWindow* window = g.Windows[i];

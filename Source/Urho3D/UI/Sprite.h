@@ -46,7 +46,7 @@ public:
     /// Update and return screen position.
     const IntVector2& GetScreenPosition() const override;
     /// Return UI rendering batches.
-    void GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor) override;
+    void GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor) override;
     /// React to position change.
     void OnPositionSet(const IntVector2& newPosition) override;
     /// Convert screen coordinates to element coordinates.
@@ -117,7 +117,7 @@ protected:
     /// Rotation angle.
     float rotation_;
     /// Texture.
-    stl::shared_ptr<Texture> texture_;
+    ea::shared_ptr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Blend mode flag.

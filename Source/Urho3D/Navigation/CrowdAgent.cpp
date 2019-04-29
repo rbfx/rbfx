@@ -520,7 +520,7 @@ void CrowdAgent::OnCrowdUpdate(dtCrowdAgent* ag, float dt)
     if (node_)
     {
         // Use pointer to self to check for destruction after sending events
-        stl::weak_ptr<CrowdAgent> self(this);
+        ea::weak_ptr<CrowdAgent> self(this);
 
         Vector3 newPos(ag->npos);
         Vector3 newVel(ag->vel);

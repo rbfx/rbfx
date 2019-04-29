@@ -666,8 +666,8 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
     if (vertexBuffer->GetVertexCount() != row * row)
         vertexBuffer->SetSize(row * row, MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT);
 
-    stl::shared_array<unsigned char> cpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
-    stl::shared_array<unsigned char> occlusionCpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
+    ea::shared_array<unsigned char> cpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
+    ea::shared_array<unsigned char> occlusionCpuVertexData(new unsigned char[row * row * sizeof(Vector3)]);
 
     auto* vertexData = (float*)vertexBuffer->Lock(0, vertexBuffer->GetVertexCount());
     auto* positionData = (float*)cpuVertexData.get();
@@ -915,12 +915,12 @@ void Terrain::CreateGeometry()
     {
         URHO3D_PROFILE("RemoveOldPatches");
 
-        stl::vector<Node*> oldPatchNodes;
+        ea::vector<Node*> oldPatchNodes;
         node_->GetChildrenWithComponent<TerrainPatch>(oldPatchNodes);
         for (auto i = oldPatchNodes.begin(); i != oldPatchNodes.end(); ++i)
         {
             bool nodeOk = false;
-            stl::vector<stl::string> coords = (*i)->GetName().substr(6).split('_');
+            ea::vector<ea::string> coords = (*i)->GetName().substr(6).split('_');
             if (coords.size() == 2)
             {
                 int x = ToInt(coords[0]);
@@ -935,7 +935,7 @@ void Terrain::CreateGeometry()
     }
 
     // Keep track of which patches actually need an update
-    stl::vector<bool> dirtyPatches((unsigned)(numPatches_.x_ * numPatches_.y_));
+    ea::vector<bool> dirtyPatches((unsigned)(numPatches_.x_ * numPatches_.y_));
     for (unsigned i = 0; i < dirtyPatches.size(); ++i)
         dirtyPatches[i] = updateAll;
 
@@ -1036,7 +1036,7 @@ void Terrain::CreateGeometry()
             {
                 for (int x = 0; x < numPatches_.x_; ++x)
                 {
-                    stl::string nodeName = "Patch_" + stl::to_string(x) + "_" + stl::to_string(z);
+                    ea::string nodeName = "Patch_" + ea::to_string(x) + "_" + ea::to_string(z);
                     Node* patchNode = node_->GetChild(nodeName);
 
                     if (!patchNode)
@@ -1074,7 +1074,7 @@ void Terrain::CreateGeometry()
                         patch->SetOccludee(occludee_);
                     }
 
-                    patches_.push_back(stl::weak_ptr<TerrainPatch>(patch));
+                    patches_.push_back(ea::weak_ptr<TerrainPatch>(patch));
                 }
             }
         }
@@ -1145,7 +1145,7 @@ void Terrain::CreateIndexData()
 {
     URHO3D_PROFILE("CreateIndexData");
 
-    stl::vector<unsigned short> indices;
+    ea::vector<unsigned short> indices;
     drawRanges_.clear();
     auto row = (unsigned)(patchSize_ + 1);
 
@@ -1293,7 +1293,7 @@ void Terrain::CreateIndexData()
                 }
             }
 
-            drawRanges_.push_back(stl::make_pair(indexStart, (unsigned)indices.size() - indexStart));
+            drawRanges_.push_back(ea::make_pair(indexStart, (unsigned)indices.size() - indexStart));
         }
     }
 
@@ -1374,7 +1374,7 @@ void Terrain::CalculateLodErrors(TerrainPatch* patch)
     URHO3D_PROFILE("CalculateLodErrors");
 
     const IntVector2& coords = patch->GetCoordinates();
-    stl::vector<float>& lodErrors = patch->GetLodErrors();
+    ea::vector<float>& lodErrors = patch->GetLodErrors();
     lodErrors.clear();
     lodErrors.reserve(numLodLevels_);
 

@@ -52,11 +52,11 @@ public:
     /// Set current entity.
     bool SetEntity(int index);
     /// Set current entity.
-    bool SetEntity(const stl::string& entityName);
+    bool SetEntity(const ea::string& entityName);
     /// Set current animation.
     bool SetAnimation(int index, LoopMode loopMode = Default);
     /// Set current animation.
-    bool SetAnimation(const stl::string& animationName, LoopMode loopMode = Default);
+    bool SetAnimation(const ea::string& animationName, LoopMode loopMode = Default);
     /// Set root spatial info.
     void setSpatialInfo(const Spriter::SpatialInfo& spatialInfo);
     /// Set root spatial info.
@@ -71,7 +71,7 @@ public:
     /// Return root spatial info.
     const Spriter::SpatialInfo& GetSpatialInfo() const { return spatialInfo_; }
     /// Return animation result timeline keys.
-    const stl::vector<Spriter::SpatialTimelineKey*>& GetTimelineKeys() const { return timelineKeys_; }
+    const ea::vector<Spriter::SpatialTimelineKey*>& GetTimelineKeys() const { return timelineKeys_; }
 
 private:
     /// Handle set entity.
@@ -104,7 +104,7 @@ private:
     /// Current mainline key.
     MainlineKey* mainlineKey_{};
     /// Current timeline keys.
-    stl::vector<SpatialTimelineKey*> timelineKeys_;
+    ea::vector<SpatialTimelineKey*> timelineKeys_;
 };
 
 }

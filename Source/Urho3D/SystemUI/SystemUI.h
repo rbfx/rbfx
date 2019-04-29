@@ -66,7 +66,7 @@ public:
     /// \param ranges optional ranges of font that should be used. Parameter is ImWchar[] of {start1, stop1, ..., startN, stopN, 0}.
     /// \param merge set to true if new font should be merged to last active font.
     /// \return ImFont instance that may be used for setting current font when drawing GUI.
-    ImFont* AddFont(const stl::string& fontPath, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
+    ImFont* AddFont(const ea::string& fontPath, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
     /// Apply built-in system ui style.
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
@@ -86,8 +86,8 @@ protected:
     Matrix4 projection_;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
-    stl::shared_ptr<Texture2D> fontTexture_;
-    stl::vector<float> fontSizes_;
+    ea::shared_ptr<Texture2D> fontTexture_;
+    ea::vector<float> fontSizes_;
     ImGuiContext* imContext_;
 
     void ReallocateFontTexture();

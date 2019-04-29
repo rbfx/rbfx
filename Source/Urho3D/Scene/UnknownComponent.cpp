@@ -75,7 +75,7 @@ bool UnknownComponent::LoadXML(const XMLElement& source)
 
         if (!attr.name_.empty())
         {
-            stl::string attrValue = attrElem.GetAttribute("value");
+            ea::string attrValue = attrElem.GetAttribute("value");
             attr.defaultValue_ = EMPTY_STRING;
             xmlAttributeInfos_.push_back(attr);
             xmlAttributes_.push_back(attrValue);
@@ -111,7 +111,7 @@ bool UnknownComponent::LoadJSON(const JSONValue& source)
 
         if (!attr.name_.empty())
         {
-            stl::string attrValue = attrVal.Get("value").GetString();
+            ea::string attrValue = attrVal.Get("value").GetString();
             attr.defaultValue_ = EMPTY_STRING;
             xmlAttributeInfos_.push_back(attr);
             xmlAttributes_.push_back(attrValue);
@@ -193,7 +193,7 @@ bool UnknownComponent::SaveJSON(JSONValue& dest) const
     return true;
 }
 
-void UnknownComponent::SetTypeName(const stl::string& typeName)
+void UnknownComponent::SetTypeName(const ea::string& typeName)
 {
     typeName_ = typeName;
     typeHash_ = typeName;

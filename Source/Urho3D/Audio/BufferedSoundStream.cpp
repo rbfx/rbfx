@@ -73,29 +73,29 @@ void BufferedSoundStream::AddData(void* data, unsigned numBytes)
     {
         MutexLock lock(bufferMutex_);
 
-        stl::shared_array<signed char> newBuffer(new signed char[numBytes]);
+        ea::shared_array<signed char> newBuffer(new signed char[numBytes]);
         memcpy(newBuffer.get(), data, numBytes);
-        buffers_.push_back(stl::make_pair(newBuffer, numBytes));
+        buffers_.push_back(ea::make_pair(newBuffer, numBytes));
     }
 }
 
-void BufferedSoundStream::AddData(const stl::shared_array<signed char>& data, unsigned numBytes)
+void BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes)
 {
     if (data && numBytes)
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.push_back(stl::make_pair(data, numBytes));
+        buffers_.push_back(ea::make_pair(data, numBytes));
     }
 }
 
-void BufferedSoundStream::AddData(const stl::shared_array<signed short>& data, unsigned numBytes)
+void BufferedSoundStream::AddData(const ea::shared_array<signed short>& data, unsigned numBytes)
 {
     if (data && numBytes)
     {
         MutexLock lock(bufferMutex_);
 
-        buffers_.push_back(stl::make_pair(stl::do_reinterpret_cast<signed char>(data), numBytes));
+        buffers_.push_back(ea::make_pair(ea::do_reinterpret_cast<signed char>(data), numBytes));
     }
 }
 

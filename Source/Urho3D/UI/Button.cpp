@@ -87,7 +87,7 @@ void Button::Update(float timeStep)
     }
 }
 
-void Button::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void Button::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     IntVector2 offset(IntVector2::ZERO);
     if (enabled_)

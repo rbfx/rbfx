@@ -414,7 +414,7 @@ public:
     void SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows, const BatchQueue& queue);
     /// Choose shaders for a deferred light volume batch.
     void SetLightVolumeBatchShaders
-        (Batch& batch, Camera* camera, const stl::string& vsName, const stl::string& psName, const stl::string& vsDefines, const stl::string& psDefines);
+        (Batch& batch, Camera* camera, const ea::string& vsName, const ea::string& psName, const ea::string& vsDefines, const ea::string& psDefines);
     /// Set cull mode while taking possible projection flipping into account.
     void SetCullMode(CullMode mode, Camera* camera);
     /// Ensure sufficient size of the instancing vertex buffer. Return true if successful.
@@ -435,7 +435,7 @@ private:
     /// Reload shaders.
     void LoadShaders();
     /// Reload shaders for a material pass. The related batch queue is provided in case it has extra shader compilation defines.
-    void LoadPassShaders(Pass* pass, stl::vector<stl::shared_ptr<ShaderVariation> >& vertexShaders, stl::vector<stl::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
+    void LoadPassShaders(Pass* pass, ea::vector<ea::shared_ptr<ShaderVariation> >& vertexShaders, ea::vector<ea::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
     /// Release shaders used in materials.
     void ReleaseMaterialShaders();
     /// Reload textures.
@@ -461,7 +461,7 @@ private:
     /// Remove all occlusion and screen buffers.
     void ResetBuffers();
     /// Find variations for shadow shaders
-    stl::string GetShadowVariations() const;
+    ea::string GetShadowVariations() const;
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle render update event.
@@ -470,67 +470,67 @@ private:
     void BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale);
 
     /// Graphics subsystem.
-    stl::weak_ptr<Graphics> graphics_;
+    ea::weak_ptr<Graphics> graphics_;
     /// Default renderpath.
-    stl::shared_ptr<RenderPath> defaultRenderPath_;
+    ea::shared_ptr<RenderPath> defaultRenderPath_;
     /// Default non-textured material technique.
-    stl::shared_ptr<Technique> defaultTechnique_;
+    ea::shared_ptr<Technique> defaultTechnique_;
     /// Default zone.
-    stl::shared_ptr<Zone> defaultZone_;
+    ea::shared_ptr<Zone> defaultZone_;
     /// Directional light quad geometry.
-    stl::shared_ptr<Geometry> dirLightGeometry_;
+    ea::shared_ptr<Geometry> dirLightGeometry_;
     /// Spot light volume geometry.
-    stl::shared_ptr<Geometry> spotLightGeometry_;
+    ea::shared_ptr<Geometry> spotLightGeometry_;
     /// Point light volume geometry.
-    stl::shared_ptr<Geometry> pointLightGeometry_;
+    ea::shared_ptr<Geometry> pointLightGeometry_;
     /// Instance stream vertex buffer.
-    stl::shared_ptr<VertexBuffer> instancingBuffer_;
+    ea::shared_ptr<VertexBuffer> instancingBuffer_;
     /// Default material.
-    stl::shared_ptr<Material> defaultMaterial_;
+    ea::shared_ptr<Material> defaultMaterial_;
     /// Default range attenuation texture.
-    stl::shared_ptr<Texture2D> defaultLightRamp_;
+    ea::shared_ptr<Texture2D> defaultLightRamp_;
     /// Default spotlight attenuation texture.
-    stl::shared_ptr<Texture2D> defaultLightSpot_;
+    ea::shared_ptr<Texture2D> defaultLightSpot_;
     /// Face selection cube map for shadowed pointlights.
-    stl::shared_ptr<TextureCube> faceSelectCubeMap_;
+    ea::shared_ptr<TextureCube> faceSelectCubeMap_;
     /// Indirection cube map for shadowed pointlights.
-    stl::shared_ptr<TextureCube> indirectionCubeMap_;
+    ea::shared_ptr<TextureCube> indirectionCubeMap_;
     /// Reusable scene nodes with shadow camera components.
-    stl::vector<stl::shared_ptr<Node> > shadowCameraNodes_;
+    ea::vector<ea::shared_ptr<Node> > shadowCameraNodes_;
     /// Reusable occlusion buffers.
-    stl::vector<stl::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
+    ea::vector<ea::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
     /// Shadow maps by resolution.
-    stl::unordered_map<int, stl::vector<stl::shared_ptr<Texture2D> > > shadowMaps_;
+    ea::unordered_map<int, ea::vector<ea::shared_ptr<Texture2D> > > shadowMaps_;
     /// Shadow map dummy color buffers by resolution.
-    stl::unordered_map<int, stl::shared_ptr<Texture2D> > colorShadowMaps_;
+    ea::unordered_map<int, ea::shared_ptr<Texture2D> > colorShadowMaps_;
     /// Shadow map allocations by resolution.
-    stl::unordered_map<int, stl::vector<Light*> > shadowMapAllocations_;
+    ea::unordered_map<int, ea::vector<Light*> > shadowMapAllocations_;
     /// Instance of shadow map filter
     Object* shadowMapFilterInstance_{};
     /// Function pointer of shadow map filter
     ShadowMapFilter shadowMapFilter_{};
     /// Screen buffers by resolution and format.
-    stl::unordered_map<unsigned long long, stl::vector<stl::shared_ptr<Texture> > > screenBuffers_;
+    ea::unordered_map<unsigned long long, ea::vector<ea::shared_ptr<Texture> > > screenBuffers_;
     /// Current screen buffer allocations by resolution and format.
-    stl::unordered_map<unsigned long long, unsigned> screenBufferAllocations_;
+    ea::unordered_map<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
-    stl::unordered_map<stl::pair<Light*, Camera*>, Rect> lightScissorCache_;
+    ea::unordered_map<ea::pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
-    stl::vector<stl::shared_ptr<Viewport> > viewports_;
+    ea::vector<ea::shared_ptr<Viewport> > viewports_;
     /// Render surface viewports queued for update.
-    stl::vector<stl::pair<stl::weak_ptr<RenderSurface>, stl::weak_ptr<Viewport> > > queuedViewports_;
+    ea::vector<ea::pair<ea::weak_ptr<RenderSurface>, ea::weak_ptr<Viewport> > > queuedViewports_;
     /// Views that have been processed this frame.
-    stl::vector<stl::weak_ptr<View> > views_;
+    ea::vector<ea::weak_ptr<View> > views_;
     /// Prepared views by culling camera.
-    stl::unordered_map<Camera*, stl::weak_ptr<View> > preparedViews_;
+    ea::unordered_map<Camera*, ea::weak_ptr<View> > preparedViews_;
     /// Octrees that have been updated during the frame.
-    stl::hash_set<Octree*> updatedOctrees_;
+    ea::hash_set<Octree*> updatedOctrees_;
     /// Techniques for which missing shader error has been displayed.
-    stl::hash_set<Technique*> shaderErrorDisplayed_;
+    ea::hash_set<Technique*> shaderErrorDisplayed_;
     /// Mutex for shadow camera allocation.
     Mutex rendererMutex_;
     /// Current variation names for deferred light volume shaders.
-    stl::vector<stl::string> deferredLightPSVariations_;
+    ea::vector<ea::string> deferredLightPSVariations_;
     /// Frame info for rendering.
     FrameInfo frame_;
     /// Texture anisotropy level.

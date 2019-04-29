@@ -44,9 +44,9 @@ struct PasteResult
     }
 
     ///
-    stl::vector<Node*> nodes_;
+    ea::vector<Node*> nodes_;
     ///
-    stl::vector<Component*> components_;
+    ea::vector<Component*> components_;
 };
 
 class SceneClipboard : public Object
@@ -62,19 +62,19 @@ public:
     ///
     void Copy(Component* component);
     ///
-    void Copy(const stl::vector<Node*>& nodes);
+    void Copy(const ea::vector<Node*>& nodes);
     ///
-    void Copy(const stl::vector<Component*>& components);
+    void Copy(const ea::vector<Component*>& components);
     ///
-    void Copy(const stl::vector<stl::weak_ptr<Node>>& nodes);
+    void Copy(const ea::vector<ea::weak_ptr<Node>>& nodes);
     ///
-    void Copy(const stl::hash_set<stl::weak_ptr<Component>>& components);
+    void Copy(const ea::hash_set<ea::weak_ptr<Component>>& components);
     ///
     PasteResult Paste(Node* node);
     ///
-    PasteResult Paste(const stl::vector<Node*>& nodes);
+    PasteResult Paste(const ea::vector<Node*>& nodes);
     ///
-    PasteResult Paste(const stl::vector<stl::weak_ptr<Node>>& nodes);
+    PasteResult Paste(const ea::vector<ea::weak_ptr<Node>>& nodes);
     ///
     bool HasNodes() const { return !nodes_.empty(); }
     ///
@@ -82,9 +82,9 @@ public:
 
 protected:
     ///
-    stl::vector<VectorBuffer> nodes_;
+    ea::vector<VectorBuffer> nodes_;
     ///
-    stl::vector<VectorBuffer> components_;
+    ea::vector<VectorBuffer> components_;
     ///
     Undo::Manager& undo_;
 };

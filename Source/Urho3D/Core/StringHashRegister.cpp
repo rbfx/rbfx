@@ -73,12 +73,12 @@ StringHash StringHashRegister::RegisterString(const char* string)
     return RegisterString(hash, string);
 }
 
-stl::string StringHashRegister::GetStringCopy(const StringHash& hash) const
+ea::string StringHashRegister::GetStringCopy(const StringHash& hash) const
 {
     if (mutex_)
         mutex_->Acquire();
 
-    const stl::string copy = GetString(hash);
+    const ea::string copy = GetString(hash);
 
     if (mutex_)
         mutex_->Release();
@@ -99,7 +99,7 @@ bool StringHashRegister::Contains(const StringHash& hash) const
     return contains;
 }
 
-const stl::string& StringHashRegister::GetString(const StringHash& hash) const
+const ea::string& StringHashRegister::GetString(const StringHash& hash) const
 {
     auto iter = map_.find(hash);
     return iter == map_.end() ? EMPTY_STRING : iter->second;

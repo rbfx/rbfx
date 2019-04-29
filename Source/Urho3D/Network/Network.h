@@ -58,11 +58,11 @@ public:
     /// Scan the LAN/subnet for available hosts.
     void DiscoverHosts(unsigned port);
     /// Set password for the client/server communcation.
-    void SetPassword(const stl::string& password);
+    void SetPassword(const ea::string& password);
     /// Set NAT server information.
-    void SetNATServerInfo(const stl::string& address, unsigned short port);
+    void SetNATServerInfo(const ea::string& address, unsigned short port);
     /// Connect to a server using UDP protocol. Return true if connection process successfully started.
-    bool Connect(const stl::string& address, unsigned short port, Scene* scene, const VariantMap& identity = Variant::emptyVariantMap);
+    bool Connect(const ea::string& address, unsigned short port, Scene* scene, const VariantMap& identity = Variant::emptyVariantMap);
     /// Disconnect the connection to the server. If wait time is non-zero, will block while waiting for disconnect to finish.
     void Disconnect(int waitMSec = 0);
     /// Start a server on a port using UDP protocol. Return true if successful.
@@ -72,9 +72,9 @@ public:
     /// Start NAT punchtrough client to allow remote connections.
     void StartNATClient();
     /// Get local server GUID.
-    const stl::string& GetGUID() const { return guid_; }
+    const ea::string& GetGUID() const { return guid_; }
     /// Attempt to connect to NAT server.
-    void AttemptNATPunchtrough(const stl::string& guid, Scene* scene, const VariantMap& identity = Variant::emptyVariantMap);
+    void AttemptNATPunchtrough(const ea::string& guid, Scene* scene, const VariantMap& identity = Variant::emptyVariantMap);
     /// Broadcast a message with content ID to all client connections.
     void BroadcastMessage(int msgID, bool reliable, bool inOrder, const VectorBuffer& msg, unsigned contentID = 0);
     /// Broadcast a message with content ID to all client connections.
@@ -98,13 +98,13 @@ public:
     /// Unregister all remote events.
     void UnregisterAllRemoteEvents();
     /// Set the package download cache directory.
-    void SetPackageCacheDir(const stl::string& path);
+    void SetPackageCacheDir(const ea::string& path);
     /// Trigger all client connections in the specified scene to download a package file from the server. Can be used to download additional resource packages when clients are already joined in the scene. The package must have been added as a requirement to the scene, or else the eventual download will fail.
     void SendPackageToClients(Scene* scene, PackageFile* package);
     /// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which can be used to read the response data.
-    stl::shared_ptr<HttpRequest> MakeHttpRequest(const stl::string& url, const stl::string& verb = EMPTY_STRING, const stl::vector<stl::string>& headers = stl::vector<stl::string>(), const stl::string& postData = EMPTY_STRING);
+    ea::shared_ptr<HttpRequest> MakeHttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
     /// Ban specific IP addresses.
-    void BanAddress(const stl::string& address);
+    void BanAddress(const ea::string& address);
     /// Return network update FPS.
     int GetUpdateFps() const { return updateFps_; }
 
@@ -119,14 +119,14 @@ public:
     /// Return the connection to the server. Null if not connected.
     Connection* GetServerConnection() const;
     /// Return all client connections.
-    stl::vector<stl::shared_ptr<Connection> > GetClientConnections() const;
+    ea::vector<ea::shared_ptr<Connection> > GetClientConnections() const;
     /// Return whether the server is running.
     bool IsServerRunning() const;
     /// Return whether a remote event is allowed to be received.
     bool CheckRemoteEvent(StringHash eventType) const;
 
     /// Return the package download cache directory.
-    const stl::string& GetPackageCacheDir() const { return packageCacheDir_; }
+    const ea::string& GetPackageCacheDir() const { return packageCacheDir_; }
 
     /// Process incoming messages from connections. Called by HandleBeginFrame.
     void Update(float timeStep);
@@ -152,15 +152,15 @@ private:
     /// SLikeNet peer instance for client connection.
     SLNet::RakPeerInterface* rakPeerClient_;
     /// Client's server connection.
-    stl::shared_ptr<Connection> serverConnection_;
+    ea::shared_ptr<Connection> serverConnection_;
     /// Server's client connections.
-    stl::unordered_map<SLNet::AddressOrGUID, stl::shared_ptr<Connection> > clientConnections_;
+    ea::unordered_map<SLNet::AddressOrGUID, ea::shared_ptr<Connection> > clientConnections_;
     /// Allowed remote events.
-    stl::hash_set<StringHash> allowedRemoteEvents_;
+    ea::hash_set<StringHash> allowedRemoteEvents_;
     /// Remote event fixed blacklist.
-    stl::hash_set<StringHash> blacklistedRemoteEvents_;
+    ea::hash_set<StringHash> blacklistedRemoteEvents_;
     /// Networked scenes.
-    stl::hash_set<Scene*> networkScenes_;
+    ea::hash_set<Scene*> networkScenes_;
     /// Update FPS.
     int updateFps_;
     /// Simulated latency (send delay) in milliseconds.
@@ -172,11 +172,11 @@ private:
     /// Update time accumulator.
     float updateAcc_;
     /// Package cache directory.
-    stl::string packageCacheDir_;
+    ea::string packageCacheDir_;
     /// Whether we started as server or not.
     bool isServer_;
     /// Server/Client password used for connecting.
-    stl::string password_;
+    ea::string password_;
     /// Scene which will be used for NAT punchtrough connections.
     Scene* scene_;
     /// Client identify for NAT punchtrough connections.
@@ -190,7 +190,7 @@ private:
     /// Remote GUID information.
     SLNet::RakNetGUID* remoteGUID_;
     /// Local server GUID.
-    stl::string guid_;
+    ea::string guid_;
 };
 
 /// Register Network library objects.

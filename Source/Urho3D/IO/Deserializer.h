@@ -45,7 +45,7 @@ public:
     /// Set position from the beginning of the stream. Return actual new position.
     virtual unsigned Seek(unsigned position) = 0;
     /// Return name of the stream.
-    virtual const stl::string& GetName() const;
+    virtual const ea::string& GetName() const;
     /// Return a checksum if applicable.
     virtual unsigned GetChecksum();
     /// Return whether the end of stream has been reached.
@@ -114,13 +114,13 @@ public:
     /// Read a bounding box.
     BoundingBox ReadBoundingBox();
     /// Read a null-terminated string.
-    stl::string ReadString();
+    ea::string ReadString();
     /// Read a four-letter file ID.
-    stl::string ReadFileID();
+    ea::string ReadFileID();
     /// Read a 32-bit StringHash.
     StringHash ReadStringHash();
     /// Read a buffer with size encoded as VLE.
-    stl::vector<unsigned char> ReadBuffer();
+    ea::vector<unsigned char> ReadBuffer();
     /// Read a resource reference.
     ResourceRef ReadResourceRef();
     /// Read a resource reference list.
@@ -140,7 +140,7 @@ public:
     /// Read a 24-bit network object ID.
     unsigned ReadNetID();
     /// Read a text line.
-    stl::string ReadLine();
+    ea::string ReadLine();
 
 protected:
     /// Stream position.

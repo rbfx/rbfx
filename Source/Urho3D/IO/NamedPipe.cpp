@@ -54,7 +54,7 @@ NamedPipe::NamedPipe(Context* context) :
 {
 }
 
-NamedPipe::NamedPipe(Context* context, const stl::string& pipeName, bool isServer) :
+NamedPipe::NamedPipe(Context* context, const ea::string& pipeName, bool isServer) :
     Object(context),
     isServer_(false),
 #ifdef _WIN32
@@ -81,7 +81,7 @@ unsigned NamedPipe::Seek(unsigned position)
 
 static const char* pipePath = "\\\\.\\pipe\\";
 
-bool NamedPipe::Open(const stl::string& pipeName, bool isServer)
+bool NamedPipe::Open(const ea::string& pipeName, bool isServer)
 {
     URHO3D_PROFILE("OpenNamedPipe");
 
@@ -207,7 +207,7 @@ static const char* pipePath = "/tmp/";
 
 #define SAFE_CLOSE(handle) if ((handle) != -1) { close(handle); (handle) = -1; }
 
-bool NamedPipe::Open(const stl::string& pipeName, bool isServer)
+bool NamedPipe::Open(const ea::string& pipeName, bool isServer)
 {
 #ifdef __EMSCRIPTEN__
     URHO3D_LOGERROR("Opening a named pipe not supported on Web platform");
@@ -219,8 +219,8 @@ bool NamedPipe::Open(const stl::string& pipeName, bool isServer)
 
     isServer_ = false;
 
-    stl::string serverReadName = pipePath + pipeName + "SR";
-    stl::string clientReadName = pipePath + pipeName + "CR";
+    ea::string serverReadName = pipePath + pipeName + "SR";
+    ea::string clientReadName = pipePath + pipeName + "CR";
 
     // Make sure SIGPIPE is ignored and will not lead to process termination
     signal(SIGPIPE, SIG_IGN);
@@ -330,8 +330,8 @@ void NamedPipe::Close()
 
         if (isServer_)
         {
-            stl::string serverReadName = pipePath + pipeName_ + "SR";
-            stl::string clientReadName = pipePath + pipeName_ + "CR";
+            ea::string serverReadName = pipePath + pipeName_ + "SR";
+            ea::string clientReadName = pipePath + pipeName_ + "CR";
             unlink(serverReadName.c_str());
             unlink(clientReadName.c_str());
             isServer_ = false;

@@ -59,7 +59,7 @@ private:
     void Cleanup();
 
     /// Free rectangles.
-    stl::vector<IntRect> freeAreas_;
+    ea::vector<IntRect> freeAreas_;
     /// Current size.
     IntVector2 size_;
     /// Maximum size it allows to grow. It is zero when it is not allowed to grow.

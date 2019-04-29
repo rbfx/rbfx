@@ -100,7 +100,7 @@ void Scene::RegisterObject(Context* context)
 {
     context->RegisterFactory<Scene>();
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, stl::string, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Name", GetName, SetName, ea::string, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Time Scale", GetTimeScale, SetTimeScale, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Smoothing Constant", GetSmoothingConstant, SetSmoothingConstant, float, DEFAULT_SMOOTHING_CONSTANT,
         AM_DEFAULT);
@@ -111,7 +111,7 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Next Local Node ID", unsigned, localNodeID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Next Local Component ID", unsigned, localComponentID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, stl::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
 }
 
 bool Scene::Load(Deserializer& source)
@@ -224,7 +224,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     StopAsyncLoading();
 
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -247,7 +247,7 @@ bool Scene::LoadJSON(Deserializer& source)
 
     StopAsyncLoading();
 
-    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return false;
 
@@ -264,11 +264,11 @@ bool Scene::LoadJSON(Deserializer& source)
         return false;
 }
 
-bool Scene::SaveXML(Serializer& dest, const stl::string& indentation) const
+bool Scene::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneXML");
 
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("scene");
     if (!SaveXML(rootElem))
         return false;
@@ -286,11 +286,11 @@ bool Scene::SaveXML(Serializer& dest, const stl::string& indentation) const
         return false;
 }
 
-bool Scene::SaveJSON(Serializer& dest, const stl::string& indentation) const
+bool Scene::SaveJSON(Serializer& dest, const ea::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneJSON");
 
-    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue rootVal;
     if (!SaveJSON(rootVal))
         return false;
@@ -393,7 +393,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(*file))
         return false;
 
@@ -462,7 +462,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(*file))
         return false;
 
@@ -600,7 +600,7 @@ Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, c
 
 Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return nullptr;
 
@@ -609,7 +609,7 @@ Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const
 
 Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    stl::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return nullptr;
 
@@ -684,7 +684,7 @@ void Scene::AddRequiredPackageFile(PackageFile* package)
     if (!package || !package->GetNumFiles())
         return;
 
-    requiredPackageFiles_.push_back(stl::shared_ptr<PackageFile>(package));
+    requiredPackageFiles_.push_back(ea::shared_ptr<PackageFile>(package));
 }
 
 void Scene::ClearRequiredPackageFiles()
@@ -692,12 +692,12 @@ void Scene::ClearRequiredPackageFiles()
     requiredPackageFiles_.clear();
 }
 
-void Scene::RegisterVar(const stl::string& name)
+void Scene::RegisterVar(const ea::string& name)
 {
     varNames_[name] = name;
 }
 
-void Scene::UnregisterVar(const stl::string& name)
+void Scene::UnregisterVar(const ea::string& name)
 {
     varNames_.erase(name);
 }
@@ -721,7 +721,7 @@ Node* Scene::GetNode(unsigned id) const
     }
 }
 
-bool Scene::GetNodesWithTag(stl::vector<Node*>& dest, const stl::string& tag) const
+bool Scene::GetNodesWithTag(ea::vector<Node*>& dest, const ea::string& tag) const
 {
     dest.clear();
     auto it = taggedNodes_.find(tag);
@@ -755,7 +755,7 @@ float Scene::GetAsyncProgress() const
         (float)(asyncProgress_.totalNodes_ + asyncProgress_.totalResources_);
 }
 
-const stl::string& Scene::GetVarName(StringHash hash) const
+const ea::string& Scene::GetVarName(StringHash hash) const
 {
     auto i = varNames_.find(hash);
     return i != varNames_.end() ? i->second : EMPTY_STRING;
@@ -934,7 +934,7 @@ void Scene::NodeAdded(Node* node)
         auto i = replicatedNodes_.find(id);
         if (i != replicatedNodes_.end() && i->second != node)
         {
-            URHO3D_LOGWARNING("Overwriting node with ID " + stl::to_string(id));
+            URHO3D_LOGWARNING("Overwriting node with ID " + ea::to_string(id));
             NodeRemoved(i->second);
         }
 
@@ -948,7 +948,7 @@ void Scene::NodeAdded(Node* node)
         auto i = localNodes_.find(id);
         if (i != localNodes_.end() && i->second != node)
         {
-            URHO3D_LOGWARNING("Overwriting node with ID " + stl::to_string(id));
+            URHO3D_LOGWARNING("Overwriting node with ID " + ea::to_string(id));
             NodeRemoved(i->second);
         }
         localNodes_[id] = node;
@@ -963,20 +963,20 @@ void Scene::NodeAdded(Node* node)
     }
 
     // Add already created components and child nodes now
-    const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
     for (auto i = components.begin(); i != components.end(); ++i)
         ComponentAdded(*i);
-    const stl::vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
         NodeAdded(*i);
 }
 
-void Scene::NodeTagAdded(Node* node, const stl::string& tag)
+void Scene::NodeTagAdded(Node* node, const ea::string& tag)
 {
     taggedNodes_[tag].push_back(node);
 }
 
-void Scene::NodeTagRemoved(Node* node, const stl::string& tag)
+void Scene::NodeTagRemoved(Node* node, const ea::string& tag)
 {
     taggedNodes_[tag].erase_first(node);
 }
@@ -1006,10 +1006,10 @@ void Scene::NodeRemoved(Node* node)
     }
 
     // Remove components and child nodes as well
-    const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
     for (auto i = components.begin(); i != components.end(); ++i)
         ComponentRemoved(*i);
-    const stl::vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+    const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
         NodeRemoved(*i);
 }
@@ -1033,7 +1033,7 @@ void Scene::ComponentAdded(Component* component)
         auto i = replicatedComponents_.find(id);
         if (i != replicatedComponents_.end() && i->second != component)
         {
-            URHO3D_LOGWARNING("Overwriting component with ID " + stl::to_string(id));
+            URHO3D_LOGWARNING("Overwriting component with ID " + ea::to_string(id));
             ComponentRemoved(i->second);
         }
 
@@ -1044,7 +1044,7 @@ void Scene::ComponentAdded(Component* component)
         auto i = localComponents_.find(id);
         if (i != localComponents_.end() && i->second != component)
         {
-            URHO3D_LOGWARNING("Overwriting component with ID " + stl::to_string(id));
+            URHO3D_LOGWARNING("Overwriting component with ID " + ea::to_string(id));
             ComponentRemoved(i->second);
         }
 
@@ -1069,18 +1069,18 @@ void Scene::ComponentRemoved(Component* component)
     component->OnSceneSet(nullptr);
 }
 
-void Scene::SetVarNamesAttr(const stl::string& value)
+void Scene::SetVarNamesAttr(const ea::string& value)
 {
-    stl::vector<stl::string> varNames = value.split(';');
+    ea::vector<ea::string> varNames = value.split(';');
 
     varNames_.clear();
     for (auto i = varNames.begin(); i != varNames.end(); ++i)
         varNames_[*i] = *i;
 }
 
-stl::string Scene::GetVarNamesAttr() const
+ea::string Scene::GetVarNamesAttr() const
 {
-    stl::string ret;
+    ea::string ret;
 
     if (!varNames_.empty())
     {
@@ -1304,7 +1304,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
     /*unsigned nodeID = */file->ReadUInt();
 
     // Read Node or Scene attributes; these do not include any resources
-    const stl::vector<AttributeInfo>* attributes = context_->GetAttributes(isSceneFile ? Scene::GetTypeStatic() : Node::GetTypeStatic());
+    const ea::vector<AttributeInfo>* attributes = context_->GetAttributes(isSceneFile ? Scene::GetTypeStatic() : Node::GetTypeStatic());
     assert(attributes);
 
     for (unsigned i = 0; i < attributes->size(); ++i)
@@ -1337,7 +1337,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
                 {
                     const ResourceRef& ref = varValue.GetResourceRef();
                     // Sanitate resource name beforehand so that when we get the background load event, the name matches exactly
-                    stl::string name = cache->SanitateResourceName(ref.name_);
+                    ea::string name = cache->SanitateResourceName(ref.name_);
                     bool success = cache->BackgroundLoadResource(ref.type_, name);
                     if (success)
                     {
@@ -1350,7 +1350,7 @@ void Scene::PreloadResources(File* file, bool isSceneFile)
                     const ResourceRefList& refList = varValue.GetResourceRefList();
                     for (unsigned k = 0; k < refList.names_.size(); ++k)
                     {
-                        stl::string name = cache->SanitateResourceName(refList.names_[k]);
+                        ea::string name = cache->SanitateResourceName(refList.names_[k]);
                         bool success = cache->BackgroundLoadResource(refList.type_, name);
                         if (success)
                         {
@@ -1380,8 +1380,8 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
     XMLElement compElem = element.GetChild("component");
     while (compElem)
     {
-        stl::string typeName = compElem.GetAttribute("type");
-        const stl::vector<AttributeInfo>* attributes = context_->GetAttributes(StringHash(typeName));
+        ea::string typeName = compElem.GetAttribute("type");
+        const ea::vector<AttributeInfo>* attributes = context_->GetAttributes(StringHash(typeName));
         if (attributes)
         {
             XMLElement attrElem = compElem.GetChild("attribute");
@@ -1389,7 +1389,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
 
             while (attrElem)
             {
-                stl::string name = attrElem.GetAttribute("name");
+                ea::string name = attrElem.GetAttribute("name");
                 unsigned i = startIndex;
                 unsigned attempts = attributes->size();
 
@@ -1401,7 +1401,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
                         if (attr.type_ == VAR_RESOURCEREF)
                         {
                             ResourceRef ref = attrElem.GetVariantValue(attr.type_).GetResourceRef();
-                            stl::string name = cache->SanitateResourceName(ref.name_);
+                            ea::string name = cache->SanitateResourceName(ref.name_);
                             bool success = cache->BackgroundLoadResource(ref.type_, name);
                             if (success)
                             {
@@ -1414,7 +1414,7 @@ void Scene::PreloadResourcesXML(const XMLElement& element)
                             ResourceRefList refList = attrElem.GetVariantValue(attr.type_).GetResourceRefList();
                             for (unsigned k = 0; k < refList.names_.size(); ++k)
                             {
-                                stl::string name = cache->SanitateResourceName(refList.names_[k]);
+                                ea::string name = cache->SanitateResourceName(refList.names_[k]);
                                 bool success = cache->BackgroundLoadResource(refList.type_, name);
                                 if (success)
                                 {
@@ -1462,9 +1462,9 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
     for (unsigned i = 0; i < componentArray.size(); i++)
     {
         const JSONValue& compValue = componentArray.at(i);
-        stl::string typeName = compValue.Get("type").GetString();
+        ea::string typeName = compValue.Get("type").GetString();
 
-        const stl::vector<AttributeInfo>* attributes = context_->GetAttributes(StringHash(typeName));
+        const ea::vector<AttributeInfo>* attributes = context_->GetAttributes(StringHash(typeName));
         if (attributes)
         {
             JSONArray attributesArray = compValue.Get("attributes").GetArray();
@@ -1474,7 +1474,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
             for (unsigned j = 0; j < attributesArray.size(); j++)
             {
                 const JSONValue& attrVal = attributesArray.at(j);
-                stl::string name = attrVal.Get("name").GetString();
+                ea::string name = attrVal.Get("name").GetString();
                 unsigned i = startIndex;
                 unsigned attempts = attributes->size();
 
@@ -1486,7 +1486,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
                         if (attr.type_ == VAR_RESOURCEREF)
                         {
                             ResourceRef ref = attrVal.Get("value").GetVariantValue(attr.type_).GetResourceRef();
-                            stl::string name = cache->SanitateResourceName(ref.name_);
+                            ea::string name = cache->SanitateResourceName(ref.name_);
                             bool success = cache->BackgroundLoadResource(ref.type_, name);
                             if (success)
                             {
@@ -1499,7 +1499,7 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
                             ResourceRefList refList = attrVal.Get("value").GetVariantValue(attr.type_).GetResourceRefList();
                             for (unsigned k = 0; k < refList.names_.size(); ++k)
                             {
-                                stl::string name = cache->SanitateResourceName(refList.names_[k]);
+                                ea::string name = cache->SanitateResourceName(refList.names_[k]);
                                 bool success = cache->BackgroundLoadResource(refList.type_, name);
                                 if (success)
                                 {

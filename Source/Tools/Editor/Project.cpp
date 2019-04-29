@@ -96,7 +96,7 @@ Project::~Project()
         editor->UpdateWindowTitle();
 }
 
-bool Project::LoadProject(const stl::string& projectPath)
+bool Project::LoadProject(const ea::string& projectPath)
 {
     if (!projectFileDir_.empty())
         // Project is already loaded.
@@ -195,7 +195,7 @@ bool Project::LoadProject(const stl::string& projectPath)
                 Tab* tab = editor->GetTabByName(name);
                 if (tab == nullptr)
                 {
-                    StringVector parts = stl::string(name).split('#');
+                    StringVector parts = ea::string(name).split('#');
                     tab = editor->CreateTab(parts.front());
                 }
                 tab->OnLoadUISettings(name, line);
@@ -222,7 +222,7 @@ bool Project::LoadProject(const stl::string& projectPath)
 #if URHO3D_HASH_DEBUG
     // StringHashNames.json
     {
-        stl::string filePath(projectFileDir_ + "StringHashNames.json");
+        ea::string filePath(projectFileDir_ + "StringHashNames.json");
         if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
@@ -241,7 +241,7 @@ bool Project::LoadProject(const stl::string& projectPath)
 
     // Settings.json
     {
-        stl::string filePath(projectFileDir_ + "Settings.json");
+        ea::string filePath(projectFileDir_ + "Settings.json");
         if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
@@ -258,7 +258,7 @@ bool Project::LoadProject(const stl::string& projectPath)
     GetCache()->AddResourceDir(GetCachePath(), 0);
     GetCache()->AddResourceDir(GetResourcePath(), 1);
 
-    stl::string filePath(projectFileDir_ + "Pipeline.json");
+    ea::string filePath(projectFileDir_ + "Pipeline.json");
     if (GetFileSystem()->Exists(filePath))
     {
         JSONFile file(context_);
@@ -284,7 +284,7 @@ bool Project::LoadProject(const stl::string& projectPath)
 
     // Project.json
     {
-        stl::string filePath(projectFileDir_ + "Project.json");
+        ea::string filePath(projectFileDir_ + "Project.json");
         if (GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
@@ -307,7 +307,7 @@ bool Project::LoadProject(const stl::string& projectPath)
                         continue;
                     }
 
-                    const stl::string& pluginName = nameIt->second.GetString();
+                    const ea::string& pluginName = nameIt->second.GetString();
                     if (Plugin* plugin = plugins_.Load(pluginName))
                     {
                         auto privateIt = pluginInfo.find("private");
@@ -369,11 +369,11 @@ bool Project::SaveProject()
                 plugins.push_back(JSONObject{{"name",    plugin->GetName()},
                                              {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
             }
-            stl::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
+            ea::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
                 auto aNameIt = a.GetObject().find("name");
                 auto bNameIt = b.GetObject().find("name");
-                const stl::string& nameA = aNameIt != a.GetObject().end() ? aNameIt->second.GetString() : EMPTY_STRING;
-                const stl::string& nameB = bNameIt != b.GetObject().end() ? bNameIt->second.GetString() : EMPTY_STRING;
+                const ea::string& nameA = aNameIt != a.GetObject().end() ? aNameIt->second.GetString() : EMPTY_STRING;
+                const ea::string& nameB = bNameIt != b.GetObject().end() ? bNameIt->second.GetString() : EMPTY_STRING;
                 return nameA.compare(nameB);
             });
             root["plugins"] = plugins;
@@ -381,7 +381,7 @@ bool Project::SaveProject()
 #endif
         root["default-scene"] = defaultScene_;
 
-        stl::string filePath(projectFileDir_ + "Project.json");
+        ea::string filePath(projectFileDir_ + "Project.json");
         if (!file.SaveFile(filePath))
         {
             projectFileDir_.clear();
@@ -401,7 +401,7 @@ bool Project::SaveProject()
         for (const auto& pair : engineParameters_)
             root[pair.first].SetVariant(pair.second, context_);
 
-        stl::string filePath(projectFileDir_ + "Settings.json");
+        ea::string filePath(projectFileDir_ + "Settings.json");
         if (!file.SaveFile(filePath))
         {
             projectFileDir_.clear();
@@ -414,14 +414,14 @@ bool Project::SaveProject()
     // StringHashNames.json
     {
         auto hashNames = StringHash::GetGlobalStringHashRegister()->GetInternalMap().values();
-        stl::quick_sort(hashNames.begin(), hashNames.end());
+        ea::quick_sort(hashNames.begin(), hashNames.end());
         JSONFile file(context_);
         JSONArray names;
         for (const auto& string : hashNames)
             names.push_back(string.ToString());
         file.GetRoot() = names;
 
-        stl::string filePath(projectFileDir_ + "StringHashNames.json");
+        ea::string filePath(projectFileDir_ + "StringHashNames.json");
         if (!file.SaveFile(filePath))
         {
             projectFileDir_.clear();
@@ -438,14 +438,14 @@ bool Project::SaveProject()
     return true;
 }
 
-stl::string Project::GetCachePath() const
+ea::string Project::GetCachePath() const
 {
     if (projectFileDir_.empty())
         return EMPTY_STRING;
     return projectFileDir_ + "Cache/";
 }
 
-stl::string Project::GetResourcePath() const
+ea::string Project::GetResourcePath() const
 {
     if (projectFileDir_.empty())
         return EMPTY_STRING;

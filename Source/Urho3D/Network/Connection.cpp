@@ -196,7 +196,7 @@ void Connection::SetScene(Scene* newScene)
         sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
-        const stl::vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+        const ea::vector<ea::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
         unsigned numPackages = packages.size();
         msg_.Clear();
         msg_.WriteString(scene_->GetFileName());
@@ -508,9 +508,9 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     // In case we have joined other scenes in this session, remove first all downloaded package files from the resource system
     // to prevent resource conflicts
     auto* cache = GetSubsystem<ResourceCache>();
-    const stl::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
+    const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    stl::vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
+    ea::vector<ea::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
     for (unsigned i = 0; i < packages.size(); ++i)
     {
         PackageFile* package = packages[i];
@@ -636,7 +636,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
                 }
             }
             else
-                URHO3D_LOGWARNING("NodeDeltaUpdate message received for missing node " + stl::to_string(nodeID));
+                URHO3D_LOGWARNING("NodeDeltaUpdate message received for missing node " + ea::to_string(nodeID));
         }
         break;
 
@@ -653,7 +653,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
             else
             {
                 // Latest data messages may be received out-of-order relative to node creation, so cache if necessary
-                stl::vector<unsigned char>& data = nodeLatestData_[nodeID];
+                ea::vector<unsigned char>& data = nodeLatestData_[nodeID];
                 data.resize(msg.GetSize());
                 memcpy(&data[0], msg.GetData(), msg.GetSize());
             }
@@ -700,7 +700,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
                 component->ApplyAttributes();
             }
             else
-                URHO3D_LOGWARNING("CreateComponent message received for missing node " + stl::to_string(nodeID));
+                URHO3D_LOGWARNING("CreateComponent message received for missing node " + ea::to_string(nodeID));
         }
         break;
 
@@ -714,7 +714,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
                 component->ApplyAttributes();
             }
             else
-                URHO3D_LOGWARNING("ComponentDeltaUpdate message received for missing component " + stl::to_string(componentID));
+                URHO3D_LOGWARNING("ComponentDeltaUpdate message received for missing component " + ea::to_string(componentID));
         }
         break;
 
@@ -730,7 +730,7 @@ void Connection::ProcessSceneUpdate(int msgID, MemoryBuffer& msg)
             else
             {
                 // Latest data messages may be received out-of-order relative to component creation, so cache if necessary
-                stl::vector<unsigned char>& data = componentLatestData_[componentID];
+                ea::vector<unsigned char>& data = componentLatestData_[componentID];
                 data.resize(msg.GetSize());
                 memcpy(&data[0], msg.GetData(), msg.GetSize());
             }
@@ -763,7 +763,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
         }
         else
         {
-            stl::string name = msg.ReadString();
+            ea::string name = msg.ReadString();
 
             if (!scene_)
             {
@@ -772,11 +772,11 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             }
 
             // The package must be one of those required by the scene
-            const stl::vector<stl::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+            const ea::vector<ea::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
             for (unsigned i = 0; i < packages.size(); ++i)
             {
                 PackageFile* package = packages[i];
-                const stl::string& packageFullName = package->GetName();
+                const ea::string& packageFullName = package->GetName();
                 if (!GetFileNameAndExtension(packageFullName).comparei(name))
                 {
                     StringHash nameHash(name);
@@ -789,7 +789,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     }
 
                     // Try to open the file now
-                    stl::shared_ptr<File> file(new File(context_, packageFullName));
+                    ea::shared_ptr<File> file(new File(context_, packageFullName));
                     if (!file->IsOpen())
                     {
                         URHO3D_LOGERROR("Failed to transmit package file " + name);
@@ -1076,9 +1076,9 @@ int Connection::GetPacketsOutPerSec() const
     return packetCounter_.y_;
 }
 
-stl::string Connection::ToString() const
+ea::string Connection::ToString() const
 {
-    return GetAddress() + ":" + stl::to_string(GetPort());
+    return GetAddress() + ":" + ea::to_string(GetPort());
 }
 
 unsigned Connection::GetNumDownloads() const
@@ -1086,7 +1086,7 @@ unsigned Connection::GetNumDownloads() const
     return downloads_.size();
 }
 
-const stl::string& Connection::GetDownloadName() const
+const ea::string& Connection::GetDownloadName() const
 {
     for (auto i = downloads_.begin(); i !=
         downloads_.end(); ++i)
@@ -1126,7 +1126,7 @@ void Connection::SendPackageToClient(PackageFile* package)
 
     msg_.Clear();
 
-    stl::string filename = GetFileNameAndExtension(package->GetName());
+    ea::string filename = GetFileNameAndExtension(package->GetName());
     msg_.WriteString(filename);
     msg_.WriteUInt(package->GetTotalSize());
     msg_.WriteUInt(package->GetChecksum());
@@ -1194,11 +1194,11 @@ void Connection::ProcessNode(unsigned nodeID)
 void Connection::ProcessNewNode(Node* node)
 {
     // Process depended upon nodes first, if they are dirty
-    const stl::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
+    const ea::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
     for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
-        if (stl::contains(sceneState_.dirtyNodes_, nodeID))
+        if (ea::contains(sceneState_.dirtyNodes_, nodeID))
             ProcessNode(nodeID);
     }
 
@@ -1225,7 +1225,7 @@ void Connection::ProcessNewNode(Node* node)
 
     // Write node's components
     msg_.WriteVLE(node->GetNumNetworkComponents());
-    const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
     for (unsigned i = 0; i < components.size(); ++i)
     {
         Component* component = components[i];
@@ -1253,11 +1253,11 @@ void Connection::ProcessNewNode(Node* node)
 void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState)
 {
     // Process depended upon nodes first, if they are dirty
-    const stl::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
+    const ea::vector<Node*>& dependencyNodes = node->GetDependencyNodes();
     for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
-        if (stl::contains(sceneState_.dirtyNodes_, nodeID))
+        if (ea::contains(sceneState_.dirtyNodes_, nodeID))
             ProcessNode(nodeID);
     }
 
@@ -1274,7 +1274,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     // Check if attributes have changed
     if (nodeState.dirtyAttributes_.Count() || nodeState.dirtyVars_.size())
     {
-        const stl::vector<AttributeInfo>* attributes = node->GetNetworkAttributes();
+        const ea::vector<AttributeInfo>* attributes = node->GetNetworkAttributes();
         unsigned numAttributes = attributes->size();
         bool hasLatestData = false;
 
@@ -1352,7 +1352,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
             // Existing component. Check if attributes have changed
             if (componentState.dirtyAttributes_.Count())
             {
-                const stl::vector<AttributeInfo>* attributes = component->GetNetworkAttributes();
+                const ea::vector<AttributeInfo>* attributes = component->GetNetworkAttributes();
                 unsigned numAttributes = attributes->size();
                 bool hasLatestData = false;
 
@@ -1393,7 +1393,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     // Check for new components
     if (nodeState.componentStates_.size() != node->GetNumNetworkComponents())
     {
-        const stl::vector<stl::shared_ptr<Component> >& components = node->GetComponents();
+        const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
         for (unsigned i = 0; i < components.size(); ++i)
         {
             Component* component = components[i];
@@ -1430,18 +1430,18 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
 bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
 {
     auto* cache = GetSubsystem<ResourceCache>();
-    const stl::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
+    const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    stl::vector<stl::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
-    stl::vector<stl::string> downloadedPackages;
+    ea::vector<ea::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
+    ea::vector<ea::string> downloadedPackages;
     bool packagesScanned = false;
 
     for (unsigned i = 0; i < numPackages; ++i)
     {
-        stl::string name = msg.ReadString();
+        ea::string name = msg.ReadString();
         unsigned fileSize = msg.ReadUInt();
         unsigned checksum = msg.ReadUInt();
-        stl::string checksumString = ToStringHex(checksum);
+        ea::string checksumString = ToStringHex(checksum);
         bool found = false;
 
         // Check first the resource cache
@@ -1474,12 +1474,12 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
         // Then the download cache
         for (unsigned j = 0; j < downloadedPackages.size(); ++j)
         {
-            const stl::string& fileName = downloadedPackages[j];
+            const ea::string& fileName = downloadedPackages[j];
             // In download cache, package file name format is checksum_packagename
             if (!fileName.find(checksumString) && !fileName.substr(9).comparei(name))
             {
                 // Name matches. Check file size and actual checksum to be sure
-                stl::shared_ptr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
+                ea::shared_ptr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
                 if (newPackage->GetTotalSize() == fileSize && newPackage->GetChecksum() == checksum)
                 {
                     // Add the package to the resource system now, as we will need it to load the scene
@@ -1498,7 +1498,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
     return true;
 }
 
-void Connection::RequestPackage(const stl::string& name, unsigned fileSize, unsigned checksum)
+void Connection::RequestPackage(const ea::string& name, unsigned fileSize, unsigned checksum)
 {
     StringHash nameHash(name);
     if (downloads_.contains(nameHash))
@@ -1520,7 +1520,7 @@ void Connection::RequestPackage(const stl::string& name, unsigned fileSize, unsi
     }
 }
 
-void Connection::SendPackageError(const stl::string& name)
+void Connection::SendPackageError(const ea::string& name)
 {
     msg_.Clear();
     msg_.WriteStringHash(name);
@@ -1538,7 +1538,7 @@ void Connection::OnSceneLoadFailed()
     SendEvent(E_NETWORKSCENELOADFAILED, eventData);
 }
 
-void Connection::OnPackageDownloadFailed(const stl::string& name)
+void Connection::OnPackageDownloadFailed(const ea::string& name)
 {
     URHO3D_LOGERROR("Download of package " + name + " failed");
     // As one package failed, we can not join the scene in any case. Clear the downloads
@@ -1569,8 +1569,8 @@ void Connection::OnPackagesReady()
     else
     {
         // Otherwise start the async loading process
-        stl::string extension = GetExtension(sceneFileName_);
-        stl::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
+        ea::string extension = GetExtension(sceneFileName_);
+        ea::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
         bool success;
 
         if (extension == ".xml")
@@ -1597,8 +1597,8 @@ void Connection::ProcessPackageInfo(int msgID, MemoryBuffer& msg)
     RequestNeededPackages(1, msg);
 }
 
-stl::string Connection::GetAddress() const {
-    return stl::string(address_->ToString(false /*write port*/));
+ea::string Connection::GetAddress() const {
+    return ea::string(address_->ToString(false /*write port*/));
 }
 
 void Connection::SetAddressOrGUID(const SLNet::AddressOrGUID& addr)

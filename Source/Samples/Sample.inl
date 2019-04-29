@@ -106,11 +106,11 @@ void Sample::InitTouchInput()
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     Input* input = GetSubsystem<Input>();
     XMLFile* layout = cache->GetResource<XMLFile>("UI/ScreenJoystick_Samples.xml");
-    const stl::string& patchString = GetScreenJoystickPatchString();
+    const ea::string& patchString = GetScreenJoystickPatchString();
     if (!patchString.empty())
     {
         // Patch the screen joystick layout further on demand
-        stl::shared_ptr<XMLFile> patchFile(new XMLFile(context_));
+        ea::shared_ptr<XMLFile> patchFile(new XMLFile(context_));
         if (patchFile->FromString(patchString))
             layout->Patch(patchFile);
     }

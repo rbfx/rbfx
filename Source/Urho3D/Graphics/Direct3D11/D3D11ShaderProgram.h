@@ -54,14 +54,14 @@ public:
         }
 
         // Copy parameters, add direct links to constant buffers
-        const stl::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
+        const ea::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
         for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
         {
             parameters_[i->first] = i->second;
             parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].get();
         }
 
-        const stl::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
+        const ea::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
         for (auto i = psParams.begin(); i != psParams.end(); ++i)
         {
             parameters_[i->first] = i->second;
@@ -79,11 +79,11 @@ public:
     }
 
     /// Combined parameters from the vertex and pixel shader.
-    stl::unordered_map<StringHash, ShaderParameter> parameters_;
+    ea::unordered_map<StringHash, ShaderParameter> parameters_;
     /// Vertex shader constant buffers.
-    stl::shared_ptr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    ea::shared_ptr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Pixel shader constant buffers.
-    stl::shared_ptr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    ea::shared_ptr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
 };
 
 }

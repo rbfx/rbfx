@@ -134,7 +134,7 @@ IntRect CameraViewport::GetScreenRect() const
     return screenRect_;
 }
 
-const stl::vector<AttributeInfo>* CameraViewport::GetAttributes() const
+const ea::vector<AttributeInfo>* CameraViewport::GetAttributes() const
 {
     if (attributesDirty_)
         const_cast<CameraViewport*>(this)->RebuildAttributes();
@@ -160,9 +160,9 @@ void CameraViewport::RebuildAttributes()
         effects_.clear();
         for (const auto& dir: GetCache()->GetResourceDirs())
         {
-            stl::vector<stl::string> effects;
-            stl::string resourcePath = "PostProcess/";
-            stl::string scanDir = AddTrailingSlash(dir) + resourcePath;
+            ea::vector<ea::string> effects;
+            ea::string resourcePath = "PostProcess/";
+            ea::string scanDir = AddTrailingSlash(dir) + resourcePath;
             GetFileSystem()->ScanDir(effects, scanDir, "*.xml", SCAN_FILES, false);
 
             for (const auto& effectFileName: effects)
@@ -171,7 +171,7 @@ void CameraViewport::RebuildAttributes()
                 auto* effect = GetCache()->GetResource<XMLFile>(effectPath);
 
                 auto root = effect->GetRoot();
-                stl::string tag;
+                ea::string tag;
                 for (auto command = root.GetChild("command"); command.NotNull(); command = command.GetNext("command"))
                 {
                     tag = command.GetAttribute("tag");
@@ -191,7 +191,7 @@ void CameraViewport::RebuildAttributes()
         }
 
         StringVector tags = effects_.keys();
-        stl::quick_sort(tags.begin(), tags.end());
+        ea::quick_sort(tags.begin(), tags.end());
 
         for (auto& effect : effects_)
         {
@@ -222,7 +222,7 @@ RenderPath* CameraViewport::RebuildRenderPath()
     if (!viewport_)
         return nullptr;
 
-    stl::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
+    ea::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPath_.name_))
     {
@@ -256,9 +256,9 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
         return;
     }
 
-    stl::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
+    ea::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
-    const stl::string& renderPathFileName = renderPathResource.name_.empty() ? defaultRenderPath.name_ : renderPathResource.name_;
+    const ea::string& renderPathFileName = renderPathResource.name_.empty() ? defaultRenderPath.name_ : renderPathResource.name_;
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPathFileName))
     {
         if (!viewport_->SetRenderPath(renderPathFile))

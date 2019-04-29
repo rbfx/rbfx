@@ -43,7 +43,7 @@
 namespace Urho3D
 {
 
-static stl::unordered_map<ContentType, stl::string> contentToTabType{
+static ea::unordered_map<ContentType, ea::string> contentToTabType{
     {CTYPE_SCENE, "SceneTab"},
     {CTYPE_UILAYOUT, "UITab"},
 };
@@ -93,7 +93,7 @@ bool ResourceTab::RenderWindowContent()
     auto action = ResourceBrowserWidget(resourcePath_, resourceSelection_, flags_);
     if (action == RBR_ITEM_OPEN)
     {
-        stl::string selected = resourcePath_ + resourceSelection_;
+        ea::string selected = resourcePath_ + resourceSelection_;
         auto it = contentToTabType.find(GetContentType(selected));
         if (it != contentToTabType.end())
         {
@@ -129,7 +129,7 @@ bool ResourceTab::RenderWindowContent()
         else
         {
             // Unknown resources are opened with associated application.
-            stl::string resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
+            ea::string resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
             if (!GetFileSystem()->Exists(resourcePath))
                 resourcePath = GetSubsystem<Project>()->GetCachePath() + selected;
 
@@ -141,7 +141,7 @@ bool ResourceTab::RenderWindowContent()
         ui::OpenPopup("Resource Context Menu");
     else if (action == RBR_ITEM_SELECTED)
     {
-        stl::string selected = resourcePath_ + resourceSelection_;
+        ea::string selected = resourcePath_ + resourceSelection_;
         switch (GetContentType(selected))
         {
 //        case CTYPE_UNKNOWN:break;
@@ -174,8 +174,8 @@ bool ResourceTab::RenderWindowContent()
         {
             if (ui::MenuItem(ICON_FA_FOLDER " Folder"))
             {
-                stl::string newFolderName("New Folder");
-                stl::string path = GetNewResourcePath(resourcePath_ + newFolderName);
+                ea::string newFolderName("New Folder");
+                ea::string path = GetNewResourcePath(resourcePath_ + newFolderName);
                 if (GetFileSystem()->CreateDir(path))
                 {
                     flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
@@ -190,7 +190,7 @@ bool ResourceTab::RenderWindowContent()
                 auto path = GetNewResourcePath(resourcePath_ + "New Scene.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
-                stl::shared_ptr<Scene> scene(new Scene(context_));
+                ea::shared_ptr<Scene> scene(new Scene(context_));
                 scene->CreateComponent<Octree>();
                 File file(context_, path, FILE_WRITE);
                 if (file.IsOpen())
@@ -208,7 +208,7 @@ bool ResourceTab::RenderWindowContent()
                 auto path = GetNewResourcePath(resourcePath_ + "New Material.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
-                stl::shared_ptr<Material> material(new Material(context_));
+                ea::shared_ptr<Material> material(new Material(context_));
                 File file(context_, path, FILE_WRITE);
                 if (file.IsOpen())
                 {
@@ -225,7 +225,7 @@ bool ResourceTab::RenderWindowContent()
                 auto path = GetNewResourcePath(resourcePath_ + "New UI Layout.xml");
                 GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
-                stl::shared_ptr<UIElement> scene(new UIElement(context_));
+                ea::shared_ptr<UIElement> scene(new UIElement(context_));
                 XMLFile layout(context_);
                 auto root = layout.GetOrCreateRoot("element");
                 if (scene->SaveXML(root) && layout.SaveFile(path))
@@ -255,7 +255,7 @@ bool ResourceTab::RenderWindowContent()
     return true;
 }
 
-stl::string ResourceTab::GetNewResourcePath(const stl::string& name)
+ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
 {
     auto* project = GetSubsystem<Project>();
     if (!GetFileSystem()->FileExists(project->GetResourcePath() + name))
@@ -276,7 +276,7 @@ stl::string ResourceTab::GetNewResourcePath(const stl::string& name)
 }
 
 template<typename Inspector, typename TResource>
-void ResourceTab::OpenResourceInspector(const stl::string& resourcePath)
+void ResourceTab::OpenResourceInspector(const ea::string& resourcePath)
 {
     ResourceInspector* inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
     SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, inspector,

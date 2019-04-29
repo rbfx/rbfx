@@ -53,18 +53,18 @@ class AssetViewer
 {
     URHO3D_OBJECT(AssetViewer, Application);
 public:
-    stl::shared_ptr<Scene> scene_;
-    stl::shared_ptr<Viewport> viewport_;
-    stl::shared_ptr<Light> light_;
-    stl::weak_ptr<Camera> camera_;
-    stl::weak_ptr<Node> node_;
-    stl::weak_ptr<Node> parentNode_;
-    stl::weak_ptr<AnimatedModel> model_;
-    stl::weak_ptr<AnimationController> animator_;
+    ea::shared_ptr<Scene> scene_;
+    ea::shared_ptr<Viewport> viewport_;
+    ea::shared_ptr<Light> light_;
+    ea::weak_ptr<Camera> camera_;
+    ea::weak_ptr<Node> node_;
+    ea::weak_ptr<Node> parentNode_;
+    ea::weak_ptr<AnimatedModel> model_;
+    ea::weak_ptr<AnimationController> animator_;
     float lookSensitivity_ = 1.0f;
     Gizmo gizmo_;
     bool showHelp_ = false;
-    stl::string assetFile_;
+    ea::string assetFile_;
 
     explicit AssetViewer(Context* context)
         : Application(context), gizmo_(context)
@@ -195,7 +195,7 @@ public:
         LoadFile(args[DropFile::P_FILENAME].GetString());
     }
 
-    void LoadFile(const stl::string& file_path)
+    void LoadFile(const ea::string& file_path)
     {
         if (file_path.ends_with(".mdl"))
             LoadModel(file_path);
@@ -205,7 +205,7 @@ public:
             LoadFbx(file_path);
     }
 
-    void LoadModel(const stl::string& file_path, const stl::vector<stl::string>& materials = { })
+    void LoadModel(const ea::string& file_path, const ea::vector<ea::string>& materials = { })
     {
         if (node_)
             node_->Remove();
@@ -243,13 +243,13 @@ public:
         }
     }
 
-    void LoadAnimation(const stl::string& file_path)
+    void LoadAnimation(const ea::string& file_path)
     {
         if (animator_)
             animator_->PlayExclusive(file_path, 0, true);
     }
 
-    void LoadFbx(const stl::string& file_path)
+    void LoadFbx(const ea::string& file_path)
     {
         auto fs = GetSubsystem<FileSystem>();
         auto temp = fs->GetTemporaryDir() + "AssetViewer/";
@@ -271,7 +271,7 @@ public:
 
         if (fs->FileExists(model_file))
         {
-            stl::vector<stl::string> materials;
+            ea::vector<ea::string> materials;
             File fp(context_, material_list_file);
             if (fp.IsOpen())
             {
@@ -281,7 +281,7 @@ public:
             LoadModel(model_file, materials);
         }
 
-        stl::vector<stl::string> animations;
+        ea::vector<ea::string> animations;
         fs->ScanDir(animations, animation_path, "*.ani", SCAN_FILES, false);
         for (const auto& filename : animations)
             fs->Delete(animation_path + filename);

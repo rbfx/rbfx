@@ -114,7 +114,7 @@ void Urho2DConstraints::CreateScene()
     camera_->SetZoom(1.2f * Min((float)graphics->GetWidth() / 1280.0f, (float)graphics->GetHeight() / 800.0f)); // Set zoom according to user's resolution to ensure full visibility (initial zoom (1.2) is set for full visibility at 1280x800 resolution)
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera_));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera_));
     auto* renderer = GetSubsystem<Renderer>();
     renderer->SetViewport(0, viewport);
 
@@ -183,7 +183,7 @@ void Urho2DConstraints::CreateScene()
     auto* polygonBody = polygon->CreateComponent<RigidBody2D>();
     polygonBody->SetBodyType(BT_DYNAMIC);
     auto* polygonShape = polygon->CreateComponent<CollisionPolygon2D>();
-    // TODO: create from stl::vector<Vector2> using SetVertices()
+    // TODO: create from ea::vector<Vector2> using SetVertices()
     polygonShape->SetVertexCount(6); // Set number of vertices (mandatory when using SetVertex())
     polygonShape->SetVertex(0, Vector2(-0.8f, -0.3f));
     polygonShape->SetVertex(1, Vector2(0.5f, -0.8f));
@@ -402,7 +402,7 @@ void Urho2DConstraints::CreateScene()
     constraintWheel->SetCollideConnected(true); // doesn't work
 }
 
-void Urho2DConstraints::CreateFlag(const stl::string& text, float x, float y) // Used to create Tex3D flags
+void Urho2DConstraints::CreateFlag(const ea::string& text, float x, float y) // Used to create Tex3D flags
 {
     Node* flagNode = scene_->CreateChild("Flag");
     flagNode->SetPosition(Vector3(x, y, 0.0f));

@@ -76,7 +76,7 @@ PasteResult SceneClipboard::Paste(Node* node)
     {
         nodeData.Seek(0);
         auto nodeID = nodeData.ReadUInt();
-        stl::shared_ptr<Node> newNode(node->CreateChild(EMPTY_STRING, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL));
+        ea::shared_ptr<Node> newNode(node->CreateChild(EMPTY_STRING, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL));
         nodeData.Seek(0);
         if (newNode->Load(nodeData))
         {
@@ -92,7 +92,7 @@ PasteResult SceneClipboard::Paste(Node* node)
     return result;
 }
 
-PasteResult SceneClipboard::Paste(const stl::vector<Node*>& nodes)
+PasteResult SceneClipboard::Paste(const ea::vector<Node*>& nodes)
 {
     PasteResult result;
 
@@ -102,7 +102,7 @@ PasteResult SceneClipboard::Paste(const stl::vector<Node*>& nodes)
     return result;
 }
 
-PasteResult SceneClipboard::Paste(const stl::vector<stl::weak_ptr<Node>>& nodes)
+PasteResult SceneClipboard::Paste(const ea::vector<ea::weak_ptr<Node>>& nodes)
 {
     PasteResult result;
 
@@ -112,25 +112,25 @@ PasteResult SceneClipboard::Paste(const stl::vector<stl::weak_ptr<Node>>& nodes)
     return result;
 }
 
-void SceneClipboard::Copy(const stl::vector<Node*>& nodes)
+void SceneClipboard::Copy(const ea::vector<Node*>& nodes)
 {
     for (auto& node : nodes)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const stl::vector<Component*>& components)
+void SceneClipboard::Copy(const ea::vector<Component*>& components)
 {
     for (auto& node : components)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const stl::vector<stl::weak_ptr<Node>>& nodes)
+void SceneClipboard::Copy(const ea::vector<ea::weak_ptr<Node>>& nodes)
 {
     for (auto& node : nodes)
         Copy(node);
 }
 
-void SceneClipboard::Copy(const stl::hash_set<stl::weak_ptr<Component>>& components)
+void SceneClipboard::Copy(const ea::hash_set<ea::weak_ptr<Component>>& components)
 {
     for (auto& node : components)
         Copy(node);

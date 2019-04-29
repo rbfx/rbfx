@@ -116,13 +116,13 @@ void EventReceiverGroup::Remove(Object* object)
         receivers_.erase_first(object);
 }
 
-void RemoveNamedAttribute(stl::unordered_map<StringHash, stl::vector<AttributeInfo> >& attributes, StringHash objectType, const char* name)
+void RemoveNamedAttribute(ea::unordered_map<StringHash, ea::vector<AttributeInfo> >& attributes, StringHash objectType, const char* name)
 {
     auto i = attributes.find(objectType);
     if (i == attributes.end())
         return;
 
-    stl::vector<AttributeInfo>& infos = i->second;
+    ea::vector<AttributeInfo>& infos = i->second;
 
     for (auto j = infos.begin(); j != infos.end(); ++j)
     {
@@ -176,13 +176,13 @@ Context::~Context()
     eventDataMaps_.clear();
 }
 
-stl::shared_ptr<Object> Context::CreateObject(StringHash objectType)
+ea::shared_ptr<Object> Context::CreateObject(StringHash objectType)
 {
     auto i = factories_.find(objectType);
     if (i != factories_.end())
         return i->second->CreateObject();
     else
-        return stl::shared_ptr<Object>();
+        return ea::shared_ptr<Object>();
 }
 
 void Context::RegisterFactory(ObjectFactory* factory)
@@ -251,13 +251,13 @@ AttributeHandle Context::RegisterAttribute(StringHash objectType, const Attribut
 
     AttributeHandle handle;
 
-    stl::vector<AttributeInfo>& objectAttributes = attributes_[objectType];
+    ea::vector<AttributeInfo>& objectAttributes = attributes_[objectType];
     objectAttributes.push_back(attr);
     handle.attributeInfo_ = &objectAttributes.back();
 
     if (attr.mode_ & AM_NET)
     {
-        stl::vector<AttributeInfo>& objectNetworkAttributes = networkAttributes_[objectType];
+        ea::vector<AttributeInfo>& objectNetworkAttributes = networkAttributes_[objectType];
         objectNetworkAttributes.push_back(attr);
         handle.networkAttributeInfo_ = &objectNetworkAttributes.back();
     }
@@ -383,7 +383,7 @@ void Context::CopyBaseAttributes(StringHash baseType, StringHash derivedType)
         return;
     }
 
-    const stl::vector<AttributeInfo>* baseAttributes = GetAttributes(baseType);
+    const ea::vector<AttributeInfo>* baseAttributes = GetAttributes(baseType);
     if (baseAttributes)
     {
         for (unsigned i = 0; i < baseAttributes->size(); ++i)
@@ -424,7 +424,7 @@ Object* Context::GetEventSender() const
         return nullptr;
 }
 
-const stl::string& Context::GetTypeName(StringHash objectType) const
+const ea::string& Context::GetTypeName(StringHash objectType) const
 {
     // Search factories to find the hash-to-name mapping
     auto i = factories_.find(objectType);
@@ -437,7 +437,7 @@ AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
     if (i == attributes_.end())
         return nullptr;
 
-    stl::vector<AttributeInfo>& infos = i->second;
+    ea::vector<AttributeInfo>& infos = i->second;
 
     for (auto j = infos.begin(); j != infos.end(); ++j)
     {
@@ -450,7 +450,7 @@ AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 
 void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 {
-    stl::shared_ptr<EventReceiverGroup>& group = eventReceivers_[eventType];
+    ea::shared_ptr<EventReceiverGroup>& group = eventReceivers_[eventType];
     if (!group)
         group = new EventReceiverGroup();
     group->Add(receiver);
@@ -458,7 +458,7 @@ void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 
 void Context::AddEventReceiver(Object* receiver, Object* sender, StringHash eventType)
 {
-    stl::shared_ptr<EventReceiverGroup>& group = specificEventReceivers_[sender][eventType];
+    ea::shared_ptr<EventReceiverGroup>& group = specificEventReceivers_[sender][eventType];
     if (!group)
         group = new EventReceiverGroup();
     group->Add(receiver);

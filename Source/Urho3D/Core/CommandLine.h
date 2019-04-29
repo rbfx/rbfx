@@ -30,7 +30,7 @@
 namespace CLI
 {
 
-inline std::istringstream& operator>>(std::istringstream &in, stl::string& val)
+inline std::istringstream& operator>>(std::istringstream &in, ea::string& val)
 {
     std::string tmp;
     in >> tmp;
@@ -38,7 +38,7 @@ inline std::istringstream& operator>>(std::istringstream &in, stl::string& val)
     return in;
 }
 
-inline std::stringstream& operator<<(std::stringstream &in, stl::string& val)
+inline std::stringstream& operator<<(std::stringstream &in, ea::string& val)
 {
     in << val.c_str();
     return in;
@@ -55,7 +55,7 @@ namespace CLI
 namespace detail
 {
 
-template <> constexpr const char *type_name<stl::string>() { return "TEXT"; }
+template <> constexpr const char *type_name<ea::string>() { return "TEXT"; }
 
 }
 

@@ -92,7 +92,7 @@ void Character2D::Update(float timeStep)
     // Collision detection (AABB query)
     Vector2 characterHalfSize = Vector2(0.16f, 0.16f);
     auto* physicsWorld = GetScene()->GetComponent<PhysicsWorld2D>();
-    stl::vector<RigidBody2D*> collidingBodies;
+    ea::vector<RigidBody2D*> collidingBodies;
     physicsWorld->GetRigidBodies(collidingBodies, Rect(node_->GetWorldPosition2D() - characterHalfSize - Vector2(0.0f, 0.1f), node_->GetWorldPosition2D() + characterHalfSize));
 
     if (collidingBodies.size() > 1 && !isClimbing_)
@@ -186,7 +186,7 @@ void Character2D::HandleWoundedState(float timeStep)
         remainingLifes_ -= 1;
         auto* ui = GetSubsystem<UI>();
         Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
-        lifeText->SetText(stl::to_string(remainingLifes_)); // Update lifes UI counter
+        lifeText->SetText(ea::to_string(remainingLifes_)); // Update lifes UI counter
 
         // Reset wounded state
         wounded_ = false;

@@ -136,9 +136,9 @@ private:
     /// Whether the Control Point IDs are dirty.
     bool dirty_;
     /// Node to be moved along the SplinePath.
-    stl::weak_ptr<Node> controlledNode_;
+    ea::weak_ptr<Node> controlledNode_;
     /// Control Points for the SplinePath.
-    stl::vector<stl::weak_ptr<Node> > controlPoints_;
+    ea::vector<ea::weak_ptr<Node> > controlPoints_;
     /// Control Point ID's for the SplinePath.
     mutable VariantVector controlPointIdsAttr_;
     /// Controlled ID for the SplinePath.

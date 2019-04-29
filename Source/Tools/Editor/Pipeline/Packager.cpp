@@ -38,12 +38,12 @@ Packager::Packager(Context* context)
     SetCompress(true);
 }
 
-bool Packager::OpenPackage(const stl::string& path)
+bool Packager::OpenPackage(const ea::string& path)
 {
     return output_.Open(path, FILE_WRITE);
 }
 
-void Packager::AddFile(const stl::string& root, const stl::string& path)
+void Packager::AddFile(const ea::string& root, const ea::string& path)
 {
     FileEntry entry{};
     entry.root_ = root;
@@ -62,14 +62,14 @@ void Packager::Write()
     unsigned totalDataSize = 0;
     unsigned lastOffset = 0;
     const unsigned blockSize_ = 32768;
-    stl::vector<uint8_t> buffer;
+    ea::vector<uint8_t> buffer;
 
     auto logger = Log::GetLogger("packager");
     // Write file data, calculate checksums & correct offsets
     for (FileEntry& entry : entries_)
     {
         lastOffset = entry.offset_ = output_.GetSize();
-        stl::string fileFullPath = entry.root_ + "/" + entry.name_;
+        ea::string fileFullPath = entry.root_ + "/" + entry.name_;
 
         File srcFile(context_, fileFullPath);
         if (!srcFile.IsOpen())
@@ -102,7 +102,7 @@ void Packager::Write()
         }
         else
         {
-            stl::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
+            ea::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
 
             unsigned pos = 0;
 

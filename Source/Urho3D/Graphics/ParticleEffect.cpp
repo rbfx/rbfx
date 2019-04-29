@@ -203,7 +203,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
     if (source.HasChild("emittertype"))
     {
-        stl::string type = source.GetChild("emittertype").GetAttributeLower("value");
+        ea::string type = source.GetChild("emittertype").GetAttributeLower("value");
         if (type == "point")
         {
             // Point emitter type is deprecated, handled as zero sized sphere
@@ -268,7 +268,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
     if (source.HasChild("faceCameraMode"))
     {
-        stl::string type = source.GetChild("faceCameraMode").GetAttributeLower("value");
+        ea::string type = source.GetChild("faceCameraMode").GetAttributeLower("value");
         faceCameraMode_ = (FaceCameraMode)GetStringListIndex(type.c_str(), faceCameraModeNames, FC_ROTATE_XYZ);
     }
 
@@ -289,7 +289,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
     if (source.HasChild("colorfade"))
     {
-        stl::vector<ColorFrame> fades;
+        ea::vector<ColorFrame> fades;
         for (XMLElement colorFadeElem = source.GetChild("colorfade"); colorFadeElem;
              colorFadeElem = colorFadeElem.GetNext("colorfade"))
             fades.push_back(ColorFrame(colorFadeElem.GetColor("color"), colorFadeElem.GetFloat("time")));
@@ -302,7 +302,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
     if (source.HasChild("texanim"))
     {
-        stl::vector<TextureFrame> animations;
+        ea::vector<TextureFrame> animations;
         for (XMLElement animElem = source.GetChild("texanim"); animElem; animElem = animElem.GetNext("texanim"))
         {
             TextureFrame animation;
@@ -319,7 +319,7 @@ bool ParticleEffect::Load(const XMLElement& source)
 
 bool ParticleEffect::Save(Serializer& dest) const
 {
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("particleeffect");
 
     Save(materialElem);
@@ -631,7 +631,7 @@ void ParticleEffect::RemoveColorFrame(unsigned index)
     colorFrames_.resize(s - 1);
 }
 
-void ParticleEffect::SetColorFrames(const stl::vector<ColorFrame>& colorFrames)
+void ParticleEffect::SetColorFrames(const ea::vector<ColorFrame>& colorFrames)
 {
     colorFrames_ = colorFrames;
 }
@@ -657,7 +657,7 @@ void ParticleEffect::SetFaceCameraMode(FaceCameraMode mode)
 
 void ParticleEffect::SortColorFrames()
 {
-    stl::vector<ColorFrame> cf = colorFrames_;
+    ea::vector<ColorFrame> cf = colorFrames_;
     colorFrames_.clear();
     for (unsigned i = 0; i < cf.size(); i++)
         AddColorFrame(cf[i]);
@@ -706,7 +706,7 @@ void ParticleEffect::RemoveTextureFrame(unsigned index)
     textureFrames_.resize(s - 1);
 }
 
-void ParticleEffect::SetTextureFrames(const stl::vector<TextureFrame>& textureFrames)
+void ParticleEffect::SetTextureFrames(const ea::vector<TextureFrame>& textureFrames)
 {
     textureFrames_ = textureFrames;
 }
@@ -727,15 +727,15 @@ void ParticleEffect::SetNumTextureFrames(unsigned number)
 
 void ParticleEffect::SortTextureFrames()
 {
-    stl::vector<TextureFrame> tf = textureFrames_;
+    ea::vector<TextureFrame> tf = textureFrames_;
     textureFrames_.clear();
     for (unsigned i = 0; i < tf.size(); i++)
         AddTextureFrame(tf[i]);
 }
 
-stl::shared_ptr<ParticleEffect> ParticleEffect::Clone(const stl::string& cloneName) const
+ea::shared_ptr<ParticleEffect> ParticleEffect::Clone(const ea::string& cloneName) const
 {
-    stl::shared_ptr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
+    ea::shared_ptr<ParticleEffect> ret(context_->CreateObject<ParticleEffect>());
 
     ret->SetName(cloneName);
     ret->material_ = material_;

@@ -57,7 +57,7 @@ void SceneResolver::AddComponent(unsigned oldID, Component* component)
 void SceneResolver::Resolve()
 {
     // Nodes do not have component or node ID attributes, so only have to go through components
-    stl::hash_set<StringHash> noIDAttributes;
+    ea::hash_set<StringHash> noIDAttributes;
     for (auto i = components_.begin(); i !=
         components_.end(); ++i)
     {
@@ -66,7 +66,7 @@ void SceneResolver::Resolve()
             continue;
 
         bool hasIDAttributes = false;
-        const stl::vector<AttributeInfo>* attributes = component->GetAttributes();
+        const ea::vector<AttributeInfo>* attributes = component->GetAttributes();
         if (!attributes)
         {
             noIDAttributes.insert(component->GetType());
@@ -91,7 +91,7 @@ void SceneResolver::Resolve()
                         component->SetAttribute(j, Variant(newNodeID));
                     }
                     else
-                        URHO3D_LOGWARNING("Could not resolve node ID " + stl::to_string(oldNodeID));
+                        URHO3D_LOGWARNING("Could not resolve node ID " + ea::to_string(oldNodeID));
                 }
             }
             else if (info.mode_ & AM_COMPONENTID)
@@ -110,7 +110,7 @@ void SceneResolver::Resolve()
                         component->SetAttribute(j, Variant(newComponentID));
                     }
                     else
-                        URHO3D_LOGWARNING("Could not resolve component ID " + stl::to_string(oldComponentID));
+                        URHO3D_LOGWARNING("Could not resolve component ID " + ea::to_string(oldComponentID));
                 }
             }
             else if (info.mode_ & AM_NODEIDVECTOR)
@@ -137,7 +137,7 @@ void SceneResolver::Resolve()
                         {
                             // If node was not found, retain number of elements, just store ID 0
                             newIDs.push_back(0);
-                            URHO3D_LOGWARNING("Could not resolve node ID " + stl::to_string(oldNodeID));
+                            URHO3D_LOGWARNING("Could not resolve node ID " + ea::to_string(oldNodeID));
                         }
                     }
 

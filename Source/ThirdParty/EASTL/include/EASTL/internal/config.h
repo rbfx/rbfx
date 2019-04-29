@@ -1869,7 +1869,7 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 
 
 #if EASTL_URHO3D_EXTENSIONS
-namespace stl = eastl;
+namespace ea = eastl;
 #endif
 
 #endif // Header include guard

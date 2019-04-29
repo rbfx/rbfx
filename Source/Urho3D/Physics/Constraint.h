@@ -62,7 +62,7 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Return the depended on nodes to order network updates.
-    void GetDependencyNodes(stl::vector<Node*>& dest) override;
+    void GetDependencyNodes(ea::vector<Node*>& dest) override;
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
@@ -166,13 +166,13 @@ private:
     void MarkFramesDirty() { framesDirty_ = true; }
 
     /// Physics world.
-    stl::weak_ptr<PhysicsWorld> physicsWorld_;
+    ea::weak_ptr<PhysicsWorld> physicsWorld_;
     /// Own rigid body.
-    stl::weak_ptr<RigidBody> ownBody_;
+    ea::weak_ptr<RigidBody> ownBody_;
     /// Other rigid body.
-    stl::weak_ptr<RigidBody> otherBody_;
+    ea::weak_ptr<RigidBody> otherBody_;
     /// Bullet constraint.
-    stl::unique_ptr<btTypedConstraint> constraint_;
+    ea::unique_ptr<btTypedConstraint> constraint_;
     /// Constraint type.
     ConstraintType constraintType_;
     /// Constraint position.

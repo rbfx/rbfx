@@ -54,16 +54,16 @@ public:
     /// Set texture.
     void SetTexture(Texture2D* texture);
     /// Define sprite.
-    void DefineSprite(const stl::string& name, const IntRect& rectangle, const Vector2& hotSpot = Vector2(0.5f, 0.5f),
+    void DefineSprite(const ea::string& name, const IntRect& rectangle, const Vector2& hotSpot = Vector2(0.5f, 0.5f),
         const IntVector2& offset = IntVector2::ZERO);
 
     /// Return texture.
     Texture2D* GetTexture() const { return texture_; }
     /// Return sprite.
-    Sprite2D* GetSprite(const stl::string& name) const;
+    Sprite2D* GetSprite(const ea::string& name) const;
 
     /// Return sprite mapping.
-    const stl::unordered_map<stl::string, stl::shared_ptr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
+    const ea::unordered_map<ea::string, ea::shared_ptr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
 
 private:
     /// Begin load from PList file.
@@ -81,17 +81,17 @@ private:
     bool EndLoadFromJSONFile();
 
     /// Texture.
-    stl::shared_ptr<Texture2D> texture_;
+    ea::shared_ptr<Texture2D> texture_;
     /// Sprite mapping.
-    stl::unordered_map<stl::string, stl::shared_ptr<Sprite2D> > spriteMapping_;
+    ea::unordered_map<ea::string, ea::shared_ptr<Sprite2D> > spriteMapping_;
     /// PList file used while loading.
-    stl::shared_ptr<PListFile> loadPListFile_;
+    ea::shared_ptr<PListFile> loadPListFile_;
     /// XML file used while loading.
-    stl::shared_ptr<XMLFile> loadXMLFile_;
+    ea::shared_ptr<XMLFile> loadXMLFile_;
     /// JSON file used while loading.
-    stl::shared_ptr<JSONFile> loadJSONFile_;
+    ea::shared_ptr<JSONFile> loadJSONFile_;
     /// Texture name used while loading.
-    stl::string loadTextureName_;
+    ea::string loadTextureName_;
 };
 
 }

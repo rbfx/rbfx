@@ -80,12 +80,12 @@ Matrix3x4 Matrix3x4::Inverse() const
     return ret;
 }
 
-stl::string Matrix3x4::ToString() const
+ea::string Matrix3x4::ToString() const
 {
     char tempBuffer[MATRIX_CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g %g %g %g %g %g %g %g %g %g", m00_, m01_, m02_, m03_, m10_, m11_, m12_, m13_, m20_, m21_, m22_,
         m23_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 
 }

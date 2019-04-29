@@ -96,7 +96,7 @@ JSONValue& JSONValue::operator =(double rhs)
     return *this;
 }
 
-JSONValue& JSONValue::operator =(const stl::string& rhs)
+JSONValue& JSONValue::operator =(const ea::string& rhs)
 {
     SetType(JSON_STRING);
     *stringValue_ = rhs;
@@ -210,12 +210,12 @@ JSONNumberType JSONValue::GetNumberType() const
     return (JSONNumberType)(type_ & 0xffffu);
 }
 
-stl::string JSONValue::GetValueTypeName() const
+ea::string JSONValue::GetValueTypeName() const
 {
     return GetValueTypeName(GetValueType());
 }
 
-stl::string JSONValue::GetNumberTypeName() const
+ea::string JSONValue::GetNumberTypeName() const
 {
     return GetNumberTypeName(GetNumberType());
 }
@@ -286,7 +286,7 @@ unsigned JSONValue::Size() const
     return 0;
 }
 
-JSONValue& JSONValue::operator [](const stl::string& key)
+JSONValue& JSONValue::operator [](const ea::string& key)
 {
     // Convert to object type
     SetType(JSON_OBJECT);
@@ -294,7 +294,7 @@ JSONValue& JSONValue::operator [](const stl::string& key)
     return (*objectValue_)[key];
 }
 
-const JSONValue& JSONValue::operator [](const stl::string& key) const
+const JSONValue& JSONValue::operator [](const ea::string& key) const
 {
     if (GetValueType() != JSON_OBJECT)
         return EMPTY;
@@ -302,7 +302,7 @@ const JSONValue& JSONValue::operator [](const stl::string& key) const
     return (*objectValue_)[key];
 }
 
-void JSONValue::Set(const stl::string& key, const JSONValue& value)
+void JSONValue::Set(const ea::string& key, const JSONValue& value)
 {
     // Convert to object type
     SetType(JSON_OBJECT);
@@ -310,7 +310,7 @@ void JSONValue::Set(const stl::string& key, const JSONValue& value)
     (*objectValue_)[key] = value;
 }
 
-const JSONValue& JSONValue::Get(const stl::string& key) const
+const JSONValue& JSONValue::Get(const ea::string& key) const
 {
     if (GetValueType() != JSON_OBJECT)
         return EMPTY;
@@ -333,7 +333,7 @@ const JSONValue& JSONValue::Get(int index) const
     return arrayValue_->at(index);
 }
 
-bool JSONValue::Erase(const stl::string& key)
+bool JSONValue::Erase(const ea::string& key)
 {
     if (GetValueType() != JSON_OBJECT)
         return false;
@@ -341,7 +341,7 @@ bool JSONValue::Erase(const stl::string& key)
     return objectValue_->erase(key);
 }
 
-bool JSONValue::Contains(const stl::string& key) const
+bool JSONValue::Contains(const ea::string& key) const
 {
     if  (GetValueType() != JSON_OBJECT)
         return false;
@@ -386,7 +386,7 @@ void JSONValue::SetType(JSONValueType valueType, JSONNumberType numberType)
     switch (GetValueType())
     {
     case JSON_STRING:
-        stringValue_ = new stl::string();
+        stringValue_ = new ea::string();
         break;
 
     case JSON_ARRAY:
@@ -465,7 +465,7 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
             }
 
             const ResourceRef& ref = variant.GetResourceRef();
-            *this = stl::string(context->GetTypeName(ref.type_)) + ";" + ref.name_;
+            *this = ea::string(context->GetTypeName(ref.type_)) + ";" + ref.name_;
         }
         return;
 
@@ -478,7 +478,7 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
             }
 
             const ResourceRefList& refList = variant.GetResourceRefList();
-            stl::string str(context->GetTypeName(refList.type_));
+            ea::string str(context->GetTypeName(refList.type_));
             for (unsigned i = 0; i < refList.names_.size(); ++i)
             {
                 str += ";";
@@ -538,7 +538,7 @@ Variant JSONValue::GetVariantValue(VariantType type) const
     case VAR_RESOURCEREF:
         {
             ResourceRef ref;
-            stl::vector<stl::string> values = GetString().split(';');
+            ea::vector<ea::string> values = GetString().split(';');
             if (values.size() == 2)
             {
                 ref.type_ = values[0];
@@ -551,7 +551,7 @@ Variant JSONValue::GetVariantValue(VariantType type) const
     case VAR_RESOURCEREFLIST:
         {
             ResourceRefList refList;
-            stl::vector<stl::string> values = GetString().split(';', true);
+            ea::vector<ea::string> values = GetString().split(';', true);
             if (values.size() >= 1)
             {
                 refList.type_ = values[0];
@@ -636,17 +636,17 @@ VariantVector JSONValue::GetVariantVector() const
     return variantVector;
 }
 
-stl::string JSONValue::GetValueTypeName(JSONValueType type)
+ea::string JSONValue::GetValueTypeName(JSONValueType type)
 {
     return valueTypeNames[type];
 }
 
-stl::string JSONValue::GetNumberTypeName(JSONNumberType type)
+ea::string JSONValue::GetNumberTypeName(JSONNumberType type)
 {
     return numberTypeNames[type];
 }
 
-JSONValueType JSONValue::GetValueTypeFromName(const stl::string& typeName)
+JSONValueType JSONValue::GetValueTypeFromName(const ea::string& typeName)
 {
     return GetValueTypeFromName(typeName.c_str());
 }
@@ -656,7 +656,7 @@ JSONValueType JSONValue::GetValueTypeFromName(const char* typeName)
     return (JSONValueType)GetStringListIndex(typeName, valueTypeNames, JSON_NULL);
 }
 
-JSONNumberType JSONValue::GetNumberTypeFromName(const stl::string& typeName)
+JSONNumberType JSONValue::GetNumberTypeFromName(const ea::string& typeName)
 {
     return GetNumberTypeFromName(typeName.c_str());
 }

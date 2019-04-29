@@ -45,7 +45,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
     /// Prepare geometry for rendering. Called from a worker thread if possible (no GPU update.)
@@ -98,7 +98,7 @@ public:
     TerrainPatch* GetEastPatch() const { return east_; }
 
     /// Return geometrical error array.
-    stl::vector<float>& GetLodErrors() { return lodErrors_; }
+    ea::vector<float>& GetLodErrors() { return lodErrors_; }
 
     /// Return patch coordinates.
     const IntVector2& GetCoordinates() const { return coordinates_; }
@@ -115,25 +115,25 @@ private:
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
 
     /// Geometry.
-    stl::shared_ptr<Geometry> geometry_;
+    ea::shared_ptr<Geometry> geometry_;
     /// Geometry that is locked to the max LOD level. Used for decals.
-    stl::shared_ptr<Geometry> maxLodGeometry_;
+    ea::shared_ptr<Geometry> maxLodGeometry_;
     /// Geometry that is used for occlusion.
-    stl::shared_ptr<Geometry> occlusionGeometry_;
+    ea::shared_ptr<Geometry> occlusionGeometry_;
     /// Vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Parent terrain.
-    stl::weak_ptr<Terrain> owner_;
+    ea::weak_ptr<Terrain> owner_;
     /// North neighbor patch.
-    stl::weak_ptr<TerrainPatch> north_;
+    ea::weak_ptr<TerrainPatch> north_;
     /// South neighbor patch.
-    stl::weak_ptr<TerrainPatch> south_;
+    ea::weak_ptr<TerrainPatch> south_;
     /// West neighbor patch.
-    stl::weak_ptr<TerrainPatch> west_;
+    ea::weak_ptr<TerrainPatch> west_;
     /// East neighbor patch.
-    stl::weak_ptr<TerrainPatch> east_;
+    ea::weak_ptr<TerrainPatch> east_;
     /// Geometrical error per LOD level.
-    stl::vector<float> lodErrors_;
+    ea::vector<float> lodErrors_;
     /// Patch coordinates in the terrain. (0,0) is the northwest corner.
     IntVector2 coordinates_;
     /// Current LOD level.

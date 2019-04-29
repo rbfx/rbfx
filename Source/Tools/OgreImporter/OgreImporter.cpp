@@ -41,33 +41,33 @@
 
 static const int VERTEX_CACHE_SIZE = 32;
 
-stl::shared_ptr<Context> context_(new Context());
-stl::shared_ptr<XMLFile> meshFile_(new XMLFile(context_));
-stl::shared_ptr<XMLFile> skelFile_(new XMLFile(context_));
-stl::vector<ModelIndexBuffer> indexBuffers_;
-stl::vector<ModelVertexBuffer> vertexBuffers_;
-stl::vector<stl::vector<ModelSubGeometryLodLevel> > subGeometries_;
-stl::vector<Vector3> subGeometryCenters_;
-stl::vector<ModelBone> bones_;
-stl::vector<ModelMorph> morphs_;
-stl::vector<stl::string> materialNames_;
+ea::shared_ptr<Context> context_(new Context());
+ea::shared_ptr<XMLFile> meshFile_(new XMLFile(context_));
+ea::shared_ptr<XMLFile> skelFile_(new XMLFile(context_));
+ea::vector<ModelIndexBuffer> indexBuffers_;
+ea::vector<ModelVertexBuffer> vertexBuffers_;
+ea::vector<ea::vector<ModelSubGeometryLodLevel> > subGeometries_;
+ea::vector<Vector3> subGeometryCenters_;
+ea::vector<ModelBone> bones_;
+ea::vector<ModelMorph> morphs_;
+ea::vector<ea::string> materialNames_;
 BoundingBox boundingBox_;
 unsigned maxBones_ = 64;
 unsigned numSubMeshes_ = 0;
 bool useOneBuffer_ = true;
 
 int main(int argc, char** argv);
-void Run(const stl::vector<stl::string>& arguments);
-void LoadSkeleton(const stl::string& skeletonFileName);
-void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool splitSubMeshes, bool exportMorphs);
-void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool rotationsOnly, bool saveMaterialList);
+void Run(const ea::vector<ea::string>& arguments);
+void LoadSkeleton(const ea::string& skeletonFileName);
+void LoadMesh(const ea::string& inputFileName, bool generateTangents, bool splitSubMeshes, bool exportMorphs);
+void WriteOutput(const ea::string& outputFileName, bool exportAnimations, bool rotationsOnly, bool saveMaterialList);
 void OptimizeIndices(ModelSubGeometryLodLevel* subGeom, ModelVertexBuffer* vb, ModelIndexBuffer* ib);
 void CalculateScore(ModelVertex& vertex);
-stl::string SanitateAssetName(const stl::string& name);
+ea::string SanitateAssetName(const ea::string& name);
 
 int main(int argc, char** argv)
 {
-    stl::vector<stl::string> arguments;
+    ea::vector<ea::string> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -79,7 +79,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const stl::vector<stl::string>& arguments)
+void Run(const ea::vector<ea::string>& arguments)
 {
     if (arguments.size() < 2)
     {
@@ -109,7 +109,7 @@ void Run(const stl::vector<stl::string>& arguments)
         {
             if (arguments[i].length() > 1 && arguments[i][0] == '-')
             {
-                stl::string argument = arguments[i].substr(1).to_lower();
+                ea::string argument = arguments[i].substr(1).to_lower();
                 if (argument == "l")
                     saveMaterialList = true;
                 else if (argument == "r")
@@ -149,7 +149,7 @@ void Run(const stl::vector<stl::string>& arguments)
     PrintLine("Finished");
 }
 
-void LoadSkeleton(const stl::string& skeletonFileName)
+void LoadSkeleton(const ea::string& skeletonFileName)
 {
     // Process skeleton first (if found)
     XMLElement skeletonRoot;
@@ -166,7 +166,7 @@ void LoadSkeleton(const stl::string& skeletonFileName)
         while (bone)
         {
             unsigned index = bone.GetInt("id");
-            stl::string name = bone.GetAttribute("name");
+            ea::string name = bone.GetAttribute("name");
             if (index >= bones_.size())
                 bones_.resize(index + 1);
 
@@ -202,8 +202,8 @@ void LoadSkeleton(const stl::string& skeletonFileName)
         XMLElement boneParent = boneHierarchy.GetChild("boneparent");
         while (boneParent)
         {
-            stl::string bone = boneParent.GetAttribute("bone");
-            stl::string parent = boneParent.GetAttribute("parent");
+            ea::string bone = boneParent.GetAttribute("bone");
+            ea::string parent = boneParent.GetAttribute("parent");
             unsigned i = 0, j = 0;
             for (i = 0; i < bones_.size() && bones_[i].name_ != bone; ++i);
             for (j = 0; j < bones_.size() && bones_[j].name_ != parent; ++j);
@@ -248,7 +248,7 @@ void LoadSkeleton(const stl::string& skeletonFileName)
     }
 }
 
-void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool splitSubMeshes, bool exportMorphs)
+void LoadMesh(const ea::string& inputFileName, bool generateTangents, bool splitSubMeshes, bool exportMorphs)
 {
     File meshFileSource(context_);
     meshFileSource.Open(inputFileName);
@@ -261,7 +261,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
     if (root.IsNull())
         ErrorExit("Could not load input file " + inputFileName);
 
-    stl::string skeletonName = skeletonLink.GetAttribute("name");
+    ea::string skeletonName = skeletonLink.GetAttribute("name");
     if (!skeletonName.empty())
         LoadSkeleton(GetPath(inputFileName) + GetFileName(skeletonName) + ".skeleton.xml");
 
@@ -311,7 +311,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
     unsigned vertexStart = 0;
     unsigned subMeshIndex = 0;
 
-    stl::vector<unsigned> vertexStarts;
+    ea::vector<unsigned> vertexStarts;
     vertexStarts.resize(numSubMeshes_);
 
     while (subMesh)
@@ -506,13 +506,13 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                 // If amount of bones is larger than supported by HW skinning, must remap per submesh
                 if (bones_.size() > maxBones_)
                 {
-                    stl::unordered_map<unsigned, unsigned> usedBoneMap;
+                    ea::unordered_map<unsigned, unsigned> usedBoneMap;
                     unsigned remapIndex = 0;
                     for (auto i = subGeometryLodLevel.boneWeights_.begin(); i !=
                         subGeometryLodLevel.boneWeights_.end(); ++i)
                     {
                         // Sort the bone assigns by weight
-                        stl::quick_sort(i->second.begin(), i->second.end(), CompareWeights);
+                        ea::quick_sort(i->second.begin(), i->second.end(), CompareWeights);
 
                         // Use only the first 4 weights
                         for (unsigned j = 0; j < i->second.size() && j < 4; ++j)
@@ -529,7 +529,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
 
                     // If still too many bones in one subgeometry, error
                     if (usedBoneMap.size() > maxBones_)
-                        ErrorExit("Too many bones (limit " + stl::to_string(maxBones_) + ") in submesh " + stl::to_string(subMeshIndex + 1));
+                        ErrorExit("Too many bones (limit " + ea::to_string(maxBones_) + ") in submesh " + ea::to_string(subMeshIndex + 1));
 
                     // Write mapping of vertex buffer bone indices to original bone indices
                     subGeometryLodLevel.boneMapping_.resize(usedBoneMap.size());
@@ -543,7 +543,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                 {
                     // Sort the bone assigns by weight, if not sorted yet in bone remapping pass
                     if (!sorted)
-                        stl::quick_sort(i->second.begin(), i->second.end(), CompareWeights);
+                        ea::quick_sort(i->second.begin(), i->second.end(), CompareWeights);
 
                     float totalWeight = 0.0f;
                     float normalizationFactor = 0.0f;
@@ -591,9 +591,9 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
 
         OptimizeIndices(&subGeometryLodLevel, vBuf, iBuf);
 
-        PrintLine("Processed submesh " + stl::to_string(subMeshIndex + 1) + ": " + stl::to_string(vertices) + " vertices " +
-            stl::to_string(triangles) + " triangles");
-        stl::vector<ModelSubGeometryLodLevel> thisSubGeometry;
+        PrintLine("Processed submesh " + ea::to_string(subMeshIndex + 1) + ": " + ea::to_string(vertices) + " vertices " +
+            ea::to_string(triangles) + " triangles");
+        ea::vector<ModelSubGeometryLodLevel> thisSubGeometry;
         thisSubGeometry.push_back(subGeometryLodLevel);
         subGeometries_.push_back(thisSubGeometry);
 
@@ -666,7 +666,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                     OptimizeIndices(&newLodLevel, vBuf, iBuf);
 
                     subGeometries_[subMeshIndex].push_back(newLodLevel);
-                    PrintLine("Processed LOD level for submesh " + stl::to_string(subMeshIndex + 1) + ": distance " + stl::to_string(distance));
+                    PrintLine("Processed LOD level for submesh " + ea::to_string(subMeshIndex + 1) + ": distance " + ea::to_string(distance));
 
                     lodSubMesh = lodSubMesh.GetNext("lodfacelist");
                 }
@@ -682,7 +682,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
     {
         try
         {
-            stl::vector<XMLElement> poses;
+            ea::vector<XMLElement> poses;
             XMLElement posesRoot = root.GetChild("poses");
             if (posesRoot)
             {
@@ -701,9 +701,9 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                 XMLElement anim = animsRoot.GetChild("animation");
                 while (anim)
                 {
-                    stl::string name = anim.GetAttribute("name");
+                    ea::string name = anim.GetAttribute("name");
                     float length = anim.GetFloat("length");
-                    stl::hash_set<unsigned> usedPoses;
+                    ea::hash_set<unsigned> usedPoses;
                     XMLElement tracks = anim.GetChild("tracks");
                     if (tracks)
                     {
@@ -784,7 +784,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
 
                                 ModelVertex newVertex;
                                 newVertex.position_ = vec;
-                                newMorph.buffers_[bufIndex].vertices_.push_back(stl::make_pair(vertexIndex, newVertex));
+                                newMorph.buffers_[bufIndex].vertices_.push_back(ea::make_pair(vertexIndex, newVertex));
                                 poseOffset = poseOffset.GetNext("poseoffset");
                             }
 
@@ -792,7 +792,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
                                 ++bufIndex;
                         }
                         morphs_.push_back(newMorph);
-                        PrintLine("Processed morph " + name + " with " + stl::to_string(usedPoses.size()) + " sub-poses");
+                        PrintLine("Processed morph " + name + " with " + ea::to_string(usedPoses.size()) + " sub-poses");
                     }
 
                     anim = anim.GetNext("animation");
@@ -845,7 +845,7 @@ void LoadMesh(const stl::string& inputFileName, bool generateTangents, bool spli
     }
 }
 
-void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool rotationsOnly, bool saveMaterialList)
+void WriteOutput(const ea::string& outputFileName, bool exportAnimations, bool rotationsOnly, bool saveMaterialList)
 {
     /// \todo Use save functions of Model & Animation classes
 
@@ -926,7 +926,7 @@ void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool 
 
     if (saveMaterialList)
     {
-        stl::string materialListName = ReplaceExtension(outputFileName, ".txt");
+        ea::string materialListName = ReplaceExtension(outputFileName, ".txt");
         File listFile(context_);
         if (listFile.Open(materialListName, FILE_WRITE))
         {
@@ -958,7 +958,7 @@ void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool 
                 XMLElement track = tracksRoot.GetChild("track");
                 while (track)
                 {
-                    stl::string trackName = track.GetAttribute("bone");
+                    ea::string trackName = track.GetAttribute("bone");
                     ModelBone* bone = nullptr;
                     for (unsigned i = 0; i < bones_.size(); ++i)
                     {
@@ -1013,7 +1013,7 @@ void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool 
                     }
 
                     // Make sure keyframes are sorted from beginning to end
-                    stl::quick_sort(newAnimationTrack.keyFrames_.begin(), newAnimationTrack.keyFrames_.end(), CompareKeyFrames);
+                    ea::quick_sort(newAnimationTrack.keyFrames_.begin(), newAnimationTrack.keyFrames_.end(), CompareKeyFrames);
 
                     // Do not add tracks with no keyframes
                     if (newAnimationTrack.keyFrames_.size())
@@ -1023,7 +1023,7 @@ void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool 
                 }
 
                 // Write each animation into a separate file
-                stl::string animationFileName = outputFileName.replaced(".mdl", "");
+                ea::string animationFileName = outputFileName.replaced(".mdl", "");
                 animationFileName += "_" + newAnimation.name_ + ".ani";
 
                 File dest(context_);
@@ -1062,8 +1062,8 @@ void WriteOutput(const stl::string& outputFileName, bool exportAnimations, bool 
 
 void OptimizeIndices(ModelSubGeometryLodLevel* subGeom, ModelVertexBuffer* vb, ModelIndexBuffer* ib)
 {
-    stl::vector<Triangle> oldTriangles;
-    stl::vector<Triangle> newTriangles;
+    ea::vector<Triangle> oldTriangles;
+    ea::vector<Triangle> newTriangles;
 
     if (subGeom->indexCount_ % 3)
     {
@@ -1089,7 +1089,7 @@ void OptimizeIndices(ModelSubGeometryLodLevel* subGeom, ModelVertexBuffer* vb, M
     for (unsigned i = 0; i < vb->vertices_.size(); ++i)
         CalculateScore(vb->vertices_[i]);
 
-    stl::vector<unsigned> vertexCache;
+    ea::vector<unsigned> vertexCache;
 
     while (oldTriangles.size())
     {
@@ -1222,9 +1222,9 @@ void CalculateScore(ModelVertex& vertex)
     vertex.score_ = score;
 }
 
-stl::string SanitateAssetName(const stl::string& name)
+ea::string SanitateAssetName(const ea::string& name)
 {
-    stl::string fixedName = name;
+    ea::string fixedName = name;
     fixedName.replace("<", "");
     fixedName.replace(">", "");
     fixedName.replace("?", "");

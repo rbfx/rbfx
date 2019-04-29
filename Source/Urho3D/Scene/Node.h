@@ -56,11 +56,11 @@ enum TransformSpace
 struct URHO3D_API NodeImpl
 {
     /// Nodes this node depends on for network updates.
-    stl::vector<Node*> dependencyNodes_;
+    ea::vector<Node*> dependencyNodes_;
     /// Network owner connection.
     Connection* owner_;
     /// Name.
-    stl::string name_;
+    ea::string name_;
     /// Tag strings.
     StringVector tags_;
     /// Name hash.
@@ -108,22 +108,22 @@ public:
     virtual void AddReplicationState(NodeReplicationState* state);
 
     /// Save to an XML file. Return true if successful.
-    bool SaveXML(Serializer& dest, const stl::string& indentation = "\t") const;
+    bool SaveXML(Serializer& dest, const ea::string& indentation = "\t") const;
     /// Save to a JSON file. Return true if successful.
-    bool SaveJSON(Serializer& dest, const stl::string& indentation = "\t") const;
+    bool SaveJSON(Serializer& dest, const ea::string& indentation = "\t") const;
     /// Set name of the scene node. Names are not required to be unique.
-    void SetName(const stl::string& name);
+    void SetName(const ea::string& name);
 
     /// Set tags. Old tags are overwritten.
     void SetTags(const StringVector& tags);
     /// Add a tag.
-    void AddTag(const stl::string& tag);
+    void AddTag(const ea::string& tag);
     /// Add tags with the specified separator, by default ;
-    void AddTags(const stl::string& tags, char separator = ';');
+    void AddTags(const ea::string& tags, char separator = ';');
     /// Add tags.
     void AddTags(const StringVector& tags);
     /// Remove tag. Return true if existed.
-    bool RemoveTag(const stl::string& tag);
+    bool RemoveTag(const ea::string& tag);
     /// Remove all tags.
     void RemoveAllTags();
 
@@ -282,9 +282,9 @@ public:
     /// Mark node and child nodes to need world transform recalculation. Notify listener components.
     void MarkDirty();
     /// Create a child scene node (with specified ID if provided).
-    Node* CreateChild(const stl::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
+    Node* CreateChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0, bool temporary = false);
     /// Create a temporary child scene node (with specified ID if provided).
-    Node* CreateTemporaryChild(const stl::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0);
+    Node* CreateTemporaryChild(const ea::string& name = EMPTY_STRING, CreateMode mode = REPLICATED, unsigned id = 0);
     /// Add a child scene node at a specific index. If index is not explicitly specified or is greater than current children size, append the new child at the end.
     void AddChild(Node* node, unsigned index = M_MAX_UNSIGNED);
     /// Remove a child scene node.
@@ -340,7 +340,7 @@ public:
     bool IsReplicated() const;
 
     /// Return name.
-    const stl::string& GetName() const { return impl_->name_; }
+    const ea::string& GetName() const { return impl_->name_; }
 
     /// Return name hash.
     StringHash GetNameHash() const { return impl_->nameHash_; }
@@ -349,7 +349,7 @@ public:
     const StringVector& GetTags() const { return impl_->tags_; }
 
     /// Return whether has a specific tag.
-    bool HasTag(const stl::string& tag) const;
+    bool HasTag(const ea::string& tag) const;
 
     /// Return parent scene node.
     Node* GetParent() const { return parent_; }
@@ -505,25 +505,25 @@ public:
     unsigned GetNumChildren(bool recursive = false) const;
 
     /// Return immediate child scene nodes.
-    const stl::vector<stl::shared_ptr<Node> >& GetChildren() const { return children_; }
+    const ea::vector<ea::shared_ptr<Node> >& GetChildren() const { return children_; }
 
     /// Return child scene nodes, optionally recursive.
-    void GetChildren(stl::vector<Node*>& dest, bool recursive = false) const;
+    void GetChildren(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Return child scene nodes, optionally recursive.
-    stl::vector<Node*> GetChildren(bool recursive) const;
+    ea::vector<Node*> GetChildren(bool recursive) const;
     /// Return child scene nodes with a specific component.
-    void GetChildrenWithComponent(stl::vector<Node*>& dest, StringHash type, bool recursive = false) const;
+    void GetChildrenWithComponent(ea::vector<Node*>& dest, StringHash type, bool recursive = false) const;
     /// Return child scene nodes with a specific component.
-    stl::vector<Node*> GetChildrenWithComponent(StringHash type, bool recursive = false) const;
+    ea::vector<Node*> GetChildrenWithComponent(StringHash type, bool recursive = false) const;
     /// Return child scene nodes with a specific tag.
-    void GetChildrenWithTag(stl::vector<Node*>& dest, const stl::string& tag, bool recursive = false) const;
+    void GetChildrenWithTag(ea::vector<Node*>& dest, const ea::string& tag, bool recursive = false) const;
     /// Return child scene nodes with a specific tag.
-    stl::vector<Node*> GetChildrenWithTag(const stl::string& tag, bool recursive = false) const;
+    ea::vector<Node*> GetChildrenWithTag(const ea::string& tag, bool recursive = false) const;
 
     /// Return child scene node by index.
     Node* GetChild(unsigned index) const;
     /// Return child scene node by name.
-    Node* GetChild(const stl::string& name, bool recursive = false) const;
+    Node* GetChild(const ea::string& name, bool recursive = false) const;
     /// Return child scene node by name.
     Node* GetChild(const char* name, bool recursive = false) const;
     /// Return child scene node by name hash.
@@ -536,10 +536,10 @@ public:
     unsigned GetNumNetworkComponents() const;
 
     /// Return all components.
-    const stl::vector<stl::shared_ptr<Component> >& GetComponents() const { return components_; }
+    const ea::vector<ea::shared_ptr<Component> >& GetComponents() const { return components_; }
 
     /// Return all components of type. Optionally recursive.
-    void GetComponents(stl::vector<Component*>& dest, StringHash type, bool recursive = false) const;
+    void GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive = false) const;
     /// Return component by type. If there are several, returns the first.
     Component* GetComponent(StringHash type, bool recursive = false) const;
     /// Return component in parent node. If there are several, returns the first. May optional traverse up to the root node.
@@ -547,7 +547,7 @@ public:
     /// Return whether has a specific component.
     bool HasComponent(StringHash type) const;
     /// Return listener components.
-    const stl::vector<stl::weak_ptr<Component> > GetListeners() const { return listeners_; }
+    const ea::vector<ea::weak_ptr<Component> > GetListeners() const { return listeners_; }
 
     /// Return a user variable.
     const Variant& GetVar(StringHash key) const;
@@ -560,15 +560,15 @@ public:
     /// Return first component derived from class in the parent node, or if fully traversing then the first node up the tree with one.
     template <class T> T* GetParentDerivedComponent(bool fullTraversal = false) const;
     /// Return components derived from class.
-    template <class T> void GetDerivedComponents(stl::vector<T*>& dest, bool recursive = false, bool clearVector = true) const;
+    template <class T> void GetDerivedComponents(ea::vector<T*>& dest, bool recursive = false, bool clearVector = true) const;
     /// Template version of returning child nodes with a specific component.
-    template <class T> void GetChildrenWithComponent(stl::vector<Node*>& dest, bool recursive = false) const;
+    template <class T> void GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive = false) const;
     /// Template version of returning a component by type.
     template <class T> T* GetComponent(bool recursive = false) const;
     /// Template version of returning a parent's component by type.
     template <class T> T* GetParentComponent(bool fullTraversal = false) const;
     /// Template version of returning all components of type.
-    template <class T> void GetComponents(stl::vector<T*>& dest, bool recursive = false) const;
+    template <class T> void GetComponents(ea::vector<T*>& dest, bool recursive = false) const;
     /// Template version of checking whether has a specific component.
     template <class T> bool HasComponent() const;
 
@@ -581,15 +581,15 @@ public:
     /// Set network position attribute.
     void SetNetPositionAttr(const Vector3& value);
     /// Set network rotation attribute.
-    void SetNetRotationAttr(const stl::vector<unsigned char>& value);
+    void SetNetRotationAttr(const ea::vector<unsigned char>& value);
     /// Set network parent attribute.
-    void SetNetParentAttr(const stl::vector<unsigned char>& value);
+    void SetNetParentAttr(const ea::vector<unsigned char>& value);
     /// Return network position attribute.
     const Vector3& GetNetPositionAttr() const;
     /// Return network rotation attribute.
-    const stl::vector<unsigned char>& GetNetRotationAttr() const;
+    const ea::vector<unsigned char>& GetNetRotationAttr() const;
     /// Return network parent attribute.
-    const stl::vector<unsigned char>& GetNetParentAttr() const;
+    const ea::vector<unsigned char>& GetNetParentAttr() const;
     /// Load components and optionally load child nodes.
     bool Load(Deserializer& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);
@@ -600,7 +600,7 @@ public:
     bool LoadJSON(const JSONValue& source, SceneResolver& resolver, bool loadChildren = true, bool rewriteIDs = false,
         CreateMode mode = REPLICATED);
     /// Return the depended on nodes to order network updates.
-    const stl::vector<Node*>& GetDependencyNodes() const { return impl_->dependencyNodes_; }
+    const ea::vector<Node*>& GetDependencyNodes() const { return impl_->dependencyNodes_; }
 
     /// Prepare network update by comparing attributes and marking replication states dirty as necessary.
     void PrepareNetworkUpdate();
@@ -638,29 +638,29 @@ protected:
     /// Handle attribute animation removed.
     void OnAttributeAnimationRemoved() override;
     /// Find target of an attribute animation from object hierarchy by name.
-    Animatable* FindAttributeAnimationTarget(const stl::string& name, stl::string& outName) override;
+    Animatable* FindAttributeAnimationTarget(const ea::string& name, ea::string& outName) override;
 
 private:
     /// Set enabled/disabled state with optional recursion. Optionally affect the remembered enable state.
     void SetEnabled(bool enable, bool recursive, bool storeSelf);
     /// Create component, allowing UnknownComponent if actual type is not supported. Leave typeName empty if not known.
-    Component* SafeCreateComponent(const stl::string& typeName, StringHash type, CreateMode mode, unsigned id);
+    Component* SafeCreateComponent(const ea::string& typeName, StringHash type, CreateMode mode, unsigned id);
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
-    void RemoveChild(stl::vector<stl::shared_ptr<Node> >::iterator i);
+    void RemoveChild(ea::vector<ea::shared_ptr<Node> >::iterator i);
     /// Return child nodes recursively.
-    void GetChildrenRecursive(stl::vector<Node*>& dest) const;
+    void GetChildrenRecursive(ea::vector<Node*>& dest) const;
     /// Return child nodes with a specific component recursively.
-    void GetChildrenWithComponentRecursive(stl::vector<Node*>& dest, StringHash type) const;
+    void GetChildrenWithComponentRecursive(ea::vector<Node*>& dest, StringHash type) const;
     /// Return child nodes with a specific tag recursively.
-    void GetChildrenWithTagRecursive(stl::vector<Node*>& dest, const stl::string& tag) const;
+    void GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string& tag) const;
     /// Return specific components recursively.
-    void GetComponentsRecursive(stl::vector<Component*>& dest, StringHash type) const;
+    void GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type) const;
     /// Clone node recursively.
     Node* CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode);
     /// Remove a component from this node with the specified iterator.
-    void RemoveComponent(stl::vector<stl::shared_ptr<Component> >::iterator i);
+    void RemoveComponent(ea::vector<ea::shared_ptr<Component> >::iterator i);
     /// Handle attribute animation update event.
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
 
@@ -693,13 +693,13 @@ private:
     /// World-space rotation.
     mutable Quaternion worldRotation_;
     /// Components.
-    stl::vector<stl::shared_ptr<Component> > components_;
+    ea::vector<ea::shared_ptr<Component> > components_;
     /// Child scene nodes.
-    stl::vector<stl::shared_ptr<Node> > children_;
+    ea::vector<ea::shared_ptr<Node> > children_;
     /// Node listeners.
-    stl::vector<stl::weak_ptr<Component> > listeners_;
+    ea::vector<ea::weak_ptr<Component> > listeners_;
     /// Pointer to implementation.
-    stl::unique_ptr<NodeImpl> impl_;
+    ea::unique_ptr<NodeImpl> impl_;
 
 protected:
     /// User variables.
@@ -720,7 +720,7 @@ template <class T> void Node::RemoveComponent() { RemoveComponent(T::GetTypeStat
 
 template <class T> void Node::RemoveComponents() { RemoveComponents(T::GetTypeStatic()); }
 
-template <class T> void Node::GetChildrenWithComponent(stl::vector<Node*>& dest, bool recursive) const
+template <class T> void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, bool recursive) const
 {
     GetChildrenWithComponent(dest, T::GetTypeStatic(), recursive);
 }
@@ -729,9 +729,9 @@ template <class T> T* Node::GetComponent(bool recursive) const { return static_c
 
 template <class T> T* Node::GetParentComponent(bool fullTraversal) const { return static_cast<T*>(GetParentComponent(T::GetTypeStatic(), fullTraversal)); }
 
-template <class T> void Node::GetComponents(stl::vector<T*>& dest, bool recursive) const
+template <class T> void Node::GetComponents(ea::vector<T*>& dest, bool recursive) const
 {
-    GetComponents(reinterpret_cast<stl::vector<Component*>&>(dest), T::GetTypeStatic(), recursive);
+    GetComponents(reinterpret_cast<ea::vector<Component*>&>(dest), T::GetTypeStatic(), recursive);
 }
 
 template <class T> bool Node::HasComponent() const { return HasComponent(T::GetTypeStatic()); }
@@ -775,7 +775,7 @@ template <class T> T* Node::GetParentDerivedComponent(bool fullTraversal) const
     return 0;
 }
 
-template <class T> void Node::GetDerivedComponents(stl::vector<T*>& dest, bool recursive, bool clearVector) const
+template <class T> void Node::GetDerivedComponents(ea::vector<T*>& dest, bool recursive, bool clearVector) const
 {
     if (clearVector)
         dest.clear();

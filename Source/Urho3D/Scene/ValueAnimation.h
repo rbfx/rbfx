@@ -127,13 +127,13 @@ public:
     Variant GetAnimationValue(float scaledTime) const;
 
     /// Return all key frames.
-    const stl::vector<VAnimKeyFrame>& GetKeyFrames() const { return keyFrames_; }
+    const ea::vector<VAnimKeyFrame>& GetKeyFrames() const { return keyFrames_; }
 
     /// Has event frames.
     bool HasEventFrames() const { return !eventFrames_.empty(); }
 
     /// Return all event frames between time.
-    void GetEventFrames(float beginTime, float endTime, stl::vector<const VAnimEventFrame*>& eventFrames) const;
+    void GetEventFrames(float beginTime, float endTime, ea::vector<const VAnimEventFrame*>& eventFrames) const;
 
 protected:
     /// Linear interpolation.
@@ -160,13 +160,13 @@ protected:
     /// End time.
     float endTime_;
     /// Key frames.
-    stl::vector<VAnimKeyFrame> keyFrames_;
+    ea::vector<VAnimKeyFrame> keyFrames_;
     /// Spline tangents.
     mutable VariantVector splineTangents_;
     /// Spline tangents dirty.
     mutable bool splineTangentsDirty_;
     /// Event frames.
-    stl::vector<VAnimEventFrame> eventFrames_;
+    ea::vector<VAnimEventFrame> eventFrames_;
 };
 
 }

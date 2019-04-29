@@ -129,7 +129,7 @@ void Constraint::OnSetEnabled()
         constraint_->setEnabled(IsEnabledEffective());
 }
 
-void Constraint::GetDependencyNodes(stl::vector<Node*>& dest)
+void Constraint::GetDependencyNodes(ea::vector<Node*>& dest)
 {
     if (otherBody_ && otherBody_->GetNode())
         dest.push_back(otherBody_->GetNode());

@@ -45,7 +45,7 @@ public:
     /// Set vertex.
     void SetVertex(unsigned index, const Vector2& vertex);
     /// Set vertices.
-    void SetVertices(const stl::vector<Vector2>& vertices);
+    void SetVertices(const ea::vector<Vector2>& vertices);
 
     /// Return vertex count.
     unsigned GetVertexCount() const { return vertices_.size(); }
@@ -54,12 +54,12 @@ public:
     const Vector2& GetVertex(unsigned index) const { return (index < vertices_.size()) ? vertices_[index] : Vector2::ZERO; }
 
     /// Return vertices.
-    const stl::vector<Vector2>& GetVertices() const { return vertices_; }
+    const ea::vector<Vector2>& GetVertices() const { return vertices_; }
 
     /// Set vertices attribute.
-    void SetVerticesAttr(const stl::vector<unsigned char>& value);
+    void SetVerticesAttr(const ea::vector<unsigned char>& value);
     /// Return vertices attribute.
-    stl::vector<unsigned char> GetVerticesAttr() const;
+    ea::vector<unsigned char> GetVerticesAttr() const;
 
 private:
     /// Apply node world scale.
@@ -70,7 +70,7 @@ private:
     /// Polygon shape.
     b2PolygonShape polygonShape_;
     /// Vertices.
-    stl::vector<Vector2> vertices_;
+    ea::vector<Vector2> vertices_;
 };
 
 }

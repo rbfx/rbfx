@@ -925,6 +925,17 @@ namespace eastl
 			return (mpRefCount == sharedPtr.mpRefCount); 
 		}
 
+#if EASTL_URHO3D_EXTENSIONS
+        element_type* detach()
+        {
+            element_type* result = mpValue;
+            mpValue = nullptr;
+            mpRefCount->release();
+            mpRefCount = nullptr;
+            return result;
+        }
+#endif
+
 	protected:
 		// Friend declarations.
 		template <typename U> friend class shared_ptr;

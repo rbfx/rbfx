@@ -115,10 +115,10 @@ namespace Urho3D
 #ifdef _WIN32
 static bool consoleOpened = false;
 #endif
-static stl::string currentLine;
-static stl::vector<stl::string> arguments;
-static stl::string miniDumpDir;
-extern stl::string specifiedExecutableFile;
+static ea::string currentLine;
+static ea::vector<ea::string> arguments;
+static ea::string miniDumpDir;
+extern ea::string specifiedExecutableFile;
 
 #if defined(IOS)
 static void GetCPUData(host_basic_info_data_t* data)
@@ -195,14 +195,14 @@ void InitFPU()
 #endif
 }
 
-void ErrorDialog(const stl::string& title, const stl::string& message)
+void ErrorDialog(const ea::string& title, const ea::string& message)
 {
 #ifndef MINI_URHO
     SDL_ShowSimpleMessageBox(SDL_MESSAGEBOX_ERROR, title.c_str(), message.c_str(), nullptr);
 #endif
 }
 
-void ErrorExit(const stl::string& message, int exitCode)
+void ErrorExit(const ea::string& message, int exitCode)
 {
     if (!message.empty())
         PrintLine(message, true);
@@ -225,7 +225,7 @@ void OpenConsoleWindow()
 #endif
 }
 
-void PrintUnicode(const stl::string& str, bool error)
+void PrintUnicode(const ea::string& str, bool error)
 {
 #if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
 #ifdef _WIN32
@@ -239,7 +239,7 @@ void PrintUnicode(const stl::string& str, bool error)
         HANDLE stream = GetStdHandle(error ? STD_ERROR_HANDLE : STD_OUTPUT_HANDLE);
         if (stream == INVALID_HANDLE_VALUE)
             return;
-        stl::wstring strW = MultiByteToWide(str);
+        ea::wstring strW = MultiByteToWide(str);
         DWORD charsWritten;
         WriteConsoleW(stream, strW.c_str(), strW.length(), &charsWritten, nullptr);
     }
@@ -249,12 +249,12 @@ void PrintUnicode(const stl::string& str, bool error)
 #endif
 }
 
-void PrintUnicodeLine(const stl::string& str, bool error)
+void PrintUnicodeLine(const ea::string& str, bool error)
 {
     PrintUnicode(str + "\n", error);
 }
 
-void PrintLine(const stl::string& str, bool error)
+void PrintLine(const ea::string& str, bool error)
 {
     PrintLine(str.c_str(), error);
 }
@@ -266,7 +266,7 @@ void PrintLine(const char* str, bool error)
 #endif
 }
 
-const stl::vector<stl::string>& ParseArguments(const stl::string& cmdLine, bool skipFirstArgument)
+const ea::vector<ea::string>& ParseArguments(const ea::string& cmdLine, bool skipFirstArgument)
 {
     arguments.clear();
 
@@ -314,24 +314,24 @@ const stl::vector<stl::string>& ParseArguments(const stl::string& cmdLine, bool 
     return arguments;
 }
 
-const stl::vector<stl::string>& ParseArguments(const char* cmdLine)
+const ea::vector<ea::string>& ParseArguments(const char* cmdLine)
 {
-    return ParseArguments(stl::string(cmdLine));
+    return ParseArguments(ea::string(cmdLine));
 }
 
-const stl::vector<stl::string>& ParseArguments(const stl::wstring& cmdLine)
+const ea::vector<ea::string>& ParseArguments(const ea::wstring& cmdLine)
 {
     return ParseArguments(WideToMultiByte(cmdLine));
 }
 
-const stl::vector<stl::string>& ParseArguments(const wchar_t* cmdLine)
+const ea::vector<ea::string>& ParseArguments(const wchar_t* cmdLine)
 {
     return ParseArguments(WideToMultiByte(cmdLine));
 }
 
-const stl::vector<stl::string>& ParseArguments(int argc, char** argv)
+const ea::vector<ea::string>& ParseArguments(int argc, char** argv)
 {
-    stl::string cmdLine;
+    ea::string cmdLine;
 
     for (int i = 0; i < argc; ++i)
         cmdLine.append_sprintf("\"%s\" ", (const char*)argv[i]);
@@ -339,14 +339,14 @@ const stl::vector<stl::string>& ParseArguments(int argc, char** argv)
     return ParseArguments(cmdLine);
 }
 
-const stl::vector<stl::string>& GetArguments()
+const ea::vector<ea::string>& GetArguments()
 {
     return arguments;
 }
 
-stl::string GetConsoleInput()
+ea::string GetConsoleInput()
 {
-    stl::string ret;
+    ea::string ret;
 #ifdef URHO3D_TESTING
     // When we are running automated tests, reading the console may block. Just return empty in that case
     return ret;
@@ -417,7 +417,7 @@ stl::string GetConsoleInput()
 #endif
 }
 
-stl::string GetPlatform()
+ea::string GetPlatform()
 {
 #if defined(__ANDROID__)
     return "Android";
@@ -507,12 +507,12 @@ unsigned GetNumLogicalCPUs()
 #endif
 }
 
-void SetMiniDumpDir(const stl::string& pathName)
+void SetMiniDumpDir(const ea::string& pathName)
 {
     miniDumpDir = AddTrailingSlash(pathName);
 }
 
-stl::string GetMiniDumpDir()
+ea::string GetMiniDumpDir()
 {
 #ifndef MINI_URHO
     if (miniDumpDir.empty())
@@ -520,7 +520,7 @@ stl::string GetMiniDumpDir()
         char* pathName = SDL_GetPrefPath("urho3d", "crashdumps");
         if (pathName)
         {
-            stl::string ret(pathName);
+            ea::string ret(pathName);
             SDL_free(pathName);
             return ret;
         }
@@ -553,7 +553,7 @@ unsigned long long GetTotalMemory()
     return 0ull;
 }
 
-stl::string GetLoginName()
+ea::string GetLoginName()
 {
 #if defined(__linux__) && !defined(__ANDROID__)
     struct passwd *p = getpwuid(getuid());
@@ -585,7 +585,7 @@ stl::string GetLoginName()
     return "(?)";
 }
 
-stl::string GetHostName()
+ea::string GetHostName()
 {
 #if (defined(__linux__) || defined(__APPLE__)) && !defined(__ANDROID__)
     char buffer[256];
@@ -616,12 +616,12 @@ static void GetOS(RTL_OSVERSIONINFOW *r)
 }
 #endif
 
-stl::string GetOSVersion()
+ea::string GetOSVersion()
 {
 #if defined(__linux__) && !defined(__ANDROID__)
     struct utsname u{};
     if (uname(&u) == 0)
-        return stl::string(u.sysname) + " " + u.release;
+        return ea::string(u.sysname) + " " + u.release;
 #elif defined(_WIN32) && defined(HAVE_RTL_OSVERSIONINFOW) && !defined(MINI_URHO)
     RTL_OSVERSIONINFOW r;
     GetOS(&r);
@@ -650,8 +650,8 @@ stl::string GetOSVersion()
 
     if (sysctlbyname("kern.osrelease", &kernel_r, &size, NULL, 0) != -1)
     {
-        stl::vector<stl::string> kernel_version = stl::string(kernel_r).Split('.');
-        stl::string version = "macOS/Mac OS X ";
+        ea::vector<ea::string> kernel_version = ea::string(kernel_r).Split('.');
+        ea::string version = "macOS/Mac OS X ";
         int major = ToInt(kernel_version[0]);
         int minor = ToInt(kernel_version[1]);
 
@@ -752,7 +752,7 @@ stl::string GetOSVersion()
     return "(?)";
 }
 
-stl::string GenerateUUID()
+ea::string GenerateUUID()
 {
 #if _WIN32
     UUID uuid{};
@@ -761,7 +761,7 @@ stl::string GenerateUUID()
     UuidCreate(&uuid);
     UuidToStringA(&uuid, &str);
 
-    stl::string result(reinterpret_cast<const char*>(str));
+    ea::string result(reinterpret_cast<const char*>(str));
     RpcStringFreeA(&str);
     return result;
 #elif ANDROID
@@ -787,7 +787,7 @@ stl::string GenerateUUID()
         (uint8_t)(lower >> 24), (uint8_t)(lower >> 16), (uint8_t)(lower >> 8), (uint8_t)lower
     );
 
-    return stl::string(str);
+    return ea::string(str);
 #elif __APPLE__
     auto guid = CFUUIDCreate(NULL);
     auto bytes = CFUUIDGetUUIDBytes(guid);
@@ -799,14 +799,14 @@ stl::string GenerateUUID()
         bytes.byte8, bytes.byte9, bytes.byte10, bytes.byte11, bytes.byte12, bytes.byte13, bytes.byte14, bytes.byte15
     );
 
-    return stl::string(str);
+    return ea::string(str);
 #else
     uuid_t uuid{};
     char str[37]{};
 
     uuid_generate(uuid);
     uuid_unparse(uuid, str);
-    return stl::string(str);
+    return ea::string(str);
 #endif
 }
 

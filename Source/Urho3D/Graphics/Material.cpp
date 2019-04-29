@@ -53,7 +53,7 @@ namespace Urho3D
 
 extern const char* wrapModeNames[];
 
-TextureUnit ParseTextureUnitName(stl::string name)
+TextureUnit ParseTextureUnitName(ea::string name)
 {
     name.make_lower();
     name.trim();
@@ -83,9 +83,9 @@ TextureUnit ParseTextureUnitName(stl::string name)
     return unit;
 }
 
-StringHash ParseTextureTypeName(const stl::string& name)
+StringHash ParseTextureTypeName(const ea::string& name)
 {
-    stl::string lowerCaseName = name;
+    ea::string lowerCaseName = name;
     lowerCaseName.make_lower();
     lowerCaseName.trim();
 
@@ -101,16 +101,16 @@ StringHash ParseTextureTypeName(const stl::string& name)
     return nullptr;
 }
 
-StringHash ParseTextureTypeXml(ResourceCache* cache, const stl::string& filename)
+StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename)
 {
     StringHash type;
     if (!cache)
         return type;
 
-    stl::shared_ptr<File> texXmlFile = cache->GetFile(filename, false);
+    ea::shared_ptr<File> texXmlFile = cache->GetFile(filename, false);
     if (texXmlFile)
     {
-        stl::shared_ptr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
+        ea::shared_ptr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
         if (texXml->Load(*texXmlFile))
             type = ParseTextureTypeName(texXml->GetRoot().GetName());
     }
@@ -141,7 +141,7 @@ TechniqueEntry::TechniqueEntry(Technique* tech, MaterialQuality qualityLevel, fl
 {
 }
 
-ShaderParameterAnimationInfo::ShaderParameterAnimationInfo(Material* material, const stl::string& name, ValueAnimation* attributeAnimation,
+ShaderParameterAnimationInfo::ShaderParameterAnimationInfo(Material* material, const ea::string& name, ValueAnimation* attributeAnimation,
     WrapMode wrapMode, float speed) :
     ValueAnimationInfo(material, attributeAnimation, wrapMode, speed),
     name_(name)
@@ -177,7 +177,7 @@ bool Material::BeginLoad(Deserializer& source)
     if (!graphics)
         return true;
 
-    stl::string extension = GetExtension(source.GetName());
+    ea::string extension = GetExtension(source.GetName());
 
     bool success = false;
     if (extension == ".xml")
@@ -253,7 +253,7 @@ bool Material::BeginLoadXML(Deserializer& source)
             XMLElement textureElem = rootElem.GetChild("texture");
             while (textureElem)
             {
-                stl::string name = textureElem.GetAttribute("name");
+                ea::string name = textureElem.GetAttribute("name");
                 // Detect cube maps and arrays by file extension: they are defined by an XML file
                 if (GetExtension(name) == ".xml")
                 {
@@ -313,8 +313,8 @@ bool Material::BeginLoadJSON(Deserializer& source)
             JSONObject textureObject = rootVal.Get("textures").GetObject();
             for (auto it = textureObject.begin(); it != textureObject.end(); it++)
             {
-                stl::string unitString = it->first;
-                stl::string name = it->second.GetString();
+                ea::string unitString = it->first;
+                ea::string name = it->second.GetString();
                 // Detect cube maps and arrays by file extension: they are defined by an XML file
                 if (GetExtension(name) == ".xml")
                 {
@@ -349,7 +349,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 
 bool Material::Save(Serializer& dest) const
 {
-    stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("material");
 
     Save(materialElem);
@@ -406,7 +406,7 @@ bool Material::Load(const XMLElement& source)
             unit = ParseTextureUnitName(textureElem.GetAttribute("unit"));
         if (unit < MAX_TEXTURE_UNITS)
         {
-            stl::string name = textureElem.GetAttribute("name");
+            ea::string name = textureElem.GetAttribute("name");
             // Detect cube maps and arrays by file extension: they are defined by an XML file
             if (GetExtension(name) == ".xml")
             {
@@ -433,7 +433,7 @@ bool Material::Load(const XMLElement& source)
     XMLElement parameterElem = source.GetChild("parameter");
     while (parameterElem)
     {
-        stl::string name = parameterElem.GetAttribute("name");
+        ea::string name = parameterElem.GetAttribute("name");
         if (!parameterElem.HasAttribute("type"))
             SetShaderParameter(name, ParseShaderParameterValue(parameterElem.GetAttribute("value")));
         else
@@ -445,15 +445,15 @@ bool Material::Load(const XMLElement& source)
     XMLElement parameterAnimationElem = source.GetChild("parameteranimation");
     while (parameterAnimationElem)
     {
-        stl::string name = parameterAnimationElem.GetAttribute("name");
-        stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        ea::string name = parameterAnimationElem.GetAttribute("name");
+        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(parameterAnimationElem))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
             return false;
         }
 
-        stl::string wrapModeString = parameterAnimationElem.GetAttribute("wrapmode");
+        ea::string wrapModeString = parameterAnimationElem.GetAttribute("wrapmode");
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -556,8 +556,8 @@ bool Material::Load(const JSONValue& source)
     JSONObject textureObject = source.Get("textures").GetObject();
     for (auto it = textureObject.begin(); it != textureObject.end(); it++)
     {
-        stl::string textureUnit = it->first;
-        stl::string textureName = it->second.GetString();
+        ea::string textureUnit = it->first;
+        ea::string textureName = it->second.GetString();
 
         TextureUnit unit = TU_DIFFUSE;
         unit = ParseTextureUnitName(textureUnit);
@@ -591,7 +591,7 @@ bool Material::Load(const JSONValue& source)
 
     for (auto it = parameterObject.begin(); it != parameterObject.end(); it++)
     {
-        stl::string name = it->first;
+        ea::string name = it->first;
         if (it->second.IsString())
             SetShaderParameter(name, ParseShaderParameterValue(it->second.GetString()));
         else if (it->second.IsObject())
@@ -606,17 +606,17 @@ bool Material::Load(const JSONValue& source)
     JSONObject paramAnimationsObject = source.Get("shaderParameterAnimations").GetObject();
     for (auto it = paramAnimationsObject.begin(); it != paramAnimationsObject.end(); it++)
     {
-        stl::string name = it->first;
+        ea::string name = it->first;
         JSONValue paramAnimVal = it->second;
 
-        stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(paramAnimVal))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
             return false;
         }
 
-        stl::string wrapModeString = paramAnimVal.Get("wrapmode").GetString();
+        ea::string wrapModeString = paramAnimVal.Get("wrapmode").GetString();
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -894,7 +894,7 @@ void Material::SetTechnique(unsigned index, Technique* tech, MaterialQuality qua
     ApplyShaderDefines(index);
 }
 
-void Material::SetVertexShaderDefines(const stl::string& defines)
+void Material::SetVertexShaderDefines(const ea::string& defines)
 {
     if (defines != vertexShaderDefines_)
     {
@@ -903,7 +903,7 @@ void Material::SetVertexShaderDefines(const stl::string& defines)
     }
 }
 
-void Material::SetPixelShaderDefines(const stl::string& defines)
+void Material::SetPixelShaderDefines(const ea::string& defines)
 {
     if (defines != pixelShaderDefines_)
     {
@@ -912,7 +912,7 @@ void Material::SetPixelShaderDefines(const stl::string& defines)
     }
 }
 
-void Material::SetShaderParameter(const stl::string& name, const Variant& value)
+void Material::SetShaderParameter(const ea::string& name, const Variant& value)
 {
     MaterialShaderParameter newParam;
     newParam.name_ = name;
@@ -943,7 +943,7 @@ void Material::SetShaderParameter(const stl::string& name, const Variant& value)
     }
 }
 
-void Material::SetShaderParameterAnimation(const stl::string& name, ValueAnimation* animation, WrapMode wrapMode, float speed)
+void Material::SetShaderParameterAnimation(const ea::string& name, ValueAnimation* animation, WrapMode wrapMode, float speed)
 {
     ShaderParameterAnimationInfo* info = GetShaderParameterAnimationInfo(name);
 
@@ -977,14 +977,14 @@ void Material::SetShaderParameterAnimation(const stl::string& name, ValueAnimati
     }
 }
 
-void Material::SetShaderParameterAnimationWrapMode(const stl::string& name, WrapMode wrapMode)
+void Material::SetShaderParameterAnimationWrapMode(const ea::string& name, WrapMode wrapMode)
 {
     ShaderParameterAnimationInfo* info = GetShaderParameterAnimationInfo(name);
     if (info)
         info->SetWrapMode(wrapMode);
 }
 
-void Material::SetShaderParameterAnimationSpeed(const stl::string& name, float speed)
+void Material::SetShaderParameterAnimationSpeed(const ea::string& name, float speed)
 {
     ShaderParameterAnimationInfo* info = GetShaderParameterAnimationInfo(name);
     if (info)
@@ -1083,7 +1083,7 @@ void Material::SetScene(Scene* scene)
     UpdateEventSubscription();
 }
 
-void Material::RemoveShaderParameter(const stl::string& name)
+void Material::RemoveShaderParameter(const ea::string& name)
 {
     StringHash nameHash(name);
     shaderParameters_.erase(nameHash);
@@ -1105,9 +1105,9 @@ void Material::ReleaseShaders()
     }
 }
 
-stl::shared_ptr<Material> Material::Clone(const stl::string& cloneName) const
+ea::shared_ptr<Material> Material::Clone(const ea::string& cloneName) const
 {
-    stl::shared_ptr<Material> ret(context_->CreateObject<Material>());
+    ea::shared_ptr<Material> ret(context_->CreateObject<Material>());
 
     ret->SetName(cloneName);
     ret->techniques_ = techniques_;
@@ -1132,7 +1132,7 @@ stl::shared_ptr<Material> Material::Clone(const stl::string& cloneName) const
 
 void Material::SortTechniques()
 {
-    stl::quick_sort(techniques_.begin(), techniques_.end(), CompareTechniqueEntries);
+    ea::quick_sort(techniques_.begin(), techniques_.end(), CompareTechniqueEntries);
 }
 
 void Material::MarkForAuxView(unsigned frameNumber)
@@ -1150,7 +1150,7 @@ Technique* Material::GetTechnique(unsigned index) const
     return index < techniques_.size() ? techniques_[index].technique_ : nullptr;
 }
 
-Pass* Material::GetPass(unsigned index, const stl::string& passName) const
+Pass* Material::GetPass(unsigned index, const ea::string& passName) const
 {
     Technique* tech = index < techniques_.size() ? techniques_[index].technique_ : nullptr;
     return tech ? tech->GetPass(passName) : nullptr;
@@ -1162,25 +1162,25 @@ Texture* Material::GetTexture(TextureUnit unit) const
     return i != textures_.end() ? i->second : nullptr;
 }
 
-const Variant& Material::GetShaderParameter(const stl::string& name) const
+const Variant& Material::GetShaderParameter(const ea::string& name) const
 {
     auto i = shaderParameters_.find(name);
     return i != shaderParameters_.end() ? i->second.value_ : Variant::EMPTY;
 }
 
-ValueAnimation* Material::GetShaderParameterAnimation(const stl::string& name) const
+ValueAnimation* Material::GetShaderParameterAnimation(const ea::string& name) const
 {
     ShaderParameterAnimationInfo* info = GetShaderParameterAnimationInfo(name);
     return info == nullptr ? nullptr : info->GetAnimation();
 }
 
-WrapMode Material::GetShaderParameterAnimationWrapMode(const stl::string& name) const
+WrapMode Material::GetShaderParameterAnimationWrapMode(const ea::string& name) const
 {
     ShaderParameterAnimationInfo* info = GetShaderParameterAnimationInfo(name);
     return info == nullptr ? WM_LOOP : info->GetWrapMode();
 }
 
-float Material::GetShaderParameterAnimationSpeed(const stl::string& name) const
+float Material::GetShaderParameterAnimationSpeed(const ea::string& name) const
 {
     ShaderParameterAnimationInfo* info = GetShaderParameterAnimationInfo(name);
     return info == nullptr ? 0 : info->GetSpeed();
@@ -1191,14 +1191,14 @@ Scene* Material::GetScene() const
     return scene_;
 }
 
-stl::string Material::GetTextureUnitName(TextureUnit unit)
+ea::string Material::GetTextureUnitName(TextureUnit unit)
 {
     return textureUnitNames[unit];
 }
 
-Variant Material::ParseShaderParameterValue(const stl::string& value)
+Variant Material::ParseShaderParameterValue(const ea::string& value)
 {
-    stl::string valueTrimmed = value.trimmed();
+    ea::string valueTrimmed = value.trimmed();
     if (valueTrimmed.length() && IsAlpha((unsigned)valueTrimmed[0]))
         return Variant(ToBool(valueTrimmed));
     else
@@ -1266,13 +1266,13 @@ void Material::RefreshMemoryUse()
     unsigned memoryUse = sizeof(Material);
 
     memoryUse += techniques_.size() * sizeof(TechniqueEntry);
-    memoryUse += MAX_TEXTURE_UNITS * sizeof(stl::shared_ptr<Texture>);
+    memoryUse += MAX_TEXTURE_UNITS * sizeof(ea::shared_ptr<Texture>);
     memoryUse += shaderParameters_.size() * sizeof(MaterialShaderParameter);
 
     SetMemoryUse(memoryUse);
 }
 
-ShaderParameterAnimationInfo* Material::GetShaderParameterAnimationInfo(const stl::string& name) const
+ShaderParameterAnimationInfo* Material::GetShaderParameterAnimationInfo(const ea::string& name) const
 {
     StringHash nameHash(name);
     auto i = shaderParameterAnimationInfos_.find(
@@ -1306,9 +1306,9 @@ void Material::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& 
     float timeStep = eventData[Update::P_TIMESTEP].GetFloat();
 
     // Keep weak pointer to self to check for destruction caused by event handling
-    stl::weak_ptr<Object> self(this);
+    ea::weak_ptr<Object> self(this);
 
-    stl::vector<stl::string> finishedNames;
+    ea::vector<ea::string> finishedNames;
     for (auto i = shaderParameterAnimationInfos_.begin();
          i != shaderParameterAnimationInfos_.end(); ++i)
     {

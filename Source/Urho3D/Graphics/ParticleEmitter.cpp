@@ -226,7 +226,7 @@ void ParticleEmitter::Update(const FrameInfo& frame)
 
             // Color interpolation
             unsigned& index = particle.colorIndex_;
-            const stl::vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
+            const ea::vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
             if (index < colorFrames_.size())
             {
                 if (index < colorFrames_.size() - 1)
@@ -242,7 +242,7 @@ void ParticleEmitter::Update(const FrameInfo& frame)
 
             // Texture animation
             unsigned& texIndex = particle.texIndex_;
-            const stl::vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
+            const ea::vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
             if (textureFrames_.size() && texIndex < textureFrames_.size() - 1)
             {
                 if (particle.timer_ >= textureFrames_[texIndex + 1].time_)
@@ -536,10 +536,10 @@ bool ParticleEmitter::EmitNewParticle()
 
     billboard.position_ = startPos;
     billboard.size_ = particles_[index].size_;
-    const stl::vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
+    const ea::vector<TextureFrame>& textureFrames_ = effect_->GetTextureFrames();
     billboard.uv_ = textureFrames_.size() ? textureFrames_[0].uv_ : Rect::POSITIVE;
     billboard.rotation_ = effect_->GetRandomRotation();
-    const stl::vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
+    const ea::vector<ColorFrame>& colorFrames_ = effect_->GetColorFrames();
     billboard.color_ = colorFrames_.size() ? colorFrames_[0].color_ : Color();
     billboard.enabled_ = true;
     billboard.direction_ = startDir;
@@ -593,7 +593,7 @@ void ParticleEmitter::HandleScenePostUpdate(StringHash eventType, VariantMap& ev
         sendFinishedEvent_ = false;
 
         // Make a weak pointer to self to check for destruction during event handling
-        stl::weak_ptr<ParticleEmitter> self(this);
+        ea::weak_ptr<ParticleEmitter> self(this);
 
         using namespace ParticleEffectFinished;
 

@@ -152,7 +152,7 @@ void Editor::RenderProjectMenu()
         }
         else
         {
-            for (const stl::string& baseName : pluginNames)
+            for (const ea::string& baseName : pluginNames)
             {
                 PluginManager* plugins = project_->GetPlugins();
                 Plugin* plugin = plugins->GetPlugin(baseName);
@@ -206,7 +206,7 @@ void Editor::RenderProjectMenu()
             }
         }
 
-        for (const stl::string& resourceName : *sceneNames)
+        for (const ea::string& resourceName : *sceneNames)
         {
             bool isDefaultScene = resourceName == project_->GetDefaultSceneName();
             if (ui::Checkbox(resourceName.c_str(), &isDefaultScene))
@@ -349,7 +349,7 @@ void Editor::RenderProjectMenu()
 
         struct NewEntryState
         {
-            stl::string customName;
+            ea::string customName;
             int customType = 0;
             int predefinedItem = 0;
         };
@@ -358,7 +358,7 @@ void Editor::RenderProjectMenu()
         auto& settings = project_->GetDefaultEngineSettings();
         for (auto it = settings.begin(); it != settings.end();)
         {
-            const stl::string& settingName = it->first;
+            const ea::string& settingName = it->first;
             ui::IdScope idScope(settingName.c_str());
             Variant& value = it->second;
             float startPos = ui::GetCursorPosX();

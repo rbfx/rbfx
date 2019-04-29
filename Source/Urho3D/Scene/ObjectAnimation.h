@@ -61,33 +61,33 @@ public:
 
     /// Add attribute animation, attribute name can in following format: "attribute" or "#0/#1/attribute" or ""#0/#1/@component#1/attribute.
     void AddAttributeAnimation
-        (const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
+        (const ea::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
     /// Remove attribute animation, attribute name can in following format: "attribute" or "#0/#1/attribute" or ""#0/#1/@component#1/attribute.
-    void RemoveAttributeAnimation(const stl::string& name);
+    void RemoveAttributeAnimation(const ea::string& name);
     /// Remove attribute animation.
     void RemoveAttributeAnimation(ValueAnimation* attributeAnimation);
 
     /// Return attribute animation by name.
-    ValueAnimation* GetAttributeAnimation(const stl::string& name) const;
+    ValueAnimation* GetAttributeAnimation(const ea::string& name) const;
     /// Return attribute animation wrap mode by name.
-    WrapMode GetAttributeAnimationWrapMode(const stl::string& name) const;
+    WrapMode GetAttributeAnimationWrapMode(const ea::string& name) const;
     /// Return attribute animation speed by name.
-    float GetAttributeAnimationSpeed(const stl::string& name) const;
+    float GetAttributeAnimationSpeed(const ea::string& name) const;
 
     /// Return all attribute animations infos.
-    const stl::unordered_map<stl::string, stl::shared_ptr<ValueAnimationInfo> >& GetAttributeAnimationInfos() const { return attributeAnimationInfos_; }
+    const ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> >& GetAttributeAnimationInfos() const { return attributeAnimationInfos_; }
 
     /// Return attribute animation info by name.
-    ValueAnimationInfo* GetAttributeAnimationInfo(const stl::string& name) const;
+    ValueAnimationInfo* GetAttributeAnimationInfo(const ea::string& name) const;
 
 private:
     /// Send attribute animation added event.
-    void SendAttributeAnimationAddedEvent(const stl::string& name);
+    void SendAttributeAnimationAddedEvent(const ea::string& name);
     /// Send attribute animation remove event.
-    void SendAttributeAnimationRemovedEvent(const stl::string& name);
+    void SendAttributeAnimationRemovedEvent(const ea::string& name);
 
     /// Name to attribute animation info mapping.
-    stl::unordered_map<stl::string, stl::shared_ptr<ValueAnimationInfo> > attributeAnimationInfos_;
+    ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> > attributeAnimationInfos_;
 };
 
 }

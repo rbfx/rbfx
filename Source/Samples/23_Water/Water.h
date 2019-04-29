@@ -64,9 +64,9 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Reflection camera scene node.
-    stl::shared_ptr<Node> reflectionCameraNode_;
+    ea::shared_ptr<Node> reflectionCameraNode_;
     /// Water body scene node.
-    stl::shared_ptr<Node> waterNode_;
+    ea::shared_ptr<Node> waterNode_;
     /// Reflection plane representing the water surface.
     Plane waterPlane_;
     /// Clipping plane for reflection rendering. Slightly biased downward from the reflection plane to avoid artifacts.

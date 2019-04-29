@@ -58,7 +58,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element\">"
         "        <element type=\"Button\">"
@@ -118,9 +118,9 @@ private:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Touch utility object.
-    stl::shared_ptr<Touch> touch_;
+    ea::shared_ptr<Touch> touch_;
     /// The controllable character component.
-    stl::weak_ptr<Character> character_;
+    ea::weak_ptr<Character> character_;
     /// First person camera flag.
     bool firstPerson_;
 };

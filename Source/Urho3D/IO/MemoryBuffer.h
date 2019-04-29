@@ -36,9 +36,9 @@ public:
     /// Construct as read-only with a pointer and size.
     MemoryBuffer(const void* data, unsigned size);
     /// Construct from a vector, which must not go out of scope before MemoryBuffer.
-    explicit MemoryBuffer(stl::vector<unsigned char>& data);
+    explicit MemoryBuffer(ea::vector<unsigned char>& data);
     /// Construct from a read-only vector, which must not go out of scope before MemoryBuffer.
-    explicit MemoryBuffer(const stl::vector<unsigned char>& data);
+    explicit MemoryBuffer(const ea::vector<unsigned char>& data);
 
     /// Read bytes from the memory area. Return number of bytes actually read.
     unsigned Read(void* dest, unsigned size) override;

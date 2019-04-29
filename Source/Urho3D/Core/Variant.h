@@ -77,13 +77,13 @@ class Variant;
 class VectorBuffer;
 
 /// Vector of variants.
-using VariantVector = stl::vector<Variant>;
+using VariantVector = ea::vector<Variant>;
 
 /// Vector of strings.
-using StringVector = stl::vector<stl::string>;
+using StringVector = ea::vector<ea::string>;
 
 /// Map of variants.
-using VariantMap = stl::unordered_map<StringHash, Variant>;
+using VariantMap = ea::unordered_map<StringHash, Variant>;
 
 /// Typed resource reference.
 struct URHO3D_API ResourceRef
@@ -98,14 +98,14 @@ struct URHO3D_API ResourceRef
     }
 
     /// Construct with type and resource name.
-    ResourceRef(StringHash type, const stl::string& name) :
+    ResourceRef(StringHash type, const ea::string& name) :
         type_(type),
         name_(name)
     {
     }
 
     /// Construct with type and resource name.
-    ResourceRef(const stl::string& type, const stl::string& name) :
+    ResourceRef(const ea::string& type, const ea::string& name) :
         type_(type),
         name_(name)
     {
@@ -124,7 +124,7 @@ struct URHO3D_API ResourceRef
     /// Object type.
     StringHash type_;
     /// Object name.
-    stl::string name_;
+    ea::string name_;
 
     /// Test for equality with another reference.
     bool operator ==(const ResourceRef& rhs) const { return type_ == rhs.type_ && name_ == rhs.name_; }
@@ -203,7 +203,7 @@ public:
     /// Compare to zero.
     virtual bool IsZero() const { return false; }
     /// Convert custom value to string.
-    virtual stl::string ToString() const { return EMPTY_STRING; }
+    virtual ea::string ToString() const { return EMPTY_STRING; }
 
 private:
     /// Type info.
@@ -218,7 +218,7 @@ template <class T> struct CustomVariantValueTraits
     /// Check whether the value is zero.
     static bool IsZero(const T& value) { (void)value; return false; }
     /// Convert type to string.
-    static stl::string ToString(const T& value) { (void)value; return EMPTY_STRING; }
+    static ea::string ToString(const T& value) { (void)value; return EMPTY_STRING; }
 };
 
 /// Custom variant value implementation.
@@ -264,7 +264,7 @@ public:
     /// Compare to zero.
     bool IsZero() const override { return Traits::IsZero(value_);}
     /// Convert custom value to string.
-    stl::string ToString() const override { return Traits::ToString(value_); }
+    ea::string ToString() const override { return Traits::ToString(value_); }
 
 private:
     /// Value.
@@ -287,7 +287,7 @@ union VariantValue
     double double_;
     long long int64_;
     void* voidPtr_;
-    stl::weak_ptr<RefCounted> weakPtr_;
+    ea::weak_ptr<RefCounted> weakPtr_;
     Vector2 vector2_;
     Vector3 vector3_;
     Vector4 vector4_;
@@ -300,11 +300,11 @@ union VariantValue
     Matrix4* matrix4_;
     Quaternion quaternion_;
     Color color_;
-    stl::string string_;
+    ea::string string_;
     StringVector stringVector_;
     VariantVector variantVector_;
     VariantMap* variantMap_;
-    stl::vector<unsigned char> buffer_;
+    ea::vector<unsigned char> buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
     CustomVariantValue* customValueHeap_;
@@ -406,7 +406,7 @@ public:
     }
 
     /// Construct from a string.
-    Variant(const stl::string& value)        // NOLINT(google-explicit-constructor)
+    Variant(const ea::string& value)        // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -418,7 +418,7 @@ public:
     }
 
     /// Construct from a buffer.
-    Variant(const stl::vector<unsigned char>& value)      // NOLINT(google-explicit-constructor)
+    Variant(const ea::vector<unsigned char>& value)      // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -489,7 +489,7 @@ public:
         *this = value;
     }
 
-    /// Construct from a RefCounted pointer. The object will be stored internally in a stl::weak_ptr so that its expiration can be detected safely.
+    /// Construct from a RefCounted pointer. The object will be stored internally in a ea::weak_ptr so that its expiration can be detected safely.
     Variant(RefCounted* value)          // NOLINT(google-explicit-constructor)
     {
         *this = value;
@@ -521,13 +521,13 @@ public:
     }
 
     /// Construct from type and value.
-    Variant(const stl::string& type, const stl::string& value)
+    Variant(const ea::string& type, const ea::string& value)
     {
         FromString(type, value);
     }
 
     /// Construct from type and value.
-    Variant(VariantType type, const stl::string& value)
+    Variant(VariantType type, const ea::string& value)
     {
         FromString(type, value);
     }
@@ -673,7 +673,7 @@ public:
     }
 
     /// Assign from a string.
-    Variant& operator =(const stl::string& rhs)
+    Variant& operator =(const ea::string& rhs)
     {
         SetType(VAR_STRING);
         value_.string_ = rhs;
@@ -689,7 +689,7 @@ public:
     }
 
     /// Assign from a buffer.
-    Variant& operator =(const stl::vector<unsigned char>& rhs)
+    Variant& operator =(const ea::vector<unsigned char>& rhs)
     {
         SetType(VAR_BUFFER);
         value_.buffer_ = rhs;
@@ -779,7 +779,7 @@ public:
         return *this;
     }
 
-    /// Assign from a RefCounted pointer. The object will be stored internally in a stl::weak_ptr so that its expiration can be detected safely.
+    /// Assign from a RefCounted pointer. The object will be stored internally in a ea::weak_ptr so that its expiration can be detected safely.
     Variant& operator =(RefCounted* rhs)
     {
         SetType(VAR_PTR);
@@ -874,13 +874,13 @@ public:
     }
 
     /// Test for equality with a string. To return true, both the type and value must match.
-    bool operator ==(const stl::string& rhs) const
+    bool operator ==(const ea::string& rhs) const
     {
         return type_ == VAR_STRING ? value_.string_ == rhs : false;
     }
 
     /// Test for equality with a buffer. To return true, both the type and value must match.
-    bool operator ==(const stl::vector<unsigned char>& rhs) const;
+    bool operator ==(const ea::vector<unsigned char>& rhs) const;
     /// Test for equality with a %VectorBuffer. To return true, both the type and value must match.
     bool operator ==(const VectorBuffer& rhs) const;
 
@@ -1018,10 +1018,10 @@ public:
     bool operator !=(const Quaternion& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a string.
-    bool operator !=(const stl::string& rhs) const { return !(*this == rhs); }
+    bool operator !=(const ea::string& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a buffer.
-    bool operator !=(const stl::vector<unsigned char>& rhs) const { return !(*this == rhs); }
+    bool operator !=(const ea::vector<unsigned char>& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a %VectorBuffer.
     bool operator !=(const VectorBuffer& rhs) const { return !(*this == rhs); }
@@ -1072,11 +1072,11 @@ public:
     bool operator !=(const Matrix4& rhs) const { return !(*this == rhs); }
 
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
-    void FromString(const stl::string& type, const stl::string& value);
+    void FromString(const ea::string& type, const ea::string& value);
     /// Set from typename and value strings. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(const char* type, const char* value);
     /// Set from type and value string. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
-    void FromString(VariantType type, const stl::string& value);
+    void FromString(VariantType type, const ea::string& value);
     /// Set from type and value string. Pointers will be set to null, and VariantBuffer or VariantMap types are not supported.
     void FromString(VariantType type, const char* value);
     /// Set buffer type from a memory area.
@@ -1197,10 +1197,10 @@ public:
     const Color& GetColor() const { return (type_ == VAR_COLOR || type_ == VAR_VECTOR4) ? value_.color_ : Color::WHITE; }
 
     /// Return string or empty on type mismatch.
-    const stl::string& GetString() const { return type_ == VAR_STRING ? value_.string_ : EMPTY_STRING; }
+    const ea::string& GetString() const { return type_ == VAR_STRING ? value_.string_ : EMPTY_STRING; }
 
     /// Return buffer or empty on type mismatch.
-    const stl::vector<unsigned char>& GetBuffer() const
+    const ea::vector<unsigned char>& GetBuffer() const
     {
         return type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer;
     }
@@ -1332,9 +1332,9 @@ public:
     VariantType GetType() const { return type_; }
 
     /// Return value's type name.
-    stl::string GetTypeName() const;
+    ea::string GetTypeName() const;
     /// Convert value to string. Pointers are returned as null, and VariantBuffer or VariantMap are not supported and return empty.
-    stl::string ToString() const;
+    ea::string ToString() const;
     /// Return true when the variant value is considered zero according to its actual type.
     bool IsZero() const;
 
@@ -1348,7 +1348,7 @@ public:
     template <class T> T Get() const;
 
     /// Return a pointer to a modifiable buffer or null on type mismatch.
-    stl::vector<unsigned char>* GetBufferPtr()
+    ea::vector<unsigned char>* GetBufferPtr()
     {
         return type_ == VAR_BUFFER ? &value_.buffer_ : nullptr;
     }
@@ -1385,16 +1385,16 @@ public:
     }
 
     /// Return name for variant type.
-    static stl::string GetTypeName(VariantType type);
+    static ea::string GetTypeName(VariantType type);
     /// Return variant type from type name.
-    static VariantType GetTypeFromName(const stl::string& typeName);
+    static VariantType GetTypeFromName(const ea::string& typeName);
     /// Return variant type from type name.
     static VariantType GetTypeFromName(const char* typeName);
 
     /// Empty variant.
     static const Variant EMPTY;
     /// Empty buffer.
-    static const stl::vector<unsigned char> emptyBuffer;
+    static const ea::vector<unsigned char> emptyBuffer;
     /// Empty resource reference.
     static const ResourceRef emptyResourceRef;
     /// Empty resource reference list.
@@ -1444,11 +1444,11 @@ template <> inline VariantType GetVariantType<Quaternion>() { return VAR_QUATERN
 
 template <> inline VariantType GetVariantType<Color>() { return VAR_COLOR; }
 
-template <> inline VariantType GetVariantType<stl::string>() { return VAR_STRING; }
+template <> inline VariantType GetVariantType<ea::string>() { return VAR_STRING; }
 
 template <> inline VariantType GetVariantType<StringHash>() { return VAR_INT; }
 
-template <> inline VariantType GetVariantType<stl::vector<unsigned char> >() { return VAR_BUFFER; }
+template <> inline VariantType GetVariantType<ea::vector<unsigned char> >() { return VAR_BUFFER; }
 
 template <> inline VariantType GetVariantType<ResourceRef>() { return VAR_RESOURCEREF; }
 
@@ -1501,7 +1501,7 @@ template <> URHO3D_API const Quaternion& Variant::Get<const Quaternion&>() const
 
 template <> URHO3D_API const Color& Variant::Get<const Color&>() const;
 
-template <> URHO3D_API const stl::string& Variant::Get<const stl::string&>() const;
+template <> URHO3D_API const ea::string& Variant::Get<const ea::string&>() const;
 
 template <> URHO3D_API const Rect& Variant::Get<const Rect&>() const;
 
@@ -1511,7 +1511,7 @@ template <> URHO3D_API const IntVector2& Variant::Get<const IntVector2&>() const
 
 template <> URHO3D_API const IntVector3& Variant::Get<const IntVector3&>() const;
 
-template <> URHO3D_API const stl::vector<unsigned char>& Variant::Get<const stl::vector<unsigned char>&>() const;
+template <> URHO3D_API const ea::vector<unsigned char>& Variant::Get<const ea::vector<unsigned char>&>() const;
 
 template <> URHO3D_API void* Variant::Get<void*>() const;
 
@@ -1543,7 +1543,7 @@ template <> URHO3D_API Quaternion Variant::Get<Quaternion>() const;
 
 template <> URHO3D_API Color Variant::Get<Color>() const;
 
-template <> URHO3D_API stl::string Variant::Get<stl::string>() const;
+template <> URHO3D_API ea::string Variant::Get<ea::string>() const;
 
 template <> URHO3D_API Rect Variant::Get<Rect>() const;
 
@@ -1553,7 +1553,7 @@ template <> URHO3D_API IntVector2 Variant::Get<IntVector2>() const;
 
 template <> URHO3D_API IntVector3 Variant::Get<IntVector3>() const;
 
-template <> URHO3D_API stl::vector<unsigned char> Variant::Get<stl::vector<unsigned char> >() const;
+template <> URHO3D_API ea::vector<unsigned char> Variant::Get<ea::vector<unsigned char> >() const;
 
 template <> URHO3D_API Matrix3 Variant::Get<Matrix3>() const;
 

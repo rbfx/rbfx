@@ -62,7 +62,7 @@ static const StringVector animationStatesStructureElementNames =
     "   Layer"
 };
 
-static bool CompareAnimationOrder(const stl::shared_ptr<AnimationState>& lhs, const stl::shared_ptr<AnimationState>& rhs)
+static bool CompareAnimationOrder(const ea::shared_ptr<AnimationState>& lhs, const ea::shared_ptr<AnimationState>& rhs)
 {
     return lhs->GetLayer() < rhs->GetLayer();
 }
@@ -123,7 +123,7 @@ void AnimatedModel::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Animation States", GetAnimationStatesAttr, SetAnimationStatesAttr,
         VariantVector, Variant::emptyVariantVector, AM_FILE)
         .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, animationStatesStructureElementNames);
-    URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_ACCESSOR_ATTRIBUTE("Morphs", GetMorphsAttr, SetMorphsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_DEFAULT | AM_NOEDIT);
 }
 
@@ -160,7 +160,7 @@ void AnimatedModel::ApplyAttributes()
         AssignBoneNodes();
 }
 
-void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     // If no bones or no bone-level testing, use the StaticModel test
     RayQueryLevel level = query.level_;
@@ -174,7 +174,7 @@ void AnimatedModel::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<Ray
     if (query.ray_.HitDistance(GetWorldBoundingBox()) >= query.maxDistance_)
         return;
 
-    const stl::vector<Bone>& bones = skeleton_.GetBones();
+    const ea::vector<Bone>& bones = skeleton_.GetBones();
     Sphere boneSphere;
 
     for (unsigned i = 0; i < bones.size(); ++i)
@@ -354,8 +354,8 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const stl::vector<stl::vector<stl::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
-        const stl::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
+        const ea::vector<ea::vector<ea::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
+        const ea::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
         for (unsigned i = 0; i < geometries.size(); ++i)
         {
             geometries_[i] = geometries[i];
@@ -363,7 +363,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         }
 
         // Copy geometry bone mappings
-        const stl::vector<stl::vector<unsigned> >& geometryBoneMappings = model->GetGeometryBoneMappings();
+        const ea::vector<ea::vector<unsigned> >& geometryBoneMappings = model->GetGeometryBoneMappings();
         geometryBoneMappings_.clear();
         geometryBoneMappings_.reserve(geometryBoneMappings.size());
         for (unsigned i = 0; i < geometryBoneMappings.size(); ++i)
@@ -372,7 +372,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         // Copy morphs. Note: morph vertex buffers will be created later on-demand
         morphVertexBuffers_.clear();
         morphs_.clear();
-        const stl::vector<ModelMorph>& morphs = model->GetMorphs();
+        const ea::vector<ModelMorph>& morphs = model->GetMorphs();
         morphs_.reserve(morphs.size());
         morphElementMask_ = MASK_NONE;
         for (unsigned i = 0; i < morphs.size(); ++i)
@@ -458,7 +458,7 @@ AnimationState* AnimatedModel::AddAnimationState(Animation* animation)
     if (existing)
         return existing;
 
-    stl::shared_ptr<AnimationState> newState(new AnimationState(this, animation));
+    ea::shared_ptr<AnimationState> newState(new AnimationState(this, animation));
     animationStates_.push_back(newState);
     MarkAnimationOrderDirty();
     return newState;
@@ -483,7 +483,7 @@ void AnimatedModel::RemoveAnimationState(Animation* animation)
     }
 }
 
-void AnimatedModel::RemoveAnimationState(const stl::string& animationName)
+void AnimatedModel::RemoveAnimationState(const ea::string& animationName)
 {
     RemoveAnimationState(StringHash(animationName));
 }
@@ -567,7 +567,7 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
         // For a master model, set the same morph weight on non-master models
         if (isMaster_)
         {
-            stl::vector<AnimatedModel*> models;
+            ea::vector<AnimatedModel*> models;
             GetComponents<AnimatedModel>(models);
 
             // Indexing might not be the same, so use the name hash instead
@@ -583,7 +583,7 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
     }
 }
 
-void AnimatedModel::SetMorphWeight(const stl::string& name, float weight)
+void AnimatedModel::SetMorphWeight(const ea::string& name, float weight)
 {
     for (unsigned i = 0; i < morphs_.size(); ++i)
     {
@@ -615,7 +615,7 @@ void AnimatedModel::ResetMorphWeights()
     // For a master model, reset weights on non-master models
     if (isMaster_)
     {
-        stl::vector<AnimatedModel*> models;
+        ea::vector<AnimatedModel*> models;
         GetComponents<AnimatedModel>(models);
 
         for (unsigned i = 1; i < models.size(); ++i)
@@ -634,7 +634,7 @@ float AnimatedModel::GetMorphWeight(unsigned index) const
     return index < morphs_.size() ? morphs_[index].weight_ : 0.0f;
 }
 
-float AnimatedModel::GetMorphWeight(const stl::string& name) const
+float AnimatedModel::GetMorphWeight(const ea::string& name) const
 {
     for (auto i = morphs_.begin(); i != morphs_.end(); ++i)
     {
@@ -667,7 +667,7 @@ AnimationState* AnimatedModel::GetAnimationState(Animation* animation) const
     return nullptr;
 }
 
-AnimationState* AnimatedModel::GetAnimationState(const stl::string& animationName) const
+AnimationState* AnimatedModel::GetAnimationState(const ea::string& animationName) const
 {
     return GetAnimationState(StringHash(animationName));
 }
@@ -706,8 +706,8 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
         // Check if bone structure has stayed compatible (reloading the model.) In that case retain the old bones and animations
         if (skeleton_.GetNumBones() == skeleton.GetNumBones())
         {
-            stl::vector<Bone>& destBones = skeleton_.GetModifiableBones();
-            const stl::vector<Bone>& srcBones = skeleton.GetBones();
+            ea::vector<Bone>& destBones = skeleton_.GetModifiableBones();
+            const ea::vector<Bone>& srcBones = skeleton.GetBones();
             bool compatible = true;
 
             for (unsigned i = 0; i < destBones.size(); ++i)
@@ -743,7 +743,7 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
         // Merge bounding boxes from non-master models
         FinalizeBoneBoundingBoxes();
 
-        stl::vector<Bone>& bones = skeleton_.GetModifiableBones();
+        ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
         // Create scene nodes for the bones
         if (createBones)
         {
@@ -784,7 +784,7 @@ void AnimatedModel::SetSkeleton(const Skeleton& skeleton, bool createBones)
 
         if (createBones)
         {
-            stl::vector<Bone>& bones = skeleton_.GetModifiableBones();
+            ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
             for (auto i = bones.begin(); i != bones.end(); ++i)
             {
                 Node* boneNode = node_->GetChild(i->name_, true);
@@ -807,7 +807,7 @@ void AnimatedModel::SetModelAttr(const ResourceRef& value)
 
 void AnimatedModel::SetBonesEnabledAttr(const VariantVector& value)
 {
-    stl::vector<Bone>& bones = skeleton_.GetModifiableBones();
+    ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
     for (unsigned i = 0; i < bones.size() && i < value.size(); ++i)
         bones[i].animated_ = value[i].GetBool();
 }
@@ -831,7 +831,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
         {
             // Note: null animation is allowed here for editing
             const ResourceRef& animRef = value[index++].GetResourceRef();
-            stl::shared_ptr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
+            ea::shared_ptr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
             animationStates_.push_back(newState);
 
             newState->SetStartBone(skeleton_.GetBone(value[index++].GetString()));
@@ -843,7 +843,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
         else
         {
             // If not enough data, just add an empty animation state
-            stl::shared_ptr<AnimationState> newState(new AnimationState(this, nullptr));
+            ea::shared_ptr<AnimationState> newState(new AnimationState(this, nullptr));
             animationStates_.push_back(newState);
         }
     }
@@ -855,7 +855,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
     }
 }
 
-void AnimatedModel::SetMorphsAttr(const stl::vector<unsigned char>& value)
+void AnimatedModel::SetMorphsAttr(const ea::vector<unsigned char>& value)
 {
     for (unsigned index = 0; index < value.size(); ++index)
         SetMorphWeight(index, (float)value[index] / 255.0f);
@@ -869,7 +869,7 @@ ResourceRef AnimatedModel::GetModelAttr() const
 VariantVector AnimatedModel::GetBonesEnabledAttr() const
 {
     VariantVector ret;
-    const stl::vector<Bone>& bones = skeleton_.GetBones();
+    const ea::vector<Bone>& bones = skeleton_.GetBones();
     ret.reserve(bones.size());
     for (auto i = bones.begin(); i != bones.end(); ++i)
         ret.push_back(i->animated_);
@@ -896,7 +896,7 @@ VariantVector AnimatedModel::GetAnimationStatesAttr() const
     return ret;
 }
 
-const stl::vector<unsigned char>& AnimatedModel::GetMorphsAttr() const
+const ea::vector<unsigned char>& AnimatedModel::GetMorphsAttr() const
 {
     attrBuffer_.Clear();
     for (auto i = morphs_.begin(); i != morphs_.end(); ++i)
@@ -913,7 +913,7 @@ void AnimatedModel::UpdateBoneBoundingBox()
         boneBoundingBox_.Clear();
         Matrix3x4 inverseNodeTransform = node_->GetWorldTransform().Inverse();
 
-        const stl::vector<Bone>& bones = skeleton_.GetBones();
+        const ea::vector<Bone>& bones = skeleton_.GetBones();
         for (auto i = bones.begin(); i != bones.end(); ++i)
         {
             Node* boneNode = i->node_;
@@ -986,7 +986,7 @@ void AnimatedModel::AssignBoneNodes()
         return;
 
     // Find the bone nodes from the node hierarchy and add listeners
-    stl::vector<Bone>& bones = skeleton_.GetModifiableBones();
+    ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
     bool boneFound = false;
     for (auto i = bones.begin(); i != bones.end(); ++i)
     {
@@ -1014,8 +1014,8 @@ void AnimatedModel::AssignBoneNodes()
 
 void AnimatedModel::FinalizeBoneBoundingBoxes()
 {
-    stl::vector<Bone>& bones = skeleton_.GetModifiableBones();
-    stl::vector<AnimatedModel*> models;
+    ea::vector<Bone>& bones = skeleton_.GetModifiableBones();
+    ea::vector<AnimatedModel*> models;
     GetComponents<AnimatedModel>(models);
 
     if (models.size() > 1)
@@ -1023,7 +1023,7 @@ void AnimatedModel::FinalizeBoneBoundingBoxes()
         // Reset first to the model resource's original bone bounding information if available (should be)
         if (model_)
         {
-            const stl::vector<Bone>& modelBones = model_->GetSkeleton().GetBones();
+            const ea::vector<Bone>& modelBones = model_->GetSkeleton().GetBones();
             for (unsigned i = 0; i < bones.size() && i < modelBones.size(); ++i)
             {
                 bones[i].collisionMask_ = modelBones[i].collisionMask_;
@@ -1106,8 +1106,8 @@ void AnimatedModel::MarkMorphsDirty()
 
 void AnimatedModel::CloneGeometries()
 {
-    const stl::vector<stl::shared_ptr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
-    stl::unordered_map<VertexBuffer*, stl::shared_ptr<VertexBuffer> > clonedVertexBuffers;
+    const ea::vector<ea::shared_ptr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
+    ea::unordered_map<VertexBuffer*, ea::shared_ptr<VertexBuffer> > clonedVertexBuffers;
     morphVertexBuffers_.resize(originalVertexBuffers.size());
 
     for (unsigned i = 0; i < originalVertexBuffers.size(); ++i)
@@ -1115,7 +1115,7 @@ void AnimatedModel::CloneGeometries()
         VertexBuffer* original = originalVertexBuffers[i];
         if (model_->GetMorphRangeCount(i))
         {
-            stl::shared_ptr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
+            ea::shared_ptr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
             clone->SetShadowed(true);
             clone->SetSize(original->GetVertexCount(), morphElementMask_ & original->GetElementMask(), true);
             void* dest = clone->Lock(0, original->GetVertexCount());
@@ -1136,12 +1136,12 @@ void AnimatedModel::CloneGeometries()
     {
         for (unsigned j = 0; j < geometries_[i].size(); ++j)
         {
-            stl::shared_ptr<Geometry> original = geometries_[i][j];
-            stl::shared_ptr<Geometry> clone(context_->CreateObject<Geometry>());
+            ea::shared_ptr<Geometry> original = geometries_[i][j];
+            ea::shared_ptr<Geometry> clone(context_->CreateObject<Geometry>());
 
             // Add an additional vertex stream into the clone, which supplies only the morphable vertex data, while the static
             // data comes from the original vertex buffer(s)
-            const stl::vector<stl::shared_ptr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
+            const ea::vector<ea::shared_ptr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
             unsigned totalBuf = originalBuffers.size();
             for (unsigned k = 0; k < originalBuffers.size(); ++k)
             {
@@ -1280,7 +1280,7 @@ void AnimatedModel::ApplyAnimation()
     // Make sure animations are in ascending priority order
     if (animationOrderDirty_)
     {
-        stl::quick_sort(animationStates_.begin(), animationStates_.end(), CompareAnimationOrder);
+        ea::quick_sort(animationStates_.begin(), animationStates_.end(), CompareAnimationOrder);
         animationOrderDirty_ = false;
     }
 
@@ -1306,7 +1306,7 @@ void AnimatedModel::ApplyAnimation()
 void AnimatedModel::UpdateSkinning()
 {
     // Note: the model's world transform will be baked in the skin matrices
-    const stl::vector<Bone>& bones = skeleton_.GetBones();
+    const ea::vector<Bone>& bones = skeleton_.GetBones();
     // Use model's world transform in case a bone is missing
     const Matrix3x4& worldTransform = node_->GetWorldTransform();
 

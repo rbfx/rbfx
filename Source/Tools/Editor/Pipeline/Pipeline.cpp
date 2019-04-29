@@ -75,7 +75,7 @@ bool Pipeline::LoadJSON(const JSONValue& source)
         if (type == StringHash::ZERO)
             return false;
 
-        stl::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
+        ea::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
         if (!converter || !converter->LoadJSON(converterData))
             return false;
 
@@ -150,7 +150,7 @@ void Pipeline::BuildCache(ConverterKinds converterKinds, const StringVector& fil
         GetFileSystem()->ScanDir(cacheFiles, project->GetCachePath(), "*", SCAN_FILES, true);
 
         // Remove cache items that no longer correspond to existing resource
-        for (const stl::string& resourceName : cacheInfo_.keys())
+        for (const ea::string& resourceName : cacheInfo_.keys())
         {
             // Source asset may be in resources dir or in cache dir.
             if (!resourceFiles.contains(resourceName) && !cacheFiles.contains(resourceName))
@@ -213,7 +213,7 @@ void Pipeline::DispatchChangedAssets()
         BuildCache(CONVERTER_ALWAYS);
 }
 
-bool Pipeline::IsCacheOutOfDate(const stl::string& resourceName) const
+bool Pipeline::IsCacheOutOfDate(const ea::string& resourceName) const
 {
     auto it = cacheInfo_.find(resourceName);
     if (it == cacheInfo_.end())
@@ -224,7 +224,7 @@ bool Pipeline::IsCacheOutOfDate(const stl::string& resourceName) const
     if (mtime == 0)
         mtime = GetFileSystem()->GetLastModifiedTime(project->GetCachePath() + resourceName);
 
-    for (const stl::string& cachedFile : it->second.files_)
+    for (const ea::string& cachedFile : it->second.files_)
     {
         if (!GetFileSystem()->Exists(project->GetCachePath() + cachedFile))
             return true;
@@ -233,7 +233,7 @@ bool Pipeline::IsCacheOutOfDate(const stl::string& resourceName) const
     return it->second.mtime_ < mtime;
 }
 
-void Pipeline::ClearCache(const stl::string& resourceName)
+void Pipeline::ClearCache(const ea::string& resourceName)
 {
     auto it = cacheInfo_.find(resourceName);
     if (it == cacheInfo_.end())
@@ -241,12 +241,12 @@ void Pipeline::ClearCache(const stl::string& resourceName)
 
     auto* project = GetSubsystem<Project>();
     const CacheEntry& cacheEntry = it->second;
-    for (const stl::string& cacheFile : cacheEntry.files_)
+    for (const ea::string& cacheFile : cacheEntry.files_)
     {
-        const stl::string& fullPath = project->GetCachePath() + cacheFile;
+        const ea::string& fullPath = project->GetCachePath() + cacheFile;
         GetFileSystem()->Delete(fullPath);
 
-        for (stl::string parentPath = GetParentPath(fullPath);; parentPath = GetParentPath(parentPath))
+        for (ea::string parentPath = GetParentPath(fullPath);; parentPath = GetParentPath(parentPath))
         {
             if (!GetFileSystem()->DirExists(parentPath))
                 continue;
@@ -264,7 +264,7 @@ void Pipeline::ClearCache(const stl::string& resourceName)
     cacheInfo_.erase(it);
 }
 
-void Pipeline::AddCacheEntry(const stl::string& resourceName, const stl::string& cacheResourceName)
+void Pipeline::AddCacheEntry(const ea::string& resourceName, const ea::string& cacheResourceName)
 {
     auto* project = GetSubsystem<Project>();
     CacheEntry& entry = cacheInfo_[resourceName];
@@ -274,13 +274,13 @@ void Pipeline::AddCacheEntry(const stl::string& resourceName, const stl::string&
     entry.files_.insert(cacheResourceName);
 }
 
-void Pipeline::AddCacheEntry(const stl::string& resourceName, const StringVector& cacheResourceNames)
+void Pipeline::AddCacheEntry(const ea::string& resourceName, const StringVector& cacheResourceNames)
 {
-    for (const stl::string& cacheResourceName : cacheResourceNames)
+    for (const ea::string& cacheResourceName : cacheResourceNames)
         AddCacheEntry(resourceName, cacheResourceName);
 }
 
-ResourcePathLock Pipeline::LockResourcePath(const stl::string& resourcePath)
+ResourcePathLock Pipeline::LockResourcePath(const ea::string& resourcePath)
 {
     ResourcePathLock result(this, resourcePath);
     return std::move(result);
@@ -293,12 +293,12 @@ void Pipeline::SaveCacheInfo()
     root = JSONValue(JSON_OBJECT);
 
     StringVector keys = cacheInfo_.keys();
-    stl::quick_sort(keys.begin(), keys.end());
-    for (const stl::string& resourceName : keys)
+    ea::quick_sort(keys.begin(), keys.end());
+    for (const ea::string& resourceName : keys)
     {
         const CacheEntry& entry = cacheInfo_[resourceName];
         JSONValue files(JSON_ARRAY);
-        for (const stl::string& fileName : entry.files_)
+        for (const ea::string& fileName : entry.files_)
             files.Push(fileName);
 
         JSONValue en(JSON_OBJECT);
@@ -311,7 +311,7 @@ void Pipeline::SaveCacheInfo()
     file.SaveFile(GetSubsystem<Project>()->GetCachePath() + "CacheInfo.json");
 }
 
-void Pipeline::Reschedule(const stl::string& resourceName)
+void Pipeline::Reschedule(const ea::string& resourceName)
 {
     MutexLock lock(lock_);
     reschedule_.emplace_back(resourceName);
@@ -325,7 +325,7 @@ void Pipeline::StartWorkItems(const StringVector& resourcePaths)
 void Pipeline::StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths)
 {
     executingConverterKinds_ = converterKinds;
-    for (stl::shared_ptr<Converter>& converter : converters_)
+    for (ea::shared_ptr<Converter>& converter : converters_)
     {
         if (converterKinds & converter->GetKind())
         {
@@ -359,13 +359,13 @@ void Pipeline::CreatePaksAsync()
     GetWorkQueue()->AddWorkItem([this]() {
         struct PackagingEntry
         {
-            stl::string pakName_;
-            stl::vector<std::regex> patterns_;
+            ea::string pakName_;
+            ea::vector<std::regex> patterns_;
         };
-        stl::vector<PackagingEntry> rules;
+        ea::vector<PackagingEntry> rules;
 
         auto* project = GetSubsystem<Project>();
-        const stl::string& projectPath = GetSubsystem<Project>()->GetProjectPath();
+        const ea::string& projectPath = GetSubsystem<Project>()->GetProjectPath();
         auto logger = Log::GetLogger("packager");
 
         JSONFile file(context_);
@@ -404,7 +404,7 @@ void Pipeline::CreatePaksAsync()
 
                 for (int j = 0; j < patterns.size(); j++)
                 {
-                    const stl::string& pattern = patterns[j].GetString();
+                    const ea::string& pattern = patterns[j].GetString();
                     if (pattern.empty())
                     {
                         logger.Error("Input glob pattern can not be empty.");
@@ -432,7 +432,7 @@ void Pipeline::CreatePaksAsync()
             rules.emplace_back(PackagingEntry{"Resources.pak", {std::regex(".+")}});
         }
 
-//        stl::shared_ptr<PackageFile> packageFile(new PackageFile(context_, "Data.pak"));
+//        ea::shared_ptr<PackageFile> packageFile(new PackageFile(context_, "Data.pak"));
 
         StringVector resourceFiles, cacheFiles;
         GetFileSystem()->ScanDir(resourceFiles, project->GetResourcePath(), "*", SCAN_FILES, true);
@@ -447,9 +447,9 @@ void Pipeline::CreatePaksAsync()
             Packager pkg(context_);
             pkg.OpenPackage(projectPath + "Output/" + rule.pakName_);
 
-            auto gatherFiles = [&](const stl::string& baseDir, const StringVector& resources)
+            auto gatherFiles = [&](const ea::string& baseDir, const StringVector& resources)
             {
-                for (const stl::string& name : resources)
+                for (const ea::string& name : resources)
                 {
                     if (cacheInfo_.contains(name))
                         logger.Info("{} not included because it has byproducts.", name);
@@ -483,7 +483,7 @@ void Pipeline::CreatePaksAsync()
     }, PWP_PACKAGE_FILES);
 }
 
-ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const stl::string& resourcePath)
+ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const ea::string& resourcePath)
     : pipeline_(pipeline)
     , resourcePath_(resourcePath)
 {
@@ -493,7 +493,7 @@ ResourcePathLock::ResourcePathLock(Pipeline* pipeline, const stl::string& resour
     while (isLocked)
     {
         isLocked = false;
-        for (const stl::string& path : pipeline->lockedPaths_)
+        for (const ea::string& path : pipeline->lockedPaths_)
         {
             if (resourcePath.starts_with(path))
             {

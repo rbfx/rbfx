@@ -100,8 +100,8 @@ bool Geometry::SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned in
     }
     if (indexBuffer_ && indexStart + indexCount > indexBuffer_->GetIndexCount())
     {
-        URHO3D_LOGERROR("Illegal draw range " + stl::to_string(indexStart) + " to " + stl::to_string(indexStart + indexCount - 1) + ", index buffer has " +
-                 stl::to_string(indexBuffer_->GetIndexCount()) + " indices");
+        URHO3D_LOGERROR("Illegal draw range " + ea::to_string(indexStart) + " to " + ea::to_string(indexStart + indexCount - 1) + ", index buffer has " +
+                 ea::to_string(indexBuffer_->GetIndexCount()) + " indices");
         return false;
     }
 
@@ -135,8 +135,8 @@ bool Geometry::SetDrawRange(PrimitiveType type, unsigned indexStart, unsigned in
         // We can allow setting an illegal draw range now if the caller guarantees to resize / fill the buffer later
         if (checkIllegal && indexStart + indexCount > indexBuffer_->GetIndexCount())
         {
-            URHO3D_LOGERROR("Illegal draw range " + stl::to_string(indexStart) + " to " + stl::to_string(indexStart + indexCount - 1) +
-                     ", index buffer has " + stl::to_string(indexBuffer_->GetIndexCount()) + " indices");
+            URHO3D_LOGERROR("Illegal draw range " + ea::to_string(indexStart) + " to " + ea::to_string(indexStart + indexCount - 1) +
+                     ", index buffer has " + ea::to_string(indexBuffer_->GetIndexCount()) + " indices");
             return false;
         }
     }
@@ -163,21 +163,21 @@ void Geometry::SetLodDistance(float distance)
     lodDistance_ = distance;
 }
 
-void Geometry::SetRawVertexData(const stl::shared_array<unsigned char>& data, const stl::vector<VertexElement>& elements)
+void Geometry::SetRawVertexData(const ea::shared_array<unsigned char>& data, const ea::vector<VertexElement>& elements)
 {
     rawVertexData_ = data;
     rawVertexSize_ = VertexBuffer::GetVertexSize(elements);
     rawElements_ = elements;
 }
 
-void Geometry::SetRawVertexData(const stl::shared_array<unsigned char>& data, unsigned elementMask)
+void Geometry::SetRawVertexData(const ea::shared_array<unsigned char>& data, unsigned elementMask)
 {
     rawVertexData_ = data;
     rawVertexSize_ = VertexBuffer::GetVertexSize(elementMask);
     rawElements_ = VertexBuffer::GetElements(elementMask);
 }
 
-void Geometry::SetRawIndexData(const stl::shared_array<unsigned char>& data, unsigned indexSize)
+void Geometry::SetRawIndexData(const ea::shared_array<unsigned char>& data, unsigned indexSize)
 {
     rawIndexData_ = data;
     rawIndexSize_ = indexSize;
@@ -220,7 +220,7 @@ unsigned short Geometry::GetBufferHash() const
 }
 
 void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize, const unsigned char*& indexData,
-    unsigned& indexSize, const stl::vector<VertexElement>*& elements) const
+    unsigned& indexSize, const ea::vector<VertexElement>*& elements) const
 {
     if (rawVertexData_)
     {
@@ -264,8 +264,8 @@ void Geometry::GetRawData(const unsigned char*& vertexData, unsigned& vertexSize
     }
 }
 
-void Geometry::GetRawDataShared(stl::shared_array<unsigned char>& vertexData, unsigned& vertexSize,
-    stl::shared_array<unsigned char>& indexData, unsigned& indexSize, const stl::vector<VertexElement>*& elements) const
+void Geometry::GetRawDataShared(ea::shared_array<unsigned char>& vertexData, unsigned& vertexSize,
+    ea::shared_array<unsigned char>& indexData, unsigned& indexSize, const ea::vector<VertexElement>*& elements) const
 {
     if (rawVertexData_)
     {
@@ -315,7 +315,7 @@ float Geometry::GetHitDistance(const Ray& ray, Vector3* outNormal, Vector2* outU
     const unsigned char* indexData;
     unsigned vertexSize;
     unsigned indexSize;
-    const stl::vector<VertexElement>* elements;
+    const ea::vector<VertexElement>* elements;
 
     GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
 
@@ -342,7 +342,7 @@ bool Geometry::IsInside(const Ray& ray) const
     const unsigned char* indexData;
     unsigned vertexSize;
     unsigned indexSize;
-    const stl::vector<VertexElement>* elements;
+    const ea::vector<VertexElement>* elements;
 
     GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
 

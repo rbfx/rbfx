@@ -45,7 +45,7 @@ class URHO3D_API Thread
 {
 public:
     /// Construct. Does not start the thread yet.
-    Thread(const stl::string& name=EMPTY_STRING);
+    Thread(const ea::string& name=EMPTY_STRING);
     /// Destruct. If running, stop and wait for thread to finish.
     virtual ~Thread();
 
@@ -62,7 +62,7 @@ public:
     /// Return whether thread exists.
     bool IsStarted() const { return handle_ != nullptr; }
     /// Set name of the platform thread on supported platforms. Must be called before Run().
-    void SetName(const stl::string& name);
+    void SetName(const ea::string& name);
 
     /// Set the current thread as the main thread.
     static void SetMainThread();
@@ -79,7 +79,7 @@ protected:
     static void* ThreadFunctionStatic(void* data);
 #endif
     /// Name of the thread. It will be propagated to underlying OS thread if possible.
-    stl::string name_{};
+    ea::string name_{};
     /// Thread handle.
     void* handle_;
     /// Running flag.

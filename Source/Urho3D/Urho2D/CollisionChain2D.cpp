@@ -51,7 +51,7 @@ void CollisionChain2D::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Loop", GetLoop, SetLoop, bool, false, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(CollisionShape2D);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Vertices", GetVerticesAttr, SetVerticesAttr, stl::vector<unsigned char>, Variant::emptyBuffer, AM_FILE);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Vertices", GetVerticesAttr, SetVerticesAttr, ea::vector<unsigned char>, Variant::emptyBuffer, AM_FILE);
 }
 
 void CollisionChain2D::SetLoop(bool loop)
@@ -84,7 +84,7 @@ void CollisionChain2D::SetVertex(unsigned index, const Vector2& vertex)
     }
 }
 
-void CollisionChain2D::SetVertices(const stl::vector<Vector2>& vertices)
+void CollisionChain2D::SetVertices(const ea::vector<Vector2>& vertices)
 {
     vertices_ = vertices;
 
@@ -92,12 +92,12 @@ void CollisionChain2D::SetVertices(const stl::vector<Vector2>& vertices)
     RecreateFixture();
 }
 
-void CollisionChain2D::SetVerticesAttr(const stl::vector<unsigned char>& value)
+void CollisionChain2D::SetVerticesAttr(const ea::vector<unsigned char>& value)
 {
     if (value.empty())
         return;
 
-    stl::vector<Vector2> vertices;
+    ea::vector<Vector2> vertices;
 
     MemoryBuffer buffer(value);
     while (!buffer.IsEof())
@@ -106,7 +106,7 @@ void CollisionChain2D::SetVerticesAttr(const stl::vector<unsigned char>& value)
     SetVertices(vertices);
 }
 
-stl::vector<unsigned char> CollisionChain2D::GetVerticesAttr() const
+ea::vector<unsigned char> CollisionChain2D::GetVerticesAttr() const
 {
     VectorBuffer ret;
 
@@ -125,7 +125,7 @@ void CollisionChain2D::RecreateFixture()
 {
     ReleaseFixture();
 
-    stl::vector<b2Vec2> b2Vertices;
+    ea::vector<b2Vec2> b2Vertices;
     unsigned count = vertices_.size();
     b2Vertices.resize(count);
 

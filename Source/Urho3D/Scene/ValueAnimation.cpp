@@ -91,7 +91,7 @@ bool ValueAnimation::LoadXML(const XMLElement& source)
     valueType_ = VAR_NONE;
     eventFrames_.clear();
 
-    stl::string interpMethodString = source.GetAttribute("interpolationmethod");
+    ea::string interpMethodString = source.GetAttribute("interpolationmethod");
     auto method = (InterpMethod)GetStringListIndex(interpMethodString.c_str(), interpMethodNames, IM_LINEAR);
 
     SetInterpolationMethod(method);
@@ -153,7 +153,7 @@ bool ValueAnimation::LoadJSON(const JSONValue& source)
     valueType_ = VAR_NONE;
     eventFrames_.clear();
 
-    stl::string interpMethodString = source.Get("interpolationmethod").GetString();
+    ea::string interpMethodString = source.Get("interpolationmethod").GetString();
     auto method = (InterpMethod)GetStringListIndex(interpMethodString.c_str(), interpMethodNames, IM_LINEAR);
 
     SetInterpolationMethod(method);
@@ -358,7 +358,7 @@ Variant ValueAnimation::GetAnimationValue(float scaledTime) const
     }
 }
 
-void ValueAnimation::GetEventFrames(float beginTime, float endTime, stl::vector<const VAnimEventFrame*>& eventFrames) const
+void ValueAnimation::GetEventFrames(float beginTime, float endTime, ea::vector<const VAnimEventFrame*>& eventFrames) const
 {
     for (unsigned i = 0; i < eventFrames_.size(); ++i)
     {

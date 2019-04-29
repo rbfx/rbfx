@@ -174,9 +174,9 @@ static unsigned glesDepthStencilFormat = GL_DEPTH_COMPONENT16;
 static unsigned glesReadableDepthFormat = GL_DEPTH_COMPONENT;
 #endif
 
-static stl::string extensions;
+static ea::string extensions;
 
-bool CheckExtension(const stl::string& name)
+bool CheckExtension(const ea::string& name)
 {
     if (extensions.empty())
         extensions = (const char*)glGetString(GL_EXTENSIONS);
@@ -314,7 +314,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 #ifdef DESKTOP_GRAPHICS
     if (fullscreen)
     {
-        stl::vector<IntVector3> resolutions = GetResolutions(monitor);
+        ea::vector<IntVector3> resolutions = GetResolutions(monitor);
         if (resolutions.size())
         {
             unsigned best = 0;
@@ -511,7 +511,7 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
 #ifdef URHO3D_LOGGING
     URHO3D_LOGINFOF("Adapter used %s %s", (const char *) glGetString(GL_VENDOR), (const char *) glGetString(GL_RENDERER));
     
-    stl::string msg;
+    ea::string msg;
     msg.append_sprintf("Set screen mode %dx%d %s monitor %d", width_, height_,
         (fullscreen_ ? "fullscreen" : "windowed"), monitor_);
     if (borderless_)
@@ -995,12 +995,12 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 void Graphics::SetVertexBuffer(VertexBuffer* buffer)
 {
     // Note: this is not multi-instance safe
-    static stl::vector<VertexBuffer*> vertexBuffers(1);
+    static ea::vector<VertexBuffer*> vertexBuffers(1);
     vertexBuffers[0] = buffer;
     SetVertexBuffers(vertexBuffers);
 }
 
-bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset)
 {
     if (buffers.size() > MAX_VERTEX_STREAMS)
     {
@@ -1029,9 +1029,9 @@ bool Graphics::SetVertexBuffers(const stl::vector<VertexBuffer*>& buffers, unsig
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
-    stl::vector<VertexBuffer*> bufferPointers;
+    ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
         bufferPointers.push_back(buffer.get());
@@ -1103,7 +1103,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         vertexShader_ = vs;
         pixelShader_ = ps;
 
-        stl::pair<ShaderVariation*, ShaderVariation*> combination(vs, ps);
+        ea::pair<ShaderVariation*, ShaderVariation*> combination(vs, ps);
         auto i = impl_->shaderPrograms_.find(combination);
 
         if (i != impl_->shaderPrograms_.end())
@@ -1125,7 +1125,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             // Link a new combination
             URHO3D_PROFILE("LinkShaders");
 
-            stl::shared_ptr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
+            ea::shared_ptr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
             if (newProgram->Link())
             {
                 URHO3D_LOGDEBUG("Linked vertex shader " + vs->GetFullName() + " and pixel shader " + ps->GetFullName());
@@ -1149,7 +1149,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 #ifndef GL_ES_VERSION_2_0
     if (gl3Support && impl_->shaderProgram_)
     {
-        const stl::shared_ptr<ConstantBuffer>* constantBuffers = impl_->shaderProgram_->GetConstantBuffers();
+        const ea::shared_ptr<ConstantBuffer>* constantBuffers = impl_->shaderProgram_->GetConstantBuffers();
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS * 2; ++i)
         {
             ConstantBuffer* buffer = constantBuffers[i];
@@ -1733,7 +1733,7 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
                 depthStencil = i->second->GetRenderSurface();
             else
             {
-                stl::shared_ptr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
+                ea::shared_ptr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
                 newDepthTexture->SetSize(width, height, GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
                 impl_->depthTextures_[searchKey] = newDepthTexture;
                 depthStencil = newDepthTexture->GetRenderSurface();
@@ -2084,9 +2084,9 @@ bool Graphics::IsDeviceLost() const
     return impl_->context_ == nullptr;
 }
 
-stl::vector<int> Graphics::GetMultiSampleLevels() const
+ea::vector<int> Graphics::GetMultiSampleLevels() const
 {
-    stl::vector<int> ret;
+    ea::vector<int> ret;
     // No multisampling always supported
     ret.push_back(1);
 
@@ -2160,7 +2160,7 @@ bool Graphics::GetGL3Support()
     return gl3Support;
 }
 
-ShaderVariation* Graphics::GetShader(ShaderType type, const stl::string& name, const stl::string& defines) const
+ShaderVariation* Graphics::GetShader(ShaderType type, const ea::string& name, const ea::string& defines) const
 {
     return GetShader(type, name.c_str(), defines.c_str());
 }
@@ -2171,7 +2171,7 @@ ShaderVariation* Graphics::GetShader(ShaderType type, const char* name, const ch
     {
         auto* cache = GetSubsystem<ResourceCache>();
 
-        stl::string fullShaderName = shaderPath_ + name + shaderExtension_;
+        ea::string fullShaderName = shaderPath_ + name + shaderExtension_;
         // Try to reduce repeated error log prints because of missing shaders
         if (lastShaderName_ == name && !cache->Exists(fullShaderName))
             return nullptr;
@@ -2193,7 +2193,7 @@ ShaderProgram* Graphics::GetShaderProgram() const
     return impl_->shaderProgram_;
 }
 
-TextureUnit Graphics::GetTextureUnit(const stl::string& name)
+TextureUnit Graphics::GetTextureUnit(const ea::string& name)
 {
     auto i = textureUnits_.find(name);
     if (i != textureUnits_.end())
@@ -2202,7 +2202,7 @@ TextureUnit Graphics::GetTextureUnit(const stl::string& name)
         return MAX_TEXTURE_UNITS;
 }
 
-const stl::string& Graphics::GetTextureUnitName(TextureUnit unit)
+const ea::string& Graphics::GetTextureUnitName(TextureUnit unit)
 {
     for (auto i = textureUnits_.begin(); i != textureUnits_.end(); ++i)
     {
@@ -2376,7 +2376,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     if (i == impl_->allConstantBuffers_.end())
     {
         i = impl_->allConstantBuffers_.insert(
-            stl::make_pair(key, stl::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>()))).first;
+            ea::make_pair(key, ea::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>()))).first;
         i->second->SetSize(size);
     }
     return i->second;
@@ -2468,15 +2468,15 @@ void Graphics::Restore()
         impl_->context_ = SDL_GL_CreateContext(window_);
 
 #if defined(__linux__)
-        stl::string driverx( (const char*)glGetString(GL_VERSION) );
-        stl::vector<stl::string>tokens = driverx.split(' ');
+        ea::string driverx( (const char*)glGetString(GL_VERSION) );
+        ea::vector<ea::string>tokens = driverx.split(' ');
         if (tokens.size() > 2) // must have enough tokens to work with
         {
             // Size() - 2 is the manufacturer, "Mesa" is the target
             if (tokens[tokens.size() - 2].comparei("Mesa") == 0 )
             {
                 // Size() - 1  is the version number, convert to long, can be n | n.n | n.n.n
-                stl::vector<stl::string>versionx = tokens[tokens.size() - 1].split('.');
+                ea::vector<ea::string>versionx = tokens[tokens.size() - 1].split('.');
                 int majver = 0;
                 int minver = 0;
                 int pointver = 0;
@@ -2765,9 +2765,9 @@ unsigned Graphics::GetReadableDepthFormat()
 #endif
 }
 
-unsigned Graphics::GetFormat(const stl::string& formatName)
+unsigned Graphics::GetFormat(const ea::string& formatName)
 {
-    stl::string nameLower = formatName.to_lower();
+    ea::string nameLower = formatName.to_lower();
     nameLower.trim();
 
     if (nameLower == "a")
@@ -2846,7 +2846,7 @@ void Graphics::CheckFeatureSupport()
     // On macOS check for an Intel driver and use shadow map RGBA dummy color textures, because mixing
     // depth-only FBO rendering and backbuffer rendering will bug, resulting in a black screen in full
     // screen mode, and incomplete shadow maps in windowed mode
-    stl::string renderer((const char*)glGetString(GL_RENDERER));
+    ea::string renderer((const char*)glGetString(GL_RENDERER));
     if (renderer.Contains("Intel", false))
         dummyColorFormat_ = GetRGBAFormat();
 #endif
@@ -2971,7 +2971,7 @@ void Graphics::PrepareDraw()
         {
             FrameBufferObject newFbo;
             newFbo.fbo_ = CreateFramebuffer();
-            i = impl_->frameBuffers_.insert(stl::make_pair(fboKey, newFbo)).first;
+            i = impl_->frameBuffers_.insert(ea::make_pair(fboKey, newFbo)).first;
         }
 
         if (impl_->boundFBO_ != i->second.fbo_)
@@ -3144,13 +3144,13 @@ void Graphics::PrepareDraw()
             if (!buffer || !buffer->GetGPUObjectName() || !impl_->vertexAttributes_)
                 continue;
 
-            const stl::vector<VertexElement>& elements = buffer->GetElements();
+            const ea::vector<VertexElement>& elements = buffer->GetElements();
 
             for (auto j = elements.begin(); j != elements.end(); ++j)
             {
                 const VertexElement& element = *j;
                 auto k = impl_->vertexAttributes_->find(
-                    stl::make_pair((unsigned char) element.semantic_, element.index_));
+                    ea::make_pair((unsigned char) element.semantic_, element.index_));
 
                 if (k != impl_->vertexAttributes_->end())
                 {

@@ -91,13 +91,13 @@ protected:
     void MarkOtherBodyNodeIDDirty() { otherBodyNodeIDDirty_ = true; }
 
     /// Physics world.
-    stl::weak_ptr<PhysicsWorld2D> physicsWorld_;
+    ea::weak_ptr<PhysicsWorld2D> physicsWorld_;
     /// Box2D joint.
     b2Joint* joint_{};
     /// Owner body.
-    stl::weak_ptr<RigidBody2D> ownerBody_;
+    ea::weak_ptr<RigidBody2D> ownerBody_;
     /// Other body.
-    stl::weak_ptr<RigidBody2D> otherBody_;
+    ea::weak_ptr<RigidBody2D> otherBody_;
     /// Other body node ID for serialization.
     unsigned otherBodyNodeID_{};
     /// Collide connected flag.
@@ -105,7 +105,7 @@ protected:
     /// Other body node ID dirty flag.
     bool otherBodyNodeIDDirty_{};
     /// Attached constraint.
-    stl::weak_ptr<Constraint2D> attachedConstraint_;
+    ea::weak_ptr<Constraint2D> attachedConstraint_;
 };
 
 }

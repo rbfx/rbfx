@@ -49,7 +49,7 @@ void CollisionPolygon2D::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(CollisionShape2D);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Vertices", GetVerticesAttr, SetVerticesAttr, stl::vector<unsigned char>, Variant::emptyBuffer, AM_FILE);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Vertices", GetVerticesAttr, SetVerticesAttr, ea::vector<unsigned char>, Variant::emptyBuffer, AM_FILE);
 }
 
 void CollisionPolygon2D::SetVertexCount(unsigned count)
@@ -71,7 +71,7 @@ void CollisionPolygon2D::SetVertex(unsigned index, const Vector2& vertex)
     }
 }
 
-void CollisionPolygon2D::SetVertices(const stl::vector<Vector2>& vertices)
+void CollisionPolygon2D::SetVertices(const ea::vector<Vector2>& vertices)
 {
     vertices_ = vertices;
 
@@ -79,12 +79,12 @@ void CollisionPolygon2D::SetVertices(const stl::vector<Vector2>& vertices)
     RecreateFixture();
 }
 
-void CollisionPolygon2D::SetVerticesAttr(const stl::vector<unsigned char>& value)
+void CollisionPolygon2D::SetVerticesAttr(const ea::vector<unsigned char>& value)
 {
     if (value.empty())
         return;
 
-    stl::vector<Vector2> vertices;
+    ea::vector<Vector2> vertices;
 
     MemoryBuffer buffer(value);
     while (!buffer.IsEof())
@@ -93,7 +93,7 @@ void CollisionPolygon2D::SetVerticesAttr(const stl::vector<unsigned char>& value
     SetVertices(vertices);
 }
 
-stl::vector<unsigned char> CollisionPolygon2D::GetVerticesAttr() const
+ea::vector<unsigned char> CollisionPolygon2D::GetVerticesAttr() const
 {
     VectorBuffer ret;
 
@@ -115,7 +115,7 @@ void CollisionPolygon2D::RecreateFixture()
     if (vertices_.size() < 3)
         return;
 
-    stl::vector<b2Vec2> b2Vertices;
+    ea::vector<b2Vec2> b2Vertices;
     unsigned count = vertices_.size();
     b2Vertices.resize(count);
 

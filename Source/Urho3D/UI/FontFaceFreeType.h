@@ -56,7 +56,7 @@ private:
     void BoxFilter(unsigned char* dest, size_t destSize, const unsigned char* src, size_t srcSize);
 
     /// FreeType library.
-    stl::shared_ptr<FreeTypeLibrary> freeType_;
+    ea::shared_ptr<FreeTypeLibrary> freeType_;
     /// FreeType face. Non-null after creation only in dynamic mode.
     void* face_{};
     /// Load mode.

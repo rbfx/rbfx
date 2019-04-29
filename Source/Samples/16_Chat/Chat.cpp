@@ -141,7 +141,7 @@ void Chat::SubscribeToEvents()
     SubscribeToEvent(E_CONNECTFAILED, URHO3D_HANDLER(Chat, HandleConnectionStatus));
 }
 
-Button* Chat::CreateButton(const stl::string& text, int width)
+Button* Chat::CreateButton(const ea::string& text, int width)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
@@ -158,13 +158,13 @@ Button* Chat::CreateButton(const stl::string& text, int width)
     return button;
 }
 
-void Chat::ShowChatText(const stl::string& row)
+void Chat::ShowChatText(const ea::string& row)
 {
     chatHistory_.pop_front();
     chatHistory_.push_back(row);
 
     // Concatenate all the rows in history
-    stl::string allRows;
+    ea::string allRows;
     for (unsigned i = 0; i < chatHistory_.size(); ++i)
         allRows += chatHistory_[i] + "\n";
 
@@ -193,7 +193,7 @@ void Chat::HandleLogMessage(StringHash /*eventType*/, VariantMap& eventData)
 
 void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
 {
-    stl::string text = textEdit_->GetText();
+    ea::string text = textEdit_->GetText();
     if (text.empty())
         return; // Do not send an empty message
 
@@ -215,7 +215,7 @@ void Chat::HandleSend(StringHash /*eventType*/, VariantMap& eventData)
 void Chat::HandleConnect(StringHash /*eventType*/, VariantMap& eventData)
 {
     auto* network = GetSubsystem<Network>();
-    stl::string address = textEdit_->GetText();
+    ea::string address = textEdit_->GetText();
     address.trim();
     if (address.empty())
         address = "localhost"; // Use localhost to connect if nothing else specified
@@ -261,10 +261,10 @@ void Chat::HandleNetworkMessage(StringHash /*eventType*/, VariantMap& eventData)
     int msgID = eventData[P_MESSAGEID].GetInt();
     if (msgID == MSG_CHAT)
     {
-        const stl::vector<unsigned char>& data = eventData[P_DATA].GetBuffer();
+        const ea::vector<unsigned char>& data = eventData[P_DATA].GetBuffer();
         // Use a MemoryBuffer to read the message data so that there is no unnecessary copying
         MemoryBuffer msg(data);
-        stl::string text = msg.ReadString();
+        ea::string text = msg.ReadString();
 
         // If we are the server, prepend the sender's IP address and port and echo to everyone
         // If we are a client, just display the message

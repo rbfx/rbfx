@@ -68,8 +68,8 @@ bool CompressStream(Serializer& dest, Deserializer& src)
     }
 
     auto maxDestSize = (unsigned)LZ4_compressBound(srcSize);
-    stl::shared_array<unsigned char> srcBuffer(new unsigned char[srcSize]);
-    stl::shared_array<unsigned char> destBuffer(new unsigned char[maxDestSize]);
+    ea::shared_array<unsigned char> srcBuffer(new unsigned char[srcSize]);
+    ea::shared_array<unsigned char> destBuffer(new unsigned char[maxDestSize]);
 
     if (src.Read(srcBuffer.get(), srcSize) != srcSize)
         return false;
@@ -95,8 +95,8 @@ bool DecompressStream(Serializer& dest, Deserializer& src)
     if (srcSize > src.GetSize())
         return false; // Illegal source (packed data) size reported, possibly not valid data
 
-    stl::shared_array<unsigned char> srcBuffer(new unsigned char[srcSize]);
-    stl::shared_array<unsigned char> destBuffer(new unsigned char[destSize]);
+    ea::shared_array<unsigned char> srcBuffer(new unsigned char[srcSize]);
+    ea::shared_array<unsigned char> destBuffer(new unsigned char[destSize]);
 
     if (src.Read(srcBuffer.get(), srcSize) != srcSize)
         return false;

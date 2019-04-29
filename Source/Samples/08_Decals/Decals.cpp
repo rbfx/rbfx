@@ -158,7 +158,7 @@ void Decals::CreateUI()
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it will point the raycast target
     auto* style = cache->GetResource<XMLFile>("UI/DefaultStyle.xml");
-    stl::shared_ptr<Cursor> cursor(new Cursor(context_));
+    ea::shared_ptr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto(style);
     ui->SetCursor(cursor);
     // Set starting position of the cursor at the rendering window center
@@ -188,7 +188,7 @@ void Decals::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -290,7 +290,7 @@ bool Decals::Raycast(float maxDistance, Vector3& hitPos, Drawable*& hitDrawable)
     auto* camera = cameraNode_->GetComponent<Camera>();
     Ray cameraRay = camera->GetScreenRay((float)pos.x_ / graphics->GetWidth(), (float)pos.y_ / graphics->GetHeight());
     // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
-    stl::vector<RayQueryResult> results;
+    ea::vector<RayQueryResult> results;
     RayOctreeQuery query(results, cameraRay, RAY_TRIANGLE, maxDistance, DRAWABLE_GEOMETRY);
     scene_->GetComponent<Octree>()->RaycastSingle(query);
     if (results.size())

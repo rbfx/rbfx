@@ -166,7 +166,7 @@ void SceneReplication::CreateUI()
 
     // Create a Cursor UI element because we want to be able to hide and show it at will. When hidden, the mouse cursor will
     // control the camera, and when visible, it can interact with the login UI
-    stl::shared_ptr<Cursor> cursor(new Cursor(context_));
+    ea::shared_ptr<Cursor> cursor(new Cursor(context_));
     cursor->SetStyleAuto(uiStyle);
     ui->SetCursor(cursor);
     // Set starting position of the cursor at the rendering window center
@@ -206,7 +206,7 @@ void SceneReplication::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 
@@ -237,7 +237,7 @@ void SceneReplication::SubscribeToEvents()
     GetSubsystem<Network>()->RegisterRemoteEvent(E_CLIENTOBJECTID);
 }
 
-Button* SceneReplication::CreateButton(const stl::string& text, int width)
+Button* SceneReplication::CreateButton(const ea::string& text, int width)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* font = cache->GetResource<Font>("Fonts/Anonymous Pro.ttf");
@@ -380,7 +380,7 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
     // Server: apply controls to client objects
     else if (network->IsServerRunning())
     {
-        const stl::vector<stl::shared_ptr<Connection> >& connections = network->GetClientConnections();
+        const ea::vector<ea::shared_ptr<Connection> >& connections = network->GetClientConnections();
 
         for (unsigned i = 0; i < connections.size(); ++i)
         {
@@ -417,7 +417,7 @@ void SceneReplication::HandlePhysicsPreStep(StringHash eventType, VariantMap& ev
 void SceneReplication::HandleConnect(StringHash eventType, VariantMap& eventData)
 {
     auto* network = GetSubsystem<Network>();
-    stl::string address = textEdit_->GetText();
+    ea::string address = textEdit_->GetText();
     address.trim();
     if (address.empty())
         address = "localhost"; // Use localhost to connect if nothing else specified

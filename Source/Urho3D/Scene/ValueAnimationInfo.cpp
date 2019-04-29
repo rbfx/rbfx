@@ -93,14 +93,14 @@ bool ValueAnimationInfo::SetTime(float time)
     // Send keyframe event if necessary
     if (animation_->HasEventFrames())
     {
-        stl::vector<const VAnimEventFrame*> eventFrames;
+        ea::vector<const VAnimEventFrame*> eventFrames;
         GetEventFrames(lastScaledTime_, scaledTime, eventFrames);
 
         if (eventFrames.size())
         {
             // Make a copy of the target weakptr, since if it expires, the AnimationInfo is deleted as well, in which case the
             // member variable cannot be accessed
-            stl::weak_ptr<Object> targetWeak(target_);
+            ea::weak_ptr<Object> targetWeak(target_);
 
             for (unsigned i = 0; i < eventFrames.size(); ++i)
                 target_->SendEvent(eventFrames[i]->eventType_, const_cast<VariantMap&>(eventFrames[i]->eventData_));
@@ -154,7 +154,7 @@ float ValueAnimationInfo::CalculateScaledTime(float currentTime, bool& finished)
     }
 }
 
-void ValueAnimationInfo::GetEventFrames(float beginTime, float endTime, stl::vector<const VAnimEventFrame*>& eventFrames)
+void ValueAnimationInfo::GetEventFrames(float beginTime, float endTime, ea::vector<const VAnimEventFrame*>& eventFrames)
 {
     switch (wrapMode_)
     {

@@ -73,16 +73,16 @@ public:
     /// Return tile map file attribute.
     ResourceRef GetTmxFileAttr() const;
     ///
-    stl::vector<stl::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
+    ea::vector<ea::shared_ptr<TileMapObject2D> > GetTileCollisionShapes(unsigned gid) const;
 private:
     /// Tmx file.
-    stl::shared_ptr<TmxFile2D> tmxFile_;
+    ea::shared_ptr<TmxFile2D> tmxFile_;
     /// Tile map information.
     TileMapInfo2D info_{};
     /// Root node for tile map layer.
-    stl::shared_ptr<Node> rootNode_;
+    ea::shared_ptr<Node> rootNode_;
     /// Tile map layers.
-    stl::vector<stl::weak_ptr<TileMapLayer2D> > layers_;
+    ea::vector<ea::weak_ptr<TileMapLayer2D> > layers_;
 };
 
 }

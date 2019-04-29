@@ -42,7 +42,7 @@ BaseResourceTab::BaseResourceTab(Context* context)
     });
 }
 
-bool BaseResourceTab::LoadResource(const stl::string& resourcePath)
+bool BaseResourceTab::LoadResource(const ea::string& resourcePath)
 {
     if (!Tab::LoadResource(resourcePath))
         return false;
@@ -88,7 +88,7 @@ void BaseResourceTab::OnLoadUISettings(const char* name, const char* line)
         LoadResource(line + 5);
 }
 
-void BaseResourceTab::SetResourceName(const stl::string& resourceName)
+void BaseResourceTab::SetResourceName(const ea::string& resourceName)
 {
     resourceName_ = resourceName;
     if (!isUtility_)

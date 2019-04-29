@@ -79,7 +79,7 @@ bool VertexBuffer::SetSize(unsigned vertexCount, unsigned elementMask, bool dyna
     return SetSize(vertexCount, GetElements(elementMask), dynamic);
 }
 
-bool VertexBuffer::SetSize(unsigned vertexCount, const stl::vector<VertexElement>& elements, bool dynamic)
+bool VertexBuffer::SetSize(unsigned vertexCount, const ea::vector<VertexElement>& elements, bool dynamic)
 {
     Unlock();
 
@@ -143,7 +143,7 @@ const VertexElement* VertexBuffer::GetElement(VertexElementType type, VertexElem
     return nullptr;
 }
 
-const VertexElement* VertexBuffer::GetElement(const stl::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index)
+const VertexElement* VertexBuffer::GetElement(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index)
 {
     for (auto i = elements.begin(); i != elements.end(); ++i)
     {
@@ -154,20 +154,20 @@ const VertexElement* VertexBuffer::GetElement(const stl::vector<VertexElement>& 
     return nullptr;
 }
 
-bool VertexBuffer::HasElement(const stl::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index)
+bool VertexBuffer::HasElement(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index)
 {
     return GetElement(elements, type, semantic, index) != nullptr;
 }
 
-unsigned VertexBuffer::GetElementOffset(const stl::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index)
+unsigned VertexBuffer::GetElementOffset(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index)
 {
     const VertexElement* element = GetElement(elements, type, semantic, index);
     return element ? element->offset_ : M_MAX_UNSIGNED;
 }
 
-stl::vector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
+ea::vector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
 {
-    stl::vector<VertexElement> ret;
+    ea::vector<VertexElement> ret;
 
     for (unsigned i = 0; i < MAX_LEGACY_VERTEX_ELEMENTS; ++i)
     {
@@ -178,7 +178,7 @@ stl::vector<VertexElement> VertexBuffer::GetElements(unsigned elementMask)
     return ret;
 }
 
-unsigned VertexBuffer::GetVertexSize(const stl::vector<VertexElement>& elements)
+unsigned VertexBuffer::GetVertexSize(const ea::vector<VertexElement>& elements)
 {
     unsigned size = 0;
 
@@ -201,7 +201,7 @@ unsigned VertexBuffer::GetVertexSize(unsigned elementMask)
     return size;
 }
 
-void VertexBuffer::UpdateOffsets(stl::vector<VertexElement>& elements)
+void VertexBuffer::UpdateOffsets(ea::vector<VertexElement>& elements)
 {
     unsigned elementOffset = 0;
 

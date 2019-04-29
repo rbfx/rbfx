@@ -46,9 +46,9 @@ public:
     /// Buffer sound data. Makes a copy of it.
     void AddData(void* data, unsigned numBytes);
     /// Buffer sound data by taking ownership of it.
-    void AddData(const stl::shared_array<signed char>& data, unsigned numBytes);
+    void AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
     /// Buffer sound data by taking ownership of it.
-    void AddData(const stl::shared_array<signed short>& data, unsigned numBytes);
+    void AddData(const ea::shared_array<signed short>& data, unsigned numBytes);
     /// Remove all buffered audio data.
     void Clear();
 
@@ -59,7 +59,7 @@ public:
 
 private:
     /// Buffers and their sizes.
-    stl::list<stl::pair<stl::shared_array<signed char>, unsigned> > buffers_;
+    ea::list<ea::pair<ea::shared_array<signed char>, unsigned> > buffers_;
     /// Byte position in the front most buffer.
     unsigned position_;
     /// Mutex for buffer data.

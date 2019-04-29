@@ -79,7 +79,7 @@ void BackgroundLoader::ThreadFunction()
             backgroundLoadMutex_.Release();
 
             bool success = false;
-            stl::shared_ptr<File> file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
+            ea::shared_ptr<File> file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
             if (file)
             {
                 resource->SetAsyncLoadState(ASYNC_LOADING);
@@ -88,7 +88,7 @@ void BackgroundLoader::ThreadFunction()
 
             // Process dependencies now
             // Need to lock the queue again when manipulating other entries
-            stl::pair<StringHash, StringHash> key = stl::make_pair(resource->GetType(), resource->GetNameHash());
+            ea::pair<StringHash, StringHash> key = ea::make_pair(resource->GetType(), resource->GetNameHash());
             backgroundLoadMutex_.Acquire();
             if (item.dependents_.size())
             {
@@ -108,10 +108,10 @@ void BackgroundLoader::ThreadFunction()
     }
 }
 
-bool BackgroundLoader::QueueResource(StringHash type, const stl::string& name, bool sendEventOnFailure, Resource* caller)
+bool BackgroundLoader::QueueResource(StringHash type, const ea::string& name, bool sendEventOnFailure, Resource* caller)
 {
     StringHash nameHash(name);
-    stl::pair<StringHash, StringHash> key = stl::make_pair(type, nameHash);
+    ea::pair<StringHash, StringHash> key = ea::make_pair(type, nameHash);
 
     MutexLock lock(backgroundLoadMutex_);
 
@@ -149,7 +149,7 @@ bool BackgroundLoader::QueueResource(StringHash type, const stl::string& name, b
     // If this is a resource calling for the background load of more resources, mark the dependency as necessary
     if (caller)
     {
-        stl::pair<StringHash, StringHash> callerKey = stl::make_pair(caller->GetType(), caller->GetNameHash());
+        ea::pair<StringHash, StringHash> callerKey = ea::make_pair(caller->GetType(), caller->GetNameHash());
         auto j = backgroundLoadQueue_.find(
             callerKey);
         if (j != backgroundLoadQueue_.end())
@@ -175,7 +175,7 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
     backgroundLoadMutex_.Acquire();
 
     // Check if the resource in question is being background loaded
-    stl::pair<StringHash, StringHash> key = stl::make_pair(type, nameHash);
+    ea::pair<StringHash, StringHash> key = ea::make_pair(type, nameHash);
     auto i = backgroundLoadQueue_.find(
         key);
     if (i != backgroundLoadQueue_.end())
@@ -201,7 +201,7 @@ void BackgroundLoader::WaitForResource(StringHash type, StringHash nameHash)
             }
 
             if (didWait)
-                URHO3D_LOGDEBUG("Waited " + stl::to_string(waitTimer.GetUSec(false) / 1000) + " ms for background loaded resource " +
+                URHO3D_LOGDEBUG("Waited " + ea::to_string(waitTimer.GetUSec(false) / 1000) + " ms for background loaded resource " +
                          resource->GetName());
         }
 
@@ -265,7 +265,7 @@ void BackgroundLoader::FinishBackgroundLoading(BackgroundLoadItem& item)
     // If BeginLoad() phase was successful, call EndLoad() and get the final success/failure result
     if (success)
     {
-        URHO3D_PROFILE(stl::string("Finish" + resource->GetTypeName()).c_str());
+        URHO3D_PROFILE(ea::string("Finish" + resource->GetTypeName()).c_str());
         URHO3D_LOGDEBUG("Finishing background loaded resource " + resource->GetName());
         success = resource->EndLoad();
     }

@@ -83,13 +83,13 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
     animElem = source.GetChild("attributeanimation");
     while (animElem)
     {
-        stl::string name = animElem.GetAttribute("name");
+        ea::string name = animElem.GetAttribute("name");
 
-        stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(animElem))
             return false;
 
-        stl::string wrapModeString = animElem.GetAttribute("wrapmode");
+        ea::string wrapModeString = animElem.GetAttribute("wrapmode");
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -142,13 +142,13 @@ bool ObjectAnimation::LoadJSON(const JSONValue& source)
 
     for (auto it = attributeAnimationsObject.begin(); it != attributeAnimationsObject.end(); it++)
     {
-        stl::string name = it->first;
+        ea::string name = it->first;
         JSONValue value = it->second;
-        stl::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(value))
             return false;
 
-        stl::string wrapModeString = value.Get("wrapmode").GetString();
+        ea::string wrapModeString = value.Get("wrapmode").GetString();
         WrapMode wrapMode = WM_LOOP;
         for (int i = 0; i <= WM_CLAMP; ++i)
         {
@@ -190,7 +190,7 @@ bool ObjectAnimation::SaveJSON(JSONValue& dest) const
     return true;
 }
 
-void ObjectAnimation::AddAttributeAnimation(const stl::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
+void ObjectAnimation::AddAttributeAnimation(const ea::string& name, ValueAnimation* attributeAnimation, WrapMode wrapMode, float speed)
 {
     if (!attributeAnimation)
         return;
@@ -201,7 +201,7 @@ void ObjectAnimation::AddAttributeAnimation(const stl::string& name, ValueAnimat
     SendAttributeAnimationAddedEvent(name);
 }
 
-void ObjectAnimation::RemoveAttributeAnimation(const stl::string& name)
+void ObjectAnimation::RemoveAttributeAnimation(const ea::string& name)
 {
     auto i = attributeAnimationInfos_.find(
         name);
@@ -233,25 +233,25 @@ void ObjectAnimation::RemoveAttributeAnimation(ValueAnimation* attributeAnimatio
     }
 }
 
-ValueAnimation* ObjectAnimation::GetAttributeAnimation(const stl::string& name) const
+ValueAnimation* ObjectAnimation::GetAttributeAnimation(const ea::string& name) const
 {
     ValueAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetAnimation() : nullptr;
 }
 
-WrapMode ObjectAnimation::GetAttributeAnimationWrapMode(const stl::string& name) const
+WrapMode ObjectAnimation::GetAttributeAnimationWrapMode(const ea::string& name) const
 {
     ValueAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetWrapMode() : WM_LOOP;
 }
 
-float ObjectAnimation::GetAttributeAnimationSpeed(const stl::string& name) const
+float ObjectAnimation::GetAttributeAnimationSpeed(const ea::string& name) const
 {
     ValueAnimationInfo* info = GetAttributeAnimationInfo(name);
     return info ? info->GetSpeed() : 1.0f;
 }
 
-ValueAnimationInfo* ObjectAnimation::GetAttributeAnimationInfo(const stl::string& name) const
+ValueAnimationInfo* ObjectAnimation::GetAttributeAnimationInfo(const ea::string& name) const
 {
     auto i = attributeAnimationInfos_.find(
         name);
@@ -260,7 +260,7 @@ ValueAnimationInfo* ObjectAnimation::GetAttributeAnimationInfo(const stl::string
     return nullptr;
 }
 
-void ObjectAnimation::SendAttributeAnimationAddedEvent(const stl::string& name)
+void ObjectAnimation::SendAttributeAnimationAddedEvent(const ea::string& name)
 {
     using namespace AttributeAnimationAdded;
     VariantMap& eventData = GetEventDataMap();
@@ -269,7 +269,7 @@ void ObjectAnimation::SendAttributeAnimationAddedEvent(const stl::string& name)
     SendEvent(E_ATTRIBUTEANIMATIONADDED, eventData);
 }
 
-void ObjectAnimation::SendAttributeAnimationRemovedEvent(const stl::string& name)
+void ObjectAnimation::SendAttributeAnimationRemovedEvent(const ea::string& name)
 {
     using namespace AttributeAnimationRemoved;
     VariantMap& eventData = GetEventDataMap();

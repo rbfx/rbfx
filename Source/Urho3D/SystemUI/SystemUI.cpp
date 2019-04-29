@@ -233,7 +233,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
         // in rendering loop.
         if (cmdList->VtxBuffer.Size > vertexBuffer_.GetVertexCount())
         {
-            stl::vector<VertexElement> elems = {VertexElement(TYPE_VECTOR2, SEM_POSITION),
+            ea::vector<VertexElement> elems = {VertexElement(TYPE_VECTOR2, SEM_POSITION),
                                               VertexElement(TYPE_VECTOR2, SEM_TEXCOORD),
                                               VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR)
             };
@@ -316,7 +316,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     graphics->SetScissorTest(false);
 }
 
-ImFont* SystemUI::AddFont(const stl::string& fontPath, const ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
@@ -324,7 +324,7 @@ ImFont* SystemUI::AddFont(const stl::string& fontPath, const ImWchar* ranges, fl
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
-        stl::vector<uint8_t> data;
+        ea::vector<uint8_t> data;
         data.resize(fontFile->GetSize());
         auto bytesLen = fontFile->Read(&data.front(), data.size());
         ImFontConfig cfg;

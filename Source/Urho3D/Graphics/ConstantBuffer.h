@@ -69,7 +69,7 @@ public:
 
 private:
     /// Shadow data.
-    stl::unique_ptr<unsigned char[]> shadowData_;
+    ea::unique_ptr<unsigned char[]> shadowData_;
     /// Buffer byte size.
     unsigned size_{};
     /// Dirty flag.

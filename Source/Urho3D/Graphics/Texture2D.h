@@ -71,7 +71,7 @@ public:
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
     bool GetImage(Image& image) const;
     /// Get image data from zero mip level. Only RGB and RGBA textures are supported.
-    stl::shared_ptr<Image> GetImage() const;
+    ea::shared_ptr<Image> GetImage() const;
 
     /// Return render surface.
     RenderSurface* GetRenderSurface() const { return renderSurface_; }
@@ -85,11 +85,11 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Render surface.
-    stl::shared_ptr<RenderSurface> renderSurface_;
+    ea::shared_ptr<RenderSurface> renderSurface_;
     /// Image file acquired during BeginLoad.
-    stl::shared_ptr<Image> loadImage_;
+    ea::shared_ptr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.
-    stl::shared_ptr<XMLFile> loadParameters_;
+    ea::shared_ptr<XMLFile> loadParameters_;
 };
 
 }

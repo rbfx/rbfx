@@ -53,7 +53,7 @@ struct DepthValue
 struct OcclusionBufferData
 {
     /// Full buffer data with safety padding.
-    stl::shared_array<int> dataWithSafety_;
+    ea::shared_array<int> dataWithSafety_;
     /// Buffer data.
     int* data_;
     /// Use flag.
@@ -182,11 +182,11 @@ private:
     void MergeBuffers();
 
     /// Highest-level buffer data per thread.
-    stl::vector<OcclusionBufferData> buffers_;
+    ea::vector<OcclusionBufferData> buffers_;
     /// Reduced size depth buffers.
-    stl::vector<stl::shared_array<DepthValue> > mipBuffers_;
+    ea::vector<ea::shared_array<DepthValue> > mipBuffers_;
     /// Submitted render jobs.
-    stl::vector<OcclusionBatch> batches_;
+    ea::vector<OcclusionBatch> batches_;
     /// Buffer width.
     int width_{};
     /// Buffer height.

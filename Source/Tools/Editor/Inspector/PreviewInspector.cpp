@@ -63,7 +63,7 @@ void PreviewInspector::SetModel(Model* model)
     node_->SetWorldPosition(node_->GetWorldPosition() - staticModel->GetWorldBoundingBox().Center());
 }
 
-void PreviewInspector::SetModel(const stl::string& resourceName)
+void PreviewInspector::SetModel(const ea::string& resourceName)
 {
     SetModel(GetCache()->GetResource<Model>(resourceName));
 }

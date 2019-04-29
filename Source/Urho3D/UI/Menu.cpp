@@ -78,7 +78,7 @@ void Menu::Update(float timeStep)
 
     if (popup_ && showPopup_)
     {
-        const stl::vector<stl::shared_ptr<UIElement> >& children = popup_->GetChildren();
+        const ea::vector<ea::shared_ptr<UIElement> >& children = popup_->GetChildren();
         for (unsigned i = 0; i < children.size(); ++i)
         {
             auto* menu = dynamic_cast<Menu*>(children[i].get());
@@ -127,7 +127,7 @@ void Menu::OnShowPopup()
 bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
 {
     // Get style override if defined
-    stl::string styleName = source.GetAttribute("style");
+    ea::string styleName = source.GetAttribute("style");
 
     // Apply the style first, if the style file is available
     if (styleFile)
@@ -147,7 +147,7 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
         if (styleFile)
         {
             // Remember the original applied style
-            stl::string appliedStyle(appliedStyle_);
+            ea::string appliedStyle(appliedStyle_);
             SetStyle(styleName, styleFile);
             appliedStyle_ = appliedStyle;
         }
@@ -165,7 +165,7 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
     {
         bool internalElem = childElem.GetBool("internal");
         bool popupElem = childElem.GetBool("popup");
-        stl::string typeName = childElem.GetAttribute("type");
+        ea::string typeName = childElem.GetAttribute("type");
         if (typeName.empty())
             typeName = "UIElement";
         unsigned index = childElem.HasAttribute("index") ? childElem.GetUInt("index") : M_MAX_UNSIGNED;
@@ -178,7 +178,7 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
             else
             {
                 // Do not add the popup element as a child even temporarily, as that can break layouts
-                stl::shared_ptr<UIElement> popup = DynamicCast<UIElement>(context_->CreateObject(typeName));
+                ea::shared_ptr<UIElement> popup = DynamicCast<UIElement>(context_->CreateObject(typeName));
                 if (!popup)
                     URHO3D_LOGERROR("Could not create popup element type " + typeName);
                 else
@@ -311,7 +311,7 @@ void Menu::ShowPopup(bool enable)
         OnHidePopup();
 
         // If the popup has child menus, hide their popups as well
-        stl::vector<UIElement*> children;
+        ea::vector<UIElement*> children;
         popup_->GetChildren(children, true);
         for (auto i = children.begin(); i != children.end(); ++i)
         {

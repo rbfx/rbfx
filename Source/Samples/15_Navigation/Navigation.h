@@ -54,7 +54,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element\">"
         "        <element type=\"Button\">"
@@ -158,11 +158,11 @@ private:
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Last calculated path.
-    stl::vector<Vector3> currentPath_;
+    ea::vector<Vector3> currentPath_;
     /// Path end position.
     Vector3 endPos_;
     /// Jack scene node.
-    stl::shared_ptr<Node> jackNode_;
+    ea::shared_ptr<Node> jackNode_;
     /// Flag for drawing debug geometry.
     bool drawDebug_;
     /// Flag for using navigation mesh streaming.
@@ -170,7 +170,7 @@ private:
     /// Streaming distance.
     int streamingDistance_;
     /// Tile data.
-    stl::unordered_map<IntVector2, stl::vector<unsigned char> > tileData_;
+    ea::unordered_map<IntVector2, ea::vector<unsigned char> > tileData_;
     /// Added tiles.
-    stl::hash_set<IntVector2> addedTiles_;
+    ea::hash_set<IntVector2> addedTiles_;
 };

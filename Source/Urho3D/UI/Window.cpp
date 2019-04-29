@@ -81,7 +81,7 @@ void Window::RegisterObject(Context* context)
     // Instead it should be set false in code when needed
 }
 
-void Window::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void Window::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     if (modal_)
     {

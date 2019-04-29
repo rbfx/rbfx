@@ -114,9 +114,9 @@ public:
     /// Get system time as seconds since 1.1.1970.
     static unsigned GetTimeSinceEpoch();
     /// Get a date/time stamp as a string.
-    static stl::string GetTimeStamp(const char* format=nullptr);
+    static ea::string GetTimeStamp(const char* format=nullptr);
     /// Get a date/time stamp as a string.
-    static stl::string GetTimeStamp(time_t timestamp, const char* format=nullptr);
+    static ea::string GetTimeStamp(time_t timestamp, const char* format=nullptr);
     /// Sleep for a number of milliseconds.
     static void Sleep(unsigned mSec);
 

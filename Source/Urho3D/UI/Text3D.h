@@ -55,7 +55,7 @@ public:
     UpdateGeometryType GetUpdateGeometryType() override;
 
     /// Set font by looking from resource cache by name and font size. Return true if successful.
-    bool SetFont(const stl::string& fontName, float size = DEFAULT_FONT_SIZE);
+    bool SetFont(const ea::string& fontName, float size = DEFAULT_FONT_SIZE);
     /// Set font and font size. Return true if successful.
     bool SetFont(Font* font, float size = DEFAULT_FONT_SIZE);
     /// Set font size only while retaining the existing font. Return true if successful.
@@ -63,7 +63,7 @@ public:
     /// Set material.
     void SetMaterial(Material* material);
     /// Set text. Text is assumed to be either ASCII or UTF8-encoded.
-    void SetText(const stl::string& text);
+    void SetText(const ea::string& text);
     /// Set horizontal and vertical alignment.
     void SetAlignment(HorizontalAlignment hAlign, VerticalAlignment vAlign);
     /// Set horizontal alignment.
@@ -108,7 +108,7 @@ public:
     /// Return material.
     Material* GetMaterial() const;
     /// Return text.
-    const stl::string& GetText() const;
+    const ea::string& GetText() const;
     /// Return row alignment.
     HorizontalAlignment GetTextAlignment() const;
     /// Return horizontal alignment.
@@ -165,9 +165,9 @@ public:
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
     /// Set text attribute.
-    void SetTextAttr(const stl::string& value);
+    void SetTextAttr(const ea::string& value);
     /// Return text attribute.
-    stl::string GetTextAttr() const;
+    ea::string GetTextAttr() const;
 
     /// Get color attribute. Uses just the top-left color.
     const Color& GetColorAttr() const { return text_.colors_[0]; }
@@ -189,15 +189,15 @@ protected:
     /// Internally used text element.
     Text text_;
     /// Geometries.
-    stl::vector<stl::shared_ptr<Geometry> > geometries_;
+    ea::vector<ea::shared_ptr<Geometry> > geometries_;
     /// Vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Material to use as a base for the text material(s).
-    stl::shared_ptr<Material> material_;
+    ea::shared_ptr<Material> material_;
     /// Text UI batches.
-    stl::vector<UIBatch> uiBatches_;
+    ea::vector<UIBatch> uiBatches_;
     /// Text vertex data.
-    stl::vector<float> uiVertexData_;
+    ea::vector<float> uiVertexData_;
     /// Custom world transform for facing the camera automatically.
     Matrix3x4 customWorldTransform_;
     /// Text rotation mode in relation to the camera.

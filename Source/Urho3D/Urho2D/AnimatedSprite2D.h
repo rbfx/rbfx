@@ -70,9 +70,9 @@ public:
     /// Set animation set.
     void SetAnimationSet(AnimationSet2D* animationSet);
     /// Set entity name (skin name for spine, entity name for spriter).
-    void SetEntity(const stl::string& entity);
+    void SetEntity(const ea::string& entity);
     /// Set animation by name and loop mode.
-    void SetAnimation(const stl::string& name, LoopMode2D loopMode = LM_DEFAULT);
+    void SetAnimation(const ea::string& name, LoopMode2D loopMode = LM_DEFAULT);
     /// Set loop mode.
     void SetLoopMode(LoopMode2D loopMode);
     /// Set speed.
@@ -81,9 +81,9 @@ public:
     /// Return animation.
     AnimationSet2D* GetAnimationSet() const;
     /// Return entity name.
-    const stl::string& GetEntity() const { return entity_; }
+    const ea::string& GetEntity() const { return entity_; }
     /// Return animation name.
-    const stl::string& GetAnimation() const { return animationName_; }
+    const ea::string& GetAnimation() const { return animationName_; }
     /// Return loop mode.
     LoopMode2D GetLoopMode() const { return loopMode_; }
     /// Return speed.
@@ -94,7 +94,7 @@ public:
     /// Return animation set attribute.
     ResourceRef GetAnimationSetAttr() const;
     /// Set animation by name.
-    void SetAnimationAttr(const stl::string& name);
+    void SetAnimationAttr(const ea::string& name);
 
 protected:
     /// Handle scene being assigned.
@@ -125,11 +125,11 @@ protected:
     /// Speed.
     float speed_;
     /// Entity name.
-    stl::string entity_;
+    ea::string entity_;
     /// Animation set.
-    stl::shared_ptr<AnimationSet2D> animationSet_;
+    ea::shared_ptr<AnimationSet2D> animationSet_;
     /// Animation name.
-    stl::string animationName_;
+    ea::string animationName_;
     /// Loop mode.
     LoopMode2D loopMode_;
 
@@ -143,7 +143,7 @@ protected:
 #endif
 
     /// Spriter instance.
-    stl::unique_ptr<Spriter::SpriterInstance> spriterInstance_;
+    ea::unique_ptr<Spriter::SpriterInstance> spriterInstance_;
 };
 
 }

@@ -57,7 +57,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element\">"
         "        <element type=\"Button\">"
@@ -175,9 +175,9 @@ private:
     /// Streaming distance.
     int streamingDistance_{2};
     /// Tile data.
-    stl::unordered_map<IntVector2, stl::vector<unsigned char> > tileData_;
+    ea::unordered_map<IntVector2, ea::vector<unsigned char> > tileData_;
     /// Added tiles.
-    stl::hash_set<IntVector2> addedTiles_;
+    ea::hash_set<IntVector2> addedTiles_;
     /// Flag for drawing debug geometry.
     bool drawDebug_{};
     /// Instruction text UI-element.

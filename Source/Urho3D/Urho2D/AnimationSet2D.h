@@ -62,9 +62,9 @@ public:
     /// Get number of animations.
     unsigned GetNumAnimations() const;
     /// Return animation name.
-    stl::string GetAnimation(unsigned index) const;
+    ea::string GetAnimation(unsigned index) const;
     /// Check has animation.
-    bool HasAnimation(const stl::string& animationName) const;
+    bool HasAnimation(const ea::string& animationName) const;
 
     /// Return sprite.
     Sprite2D* GetSprite() const;
@@ -96,11 +96,11 @@ private:
     void Dispose();
 
     /// Spine sprite.
-    stl::shared_ptr<Sprite2D> sprite_;
+    ea::shared_ptr<Sprite2D> sprite_;
 
 #ifdef URHO3D_SPINE
     /// Spine json data.
-    stl::shared_array<char> jsonData_;
+    ea::shared_array<char> jsonData_;
     /// Spine skeleton data.
     spSkeletonData* skeletonData_;
     /// Spine atlas.
@@ -108,15 +108,15 @@ private:
 #endif
 
     /// Spriter data.
-    stl::unique_ptr<Spriter::SpriterData> spriterData_;
+    ea::unique_ptr<Spriter::SpriterData> spriterData_;
     /// Has sprite sheet.
     bool hasSpriteSheet_;
     /// Sprite sheet file path.
-    stl::string spriteSheetFilePath_;
+    ea::string spriteSheetFilePath_;
     /// Sprite sheet.
-    stl::shared_ptr<SpriteSheet2D> spriteSheet_;
+    ea::shared_ptr<SpriteSheet2D> spriteSheet_;
     /// Spriter sprites.
-    stl::unordered_map<unsigned, stl::shared_ptr<Sprite2D> > spriterFileSprites_;
+    ea::unordered_map<unsigned, ea::shared_ptr<Sprite2D> > spriterFileSprites_;
 };
 
 }

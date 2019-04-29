@@ -96,14 +96,14 @@ protected:
     /// Filter implicit attributes in serialization process.
     bool FilterImplicitAttributes(XMLElement& dest) const override;
     /// Filter implicit attributes in serialization process for internal button.
-    bool FilterButtonImplicitAttributes(XMLElement& dest, const stl::string& name) const;
+    bool FilterButtonImplicitAttributes(XMLElement& dest, const ea::string& name) const;
 
     /// Back button.
-    stl::shared_ptr<Button> backButton_;
+    ea::shared_ptr<Button> backButton_;
     /// Forward button.
-    stl::shared_ptr<Button> forwardButton_;
+    ea::shared_ptr<Button> forwardButton_;
     /// Slider.
-    stl::shared_ptr<Slider> slider_;
+    ea::shared_ptr<Slider> slider_;
     /// Scroll step.
     float scrollStep_;
     /// Step factor.

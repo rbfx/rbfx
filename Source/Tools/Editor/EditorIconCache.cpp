@@ -42,7 +42,7 @@ EditorIconCache::EditorIconCache(Context* context)
     XMLElement root = icons->GetRoot();
     for (XMLElement element = root.GetChild("element"); element.NotNull(); element = element.GetNext("element"))
     {
-        stl::string type = element.GetAttribute("type");
+        ea::string type = element.GetAttribute("type");
         if (type.empty())
         {
             URHO3D_LOGERROR("EditorIconCache.xml contains icon entry without a \"type\" attribute.");
@@ -70,7 +70,7 @@ EditorIconCache::EditorIconCache(Context* context)
     }
 }
 
-EditorIconCache::IconData* EditorIconCache::GetIconData(const stl::string& name)
+EditorIconCache::IconData* EditorIconCache::GetIconData(const ea::string& name)
 {
     auto it = iconCache_.find(name);
     if (it != iconCache_.end())

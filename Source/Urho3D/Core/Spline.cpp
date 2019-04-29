@@ -47,7 +47,7 @@ Spline::Spline(InterpolationMode mode) :
 {
 }
 
-Spline::Spline(const stl::vector<Variant>& knots, InterpolationMode mode) :
+Spline::Spline(const ea::vector<Variant>& knots, InterpolationMode mode) :
     interpolationMode_(mode),
     knots_(knots)
 {
@@ -74,7 +74,7 @@ Variant Spline::GetPoint(float f) const
     case CATMULL_ROM_FULL_CURVE:
         {
             /// \todo Do not allocate a new vector each time
-            stl::vector<Variant> fullKnots;
+            ea::vector<Variant> fullKnots;
             if (knots_.size() > 1)
             {
                 // Non-cyclic case: duplicate start and end
@@ -140,7 +140,7 @@ void Spline::AddKnot(const Variant& knot, unsigned index)
             knots_[0].GetTypeName().c_str());
 }
 
-Variant Spline::BezierInterpolation(const stl::vector<Variant>& knots, float t) const
+Variant Spline::BezierInterpolation(const ea::vector<Variant>& knots, float t) const
 {
     if (knots.size() == 2)
     {
@@ -160,7 +160,7 @@ Variant Spline::BezierInterpolation(const stl::vector<Variant>& knots, float t) 
     else
     {
         /// \todo Do not allocate a new vector each time
-        stl::vector<Variant> interpolatedKnots;
+        ea::vector<Variant> interpolatedKnots;
         for (unsigned i = 1; i < knots.size(); i++)
         {
             switch (knots[0].GetType())
@@ -188,7 +188,7 @@ template <typename T> Variant CalculateCatmullRom(const T& p0, const T& p1, cons
         (-p0 + 3.0f * p1 - 3.0f * p2 + p3) * t3));
 }
 
-Variant Spline::CatmullRomInterpolation(const stl::vector<Variant>& knots, float t) const
+Variant Spline::CatmullRomInterpolation(const ea::vector<Variant>& knots, float t) const
 {
     if (knots.size() < 4)
         return Variant::EMPTY;
@@ -228,7 +228,7 @@ Variant Spline::CatmullRomInterpolation(const stl::vector<Variant>& knots, float
     }
 }
 
-Variant Spline::LinearInterpolation(const stl::vector<Variant>& knots, float t) const
+Variant Spline::LinearInterpolation(const ea::vector<Variant>& knots, float t) const
 {
     if (knots.size() < 2)
         return Variant::EMPTY;

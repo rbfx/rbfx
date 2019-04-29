@@ -256,7 +256,7 @@ void Object::UnsubscribeFromAllEvents()
     }
 }
 
-void Object::UnsubscribeFromAllEventsExcept(const stl::vector<StringHash>& exceptions, bool onlyUserData)
+void Object::UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& exceptions, bool onlyUserData)
 {
     for (auto handler = eventHandlers_.begin(); handler != eventHandlers_.end(); )
     {
@@ -299,14 +299,14 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling
-    stl::weak_ptr<Object> self(this);
+    ea::weak_ptr<Object> self(this);
     Context* context = context_;
 
     context->BeginSendEvent(this, eventType);
 
     // Check first the specific event receivers
     // Note: group is held alive with a shared ptr, as it may get destroyed along with the sender
-    stl::shared_ptr<EventReceiverGroup> group(context->GetEventReceivers(this, eventType));
+    ea::shared_ptr<EventReceiverGroup> group(context->GetEventReceivers(this, eventType));
     if (group)
     {
         group->BeginSendEvent();
@@ -334,7 +334,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     }
 
     // Then the non-specific receivers
-    stl::shared_ptr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
+    ea::shared_ptr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
     if (groupNonSpec)
     {
         groupNonSpec->BeginSendEvent();
@@ -411,9 +411,9 @@ bool Object::HasSubscribedToEvent(Object* sender, StringHash eventType) const
         return FindSpecificEventHandler(sender, eventType) != eventHandlers_.end();
 }
 
-const stl::string& Object::GetCategory() const
+const ea::string& Object::GetCategory() const
 {
-    const stl::unordered_map<stl::string, stl::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
+    const ea::unordered_map<ea::string, ea::vector<StringHash> >& objectCategories = context_->GetObjectCategories();
     for (auto i = objectCategories.begin(); i != objectCategories.end(); ++i)
     {
         if (i->second.contains(GetType()))
@@ -423,23 +423,23 @@ const stl::string& Object::GetCategory() const
     return EMPTY_STRING;
 }
 
-stl::intrusive_list<EventHandler>::iterator Object::FindEventHandler(StringHash eventType)
+ea::intrusive_list<EventHandler>::iterator Object::FindEventHandler(StringHash eventType)
 {
-    return stl::find_if(eventHandlers_.begin(), eventHandlers_.end(), [eventType](const EventHandler& e) {
+    return ea::find_if(eventHandlers_.begin(), eventHandlers_.end(), [eventType](const EventHandler& e) {
         return e.GetEventType() == eventType;
     });
 }
 
-stl::intrusive_list<EventHandler>::iterator Object::FindSpecificEventHandler(Object* sender)
+ea::intrusive_list<EventHandler>::iterator Object::FindSpecificEventHandler(Object* sender)
 {
-    return stl::find_if(eventHandlers_.begin(), eventHandlers_.end(), [sender](const EventHandler& e) {
+    return ea::find_if(eventHandlers_.begin(), eventHandlers_.end(), [sender](const EventHandler& e) {
         return e.GetSender() == sender;
     });
 }
 
-stl::intrusive_list<EventHandler>::iterator Object::FindSpecificEventHandler(Object* sender, StringHash eventType)
+ea::intrusive_list<EventHandler>::iterator Object::FindSpecificEventHandler(Object* sender, StringHash eventType)
 {
-    return stl::find_if(eventHandlers_.begin(), eventHandlers_.end(), [sender, eventType](const EventHandler& e) {
+    return ea::find_if(eventHandlers_.begin(), eventHandlers_.end(), [sender, eventType](const EventHandler& e) {
         return e.GetSender() == sender && e.GetEventType() == eventType;
     });
 }

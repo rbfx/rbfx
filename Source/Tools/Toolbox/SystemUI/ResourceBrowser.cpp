@@ -38,7 +38,7 @@
 namespace Urho3D
 {
 
-ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& selected, ResourceBrowserFlags flags)
+ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& selected, ResourceBrowserFlags flags)
 {
     struct State
     {
@@ -46,7 +46,7 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         bool wasEditing = false;
         bool deletionPending = false;
         char editBuffer[250]{};
-        stl::string editStartItem;
+        ea::string editStartItem;
     };
 
     auto result = RBR_NOOP;
@@ -94,10 +94,10 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         ui::End();
     }
 
-    stl::vector<stl::string> mergedDirs;
-    stl::vector<stl::string> mergedFiles;
+    ea::vector<ea::string> mergedDirs;
+    ea::vector<ea::string> mergedFiles;
 
-    stl::string cacheDir;
+    ea::string cacheDir;
     for (const auto& dir: systemUI->GetCache()->GetResourceDirs())
     {
         if (dir.ends_with("/EditorData/"))
@@ -109,7 +109,7 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
             continue;
         }
 
-        stl::vector<stl::string> items;
+        ea::vector<ea::string> items;
         fs->ScanDir(items, dir + path, "", SCAN_FILES, false);
         for (const auto& item: items)
         {
@@ -128,7 +128,7 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         }
     }
 
-    auto moveFileDropTarget = [&](const stl::string& item) {
+    auto moveFileDropTarget = [&](const ea::string& item) {
         if (ui::BeginDragDropTarget())
         {
             auto dropped = ui::AcceptDragDropVariant("path");
@@ -160,7 +160,7 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         moveFileDropTarget(GetParentPath(path));
     }
 
-    auto renameWidget = [&](const stl::string& item, const stl::string& icon) {
+    auto renameWidget = [&](const ea::string& item, const ea::string& icon) {
         if (selected == item && state.isEditing)
         {
             ui::IdScope idScope("Rename");
@@ -190,7 +190,7 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         return false;
     };
 
-    stl::quick_sort(mergedDirs.begin(), mergedDirs.end());
+    ea::quick_sort(mergedDirs.begin(), mergedDirs.end());
     for (const auto& item: mergedDirs)
     {
         if (!renameWidget(item, ICON_FA_FOLDER))
@@ -230,7 +230,7 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         }
     }
 
-    auto renderAssetEntry = [&](const stl::string& item) {
+    auto renderAssetEntry = [&](const ea::string& item) {
         auto icon = GetFileIcon(item);
         if (!renameWidget(item, icon))
         {
@@ -265,15 +265,15 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
         }
     };
 
-    stl::quick_sort(mergedFiles.begin(), mergedFiles.end());
+    ea::quick_sort(mergedFiles.begin(), mergedFiles.end());
     for (const auto& item: mergedFiles)
     {
         if (fs->DirExists(cacheDir + path + item))
         {
             // File is converted asset.
-            std::function<void(const stl::string&)> renderCacheAssetTree = [&](const stl::string& subPath)
+            std::function<void(const ea::string&)> renderCacheAssetTree = [&](const ea::string& subPath)
             {
-                stl::string targetPath = cacheDir + path + subPath;
+                ea::string targetPath = cacheDir + path + subPath;
 
                 if (fs->DirExists(targetPath))
                 {
@@ -281,14 +281,14 @@ ResourceBrowserResult ResourceBrowserWidget(stl::string& path, stl::string& sele
                     ui::SameLine();
                     if (ui::TreeNode(GetFileNameAndExtension(subPath).c_str()))
                     {
-                        stl::vector<stl::string> files;
-                        stl::vector<stl::string> dirs;
+                        ea::vector<ea::string> files;
+                        ea::vector<ea::string> dirs;
                         fs->ScanDir(files, targetPath, "", SCAN_FILES, false);
                         fs->ScanDir(dirs, targetPath, "", SCAN_DIRS, false);
                         dirs.erase_first(".");
                         dirs.erase_first("..");
-                        stl::quick_sort(files.begin(), files.end());
-                        stl::quick_sort(dirs.begin(), dirs.end());
+                        ea::quick_sort(files.begin(), files.end());
+                        ea::quick_sort(dirs.begin(), dirs.end());
 
                         for (const auto& dir : dirs)
                             renderCacheAssetTree(subPath + "/" + dir);

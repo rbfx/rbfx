@@ -181,21 +181,21 @@ private:
     /// If the RigidBody should be activated.
     bool activate_;
     /// Hull RigidBody
-    stl::weak_ptr<RigidBody> hullBody_;
+    ea::weak_ptr<RigidBody> hullBody_;
     /// Opaque Bullet data hidden from public
     RaycastVehicleData* vehicleData_;
     /// Coordinate system.
     IntVector3 coordinateSystem_;
     /// Nodes of all wheels
-    stl::vector<Node*> wheelNodes_;
+    ea::vector<Node*> wheelNodes_;
     /// All wheels original rotations. These are applied in addition to wheel rotations by btRaycastVehicle
-    stl::vector<Quaternion> origRotation_;
+    ea::vector<Quaternion> origRotation_;
     /// Revolutions per minute value for in-air motor wheels. FIXME: set this one per wheel
     float inAirRPM_;
     /// Per-wheel extra settings.
-    stl::vector<float> skidInfoCumulative_;
+    ea::vector<float> skidInfoCumulative_;
     /// Wheel side movement speed.
-    stl::vector<float> wheelSideSlipSpeed_;
+    ea::vector<float> wheelSideSlipSpeed_;
     /// Side slip speed threshold.
     float maxSideSlipSpeed_;
     /// Loaded data temporarily wait here for ApplyAttributes to come pick them up.

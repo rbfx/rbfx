@@ -57,10 +57,10 @@ const BYTE d3dElementUsage[] =
     D3DDECLUSAGE_TEXCOORD // Object index (not supported by D3D9)
 };
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<VertexElement>& srcElements) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const ea::vector<VertexElement>& srcElements) :
     declaration_(nullptr)
 {
-    stl::vector<VertexDeclarationElement> elements;
+    ea::vector<VertexDeclarationElement> elements;
 
     for (unsigned i = 0; i < srcElements.size(); ++i)
     {
@@ -84,10 +84,10 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
     Create(graphics, elements);
 }
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<VertexBuffer*>& buffers) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const ea::vector<VertexBuffer*>& buffers) :
     declaration_(nullptr)
 {
-    stl::vector<VertexDeclarationElement> elements;
+    ea::vector<VertexDeclarationElement> elements;
     unsigned prevBufferElements = 0;
 
     for (unsigned i = 0; i < buffers.size(); ++i)
@@ -95,7 +95,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
         if (!buffers[i])
             continue;
 
-        const stl::vector<VertexElement>& srcElements = buffers[i]->GetElements();
+        const ea::vector<VertexElement>& srcElements = buffers[i]->GetElements();
         bool isExisting = false;
 
         for (unsigned j = 0; j < srcElements.size(); ++j)
@@ -138,10 +138,10 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<Verte
     Create(graphics, elements);
 }
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers) :
     declaration_(nullptr)
 {
-    stl::vector<VertexDeclarationElement> elements;
+    ea::vector<VertexDeclarationElement> elements;
     unsigned prevBufferElements = 0;
 
     for (unsigned i = 0; i < buffers.size(); ++i)
@@ -149,7 +149,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const stl::vector<stl::
         if (!buffers[i])
             continue;
 
-        const stl::vector<VertexElement>& srcElements = buffers[i]->GetElements();
+        const ea::vector<VertexElement>& srcElements = buffers[i]->GetElements();
         bool isExisting = false;
 
         for (unsigned j = 0; j < srcElements.size(); ++j)
@@ -197,9 +197,9 @@ VertexDeclaration::~VertexDeclaration()
     Release();
 }
 
-void VertexDeclaration::Create(Graphics* graphics, const stl::vector<VertexDeclarationElement>& elements)
+void VertexDeclaration::Create(Graphics* graphics, const ea::vector<VertexDeclarationElement>& elements)
 {
-    stl::shared_array<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.size() + 1]);
+    ea::shared_array<D3DVERTEXELEMENT9> elementArray(new D3DVERTEXELEMENT9[elements.size() + 1]);
 
     D3DVERTEXELEMENT9* dest = elementArray.get();
     for (auto i = elements.begin(); i != elements.end(); ++i)

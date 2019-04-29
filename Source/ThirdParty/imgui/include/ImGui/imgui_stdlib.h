@@ -17,6 +17,6 @@ namespace ImGui
 {
     // ImGui::InputText() with std::string
     // Because text input needs dynamic resizing, we need to setup a callback to grow the capacity
-    IMGUI_API bool  InputText(const char* label, stl::string* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
-    IMGUI_API bool  InputTextMultiline(const char* label, stl::string* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+    IMGUI_API bool  InputText(const char* label, ea::string* str, ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
+    IMGUI_API bool  InputTextMultiline(const char* label, ea::string* str, const ImVec2& size = ImVec2(0, 0), ImGuiInputTextFlags flags = 0, ImGuiInputTextCallback callback = NULL, void* user_data = NULL);
 }

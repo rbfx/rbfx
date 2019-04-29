@@ -36,21 +36,21 @@ class URHO3D_API SystemMessageBox : public Object
 
 public:
     /// Construct. If layout file is not given, use the default message box layout. If style file is not given, use the default style file from root UI element.
-    SystemMessageBox(Context* context, const stl::string& messageString = EMPTY_STRING, const stl::string& titleString = EMPTY_STRING);
+    SystemMessageBox(Context* context, const ea::string& messageString = EMPTY_STRING, const ea::string& titleString = EMPTY_STRING);
     /// Destruct.
     virtual ~SystemMessageBox();
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Set title text. No-ops if there is no title text element.
-    void SetTitle(const stl::string& text);
+    void SetTitle(const ea::string& text);
     /// Set message text. No-ops if there is no message text element.
-    void SetMessage(const stl::string& text);
+    void SetMessage(const ea::string& text);
 
     /// Return title text. Return empty string if there is no title text element.
-    const stl::string& GetTitle() const;
+    const ea::string& GetTitle() const;
     /// Return message text. Return empty string if there is no message text element.
-    const stl::string& GetMessage() const;
+    const ea::string& GetMessage() const;
     /// Returns true if message box is open.
     bool IsOpen() const { return isOpen_; }
 
@@ -59,9 +59,9 @@ private:
     void RenderFrame(StringHash eventType, VariantMap& eventData);
 
     /// Title text element.
-    stl::string titleText_;
+    ea::string titleText_;
     /// Message text element.
-    stl::string messageText_;
+    ea::string messageText_;
     /// Is message box window open.
     bool isOpen_;
     /// Initial message box window position.

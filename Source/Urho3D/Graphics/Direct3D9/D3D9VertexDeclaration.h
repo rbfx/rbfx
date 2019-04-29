@@ -53,11 +53,11 @@ class URHO3D_API VertexDeclaration : public RefCounted
 {
 public:
     /// Construct with a single buffer's vertex element list.
-    VertexDeclaration(Graphics* graphics, const stl::vector<VertexElement>& srcElements);
+    VertexDeclaration(Graphics* graphics, const ea::vector<VertexElement>& srcElements);
     /// Construct with vertex buffers to base declaration on. Higher index buffers will override semantics on lower indices.
-    VertexDeclaration(Graphics* graphics, const stl::vector<VertexBuffer*>& buffers);
+    VertexDeclaration(Graphics* graphics, const ea::vector<VertexBuffer*>& buffers);
     /// Construct with vertex buffers (shared pointer vector) to base declaration on. Higher index buffers will override semantics on lower indices.
-    VertexDeclaration(Graphics* graphics, const stl::vector<stl::shared_ptr<VertexBuffer> >& buffers);
+    VertexDeclaration(Graphics* graphics, const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers);
     /// Destruct.
     ~VertexDeclaration();
 
@@ -66,7 +66,7 @@ public:
 
 private:
     /// Create declaration.
-    void Create(Graphics* graphics, const stl::vector<VertexDeclarationElement>& elements);
+    void Create(Graphics* graphics, const ea::vector<VertexDeclarationElement>& elements);
     /// Release declaration.
     void Release();
 

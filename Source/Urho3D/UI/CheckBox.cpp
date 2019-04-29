@@ -56,7 +56,7 @@ void CheckBox::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Checked Image Offset", GetCheckedOffset, SetCheckedOffset, IntVector2, IntVector2::ZERO, AM_FILE);
 }
 
-void CheckBox::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void CheckBox::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     IntVector2 offset(IntVector2::ZERO);
     if (hovering_ || selected_ || HasFocus())

@@ -122,7 +122,7 @@ void Urho2DPlatformer::CreateScene()
     camera->SetZoom(2.0f * Min((float)graphics->GetWidth() / 1280.0f, (float)graphics->GetHeight() / 800.0f)); // Set zoom according to user's resolution to ensure full visibility (initial zoom (2.0) is set for full visibility at 1280x800 resolution)
 
     // Setup the viewport for displaying the scene
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
     renderer->SetViewport(0, viewport);
 
@@ -132,7 +132,7 @@ void Urho2DPlatformer::CreateScene()
 
     // Create tile map from tmx file
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
+    ea::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
     auto* tileMap = tileMapNode->CreateComponent<TileMap2D>();
     tileMap->SetTmxFile(cache->GetResource<TmxFile2D>("Urho2D/Tilesets/Ortho.tmx"));
     const TileMapInfo2D& info = tileMap->GetInfo();
@@ -200,7 +200,7 @@ void Urho2DPlatformer::HandleCollisionBegin(StringHash eventType, VariantMap& ev
     auto* hitNode = static_cast<Node*>(eventData[PhysicsBeginContact2D::P_NODEA].GetPtr());
     if (hitNode->GetName() == "Imp")
         hitNode = static_cast<Node*>(eventData[PhysicsBeginContact2D::P_NODEB].GetPtr());
-    stl::string nodeName = hitNode->GetName();
+    ea::string nodeName = hitNode->GetName();
     Node* character2DNode = scene_->GetChild("Imp", true);
 
     // Handle ropes and ladders climbing
@@ -235,7 +235,7 @@ void Urho2DPlatformer::HandleCollisionBegin(StringHash eventType, VariantMap& ev
             instructions->SetText("!!! Go to the Exit !!!");
         }
         Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
-        coinsText->SetText(stl::to_string(character2D_->remainingCoins_)); // Update coins UI counter
+        coinsText->SetText(ea::to_string(character2D_->remainingCoins_)); // Update coins UI counter
         sample2D_->PlaySoundEffect("Powerup.wav");
     }
 
@@ -310,7 +310,7 @@ void Urho2DPlatformer::HandleCollisionEnd(StringHash eventType, VariantMap& even
     auto* hitNode = static_cast<Node*>(eventData[PhysicsEndContact2D::P_NODEA].GetPtr());
     if (hitNode->GetName() == "Imp")
         hitNode = static_cast<Node*>(eventData[PhysicsEndContact2D::P_NODEB].GetPtr());
-    stl::string nodeName = hitNode->GetName();
+    ea::string nodeName = hitNode->GetName();
     Node* character2DNode = scene_->GetChild("Imp", true);
 
     // Handle leaving a rope or ladder
@@ -386,7 +386,7 @@ void Urho2DPlatformer::HandlePostRenderUpdate(StringHash eventType, VariantMap& 
 
 void Urho2DPlatformer::ReloadScene(bool reInit)
 {
-    stl::string filename = sample2D_->demoFilename_;
+    ea::string filename = sample2D_->demoFilename_;
     if (!reInit)
         filename += "InGame";
 
@@ -410,11 +410,11 @@ void Urho2DPlatformer::ReloadScene(bool reInit)
     // Update lifes UI
     auto* ui = GetSubsystem<UI>();
     Text* lifeText = static_cast<Text*>(ui->GetRoot()->GetChild("LifeText", true));
-    lifeText->SetText(stl::to_string(lifes));
+    lifeText->SetText(ea::to_string(lifes));
 
     // Update coins UI
     Text* coinsText = static_cast<Text*>(ui->GetRoot()->GetChild("CoinsText", true));
-    coinsText->SetText(stl::to_string(coins));
+    coinsText->SetText(ea::to_string(coins));
 }
 
 void Urho2DPlatformer::HandlePlayButton(StringHash eventType, VariantMap& eventData)

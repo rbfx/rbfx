@@ -46,7 +46,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -62,7 +62,7 @@ private:
     /// Handle the logic update event.
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
-    stl::string message_;
-    stl::shared_ptr<Text> text_;
-    stl::shared_ptr<HttpRequest> httpRequest_;
+    ea::string message_;
+    ea::shared_ptr<Text> text_;
+    ea::shared_ptr<HttpRequest> httpRequest_;
 };

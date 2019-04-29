@@ -32,7 +32,7 @@ using namespace Urho3D;
 namespace ImGui
 {
 
-void Image(const stl::string& name)
+void Image(const ea::string& name)
 {
     auto* icons = ui::GetSystemUI()->GetSubsystem<EditorIconCache>();
 
@@ -49,7 +49,7 @@ void Image(const stl::string& name)
         URHO3D_LOGERRORF("Editor icon \"%s\" does not exist.", name.c_str());
 }
 
-bool ImageButton(const stl::string& name)
+bool ImageButton(const ea::string& name)
 {
     auto* icons = ui::GetSystemUI()->GetSubsystem<EditorIconCache>();
 

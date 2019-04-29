@@ -33,7 +33,7 @@ Urho3D::Converter::Converter(Urho3D::Context* context)
 
 void Urho3D::Converter::RegisterObject(Context* context)
 {
-    URHO3D_ATTRIBUTE("comment", stl::string, comment_, EMPTY_STRING, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("comment", ea::string, comment_, EMPTY_STRING, AM_DEFAULT);
     URHO3D_ENUM_ATTRIBUTE("kind", kind_, converterKindNames, CONVERTER_OFFLINE, AM_DEFAULT);
 }
 
@@ -49,7 +49,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
                 return false;
 
             StringHash type = GetSerializedType(value);
-            stl::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
+            ea::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
             if (!converter)
                 return false;
 
@@ -83,7 +83,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
 
 void Urho3D::Converter::Execute(const StringVector& input)
 {
-    for (stl::shared_ptr<Converter>& converter : converters_)
+    for (ea::shared_ptr<Converter>& converter : converters_)
         converter->Execute(input);
 }
 

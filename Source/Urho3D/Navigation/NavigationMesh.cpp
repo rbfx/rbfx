@@ -151,7 +151,7 @@ void NavigationMesh::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Detail Sample Max Error", GetDetailSampleMaxError, SetDetailSampleMaxError, float,
         DEFAULT_DETAIL_SAMPLE_MAX_ERROR, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Bounding Box Padding", GetPadding, SetPadding, Vector3, Vector3::ONE, AM_DEFAULT);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Navigation Data", GetNavigationDataAttr, SetNavigationDataAttr, stl::vector<unsigned char>,
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Navigation Data", GetNavigationDataAttr, SetNavigationDataAttr, ea::vector<unsigned char>,
         Variant::emptyBuffer, AM_FILE | AM_NOEDIT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Partition Type", GetPartitionType, SetPartitionType, NavmeshPartitionType, navmeshPartitionTypeNames,
         NAVMESH_PARTITION_WATERSHED, AM_DEFAULT);
@@ -196,7 +196,7 @@ void NavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         // Draw OffMeshConnection components
         if (drawOffMeshConnections_)
         {
-            stl::vector<Node*> connections;
+            ea::vector<Node*> connections;
             scene->GetChildrenWithComponent<OffMeshConnection>(connections, true);
             for (unsigned i = 0; i < connections.size(); ++i)
             {
@@ -219,7 +219,7 @@ void NavigationMesh::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     }
 }
 
-void NavigationMesh::SetMeshName(const stl::string& newName)
+void NavigationMesh::SetMeshName(const ea::string& newName)
 {
     meshName_ = newName;
 }
@@ -368,7 +368,7 @@ bool NavigationMesh::Allocate(const BoundingBox& boundingBox, unsigned maxTiles)
         return false;
     }
 
-    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + stl::to_string(maxTiles) + " tiles");
+    URHO3D_LOGDEBUG("Allocated empty navigation mesh with max " + ea::to_string(maxTiles) + " tiles");
 
     // Send a notification event to concerned parties that we've been fully rebuilt
     {
@@ -394,7 +394,7 @@ bool NavigationMesh::Build()
     if (!node_->GetWorldScale().Equals(Vector3::ONE))
         URHO3D_LOGWARNING("Navigation mesh root node has scaling. Agent parameters may not work as intended");
 
-    stl::vector<NavigationGeometryInfo> geometryList;
+    ea::vector<NavigationGeometryInfo> geometryList;
     CollectGeometries(geometryList);
 
     if (geometryList.empty())
@@ -447,7 +447,7 @@ bool NavigationMesh::Build()
         // Build each tile
         unsigned numTiles = BuildTiles(geometryList, IntVector2::ZERO, GetNumTiles() - IntVector2::ONE);
 
-        URHO3D_LOGDEBUG("Built navigation mesh with " + stl::to_string(numTiles) + " tiles");
+        URHO3D_LOGDEBUG("Built navigation mesh with " + ea::to_string(numTiles) + " tiles");
 
         // Send a notification event to concerned parties that we've been fully rebuilt
         {
@@ -482,7 +482,7 @@ bool NavigationMesh::Build(const BoundingBox& boundingBox)
 
     float tileEdgeLength = (float)tileSize_ * cellSize_;
 
-    stl::vector<NavigationGeometryInfo> geometryList;
+    ea::vector<NavigationGeometryInfo> geometryList;
     CollectGeometries(geometryList);
 
     int sx = Clamp((int)((localSpaceBox.min_.x_ - boundingBox_.min_.x_) / tileEdgeLength), 0, numTilesX_ - 1);
@@ -492,7 +492,7 @@ bool NavigationMesh::Build(const BoundingBox& boundingBox)
 
     unsigned numTiles = BuildTiles(geometryList, IntVector2(sx, sz), IntVector2(ex, ez));
 
-    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + ea::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
@@ -512,23 +512,23 @@ bool NavigationMesh::Build(const IntVector2& from, const IntVector2& to)
     if (!node_->GetWorldScale().Equals(Vector3::ONE))
         URHO3D_LOGWARNING("Navigation mesh root node has scaling. Agent parameters may not work as intended");
 
-    stl::vector<NavigationGeometryInfo> geometryList;
+    ea::vector<NavigationGeometryInfo> geometryList;
     CollectGeometries(geometryList);
 
     unsigned numTiles = BuildTiles(geometryList, from, to);
 
-    URHO3D_LOGDEBUG("Rebuilt " + stl::to_string(numTiles) + " tiles of the navigation mesh");
+    URHO3D_LOGDEBUG("Rebuilt " + ea::to_string(numTiles) + " tiles of the navigation mesh");
     return true;
 }
 
-stl::vector<unsigned char> NavigationMesh::GetTileData(const IntVector2& tile) const
+ea::vector<unsigned char> NavigationMesh::GetTileData(const IntVector2& tile) const
 {
     VectorBuffer ret;
     WriteTile(ret, tile.x_, tile.y_);
     return ret.GetBuffer();
 }
 
-bool NavigationMesh::AddTile(const stl::vector<unsigned char>& tileData)
+bool NavigationMesh::AddTile(const ea::vector<unsigned char>& tileData)
 {
     MemoryBuffer buffer(tileData);
     return ReadTile(buffer, false);
@@ -644,16 +644,16 @@ Vector3 NavigationMesh::MoveAlongSurface(const Vector3& start, const Vector3& en
     Vector3 resultPos;
     int visitedCount = 0;
     maxVisited = Max(maxVisited, 0);
-    stl::vector<dtPolyRef> visited((unsigned)maxVisited);
+    ea::vector<dtPolyRef> visited((unsigned)maxVisited);
     navMeshQuery_->moveAlongSurface(startRef, &localStart.x_, &localEnd.x_, queryFilter, &resultPos.x_, maxVisited ?
         &visited[0] : nullptr, &visitedCount, maxVisited);
     return transform * resultPos;
 }
 
-void NavigationMesh::FindPath(stl::vector<Vector3>& dest, const Vector3& start, const Vector3& end, const Vector3& extents,
+void NavigationMesh::FindPath(ea::vector<Vector3>& dest, const Vector3& start, const Vector3& end, const Vector3& extents,
     const dtQueryFilter* filter)
 {
-    stl::vector<NavigationPathPoint> navPathPoints;
+    ea::vector<NavigationPathPoint> navPathPoints;
     FindPath(navPathPoints, start, end, extents, filter);
 
     dest.clear();
@@ -661,7 +661,7 @@ void NavigationMesh::FindPath(stl::vector<Vector3>& dest, const Vector3& start, 
         dest.push_back(navPathPoints[i].position_);
 }
 
-void NavigationMesh::FindPath(stl::vector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end,
+void NavigationMesh::FindPath(ea::vector<NavigationPathPoint>& dest, const Vector3& start, const Vector3& end,
     const Vector3& extents, const dtQueryFilter* filter)
 {
     URHO3D_PROFILE("FindPath");
@@ -876,7 +876,7 @@ float NavigationMesh::GetAreaCost(unsigned areaID) const
     return 1.0f;
 }
 
-void NavigationMesh::SetNavigationDataAttr(const stl::vector<unsigned char>& value)
+void NavigationMesh::SetNavigationDataAttr(const ea::vector<unsigned char>& value)
 {
     ReleaseNavigationMesh();
 
@@ -920,11 +920,11 @@ void NavigationMesh::SetNavigationDataAttr(const stl::vector<unsigned char>& val
             return;
     }
 
-    URHO3D_LOGDEBUG("Created navigation mesh with " + stl::to_string(numTiles) + " tiles from serialized data");
+    URHO3D_LOGDEBUG("Created navigation mesh with " + ea::to_string(numTiles) + " tiles from serialized data");
     // \todo Shall we send E_NAVIGATION_MESH_REBUILT here?
 }
 
-stl::vector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
+ea::vector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
 {
     VectorBuffer ret;
 
@@ -950,16 +950,16 @@ stl::vector<unsigned char> NavigationMesh::GetNavigationDataAttr() const
     return ret.GetBuffer();
 }
 
-void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geometryList)
+void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList)
 {
     URHO3D_PROFILE("CollectNavigationGeometry");
 
     // Get Navigable components from child nodes, not from whole scene. This makes it possible to partition
     // the scene into several navigation meshes
-    stl::vector<Navigable*> navigables;
+    ea::vector<Navigable*> navigables;
     node_->GetComponents<Navigable>(navigables, true);
 
-    stl::hash_set<Node*> processedNodes;
+    ea::hash_set<Node*> processedNodes;
     for (unsigned i = 0; i < navigables.size(); ++i)
     {
         if (navigables[i]->IsEnabledEffective())
@@ -968,7 +968,7 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
 
     // Get offmesh connections
     Matrix3x4 inverse = node_->GetWorldTransform().Inverse();
-    stl::vector<OffMeshConnection*> connections;
+    ea::vector<OffMeshConnection*> connections;
     node_->GetComponents<OffMeshConnection>(connections, true);
 
     for (unsigned i = 0; i < connections.size(); ++i)
@@ -987,7 +987,7 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
     }
 
     // Get nav area volumes
-    stl::vector<NavArea*> navAreas;
+    ea::vector<NavArea*> navAreas;
     node_->GetComponents<NavArea>(navAreas, true);
     areas_.clear();
     for (unsigned i = 0; i < navAreas.size(); ++i)
@@ -999,12 +999,12 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
             info.component_ = area;
             info.boundingBox_ = area->GetWorldBoundingBox();
             geometryList.push_back(info);
-            areas_.push_back(stl::weak_ptr<NavArea>(area));
+            areas_.push_back(ea::weak_ptr<NavArea>(area));
         }
     }
 }
 
-void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geometryList, Node* node, stl::hash_set<Node*>& processedNodes,
+void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geometryList, Node* node, ea::hash_set<Node*>& processedNodes,
     bool recursive)
 {
     // Make sure nodes are not included twice
@@ -1020,7 +1020,7 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
 #ifdef URHO3D_PHYSICS
     // Prefer compatible physics collision shapes (triangle mesh, convex hull, box) if found.
     // Then fallback to visible geometry
-    stl::vector<CollisionShape*> collisionShapes;
+    ea::vector<CollisionShape*> collisionShapes;
     node->GetComponents<CollisionShape>(collisionShapes);
     bool collisionShapeFound = false;
 
@@ -1047,7 +1047,7 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
     if (!collisionShapeFound)
 #endif
     {
-        stl::vector<Drawable*> drawables;
+        ea::vector<Drawable*> drawables;
         node->GetDerivedComponents<Drawable>(drawables);
 
         for (unsigned i = 0; i < drawables.size(); ++i)
@@ -1076,13 +1076,13 @@ void NavigationMesh::CollectGeometries(stl::vector<NavigationGeometryInfo>& geom
 
     if (recursive)
     {
-        const stl::vector<stl::shared_ptr<Node> >& children = node->GetChildren();
+        const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
         for (unsigned i = 0; i < children.size(); ++i)
             CollectGeometries(geometryList, children[i], processedNodes, recursive);
     }
 }
 
-void NavigationMesh::GetTileGeometry(NavBuildData* build, stl::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box)
+void NavigationMesh::GetTileGeometry(NavBuildData* build, ea::vector<NavigationGeometryInfo>& geometryList, BoundingBox& box)
 {
     Matrix3x4 inverse = node_->GetWorldTransform().Inverse();
 
@@ -1185,7 +1185,7 @@ void NavigationMesh::GetTileGeometry(NavBuildData* build, stl::vector<Navigation
             auto* drawable = dynamic_cast<Drawable*>(geometryList[i].component_);
             if (drawable)
             {
-                const stl::vector<SourceBatch>& batches = drawable->GetBatches();
+                const ea::vector<SourceBatch>& batches = drawable->GetBatches();
 
                 for (unsigned j = 0; j < batches.size(); ++j)
                     AddTriMeshGeometry(build, drawable->GetLodGeometry(j, geometryList[i].lodLevel_), transform);
@@ -1203,7 +1203,7 @@ void NavigationMesh::AddTriMeshGeometry(NavBuildData* build, Geometry* geometry,
     const unsigned char* indexData;
     unsigned vertexSize;
     unsigned indexSize;
-    const stl::vector<VertexElement>* elements;
+    const ea::vector<VertexElement>* elements;
 
     geometry->GetRawData(vertexData, vertexSize, indexData, indexSize, elements);
     if (!vertexData || !indexData || !elements || VertexBuffer::GetElementOffset(*elements, TYPE_VECTOR3, SEM_POSITION) != 0)
@@ -1299,7 +1299,7 @@ bool NavigationMesh::ReadTile(Deserializer& source, bool silent)
     return true;
 }
 
-bool NavigationMesh::BuildTile(stl::vector<NavigationGeometryInfo>& geometryList, int x, int z)
+bool NavigationMesh::BuildTile(ea::vector<NavigationGeometryInfo>& geometryList, int x, int z)
 {
     URHO3D_PROFILE("BuildNavigationMeshTile");
 
@@ -1358,7 +1358,7 @@ bool NavigationMesh::BuildTile(stl::vector<NavigationGeometryInfo>& geometryList
     }
 
     unsigned numTriangles = build.indices_.size() / 3;
-    stl::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
+    ea::shared_array<unsigned char> triAreas(new unsigned char[numTriangles]);
     memset(triAreas.get(), 0, numTriangles);
 
     rcMarkWalkableTriangles(build.ctx_, cfg.walkableSlopeAngle, &build.vertices_[0].x_, build.vertices_.size(),
@@ -1527,7 +1527,7 @@ bool NavigationMesh::BuildTile(stl::vector<NavigationGeometryInfo>& geometryList
     return true;
 }
 
-unsigned NavigationMesh::BuildTiles(stl::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
+unsigned NavigationMesh::BuildTiles(ea::vector<NavigationGeometryInfo>& geometryList, const IntVector2& from, const IntVector2& to)
 {
     unsigned numTiles = 0;
 

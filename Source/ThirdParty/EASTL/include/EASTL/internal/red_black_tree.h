@@ -20,6 +20,9 @@
 #include <EASTL/algorithm.h>
 #include <EASTL/initializer_list.h>
 #include <EASTL/tuple.h>
+#if EASTL_URHO3D_EXTENSIONS
+	#include <EASTL/vector.h>
+#endif
 
 EA_DISABLE_ALL_VC_WARNINGS()
 #include <new>
@@ -511,6 +514,30 @@ namespace eastl
 		bool validate() const;
 		int  validate_iterator(const_iterator i) const;
 
+#if EASTL_URHO3D_EXTENSIONS
+		bool contains(const key_type& key) const
+		{
+			return find(key) != end();
+		}
+
+		eastl::vector<key_type> keys() const
+		{
+			eastl::vector<key_type> result{};
+			result.reserve(size());
+			for (const auto& pair : *this)
+				result.emplace_back(pair.first);
+			return result;
+		}
+
+		eastl::vector<key_type> values() const
+		{
+			eastl::vector<key_type> result{};
+			result.reserve(size());
+			for (const auto& pair : *this)
+				result.emplace_back(pair.second);
+			return result;
+		}
+#endif
 	protected:
 		node_type* DoAllocateNode();
 		void       DoFreeNode(node_type* pNode);

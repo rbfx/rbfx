@@ -137,7 +137,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     if (error)
     {
         FT_Done_Face(face);
-        URHO3D_LOGERROR("Could not set font point size " + stl::to_string(pointSize));
+        URHO3D_LOGERROR("Could not set font point size " + ea::to_string(pointSize));
         return false;
     }
 
@@ -146,7 +146,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     auto numGlyphs = (unsigned)face->num_glyphs;
     URHO3D_LOGDEBUGF("Font face %s (%fpt) has %d glyphs", GetFileName(font_->GetName()).c_str(), pointSize, numGlyphs);
 
-    stl::vector<unsigned> charCodes(numGlyphs + 1, 0);
+    ea::vector<unsigned> charCodes(numGlyphs + 1, 0);
 
     // Attempt to load space glyph first regardless if it's listed or not
     // In some fonts (Consola) it is missing
@@ -198,7 +198,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     int textureHeight = maxTextureSize;
     hasMutableGlyph_ = false;
 
-    stl::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
+    ea::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
@@ -217,7 +217,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
         }
     }
 
-    stl::shared_ptr<Texture2D> texture = LoadFaceTexture(image);
+    ea::shared_ptr<Texture2D> texture = LoadFaceTexture(image);
     if (!texture)
         return false;
 
@@ -238,7 +238,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
             return false;
         }
 
-        stl::shared_array<unsigned char> kerningTable(new unsigned char[kerningTableSize]);
+        ea::shared_array<unsigned char> kerningTable(new unsigned char[kerningTableSize]);
         error = FT_Load_Sfnt_Table(face, tagKern, 0, kerningTable.get(), &kerningTableSize);
         if (error)
         {
@@ -248,7 +248,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
 
         // Convert big endian to little endian
         for (unsigned i = 0; i < kerningTableSize; i += 2)
-            stl::swap(kerningTable[i], kerningTable[i + 1]);
+            ea::swap(kerningTable[i], kerningTable[i + 1]);
         MemoryBuffer deserializer(kerningTable.get(), (unsigned)kerningTableSize);
 
         unsigned short version = deserializer.ReadUShort();
@@ -331,12 +331,12 @@ const FontGlyph* FontFaceFreeType::GetGlyph(unsigned c)
 
 bool FontFaceFreeType::SetupNextTexture(int textureWidth, int textureHeight)
 {
-    stl::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
+    ea::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
 
-    stl::shared_ptr<Texture2D> texture = LoadFaceTexture(image);
+    ea::shared_ptr<Texture2D> texture = LoadFaceTexture(image);
     if (!texture)
         return false;
 

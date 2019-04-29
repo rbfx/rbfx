@@ -85,10 +85,10 @@ void UITab::RenderHierarchy()
 
 void UITab::RenderNodeTree(UIElement* element)
 {
-    stl::shared_ptr<UIElement> elementRef(element);
-    stl::string name = element->GetName();
-    stl::string type = element->GetTypeName();
-    stl::string tooltip = "Type: " + type;
+    ea::shared_ptr<UIElement> elementRef(element);
+    ea::string name = element->GetName();
+    ea::string type = element->GetTypeName();
+    ea::string tooltip = "Type: " + type;
     if (name.empty())
         name = type;
     ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_OpenOnDoubleClick;
@@ -99,7 +99,7 @@ void UITab::RenderNodeTree(UIElement* element)
         flags |= ImGuiTreeNodeFlags_DefaultOpen;
 
     if (showInternal_)
-        tooltip += stl::string("\nInternal: ") + (isInternal ? "true" : "false");
+        tooltip += ea::string("\nInternal: ") + (isInternal ? "true" : "false");
 
     if (element == selectedElement_)
         flags |= ImGuiTreeNodeFlags_Selected;
@@ -122,7 +122,7 @@ void UITab::RenderNodeTree(UIElement* element)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            stl::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            ea::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
             if (child && child != element)
             {
                 child->Remove();    // Needed for reordering under the same parent.
@@ -154,7 +154,7 @@ void UITab::RenderNodeTree(UIElement* element)
         if (!wasDeleted)
         {
             // Do not use element->GetChildren() because child may be deleted during this loop.
-            stl::vector<UIElement*> children;
+            ea::vector<UIElement*> children;
             element->GetChildren(children);
             for (const auto& child: children)
                 RenderNodeTree(child);
@@ -172,7 +172,7 @@ void UITab::RenderNodeTree(UIElement* element)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            stl::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            ea::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
             if (child && child != element)
             {
                 child->Remove();    // Needed for reordering under the same parent.
@@ -325,7 +325,7 @@ IntRect UITab::UpdateViewRect()
     return rect;
 }
 
-bool UITab::LoadResource(const stl::string& resourcePath)
+bool UITab::LoadResource(const ea::string& resourcePath)
 {
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
@@ -344,10 +344,10 @@ bool UITab::LoadResource(const stl::string& resourcePath)
     UIElement* layoutElement = nullptr;
     if (resourcePath.ends_with(".xml"))
     {
-        stl::shared_ptr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
+        ea::shared_ptr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
         if (file)
         {
-            stl::string type = file->GetRoot().GetAttribute("type");
+            ea::string type = file->GetRoot().GetAttribute("type");
             if (type.empty())
                 type = "UIElement";
             auto* child = rootElement_->CreateChild(StringHash(type));
@@ -407,7 +407,7 @@ bool UITab::SaveResource()
         return false;
 
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    stl::string savePath = cache->GetResourceFileName(resourceName_);
+    ea::string savePath = cache->GetResourceFileName(resourceName_);
     cache->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_);
 
     if (resourceName_.ends_with(".xml"))
@@ -489,7 +489,7 @@ void UITab::AutoLoadDefaultStyle()
     auto fs = GetSubsystem<FileSystem>();
     for (const auto& dir: cache->GetResourceDirs())
     {
-        stl::vector<stl::string> items;
+        ea::vector<ea::string> items;
         fs->ScanDir(items, dir + "UI", "", SCAN_FILES, false);
 
         for (const auto& fileName : items)
@@ -513,7 +513,7 @@ void UITab::AutoLoadDefaultStyle()
             }
         }
     }
-    stl::quick_sort(styleNames_.begin(), styleNames_.end());
+    ea::quick_sort(styleNames_.begin(), styleNames_.end());
 }
 
 void UITab::RenderElementContextMenu()
@@ -523,9 +523,9 @@ void UITab::RenderElementContextMenu()
         if (ui::BeginMenu("Create Child"))
         {
             auto components = GetSubsystem<Editor>()->GetObjectsByCategory("UI");
-            stl::quick_sort(components.begin(), components.end());
+            ea::quick_sort(components.begin(), components.end());
 
-            for (const stl::string& component : components)
+            for (const ea::string& component : components)
             {
                 // TODO: element creation with custom styles more usable.
                 if (GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
@@ -574,7 +574,7 @@ void UITab::RenderElementContextMenu()
     }
 }
 
-stl::string UITab::GetAppliedStyle(UIElement* element)
+ea::string UITab::GetAppliedStyle(UIElement* element)
 {
     if (element == nullptr)
         element = selectedElement_;

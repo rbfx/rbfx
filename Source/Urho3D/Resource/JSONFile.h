@@ -46,12 +46,12 @@ public:
     /// Save resource with default indentation (one tab). Return true if successful.
     bool Save(Serializer& dest) const override;
     /// Save resource with user-defined indentation, only the first character (if any) of the string is used and the length of the string defines the character count. Return true if successful.
-    bool Save(Serializer& dest, const stl::string& indendation) const;
+    bool Save(Serializer& dest, const ea::string& indendation) const;
 
     /// Deserialize from a string. Return true if successful.
-    bool FromString(const stl::string& source);
+    bool FromString(const ea::string& source);
     /// Save to a string.
-    stl::string ToString(const stl::string& indendation = "\t") const;
+    ea::string ToString(const ea::string& indendation = "\t") const;
 
     /// Return root value.
     JSONValue& GetRoot() { return root_; }
@@ -59,7 +59,7 @@ public:
     const JSONValue& GetRoot() const { return root_; }
 
     /// Return true if parsing json string into JSONValue succeeds.
-    static bool ParseJSON(const stl::string& json, JSONValue& value, bool reportError = true);
+    static bool ParseJSON(const ea::string& json, JSONValue& value, bool reportError = true);
 private:
     /// JSON root value.
     JSONValue root_;

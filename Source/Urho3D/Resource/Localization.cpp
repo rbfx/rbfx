@@ -41,7 +41,7 @@ Localization::Localization(Context* context) :
 
 Localization::~Localization() = default;
 
-int Localization::GetLanguageIndex(const stl::string& language)
+int Localization::GetLanguageIndex(const ea::string& language)
 {
     if (language.empty())
     {
@@ -61,7 +61,7 @@ int Localization::GetLanguageIndex(const stl::string& language)
     return -1;
 }
 
-stl::string Localization::GetLanguage()
+ea::string Localization::GetLanguage()
 {
     if (languageIndex_ == -1)
     {
@@ -71,7 +71,7 @@ stl::string Localization::GetLanguage()
     return languages_[languageIndex_];
 }
 
-stl::string Localization::GetLanguage(int index)
+ea::string Localization::GetLanguage(int index)
 {
     if (GetNumLanguages() == 0)
     {
@@ -106,7 +106,7 @@ void Localization::SetLanguage(int index)
     }
 }
 
-void Localization::SetLanguage(const stl::string& language)
+void Localization::SetLanguage(const ea::string& language)
 {
     if (language.empty())
     {
@@ -127,7 +127,7 @@ void Localization::SetLanguage(const stl::string& language)
     SetLanguage(index);
 }
 
-stl::string Localization::Get(const stl::string& id, int index)
+ea::string Localization::Get(const ea::string& id, int index)
 {
     if (id.empty())
         return EMPTY_STRING;
@@ -142,7 +142,7 @@ stl::string Localization::Get(const stl::string& id, int index)
         return id;
     }
 
-    stl::string result = strings_[index < 0 ? GetLanguage() : languages_[index]][StringHash(id)];
+    ea::string result = strings_[index < 0 ? GetLanguage() : languages_[index]][StringHash(id)];
     if (result.empty())
     {
         URHO3D_LOGTRACE("Localization::Get(\"" + id + "\") not found translation, language=\"" + GetLanguage() + "\"");
@@ -158,7 +158,7 @@ void Localization::Reset()
     strings_.clear();
 }
 
-void Localization::LoadJSONFile(const stl::string& name, const stl::string language)
+void Localization::LoadJSONFile(const ea::string& name, const ea::string language)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* jsonFile = cache->GetResource<JSONFile>(name);
@@ -176,7 +176,7 @@ void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
 {
     for (const auto& i : source)
     {
-        stl::string id = i.first;
+        ea::string id = i.first;
         if (id.empty())
         {
             URHO3D_LOGWARNING("Localization::LoadMultipleLanguageJSON(source): string ID is empty");
@@ -187,14 +187,14 @@ void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
         {
             for (const auto& j : value)
             {
-                const stl::string &lang = j.first;
+                const ea::string &lang = j.first;
                 if (lang.empty())
                 {
                     URHO3D_LOGWARNING(
                             "Localization::LoadMultipleLanguageJSON(source): language name is empty, string ID=\"" + id + "\"");
                     continue;
                 }
-                const stl::string &string = j.second.GetString();
+                const ea::string &string = j.second.GetString();
                 if (string.empty())
                 {
                     URHO3D_LOGWARNING(
@@ -220,11 +220,11 @@ void Localization::LoadMultipleLanguageJSON(const JSONValue& source)
     }
 }
 
-void Localization::LoadSingleLanguageJSON(const JSONValue& source, const stl::string& language)
+void Localization::LoadSingleLanguageJSON(const JSONValue& source, const ea::string& language)
 {
     for (const auto& i : source)
     {
-        stl::string id = i.first;
+        ea::string id = i.first;
         if (id.empty())
         {
             URHO3D_LOGWARNING("Localization::LoadSingleLanguageJSON(source, language): string ID is empty");

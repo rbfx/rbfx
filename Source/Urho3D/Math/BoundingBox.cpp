@@ -76,7 +76,7 @@ void BoundingBox::Merge(const Polyhedron& poly)
 {
     for (unsigned i = 0; i < poly.faces_.size(); ++i)
     {
-        const stl::vector<Vector3>& face = poly.faces_[i];
+        const ea::vector<Vector3>& face = poly.faces_[i];
         if (!face.empty())
             Merge(&face[0], face.size());
     }
@@ -294,7 +294,7 @@ Intersection BoundingBox::IsInsideFast(const Sphere& sphere) const
         return INSIDE;
 }
 
-stl::string BoundingBox::ToString() const
+ea::string BoundingBox::ToString() const
 {
     return min_.ToString() + " - " + max_.ToString();
 }

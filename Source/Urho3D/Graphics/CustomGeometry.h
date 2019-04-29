@@ -70,7 +70,7 @@ public:
     static void RegisterObject(Context* context);
 
     /// Process octree raycast. May be called from a worker thread.
-    void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results) override;
+    void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Return the geometry for a specific LOD level.
     Geometry* GetLodGeometry(unsigned batchIndex, unsigned level) override;
     /// Return number of occlusion geometry triangles.
@@ -120,17 +120,17 @@ public:
     Material* GetMaterial(unsigned index = 0) const;
 
     /// Return all vertices. These can be edited; calling Commit() updates the vertex buffer.
-    stl::vector<stl::vector<CustomGeometryVertex> >& GetVertices() { return vertices_; }
+    ea::vector<ea::vector<CustomGeometryVertex> >& GetVertices() { return vertices_; }
 
     /// Return a vertex in a geometry for editing, or null if out of bounds. After the edits are finished, calling Commit() updates  the vertex buffer.
     CustomGeometryVertex* GetVertex(unsigned geometryIndex, unsigned vertexNum);
 
     /// Set geometry data attribute.
-    void SetGeometryDataAttr(const stl::vector<unsigned char>& value);
+    void SetGeometryDataAttr(const ea::vector<unsigned char>& value);
     /// Set materials attribute.
     void SetMaterialsAttr(const ResourceRefList& value);
     /// Return geometry data attribute.
-    stl::vector<unsigned char> GetGeometryDataAttr() const;
+    ea::vector<unsigned char> GetGeometryDataAttr() const;
     /// Return materials attribute.
     const ResourceRefList& GetMaterialsAttr() const;
 
@@ -140,13 +140,13 @@ protected:
 
 private:
     /// Primitive type per geometry.
-    stl::vector<PrimitiveType> primitiveTypes_;
+    ea::vector<PrimitiveType> primitiveTypes_;
     /// Source vertices per geometry.
-    stl::vector<stl::vector<CustomGeometryVertex> > vertices_;
+    ea::vector<ea::vector<CustomGeometryVertex> > vertices_;
     /// All geometries.
-    stl::vector<stl::shared_ptr<Geometry> > geometries_;
+    ea::vector<ea::shared_ptr<Geometry> > geometries_;
     /// Vertex buffer.
-    stl::shared_ptr<VertexBuffer> vertexBuffer_;
+    ea::shared_ptr<VertexBuffer> vertexBuffer_;
     /// Element mask used so far.
     VertexMaskFlags elementMask_;
     /// Current geometry being updated.

@@ -84,7 +84,7 @@ void DropDownList::ApplyAttributes()
     SetSelection(selectionAttr_);
 }
 
-void DropDownList::GetBatches(stl::vector<UIBatch>& batches, stl::vector<float>& vertexData, const IntRect& currentScissor)
+void DropDownList::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor)
 {
     Menu::GetBatches(batches, vertexData, currentScissor);
 
@@ -185,7 +185,7 @@ void DropDownList::SetSelection(unsigned index)
     listView_->SetSelection(index);
 }
 
-void DropDownList::SetPlaceholderText(const stl::string& text)
+void DropDownList::SetPlaceholderText(const ea::string& text)
 {
     placeholder_->GetChildStaticCast<Text>(0)->SetText(text);
 }
@@ -205,7 +205,7 @@ UIElement* DropDownList::GetItem(unsigned index) const
     return listView_->GetItem(index);
 }
 
-stl::vector<UIElement*> DropDownList::GetItems() const
+ea::vector<UIElement*> DropDownList::GetItems() const
 {
     return listView_->GetItems();
 }
@@ -220,7 +220,7 @@ UIElement* DropDownList::GetSelectedItem() const
     return listView_->GetSelectedItem();
 }
 
-const stl::string& DropDownList::GetPlaceholderText() const
+const ea::string& DropDownList::GetPlaceholderText() const
 {
     return placeholder_->GetChildStaticCast<Text>(0)->GetText();
 }

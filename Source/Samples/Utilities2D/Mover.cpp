@@ -49,7 +49,7 @@ void Mover::RegisterObject(Context* context)
 
     // These macros register the class attribute to the Context for automatic load / save handling.
     // We specify the Default attribute mode which means it will be used both for saving into file, and network replication.
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Path", GetPathAttr, SetPathAttr, stl::vector<unsigned char>, Variant::emptyBuffer, AM_DEFAULT);
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Path", GetPathAttr, SetPathAttr, ea::vector<unsigned char>, Variant::emptyBuffer, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Speed", float, speed_, 0.8f, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Current Path ID", int, currentPathID_, 1, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Emit Time", float, emitTime_, 0.0f, AM_DEFAULT);
@@ -57,7 +57,7 @@ void Mover::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Flip Animation", float, flip_, 0.0f, AM_DEFAULT);
 }
 
-void Mover::SetPathAttr(const stl::vector<unsigned char>& value)
+void Mover::SetPathAttr(const ea::vector<unsigned char>& value)
 {
     if (value.empty())
         return;
@@ -67,7 +67,7 @@ void Mover::SetPathAttr(const stl::vector<unsigned char>& value)
         path_.push_back(buffer.ReadVector2());
 }
 
-stl::vector<unsigned char> Mover::GetPathAttr() const
+ea::vector<unsigned char> Mover::GetPathAttr() const
 {
     VectorBuffer buffer;
 
@@ -86,7 +86,7 @@ void Mover::Update(float timeStep)
     if (node_->GetName() == "Orc")
     {
         auto* animatedSprite = node_->GetComponent<AnimatedSprite2D>();
-        stl::string anim = "run";
+        ea::string anim = "run";
 
         // Handle wounded state
         if (emitTime_ > 0.0f)

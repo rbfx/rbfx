@@ -284,7 +284,7 @@ void Octant::GetDrawablesInternal(RayOctreeQuery& query) const
     }
 }
 
-void Octant::GetDrawablesOnlyInternal(RayOctreeQuery& query, stl::vector<Drawable*>& drawables) const
+void Octant::GetDrawablesOnlyInternal(RayOctreeQuery& query, ea::vector<Drawable*>& drawables) const
 {
     float octantDist = query.ray_.HitDistance(cullingBox_);
     if (octantDist >= query.maxDistance_)
@@ -390,7 +390,7 @@ void Octree::Update(const FrameInfo& frame)
         // Create a work item for each thread
         for (int i = 0; i < numWorkItems; ++i)
         {
-            stl::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = UpdateDrawablesWork;
             item->aux_ = const_cast<FrameInfo*>(&frame);
@@ -508,7 +508,7 @@ void Octree::Raycast(RayOctreeQuery& query) const
 
     query.result_.clear();
     GetDrawablesInternal(query);
-    stl::quick_sort(query.result_.begin(), query.result_.end(), CompareRayQueryResults);
+    ea::quick_sort(query.result_.begin(), query.result_.end(), CompareRayQueryResults);
 }
 
 void Octree::RaycastSingle(RayOctreeQuery& query) const
@@ -526,7 +526,7 @@ void Octree::RaycastSingle(RayOctreeQuery& query) const
         drawable->SetSortValue(query.ray_.HitDistance(drawable->GetWorldBoundingBox()));
     }
 
-    stl::quick_sort(rayQueryDrawables_.begin(), rayQueryDrawables_.end(), CompareDrawables);
+    ea::quick_sort(rayQueryDrawables_.begin(), rayQueryDrawables_.end(), CompareDrawables);
 
     // Then do the actual test according to the query, and early-out as possible
     float closestHit = M_INFINITY;
@@ -546,7 +546,7 @@ void Octree::RaycastSingle(RayOctreeQuery& query) const
 
     if (query.result_.size() > 1)
     {
-        stl::quick_sort(query.result_.begin(), query.result_.end(), CompareRayQueryResults);
+        ea::quick_sort(query.result_.begin(), query.result_.end(), CompareRayQueryResults);
         query.result_.resize(1);
     }
 }

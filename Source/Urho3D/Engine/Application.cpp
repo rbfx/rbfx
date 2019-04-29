@@ -140,22 +140,22 @@ int Application::Run()
 #endif
 }
 
-void Application::ErrorExit(const stl::string& message)
+void Application::ErrorExit(const ea::string& message)
 {
     engine_->Exit(); // Close the rendering window
     exitCode_ = EXIT_FAILURE;
 
-    std::function<void(const stl::string&)> showError;
+    std::function<void(const ea::string&)> showError;
     if (engineParameters_[EP_HEADLESS].GetBool())
     {
-        showError = [this](const stl::string& message)
+        showError = [this](const ea::string& message)
         {
             URHO3D_LOGERROR(message.c_str());
         };
     }
     else
     {
-        showError = [this](const stl::string& message)
+        showError = [this](const ea::string& message)
         {
             ErrorDialog(GetTypeName(), message);
         };
@@ -164,7 +164,7 @@ void Application::ErrorExit(const stl::string& message)
     if (!message.length())
     {
         showError(startupErrors_.length() ?
-            startupErrors_ : stl::string("Application has been terminated due to unexpected error."));
+            startupErrors_ : ea::string("Application has been terminated due to unexpected error."));
     }
     else
         showError(message);
@@ -177,9 +177,9 @@ void Application::HandleLogMessage(StringHash eventType, VariantMap& eventData)
     if (eventData[P_LEVEL].GetInt() == LOG_ERROR)
     {
         // Strip the timestamp if necessary
-        stl::string error = eventData[P_MESSAGE].GetString();
+        ea::string error = eventData[P_MESSAGE].GetString();
         unsigned bracketPos = error.find(']');
-        if (bracketPos != stl::string::npos)
+        if (bracketPos != ea::string::npos)
             error = error.substr(bracketPos + 2);
 
         startupErrors_ += error + "\n";

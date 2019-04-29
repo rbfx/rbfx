@@ -130,11 +130,11 @@ void BillboardSet::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Billboards", GetBillboardsAttr, SetBillboardsAttr, VariantVector, Variant::emptyVariantVector, AM_FILE)
         .SetMetadata(AttributeMetadata::P_VECTOR_STRUCT_ELEMENTS, billboardsStructureElementNames);
-    URHO3D_ACCESSOR_ATTRIBUTE("Network Billboards", GetNetBillboardsAttr, SetNetBillboardsAttr, stl::vector<unsigned char>,
+    URHO3D_ACCESSOR_ATTRIBUTE("Network Billboards", GetNetBillboardsAttr, SetNetBillboardsAttr, ea::vector<unsigned char>,
         Variant::emptyBuffer, AM_NET | AM_NOEDIT);
 }
 
-void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void BillboardSet::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     // If no billboard-level testing, use the Drawable test
     if (query.level_ < RAY_TRIANGLE)
@@ -406,7 +406,7 @@ void BillboardSet::SetBillboardsAttr(const VariantVector& value)
     Commit();
 }
 
-void BillboardSet::SetNetBillboardsAttr(const stl::vector<unsigned char>& value)
+void BillboardSet::SetNetBillboardsAttr(const ea::vector<unsigned char>& value)
 {
     MemoryBuffer buf(value);
     unsigned numBillboards = buf.ReadVLE();
@@ -451,7 +451,7 @@ VariantVector BillboardSet::GetBillboardsAttr() const
     return ret;
 }
 
-const stl::vector<unsigned char>& BillboardSet::GetNetBillboardsAttr() const
+const ea::vector<unsigned char>& BillboardSet::GetNetBillboardsAttr() const
 {
     attrBuffer_.Clear();
     attrBuffer_.WriteVLE(billboards_.size());
@@ -629,7 +629,7 @@ void BillboardSet::UpdateVertexBuffer(const FrameInfo& frame)
 
     if (sorted_)
     {
-        stl::quick_sort(sortedBillboards_.begin(), sortedBillboards_.end(), CompareBillboards);
+        ea::quick_sort(sortedBillboards_.begin(), sortedBillboards_.end(), CompareBillboards);
         Vector3 worldPos = node_->GetWorldPosition();
         // Store the "last sorted position" now
         previousOffset_ = (worldPos - frame.camera_->GetNode()->GetWorldPosition());

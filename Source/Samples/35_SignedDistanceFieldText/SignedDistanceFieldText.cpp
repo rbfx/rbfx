@@ -117,7 +117,7 @@ void SignedDistanceFieldText::CreateScene()
         Node* mushroomTitleNode = mushroomNode->CreateChild("MushroomTitle");
         mushroomTitleNode->SetPosition(Vector3(0.0f, 1.2f, 0.0f));
         auto* mushroomTitleText = mushroomTitleNode->CreateComponent<Text3D>();
-        mushroomTitleText->SetText("Mushroom " + stl::to_string(i));
+        mushroomTitleText->SetText("Mushroom " + ea::to_string(i));
         mushroomTitleText->SetFont(cache->GetResource<Font>("Fonts/BlueHighway.sdf"), 24);
 
         mushroomTitleText->SetColor(Color::RED);
@@ -170,7 +170,7 @@ void SignedDistanceFieldText::SetupViewport()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

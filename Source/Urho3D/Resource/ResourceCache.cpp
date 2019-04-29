@@ -65,7 +65,7 @@ static const char* checkDirs[] =
     nullptr
 };
 
-static const stl::shared_ptr<Resource> noResource;
+static const ea::shared_ptr<Resource> noResource;
 
 ResourceCache::ResourceCache(Context* context) :
     Object(context),
@@ -95,7 +95,7 @@ ResourceCache::~ResourceCache()
 #endif
 }
 
-bool ResourceCache::AddResourceDir(const stl::string& pathName, unsigned priority)
+bool ResourceCache::AddResourceDir(const ea::string& pathName, unsigned priority)
 {
     MutexLock lock(resourceMutex_);
 
@@ -107,7 +107,7 @@ bool ResourceCache::AddResourceDir(const stl::string& pathName, unsigned priorit
     }
 
     // Convert path to absolute
-    stl::string fixedPath = SanitateResourceDirName(pathName);
+    ea::string fixedPath = SanitateResourceDirName(pathName);
 
     // Check that the same path does not already exist
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
@@ -124,7 +124,7 @@ bool ResourceCache::AddResourceDir(const stl::string& pathName, unsigned priorit
     // If resource auto-reloading active, create a file watcher for the directory
     if (autoReloadResources_)
     {
-        stl::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
+        ea::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
         watcher->StartWatching(fixedPath, true);
         fileWatchers_.push_back(watcher);
     }
@@ -145,17 +145,17 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
     }
 
     if (priority < packages_.size())
-        packages_.insert(priority, stl::shared_ptr<PackageFile>(package));
+        packages_.insert(priority, ea::shared_ptr<PackageFile>(package));
     else
-        packages_.push_back(stl::shared_ptr<PackageFile>(package));
+        packages_.push_back(ea::shared_ptr<PackageFile>(package));
 
     URHO3D_LOGINFO("Added resource package " + package->GetName());
     return true;
 }
 
-bool ResourceCache::AddPackageFile(const stl::string& fileName, unsigned priority)
+bool ResourceCache::AddPackageFile(const ea::string& fileName, unsigned priority)
 {
-    stl::shared_ptr<PackageFile> package(new PackageFile(context_));
+    ea::shared_ptr<PackageFile> package(new PackageFile(context_));
     return package->Open(fileName) && AddPackageFile(package, priority);
 }
 
@@ -167,7 +167,7 @@ bool ResourceCache::AddManualResource(Resource* resource)
         return false;
     }
 
-    const stl::string& name = resource->GetName();
+    const ea::string& name = resource->GetName();
     if (name.empty())
     {
         URHO3D_LOGERROR("Manual resource with empty name, can not add");
@@ -180,11 +180,11 @@ bool ResourceCache::AddManualResource(Resource* resource)
     return true;
 }
 
-void ResourceCache::RemoveResourceDir(const stl::string& pathName)
+void ResourceCache::RemoveResourceDir(const ea::string& pathName)
 {
     MutexLock lock(resourceMutex_);
 
-    stl::string fixedPath = SanitateResourceDirName(pathName);
+    ea::string fixedPath = SanitateResourceDirName(pathName);
 
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
     {
@@ -223,12 +223,12 @@ void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResource
     }
 }
 
-void ResourceCache::RemovePackageFile(const stl::string& fileName, bool releaseResources, bool forceRelease)
+void ResourceCache::RemovePackageFile(const ea::string& fileName, bool releaseResources, bool forceRelease)
 {
     MutexLock lock(resourceMutex_);
 
     // Compare the name and extension only, not the path
-    stl::string fileNameNoPath = GetFileNameAndExtension(fileName);
+    ea::string fileNameNoPath = GetFileNameAndExtension(fileName);
 
     for (auto i = packages_.begin(); i != packages_.end(); ++i)
     {
@@ -243,10 +243,10 @@ void ResourceCache::RemovePackageFile(const stl::string& fileName, bool releaseR
     }
 }
 
-void ResourceCache::ReleaseResource(StringHash type, const stl::string& name, bool force)
+void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, bool force)
 {
     StringHash nameHash(name);
-    const stl::shared_ptr<Resource>& existingRes = FindResource(type, nameHash);
+    const ea::shared_ptr<Resource>& existingRes = FindResource(type, nameHash);
     if (!existingRes)
         return;
 
@@ -282,7 +282,7 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
         UpdateResourceGroup(type);
 }
 
-void ResourceCache::ReleaseResources(StringHash type, const stl::string& partialName, bool force)
+void ResourceCache::ReleaseResources(StringHash type, const ea::string& partialName, bool force)
 {
     bool released = false;
 
@@ -309,7 +309,7 @@ void ResourceCache::ReleaseResources(StringHash type, const stl::string& partial
         UpdateResourceGroup(type);
 }
 
-void ResourceCache::ReleaseResources(const stl::string& partialName, bool force)
+void ResourceCache::ReleaseResources(const ea::string& partialName, bool force)
 {
     // Some resources refer to others, like materials to textures. Repeat the release logic as many times as necessary to ensure
     // these get released. This is not necessary if forcing release
@@ -378,7 +378,7 @@ bool ResourceCache::ReloadResource(Resource* resource)
     resource->SendEvent(E_RELOADSTARTED);
 
     bool success = false;
-    stl::shared_ptr<File> file = GetFile(resource->GetName());
+    ea::shared_ptr<File> file = GetFile(resource->GetName());
     if (file)
         success = resource->Load(*(file.get()));
 
@@ -396,11 +396,11 @@ bool ResourceCache::ReloadResource(Resource* resource)
     return false;
 }
 
-void ResourceCache::ReloadResourceWithDependencies(const stl::string& fileName)
+void ResourceCache::ReloadResourceWithDependencies(const ea::string& fileName)
 {
     StringHash fileNameHash(fileName);
     // If the filename is a resource we keep track of, reload it
-    const stl::shared_ptr<Resource>& resource = FindResource(fileNameHash);
+    const ea::shared_ptr<Resource>& resource = FindResource(fileNameHash);
     if (resource)
     {
         URHO3D_LOGDEBUG("Reloading changed resource " + fileName);
@@ -416,12 +416,12 @@ void ResourceCache::ReloadResourceWithDependencies(const stl::string& fileName)
         {
             // Reloading a resource may modify the dependency tracking structure. Therefore collect the
             // resources we need to reload first
-            stl::vector<stl::shared_ptr<Resource> > dependents;
+            ea::vector<ea::shared_ptr<Resource> > dependents;
             dependents.reserve(j->second.size());
 
             for (auto k = j->second.begin(); k != j->second.end(); ++k)
             {
-                const stl::shared_ptr<Resource>& dependent = FindResource(*k);
+                const ea::shared_ptr<Resource>& dependent = FindResource(*k);
                 if (dependent)
                     dependents.push_back(dependent);
             }
@@ -448,7 +448,7 @@ void ResourceCache::SetAutoReloadResources(bool enable)
         {
             for (unsigned i = 0; i < resourceDirs_.size(); ++i)
             {
-                stl::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
+                ea::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
                 watcher->StartWatching(resourceDirs_[i], true);
                 fileWatchers_.push_back(watcher);
             }
@@ -470,9 +470,9 @@ void ResourceCache::AddResourceRouter(ResourceRouter* router, bool addAsFirst)
     }
 
     if (addAsFirst)
-        resourceRouters_.push_front(stl::shared_ptr<ResourceRouter>(router));
+        resourceRouters_.push_front(ea::shared_ptr<ResourceRouter>(router));
     else
-        resourceRouters_.push_back(stl::shared_ptr<ResourceRouter>(router));
+        resourceRouters_.push_back(ea::shared_ptr<ResourceRouter>(router));
 }
 
 void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
@@ -487,11 +487,11 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
     }
 }
 
-stl::shared_ptr<File> ResourceCache::GetFile(const stl::string& name, bool sendEventOnFailure)
+ea::shared_ptr<File> ResourceCache::GetFile(const ea::string& name, bool sendEventOnFailure)
 {
     MutexLock lock(resourceMutex_);
 
-    stl::string sanitatedName = SanitateResourceName(name);
+    ea::string sanitatedName = SanitateResourceName(name);
     RouteResourceName(sanitatedName, RESOURCE_GETFILE);
 
     if (sanitatedName.length())
@@ -512,7 +512,7 @@ stl::shared_ptr<File> ResourceCache::GetFile(const stl::string& name, bool sendE
         }
 
         if (file)
-            return stl::shared_ptr<File>(file);
+            return ea::shared_ptr<File>(file);
     }
 
     if (sendEventOnFailure)
@@ -532,12 +532,12 @@ stl::shared_ptr<File> ResourceCache::GetFile(const stl::string& name, bool sendE
         }
     }
 
-    return stl::shared_ptr<File>();
+    return ea::shared_ptr<File>();
 }
 
-Resource* ResourceCache::GetExistingResource(StringHash type, const stl::string& name)
+Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& name)
 {
-    stl::string sanitatedName = SanitateResourceName(name);
+    ea::string sanitatedName = SanitateResourceName(name);
 
     if (!Thread::IsMainThread())
     {
@@ -551,13 +551,13 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const stl::string&
 
     StringHash nameHash(sanitatedName);
 
-    const stl::shared_ptr<Resource>& existing = FindResource(type, nameHash);
+    const ea::shared_ptr<Resource>& existing = FindResource(type, nameHash);
     return existing;
 }
 
-Resource* ResourceCache::GetResource(StringHash type, const stl::string& name, bool sendEventOnFailure)
+Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bool sendEventOnFailure)
 {
-    stl::string sanitatedName = SanitateResourceName(name);
+    ea::string sanitatedName = SanitateResourceName(name);
 
     if (!Thread::IsMainThread())
     {
@@ -576,11 +576,11 @@ Resource* ResourceCache::GetResource(StringHash type, const stl::string& name, b
     backgroundLoader_->WaitForResource(type, nameHash);
 #endif
 
-    const stl::shared_ptr<Resource>& existing = FindResource(type, nameHash);
+    const ea::shared_ptr<Resource>& existing = FindResource(type, nameHash);
     if (existing)
         return existing;
 
-    stl::shared_ptr<Resource> resource;
+    ea::shared_ptr<Resource> resource;
     // Make sure the pointer is non-null and is a Resource subclass
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
@@ -600,7 +600,7 @@ Resource* ResourceCache::GetResource(StringHash type, const stl::string& name, b
     }
 
     // Attempt to load the resource
-    stl::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    ea::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
         return nullptr;   // Error is already logged
 
@@ -631,11 +631,11 @@ Resource* ResourceCache::GetResource(StringHash type, const stl::string& name, b
     return resource;
 }
 
-bool ResourceCache::BackgroundLoadResource(StringHash type, const stl::string& name, bool sendEventOnFailure, Resource* caller)
+bool ResourceCache::BackgroundLoadResource(StringHash type, const ea::string& name, bool sendEventOnFailure, Resource* caller)
 {
 #ifdef URHO3D_THREADING
     // If empty name, fail immediately
-    stl::string sanitatedName = SanitateResourceName(name);
+    ea::string sanitatedName = SanitateResourceName(name);
     if (sanitatedName.empty())
         return false;
 
@@ -651,15 +651,15 @@ bool ResourceCache::BackgroundLoadResource(StringHash type, const stl::string& n
 #endif
 }
 
-stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const stl::string& name, bool sendEventOnFailure)
+ea::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const ea::string& name, bool sendEventOnFailure)
 {
-    stl::string sanitatedName = SanitateResourceName(name);
+    ea::string sanitatedName = SanitateResourceName(name);
 
     // If empty name, return null pointer immediately
     if (sanitatedName.empty())
-        return stl::shared_ptr<Resource>();
+        return ea::shared_ptr<Resource>();
 
-    stl::shared_ptr<Resource> resource;
+    ea::shared_ptr<Resource> resource;
     // Make sure the pointer is non-null and is a Resource subclass
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
@@ -675,13 +675,13 @@ stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const 
             SendEvent(E_UNKNOWNRESOURCETYPE, eventData);
         }
 
-        return stl::shared_ptr<Resource>();
+        return ea::shared_ptr<Resource>();
     }
 
     // Attempt to load the resource
-    stl::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    ea::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
-        return stl::shared_ptr<Resource>();  // Error is already logged
+        return ea::shared_ptr<Resource>();  // Error is already logged
 
     URHO3D_LOGDEBUG("Loading temporary resource " + sanitatedName);
     resource->SetName(file->GetName());
@@ -698,7 +698,7 @@ stl::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const 
             SendEvent(E_LOADFAILED, eventData);
         }
 
-        return stl::shared_ptr<Resource>();
+        return ea::shared_ptr<Resource>();
     }
 
     return resource;
@@ -713,7 +713,7 @@ unsigned ResourceCache::GetNumBackgroundLoadResources() const
 #endif
 }
 
-void ResourceCache::GetResources(stl::vector<Resource*>& result, StringHash type) const
+void ResourceCache::GetResources(ea::vector<Resource*>& result, StringHash type) const
 {
     result.clear();
     auto i = resourceGroups_.find(type);
@@ -725,11 +725,11 @@ void ResourceCache::GetResources(stl::vector<Resource*>& result, StringHash type
     }
 }
 
-bool ResourceCache::Exists(const stl::string& name) const
+bool ResourceCache::Exists(const ea::string& name) const
 {
     MutexLock lock(resourceMutex_);
 
-    stl::string sanitatedName = SanitateResourceName(name);
+    ea::string sanitatedName = SanitateResourceName(name);
     RouteResourceName(sanitatedName, RESOURCE_CHECKEXISTS);
 
     if (sanitatedName.empty())
@@ -773,7 +773,7 @@ unsigned long long ResourceCache::GetTotalMemoryUse() const
     return total;
 }
 
-stl::string ResourceCache::GetResourceFileName(const stl::string& name) const
+ea::string ResourceCache::GetResourceFileName(const ea::string& name) const
 {
     MutexLock lock(resourceMutex_);
 
@@ -787,7 +787,7 @@ stl::string ResourceCache::GetResourceFileName(const stl::string& name) const
     if (IsAbsolutePath(name) && fileSystem->FileExists(name))
         return name;
     else
-        return stl::string();
+        return ea::string();
 }
 
 ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
@@ -795,9 +795,9 @@ ResourceRouter* ResourceCache::GetResourceRouter(unsigned index) const
     return index < resourceRouters_.size() ? resourceRouters_[index] : nullptr;
 }
 
-stl::string ResourceCache::GetPreferredResourceDir(const stl::string& path) const
+ea::string ResourceCache::GetPreferredResourceDir(const ea::string& path) const
 {
-    stl::string fixedPath = AddTrailingSlash(path);
+    ea::string fixedPath = AddTrailingSlash(path);
 
     bool pathHasKnownDirs = false;
     bool parentHasKnownDirs = false;
@@ -814,7 +814,7 @@ stl::string ResourceCache::GetPreferredResourceDir(const stl::string& path) cons
     }
     if (!pathHasKnownDirs)
     {
-        stl::string parentPath = GetParentPath(fixedPath);
+        ea::string parentPath = GetParentPath(fixedPath);
         for (unsigned i = 0; checkDirs[i] != nullptr; ++i)
         {
             if (fileSystem->DirExists(parentPath + checkDirs[i]))
@@ -831,10 +831,10 @@ stl::string ResourceCache::GetPreferredResourceDir(const stl::string& path) cons
     return fixedPath;
 }
 
-stl::string ResourceCache::SanitateResourceName(const stl::string& name) const
+ea::string ResourceCache::SanitateResourceName(const ea::string& name) const
 {
     // Sanitate unsupported constructs from the resource name
-    stl::string sanitatedName = GetInternalPath(name);
+    ea::string sanitatedName = GetInternalPath(name);
     sanitatedName.replace("../", "");
     sanitatedName.replace("./", "");
 
@@ -842,11 +842,11 @@ stl::string ResourceCache::SanitateResourceName(const stl::string& name) const
     auto* fileSystem = GetSubsystem<FileSystem>();
     if (resourceDirs_.size())
     {
-        stl::string namePath = GetPath(sanitatedName);
-        stl::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
+        ea::string namePath = GetPath(sanitatedName);
+        ea::string exePath = fileSystem->GetProgramDir().replaced("/./", "/");
         for (unsigned i = 0; i < resourceDirs_.size(); ++i)
         {
-            stl::string relativeResourcePath = resourceDirs_[i];
+            ea::string relativeResourcePath = resourceDirs_[i];
             if (relativeResourcePath.starts_with(exePath))
                 relativeResourcePath = relativeResourcePath.substr(exePath.length());
 
@@ -863,9 +863,9 @@ stl::string ResourceCache::SanitateResourceName(const stl::string& name) const
     return sanitatedName;
 }
 
-stl::string ResourceCache::SanitateResourceDirName(const stl::string& name) const
+ea::string ResourceCache::SanitateResourceDirName(const ea::string& name) const
 {
-    stl::string fixedPath = AddTrailingSlash(name);
+    ea::string fixedPath = AddTrailingSlash(name);
     if (!IsAbsolutePath(fixedPath))
         fixedPath = GetSubsystem<FileSystem>()->GetCurrentDir() + fixedPath;
 
@@ -876,7 +876,7 @@ stl::string ResourceCache::SanitateResourceDirName(const stl::string& name) cons
     return fixedPath;
 }
 
-void ResourceCache::StoreResourceDependency(Resource* resource, const stl::string& dependency)
+void ResourceCache::StoreResourceDependency(Resource* resource, const ea::string& dependency)
 {
     if (!resource)
         return;
@@ -884,7 +884,7 @@ void ResourceCache::StoreResourceDependency(Resource* resource, const stl::strin
     MutexLock lock(resourceMutex_);
 
     StringHash nameHash(resource->GetName());
-    stl::hash_set<StringHash>& dependents = dependentResources_[dependency];
+    ea::hash_set<StringHash>& dependents = dependentResources_[dependency];
     dependents.insert(nameHash);
 }
 
@@ -900,7 +900,7 @@ void ResourceCache::ResetDependencies(Resource* resource)
     for (auto i = dependentResources_.begin(); i !=
         dependentResources_.end();)
     {
-        stl::hash_set<StringHash>& dependents = i->second;
+        ea::hash_set<StringHash>& dependents = i->second;
         dependents.erase(nameHash);
         if (dependents.empty())
             i = dependentResources_.erase(i);
@@ -909,9 +909,9 @@ void ResourceCache::ResetDependencies(Resource* resource)
     }
 }
 
-stl::string ResourceCache::PrintMemoryUsage() const
+ea::string ResourceCache::PrintMemoryUsage() const
 {
-    stl::string output = "Resource Type                 Cnt       Avg       Max    Budget     Total\n\n";
+    ea::string output = "Resource Type                 Cnt       Avg       Max    Budget     Total\n\n";
     char outputLine[256];
 
     unsigned totalResourceCt = 0;
@@ -939,12 +939,12 @@ stl::string ResourceCache::PrintMemoryUsage() const
 
         totalResourceCt += resourceCt;
 
-        const stl::string countString = stl::to_string(cit->second.resources_.size());
-        const stl::string memUseString = GetFileSizeString(average);
-        const stl::string memMaxString = GetFileSizeString(largest);
-        const stl::string memBudgetString = GetFileSizeString(cit->second.memoryBudget_);
-        const stl::string memTotalString = GetFileSizeString(cit->second.memoryUse_);
-        const stl::string resTypeName = context_->GetTypeName(cit->first);
+        const ea::string countString = ea::to_string(cit->second.resources_.size());
+        const ea::string memUseString = GetFileSizeString(average);
+        const ea::string memMaxString = GetFileSizeString(largest);
+        const ea::string memBudgetString = GetFileSizeString(cit->second.memoryBudget_);
+        const ea::string memTotalString = GetFileSizeString(cit->second.memoryUse_);
+        const ea::string resTypeName = context_->GetTypeName(cit->first);
 
         memset(outputLine, ' ', 256);
         outputLine[255] = 0;
@@ -956,10 +956,10 @@ stl::string ResourceCache::PrintMemoryUsage() const
     if (totalResourceCt > 0)
         totalAverage = totalUse / totalResourceCt;
 
-    const stl::string countString = stl::to_string(totalResourceCt);
-    const stl::string memUseString = GetFileSizeString(totalAverage);
-    const stl::string memMaxString = GetFileSizeString(totalLargest);
-    const stl::string memTotalString = GetFileSizeString(totalUse);
+    const ea::string countString = ea::to_string(totalResourceCt);
+    const ea::string memUseString = GetFileSizeString(totalAverage);
+    const ea::string memMaxString = GetFileSizeString(totalLargest);
+    const ea::string memTotalString = GetFileSizeString(totalUse);
 
     memset(outputLine, ' ', 256);
     outputLine[255] = 0;
@@ -969,7 +969,7 @@ stl::string ResourceCache::PrintMemoryUsage() const
     return output;
 }
 
-const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
+const ea::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
@@ -983,7 +983,7 @@ const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, St
     return j->second;
 }
 
-const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash)
+const ea::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
@@ -1000,9 +1000,9 @@ const stl::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash
 
 void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
 {
-    stl::hash_set<StringHash> affectedGroups;
+    ea::hash_set<StringHash> affectedGroups;
 
-    const stl::unordered_map<stl::string, PackageEntry>& entries = package->GetEntries();
+    const ea::unordered_map<ea::string, PackageEntry>& entries = package->GetEntries();
     for (auto i = entries.begin(); i != entries.end(); ++i)
     {
         StringHash nameHash(i->first);
@@ -1104,7 +1104,7 @@ void ResourceCache::HandleBeginFrame(StringHash eventType, VariantMap& eventData
 #endif
 }
 
-File* ResourceCache::SearchResourceDirs(const stl::string& name)
+File* ResourceCache::SearchResourceDirs(const ea::string& name)
 {
     auto* fileSystem = GetSubsystem<FileSystem>();
     for (unsigned i = 0; i < resourceDirs_.size(); ++i)
@@ -1126,7 +1126,7 @@ File* ResourceCache::SearchResourceDirs(const stl::string& name)
     return nullptr;
 }
 
-File* ResourceCache::SearchPackages(const stl::string& name)
+File* ResourceCache::SearchPackages(const ea::string& name)
 {
     for (unsigned i = 0; i < packages_.size(); ++i)
     {
@@ -1145,9 +1145,9 @@ void RegisterResourceLibrary(Context* context)
     XMLFile::RegisterObject(context);
 }
 
-void ResourceCache::Scan(stl::vector<stl::string>& result, const stl::string& pathName, const stl::string& filter, unsigned flags, bool recursive) const
+void ResourceCache::Scan(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
 {
-    stl::vector<stl::string> interimResult;
+    ea::vector<ea::string> interimResult;
 
     for (unsigned i = 0; i < packages_.size(); ++i)
     {
@@ -1163,12 +1163,12 @@ void ResourceCache::Scan(stl::vector<stl::string>& result, const stl::string& pa
     }
 }
 
-stl::string ResourceCache::PrintResources(const stl::string& typeName) const
+ea::string ResourceCache::PrintResources(const ea::string& typeName) const
 {
 
     StringHash typeNameHash(typeName);
 
-    stl::string output = "Resource Type         Refs   WeakRefs  Name\n\n";
+    ea::string output = "Resource Type         Refs   WeakRefs  Name\n\n";
 
     for (auto cit = resourceGroups_.begin(); cit !=
         resourceGroups_.end(); ++cit)
@@ -1190,7 +1190,7 @@ stl::string ResourceCache::PrintResources(const stl::string& typeName) const
     return output;
 }
 
-bool ResourceCache::RenameResource(stl::string source, stl::string destination)
+bool ResourceCache::RenameResource(ea::string source, ea::string destination)
 {
     if (!packages_.empty())
     {
@@ -1230,8 +1230,8 @@ bool ResourceCache::RenameResource(stl::string source, stl::string destination)
         return false;
     }
 
-    stl::string resourceName;
-    stl::string destinationName;
+    ea::string resourceName;
+    ea::string destinationName;
     for (const auto& dir : resourceDirs_)
     {
         if (source.starts_with(dir))
@@ -1253,7 +1253,7 @@ bool ResourceCache::RenameResource(stl::string source, stl::string destination)
         auto resourcesCopy = groupPair.second.resources_;
         for (auto& resourcePair : resourcesCopy)
         {
-            stl::shared_ptr<Resource> resource = resourcePair.second;
+            ea::shared_ptr<Resource> resource = resourcePair.second;
             if (resource->GetName().starts_with(resourceName))
             {
                 if (autoReloadResources_)
@@ -1278,7 +1278,7 @@ bool ResourceCache::RenameResource(stl::string source, stl::string destination)
     return true;
 }
 
-void ResourceCache::IgnoreResourceReload(const stl::string& name)
+void ResourceCache::IgnoreResourceReload(const ea::string& name)
 {
     ignoreResourceAutoReload_.emplace_back(name);
 }
@@ -1288,7 +1288,7 @@ void ResourceCache::IgnoreResourceReload(const Resource* resource)
     IgnoreResourceReload(resource->GetName());
 }
 
-void ResourceCache::RouteResourceName(stl::string& name, ResourceRequest requestType) const
+void ResourceCache::RouteResourceName(ea::string& name, ResourceRequest requestType) const
 {
     name = SanitateResourceName(name);
     if (!isRouting_)

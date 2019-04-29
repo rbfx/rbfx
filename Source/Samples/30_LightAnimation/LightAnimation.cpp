@@ -99,10 +99,10 @@ void LightAnimation::CreateScene()
     light->SetRange(10.0f);
 
     // Create light animation
-    stl::shared_ptr<ObjectAnimation> lightAnimation(new ObjectAnimation(context_));
+    ea::shared_ptr<ObjectAnimation> lightAnimation(new ObjectAnimation(context_));
 
     // Create light position animation
-    stl::shared_ptr<ValueAnimation> positionAnimation(new ValueAnimation(context_));
+    ea::shared_ptr<ValueAnimation> positionAnimation(new ValueAnimation(context_));
     // Use spline interpolation method
     positionAnimation->SetInterpolationMethod(IM_SPLINE);
     // Set spline tension
@@ -116,27 +116,27 @@ void LightAnimation::CreateScene()
     lightAnimation->AddAttributeAnimation("Position", positionAnimation);
 
     // Create text animation
-    stl::shared_ptr<ValueAnimation> textAnimation(new ValueAnimation(context_));
+    ea::shared_ptr<ValueAnimation> textAnimation(new ValueAnimation(context_));
     textAnimation->SetKeyFrame(0.0f, "WHITE");
     textAnimation->SetKeyFrame(1.0f, "RED");
     textAnimation->SetKeyFrame(2.0f, "YELLOW");
     textAnimation->SetKeyFrame(3.0f, "GREEN");
     textAnimation->SetKeyFrame(4.0f, "WHITE");
-    GetSubsystem<UI>()->GetRoot()->GetChild(stl::string("animatingText"))->SetAttributeAnimation("Text", textAnimation);
+    GetSubsystem<UI>()->GetRoot()->GetChild(ea::string("animatingText"))->SetAttributeAnimation("Text", textAnimation);
 
     // Create UI element animation
     // (note: a spritesheet and "Image Rect" attribute should be used in real use cases for better performance)
-    stl::shared_ptr<ValueAnimation> spriteAnimation(new ValueAnimation(context_));
+    ea::shared_ptr<ValueAnimation> spriteAnimation(new ValueAnimation(context_));
     spriteAnimation->SetKeyFrame(0.0f, ResourceRef("Texture2D", "Urho2D/GoldIcon/1.png"));
     spriteAnimation->SetKeyFrame(0.1f, ResourceRef("Texture2D", "Urho2D/GoldIcon/2.png"));
     spriteAnimation->SetKeyFrame(0.2f, ResourceRef("Texture2D", "Urho2D/GoldIcon/3.png"));
     spriteAnimation->SetKeyFrame(0.3f, ResourceRef("Texture2D", "Urho2D/GoldIcon/4.png"));
     spriteAnimation->SetKeyFrame(0.4f, ResourceRef("Texture2D", "Urho2D/GoldIcon/5.png"));
     spriteAnimation->SetKeyFrame(0.5f, ResourceRef("Texture2D", "Urho2D/GoldIcon/1.png"));
-    GetSubsystem<UI>()->GetRoot()->GetChild(stl::string("animatingSprite"))->SetAttributeAnimation("Texture", spriteAnimation);
+    GetSubsystem<UI>()->GetRoot()->GetChild(ea::string("animatingSprite"))->SetAttributeAnimation("Texture", spriteAnimation);
 
     // Create light color animation
-    stl::shared_ptr<ValueAnimation> colorAnimation(new ValueAnimation(context_));
+    ea::shared_ptr<ValueAnimation> colorAnimation(new ValueAnimation(context_));
     colorAnimation->SetKeyFrame(0.0f, Color::WHITE);
     colorAnimation->SetKeyFrame(1.0f, Color::RED);
     colorAnimation->SetKeyFrame(2.0f, Color::YELLOW);
@@ -211,7 +211,7 @@ void LightAnimation::SetupViewport()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
-    stl::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

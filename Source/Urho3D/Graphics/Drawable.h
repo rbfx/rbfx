@@ -98,7 +98,7 @@ struct URHO3D_API SourceBatch
     /// Geometry.
     Geometry* geometry_{};
     /// Material.
-    stl::shared_ptr<Material> material_;
+    ea::shared_ptr<Material> material_;
     /// World transform(s). For a skinned model, these are the bone transforms.
     const Matrix3x4* worldTransform_{&Matrix3x4::IDENTITY};
     /// Number of world transforms.
@@ -145,7 +145,7 @@ public:
     /// Handle enabled/disabled state change.
     void OnSetEnabled() override;
     /// Process octree raycast. May be called from a worker thread.
-    virtual void ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results);
+    virtual void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results);
     /// Update before octree reinsertion. Is called from a worker thread
     virtual void Update(const FrameInfo& frame) { }
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
@@ -240,7 +240,7 @@ public:
     bool IsInView(Camera* camera) const;
 
     /// Return draw call source data.
-    const stl::vector<SourceBatch>& GetBatches() const { return batches_; }
+    const ea::vector<SourceBatch>& GetBatches() const { return batches_; }
 
     /// Set new zone. Zone assignment may optionally be temporary, meaning it needs to be re-evaluated on the next frame.
     void SetZone(Zone* zone, bool temporary = false);
@@ -291,10 +291,10 @@ public:
     bool HasBasePass(unsigned batchIndex) const { return (basePassFlags_ & (1u << batchIndex)) != 0; }
 
     /// Return per-pixel lights.
-    const stl::vector<Light*>& GetLights() const { return lights_; }
+    const ea::vector<Light*>& GetLights() const { return lights_; }
 
     /// Return per-vertex lights.
-    const stl::vector<Light*>& GetVertexLights() const { return vertexLights_; }
+    const ea::vector<Light*>& GetVertexLights() const { return vertexLights_; }
 
     /// Return the first added per-pixel light.
     Light* GetFirstLight() const { return firstLight_; }
@@ -349,7 +349,7 @@ protected:
     /// Local-space bounding box.
     BoundingBox boundingBox_;
     /// Draw call source data.
-    stl::vector<SourceBatch> batches_;
+    ea::vector<SourceBatch> batches_;
     /// Drawable flags.
     DrawableFlags drawableFlags_;
     /// Bounding box dirty flag.
@@ -399,13 +399,13 @@ protected:
     /// Maximum per-pixel lights.
     unsigned maxLights_;
     /// List of cameras from which is seen on the current frame.
-    stl::vector<Camera*> viewCameras_;
+    ea::vector<Camera*> viewCameras_;
     /// First per-pixel light added this frame.
     Light* firstLight_;
     /// Per-pixel lights affecting this drawable.
-    stl::vector<Light*> lights_;
+    ea::vector<Light*> lights_;
     /// Per-vertex lights affecting this drawable.
-    stl::vector<Light*> vertexLights_;
+    ea::vector<Light*> vertexLights_;
 };
 
 inline bool CompareDrawables(const Drawable* lhs, const Drawable* rhs)
@@ -413,6 +413,6 @@ inline bool CompareDrawables(const Drawable* lhs, const Drawable* rhs)
     return lhs->GetSortValue() < rhs->GetSortValue();
 }
 
-URHO3D_API bool WriteDrawablesToOBJ(stl::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV = false);
+URHO3D_API bool WriteDrawablesToOBJ(ea::vector<Drawable*> drawables, File* outputFile, bool asZUp, bool asRightHanded, bool writeLightmapUV = false);
 
 }

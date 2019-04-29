@@ -50,10 +50,10 @@ Matrix2 Matrix2::Inverse() const
     ) * invDet;
 }
 
-stl::string Matrix2::ToString() const
+ea::string Matrix2::ToString() const
 {
     char tempBuffer[MATRIX_CONVERSION_BUFFER_LENGTH];
     sprintf(tempBuffer, "%g %g %g %g", m00_, m01_, m10_, m11_);
-    return stl::string(tempBuffer);
+    return ea::string(tempBuffer);
 }
 }

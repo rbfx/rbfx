@@ -58,7 +58,7 @@ public:
     /// \param camera which observes the node.
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
     /// \returns true if node was manipulated on current frame.
-    bool Manipulate(const Camera* camera, const stl::vector<stl::weak_ptr<Node>>& nodes);
+    bool Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>>& nodes);
     /// Manipulate current node selection. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \returns true if node(s) were manipulated on current frame.
@@ -79,7 +79,7 @@ public:
     /// Add a node to selection.
     bool Select(Node* node);
     /// Add a node to selection.
-    bool Select(stl::vector<Node*> nodes);
+    bool Select(ea::vector<Node*> nodes);
     /// Remove a node from selection.
     bool Unselect(Node* node);
     /// Select if node was not selected or unselect if node was selected.
@@ -89,7 +89,7 @@ public:
     /// Return true if node is selected by gizmo.
     bool IsSelected(Node* node) const;
     /// Return list of selected nodes.
-    const stl::vector<stl::weak_ptr<Node>>& GetSelection() const { return nodeSelection_; }
+    const ea::vector<ea::weak_ptr<Node>>& GetSelection() const { return nodeSelection_; }
     /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
     void SetScreenRect(const IntVector2& pos, const IntVector2& size);
     /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
@@ -102,13 +102,13 @@ protected:
     /// Current coordinate space to operate in. World or local.
     TransformSpace transformSpace_ = TS_WORLD;
     /// Saved node scale on operation start.
-    stl::unordered_map<Node*, Vector3> nodeScaleStart_;
+    ea::unordered_map<Node*, Vector3> nodeScaleStart_;
     /// Current operation origin. This is center point between all nodes that are being manipulated.
     Matrix4 currentOrigin_;
     /// Current node selection. Nodes removed from the scene are automatically unselected.
-    stl::vector<stl::weak_ptr<Node> > nodeSelection_;
+    ea::vector<ea::weak_ptr<Node> > nodeSelection_;
     /// Camera which is used for automatic node selection in the scene camera belongs to.
-    stl::weak_ptr<Camera> autoModeCamera_;
+    ea::weak_ptr<Camera> autoModeCamera_;
     /// Position of display area gizmo is rendered in.
     ImVec2 displayPos_{};
     /// Size of display area gizmo is rendered in.
@@ -116,7 +116,7 @@ protected:
     /// Flag indicating that gizmo was active on the last frame.
     bool wasActive_ = false;
     /// A map of initial transforms.
-    stl::unordered_map<Node*, Matrix3x4> initialTransforms_;
+    ea::unordered_map<Node*, Matrix3x4> initialTransforms_;
 };
 
 }

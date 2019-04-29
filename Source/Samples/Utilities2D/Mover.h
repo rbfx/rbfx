@@ -45,12 +45,12 @@ public:
     /// Handle scene update. Called by LogicComponent base class.
     void Update(float timeStep) override;
     /// Return path attribute.
-    stl::vector<unsigned char> GetPathAttr() const;
+    ea::vector<unsigned char> GetPathAttr() const;
     /// Set path attribute.
-    void SetPathAttr(const stl::vector<unsigned char>& value);
+    void SetPathAttr(const ea::vector<unsigned char>& value);
 
     /// Path.
-    stl::vector<Vector2> path_;
+    ea::vector<Vector2> path_;
     /// Movement speed.
     float speed_;
     /// ID of the current path point.

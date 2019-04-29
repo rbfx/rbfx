@@ -161,9 +161,9 @@ void View3D::ResetScene()
     if (!ownScene_)
     {
         auto* refCount = scene_->mWeakPtr.get_refcount_pointer();
-        stl::Internal::atomic_increment(&refCount->mRefCount);
+        ea::Internal::atomic_increment(&refCount->mRefCount);
         scene_.reset();
-        stl::Internal::atomic_decrement(&refCount->mRefCount);
+        ea::Internal::atomic_decrement(&refCount->mRefCount);
     }
     else
         scene_ = nullptr;

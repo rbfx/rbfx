@@ -93,7 +93,7 @@ static DecalVertex ClipEdge(const DecalVertex& v0, const DecalVertex& v1, float 
     return ret;
 }
 
-static void ClipPolygon(stl::vector<DecalVertex>& dest, const stl::vector<DecalVertex>& src, const Plane& plane, bool skinned)
+static void ClipPolygon(ea::vector<DecalVertex>& dest, const ea::vector<DecalVertex>& src, const Plane& plane, bool skinned)
 {
     unsigned last = 0;
     float lastDistance = 0.0f;
@@ -190,7 +190,7 @@ void DecalSet::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Can Be Occluded", IsOccludee, SetOccludee, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Draw Distance", GetDrawDistance, SetDrawDistance, float, 0.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
-    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Decals", GetDecalsAttr, SetDecalsAttr, stl::vector<unsigned char>, Variant::emptyBuffer,
+    URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Decals", GetDecalsAttr, SetDecalsAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_FILE | AM_NOEDIT);
 }
 
@@ -207,7 +207,7 @@ void DecalSet::OnSetEnabled()
     UpdateEventSubscription(true);
 }
 
-void DecalSet::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void DecalSet::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     // Do not return raycast hits
 }
@@ -383,8 +383,8 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     Decal& newDecal = decals_.back();
     newDecal.timeToLive_ = timeToLive;
 
-    stl::vector<stl::vector<DecalVertex> > faces;
-    stl::vector<DecalVertex> tempFace;
+    ea::vector<ea::vector<DecalVertex> > faces;
+    ea::vector<DecalVertex> tempFace;
 
     unsigned numBatches = target->GetBatches().size();
 
@@ -402,7 +402,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     {
         for (unsigned j = 0; j < faces.size(); ++j)
         {
-            stl::vector<DecalVertex>& face = faces[j];
+            ea::vector<DecalVertex>& face = faces[j];
             if (face.empty())
                 continue;
 
@@ -414,7 +414,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     // Now triangulate the resulting faces into decal vertices
     for (unsigned i = 0; i < faces.size(); ++i)
     {
-        stl::vector<DecalVertex>& face = faces[i];
+        ea::vector<DecalVertex>& face = faces[i];
         if (face.size() < 3)
             continue;
 
@@ -435,15 +435,15 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
 
     if (newDecal.vertices_.size() > maxVertices_)
     {
-        URHO3D_LOGWARNING("Can not add decal, vertex count " + stl::to_string(newDecal.vertices_.size()) + " exceeds maximum " +
-                   stl::to_string(maxVertices_));
+        URHO3D_LOGWARNING("Can not add decal, vertex count " + ea::to_string(newDecal.vertices_.size()) + " exceeds maximum " +
+                   ea::to_string(maxVertices_));
         decals_.pop_back();
         return false;
     }
     if (newDecal.indices_.size() > maxIndices_)
     {
-        URHO3D_LOGWARNING("Can not add decal, index count " + stl::to_string(newDecal.indices_.size()) + " exceeds maximum " +
-                   stl::to_string(maxIndices_));
+        URHO3D_LOGWARNING("Can not add decal, index count " + ea::to_string(newDecal.indices_.size()) + " exceeds maximum " +
+                   ea::to_string(maxIndices_));
         decals_.pop_back();
         return false;
     }
@@ -472,7 +472,7 @@ bool DecalSet::AddDecal(Drawable* target, const Vector3& worldPosition, const Qu
     while (decals_.size() && (numVertices_ > maxVertices_ || numIndices_ > maxIndices_))
         RemoveDecals(1);
 
-    URHO3D_LOGDEBUG("Added decal with " + stl::to_string(newDecal.vertices_.size()) + " vertices");
+    URHO3D_LOGDEBUG("Added decal with " + ea::to_string(newDecal.vertices_.size()) + " vertices");
 
     // If new decal is time limited, subscribe to scene post-update
     if (newDecal.timeToLive_ > 0.0f && !subscribed_)
@@ -521,7 +521,7 @@ void DecalSet::SetMaterialAttr(const ResourceRef& value)
     SetMaterial(cache->GetResource<Material>(value.name_));
 }
 
-void DecalSet::SetDecalsAttr(const stl::vector<unsigned char>& value)
+void DecalSet::SetDecalsAttr(const ea::vector<unsigned char>& value)
 {
     RemoveAllDecals();
 
@@ -599,7 +599,7 @@ ResourceRef DecalSet::GetMaterialAttr() const
     return GetResourceRef(batches_[0].material_, Material::GetTypeStatic());
 }
 
-stl::vector<unsigned char> DecalSet::GetDecalsAttr() const
+ea::vector<unsigned char> DecalSet::GetDecalsAttr() const
 {
     VectorBuffer ret;
 
@@ -694,7 +694,7 @@ void DecalSet::OnWorldBoundingBoxUpdate()
     }
 }
 
-void DecalSet::GetFaces(stl::vector<stl::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, const Frustum& frustum,
+void DecalSet::GetFaces(ea::vector<ea::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, const Frustum& frustum,
     const Vector3& decalNormal, float normalCutoff)
 {
     // Try to use the most accurate LOD level if possible
@@ -751,7 +751,7 @@ void DecalSet::GetFaces(stl::vector<stl::vector<DecalVertex> >& faces, Drawable*
     if (!positionData)
     {
         // As a fallback, try to get the geometry's raw vertex/index data
-        const stl::vector<VertexElement>* elements;
+        const ea::vector<VertexElement>* elements;
         geometry->GetRawData(positionData, positionStride, indexData, indexStride, elements);
         if (!positionData)
         {
@@ -807,7 +807,7 @@ void DecalSet::GetFaces(stl::vector<stl::vector<DecalVertex> >& faces, Drawable*
     }
 }
 
-void DecalSet::GetFace(stl::vector<stl::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, unsigned i0, unsigned i1,
+void DecalSet::GetFace(ea::vector<ea::vector<DecalVertex> >& faces, Drawable* target, unsigned batchIndex, unsigned i0, unsigned i1,
     unsigned i2, const unsigned char* positionData, const unsigned char* normalData, const unsigned char* skinningData,
     unsigned positionStride, unsigned normalStride, unsigned skinningStride, const Frustum& frustum, const Vector3& decalNormal,
     float normalCutoff)
@@ -849,7 +849,7 @@ void DecalSet::GetFace(stl::vector<stl::vector<DecalVertex> >& faces, Drawable* 
     }
 
     faces.resize(faces.size() + 1);
-    stl::vector<DecalVertex>& face = faces.back();
+    ea::vector<DecalVertex>& face = faces.back();
     if (!hasSkinning)
     {
         face.reserve(3);
@@ -889,8 +889,8 @@ bool DecalSet::GetBones(Drawable* target, unsigned batchIndex, const float* blen
         return false;
 
     // Check whether target is using global or per-geometry skinning
-    const stl::vector<stl::vector<Matrix3x4> >& geometrySkinMatrices = animatedModel->GetGeometrySkinMatrices();
-    const stl::vector<stl::vector<unsigned> >& geometryBoneMappings = animatedModel->GetGeometryBoneMappings();
+    const ea::vector<ea::vector<Matrix3x4> >& geometrySkinMatrices = animatedModel->GetGeometrySkinMatrices();
+    const ea::vector<ea::vector<unsigned> >& geometryBoneMappings = animatedModel->GetGeometryBoneMappings();
 
     for (unsigned i = 0; i < 4; ++i)
     {
@@ -981,7 +981,7 @@ void DecalSet::TransformVertices(Decal& decal, const Matrix3x4& transform)
     }
 }
 
-stl::list<Decal>::iterator DecalSet::RemoveDecal(stl::list<Decal>::iterator i)
+ea::list<Decal>::iterator DecalSet::RemoveDecal(ea::list<Decal>::iterator i)
 {
     numVertices_ -= i->vertices_.size();
     numIndices_ -= i->indices_.size();

@@ -61,16 +61,16 @@ using namespace Urho3D;
 
 struct OutModel
 {
-    stl::string outName_;
+    ea::string outName_;
     aiNode* rootNode_{};
-    stl::hash_set<unsigned> meshIndices_;
-    stl::vector<aiMesh*> meshes_;
-    stl::vector<aiNode*> meshNodes_;
-    stl::vector<aiNode*> bones_;
-    stl::vector<aiNode*> pivotlessBones_;
-    stl::vector<aiAnimation*> animations_;
-    stl::vector<float> boneRadii_;
-    stl::vector<BoundingBox> boneHitboxes_;
+    ea::hash_set<unsigned> meshIndices_;
+    ea::vector<aiMesh*> meshes_;
+    ea::vector<aiNode*> meshNodes_;
+    ea::vector<aiNode*> bones_;
+    ea::vector<aiNode*> pivotlessBones_;
+    ea::vector<aiAnimation*> animations_;
+    ea::vector<float> boneRadii_;
+    ea::vector<BoundingBox> boneHitboxes_;
     aiNode* rootBone_{};
     unsigned totalVertices_{};
     unsigned totalIndices_{};
@@ -78,11 +78,11 @@ struct OutModel
 
 struct OutScene
 {
-    stl::string outName_;
+    ea::string outName_;
     aiNode* rootNode_{};
-    stl::vector<OutModel> models_;
-    stl::vector<aiNode*> nodes_;
-    stl::vector<unsigned> nodeModelIndices_;
+    ea::vector<OutModel> models_;
+    ea::vector<aiNode*> nodes_;
+    ea::vector<unsigned> nodeModelIndices_;
 };
 
 // FBX transform chain
@@ -137,13 +137,13 @@ const char *transformSuffix[TransformationComp_MAXIMUM] =
 
 static const unsigned MAX_CHANNELS = 4;
 
-stl::shared_ptr<Context> context_(new Context());
+ea::shared_ptr<Context> context_(new Context());
 const aiScene* scene_ = nullptr;
 aiNode* rootNode_ = nullptr;
-stl::string inputName_;
-stl::string resourcePath_;
-stl::string outPath_;
-stl::string outName_;
+ea::string inputName_;
+ea::string resourcePath_;
+ea::string outPath_;
+ea::string outName_;
 bool useSubdirs_ = true;
 bool localIDs_ = false;
 bool saveBinary_ = false;
@@ -165,11 +165,11 @@ bool noOverwriteNewerTexture_ = false;
 bool checkUniqueModel_ = true;
 bool moveToBindPose_ = false;
 unsigned maxBones_ = 64;
-stl::vector<stl::string> nonSkinningBoneIncludes_;
-stl::vector<stl::string> nonSkinningBoneExcludes_;
+ea::vector<ea::string> nonSkinningBoneIncludes_;
+ea::vector<ea::string> nonSkinningBoneExcludes_;
 
-stl::hash_set<aiAnimation*> allAnimations_;
-stl::vector<aiAnimation*> sceneAnimations_;
+ea::hash_set<aiAnimation*> allAnimations_;
+ea::vector<aiAnimation*> sceneAnimations_;
 
 float defaultTicksPerSecond_ = 4800.0f;
 // For subset animation import usage
@@ -178,73 +178,73 @@ float importEndTime_ = 0.0f;
 bool suppressFbxPivotNodes_ = true;
 
 int main(int argc, char** argv);
-void Run(const stl::vector<stl::string>& arguments);
+void Run(const ea::vector<ea::string>& arguments);
 void DumpNodes(aiNode* rootNode, unsigned level);
 
-void ExportModel(const stl::string& outName, bool animationOnly);
-void ExportAnimation(const stl::string& outName, bool animationOnly);
+void ExportModel(const ea::string& outName, bool animationOnly);
+void ExportAnimation(const ea::string& outName, bool animationOnly);
 void CollectMeshes(OutModel& model, aiNode* node);
 void CollectBones(OutModel& model, bool animationOnly = false);
-void CollectBonesFinal(stl::vector<aiNode*>& dest, const stl::hash_set<aiNode*>& necessary, aiNode* node);
+void CollectBonesFinal(ea::vector<aiNode*>& dest, const ea::hash_set<aiNode*>& necessary, aiNode* node);
 void MoveToBindPose(OutModel& model, aiNode* current);
 void CollectAnimations(OutModel* model = nullptr);
 void BuildBoneCollisionInfo(OutModel& model);
 void BuildAndSaveModel(OutModel& model);
 void BuildAndSaveAnimations(OutModel* model = nullptr);
 
-void ExportScene(const stl::string& outName, bool asPrefab);
+void ExportScene(const ea::string& outName, bool asPrefab);
 void CollectSceneModels(OutScene& scene, aiNode* node);
-void CreateHierarchy(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping);
-Node* CreateSceneNode(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping);
+void CreateHierarchy(Scene* scene, aiNode* srcNode, ea::unordered_map<aiNode*, Node*>& nodeMapping);
+Node* CreateSceneNode(Scene* scene, aiNode* srcNode, ea::unordered_map<aiNode*, Node*>& nodeMapping);
 void BuildAndSaveScene(OutScene& scene, bool asPrefab);
 
-void ExportMaterials(stl::hash_set<stl::string>& usedTextures);
-void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& usedTextures);
-void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::string& sourcePath);
+void ExportMaterials(ea::hash_set<ea::string>& usedTextures);
+void BuildAndSaveMaterial(aiMaterial* material, ea::hash_set<ea::string>& usedTextures);
+void CopyTextures(const ea::hash_set<ea::string>& usedTextures, const ea::string& sourcePath);
 
-void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::string>& modelNames, const stl::string& outName);
+void CombineLods(const ea::vector<float>& lodDistances, const ea::vector<ea::string>& modelNames, const ea::string& outName);
 
-void GetMeshesUnderNode(stl::vector<stl::pair<aiNode*, aiMesh*> >& dest, aiNode* node);
+void GetMeshesUnderNode(ea::vector<ea::pair<aiNode*, aiMesh*> >& dest, aiNode* node);
 unsigned GetMeshIndex(aiMesh* mesh);
-unsigned GetBoneIndex(OutModel& model, const stl::string& boneName);
-aiBone* GetMeshBone(OutModel& model, const stl::string& boneName);
-Matrix3x4 GetOffsetMatrix(OutModel& model, const stl::string& boneName);
-void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<unsigned>& boneMappings, stl::vector<stl::vector<unsigned char> >&
-    blendIndices, stl::vector<stl::vector<float> >& blendWeights);
-stl::string GetMeshMaterialName(aiMesh* mesh);
-stl::string GetMaterialTextureName(const stl::string& nameIn);
-stl::string GenerateMaterialName(aiMaterial* material);
-stl::string GenerateTextureName(unsigned texIndex);
+unsigned GetBoneIndex(OutModel& model, const ea::string& boneName);
+aiBone* GetMeshBone(OutModel& model, const ea::string& boneName);
+Matrix3x4 GetOffsetMatrix(OutModel& model, const ea::string& boneName);
+void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, ea::vector<unsigned>& boneMappings, ea::vector<ea::vector<unsigned char> >&
+    blendIndices, ea::vector<ea::vector<float> >& blendWeights);
+ea::string GetMeshMaterialName(aiMesh* mesh);
+ea::string GetMaterialTextureName(const ea::string& nameIn);
+ea::string GenerateMaterialName(aiMaterial* material);
+ea::string GenerateTextureName(unsigned texIndex);
 unsigned GetNumValidFaces(aiMesh* mesh);
 
 void WriteShortIndices(unsigned short*& dest, aiMesh* mesh, unsigned index, unsigned offset);
 void WriteLargeIndices(unsigned*& dest, aiMesh* mesh, unsigned index, unsigned offset);
 void WriteVertex(float*& dest, aiMesh* mesh, unsigned index, bool isSkinned, BoundingBox& box,
-    const Matrix3x4& vertexTransform, const Matrix3& normalTransform, stl::vector<stl::vector<unsigned char> >& blendIndices,
-    stl::vector<stl::vector<float> >& blendWeights);
-stl::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned);
+    const Matrix3x4& vertexTransform, const Matrix3& normalTransform, ea::vector<ea::vector<unsigned char> >& blendIndices,
+    ea::vector<ea::vector<float> >& blendWeights);
+ea::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned);
 
-aiNode* GetNode(const stl::string& name, aiNode* rootNode, bool caseSensitive = true);
+aiNode* GetNode(const ea::string& name, aiNode* rootNode, bool caseSensitive = true);
 aiMatrix4x4 GetDerivedTransform(aiNode* node, aiNode* rootNode, bool rootInclusive = true);
 aiMatrix4x4 GetDerivedTransform(aiMatrix4x4 transform, aiNode* node, aiNode* rootNode, bool rootInclusive = true);
 aiMatrix4x4 GetMeshBakingTransform(aiNode* meshNode, aiNode* modelRootNode);
 void GetPosRotScale(const aiMatrix4x4& transform, Vector3& pos, Quaternion& rot, Vector3& scale);
 
-stl::string FromAIString(const aiString& str);
+ea::string FromAIString(const aiString& str);
 Vector3 ToVector3(const aiVector3D& vec);
 Vector2 ToVector2(const aiVector2D& vec);
 Quaternion ToQuaternion(const aiQuaternion& quat);
 Matrix3x4 ToMatrix3x4(const aiMatrix4x4& mat);
 aiMatrix4x4 ToAIMatrix4x4(const Matrix3x4& mat);
-stl::string SanitateAssetName(const stl::string& name);
+ea::string SanitateAssetName(const ea::string& name);
 
-unsigned GetPivotlessBoneIndex(OutModel& model, const stl::string& boneName);
+unsigned GetPivotlessBoneIndex(OutModel& model, const ea::string& boneName);
 void ExtrapolatePivotlessAnimation(OutModel* model);
 void CollectSceneNodesAsBones(OutModel &model, aiNode* rootNode);
 
 int main(int argc, char** argv)
 {
-    stl::vector<stl::string> arguments;
+    ea::vector<ea::string> arguments;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
@@ -256,7 +256,7 @@ int main(int argc, char** argv)
     return 0;
 }
 
-void Run(const stl::vector<stl::string>& arguments)
+void Run(const ea::vector<ea::string>& arguments)
 {
     if (arguments.size() < 2)
     {
@@ -319,8 +319,8 @@ void Run(const stl::vector<stl::string>& arguments)
     RegisterPhysicsLibrary(context_);
 #endif
 
-    stl::string command = arguments[0].to_lower();
-    stl::string rootNodeName;
+    ea::string command = arguments[0].to_lower();
+    ea::string rootNodeName;
 
     unsigned flags =
         aiProcess_ConvertToLeftHanded |
@@ -340,8 +340,8 @@ void Run(const stl::vector<stl::string>& arguments)
     {
         if (arguments[i].length() > 1 && arguments[i][0] == '-')
         {
-            stl::string argument = arguments[i].substr(1).to_lower();
-            stl::string value = i + 1 < arguments.size() ? arguments[i + 1] : EMPTY_STRING;
+            ea::string argument = arguments[i].substr(1).to_lower();
+            ea::string value = i + 1 < arguments.size() ? arguments[i + 1] : EMPTY_STRING;
 
             if (argument == "b")
                 saveBinary_ = true;
@@ -433,7 +433,7 @@ void Run(const stl::vector<stl::string>& arguments)
                 includeNonSkinningBones_ = true;
                 if (value.length() && (value[0] != '-' || value.length() > 3))
                 {
-                    stl::vector<stl::string> filters = value.split(';');
+                    ea::vector<ea::string> filters = value.split(';');
                     for (unsigned i = 0; i < filters.size(); ++i)
                     {
                         if (filters[i][0] == '-')
@@ -459,7 +459,7 @@ void Run(const stl::vector<stl::string>& arguments)
                 moveToBindPose_ = true;
             else if (argument == "split")
             {
-                stl::string value2 = i + 2 < arguments.size() ? arguments[i + 2] : EMPTY_STRING;
+                ea::string value2 = i + 2 < arguments.size() ? arguments[i + 2] : EMPTY_STRING;
                 if (value.length() && value2.length() && (value[0] != '-') && (value2[0] != '-'))
                 {
                     importStartTime_ = ToFloat(value);
@@ -471,8 +471,8 @@ void Run(const stl::vector<stl::string>& arguments)
 
     if (command == "model" || command == "scene" || command == "anim" || command == "node" || command == "dump")
     {
-        stl::string inFile = arguments[1];
-        stl::string outFile;
+        ea::string inFile = arguments[1];
+        ea::string outFile;
         if (arguments.size() > 2 && arguments[2][0] != '-')
             outFile = GetInternalPath(arguments[2]);
 
@@ -532,7 +532,7 @@ void Run(const stl::vector<stl::string>& arguments)
             scene_ = aiImportFile(GetNativePath(inFile).c_str(), flags);
 
         if (!scene_)
-            ErrorExit("Could not open or parse input file " + inFile + ": " + stl::string(aiGetErrorString()));
+            ErrorExit("Could not open or parse input file " + inFile + ": " + ea::string(aiGetErrorString()));
 
         if (verboseLog_)
             Assimp::DefaultLogger::kill();
@@ -570,7 +570,7 @@ void Run(const stl::vector<stl::string>& arguments)
 
         if (!noMaterials_)
         {
-            stl::hash_set<stl::string> usedTextures;
+            ea::hash_set<ea::string> usedTextures;
             ExportMaterials(usedTextures);
             if (!noTextures_)
                 CopyTextures(usedTextures, GetPath(inFile));
@@ -578,9 +578,9 @@ void Run(const stl::vector<stl::string>& arguments)
     }
     else if (command == "lod")
     {
-        stl::vector<float> lodDistances;
-        stl::vector<stl::string> modelNames;
-        stl::string outFile;
+        ea::vector<float> lodDistances;
+        ea::vector<ea::string> modelNames;
+        ea::string outFile;
 
         unsigned numLodArguments = 0;
         for (unsigned i = 1; i < arguments.size(); ++i)
@@ -624,7 +624,7 @@ void DumpNodes(aiNode* rootNode, unsigned level)
     if (!rootNode)
         return;
 
-    stl::string indent(' ', level * 2);
+    ea::string indent(' ', level * 2);
     Vector3 pos, scale;
     Quaternion rot;
     aiMatrix4x4 transform = GetDerivedTransform(rootNode, rootNode_);
@@ -633,15 +633,15 @@ void DumpNodes(aiNode* rootNode, unsigned level)
     PrintLine(indent + "Node " + FromAIString(rootNode->mName) + " pos " + pos.ToString());
 
     if (rootNode->mNumMeshes == 1)
-        PrintLine(indent + "  " + stl::to_string(rootNode->mNumMeshes) + " geometry");
+        PrintLine(indent + "  " + ea::to_string(rootNode->mNumMeshes) + " geometry");
     if (rootNode->mNumMeshes > 1)
-        PrintLine(indent + "  " + stl::to_string(rootNode->mNumMeshes) + " geometries");
+        PrintLine(indent + "  " + ea::to_string(rootNode->mNumMeshes) + " geometries");
 
     for (unsigned i = 0; i < rootNode->mNumChildren; ++i)
         DumpNodes(rootNode->mChildren[i], level + 1);
 }
 
-void ExportModel(const stl::string& outName, bool animationOnly)
+void ExportModel(const ea::string& outName, bool animationOnly)
 {
     if (outName.empty())
         ErrorExit("No output file defined");
@@ -665,7 +665,7 @@ void ExportModel(const stl::string& outName, bool animationOnly)
     }
 }
 
-void ExportAnimation(const stl::string& outName, bool animationOnly)
+void ExportAnimation(const ea::string& outName, bool animationOnly)
 {
     if (outName.empty())
         ErrorExit("No output file defined");
@@ -722,8 +722,8 @@ void CollectMeshes(OutModel& model, aiNode* node)
 
 void CollectBones(OutModel& model, bool animationOnly)
 {
-    stl::hash_set<aiNode*> necessary;
-    stl::hash_set<aiNode*> rootNodes;
+    ea::hash_set<aiNode*> necessary;
+    ea::hash_set<aiNode*> rootNodes;
 
     bool haveSkinnedMeshes = false;
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
@@ -745,7 +745,7 @@ void CollectBones(OutModel& model, bool animationOnly)
         for (unsigned j = 0; j < mesh->mNumBones; ++j)
         {
             aiBone* bone = mesh->mBones[j];
-            stl::string boneName(FromAIString(bone->mName));
+            ea::string boneName(FromAIString(bone->mName));
             aiNode* boneNode = GetNode(boneName, scene_->mRootNode, true);
             if (!boneNode)
                 ErrorExit("Could not find scene node for bone " + boneName);
@@ -857,7 +857,7 @@ void CollectBones(OutModel& model, bool animationOnly)
 
 void MoveToBindPose(OutModel& model, aiNode* current)
 {
-    stl::string nodeName(FromAIString(current->mName));
+    ea::string nodeName(FromAIString(current->mName));
     Matrix3x4 bindWorldTransform = GetOffsetMatrix(model, nodeName).Inverse();
     // Skip if we get an identity offset matrix (bone lookup failed)
     if (!bindWorldTransform.Equals(Matrix3x4::IDENTITY))
@@ -876,10 +876,10 @@ void MoveToBindPose(OutModel& model, aiNode* current)
         MoveToBindPose(model, current->mChildren[i]);
 }
 
-void CollectBonesFinal(stl::vector<aiNode*>& dest, const stl::hash_set<aiNode*>& necessary, aiNode* node)
+void CollectBonesFinal(ea::vector<aiNode*>& dest, const ea::hash_set<aiNode*>& necessary, aiNode* node)
 {
     bool includeBone = necessary.find(node) != necessary.end();
-    stl::string boneName = FromAIString(node->mName);
+    ea::string boneName = FromAIString(node->mName);
 
     // Check include/exclude filters for non-skinned bones
     if (!includeBone && includeNonSkinningBones_)
@@ -932,7 +932,7 @@ void CollectAnimations(OutModel* model)
             for (unsigned j = 0; j < anim->mNumChannels; ++j)
             {
                 aiNodeAnim* channel = anim->mChannels[j];
-                stl::string channelName = FromAIString(channel->mNodeName);
+                ea::string channelName = FromAIString(channel->mNodeName);
                 if (GetBoneIndex(*model, channelName) != M_MAX_UNSIGNED)
                 {
                     modelBoneFound = true;
@@ -963,7 +963,7 @@ void BuildBoneCollisionInfo(OutModel& model)
         for (unsigned j = 0; j < mesh->mNumBones; ++j)
         {
             aiBone* bone = mesh->mBones[j];
-            stl::string boneName = FromAIString(bone->mName);
+            ea::string boneName = FromAIString(bone->mName);
             unsigned boneIndex = GetBoneIndex(model, boneName);
             if (boneIndex == M_MAX_UNSIGNED)
                 continue;
@@ -993,7 +993,7 @@ void BuildAndSaveModel(OutModel& model)
         return;
     }
 
-    stl::string rootNodeName = FromAIString(model.rootNode_->mName);
+    ea::string rootNodeName = FromAIString(model.rootNode_->mName);
     if (!model.meshes_.size())
     {
         PrintLine("No geometries found starting from node " + rootNodeName + ", skipping model save");
@@ -1002,15 +1002,15 @@ void BuildAndSaveModel(OutModel& model)
 
     PrintLine("Writing model " + rootNodeName);
 
-    stl::shared_ptr<Model> outModel(new Model(context_));
-    stl::vector<stl::vector<unsigned> > allBoneMappings;
+    ea::shared_ptr<Model> outModel(new Model(context_));
+    ea::vector<ea::vector<unsigned> > allBoneMappings;
     BoundingBox box;
 
     unsigned numValidGeometries = 0;
 
     bool combineBuffers = true;
     // Check if buffers can be combined (same vertex elements, under 65535 vertices)
-    stl::vector<VertexElement> elements = GetVertexElements(model.meshes_[0], model.bones_.size() > 0);
+    ea::vector<VertexElement> elements = GetVertexElements(model.meshes_[0], model.bones_.size() > 0);
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
     {
         if (GetNumValidFaces(model.meshes_[i]))
@@ -1037,10 +1037,10 @@ void BuildAndSaveModel(OutModel& model)
             combineBuffers = false;
     }
 
-    stl::shared_ptr<IndexBuffer> ib;
-    stl::shared_ptr<VertexBuffer> vb;
-    stl::vector<stl::shared_ptr<VertexBuffer> > vbVector;
-    stl::vector<stl::shared_ptr<IndexBuffer> > ibVector;
+    ea::shared_ptr<IndexBuffer> ib;
+    ea::shared_ptr<VertexBuffer> vb;
+    ea::vector<ea::shared_ptr<VertexBuffer> > vbVector;
+    ea::vector<ea::shared_ptr<IndexBuffer> > ibVector;
     unsigned startVertexOffset = 0;
     unsigned startIndexOffset = 0;
     unsigned destGeomIndex = 0;
@@ -1051,7 +1051,7 @@ void BuildAndSaveModel(OutModel& model)
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
     {
         aiMesh* mesh = model.meshes_[i];
-        stl::vector<VertexElement> elements = GetVertexElements(mesh, isSkinned);
+        ea::vector<VertexElement> elements = GetVertexElements(mesh, isSkinned);
         unsigned validFaces = GetNumValidFaces(mesh);
         if (!validFaces)
             continue;
@@ -1094,13 +1094,13 @@ void BuildAndSaveModel(OutModel& model)
         vertexTransform = Matrix3x4(pos, rot, scale);
         normalTransform = rot.RotationMatrix();
 
-        stl::shared_ptr<Geometry> geom(new Geometry(context_));
+        ea::shared_ptr<Geometry> geom(new Geometry(context_));
 
-        PrintLine("Writing geometry " + stl::to_string(i) + " with " + stl::to_string(mesh->mNumVertices) + " vertices " +
-            stl::to_string(validFaces * 3) + " indices");
+        PrintLine("Writing geometry " + ea::to_string(i) + " with " + ea::to_string(mesh->mNumVertices) + " vertices " +
+            ea::to_string(validFaces * 3) + " indices");
 
         if (model.bones_.size() > 0 && !mesh->HasBones())
-            PrintLine("Warning: model has bones but geometry " + stl::to_string(i) + " has no skinning information");
+            PrintLine("Warning: model has bones but geometry " + ea::to_string(i) + " has no skinning information");
 
         unsigned char* vertexData = vb->GetShadowData();
         unsigned char* indexData = ib->GetShadowData();
@@ -1121,9 +1121,9 @@ void BuildAndSaveModel(OutModel& model)
 
         // Build the vertex data
         // If there are bones, get blend data
-        stl::vector<stl::vector<unsigned char> > blendIndices;
-        stl::vector<stl::vector<float> > blendWeights;
-        stl::vector<unsigned> boneMappings;
+        ea::vector<ea::vector<unsigned char> > blendIndices;
+        ea::vector<ea::vector<float> > blendWeights;
+        ea::vector<unsigned> boneMappings;
         if (model.bones_.size())
             GetBlendData(model, mesh, model.meshNodes_[i], boneMappings, blendIndices, blendWeights);
 
@@ -1164,7 +1164,7 @@ void BuildAndSaveModel(OutModel& model)
     }
 
     // Define the model buffers and bounding box
-    stl::vector<unsigned> emptyMorphRange;
+    ea::vector<unsigned> emptyMorphRange;
     outModel->SetVertexBuffers(vbVector, emptyMorphRange, emptyMorphRange);
     outModel->SetIndexBuffers(ibVector);
     outModel->SetBoundingBox(box);
@@ -1172,16 +1172,16 @@ void BuildAndSaveModel(OutModel& model)
     // Build skeleton if necessary
     if (model.bones_.size() && model.rootBone_)
     {
-        PrintLine("Writing skeleton with " + stl::to_string(model.bones_.size()) + " bones, rootbone " +
+        PrintLine("Writing skeleton with " + ea::to_string(model.bones_.size()) + " bones, rootbone " +
             FromAIString(model.rootBone_->mName));
 
         Skeleton skeleton;
-        stl::vector<Bone>& bones = skeleton.GetModifiableBones();
+        ea::vector<Bone>& bones = skeleton.GetModifiableBones();
 
         for (unsigned i = 0; i < model.bones_.size(); ++i)
         {
             aiNode* boneNode = model.bones_[i];
-            stl::string boneName(FromAIString(boneNode->mName));
+            ea::string boneName(FromAIString(boneNode->mName));
 
             Bone newBone;
             newBone.name_ = boneName;
@@ -1205,7 +1205,7 @@ void BuildAndSaveModel(OutModel& model)
         // Set the bone hierarchy
         for (unsigned i = 1; i < model.bones_.size(); ++i)
         {
-            stl::string parentName = FromAIString(model.bones_[i]->mParent->mName);
+            ea::string parentName = FromAIString(model.bones_[i]->mParent->mName);
             for (unsigned j = 0; j < bones.size(); ++j)
             {
                 if (bones[j].name_ == parentName)
@@ -1229,7 +1229,7 @@ void BuildAndSaveModel(OutModel& model)
     // If exporting materials, also save material list for use by the editor
     if (!noMaterials_ && saveMaterialList_)
     {
-        stl::string materialListName = ReplaceExtension(model.outName_, ".txt");
+        ea::string materialListName = ReplaceExtension(model.outName_, ".txt");
         File listFile(context_);
         if (listFile.Open(materialListName, FILE_WRITE))
         {
@@ -1247,15 +1247,15 @@ void BuildAndSaveAnimations(OutModel* model)
     ExtrapolatePivotlessAnimation(model);
 
     // build and save anim
-    const stl::vector<aiAnimation*>& animations = model ? model->animations_ : sceneAnimations_;
+    const ea::vector<aiAnimation*>& animations = model ? model->animations_ : sceneAnimations_;
 
     for (unsigned i = 0; i < animations.size(); ++i)
     {
         aiAnimation* anim = animations[i];
 
         auto duration = (float)anim->mDuration;
-        stl::string animName = FromAIString(anim->mName);
-        stl::string animOutName;
+        ea::string animName = FromAIString(anim->mName);
+        ea::string animOutName;
 
         float thisImportEndTime = importEndTime_;
         float thisImportStartTime = importStartTime_;
@@ -1265,9 +1265,9 @@ void BuildAndSaveAnimations(OutModel* model)
             thisImportEndTime = duration;
 
         if (animName.empty())
-            animName = "Anim" + stl::to_string(i + 1);
+            animName = "Anim" + ea::to_string(i + 1);
 
-        stl::string outName = model ? model->outName_ : outName_;
+        ea::string outName = model ? model->outName_ : outName_;
 
         if (context_->GetFileSystem()->DirExists(outName))
         {
@@ -1302,15 +1302,15 @@ void BuildAndSaveAnimations(OutModel* model)
             thisImportStartTime = startTime;
         duration = thisImportEndTime - thisImportStartTime;
 
-        stl::shared_ptr<Animation> outAnim(new Animation(context_));
+        ea::shared_ptr<Animation> outAnim(new Animation(context_));
         outAnim->SetAnimationName(animName);
         outAnim->SetLength(duration * tickConversion);
 
-        PrintLine("Writing animation " + animName + " length " + stl::to_string(outAnim->GetLength()));
+        PrintLine("Writing animation " + animName + " length " + ea::to_string(outAnim->GetLength()));
         for (unsigned j = 0; j < anim->mNumChannels; ++j)
         {
             aiNodeAnim* channel = anim->mChannels[j];
-            stl::string channelName = FromAIString(channel->mNodeName);
+            ea::string channelName = FromAIString(channel->mNodeName);
             aiNode* boneNode = nullptr;
 
             if (model)
@@ -1318,7 +1318,7 @@ void BuildAndSaveAnimations(OutModel* model)
                 unsigned boneIndex;
                 unsigned pos = channelName.find("_$AssimpFbx$");
 
-                if (!suppressFbxPivotNodes_ || pos == stl::string::npos)
+                if (!suppressFbxPivotNodes_ || pos == ea::string::npos)
                 {
                     boneIndex = GetBoneIndex(*model, channelName);
                     if (boneIndex == M_MAX_UNSIGNED)
@@ -1497,7 +1497,7 @@ void BuildAndSaveAnimations(OutModel* model)
     }
 }
 
-void ExportScene(const stl::string& outName, bool asPrefab)
+void ExportScene(const ea::string& outName, bool asPrefab)
 {
     OutScene outScene;
     outScene.outName_ = outName;
@@ -1525,7 +1525,7 @@ void ExportScene(const stl::string& outName, bool asPrefab)
 
 void CollectSceneModels(OutScene& scene, aiNode* node)
 {
-    stl::vector<stl::pair<aiNode*, aiMesh*> > meshes;
+    ea::vector<ea::pair<aiNode*, aiMesh*> > meshes;
     GetMeshesUnderNode(meshes, node);
 
     if (meshes.size())
@@ -1582,14 +1582,14 @@ void CollectSceneModels(OutScene& scene, aiNode* node)
         CollectSceneModels(scene, node->mChildren[i]);
 }
 
-void CreateHierarchy(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping)
+void CreateHierarchy(Scene* scene, aiNode* srcNode, ea::unordered_map<aiNode*, Node*>& nodeMapping)
 {
     CreateSceneNode(scene, srcNode, nodeMapping);
     for (unsigned i = 0; i < srcNode->mNumChildren; ++i)
         CreateHierarchy(scene, srcNode->mChildren[i], nodeMapping);
 }
 
-Node* CreateSceneNode(Scene* scene, aiNode* srcNode, stl::unordered_map<aiNode*, Node*>& nodeMapping)
+Node* CreateSceneNode(Scene* scene, aiNode* srcNode, ea::unordered_map<aiNode*, Node*>& nodeMapping)
 {
     if (nodeMapping.contains(srcNode))
         return nodeMapping[srcNode];
@@ -1642,7 +1642,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
     else
         PrintLine("Writing node hierarchy");
 
-    stl::shared_ptr<Scene> outScene(new Scene(context_));
+    ea::shared_ptr<Scene> outScene(new Scene(context_));
 
     if (!asPrefab)
     {
@@ -1676,7 +1676,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
 
     auto* cache = context_->GetSubsystem<ResourceCache>();
 
-    stl::unordered_map<aiNode*, Node*> nodeMapping;
+    ea::unordered_map<aiNode*, Node*> nodeMapping;
 
     Node* outRootNode = nullptr;
     if (asPrefab)
@@ -1704,7 +1704,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
                 model.bones_.empty() ? modelNode->CreateComponent<StaticModel>() : modelNode->CreateComponent<AnimatedModel>());
 
         // Create a dummy model so that the reference can be stored
-        stl::string modelName = (useSubdirs_ ? "Models/" : "") + GetFileNameAndExtension(model.outName_);
+        ea::string modelName = (useSubdirs_ ? "Models/" : "") + GetFileNameAndExtension(model.outName_);
         if (!cache->Exists(modelName))
         {
             auto* dummyModel = new Model(context_);
@@ -1717,7 +1717,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
         // Set materials if they are known
         for (unsigned j = 0; j < model.meshes_.size(); ++j)
         {
-            stl::string matName = GetMeshMaterialName(model.meshes_[j]);
+            ea::string matName = GetMeshMaterialName(model.meshes_[j]);
             // Create a dummy material so that the reference can be stored
             if (!cache->Exists(matName))
             {
@@ -1811,7 +1811,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
     }
 }
 
-void ExportMaterials(stl::hash_set<stl::string>& usedTextures)
+void ExportMaterials(ea::hash_set<ea::string>& usedTextures)
 {
     if (useSubdirs_)
         context_->GetSubsystem<FileSystem>()->CreateDir(resourcePath_ + "Materials");
@@ -1820,11 +1820,11 @@ void ExportMaterials(stl::hash_set<stl::string>& usedTextures)
         BuildAndSaveMaterial(scene_->mMaterials[i], usedTextures);
 }
 
-void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& usedTextures)
+void BuildAndSaveMaterial(aiMaterial* material, ea::hash_set<ea::string>& usedTextures)
 {
     aiString matNameStr;
     material->Get(AI_MATKEY_NAME, matNameStr);
-    stl::string matName = SanitateAssetName(FromAIString(matNameStr));
+    ea::string matName = SanitateAssetName(FromAIString(matNameStr));
     matName.trim();
     if (matName.empty())
         matName = GenerateMaterialName(material);
@@ -1833,11 +1833,11 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& used
     XMLFile outMaterial(context_);
     XMLElement materialElem = outMaterial.CreateRoot("material");
 
-    stl::string diffuseTexName;
-    stl::string normalTexName;
-    stl::string specularTexName;
-    stl::string lightmapTexName;
-    stl::string emissiveTexName;
+    ea::string diffuseTexName;
+    ea::string normalTexName;
+    ea::string specularTexName;
+    ea::string lightmapTexName;
+    ea::string emissiveTexName;
     Color diffuseColor = Color::WHITE;
     Color specularColor;
     Color emissiveColor = Color::BLACK;
@@ -1888,7 +1888,7 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& used
     if (material->Get(AI_MATKEY_TWOSIDED, intVal) == AI_SUCCESS)
         twoSided = (intVal != 0);
 
-    stl::string techniqueName = "Techniques/NoTexture";
+    ea::string techniqueName = "Techniques/NoTexture";
     if (!diffuseTexName.empty())
     {
         techniqueName = "Techniques/Diff";
@@ -1964,7 +1964,7 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& used
 
     auto* fileSystem = context_->GetSubsystem<FileSystem>();
 
-    stl::string outFileName = resourcePath_ + (useSubdirs_ ? "Materials/" : "" ) + matName + ".xml";
+    ea::string outFileName = resourcePath_ + (useSubdirs_ ? "Materials/" : "" ) + matName + ".xml";
     if (noOverwriteMaterial_ && fileSystem->FileExists(outFileName))
     {
         PrintLine("Skipping save of existing material " + matName);
@@ -1979,7 +1979,7 @@ void BuildAndSaveMaterial(aiMaterial* material, stl::hash_set<stl::string>& used
     outMaterial.Save(outFile);
 }
 
-void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::string& sourcePath)
+void CopyTextures(const ea::hash_set<ea::string>& usedTextures, const ea::string& sourcePath)
 {
     auto* fileSystem = context_->GetSubsystem<FileSystem>();
 
@@ -1993,11 +1993,11 @@ void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::str
         {
             unsigned texIndex = ToInt(i->substr(1));
             if (texIndex >= scene_->mNumTextures)
-                PrintLine("Skipping out of range texture index " + stl::to_string(texIndex));
+                PrintLine("Skipping out of range texture index " + ea::to_string(texIndex));
             else
             {
                 aiTexture* tex = scene_->mTextures[texIndex];
-                stl::string fullDestName = resourcePath_ + GenerateTextureName(texIndex);
+                ea::string fullDestName = resourcePath_ + GenerateTextureName(texIndex);
                 bool destExists = fileSystem->FileExists(fullDestName);
                 if (destExists && noOverwriteTexture_)
                 {
@@ -2024,8 +2024,8 @@ void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::str
         }
         else
         {
-            stl::string fullSourceName = sourcePath + *i;
-            stl::string fullDestName = resourcePath_ + (useSubdirs_ ? "Textures/" : "") + *i;
+            ea::string fullSourceName = sourcePath + *i;
+            ea::string fullDestName = resourcePath_ + (useSubdirs_ ? "Textures/" : "") + *i;
 
             if (!fileSystem->FileExists(fullSourceName))
             {
@@ -2060,16 +2060,16 @@ void CopyTextures(const stl::hash_set<stl::string>& usedTextures, const stl::str
     }
 }
 
-void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::string>& modelNames, const stl::string& outName)
+void CombineLods(const ea::vector<float>& lodDistances, const ea::vector<ea::string>& modelNames, const ea::string& outName)
 {
     // Load models
-    stl::vector<stl::shared_ptr<Model> > srcModels;
+    ea::vector<ea::shared_ptr<Model> > srcModels;
     for (unsigned i = 0; i < modelNames.size(); ++i)
     {
-        PrintLine("Reading LOD level " + stl::to_string(i) + ": model " + modelNames[i] + " distance " + stl::to_string(lodDistances[i]));
+        PrintLine("Reading LOD level " + ea::to_string(i) + ": model " + modelNames[i] + " distance " + ea::to_string(lodDistances[i]));
         File srcFile(context_);
         srcFile.Open(modelNames[i]);
-        stl::shared_ptr<Model> srcModel(new Model(context_));
+        ea::shared_ptr<Model> srcModel(new Model(context_));
         if (!srcModel->Load(srcFile))
             ErrorExit("Could not load input model " + modelNames[i]);
         srcModels.push_back(srcModel);
@@ -2106,12 +2106,12 @@ void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::
             ErrorExit(modelNames[i] + " has different per-geometry bone mappings than " + modelNames[0]);
     }
 
-    stl::vector<stl::shared_ptr<VertexBuffer> > vbVector;
-    stl::vector<stl::shared_ptr<IndexBuffer> > ibVector;
-    stl::vector<unsigned> emptyMorphRange;
+    ea::vector<ea::shared_ptr<VertexBuffer> > vbVector;
+    ea::vector<ea::shared_ptr<IndexBuffer> > ibVector;
+    ea::vector<unsigned> emptyMorphRange;
 
     // Create the final model
-    stl::shared_ptr<Model> outModel(new Model(context_));
+    ea::shared_ptr<Model> outModel(new Model(context_));
     outModel->SetNumGeometries(srcModels[0]->GetNumGeometries());
     for (unsigned i = 0; i < srcModels[0]->GetNumGeometries(); ++i)
     {
@@ -2124,12 +2124,12 @@ void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::
 
             for (unsigned k = 0; k < geometry->GetNumVertexBuffers(); ++k)
             {
-                stl::shared_ptr<VertexBuffer> vb(geometry->GetVertexBuffer(k));
+                ea::shared_ptr<VertexBuffer> vb(geometry->GetVertexBuffer(k));
                 if (!vbVector.contains(vb))
                     vbVector.push_back(vb);
             }
 
-            stl::shared_ptr<IndexBuffer> ib(geometry->GetIndexBuffer());
+            ea::shared_ptr<IndexBuffer> ib(geometry->GetIndexBuffer());
             if (!ibVector.contains(ib))
                 ibVector.push_back(ib);
         }
@@ -2150,10 +2150,10 @@ void CombineLods(const stl::vector<float>& lodDistances, const stl::vector<stl::
     outModel->Save(outFile);
 }
 
-void GetMeshesUnderNode(stl::vector<stl::pair<aiNode*, aiMesh*> >& dest, aiNode* node)
+void GetMeshesUnderNode(ea::vector<ea::pair<aiNode*, aiMesh*> >& dest, aiNode* node)
 {
     for (unsigned i = 0; i < node->mNumMeshes; ++i)
-        dest.push_back(stl::make_pair(node, scene_->mMeshes[node->mMeshes[i]]));
+        dest.push_back(ea::make_pair(node, scene_->mMeshes[node->mMeshes[i]]));
 }
 
 unsigned GetMeshIndex(aiMesh* mesh)
@@ -2166,7 +2166,7 @@ unsigned GetMeshIndex(aiMesh* mesh)
     return M_MAX_UNSIGNED;
 }
 
-unsigned GetBoneIndex(OutModel& model, const stl::string& boneName)
+unsigned GetBoneIndex(OutModel& model, const ea::string& boneName)
 {
     for (unsigned i = 0; i < model.bones_.size(); ++i)
     {
@@ -2176,7 +2176,7 @@ unsigned GetBoneIndex(OutModel& model, const stl::string& boneName)
     return M_MAX_UNSIGNED;
 }
 
-aiBone* GetMeshBone(OutModel& model, const stl::string& boneName)
+aiBone* GetMeshBone(OutModel& model, const ea::string& boneName)
 {
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
     {
@@ -2191,7 +2191,7 @@ aiBone* GetMeshBone(OutModel& model, const stl::string& boneName)
     return nullptr;
 }
 
-Matrix3x4 GetOffsetMatrix(OutModel& model, const stl::string& boneName)
+Matrix3x4 GetOffsetMatrix(OutModel& model, const ea::string& boneName)
 {
     for (unsigned i = 0; i < model.meshes_.size(); ++i)
     {
@@ -2227,8 +2227,8 @@ Matrix3x4 GetOffsetMatrix(OutModel& model, const stl::string& boneName)
     return Matrix3x4::IDENTITY;
 }
 
-void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<unsigned>& boneMappings, stl::vector<stl::vector<unsigned char> >&
-    blendIndices, stl::vector<stl::vector<float> >& blendWeights)
+void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, ea::vector<unsigned>& boneMappings, ea::vector<ea::vector<unsigned char> >&
+    blendIndices, ea::vector<ea::vector<float> >& blendWeights)
 {
     blendIndices.resize(mesh->mNumVertices);
     blendWeights.resize(mesh->mNumVertices);
@@ -2240,8 +2240,8 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
         if (mesh->mNumBones > maxBones_)
         {
             ErrorExit(
-                "Geometry (submesh) has over " + stl::to_string(maxBones_) + " bone influences. Try splitting to more submeshes\n"
-                "that each stay at " + stl::to_string(maxBones_) + " bones or below."
+                "Geometry (submesh) has over " + ea::to_string(maxBones_) + " bone influences. Try splitting to more submeshes\n"
+                "that each stay at " + ea::to_string(maxBones_) + " bones or below."
             );
         }
         if (mesh->mNumBones > 0)
@@ -2250,7 +2250,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 aiBone* bone = mesh->mBones[i];
-                stl::string boneName = FromAIString(bone->mName);
+                ea::string boneName = FromAIString(bone->mName);
                 unsigned globalIndex = GetBoneIndex(model, boneName);
                 if (globalIndex == M_MAX_UNSIGNED)
                     ErrorExit("Bone " + boneName + " not found");
@@ -2266,7 +2266,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
         else
         {
             // If mesh does not have skinning information, implement rigid skinning so that it stays compatible with AnimatedModel
-            stl::string boneName = FromAIString(meshNode->mName);
+            ea::string boneName = FromAIString(meshNode->mName);
             unsigned globalIndex = GetBoneIndex(model, boneName);
             if (globalIndex == M_MAX_UNSIGNED)
                 PrintLine("Warning: bone " + boneName + " not found, skipping rigid skinning");
@@ -2288,7 +2288,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
             for (unsigned i = 0; i < mesh->mNumBones; ++i)
             {
                 aiBone* bone = mesh->mBones[i];
-                stl::string boneName = FromAIString(bone->mName);
+                ea::string boneName = FromAIString(bone->mName);
                 unsigned globalIndex = GetBoneIndex(model, boneName);
                 if (globalIndex == M_MAX_UNSIGNED)
                     ErrorExit("Bone " + boneName + " not found");
@@ -2302,7 +2302,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
         }
         else
         {
-            stl::string boneName = FromAIString(meshNode->mName);
+            ea::string boneName = FromAIString(meshNode->mName);
             unsigned globalIndex = GetBoneIndex(model, boneName);
             if (globalIndex == M_MAX_UNSIGNED)
                 PrintLine("Warning: bone " + boneName + " not found, skipping rigid skinning");
@@ -2322,7 +2322,7 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
     {
         if (blendWeights[i].size() > 4)
         {
-            PrintLine("Warning: more than 4 bone influences in vertex " + stl::to_string(i));
+            PrintLine("Warning: more than 4 bone influences in vertex " + ea::to_string(i));
 
             while (blendWeights[i].size() > 4)
             {
@@ -2352,12 +2352,12 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, stl::vector<u
     }
 }
 
-stl::string GetMeshMaterialName(aiMesh* mesh)
+ea::string GetMeshMaterialName(aiMesh* mesh)
 {
     aiMaterial* material = scene_->mMaterials[mesh->mMaterialIndex];
     aiString matNameStr;
     material->Get(AI_MATKEY_NAME, matNameStr);
-    stl::string matName = SanitateAssetName(FromAIString(matNameStr));
+    ea::string matName = SanitateAssetName(FromAIString(matNameStr));
     matName.trim();
     if (matName.empty())
         matName = GenerateMaterialName(material);
@@ -2365,19 +2365,19 @@ stl::string GetMeshMaterialName(aiMesh* mesh)
     return (useSubdirs_ ? "Materials/" : "") + matName + ".xml";
 }
 
-stl::string GenerateMaterialName(aiMaterial* material)
+ea::string GenerateMaterialName(aiMaterial* material)
 {
     for (unsigned i = 0; i < scene_->mNumMaterials; ++i)
     {
         if (scene_->mMaterials[i] == material)
-            return inputName_ + "_Material" + stl::to_string(i);
+            return inputName_ + "_Material" + ea::to_string(i);
     }
 
     // Should not go here
     return EMPTY_STRING;
 }
 
-stl::string GetMaterialTextureName(const stl::string& nameIn)
+ea::string GetMaterialTextureName(const ea::string& nameIn)
 {
     // Detect assimp embedded texture
     if (nameIn.length() && nameIn[0] == '*')
@@ -2386,16 +2386,16 @@ stl::string GetMaterialTextureName(const stl::string& nameIn)
         return (useSubdirs_ ? "Textures/" : "") + nameIn;
 }
 
-stl::string GenerateTextureName(unsigned texIndex)
+ea::string GenerateTextureName(unsigned texIndex)
 {
     if (texIndex < scene_->mNumTextures)
     {
         // If embedded texture contains encoded data, use the format hint for file extension. Else save RGBA8 data as PNG
         aiTexture* tex = scene_->mTextures[texIndex];
         if (!tex->mHeight)
-            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + stl::to_string(texIndex) + "." + tex->achFormatHint;
+            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + ea::to_string(texIndex) + "." + tex->achFormatHint;
         else
-            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + stl::to_string(texIndex) + ".png";
+            return (useSubdirs_ ? "Textures/" : "") + inputName_ + "_Texture" + ea::to_string(texIndex) + ".png";
     }
 
     // Should not go here
@@ -2436,8 +2436,8 @@ void WriteLargeIndices(unsigned*& dest, aiMesh* mesh, unsigned index, unsigned o
 }
 
 void WriteVertex(float*& dest, aiMesh* mesh, unsigned index, bool isSkinned, BoundingBox& box,
-    const Matrix3x4& vertexTransform, const Matrix3& normalTransform, stl::vector<stl::vector<unsigned char> >& blendIndices,
-    stl::vector<stl::vector<float> >& blendWeights)
+    const Matrix3x4& vertexTransform, const Matrix3& normalTransform, ea::vector<ea::vector<unsigned char> >& blendIndices,
+    ea::vector<ea::vector<float> >& blendWeights)
 {
     Vector3 vertex = vertexTransform * ToVector3(mesh->mVertices[index]);
     box.Merge(vertex);
@@ -2505,9 +2505,9 @@ void WriteVertex(float*& dest, aiMesh* mesh, unsigned index, bool isSkinned, Bou
     }
 }
 
-stl::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned)
+ea::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned)
 {
-    stl::vector<VertexElement> ret;
+    ea::vector<VertexElement> ret;
 
     // Position must always be first and of type Vector3 for raycasts to work
     ret.push_back(VertexElement(TYPE_VECTOR3, SEM_POSITION));
@@ -2534,7 +2534,7 @@ stl::vector<VertexElement> GetVertexElements(aiMesh* mesh, bool isSkinned)
     return ret;
 }
 
-aiNode* GetNode(const stl::string& name, aiNode* rootNode, bool caseSensitive)
+aiNode* GetNode(const ea::string& name, aiNode* rootNode, bool caseSensitive)
 {
     if (!rootNode)
         return nullptr;
@@ -2588,9 +2588,9 @@ void GetPosRotScale(const aiMatrix4x4& transform, Vector3& pos, Quaternion& rot,
 }
 
 
-stl::string FromAIString(const aiString& str)
+ea::string FromAIString(const aiString& str)
 {
-    return stl::string(str.data);
+    return ea::string(str.data);
 }
 
 Vector3 ToVector3(const aiVector3D& vec)
@@ -2622,9 +2622,9 @@ aiMatrix4x4 ToAIMatrix4x4(const Matrix3x4& mat)
     return ret;
 }
 
-stl::string SanitateAssetName(const stl::string& name)
+ea::string SanitateAssetName(const ea::string& name)
 {
-    stl::string fixedName = name;
+    ea::string fixedName = name;
     fixedName.replace("<", "");
     fixedName.replace(">", "");
     fixedName.replace("?", "");
@@ -2638,7 +2638,7 @@ stl::string SanitateAssetName(const stl::string& name)
     return fixedName;
 }
 
-unsigned GetPivotlessBoneIndex(OutModel& model, const stl::string& boneName)
+unsigned GetPivotlessBoneIndex(OutModel& model, const ea::string& boneName)
 {
     for (unsigned i = 0; i < model.pivotlessBones_.size(); ++i)
     {
@@ -2648,15 +2648,15 @@ unsigned GetPivotlessBoneIndex(OutModel& model, const stl::string& boneName)
     return M_MAX_UNSIGNED;
 }
 
-void FillChainTransforms(OutModel &model, aiMatrix4x4 *chain, const stl::string& mainBoneName)
+void FillChainTransforms(OutModel &model, aiMatrix4x4 *chain, const ea::string& mainBoneName)
 {
     for (unsigned j = 0; j < TransformationComp_MAXIMUM; ++j)
     {
-        stl::string transfBoneName = mainBoneName + "_$AssimpFbx$_" + stl::string(transformSuffix[j]);
+        ea::string transfBoneName = mainBoneName + "_$AssimpFbx$_" + ea::string(transformSuffix[j]);
 
         for (unsigned k = 0; k < model.bones_.size(); ++k)
         {
-            stl::string boneName = stl::string(model.bones_[k]->mName.data);
+            ea::string boneName = ea::string(model.bones_[k]->mName.data);
 
             if (boneName == transfBoneName)
             {
@@ -2735,19 +2735,19 @@ void ExpandAnimatedChannelKeys(aiAnimation* anim, unsigned mainChannel, const in
     }
 }
 
-void InitAnimatedChainTransformIndices(aiAnimation* anim, unsigned mainChannel, const stl::string& mainBoneName, int *channelIndices)
+void InitAnimatedChainTransformIndices(aiAnimation* anim, unsigned mainChannel, const ea::string& mainBoneName, int *channelIndices)
 {
     int numTransforms = 0;
 
     for (unsigned j = 0; j < TransformationComp_MAXIMUM; ++j)
     {
-        stl::string transfBoneName = mainBoneName + "_$AssimpFbx$_" + stl::string(transformSuffix[j]);
+        ea::string transfBoneName = mainBoneName + "_$AssimpFbx$_" + ea::string(transformSuffix[j]);
         channelIndices[j] = -1;
 
         for (unsigned k = 0; k < anim->mNumChannels; ++k)
         {
             aiNodeAnim* channel = anim->mChannels[k];
-            stl::string channelName = FromAIString(channel->mNodeName);
+            ea::string channelName = FromAIString(channel->mNodeName);
 
             if (channelName == transfBoneName)
             {
@@ -2771,10 +2771,10 @@ void CreatePivotlessFbxBoneStruct(OutModel &model)
 
     for (unsigned i = 0; i < model.bones_.size(); ++i)
     {
-        stl::string mainBoneName = stl::string(model.bones_[i]->mName.data);
+        ea::string mainBoneName = ea::string(model.bones_[i]->mName.data);
 
         // Skip $fbx nodes
-        if (mainBoneName.find("$AssimpFbx$") != stl::string::npos)
+        if (mainBoneName.find("$AssimpFbx$") != ea::string::npos)
             continue;
 
         std::fill_n(chains, static_cast<unsigned int>(TransformationComp_MAXIMUM), aiMatrix4x4());
@@ -2804,24 +2804,24 @@ void ExtrapolatePivotlessAnimation(OutModel* model)
         CreatePivotlessFbxBoneStruct(*model);
 
         // Extrapolate anim
-        const stl::vector<aiAnimation *> &animations = model->animations_;
+        const ea::vector<aiAnimation *> &animations = model->animations_;
         for (unsigned i = 0; i < animations.size(); ++i)
         {
             aiAnimation* anim = animations[i];
-            stl::vector<stl::string> mainBoneCompleteList;
+            ea::vector<ea::string> mainBoneCompleteList;
             mainBoneCompleteList.clear();
 
             for (unsigned j = 0; j < anim->mNumChannels; ++j)
             {
                 aiNodeAnim* channel = anim->mChannels[j];
-                stl::string channelName = FromAIString(channel->mNodeName);
+                ea::string channelName = FromAIString(channel->mNodeName);
                 unsigned pos = channelName.find("_$AssimpFbx$");
 
-                if (pos != stl::string::npos)
+                if (pos != ea::string::npos)
                 {
                     // Every first $fbx animation channel for a bone will consolidate other $fbx animation to a single channel
                     // skip subsequent $fbx animation channel for the same bone
-                    stl::string mainBoneName = channelName.substr(0, pos);
+                    ea::string mainBoneName = channelName.substr(0, pos);
 
                     if (mainBoneCompleteList.find(mainBoneName) != mainBoneCompleteList.end())
                         continue;

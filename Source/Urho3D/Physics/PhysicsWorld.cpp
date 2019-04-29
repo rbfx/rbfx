@@ -122,7 +122,7 @@ void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
 struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
 {
     /// Construct.
-    PhysicsQueryCallback(stl::vector<RigidBody*>& result, unsigned collisionMask) :
+    PhysicsQueryCallback(ea::vector<RigidBody*>& result, unsigned collisionMask) :
         result_(result),
         collisionMask_(collisionMask)
     {
@@ -142,7 +142,7 @@ struct PhysicsQueryCallback : public btCollisionWorld::ContactResultCallback
     }
 
     /// Found rigid bodies.
-    stl::vector<RigidBody*>& result_;
+    ea::vector<RigidBody*>& result_;
     /// Collision mask for the query.
     unsigned collisionMask_;
 };
@@ -244,7 +244,7 @@ void PhysicsWorld::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void PhysicsWorld::reportErrorWarning(const char* warningString)
 {
-    URHO3D_LOGWARNING("Physics: " + stl::string(warningString));
+    URHO3D_LOGWARNING("Physics: " + ea::string(warningString));
 }
 
 void PhysicsWorld::drawContactPoint(const btVector3& pointOnB, const btVector3& normalOnB, btScalar distance, int lifeTime,
@@ -372,7 +372,7 @@ void PhysicsWorld::SetMaxNetworkAngularVelocity(float velocity)
     MarkNetworkUpdate();
 }
 
-void PhysicsWorld::Raycast(stl::vector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
+void PhysicsWorld::Raycast(ea::vector<PhysicsRaycastResult>& result, const Ray& ray, float maxDistance, unsigned collisionMask)
 {
     URHO3D_PROFILE("PhysicsRaycast");
 
@@ -397,7 +397,7 @@ void PhysicsWorld::Raycast(stl::vector<PhysicsRaycastResult>& result, const Ray&
         result.push_back(newResult);
     }
 
-    stl::quick_sort(result.begin(), result.end(), CompareRaycastResults);
+    ea::quick_sort(result.begin(), result.end(), CompareRaycastResults);
 }
 
 void PhysicsWorld::RaycastSingle(PhysicsRaycastResult& result, const Ray& ray, float maxDistance, unsigned collisionMask)
@@ -621,14 +621,14 @@ void PhysicsWorld::RemoveCachedGeometry(Model* model)
     RemoveCachedGeometryImpl(gimpactTrimeshCache_, model);
 }
 
-void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
+void PhysicsWorld::GetRigidBodies(ea::vector<RigidBody*>& result, const Sphere& sphere, unsigned collisionMask)
 {
     URHO3D_PROFILE("PhysicsSphereQuery");
 
     result.clear();
 
     btSphereShape sphereShape(sphere.radius_);
-    stl::unique_ptr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &sphereShape));
+    ea::unique_ptr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &sphereShape));
     tempRigidBody->setWorldTransform(btTransform(btQuaternion::getIdentity(), ToBtVector3(sphere.center_)));
     // Need to activate the temporary rigid body to get reliable results from static, sleeping objects
     tempRigidBody->activate();
@@ -640,14 +640,14 @@ void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const Sphere&
     world_->removeRigidBody(tempRigidBody.get());
 }
 
-void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask)
+void PhysicsWorld::GetRigidBodies(ea::vector<RigidBody*>& result, const BoundingBox& box, unsigned collisionMask)
 {
     URHO3D_PROFILE("PhysicsBoxQuery");
 
     result.clear();
 
     btBoxShape boxShape(ToBtVector3(box.HalfSize()));
-    stl::unique_ptr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &boxShape));
+    ea::unique_ptr<btRigidBody> tempRigidBody(new btRigidBody(1.0f, nullptr, &boxShape));
     tempRigidBody->setWorldTransform(btTransform(btQuaternion::getIdentity(), ToBtVector3(box.Center())));
     tempRigidBody->activate();
     world_->addRigidBody(tempRigidBody.get());
@@ -658,7 +658,7 @@ void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const Boundin
     world_->removeRigidBody(tempRigidBody.get());
 }
 
-void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const RigidBody* body)
+void PhysicsWorld::GetRigidBodies(ea::vector<RigidBody*>& result, const RigidBody* body)
 {
     URHO3D_PROFILE("PhysicsBodyQuery");
 
@@ -681,7 +681,7 @@ void PhysicsWorld::GetRigidBodies(stl::vector<RigidBody*>& result, const RigidBo
     }
 }
 
-void PhysicsWorld::GetCollidingBodies(stl::vector<RigidBody*>& result, const RigidBody* body)
+void PhysicsWorld::GetCollidingBodies(ea::vector<RigidBody*>& result, const RigidBody* body)
 {
     URHO3D_PROFILE("GetCollidingBodies");
 
@@ -868,20 +868,20 @@ void PhysicsWorld::SendCollisionEvents()
                 !bodyA->IsActive() && !bodyB->IsActive())
                 continue;
 
-            stl::weak_ptr<RigidBody> bodyWeakA(bodyA);
-            stl::weak_ptr<RigidBody> bodyWeakB(bodyB);
+            ea::weak_ptr<RigidBody> bodyWeakA(bodyA);
+            ea::weak_ptr<RigidBody> bodyWeakB(bodyB);
 
             // First only store the collision pair as weak pointers and the manifold pointer, so user code can safely destroy
             // objects during collision event handling
-            stl::pair<stl::weak_ptr<RigidBody>, stl::weak_ptr<RigidBody> > bodyPair;
+            ea::pair<ea::weak_ptr<RigidBody>, ea::weak_ptr<RigidBody> > bodyPair;
             if (bodyA < bodyB)
             {
-                bodyPair = stl::make_pair(bodyWeakA, bodyWeakB);
+                bodyPair = ea::make_pair(bodyWeakA, bodyWeakB);
                 currentCollisions_[bodyPair].manifold_ = contactManifold;
             }
             else
             {
-                bodyPair = stl::make_pair(bodyWeakB, bodyWeakA);
+                bodyPair = ea::make_pair(bodyWeakB, bodyWeakA);
                 currentCollisions_[bodyPair].flippedManifold_ = contactManifold;
             }
         }
@@ -896,8 +896,8 @@ void PhysicsWorld::SendCollisionEvents()
 
             Node* nodeA = bodyA->GetNode();
             Node* nodeB = bodyB->GetNode();
-            stl::weak_ptr<Node> nodeWeakA(nodeA);
-            stl::weak_ptr<Node> nodeWeakB(nodeB);
+            ea::weak_ptr<Node> nodeWeakA(nodeA);
+            ea::weak_ptr<Node> nodeWeakB(nodeB);
 
             bool trigger = bodyA->IsTrigger() || bodyB->IsTrigger();
             bool newCollision = !previousCollisions_.contains(i->first);
@@ -1040,8 +1040,8 @@ void PhysicsWorld::SendCollisionEvents()
 
                 Node* nodeA = bodyA->GetNode();
                 Node* nodeB = bodyB->GetNode();
-                stl::weak_ptr<Node> nodeWeakA(nodeA);
-                stl::weak_ptr<Node> nodeWeakB(nodeB);
+                ea::weak_ptr<Node> nodeWeakA(nodeA);
+                ea::weak_ptr<Node> nodeWeakB(nodeB);
 
                 physicsCollisionData_[PhysicsCollisionEnd::P_BODYA] = bodyA;
                 physicsCollisionData_[PhysicsCollisionEnd::P_BODYB] = bodyB;

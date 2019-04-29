@@ -99,7 +99,7 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 
     for (unsigned i = 0; i < numThreads; ++i)
     {
-        stl::shared_ptr<WorkerThread> thread(new WorkerThread(this, i + 1));
+        ea::shared_ptr<WorkerThread> thread(new WorkerThread(this, i + 1));
         thread->SetName(Format("Worker {}", i + 1));
         thread->Run();
         threads_.push_back(thread);
@@ -109,24 +109,24 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 #endif
 }
 
-stl::shared_ptr<WorkItem> WorkQueue::GetFreeItem()
+ea::shared_ptr<WorkItem> WorkQueue::GetFreeItem()
 {
     if (!poolItems_.empty())
     {
-        stl::shared_ptr<WorkItem> item = poolItems_.front();
+        ea::shared_ptr<WorkItem> item = poolItems_.front();
         poolItems_.pop_front();
         return item;
     }
     else
     {
         // No usable items found, create a new one set it as pooled and return it.
-        stl::shared_ptr<WorkItem> item(new WorkItem());
+        ea::shared_ptr<WorkItem> item(new WorkItem());
         item->pooled_ = true;
         return item;
     }
 }
 
-void WorkQueue::AddWorkItem(const stl::shared_ptr<WorkItem>& item)
+void WorkQueue::AddWorkItem(const ea::shared_ptr<WorkItem>& item)
 {
     if (!item)
     {
@@ -135,7 +135,7 @@ void WorkQueue::AddWorkItem(const stl::shared_ptr<WorkItem>& item)
     }
 
     // Check for duplicate items.
-    assert(stl::find(workItems_.begin(), workItems_.end(), item) == workItems_.end());
+    assert(ea::find(workItems_.begin(), workItems_.end(), item) == workItems_.end());
 
     // Push to the main thread list to keep item alive
     // Clear completed flag in case item is reused
@@ -184,7 +184,7 @@ WorkItem* WorkQueue::AddWorkItem(std::function<void()> workFunction, unsigned pr
     return item;
 }
 
-bool WorkQueue::RemoveWorkItem(stl::shared_ptr<WorkItem> item)
+bool WorkQueue::RemoveWorkItem(ea::shared_ptr<WorkItem> item)
 {
     if (!item)
         return false;
@@ -192,10 +192,10 @@ bool WorkQueue::RemoveWorkItem(stl::shared_ptr<WorkItem> item)
     MutexLock lock(queueMutex_);
 
     // Can only remove successfully if the item was not yet taken by threads for execution
-    auto i = stl::find(queue_.begin(), queue_.end(), item.get());
+    auto i = ea::find(queue_.begin(), queue_.end(), item.get());
     if (i != queue_.end())
     {
-        auto j = stl::find(workItems_.begin(), workItems_.end(), item);
+        auto j = ea::find(workItems_.begin(), workItems_.end(), item);
         if (j != workItems_.end())
         {
             queue_.erase(i);
@@ -208,17 +208,17 @@ bool WorkQueue::RemoveWorkItem(stl::shared_ptr<WorkItem> item)
     return false;
 }
 
-unsigned WorkQueue::RemoveWorkItems(const stl::vector<stl::shared_ptr<WorkItem> >& items)
+unsigned WorkQueue::RemoveWorkItems(const ea::vector<ea::shared_ptr<WorkItem> >& items)
 {
     MutexLock lock(queueMutex_);
     unsigned removed = 0;
 
     for (auto i = items.begin(); i != items.end(); ++i)
     {
-        auto j = stl::find(queue_.begin(), queue_.end(), i->get());
+        auto j = ea::find(queue_.begin(), queue_.end(), i->get());
         if (j != queue_.end())
         {
-            auto k = stl::find(workItems_.begin(), workItems_.end(), *i);
+            auto k = ea::find(workItems_.begin(), workItems_.end(), *i);
             if (k != workItems_.end())
             {
                 queue_.erase(j);
@@ -403,7 +403,7 @@ void WorkQueue::PurgePool()
     lastSize_ = currentSize;
 }
 
-void WorkQueue::ReturnToPool(stl::shared_ptr<WorkItem>& item)
+void WorkQueue::ReturnToPool(ea::shared_ptr<WorkItem>& item)
 {
     // Check if this was a pooled item and set it to usable
     if (item->pooled_)

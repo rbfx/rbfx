@@ -53,7 +53,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Button2']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -70,9 +70,9 @@ private:
     /// Subscribe to log message, UI and network events.
     void SubscribeToEvents();
     /// Create a button to the button container.
-    Button* CreateButton(const stl::string& text, int width, IntVector2 position);
+    Button* CreateButton(const ea::string& text, int width, IntVector2 position);
     /// Create label
-    Text* CreateLabel(const stl::string& text, IntVector2 pos);
+    Text* CreateLabel(const ea::string& text, IntVector2 pos);
     
     /// Handle found LAN server
     void HandleNetworkHostDiscovered(StringHash eventType, VariantMap& eventData);
@@ -83,11 +83,11 @@ private:
 	/// Start network discovery
 	void HandleDoNetworkDiscovery(StringHash eventType, VariantMap& eventData);
     /// Start server
-    stl::shared_ptr<Button> startServer_;
+    ea::shared_ptr<Button> startServer_;
     /// Stop server
-    stl::shared_ptr<Button> stopServer_;
+    ea::shared_ptr<Button> stopServer_;
     /// Redo LAN discovery
-    stl::shared_ptr<Button> refreshServerList_;
+    ea::shared_ptr<Button> refreshServerList_;
     /// Found server list
-	stl::shared_ptr<Text> serverList_;
+	ea::shared_ptr<Text> serverList_;
 };

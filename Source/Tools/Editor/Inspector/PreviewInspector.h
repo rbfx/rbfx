@@ -45,7 +45,7 @@ public:
     /// Copy effects from specified render path.
     void SetEffectSource(RenderPath* renderPath);
     /// Set preview model by passing a resource name.
-    void SetModel(const stl::string& resourceName);
+    void SetModel(const ea::string& resourceName);
     /// Set preview model by passing model resourcei nstance.
     void SetModel(Model* model);
 
@@ -60,7 +60,7 @@ protected:
     /// Preview scene.
     SceneView view_;
     /// Node holding figure to which material is applied.
-    stl::weak_ptr<Node> node_;
+    ea::weak_ptr<Node> node_;
     /// Flag indicating if this widget grabbed mouse for rotating material node.
     bool mouseGrabbed_ = false;
     /// Distance from camera to figure.

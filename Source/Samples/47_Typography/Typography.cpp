@@ -138,7 +138,7 @@ void Typography::Start()
 
 void Typography::CreateText()
 {
-    stl::shared_ptr<UIElement> container(new UIElement(context_));
+    ea::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
     container->SetLayout(LM_VERTICAL);
     uielement_->AddChild(container);
@@ -149,26 +149,26 @@ void Typography::CreateText()
     for (auto size2x = 2; size2x <= 36; ++size2x)
     {
         auto size = size2x / 2.f;
-        stl::shared_ptr<Text> text(new Text(context_));
-        text->SetText(stl::string("The quick brown fox jumps over the lazy dog (") + stl::to_string(size) + stl::string("pt)"));
+        ea::shared_ptr<Text> text(new Text(context_));
+        text->SetText(ea::string("The quick brown fox jumps over the lazy dog (") + ea::to_string(size) + ea::string("pt)"));
         text->SetFont(font, size);
         text->AddTag(TEXT_TAG);
         container->AddChild(text);
     }
 }
 
-stl::shared_ptr<CheckBox> Typography::CreateCheckbox(const stl::string& label, EventHandler* handler)
+ea::shared_ptr<CheckBox> Typography::CreateCheckbox(const ea::string& label, EventHandler* handler)
 {
-    stl::shared_ptr<UIElement> container(new UIElement(context_));
+    ea::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
     container->SetLayout(LM_HORIZONTAL, 8);
     uielement_->AddChild(container);
 
-    stl::shared_ptr<CheckBox> box(new CheckBox(context_));
+    ea::shared_ptr<CheckBox> box(new CheckBox(context_));
     container->AddChild(box);
     box->SetStyleAuto();
 
-    stl::shared_ptr<Text> text(new Text(context_));
+    ea::shared_ptr<Text> text(new Text(context_));
     container->AddChild(text);
     text->SetText(label);
     text->SetStyleAuto();
@@ -178,26 +178,26 @@ stl::shared_ptr<CheckBox> Typography::CreateCheckbox(const stl::string& label, E
     return box;
 }
 
-stl::shared_ptr<DropDownList> Typography::CreateMenu(const stl::string& label, const char** items, EventHandler* handler)
+ea::shared_ptr<DropDownList> Typography::CreateMenu(const ea::string& label, const char** items, EventHandler* handler)
 {
-    stl::shared_ptr<UIElement> container(new UIElement(context_));
+    ea::shared_ptr<UIElement> container(new UIElement(context_));
     container->SetAlignment(HA_LEFT, VA_TOP);
     container->SetLayout(LM_HORIZONTAL, 8);
     uielement_->AddChild(container);
 
-    stl::shared_ptr<Text> text(new Text(context_));
+    ea::shared_ptr<Text> text(new Text(context_));
     container->AddChild(text);
     text->SetText(label);
     text->SetStyleAuto();
     text->AddTag(TEXT_TAG);
 
-    stl::shared_ptr<DropDownList> list(new DropDownList(context_));
+    ea::shared_ptr<DropDownList> list(new DropDownList(context_));
     container->AddChild(list);
     list->SetStyleAuto();
 
     for (int i = 0; items[i]; ++i)
     {
-        stl::shared_ptr<Text> item(new Text(context_));
+        ea::shared_ptr<Text> item(new Text(context_));
         list->AddItem(item);
         item->SetText(items[i]);
         item->SetStyleAuto();
@@ -223,7 +223,7 @@ void Typography::HandleWhiteBackground(StringHash eventType, VariantMap& eventDa
     Zone* zone = renderer->GetDefaultZone();
     zone->SetFogColor(bg);
 
-    stl::vector<UIElement*> text = uielement_->GetChildrenWithTag(TEXT_TAG, true);
+    ea::vector<UIElement*> text = uielement_->GetChildrenWithTag(TEXT_TAG, true);
     for (int i = 0; i < text.size(); i++)
     {
         text[i]->SetColor(fg);

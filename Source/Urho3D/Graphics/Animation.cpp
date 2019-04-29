@@ -55,7 +55,7 @@ void AnimationTrack::SetKeyFrame(unsigned index, const AnimationKeyFrame& keyFra
     if (index < keyFrames_.size())
     {
         keyFrames_[index] = keyFrame;
-        stl::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
+        ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
     }
     else if (index == keyFrames_.size())
         AddKeyFrame(keyFrame);
@@ -66,13 +66,13 @@ void AnimationTrack::AddKeyFrame(const AnimationKeyFrame& keyFrame)
     bool needSort = keyFrames_.size() ? keyFrames_.back().time_ > keyFrame.time_ : false;
     keyFrames_.push_back(keyFrame);
     if (needSort)
-        stl::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
+        ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
 }
 
 void AnimationTrack::InsertKeyFrame(unsigned index, const AnimationKeyFrame& keyFrame)
 {
     keyFrames_.insert(index, keyFrame);
-    stl::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
+    ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
 }
 
 void AnimationTrack::RemoveKeyFrame(unsigned index)
@@ -166,9 +166,9 @@ bool Animation::BeginLoad(Deserializer& source)
 
     // Optionally read triggers from an XML file
     auto* cache = GetSubsystem<ResourceCache>();
-    stl::string xmlName = ReplaceExtension(GetName(), ".xml");
+    ea::string xmlName = ReplaceExtension(GetName(), ".xml");
 
-    stl::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    ea::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
     {
         XMLElement rootElem = file->GetRoot();
@@ -188,9 +188,9 @@ bool Animation::BeginLoad(Deserializer& source)
     }
 
     // Optionally read triggers from a JSON file
-    stl::string jsonName = ReplaceExtension(GetName(), ".json");
+    ea::string jsonName = ReplaceExtension(GetName(), ".json");
 
-    stl::shared_ptr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
+    ea::shared_ptr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
     if (jsonFile)
     {
         const JSONValue& rootVal = jsonFile->GetRoot();
@@ -258,9 +258,9 @@ bool Animation::Save(Serializer& dest) const
         auto* destFile = dynamic_cast<File*>(&dest);
         if (destFile)
         {
-            stl::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
+            ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            stl::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("animation");
 
             for (unsigned i = 0; i < triggers_.size(); ++i)
@@ -282,7 +282,7 @@ bool Animation::Save(Serializer& dest) const
     return true;
 }
 
-void Animation::SetAnimationName(const stl::string& name)
+void Animation::SetAnimationName(const ea::string& name)
 {
     animationName_ = name;
     animationNameHash_ = StringHash(name);
@@ -293,7 +293,7 @@ void Animation::SetLength(float length)
     length_ = Max(length, 0.0f);
 }
 
-AnimationTrack* Animation::CreateTrack(const stl::string& name)
+AnimationTrack* Animation::CreateTrack(const ea::string& name)
 {
     /// \todo When tracks / keyframes are created dynamically, memory use is not updated
     StringHash nameHash(name);
@@ -307,7 +307,7 @@ AnimationTrack* Animation::CreateTrack(const stl::string& name)
     return &newTrack;
 }
 
-bool Animation::RemoveTrack(const stl::string& name)
+bool Animation::RemoveTrack(const ea::string& name)
 {
     auto i = tracks_.find(StringHash(name));
     if (i != tracks_.end())
@@ -331,14 +331,14 @@ void Animation::SetTrigger(unsigned index, const AnimationTriggerPoint& trigger)
     else if (index < triggers_.size())
     {
         triggers_[index] = trigger;
-        stl::quick_sort(triggers_.begin(), triggers_.end(), CompareTriggers);
+        ea::quick_sort(triggers_.begin(), triggers_.end(), CompareTriggers);
     }
 }
 
 void Animation::AddTrigger(const AnimationTriggerPoint& trigger)
 {
     triggers_.push_back(trigger);
-    stl::quick_sort(triggers_.begin(), triggers_.end(), CompareTriggers);
+    ea::quick_sort(triggers_.begin(), triggers_.end(), CompareTriggers);
 }
 
 void Animation::AddTrigger(float time, bool timeIsNormalized, const Variant& data)
@@ -348,7 +348,7 @@ void Animation::AddTrigger(float time, bool timeIsNormalized, const Variant& dat
     newTrigger.data_ = data;
     triggers_.push_back(newTrigger);
 
-    stl::quick_sort(triggers_.begin(), triggers_.end(), CompareTriggers);
+    ea::quick_sort(triggers_.begin(), triggers_.end(), CompareTriggers);
 }
 
 void Animation::RemoveTrigger(unsigned index)
@@ -367,9 +367,9 @@ void Animation::SetNumTriggers(unsigned num)
     triggers_.resize(num);
 }
 
-stl::shared_ptr<Animation> Animation::Clone(const stl::string& cloneName) const
+ea::shared_ptr<Animation> Animation::Clone(const ea::string& cloneName) const
 {
-    stl::shared_ptr<Animation> ret(context_->CreateObject<Animation>());
+    ea::shared_ptr<Animation> ret(context_->CreateObject<Animation>());
 
     ret->SetName(cloneName);
     ret->SetAnimationName(animationName_);
@@ -399,7 +399,7 @@ AnimationTrack* Animation::GetTrack(unsigned index)
     return nullptr;
 }
 
-AnimationTrack* Animation::GetTrack(const stl::string& name)
+AnimationTrack* Animation::GetTrack(const ea::string& name)
 {
     auto i = tracks_.find(StringHash(name));
     return i != tracks_.end() ? &i->second : nullptr;
@@ -416,7 +416,7 @@ AnimationTriggerPoint* Animation::GetTrigger(unsigned index)
     return index < triggers_.size() ? &triggers_[index] : nullptr;
 }
 
-void Animation::SetTracks(const stl::vector<AnimationTrack>& tracks)
+void Animation::SetTracks(const ea::vector<AnimationTrack>& tracks)
 {
     tracks_.clear();
 

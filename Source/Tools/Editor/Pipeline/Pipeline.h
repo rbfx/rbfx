@@ -39,7 +39,7 @@ class Pipeline;
 
 struct ResourcePathLock
 {
-    explicit ResourcePathLock(Pipeline* pipeline, const stl::string& resourcePath);
+    explicit ResourcePathLock(Pipeline* pipeline, const ea::string& resourcePath);
 
     ~ResourcePathLock();
 
@@ -47,15 +47,15 @@ struct ResourcePathLock
 
     ResourcePathLock(ResourcePathLock&& other) noexcept
     {
-        stl::swap(pipeline_, other.pipeline_);
-        stl::swap(resourcePath_, other.resourcePath_);
+        ea::swap(pipeline_, other.pipeline_);
+        ea::swap(resourcePath_, other.resourcePath_);
     }
 
 protected:
     ///
     Pipeline* pipeline_{};
     ///
-    stl::string resourcePath_{};
+    ea::string resourcePath_{};
 };
 
 class Pipeline : public Serializable
@@ -73,24 +73,24 @@ public:
     /// Waits until all scheduled work items are complete.
     void WaitForCompletion();
     /// Returns true when assets in the cache are older than source asset.
-    bool IsCacheOutOfDate(const stl::string& resourceName) const;
+    bool IsCacheOutOfDate(const ea::string& resourceName) const;
     /// Remove any cached assets belonging to specified resource.
-    void ClearCache(const stl::string& resourceName);
+    void ClearCache(const ea::string& resourceName);
     /// Register converted asset with the pipeline.
-    void AddCacheEntry(const stl::string& resourceName, const stl::string& cacheResourceName);
+    void AddCacheEntry(const ea::string& resourceName, const ea::string& cacheResourceName);
     /// Register converted asset with the pipeline.
-    void AddCacheEntry(const stl::string& resourceName, const StringVector& cacheResourceNames);
+    void AddCacheEntry(const ea::string& resourceName, const StringVector& cacheResourceNames);
     /// Acquire lock on resource path. Returns object whose lifetime is controls lifetime of the lock. Subsequent calls
     /// when same `resourcePath` is specified will block until result of this function is destroyed.
     /// This "lock" is used to prevent multiple pipeline converters from writing to same folder at the same time. Reason
     /// is that converter process can be anything and it likely does not output any information of written files.
     /// Pipeline needs to track converted files however and this is done by diffing file trees before and after conversion.
     /// Should be called from workers only.
-    ResourcePathLock LockResourcePath(const stl::string& resourcePath);
+    ResourcePathLock LockResourcePath(const ea::string& resourcePath);
     ///
     void SetSkipUpToDateAssets(bool skip) { skipUpToDateAssets_ = skip; }
     ///
-    void Reschedule(const stl::string& resourceName);
+    void Reschedule(const ea::string& resourceName);
     ///
     void CreatePaksAsync();
 
@@ -114,15 +114,15 @@ protected:
         /// Modification time of source file.
         unsigned mtime_;
         /// List of files that
-        stl::hash_set<stl::string> files_;
+        ea::hash_set<ea::string> files_;
     };
 
     /// Collection of top level converters defined in pipeline.
-    stl::vector<stl::shared_ptr<Converter>> converters_{};
+    ea::vector<ea::shared_ptr<Converter>> converters_{};
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///
-    stl::unordered_map<stl::string, CacheEntry> cacheInfo_{};
+    ea::unordered_map<ea::string, CacheEntry> cacheInfo_{};
     ///
     Mutex lock_{};
     ///

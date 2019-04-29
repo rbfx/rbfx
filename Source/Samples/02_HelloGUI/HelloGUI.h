@@ -53,7 +53,7 @@ public:
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
-    stl::string GetScreenJoystickPatchString() const override { return
+    ea::string GetScreenJoystickPatchString() const override { return
         "<patch>"
         "    <add sel=\"/element/element[./attribute[@name='Name' and @value='Hat0']]\">"
         "        <attribute name=\"Is Visible\" value=\"false\" />"
@@ -80,9 +80,9 @@ private:
     void HandleClosePressed(StringHash eventType, VariantMap& eventData);
 
     /// The Window.
-    stl::shared_ptr<Window> window_;
+    ea::shared_ptr<Window> window_;
     /// The UI's root UIElement.
-    stl::shared_ptr<UIElement> uiRoot_;
+    ea::shared_ptr<UIElement> uiRoot_;
     /// Remembered drag begin position.
     IntVector2 dragBeginPosition_;
 };

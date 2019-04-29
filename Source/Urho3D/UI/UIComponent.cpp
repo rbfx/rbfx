@@ -113,7 +113,7 @@ public:
         }
 
         Ray ray(camera->GetScreenRay((float)screenPos.x_ / rect.Width(), (float)screenPos.y_ / rect.Height()));
-        stl::vector<RayQueryResult> queryResultVector;
+        ea::vector<RayQueryResult> queryResultVector;
         RayOctreeQuery query(queryResultVector, ray, RAY_TRIANGLE_UV, M_INFINITY, DRAWABLE_GEOMETRY, DEFAULT_VIEWMASK);
 
         octree->Raycast(query);
@@ -142,9 +142,9 @@ public:
 
 protected:
     /// A UIComponent which owns this element.
-    stl::weak_ptr<Node> node_;
+    ea::weak_ptr<Node> node_;
     /// Viewport which renders this element.
-    stl::weak_ptr<Viewport> viewport_;
+    ea::weak_ptr<Viewport> viewport_;
 };
 
 UIComponent::UIComponent(Context* context)

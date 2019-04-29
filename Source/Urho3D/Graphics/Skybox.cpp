@@ -50,7 +50,7 @@ void Skybox::RegisterObject(Context* context)
     URHO3D_COPY_BASE_ATTRIBUTES(StaticModel);
 }
 
-void Skybox::ProcessRayQuery(const RayOctreeQuery& query, stl::vector<RayQueryResult>& results)
+void Skybox::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
 {
     // Do not record a raycast result for a skybox, as it would block all other results
 }
@@ -68,7 +68,7 @@ void Skybox::UpdateBatches(const FrameInfo& frame)
     // Add camera position to fix the skybox in space. Use effective world transform to take reflection into account
     Matrix3x4 customWorldTransform = node_->GetWorldTransform();
     customWorldTransform.SetTranslation(node_->GetWorldPosition() + frame.camera_->GetEffectiveWorldTransform().Translation());
-    auto it = customWorldTransforms_.insert(stl::make_pair(frame.camera_, customWorldTransform));
+    auto it = customWorldTransforms_.insert(ea::make_pair(frame.camera_, customWorldTransform));
 
     for (unsigned i = 0; i < batches_.size(); ++i)
     {
