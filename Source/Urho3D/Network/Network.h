@@ -146,6 +146,8 @@ private:
     void ConfigureNetworkSimulator();
     /// All incoming packages are handled here.
     void HandleIncomingPacket(SLNet::Packet* packet, bool isServer);
+    /// Return hash of endpoint.
+    static unsigned long GetEndpointHash(const SLNet::AddressOrGUID& endpoint);
 
     /// SLikeNet peer instance for server connection.
     SLNet::RakPeerInterface* rakPeer_;
@@ -153,8 +155,8 @@ private:
     SLNet::RakPeerInterface* rakPeerClient_;
     /// Client's server connection.
     ea::shared_ptr<Connection> serverConnection_;
-    /// Server's client connections.
-    ea::unordered_map<SLNet::AddressOrGUID, ea::shared_ptr<Connection> > clientConnections_;
+    /// Server's client connections. Key is SLNet::AddressOrGUID hash.
+    ea::unordered_map<unsigned long, ea::shared_ptr<Connection> > clientConnections_;
     /// Allowed remote events.
     ea::hash_set<StringHash> allowedRemoteEvents_;
     /// Remote event fixed blacklist.

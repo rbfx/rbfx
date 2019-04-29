@@ -40,26 +40,6 @@ namespace SLNet
     class RakPeerInterface;
 }
 
-#include <slikenet/types.h>
-#ifdef SendMessage
-#   undef SendMessage
-#endif
-
-namespace eastl
-{
-
-template <class T, typename Enable> struct hash;
-
-template<> struct hash<SLNet::AddressOrGUID>
-{
-    size_t operator()(const SLNet::AddressOrGUID& value) const
-    {
-        return value.ToHash();
-    }
-};
-
-}   // namespace eastl
-
 namespace Urho3D
 {
 

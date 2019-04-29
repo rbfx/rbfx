@@ -320,7 +320,7 @@ void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
     ea::shared_ptr<Connection> newConnection(context_->CreateObject<Connection>());
     newConnection->Initialize(true, connection, rakPeer_);
     newConnection->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
-    clientConnections_[connection] = newConnection;
+    clientConnections_[GetEndpointHash(connection)] = newConnection;
     URHO3D_LOGINFO("Client " + newConnection->ToString() + " connected");
 
     using namespace ClientConnected;
@@ -333,7 +333,7 @@ void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
 void Network::ClientDisconnected(const SLNet::AddressOrGUID& connection)
 {
     // Remove the client connection that corresponds to this MessageConnection
-    auto i = clientConnections_.find(connection);
+    auto i = clientConnections_.find(GetEndpointHash(connection));
     if (i != clientConnections_.end())
     {
         Connection* connection = i->second;
@@ -544,15 +544,13 @@ void Network::BroadcastMessage(int msgID, bool reliable, bool inOrder, const uns
 
 void Network::BroadcastRemoteEvent(StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
-    for (auto i = clientConnections_.begin(); i !=
-        clientConnections_.end(); ++i)
+    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
         i->second->SendRemoteEvent(eventType, inOrder, eventData);
 }
 
 void Network::BroadcastRemoteEvent(Scene* scene, StringHash eventType, bool inOrder, const VariantMap& eventData)
 {
-    for (auto i = clientConnections_.begin();
-         i != clientConnections_.end(); ++i)
+    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
     {
         if (i->second->GetScene() == scene)
             i->second->SendRemoteEvent(eventType, inOrder, eventData);
@@ -573,8 +571,7 @@ void Network::BroadcastRemoteEvent(Node* node, StringHash eventType, bool inOrde
     }
 
     Scene* scene = node->GetScene();
-    for (auto i = clientConnections_.begin();
-         i != clientConnections_.end(); ++i)
+    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
     {
         if (i->second->GetScene() == scene)
             i->second->SendRemoteEvent(node, eventType, inOrder, eventData);
@@ -639,8 +636,7 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
         return;
     }
 
-    for (auto i = clientConnections_.begin();
-         i != clientConnections_.end(); ++i)
+    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
     {
         if (i->second->GetScene() == scene)
             i->second->SendPackageToClient(package);
@@ -668,8 +664,7 @@ Connection* Network::GetConnection(const SLNet::AddressOrGUID& connection) const
         return serverConnection_;
     else
     {
-        auto i = clientConnections_.find(
-            connection);
+        auto i = clientConnections_.find(GetEndpointHash(connection));
         if (i != clientConnections_.end())
             return i->second;
         else
@@ -685,8 +680,7 @@ Connection* Network::GetServerConnection() const
 ea::vector<ea::shared_ptr<Connection> > Network::GetClientConnections() const
 {
     ea::vector<ea::shared_ptr<Connection> > ret;
-    for (auto i = clientConnections_.begin();
-         i != clientConnections_.end(); ++i)
+    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
         ret.push_back(i->second);
 
     return ret;
@@ -940,8 +934,7 @@ void Network::PostUpdate(float timeStep)
                 URHO3D_PROFILE("PrepareServerUpdate");
 
                 networkScenes_.clear();
-                for (auto i = clientConnections_.begin();
-                     i != clientConnections_.end(); ++i)
+                for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
                 {
                     Scene* scene = i->second->GetScene();
                     if (scene)
@@ -956,8 +949,7 @@ void Network::PostUpdate(float timeStep)
                 URHO3D_PROFILE("SendServerUpdate");
 
                 // Then send server updates for each client connection
-                for (auto i = clientConnections_.begin();
-                     i != clientConnections_.end(); ++i)
+                for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
                 {
                     i->second->SendServerUpdate();
                     i->second->SendRemoteEvents();
@@ -1029,9 +1021,13 @@ void Network::ConfigureNetworkSimulator()
     if (serverConnection_)
         serverConnection_->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
 
-    for (auto i = clientConnections_.begin();
-         i != clientConnections_.end(); ++i)
+    for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
         i->second->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
+}
+
+unsigned long Network::GetEndpointHash(const SLNet::AddressOrGUID& endpoint)
+{
+    return SLNet::AddressOrGUID::ToInteger(endpoint);
 }
 
 void RegisterNetworkLibrary(Context* context)
