@@ -1762,7 +1762,7 @@ namespace eastl
             return *this;
         }
 
-        this_type& operator=(nullptr_t)
+        this_type& operator=(std::nullptr_t)
         {
             reset();
             return *this;
