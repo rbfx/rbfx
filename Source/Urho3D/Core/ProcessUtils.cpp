@@ -285,9 +285,7 @@ const stl::vector<stl::string>& ParseArguments(const stl::string& cmdLine, bool 
                 inCmd = false;
                 cmdEnd = i;
                 // Do not store the first argument (executable name)
-                if (!skipFirstArgument)
-                    arguments.push_back(cmdLine.substr(cmdStart, cmdEnd - cmdStart));
-                skipFirstArgument = false;
+                arguments.push_back(cmdLine.substr(cmdStart, cmdEnd - cmdStart));
             }
         }
         else
@@ -302,13 +300,16 @@ const stl::vector<stl::string>& ParseArguments(const stl::string& cmdLine, bool 
     if (inCmd)
     {
         cmdEnd = cmdLine.length();
-        if (!skipFirstArgument)
-            arguments.push_back(cmdLine.substr(cmdStart, cmdEnd - cmdStart));
+        arguments.push_back(cmdLine.substr(cmdStart, cmdEnd - cmdStart));
     }
 
     // Strip double quotes from the arguments
     for (unsigned i = 0; i < arguments.size(); ++i)
         arguments[i].replace("\"", "");
+
+    specifiedExecutableFile = arguments.front();
+    if (skipFirstArgument)
+        arguments.pop_front();
 
     return arguments;
 }
