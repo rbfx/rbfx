@@ -450,24 +450,23 @@ namespace eastl
 		return (sharedArray1.get() < sharedArray2.get()); // Alternatively use: std::less<T*>(a.get(), b.get());
 	}
 
-	// Urho3D:
-
+#if EASTL_URHO3D_EXTENSIONS
 	/// Perform a static cast from one shared array pointer type to another.
-	template <class T, class U> stl::shared_array<T> do_static_cast(const stl::shared_array<U>& ptr)
+	template <class T, class U> eastl::shared_array<T> do_static_cast(const eastl::shared_array<U>& ptr)
 	{
-		stl::shared_array<T> ret;
+		eastl::shared_array<T> ret;
 		ret.StaticCast(ptr);
 		return ret;
 	}
 
 	/// Perform a reinterpret cast from one shared array pointer type to another.
-	template <class T, class U> stl::shared_array<T> do_reinterpret_cast(const stl::shared_array<U>& ptr)
+	template <class T, class U> eastl::shared_array<T> do_reinterpret_cast(const eastl::shared_array<U>& ptr)
 	{
-		stl::shared_array<T> ret;
+		eastl::shared_array<T> ret;
 		ret.do_reinterpret_cast(ptr);
 		return ret;
 	}
-
+#endif
 } // namespace eastl
 
 

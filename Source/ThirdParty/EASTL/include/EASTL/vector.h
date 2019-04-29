@@ -386,7 +386,7 @@ namespace eastl
 
 		size_type index_of(const value_type& value) const
 		{
-			return stl::distance(cbegin(), find(value));
+			return eastl::distance(cbegin(), find(value));
 		}
 
 		iterator push_back(const this_type& value)

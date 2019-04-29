@@ -890,7 +890,7 @@ namespace eastl
 
         static eastl::vector<this_type> split(const value_type* str, value_type separator, bool keepEmptyStrings = false)
         {
-            stl::vector<this_type> ret;
+            eastl::vector<this_type> ret;
             const char* strEnd = str + strlen(str);
 
             for (const char* splitEnd = str; splitEnd != strEnd; ++splitEnd)
@@ -916,7 +916,7 @@ namespace eastl
             return split(c_str(), separator, keepEmptyStrings);
         }
         /// Return a string by joining substrings with a 'glue' string.
-        static this_type joined(const stl::vector<this_type>& subStrings, const this_type& glue)
+        static this_type joined(const eastl::vector<this_type>& subStrings, const this_type& glue)
         {
             if (subStrings.empty())
                 return this_type();

@@ -43,8 +43,8 @@
 #include <EASTL/tuple.h>
 #include <string.h>
 
-#ifdef URHO3D_HASH_DEBUG
-#include <EASTL/vector.h>
+#if EASTL_URHO3D_EXTENSIONS
+	#include <EASTL/vector.h>
 #endif
 
 EA_DISABLE_ALL_VC_WARNINGS()
@@ -1176,7 +1176,7 @@ namespace eastl
 		bool validate() const;
 		int  validate_iterator(const_iterator i) const;
 
-#ifdef URHO3D_HASH_DEBUG
+#if EASTL_URHO3D_EXTENSIONS
 		bool contains(const key_type& key) const
 		{
 			return find(key) != end();
