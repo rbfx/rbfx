@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <stdlib.h> // For alligned_alloc on MacOS
+
 #include "../Container/Allocator.h"
 #include "../Core/Profiler.h"
 
