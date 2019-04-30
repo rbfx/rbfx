@@ -402,9 +402,10 @@ void basic_buffer<T>::append(const U *begin, const U *end) {
 
 // C++20 feature test, since r346892 Clang considers char8_t a fundamental
 // type in this mode. If this is the case __cpp_char8_t will be defined.
-#if !defined(__cpp_char8_t)
+// Urho3D fix for EASTL
+#if !defined(__cpp_char8_t) && !defined(CHAR8_T_DEFINED)
 // A UTF-8 code unit type.
-enum char8_t: unsigned char {};
+#define char8_t char
 #endif
 
 // A UTF-8 string view.

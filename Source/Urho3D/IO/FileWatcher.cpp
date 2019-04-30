@@ -355,14 +355,14 @@ void FileWatcher::ThreadFunction()
         Time::Sleep(100);
 
         ea::string changes = ReadFileWatcher(watcher_);
-        if (!changes.Empty())
+        if (!changes.empty())
         {
-            ea::vector<ea::string> fileChanges = changes.Split('\n');
+            ea::vector<ea::string> fileChanges = changes.split('\n');
             FileChange change{};
             for (const ea::string& fileResult : fileChanges)
             {
                 change.kind_ = (FileChangeKind)fileResult[0];   // First byte is change kind.
-                ea::string fileName = &fileResult.At(1);
+                ea::string fileName = &fileResult.at(1);
                 if (change.kind_ == FILECHANGE_RENAMED)
                 {
                     if (GetSubsystem<FileSystem>()->FileExists(fileName))
@@ -370,7 +370,7 @@ void FileWatcher::ThreadFunction()
                     else
                         change.oldFileName_ = std::move(fileName);
 
-                    if (!change.fileName_.Empty() && !change.oldFileName_.Empty())
+                    if (!change.fileName_.empty() && !change.oldFileName_.empty())
                     {
                         AddChange(change);
                         change = {};

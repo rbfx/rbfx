@@ -650,7 +650,7 @@ ea::string GetOSVersion()
 
     if (sysctlbyname("kern.osrelease", &kernel_r, &size, NULL, 0) != -1)
     {
-        ea::vector<ea::string> kernel_version = ea::string(kernel_r).Split('.');
+        ea::vector<ea::string> kernel_version = ea::string(kernel_r).split('.');
         ea::string version = "macOS/Mac OS X ";
         int major = ToInt(kernel_version[0]);
         int minor = ToInt(kernel_version[1]);

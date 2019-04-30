@@ -2847,7 +2847,7 @@ void Graphics::CheckFeatureSupport()
     // depth-only FBO rendering and backbuffer rendering will bug, resulting in a black screen in full
     // screen mode, and incomplete shadow maps in windowed mode
     ea::string renderer((const char*)glGetString(GL_RENDERER));
-    if (renderer.Contains("Intel", false))
+    if (renderer.contains("Intel", false))
         dummyColorFormat_ = GetRGBAFormat();
 #endif
 #else
