@@ -53,14 +53,13 @@ static StringHashRegister& GetGlobalStringHashRegister()
 
 const StringHash StringHash::ZERO;
 
+#ifdef URHO3D_HASH_DEBUG
 StringHash::StringHash(const char* str) noexcept :      // NOLINT(google-explicit-constructor)
     value_(Calculate(str))
 {
-#ifdef URHO3D_HASH_DEBUG
     GetGlobalStringHashRegister()->RegisterString(*this, str);
-#endif
 }
-
+#endif
 StringHash::StringHash(const ea::string& str) noexcept :
     value_(Calculate(str.c_str()))
 {

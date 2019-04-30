@@ -123,7 +123,7 @@ void ShaderPrecache::LoadShaders(Graphics* graphics, Deserializer& source)
 #ifndef __EMSCRIPTEN__
             vsDefines.Contains("INSTANCED") ||
 #endif
-            (psDefines.Contains("POINTLIGHT") && psDefines.Contains("SHADOW")))
+            (psDefines.contains("POINTLIGHT") && psDefines.contains("SHADOW")))
         {
             shader = shader.GetNext("shader");
             continue;

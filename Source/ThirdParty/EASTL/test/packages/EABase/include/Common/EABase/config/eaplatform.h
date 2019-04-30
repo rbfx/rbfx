@@ -587,6 +587,17 @@
 // __sun is defined by the GCC compiler.
 // __i386 is defined by the Sun and GCC compilers.
 // __sparc is defined by the Sun and GCC compilers.
+#elif defined(__EMSCRIPTEN__)   // Urho3D
+	#undef  EA_PLATFORM_WEB
+	#define EA_PLATFORM_WEB 1
+	#define EA_PLATFORM_UNIX 1
+	#define EA_PLATFORM_POSIX 1
+	#define EA_PLATFORM_NAME "Web"
+	#define EA_PLATFORM_DESCRIPTION "Web (Emscritpten)"
+	#define EA_ASM_STYLE_ATT 1
+	#define EA_SYSTEM_LITTLE_ENDIAN 1
+	#define EA_PROCESSOR_WASM 1
+	//#define EA_ABI_ARM_LINUX 1 // a.k.a. "ARM eabi"
 #else
 	#error Unknown platform
 	#error Unknown processor

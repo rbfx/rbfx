@@ -152,11 +152,12 @@ Context::Context() :
 
 Context::~Context()
 {
+#ifndef MINI_URHO
     // Destroying resource cache does clear it, however some resources depend on resource cache being available when
     // destructor executes.
     if (auto* cache = GetSubsystem<ResourceCache>())
         cache->Clear();
-
+#endif
     // Remove subsystems that use SDL in reverse order of construction, so that Graphics can shut down SDL last
     /// \todo Context should not need to know about subsystems
     RemoveSubsystem("Audio");

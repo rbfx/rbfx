@@ -42,7 +42,7 @@
 namespace Urho3D
 {
 
-inline bool CompareBatchesState(Batch* lhs, Batch* rhs)
+inline bool CompareBatchesState(const Batch* lhs, const Batch* rhs)
 {
     if (lhs->renderOrder_ != rhs->renderOrder_)
         return lhs->renderOrder_ < rhs->renderOrder_;
@@ -52,7 +52,7 @@ inline bool CompareBatchesState(Batch* lhs, Batch* rhs)
         return lhs->distance_ < rhs->distance_;
 }
 
-inline bool CompareBatchesFrontToBack(Batch* lhs, Batch* rhs)
+inline bool CompareBatchesFrontToBack(const Batch* lhs, const Batch* rhs)
 {
     if (lhs->renderOrder_ != rhs->renderOrder_)
         return lhs->renderOrder_ < rhs->renderOrder_;
@@ -62,7 +62,7 @@ inline bool CompareBatchesFrontToBack(Batch* lhs, Batch* rhs)
         return lhs->sortKey_ < rhs->sortKey_;
 }
 
-inline bool CompareBatchesBackToFront(Batch* lhs, Batch* rhs)
+inline bool CompareBatchesBackToFront(const Batch* lhs, const Batch* rhs)
 {
     if (lhs->renderOrder_ != rhs->renderOrder_)
         return lhs->renderOrder_ < rhs->renderOrder_;
@@ -77,7 +77,7 @@ inline bool CompareInstancesFrontToBack(const InstanceData& lhs, const InstanceD
     return lhs.distance_ < rhs.distance_;
 }
 
-inline bool CompareBatchGroupOrder(BatchGroup* lhs, BatchGroup* rhs)
+inline bool CompareBatchGroupOrder(const BatchGroup* lhs, const BatchGroup* rhs)
 {
     return lhs->renderOrder_ < rhs->renderOrder_;
 }
@@ -789,7 +789,7 @@ void BatchQueue::SortFrontToBack2Pass(ea::vector<Batch*>& batches)
     // Mobile devices likely use a tiled deferred approach, with which front-to-back sorting is irrelevant. The 2-pass
     // method is also time consuming, so just sort with state having priority
 #ifdef GL_ES_VERSION_2_0
-    Sort(batches.Begin(), batches.End(), CompareBatchesState);
+    ea::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
 #else
     // For desktop, first sort by distance and remap shader/material/geometry IDs in the sort key
     ea::quick_sort(batches.begin(), batches.end(), CompareBatchesFrontToBack);

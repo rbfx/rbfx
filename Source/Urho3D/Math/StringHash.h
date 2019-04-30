@@ -53,9 +53,13 @@ public:
 
     /// Construct from a C string.
 #ifndef URHO3D_HASH_DEBUG
-    constexpr
-#endif
+    constexpr StringHash(const char* str) noexcept      // NOLINT(google-explicit-constructor)
+        : value_(Calculate(str))
+    {
+    }
+#else
     StringHash(const char* str) noexcept;      // NOLINT(google-explicit-constructor)
+#endif
     /// Construct from a string.
     StringHash(const ea::string& str) noexcept;      // NOLINT(google-explicit-constructor)
 
