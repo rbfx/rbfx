@@ -309,7 +309,7 @@ PluginType GetPluginType(Context* context, const ea::string& path)
             return PLUGIN_INVALID;
 
         data.Resize(file.GetSize());
-        if (file.Read(data.data(), data.Size()) != data.Size())
+        if (file.Read(data.data(), data.size()) != data.size())
             return PLUGIN_INVALID;
 
         mach_header* hdr = reinterpret_cast<mach_header*>(data.data());
