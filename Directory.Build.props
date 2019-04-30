@@ -24,7 +24,7 @@
   <PropertyGroup>
     <BaseOutputPath>bin/</BaseOutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(CMAKE_GENERATOR)' == 'Xcode' ">
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(BuildDir)' == '' ">

@@ -302,13 +302,13 @@ PluginType GetPluginType(Context* context, const ea::string& path)
     }
 #endif  // _WIN32
 #if __APPLE__
-    if (path.EndsWith(".dylib"))
+    if (path.ends_with(".dylib"))
     {
         File file(context);
         if (!file.Open(path, FILE_READ))
             return PLUGIN_INVALID;
 
-        data.Resize(file.GetSize());
+        data.resize(file.GetSize());
         if (file.Read(data.data(), data.size()) != data.size())
             return PLUGIN_INVALID;
 
