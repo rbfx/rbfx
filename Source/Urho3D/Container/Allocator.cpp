@@ -27,6 +27,29 @@
 
 #include "../DebugNew.h"
 
+#if URHO3D_STATIC
+URHO3D_API void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
+{
+    void* memory = malloc(size);
+    if (memory == nullptr)
+        throw std::bad_alloc();
+    return memory;
+}
+
+URHO3D_API void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
+{
+    void* memory = aligned_alloc(alignment, size);
+    if (memory == nullptr)
+        throw std::bad_alloc();
+    return memory;
+}
+URHO3D_API void operator delete[](void* memory)
+{
+    if (memory != nullptr)
+        free(memory);
+}
+#endif
+
 namespace Urho3D
 {
 

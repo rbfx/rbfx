@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <atomic>
 
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/Resource/XMLFile.h>
