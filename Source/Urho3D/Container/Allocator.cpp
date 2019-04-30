@@ -27,8 +27,6 @@
 #include "../Container/Allocator.h"
 #include "../Core/Profiler.h"
 
-#include "../DebugNew.h"
-
 #if URHO3D_STATIC
 URHO3D_API void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
 {
@@ -37,6 +35,10 @@ URHO3D_API void* operator new[](size_t size, const char* pName, int flags, unsig
         throw std::bad_alloc();
     return memory;
 }
+
+#if _MSC_VER
+#   define aligned_alloc _aligned_malloc
+#endif
 
 URHO3D_API void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
 {
@@ -51,6 +53,8 @@ URHO3D_API void operator delete[](void* memory)
         free(memory);
 }
 #endif
+
+#include "../DebugNew.h"
 
 namespace Urho3D
 {
