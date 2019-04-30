@@ -42,7 +42,13 @@ URHO3D_API void* operator new[](size_t size, const char* pName, int flags, unsig
 
 URHO3D_API void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
 {
-    void* memory = aligned_alloc(alignment, size);
+    void* memory = nullptr;
+#if __APPLE__
+    if (posix_memalign(&memory, alignment, size) != 0)
+        memory = nullptr;
+#else
+    memory = aligned_alloc(alignment, size);
+#endif
     if (memory == nullptr)
         throw std::bad_alloc();
     return memory;
