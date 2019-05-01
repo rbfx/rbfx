@@ -79,7 +79,7 @@ int RunApplication() \
     ea::shared_ptr<className> application(new className(context)); \
     return application->Run(); \
 } \
-URHO3D_DEFINE_MAIN(RunApplication());
+URHO3D_DEFINE_MAIN(RunApplication())
 #else
 // On iOS/tvOS we will let this function exit, so do not hold the context and application in ea::shared_ptr's
 #define URHO3D_DEFINE_APPLICATION_MAIN(className) \

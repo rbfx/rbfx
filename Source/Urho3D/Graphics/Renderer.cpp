@@ -1948,7 +1948,7 @@ ea::string Renderer::GetShadowVariations() const
             return "VSM_SHADOW ";
     }
     return "";
-};
+}
 
 void Renderer::HandleScreenMode(StringHash eventType, VariantMap& eventData)
 {
