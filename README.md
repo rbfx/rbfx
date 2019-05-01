@@ -1,3 +1,5 @@
+![rbfx-logo](https://user-images.githubusercontent.com/19151258/57008846-a292be00-6bfb-11e9-8303-d79e6dd36038.png)
+
 # rbfx
 
 [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/rbfx/branch/master)
