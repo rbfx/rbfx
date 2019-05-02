@@ -354,6 +354,16 @@ bool    ImGui_ImplOpenGL3_CreateDeviceObjects()
     int glsl_version = 130;
     sscanf(g_GlslVersionString, "#version %d", &glsl_version);
 
+#if __APPLE__
+    // Urho3D fix
+    if (glsl_version < 150)
+    {
+        // For some reason reported shader version is not supported on MacOS.
+        strcpy(g_GlslVersionString, "#version 150\n");
+        glsl_version = 150;
+    }
+#endif
+    
     const GLchar* vertex_shader_glsl_120 =
         "uniform mat4 ProjMtx;\n"
         "attribute vec2 Position;\n"
