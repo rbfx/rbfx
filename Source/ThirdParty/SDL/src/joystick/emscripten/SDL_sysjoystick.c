@@ -165,6 +165,12 @@ SDL_SYS_JoystickInit(void)
     int retval, i, numjs;
     EmscriptenGamepadEvent gamepadState;
 
+    retval = emscripten_sample_gamepad_data();
+    /* Check if gamepad is supported by browser */
+    if (retval == EMSCRIPTEN_RESULT_NOT_SUPPORTED) {
+        return SDL_SetError("Gamepads not supported");
+    }
+
     numjoysticks = 0;
     numjs = emscripten_get_num_gamepads();
 
