@@ -74,7 +74,6 @@ cmake_dependent_option(URHO3D_NETWORK            "Networking subsystem enabled" 
 option                (URHO3D_PHYSICS            "Physics subsystem enabled"                             ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_PROFILING          "Profiler support enabled"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 option                (URHO3D_SYSTEMUI           "Build SystemUI subsystem"                              ${URHO3D_ENABLE_ALL})
-cmake_dependent_option(URHO3D_TASKS              "Enable coroutine subsystem"                            ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
 option                (URHO3D_URHO2D             "2D subsystem enabled"                                  ${URHO3D_ENABLE_ALL})
 
 # Features

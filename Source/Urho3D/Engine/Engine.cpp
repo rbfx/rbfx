@@ -63,9 +63,6 @@
 #ifdef URHO3D_URHO2D
 #include "../Urho2D/Urho2D.h"
 #endif
-#if URHO3D_TASKS
-#include "../Core/Tasks.h"
-#endif
 #include "../Engine/EngineEvents.h"
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
@@ -141,9 +138,6 @@ Engine::Engine(Context* context) :
     // there may exist multiple instances of UI.
     RegisterUILibrary(context_);
     context_->RegisterSubsystem(new UI(context_));
-#if URHO3D_TASKS
-    context_->RegisterSubsystem(new Tasks(context_));
-#endif
 
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);

@@ -1,3 +1,5 @@
+![rbfx-logo](https://user-images.githubusercontent.com/19151258/57008846-a292be00-6bfb-11e9-8303-d79e6dd36038.png)
+
 # rbfx
 
 [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/rbfx/branch/master)
@@ -58,7 +60,6 @@ rbfx uses the following third-party libraries:
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 - ImGuizmo 1.61 (https://github.com/CedricGuillemet/ImGuizmo)
-- sc (https://github.com/rhoot/sc)
 - cr (https://github.com/fungos/cr)
 - crunch (https://github.com/Unity-Technologies/crunch/)
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)

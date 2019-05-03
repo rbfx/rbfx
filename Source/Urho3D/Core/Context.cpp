@@ -30,9 +30,6 @@
 #include "../Engine/Engine.h"
 #include "../Core/WorkQueue.h"
 #include "../Core/Thread.h"
-#if URHO3D_TASKS
-#include "../Core/Tasks.h"
-#endif
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
@@ -573,13 +570,6 @@ void Context::RegisterSubsystem(UI* subsystem)
     ui_ = subsystem;
     RegisterSubsystem((Object*) subsystem);
 }
-#if URHO3D_TASKS
-void Context::RegisterSubsystem(Tasks* subsystem)
-{
-    tasks_ = subsystem;
-    RegisterSubsystem((Object*) subsystem);
-}
-#endif
 #if URHO3D_SYSTEMUI
 void Context::RegisterSubsystem(SystemUI* subsystem)
 {

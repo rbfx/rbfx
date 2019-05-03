@@ -165,7 +165,6 @@ set (THIRD_PARTY_DEPENDENCIES
     LibCpuId
     GLEW
     MojoShader
-    sc
     cr
     nativefiledialog
     CLI11
@@ -243,14 +242,6 @@ if (URHO3D_SSE)
         target_compile_options (Urho3D PUBLIC -m${URHO3D_SSE})
     endif ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_SSE)
-endif ()
-
-if (URHO3D_TASKS)
-    include(CheckIncludeFile)
-    check_include_file("valgrind/valgrind.h" HAVE_VALGRIND)
-    if (HAVE_VALGRIND)
-        target_compile_definitions(Urho3D PRIVATE -DHAVE_VALGRIND=${HAVE_VALGRIND})
-    endif ()
 endif ()
 
 if (WIN32)
