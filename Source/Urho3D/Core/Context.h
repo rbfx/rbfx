@@ -249,10 +249,6 @@ public:
     inline Graphics* GetGraphics() const { return graphics_; }
     /// Return renderer subsystem.
     inline Renderer* GetRenderer() const { return renderer_; }
-#if URHO3D_TASKS
-    /// Return tasks subsystem.
-    inline Tasks* GetTasks() const { return tasks_; }
-#endif
 
     /// Register engine subsystem and cache it's pointer.
     void RegisterSubsystem(Engine* subsystem);
@@ -280,10 +276,6 @@ public:
     void RegisterSubsystem(Audio* subsystem);
     /// Register UI subsystem and cache it's pointer.
     void RegisterSubsystem(UI* subsystem);
-#if URHO3D_TASKS
-    /// Register tasks subsystem and cache it's pointer.
-    void RegisterSubsystem(Tasks* subsystem);
-#endif
 #if URHO3D_SYSTEMUI
     /// Register system UI subsystem and cache it's pointer.
     void RegisterSubsystem(SystemUI* subsystem);
@@ -365,10 +357,7 @@ private:
     ea::weak_ptr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
     ea::weak_ptr<Renderer> renderer_;
-#if URHO3D_TASKS
-    /// Cached pointer to tasks subsystem.
-    ea::weak_ptr<Tasks> tasks_;
-#endif
+
     friend class Engine;
 };
 

@@ -60,9 +60,6 @@ class SystemUI;
 #endif
 class Graphics;
 class Renderer;
-#if URHO3D_TASKS
-class Tasks;
-#endif
 #if URHO3D_CSHARP
 class ScriptSubsystem;
 #endif
@@ -241,10 +238,6 @@ public:
     Graphics* GetGraphics() const;
     /// Return renderer subsystem.
     Renderer* GetRenderer() const;
-#if URHO3D_TASKS
-    /// Return tasks subsystem.
-    Tasks* GetTasks() const;
-#endif
 
 protected:
     /// Execution context.
@@ -472,7 +465,4 @@ template <> URHO3D_API SystemUI* Object::GetSubsystem<SystemUI>() const;
 #endif
 template <> URHO3D_API Graphics* Object::GetSubsystem<Graphics>() const;
 template <> URHO3D_API Renderer* Object::GetSubsystem<Renderer>() const;
-#if URHO3D_TASKS
-template <> URHO3D_API Tasks* Object::GetSubsystem<Tasks>() const;
-#endif
 }

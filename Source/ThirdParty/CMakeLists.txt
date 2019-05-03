@@ -102,10 +102,6 @@ else ()
         add_subdirectory(Assimp)
     endif ()
 
-    if (URHO3D_TASKS)
-        add_subdirectory(sc)
-    endif ()
-
     if (URHO3D_CSHARP)
         add_subdirectory(swig)
     endif ()
