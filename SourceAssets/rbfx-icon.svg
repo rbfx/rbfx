@@ -15,7 +15,10 @@
    version="1.1"
    id="svg8"
    inkscape:version="0.92.4 5da689c313, 2019-01-14"
-   sodipodi:docname="rbfx-icon.svg">
+   sodipodi:docname="rbfx-icon.svg"
+   inkscape:export-filename="/home/rk/src/games/Projects/Urho3D/SourceAssets/rbfx-icon.svg.png"
+   inkscape:export-xdpi="105.5135"
+   inkscape:export-ydpi="105.5135">
   <sodipodi:namedview
      id="base"
      pagecolor="#ffffff"
@@ -23,9 +26,9 @@
      borderopacity="1.0"
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
-     inkscape:zoom="32.000001"
-     inkscape:cx="35.610712"
-     inkscape:cy="22.839751"
+     inkscape:zoom="11.313709"
+     inkscape:cx="17.663635"
+     inkscape:cy="16.069174"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="false"
@@ -41,7 +44,7 @@
      inkscape:window-width="2560"
      inkscape:window-height="1411"
      inkscape:window-x="0"
-     inkscape:window-y="29"
+     inkscape:window-y="0"
      inkscape:window-maximized="1"
      inkscape:snap-object-midpoints="true"
      inkscape:snap-center="true" />
