@@ -110,6 +110,13 @@ install: |
       fi
       sudo installer -pkg /tmp/downloads/Mono.pkg -target /
   fi
+  if [[ "$EMSCRIPTEN" != "" ]];
+  then
+      if [[ ! -f /tmp/downloads/emscripten-sdk.zip ]];
+      then
+          wget https://github.com/rokups/emscripten-sdk/archive/master.zip -O /tmp/downloads/emscripten-sdk.zip
+      fi
+  fi
 
 before_script: |
   if [[ "$EMSCRIPTEN" != "" ]];
@@ -117,9 +124,9 @@ before_script: |
       if [[ ! $EMSCRIPTEN_WASM ]]; then
           export BINARYEN=binaryen-master-64bit;
       fi
-      git clone --depth 1 https://github.com/urho3d/emscripten-sdk.git
-      emscripten-sdk/emsdk activate --build=Release sdk-master-64bit $BINARYEN
-      source emscripten-sdk/emsdk_env.sh
+      unzip /tmp/downloads/emscripten-sdk.zip
+      emscripten-sdk-master/emsdk activate --build=Release latest-64bit $BINARYEN
+      source emscripten-sdk-master/emsdk_env.sh
       for compiler in $EMSCRIPTEN/{emcc,em++};
       do
           touch -d "2017-01-01 00:00:00 +0800" $compiler;
