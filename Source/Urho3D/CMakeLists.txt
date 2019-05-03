@@ -301,7 +301,7 @@ endif ()
 if (WEB)
     # Switching to WASM may be possible after https://github.com/kripken/emscripten-fastcomp/pull/195 lands and
     # https://github.com/kripken/emscripten/issues/5436 is fixed.
-    target_link_libraries(Urho3D PRIVATE "-s EXTRA_EXPORTED_RUNTIME_METHODS=['Pointer_stringify']" PUBLIC "-s WASM=0")
+    target_link_libraries(Urho3D PRIVATE "-s EXTRA_EXPORTED_RUNTIME_METHODS=['UTF8ToString']" PUBLIC "-s WASM=0")
 endif ()
 
 if (BUILD_SHARED_LIBS)
