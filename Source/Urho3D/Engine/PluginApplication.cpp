@@ -30,7 +30,9 @@
 #       define CR_LOG(format, ...)   URHO3D_LOGINFOF(format, ##__VA_ARGS__)
 #       define CR_TRACE
 #   endif
-#   include <cr/cr.h>
+#   if DESKTOP
+#       include <cr/cr.h>
+#   endif
 #endif
 
 namespace Urho3D
@@ -57,6 +59,7 @@ void PluginApplication::RecordPluginFactory(StringHash type, const char* categor
 #if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
 int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
 {
+#ifndef __EMSCRIPTEN__
     assert(ctx_);
     auto* ctx = static_cast<cr_plugin*>(ctx_);
 
@@ -95,6 +98,7 @@ int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplicatio
 		break;
     }
 	assert(false);
+#endif
 	return -3;
 }
 #endif
