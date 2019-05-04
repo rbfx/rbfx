@@ -181,7 +181,13 @@ if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
 elseif (TARGET Bullet)
     # This library can not be exported from .dll on windows platforms.
-    target_link_libraries(Urho3D PUBLIC Bullet)
+    if (WEB AND BUILD_SHARED_LIBS)
+        # With this configuration public linking causes some symbols to be multiply defined.
+        target_link_libraries(Urho3D PRIVATE Bullet)
+        target_include_directories(Urho3D PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../ThirdParty/Bullet>)
+    else ()
+        target_link_libraries(Urho3D PUBLIC Bullet)
+    endif ()
 endif ()
 
 foreach (dep ${THIRD_PARTY_DEPENDENCIES})
@@ -301,7 +307,29 @@ endif ()
 if (WEB)
     # Switching to WASM may be possible after https://github.com/kripken/emscripten-fastcomp/pull/195 lands and
     # https://github.com/kripken/emscripten/issues/5436 is fixed.
-    target_link_libraries(Urho3D PRIVATE "-s EXTRA_EXPORTED_RUNTIME_METHODS=['UTF8ToString']" PUBLIC "-s WASM=0")
+    target_link_libraries(Urho3D PUBLIC "-s WASM=0")
+    target_compile_options(Urho3D PRIVATE -Wno-warn-absolute-paths -Wno-unknown-warning-option)
+    if (URHO3D_THREADING)
+        target_compile_options(Urho3D PRIVATE "-s USE_PTHREADS=1")
+    endif ()
+    # Since version 1.37.25 emcc reduces default runtime exports, but we need "UTF8ToString" so it needs to be explicitly declared now
+    # (See https://github.com/kripken/emscripten/commit/3bc1f9f08b9f420680124af703c787244468cedc for more detail)
+    if (NOT EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.37.25)
+        target_link_libraries(Urho3D PUBLIC "-s EXTRA_EXPORTED_RUNTIME_METHODS=\"['UTF8ToString']\"")
+    endif ()
+    # Since version 1.37.28 emcc reduces default runtime exports, but we need "FS" so it needs to be explicitly requested now
+    # (See https://github.com/kripken/emscripten/commit/f2191c1223e8261bf45f4e27d2ba4d2e9d8b3341 for more detail)
+    if (NOT EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.37.28)
+        target_link_libraries(Urho3D PUBLIC "-s FORCE_FILESYSTEM=1")
+    endif ()
+    set (CMAKE_C_FLAGS_RELEASE "-Oz -DNDEBUG")
+    set (CMAKE_CXX_FLAGS_RELEASE "-Oz -DNDEBUG")
+    # Remove variables to make the -O3 regalloc easier, embed data in asm.js to reduce number of moving part
+    set (CMAKE_EXE_LINKER_FLAGS_RELEASE "${CMAKE_EXE_LINKER_FLAGS_RELEASE} -O3 -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
+    set (CMAKE_MODULE_LINKER_FLAGS_RELEASE "${CMAKE_MODULE_LINKER_FLAGS_RELEASE} -O3 -s AGGRESSIVE_VARIABLE_ELIMINATION=1 --memory-init-file 0")
+    # Preserve LLVM debug information, show line number debug comments, and generate source maps; always disable exception handling codegen
+    set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
+    set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
 endif ()
 
 if (BUILD_SHARED_LIBS)
