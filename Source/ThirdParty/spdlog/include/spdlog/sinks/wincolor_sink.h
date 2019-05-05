@@ -17,7 +17,7 @@
 #include <memory>
 #include <mutex>
 #include <string>
-#include <unordered_map>
+#include <EASTL/unordered_map.h>
 #include <wincon.h>
 
 namespace spdlog {
@@ -94,7 +94,7 @@ public:
         // windows console always flushed?
     }
 
-    void set_pattern(const std::string &pattern) override final
+    void set_pattern(const eastl::string &pattern) override final
     {
         std::lock_guard<mutex_t> lock(mutex_);
         formatter_ = std::unique_ptr<spdlog::formatter>(new pattern_formatter(pattern));
@@ -130,7 +130,7 @@ private:
 
     HANDLE out_handle_;
     mutex_t &mutex_;
-    std::unordered_map<level::level_enum, WORD, level::level_hasher> colors_;
+    eastl::unordered_map<level::level_enum, WORD, level::level_hasher> colors_;
 };
 
 using wincolor_stdout_sink_mt = wincolor_sink<details::console_stdout, details::console_mutex>;

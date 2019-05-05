@@ -34,7 +34,7 @@ template<typename Mutex>
 class android_sink final : public base_sink<Mutex>
 {
 public:
-    explicit android_sink(std::string tag = "spdlog", bool use_raw_msg = false)
+    explicit android_sink(eastl::string tag = "spdlog", bool use_raw_msg = false)
         : tag_(std::move(tag))
         , use_raw_msg_(use_raw_msg)
     {
@@ -96,7 +96,7 @@ private:
         }
     }
 
-    std::string tag_;
+    eastl::string tag_;
     bool use_raw_msg_;
 };
 
@@ -107,13 +107,13 @@ using android_sink_st = android_sink<details::null_mutex>;
 // Create and register android syslog logger
 
 template<typename Factory = default_factory>
-inline std::shared_ptr<logger> android_logger_mt(const std::string &logger_name, const std::string &tag = "spdlog")
+inline std::shared_ptr<logger> android_logger_mt(const eastl::string &logger_name, const eastl::string &tag = "spdlog")
 {
     return Factory::template create<sinks::android_sink_mt>(logger_name, tag);
 }
 
 template<typename Factory = default_factory>
-inline std::shared_ptr<logger> android_logger_st(const std::string &logger_name, const std::string &tag = "spdlog")
+inline std::shared_ptr<logger> android_logger_st(const eastl::string &logger_name, const eastl::string &tag = "spdlog")
 {
     return Factory::template create<sinks::android_sink_st>(logger_name, tag);
 }

@@ -793,7 +793,7 @@ public:
     }
 
 private:
-    std::string str_;
+    eastl::string str_;
 };
 
 // mark the color range. expect it to be in the form of "%^colored text%$"
@@ -1015,7 +1015,7 @@ class pattern_formatter final : public formatter
 {
 public:
     explicit pattern_formatter(
-        std::string pattern, pattern_time_type time_type = pattern_time_type::local, std::string eol = spdlog::details::os::default_eol)
+        eastl::string pattern, pattern_time_type time_type = pattern_time_type::local, eastl::string eol = spdlog::details::os::default_eol)
         : pattern_(std::move(pattern))
         , eol_(std::move(eol))
         , pattern_time_type_(time_type)
@@ -1026,7 +1026,7 @@ public:
     }
 
     // use by default full formatter for if pattern is not given
-    explicit pattern_formatter(pattern_time_type time_type = pattern_time_type::local, std::string eol = spdlog::details::os::default_eol)
+    explicit pattern_formatter(pattern_time_type time_type = pattern_time_type::local, eastl::string eol = spdlog::details::os::default_eol)
         : pattern_("%+")
         , eol_(std::move(eol))
         , pattern_time_type_(time_type)
@@ -1063,8 +1063,8 @@ public:
     }
 
 private:
-    std::string pattern_;
-    std::string eol_;
+    eastl::string pattern_;
+    eastl::string eol_;
     pattern_time_type pattern_time_type_;
     std::tm cached_tm_;
     std::chrono::seconds last_log_secs_;
@@ -1253,7 +1253,7 @@ private:
     // Extract given pad spec (e.g. %8X)
     // Advance the given it pass the end of the padding spec found (if any)
     // Return padding.
-    details::padding_info handle_padspec_(std::string::const_iterator &it, std::string::const_iterator end)
+    details::padding_info handle_padspec_(eastl::string::const_iterator &it, eastl::string::const_iterator end)
     {
         using details::padding_info;
         using details::scoped_pad;
@@ -1293,7 +1293,7 @@ private:
         return details::padding_info{std::min<size_t>(width, max_width), side};
     }
 
-    void compile_pattern_(const std::string &pattern)
+    void compile_pattern_(const eastl::string &pattern)
     {
         auto end = pattern.end();
         std::unique_ptr<details::aggregate_formatter> user_chars;

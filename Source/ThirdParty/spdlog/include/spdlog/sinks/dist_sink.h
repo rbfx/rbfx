@@ -71,7 +71,7 @@ protected:
         }
     }
 
-    void set_pattern_(const std::string &pattern) override
+    void set_pattern_(const eastl::string &pattern) override
     {
         set_formatter_(details::make_unique<spdlog::pattern_formatter>(pattern));
     }

@@ -27,7 +27,7 @@ class syslog_sink : public base_sink<Mutex>
 {
 public:
     //
-    explicit syslog_sink(std::string ident = "", int syslog_option = 0, int syslog_facility = LOG_USER)
+    explicit syslog_sink(eastl::string ident = "", int syslog_option = 0, int syslog_facility = LOG_USER)
         : ident_(std::move(ident))
     {
         priorities_[static_cast<size_t>(level::trace)] = LOG_DEBUG;
@@ -62,7 +62,7 @@ private:
     std::array<int, 7> priorities_;
     // must store the ident because the man says openlog might use the pointer as
     // is and not a string copy
-    const std::string ident_;
+    const eastl::string ident_;
 
     //
     // Simply maps spdlog's log level to syslog priority level.
@@ -80,14 +80,14 @@ using syslog_sink_st = syslog_sink<details::null_mutex>;
 // Create and register a syslog logger
 template<typename Factory = default_factory>
 inline std::shared_ptr<logger> syslog_logger_mt(
-    const std::string &logger_name, const std::string &syslog_ident = "", int syslog_option = 0, int syslog_facility = (1 << 3))
+    const eastl::string &logger_name, const eastl::string &syslog_ident = "", int syslog_option = 0, int syslog_facility = (1 << 3))
 {
     return Factory::template create<sinks::syslog_sink_mt>(logger_name, syslog_ident, syslog_option, syslog_facility);
 }
 
 template<typename Factory = default_factory>
 inline std::shared_ptr<logger> syslog_logger_st(
-    const std::string &logger_name, const std::string &syslog_ident = "", int syslog_option = 0, int syslog_facility = (1 << 3))
+    const eastl::string &logger_name, const eastl::string &syslog_ident = "", int syslog_option = 0, int syslog_facility = (1 << 3))
 {
     return Factory::template create<sinks::syslog_sink_st>(logger_name, syslog_ident, syslog_option, syslog_facility);
 }

@@ -29,7 +29,7 @@ public:
     virtual ~sink() = default;
     virtual void log(const details::log_msg &msg) = 0;
     virtual void flush() = 0;
-    virtual void set_pattern(const std::string &pattern) = 0;
+    virtual void set_pattern(const eastl::string &pattern) = 0;
     virtual void set_formatter(std::unique_ptr<spdlog::formatter> sink_formatter) = 0;
 
     bool should_log(level::level_enum msg_level) const

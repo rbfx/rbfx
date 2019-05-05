@@ -1,3 +1,6 @@
+# Replace all instances of `std::string` with `eastl::string`.
+# Replace all instances of `std::unordered_map` with `eastl::unordered_map`.
+# Replace all instances of `#include <unordered_map>` with `#include <EASTL/unordered_map.h>`.
 
 add_library(spdlog INTERFACE)
 target_include_directories(spdlog INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)

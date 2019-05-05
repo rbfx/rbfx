@@ -31,11 +31,11 @@ namespace spdlog {
 class logger
 {
 public:
-    logger(std::string name, sink_ptr single_sink);
-    logger(std::string name, sinks_init_list sinks);
+    logger(eastl::string name, sink_ptr single_sink);
+    logger(eastl::string name, sinks_init_list sinks);
 
     template<typename It>
-    logger(std::string name, It begin, It end);
+    logger(eastl::string name, It begin, It end);
 
     virtual ~logger();
 
@@ -139,12 +139,12 @@ public:
 
     static level::level_enum default_level();
     level::level_enum level() const;
-    const std::string &name() const;
+    const eastl::string &name() const;
 
     // set formatting for the sinks in this logger.
     // each sink will get a seperate instance of the formatter object.
     void set_formatter(std::unique_ptr<formatter> formatter);
-    void set_pattern(std::string pattern, pattern_time_type time_type = pattern_time_type::local);
+    void set_pattern(eastl::string pattern, pattern_time_type time_type = pattern_time_type::local);
 
     // flush functions
     void flush();
@@ -160,7 +160,7 @@ public:
     log_err_handler error_handler() const;
 
     // create new logger with same sinks and configuration.
-    virtual std::shared_ptr<logger> clone(std::string logger_name);
+    virtual std::shared_ptr<logger> clone(eastl::string logger_name);
 
 protected:
     virtual void sink_it_(details::log_msg &msg);
@@ -170,16 +170,16 @@ protected:
 
     // default error handler.
     // print the error to stderr with the max rate of 1 message/minute.
-    void default_err_handler_(const std::string &msg);
+    void default_err_handler_(const eastl::string &msg);
 
     // increment the message count (only if defined(SPDLOG_ENABLE_MESSAGE_COUNTER))
     void incr_msg_counter_(details::log_msg &msg);
 
-    const std::string name_;
+    const eastl::string name_;
     std::vector<sink_ptr> sinks_;
     spdlog::level_t level_{spdlog::logger::default_level()};
     spdlog::level_t flush_level_{level::off};
-    log_err_handler err_handler_{[this](const std::string &msg) { this->default_err_handler_(msg); }};
+    log_err_handler err_handler_{[this](const eastl::string &msg) { this->default_err_handler_(msg); }};
     std::atomic<time_t> last_err_time_{0};
     std::atomic<size_t> msg_counter_{1};
 };

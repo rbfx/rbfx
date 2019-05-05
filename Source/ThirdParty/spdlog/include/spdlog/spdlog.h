@@ -25,7 +25,7 @@ namespace spdlog {
 struct synchronous_factory
 {
     template<typename Sink, typename... SinkArgs>
-    static std::shared_ptr<spdlog::logger> create(std::string logger_name, SinkArgs &&... args)
+    static std::shared_ptr<spdlog::logger> create(eastl::string logger_name, SinkArgs &&... args)
     {
         auto sink = std::make_shared<Sink>(std::forward<SinkArgs>(args)...);
         auto new_logger = std::make_shared<logger>(std::move(logger_name), std::move(sink));
@@ -42,7 +42,7 @@ using default_factory = synchronous_factory;
 // Example:
 // spdlog::create<daily_file_sink_st>("logger_name", "dailylog_filename", 11, 59);
 template<typename Sink, typename... SinkArgs>
-inline std::shared_ptr<spdlog::logger> create(std::string logger_name, SinkArgs &&... sink_args)
+inline std::shared_ptr<spdlog::logger> create(eastl::string logger_name, SinkArgs &&... sink_args)
 {
     return default_factory::create<Sink>(std::move(logger_name), std::forward<SinkArgs>(sink_args)...);
 }
@@ -50,7 +50,7 @@ inline std::shared_ptr<spdlog::logger> create(std::string logger_name, SinkArgs 
 // Return an existing logger or nullptr if a logger with such name doesn't
 // exist.
 // example: spdlog::get("my_logger")->info("hello {}", "world");
-inline std::shared_ptr<logger> get(const std::string &name)
+inline std::shared_ptr<logger> get(const eastl::string &name)
 {
     return details::registry::instance().get(name);
 }
@@ -63,7 +63,7 @@ inline void set_formatter(std::unique_ptr<spdlog::formatter> formatter)
 
 // Set global format string.
 // example: spdlog::set_pattern("%Y-%m-%d %H:%M:%S.%e %l : %v");
-inline void set_pattern(std::string pattern, pattern_time_type time_type = pattern_time_type::local)
+inline void set_pattern(eastl::string pattern, pattern_time_type time_type = pattern_time_type::local)
 {
     set_formatter(std::unique_ptr<spdlog::formatter>(new pattern_formatter(std::move(pattern), time_type)));
 }
@@ -108,7 +108,7 @@ inline void apply_all(const std::function<void(std::shared_ptr<logger>)> &fun)
 }
 
 // Drop the reference to the given logger
-inline void drop(const std::string &name)
+inline void drop(const eastl::string &name)
 {
     details::registry::instance().drop(name);
 }

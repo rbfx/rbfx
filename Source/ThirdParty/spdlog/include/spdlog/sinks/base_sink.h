@@ -38,7 +38,7 @@ public:
         flush_();
     }
 
-    void set_pattern(const std::string &pattern) final
+    void set_pattern(const eastl::string &pattern) final
     {
         std::lock_guard<Mutex> lock(mutex_);
         set_pattern_(pattern);
@@ -54,7 +54,7 @@ protected:
     virtual void sink_it_(const details::log_msg &msg) = 0;
     virtual void flush_() = 0;
 
-    virtual void set_pattern_(const std::string &pattern)
+    virtual void set_pattern_(const eastl::string &pattern)
     {
         set_formatter_(details::make_unique<spdlog::pattern_formatter>(pattern));
     }

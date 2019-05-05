@@ -31,7 +31,7 @@ using null_sink_st = null_sink<details::null_mutex>;
 } // namespace sinks
 
 template<typename Factory = default_factory>
-inline std::shared_ptr<logger> null_logger_mt(const std::string &logger_name)
+inline std::shared_ptr<logger> null_logger_mt(const eastl::string &logger_name)
 {
     auto null_logger = Factory::template create<sinks::null_sink_mt>(logger_name);
     null_logger->set_level(level::off);
@@ -39,7 +39,7 @@ inline std::shared_ptr<logger> null_logger_mt(const std::string &logger_name)
 }
 
 template<typename Factory = default_factory>
-inline std::shared_ptr<logger> null_logger_st(const std::string &logger_name)
+inline std::shared_ptr<logger> null_logger_st(const eastl::string &logger_name)
 {
     auto null_logger = Factory::template create<sinks::null_sink_st>(logger_name);
     null_logger->set_level(level::off);

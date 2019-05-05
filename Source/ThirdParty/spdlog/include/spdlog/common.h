@@ -16,7 +16,7 @@
 #include <string>
 #include <cstring>
 #include <type_traits>
-#include <unordered_map>
+#include <EASTL/unordered_map.h>
 
 #if defined(SPDLOG_WCHAR_FILENAMES) || defined(SPDLOG_WCHAR_TO_UTF8_SUPPORT)
 #include <codecvt>
@@ -79,7 +79,7 @@ class sink;
 using log_clock = std::chrono::system_clock;
 using sink_ptr = std::shared_ptr<sinks::sink>;
 using sinks_init_list = std::initializer_list<sink_ptr>;
-using log_err_handler = std::function<void(const std::string &err_msg)>;
+using log_err_handler = std::function<void(const eastl::string &err_msg)>;
 
 // string_view type - either std::string_view or fmt::string_view (pre c++17)
 #if defined(FMT_USE_STD_STRING_VIEW)
@@ -139,7 +139,7 @@ inline const char *to_short_c_str(spdlog::level::level_enum l) SPDLOG_NOEXCEPT
     return short_level_names[l];
 }
 
-inline spdlog::level::level_enum from_str(const std::string &name) SPDLOG_NOEXCEPT
+inline spdlog::level::level_enum from_str(const eastl::string &name) SPDLOG_NOEXCEPT
 {
     int level = 0;
     for (const auto &level_str : level_string_views)
@@ -172,12 +172,12 @@ enum class pattern_time_type
 class spdlog_ex : public std::exception
 {
 public:
-    explicit spdlog_ex(std::string msg)
+    explicit spdlog_ex(eastl::string msg)
         : msg_(std::move(msg))
     {
     }
 
-    spdlog_ex(const std::string &msg, int last_errno)
+    spdlog_ex(const eastl::string &msg, int last_errno)
     {
         fmt::memory_buffer outbuf;
         fmt::format_system_error(outbuf, last_errno, msg);
@@ -190,7 +190,7 @@ public:
     }
 
 private:
-    std::string msg_;
+    eastl::string msg_;
 };
 
 //
@@ -199,7 +199,7 @@ private:
 #if defined(_WIN32) && defined(SPDLOG_WCHAR_FILENAMES)
 using filename_t = std::wstring;
 #else
-using filename_t = std::string;
+using filename_t = eastl::string;
 #endif
 
 struct source_loc
