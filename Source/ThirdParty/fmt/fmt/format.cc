@@ -27,7 +27,7 @@ template FMT_API int internal::char_traits<char>::format_float(
 template FMT_API int internal::char_traits<char>::format_float(
     char *, std::size_t, const char *, int, long double);
 
-template FMT_API std::string internal::vformat<char>(
+template FMT_API FMT_STRING_T internal::vformat<char>(
     string_view, basic_format_args<format_context>);
 
 template FMT_API format_context::iterator internal::vformat_to(
@@ -54,6 +54,6 @@ template FMT_API int internal::char_traits<wchar_t>::format_float(
 template FMT_API int internal::char_traits<wchar_t>::format_float(
     wchar_t *, std::size_t, const wchar_t *, int, long double);
 
-template FMT_API std::wstring internal::vformat<wchar_t>(
+template FMT_API FMT_WSTRING_T internal::vformat<wchar_t>(
     wstring_view, basic_format_args<wformat_context>);
 FMT_END_NAMESPACE

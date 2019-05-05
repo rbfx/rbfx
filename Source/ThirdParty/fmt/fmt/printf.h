@@ -731,7 +731,7 @@ inline format_arg_store<wprintf_context, Args...>
   make_wprintf_args(const Args &... args) { return {args...}; }
 
 template <typename S, typename Char = FMT_CHAR(S)>
-inline std::basic_string<Char>
+inline FMT_BASIC_STRING<Char>
 vsprintf(const S &format,
          basic_format_args<typename basic_printf_context_t<
            internal::basic_buffer<Char>>::type> args) {
@@ -751,7 +751,7 @@ vsprintf(const S &format,
 */
 template <typename S, typename... Args>
 inline FMT_ENABLE_IF_T(
-    internal::is_string<S>::value, std::basic_string<FMT_CHAR(S)>)
+    internal::is_string<S>::value, FMT_BASIC_STRING<FMT_CHAR(S)>)
     sprintf(const S &format, const Args & ... args) {
   internal::check_format_string<Args...>(format);
   typedef internal::basic_buffer<FMT_CHAR(S)> buffer;
