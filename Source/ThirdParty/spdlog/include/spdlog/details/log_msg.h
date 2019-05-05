@@ -16,7 +16,7 @@ namespace details {
 struct log_msg
 {
 
-    log_msg(source_loc loc, const std::string *loggers_name, level::level_enum lvl, string_view_t view)
+    log_msg(source_loc loc, const eastl::string *loggers_name, level::level_enum lvl, string_view_t view)
         : logger_name(loggers_name)
         , level(lvl)
 #ifndef SPDLOG_NO_DATETIME
@@ -31,14 +31,14 @@ struct log_msg
     {
     }
 
-    log_msg(const std::string *loggers_name, level::level_enum lvl, string_view_t view)
+    log_msg(const eastl::string *loggers_name, level::level_enum lvl, string_view_t view)
         : log_msg(source_loc{}, loggers_name, lvl, view)
     {
     }
 
     log_msg(const log_msg &other) = default;
 
-    const std::string *logger_name{nullptr};
+    const eastl::string *logger_name{nullptr};
     level::level_enum level{level::off};
     log_clock::time_point time;
     size_t thread_id{0};

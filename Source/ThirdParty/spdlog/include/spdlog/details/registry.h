@@ -27,7 +27,7 @@
 #include <functional>
 #include <memory>
 #include <string>
-#include <unordered_map>
+#include <EASTL/unordered_map.h>
 
 namespace spdlog {
 namespace details {
@@ -64,7 +64,7 @@ public:
         }
     }
 
-    std::shared_ptr<logger> get(const std::string &logger_name)
+    std::shared_ptr<logger> get(const eastl::string &logger_name)
     {
         std::lock_guard<std::mutex> lock(logger_map_mutex_);
         auto found = loggers_.find(logger_name);
@@ -181,7 +181,7 @@ public:
         }
     }
 
-    void drop(const std::string &logger_name)
+    void drop(const eastl::string &logger_name)
     {
         std::lock_guard<std::mutex> lock(logger_map_mutex_);
         loggers_.erase(logger_name);
@@ -253,7 +253,7 @@ private:
 
     ~registry() = default;
 
-    void throw_if_exists_(const std::string &logger_name)
+    void throw_if_exists_(const eastl::string &logger_name)
     {
         if (loggers_.find(logger_name) != loggers_.end())
         {
@@ -270,7 +270,7 @@ private:
 
     std::mutex logger_map_mutex_, flusher_mutex_;
     std::recursive_mutex tp_mutex_;
-    std::unordered_map<std::string, std::shared_ptr<logger>> loggers_;
+    eastl::unordered_map<eastl::string, std::shared_ptr<logger>> loggers_;
     std::unique_ptr<formatter> formatter_;
     level::level_enum level_ = spdlog::logger::default_level();
     level::level_enum flush_level_ = level::off;

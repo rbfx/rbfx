@@ -16,7 +16,7 @@
 
 template<typename It>
 inline spdlog::async_logger::async_logger(
-    std::string logger_name, It begin, It end, std::weak_ptr<details::thread_pool> tp, async_overflow_policy overflow_policy)
+    eastl::string logger_name, It begin, It end, std::weak_ptr<details::thread_pool> tp, async_overflow_policy overflow_policy)
     : logger(std::move(logger_name), begin, end)
     , thread_pool_(std::move(tp))
     , overflow_policy_(overflow_policy)
@@ -24,13 +24,13 @@ inline spdlog::async_logger::async_logger(
 }
 
 inline spdlog::async_logger::async_logger(
-    std::string logger_name, sinks_init_list sinks_list, std::weak_ptr<details::thread_pool> tp, async_overflow_policy overflow_policy)
+    eastl::string logger_name, sinks_init_list sinks_list, std::weak_ptr<details::thread_pool> tp, async_overflow_policy overflow_policy)
     : async_logger(std::move(logger_name), sinks_list.begin(), sinks_list.end(), std::move(tp), overflow_policy)
 {
 }
 
 inline spdlog::async_logger::async_logger(
-    std::string logger_name, sink_ptr single_sink, std::weak_ptr<details::thread_pool> tp, async_overflow_policy overflow_policy)
+    eastl::string logger_name, sink_ptr single_sink, std::weak_ptr<details::thread_pool> tp, async_overflow_policy overflow_policy)
     : async_logger(std::move(logger_name), {std::move(single_sink)}, std::move(tp), overflow_policy)
 {
 }
@@ -99,7 +99,7 @@ inline void spdlog::async_logger::backend_flush_()
     SPDLOG_CATCH_AND_HANDLE
 }
 
-inline std::shared_ptr<spdlog::logger> spdlog::async_logger::clone(std::string new_name)
+inline std::shared_ptr<spdlog::logger> spdlog::async_logger::clone(eastl::string new_name)
 {
     auto cloned = std::make_shared<spdlog::async_logger>(std::move(new_name), sinks_.begin(), sinks_.end(), thread_pool_, overflow_policy_);
 

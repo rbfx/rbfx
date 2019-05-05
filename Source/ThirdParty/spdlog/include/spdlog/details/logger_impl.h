@@ -23,20 +23,20 @@
 // create logger with given name, sinks and the default pattern formatter
 // all other ctors will call this one
 template<typename It>
-inline spdlog::logger::logger(std::string logger_name, It begin, It end)
+inline spdlog::logger::logger(eastl::string logger_name, It begin, It end)
     : name_(std::move(logger_name))
     , sinks_(begin, end)
 {
 }
 
 // ctor with sinks as init list
-inline spdlog::logger::logger(std::string logger_name, sinks_init_list sinks_list)
+inline spdlog::logger::logger(eastl::string logger_name, sinks_init_list sinks_list)
     : logger(std::move(logger_name), sinks_list.begin(), sinks_list.end())
 {
 }
 
 // ctor with single sink
-inline spdlog::logger::logger(std::string logger_name, spdlog::sink_ptr single_sink)
+inline spdlog::logger::logger(eastl::string logger_name, spdlog::sink_ptr single_sink)
     : logger(std::move(logger_name), {std::move(single_sink)})
 {
 }
@@ -51,7 +51,7 @@ inline void spdlog::logger::set_formatter(std::unique_ptr<spdlog::formatter> f)
     }
 }
 
-inline void spdlog::logger::set_pattern(std::string pattern, pattern_time_type time_type)
+inline void spdlog::logger::set_pattern(eastl::string pattern, pattern_time_type time_type)
 {
     auto new_formatter = details::make_unique<spdlog::pattern_formatter>(std::move(pattern), time_type);
     set_formatter(std::move(new_formatter));
@@ -311,7 +311,7 @@ inline void spdlog::logger::critical(const wchar_t *fmt, const Args &... args)
 //
 // name and level
 //
-inline const std::string &spdlog::logger::name() const
+inline const eastl::string &spdlog::logger::name() const
 {
     return name_;
 }
@@ -402,7 +402,7 @@ inline void spdlog::logger::flush_()
     }
 }
 
-inline void spdlog::logger::default_err_handler_(const std::string &msg)
+inline void spdlog::logger::default_err_handler_(const eastl::string &msg)
 {
     auto now = time(nullptr);
     if (now - last_err_time_ < 60)
@@ -431,7 +431,7 @@ inline std::vector<spdlog::sink_ptr> &spdlog::logger::sinks()
     return sinks_;
 }
 
-inline std::shared_ptr<spdlog::logger> spdlog::logger::clone(std::string logger_name)
+inline std::shared_ptr<spdlog::logger> spdlog::logger::clone(eastl::string logger_name)
 {
     auto cloned = std::make_shared<spdlog::logger>(std::move(logger_name), sinks_.begin(), sinks_.end());
     cloned->set_level(this->level());
