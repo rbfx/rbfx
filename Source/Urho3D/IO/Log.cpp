@@ -65,7 +65,7 @@ class IOSSink : public spdlog::sinks::base_sink<Mutex>
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override
     {
-        SDL_IOS_LogMessage(std::string(msg.payload.begin(), msg.payload.end()).c_str());
+        SDL_IOS_LogMessage(ea::string(msg.payload.begin(), msg.payload.end()).c_str());
     }
 
     void flush_() override { }
@@ -296,7 +296,7 @@ Logger Log::GetLogger(const char* name)
 
         if (!logger)
         {
-            logger = std::make_shared<spdlog::logger>(std::string(name), logInstance->impl_->sinkProxy_);
+            logger = std::make_shared<spdlog::logger>(ea::string(name), logInstance->impl_->sinkProxy_);
             spdlog::register_logger(logger);
         }
 
