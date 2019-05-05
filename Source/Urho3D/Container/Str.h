@@ -105,14 +105,3 @@ inline ea::wstring MultiByteToWide(const ea::string& string) { return MultiByteT
 URHO3D_API extern const ea::string EMPTY_STRING;
 
 }
-
-namespace eastl
-{
-
-/// Make fmt library aware of String type for inputs.
-inline fmt::string_view to_string_view(const ea::string& s)
-{
-    return {s.c_str(), s.length()};
-}
-
-}
