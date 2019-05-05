@@ -103,7 +103,7 @@ class basic_cstring_view {
     Constructs a string reference from an ``std::string`` object.
     \endrst
    */
-  basic_cstring_view(const std::basic_string<Char> &s) : data_(s.c_str()) {}
+  basic_cstring_view(const FMT_BASIC_STRING<Char> &s) : data_(s.c_str()) {}
 
   /** Returns the pointer to a C string. */
   const Char *c_str() const { return data_; }

@@ -237,7 +237,7 @@ FMT_FUNC void system_error::init(
   memory_buffer buffer;
   format_system_error(buffer, err_code, vformat(format_str, args));
   std::runtime_error &base = *this;
-  base = std::runtime_error(to_string(buffer));
+  base = std::runtime_error(to_string(buffer).c_str());
 }
 
 namespace internal {
@@ -868,7 +868,7 @@ FMT_FUNC void windows_error::init(
   memory_buffer buffer;
   internal::format_windows_error(buffer, err_code, vformat(format_str, args));
   std::runtime_error &base = *this;
-  base = std::runtime_error(to_string(buffer));
+  base = std::runtime_error(to_string(buffer).c_str());
 }
 
 FMT_FUNC void internal::format_windows_error(

@@ -25,7 +25,7 @@ typename buffer_context<Char>::type::iterator vformat_to(
 }
 
 template <typename Char>
-std::basic_string<Char> vformat(
+FMT_BASIC_STRING<Char> vformat(
     const std::locale &loc, basic_string_view<Char> format_str,
     basic_format_args<typename buffer_context<Char>::type> args) {
   basic_memory_buffer<Char> buffer;
@@ -35,14 +35,14 @@ std::basic_string<Char> vformat(
 }
 
 template <typename S, typename Char = FMT_CHAR(S)>
-inline std::basic_string<Char> vformat(
+inline FMT_BASIC_STRING<Char> vformat(
     const std::locale &loc, const S &format_str,
     basic_format_args<typename buffer_context<Char>::type> args) {
   return internal::vformat(loc, to_string_view(format_str), args);
 }
 
 template <typename S, typename... Args>
-inline std::basic_string<FMT_CHAR(S)> format(
+inline FMT_BASIC_STRING<FMT_CHAR(S)> format(
     const std::locale &loc, const S &format_str, const Args &... args) {
   return internal::vformat(
     loc, to_string_view(format_str),

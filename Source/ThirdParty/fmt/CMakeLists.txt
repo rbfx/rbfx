@@ -1,3 +1,25 @@
+# core.h has following additions:
+#    #include <EASTL/string.h>
+#
+# Conditionally define some macros to make fmt use types from alternate stl implementation
+#    #if EASTL_URHO3D_EXTENSIONS
+#    # define FMT_STRING_VIEW eastl::basic_string_view
+#    # define FMT_BASIC_STRING eastl::basic_string
+#    # define FMT_STRING_T eastl::string
+#    # define FMT_WSTRING_T eastl::wstring
+#    #else
+#    // libc++ supports string_view in pre-c++17.
+#    <...>
+#    #endif
+#    #endif
+#
+# Replace all instances of `std::basic_string` with `FMT_BASIC_STRING`.
+# Replace all instances of `std::string` with `FMT_STRING_T`.
+# Replace all instances of `std::wstring` with `FMT_WSTRING_T`.
+#
+# Some std::runtime_error() require extra `.c_str()` because this function consumes `std::string`.
+#
+
 include(CheckSymbolExists)
 if (WIN32)
   check_symbol_exists(open io.h HAVE_OPEN)
@@ -14,7 +36,7 @@ if (HAVE_OPEN)
 endif ()
 
 add_library(fmt STATIC ${FMT_HEADERS} ${FMT_SOURCES})
-
+target_link_libraries(fmt PUBLIC EASTL)
 target_compile_definitions(fmt INTERFACE FMT_USE_RVALUE_REFERENCES=1 FMT_USE_VARIADIC_TEMPLATES=1)
 target_include_directories(fmt INTERFACE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>

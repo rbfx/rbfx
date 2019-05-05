@@ -367,8 +367,8 @@ class format_error : public std::runtime_error {
   explicit format_error(const char *message)
   : std::runtime_error(message) {}
 
-  explicit format_error(const std::string &message)
-  : std::runtime_error(message) {}
+  explicit format_error(const FMT_STRING_T &message)
+  : std::runtime_error(message.c_str()) {}
 };
 
 namespace internal {
@@ -1046,7 +1046,7 @@ class utf8_to_utf16 {
   operator wstring_view() const { return wstring_view(&buffer_[0], size()); }
   size_t size() const { return buffer_.size() - 1; }
   const wchar_t *c_str() const { return &buffer_[0]; }
-  std::wstring str() const { return std::wstring(&buffer_[0], size()); }
+  FMT_WSTRING_T str() const { return FMT_WSTRING_T(&buffer_[0], size()); }
 };
 
 // A converter from UTF-16 to UTF-8.
@@ -1061,7 +1061,7 @@ class utf16_to_utf8 {
   operator string_view() const { return string_view(&buffer_[0], size()); }
   size_t size() const { return buffer_.size() - 1; }
   const char *c_str() const { return &buffer_[0]; }
-  std::string str() const { return std::string(&buffer_[0], size()); }
+  FMT_STRING_T str() const { return FMT_STRING_T(&buffer_[0], size()); }
 
   // Performs conversion returning a system error code instead of
   // throwing exception on conversion error. This method may still throw
@@ -2884,7 +2884,7 @@ class format_int {
     Returns the content of the output buffer as an ``std::string``.
     \endrst
    */
-  std::string str() const { return std::string(str_, size()); }
+  FMT_STRING_T str() const { return FMT_STRING_T(str_, size()); }
 };
 
 // DEPRECATED!
@@ -3207,9 +3207,9 @@ auto join(const Range &range, wstring_view sep)
   \endrst
  */
 template <typename T>
-std::string to_string(const T &value) {
-  std::string str;
-  internal::container_buffer<std::string> buf(str);
+FMT_STRING_T to_string(const T &value) {
+  FMT_STRING_T str;
+  internal::container_buffer<FMT_STRING_T> buf(str);
   writer(buf).write(value);
   return str;
 }
@@ -3218,16 +3218,16 @@ std::string to_string(const T &value) {
   Converts *value* to ``std::wstring`` using the default format for type *T*.
  */
 template <typename T>
-std::wstring to_wstring(const T &value) {
-  std::wstring str;
-  internal::container_buffer<std::wstring> buf(str);
+FMT_WSTRING_T to_wstring(const T &value) {
+  FMT_WSTRING_T str;
+  internal::container_buffer<FMT_WSTRING_T> buf(str);
   wwriter(buf).write(value);
   return str;
 }
 
 template <typename Char, std::size_t SIZE>
-std::basic_string<Char> to_string(const basic_memory_buffer<Char, SIZE> &buf) {
-  return std::basic_string<Char>(buf.data(), buf.size());
+FMT_BASIC_STRING<Char> to_string(const basic_memory_buffer<Char, SIZE> &buf) {
+  return FMT_BASIC_STRING<Char>(buf.data(), buf.size());
 }
 
 template <typename Char>
@@ -3408,7 +3408,7 @@ inline FMT_ENABLE_IF_T(
 }
 
 template <typename Char>
-inline std::basic_string<Char> internal::vformat(
+inline FMT_BASIC_STRING<Char> internal::vformat(
     basic_string_view<Char> format_str,
     basic_format_args<typename buffer_context<Char>::type> args) {
   basic_memory_buffer<Char> buffer;
@@ -3435,7 +3435,7 @@ template <typename Char, Char... CHARS>
 class udl_formatter {
  public:
   template <typename... Args>
-  std::basic_string<Char> operator()(const Args &... args) const {
+  FMT_BASIC_STRING<Char> operator()(const Args &... args) const {
     FMT_CONSTEXPR_DECL Char s[] = {CHARS..., '\0'};
     FMT_CONSTEXPR_DECL bool invalid_format =
         do_check_format_string<Char, error_handler, Args...>(
