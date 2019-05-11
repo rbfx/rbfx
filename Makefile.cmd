@@ -45,13 +45,14 @@ if "!VS!" == "2015" (
 )
 set "CMAKE_GENRATOR=!CMAKE_GENRATOR! !vs!"
 
-if "!PLATFORM!" == "x64" (
-    if "!VS!" == "2019" (
-		set "CMAKE_GENRATOR=!CMAKE_GENRATOR!"
-		set CMAKE_ARGS=-A !PLATFORM! !CMAKE_ARGS!
-	) else (
-		set "CMAKE_GENRATOR=!CMAKE_GENRATOR! Win64"
+if "!VS!" == "2019" (
+	set "CMAKE_GENRATOR=!CMAKE_GENRATOR!"
+	if "!PLATFORM!" == "x86" (
+		set "PLATFORM=Win32"
 	)
+	set CMAKE_ARGS=-A !PLATFORM! !CMAKE_ARGS!
+) else if "!PLATFORM!" == "x64" (
+	set "CMAKE_GENRATOR=!CMAKE_GENRATOR! Win64"
 ) else if NOT "!PLATFORM!" == "x86" (
     echo Unknown platform
     goto quit
