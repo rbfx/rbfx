@@ -256,6 +256,8 @@ private:
     ea::intrusive_list<EventHandler>::iterator FindSpecificEventHandler(Object* sender, StringHash eventType);
     /// Find the first event handler with specific sender and event type.
     ea::intrusive_list<EventHandler>::iterator FindSpecificEventHandler(Object* sender, StringHash eventType) const { return const_cast<Object*>(this)->FindSpecificEventHandler(sender, eventType); }
+    /// Erase event handler from the list.
+    ea::intrusive_list<EventHandler>::iterator EraseEventHandler(ea::intrusive_list<EventHandler>::iterator handlerIter);
     /// Remove event handlers related to a specific sender.
     void RemoveEventSender(Object* sender);
 

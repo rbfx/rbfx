@@ -742,7 +742,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_VARIANTMAP:
-        value_.variantMap_->~VariantMap();
+        delete value_.variantMap_;
         break;
 
     case VAR_PTR:
