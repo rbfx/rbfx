@@ -1,7 +1,7 @@
 #ifndef __TRACYPOPCNT_HPP__
 #define __TRACYPOPCNT_HPP__
 
-#ifdef _WIN32
+#ifdef _WIN64   // Urho3D fix
 #  include <intrin.h>
 #  define TracyCountBits __popcnt64
 #else
