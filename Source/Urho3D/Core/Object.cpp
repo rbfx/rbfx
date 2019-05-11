@@ -145,7 +145,7 @@ void Object::SubscribeToEvent(StringHash eventType, EventHandler* handler)
     auto oldHandler = FindSpecificEventHandler(nullptr, eventType);
     if (oldHandler != eventHandlers_.end())
     {
-        eventHandlers_.erase(oldHandler);
+        EraseEventHandler(oldHandler);
         eventHandlers_.insert(eventHandlers_.begin(), *handler);
     }
     else
@@ -169,7 +169,7 @@ void Object::SubscribeToEvent(Object* sender, StringHash eventType, EventHandler
     auto oldHandler = FindSpecificEventHandler(sender, eventType);
     if (oldHandler != eventHandlers_.end())
     {
-        eventHandlers_.erase(oldHandler);
+        EraseEventHandler(oldHandler);
         eventHandlers_.insert(eventHandlers_.begin(), *handler);
     }
     else
@@ -200,7 +200,7 @@ void Object::UnsubscribeFromEvent(StringHash eventType)
                 context_->RemoveEventReceiver(this, handler->GetSender(), eventType);
             else
                 context_->RemoveEventReceiver(this, eventType);
-            eventHandlers_.erase(handler);
+            EraseEventHandler(handler);
         }
         else
             break;
@@ -216,7 +216,7 @@ void Object::UnsubscribeFromEvent(Object* sender, StringHash eventType)
     if (handler != eventHandlers_.end())
     {
         context_->RemoveEventReceiver(this, handler->GetSender(), eventType);
-        eventHandlers_.erase(handler);
+        EraseEventHandler(handler);
     }
 }
 
@@ -231,7 +231,7 @@ void Object::UnsubscribeFromEvents(Object* sender)
         if (handler != eventHandlers_.end())
         {
             context_->RemoveEventReceiver(this, handler->GetSender(), handler->GetEventType());
-            eventHandlers_.erase(handler);
+            EraseEventHandler(handler);
         }
         else
             break;
@@ -249,7 +249,7 @@ void Object::UnsubscribeFromAllEvents()
                 context_->RemoveEventReceiver(this, handler->GetSender(), handler->GetEventType());
             else
                 context_->RemoveEventReceiver(this, handler->GetEventType());
-            eventHandlers_.erase(handler);
+            EraseEventHandler(handler);
         }
         else
             break;
@@ -267,7 +267,7 @@ void Object::UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& except
             else
                 context_->RemoveEventReceiver(this, handler->GetEventType());
 
-            handler = eventHandlers_.erase(handler);
+            handler = EraseEventHandler(handler);
         }
         else
             ++handler;
@@ -444,12 +444,21 @@ ea::intrusive_list<EventHandler>::iterator Object::FindSpecificEventHandler(Obje
     });
 }
 
+ea::intrusive_list<EventHandler>::iterator Object::EraseEventHandler(ea::intrusive_list<EventHandler>::iterator handlerIter)
+{
+    assert(handlerIter != eventHandlers_.end());
+    EventHandler* handler = &*handlerIter;
+    auto nextIter = eventHandlers_.erase(handlerIter);
+    delete handler;
+    return nextIter;
+}
+
 void Object::RemoveEventSender(Object* sender)
 {
     for (auto handler = eventHandlers_.begin(); handler != eventHandlers_.end(); )
     {
         if (handler->GetSender() == sender)
-            handler = eventHandlers_.erase(handler);
+            handler = EraseEventHandler(handler);
         else
             ++handler;
     }
