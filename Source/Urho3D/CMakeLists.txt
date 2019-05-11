@@ -170,6 +170,7 @@ set (THIRD_PARTY_DEPENDENCIES
     fmt
     spdlog
     EASTL
+    entt
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)

@@ -28,6 +28,7 @@ else ()
 endif ()
 
 add_subdirectory(EASTL)
+add_subdirectory(entt)
 add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
 add_subdirectory(rapidjson)
