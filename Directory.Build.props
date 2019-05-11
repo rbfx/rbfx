@@ -19,6 +19,8 @@
   </PropertyGroup>
   <PropertyGroup>
     <PlatformTarget Condition=" '$(PlatformTarget)' == '' ">x64</PlatformTarget>
+    <PlatformTarget Condition=" '$(Platform)' == 'x64' ">x64</PlatformTarget>
+    <PlatformTarget Condition=" '$(Platform)' == 'Win32' Or '$(Platform)' == 'x86' ">x86</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
   </PropertyGroup>
   <PropertyGroup>
