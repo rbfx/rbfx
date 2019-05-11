@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2017-2019 Rokas Kupstys.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -124,11 +124,11 @@ namespace Urho3DNet
         #region Interop
 
         [SuppressUnmanagedCodeSecurity]
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("Urho3DCSharp")]
         private static extern void Urho3DRegisterDirectorFactories(HandleRef context);
 
         [SuppressUnmanagedCodeSecurity]
-        [DllImport("Urho3DCSharp", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("Urho3DCSharp")]
         private static extern void Urho3D_Context_RegisterFactory(HandleRef context,
             [MarshalAs(UnmanagedType.LPStr)]string typeName, uint baseType,
             [MarshalAs(UnmanagedType.LPStr)]string category);

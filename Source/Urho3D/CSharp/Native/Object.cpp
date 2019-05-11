@@ -37,7 +37,7 @@ extern URHO3D_EXPORT_API Urho3D_CSharpFreeGCHandleCallback Urho3D_CSharpFreeGCHa
 namespace Urho3D
 {
 
-typedef void(*EventHandlerCallback)(unsigned, VariantMap*);
+typedef void(SWIGSTDCALL*EventHandlerCallback)(unsigned, VariantMap*);
 
 class ManagedEventHandler : public EventHandler
 {
@@ -75,7 +75,7 @@ protected:
 extern "C"
 {
 
-URHO3D_EXPORT_API void Urho3D_Object_SubscribeToEvent(Object* receiver, Object* sender, unsigned eventType,
+URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_Object_SubscribeToEvent(Object* receiver, Object* sender, unsigned eventType,
     EventHandlerCallback callback, void* callbackHandle)
 {
     // callbackHandle is a handle to Action<> which references receiver object. We have to ensure object is alive as long as
