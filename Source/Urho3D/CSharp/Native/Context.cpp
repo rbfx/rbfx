@@ -82,7 +82,7 @@ protected:
 extern "C"
 {
 
-URHO3D_EXPORT_API void Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType, const char* category)
+URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType, const char* category)
 {
     context->RegisterFactory(new ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
 }

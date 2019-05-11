@@ -147,10 +147,10 @@ namespace Player
             new Program().Run(args);
         }
 
-        [DllImport("libPlayer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libPlayer")]
         private static extern IntPtr CreateApplication(IntPtr context);
 
-        [DllImport("libPlayer", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libPlayer")]
         private static extern void ParseArgumentsC(int argc,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
     }

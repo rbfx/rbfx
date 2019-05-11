@@ -306,10 +306,10 @@ namespace EditorHost
             new Program().Run(args);
         }
 
-        [DllImport("libEditor", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libEditor")]
         private static extern IntPtr CreateEditorApplication(IntPtr context);
 
-        [DllImport("libEditor", CallingConvention = CallingConvention.Cdecl)]
+        [DllImport("libEditor")]
         private static extern void ParseArgumentsC(int argc,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
     }
