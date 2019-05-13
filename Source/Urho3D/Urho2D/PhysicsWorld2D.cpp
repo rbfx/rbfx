@@ -56,7 +56,7 @@ PhysicsWorld2D::PhysicsWorld2D(Context* context) :
     m_drawFlags = e_shapeBit;
 
     // Create Box2D world
-    world_ = new b2World(ToB2Vec2(gravity_));
+    world_ = ea::make_unique<b2World>(ToB2Vec2(gravity_));
     // Set contact listener
     world_->SetContactListener(this);
     // Set debug draw

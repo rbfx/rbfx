@@ -60,7 +60,7 @@ Node::Node(Context* context) :
     scale_(Vector3::ONE),
     worldRotation_(Quaternion::IDENTITY)
 {
-    impl_ = new NodeImpl();
+    impl_ = ea::make_unique<NodeImpl>();
     impl_->owner_ = nullptr;
 }
 

@@ -79,8 +79,8 @@ RigidBody::RigidBody(Context* context) :
     enableMassUpdate_(true),
     hasSimulated_(false)
 {
-    compoundShape_ = new btCompoundShape();
-    shiftedCompoundShape_ = new btCompoundShape();
+    compoundShape_ = ea::make_unique<btCompoundShape>();
+    shiftedCompoundShape_ = ea::make_unique<btCompoundShape>();
 }
 
 RigidBody::~RigidBody()

@@ -1070,20 +1070,20 @@ XPathQuery::~XPathQuery() = default;
 void XPathQuery::Bind()
 {
     // Delete previous query object and create a new one binding it with variable set
-    query_ = new pugi::xpath_query(queryString_.c_str(), variables_.get());
+    query_ = ea::make_unique<pugi::xpath_query>(queryString_.c_str(), variables_.get());
 }
 
 bool XPathQuery::SetVariable(const ea::string& name, bool value)
 {
     if (!variables_)
-        variables_ = new pugi::xpath_variable_set();
+        variables_ = ea::make_unique<pugi::xpath_variable_set>();
     return variables_->set(name.c_str(), value);
 }
 
 bool XPathQuery::SetVariable(const ea::string& name, float value)
 {
     if (!variables_)
-        variables_ = new pugi::xpath_variable_set();
+        variables_ = ea::make_unique<pugi::xpath_variable_set>();
     return variables_->set(name.c_str(), value);
 }
 
@@ -1095,14 +1095,14 @@ bool XPathQuery::SetVariable(const ea::string& name, const ea::string& value)
 bool XPathQuery::SetVariable(const char* name, const char* value)
 {
     if (!variables_)
-        variables_ = new pugi::xpath_variable_set();
+        variables_ = ea::make_unique<pugi::xpath_variable_set>();
     return variables_->set(name, value);
 }
 
 bool XPathQuery::SetVariable(const ea::string& name, const XPathResultSet& value)
 {
     if (!variables_)
-        variables_ = new pugi::xpath_variable_set();
+        variables_ = ea::make_unique<pugi::xpath_variable_set>();
 
     pugi::xpath_node_set* nodeSet = value.GetXPathNodeSet();
     if (!nodeSet)
@@ -1116,7 +1116,7 @@ bool XPathQuery::SetQuery(const ea::string& queryString, const ea::string& varia
     if (!variableString.empty())
     {
         Clear();
-        variables_ = new pugi::xpath_variable_set();
+        variables_ = ea::make_unique<pugi::xpath_variable_set>();
 
         // Parse the variable string having format "name1:type1,name2:type2,..." where type is one of "Bool", "Float", "String", "ResultSet"
         ea::vector<ea::string> vars = variableString.split(',');

@@ -198,30 +198,30 @@ private:
 
 TriangleMeshData::TriangleMeshData(Model* model, unsigned lodLevel)
 {
-    meshInterface_ = new TriangleMeshInterface(model, lodLevel);
-    shape_ = new btBvhTriangleMeshShape(meshInterface_.get(), meshInterface_->useQuantize_, true);
+    meshInterface_ = ea::make_unique<TriangleMeshInterface>(model, lodLevel);
+    shape_ = ea::make_unique<btBvhTriangleMeshShape>(meshInterface_.get(), meshInterface_->useQuantize_, true);
 
-    infoMap_ = new btTriangleInfoMap();
+    infoMap_ = ea::make_unique<btTriangleInfoMap>();
     btGenerateInternalEdgeInfo(shape_.get(), infoMap_.get());
 }
 
 TriangleMeshData::TriangleMeshData(CustomGeometry* custom)
 {
-    meshInterface_ = new TriangleMeshInterface(custom);
-    shape_ = new btBvhTriangleMeshShape(meshInterface_.get(), meshInterface_->useQuantize_, true);
+    meshInterface_ = ea::make_unique<TriangleMeshInterface>(custom);
+    shape_ = ea::make_unique<btBvhTriangleMeshShape>(meshInterface_.get(), meshInterface_->useQuantize_, true);
 
-    infoMap_ = new btTriangleInfoMap();
+    infoMap_ = ea::make_unique<btTriangleInfoMap>();
     btGenerateInternalEdgeInfo(shape_.get(), infoMap_.get());
 }
 
 GImpactMeshData::GImpactMeshData(Model* model, unsigned lodLevel)
 {
-    meshInterface_ = new TriangleMeshInterface(model, lodLevel);
+    meshInterface_ = ea::make_unique<TriangleMeshInterface>(model, lodLevel);
 }
 
 GImpactMeshData::GImpactMeshData(CustomGeometry* custom)
 {
-    meshInterface_ = new TriangleMeshInterface(custom);
+    meshInterface_ = ea::make_unique<TriangleMeshInterface>(custom);
 }
 
 ConvexData::ConvexData(Model* model, unsigned lodLevel)
@@ -1018,31 +1018,31 @@ void CollisionShape::UpdateShape()
         switch (shapeType_)
         {
         case SHAPE_BOX:
-            shape_ = new btBoxShape(ToBtVector3(size_ * 0.5f));
+            shape_ = ea::make_unique<btBoxShape>(ToBtVector3(size_ * 0.5f));
             shape_->setLocalScaling(ToBtVector3(cachedWorldScale_));
             break;
 
         case SHAPE_SPHERE:
-            shape_ = new btSphereShape(size_.x_ * 0.5f);
+            shape_ = ea::make_unique<btSphereShape>(size_.x_ * 0.5f);
             shape_->setLocalScaling(ToBtVector3(cachedWorldScale_));
             break;
 
         case SHAPE_STATICPLANE:
-            shape_ = new btStaticPlaneShape(btVector3(0.0f, 1.0f, 0.0f), 0.0f);
+            shape_ = ea::make_unique<btStaticPlaneShape>(btVector3(0.0f, 1.0f, 0.0f), 0.0f);
             break;
 
         case SHAPE_CYLINDER:
-            shape_ = new btCylinderShape(btVector3(size_.x_ * 0.5f, size_.y_ * 0.5f, size_.x_ * 0.5f));
+            shape_ = ea::make_unique<btCylinderShape>(btVector3(size_.x_ * 0.5f, size_.y_ * 0.5f, size_.x_ * 0.5f));
             shape_->setLocalScaling(ToBtVector3(cachedWorldScale_));
             break;
 
         case SHAPE_CAPSULE:
-            shape_ = new btCapsuleShape(size_.x_ * 0.5f, Max(size_.y_ - size_.x_, 0.0f));
+            shape_ = ea::make_unique<btCapsuleShape>(size_.x_ * 0.5f, Max(size_.y_ - size_.x_, 0.0f));
             shape_->setLocalScaling(ToBtVector3(cachedWorldScale_));
             break;
 
         case SHAPE_CONE:
-            shape_ = new btConeShape(size_.x_ * 0.5f, size_.y_);
+            shape_ = ea::make_unique<btConeShape>(size_.x_ * 0.5f, size_.y_);
             shape_->setLocalScaling(ToBtVector3(cachedWorldScale_));
             break;
 
@@ -1067,9 +1067,9 @@ void CollisionShape::UpdateShape()
                     geometry_ = new HeightfieldData(terrain, lodLevel_);
                     auto* heightfield = static_cast<HeightfieldData*>(geometry_.get());
 
-                    shape_ =
-                        new btHeightfieldTerrainShape(heightfield->size_.x_, heightfield->size_.y_, heightfield->heightData_.get(),
-                            1.0f, heightfield->minHeight_, heightfield->maxHeight_, 1, PHY_FLOAT, false);
+                    shape_ = ea::make_unique<btHeightfieldTerrainShape>(heightfield->size_.x_, heightfield->size_.y_,
+                        heightfield->heightData_.get(), 1.0f, heightfield->minHeight_, heightfield->maxHeight_, 1,
+                        PHY_FLOAT, false);
                     shape_->setLocalScaling(
                         ToBtVector3(Vector3(heightfield->spacing_.x_, 1.0f, heightfield->spacing_.z_) * cachedWorldScale_ * size_));
                 }
@@ -1077,7 +1077,7 @@ void CollisionShape::UpdateShape()
             break;
 
         default:
-            shape_ = this->UpdateDerivedShape(shapeType_, cachedWorldScale_);
+            shape_.reset(UpdateDerivedShape(shapeType_, cachedWorldScale_));
             break;
         }
 
@@ -1106,7 +1106,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
         {
             geometry_ = CreateCollisionGeometryData(shapeType_, custom);
             assert(geometry_);
-            shape_ = CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_);
+            shape_.reset(CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_));
             assert(shape_);
         }
         else
@@ -1129,7 +1129,7 @@ void CollisionShape::UpdateCachedGeometryShape(CollisionGeometryDataCache& cache
                 cache[id] = geometry_;
         }
 
-        shape_ = CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_);
+        shape_.reset(CreateCollisionGeometryDataShape(shapeType_, geometry_, cachedWorldScale_ * size_));
         assert(shape_);
         // Watch for live reloads of the collision model to reload the geometry if necessary
         SubscribeToEvent(model_, E_RELOADFINISHED, URHO3D_HANDLER(CollisionShape, HandleModelReloadFinished));

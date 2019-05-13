@@ -327,17 +327,7 @@ namespace eastl
 		/// These functions are deleted in order to prevent copying, for safety.
 		unique_ptr(const this_type&) = delete;
 		unique_ptr& operator=(const this_type&) = delete;
-
-		// Urho3D:
-		// unique_ptr& operator=(pointer pValue) = delete;
-
-		/// unique_ptr
-		/// new-assignment
-		this_type& operator=(pointer&& pValue) EA_NOEXCEPT
-		{
-			reset(pValue);
-			return *this;
-		}
+		unique_ptr& operator=(pointer pValue) = delete;
 
 	protected:
 		eastl::compressed_pair<pointer, deleter_type> mPair;
