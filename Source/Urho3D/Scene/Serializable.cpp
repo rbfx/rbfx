@@ -758,7 +758,7 @@ void Serializable::AllocateNetworkState()
         return;
 
     const ea::vector<AttributeInfo>* networkAttributes = GetNetworkAttributes();
-    networkState_ = new NetworkState();
+    networkState_ = ea::make_unique<NetworkState>();
     networkState_->attributes_ = networkAttributes;
 
     if (!networkAttributes)
@@ -1063,7 +1063,7 @@ void Serializable::SetInstanceDefault(const ea::string& name, const Variant& def
 {
     // Allocate the instance level default value
     if (!instanceDefaultValues_)
-        instanceDefaultValues_ = new VariantMap();
+        instanceDefaultValues_ = ea::make_unique<VariantMap>();
     instanceDefaultValues_->operator [](name) = defaultValue;
 }
 

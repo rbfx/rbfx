@@ -135,7 +135,7 @@ void AnimatedSprite2D::SetAnimationSet(AnimationSet2D* animationSet)
 #endif
     if (animationSet_->GetSpriterData())
     {
-        spriterInstance_ = new Spriter::SpriterInstance(this, animationSet_->GetSpriterData());
+        spriterInstance_ = ea::make_unique<Spriter::SpriterInstance>(this, animationSet_->GetSpriterData());
 
         if (!animationSet_->GetSpriterData()->entities_.empty())
         {
@@ -405,7 +405,7 @@ void AnimatedSprite2D::UpdateSourceBatchesSpine()
 void AnimatedSprite2D::SetSpriterAnimation()
 {
     if (!spriterInstance_)
-        spriterInstance_ = new Spriter::SpriterInstance(this, animationSet_->GetSpriterData());
+        spriterInstance_ = ea::make_unique<Spriter::SpriterInstance>(this, animationSet_->GetSpriterData());
 
     // Use entity is empty first entity
     if (entity_.empty())

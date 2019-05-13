@@ -159,12 +159,12 @@ PhysicsWorld::PhysicsWorld(Context* context) :
     else
         collisionConfiguration_ = new btDefaultCollisionConfiguration();
 
-    collisionDispatcher_ = new btCollisionDispatcher(collisionConfiguration_);
+    collisionDispatcher_ = ea::make_unique<btCollisionDispatcher>(collisionConfiguration_);
     btGImpactCollisionAlgorithm::registerAlgorithm(static_cast<btCollisionDispatcher*>(collisionDispatcher_.get()));
 
-    broadphase_ = new btDbvtBroadphase();
-    solver_ = new btSequentialImpulseConstraintSolver();
-    world_ = new btDiscreteDynamicsWorld(collisionDispatcher_.get(), broadphase_.get(), solver_.get(), collisionConfiguration_);
+    broadphase_ = ea::make_unique<btDbvtBroadphase>();
+    solver_ = ea::make_unique<btSequentialImpulseConstraintSolver>();
+    world_ = ea::make_unique<btDiscreteDynamicsWorld>(collisionDispatcher_.get(), broadphase_.get(), solver_.get(), collisionConfiguration_);
 
     world_->setGravity(ToBtVector3(DEFAULT_GRAVITY));
     world_->getDispatchInfo().m_useContinuous = true;

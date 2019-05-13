@@ -292,7 +292,7 @@ bool AnimationSet2D::BeginLoadSpriter(Deserializer& source)
     if (source.Read(buffer.get(), dataSize) != dataSize)
         return false;
 
-    spriterData_ = new Spriter::SpriterData();
+    spriterData_ = ea::make_unique<Spriter::SpriterData>();
     if (!spriterData_->Load(buffer.get(), dataSize))
     {
         URHO3D_LOGERROR("Could not spriter data from " + source.GetName());

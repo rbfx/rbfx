@@ -113,7 +113,7 @@ bool XMLFile::BeginLoad(Deserializer& source)
 
         // Patch this XMLFile and leave the original inherited XMLFile as it is
         ea::unique_ptr<pugi::xml_document> patchDocument(document_.detach());
-        document_ = new pugi::xml_document();
+        document_ = ea::make_unique<pugi::xml_document>();
         document_->reset(*inheritedXMLFile->document_);
         Patch(rootElem);
 

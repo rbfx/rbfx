@@ -485,7 +485,7 @@ void Constraint::CreateConstraint()
     {
     case CONSTRAINT_POINT:
         {
-            constraint_ = new btPoint2PointConstraint(*ownBody, *otherBody, ToBtVector3(ownBodyScaledPosition),
+            constraint_ = ea::make_unique<btPoint2PointConstraint>(*ownBody, *otherBody, ToBtVector3(ownBodyScaledPosition),
                 ToBtVector3(otherBodyScaledPosition));
         }
         break;
@@ -494,7 +494,7 @@ void Constraint::CreateConstraint()
         {
             btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
             btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            constraint_ = new btHingeConstraint(*ownBody, *otherBody, ownFrame, otherFrame);
+            constraint_ = ea::make_unique<btHingeConstraint>(*ownBody, *otherBody, ownFrame, otherFrame);
         }
         break;
 
@@ -502,7 +502,7 @@ void Constraint::CreateConstraint()
         {
             btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
             btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            constraint_ = new btSliderConstraint(*ownBody, *otherBody, ownFrame, otherFrame, false);
+            constraint_ = ea::make_unique<btSliderConstraint>(*ownBody, *otherBody, ownFrame, otherFrame, false);
         }
         break;
 
@@ -510,7 +510,7 @@ void Constraint::CreateConstraint()
         {
             btTransform ownFrame(ToBtQuaternion(rotation_), ToBtVector3(ownBodyScaledPosition));
             btTransform otherFrame(ToBtQuaternion(otherRotation_), ToBtVector3(otherBodyScaledPosition));
-            constraint_ = new btConeTwistConstraint(*ownBody, *otherBody, ownFrame, otherFrame);
+            constraint_ = ea::make_unique<btConeTwistConstraint>(*ownBody, *otherBody, ownFrame, otherFrame);
         }
         break;
 
