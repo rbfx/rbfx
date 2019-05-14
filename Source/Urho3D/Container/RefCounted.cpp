@@ -31,61 +31,54 @@
 namespace Urho3D
 {
 
-RefCounted::RefCounted() :
-    refCount_(new RefCount())
+RefCounted::RefCounted()
 {
-    // Hold a weak ref to self to avoid possible double delete of the refcount
-    (refCount_->weakRefs_)++;
+    EASTLAllocatorType allocator;
+    ea::default_delete<RefCounted> deleter;
+
+    void* const pMemory = EASTLAlloc(allocator, sizeof(RefCount));
+    assert(pMemory != nullptr);
+
+    refCount_ = ::new(pMemory) RefCount(this, eastl::move(deleter), eastl::move(allocator));
+
+    // RefCount is constructed with 1 strong ref and 1 weak ref. Urho3D expects 1 weak ref only.
+    refCount_->mRefCount = 0;
 }
 
 RefCounted::~RefCounted()
 {
     assert(refCount_);
-    assert(refCount_->refs_ == 0);
-    assert(refCount_->weakRefs_ > 0);
+    assert(refCount_->mRefCount == 0);
+    assert(refCount_->mWeakRefCount > 0);
 
     // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
-    refCount_->refs_ = -1;
-    (refCount_->weakRefs_)--;
-    if (!refCount_->weakRefs_)
-        delete refCount_;
-
+    refCount_->mRefCount = -1;
+    refCount_->weak_release();
     refCount_ = nullptr;
 }
 
 void RefCounted::AddRef()
 {
-    assert(refCount_->refs_ >= 0);
-    (refCount_->refs_)++;
+    assert(refCount_->mRefCount >= 0);
+    refCount_->addref();
 }
 
 void RefCounted::ReleaseRef()
 {
-    assert(refCount_->refs_ > 0);
-    (refCount_->refs_)--;
-    if (!refCount_->refs_)
-    {
-        if (deleter_ != nullptr)
-            deleter_(this);
-        else
-            delete this;
-    }
+    assert(refCount_->mRefCount > 0);
+    refCount_->release();
 }
 
 int RefCounted::Refs() const
 {
-    return refCount_->refs_;
+    return refCount_->mRefCount;
 }
 
 int RefCounted::WeakRefs() const
 {
     // Subtract one to not return the internally held reference
-    return refCount_->weakRefs_ - 1;
-}
-
-void RefCounted::SetDeleter(std::function<void(RefCounted*)> deleter)
-{
-    deleter_ = std::move(deleter);
+    // Subtract strong refs because eastl increases both strong and weak refs when adding a reference
+    return refCount_->mWeakRefCount - refCount_->mRefCount - 1;
 }
 
 }

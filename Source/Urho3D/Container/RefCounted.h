@@ -24,39 +24,15 @@
 
 
 #include <functional>
-
-#ifdef URHO3D_IS_BUILDING
-#include "Urho3D.h"
-#else
 #include <Urho3D/Urho3D.h>
-#endif
+
+#include <EASTL/shared_ptr.h>
 
 namespace Urho3D
 {
 
-/// Reference count structure.
-struct RefCount
-{
-    /// Construct.
-    RefCount() :
-        refs_(0),
-        weakRefs_(0)
-    {
-    }
-
-    /// Destruct.
-    ~RefCount()
-    {
-        // Set reference counts below zero to fire asserts if this object is still accessed
-        refs_ = -1;
-        weakRefs_ = -1;
-    }
-
-    /// Reference count. If below zero, the object has been destroyed.
-    int refs_;
-    /// Weak reference count.
-    int weakRefs_;
-};
+class RefCounted;
+using RefCount = ea::ref_count_sp_t<RefCounted*, EASTLAllocatorType, ea::default_delete<RefCounted>>;
 
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
 class URHO3D_API RefCounted
@@ -84,17 +60,9 @@ public:
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() { return refCount_; }
 
-    /// Set a custom deleter function which will be in charge of deallocating object.
-    void SetDeleter(std::function<void(RefCounted*)> deleter);
-    /// Returns custom deleter of this object.
-    std::function<void(RefCounted*)> GetDeleter() const { return deleter_; }
-
 private:
     /// Pointer to the reference count structure.
-    RefCount* refCount_;
-
-    /// Custom deleter which will be deallocating native object.
-    std::function<void(RefCounted*)> deleter_{};
+    RefCount* refCount_ = nullptr;
 };
 
 }
