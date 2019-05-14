@@ -337,8 +337,10 @@ if (URHO3D_CSHARP)
     endif ()
 
     if (NOT MSVC)
-        execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
-        add_custom_target(NugetRestore COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
+        execute_process(COMMAND
+            ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /p:BuildDir="${CMAKE_BINARY_DIR}/" /t:restore /m /consoleloggerparameters:ErrorsOnly)
+        add_custom_target(NugetRestore COMMAND
+            ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /p:BuildDir="${CMAKE_BINARY_DIR}/" /t:restore /m /consoleloggerparameters:ErrorsOnly)
         set_property(TARGET NugetRestore PROPERTY EXCLUDE_FROM_ALL ON)
     endif ()
 
