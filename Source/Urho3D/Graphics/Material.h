@@ -119,9 +119,9 @@ struct URHO3D_API TechniqueEntry
     }
 
     /// Technique.
-    ea::shared_ptr<Technique> technique_;
+    SharedPtr<Technique> technique_;
     /// Original technique, in case the material adds shader compilation defines. The modified clones are requested from it.
-    ea::shared_ptr<Technique> original_;
+    SharedPtr<Technique> original_;
     /// Quality level.
     MaterialQuality qualityLevel_;
     /// LOD distance.
@@ -228,7 +228,7 @@ public:
     /// Reset all shader pointers.
     void ReleaseShaders();
     /// Clone the material.
-    ea::shared_ptr<Material> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    SharedPtr<Material> Clone(const ea::string& cloneName = EMPTY_STRING) const;
     /// Ensure that material techniques are listed in correct order.
     void SortTechniques();
     /// Mark material for auxiliary view rendering.
@@ -250,7 +250,7 @@ public:
     Texture* GetTexture(TextureUnit unit) const;
 
     /// Return all textures.
-    const ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> >& GetTextures() const { return textures_; }
+    const ea::unordered_map<TextureUnit, SharedPtr<Texture> >& GetTextures() const { return textures_; }
 
     /// Return additional vertex shader defines.
     const ea::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
@@ -334,11 +334,11 @@ private:
     /// Techniques.
     ea::vector<TechniqueEntry> techniques_;
     /// Textures.
-    ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> > textures_;
+    ea::unordered_map<TextureUnit, SharedPtr<Texture> > textures_;
     /// %Shader parameters.
     ea::unordered_map<StringHash, MaterialShaderParameter> shaderParameters_;
     /// %Shader parameters animation infos.
-    ea::unordered_map<StringHash, ea::shared_ptr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
+    ea::unordered_map<StringHash, SharedPtr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
     /// Vertex shader defines.
     ea::string vertexShaderDefines_;
     /// Pixel shader defines.
@@ -370,11 +370,11 @@ private:
     /// Flag to suppress parameter hash and memory use recalculation when setting multiple shader parameters (loading or resetting the material.)
     bool batchedParameterUpdate_{};
     /// XML file used while loading.
-    ea::shared_ptr<XMLFile> loadXMLFile_;
+    SharedPtr<XMLFile> loadXMLFile_;
     /// JSON file used while loading.
-    ea::shared_ptr<JSONFile> loadJSONFile_;
+    SharedPtr<JSONFile> loadJSONFile_;
     /// Associated scene for shader parameter animation updates.
-    ea::weak_ptr<Scene> scene_;
+    WeakPtr<Scene> scene_;
 };
 
 }

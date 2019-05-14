@@ -129,7 +129,7 @@ struct RaycastVehicleData
         }
     }
 
-    ea::weak_ptr<PhysicsWorld> physWorld_;
+    WeakPtr<PhysicsWorld> physWorld_;
     btVehicleRaycaster* vehicleRayCaster_;
     btRaycastVehicle* vehicle_;
     btRaycastVehicle::btVehicleTuning tuning_;

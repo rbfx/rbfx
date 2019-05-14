@@ -95,7 +95,7 @@ private:
     FontFace* GetFaceBitmap(float pointSize);
 
     /// Created faces.
-    ea::unordered_map<int, ea::shared_ptr<FontFace> > faces_;
+    ea::unordered_map<int, SharedPtr<FontFace> > faces_;
     /// Font data.
     ea::shared_array<unsigned char> fontData_;
     /// Size of font data.

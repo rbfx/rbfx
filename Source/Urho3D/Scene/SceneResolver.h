@@ -51,9 +51,9 @@ public:
 
 private:
     /// Nodes.
-    ea::unordered_map<unsigned, ea::weak_ptr<Node> > nodes_;
+    ea::unordered_map<unsigned, WeakPtr<Node> > nodes_;
     /// Components.
-    ea::unordered_map<unsigned, ea::weak_ptr<Component> > components_;
+    ea::unordered_map<unsigned, WeakPtr<Component> > components_;
 };
 
 }

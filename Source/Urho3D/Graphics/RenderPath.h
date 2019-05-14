@@ -220,7 +220,7 @@ public:
     ~RenderPath() override;
 
     /// Clone the rendering path.
-    ea::shared_ptr<RenderPath> Clone();
+    SharedPtr<RenderPath> Clone();
     /// Clear existing data and load from an XML file. Return true if successful.
     bool Load(XMLFile* file);
     /// Append data from an XML file. Return true if successful.

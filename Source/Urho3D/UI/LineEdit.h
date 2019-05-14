@@ -127,9 +127,9 @@ protected:
     unsigned GetCharIndex(const IntVector2& position);
 
     /// Text element.
-    ea::shared_ptr<Text> text_;
+    SharedPtr<Text> text_;
     /// Cursor element.
-    ea::shared_ptr<BorderImage> cursor_;
+    SharedPtr<BorderImage> cursor_;
     /// Text line.
     ea::string line_;
     /// Last used text font.

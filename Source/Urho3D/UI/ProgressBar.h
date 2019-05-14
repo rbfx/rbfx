@@ -91,9 +91,9 @@ protected:
     void UpdateProgressBar();
 
     /// ProgressBar knob.
-    ea::shared_ptr <BorderImage> knob_;
+    SharedPtr <BorderImage> knob_;
     /// ProgressBar text
-    ea::shared_ptr <Text> loadingText_;
+    SharedPtr <Text> loadingText_;
     /// Orientation.
     Orientation orientation_;
     /// ProgressBar text style

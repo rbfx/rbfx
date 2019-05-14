@@ -127,7 +127,7 @@ public:
 
 protected:
     /// Audio subsystem.
-    ea::weak_ptr<Audio> audio_;
+    WeakPtr<Audio> audio_;
     /// SoundSource type, determines the master gain group.
     ea::string soundType_;
     /// SoundSource type hash.
@@ -151,7 +151,7 @@ private:
     /// Play a sound without locking the audio mutex. Called internally.
     void PlayLockless(Sound* sound);
     /// Play a sound stream without locking the audio mutex. Called internally.
-    void PlayLockless(const ea::shared_ptr<SoundStream>& stream);
+    void PlayLockless(const SharedPtr<SoundStream>& stream);
     /// Stop sound without locking the audio mutex. Called internally.
     void StopLockless();
     /// Set new playback position without locking the audio mutex. Called internally.
@@ -178,9 +178,9 @@ private:
     void MixNull(float timeStep);
 
     /// Sound that is being played.
-    ea::shared_ptr<Sound> sound_;
+    SharedPtr<Sound> sound_;
     /// Sound stream that is being played.
-    ea::shared_ptr<SoundStream> soundStream_;
+    SharedPtr<SoundStream> soundStream_;
     /// Playback position.
     volatile signed char* position_;
     /// Playback fractional position.
@@ -188,7 +188,7 @@ private:
     /// Playback time position.
     volatile float timePosition_;
     /// Decode buffer.
-    ea::shared_ptr<Sound> streamBuffer_;
+    SharedPtr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
 };

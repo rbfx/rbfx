@@ -119,7 +119,7 @@ protected:
     };
 
     /// Collection of top level converters defined in pipeline.
-    ea::vector<ea::shared_ptr<Converter>> converters_{};
+    ea::vector<SharedPtr<Converter>> converters_{};
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     ///

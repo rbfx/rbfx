@@ -1015,6 +1015,8 @@ namespace eastl
 		size_t operator()(T p) const { return size_t(p); }
 	};
 #else
+	namespace Internal
+	{
 		// utility to disable the generic template specialization that is
 		// used for enum types only.
 		template <typename T, bool Enabled>

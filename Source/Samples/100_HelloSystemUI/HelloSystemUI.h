@@ -59,7 +59,7 @@ private:
     void CreateScene();
 
     /// Reference holding message box.
-    ea::shared_ptr<SystemMessageBox> messageBox_;
+    SharedPtr<SystemMessageBox> messageBox_;
     /// Flag controlling display of imgui demo window.
     bool demoOpen_ = false;
 };

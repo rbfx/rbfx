@@ -52,8 +52,8 @@ Gizmo::~Gizmo()
 
 bool Gizmo::Manipulate(const Camera* camera, Node* node)
 {
-    ea::vector<ea::weak_ptr<Node>> nodes;
-    nodes.push_back(ea::weak_ptr<Node>(node));
+    ea::vector<WeakPtr<Node>> nodes;
+    nodes.push_back(WeakPtr<Node>(node));
     return Manipulate(camera, nodes);
 }
 
@@ -62,7 +62,7 @@ bool Gizmo::IsActive() const
     return ImGuizmo::IsUsing();
 }
 
-bool Gizmo::Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>>& nodes)
+bool Gizmo::Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& nodes)
 {
     if (nodes.empty())
         return false;
@@ -81,7 +81,7 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>
             auto count = 0;
             for (const auto& node: nodes)
             {
-                if (node.expired() || node->GetType() == Scene::GetTypeStatic())
+                if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
                     continue;
                 center += node->GetWorldPosition();
                 count++;
@@ -93,7 +93,7 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>
             center /= count;
             currentOrigin_.SetTranslation(center);
         }
-        else if (!nodes.front().expired())
+        else if (!nodes.front().Expired())
             currentOrigin_ = nodes.front()->GetTransform().ToMatrix4();
     }
 
@@ -177,13 +177,13 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>
             using namespace GizmoNodeModified;
             for (const auto& node: nodes)
             {
-                if (node.expired())
+                if (node.Expired())
                 {
                     URHO3D_LOGWARNINGF("Node expired while manipulating it with gizmo.");
                     continue;
                 }
 
-                auto it = initialTransforms_.find(node.get());
+                auto it = initialTransforms_.find(node.Get());
                 if (it == initialTransforms_.end())
                 {
                     URHO3D_LOGWARNINGF("Gizmo has no record of initial node transform. List of transformed nodes "
@@ -191,7 +191,7 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<ea::weak_ptr<Node>
                     continue;
                 }
 
-                SendEvent(E_GIZMONODEMODIFIED, P_NODE, node.get(), P_OLDTRANSFORM, it->second,
+                SendEvent(E_GIZMONODEMODIFIED, P_NODE, node.Get(), P_OLDTRANSFORM, it->second,
                     P_NEWTRANSFORM, node->GetTransform());
             }
         }
@@ -210,7 +210,7 @@ bool Gizmo::ManipulateSelection(const Camera* camera)
     // Remove expired selections
     for (auto it = nodeSelection_.begin(); it != nodeSelection_.end();)
     {
-        if (it->expired())
+        if (it->Expired())
             it = nodeSelection_.erase(it);
         else
             ++it;
@@ -244,7 +244,7 @@ void Gizmo::RenderUI()
 
 bool Gizmo::Select(Node* node)
 {
-    ea::weak_ptr<Node> weakNode(node);
+    WeakPtr<Node> weakNode(node);
     if (nodeSelection_.contains(weakNode))
         return false;
     nodeSelection_.push_back(weakNode);
@@ -257,7 +257,7 @@ bool Gizmo::Select(ea::vector<Node*> nodes)
     bool selectedAny = false;
     for (auto* node : nodes)
     {
-        ea::weak_ptr<Node> weakNode(node);
+        WeakPtr<Node> weakNode(node);
         if (!nodeSelection_.contains(weakNode))
         {
             nodeSelection_.push_back(weakNode);
@@ -272,7 +272,7 @@ bool Gizmo::Select(ea::vector<Node*> nodes)
 
 bool Gizmo::Unselect(Node* node)
 {
-    ea::weak_ptr<Node> weakNode(node);
+    WeakPtr<Node> weakNode(node);
     if (!nodeSelection_.contains(weakNode))
         return false;
     nodeSelection_.erase_first(weakNode);
@@ -299,7 +299,7 @@ bool Gizmo::UnselectAll()
 
 bool Gizmo::IsSelected(Node* node) const
 {
-    ea::weak_ptr<Node> pNode(node);
+    WeakPtr<Node> pNode(node);
     return nodeSelection_.contains(pNode);
 }
 

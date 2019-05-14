@@ -110,7 +110,7 @@ void Run(ea::vector<ea::string>& arguments)
     if (arguments.size() < 2)
         Help();
 
-    ea::shared_ptr<Context> context(new Context());
+    SharedPtr<Context> context(new Context());
     context->RegisterSubsystem(new FileSystem(context));
     context->RegisterSubsystem(new Log(context));
     auto* fileSystem = context->GetSubsystem<FileSystem>();
@@ -196,7 +196,7 @@ void Run(ea::vector<ea::string>& arguments)
     offsetX = Min((int)offsetX, (int)padX);
     offsetY = Min((int)offsetY, (int)padY);
 
-    ea::vector<ea::shared_ptr<PackerInfo > > packerInfos;
+    ea::vector<SharedPtr<PackerInfo > > packerInfos;
 
     for (unsigned i = 0; i < inputFiles.size(); ++i)
     {
@@ -211,7 +211,7 @@ void Run(ea::vector<ea::string>& arguments)
         if (image.IsCompressed())
             ErrorExit(path + " is compressed. Compressed images are not allowed.");
 
-        ea::shared_ptr<PackerInfo> packerInfo(new PackerInfo(path, name));
+        SharedPtr<PackerInfo> packerInfo(new PackerInfo(path, name));
         int imageWidth = image.GetWidth();
         int imageHeight = image.GetHeight();
         int trimOffsetX = 0;
@@ -344,7 +344,7 @@ void Run(ea::vector<ea::string>& arguments)
 
     for (unsigned i = 0; i < packerInfos.size(); ++i)
     {
-        ea::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
+        SharedPtr<PackerInfo> packerInfo = packerInfos[i];
         XMLElement subTexture = root.CreateChild("SubTexture");
         subTexture.SetString("name", packerInfo->name);
         subTexture.SetInt("x", packerInfo->x + offsetX);
@@ -387,7 +387,7 @@ void Run(ea::vector<ea::string>& arguments)
         URHO3D_LOGINFO("Drawing debug information.");
         for (unsigned i = 0; i < packerInfos.size(); ++i)
         {
-            ea::shared_ptr<PackerInfo> packerInfo = packerInfos[i];
+            SharedPtr<PackerInfo> packerInfo = packerInfos[i];
 
             // Draw outer bounds
             for (int x = 0; x < packerInfo->frameWidth; ++x)

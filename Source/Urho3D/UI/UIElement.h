@@ -565,7 +565,7 @@ public:
     UIElement* GetChild(const StringHash& key, const Variant& value = Variant::EMPTY, bool recursive = false) const;
 
     /// Return immediate child elements.
-    const ea::vector<ea::shared_ptr<UIElement> >& GetChildren() const { return children_; }
+    const ea::vector<SharedPtr<UIElement> >& GetChildren() const { return children_; }
 
     /// Return child elements either recursively or non-recursively.
     void GetChildren(ea::vector<UIElement*>& dest, bool recursive = false) const;
@@ -669,7 +669,7 @@ protected:
     /// Name.
     ea::string name_;
     /// Child elements.
-    ea::vector<ea::shared_ptr<UIElement> > children_;
+    ea::vector<SharedPtr<UIElement> > children_;
     /// Parent element.
     UIElement* parent_{};
     /// Child element clipping border.
@@ -800,9 +800,9 @@ private:
     /// Has color gradient flag.
     bool colorGradient_{};
     /// Default style file.
-    ea::shared_ptr<XMLFile> defaultStyle_;
+    SharedPtr<XMLFile> defaultStyle_;
     /// Last applied style file.
-    ea::weak_ptr<XMLFile> appliedStyleFile_;
+    WeakPtr<XMLFile> appliedStyleFile_;
     /// Style resource name which is loaded by default.
     ea::string defaultStyleFileName_;
     /// Traversal mode for rendering.

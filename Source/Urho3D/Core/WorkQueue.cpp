@@ -99,7 +99,7 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 
     for (unsigned i = 0; i < numThreads; ++i)
     {
-        ea::shared_ptr<WorkerThread> thread(new WorkerThread(this, i + 1));
+        SharedPtr<WorkerThread> thread(new WorkerThread(this, i + 1));
         thread->SetName(Format("Worker {}", i + 1));
         thread->Run();
         threads_.push_back(thread);
@@ -109,24 +109,24 @@ void WorkQueue::CreateThreads(unsigned numThreads)
 #endif
 }
 
-ea::shared_ptr<WorkItem> WorkQueue::GetFreeItem()
+SharedPtr<WorkItem> WorkQueue::GetFreeItem()
 {
     if (!poolItems_.empty())
     {
-        ea::shared_ptr<WorkItem> item = poolItems_.front();
+        SharedPtr<WorkItem> item = poolItems_.front();
         poolItems_.pop_front();
         return item;
     }
     else
     {
         // No usable items found, create a new one set it as pooled and return it.
-        ea::shared_ptr<WorkItem> item(new WorkItem());
+        SharedPtr<WorkItem> item(new WorkItem());
         item->pooled_ = true;
         return item;
     }
 }
 
-void WorkQueue::AddWorkItem(const ea::shared_ptr<WorkItem>& item)
+void WorkQueue::AddWorkItem(const SharedPtr<WorkItem>& item)
 {
     if (!item)
     {
@@ -148,7 +148,7 @@ void WorkQueue::AddWorkItem(const ea::shared_ptr<WorkItem>& item)
 
     // Find position for new item
     if (queue_.empty())
-        queue_.push_back(item.get());
+        queue_.push_back(item.Get());
     else
     {
         bool inserted = false;
@@ -157,14 +157,14 @@ void WorkQueue::AddWorkItem(const ea::shared_ptr<WorkItem>& item)
         {
             if ((*i)->priority_ <= item->priority_)
             {
-                queue_.insert(i, item.get());
+                queue_.insert(i, item.Get());
                 inserted = true;
                 break;
             }
         }
 
         if (!inserted)
-            queue_.push_back(item.get());
+            queue_.push_back(item.Get());
     }
 
     if (threads_.size())
@@ -184,7 +184,7 @@ WorkItem* WorkQueue::AddWorkItem(std::function<void()> workFunction, unsigned pr
     return item;
 }
 
-bool WorkQueue::RemoveWorkItem(ea::shared_ptr<WorkItem> item)
+bool WorkQueue::RemoveWorkItem(SharedPtr<WorkItem> item)
 {
     if (!item)
         return false;
@@ -192,7 +192,7 @@ bool WorkQueue::RemoveWorkItem(ea::shared_ptr<WorkItem> item)
     MutexLock lock(queueMutex_);
 
     // Can only remove successfully if the item was not yet taken by threads for execution
-    auto i = ea::find(queue_.begin(), queue_.end(), item.get());
+    auto i = ea::find(queue_.begin(), queue_.end(), item.Get());
     if (i != queue_.end())
     {
         auto j = ea::find(workItems_.begin(), workItems_.end(), item);
@@ -208,14 +208,14 @@ bool WorkQueue::RemoveWorkItem(ea::shared_ptr<WorkItem> item)
     return false;
 }
 
-unsigned WorkQueue::RemoveWorkItems(const ea::vector<ea::shared_ptr<WorkItem> >& items)
+unsigned WorkQueue::RemoveWorkItems(const ea::vector<SharedPtr<WorkItem> >& items)
 {
     MutexLock lock(queueMutex_);
     unsigned removed = 0;
 
     for (auto i = items.begin(); i != items.end(); ++i)
     {
-        auto j = ea::find(queue_.begin(), queue_.end(), i->get());
+        auto j = ea::find(queue_.begin(), queue_.end(), i->Get());
         if (j != queue_.end())
         {
             auto k = ea::find(workItems_.begin(), workItems_.end(), *i);
@@ -379,7 +379,7 @@ void WorkQueue::PurgeCompleted(unsigned priority)
                 using namespace WorkItemCompleted;
 
                 VariantMap& eventData = GetEventDataMap();
-                eventData[P_ITEM] = i->get();
+                eventData[P_ITEM] = i->Get();
                 SendEvent(E_WORKITEMCOMPLETED, eventData);
             }
 
@@ -403,7 +403,7 @@ void WorkQueue::PurgePool()
     lastSize_ = currentSize;
 }
 
-void WorkQueue::ReturnToPool(ea::shared_ptr<WorkItem>& item)
+void WorkQueue::ReturnToPool(SharedPtr<WorkItem>& item)
 {
     // Check if this was a pooled item and set it to usable
     if (item->pooled_)

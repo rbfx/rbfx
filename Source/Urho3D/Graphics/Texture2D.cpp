@@ -75,7 +75,7 @@ bool Texture2D::BeginLoad(Deserializer& source)
     loadImage_ = context_->CreateObject<Image>();
     if (!loadImage_->Load(source))
     {
-        loadImage_.reset();
+        loadImage_.Reset();
         return false;
     }
 
@@ -103,8 +103,8 @@ bool Texture2D::EndLoad()
     SetParameters(loadParameters_);
     bool success = SetData(loadImage_);
 
-    loadImage_.reset();
-    loadParameters_.reset();
+    loadImage_.Reset();
+    loadParameters_.Reset();
 
     return success;
 }
@@ -131,7 +131,7 @@ bool Texture2D::SetSize(int width, int height, unsigned format, TextureUsage usa
         requestedLevels_ = 1;
 
     // Delete the old rendersurface if any
-    renderSurface_.reset();
+    renderSurface_.Reset();
 
     usage_ = usage;
 
@@ -173,9 +173,9 @@ bool Texture2D::GetImage(Image& image) const
     return true;
 }
 
-ea::shared_ptr<Image> Texture2D::GetImage() const
+SharedPtr<Image> Texture2D::GetImage() const
 {
-    auto rawImage = ea::make_shared<Image>(context_);
+    auto rawImage = MakeShared<Image>(context_);
     if (!GetImage(*rawImage))
         return nullptr;
     return rawImage;

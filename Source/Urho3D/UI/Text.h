@@ -214,9 +214,9 @@ protected:
             float depthBias = 0.0f);
 
     /// Font.
-    ea::shared_ptr<Font> font_;
+    SharedPtr<Font> font_;
     /// Current face.
-    ea::weak_ptr<FontFace> fontFace_;
+    WeakPtr<FontFace> fontFace_;
     /// Font size.
     float fontSize_;
     /// UTF-8 encoded text.

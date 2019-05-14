@@ -70,9 +70,9 @@ protected:
 
 private:
     /// Image file acquired during BeginLoad.
-    ea::shared_ptr<Image> loadImage_;
+    SharedPtr<Image> loadImage_;
     /// Parameter file acquired during BeginLoad.
-    ea::shared_ptr<XMLFile> loadParameters_;
+    SharedPtr<XMLFile> loadParameters_;
 };
 
 }

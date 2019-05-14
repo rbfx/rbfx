@@ -150,11 +150,11 @@ protected:
     /// Animation enabled.
     bool animationEnabled_;
     /// Animation.
-    ea::shared_ptr<ObjectAnimation> objectAnimation_;
+    SharedPtr<ObjectAnimation> objectAnimation_;
     /// Animated network attribute set.
     ea::hash_set<const AttributeInfo*> animatedNetworkAttributes_;
     /// Attribute animation infos.
-    ea::unordered_map<ea::string, ea::shared_ptr<AttributeAnimationInfo> > attributeAnimationInfos_;
+    ea::unordered_map<ea::string, SharedPtr<AttributeAnimationInfo> > attributeAnimationInfos_;
 };
 
 }

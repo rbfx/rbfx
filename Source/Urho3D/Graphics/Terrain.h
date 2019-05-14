@@ -245,27 +245,27 @@ private:
     void MarkTerrainDirty() { recreateTerrain_ = true; }
 
     /// Shared index buffer.
-    ea::shared_ptr<IndexBuffer> indexBuffer_;
+    SharedPtr<IndexBuffer> indexBuffer_;
     /// Heightmap image.
-    ea::shared_ptr<Image> heightMap_;
+    SharedPtr<Image> heightMap_;
     /// Height data.
     ea::shared_array<float> heightData_;
     /// Source height data for smoothing.
     ea::shared_array<float> sourceHeightData_;
     /// Material.
-    ea::shared_ptr<Material> material_;
+    SharedPtr<Material> material_;
     /// Terrain patches.
-    ea::vector<ea::weak_ptr<TerrainPatch> > patches_;
+    ea::vector<WeakPtr<TerrainPatch> > patches_;
     /// Draw ranges for different LODs and stitching combinations.
     ea::vector<ea::pair<unsigned, unsigned> > drawRanges_;
     /// North neighbor terrain.
-    ea::weak_ptr<Terrain> north_;
+    WeakPtr<Terrain> north_;
     /// South neighbor terrain.
-    ea::weak_ptr<Terrain> south_;
+    WeakPtr<Terrain> south_;
     /// West neighbor terrain.
-    ea::weak_ptr<Terrain> west_;
+    WeakPtr<Terrain> west_;
     /// East neighbor terrain.
-    ea::weak_ptr<Terrain> east_;
+    WeakPtr<Terrain> east_;
     /// Vertex and height spacing.
     Vector3 spacing_;
     /// Vertex and height sacing at the time of last update.

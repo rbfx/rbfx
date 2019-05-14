@@ -69,11 +69,11 @@ protected:
     void UpdateViewports();
 
     /// Current loaded scenes.
-    ea::vector<ea::shared_ptr<Scene>> scenes_;
+    ea::vector<SharedPtr<Scene>> scenes_;
     /// Current active scene.
-    ea::weak_ptr<Scene> activeScene_;
+    WeakPtr<Scene> activeScene_;
     /// Surface for rendering active scene into.
-    ea::weak_ptr<RenderSurface> renderSurface_;
+    WeakPtr<RenderSurface> renderSurface_;
     ///
     bool missingMetadataWarned_ = false;
 };

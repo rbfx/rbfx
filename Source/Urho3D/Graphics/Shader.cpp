@@ -132,7 +132,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const ea::string& defines
 ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
 {
     StringHash definesHash(defines);
-    ea::unordered_map<StringHash, ea::shared_ptr<ShaderVariation> >& variations(type == VS ? vsVariations_ : psVariations_);
+    ea::unordered_map<StringHash, SharedPtr<ShaderVariation> >& variations(type == VS ? vsVariations_ : psVariations_);
     auto i = variations.find(definesHash);
     if (i == variations.end())
     {
@@ -147,7 +147,7 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
         else
         {
             // No shader variation found. Create new
-            i = variations.insert(ea::make_pair(normalizedHash, ea::shared_ptr<ShaderVariation>(new ShaderVariation(this, type)))).first;
+            i = variations.insert(ea::make_pair(normalizedHash, SharedPtr<ShaderVariation>(new ShaderVariation(this, type)))).first;
             if (definesHash != normalizedHash)
                 variations.insert(ea::make_pair(definesHash, i->second));
 
@@ -188,7 +188,7 @@ bool Shader::ProcessSource(ea::string& code, Deserializer& source)
         {
             ea::string includeFileName = GetPath(source.GetName()) + line.substr(9).replaced("\"", "").trimmed();
 
-            ea::shared_ptr<File> includeFile = cache->GetFile(includeFileName);
+            SharedPtr<File> includeFile = cache->GetFile(includeFileName);
             if (!includeFile)
                 return false;
 

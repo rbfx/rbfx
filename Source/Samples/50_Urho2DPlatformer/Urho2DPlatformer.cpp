@@ -122,7 +122,7 @@ void Urho2DPlatformer::CreateScene()
     camera->SetZoom(2.0f * Min((float)graphics->GetWidth() / 1280.0f, (float)graphics->GetHeight() / 800.0f)); // Set zoom according to user's resolution to ensure full visibility (initial zoom (2.0) is set for full visibility at 1280x800 resolution)
 
     // Setup the viewport for displaying the scene
-    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, camera));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, camera));
     auto* renderer = GetSubsystem<Renderer>();
     renderer->SetViewport(0, viewport);
 
@@ -132,7 +132,7 @@ void Urho2DPlatformer::CreateScene()
 
     // Create tile map from tmx file
     auto* cache = GetSubsystem<ResourceCache>();
-    ea::shared_ptr<Node> tileMapNode(scene_->CreateChild("TileMap"));
+    SharedPtr<Node> tileMapNode(scene_->CreateChild("TileMap"));
     auto* tileMap = tileMapNode->CreateComponent<TileMap2D>();
     tileMap->SetTmxFile(cache->GetResource<TmxFile2D>("Urho2D/Tilesets/Ortho.tmx"));
     const TileMapInfo2D& info = tileMap->GetInfo();

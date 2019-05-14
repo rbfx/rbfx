@@ -58,14 +58,14 @@ public:
         for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
         {
             parameters_[i->first] = i->second;
-            parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].get();
+            parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].Get();
         }
 
         const ea::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
         for (auto i = psParams.begin(); i != psParams.end(); ++i)
         {
             parameters_[i->first] = i->second;
-            parameters_[i->first].bufferPtr_ = psConstantBuffers_[i->second.buffer_].get();
+            parameters_[i->first].bufferPtr_ = psConstantBuffers_[i->second.buffer_].Get();
         }
 
         // Optimize shader parameter lookup by rehashing to next power of two
@@ -81,9 +81,9 @@ public:
     /// Combined parameters from the vertex and pixel shader.
     ea::unordered_map<StringHash, ShaderParameter> parameters_;
     /// Vertex shader constant buffers.
-    ea::shared_ptr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    SharedPtr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Pixel shader constant buffers.
-    ea::shared_ptr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    SharedPtr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
 };
 
 }

@@ -61,53 +61,53 @@ FileSelector::FileSelector(Context* context) :
 
     titleLayout = context_->CreateObject<UIElement>();
     titleLayout->SetLayout(LM_HORIZONTAL);
-    window_->AddChild(titleLayout.get());
+    window_->AddChild(titleLayout.Get());
 
     titleText_ = context_->CreateObject<Text>();
-    titleLayout->AddChild(titleText_.get());
+    titleLayout->AddChild(titleText_.Get());
 
     closeButton_ = context_->CreateObject<Button>();
-    titleLayout->AddChild(closeButton_.get());
+    titleLayout->AddChild(closeButton_.Get());
 
     pathEdit_ = context_->CreateObject<LineEdit>();
-    window_->AddChild(pathEdit_.get());
+    window_->AddChild(pathEdit_.Get());
 
     fileList_ = context_->CreateObject<ListView>();
-    window_->AddChild(fileList_.get());
+    window_->AddChild(fileList_.Get());
 
     fileNameLayout_ = context_->CreateObject<UIElement>();
     fileNameLayout_->SetLayout(LM_HORIZONTAL);
 
     fileNameEdit_ = context_->CreateObject<LineEdit>();
-    fileNameLayout_->AddChild(fileNameEdit_.get());
+    fileNameLayout_->AddChild(fileNameEdit_.Get());
 
     filterList_ = context_->CreateObject<DropDownList>();
-    fileNameLayout_->AddChild(filterList_.get());
+    fileNameLayout_->AddChild(filterList_.Get());
 
-    window_->AddChild(fileNameLayout_.get());
+    window_->AddChild(fileNameLayout_.Get());
 
     separatorLayout_ = context_->CreateObject<UIElement>();
-    window_->AddChild(separatorLayout_.get());
+    window_->AddChild(separatorLayout_.Get());
 
     buttonLayout_ = context_->CreateObject<UIElement>();
     buttonLayout_->SetLayout(LM_HORIZONTAL);
 
     auto spacer = context_->CreateObject<UIElement>();
-    buttonLayout_->AddChild(spacer.get()); // Add spacer
+    buttonLayout_->AddChild(spacer.Get()); // Add spacer
 
     cancelButton_ = context_->CreateObject<Button>();
     cancelButtonText_ = context_->CreateObject<Text>();
     cancelButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
-    cancelButton_->AddChild(cancelButtonText_.get());
-    buttonLayout_->AddChild(cancelButton_.get());
+    cancelButton_->AddChild(cancelButtonText_.Get());
+    buttonLayout_->AddChild(cancelButton_.Get());
 
     okButton_ = context_->CreateObject<Button>();
     okButtonText_ = context_->CreateObject<Text>();
     okButtonText_->SetAlignment(HA_CENTER, VA_CENTER);
-    okButton_->AddChild(okButtonText_.get());
-    buttonLayout_->AddChild(okButton_.get());
+    okButton_->AddChild(okButtonText_.Get());
+    buttonLayout_->AddChild(okButton_.Get());
 
-    window_->AddChild(buttonLayout_.get());
+    window_->AddChild(buttonLayout_.Get());
 
     ea::vector<ea::string> defaultFilters;
     defaultFilters.push_back("*.*");
@@ -117,8 +117,8 @@ FileSelector::FileSelector(Context* context) :
 
     // Focus the fileselector's filelist initially when created, and bring to front
     auto* ui = GetSubsystem<UI>();
-    ui->GetRoot()->AddChild(window_.get());
-    ui->SetFocusElement(fileList_.get());
+    ui->GetRoot()->AddChild(window_.Get());
+    ui->SetFocusElement(fileList_.Get());
     window_->SetModal(true);
 
     SubscribeToEvent(filterList_, E_ITEMSELECTED, URHO3D_HANDLER(FileSelector, HandleFilterChanged));
@@ -171,11 +171,11 @@ void FileSelector::SetDefaultStyle(XMLFile* style)
     okButton_->SetStyle("FileSelectorButton");
     cancelButton_->SetStyle("FileSelectorButton");
 
-    const ea::vector<ea::shared_ptr<UIElement> >& filterTexts = filterList_->GetListView()->GetContentElement()->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& filterTexts = filterList_->GetListView()->GetContentElement()->GetChildren();
     for (unsigned i = 0; i < filterTexts.size(); ++i)
         filterTexts[i]->SetStyle("FileSelectorFilterText");
 
-    const ea::vector<ea::shared_ptr<UIElement> >& listTexts = fileList_->GetContentElement()->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& listTexts = fileList_->GetContentElement()->GetChildren();
     for (unsigned i = 0; i < listTexts.size(); ++i)
         listTexts[i]->SetStyle("FileSelectorListText");
 

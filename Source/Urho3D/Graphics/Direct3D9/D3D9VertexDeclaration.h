@@ -57,7 +57,7 @@ public:
     /// Construct with vertex buffers to base declaration on. Higher index buffers will override semantics on lower indices.
     VertexDeclaration(Graphics* graphics, const ea::vector<VertexBuffer*>& buffers);
     /// Construct with vertex buffers (shared pointer vector) to base declaration on. Higher index buffers will override semantics on lower indices.
-    VertexDeclaration(Graphics* graphics, const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers);
+    VertexDeclaration(Graphics* graphics, const ea::vector<SharedPtr<VertexBuffer> >& buffers);
     /// Destruct.
     ~VertexDeclaration();
 

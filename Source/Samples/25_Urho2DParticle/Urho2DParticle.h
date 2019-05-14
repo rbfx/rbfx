@@ -69,5 +69,5 @@ private:
     void HandleMouseMove(StringHash eventType, VariantMap& eventData);
 
     /// Particle scene node.
-    ea::shared_ptr<Node> particleNode_;
+    SharedPtr<Node> particleNode_;
 };

@@ -222,7 +222,7 @@ RenderPath* CameraViewport::RebuildRenderPath()
     if (!viewport_)
         return nullptr;
 
-    ea::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
+    SharedPtr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPath_.name_))
     {
@@ -256,7 +256,7 @@ void CameraViewport::SetRenderPath(const ResourceRef& renderPathResource)
         return;
     }
 
-    ea::shared_ptr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
+    SharedPtr<RenderPath> oldRenderPath(viewport_->GetRenderPath());
 
     const ea::string& renderPathFileName = renderPathResource.name_.empty() ? defaultRenderPath.name_ : renderPathResource.name_;
     if (XMLFile* renderPathFile = GetCache()->GetResource<XMLFile>(renderPathFileName))

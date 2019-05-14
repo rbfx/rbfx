@@ -181,7 +181,7 @@ private:
     /// If the RigidBody should be activated.
     bool activate_;
     /// Hull RigidBody
-    ea::weak_ptr<RigidBody> hullBody_;
+    WeakPtr<RigidBody> hullBody_;
     /// Opaque Bullet data hidden from public
     RaycastVehicleData* vehicleData_;
     /// Coordinate system.

@@ -83,15 +83,15 @@ protected:
     void AttributeCustomize(VariantMap& args);
 
     ///
-    ea::shared_ptr<UI> offScreenUI_;
+    SharedPtr<UI> offScreenUI_;
     /// Root element which contains edited UI.
-    ea::shared_ptr<RootUIElement> rootElement_;
+    SharedPtr<RootUIElement> rootElement_;
     /// Texture that UIElement will be rendered into.
-    ea::shared_ptr<Texture2D> texture_;
+    SharedPtr<Texture2D> texture_;
     /// Flag enabling display of internal elements.
     bool showInternal_ = false;
 
-    ea::weak_ptr<UIElement> selectedElement_;
+    WeakPtr<UIElement> selectedElement_;
     bool hideResizeHandles_ = false;
     ea::vector<ea::string> styleNames_;
     ea::string textureSelectorAttribute_;

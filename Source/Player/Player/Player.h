@@ -67,7 +67,7 @@ protected:
 #endif
 
     ///
-    ea::vector<ea::shared_ptr<PluginApplication>> plugins_;
+    ea::vector<SharedPtr<PluginApplication>> plugins_;
 };
 
 }

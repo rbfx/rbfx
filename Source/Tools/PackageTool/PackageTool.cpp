@@ -51,8 +51,8 @@ struct FileEntry
     unsigned checksum_{};
 };
 
-ea::shared_ptr<Context> context_(new Context());
-ea::shared_ptr<FileSystem> fileSystem_(new FileSystem(context_));
+SharedPtr<Context> context_(new Context());
+SharedPtr<FileSystem> fileSystem_(new FileSystem(context_));
 ea::string basePath_;
 ea::vector<FileEntry> entries_;
 unsigned checksum_ = 0;
@@ -164,7 +164,7 @@ void Run(const ea::vector<ea::string>& arguments)
         if (fileSystem_->Exists(packageName))
         {
             unsigned packageTime = fileSystem_->GetLastModifiedTime(packageName);
-            ea::shared_ptr<PackageFile> packageFile(new PackageFile(context_, packageName));
+            SharedPtr<PackageFile> packageFile(new PackageFile(context_, packageName));
             if (packageFile->GetNumFiles() == fileNames.size())
             {
                 bool filesOutOfDate = false;
@@ -192,7 +192,7 @@ void Run(const ea::vector<ea::string>& arguments)
     }
     else
     {
-        ea::shared_ptr<PackageFile> packageFile(new PackageFile(context_, packageName));
+        SharedPtr<PackageFile> packageFile(new PackageFile(context_, packageName));
         bool outputCompressionRatio = false;
         switch (arguments[0][1])
         {

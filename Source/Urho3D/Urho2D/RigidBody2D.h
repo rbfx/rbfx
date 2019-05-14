@@ -170,7 +170,7 @@ private:
     void OnMarkedDirty(Node* node) override;
 
     /// Physics world.
-    ea::weak_ptr<PhysicsWorld2D> physicsWorld_;
+    WeakPtr<PhysicsWorld2D> physicsWorld_;
     /// Box2D body define.
     b2BodyDef bodyDef_;
     /// Box2D mass data.
@@ -180,9 +180,9 @@ private:
     /// Box2D body.
     b2Body* body_;
     /// Collision shapes.
-    ea::vector<ea::weak_ptr<CollisionShape2D> > collisionShapes_;
+    ea::vector<WeakPtr<CollisionShape2D> > collisionShapes_;
     /// Constraints.
-    ea::vector<ea::weak_ptr<Constraint2D> > constraints_;
+    ea::vector<WeakPtr<Constraint2D> > constraints_;
 };
 
 }

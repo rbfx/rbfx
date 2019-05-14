@@ -82,15 +82,15 @@ private:
     void HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Renderable texture.
-    ea::shared_ptr<Texture2D> renderTexture_;
+    SharedPtr<Texture2D> renderTexture_;
     /// Depth stencil texture.
-    ea::shared_ptr<Texture2D> depthTexture_;
+    SharedPtr<Texture2D> depthTexture_;
     /// Viewport.
-    ea::shared_ptr<Viewport> viewport_;
+    SharedPtr<Viewport> viewport_;
     /// Scene.
-    ea::shared_ptr<Scene> scene_;
+    SharedPtr<Scene> scene_;
     /// Camera scene node.
-    ea::shared_ptr<Node> cameraNode_;
+    SharedPtr<Node> cameraNode_;
     /// Own scene.
     bool ownScene_;
     /// Render texture format.

@@ -361,15 +361,13 @@ namespace eastl
 			mAllocator = allocator;
 		}
 
-		// Urho3D:
-
+#if EASTL_URHO3D_EXTENSIONS
 		/// Get pointer to reference count integer. It may be shared between multiple instances of shared_array<>.
 		int* get_refcount_pointer() const
 		{
 			return mpRefCount;
 		}
 
-#if EASTL_URHO3D_EXTENSIONS
 		/// Perform a static cast from a shared array pointer of another type.
 		template <class U> void do_static_cast(const shared_array<U>& rhs)
 		{

@@ -111,7 +111,7 @@ private:
     void HandlePostRenderUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Rear-facing camera scene node.
-    ea::shared_ptr<Node> rearCameraNode_;
+    SharedPtr<Node> rearCameraNode_;
     /// Flag for drawing debug geometry.
     bool drawDebug_;
 };

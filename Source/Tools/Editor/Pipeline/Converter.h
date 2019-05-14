@@ -72,7 +72,7 @@ protected:
     ///
     ConverterKind kind_ = CONVERTER_OFFLINE;
     ///
-    ea::vector<ea::shared_ptr<Converter>> converters_;
+    ea::vector<SharedPtr<Converter>> converters_;
 };
 
 }

@@ -84,9 +84,9 @@ protected:
     void GetEventFrames(float beginTime, float endTime, ea::vector<const VAnimEventFrame*>& eventFrames);
 
     /// Target object.
-    ea::weak_ptr<Object> target_;
+    WeakPtr<Object> target_;
     /// Attribute animation.
-    ea::shared_ptr<ValueAnimation> animation_;
+    SharedPtr<ValueAnimation> animation_;
     /// Wrap mode.
     WrapMode wrapMode_;
     /// Animation speed.

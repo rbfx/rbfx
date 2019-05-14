@@ -80,7 +80,7 @@ char* _spUtil_readFile(const char* path, int* length)
         return 0;
 
     ResourceCache* cache = currentAnimationSet->GetSubsystem<ResourceCache>();
-    ea::shared_ptr<File> file = cache->GetFile(path);
+    SharedPtr<File> file = cache->GetFile(path);
     if (!file)
         return 0;
 
@@ -341,7 +341,7 @@ struct SpriteInfo
     int x{};
     int y{};
     Spriter::File* file_{};
-    ea::shared_ptr<Image> image_;
+    SharedPtr<Image> image_;
 };
 
 bool AnimationSet2D::EndLoadSpriter()
@@ -362,7 +362,7 @@ bool AnimationSet2D::EndLoadSpriter()
             for (unsigned j = 0; j < folder->files_.size(); ++j)
             {
                 Spriter::File* file = folder->files_[j];
-                ea::shared_ptr<Sprite2D> sprite(spriteSheet_->GetSprite(GetFileName(file->name_)));
+                SharedPtr<Sprite2D> sprite(spriteSheet_->GetSprite(GetFileName(file->name_)));
                 if (!sprite)
                 {
                     URHO3D_LOGERROR("Could not load sprite " + file->name_);
@@ -405,7 +405,7 @@ bool AnimationSet2D::EndLoadSpriter()
             {
                 Spriter::File* file = folder->files_[j];
                 ea::string imagePath = parentPath + file->name_;
-                ea::shared_ptr<Image> image(cache->GetResource<Image>(imagePath));
+                SharedPtr<Image> image(cache->GetResource<Image>(imagePath));
                 if (!image)
                 {
                     URHO3D_LOGERROR("Could not load image");
@@ -448,7 +448,7 @@ bool AnimationSet2D::EndLoadSpriter()
                 }
             }
 
-            ea::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
             texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
@@ -471,7 +471,7 @@ bool AnimationSet2D::EndLoadSpriter()
                         image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
                 }
 
-                ea::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+                SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
                 sprite->SetTexture(texture);
                 sprite->SetRectangle(IntRect(info.x, info.y, info.x + image->GetWidth(), info.y + image->GetHeight()));
                 sprite->SetHotSpot(Vector2(info.file_->pivotX_, info.file_->pivotY_));
@@ -484,7 +484,7 @@ bool AnimationSet2D::EndLoadSpriter()
         }
         else
         {
-            ea::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
+            SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
             texture->SetMipsToSkip(QUALITY_LOW, 0);
             texture->SetNumLevels(1);
 
@@ -522,8 +522,8 @@ void AnimationSet2D::Dispose()
 
     spriterData_.reset();
 
-    sprite_.reset();
-    spriteSheet_.reset();
+    sprite_.Reset();
+    spriteSheet_.Reset();
     spriterFileSprites_.clear();
 }
 

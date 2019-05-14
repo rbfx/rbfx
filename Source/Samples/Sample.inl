@@ -110,7 +110,7 @@ void Sample::InitTouchInput()
     if (!patchString.empty())
     {
         // Patch the screen joystick layout further on demand
-        ea::shared_ptr<XMLFile> patchFile(new XMLFile(context_));
+        SharedPtr<XMLFile> patchFile(new XMLFile(context_));
         if (patchFile->FromString(patchString))
             layout->Patch(patchFile);
     }

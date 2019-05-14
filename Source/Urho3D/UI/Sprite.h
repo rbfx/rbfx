@@ -117,7 +117,7 @@ protected:
     /// Rotation angle.
     float rotation_;
     /// Texture.
-    ea::shared_ptr<Texture> texture_;
+    SharedPtr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Blend mode flag.

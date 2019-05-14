@@ -393,7 +393,6 @@ namespace eastl
 		{
 			return insert(end(), value.begin(), value.end());
 		}
-
 #endif
 
 	protected:

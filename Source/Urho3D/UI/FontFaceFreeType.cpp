@@ -198,7 +198,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
     int textureHeight = maxTextureSize;
     hasMutableGlyph_ = false;
 
-    ea::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
@@ -217,7 +217,7 @@ bool FontFaceFreeType::Load(const unsigned char* fontData, unsigned fontDataSize
         }
     }
 
-    ea::shared_ptr<Texture2D> texture = LoadFaceTexture(image);
+    SharedPtr<Texture2D> texture = LoadFaceTexture(image);
     if (!texture)
         return false;
 
@@ -331,12 +331,12 @@ const FontGlyph* FontFaceFreeType::GetGlyph(unsigned c)
 
 bool FontFaceFreeType::SetupNextTexture(int textureWidth, int textureHeight)
 {
-    ea::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(textureWidth, textureHeight, 1);
     unsigned char* imageData = image->GetData();
     memset(imageData, 0, (size_t)image->GetWidth() * image->GetHeight());
 
-    ea::shared_ptr<Texture2D> texture = LoadFaceTexture(image);
+    SharedPtr<Texture2D> texture = LoadFaceTexture(image);
     if (!texture)
         return false;
 

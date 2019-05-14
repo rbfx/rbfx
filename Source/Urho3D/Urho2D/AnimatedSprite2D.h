@@ -127,7 +127,7 @@ protected:
     /// Entity name.
     ea::string entity_;
     /// Animation set.
-    ea::shared_ptr<AnimationSet2D> animationSet_;
+    SharedPtr<AnimationSet2D> animationSet_;
     /// Animation name.
     ea::string animationName_;
     /// Loop mode.

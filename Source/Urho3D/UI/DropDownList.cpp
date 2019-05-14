@@ -48,13 +48,13 @@ DropDownList::DropDownList(Context* context) :
 
     auto window(context_->CreateObject<Window>());
     window->SetInternal(true);
-    SetPopup(window.get());
+    SetPopup(window.Get());
 
     listView_ = context_->CreateObject<ListView>();
     listView_->SetInternal(true);
     listView_->SetScrollBarsVisible(false, false);
     popup_->SetLayout(LM_VERTICAL);
-    popup_->AddChild(listView_.get());
+    popup_->AddChild(listView_.Get());
     placeholder_ = CreateChild<UIElement>("DDL_Placeholder");
     placeholder_->SetInternal(true);
     auto* text = placeholder_->CreateChild<Text>("DDL_Placeholder_Text");
@@ -132,7 +132,7 @@ void DropDownList::OnShowPopup()
     SetPopupOffset(0, showAbove ? -popup_->GetHeight() : GetHeight());
 
     // Focus the ListView to allow making the selection with keys
-    GetSubsystem<UI>()->SetFocusElement(listView_.get());
+    GetSubsystem<UI>()->SetFocusElement(listView_.Get());
 }
 
 void DropDownList::OnHidePopup()

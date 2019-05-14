@@ -390,7 +390,7 @@ void Octree::Update(const FrameInfo& frame)
         // Create a work item for each thread
         for (int i = 0; i < numWorkItems; ++i)
         {
-            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            SharedPtr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = UpdateDrawablesWork;
             item->aux_ = const_cast<FrameInfo*>(&frame);

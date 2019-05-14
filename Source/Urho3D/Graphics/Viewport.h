@@ -101,17 +101,17 @@ public:
 
 private:
     /// Scene pointer.
-    ea::weak_ptr<Scene> scene_;
+    WeakPtr<Scene> scene_;
     /// Camera pointer.
-    ea::weak_ptr<Camera> camera_;
+    WeakPtr<Camera> camera_;
     /// Culling camera pointer.
-    ea::weak_ptr<Camera> cullCamera_;
+    WeakPtr<Camera> cullCamera_;
     /// Viewport rectangle.
     IntRect rect_;
     /// Rendering path.
-    ea::shared_ptr<RenderPath> renderPath_;
+    SharedPtr<RenderPath> renderPath_;
     /// Internal rendering structure.
-    ea::shared_ptr<View> view_;
+    SharedPtr<View> view_;
     /// Debug draw flag.
     bool drawDebug_;
 };

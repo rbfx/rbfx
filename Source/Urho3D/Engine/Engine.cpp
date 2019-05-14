@@ -330,11 +330,11 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     if (removeOld)
     {
         ea::vector<ea::string> resourceDirs = cache->GetResourceDirs();
-        ea::vector<ea::shared_ptr<PackageFile> > packageFiles = cache->GetPackageFiles();
+        ea::vector<SharedPtr<PackageFile> > packageFiles = cache->GetPackageFiles();
         for (unsigned i = 0; i < resourceDirs.size(); ++i)
             cache->RemoveResourceDir(resourceDirs[i]);
         for (unsigned i = 0; i < packageFiles.size(); ++i)
-            cache->RemovePackageFile(packageFiles[i].get());
+            cache->RemovePackageFile(packageFiles[i].Get());
     }
 
     // Add resource paths
@@ -640,7 +640,7 @@ void Engine::DumpResources(bool dumpFileName)
         for (auto i = resourceGroups.begin(); i !=
             resourceGroups.end(); ++i)
         {
-            const ea::unordered_map<StringHash, ea::shared_ptr<Resource> >& resources = i->second.resources_;
+            const ea::unordered_map<StringHash, SharedPtr<Resource> >& resources = i->second.resources_;
             if (dumpFileName)
             {
                 for (auto j = resources.begin(); j !=

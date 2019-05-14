@@ -63,7 +63,7 @@ public:
     Sprite2D* GetSprite(const ea::string& name) const;
 
     /// Return sprite mapping.
-    const ea::unordered_map<ea::string, ea::shared_ptr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
+    const ea::unordered_map<ea::string, SharedPtr<Sprite2D> >& GetSpriteMapping() const { return spriteMapping_; }
 
 private:
     /// Begin load from PList file.
@@ -81,15 +81,15 @@ private:
     bool EndLoadFromJSONFile();
 
     /// Texture.
-    ea::shared_ptr<Texture2D> texture_;
+    SharedPtr<Texture2D> texture_;
     /// Sprite mapping.
-    ea::unordered_map<ea::string, ea::shared_ptr<Sprite2D> > spriteMapping_;
+    ea::unordered_map<ea::string, SharedPtr<Sprite2D> > spriteMapping_;
     /// PList file used while loading.
-    ea::shared_ptr<PListFile> loadPListFile_;
+    SharedPtr<PListFile> loadPListFile_;
     /// XML file used while loading.
-    ea::shared_ptr<XMLFile> loadXMLFile_;
+    SharedPtr<XMLFile> loadXMLFile_;
     /// JSON file used while loading.
-    ea::shared_ptr<JSONFile> loadJSONFile_;
+    SharedPtr<JSONFile> loadJSONFile_;
     /// Texture name used while loading.
     ea::string loadTextureName_;
 };

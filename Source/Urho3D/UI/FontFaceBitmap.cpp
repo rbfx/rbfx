@@ -52,7 +52,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 {
     Context* context = font_->GetContext();
 
-    ea::shared_ptr<XMLFile> xmlReader(context->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xmlReader(context->CreateObject<XMLFile>());
     MemoryBuffer memoryBuffer(fontData, fontDataSize);
     if (!xmlReader->Load(memoryBuffer))
     {
@@ -100,14 +100,14 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
         ea::string textureFile = fontPath + pageElem.GetAttribute("file");
 
         // Load texture manually to allow controlling the alpha channel mode
-        ea::shared_ptr<File> fontFile = resourceCache->GetFile(textureFile);
-        ea::shared_ptr<Image> fontImage(context->CreateObject<Image>());
+        SharedPtr<File> fontFile = resourceCache->GetFile(textureFile);
+        SharedPtr<Image> fontImage(context->CreateObject<Image>());
         if (!fontFile || !fontImage->Load(*fontFile))
         {
             URHO3D_LOGERROR("Failed to load font image file");
             return false;
         }
-        ea::shared_ptr<Texture2D> texture = LoadFaceTexture(fontImage);
+        SharedPtr<Texture2D> texture = LoadFaceTexture(fontImage);
         if (!texture)
             return false;
 
@@ -115,7 +115,7 @@ bool FontFaceBitmap::Load(const unsigned char* fontData, unsigned fontDataSize, 
 
         // Add texture to resource cache
         texture->SetName(fontFile->GetName());
-        resourceCache->AddManualResource(texture.get());
+        resourceCache->AddManualResource(texture.Get());
 
         totalTextureSize += fontImage->GetWidth() * fontImage->GetHeight() * fontImage->GetComponents();
 
@@ -217,14 +217,14 @@ bool FontFaceBitmap::Load(FontFace* fontFace, bool usedGlyphs)
     unsigned components = ConvertFormatToNumComponents(fontFace->textures_[0]->GetFormat());
 
     // Save the existing textures as image resources
-    ea::vector<ea::shared_ptr<Image> > oldImages;
+    ea::vector<SharedPtr<Image> > oldImages;
     for (unsigned i = 0; i < fontFace->textures_.size(); ++i)
-        oldImages.push_back(SaveFaceTexture(fontFace->textures_[i].get()));
+        oldImages.push_back(SaveFaceTexture(fontFace->textures_[i].Get()));
 
-    ea::vector<ea::shared_ptr<Image> > newImages(numPages);
+    ea::vector<SharedPtr<Image> > newImages(numPages);
     for (unsigned i = 0; i < numPages; ++i)
     {
-        ea::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
+        SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
 
         int width = maxTextureSize;
         int height = maxTextureSize;
@@ -269,7 +269,7 @@ bool FontFaceBitmap::Save(Serializer& dest, int pointSize, const ea::string& ind
 {
     Context* context = font_->GetContext();
 
-    ea::shared_ptr<XMLFile> xml(context->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("font");
 
     // Information
@@ -357,21 +357,21 @@ unsigned FontFaceBitmap::ConvertFormatToNumComponents(unsigned format)
         return 1;
 }
 
-ea::shared_ptr<Image> FontFaceBitmap::SaveFaceTexture(Texture2D* texture)
+SharedPtr<Image> FontFaceBitmap::SaveFaceTexture(Texture2D* texture)
 {
-    ea::shared_ptr<Image> image(font_->GetContext()->CreateObject<Image>());
+    SharedPtr<Image> image(font_->GetContext()->CreateObject<Image>());
     image->SetSize(texture->GetWidth(), texture->GetHeight(), ConvertFormatToNumComponents(texture->GetFormat()));
     if (!texture->GetData(0, image->GetData()))
     {
         URHO3D_LOGERROR("Could not save texture to image resource");
-        return ea::shared_ptr<Image>();
+        return SharedPtr<Image>();
     }
     return image;
 }
 
 bool FontFaceBitmap::SaveFaceTexture(Texture2D* texture, const ea::string& fileName)
 {
-    ea::shared_ptr<Image> image = SaveFaceTexture(texture);
+    SharedPtr<Image> image = SaveFaceTexture(texture);
     return image ? image->SavePNG(fileName) : false;
 }
 

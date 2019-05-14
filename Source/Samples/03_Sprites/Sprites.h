@@ -62,5 +62,5 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Vector to store the sprites for iterating through them.
-    ea::vector<ea::shared_ptr<Sprite> > sprites_;
+    ea::vector<SharedPtr<Sprite> > sprites_;
 };

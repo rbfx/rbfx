@@ -131,7 +131,7 @@ private:
     void HandleEffectReloadFinished(StringHash eventType, VariantMap& eventData);
 
     /// Particle effect.
-    ea::shared_ptr<ParticleEffect> effect_;
+    SharedPtr<ParticleEffect> effect_;
     /// Particles.
     ea::vector<Particle> particles_;
     /// Active/inactive period timer.

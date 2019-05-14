@@ -712,7 +712,7 @@ void CrowdManager::HandleNavMeshChanged(StringHash eventType, VariantMap& eventD
         navMesh = static_cast<NavigationMesh*>(eventData[NavigationMeshRebuilt::P_MESH].GetPtr());
         // Reset internal pointer so that the same navmesh can be reassigned and the crowd creation be reattempted
         if (navMesh == navigationMesh_)
-            navigationMesh_.reset();
+            navigationMesh_.Reset();
     }
     else
     {

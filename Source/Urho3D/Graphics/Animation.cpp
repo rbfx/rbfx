@@ -168,7 +168,7 @@ bool Animation::BeginLoad(Deserializer& source)
     auto* cache = GetSubsystem<ResourceCache>();
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
 
-    ea::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
     {
         XMLElement rootElem = file->GetRoot();
@@ -190,7 +190,7 @@ bool Animation::BeginLoad(Deserializer& source)
     // Optionally read triggers from a JSON file
     ea::string jsonName = ReplaceExtension(GetName(), ".json");
 
-    ea::shared_ptr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
+    SharedPtr<JSONFile> jsonFile(cache->GetTempResource<JSONFile>(jsonName, false));
     if (jsonFile)
     {
         const JSONValue& rootVal = jsonFile->GetRoot();
@@ -260,7 +260,7 @@ bool Animation::Save(Serializer& dest) const
         {
             ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("animation");
 
             for (unsigned i = 0; i < triggers_.size(); ++i)
@@ -367,9 +367,9 @@ void Animation::SetNumTriggers(unsigned num)
     triggers_.resize(num);
 }
 
-ea::shared_ptr<Animation> Animation::Clone(const ea::string& cloneName) const
+SharedPtr<Animation> Animation::Clone(const ea::string& cloneName) const
 {
-    ea::shared_ptr<Animation> ret(context_->CreateObject<Animation>());
+    SharedPtr<Animation> ret(context_->CreateObject<Animation>());
 
     ret->SetName(cloneName);
     ret->SetAnimationName(animationName_);

@@ -83,11 +83,11 @@ private:
 	/// Start network discovery
 	void HandleDoNetworkDiscovery(StringHash eventType, VariantMap& eventData);
     /// Start server
-    ea::shared_ptr<Button> startServer_;
+    SharedPtr<Button> startServer_;
     /// Stop server
-    ea::shared_ptr<Button> stopServer_;
+    SharedPtr<Button> stopServer_;
     /// Redo LAN discovery
-    ea::shared_ptr<Button> refreshServerList_;
+    SharedPtr<Button> refreshServerList_;
     /// Found server list
-	ea::shared_ptr<Text> serverList_;
+	SharedPtr<Text> serverList_;
 };

@@ -48,19 +48,19 @@ public:
 
 protected:
     /// Animation controller of Jack.
-    ea::shared_ptr<Urho3D::AnimationController> jackAnimCtrl_;
+    SharedPtr<Urho3D::AnimationController> jackAnimCtrl_;
     /// Inverse kinematic left effector.
-    ea::shared_ptr<Urho3D::IKEffector> leftEffector_;
+    SharedPtr<Urho3D::IKEffector> leftEffector_;
     /// Inverse kinematic right effector.
-    ea::shared_ptr<Urho3D::IKEffector> rightEffector_;
+    SharedPtr<Urho3D::IKEffector> rightEffector_;
     /// Inverse kinematic solver.
-    ea::shared_ptr<Urho3D::IKSolver> solver_;
+    SharedPtr<Urho3D::IKSolver> solver_;
     /// Need references to these nodes to calculate foot angles and offsets.
-    ea::shared_ptr<Urho3D::Node> leftFoot_;
-    ea::shared_ptr<Urho3D::Node> rightFoot_;
-    ea::shared_ptr<Urho3D::Node> jackNode_;
+    SharedPtr<Urho3D::Node> leftFoot_;
+    SharedPtr<Urho3D::Node> rightFoot_;
+    SharedPtr<Urho3D::Node> jackNode_;
     /// So we can rotate the floor.
-    ea::shared_ptr<Urho3D::Node> floorNode_;
+    SharedPtr<Urho3D::Node> floorNode_;
     float floorPitch_{};
     float floorRoll_{};
     /// Whether or not to draw debug geometry.
@@ -84,5 +84,5 @@ private:
     /// Process IK logic.
     void HandleSceneDrawableUpdateFinished(StringHash eventType, VariantMap& eventData);
     /// Camera node.
-    ea::shared_ptr<Node> cameraRotateNode_;
+    SharedPtr<Node> cameraRotateNode_;
 };

@@ -100,7 +100,7 @@ public:
     /// Returns a loaded plugin with specified name.
     Plugin* GetPlugin(const ea::string& name);
     /// Returns a vector containing all loaded plugins.
-    const ea::vector<ea::shared_ptr<Plugin>>& GetPlugins() const { return plugins_; }
+    const ea::vector<SharedPtr<Plugin>>& GetPlugins() const { return plugins_; }
     /// Tick native plugins.
     void OnEndFrame();
     /// Returns list of sorted plugin names that exist in editor directory.
@@ -123,7 +123,7 @@ protected:
     };
 
     /// Loaded plugins.
-    ea::vector<ea::shared_ptr<Plugin>> plugins_;
+    ea::vector<SharedPtr<Plugin>> plugins_;
     /// Plugin update check timer.
     Timer updateCheckTimer_;
     /// Cached plugin information.

@@ -195,11 +195,11 @@ private:
     /// View frustum.
     Frustum frustum_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Line antialiasing flag.
     bool lineAntiAlias_;
     /// Active camera.
-    ea::weak_ptr<Camera> camera_;
+    WeakPtr<Camera> camera_;
 };
 
 }

@@ -188,7 +188,7 @@ public:
     /// Resize trigger point vector.
     void SetNumTriggers(unsigned num);
     /// Clone the animation.
-    ea::shared_ptr<Animation> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    SharedPtr<Animation> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return animation name.
     const ea::string& GetAnimationName() const { return animationName_; }

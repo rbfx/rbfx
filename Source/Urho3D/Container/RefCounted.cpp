@@ -32,46 +32,60 @@ namespace Urho3D
 {
 
 RefCounted::RefCounted() :
-    ea::enable_shared_from_this<RefCounted>()
+    refCount_(new RefCount())
 {
-    {
-        // Creates refcount object early so assigning this object in subclass constructor to smart pointers works.
-        ea::shared_ptr<RefCounted> ptr(this);
-        // Ensure that shared pointer destructor does not free this object
-        ea::Internal::atomic_increment(&mWeakPtr.get_refcount_pointer()->mRefCount);
-    }
-    // Restore proper refcount. Object may have 0 references and yet be alive when it is not managed by smart pointer.
-    ea::Internal::atomic_decrement(&mWeakPtr.get_refcount_pointer()->mRefCount);
+    // Hold a weak ref to self to avoid possible double delete of the refcount
+    (refCount_->weakRefs_)++;
 }
 
 RefCounted::~RefCounted()
 {
+    assert(refCount_);
+    assert(refCount_->refs_ == 0);
+    assert(refCount_->weakRefs_ > 0);
+
+    // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
+    refCount_->refs_ = -1;
+    (refCount_->weakRefs_)--;
+    if (!refCount_->weakRefs_)
+        delete refCount_;
+
+    refCount_ = nullptr;
 }
 
 void RefCounted::AddRef()
 {
-    assert(!mWeakPtr.expired());
-    mWeakPtr.get_refcount_pointer()->addref();
+    assert(refCount_->refs_ >= 0);
+    (refCount_->refs_)++;
 }
 
 void RefCounted::ReleaseRef()
 {
-    assert(!mWeakPtr.expired());
-    mWeakPtr.get_refcount_pointer()->release();
+    assert(refCount_->refs_ > 0);
+    (refCount_->refs_)--;
+    if (!refCount_->refs_)
+    {
+        if (deleter_ != nullptr)
+            deleter_(this);
+        else
+            delete this;
+    }
 }
 
 int RefCounted::Refs() const
 {
-    if (auto* refCount = mWeakPtr.get_refcount_pointer())
-        return refCount->mRefCount;
-    return 0;
+    return refCount_->refs_;
 }
 
 int RefCounted::WeakRefs() const
 {
-    if (auto* refCount = mWeakPtr.get_refcount_pointer())
-        return refCount->mWeakRefCount;
-    return 0;
+    // Subtract one to not return the internally held reference
+    return refCount_->weakRefs_ - 1;
+}
+
+void RefCounted::SetDeleter(std::function<void(RefCounted*)> deleter)
+{
+    deleter_ = std::move(deleter);
 }
 
 }

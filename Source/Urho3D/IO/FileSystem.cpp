@@ -132,7 +132,7 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
     // Capture the standard error stream
     if (!stderrFilename.empty())
     {
-        ea::shared_ptr<File> errFile(new File(context, stderrFilename, FILE_READ));
+        SharedPtr<File> errFile(new File(context, stderrFilename, FILE_READ));
         while (!errFile->IsEof())
         {
             unsigned numRead = errFile->Read(buffer, sizeof(buffer));
@@ -601,10 +601,10 @@ bool FileSystem::Copy(const ea::string& srcFileName, const ea::string& destFileN
         return false;
     }
 
-    ea::shared_ptr<File> srcFile(new File(context_, srcFileName, FILE_READ));
+    SharedPtr<File> srcFile(new File(context_, srcFileName, FILE_READ));
     if (!srcFile->IsOpen())
         return false;
-    ea::shared_ptr<File> destFile(new File(context_, destFileName, FILE_WRITE));
+    SharedPtr<File> destFile(new File(context_, destFileName, FILE_WRITE));
     if (!destFile->IsOpen())
         return false;
 

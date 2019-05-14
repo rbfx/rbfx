@@ -78,10 +78,10 @@ void Menu::Update(float timeStep)
 
     if (popup_ && showPopup_)
     {
-        const ea::vector<ea::shared_ptr<UIElement> >& children = popup_->GetChildren();
+        const ea::vector<SharedPtr<UIElement> >& children = popup_->GetChildren();
         for (unsigned i = 0; i < children.size(); ++i)
         {
-            auto* menu = dynamic_cast<Menu*>(children[i].get());
+            auto* menu = dynamic_cast<Menu*>(children[i].Get());
             if (menu && !menu->autoPopup_ && !menu->IsHovering())
                 menu->autoPopup_ = true;
         }
@@ -178,13 +178,13 @@ bool Menu::LoadXML(const XMLElement& source, XMLFile* styleFile)
             else
             {
                 // Do not add the popup element as a child even temporarily, as that can break layouts
-                ea::shared_ptr<UIElement> popup = DynamicCast<UIElement>(context_->CreateObject(typeName));
+                SharedPtr<UIElement> popup = DynamicCast<UIElement>(context_->CreateObject(typeName));
                 if (!popup)
                     URHO3D_LOGERROR("Could not create popup element type " + typeName);
                 else
                 {
                     child = popup;
-                    SetPopup(popup.get());
+                    SetPopup(popup.Get());
                 }
             }
         }
@@ -298,7 +298,7 @@ void Menu::ShowPopup(bool enable)
         OnShowPopup();
 
         popup_->SetVar(VAR_ORIGIN, this);
-        static_cast<Window*>(popup_.get())->SetModal(true);
+        static_cast<Window*>(popup_.Get())->SetModal(true);
 
         popup_->SetPosition(GetScreenPosition() + popupOffset_);
         popup_->SetVisible(true);
@@ -320,7 +320,7 @@ void Menu::ShowPopup(bool enable)
                 menu->ShowPopup(false);
         }
 
-        static_cast<Window*>(popup_.get())->SetModal(false);
+        static_cast<Window*>(popup_.Get())->SetModal(false);
         const_cast<VariantMap&>(popup_->GetVars()).erase(VAR_ORIGIN);
 
         popup_->SetVisible(false);
@@ -408,7 +408,7 @@ void Menu::HandleFocusChanged(StringHash eventType, VariantMap& eventData)
     // In that case, do not hide
     while (element)
     {
-        if (element == this || element == popup_.get())
+        if (element == this || element == popup_.Get())
             return;
         if (element->GetParent() == root)
             element = static_cast<UIElement*>(element->GetVar(VAR_ORIGIN).GetPtr());

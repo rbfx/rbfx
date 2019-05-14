@@ -53,14 +53,14 @@ class AssetViewer
 {
     URHO3D_OBJECT(AssetViewer, Application);
 public:
-    ea::shared_ptr<Scene> scene_;
-    ea::shared_ptr<Viewport> viewport_;
-    ea::shared_ptr<Light> light_;
-    ea::weak_ptr<Camera> camera_;
-    ea::weak_ptr<Node> node_;
-    ea::weak_ptr<Node> parentNode_;
-    ea::weak_ptr<AnimatedModel> model_;
-    ea::weak_ptr<AnimationController> animator_;
+    SharedPtr<Scene> scene_;
+    SharedPtr<Viewport> viewport_;
+    SharedPtr<Light> light_;
+    WeakPtr<Camera> camera_;
+    WeakPtr<Node> node_;
+    WeakPtr<Node> parentNode_;
+    WeakPtr<AnimatedModel> model_;
+    WeakPtr<AnimationController> animator_;
     float lookSensitivity_ = 1.0f;
     Gizmo gizmo_;
     bool showHelp_ = false;

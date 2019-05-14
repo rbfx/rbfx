@@ -85,13 +85,13 @@ private:
     /// Texture array layers number.
     unsigned layers_{};
     /// Render surface.
-    ea::shared_ptr<RenderSurface> renderSurface_;
+    SharedPtr<RenderSurface> renderSurface_;
     /// Memory use per layer.
     ea::vector<unsigned> layerMemoryUse_;
     /// Layer image files acquired during BeginLoad.
-    ea::vector<ea::shared_ptr<Image> > loadImages_;
+    ea::vector<SharedPtr<Image> > loadImages_;
     /// Parameter file acquired during BeginLoad.
-    ea::shared_ptr<XMLFile> loadParameters_;
+    SharedPtr<XMLFile> loadParameters_;
 };
 
 }

@@ -299,14 +299,14 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 #endif
 
     // Make a weak pointer to self to check for destruction during event handling
-    ea::weak_ptr<Object> self(this);
+    WeakPtr<Object> self(this);
     Context* context = context_;
 
     context->BeginSendEvent(this, eventType);
 
     // Check first the specific event receivers
     // Note: group is held alive with a shared ptr, as it may get destroyed along with the sender
-    ea::shared_ptr<EventReceiverGroup> group(context->GetEventReceivers(this, eventType));
+    SharedPtr<EventReceiverGroup> group(context->GetEventReceivers(this, eventType));
     if (group)
     {
         group->BeginSendEvent();
@@ -322,7 +322,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
             receiver->OnEvent(this, eventType, eventData);
 
             // If self has been destroyed as a result of event handling, exit
-            if (self.expired())
+            if (self.Expired())
             {
                 group->EndSendEvent();
                 context->EndSendEvent();
@@ -334,7 +334,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
     }
 
     // Then the non-specific receivers
-    ea::shared_ptr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
+    SharedPtr<EventReceiverGroup> groupNonSpec(context->GetEventReceivers(eventType));
     if (groupNonSpec)
     {
         groupNonSpec->BeginSendEvent();
@@ -349,7 +349,7 @@ void Object::SendEvent(StringHash eventType, VariantMap& eventData)
 
             receiver->OnEvent(this, eventType, eventData);
 
-            if (self.expired())
+            if (self.Expired())
             {
                 groupNonSpec->EndSendEvent();
                 context->EndSendEvent();

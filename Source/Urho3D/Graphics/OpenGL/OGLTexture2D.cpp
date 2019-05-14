@@ -176,7 +176,7 @@ bool Texture2D::SetData(Image* image, bool useAlpha)
     }
 
     // Use a shared ptr for managing the temporary mip images created during this function
-    ea::shared_ptr<Image> mipImage;
+    SharedPtr<Image> mipImage;
     unsigned memoryUse = sizeof(Texture2D);
     MaterialQuality quality = QUALITY_HIGH;
     auto* renderer = GetSubsystem<Renderer>();

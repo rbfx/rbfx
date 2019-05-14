@@ -250,17 +250,17 @@ Material* Renderer2D::GetMaterial(Texture2D* texture, BlendMode blendMode)
         texture);
     if (t == cachedMaterials_.end())
     {
-        ea::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
+        SharedPtr<Material> newMaterial = CreateMaterial(texture, blendMode);
         cachedMaterials_[texture][blendMode] = newMaterial;
         return newMaterial;
     }
 
-    ea::unordered_map<int, ea::shared_ptr<Material> >& materials = t->second;
+    ea::unordered_map<int, SharedPtr<Material> >& materials = t->second;
     auto b = materials.find(blendMode);
     if (b != materials.end())
         return b->second;
 
-    ea::shared_ptr<Material> newMaterial = CreateMaterial(texture, blendMode);
+    SharedPtr<Material> newMaterial = CreateMaterial(texture, blendMode);
     materials[blendMode] = newMaterial;
 
     return newMaterial;
@@ -282,14 +282,14 @@ void Renderer2D::OnWorldBoundingBoxUpdate()
     worldBoundingBox_ = boundingBox_;
 }
 
-ea::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode blendMode)
+SharedPtr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMode blendMode)
 {
-    ea::shared_ptr<Material> newMaterial = material_->Clone();
+    SharedPtr<Material> newMaterial = material_->Clone();
 
     auto techIt = cachedTechniques_.find((int) blendMode);
     if (techIt == cachedTechniques_.end())
     {
-        ea::shared_ptr<Technique> tech(context_->CreateObject<Technique>());
+        SharedPtr<Technique> tech(context_->CreateObject<Technique>());
         Pass* pass = tech->CreatePass("alpha");
         pass->SetVertexShader("Urho2D");
         pass->SetPixelShader("Urho2D");
@@ -298,7 +298,7 @@ ea::shared_ptr<Material> Renderer2D::CreateMaterial(Texture2D* texture, BlendMod
         techIt = cachedTechniques_.insert(ea::make_pair((int) blendMode, tech)).first;
     }
 
-    newMaterial->SetTechnique(0, techIt->second.get());
+    newMaterial->SetTechnique(0, techIt->second.Get());
     newMaterial->SetName(texture->GetName() + "_" + blendModeNames[blendMode]);
     newMaterial->SetTexture(TU_DIFFUSE, texture);
 
@@ -347,7 +347,7 @@ void Renderer2D::HandleBeginViewUpdate(StringHash eventType, VariantMap& eventDa
         auto start = drawables_.begin();
         for (int i = 0; i < numWorkItems; ++i)
         {
-            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            SharedPtr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = CheckDrawableVisibilityWork;
             item->aux_ = this;
@@ -392,17 +392,17 @@ void Renderer2D::GetDrawables(ea::vector<Drawable2D*>& drawables, Node* node)
     if (!node || !node->IsEnabled())
         return;
 
-    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
     for (auto i = components.begin(); i != components.end(); ++i)
     {
-        auto* drawable = dynamic_cast<Drawable2D*>(i->get());
+        auto* drawable = dynamic_cast<Drawable2D*>(i->Get());
         if (drawable && drawable->IsEnabled())
             drawables.push_back(drawable);
     }
 
-    const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
+    const ea::vector<SharedPtr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
-        GetDrawables(drawables, i->get());
+        GetDrawables(drawables, i->Get());
 }
 
 static inline bool CompareSourceBatch2Ds(const SourceBatch2D* lhs, const SourceBatch2D* rhs)
@@ -512,7 +512,7 @@ void Renderer2D::AddViewBatch(ViewBatchInfo2D& viewBatchInfo, Material* material
     // Allocate new geometry if necessary
     if (viewBatchInfo.geometries_.size() <= viewBatchInfo.batchCount_)
     {
-        ea::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
+        SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
         geometry->SetIndexBuffer(indexBuffer_);
         geometry->SetVertexBuffer(0, viewBatchInfo.vertexBuffer_);
 

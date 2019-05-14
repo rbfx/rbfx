@@ -104,7 +104,7 @@ void Constraint::ApplyAttributes()
         if (otherBody_)
             otherBody_->RemoveConstraint(this);
 
-        otherBody_.reset();
+        otherBody_.Reset();
 
         Scene* scene = GetScene();
         if (scene && otherBodyNodeID_)

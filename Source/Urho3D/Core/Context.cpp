@@ -174,13 +174,13 @@ Context::~Context()
     eventDataMaps_.clear();
 }
 
-ea::shared_ptr<Object> Context::CreateObject(StringHash objectType)
+SharedPtr<Object> Context::CreateObject(StringHash objectType)
 {
     auto i = factories_.find(objectType);
     if (i != factories_.end())
         return i->second->CreateObject();
     else
-        return ea::shared_ptr<Object>();
+        return SharedPtr<Object>();
 }
 
 void Context::RegisterFactory(ObjectFactory* factory)
@@ -448,7 +448,7 @@ AttributeInfo* Context::GetAttribute(StringHash objectType, const char* name)
 
 void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 {
-    ea::shared_ptr<EventReceiverGroup>& group = eventReceivers_[eventType];
+    SharedPtr<EventReceiverGroup>& group = eventReceivers_[eventType];
     if (!group)
         group = new EventReceiverGroup();
     group->Add(receiver);
@@ -456,7 +456,7 @@ void Context::AddEventReceiver(Object* receiver, StringHash eventType)
 
 void Context::AddEventReceiver(Object* receiver, Object* sender, StringHash eventType)
 {
-    ea::shared_ptr<EventReceiverGroup>& group = specificEventReceivers_[sender][eventType];
+    SharedPtr<EventReceiverGroup>& group = specificEventReceivers_[sender][eventType];
     if (!group)
         group = new EventReceiverGroup();
     group->Add(receiver);

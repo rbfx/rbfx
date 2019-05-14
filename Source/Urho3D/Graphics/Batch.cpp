@@ -606,12 +606,12 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
                 graphics->SetShaderParameter(i->first, i->second.value_);
         }
 
-        const ea::unordered_map<TextureUnit, ea::shared_ptr<Texture> >& textures = material_->GetTextures();
+        const ea::unordered_map<TextureUnit, SharedPtr<Texture> >& textures = material_->GetTextures();
         for (auto i = textures.begin(); i !=
             textures.end(); ++i)
         {
             if (graphics->HasTextureUnit(i->first))
-                graphics->SetTexture(i->first, i->second.get());
+                graphics->SetTexture(i->first, i->second.Get());
         }
     }
 
@@ -700,9 +700,9 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
 
             // Get the geometry vertex buffers, then add the instancing stream buffer
             // Hack: use a const_cast to avoid dynamic allocation of new temp vectors
-            auto& vertexBuffers = const_cast<ea::vector<ea::shared_ptr<VertexBuffer> >&>(
+            auto& vertexBuffers = const_cast<ea::vector<SharedPtr<VertexBuffer> >&>(
                 geometry_->GetVertexBuffers());
-            vertexBuffers.push_back(ea::shared_ptr<VertexBuffer>(instanceBuffer));
+            vertexBuffers.push_back(SharedPtr<VertexBuffer>(instanceBuffer));
 
             graphics->SetIndexBuffer(geometry_->GetIndexBuffer());
             graphics->SetVertexBuffers(vertexBuffers, startIndex_);

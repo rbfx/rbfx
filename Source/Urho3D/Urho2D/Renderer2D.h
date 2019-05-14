@@ -49,7 +49,7 @@ struct ViewBatchInfo2D
     /// Vertex count.
     unsigned vertexCount_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Batch updated frame number.
     unsigned batchUpdatedFrameNumber_;
     /// Source batches.
@@ -59,9 +59,9 @@ struct ViewBatchInfo2D
     /// Distances.
     ea::vector<float> distances_;
     /// Materials.
-    ea::vector<ea::shared_ptr<Material> > materials_;
+    ea::vector<SharedPtr<Material> > materials_;
     /// Geometries.
-    ea::vector<ea::shared_ptr<Geometry> > geometries_;
+    ea::vector<SharedPtr<Geometry> > geometries_;
 };
 
 /// 2D renderer component.
@@ -102,7 +102,7 @@ private:
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
     /// Create material by texture and blend mode.
-    ea::shared_ptr<Material> CreateMaterial(Texture2D* texture, BlendMode blendMode);
+    SharedPtr<Material> CreateMaterial(Texture2D* texture, BlendMode blendMode);
     /// Handle view update begin event. Determine Drawable2D's and their batches here.
     void HandleBeginViewUpdate(StringHash eventType, VariantMap& eventData);
     /// Get all drawables in node.
@@ -114,9 +114,9 @@ private:
         unsigned indexStart, unsigned indexCount, unsigned vertexStart, unsigned vertexCount, float distance);
 
     /// Index buffer.
-    ea::shared_ptr<IndexBuffer> indexBuffer_;
+    SharedPtr<IndexBuffer> indexBuffer_;
     /// Material.
-    ea::shared_ptr<Material> material_;
+    SharedPtr<Material> material_;
     /// Drawables.
     ea::vector<Drawable2D*> drawables_;
     /// View frame info for current frame.
@@ -128,9 +128,9 @@ private:
     /// View mask of current camera for visibility checking.
     unsigned viewMask_;
     /// Cached materials.
-    ea::unordered_map<Texture2D*, ea::unordered_map<int, ea::shared_ptr<Material> > > cachedMaterials_;
+    ea::unordered_map<Texture2D*, ea::unordered_map<int, SharedPtr<Material> > > cachedMaterials_;
     /// Cached techniques per blend mode.
-    ea::unordered_map<int, ea::shared_ptr<Technique> > cachedTechniques_;
+    ea::unordered_map<int, SharedPtr<Technique> > cachedTechniques_;
 };
 
 }

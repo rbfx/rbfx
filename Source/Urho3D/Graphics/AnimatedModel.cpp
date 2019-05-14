@@ -62,7 +62,7 @@ static const StringVector animationStatesStructureElementNames =
     "   Layer"
 };
 
-static bool CompareAnimationOrder(const ea::shared_ptr<AnimationState>& lhs, const ea::shared_ptr<AnimationState>& rhs)
+static bool CompareAnimationOrder(const SharedPtr<AnimationState>& lhs, const SharedPtr<AnimationState>& rhs)
 {
     return lhs->GetLayer() < rhs->GetLayer();
 }
@@ -354,7 +354,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const ea::vector<ea::vector<ea::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
+        const ea::vector<ea::vector<SharedPtr<Geometry> > >& geometries = model->GetGeometries();
         const ea::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
         for (unsigned i = 0; i < geometries.size(); ++i)
         {
@@ -458,7 +458,7 @@ AnimationState* AnimatedModel::AddAnimationState(Animation* animation)
     if (existing)
         return existing;
 
-    ea::shared_ptr<AnimationState> newState(new AnimationState(this, animation));
+    SharedPtr<AnimationState> newState(new AnimationState(this, animation));
     animationStates_.push_back(newState);
     MarkAnimationOrderDirty();
     return newState;
@@ -831,7 +831,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
         {
             // Note: null animation is allowed here for editing
             const ResourceRef& animRef = value[index++].GetResourceRef();
-            ea::shared_ptr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
+            SharedPtr<AnimationState> newState(new AnimationState(this, cache->GetResource<Animation>(animRef.name_)));
             animationStates_.push_back(newState);
 
             newState->SetStartBone(skeleton_.GetBone(value[index++].GetString()));
@@ -843,7 +843,7 @@ void AnimatedModel::SetAnimationStatesAttr(const VariantVector& value)
         else
         {
             // If not enough data, just add an empty animation state
-            ea::shared_ptr<AnimationState> newState(new AnimationState(this, nullptr));
+            SharedPtr<AnimationState> newState(new AnimationState(this, nullptr));
             animationStates_.push_back(newState);
         }
     }
@@ -1106,8 +1106,8 @@ void AnimatedModel::MarkMorphsDirty()
 
 void AnimatedModel::CloneGeometries()
 {
-    const ea::vector<ea::shared_ptr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
-    ea::unordered_map<VertexBuffer*, ea::shared_ptr<VertexBuffer> > clonedVertexBuffers;
+    const ea::vector<SharedPtr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
+    ea::unordered_map<VertexBuffer*, SharedPtr<VertexBuffer> > clonedVertexBuffers;
     morphVertexBuffers_.resize(originalVertexBuffers.size());
 
     for (unsigned i = 0; i < originalVertexBuffers.size(); ++i)
@@ -1115,7 +1115,7 @@ void AnimatedModel::CloneGeometries()
         VertexBuffer* original = originalVertexBuffers[i];
         if (model_->GetMorphRangeCount(i))
         {
-            ea::shared_ptr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
+            SharedPtr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
             clone->SetShadowed(true);
             clone->SetSize(original->GetVertexCount(), morphElementMask_ & original->GetElementMask(), true);
             void* dest = clone->Lock(0, original->GetVertexCount());
@@ -1128,7 +1128,7 @@ void AnimatedModel::CloneGeometries()
             morphVertexBuffers_[i] = clone;
         }
         else
-            morphVertexBuffers_[i].reset();
+            morphVertexBuffers_[i].Reset();
     }
 
     // Geometries will always be cloned fully. They contain only references to buffer, so they are relatively light
@@ -1136,12 +1136,12 @@ void AnimatedModel::CloneGeometries()
     {
         for (unsigned j = 0; j < geometries_[i].size(); ++j)
         {
-            ea::shared_ptr<Geometry> original = geometries_[i][j];
-            ea::shared_ptr<Geometry> clone(context_->CreateObject<Geometry>());
+            SharedPtr<Geometry> original = geometries_[i][j];
+            SharedPtr<Geometry> clone(context_->CreateObject<Geometry>());
 
             // Add an additional vertex stream into the clone, which supplies only the morphable vertex data, while the static
             // data comes from the original vertex buffer(s)
-            const ea::vector<ea::shared_ptr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
+            const ea::vector<SharedPtr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
             unsigned totalBuf = originalBuffers.size();
             for (unsigned k = 0; k < originalBuffers.size(); ++k)
             {
@@ -1436,7 +1436,7 @@ void AnimatedModel::ApplyMorph(VertexBuffer* buffer, void* destVertexData, unsig
 void AnimatedModel::HandleModelReloadFinished(StringHash eventType, VariantMap& eventData)
 {
     Model* currentModel = model_;
-    model_.reset(); // Set null to allow to be re-set
+    model_.Reset(); // Set null to allow to be re-set
     SetModel(currentModel);
 }
 

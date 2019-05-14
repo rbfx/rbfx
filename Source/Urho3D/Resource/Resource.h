@@ -160,7 +160,7 @@ inline ResourceRef GetResourceRef(Resource* resource, StringHash defaultType)
     return ResourceRef(GetResourceType(resource, defaultType), GetResourceName(resource));
 }
 
-template <class T> ea::vector<ea::string> GetResourceNames(const ea::vector<ea::shared_ptr<T> >& resources)
+template <class T> ea::vector<ea::string> GetResourceNames(const ea::vector<SharedPtr<T> >& resources)
 {
     ea::vector<ea::string> ret(resources.size());
     for (unsigned i = 0; i < resources.size(); ++i)
@@ -169,7 +169,7 @@ template <class T> ea::vector<ea::string> GetResourceNames(const ea::vector<ea::
     return ret;
 }
 
-template <class T> ResourceRefList GetResourceRefList(const ea::vector<ea::shared_ptr<T> >& resources)
+template <class T> ResourceRefList GetResourceRefList(const ea::vector<SharedPtr<T> >& resources)
 {
     return ResourceRefList(T::GetTypeStatic(), GetResourceNames(resources));
 }

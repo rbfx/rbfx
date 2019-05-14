@@ -70,7 +70,7 @@ public:
 
 protected:
     /// Graphics subsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// Object pointer or name.
     GPUObjectHandle object_{};
     /// Data lost flag.

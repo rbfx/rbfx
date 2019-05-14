@@ -86,7 +86,7 @@ private:
     void HandleMouseButtonDown(StringHash eventType, VariantMap& eventData);
 
     /// Spriter nodes.
-    ea::shared_ptr<Node> spriterNode_;
+    SharedPtr<Node> spriterNode_;
     /// Spriter animation index.
     int spriterAnimationIndex_;
 };

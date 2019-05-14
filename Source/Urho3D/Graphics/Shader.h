@@ -72,9 +72,9 @@ private:
     /// Source code adapted for pixel shader.
     ea::string psSourceCode_;
     /// Vertex shader variations.
-    ea::unordered_map<StringHash, ea::shared_ptr<ShaderVariation> > vsVariations_;
+    ea::unordered_map<StringHash, SharedPtr<ShaderVariation> > vsVariations_;
     /// Pixel shader variations.
-    ea::unordered_map<StringHash, ea::shared_ptr<ShaderVariation> > psVariations_;
+    ea::unordered_map<StringHash, SharedPtr<ShaderVariation> > psVariations_;
     /// Source code timestamp.
     unsigned timeStamp_;
     /// Number of unique variations so far.

@@ -66,9 +66,9 @@ public:
         delete typeInfo_;
     }
 
-    ea::shared_ptr<Object> CreateObject() override
+    SharedPtr<Object> CreateObject() override
     {
-        ea::shared_ptr<Object> result((Object*)Urho3D_CSharpCreateObject(context_, managedType_.Value()));
+        SharedPtr<Object> result((Object*)Urho3D_CSharpCreateObject(context_, managedType_.Value()));
         return result;
     }
 

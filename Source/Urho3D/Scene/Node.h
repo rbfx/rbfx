@@ -505,7 +505,7 @@ public:
     unsigned GetNumChildren(bool recursive = false) const;
 
     /// Return immediate child scene nodes.
-    const ea::vector<ea::shared_ptr<Node> >& GetChildren() const { return children_; }
+    const ea::vector<SharedPtr<Node> >& GetChildren() const { return children_; }
 
     /// Return child scene nodes, optionally recursive.
     void GetChildren(ea::vector<Node*>& dest, bool recursive = false) const;
@@ -536,7 +536,7 @@ public:
     unsigned GetNumNetworkComponents() const;
 
     /// Return all components.
-    const ea::vector<ea::shared_ptr<Component> >& GetComponents() const { return components_; }
+    const ea::vector<SharedPtr<Component> >& GetComponents() const { return components_; }
 
     /// Return all components of type. Optionally recursive.
     void GetComponents(ea::vector<Component*>& dest, StringHash type, bool recursive = false) const;
@@ -547,7 +547,7 @@ public:
     /// Return whether has a specific component.
     bool HasComponent(StringHash type) const;
     /// Return listener components.
-    const ea::vector<ea::weak_ptr<Component> > GetListeners() const { return listeners_; }
+    const ea::vector<WeakPtr<Component> > GetListeners() const { return listeners_; }
 
     /// Return a user variable.
     const Variant& GetVar(StringHash key) const;
@@ -648,7 +648,7 @@ private:
     /// Recalculate the world transform.
     void UpdateWorldTransform() const;
     /// Remove child node by iterator.
-    void RemoveChild(ea::vector<ea::shared_ptr<Node> >::iterator i);
+    void RemoveChild(ea::vector<SharedPtr<Node> >::iterator i);
     /// Return child nodes recursively.
     void GetChildrenRecursive(ea::vector<Node*>& dest) const;
     /// Return child nodes with a specific component recursively.
@@ -660,7 +660,7 @@ private:
     /// Clone node recursively.
     Node* CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mode);
     /// Remove a component from this node with the specified iterator.
-    void RemoveComponent(ea::vector<ea::shared_ptr<Component> >::iterator i);
+    void RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i);
     /// Handle attribute animation update event.
     void HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& eventData);
 
@@ -693,11 +693,11 @@ private:
     /// World-space rotation.
     mutable Quaternion worldRotation_;
     /// Components.
-    ea::vector<ea::shared_ptr<Component> > components_;
+    ea::vector<SharedPtr<Component> > components_;
     /// Child scene nodes.
-    ea::vector<ea::shared_ptr<Node> > children_;
+    ea::vector<SharedPtr<Node> > children_;
     /// Node listeners.
-    ea::vector<ea::weak_ptr<Component> > listeners_;
+    ea::vector<WeakPtr<Component> > listeners_;
     /// Pointer to implementation.
     ea::unique_ptr<NodeImpl> impl_;
 
@@ -740,7 +740,7 @@ template <class T> T* Node::GetDerivedComponent(bool recursive) const
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        auto* component = dynamic_cast<T*>(i->get());
+        auto* component = dynamic_cast<T*>(i->Get());
         if (component)
             return component;
     }
@@ -782,7 +782,7 @@ template <class T> void Node::GetDerivedComponents(ea::vector<T*>& dest, bool re
 
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        auto* component = dynamic_cast<T*>(i->get());
+        auto* component = dynamic_cast<T*>(i->Get());
         if (component)
             dest.push_back(component);
     }

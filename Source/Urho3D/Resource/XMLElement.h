@@ -304,7 +304,7 @@ public:
 
 private:
     /// XML file.
-    ea::weak_ptr<XMLFile> file_;
+    WeakPtr<XMLFile> file_;
     /// Pugixml node.
     pugi::xml_node_struct* node_;
     /// XPath query result set.
@@ -345,7 +345,7 @@ public:
 
 private:
     /// XML file.
-    ea::weak_ptr<XMLFile> file_;
+    WeakPtr<XMLFile> file_;
     /// Pugixml xpath_node_set.
     pugi::xpath_node_set* resultSet_;
 };

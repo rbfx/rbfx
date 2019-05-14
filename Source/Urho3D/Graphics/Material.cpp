@@ -107,10 +107,10 @@ StringHash ParseTextureTypeXml(ResourceCache* cache, const ea::string& filename)
     if (!cache)
         return type;
 
-    ea::shared_ptr<File> texXmlFile = cache->GetFile(filename, false);
+    SharedPtr<File> texXmlFile = cache->GetFile(filename, false);
     if (texXmlFile)
     {
-        ea::shared_ptr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
+        SharedPtr<XMLFile> texXml(cache->GetContext()->CreateObject<XMLFile>());
         if (texXml->Load(*texXmlFile))
             type = ParseTextureTypeName(texXml->GetRoot().GetName());
     }
@@ -154,7 +154,7 @@ ShaderParameterAnimationInfo::~ShaderParameterAnimationInfo() = default;
 
 void ShaderParameterAnimationInfo::ApplyValue(const Variant& newValue)
 {
-    static_cast<Material*>(target_.get())->SetShaderParameter(name_, newValue);
+    static_cast<Material*>(target_.Get())->SetShaderParameter(name_, newValue);
 }
 
 Material::Material(Context* context) :
@@ -201,7 +201,7 @@ bool Material::BeginLoad(Deserializer& source)
 
     // All loading failed
     ResetToDefaults();
-    loadJSONFile_.reset();
+    loadJSONFile_.Reset();
     return false;
 }
 
@@ -226,8 +226,8 @@ bool Material::EndLoad()
         success = Load(rootVal);
     }
 
-    loadXMLFile_.reset();
-    loadJSONFile_.reset();
+    loadXMLFile_.Reset();
+    loadJSONFile_.Reset();
     return success;
 }
 
@@ -290,7 +290,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 {
     // Attempt to load a JSON file
     ResetToDefaults();
-    loadXMLFile_.reset();
+    loadXMLFile_.Reset();
 
     // Attempt to load from JSON file instead
     loadJSONFile_ = context_->CreateObject<JSONFile>();
@@ -349,7 +349,7 @@ bool Material::BeginLoadJSON(Deserializer& source)
 
 bool Material::Save(Serializer& dest) const
 {
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement materialElem = xml->CreateRoot("material");
 
     Save(materialElem);
@@ -446,7 +446,7 @@ bool Material::Load(const XMLElement& source)
     while (parameterAnimationElem)
     {
         ea::string name = parameterAnimationElem.GetAttribute("name");
-        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(parameterAnimationElem))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -609,7 +609,7 @@ bool Material::Load(const JSONValue& source)
         ea::string name = it->first;
         JSONValue paramAnimVal = it->second;
 
-        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(paramAnimVal))
         {
             URHO3D_LOGERROR("Could not load parameter animation");
@@ -1105,9 +1105,9 @@ void Material::ReleaseShaders()
     }
 }
 
-ea::shared_ptr<Material> Material::Clone(const ea::string& cloneName) const
+SharedPtr<Material> Material::Clone(const ea::string& cloneName) const
 {
-    ea::shared_ptr<Material> ret(context_->CreateObject<Material>());
+    SharedPtr<Material> ret(context_->CreateObject<Material>());
 
     ret->SetName(cloneName);
     ret->techniques_ = techniques_;
@@ -1266,7 +1266,7 @@ void Material::RefreshMemoryUse()
     unsigned memoryUse = sizeof(Material);
 
     memoryUse += techniques_.size() * sizeof(TechniqueEntry);
-    memoryUse += MAX_TEXTURE_UNITS * sizeof(ea::shared_ptr<Texture>);
+    memoryUse += MAX_TEXTURE_UNITS * sizeof(SharedPtr<Texture>);
     memoryUse += shaderParameters_.size() * sizeof(MaterialShaderParameter);
 
     SetMemoryUse(memoryUse);
@@ -1306,7 +1306,7 @@ void Material::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& 
     float timeStep = eventData[Update::P_TIMESTEP].GetFloat();
 
     // Keep weak pointer to self to check for destruction caused by event handling
-    ea::weak_ptr<Object> self(this);
+    WeakPtr<Object> self(this);
 
     ea::vector<ea::string> finishedNames;
     for (auto i = shaderParameterAnimationInfos_.begin();
@@ -1314,7 +1314,7 @@ void Material::HandleAttributeAnimationUpdate(StringHash eventType, VariantMap& 
     {
         bool finished = i->second->Update(timeStep);
         // If self deleted as a result of an event sent during animation playback, nothing more to do
-        if (self.expired())
+        if (self.Expired())
             return;
 
         if (finished)

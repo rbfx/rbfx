@@ -49,7 +49,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
                 return false;
 
             StringHash type = GetSerializedType(value);
-            ea::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
+            SharedPtr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
             if (!converter)
                 return false;
 
@@ -83,7 +83,7 @@ bool Urho3D::Converter::LoadJSON(const Urho3D::JSONValue& source)
 
 void Urho3D::Converter::Execute(const StringVector& input)
 {
-    for (ea::shared_ptr<Converter>& converter : converters_)
+    for (SharedPtr<Converter>& converter : converters_)
         converter->Execute(input);
 }
 

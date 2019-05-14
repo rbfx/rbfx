@@ -94,7 +94,7 @@ void Player::Start()
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
-    ea::shared_ptr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
+    SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
     if (!projectFile)
     {
         projectFile = new JSONFile(context_);
@@ -232,7 +232,7 @@ bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
                 if (pluginMain(&dummy, CR_LOAD) == 0)
                 {
                     plugins_.push_back(
-                        ea::shared_ptr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
+                        SharedPtr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
                     return true;
                 }
             }
@@ -245,7 +245,7 @@ bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
         {
             if (PluginApplication* plugin = script->LoadAssembly(path))
             {
-                plugins_.emplace_back(ea::shared_ptr<PluginApplication>(plugin));
+                plugins_.emplace_back(SharedPtr<PluginApplication>(plugin));
                 return true;
             }
         }
@@ -258,7 +258,7 @@ bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
 BakedResourceRouter::BakedResourceRouter(Context* context)
     : ResourceRouter(context)
 {
-    ea::shared_ptr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
+    SharedPtr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
     if (file)
     {
         const auto& info = file->GetRoot().GetObject();

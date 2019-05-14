@@ -76,12 +76,12 @@ public:
     ~Context() override;
 
     /// Create an object by type. Return pointer to it or null if no factory found.
-    template <class T> inline ea::shared_ptr<T> CreateObject()
+    template <class T> inline SharedPtr<T> CreateObject()
     {
         return StaticCast<T>(CreateObject(T::GetTypeStatic()));
     }
     /// Create an object by type hash. Return pointer to it or null if no factory found.
-    ea::shared_ptr<Object> CreateObject(StringHash objectType);
+    SharedPtr<Object> CreateObject(StringHash objectType);
     /// Register a factory for an object type.
     void RegisterFactory(ObjectFactory* factory);
     /// Register a factory for an object type and specify the object category.
@@ -153,10 +153,10 @@ public:
     void SetGlobalVar(StringHash key, const Variant& value);
 
     /// Return all subsystems.
-    const ea::unordered_map<StringHash, ea::shared_ptr<Object> >& GetSubsystems() const { return subsystems_; }
+    const ea::unordered_map<StringHash, SharedPtr<Object> >& GetSubsystems() const { return subsystems_; }
 
     /// Return all object factories.
-    const ea::unordered_map<StringHash, ea::shared_ptr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
+    const ea::unordered_map<StringHash, SharedPtr<ObjectFactory> >& GetObjectFactories() const { return factories_; }
 
     /// Return all object categories.
     const ea::unordered_map<ea::string, ea::vector<StringHash> >& GetObjectCategories() const { return objectCategories_; }
@@ -301,17 +301,17 @@ private:
     void SetEventHandler(EventHandler* handler) { eventHandler_ = handler; }
 
     /// Object factories.
-    ea::unordered_map<StringHash, ea::shared_ptr<ObjectFactory> > factories_;
+    ea::unordered_map<StringHash, SharedPtr<ObjectFactory> > factories_;
     /// Subsystems.
-    ea::unordered_map<StringHash, ea::shared_ptr<Object> > subsystems_;
+    ea::unordered_map<StringHash, SharedPtr<Object> > subsystems_;
     /// Attribute descriptions per object type.
     ea::unordered_map<StringHash, ea::vector<AttributeInfo> > attributes_;
     /// Network replication attribute descriptions per object type.
     ea::unordered_map<StringHash, ea::vector<AttributeInfo> > networkAttributes_;
     /// Event receivers for non-specific events.
-    ea::unordered_map<StringHash, ea::shared_ptr<EventReceiverGroup> > eventReceivers_;
+    ea::unordered_map<StringHash, SharedPtr<EventReceiverGroup> > eventReceivers_;
     /// Event receivers for specific senders' events.
-    ea::unordered_map<Object*, ea::unordered_map<StringHash, ea::shared_ptr<EventReceiverGroup> > > specificEventReceivers_;
+    ea::unordered_map<Object*, ea::unordered_map<StringHash, SharedPtr<EventReceiverGroup> > > specificEventReceivers_;
     /// Event sender stack.
     ea::vector<Object*> eventSenders_;
     /// Event data stack.
@@ -324,39 +324,39 @@ private:
     VariantMap globalVars_;
 
     /// Cached pointer of engine susbsystem.
-    ea::weak_ptr<Engine> engine_;
+    WeakPtr<Engine> engine_;
     /// Cached pointer of time susbsystem.
-    ea::weak_ptr<Time> time_;
+    WeakPtr<Time> time_;
     /// Cached pointer of work queue susbsystem.
-    ea::weak_ptr<WorkQueue> workQueue_;
+    WeakPtr<WorkQueue> workQueue_;
     /// Cached pointer of file system susbsystem.
-    ea::weak_ptr<FileSystem> fileSystem_;
+    WeakPtr<FileSystem> fileSystem_;
 #if URHO3D_LOGGING
     /// Cached pointer of logging susbsystem.
-    ea::weak_ptr<Log> log_;
+    WeakPtr<Log> log_;
 #endif
     /// Cached pointer of resource cache susbsystem.
-    ea::weak_ptr<ResourceCache> cache_;
+    WeakPtr<ResourceCache> cache_;
     /// Cached pointer of internationalization susbsystem.
-    ea::weak_ptr<Localization> l18n_;
+    WeakPtr<Localization> l18n_;
 #if URHO3D_NETWORK
     /// Cached pointer of network susbsystem.
-    ea::weak_ptr<Network> network_;
+    WeakPtr<Network> network_;
 #endif
     /// Cached pointer of input susbsystem.
-    ea::weak_ptr<Input> input_;
+    WeakPtr<Input> input_;
     /// Cached pointer of audio susbsystem.
-    ea::weak_ptr<Audio> audio_;
+    WeakPtr<Audio> audio_;
     /// Cached pointer of UI susbsystem.
-    ea::weak_ptr<UI> ui_;
+    WeakPtr<UI> ui_;
 #if URHO3D_SYSTEMUI
     /// Cached pointer of system UI susbsystem.
-    ea::weak_ptr<SystemUI> systemUi_;
+    WeakPtr<SystemUI> systemUi_;
 #endif
     /// Cached pointer of graphics susbsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
-    ea::weak_ptr<Renderer> renderer_;
+    WeakPtr<Renderer> renderer_;
 
     friend class Engine;
 };

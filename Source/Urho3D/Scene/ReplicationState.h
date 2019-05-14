@@ -148,7 +148,7 @@ struct URHO3D_API ComponentReplicationState : public ReplicationState
     /// Parent node replication state.
     NodeReplicationState* nodeState_{};
     /// Link to the actual component.
-    ea::weak_ptr<Component> component_;
+    WeakPtr<Component> component_;
     /// Dirty attribute bits.
     DirtyBits dirtyAttributes_;
 };
@@ -159,7 +159,7 @@ struct URHO3D_API NodeReplicationState : public ReplicationState
     /// Parent scene replication state.
     SceneReplicationState* sceneState_;
     /// Link to the actual node.
-    ea::weak_ptr<Node> node_;
+    WeakPtr<Node> node_;
     /// Dirty attribute bits.
     DirtyBits dirtyAttributes_;
     /// Dirty user vars.

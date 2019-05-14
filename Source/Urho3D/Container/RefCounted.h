@@ -23,18 +23,43 @@
 #pragma once
 
 
-#include <EASTL/shared_ptr.h>
-#include <EASTL/weak_ptr.h>
+#include <functional>
 
+#ifdef URHO3D_IS_BUILDING
+#include "Urho3D.h"
+#else
 #include <Urho3D/Urho3D.h>
-
-#include "../Container/Hash.h"
+#endif
 
 namespace Urho3D
 {
 
+/// Reference count structure.
+struct RefCount
+{
+    /// Construct.
+    RefCount() :
+        refs_(0),
+        weakRefs_(0)
+    {
+    }
+
+    /// Destruct.
+    ~RefCount()
+    {
+        // Set reference counts below zero to fire asserts if this object is still accessed
+        refs_ = -1;
+        weakRefs_ = -1;
+    }
+
+    /// Reference count. If below zero, the object has been destroyed.
+    int refs_;
+    /// Weak reference count.
+    int weakRefs_;
+};
+
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
-class URHO3D_API RefCounted : public ea::enable_shared_from_this<RefCounted>
+class URHO3D_API RefCounted
 {
 public:
     /// Construct. Allocate the reference count structure and set an initial self weak reference.
@@ -47,14 +72,29 @@ public:
     /// Prevent assignment.
     RefCounted& operator =(const RefCounted& rhs) = delete;
 
-    /// Increment reference count. Can also be called outside of a ea::shared_ptr for traditional reference counting.
+    /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting.
     void AddRef();
-    /// Decrement reference count and delete self if no more references. Can also be called outside of a ea::shared_ptr for traditional reference counting.
+    /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting.
     void ReleaseRef();
     /// Return reference count.
     int Refs() const;
     /// Return weak reference count.
     int WeakRefs() const;
+
+    /// Return pointer to the reference count structure.
+    RefCount* RefCountPtr() { return refCount_; }
+
+    /// Set a custom deleter function which will be in charge of deallocating object.
+    void SetDeleter(std::function<void(RefCounted*)> deleter);
+    /// Returns custom deleter of this object.
+    std::function<void(RefCounted*)> GetDeleter() const { return deleter_; }
+
+private:
+    /// Pointer to the reference count structure.
+    RefCount* refCount_;
+
+    /// Custom deleter which will be deallocating native object.
+    std::function<void(RefCounted*)> deleter_{};
 };
 
 }

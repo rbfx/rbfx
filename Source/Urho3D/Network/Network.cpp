@@ -272,7 +272,7 @@ Network::~Network()
     rakPeerClient_->DetachPlugin(natPunchthroughClient_);
     // If server connection exists, disconnect, but do not send an event because we are shutting down
     Disconnect(100);
-    serverConnection_.reset();
+    serverConnection_.Reset();
 
     clientConnections_.clear();
 
@@ -317,7 +317,7 @@ void Network::HandleMessage(const SLNet::AddressOrGUID& source, int packetID, in
 void Network::NewConnectionEstablished(const SLNet::AddressOrGUID& connection)
 {
     // Create a new client connection corresponding to this MessageConnection
-    ea::shared_ptr<Connection> newConnection(context_->CreateObject<Connection>());
+    SharedPtr<Connection> newConnection(context_->CreateObject<Connection>());
     newConnection->Initialize(true, connection, rakPeer_);
     newConnection->ConfigureNetworkSimulator(simulatedLatency_, simulatedPacketLoss_);
     clientConnections_[GetEndpointHash(connection)] = newConnection;
@@ -643,13 +643,13 @@ void Network::SendPackageToClients(Scene* scene, PackageFile* package)
     }
 }
 
-ea::shared_ptr<HttpRequest> Network::MakeHttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers,
+SharedPtr<HttpRequest> Network::MakeHttpRequest(const ea::string& url, const ea::string& verb, const ea::vector<ea::string>& headers,
     const ea::string& postData)
 {
     URHO3D_PROFILE("MakeHttpRequest");
 
     // The initialization of the request will take time, can not know at this point if it has an error or not
-    ea::shared_ptr<HttpRequest> request(new HttpRequest(url, verb, headers, postData));
+    SharedPtr<HttpRequest> request(new HttpRequest(url, verb, headers, postData));
     return request;
 }
 
@@ -677,9 +677,9 @@ Connection* Network::GetServerConnection() const
     return serverConnection_;
 }
 
-ea::vector<ea::shared_ptr<Connection> > Network::GetClientConnections() const
+ea::vector<SharedPtr<Connection> > Network::GetClientConnections() const
 {
-    ea::vector<ea::shared_ptr<Connection> > ret;
+    ea::vector<SharedPtr<Connection> > ret;
     for (auto i = clientConnections_.begin(); i != clientConnections_.end(); ++i)
         ret.push_back(i->second);
 
@@ -1002,7 +1002,7 @@ void Network::OnServerDisconnected()
 {
     // Differentiate between failed connection, and disconnection
     bool failedConnect = serverConnection_ && serverConnection_->IsConnectPending();
-    serverConnection_.reset();
+    serverConnection_.Reset();
 
     if (!failedConnect)
     {

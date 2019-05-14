@@ -110,7 +110,7 @@ private:
     void SetImageLayer(const TmxImageLayer2D* imageLayer);
 
     /// Tile map.
-    ea::weak_ptr<TileMap2D> tileMap_;
+    WeakPtr<TileMap2D> tileMap_;
     /// Tmx layer.
     const TmxLayer2D* tmxLayer_{};
     /// Tile layer.
@@ -124,7 +124,7 @@ private:
     /// Visible.
     bool visible_{true};
     /// Tile node or image nodes.
-    ea::vector<ea::shared_ptr<Node> > nodes_;
+    ea::vector<SharedPtr<Node> > nodes_;
 };
 
 }

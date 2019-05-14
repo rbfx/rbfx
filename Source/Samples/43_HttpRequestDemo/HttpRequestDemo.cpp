@@ -106,7 +106,7 @@ void HttpRequestDemo::HandleUpdate(StringHash eventType, VariantMap& eventData)
             {
                 text_->SetText("Processing...");
 
-                ea::shared_ptr<JSONFile> json(new JSONFile(context_));
+                SharedPtr<JSONFile> json(new JSONFile(context_));
                 json->FromString(message_);
 
                 JSONValue val = json->GetRoot().Get("origin");

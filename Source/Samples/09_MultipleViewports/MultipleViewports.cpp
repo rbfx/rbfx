@@ -190,7 +190,7 @@ void MultipleViewports::SetupViewports()
     renderer->SetNumViewports(2);
 
     // Set up the front camera viewport
-    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Clone the default render path so that we do not interfere with the other viewport, then add
@@ -198,7 +198,7 @@ void MultipleViewports::SetupViewports()
     // for example with the effect name to allow easy toggling on and off. We start with the effects
     // disabled.
     auto* cache = GetSubsystem<ResourceCache>();
-    ea::shared_ptr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
+    SharedPtr<RenderPath> effectRenderPath = viewport->GetRenderPath()->Clone();
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/Bloom.xml"));
     effectRenderPath->Append(cache->GetResource<XMLFile>("PostProcess/FXAA2.xml"));
     // Make the bloom mixing parameter more pronounced
@@ -209,7 +209,7 @@ void MultipleViewports::SetupViewports()
 
     // Set up the rear camera viewport on top of the front view ("rear view mirror")
     // The viewport index must be greater in that case, otherwise the view would be left behind
-    ea::shared_ptr<Viewport> rearViewport(new Viewport(context_, scene_, rearCameraNode_->GetComponent<Camera>(),
+    SharedPtr<Viewport> rearViewport(new Viewport(context_, scene_, rearCameraNode_->GetComponent<Camera>(),
         IntRect(graphics->GetWidth() * 2 / 3, 32, graphics->GetWidth() - 32, graphics->GetHeight() / 3)));
     renderer->SetViewport(1, rearViewport);
 }

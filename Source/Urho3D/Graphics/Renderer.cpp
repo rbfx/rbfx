@@ -299,7 +299,7 @@ void Renderer::SetDefaultRenderPath(RenderPath* renderPath)
 
 void Renderer::SetDefaultRenderPath(XMLFile* xmlFile)
 {
-    ea::shared_ptr<RenderPath> newRenderPath(new RenderPath());
+    SharedPtr<RenderPath> newRenderPath(new RenderPath());
     if (newRenderPath->Load(xmlFile))
         defaultRenderPath_ = newRenderPath;
 }
@@ -567,7 +567,7 @@ Technique* Renderer::GetDefaultTechnique() const
 {
     // Assign default when first asked if not assigned yet
     if (!defaultTechnique_)
-        const_cast<ea::shared_ptr<Technique>& >(defaultTechnique_) = GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml");
+        const_cast<SharedPtr<Technique>& >(defaultTechnique_) = GetSubsystem<ResourceCache>()->GetResource<Technique>("Techniques/NoTexture.xml");
 
     return defaultTechnique_;
 }
@@ -809,8 +809,8 @@ void Renderer::QueueViewport(RenderSurface* renderTarget, Viewport* viewport)
 {
     if (viewport)
     {
-        ea::pair<ea::weak_ptr<RenderSurface>, ea::weak_ptr<Viewport> > newView =
-            ea::make_pair(ea::weak_ptr<RenderSurface>(renderTarget), ea::weak_ptr<Viewport>(viewport));
+        ea::pair<WeakPtr<RenderSurface>, WeakPtr<Viewport> > newView =
+            ea::make_pair(WeakPtr<RenderSurface>(renderTarget), WeakPtr<Viewport>(viewport));
 
         // Prevent double add of the same rendertarget/viewport combination
         if (!queuedViewports_.contains(newView))
@@ -942,7 +942,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
     if (!shadowMapFormat)
         return nullptr;
 
-    ea::shared_ptr<Texture2D> newShadowMap(context_->CreateObject<Texture2D>());
+    SharedPtr<Texture2D> newShadowMap(context_->CreateObject<Texture2D>());
     int retries = 3;
     unsigned dummyColorFormat = graphics_->GetDummyColorFormat();
 
@@ -989,7 +989,7 @@ Texture2D* Renderer::GetShadowMap(Light* light, Camera* camera, unsigned viewWid
 
     // If failed to set size, store a null pointer so that we will not retry
     if (!retries)
-        newShadowMap.reset();
+        newShadowMap.Reset();
 
     shadowMaps_[searchKey].push_back(newShadowMap);
     if (!reuseShadowMaps_)
@@ -1041,11 +1041,11 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
 
     if (allocations >= screenBuffers_[searchKey].size())
     {
-        ea::shared_ptr<Texture> newBuffer;
+        SharedPtr<Texture> newBuffer;
 
         if (!cubemap)
         {
-            ea::shared_ptr<Texture2D> newTex2D(context_->CreateObject<Texture2D>());
+            SharedPtr<Texture2D> newTex2D(context_->CreateObject<Texture2D>());
             /// \todo Mipmaps disabled for now. Allow to request mipmapped buffer?
             newTex2D->SetNumLevels(1);
             newTex2D->SetSize(width, height, format, depthStencil ? TEXTURE_DEPTHSTENCIL : TEXTURE_RENDERTARGET, multiSample, autoResolve);
@@ -1068,7 +1068,7 @@ Texture* Renderer::GetScreenBuffer(int width, int height, unsigned format, int m
         }
         else
         {
-            ea::shared_ptr<TextureCube> newTexCube(context_->CreateObject<TextureCube>());
+            SharedPtr<TextureCube> newTexCube(context_->CreateObject<TextureCube>());
             newTexCube->SetNumLevels(1);
             newTexCube->SetSize(width, format, TEXTURE_RENDERTARGET, multiSample);
 
@@ -1110,7 +1110,7 @@ OcclusionBuffer* Renderer::GetOcclusionBuffer(Camera* camera)
     assert(numOcclusionBuffers_ <= occlusionBuffers_.size());
     if (numOcclusionBuffers_ == occlusionBuffers_.size())
     {
-        ea::shared_ptr<OcclusionBuffer> newBuffer(context_->CreateObject<OcclusionBuffer>());
+        SharedPtr<OcclusionBuffer> newBuffer(context_->CreateObject<OcclusionBuffer>());
         occlusionBuffers_.push_back(newBuffer);
     }
 
@@ -1132,7 +1132,7 @@ Camera* Renderer::GetShadowCamera()
     assert(numShadowCameras_ <= shadowCameraNodes_.size());
     if (numShadowCameras_ == shadowCameraNodes_.size())
     {
-        ea::shared_ptr<Node> newNode(context_->CreateObject<Node>());
+        SharedPtr<Node> newNode(context_->CreateObject<Node>());
         newNode->CreateComponent<Camera>();
         shadowCameraNodes_.push_back(newNode);
     }
@@ -1153,7 +1153,7 @@ void Renderer::StorePreparedView(View* view, Camera* camera)
 View* Renderer::GetPreparedView(Camera* camera)
 {
     auto i = preparedViews_.find(camera);
-    return i != preparedViews_.end() ? i->second.get() : nullptr;
+    return i != preparedViews_.end() ? i->second.Get() : nullptr;
 }
 
 View* Renderer::GetActualView(View* view)
@@ -1172,8 +1172,8 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
     if (pass->GetShadersLoadedFrameNumber() != shadersChangedFrameNumber_)
         pass->ReleaseShaders();
 
-    ea::vector<ea::shared_ptr<ShaderVariation> >& vertexShaders = queue.hasExtraDefines_ ? pass->GetVertexShaders(queue.vsExtraDefinesHash_) : pass->GetVertexShaders();
-    ea::vector<ea::shared_ptr<ShaderVariation> >& pixelShaders = queue.hasExtraDefines_ ? pass->GetPixelShaders(queue.psExtraDefinesHash_) : pass->GetPixelShaders();
+    ea::vector<SharedPtr<ShaderVariation> >& vertexShaders = queue.hasExtraDefines_ ? pass->GetVertexShaders(queue.vsExtraDefinesHash_) : pass->GetVertexShaders();
+    ea::vector<SharedPtr<ShaderVariation> >& pixelShaders = queue.hasExtraDefines_ ? pass->GetPixelShaders(queue.psExtraDefinesHash_) : pass->GetPixelShaders();
 
     // Load shaders now if necessary
     if (!vertexShaders.size() || !pixelShaders.size())
@@ -1479,11 +1479,11 @@ const Rect& Renderer::GetLightScissor(Light* light, Camera* camera)
 
 void Renderer::UpdateQueuedViewport(unsigned index)
 {
-    ea::weak_ptr<RenderSurface>& renderTarget = queuedViewports_[index].first;
-    ea::weak_ptr<Viewport>& viewport = queuedViewports_[index].second;
+    WeakPtr<RenderSurface>& renderTarget = queuedViewports_[index].first;
+    WeakPtr<Viewport>& viewport = queuedViewports_[index].second;
 
     // Null pointer means backbuffer view. Differentiate between that and an expired rendersurface
-    if ((renderTarget && renderTarget.expired()) || viewport.expired())
+    if ((renderTarget && renderTarget.Expired()) || viewport.Expired())
         return;
 
     // (Re)allocate the view structure if necessary
@@ -1496,7 +1496,7 @@ void Renderer::UpdateQueuedViewport(unsigned index)
     if (!view->Define(renderTarget, viewport))
         return;
 
-    views_.push_back(ea::weak_ptr<View>(view));
+    views_.push_back(WeakPtr<View>(view));
 
     const IntRect& viewRect = viewport->GetRect();
     Scene* scene = viewport->GetScene();
@@ -1550,7 +1550,7 @@ void Renderer::RemoveUnusedBuffers()
         screenBuffers_.end();)
     {
         auto current = i++;
-        ea::vector<ea::shared_ptr<Texture> >& buffers = current->second;
+        ea::vector<SharedPtr<Texture> >& buffers = current->second;
         for (unsigned j = buffers.size() - 1; j < buffers.size(); --j)
         {
             Texture* buffer = buffers[j];
@@ -1643,7 +1643,7 @@ void Renderer::LoadShaders()
     shadersDirty_ = false;
 }
 
-void Renderer::LoadPassShaders(Pass* pass, ea::vector<ea::shared_ptr<ShaderVariation> >& vertexShaders, ea::vector<ea::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue)
+void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation> >& vertexShaders, ea::vector<SharedPtr<ShaderVariation> >& pixelShaders, const BatchQueue& queue)
 {
     URHO3D_PROFILE("LoadPassShaders");
 
@@ -1772,12 +1772,12 @@ void Renderer::ReloadTextures()
 
 void Renderer::CreateGeometries()
 {
-    ea::shared_ptr<VertexBuffer> dlvb(context_->CreateObject<VertexBuffer>());
+    SharedPtr<VertexBuffer> dlvb(context_->CreateObject<VertexBuffer>());
     dlvb->SetShadowed(true);
     dlvb->SetSize(4, MASK_POSITION);
     dlvb->SetData(dirLightVertexData);
 
-    ea::shared_ptr<IndexBuffer> dlib(context_->CreateObject<IndexBuffer>());
+    SharedPtr<IndexBuffer> dlib(context_->CreateObject<IndexBuffer>());
     dlib->SetShadowed(true);
     dlib->SetSize(6, false);
     dlib->SetData(dirLightIndexData);
@@ -1787,12 +1787,12 @@ void Renderer::CreateGeometries()
     dirLightGeometry_->SetIndexBuffer(dlib);
     dirLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, dlib->GetIndexCount());
 
-    ea::shared_ptr<VertexBuffer> slvb(context_->CreateObject<VertexBuffer>());
+    SharedPtr<VertexBuffer> slvb(context_->CreateObject<VertexBuffer>());
     slvb->SetShadowed(true);
     slvb->SetSize(8, MASK_POSITION);
     slvb->SetData(spotLightVertexData);
 
-    ea::shared_ptr<IndexBuffer> slib(context_->CreateObject<IndexBuffer>());
+    SharedPtr<IndexBuffer> slib(context_->CreateObject<IndexBuffer>());
     slib->SetShadowed(true);
     slib->SetSize(36, false);
     slib->SetData(spotLightIndexData);
@@ -1802,12 +1802,12 @@ void Renderer::CreateGeometries()
     spotLightGeometry_->SetIndexBuffer(slib);
     spotLightGeometry_->SetDrawRange(TRIANGLE_LIST, 0, slib->GetIndexCount());
 
-    ea::shared_ptr<VertexBuffer> plvb(context_->CreateObject<VertexBuffer>());
+    SharedPtr<VertexBuffer> plvb(context_->CreateObject<VertexBuffer>());
     plvb->SetShadowed(true);
     plvb->SetSize(24, MASK_POSITION);
     plvb->SetData(pointLightVertexData);
 
-    ea::shared_ptr<IndexBuffer> plib(context_->CreateObject<IndexBuffer>());
+    SharedPtr<IndexBuffer> plib(context_->CreateObject<IndexBuffer>());
     plib->SetShadowed(true);
     plib->SetSize(132, false);
     plib->SetData(pointLightIndexData);
@@ -1888,7 +1888,7 @@ void Renderer::CreateInstancingBuffer()
     // Do not create buffer if instancing not supported
     if (!graphics_->GetInstancingSupport())
     {
-        instancingBuffer_.reset();
+        instancingBuffer_.Reset();
         dynamicInstancing_ = false;
         return;
     }
@@ -1897,7 +1897,7 @@ void Renderer::CreateInstancingBuffer()
     const ea::vector<VertexElement> instancingBufferElements = CreateInstancingBufferElements(numExtraInstancingBufferElements_);
     if (!instancingBuffer_->SetSize(INSTANCING_BUFFER_DEFAULT_SIZE, instancingBufferElements, true))
     {
-        instancingBuffer_.reset();
+        instancingBuffer_.Reset();
         dynamicInstancing_ = false;
     }
 }

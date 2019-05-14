@@ -226,7 +226,7 @@ protected:
     int positionIterations_{};
 
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
-    ea::weak_ptr<Scene> scene_;
+    WeakPtr<Scene> scene_;
     /// Debug renderer.
     DebugRenderer* debugRenderer_{};
     /// Debug draw depth test mode.
@@ -239,7 +239,7 @@ protected:
     /// Applying transforms.
     bool applyingTransforms_{};
     /// Rigid bodies.
-    ea::vector<ea::weak_ptr<RigidBody2D> > rigidBodies_;
+    ea::vector<WeakPtr<RigidBody2D> > rigidBodies_;
     /// Delayed (parented) world transform assignments.
     ea::unordered_map<RigidBody2D*, DelayedWorldTransform2D> delayedWorldTransforms_;
 
@@ -254,17 +254,17 @@ protected:
         const ea::vector<unsigned char>& Serialize(VectorBuffer& buffer) const;
 
         /// Rigid body A.
-        ea::shared_ptr<RigidBody2D> bodyA_;
+        SharedPtr<RigidBody2D> bodyA_;
         /// Rigid body B.
-        ea::shared_ptr<RigidBody2D> bodyB_;
+        SharedPtr<RigidBody2D> bodyB_;
         /// Node A.
-        ea::shared_ptr<Node> nodeA_;
+        SharedPtr<Node> nodeA_;
         /// Node B.
-        ea::shared_ptr<Node> nodeB_;
+        SharedPtr<Node> nodeB_;
         /// Shape A.
-        ea::shared_ptr<CollisionShape2D> shapeA_;
+        SharedPtr<CollisionShape2D> shapeA_;
         /// Shape B.
-        ea::shared_ptr<CollisionShape2D> shapeB_;
+        SharedPtr<CollisionShape2D> shapeB_;
         /// Number of contact points.
         int numPoints_{};
         /// Contact normal in world space.

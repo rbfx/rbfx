@@ -52,7 +52,7 @@ AttributeAnimationInfo::~AttributeAnimationInfo() = default;
 
 void AttributeAnimationInfo::ApplyValue(const Variant& newValue)
 {
-    auto* animatable = static_cast<Animatable*>(target_.get());
+    auto* animatable = static_cast<Animatable*>(target_.Get());
     if (animatable)
     {
         animatable->OnSetAttribute(attributeInfo_, newValue);
@@ -85,18 +85,18 @@ bool Animatable::LoadXML(const XMLElement& source)
     XMLElement elem = source.GetChild("objectanimation");
     if (elem)
     {
-        ea::shared_ptr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
+        SharedPtr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
         if (!objectAnimation->LoadXML(elem))
             return false;
 
-        SetObjectAnimation(objectAnimation.get());
+        SetObjectAnimation(objectAnimation.Get());
     }
 
     elem = source.GetChild("attributeanimation");
     while (elem)
     {
         ea::string name = elem.GetAttribute("name");
-        ea::shared_ptr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
         if (!attributeAnimation->LoadXML(elem))
             return false;
 
@@ -131,11 +131,11 @@ bool Animatable::LoadJSON(const JSONValue& source)
     JSONValue value = source.Get("objectanimation");
     if (!value.IsNull())
     {
-        ea::shared_ptr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
+        SharedPtr<ObjectAnimation> objectAnimation(context_->CreateObject<ObjectAnimation>());
         if (!objectAnimation->LoadJSON(value))
             return false;
 
-        SetObjectAnimation(objectAnimation.get());
+        SetObjectAnimation(objectAnimation.Get());
     }
 
     JSONValue attributeAnimationValue = source.Get("attributeanimation");
@@ -154,7 +154,7 @@ bool Animatable::LoadJSON(const JSONValue& source)
     {
         ea::string name = it->first;
         JSONValue value = it->second;
-        ea::shared_ptr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> attributeAnimation(context_->CreateObject<ValueAnimation>());
         if (!attributeAnimation->LoadJSON(it->second))
             return false;
 
@@ -257,7 +257,7 @@ void Animatable::SetAnimationEnabled(bool enable)
     {
         // In object animation there may be targets in hierarchy. Set same enable/disable state in all
         ea::hash_set<Animatable*> targets;
-        const ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
+        const ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
         for (auto i = infos.begin(); i !=
             infos.end(); ++i)
         {
@@ -279,7 +279,7 @@ void Animatable::SetAnimationTime(float time)
     if (objectAnimation_)
     {
         // In object animation there may be targets in hierarchy. Set same time in all
-        const ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
+        const ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo> >& infos = objectAnimation_->GetAttributeAnimationInfos();
         for (auto i = infos.begin(); i !=
             infos.end(); ++i)
         {
@@ -299,12 +299,12 @@ void Animatable::SetAnimationTime(float time)
 
 void Animatable::SetObjectAnimation(ObjectAnimation* objectAnimation)
 {
-    if (objectAnimation == objectAnimation_.get())
+    if (objectAnimation == objectAnimation_.Get())
         return;
 
     if (objectAnimation_)
     {
-        OnObjectAnimationRemoved(objectAnimation_.get());
+        OnObjectAnimationRemoved(objectAnimation_.Get());
         UnsubscribeFromEvent(objectAnimation_, E_ATTRIBUTEANIMATIONADDED);
         UnsubscribeFromEvent(objectAnimation_, E_ATTRIBUTEANIMATIONREMOVED);
     }
@@ -313,7 +313,7 @@ void Animatable::SetObjectAnimation(ObjectAnimation* objectAnimation)
 
     if (objectAnimation_)
     {
-        OnObjectAnimationAdded(objectAnimation_.get());
+        OnObjectAnimationAdded(objectAnimation_.Get());
         SubscribeToEvent(objectAnimation_, E_ATTRIBUTEANIMATIONADDED, URHO3D_HANDLER(Animatable, HandleAttributeAnimationAdded));
         SubscribeToEvent(objectAnimation_, E_ATTRIBUTEANIMATIONREMOVED, URHO3D_HANDLER(Animatable, HandleAttributeAnimationRemoved));
     }
@@ -486,7 +486,7 @@ void Animatable::OnObjectAnimationAdded(ObjectAnimation* objectAnimation)
         return;
 
     // Set all attribute animations from the object animation
-    const ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> >& attributeAnimationInfos = objectAnimation->GetAttributeAnimationInfos();
+    const ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo> >& attributeAnimationInfos = objectAnimation->GetAttributeAnimationInfos();
     for (auto i = attributeAnimationInfos.begin();
          i != attributeAnimationInfos.end(); ++i)
     {
@@ -502,7 +502,7 @@ void Animatable::OnObjectAnimationRemoved(ObjectAnimation* objectAnimation)
         return;
 
     // Just remove all attribute animations listed by the object animation
-    const ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> >& infos = objectAnimation->GetAttributeAnimationInfos();
+    const ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo> >& infos = objectAnimation->GetAttributeAnimationInfos();
     for (auto i = infos.begin(); i !=
         infos.end(); ++i)
         SetObjectAttributeAnimation(i->first, nullptr, WM_LOOP, 1.0f);
@@ -514,7 +514,7 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
         return;
 
     // Keep weak pointer to self to check for destruction caused by event handling
-    ea::weak_ptr<Animatable> self(this);
+    WeakPtr<Animatable> self(this);
 
     ea::vector<ea::string> finishedNames;
     for (auto i = attributeAnimationInfos_.begin();
@@ -522,7 +522,7 @@ void Animatable::UpdateAttributeAnimations(float timeStep)
     {
         bool finished = i->second->Update(timeStep);
         // If self deleted as a result of an event sent during animation playback, nothing more to do
-        if (self.expired())
+        if (self.Expired())
             return;
 
         if (finished)

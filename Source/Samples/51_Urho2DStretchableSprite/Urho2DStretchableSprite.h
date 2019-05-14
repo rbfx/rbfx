@@ -91,9 +91,9 @@ private:
     void ScaleSprites(float timeStep);
 
     /// Reference (static) sprite node.
-    ea::shared_ptr<Node> refSpriteNode_;
+    SharedPtr<Node> refSpriteNode_;
     /// Stretchable sprite node.
-    ea::shared_ptr<Node> stretchSpriteNode_;
+    SharedPtr<Node> stretchSpriteNode_;
     /// Transform mode tracking index.
     unsigned selectTransform_ = 0;
 };

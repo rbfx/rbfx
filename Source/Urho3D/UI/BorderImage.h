@@ -98,7 +98,7 @@ protected:
         (ea::vector<UIBatch>& batches, ea::vector<float>& vertexData, const IntRect& currentScissor, const IntVector2& offset);
 
     /// Texture.
-    ea::shared_ptr<Texture> texture_;
+    SharedPtr<Texture> texture_;
     /// Image rectangle.
     IntRect imageRect_;
     /// Border dimensions on screen.

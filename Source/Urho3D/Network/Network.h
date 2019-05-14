@@ -102,7 +102,7 @@ public:
     /// Trigger all client connections in the specified scene to download a package file from the server. Can be used to download additional resource packages when clients are already joined in the scene. The package must have been added as a requirement to the scene, or else the eventual download will fail.
     void SendPackageToClients(Scene* scene, PackageFile* package);
     /// Perform an HTTP request to the specified URL. Empty verb defaults to a GET request. Return a request object which can be used to read the response data.
-    ea::shared_ptr<HttpRequest> MakeHttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
+    SharedPtr<HttpRequest> MakeHttpRequest(const ea::string& url, const ea::string& verb = EMPTY_STRING, const ea::vector<ea::string>& headers = ea::vector<ea::string>(), const ea::string& postData = EMPTY_STRING);
     /// Ban specific IP addresses.
     void BanAddress(const ea::string& address);
     /// Return network update FPS.
@@ -119,7 +119,7 @@ public:
     /// Return the connection to the server. Null if not connected.
     Connection* GetServerConnection() const;
     /// Return all client connections.
-    ea::vector<ea::shared_ptr<Connection> > GetClientConnections() const;
+    ea::vector<SharedPtr<Connection> > GetClientConnections() const;
     /// Return whether the server is running.
     bool IsServerRunning() const;
     /// Return whether a remote event is allowed to be received.
@@ -154,9 +154,9 @@ private:
     /// SLikeNet peer instance for client connection.
     SLNet::RakPeerInterface* rakPeerClient_;
     /// Client's server connection.
-    ea::shared_ptr<Connection> serverConnection_;
+    SharedPtr<Connection> serverConnection_;
     /// Server's client connections. Key is SLNet::AddressOrGUID hash.
-    ea::unordered_map<unsigned long, ea::shared_ptr<Connection> > clientConnections_;
+    ea::unordered_map<unsigned long, SharedPtr<Connection> > clientConnections_;
     /// Allowed remote events.
     ea::hash_set<StringHash> allowedRemoteEvents_;
     /// Remote event fixed blacklist.

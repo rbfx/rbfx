@@ -72,7 +72,7 @@ public:
     void Draw(Graphics* graphics);
 
     /// Return all vertex buffers.
-    const ea::vector<ea::shared_ptr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
+    const ea::vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 
     /// Return number of vertex buffers.
     unsigned GetNumVertexBuffers() const { return vertexBuffers_.size(); }
@@ -118,9 +118,9 @@ public:
 
 private:
     /// Vertex buffers.
-    ea::vector<ea::shared_ptr<VertexBuffer> > vertexBuffers_;
+    ea::vector<SharedPtr<VertexBuffer> > vertexBuffers_;
     /// Index buffer.
-    ea::shared_ptr<IndexBuffer> indexBuffer_;
+    SharedPtr<IndexBuffer> indexBuffer_;
     /// Primitive type.
     PrimitiveType primitiveType_;
     /// Start index.

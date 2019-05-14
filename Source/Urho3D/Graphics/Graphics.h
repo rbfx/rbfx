@@ -150,7 +150,7 @@ public:
     /// Set multiple vertex buffers.
     bool SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsigned instanceOffset = 0);
     /// Set multiple vertex buffers.
-    bool SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
+    bool SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset = 0);
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
@@ -640,7 +640,7 @@ private:
     /// Window title.
     ea::string windowTitle_;
     /// Window icon image.
-    ea::weak_ptr<Image> windowIcon_;
+    WeakPtr<Image> windowIcon_;
     /// External window, null if not in use (default.)
     void* externalWindow_{};
     /// Window width in pixels.
@@ -790,11 +790,11 @@ private:
     /// File extension for shaders.
     ea::string shaderExtension_;
     /// Last used shader in shader variation query.
-    mutable ea::weak_ptr<Shader> lastShader_;
+    mutable WeakPtr<Shader> lastShader_;
     /// Last used shader name in shader variation query.
     mutable ea::string lastShaderName_;
     /// Shader precache utility.
-    ea::shared_ptr<ShaderPrecache> shaderPrecache_;
+    SharedPtr<ShaderPrecache> shaderPrecache_;
     /// Allowed screen orientations.
     ea::string orientations_;
     /// Graphics API name.

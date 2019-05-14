@@ -950,12 +950,12 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
     ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
-        bufferPointers.push_back(buffer.get());
+        bufferPointers.push_back(buffer.Get());
     return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
@@ -1041,7 +1041,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
         auto i = impl_->shaderPrograms_.find(key);
         if (i != impl_->shaderPrograms_.end())
-            impl_->shaderProgram_ = i->second.get();
+            impl_->shaderProgram_ = i->second.Get();
         else
         {
             ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
@@ -1899,13 +1899,13 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType type, unsigned in
     unsigned key = type | (index << 1) | (size << 4);
     auto i = impl_->allConstantBuffers_.find(key);
     if (i != impl_->allConstantBuffers_.end())
-        return i->second.get();
+        return i->second.Get();
     else
     {
-        ea::shared_ptr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
+        SharedPtr<ConstantBuffer> newConstantBuffer(context_->CreateObject<ConstantBuffer>());
         newConstantBuffer->SetSize(size);
         impl_->allConstantBuffers_[key] = newConstantBuffer;
-        return newConstantBuffer.get();
+        return newConstantBuffer.Get();
     }
 }
 
@@ -2451,7 +2451,7 @@ void Graphics::PrepareDraw()
                 auto i = impl_->vertexDeclarations_.find(newVertexDeclarationHash);
                 if (i == impl_->vertexDeclarations_.end())
                 {
-                    ea::shared_ptr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
+                    SharedPtr<VertexDeclaration> newVertexDeclaration(new VertexDeclaration(this, vertexShader_, vertexBuffers_));
                     i = impl_->vertexDeclarations_.insert(ea::make_pair(newVertexDeclarationHash, newVertexDeclaration)).first;
                 }
                 impl_->deviceContext_->IASetInputLayout((ID3D11InputLayout*)i->second->GetInputLayout());

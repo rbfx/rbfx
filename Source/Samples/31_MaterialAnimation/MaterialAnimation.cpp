@@ -106,7 +106,7 @@ void MaterialAnimation::CreateScene()
     // scene.
     auto* mushroomMat = cache->GetResource<Material>("Materials/Mushroom.xml");
     // Apply shader parameter animation to material
-    ea::shared_ptr<ValueAnimation> specColorAnimation(new ValueAnimation(context_));
+    SharedPtr<ValueAnimation> specColorAnimation(new ValueAnimation(context_));
     specColorAnimation->SetKeyFrame(0.0f, Color(0.1f, 0.1f, 0.1f, 16.0f));
     specColorAnimation->SetKeyFrame(1.0f, Color(1.0f, 0.0f, 0.0f, 2.0f));
     specColorAnimation->SetKeyFrame(2.0f, Color(1.0f, 1.0f, 0.0f, 2.0f));
@@ -159,7 +159,7 @@ void MaterialAnimation::SetupViewport()
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen. We need to define the scene and the camera
     // at minimum. Additionally we could configure the viewport screen size and the rendering path (eg. forward / deferred) to
     // use, but now we just use full screen and default render path configured in the engine command line options
-    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

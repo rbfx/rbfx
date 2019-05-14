@@ -99,7 +99,7 @@ protected:
     void Page(const IntVector2& position, bool pressed);
 
     /// Slider knob.
-    ea::shared_ptr<BorderImage> knob_;
+    SharedPtr<BorderImage> knob_;
     /// Orientation.
     Orientation orientation_;
     /// Slider range.

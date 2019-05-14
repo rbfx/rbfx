@@ -82,15 +82,15 @@ public:
     /// Create worker threads. Can only be called once.
     void CreateThreads(unsigned numThreads);
     /// Get pointer to an usable WorkItem from the item pool. Allocate one if no more free items.
-    ea::shared_ptr<WorkItem> GetFreeItem();
+    SharedPtr<WorkItem> GetFreeItem();
     /// Add a work item and resume worker threads.
-    void AddWorkItem(const ea::shared_ptr<WorkItem>& item);
+    void AddWorkItem(const SharedPtr<WorkItem>& item);
     /// Add a work item and resume worker threads.
     WorkItem* AddWorkItem(std::function<void()> workFunction, unsigned priority = 0);
     /// Remove a work item before it has started executing. Return true if successfully removed.
-    bool RemoveWorkItem(ea::shared_ptr<WorkItem> item);
+    bool RemoveWorkItem(SharedPtr<WorkItem> item);
     /// Remove a number of work items before they have started executing. Return the number of items successfully removed.
-    unsigned RemoveWorkItems(const ea::vector<ea::shared_ptr<WorkItem> >& items);
+    unsigned RemoveWorkItems(const ea::vector<SharedPtr<WorkItem> >& items);
     /// Pause worker threads.
     void Pause();
     /// Resume worker threads.
@@ -128,16 +128,16 @@ private:
     /// Purge the pool to reduce allocation where its unneeded.
     void PurgePool();
     /// Return a work item to the pool.
-    void ReturnToPool(ea::shared_ptr<WorkItem>& item);
+    void ReturnToPool(SharedPtr<WorkItem>& item);
     /// Handle frame start event. Purge completed work from the main thread queue, and perform work if no threads at all.
     void HandleBeginFrame(StringHash eventType, VariantMap& eventData);
 
     /// Worker threads.
-    ea::vector<ea::shared_ptr<WorkerThread> > threads_;
+    ea::vector<SharedPtr<WorkerThread> > threads_;
     /// Work item pool for reuse to cut down on allocation. The bool is a flag for item pooling and whether it is available or not.
-    ea::list<ea::shared_ptr<WorkItem> > poolItems_;
+    ea::list<SharedPtr<WorkItem> > poolItems_;
     /// Work item collection. Accessed only by the main thread.
-    ea::list<ea::shared_ptr<WorkItem> > workItems_;
+    ea::list<SharedPtr<WorkItem> > workItems_;
     /// Work item prioritized queue for worker threads. Pointers are guaranteed to be valid (point to workItems.)
     ea::list<WorkItem*> queue_;
     /// Worker queue mutex.

@@ -174,7 +174,7 @@ ea::string Pass::GetEffectivePixelShaderDefines() const
     return ea::string::joined(psDefines, " ");
 }
 
-ea::vector<ea::shared_ptr<ShaderVariation> >& Pass::GetVertexShaders(const StringHash& extraDefinesHash)
+ea::vector<SharedPtr<ShaderVariation> >& Pass::GetVertexShaders(const StringHash& extraDefinesHash)
 {
     // If empty hash, return the base shaders
     if (!extraDefinesHash.Value())
@@ -183,7 +183,7 @@ ea::vector<ea::shared_ptr<ShaderVariation> >& Pass::GetVertexShaders(const Strin
         return extraVertexShaders_[extraDefinesHash];
 }
 
-ea::vector<ea::shared_ptr<ShaderVariation> >& Pass::GetPixelShaders(const StringHash& extraDefinesHash)
+ea::vector<SharedPtr<ShaderVariation> >& Pass::GetPixelShaders(const StringHash& extraDefinesHash)
 {
     if (!extraDefinesHash.Value())
         return pixelShaders_;
@@ -227,7 +227,7 @@ bool Technique::BeginLoad(Deserializer& source)
 
     SetMemoryUse(sizeof(Technique));
 
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -332,22 +332,22 @@ void Technique::ReleaseShaders()
 {
     for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
-        Pass* pass = i->get();
+        Pass* pass = i->Get();
         if (pass)
             pass->ReleaseShaders();
     }
 }
 
-ea::shared_ptr<Technique> Technique::Clone(const ea::string& cloneName) const
+SharedPtr<Technique> Technique::Clone(const ea::string& cloneName) const
 {
-    ea::shared_ptr<Technique> ret(context_->CreateObject<Technique>());
+    SharedPtr<Technique> ret(context_->CreateObject<Technique>());
     ret->SetIsDesktop(isDesktop_);
     ret->SetName(cloneName);
 
     // Deep copy passes
     for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
-        Pass* srcPass = i->get();
+        Pass* srcPass = i->Get();
         if (!srcPass)
             continue;
 
@@ -375,7 +375,7 @@ Pass* Technique::CreatePass(const ea::string& name)
     if (oldPass)
         return oldPass;
 
-    ea::shared_ptr<Pass> newPass(new Pass(name));
+    SharedPtr<Pass> newPass(new Pass(name));
     unsigned passIndex = newPass->GetIndex();
     if (passIndex >= passes_.size())
         passes_.resize(passIndex + 1);
@@ -392,9 +392,9 @@ void Technique::RemovePass(const ea::string& name)
     auto i = passIndices.find(name.to_lower());
     if (i == passIndices.end())
         return;
-    else if (i->second < passes_.size() && passes_[i->second].get())
+    else if (i->second < passes_.size() && passes_[i->second].Get())
     {
-        passes_[i->second].reset();
+        passes_[i->second].Reset();
         SetMemoryUse((unsigned)(sizeof(Technique) + GetNumPasses() * sizeof(Pass)));
     }
 }
@@ -423,7 +423,7 @@ unsigned Technique::GetNumPasses() const
 
     for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
-        if (i->get())
+        if (i->Get())
             ++ret;
     }
 
@@ -436,7 +436,7 @@ ea::vector<ea::string> Technique::GetPassNames() const
 
     for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
-        Pass* pass = i->get();
+        Pass* pass = i->Get();
         if (pass)
             ret.push_back(pass->GetName());
     }
@@ -450,7 +450,7 @@ ea::vector<Pass*> Technique::GetPasses() const
 
     for (auto i = passes_.begin(); i != passes_.end(); ++i)
     {
-        Pass* pass = i->get();
+        Pass* pass = i->Get();
         if (pass)
             ret.push_back(pass);
     }
@@ -458,11 +458,11 @@ ea::vector<Pass*> Technique::GetPasses() const
     return ret;
 }
 
-ea::shared_ptr<Technique> Technique::CloneWithDefines(const ea::string& vsDefines, const ea::string& psDefines)
+SharedPtr<Technique> Technique::CloneWithDefines(const ea::string& vsDefines, const ea::string& psDefines)
 {
     // Return self if no actual defines
     if (vsDefines.empty() && psDefines.empty())
-        return ea::shared_ptr<Technique>(this);
+        return SharedPtr<Technique>(this);
 
     ea::pair<StringHash, StringHash> key = ea::make_pair(StringHash(vsDefines), StringHash(psDefines));
 

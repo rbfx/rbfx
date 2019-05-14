@@ -148,13 +148,13 @@ protected:
     void UpdateView(const IntVector2& position);
 
     /// Content element.
-    ea::shared_ptr<UIElement> contentElement_;
+    SharedPtr<UIElement> contentElement_;
     /// Horizontal scroll bar.
-    ea::shared_ptr<ScrollBar> horizontalScrollBar_;
+    SharedPtr<ScrollBar> horizontalScrollBar_;
     /// Vertical scroll bar.
-    ea::shared_ptr<ScrollBar> verticalScrollBar_;
+    SharedPtr<ScrollBar> verticalScrollBar_;
     /// Scroll panel element.
-    ea::shared_ptr<BorderImage> scrollPanel_;
+    SharedPtr<BorderImage> scrollPanel_;
     /// Current view offset from the top-left corner.
     IntVector2 viewPosition_;
     /// Total view size.

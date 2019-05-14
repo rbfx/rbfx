@@ -349,7 +349,7 @@ protected:
     /// Debug draw NavArea components.
     bool drawNavAreas_;
     /// NavAreas for this NavMesh
-    ea::vector<ea::weak_ptr<NavArea> > areas_;
+    ea::vector<WeakPtr<NavArea> > areas_;
 };
 
 /// Register Navigation library objects.

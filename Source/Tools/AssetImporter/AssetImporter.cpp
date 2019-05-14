@@ -137,7 +137,7 @@ const char *transformSuffix[TransformationComp_MAXIMUM] =
 
 static const unsigned MAX_CHANNELS = 4;
 
-ea::shared_ptr<Context> context_(new Context());
+SharedPtr<Context> context_(new Context());
 const aiScene* scene_ = nullptr;
 aiNode* rootNode_ = nullptr;
 ea::string inputName_;
@@ -1002,7 +1002,7 @@ void BuildAndSaveModel(OutModel& model)
 
     PrintLine("Writing model " + rootNodeName);
 
-    ea::shared_ptr<Model> outModel(new Model(context_));
+    SharedPtr<Model> outModel(new Model(context_));
     ea::vector<ea::vector<unsigned> > allBoneMappings;
     BoundingBox box;
 
@@ -1037,10 +1037,10 @@ void BuildAndSaveModel(OutModel& model)
             combineBuffers = false;
     }
 
-    ea::shared_ptr<IndexBuffer> ib;
-    ea::shared_ptr<VertexBuffer> vb;
-    ea::vector<ea::shared_ptr<VertexBuffer> > vbVector;
-    ea::vector<ea::shared_ptr<IndexBuffer> > ibVector;
+    SharedPtr<IndexBuffer> ib;
+    SharedPtr<VertexBuffer> vb;
+    ea::vector<SharedPtr<VertexBuffer> > vbVector;
+    ea::vector<SharedPtr<IndexBuffer> > ibVector;
     unsigned startVertexOffset = 0;
     unsigned startIndexOffset = 0;
     unsigned destGeomIndex = 0;
@@ -1094,7 +1094,7 @@ void BuildAndSaveModel(OutModel& model)
         vertexTransform = Matrix3x4(pos, rot, scale);
         normalTransform = rot.RotationMatrix();
 
-        ea::shared_ptr<Geometry> geom(new Geometry(context_));
+        SharedPtr<Geometry> geom(new Geometry(context_));
 
         PrintLine("Writing geometry " + ea::to_string(i) + " with " + ea::to_string(mesh->mNumVertices) + " vertices " +
             ea::to_string(validFaces * 3) + " indices");
@@ -1302,7 +1302,7 @@ void BuildAndSaveAnimations(OutModel* model)
             thisImportStartTime = startTime;
         duration = thisImportEndTime - thisImportStartTime;
 
-        ea::shared_ptr<Animation> outAnim(new Animation(context_));
+        SharedPtr<Animation> outAnim(new Animation(context_));
         outAnim->SetAnimationName(animName);
         outAnim->SetLength(duration * tickConversion);
 
@@ -1642,7 +1642,7 @@ void BuildAndSaveScene(OutScene& scene, bool asPrefab)
     else
         PrintLine("Writing node hierarchy");
 
-    ea::shared_ptr<Scene> outScene(new Scene(context_));
+    SharedPtr<Scene> outScene(new Scene(context_));
 
     if (!asPrefab)
     {
@@ -2063,13 +2063,13 @@ void CopyTextures(const ea::hash_set<ea::string>& usedTextures, const ea::string
 void CombineLods(const ea::vector<float>& lodDistances, const ea::vector<ea::string>& modelNames, const ea::string& outName)
 {
     // Load models
-    ea::vector<ea::shared_ptr<Model> > srcModels;
+    ea::vector<SharedPtr<Model> > srcModels;
     for (unsigned i = 0; i < modelNames.size(); ++i)
     {
         PrintLine("Reading LOD level " + ea::to_string(i) + ": model " + modelNames[i] + " distance " + ea::to_string(lodDistances[i]));
         File srcFile(context_);
         srcFile.Open(modelNames[i]);
-        ea::shared_ptr<Model> srcModel(new Model(context_));
+        SharedPtr<Model> srcModel(new Model(context_));
         if (!srcModel->Load(srcFile))
             ErrorExit("Could not load input model " + modelNames[i]);
         srcModels.push_back(srcModel);
@@ -2106,12 +2106,12 @@ void CombineLods(const ea::vector<float>& lodDistances, const ea::vector<ea::str
             ErrorExit(modelNames[i] + " has different per-geometry bone mappings than " + modelNames[0]);
     }
 
-    ea::vector<ea::shared_ptr<VertexBuffer> > vbVector;
-    ea::vector<ea::shared_ptr<IndexBuffer> > ibVector;
+    ea::vector<SharedPtr<VertexBuffer> > vbVector;
+    ea::vector<SharedPtr<IndexBuffer> > ibVector;
     ea::vector<unsigned> emptyMorphRange;
 
     // Create the final model
-    ea::shared_ptr<Model> outModel(new Model(context_));
+    SharedPtr<Model> outModel(new Model(context_));
     outModel->SetNumGeometries(srcModels[0]->GetNumGeometries());
     for (unsigned i = 0; i < srcModels[0]->GetNumGeometries(); ++i)
     {
@@ -2124,12 +2124,12 @@ void CombineLods(const ea::vector<float>& lodDistances, const ea::vector<ea::str
 
             for (unsigned k = 0; k < geometry->GetNumVertexBuffers(); ++k)
             {
-                ea::shared_ptr<VertexBuffer> vb(geometry->GetVertexBuffer(k));
+                SharedPtr<VertexBuffer> vb(geometry->GetVertexBuffer(k));
                 if (!vbVector.contains(vb))
                     vbVector.push_back(vb);
             }
 
-            ea::shared_ptr<IndexBuffer> ib(geometry->GetIndexBuffer());
+            SharedPtr<IndexBuffer> ib(geometry->GetIndexBuffer());
             if (!ibVector.contains(ib))
                 ibVector.push_back(ib);
         }

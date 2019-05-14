@@ -64,13 +64,13 @@ struct SceneState
     }
 
     ///
-    ea::weak_ptr<Scene> startScene_;
+    WeakPtr<Scene> startScene_;
     ///
     VectorBuffer sceneState_;
     ///
     VectorBuffer uiState_;
     ///
-    ea::shared_ptr<XMLFile> defaultStyle_;
+    SharedPtr<XMLFile> defaultStyle_;
 };
 
 class SceneTab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
@@ -119,7 +119,7 @@ public:
     /// Return true if component is selected.
     bool IsSelected(Component* component) const;
     /// Return list of selected nodes.
-    const ea::vector<ea::weak_ptr<Node>>& GetSelection() const;
+    const ea::vector<WeakPtr<Node>>& GetSelection() const;
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene displayed in the tab viewport.
@@ -186,23 +186,23 @@ protected:
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
     /// Texture to which scene is rendered.
-    ea::shared_ptr<Texture2D> texture_;
+    SharedPtr<Texture2D> texture_;
     /// Viewport which defines rendering area.
-    ea::shared_ptr<Viewport> viewport_;
+    SharedPtr<Viewport> viewport_;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
     /// Current selected component displayed in inspector.
-    ea::hash_set<ea::weak_ptr<Component>> selectedComponents_;
+    ea::hash_set<WeakPtr<Component>> selectedComponents_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool mouseHoversViewport_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
     ea::vector<Node*> openHierarchyNodes_;
     /// Node to scroll to on next frame.
-    ea::weak_ptr<Node> scrollTo_;
+    WeakPtr<Node> scrollTo_;
     /// Selected camera preview texture.
-    ea::shared_ptr<Texture2D> cameraPreviewtexture_;
+    SharedPtr<Texture2D> cameraPreviewtexture_;
     /// Selected camera preview viewport.
-    ea::shared_ptr<Viewport> cameraPreviewViewport_;
+    SharedPtr<Viewport> cameraPreviewViewport_;
     /// Utility for copying and pasting scene nodes.
     SceneClipboard clipboard_;
     /// Original window padding that was overwritten before creating window. This padding will be restored right after window started.
@@ -212,11 +212,11 @@ protected:
     /// List of component IDs that are saved when scene state is saved. Component selection will be restored using these.
     ea::vector<unsigned> savedComponentSelection_;
     ///
-    ea::shared_ptr<UI> offScreenUI_;
+    SharedPtr<UI> offScreenUI_;
     /// Root element which contains edited UI.
-    ea::shared_ptr<RootUIElement> rootElement_;
+    SharedPtr<RootUIElement> rootElement_;
     ///
-    ea::shared_ptr<XMLFile> defaultStyle_;
+    SharedPtr<XMLFile> defaultStyle_;
 };
 
 };

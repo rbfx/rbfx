@@ -300,7 +300,7 @@ void Node::AddReplicationState(NodeReplicationState* state)
 
 bool Node::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("node");
     if (!SaveXML(rootElem))
         return false;
@@ -310,7 +310,7 @@ bool Node::SaveXML(Serializer& dest, const ea::string& indentation) const
 
 bool Node::SaveJSON(Serializer& dest, const ea::string& indentation) const
 {
-    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue& rootElem = json->GetRoot();
 
     if (!SaveJSON(rootElem))
@@ -755,7 +755,7 @@ void Node::MarkDirty()
         for (auto i = cur->listeners_.begin(); i !=
             cur->listeners_.end();)
         {
-            Component *c = i->get();
+            Component *c = i->Get();
             if (c)
             {
                 c->OnMarkedDirty(cur);
@@ -775,7 +775,7 @@ void Node::MarkDirty()
         auto i = cur->children_.begin();
         if (i != cur->children_.end())
         {
-            Node *next = i->get();
+            Node *next = i->Get();
             for (++i; i != cur->children_.end(); ++i)
                 (*i)->MarkDirty();
             cur = next;
@@ -807,7 +807,7 @@ void Node::AddChild(Node* node, unsigned index)
         return;
 
     // Keep a shared ptr to the node while transferring
-    ea::shared_ptr<Node> nodeShared(node);
+    SharedPtr<Node> nodeShared(node);
     Node* oldParent = node->parent_;
     if (oldParent)
     {
@@ -867,7 +867,7 @@ void Node::RemoveChild(Node* node)
 
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
-        if (i->get() == node)
+        if (i->Get() == node)
         {
             RemoveChild(i);
             return;
@@ -916,7 +916,7 @@ Component* Node::CreateComponent(StringHash type, CreateMode mode, unsigned id)
         mode = LOCAL;
 
     // Check that creation succeeds and that the object in fact is a component
-    ea::shared_ptr<Component> newComponent = DynamicCast<Component>(context_->CreateObject(type));
+    SharedPtr<Component> newComponent = DynamicCast<Component>(context_->CreateObject(type));
     if (!newComponent)
     {
         URHO3D_LOGERROR("Could not create unknown component type " + type.ToString());
@@ -1002,7 +1002,7 @@ void Node::RemoveComponent(Component* component)
 {
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        if (i->get() == component)
+        if (i->Get() == component)
         {
             RemoveComponent(i);
 
@@ -1084,10 +1084,10 @@ void Node::ReorderComponent(Component* component, unsigned index)
 
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        if (i->get() == component)
+        if (i->Get() == component)
         {
             // Need shared ptr to insert. Also, prevent destruction when removing first
-            ea::shared_ptr<Component> componentShared(component);
+            SharedPtr<Component> componentShared(component);
             components_.erase(i);
             components_.insert(index, componentShared);
             return;
@@ -1154,11 +1154,11 @@ void Node::AddListener(Component* component)
     // Check for not adding twice
     for (auto i = listeners_.begin(); i != listeners_.end(); ++i)
     {
-        if (i->get() == component)
+        if (i->Get() == component)
             return;
     }
 
-    listeners_.push_back(ea::weak_ptr<Component>(component));
+    listeners_.push_back(WeakPtr<Component>(component));
     // If the node is currently dirty, notify immediately
     if (dirty_)
         component->OnMarkedDirty(this);
@@ -1168,7 +1168,7 @@ void Node::RemoveListener(Component* component)
 {
     for (auto i = listeners_.begin(); i != listeners_.end(); ++i)
     {
-        if (i->get() == component)
+        if (i->Get() == component)
         {
             listeners_.erase(i);
             return;
@@ -1237,7 +1237,7 @@ void Node::GetChildren(ea::vector<Node*>& dest, bool recursive) const
     if (!recursive)
     {
         for (auto i = children_.begin(); i != children_.end(); ++i)
-            dest.push_back(i->get());
+            dest.push_back(i->Get());
     }
     else
         GetChildrenRecursive(dest);
@@ -1259,7 +1259,7 @@ void Node::GetChildrenWithComponent(ea::vector<Node*>& dest, StringHash type, bo
         for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             if ((*i)->HasComponent(type))
-                dest.push_back(i->get());
+                dest.push_back(i->Get());
         }
     }
     else
@@ -1282,7 +1282,7 @@ void Node::GetChildrenWithTag(ea::vector<Node*>& dest, const ea::string& tag, bo
         for (auto i = children_.begin(); i != children_.end(); ++i)
         {
             if ((*i)->HasTag(tag))
-                dest.push_back(i->get());
+                dest.push_back(i->Get());
         }
     }
     else
@@ -1316,7 +1316,7 @@ Node* Node::GetChild(StringHash nameHash, bool recursive) const
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
         if ((*i)->GetNameHash() == nameHash)
-            return i->get();
+            return i->Get();
 
         if (recursive)
         {
@@ -1350,7 +1350,7 @@ void Node::GetComponents(ea::vector<Component*>& dest, StringHash type, bool rec
         for (auto i = components_.begin(); i != components_.end(); ++i)
         {
             if ((*i)->GetType() == type)
-                dest.push_back(i->get());
+                dest.push_back(i->Get());
         }
     }
     else
@@ -1400,7 +1400,7 @@ Component* Node::GetComponent(StringHash type, bool recursive) const
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
-            return i->get();
+            return i->Get();
     }
 
     if (recursive)
@@ -1697,7 +1697,7 @@ void Node::PrepareNetworkUpdate()
     // Let the components add their dependencies
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        Component* component = i->get();
+        Component* component = i->Get();
         if (component->IsReplicated())
             component->GetDependencyNodes(impl_->dependencyNodes_);
     }
@@ -1801,7 +1801,7 @@ void Node::MarkReplicationDirty()
 
 Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
 {
-    ea::shared_ptr<Node> newNode(context_->CreateObject<Node>());
+    SharedPtr<Node> newNode(context_->CreateObject<Node>());
     newNode->SetTemporary(temporary);
 
     // If zero ID specified, or the ID is already taken, let the scene assign
@@ -1814,7 +1814,7 @@ Node* Node::CreateChild(unsigned id, CreateMode mode, bool temporary)
     else
         newNode->SetID(id);
 
-    AddChild(newNode.get());
+    AddChild(newNode.Get());
     return newNode;
 }
 
@@ -1823,7 +1823,7 @@ void Node::AddComponent(Component* component, unsigned id, CreateMode mode)
     if (!component)
         return;
 
-    components_.push_back(ea::shared_ptr<Component>(component));
+    components_.push_back(SharedPtr<Component>(component));
 
     if (component->GetNode())
         URHO3D_LOGWARNING("Component " + component->GetTypeName() + " already belongs to a node!");
@@ -2047,7 +2047,7 @@ void Node::SetEnabled(bool enable, bool recursive, bool storeSelf)
                 VariantMap& eventData = GetEventDataMap();
                 eventData[P_SCENE] = scene_;
                 eventData[P_NODE] = this;
-                eventData[P_COMPONENT] = i->get();
+                eventData[P_COMPONENT] = i->Get();
 
                 scene_->SendEvent(E_COMPONENTENABLEDCHANGED, eventData);
             }
@@ -2075,7 +2075,7 @@ Component* Node::SafeCreateComponent(const ea::string& typeName, StringHash type
     {
         URHO3D_LOGWARNING("Component type " + type.ToString() + " not known, creating UnknownComponent as placeholder");
         // Else create as UnknownComponent
-        ea::shared_ptr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
+        SharedPtr<UnknownComponent> newComponent(context_->CreateObject<UnknownComponent>());
         if (typeName.empty() || typeName.starts_with("Unknown", false))
             newComponent->SetType(type);
         else
@@ -2105,12 +2105,12 @@ void Node::UpdateWorldTransform() const
     dirty_ = false;
 }
 
-void Node::RemoveChild(ea::vector<ea::shared_ptr<Node> >::iterator i)
+void Node::RemoveChild(ea::vector<SharedPtr<Node> >::iterator i)
 {
     // Keep a shared pointer to the child about to be removed, to make sure the erase from container completes first. Otherwise
     // it would be possible that other child nodes get removed as part of the node's components' cleanup, causing a re-entrant
     // erase and a crash
-    ea::shared_ptr<Node> child(*i);
+    SharedPtr<Node> child(*i);
 
     // Send change event. Do not send when this node is already being destroyed
     if (Refs() > 0 && scene_)
@@ -2129,7 +2129,7 @@ void Node::RemoveChild(ea::vector<ea::shared_ptr<Node> >::iterator i)
     child->MarkDirty();
     child->MarkNetworkUpdate();
     if (scene_)
-        scene_->NodeRemoved(child.get());
+        scene_->NodeRemoved(child.Get());
 
     children_.erase(i);
 }
@@ -2138,7 +2138,7 @@ void Node::GetChildrenRecursive(ea::vector<Node*>& dest) const
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
-        Node* node = i->get();
+        Node* node = i->Get();
         dest.push_back(node);
         if (!node->children_.empty())
             node->GetChildrenRecursive(dest);
@@ -2149,7 +2149,7 @@ void Node::GetChildrenWithComponentRecursive(ea::vector<Node*>& dest, StringHash
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
-        Node* node = i->get();
+        Node* node = i->Get();
         if (node->HasComponent(type))
             dest.push_back(node);
         if (!node->children_.empty())
@@ -2162,7 +2162,7 @@ void Node::GetComponentsRecursive(ea::vector<Component*>& dest, StringHash type)
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
         if ((*i)->GetType() == type)
-            dest.push_back(i->get());
+            dest.push_back(i->Get());
     }
     for (auto i = children_.begin(); i != children_.end(); ++i)
         (*i)->GetComponentsRecursive(dest, type);
@@ -2172,7 +2172,7 @@ void Node::GetChildrenWithTagRecursive(ea::vector<Node*>& dest, const ea::string
 {
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
-        Node* node = i->get();
+        Node* node = i->Get();
         if (node->HasTag(tag))
             dest.push_back(node);
         if (!node->children_.empty())
@@ -2203,7 +2203,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     // Clone components
     for (auto i = components_.begin(); i != components_.end(); ++i)
     {
-        Component* component = i->get();
+        Component* component = i->Get();
         if (component->IsTemporary())
             continue;
 
@@ -2216,7 +2216,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     // Clone child nodes recursively
     for (auto i = children_.begin(); i != children_.end(); ++i)
     {
-        Node* node = i->get();
+        Node* node = i->Get();
         if (node->IsTemporary())
             continue;
 
@@ -2238,7 +2238,7 @@ Node* Node::CloneRecursive(Node* parent, SceneResolver& resolver, CreateMode mod
     return cloneNode;
 }
 
-void Node::RemoveComponent(ea::vector<ea::shared_ptr<Component> >::iterator i)
+void Node::RemoveComponent(ea::vector<SharedPtr<Component> >::iterator i)
 {
     // Send node change event. Do not send when already being destroyed
     if (Refs() > 0 && scene_)
@@ -2253,9 +2253,9 @@ void Node::RemoveComponent(ea::vector<ea::shared_ptr<Component> >::iterator i)
         scene_->SendEvent(E_COMPONENTREMOVED, eventData);
     }
 
-    RemoveListener(i->get());
+    RemoveListener(i->Get());
     if (scene_)
-        scene_->ComponentRemoved(i->get());
+        scene_->ComponentRemoved(i->Get());
     (*i)->SetNode(nullptr);
     components_.erase(i);
 }

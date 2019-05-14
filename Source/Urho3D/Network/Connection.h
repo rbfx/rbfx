@@ -70,7 +70,7 @@ struct PackageDownload
     PackageDownload();
 
     /// Destination file.
-    ea::shared_ptr<File> file_;
+    SharedPtr<File> file_;
     /// Already received fragments.
     ea::hash_set<unsigned> receivedFragments_;
     /// Package name.
@@ -90,7 +90,7 @@ struct PackageUpload
     PackageUpload();
 
     /// Source file.
-    ea::shared_ptr<File> file_;
+    SharedPtr<File> file_;
     /// Current fragment index.
     unsigned fragment_;
     /// Total number of fragments
@@ -283,7 +283,7 @@ private:
     void OnPackagesReady();
 
     /// Scene.
-    ea::weak_ptr<Scene> scene_;
+    WeakPtr<Scene> scene_;
     /// Network replication state of the scene.
     SceneReplicationState sceneState_;
     /// Waiting or ongoing package file receive transfers.

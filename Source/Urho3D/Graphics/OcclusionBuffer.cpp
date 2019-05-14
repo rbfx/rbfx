@@ -221,7 +221,7 @@ void OcclusionBuffer::DrawTriangles()
 
         for (auto i = batches_.begin(); i != batches_.end(); ++i)
         {
-            ea::shared_ptr<WorkItem> item = queue->GetFreeItem();
+            SharedPtr<WorkItem> item = queue->GetFreeItem();
             item->priority_ = M_MAX_UNSIGNED;
             item->workFunction_ = DrawOcclusionBatchWork;
             item->aux_ = this;
