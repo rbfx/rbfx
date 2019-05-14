@@ -56,11 +56,11 @@ enum LoadMode
 struct AsyncProgress
 {
     /// File for binary mode.
-    ea::shared_ptr<File> file_;
+    SharedPtr<File> file_;
     /// XML file for XML mode.
-    ea::shared_ptr<XMLFile> xmlFile_;
+    SharedPtr<XMLFile> xmlFile_;
     /// JSON file for JSON mode
-    ea::shared_ptr<JSONFile> jsonFile_;
+    SharedPtr<JSONFile> jsonFile_;
 
     /// Current XML element for XML mode.
     XMLElement xmlElement_;
@@ -207,7 +207,7 @@ public:
     int GetAsyncLoadingMs() const { return asyncLoadingMs_; }
 
     /// Return required package files.
-    const ea::vector<ea::shared_ptr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
+    const ea::vector<SharedPtr<PackageFile> >& GetRequiredPackageFiles() const { return requiredPackageFiles_; }
 
     /// Return a node user variable name, or empty if not registered.
     const ea::string& GetVarName(StringHash hash) const;
@@ -296,7 +296,7 @@ private:
     /// Source file name.
     mutable ea::string fileName_;
     /// Required package files for networking.
-    ea::vector<ea::shared_ptr<PackageFile> > requiredPackageFiles_;
+    ea::vector<SharedPtr<PackageFile> > requiredPackageFiles_;
     /// Registered node user variable reverse mappings.
     ea::unordered_map<StringHash, ea::string> varNames_;
     /// Nodes to check for attribute changes on the next network update.

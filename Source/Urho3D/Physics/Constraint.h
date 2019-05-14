@@ -166,11 +166,11 @@ private:
     void MarkFramesDirty() { framesDirty_ = true; }
 
     /// Physics world.
-    ea::weak_ptr<PhysicsWorld> physicsWorld_;
+    WeakPtr<PhysicsWorld> physicsWorld_;
     /// Own rigid body.
-    ea::weak_ptr<RigidBody> ownBody_;
+    WeakPtr<RigidBody> ownBody_;
     /// Other rigid body.
-    ea::weak_ptr<RigidBody> otherBody_;
+    WeakPtr<RigidBody> otherBody_;
     /// Bullet constraint.
     ea::unique_ptr<btTypedConstraint> constraint_;
     /// Constraint type.

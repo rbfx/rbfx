@@ -63,6 +63,6 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     ea::string message_;
-    ea::shared_ptr<Text> text_;
-    ea::shared_ptr<HttpRequest> httpRequest_;
+    SharedPtr<Text> text_;
+    SharedPtr<HttpRequest> httpRequest_;
 };

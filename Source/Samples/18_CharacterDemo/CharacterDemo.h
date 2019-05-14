@@ -118,9 +118,9 @@ private:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Touch utility object.
-    ea::shared_ptr<Touch> touch_;
+    SharedPtr<Touch> touch_;
     /// The controllable character component.
-    ea::weak_ptr<Character> character_;
+    WeakPtr<Character> character_;
     /// First person camera flag.
     bool firstPerson_;
 };

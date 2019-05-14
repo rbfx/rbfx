@@ -41,9 +41,9 @@
 
 static const int VERTEX_CACHE_SIZE = 32;
 
-ea::shared_ptr<Context> context_(new Context());
-ea::shared_ptr<XMLFile> meshFile_(new XMLFile(context_));
-ea::shared_ptr<XMLFile> skelFile_(new XMLFile(context_));
+SharedPtr<Context> context_(new Context());
+SharedPtr<XMLFile> meshFile_(new XMLFile(context_));
+SharedPtr<XMLFile> skelFile_(new XMLFile(context_));
 ea::vector<ModelIndexBuffer> indexBuffers_;
 ea::vector<ModelVertexBuffer> vertexBuffers_;
 ea::vector<ea::vector<ModelSubGeometryLodLevel> > subGeometries_;

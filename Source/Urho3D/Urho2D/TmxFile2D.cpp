@@ -145,7 +145,7 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
                 unsigned gid = tileElem.GetUInt("gid");
                 if (gid > 0)
                 {
-                    ea::shared_ptr<Tile2D> tile(new Tile2D());
+                    SharedPtr<Tile2D> tile(new Tile2D());
                     tile->gid_ = gid;
                     tile->sprite_ = tmxFile_->GetTileSprite(gid & ~FLIP_ALL);
                     tile->propertySet_ = tmxFile_->GetTilePropertySet(gid & ~FLIP_ALL);
@@ -169,7 +169,7 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
                 unsigned gid = ToUInt(gidVector[currentIndex]);
                 if (gid > 0)
                 {
-                    ea::shared_ptr<Tile2D> tile(new Tile2D());
+                    SharedPtr<Tile2D> tile(new Tile2D());
                     tile->gid_ = gid;
                     tile->sprite_ = tmxFile_->GetTileSprite(gid & ~FLIP_ALL);
                     tile->propertySet_ = tmxFile_->GetTilePropertySet(gid & ~FLIP_ALL);
@@ -199,7 +199,7 @@ bool TmxTileLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
                              | (unsigned)buffer[currentIndex];
                 if (gid > 0)
                 {
-                    ea::shared_ptr<Tile2D> tile(new Tile2D());
+                    SharedPtr<Tile2D> tile(new Tile2D());
                     tile->gid_ = gid;
                     tile->sprite_ = tmxFile_->GetTileSprite(gid & ~FLIP_ALL);
                     tile->propertySet_ = tmxFile_->GetTilePropertySet(gid & ~FLIP_ALL);
@@ -235,7 +235,7 @@ bool TmxObjectGroup2D::Load(const XMLElement& element, const TileMapInfo2D& info
 
     for (XMLElement objectElem = element.GetChild("object"); objectElem; objectElem = objectElem.GetNext("object"))
     {
-        ea::shared_ptr<TileMapObject2D> object(new TileMapObject2D());
+        SharedPtr<TileMapObject2D> object(new TileMapObject2D());
         StoreObject(objectElem, object, info);
         objects_.push_back(object);
     }
@@ -246,7 +246,7 @@ bool TmxObjectGroup2D::Load(const XMLElement& element, const TileMapInfo2D& info
     return true;
 }
 
-void TmxObjectGroup2D::StoreObject(const XMLElement& objectElem, const ea::shared_ptr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile)
+void TmxObjectGroup2D::StoreObject(const XMLElement& objectElem, const SharedPtr<TileMapObject2D>& object, const TileMapInfo2D& info, bool isTile)
 {
         if (objectElem.HasAttribute("name"))
             object->name_ = objectElem.GetAttribute("name");
@@ -349,7 +349,7 @@ bool TmxImageLayer2D::Load(const XMLElement& element, const TileMapInfo2D& info)
     source_ = imageElem.GetAttribute("source");
     ea::string textureFilePath = GetParentPath(tmxFile_->GetName()) + source_;
     auto* cache = tmxFile_->GetSubsystem<ResourceCache>();
-    ea::shared_ptr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
+    SharedPtr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
     if (!texture)
     {
         URHO3D_LOGERROR("Could not load texture " + textureFilePath);
@@ -399,7 +399,7 @@ bool TmxFile2D::BeginLoad(Deserializer& source)
     if (!loadXMLFile_->Load(source))
     {
         URHO3D_LOGERROR("Load XML failed " + source.GetName());
-        loadXMLFile_.reset();
+        loadXMLFile_.Reset();
         return false;
     }
 
@@ -407,7 +407,7 @@ bool TmxFile2D::BeginLoad(Deserializer& source)
     if (!rootElem)
     {
         URHO3D_LOGERROR("Invalid tmx file " + source.GetName());
-        loadXMLFile_.reset();
+        loadXMLFile_.Reset();
         return false;
     }
 
@@ -420,7 +420,7 @@ bool TmxFile2D::BeginLoad(Deserializer& source)
             if (tileSetElem.HasAttribute("source"))
             {
                 ea::string source = tileSetElem.GetAttribute("source");
-                ea::shared_ptr<XMLFile> tsxXMLFile = LoadTSXFile(source);
+                SharedPtr<XMLFile> tsxXMLFile = LoadTSXFile(source);
                 if (!tsxXMLFile)
                     return false;
 
@@ -516,13 +516,13 @@ bool TmxFile2D::EndLoad()
 
         if (!ret)
         {
-            loadXMLFile_.reset();
+            loadXMLFile_.Reset();
             tsxXMLFiles_.clear();
             return false;
         }
     }
 
-    loadXMLFile_.reset();
+    loadXMLFile_.Reset();
     tsxXMLFiles_.clear();
     return true;
 }
@@ -561,9 +561,9 @@ Sprite2D* TmxFile2D::GetTileSprite(unsigned gid) const
     return i->second;
 }
 
-ea::vector<ea::shared_ptr<TileMapObject2D> > TmxFile2D::GetTileCollisionShapes(unsigned gid) const
+ea::vector<SharedPtr<TileMapObject2D> > TmxFile2D::GetTileCollisionShapes(unsigned gid) const
 {
-    ea::vector<ea::shared_ptr<TileMapObject2D> > tileShapes;
+    ea::vector<SharedPtr<TileMapObject2D> > tileShapes;
     auto i = gidToCollisionShapeMapping_.find(
         gid);
     if (i == gidToCollisionShapeMapping_.end())
@@ -595,15 +595,15 @@ void TmxFile2D::SetSpriteTextureEdgeOffset(float offset)
         i.second->SetTextureEdgeOffset(offset);
 }
 
-ea::shared_ptr<XMLFile> TmxFile2D::LoadTSXFile(const ea::string& source)
+SharedPtr<XMLFile> TmxFile2D::LoadTSXFile(const ea::string& source)
 {
     ea::string tsxFilePath = GetParentPath(GetName()) + source;
-    ea::shared_ptr<File> tsxFile = GetSubsystem<ResourceCache>()->GetFile(tsxFilePath);
-    ea::shared_ptr<XMLFile> tsxXMLFile(context_->CreateObject<XMLFile>());
+    SharedPtr<File> tsxFile = GetSubsystem<ResourceCache>()->GetFile(tsxFilePath);
+    SharedPtr<XMLFile> tsxXMLFile(context_->CreateObject<XMLFile>());
     if (!tsxFile || !tsxXMLFile->Load(*tsxFile))
     {
         URHO3D_LOGERROR("Load TSX file failed " + tsxFilePath);
-        return ea::shared_ptr<XMLFile>();
+        return SharedPtr<XMLFile>();
     }
 
     return tsxXMLFile;
@@ -629,7 +629,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         auto i = tsxXMLFiles_.find(source);
         if (i == tsxXMLFiles_.end())
         {
-            ea::shared_ptr<XMLFile> tsxXMLFile = LoadTSXFile(source);
+            SharedPtr<XMLFile> tsxXMLFile = LoadTSXFile(source);
             if (!tsxXMLFile)
                 return false;
 
@@ -659,7 +659,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         if (imageElem.NotNull()) {
             isSingleTileSet = true;
             ea::string textureFilePath = GetParentPath(GetName()) + imageElem.GetAttribute("source");
-            ea::shared_ptr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
+            SharedPtr<Texture2D> texture(cache->GetResource<Texture2D>(textureFilePath));
             if (!texture)
             {
                 URHO3D_LOGERROR("Could not load texture " + textureFilePath);
@@ -683,7 +683,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             {
                 for (int x = margin; x + tileWidth <= imageWidth - margin; x += tileWidth + spacing)
                 {
-                    ea::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+                    SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
                     sprite->SetTexture(texture);
                     sprite->SetRectangle(IntRect(x, y, x + tileWidth, y + tileHeight));
                     sprite->SetHotSpot(hotSpot);
@@ -704,7 +704,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             XMLElement imageElem = tileElem.GetChild("image");
             if (imageElem.NotNull()) {
                 ea::string textureFilePath = GetParentPath(GetName()) + imageElem.GetAttribute("source");
-                ea::shared_ptr<Image> image(cache->GetResource<Image>(textureFilePath));
+                SharedPtr<Image> image(cache->GetResource<Image>(textureFilePath));
                 if (!image)
                 {
                     URHO3D_LOGERROR("Could not load image " + textureFilePath);
@@ -720,10 +720,10 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         TmxObjectGroup2D objectGroup(this);
         for (XMLElement collisionElem = tileElem.GetChild("objectgroup"); collisionElem; collisionElem = collisionElem.GetNext("objectgroup"))
         {
-            ea::vector<ea::shared_ptr<TileMapObject2D> > objects;
+            ea::vector<SharedPtr<TileMapObject2D> > objects;
             for (XMLElement objectElem = collisionElem.GetChild("object"); objectElem; objectElem = objectElem.GetNext("object"))
             {
-                ea::shared_ptr<TileMapObject2D> object(new TileMapObject2D());
+                SharedPtr<TileMapObject2D> object(new TileMapObject2D());
 
                 // Convert Tiled local position (left top) to Urho3D local position (left bottom)
                 objectElem.SetAttribute("y", ea::to_string(info_.GetMapHeight() / PIXEL_SIZE - (tileHeight - objectElem.GetFloat("y"))));
@@ -735,7 +735,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         }
         if (tileElem.HasChild("properties"))
         {
-            ea::shared_ptr<PropertySet2D> propertySet(new PropertySet2D());
+            SharedPtr<PropertySet2D> propertySet(new PropertySet2D());
             propertySet->Load(tileElem.GetChild("properties"));
             gidToPropertySetMapping_[gid] = propertySet;
         }
@@ -758,7 +758,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
             }
         }
 
-        ea::shared_ptr<Texture2D> texture(context_->CreateObject<Texture2D>());
+        SharedPtr<Texture2D> texture(context_->CreateObject<Texture2D>());
         texture->SetMipsToSkip(QUALITY_LOW, 0);
         texture->SetNumLevels(1);
         texture->SetSize(allocator.GetWidth(), allocator.GetHeight(), Graphics::GetRGBAFormat());
@@ -770,7 +770,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
         for (int i = 0; i < tileImageInfos.size(); ++i)
         {
             TileImageInfo& info = tileImageInfos[i];
-            ea::shared_ptr<Image> image = info.image->ConvertToRGBA();
+            SharedPtr<Image> image = info.image->ConvertToRGBA();
 
             for (int y = 0; y < image->GetHeight(); ++y)
             {
@@ -778,7 +778,7 @@ bool TmxFile2D::LoadTileSet(const XMLElement& element)
                     image->GetData() + y * image->GetWidth() * 4, (size_t)image->GetWidth() * 4);
             }
 
-            ea::shared_ptr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
+            SharedPtr<Sprite2D> sprite(context_->CreateObject<Sprite2D>());
             sprite->SetTexture(texture);
             sprite->SetRectangle(IntRect(info.x, info.y, info.x + info.imageWidth, info.y + info.imageHeight));
             sprite->SetHotSpot(Vector2::ZERO);

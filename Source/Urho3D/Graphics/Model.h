@@ -140,10 +140,10 @@ public:
     /// Set local-space bounding box.
     void SetBoundingBox(const BoundingBox& box);
     /// Set vertex buffers and their morph ranges.
-    bool SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, const ea::vector<unsigned>& morphRangeStarts,
+    bool SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, const ea::vector<unsigned>& morphRangeStarts,
         const ea::vector<unsigned>& morphRangeCounts);
     /// Set index buffers.
-    bool SetIndexBuffers(const ea::vector<ea::shared_ptr<IndexBuffer> >& buffers);
+    bool SetIndexBuffers(const ea::vector<SharedPtr<IndexBuffer> >& buffers);
     /// Set number of geometries.
     void SetNumGeometries(unsigned num);
     /// Set number of LOD levels in a geometry.
@@ -159,7 +159,7 @@ public:
     /// Set vertex morphs.
     void SetMorphs(const ea::vector<ModelMorph>& morphs);
     /// Clone the model. The geometry data is deep-copied and can be modified in the clone without affecting the original.
-    ea::shared_ptr<Model> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    SharedPtr<Model> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return bounding box.
     const BoundingBox& GetBoundingBox() const { return boundingBox_; }
@@ -168,10 +168,10 @@ public:
     Skeleton& GetSkeleton() { return skeleton_; }
 
     /// Return vertex buffers.
-    const ea::vector<ea::shared_ptr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
+    const ea::vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
 
     /// Return index buffers.
-    const ea::vector<ea::shared_ptr<IndexBuffer> >& GetIndexBuffers() const { return indexBuffers_; }
+    const ea::vector<SharedPtr<IndexBuffer> >& GetIndexBuffers() const { return indexBuffers_; }
 
     /// Return number of geometries.
     unsigned GetNumGeometries() const { return geometries_.size(); }
@@ -180,7 +180,7 @@ public:
     unsigned GetNumGeometryLodLevels(unsigned index) const;
 
     /// Return geometry pointers.
-    const ea::vector<ea::vector<ea::shared_ptr<Geometry> > >& GetGeometries() const { return geometries_; }
+    const ea::vector<ea::vector<SharedPtr<Geometry> > >& GetGeometries() const { return geometries_; }
 
     /// Return geometry center points.
     const ea::vector<Vector3>& GetGeometryCenters() const { return geometryCenters_; }
@@ -220,11 +220,11 @@ private:
     /// Skeleton.
     Skeleton skeleton_;
     /// Vertex buffers.
-    ea::vector<ea::shared_ptr<VertexBuffer> > vertexBuffers_;
+    ea::vector<SharedPtr<VertexBuffer> > vertexBuffers_;
     /// Index buffers.
-    ea::vector<ea::shared_ptr<IndexBuffer> > indexBuffers_;
+    ea::vector<SharedPtr<IndexBuffer> > indexBuffers_;
     /// Geometries.
-    ea::vector<ea::vector<ea::shared_ptr<Geometry> > > geometries_;
+    ea::vector<ea::vector<SharedPtr<Geometry> > > geometries_;
     /// Geometry bone mappings.
     ea::vector<ea::vector<unsigned> > geometryBoneMappings_;
     /// Geometry centers.

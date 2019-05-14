@@ -61,7 +61,7 @@ struct hash<weak_ptr<U>>
 {
     size_t operator()(const weak_ptr<U>& value) const
     {
-        return (size_t)(void*)value.get();
+        return (size_t)(void*)value.Get();
     }
 };
 

@@ -99,19 +99,19 @@ private:
     void HandleClientObjectID(StringHash eventType, VariantMap& eventData);
 
     /// Mapping from client connections to controllable objects.
-    ea::unordered_map<Connection*, ea::weak_ptr<Node> > serverObjects_;
+    ea::unordered_map<Connection*, WeakPtr<Node> > serverObjects_;
     /// Button container element.
-    ea::shared_ptr<UIElement> buttonContainer_;
+    SharedPtr<UIElement> buttonContainer_;
     /// Server address line editor element.
-    ea::shared_ptr<LineEdit> textEdit_;
+    SharedPtr<LineEdit> textEdit_;
     /// Connect button.
-    ea::shared_ptr<Button> connectButton_;
+    SharedPtr<Button> connectButton_;
     /// Disconnect button.
-    ea::shared_ptr<Button> disconnectButton_;
+    SharedPtr<Button> disconnectButton_;
     /// Start server button.
-    ea::shared_ptr<Button> startServerButton_;
+    SharedPtr<Button> startServerButton_;
     /// Instructions text.
-    ea::shared_ptr<Text> instructionsText_;
+    SharedPtr<Text> instructionsText_;
     /// ID of own controllable object (client only.)
     unsigned clientObjectID_{};
 };

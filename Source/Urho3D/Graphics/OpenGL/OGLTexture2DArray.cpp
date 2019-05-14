@@ -176,7 +176,7 @@ bool Texture2DArray::SetData(unsigned layer, unsigned level, int x, int y, int w
 
 bool Texture2DArray::SetData(unsigned layer, Deserializer& source)
 {
-    ea::shared_ptr<Image> image(context_->CreateObject<Image>());
+    SharedPtr<Image> image(context_->CreateObject<Image>());
     if (!image->Load(source))
         return false;
 
@@ -202,7 +202,7 @@ bool Texture2DArray::SetData(unsigned layer, Image* image, bool useAlpha)
     }
 
     // Use a shared ptr for managing the temporary mip images created during this function
-    ea::shared_ptr<Image> mipImage;
+    SharedPtr<Image> mipImage;
     unsigned memoryUse = 0;
     MaterialQuality quality = QUALITY_HIGH;
     auto* renderer = GetSubsystem<Renderer>();

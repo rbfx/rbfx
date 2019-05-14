@@ -180,13 +180,13 @@ void RenderToTexture::CreateScene()
             screenObject->SetModel(cache->GetResource<Model>("Models/Plane.mdl"));
 
             // Create a renderable texture (1024x768, RGB format), enable bilinear filtering on it
-            ea::shared_ptr<Texture2D> renderTexture(new Texture2D(context_));
+            SharedPtr<Texture2D> renderTexture(new Texture2D(context_));
             renderTexture->SetSize(1024, 768, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
             renderTexture->SetFilterMode(FILTER_BILINEAR);
 
             // Create a new material from scratch, use the diffuse unlit technique, assign the render texture
             // as its diffuse texture, then assign the material to the screen plane object
-            ea::shared_ptr<Material> renderMaterial(new Material(context_));
+            SharedPtr<Material> renderMaterial(new Material(context_));
             renderMaterial->SetTechnique(0, cache->GetResource<Technique>("Techniques/DiffUnlit.xml"));
             renderMaterial->SetTexture(TU_DIFFUSE, renderTexture);
             // Since the screen material is on top of the box model and may Z-fight, use negative depth bias
@@ -199,7 +199,7 @@ void RenderToTexture::CreateScene()
             // to the Renderer subsystem. By default the texture viewport will be updated when the texture is visible
             // in the main view
             RenderSurface* surface = renderTexture->GetRenderSurface();
-            ea::shared_ptr<Viewport> rttViewport(new Viewport(context_, rttScene_, rttCameraNode_->GetComponent<Camera>()));
+            SharedPtr<Viewport> rttViewport(new Viewport(context_, rttScene_, rttCameraNode_->GetComponent<Camera>()));
             surface->SetViewport(0, rttViewport);
         }
 
@@ -234,7 +234,7 @@ void RenderToTexture::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

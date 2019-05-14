@@ -103,7 +103,7 @@ public:
     Skeleton& GetSkeleton() { return skeleton_; }
 
     /// Return all animation states.
-    const ea::vector<ea::shared_ptr<AnimationState> >& GetAnimationStates() const { return animationStates_; }
+    const ea::vector<SharedPtr<AnimationState> >& GetAnimationStates() const { return animationStates_; }
 
     /// Return number of animation states.
     unsigned GetNumAnimationStates() const { return animationStates_.size(); }
@@ -127,7 +127,7 @@ public:
     const ea::vector<ModelMorph>& GetMorphs() const { return morphs_; }
 
     /// Return all morph vertex buffers.
-    const ea::vector<ea::shared_ptr<VertexBuffer> >& GetMorphVertexBuffers() const { return morphVertexBuffers_; }
+    const ea::vector<SharedPtr<VertexBuffer> >& GetMorphVertexBuffers() const { return morphVertexBuffers_; }
 
     /// Return number of vertex morphs.
     unsigned GetNumMorphs() const { return morphs_.size(); }
@@ -212,11 +212,11 @@ private:
     /// Skeleton.
     Skeleton skeleton_;
     /// Morph vertex buffers.
-    ea::vector<ea::shared_ptr<VertexBuffer> > morphVertexBuffers_;
+    ea::vector<SharedPtr<VertexBuffer> > morphVertexBuffers_;
     /// Vertex morphs.
     ea::vector<ModelMorph> morphs_;
     /// Animation states.
-    ea::vector<ea::shared_ptr<AnimationState> > animationStates_;
+    ea::vector<SharedPtr<AnimationState> > animationStates_;
     /// Skinning matrices.
     ea::vector<Matrix3x4> skinMatrices_;
     /// Mapping of subgeometry bone indices, used if more bones than skinning shader can manage.

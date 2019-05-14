@@ -146,35 +146,35 @@ private:
     void HandleCancelPressed(StringHash eventType, VariantMap& eventData);
 
     /// Fileselector window.
-    ea::shared_ptr<Window> window_;
+    SharedPtr<Window> window_;
     /// Title layout.
-    ea::shared_ptr<UIElement> titleLayout;
+    SharedPtr<UIElement> titleLayout;
     /// Window title text.
-    ea::shared_ptr<Text> titleText_;
+    SharedPtr<Text> titleText_;
     /// File list.
-    ea::shared_ptr<ListView> fileList_;
+    SharedPtr<ListView> fileList_;
     /// Path editor.
-    ea::shared_ptr<LineEdit> pathEdit_;
+    SharedPtr<LineEdit> pathEdit_;
     /// Filename editor.
-    ea::shared_ptr<LineEdit> fileNameEdit_;
+    SharedPtr<LineEdit> fileNameEdit_;
     /// Filter dropdown.
-    ea::shared_ptr<DropDownList> filterList_;
+    SharedPtr<DropDownList> filterList_;
     /// OK button.
-    ea::shared_ptr<Button> okButton_;
+    SharedPtr<Button> okButton_;
     /// OK button text.
-    ea::shared_ptr<Text> okButtonText_;
+    SharedPtr<Text> okButtonText_;
     /// Cancel button.
-    ea::shared_ptr<Button> cancelButton_;
+    SharedPtr<Button> cancelButton_;
     /// Cancel button text.
-    ea::shared_ptr<Text> cancelButtonText_;
+    SharedPtr<Text> cancelButtonText_;
     /// Close button.
-    ea::shared_ptr<Button> closeButton_;
+    SharedPtr<Button> closeButton_;
     /// Filename and filter layout.
-    ea::shared_ptr<UIElement> fileNameLayout_;
+    SharedPtr<UIElement> fileNameLayout_;
     /// Separator layout.
-    ea::shared_ptr<UIElement> separatorLayout_;
+    SharedPtr<UIElement> separatorLayout_;
     /// Button layout.
-    ea::shared_ptr<UIElement> buttonLayout_;
+    SharedPtr<UIElement> buttonLayout_;
     /// Current directory.
     ea::string path_;
     /// Filters.

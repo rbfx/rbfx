@@ -1055,7 +1055,7 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
         auto i = impl_->vertexDeclarations_.find(hash);
         if (i == impl_->vertexDeclarations_.end())
         {
-            ea::shared_ptr<VertexDeclaration> newDeclaration(new VertexDeclaration(this, buffers));
+            SharedPtr<VertexDeclaration> newDeclaration(new VertexDeclaration(this, buffers));
             if (!newDeclaration->GetDeclaration())
                 return false;
 
@@ -1100,12 +1100,12 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
     ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
-        bufferPointers.push_back(buffer.get());
+        bufferPointers.push_back(buffer.Get());
     return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
@@ -1196,7 +1196,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
         auto i = impl_->shaderPrograms_.find(key);
         if (i != impl_->shaderPrograms_.end())
-            impl_->shaderProgram_ = i->second.get();
+            impl_->shaderProgram_ = i->second.Get();
         else
         {
             ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(vertexShader_, pixelShader_);

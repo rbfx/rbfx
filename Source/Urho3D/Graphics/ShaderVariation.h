@@ -153,7 +153,7 @@ private:
     void CalculateConstantBufferSizes();
 
     /// Shader this variation belongs to.
-    ea::weak_ptr<Shader> owner_;
+    WeakPtr<Shader> owner_;
     /// Shader type.
     ShaderType type_;
     /// Vertex element hash for vertex shaders. Zero for pixel shaders. Note that hashing is different than vertex buffers.

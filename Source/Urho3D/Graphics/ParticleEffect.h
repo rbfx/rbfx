@@ -243,7 +243,7 @@ public:
     /// Sort the list of texture frames based on time.
     void SortTextureFrames();
     /// Clone the particle effect.
-    ea::shared_ptr<ParticleEffect> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    SharedPtr<ParticleEffect> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return material.
     Material* GetMaterial() const { return material_; }
@@ -378,7 +378,7 @@ private:
     void GetVector3MinMax(const XMLElement& element, Vector3& minValue, Vector3& maxValue);
 
     /// Material.
-    ea::shared_ptr<Material> material_;
+    SharedPtr<Material> material_;
     /// Number of particles.
     unsigned numParticles_;
     /// Update when invisible flag.

@@ -1029,12 +1029,12 @@ bool Graphics::SetVertexBuffers(const ea::vector<VertexBuffer*>& buffers, unsign
     return true;
 }
 
-bool Graphics::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, unsigned instanceOffset)
+bool Graphics::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, unsigned instanceOffset)
 {
     ea::vector<VertexBuffer*> bufferPointers;
     bufferPointers.reserve(buffers.size());
     for (auto& buffer : buffers)
-        bufferPointers.push_back(buffer.get());
+        bufferPointers.push_back(buffer.Get());
     return SetVertexBuffers(bufferPointers, instanceOffset);
 }
 
@@ -1125,7 +1125,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             // Link a new combination
             URHO3D_PROFILE("LinkShaders");
 
-            ea::shared_ptr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
+            SharedPtr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
             if (newProgram->Link())
             {
                 URHO3D_LOGDEBUG("Linked vertex shader " + vs->GetFullName() + " and pixel shader " + ps->GetFullName());
@@ -1149,7 +1149,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 #ifndef GL_ES_VERSION_2_0
     if (gl3Support && impl_->shaderProgram_)
     {
-        const ea::shared_ptr<ConstantBuffer>* constantBuffers = impl_->shaderProgram_->GetConstantBuffers();
+        const SharedPtr<ConstantBuffer>* constantBuffers = impl_->shaderProgram_->GetConstantBuffers();
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS * 2; ++i)
         {
             ConstantBuffer* buffer = constantBuffers[i];
@@ -1733,7 +1733,7 @@ void Graphics::SetDepthStencil(RenderSurface* depthStencil)
                 depthStencil = i->second->GetRenderSurface();
             else
             {
-                ea::shared_ptr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
+                SharedPtr<Texture2D> newDepthTexture(context_->CreateObject<Texture2D>());
                 newDepthTexture->SetSize(width, height, GetDepthStencilFormat(), TEXTURE_DEPTHSTENCIL);
                 impl_->depthTextures_[searchKey] = newDepthTexture;
                 depthStencil = newDepthTexture->GetRenderSurface();
@@ -2376,7 +2376,7 @@ ConstantBuffer* Graphics::GetOrCreateConstantBuffer(ShaderType /*type*/,  unsign
     if (i == impl_->allConstantBuffers_.end())
     {
         i = impl_->allConstantBuffers_.insert(
-            ea::make_pair(key, ea::shared_ptr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>()))).first;
+            ea::make_pair(key, SharedPtr<ConstantBuffer>(context_->CreateObject<ConstantBuffer>()))).first;
         i->second->SetSize(size);
     }
     return i->second;

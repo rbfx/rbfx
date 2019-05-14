@@ -58,8 +58,6 @@
 EA_DISABLE_ALL_VC_WARNINGS()
 #include <new>
 #include <stddef.h>
-
-
 EA_RESTORE_ALL_VC_WARNINGS()
 
 #ifdef _MSC_VER
@@ -143,13 +141,7 @@ namespace eastl
 			virtual void* get_deleter(const std::type_info& type) const EA_NOEXCEPT = 0;
 		#else
 			virtual void* get_deleter() const EA_NOEXCEPT = 0;
-        #endif
-
-#if EASTL_URHO3D_EXTENSIONS
-        /// Returns true when object was freed due to expired refcount. If object recount is 0 but object was not used
-        /// with a smart pointer this function will return false.
-        virtual bool is_deleted() const EA_NOEXCEPT = 0;
-#endif
+		#endif
 	};
 
 
@@ -252,13 +244,7 @@ namespace eastl
 			{
 				return (void*)&mDeleter;
 			}
-        #endif
-
-#if EASTL_URHO3D_EXTENSIONS
-        /// Returns true when object was freed due to expired refcount. If object recount is 0 but object was not used
-        /// with a smart pointer this function will return false.
-        virtual bool is_deleted() const EA_NOEXCEPT { return mValue == nullptr; }
-#endif
+		#endif
 	};
 
 	/// ref_count_sp_t_inst
@@ -275,7 +261,6 @@ namespace eastl
 		typedef Allocator                                                                allocator_type;
 		typedef typename aligned_storage<sizeof(T), eastl::alignment_of<T>::value>::type storage_type;
 
-		bool           mOccupied:1;
 		storage_type   mMemory;
 		allocator_type mAllocator;
 
@@ -286,17 +271,11 @@ namespace eastl
 			: ref_count_sp(), mAllocator(eastl::move(allocator))
 		{
 			new (&mMemory) value_type(eastl::forward<Args>(args)...);
-#if EASTL_URHO3D_EXTENSIONS
-            mOccupied = true;
-#endif
 		}
 
 		void free_value() EA_NOEXCEPT
 		{
 			GetValue()->~value_type();
-#if EASTL_URHO3D_EXTENSIONS
-            mOccupied = false;
-#endif
 		}
 
 		void free_ref_count_sp() EA_NOEXCEPT
@@ -316,13 +295,7 @@ namespace eastl
 			{
 				return NULL;
 			}
-        #endif
-
-#if EASTL_URHO3D_EXTENSIONS
-        /// Returns true when object was freed due to expired refcount. If object recount is 0 but object was not used
-        /// with a smart pointer this function will return false.
-        virtual bool is_deleted() const EA_NOEXCEPT { return !mOccupied; }
-#endif
+		#endif
 	};
 
 
@@ -421,13 +394,9 @@ namespace eastl
 		///         a resource other than memory could not be obtained.
 		/// Exception safety: If an exception is thrown, delete p is called.
 		/// Postcondition in the event of no exception: use_count() == 1 && get() == p
-		template <typename U, typename W>
+		template <typename U>
 		explicit shared_ptr(U* pValue,
-		                    typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value
-#if EASTL_URHO3D_EXTENSIONS
-		                    && !eastl::is_convertible<U*, enable_shared_from_this<W>*>::value
-#endif
-		                    >::type* = 0)
+		                    typename eastl::enable_if<eastl::is_convertible<U*, element_type*>::value>::type* = 0)
 		    : mpValue(NULL), mpRefCount(NULL) // alloc_internal will set this.
 		{
 			// We explicitly use default_delete<U>. You can use the other version of this constructor to provide a
@@ -925,17 +894,6 @@ namespace eastl
 			return (mpRefCount == sharedPtr.mpRefCount); 
 		}
 
-#if EASTL_URHO3D_EXTENSIONS
-        element_type* detach()
-        {
-            element_type* result = mpValue;
-            mpValue = nullptr;
-            mpRefCount->release();
-            mpRefCount = nullptr;
-            return result;
-        }
-#endif
-
 	protected:
 		// Friend declarations.
 		template <typename U> friend class shared_ptr;
@@ -978,72 +936,6 @@ namespace eastl
 				}
 			#endif
 		}
-
-#if EASTL_URHO3D_EXTENSIONS
-    public:
-        /// Takes ownership of the pointer and sets the reference count
-        /// to the pointer to 1. It is OK if the input pointer is null.
-        /// The shared reference count is allocated on the heap using the
-        /// default eastl allocator. If pValue has ref count already -
-        /// use existing ref count object.
-        /// Throws: bad_alloc, or an implementation-defined exception when
-        ///         a resource other than memory could not be obtained.
-        /// Exception safety: If an exception is thrown, delete p is called.
-        /// Postcondition in the event of no exception: use_count() == 1 && get() == p
-        template <typename U>
-        shared_ptr(enable_shared_from_this<U>* pValue,
-            typename eastl::enable_if<eastl::is_convertible<element_type*, enable_shared_from_this<U>*>::value != 0>::type* = 0)
-            : mpValue(NULL), mpRefCount(NULL) // alloc_internal will set this.
-        {
-            if (pValue == nullptr || pValue->mWeakPtr.mpRefCount == nullptr)
-            {
-                // Create empty shared pointer if pValue is null or allocate new ref count if pValue is newly allocated
-                // object that was not used with shared pointer yet.
-
-                // We explicitly use default_delete<U>. You can use the other version of this constructor to provide a
-                // custom version.
-                alloc_internal((element_type*)pValue, default_allocator_type(),
-                    default_delete<T>()); // Problem: We want to be able to use default_deleter_type() instead of
-                // default_delete<U>, but if default_deleter_type's type is void or
-                // otherwise mismatched then this will fail to compile. What we really
-                // want to be able to do is "rebind" default_allocator_type to U
-                // instead of its original type.
-            }
-            else
-            {
-                mpValue = static_cast<element_type*>(pValue);
-                mpRefCount = pValue->mWeakPtr.mpRefCount;
-                mpRefCount->addref();
-            }
-        }
-
-        /// Implicitly converts shared pointer to it's underlying pointer value.
-        operator element_type*()
-        {
-            return use_count() ? mpValue : nullptr;
-        }
-
-        /// Implicitly converts shared pointer to it's underlying pointer value.
-        operator element_type*() const
-        {
-            return use_count() ? mpValue : nullptr;
-        }
-
-        /// Assign from a pointer that inherits enable_shared_from_this<>.
-        template <typename U>
-        typename eastl::enable_if<eastl::is_convertible<element_type*, enable_shared_from_this<U>*>::value, this_type&>::type
-        operator=(enable_shared_from_this<U>* pValue) EA_NOEXCEPT
-        {
-            this_type(pValue).swap(*this);
-            return *this;
-        }
-        /// weak_use_count
-        /// Returns: the number of weak_ptr objects, *this included, that share ownership with *this, or 0 when *this is empty.
-        int weak_use_count() const EA_NOEXCEPT
-        {
-            return mpRefCount ? mpRefCount->mWeakRefCount : 0;
-        }
-#endif
 
 	}; // class shared_ptr
 
@@ -1627,13 +1519,7 @@ namespace eastl
 		// Returns: use_count() == 0
 		bool expired() const EA_NOEXCEPT
 		{
-#if EASTL_URHO3D_EXTENSIONS
-            // Sometimes we may allocate enable_shared_from_this<> object on the stack and assign it to a weak pointer.
-            // This ensures that such weak pointer reports object as alive.
-            return (!mpRefCount || (mpRefCount->mRefCount == 0 && mpRefCount->is_deleted()));
-#else
 			return (!mpRefCount || (mpRefCount->mRefCount == 0));
-#endif
 		}
 
 		void reset()
@@ -1734,79 +1620,6 @@ namespace eastl
 		template <typename U> friend class shared_ptr;
 		template <typename U> friend class weak_ptr;
 
-#if EASTL_URHO3D_EXTENSIONS
-    public:
-        /// weak_ptr
-        /// Constructs a weak_ptr from a enable_shared_from_this<element_type>.
-        template <typename U>
-        weak_ptr(enable_shared_from_this<U>* pValue,
-            typename eastl::enable_if<eastl::is_convertible<element_type*, enable_shared_from_this<U>*>::value>::type* = 0)
-            : mpValue(nullptr),
-            mpRefCount(nullptr)
-        {
-            if (pValue)
-            {
-                mpValue = static_cast<element_type*>(pValue);
-                mpRefCount = pValue->mWeakPtr.mpRefCount;
-                if (mpRefCount)
-                    mpRefCount->weak_addref();
-            }
-        }
-
-        /// Assign from a pointer where type inherits enable_shared_from_this<>.
-        template <typename U>
-        typename eastl::enable_if<eastl::is_convertible<element_type*, enable_shared_from_this<U>*>::value, this_type&>::type
-        operator=(enable_shared_from_this<U>* pValue)
-        {
-            this_type(pValue).swap(*this);
-            return *this;
-        }
-
-        this_type& operator=(std::nullptr_t)
-        {
-            reset();
-            return *this;
-        }
-
-        explicit operator bool() const EA_NOEXCEPT
-        {
-            // Sometimes we may allocate enable_shared_from_this<> object on the stack and assign it to a weak pointer.
-            // This ensures that such weak pointer reports object as alive.
-            return !expired();
-        }
-
-        operator element_type*()
-        {
-            return expired() ? nullptr : mpValue;
-        }
-
-        operator element_type*() const
-        {
-            return expired() ? nullptr : mpValue;
-        }
-
-        ref_count_sp* get_refcount_pointer() const
-        {
-	        return mpRefCount;
-        }
-
-        element_type* get() const EA_NOEXCEPT
-        {
-	        return mpValue;
-        }
-
-        element_type* operator->() const EA_NOEXCEPT
-        {
-            EASTL_ASSERT(!expired());
-            return mpValue;
-        }
-
-        element_type* operator->() EA_NOEXCEPT
-        {
-            EASTL_ASSERT(!expired());
-            return mpValue;
-        }
-#endif
 	}; // class weak_ptr
 
 
@@ -1873,108 +1686,7 @@ namespace eastl
 			{ return a.owner_before(b); }
 	};
 
-/*
-#if EASTL_URHO3D_EXTENSIONS
-    template <typename T, typename U>
-    inline bool operator==(const shared_ptr<T>& a, const weak_ptr<U>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() == b.get());
-    }
 
-    template <typename T, typename U>
-    inline bool operator!=(const shared_ptr<T>& a, const weak_ptr<U>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() != b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator==(const weak_ptr<T>& a, const shared_ptr<U>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() == b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator!=(const weak_ptr<T>& a, const shared_ptr<U>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() != b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator==(const weak_ptr<T>& a, const weak_ptr<U>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() == b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator!=(const weak_ptr<T>& a, const weak_ptr<U>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() != b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator==(const shared_ptr<T>& a, const U* b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() == b);
-    }
-
-    template <typename T, typename U>
-    inline bool operator!=(const shared_ptr<T>& a, const U* b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() != b);
-    }
-
-    template <typename T, typename U>
-    inline bool operator==(const U& a, const shared_ptr<T>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a == b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator!=(const U* a, const shared_ptr<T>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a != b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator==(const weak_ptr<T>& a, const U* b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() == b);
-    }
-
-    template <typename T, typename U>
-    inline bool operator!=(const weak_ptr<T>& a, const U* b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a.get() != b);
-    }
-
-    template <typename T, typename U>
-    inline bool operator==(const U& a, const weak_ptr<T>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a == b.get());
-    }
-
-    template <typename T, typename U>
-    inline bool operator!=(const U* a, const weak_ptr<T>& b) EA_NOEXCEPT
-    {
-        // assert((a.get() != b.get()) || (a.use_count() == b.use_count()));
-        return (a != b.get());
-    }
-
-#endif
-*/
 } // namespace eastl
 
 
@@ -1986,24 +1698,6 @@ namespace eastl
 // We have to either #include enable_shared.h here or we need to move the enable_shared source code to here.
 #include <EASTL/internal/enable_shared.h>
 
-#if EASTL_URHO3D_EXTENSIONS
-namespace Urho3D
-{
-
-/// Shared pointer hash function.
-template <class T> inline unsigned MakeHash(const eastl::shared_ptr<T>& value)
-{
-    return (unsigned)(size_t)value.get();
-}
-
-/// Weak pointer hash function.
-template <class T> inline unsigned MakeHash(const eastl::weak_ptr<T>& value)
-{
-    return (unsigned)(size_t)value.get();
-}
-
-}   // namespace Urho3D
-#endif  // EASTL_URHO3D_EXTENSIONS
 
 #endif // Header include guard
 

@@ -104,7 +104,7 @@ UIElement::~UIElement()
     // If child elements have outside references, detach them
     for (auto i = children_.begin(); i < children_.end(); ++i)
     {
-        if (i->use_count() > 1)
+        if (i->Refs() > 1)
             (*i)->Detach();
     }
 }
@@ -180,7 +180,7 @@ bool UIElement::LoadXML(const XMLElement& source, XMLFile* styleFile)
     if (!defaultStyleFileName.empty())
         defaultStyleFileName_ = defaultStyleFileName;
 
-    ea::shared_ptr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> savedStyleFile(context_->CreateObject<XMLFile>());
     if (styleFile == nullptr)
     {
         if (!defaultStyleFileName.empty())
@@ -496,13 +496,13 @@ IntVector2 UIElement::ElementToScreen(const IntVector2& position)
 
 bool UIElement::LoadXML(Deserializer& source)
 {
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     return xml->Load(source) && LoadXML(xml->GetRoot());
 }
 
 bool UIElement::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("element");
     return SaveXML(rootElem) && xml->Save(dest, indentation);
 }
@@ -1259,7 +1259,7 @@ void UIElement::BringToFront()
     ea::hash_set<int> usedPriorities;
 
     int maxPriority = M_MIN_INT;
-    const ea::vector<ea::shared_ptr<UIElement> >& rootChildren = root->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& rootChildren = root->GetChildren();
     for (auto i = rootChildren.begin(); i != rootChildren.end(); ++i)
     {
         UIElement* other = *i;
@@ -1297,7 +1297,7 @@ void UIElement::BringToFront()
 UIElement* UIElement::CreateChild(StringHash type, const ea::string& name, unsigned index)
 {
     // Check that creation succeeds and that the object in fact is a UI element
-    ea::shared_ptr<UIElement> newElement = DynamicCast<UIElement>(context_->CreateObject(type));
+    SharedPtr<UIElement> newElement = DynamicCast<UIElement>(context_->CreateObject(type));
     if (!newElement)
     {
         URHO3D_LOGERROR("Could not create unknown UI element type " + type.ToString());
@@ -1332,9 +1332,9 @@ void UIElement::InsertChild(unsigned index, UIElement* element)
 
     // Add first, then remove from old parent, to ensure the element does not get deleted
     if (index >= children_.size())
-        children_.push_back(ea::shared_ptr<UIElement>(element));
+        children_.push_back(SharedPtr<UIElement>(element));
     else
-        children_.insert(index, ea::shared_ptr<UIElement>(element));
+        children_.insert(index, SharedPtr<UIElement>(element));
 
     element->Remove();
 
@@ -1452,7 +1452,7 @@ void UIElement::Remove()
 
 unsigned UIElement::FindChild(UIElement* element) const
 {
-    auto i = children_.find(ea::shared_ptr<UIElement>(element));
+    auto i = children_.find(SharedPtr<UIElement>(element));
     return i != children_.end() ? (unsigned)(i - children_.begin()) : M_MAX_UNSIGNED;
 }
 

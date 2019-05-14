@@ -75,7 +75,7 @@ private:
     /// Mark end point dirty.
     void MarkEndPointDirty() { endPointDirty_ = true; }
     /// Endpoint node.
-    ea::weak_ptr<Node> endPoint_;
+    WeakPtr<Node> endPoint_;
     /// Endpoint node ID.
     unsigned endPointID_;
     /// Radius.

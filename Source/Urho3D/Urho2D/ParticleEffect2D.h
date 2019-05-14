@@ -129,7 +129,7 @@ public:
     /// Set rotation end variance.
     void SetRotationEndVariance(float rotationEndVariance);
     /// Clone the 2D particle effect.
-    ea::shared_ptr<ParticleEffect2D> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    SharedPtr<ParticleEffect2D> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return sprite.
     Sprite2D* GetSprite() const { return sprite_; }
@@ -255,7 +255,7 @@ private:
     void WriteVector2(XMLElement& element, const ea::string& name, const Vector2& value) const;
 
     /// Sprite.
-    ea::shared_ptr<Sprite2D> sprite_;
+    SharedPtr<Sprite2D> sprite_;
     /// Source position variance.
     Vector2 sourcePositionVariance_;
     /// Speed.

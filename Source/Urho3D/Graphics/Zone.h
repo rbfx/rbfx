@@ -163,11 +163,11 @@ protected:
     /// Zone priority.
     int priority_;
     /// Zone texture.
-    ea::shared_ptr<Texture> zoneTexture_;
+    SharedPtr<Texture> zoneTexture_;
     /// Last zone used for ambient gradient start color.
-    ea::weak_ptr<Zone> lastAmbientStartZone_;
+    WeakPtr<Zone> lastAmbientStartZone_;
     /// Last zone used for ambient gradient end color.
-    ea::weak_ptr<Zone> lastAmbientEndZone_;
+    WeakPtr<Zone> lastAmbientEndZone_;
 };
 
 }

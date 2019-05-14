@@ -85,7 +85,7 @@ bool ObjectAnimation::LoadXML(const XMLElement& source)
     {
         ea::string name = animElem.GetAttribute("name");
 
-        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadXML(animElem))
             return false;
 
@@ -144,7 +144,7 @@ bool ObjectAnimation::LoadJSON(const JSONValue& source)
     {
         ea::string name = it->first;
         JSONValue value = it->second;
-        ea::shared_ptr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
+        SharedPtr<ValueAnimation> animation(context_->CreateObject<ValueAnimation>());
         if (!animation->LoadJSON(value))
             return false;
 

@@ -83,7 +83,7 @@ bool Texture3D::BeginLoad(Deserializer& source)
     loadParameters_ = context_->CreateObject<XMLFile>();
     if (!loadParameters_->Load(source))
     {
-        loadParameters_.reset();
+        loadParameters_.Reset();
         return false;
     }
 
@@ -118,12 +118,12 @@ bool Texture3D::BeginLoad(Deserializer& source)
         if (colorlutTexPath.empty())
             name = texPath + name;
 
-        ea::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(name);
+        SharedPtr<File> file = GetSubsystem<ResourceCache>()->GetFile(name);
         loadImage_ = context_->CreateObject<Image>();
-        if (!loadImage_->LoadColorLUT(*(file.get())))
+        if (!loadImage_->LoadColorLUT(*(file.Get())))
         {
-            loadParameters_.reset();
-            loadImage_.reset();
+            loadParameters_.Reset();
+            loadImage_.Reset();
             return false;
         }
         // Precalculate mip levels if async loading
@@ -150,8 +150,8 @@ bool Texture3D::EndLoad()
     SetParameters(loadParameters_);
     bool success = SetData(loadImage_);
 
-    loadImage_.reset();
-    loadParameters_.reset();
+    loadImage_.Reset();
+    loadParameters_.Reset();
 
     return success;
 }

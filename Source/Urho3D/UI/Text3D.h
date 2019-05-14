@@ -189,11 +189,11 @@ protected:
     /// Internally used text element.
     Text text_;
     /// Geometries.
-    ea::vector<ea::shared_ptr<Geometry> > geometries_;
+    ea::vector<SharedPtr<Geometry> > geometries_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Material to use as a base for the text material(s).
-    ea::shared_ptr<Material> material_;
+    SharedPtr<Material> material_;
     /// Text UI batches.
     ea::vector<UIBatch> uiBatches_;
     /// Text vertex data.

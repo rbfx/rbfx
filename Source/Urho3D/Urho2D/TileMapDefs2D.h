@@ -154,9 +154,9 @@ private:
     /// Gid.
     unsigned gid_;
     /// Sprite.
-    ea::shared_ptr<Sprite2D> sprite_;
+    SharedPtr<Sprite2D> sprite_;
     /// Property set.
-    ea::shared_ptr<PropertySet2D> propertySet_;
+    SharedPtr<PropertySet2D> propertySet_;
 };
 
 /// Tile map object.
@@ -219,9 +219,9 @@ private:
     /// Gid (for tile).
     unsigned gid_{};
     /// Sprite (for tile).
-    ea::shared_ptr<Sprite2D> sprite_;
+    SharedPtr<Sprite2D> sprite_;
     /// Property set.
-    ea::shared_ptr<PropertySet2D> propertySet_;
+    SharedPtr<PropertySet2D> propertySet_;
 };
 
 }

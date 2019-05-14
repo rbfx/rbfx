@@ -20,7 +20,6 @@ namespace ea = eastl;
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
-#include <EASTL/shared_ptr.h>
 #include <EASTL/unordered_map.h>
 %}
 
@@ -543,7 +542,7 @@ public:
 %ignore Urho3D::PackageDownload;
 %ignore Urho3D::PackageUpload;
 
-%template(ConnectionVector) eastl::vector<eastl::shared_ptr<Urho3D::Connection>>;
+%template(ConnectionVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Connection>>;
 
 // These methods use forward-declared types from SLikeNet.
 %ignore Urho3D::Connection::Connection;
@@ -644,11 +643,11 @@ public:
 
 // --------------------------------------- Urho2D ---------------------------------------
 #if URHO3D_URHO2D
-%template(Sprite2DMap) eastl::unordered_map<eastl::string, eastl::shared_ptr<Urho3D::Sprite2D>>;
+%template(Sprite2DMap) eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::Sprite2D>>;
 %template(PhysicsRaycastResult2DArray) eastl::vector<Urho3D::PhysicsRaycastResult2D>;
 %template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
-%template(MaterialVector) eastl::vector<eastl::shared_ptr<Urho3D::Material>>;
-%template(TileMapObject2DVector) eastl::vector<eastl::shared_ptr<Urho3D::TileMapObject2D>>;
+%template(MaterialVector) eastl::vector<Urho3D::SharedPtr<Urho3D::Material>>;
+%template(TileMapObject2DVector) eastl::vector<Urho3D::SharedPtr<Urho3D::TileMapObject2D>>;
 
 %ignore Urho3D::AnimationSet2D::GetSpriterData;
 %ignore Urho3D::PhysicsWorld2D::DrawTransform;

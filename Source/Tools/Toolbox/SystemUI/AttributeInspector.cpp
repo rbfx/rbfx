@@ -115,7 +115,7 @@ static const float buttonWidth()
 
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string& name, ea::string& result)
 {
-    ea::shared_ptr<Resource> resource;
+    SharedPtr<Resource> resource;
     auto returnValue = false;
 
     UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-buttonWidth()))

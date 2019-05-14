@@ -75,7 +75,7 @@ bool Pipeline::LoadJSON(const JSONValue& source)
         if (type == StringHash::ZERO)
             return false;
 
-        ea::shared_ptr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
+        SharedPtr<Converter> converter = DynamicCast<Converter>(context_->CreateObject(type));
         if (!converter || !converter->LoadJSON(converterData))
             return false;
 
@@ -325,7 +325,7 @@ void Pipeline::StartWorkItems(const StringVector& resourcePaths)
 void Pipeline::StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths)
 {
     executingConverterKinds_ = converterKinds;
-    for (ea::shared_ptr<Converter>& converter : converters_)
+    for (SharedPtr<Converter>& converter : converters_)
     {
         if (converterKinds & converter->GetKind())
         {

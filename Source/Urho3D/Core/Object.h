@@ -285,7 +285,7 @@ public:
     virtual ~ObjectFactory() = default;
 
     /// Create an object. Implemented in templated subclasses.
-    virtual ea::shared_ptr<Object> CreateObject() = 0;
+    virtual SharedPtr<Object> CreateObject() = 0;
 
     /// Return execution context.
     Context* GetContext() const { return context_; }
@@ -318,7 +318,7 @@ public:
     }
 
     /// Create an object of the specific type.
-    ea::shared_ptr<Object> CreateObject() override { return ea::shared_ptr<Object>(new T(context_)); }
+    SharedPtr<Object> CreateObject() override { return SharedPtr<Object>(new T(context_)); }
 };
 
 /// Internal helper class for invoking event handler functions.

@@ -52,7 +52,7 @@ Scene* SceneManager::CreateScene(const ea::string& name)
         URHO3D_LOGERRORF("Scene '%s' already exists.", name.c_str());
         return nullptr;
     }
-    ea::shared_ptr<Scene> scene(context_->CreateObject<Scene>());
+    SharedPtr<Scene> scene(context_->CreateObject<Scene>());
     scene->SetName(name);
     scene->GetOrCreateComponent<Octree>();
     scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
@@ -79,17 +79,17 @@ Scene* SceneManager::GetOrCreateScene(const ea::string& name)
 
 void SceneManager::UnloadScene(Scene* scene)
 {
-    auto it = scenes_.find(ea::shared_ptr<Scene>(scene));
+    auto it = scenes_.find(SharedPtr<Scene>(scene));
     if (it != scenes_.end())
         scenes_.erase(it);
-    if (activeScene_.expired())
+    if (activeScene_.Expired())
         UpdateViewports();
 }
 
 void SceneManager::UnloadScene(const ea::string& name)
 {
-    scenes_.erase_first(ea::shared_ptr<Scene>(GetScene(name)));
-    if (activeScene_.expired())
+    scenes_.erase_first(SharedPtr<Scene>(GetScene(name)));
+    if (activeScene_.Expired())
         UpdateViewports();
 }
 
@@ -98,7 +98,7 @@ void SceneManager::UnloadAll()
     SetActiveScene(nullptr);
     auto scenesCopy = scenes_;
     for (auto& scene : scenesCopy)
-        UnloadScene(scene.get());
+        UnloadScene(scene.Get());
 }
 
 void SceneManager::UnloadAllButActiveScene()
@@ -106,8 +106,8 @@ void SceneManager::UnloadAllButActiveScene()
     auto scenesCopy = scenes_;
     for (auto& scene : scenesCopy)
     {
-        if (scene != activeScene_.get())
-            UnloadScene(scene.get());
+        if (scene != activeScene_.Get())
+            UnloadScene(scene.Get());
     }
 }
 
@@ -118,7 +118,7 @@ void SceneManager::SetActiveScene(Scene* scene)
     eventData[P_OLDSCENE] = activeScene_;
     eventData[P_NEWSCENE] = scene;
 
-    if (!activeScene_.expired())
+    if (!activeScene_.Expired())
         activeScene_->SetUpdateEnabled(false);
 
     activeScene_ = scene;
@@ -140,12 +140,12 @@ void SceneManager::SetRenderSurface(RenderSurface* surface)
 
 void SceneManager::UpdateViewports()
 {
-    if (renderSurface_.expired())
+    if (renderSurface_.Expired())
         GetRenderer()->SetNumViewports(0);
     else
         renderSurface_->SetNumViewports(0);
 
-    if (activeScene_.expired())
+    if (activeScene_.Expired())
         return;
 
     SceneMetadata* meta = activeScene_->GetComponent<SceneMetadata>();
@@ -162,24 +162,24 @@ void SceneManager::UpdateViewports()
 
     unsigned index = 0;
     const auto& viewportComponents = meta->GetCameraViewportComponents();
-    if (renderSurface_.expired())
+    if (renderSurface_.Expired())
         GetRenderer()->SetNumViewports(viewportComponents.size());
     else
         renderSurface_->SetNumViewports(viewportComponents.size());
 
     for (const auto& cameraViewport : viewportComponents)
     {
-        if (cameraViewport.expired())
+        if (cameraViewport.Expired())
             continue;
 
         // Trigger resizing of underlying viewport
-        if (renderSurface_.expired())
+        if (renderSurface_.Expired())
             cameraViewport->SetScreenRect({0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()});
         else
             cameraViewport->SetScreenRect({0, 0, renderSurface_->GetWidth(), renderSurface_->GetHeight()});
         cameraViewport->UpdateViewport();
         cameraViewport->GetViewport()->SetDrawDebug(false); // TODO: make this configurable maybe?
-        if (renderSurface_.expired())
+        if (renderSurface_.Expired())
             GetRenderer()->SetViewport(index++, cameraViewport->GetViewport());
         else
             renderSurface_->SetViewport(index++, cameraViewport->GetViewport());

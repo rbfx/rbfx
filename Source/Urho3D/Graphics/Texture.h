@@ -245,7 +245,7 @@ protected:
     /// Mipmap levels regeneration needed -flag.
     bool levelsDirty_{};
     /// Backup texture.
-    ea::shared_ptr<Texture> backupTexture_;
+    SharedPtr<Texture> backupTexture_;
 };
 
 }

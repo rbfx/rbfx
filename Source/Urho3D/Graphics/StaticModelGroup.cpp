@@ -89,7 +89,7 @@ void StaticModelGroup::ApplyAttributes()
             Node* node = scene->GetNode(nodeIDsAttr_[i].GetUInt());
             if (node)
             {
-                ea::weak_ptr<Node> instanceWeak(node);
+                WeakPtr<Node> instanceWeak(node);
                 node->AddListener(this);
                 instanceNodes_.push_back(instanceWeak);
             }
@@ -275,7 +275,7 @@ void StaticModelGroup::AddInstanceNode(Node* node)
     if (!node)
         return;
 
-    ea::weak_ptr<Node> instanceWeak(node);
+    WeakPtr<Node> instanceWeak(node);
     if (instanceNodes_.contains(instanceWeak))
         return;
 
@@ -290,7 +290,7 @@ void StaticModelGroup::RemoveInstanceNode(Node* node)
     if (!node)
         return;
 
-    ea::weak_ptr<Node> instanceWeak(node);
+    WeakPtr<Node> instanceWeak(node);
     auto i = instanceNodes_.find(instanceWeak);
     if (i == instanceNodes_.end())
         return;
@@ -315,7 +315,7 @@ void StaticModelGroup::RemoveAllInstanceNodes()
 
 Node* StaticModelGroup::GetInstanceNode(unsigned index) const
 {
-    return index < instanceNodes_.size() ? instanceNodes_[index].get() : nullptr;
+    return index < instanceNodes_.size() ? instanceNodes_[index].Get() : nullptr;
 }
 
 void StaticModelGroup::SetNodeIDsAttr(const VariantVector& value)

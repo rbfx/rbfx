@@ -217,7 +217,7 @@ private:
     /// Animation control structures.
     ea::vector<AnimationControl> animations_;
     /// Node hierarchy mode animation states.
-    ea::vector<ea::shared_ptr<AnimationState> > nodeAnimationStates_;
+    ea::vector<SharedPtr<AnimationState> > nodeAnimationStates_;
     /// Attribute buffer for network replication.
     mutable VectorBuffer attrBuffer_;
 };

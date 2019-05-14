@@ -83,9 +83,9 @@ public:
     /// Debug draw a UI element.
     void DebugDraw(UIElement* element);
     /// Load a UI layout from an XML file. Optionally specify another XML file for element style. Return the root element.
-    ea::shared_ptr<UIElement> LoadLayout(Deserializer& source, XMLFile* styleFile = nullptr);
+    SharedPtr<UIElement> LoadLayout(Deserializer& source, XMLFile* styleFile = nullptr);
     /// Load a UI layout from an XML file. Optionally specify another XML file for element style. Return the root element.
-    ea::shared_ptr<UIElement> LoadLayout(XMLFile* file, XMLFile* styleFile = nullptr);
+    SharedPtr<UIElement> LoadLayout(XMLFile* file, XMLFile* styleFile = nullptr);
     /// Save a UI layout to an XML file. Return true if successful.
     bool SaveLayout(Serializer& dest, UIElement* element);
     /// Set clipboard text.
@@ -328,7 +328,7 @@ private:
     /// Handle rendering to a texture.
     void HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData);
     /// Remove drag data and return next iterator.
-    ea::unordered_map<ea::weak_ptr<UIElement>, DragData*>::iterator DragElementErase(ea::unordered_map<ea::weak_ptr<UIElement>, DragData*>::iterator i);
+    ea::unordered_map<WeakPtr<UIElement>, DragData*>::iterator DragElementErase(ea::unordered_map<WeakPtr<UIElement>, DragData*>::iterator i);
     /// Handle clean up on a drag cancel.
     void ProcessDragCancel();
     /// Sum touch positions and return the begin position ready to send.
@@ -341,15 +341,15 @@ private:
     bool ShouldIgnoreInput() const;
 
     /// Graphics subsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// UI root element.
-    ea::shared_ptr<UIElement> rootElement_;
+    SharedPtr<UIElement> rootElement_;
     /// UI root modal element.
-    ea::shared_ptr<UIElement> rootModalElement_;
+    SharedPtr<UIElement> rootModalElement_;
     /// Cursor.
-    ea::shared_ptr<Cursor> cursor_;
+    SharedPtr<Cursor> cursor_;
     /// Currently focused element.
-    ea::weak_ptr<UIElement> focusElement_;
+    WeakPtr<UIElement> focusElement_;
     /// UI rendering batches.
     ea::vector<UIBatch> batches_;
     /// UI rendering vertex data.
@@ -359,9 +359,9 @@ private:
     /// UI rendering vertex data for debug draw.
     ea::vector<float> debugVertexData_;
     /// UI vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// UI debug geometry vertex buffer.
-    ea::shared_ptr<VertexBuffer> debugVertexBuffer_;
+    SharedPtr<VertexBuffer> debugVertexBuffer_;
     /// UI element query vector.
     ea::vector<UIElement*> tempElements_;
     /// Clipboard text.
@@ -409,21 +409,21 @@ private:
     /// Timer used to trigger double click.
     Timer clickTimer_;
     /// UI element last clicked for tracking double clicks.
-    ea::weak_ptr<UIElement> doubleClickElement_;
+    WeakPtr<UIElement> doubleClickElement_;
     /// Screen position of first mouse click for double click distance checking.
     IntVector2 doubleClickFirstPos_;
     /// Max screen distance the first click in a double click can be from the second click in a double click.
     float maxDoubleClickDist_;
     /// Currently hovered elements.
-    ea::unordered_map<ea::weak_ptr<UIElement>, bool> hoveredElements_;
+    ea::unordered_map<WeakPtr<UIElement>, bool> hoveredElements_;
     /// Currently dragged elements.
-    ea::unordered_map<ea::weak_ptr<UIElement>, DragData*> dragElements_;
+    ea::unordered_map<WeakPtr<UIElement>, DragData*> dragElements_;
     /// Number of elements in dragElements_.
     int dragElementsCount_;
     /// Number of elements in dragElements_ with dragPending = false.
     int dragConfirmedCount_;
     /// UI elements that are being touched with touch input.
-    ea::unordered_map<ea::weak_ptr<UIElement>, MouseButtonFlags> touchDragElements_;
+    ea::unordered_map<WeakPtr<UIElement>, MouseButtonFlags> touchDragElements_;
     /// Confirmed drag elements cache.
     ea::vector<UIElement*> dragElementsConfirmed_;
     /// Current scale of UI.
@@ -431,7 +431,7 @@ private:
     /// Root element custom size. 0,0 for automatic resizing (default.)
     IntVector2 customSize_;
     /// Texture that UI will be rendered into.
-    ea::weak_ptr<Texture2D> texture_;
+    WeakPtr<Texture2D> texture_;
     /// Color which will be used to clear target texture.
     Color clearColor_ = Color::TRANSPARENT_BLACK;
     /// Flag indicating that UI should process input when mouse cursor hovers SystemUI elements.

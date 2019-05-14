@@ -307,9 +307,9 @@ private:
     }
 
     /// Graphics subsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// Renderer subsystem.
-    ea::weak_ptr<Renderer> renderer_;
+    WeakPtr<Renderer> renderer_;
     /// Scene to use.
     Scene* scene_{};
     /// Octree to use.
@@ -319,7 +319,7 @@ private:
     /// Culling camera. Usually same as the viewport camera.
     Camera* cullCamera_{};
     /// Shared source view. Null if this view is using its own culling.
-    ea::weak_ptr<View> sourceView_;
+    WeakPtr<View> sourceView_;
     /// Zone the camera is inside, or default zone if not assigned.
     Zone* cameraZone_{};
     /// Zone at far clip plane.

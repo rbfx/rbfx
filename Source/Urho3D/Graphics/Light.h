@@ -379,9 +379,9 @@ private:
     /// Custom world transform for the light volume.
     Matrix3x4 volumeTransform_;
     /// Range attenuation texture.
-    ea::shared_ptr<Texture> rampTexture_;
+    SharedPtr<Texture> rampTexture_;
     /// Spotlight attenuation texture.
-    ea::shared_ptr<Texture> shapeTexture_;
+    SharedPtr<Texture> shapeTexture_;
     /// Light queue.
     LightBatchQueue* lightQueue_;
     /// Specular intensity.

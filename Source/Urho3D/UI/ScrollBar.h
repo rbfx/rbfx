@@ -99,11 +99,11 @@ protected:
     bool FilterButtonImplicitAttributes(XMLElement& dest, const ea::string& name) const;
 
     /// Back button.
-    ea::shared_ptr<Button> backButton_;
+    SharedPtr<Button> backButton_;
     /// Forward button.
-    ea::shared_ptr<Button> forwardButton_;
+    SharedPtr<Button> forwardButton_;
     /// Slider.
-    ea::shared_ptr<Slider> slider_;
+    SharedPtr<Slider> slider_;
     /// Scroll step.
     float scrollStep_;
     /// Step factor.

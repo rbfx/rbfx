@@ -97,7 +97,7 @@ private:
     };
 
     /// Filesystem.
-    ea::shared_ptr<FileSystem> fileSystem_;
+    SharedPtr<FileSystem> fileSystem_;
     /// The path being watched.
     ea::string path_;
     /// Pending changes. These will be returned and removed from the list when their timer has exceeded the delay.

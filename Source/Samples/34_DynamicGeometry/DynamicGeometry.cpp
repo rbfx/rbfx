@@ -153,11 +153,11 @@ void DynamicGeometry::CreateScene()
             Node* node = scene_->CreateChild("Object");
             node->SetPosition(Vector3(x * 2.0f, 0.0f, y * 2.0f));
             auto* object = node->CreateComponent<StaticModel>();
-            ea::shared_ptr<Model> cloneModel = originalModel->Clone();
+            SharedPtr<Model> cloneModel = originalModel->Clone();
             object->SetModel(cloneModel);
             // Store the cloned vertex buffer that we will modify when animating
             animatingBuffers_.push_back(
-                ea::shared_ptr<VertexBuffer>(cloneModel->GetGeometry(0, 0)->GetVertexBuffer(0)));
+                SharedPtr<VertexBuffer>(cloneModel->GetGeometry(0, 0)->GetVertexBuffer(0)));
         }
     }
 
@@ -217,10 +217,10 @@ void DynamicGeometry::CreateScene()
             n1 = n2 = n3 = edge1.CrossProduct(edge2).Normalized();
         }
 
-        ea::shared_ptr<Model> fromScratchModel(new Model(context_));
-        ea::shared_ptr<VertexBuffer> vb(new VertexBuffer(context_));
-        ea::shared_ptr<IndexBuffer> ib(new IndexBuffer(context_));
-        ea::shared_ptr<Geometry> geom(new Geometry(context_));
+        SharedPtr<Model> fromScratchModel(new Model(context_));
+        SharedPtr<VertexBuffer> vb(new VertexBuffer(context_));
+        SharedPtr<IndexBuffer> ib(new IndexBuffer(context_));
+        SharedPtr<Geometry> geom(new Geometry(context_));
 
         // Shadowed buffer needed for raycasts to work, and so that data can be automatically restored on device loss
         vb->SetShadowed(true);
@@ -245,8 +245,8 @@ void DynamicGeometry::CreateScene()
         fromScratchModel->SetBoundingBox(BoundingBox(Vector3(-0.5f, -0.5f, -0.5f), Vector3(0.5f, 0.5f, 0.5f)));
 
         // Though not necessary to render, the vertex & index buffers must be listed in the model so that it can be saved properly
-        ea::vector<ea::shared_ptr<VertexBuffer> > vertexBuffers;
-        ea::vector<ea::shared_ptr<IndexBuffer> > indexBuffers;
+        ea::vector<SharedPtr<VertexBuffer> > vertexBuffers;
+        ea::vector<SharedPtr<IndexBuffer> > indexBuffers;
         vertexBuffers.push_back(vb);
         indexBuffers.push_back(ib);
         // Morph ranges could also be not defined. Here we simply define a zero range (no morphing) for the vertex buffer
@@ -296,7 +296,7 @@ void DynamicGeometry::SetupViewport()
     auto* renderer = GetSubsystem<Renderer>();
 
     // Set up a viewport to the Renderer subsystem so that the 3D scene can be seen
-    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 }
 

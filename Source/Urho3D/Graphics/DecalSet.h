@@ -229,11 +229,11 @@ private:
     void HandleScenePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Geometry.
-    ea::shared_ptr<Geometry> geometry_;
+    SharedPtr<Geometry> geometry_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Index buffer.
-    ea::shared_ptr<IndexBuffer> indexBuffer_;
+    SharedPtr<IndexBuffer> indexBuffer_;
     /// Decals.
     ea::list<Decal> decals_;
     /// Bones used for skinned decals.

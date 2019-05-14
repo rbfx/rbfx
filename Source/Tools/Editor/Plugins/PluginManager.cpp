@@ -124,7 +124,7 @@ Plugin* PluginManager::Load(const ea::string& name)
     if (pluginPath.empty())
         return nullptr;
 
-    ea::shared_ptr<Plugin> plugin(new Plugin(context_));
+    SharedPtr<Plugin> plugin(new Plugin(context_));
     plugin->type_ = GetPluginType(context_, pluginPath);
 
     if (plugin->type_ == PLUGIN_NATIVE)
@@ -141,7 +141,7 @@ Plugin* PluginManager::Load(const ea::string& name)
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             plugins_.push_back(plugin);
-            return plugin.get();
+            return plugin.Get();
         }
         else
             URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name.c_str());
@@ -155,7 +155,7 @@ Plugin* PluginManager::Load(const ea::string& name)
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             plugins_.push_back(plugin);
-            return plugin.get();
+            return plugin.Get();
         }
     }
 #endif
@@ -168,7 +168,7 @@ void PluginManager::Unload(Plugin* plugin)
     if (plugin == nullptr)
         return;
 
-    auto it = plugins_.find(ea::shared_ptr<Plugin>(plugin));
+    auto it = plugins_.find(SharedPtr<Plugin>(plugin));
     if (it == plugins_.end())
     {
         URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.c_str());
@@ -191,7 +191,7 @@ void PluginManager::OnEndFrame()
     ea::vector<Plugin*> reloadingPlugins;
     for (auto it = plugins_.begin(); it != plugins_.end(); it++)
     {
-        Plugin* plugin = it->get();
+        Plugin* plugin = it->Get();
         if (plugin->type_ == PLUGIN_MANAGED && plugin->mtime_ < GetFileSystem()->GetLastModifiedTime(plugin->path_))
             reloadingPlugins.push_back(plugin);
     }
@@ -209,7 +209,7 @@ void PluginManager::OnEndFrame()
         {
             if (plugin->type_ == PLUGIN_MANAGED)
             {
-                if (reloadingPlugins.contains(plugin.get()))
+                if (reloadingPlugins.contains(plugin.Get()))
                 {
                     // This plugin was modified and triggered a reload. Good idea before loading it would be waiting for
                     // build to be done (should it still be in progress).
@@ -226,7 +226,7 @@ void PluginManager::OnEndFrame()
 
     for (auto it = plugins_.begin(); it != plugins_.end();)
     {
-        Plugin* plugin = it->get();
+        Plugin* plugin = it->Get();
 
         if (plugin->unloading_)
         {
@@ -303,8 +303,8 @@ Plugin* PluginManager::GetPlugin(const ea::string& name)
 {
     for (auto it = plugins_.begin(); it != plugins_.end(); it++)
     {
-        if (it->get()->name_ == name)
-            return it->get();
+        if (it->Get()->name_ == name)
+            return it->Get();
     }
     return nullptr;
 }

@@ -88,7 +88,7 @@ private:
     /// Id received from tile cache.
     unsigned obstacleId_;
     /// Pointer to the navigation mesh we belong to.
-    ea::weak_ptr<DynamicNavigationMesh> ownerMesh_;
+    WeakPtr<DynamicNavigationMesh> ownerMesh_;
 };
 
 }

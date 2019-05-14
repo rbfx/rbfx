@@ -142,9 +142,9 @@ private:
     void UpdateParticle(Particle2D& particle, float timeStep, const Vector3& worldPosition, float worldScale);
 
     /// Particle effect.
-    ea::shared_ptr<ParticleEffect2D> effect_;
+    SharedPtr<ParticleEffect2D> effect_;
     /// Sprite.
-    ea::shared_ptr<Sprite2D> sprite_;
+    SharedPtr<Sprite2D> sprite_;
     /// Blend mode.
     BlendMode blendMode_;
     /// Nummber of particles.

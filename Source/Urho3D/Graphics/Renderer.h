@@ -375,7 +375,7 @@ public:
     TextureCube* GetIndirectionCubeMap() const { return indirectionCubeMap_; }
 
     /// Return the instancing vertex buffer
-    VertexBuffer* GetInstancingBuffer() const { return dynamicInstancing_ ? instancingBuffer_ : nullptr; }
+    VertexBuffer* GetInstancingBuffer() const { return dynamicInstancing_ ? instancingBuffer_.Get() : nullptr; }
 
     /// Return the frame update parameters.
     const FrameInfo& GetFrameInfo() const { return frame_; }
@@ -435,7 +435,7 @@ private:
     /// Reload shaders.
     void LoadShaders();
     /// Reload shaders for a material pass. The related batch queue is provided in case it has extra shader compilation defines.
-    void LoadPassShaders(Pass* pass, ea::vector<ea::shared_ptr<ShaderVariation> >& vertexShaders, ea::vector<ea::shared_ptr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
+    void LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation> >& vertexShaders, ea::vector<SharedPtr<ShaderVariation> >& pixelShaders, const BatchQueue& queue);
     /// Release shaders used in materials.
     void ReleaseMaterialShaders();
     /// Reload textures.
@@ -470,39 +470,39 @@ private:
     void BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale);
 
     /// Graphics subsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// Default renderpath.
-    ea::shared_ptr<RenderPath> defaultRenderPath_;
+    SharedPtr<RenderPath> defaultRenderPath_;
     /// Default non-textured material technique.
-    ea::shared_ptr<Technique> defaultTechnique_;
+    SharedPtr<Technique> defaultTechnique_;
     /// Default zone.
-    ea::shared_ptr<Zone> defaultZone_;
+    SharedPtr<Zone> defaultZone_;
     /// Directional light quad geometry.
-    ea::shared_ptr<Geometry> dirLightGeometry_;
+    SharedPtr<Geometry> dirLightGeometry_;
     /// Spot light volume geometry.
-    ea::shared_ptr<Geometry> spotLightGeometry_;
+    SharedPtr<Geometry> spotLightGeometry_;
     /// Point light volume geometry.
-    ea::shared_ptr<Geometry> pointLightGeometry_;
+    SharedPtr<Geometry> pointLightGeometry_;
     /// Instance stream vertex buffer.
-    ea::shared_ptr<VertexBuffer> instancingBuffer_;
+    SharedPtr<VertexBuffer> instancingBuffer_;
     /// Default material.
-    ea::shared_ptr<Material> defaultMaterial_;
+    SharedPtr<Material> defaultMaterial_;
     /// Default range attenuation texture.
-    ea::shared_ptr<Texture2D> defaultLightRamp_;
+    SharedPtr<Texture2D> defaultLightRamp_;
     /// Default spotlight attenuation texture.
-    ea::shared_ptr<Texture2D> defaultLightSpot_;
+    SharedPtr<Texture2D> defaultLightSpot_;
     /// Face selection cube map for shadowed pointlights.
-    ea::shared_ptr<TextureCube> faceSelectCubeMap_;
+    SharedPtr<TextureCube> faceSelectCubeMap_;
     /// Indirection cube map for shadowed pointlights.
-    ea::shared_ptr<TextureCube> indirectionCubeMap_;
+    SharedPtr<TextureCube> indirectionCubeMap_;
     /// Reusable scene nodes with shadow camera components.
-    ea::vector<ea::shared_ptr<Node> > shadowCameraNodes_;
+    ea::vector<SharedPtr<Node> > shadowCameraNodes_;
     /// Reusable occlusion buffers.
-    ea::vector<ea::shared_ptr<OcclusionBuffer> > occlusionBuffers_;
+    ea::vector<SharedPtr<OcclusionBuffer> > occlusionBuffers_;
     /// Shadow maps by resolution.
-    ea::unordered_map<int, ea::vector<ea::shared_ptr<Texture2D> > > shadowMaps_;
+    ea::unordered_map<int, ea::vector<SharedPtr<Texture2D> > > shadowMaps_;
     /// Shadow map dummy color buffers by resolution.
-    ea::unordered_map<int, ea::shared_ptr<Texture2D> > colorShadowMaps_;
+    ea::unordered_map<int, SharedPtr<Texture2D> > colorShadowMaps_;
     /// Shadow map allocations by resolution.
     ea::unordered_map<int, ea::vector<Light*> > shadowMapAllocations_;
     /// Instance of shadow map filter
@@ -510,19 +510,19 @@ private:
     /// Function pointer of shadow map filter
     ShadowMapFilter shadowMapFilter_{};
     /// Screen buffers by resolution and format.
-    ea::unordered_map<unsigned long long, ea::vector<ea::shared_ptr<Texture> > > screenBuffers_;
+    ea::unordered_map<unsigned long long, ea::vector<SharedPtr<Texture> > > screenBuffers_;
     /// Current screen buffer allocations by resolution and format.
     ea::unordered_map<unsigned long long, unsigned> screenBufferAllocations_;
     /// Cache for light scissor queries.
     ea::unordered_map<ea::pair<Light*, Camera*>, Rect> lightScissorCache_;
     /// Backbuffer viewports.
-    ea::vector<ea::shared_ptr<Viewport> > viewports_;
+    ea::vector<SharedPtr<Viewport> > viewports_;
     /// Render surface viewports queued for update.
-    ea::vector<ea::pair<ea::weak_ptr<RenderSurface>, ea::weak_ptr<Viewport> > > queuedViewports_;
+    ea::vector<ea::pair<WeakPtr<RenderSurface>, WeakPtr<Viewport> > > queuedViewports_;
     /// Views that have been processed this frame.
-    ea::vector<ea::weak_ptr<View> > views_;
+    ea::vector<WeakPtr<View> > views_;
     /// Prepared views by culling camera.
-    ea::unordered_map<Camera*, ea::weak_ptr<View> > preparedViews_;
+    ea::unordered_map<Camera*, WeakPtr<View> > preparedViews_;
     /// Octrees that have been updated during the frame.
     ea::hash_set<Octree*> updatedOctrees_;
     /// Techniques for which missing shader error has been displayed.

@@ -50,7 +50,7 @@ static unsigned RemapAttributeIndex(const ea::vector<AttributeInfo>* attributes,
     {
         const AttributeInfo& attr = attributes->at(i);
         // Compare accessor to avoid name string compare
-        if (attr.accessor_ && attr.accessor_ == netAttr.accessor_.get())
+        if (attr.accessor_ && attr.accessor_ == netAttr.accessor_.Get())
             return i;
     }
 
@@ -591,7 +591,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
 
 bool Serializable::Load(const ea::string& resourceName)
 {
-    ea::shared_ptr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
+    SharedPtr<File> file(GetSubsystem<ResourceCache>()->GetFile(resourceName, false));
     if (file)
         return Load(*file);
     return false;
@@ -599,7 +599,7 @@ bool Serializable::Load(const ea::string& resourceName)
 
 bool Serializable::LoadXML(const ea::string& resourceName)
 {
-    ea::shared_ptr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
+    SharedPtr<XMLFile> file(GetSubsystem<ResourceCache>()->GetResource<XMLFile>(resourceName, false));
     if (file)
         return LoadXML(file->GetRoot());
     return false;
@@ -607,7 +607,7 @@ bool Serializable::LoadXML(const ea::string& resourceName)
 
 bool Serializable::LoadJSON(const ea::string& resourceName)
 {
-    ea::shared_ptr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
+    SharedPtr<JSONFile> file(GetSubsystem<ResourceCache>()->GetResource<JSONFile>(resourceName, false));
     if (file)
         return LoadJSON(file->GetRoot());
     return false;

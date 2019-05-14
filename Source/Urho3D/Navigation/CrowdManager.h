@@ -182,7 +182,7 @@ private:
     /// Internal Detour crowd object.
     dtCrowd* crowd_{};
     /// NavigationMesh for which the crowd was created.
-    ea::weak_ptr<NavigationMesh> navigationMesh_;
+    WeakPtr<NavigationMesh> navigationMesh_;
     /// The NavigationMesh component Id for pending crowd creation.
     unsigned navigationMeshId_{};
     /// The maximum number of agents the crowd can manage.

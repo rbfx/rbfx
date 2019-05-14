@@ -89,7 +89,7 @@ struct Bone
     /// Local-space bounding box.
     BoundingBox boundingBox_;
     /// Scene node.
-    ea::weak_ptr<Node> node_;
+    WeakPtr<Node> node_;
 };
 
 /// Hierarchical collection of bones.

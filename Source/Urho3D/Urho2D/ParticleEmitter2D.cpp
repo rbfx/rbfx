@@ -285,7 +285,7 @@ void ParticleEmitter2D::HandleScenePostUpdate(StringHash eventType, VariantMap& 
     if (emitting && emissionTime_ == 0.0f)
     {
         // Make a weak pointer to self to check for destruction during event handling
-        ea::weak_ptr<ParticleEmitter2D> self(this);
+        WeakPtr<ParticleEmitter2D> self(this);
         using namespace ParticlesDuration;
 
         VariantMap& eventData = GetEventDataMap();
@@ -293,7 +293,7 @@ void ParticleEmitter2D::HandleScenePostUpdate(StringHash eventType, VariantMap& 
         eventData[P_EFFECT] = effect_;
         SendEvent(E_PARTICLESDURATION, eventData); // Emitting particles stopped
 
-        if (self.expired())
+        if (self.Expired())
             return;
     }
     if (hasParticles && numParticles_ == 0)

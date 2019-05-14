@@ -65,7 +65,7 @@ static const char* checkDirs[] =
     nullptr
 };
 
-static const ea::shared_ptr<Resource> noResource;
+static const SharedPtr<Resource> noResource;
 
 ResourceCache::ResourceCache(Context* context) :
     Object(context),
@@ -91,7 +91,7 @@ ResourceCache::~ResourceCache()
 {
 #ifdef URHO3D_THREADING
     // Shut down the background loader first
-    backgroundLoader_.reset();
+    backgroundLoader_.Reset();
 #endif
 }
 
@@ -124,7 +124,7 @@ bool ResourceCache::AddResourceDir(const ea::string& pathName, unsigned priority
     // If resource auto-reloading active, create a file watcher for the directory
     if (autoReloadResources_)
     {
-        ea::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
+        SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
         watcher->StartWatching(fixedPath, true);
         fileWatchers_.push_back(watcher);
     }
@@ -145,9 +145,9 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
     }
 
     if (priority < packages_.size())
-        packages_.insert(priority, ea::shared_ptr<PackageFile>(package));
+        packages_.insert(priority, SharedPtr<PackageFile>(package));
     else
-        packages_.push_back(ea::shared_ptr<PackageFile>(package));
+        packages_.push_back(SharedPtr<PackageFile>(package));
 
     URHO3D_LOGINFO("Added resource package " + package->GetName());
     return true;
@@ -155,7 +155,7 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
 
 bool ResourceCache::AddPackageFile(const ea::string& fileName, unsigned priority)
 {
-    ea::shared_ptr<PackageFile> package(new PackageFile(context_));
+    SharedPtr<PackageFile> package(new PackageFile(context_));
     return package->Open(fileName) && AddPackageFile(package, priority);
 }
 
@@ -212,10 +212,10 @@ void ResourceCache::RemovePackageFile(PackageFile* package, bool releaseResource
 
     for (auto i = packages_.begin(); i != packages_.end(); ++i)
     {
-        if (i->get() == package)
+        if (i->Get() == package)
         {
             if (releaseResources)
-                ReleasePackageResources(i->get(), forceRelease);
+                ReleasePackageResources(i->Get(), forceRelease);
             URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
             packages_.erase(i);
             return;
@@ -235,7 +235,7 @@ void ResourceCache::RemovePackageFile(const ea::string& fileName, bool releaseRe
         if (!GetFileNameAndExtension((*i)->GetName()).comparei(fileNameNoPath))
         {
             if (releaseResources)
-                ReleasePackageResources(i->get(), forceRelease);
+                ReleasePackageResources(i->Get(), forceRelease);
             URHO3D_LOGINFO("Removed resource package " + (*i)->GetName());
             packages_.erase(i);
             return;
@@ -246,12 +246,12 @@ void ResourceCache::RemovePackageFile(const ea::string& fileName, bool releaseRe
 void ResourceCache::ReleaseResource(StringHash type, const ea::string& name, bool force)
 {
     StringHash nameHash(name);
-    const ea::shared_ptr<Resource>& existingRes = FindResource(type, nameHash);
+    const SharedPtr<Resource>& existingRes = FindResource(type, nameHash);
     if (!existingRes)
         return;
 
     // If other references exist, do not release, unless forced
-    if ((existingRes.use_count() == 1 && existingRes.weak_use_count() == 0) || force)
+    if ((existingRes.Refs() == 1 && existingRes.WeakRefs() == 0) || force)
     {
         resourceGroups_[type].resources_.erase(nameHash);
         UpdateResourceGroup(type);
@@ -270,7 +270,7 @@ void ResourceCache::ReleaseResources(StringHash type, bool force)
         {
             auto current = j++;
             // If other references exist, do not release, unless forced
-            if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
+            if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
             {
                 i->second.resources_.erase(current);
                 released = true;
@@ -296,7 +296,7 @@ void ResourceCache::ReleaseResources(StringHash type, const ea::string& partialN
             if (current->second->GetName().contains(partialName))
             {
                 // If other references exist, do not release, unless forced
-                if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
+                if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                 {
                     i->second.resources_.erase(current);
                     released = true;
@@ -328,7 +328,7 @@ void ResourceCache::ReleaseResources(const ea::string& partialName, bool force)
                 if (current->second->GetName().contains(partialName))
                 {
                     // If other references exist, do not release, unless forced
-                    if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
+                    if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                     {
                         i->second.resources_.erase(current);
                         released = true;
@@ -357,7 +357,7 @@ void ResourceCache::ReleaseAllResources(bool force)
             {
                 auto current = j++;
                 // If other references exist, do not release, unless forced
-                if ((current->second.use_count() == 1 && current->second.weak_use_count() == 0) || force)
+                if ((current->second.Refs() == 1 && current->second.WeakRefs() == 0) || force)
                 {
                     i->second.resources_.erase(current);
                     released = true;
@@ -378,9 +378,9 @@ bool ResourceCache::ReloadResource(Resource* resource)
     resource->SendEvent(E_RELOADSTARTED);
 
     bool success = false;
-    ea::shared_ptr<File> file = GetFile(resource->GetName());
+    SharedPtr<File> file = GetFile(resource->GetName());
     if (file)
-        success = resource->Load(*(file.get()));
+        success = resource->Load(*(file.Get()));
 
     if (success)
     {
@@ -400,11 +400,11 @@ void ResourceCache::ReloadResourceWithDependencies(const ea::string& fileName)
 {
     StringHash fileNameHash(fileName);
     // If the filename is a resource we keep track of, reload it
-    const ea::shared_ptr<Resource>& resource = FindResource(fileNameHash);
+    const SharedPtr<Resource>& resource = FindResource(fileNameHash);
     if (resource)
     {
         URHO3D_LOGDEBUG("Reloading changed resource " + fileName);
-        ReloadResource(resource.get());
+        ReloadResource(resource.Get());
     }
     // Always perform dependency resource check for resource loaded from XML file as it could be used in inheritance
     if (!resource || GetExtension(resource->GetName()) == ".xml")
@@ -416,12 +416,12 @@ void ResourceCache::ReloadResourceWithDependencies(const ea::string& fileName)
         {
             // Reloading a resource may modify the dependency tracking structure. Therefore collect the
             // resources we need to reload first
-            ea::vector<ea::shared_ptr<Resource> > dependents;
+            ea::vector<SharedPtr<Resource> > dependents;
             dependents.reserve(j->second.size());
 
             for (auto k = j->second.begin(); k != j->second.end(); ++k)
             {
-                const ea::shared_ptr<Resource>& dependent = FindResource(*k);
+                const SharedPtr<Resource>& dependent = FindResource(*k);
                 if (dependent)
                     dependents.push_back(dependent);
             }
@@ -429,7 +429,7 @@ void ResourceCache::ReloadResourceWithDependencies(const ea::string& fileName)
             for (unsigned k = 0; k < dependents.size(); ++k)
             {
                 URHO3D_LOGDEBUG("Reloading resource " + dependents[k]->GetName() + " depending on " + fileName);
-                ReloadResource(dependents[k].get());
+                ReloadResource(dependents[k].Get());
             }
         }
     }
@@ -448,7 +448,7 @@ void ResourceCache::SetAutoReloadResources(bool enable)
         {
             for (unsigned i = 0; i < resourceDirs_.size(); ++i)
             {
-                ea::shared_ptr<FileWatcher> watcher(new FileWatcher(context_));
+                SharedPtr<FileWatcher> watcher(new FileWatcher(context_));
                 watcher->StartWatching(resourceDirs_[i], true);
                 fileWatchers_.push_back(watcher);
             }
@@ -470,9 +470,9 @@ void ResourceCache::AddResourceRouter(ResourceRouter* router, bool addAsFirst)
     }
 
     if (addAsFirst)
-        resourceRouters_.push_front(ea::shared_ptr<ResourceRouter>(router));
+        resourceRouters_.push_front(SharedPtr<ResourceRouter>(router));
     else
-        resourceRouters_.push_back(ea::shared_ptr<ResourceRouter>(router));
+        resourceRouters_.push_back(SharedPtr<ResourceRouter>(router));
 }
 
 void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
@@ -487,7 +487,7 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
     }
 }
 
-ea::shared_ptr<File> ResourceCache::GetFile(const ea::string& name, bool sendEventOnFailure)
+SharedPtr<File> ResourceCache::GetFile(const ea::string& name, bool sendEventOnFailure)
 {
     MutexLock lock(resourceMutex_);
 
@@ -512,7 +512,7 @@ ea::shared_ptr<File> ResourceCache::GetFile(const ea::string& name, bool sendEve
         }
 
         if (file)
-            return ea::shared_ptr<File>(file);
+            return SharedPtr<File>(file);
     }
 
     if (sendEventOnFailure)
@@ -532,7 +532,7 @@ ea::shared_ptr<File> ResourceCache::GetFile(const ea::string& name, bool sendEve
         }
     }
 
-    return ea::shared_ptr<File>();
+    return SharedPtr<File>();
 }
 
 Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& name)
@@ -551,7 +551,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
 
     StringHash nameHash(sanitatedName);
 
-    const ea::shared_ptr<Resource>& existing = FindResource(type, nameHash);
+    const SharedPtr<Resource>& existing = FindResource(type, nameHash);
     return existing;
 }
 
@@ -576,11 +576,11 @@ Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bo
     backgroundLoader_->WaitForResource(type, nameHash);
 #endif
 
-    const ea::shared_ptr<Resource>& existing = FindResource(type, nameHash);
+    const SharedPtr<Resource>& existing = FindResource(type, nameHash);
     if (existing)
         return existing;
 
-    ea::shared_ptr<Resource> resource;
+    SharedPtr<Resource> resource;
     // Make sure the pointer is non-null and is a Resource subclass
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
@@ -600,14 +600,14 @@ Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bo
     }
 
     // Attempt to load the resource
-    ea::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    SharedPtr<File> file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
         return nullptr;   // Error is already logged
 
     URHO3D_LOGDEBUG("Loading resource " + sanitatedName);
     resource->SetName(sanitatedName);
 
-    if (!resource->Load(*(file.get())))
+    if (!resource->Load(*(file.Get())))
     {
         // Error should already been logged by corresponding resource descendant class
         if (sendEventOnFailure)
@@ -651,15 +651,15 @@ bool ResourceCache::BackgroundLoadResource(StringHash type, const ea::string& na
 #endif
 }
 
-ea::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const ea::string& name, bool sendEventOnFailure)
+SharedPtr<Resource> ResourceCache::GetTempResource(StringHash type, const ea::string& name, bool sendEventOnFailure)
 {
     ea::string sanitatedName = SanitateResourceName(name);
 
     // If empty name, return null pointer immediately
     if (sanitatedName.empty())
-        return ea::shared_ptr<Resource>();
+        return SharedPtr<Resource>();
 
-    ea::shared_ptr<Resource> resource;
+    SharedPtr<Resource> resource;
     // Make sure the pointer is non-null and is a Resource subclass
     resource = DynamicCast<Resource>(context_->CreateObject(type));
     if (!resource)
@@ -675,18 +675,18 @@ ea::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const e
             SendEvent(E_UNKNOWNRESOURCETYPE, eventData);
         }
 
-        return ea::shared_ptr<Resource>();
+        return SharedPtr<Resource>();
     }
 
     // Attempt to load the resource
-    ea::shared_ptr<File> file = GetFile(sanitatedName, sendEventOnFailure);
+    SharedPtr<File> file = GetFile(sanitatedName, sendEventOnFailure);
     if (!file)
-        return ea::shared_ptr<Resource>();  // Error is already logged
+        return SharedPtr<Resource>();  // Error is already logged
 
     URHO3D_LOGDEBUG("Loading temporary resource " + sanitatedName);
     resource->SetName(file->GetName());
 
-    if (!resource->Load(*(file.get())))
+    if (!resource->Load(*(file.Get())))
     {
         // Error should already been logged by corresponding resource descendant class
         if (sendEventOnFailure)
@@ -698,7 +698,7 @@ ea::shared_ptr<Resource> ResourceCache::GetTempResource(StringHash type, const e
             SendEvent(E_LOADFAILED, eventData);
         }
 
-        return ea::shared_ptr<Resource>();
+        return SharedPtr<Resource>();
     }
 
     return resource;
@@ -721,7 +721,7 @@ void ResourceCache::GetResources(ea::vector<Resource*>& result, StringHash type)
     {
         for (auto j = i->second.resources_.begin();
              j != i->second.resources_.end(); ++j)
-            result.push_back(j->second.get());
+            result.push_back(j->second.Get());
     }
 }
 
@@ -969,7 +969,7 @@ ea::string ResourceCache::PrintMemoryUsage() const
     return output;
 }
 
-const ea::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
+const SharedPtr<Resource>& ResourceCache::FindResource(StringHash type, StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
@@ -983,7 +983,7 @@ const ea::shared_ptr<Resource>& ResourceCache::FindResource(StringHash type, Str
     return j->second;
 }
 
-const ea::shared_ptr<Resource>& ResourceCache::FindResource(StringHash nameHash)
+const SharedPtr<Resource>& ResourceCache::FindResource(StringHash nameHash)
 {
     MutexLock lock(resourceMutex_);
 
@@ -1015,7 +1015,7 @@ void ResourceCache::ReleasePackageResources(PackageFile* package, bool force)
             if (k != j->second.resources_.end())
             {
                 // If other references exist, do not release, unless forced
-                if ((k->second.use_count() == 1 && k->second.weak_use_count() == 0) || force)
+                if ((k->second.Refs() == 1 && k->second.WeakRefs() == 0) || force)
                 {
                     j->second.resources_.erase(k);
                     affectedGroups.insert(j->first);
@@ -1253,7 +1253,7 @@ bool ResourceCache::RenameResource(ea::string source, ea::string destination)
         auto resourcesCopy = groupPair.second.resources_;
         for (auto& resourcePair : resourcesCopy)
         {
-            ea::shared_ptr<Resource> resource = resourcePair.second;
+            SharedPtr<Resource> resource = resourcePair.second;
             if (resource->GetName().starts_with(resourceName))
             {
                 if (autoReloadResources_)

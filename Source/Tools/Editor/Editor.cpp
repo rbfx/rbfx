@@ -155,7 +155,7 @@ void Editor::Setup()
 void Editor::Start()
 {
     // Execute specified subcommand and exit.
-    for (ea::shared_ptr<SubCommand>& cmd : subCommands_)
+    for (SharedPtr<SubCommand>& cmd : subCommands_)
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
         {
@@ -298,7 +298,7 @@ void Editor::OnUpdate(VariantMap& args)
             tabs_.erase(tabs_.find(tab));
     }
 
-    if (!activeTab_.expired())
+    if (!activeTab_.Expired())
     {
         activeTab_->OnActiveUpdate();
     }
@@ -378,9 +378,9 @@ void Editor::OnUpdate(VariantMap& args)
 
 Tab* Editor::CreateTab(StringHash type)
 {
-    ea::shared_ptr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
+    SharedPtr<Tab> tab(DynamicCast<Tab>(context_->CreateObject(type)));
     tabs_.push_back(tab);
-    return tab.get();
+    return tab.Get();
 }
 
 StringVector Editor::GetObjectsByCategory(const ea::string& category)
@@ -457,7 +457,7 @@ void Editor::CloseProject()
     SendEvent(E_EDITORPROJECTCLOSING);
     context_->RemoveSubsystem<Project>();
     tabs_.clear();
-    project_.reset();
+    project_.Reset();
 }
 
 void Editor::HandleHotkeys()
@@ -494,7 +494,7 @@ Tab* Editor::GetTabByName(const ea::string& uniqueName)
     for (auto& tab : tabs_)
     {
         if (tab->GetUniqueName() == uniqueName)
-            return tab.get();
+            return tab.Get();
     }
     return nullptr;
 }
@@ -505,7 +505,7 @@ Tab* Editor::GetTabByResource(const ea::string& resourceName)
     {
         auto resource = DynamicCast<BaseResourceTab>(tab);
         if (resource && resource->GetResourceName() == resourceName)
-            return resource.get();
+            return resource.Get();
     }
     return nullptr;
 }
@@ -515,7 +515,7 @@ Tab* Editor::GetTab(StringHash type)
     for (auto& tab : tabs_)
     {
         if (tab->GetType() == type)
-            return tab.get();
+            return tab.Get();
     }
     return nullptr;
 }
@@ -619,7 +619,7 @@ template<typename T>
 void Editor::RegisterSubcommand()
 {
     T::RegisterObject(context_);
-    ea::shared_ptr<T> cmd(context_->CreateObject<T>());
+    SharedPtr<T> cmd(context_->CreateObject<T>());
     subCommands_.push_back(DynamicCast<SubCommand>(cmd));
     if (CLI::App* subCommand = GetCommandLineParser().add_subcommand(T::GetTypeNameStatic().c_str()))
         cmd->RegisterCommandLine(*subCommand);

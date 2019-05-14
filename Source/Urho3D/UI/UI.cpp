@@ -156,7 +156,7 @@ void UI::SetCursor(Cursor* cursor)
     if (cursor_)
     {
         rootElement_->RemoveChild(cursor_);
-        cursor_.reset();
+        cursor_.Reset();
     }
     if (cursor)
     {
@@ -204,7 +204,7 @@ void UI::SetFocusElement(UIElement* element, bool byKey)
     if (focusElement_)
     {
         UIElement* oldFocusElement = focusElement_;
-        focusElement_.reset();
+        focusElement_.Reset();
 
         VariantMap& focusEventData = GetEventDataMap();
         focusEventData[Defocused::P_ELEMENT] = oldFocusElement;
@@ -339,7 +339,7 @@ void UI::Update(float timeStep)
         for (auto i = dragElements_.begin(); i !=
             dragElements_.end();)
         {
-            ea::weak_ptr<UIElement> dragElement = i->first;
+            WeakPtr<UIElement> dragElement = i->first;
             UI::DragData* dragData = i->second;
 
             if (!dragElement)
@@ -402,7 +402,7 @@ void UI::Update(float timeStep)
     for (auto i = hoveredElements_.begin(); i !=
         hoveredElements_.end();)
     {
-        if (i->first.expired() || !i->second)
+        if (i->first.Expired() || !i->second)
         {
             UIElement* element = i->first;
             if (element)
@@ -508,20 +508,20 @@ void UI::DebugDraw(UIElement* element)
     }
 }
 
-ea::shared_ptr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
+SharedPtr<UIElement> UI::LoadLayout(Deserializer& source, XMLFile* styleFile)
 {
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
-        return ea::shared_ptr<UIElement>();
+        return SharedPtr<UIElement>();
     else
         return LoadLayout(xml, styleFile);
 }
 
-ea::shared_ptr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
+SharedPtr<UIElement> UI::LoadLayout(XMLFile* file, XMLFile* styleFile)
 {
     URHO3D_PROFILE("LoadUILayout");
 
-    ea::shared_ptr<UIElement> root;
+    SharedPtr<UIElement> root;
 
     if (!file)
     {
@@ -765,7 +765,7 @@ UIElement* UI::GetElementAt(int x, int y, bool enabledOnly)
 
 UIElement* UI::GetFrontElement() const
 {
-    const ea::vector<ea::shared_ptr<UIElement> >& rootChildren = rootElement_->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& rootChildren = rootElement_->GetChildren();
     int maxPriority = M_MIN_INT;
     UIElement* front = nullptr;
 
@@ -795,7 +795,7 @@ const ea::vector<UIElement*>& UI::GetDragElements()
     for (auto i = dragElements_.begin(); i !=
         dragElements_.end();)
     {
-        ea::weak_ptr<UIElement> dragElement = i->first;
+        WeakPtr<UIElement> dragElement = i->first;
         UI::DragData* dragData = i->second;
 
         if (!dragElement)
@@ -870,7 +870,7 @@ void UI::Initialize()
 void UI::Update(float timeStep, UIElement* element)
 {
     // Keep a weak pointer to the element in case it destroys itself on update
-    ea::weak_ptr<UIElement> elementWeak(element);
+    WeakPtr<UIElement> elementWeak(element);
 
 #ifdef URHO3D_SYSTEMUI
     // Unfocus active element if system ui has focus
@@ -882,10 +882,10 @@ void UI::Update(float timeStep, UIElement* element)
 #endif
 
     element->Update(timeStep);
-    if (elementWeak.expired())
+    if (elementWeak.Expired())
         return;
 
-    const ea::vector<ea::shared_ptr<UIElement> >& children = element->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& children = element->GetChildren();
     // Update of an element may modify its child vector. Use just index-based iteration to be safe
     for (unsigned i = 0; i < children.size(); ++i)
         Update(timeStep, children[i]);
@@ -1034,7 +1034,7 @@ void UI::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexData,
         return;
 
     element->SortChildren();
-    const ea::vector<ea::shared_ptr<UIElement> >& children = element->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& children = element->GetChildren();
     if (children.empty())
         return;
 
@@ -1085,7 +1085,7 @@ void UI::GetElementAt(UIElement*& result, UIElement* current, const IntVector2& 
         return;
 
     current->SortChildren();
-    const ea::vector<ea::shared_ptr<UIElement> >& children = current->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& children = current->GetChildren();
     LayoutMode parentLayoutMode = current->GetLayoutMode();
 
     for (unsigned i = 0; i < children.size(); ++i)
@@ -1208,12 +1208,12 @@ void UI::ReleaseFontFaces()
 void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor)
 {
     IntVector2 cursorPos;
-    ea::weak_ptr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
+    WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
 
     for (auto i = dragElements_.begin(); i !=
         dragElements_.end();)
     {
-        ea::weak_ptr<UIElement> dragElement = i->first;
+        WeakPtr<UIElement> dragElement = i->first;
         UI::DragData* dragData = i->second;
 
         if (!dragElement)
@@ -1300,7 +1300,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
     if (cursorVisible)
     {
         IntVector2 cursorPos;
-        ea::weak_ptr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
+        WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
 
         bool newButton;
         if (usingTouchInput_)
@@ -1327,7 +1327,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
                 (clickTimer_.GetMSec(true) < (unsigned)(doubleClickInterval_ * 1000)) && lastMouseButtons_ == buttons && (windowCursorPos - doubleClickFirstPos_).Length() < maxDoubleClickDist_)
             {
                 element->OnDoubleClick(element->ScreenToElement(cursorPos), cursorPos, button, buttons, qualifiers, cursor);
-                doubleClickElement_.reset();
+                doubleClickElement_.Reset();
                 SendDoubleClickEvent(nullptr, element, doubleClickFirstPos_, cursorPos, button, buttons, qualifiers);
             }
             else
@@ -1379,7 +1379,7 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
 
 void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor, bool cursorVisible)
 {
-    ea::weak_ptr<UIElement> element;
+    WeakPtr<UIElement> element;
     IntVector2 cursorPos = windowCursorPos;
     if (cursorVisible)
         element = GetElementAt(cursorPos, true, &cursorPos);
@@ -1388,7 +1388,7 @@ void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, 
     for (auto i = dragElements_.begin(); i !=
         dragElements_.end();)
     {
-        ea::weak_ptr<UIElement> dragElement = i->first;
+        WeakPtr<UIElement> dragElement = i->first;
         UI::DragData* dragData = i->second;
 
         if (!dragElement || !cursorVisible)
@@ -1457,7 +1457,7 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
         for (auto i = dragElements_.begin(); i !=
             dragElements_.end();)
         {
-            ea::weak_ptr<UIElement> dragElement = i->first;
+            WeakPtr<UIElement> dragElement = i->first;
             UI::DragData* dragData = i->second;
 
             if (!dragElement)
@@ -1518,7 +1518,7 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
             {
                 dragElement->OnDragEnd(dragElement->ScreenToElement(sendPos), sendPos, dragData->dragButtons, buttons, cursor);
                 SendDragOrHoverEvent(E_DRAGEND, dragElement, sendPos, IntVector2::ZERO, dragData);
-                dragElement.reset();
+                dragElement.Reset();
             }
 
             ++i;
@@ -1789,7 +1789,7 @@ void UI::HandleTouchBegin(StringHash eventType, VariantMap& eventData)
     usingTouchInput_ = true;
 
     const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
-    ea::weak_ptr<UIElement> element(GetElementAt(pos));
+    WeakPtr<UIElement> element(GetElementAt(pos));
 
     if (element)
     {
@@ -1812,7 +1812,7 @@ void UI::HandleTouchEnd(StringHash eventType, VariantMap& eventData)
     const MouseButton touchId = MakeTouchIDMask(eventData[P_TOUCHID].GetInt());
 
     // Transmit hover end to the position where the finger was lifted
-    ea::weak_ptr<UIElement> element(GetElementAt(pos));
+    WeakPtr<UIElement> element(GetElementAt(pos));
 
     // Clear any drag events that were using the touch id
     for (auto i = touchDragElements_.begin(); i != touchDragElements_.end();)
@@ -2026,7 +2026,7 @@ void UI::HandleEndAllViewsRender(StringHash eventType, VariantMap& eventData)
     }
 }
 
-ea::unordered_map<ea::weak_ptr<UIElement>, UI::DragData*>::iterator UI::DragElementErase(ea::unordered_map<ea::weak_ptr<UIElement>, DragData*>::iterator i)
+ea::unordered_map<WeakPtr<UIElement>, UI::DragData*>::iterator UI::DragElementErase(ea::unordered_map<WeakPtr<UIElement>, DragData*>::iterator i)
 {
     // If running the engine frame in response to an event (re-entering UI frame logic) the dragElements_ may already be empty
     if (dragElements_.empty())
@@ -2058,7 +2058,7 @@ void UI::ProcessDragCancel()
     for (auto i = dragElements_.begin(); i !=
         dragElements_.end();)
     {
-        ea::weak_ptr<UIElement> dragElement = i->first;
+        WeakPtr<UIElement> dragElement = i->first;
         UI::DragData* dragData = i->second;
 
         if (dragElement && dragElement->IsEnabled() && dragElement->IsVisible() && !dragData->dragBeginPending)

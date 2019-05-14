@@ -186,8 +186,8 @@ public:
     void SetINHERIT_PARENT_ROTATION(bool enable);
 
 private:
-    ea::weak_ptr<Node> targetNode_;
-    ea::weak_ptr<IKSolver> solver_;
+    WeakPtr<Node> targetNode_;
+    WeakPtr<IKSolver> solver_;
     ik_node_t* ikEffectorNode_;
 
     ea::string targetName_;

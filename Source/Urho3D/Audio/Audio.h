@@ -149,7 +149,7 @@ private:
     /// Sound sources.
     ea::vector<SoundSource*> soundSources_;
     /// Sound listener.
-    ea::weak_ptr<SoundListener> listener_;
+    WeakPtr<SoundListener> listener_;
 };
 
 /// Register Audio library objects.

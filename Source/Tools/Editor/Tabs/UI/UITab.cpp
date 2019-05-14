@@ -85,7 +85,7 @@ void UITab::RenderHierarchy()
 
 void UITab::RenderNodeTree(UIElement* element)
 {
-    ea::shared_ptr<UIElement> elementRef(element);
+    SharedPtr<UIElement> elementRef(element);
     ea::string name = element->GetName();
     ea::string type = element->GetTypeName();
     ea::string tooltip = "Type: " + type;
@@ -122,7 +122,7 @@ void UITab::RenderNodeTree(UIElement* element)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            ea::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
             if (child && child != element)
             {
                 child->Remove();    // Needed for reordering under the same parent.
@@ -172,7 +172,7 @@ void UITab::RenderNodeTree(UIElement* element)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            ea::shared_ptr<UIElement> child((UIElement*)payload.GetVoidPtr());
+            SharedPtr<UIElement> child((UIElement*)payload.GetVoidPtr());
             if (child && child != element)
             {
                 child->Remove();    // Needed for reordering under the same parent.
@@ -344,7 +344,7 @@ bool UITab::LoadResource(const ea::string& resourcePath)
     UIElement* layoutElement = nullptr;
     if (resourcePath.ends_with(".xml"))
     {
-        ea::shared_ptr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
+        SharedPtr<XMLFile> file(cache->GetResource<XMLFile>(resourcePath));
         if (file)
         {
             ea::string type = file->GetRoot().GetAttribute("type");

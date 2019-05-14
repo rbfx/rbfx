@@ -48,11 +48,11 @@ protected:
     }
 
 private:
-    ea::shared_ptr<UIElement> uielement_;
+    SharedPtr<UIElement> uielement_;
 
     void CreateText();
-    ea::shared_ptr<CheckBox> CreateCheckbox(const ea::string& label, EventHandler* handler);
-    ea::shared_ptr<DropDownList> CreateMenu(const ea::string& label, const char** items, EventHandler* handler);
+    SharedPtr<CheckBox> CreateCheckbox(const ea::string& label, EventHandler* handler);
+    SharedPtr<DropDownList> CreateMenu(const ea::string& label, const char** items, EventHandler* handler);
 
     void HandleWhiteBackground(StringHash eventType, VariantMap& eventData);
     void HandleSRGB(StringHash eventType, VariantMap& eventData);

@@ -40,7 +40,7 @@
 namespace Urho3D
 {
 
-unsigned LookupVertexBuffer(VertexBuffer* buffer, const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers)
+unsigned LookupVertexBuffer(VertexBuffer* buffer, const ea::vector<SharedPtr<VertexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -50,7 +50,7 @@ unsigned LookupVertexBuffer(VertexBuffer* buffer, const ea::vector<ea::shared_pt
     return 0;
 }
 
-unsigned LookupIndexBuffer(IndexBuffer* buffer, const ea::vector<ea::shared_ptr<IndexBuffer> >& buffers)
+unsigned LookupIndexBuffer(IndexBuffer* buffer, const ea::vector<SharedPtr<IndexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -127,7 +127,7 @@ bool Model::BeginLoad(Deserializer& source)
         morphRangeStarts_[i] = source.ReadUInt();
         morphRangeCounts_[i] = source.ReadUInt();
 
-        ea::shared_ptr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
+        SharedPtr<VertexBuffer> buffer(context_->CreateObject<VertexBuffer>());
         unsigned vertexSize = VertexBuffer::GetVertexSize(desc.vertexElements_);
         desc.dataSize_ = desc.vertexCount_ * vertexSize;
 
@@ -161,7 +161,7 @@ bool Model::BeginLoad(Deserializer& source)
         unsigned indexCount = source.ReadUInt();
         unsigned indexSize = source.ReadUInt();
 
-        ea::shared_ptr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
+        SharedPtr<IndexBuffer> buffer(context_->CreateObject<IndexBuffer>());
 
         // Prepare index buffer data to be uploaded during EndLoad()
         if (async)
@@ -203,7 +203,7 @@ bool Model::BeginLoad(Deserializer& source)
         geometryBoneMappings_.push_back(boneMapping);
 
         unsigned numLodLevels = source.ReadUInt();
-        ea::vector<ea::shared_ptr<Geometry> > geometryLodLevels;
+        ea::vector<SharedPtr<Geometry> > geometryLodLevels;
         geometryLodLevels.reserve(numLodLevels);
         loadGeometries_[i].resize(numLodLevels);
 
@@ -234,7 +234,7 @@ bool Model::BeginLoad(Deserializer& source)
                 return false;
             }
 
-            ea::shared_ptr<Geometry> geometry(context_->CreateObject<Geometry>());
+            SharedPtr<Geometry> geometry(context_->CreateObject<Geometry>());
             geometry->SetLodDistance(distance);
 
             // Prepare geometry to be defined during EndLoad()
@@ -310,7 +310,7 @@ bool Model::BeginLoad(Deserializer& source)
     // Read metadata
     auto* cache = GetSubsystem<ResourceCache>();
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
-    ea::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (file)
         LoadMetadataFromXML(file->GetRoot());
 
@@ -469,7 +469,7 @@ bool Model::Save(Serializer& dest) const
         {
             ea::string xmlName = ReplaceExtension(destFile->GetName(), ".xml");
 
-            ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+            SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
             XMLElement rootElem = xml->CreateRoot("model");
             SaveMetadataToXML(rootElem);
 
@@ -488,7 +488,7 @@ void Model::SetBoundingBox(const BoundingBox& box)
     boundingBox_ = box;
 }
 
-bool Model::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers, const ea::vector<unsigned>& morphRangeStarts,
+bool Model::SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer> >& buffers, const ea::vector<unsigned>& morphRangeStarts,
     const ea::vector<unsigned>& morphRangeCounts)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
@@ -519,7 +519,7 @@ bool Model::SetVertexBuffers(const ea::vector<ea::shared_ptr<VertexBuffer> >& bu
     return true;
 }
 
-bool Model::SetIndexBuffers(const ea::vector<ea::shared_ptr<IndexBuffer> >& buffers)
+bool Model::SetIndexBuffers(const ea::vector<SharedPtr<IndexBuffer> >& buffers)
 {
     for (unsigned i = 0; i < buffers.size(); ++i)
     {
@@ -614,9 +614,9 @@ void Model::SetMorphs(const ea::vector<ModelMorph>& morphs)
     morphs_ = morphs;
 }
 
-ea::shared_ptr<Model> Model::Clone(const ea::string& cloneName) const
+SharedPtr<Model> Model::Clone(const ea::string& cloneName) const
 {
-    ea::shared_ptr<Model> ret(context_->CreateObject<Model>());
+    SharedPtr<Model> ret(context_->CreateObject<Model>());
 
     ret->SetName(cloneName);
     ret->boundingBox_ = boundingBox_;
@@ -632,7 +632,7 @@ ea::shared_ptr<Model> Model::Clone(const ea::string& cloneName) const
     for (auto i = vertexBuffers_.begin(); i != vertexBuffers_.end(); ++i)
     {
         VertexBuffer* origBuffer = *i;
-        ea::shared_ptr<VertexBuffer> cloneBuffer;
+        SharedPtr<VertexBuffer> cloneBuffer;
 
         if (origBuffer)
         {
@@ -659,7 +659,7 @@ ea::shared_ptr<Model> Model::Clone(const ea::string& cloneName) const
     for (auto i = indexBuffers_.begin(); i != indexBuffers_.end(); ++i)
     {
         IndexBuffer* origBuffer = *i;
-        ea::shared_ptr<IndexBuffer> cloneBuffer;
+        SharedPtr<IndexBuffer> cloneBuffer;
 
         if (origBuffer)
         {
@@ -690,7 +690,7 @@ ea::shared_ptr<Model> Model::Clone(const ea::string& cloneName) const
         ret->geometries_[i].resize(geometries_[i].size());
         for (unsigned j = 0; j < geometries_[i].size(); ++j)
         {
-            ea::shared_ptr<Geometry> cloneGeometry;
+            SharedPtr<Geometry> cloneGeometry;
             Geometry* origGeometry = geometries_[i][j];
 
             if (origGeometry)

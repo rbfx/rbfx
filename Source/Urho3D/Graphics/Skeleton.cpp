@@ -108,7 +108,7 @@ void Skeleton::Define(const Skeleton& src)
     // Make sure we clear node references, if they exist
     // (AnimatedModel will create new nodes on its own)
     for (auto i = bones_.begin(); i != bones_.end(); ++i)
-        i->node_.reset();
+        i->node_.Reset();
     rootBoneIndex_ = src.rootBoneIndex_;
 }
 

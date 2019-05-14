@@ -69,7 +69,7 @@ struct CollisionGeometryData : public RefCounted
 
 /// Cache of collision geometry data.
 /// \todo Remove duplicate declaration
-using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, ea::shared_ptr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, SharedPtr<CollisionGeometryData> >;
 
 /// Triangle mesh geometry data.
 struct TriangleMeshData : public CollisionGeometryData
@@ -286,13 +286,13 @@ private:
     void MarkShapeDirty() { recreateShape_ = true; }
 
     /// Physics world.
-    ea::weak_ptr<PhysicsWorld> physicsWorld_;
+    WeakPtr<PhysicsWorld> physicsWorld_;
     /// Rigid body.
-    ea::weak_ptr<RigidBody> rigidBody_;
+    WeakPtr<RigidBody> rigidBody_;
     /// Model.
-    ea::shared_ptr<Model> model_;
+    SharedPtr<Model> model_;
     /// Shared geometry data.
-    ea::shared_ptr<CollisionGeometryData> geometry_;
+    SharedPtr<CollisionGeometryData> geometry_;
     /// Bullet collision shape.
     ea::unique_ptr<btCollisionShape> shape_;
     /// Collision shape type.

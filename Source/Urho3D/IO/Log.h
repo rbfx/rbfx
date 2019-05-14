@@ -166,7 +166,7 @@ private:
     void HandleEndFrame(StringHash eventType, VariantMap& eventData) { PumpThreadMessages(); }
 
     /// Implementation hiding spdlog class types from public headers.
-    ea::shared_ptr<LogImpl> impl_;
+    SharedPtr<LogImpl> impl_;
     /// Log format pattern.
     ea::string formatPattern_{};
     /// Mutex for threaded operation.

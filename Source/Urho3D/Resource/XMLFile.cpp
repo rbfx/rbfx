@@ -102,8 +102,8 @@ bool XMLFile::BeginLoad(Deserializer& source)
         // The existence of this attribute indicates this is an RFC 5261 patch file
         auto* cache = GetSubsystem<ResourceCache>();
         // If being async loaded, GetResource() is not safe, so use GetTempResource() instead
-        ea::shared_ptr<XMLFile> inheritedXMLFile(
-            GetAsyncLoadState() == ASYNC_DONE ? ea::shared_ptr<XMLFile>(cache->GetResource<XMLFile>(inherit)) :
+        SharedPtr<XMLFile> inheritedXMLFile(
+            GetAsyncLoadState() == ASYNC_DONE ? SharedPtr<XMLFile>(cache->GetResource<XMLFile>(inherit)) :
                 cache->GetTempResource<XMLFile>(inherit));
         if (!inheritedXMLFile)
         {

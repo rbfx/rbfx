@@ -746,7 +746,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_PTR:
-        value_.weakPtr_.~weak_ptr<RefCounted>();
+        value_.weakPtr_.~WeakPtr<RefCounted>();
         break;
 
     case VAR_MATRIX3:
@@ -806,7 +806,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_PTR:
-        new(&value_.weakPtr_) ea::weak_ptr<RefCounted>();
+        new(&value_.weakPtr_) WeakPtr<RefCounted>();
         break;
 
     case VAR_MATRIX3:

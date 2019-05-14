@@ -144,9 +144,9 @@ private:
     /// Source vertices per geometry.
     ea::vector<ea::vector<CustomGeometryVertex> > vertices_;
     /// All geometries.
-    ea::vector<ea::shared_ptr<Geometry> > geometries_;
+    ea::vector<SharedPtr<Geometry> > geometries_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Element mask used so far.
     VertexMaskFlags elementMask_;
     /// Current geometry being updated.

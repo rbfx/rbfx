@@ -194,7 +194,7 @@ bool SceneTab::RenderWindowContent()
         ui::PushStyleColor(ImGuiCol_Border, ui::GetColorU32(ImGuiCol_Border, 255.f));                                   // Make a border opaque, otherwise it is barely visible.
         ui::SetCursorScreenPos(ToImGui(tabRect.Max() - cameraPreviewSize - IntVector2{10, 10}));
 
-        ui::Image(cameraPreviewtexture_.get(), ToImGui(cameraPreviewSize));
+        ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
         ui::RenderFrameBorder(ui::GetItemRectMin() - ImVec2{border, border}, ui::GetItemRectMax() + ImVec2{border, border});
 
         ui::PopStyleColor();
@@ -230,12 +230,12 @@ bool SceneTab::RenderWindowContent()
         if (results.size() && results[0].drawable_->GetNode() != nullptr)
         {
             StringHash componentType;
-            ea::weak_ptr<Node> clickNode(results[0].drawable_->GetNode());
+            WeakPtr<Node> clickNode(results[0].drawable_->GetNode());
 
             if (clickNode->HasTag("DebugIcon"))
                 componentType = clickNode->GetVar("ComponentType").GetStringHash();
 
-            while (!clickNode.expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
+            while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
                 clickNode = clickNode->GetParent();
 
             if (isClickedLeft)
@@ -425,7 +425,7 @@ void SceneTab::Select(Component* component)
     if (component == nullptr)
         return;
 
-    selectedComponents_.insert(ea::weak_ptr<Component>(component));
+    selectedComponents_.insert(WeakPtr<Component>(component));
     using namespace EditorSelectionChanged;
     SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
 }
@@ -459,7 +459,7 @@ void SceneTab::Unselect(Component* component)
     if (component == nullptr)
         return;
 
-    if (selectedComponents_.erase(ea::weak_ptr<Component>(component)))
+    if (selectedComponents_.erase(WeakPtr<Component>(component)))
     {
         using namespace EditorSelectionChanged;
         SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
@@ -481,7 +481,7 @@ void SceneTab::ToggleSelection(Component* component)
     if (component == nullptr)
         return;
 
-    ea::weak_ptr<Component> componentPtr(component);
+    WeakPtr<Component> componentPtr(component);
     if (selectedComponents_.contains(componentPtr))
         selectedComponents_.erase(componentPtr);
     else
@@ -502,7 +502,7 @@ void SceneTab::UnselectAll()
     }
 }
 
-const ea::vector<ea::weak_ptr<Node>>& SceneTab::GetSelection() const
+const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 {
     return gizmo_.GetSelection();
 }
@@ -572,7 +572,7 @@ bool SceneTab::IsSelected(Component* component) const
     if (component == nullptr)
         return false;
 
-    return selectedComponents_.contains(ea::weak_ptr<Component>(component));
+    return selectedComponents_.contains(WeakPtr<Component>(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
@@ -586,15 +586,15 @@ void SceneTab::RenderInspector(const char* filter)
     bool singleNodeMode = selection.size() == 1 && selectedComponents_.empty();
     for (auto& node : GetSelection())
     {
-        if (node.expired())
+        if (node.Expired())
             continue;
-        RenderAttributes(node.get(), filter, &inspector_);
+        RenderAttributes(node.Get(), filter, &inspector_);
         if (singleNodeMode)
         {
             for (auto& component : node->GetComponents())
             {
                 if (!component->IsTemporary())
-                    RenderAttributes(component.get(), filter, &inspector_);
+                    RenderAttributes(component.Get(), filter, &inspector_);
             }
         }
     }
@@ -603,9 +603,9 @@ void SceneTab::RenderInspector(const char* filter)
     {
         for (auto& component : selectedComponents_)
         {
-            if (component.expired())
+            if (component.Expired())
                 continue;
-            RenderAttributes(component.get(), filter, &inspector_);
+            RenderAttributes(component.Get(), filter, &inspector_);
         }
     }
 }
@@ -629,7 +629,7 @@ void SceneTab::RenderNodeTree(Node* node)
     if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__"))
         return;
 
-    if (node == scrollTo_.get())
+    if (node == scrollTo_.Get())
         ui::SetScrollHereY();
 
     ea::string name = node->GetName().empty() ? ToString("%s %d", node->GetTypeName().c_str(), node->GetID()) : node->GetName();
@@ -665,7 +665,7 @@ void SceneTab::RenderNodeTree(Node* node)
         const Variant& payload = ui::AcceptDragDropVariant("ptr");
         if (!payload.IsEmpty())
         {
-            ea::shared_ptr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
+            SharedPtr<Node> child(dynamic_cast<Node*>(payload.GetPtr()));
             if (child && child != node)
             {
                 node->AddChild(child);
@@ -686,7 +686,7 @@ void SceneTab::RenderNodeTree(Node* node)
     }
 
     // Popup may delete node. Weak reference will convey that information.
-    ea::weak_ptr<Node> nodeRef(node);
+    WeakPtr<Node> nodeRef(node);
 
     if (ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup))
     {
@@ -711,9 +711,9 @@ void SceneTab::RenderNodeTree(Node* node)
 
     if (opened)
     {
-        if (!nodeRef.expired())
+        if (!nodeRef.Expired())
         {
-            ea::vector<ea::shared_ptr<Component>> components = node->GetComponents();
+            ea::vector<SharedPtr<Component>> components = node->GetComponents();
             for (const auto& component: components)
             {
                 if (component->IsTemporary())
@@ -762,7 +762,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 {
                     for (auto& selectedNode : GetSelection())
                     {
-                        if (selectedNode.expired())
+                        if (selectedNode.Expired())
                             continue;
 
                         if(selectedNode->IsChildOf(child))
@@ -789,13 +789,13 @@ void SceneTab::RemoveSelection()
 {
     for (auto& component : selectedComponents_)
     {
-        if (!component.expired())
+        if (!component.Expired())
             component->Remove();
     }
 
     for (auto& selected : GetSelection())
     {
-        if (!selected.expired())
+        if (!selected.Expired())
             selected->Remove();
     }
 
@@ -967,7 +967,7 @@ void SceneTab::RenderNodeContextMenu()
                 ea::vector<Node*> newNodes;
                 for (auto& selectedNode : GetSelection())
                 {
-                    if (!selectedNode.expired())
+                    if (!selectedNode.Expired())
                     {
                         newNodes.push_back(selectedNode->CreateChild(EMPTY_STRING, alternative ? LOCAL : REPLICATED));
                         openHierarchyNodes_.push_back(selectedNode);
@@ -1004,7 +1004,7 @@ void SceneTab::RenderNodeContextMenu()
                             {
                                 for (auto& selectedNode : GetSelection())
                                 {
-                                    if (!selectedNode.expired())
+                                    if (!selectedNode.Expired())
                                     {
                                         if (selectedNode->CreateComponent(StringHash(component),
                                                                           alternative ? LOCAL : REPLICATED))
@@ -1272,7 +1272,7 @@ void SceneTab::PasteNextToSelection()
         target = nullptr;
         unsigned i = 0;
         while (target == nullptr && i < selection.size())   // Selected node may be null
-            target = selection[i++].get();
+            target = selection[i++].Get();
         if (target != nullptr)
             target = target->GetParent();
     }
@@ -1288,7 +1288,7 @@ void SceneTab::PasteNextToSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.insert(ea::weak_ptr<Component>(component));
+        selectedComponents_.insert(WeakPtr<Component>(component));
 }
 
 void SceneTab::PasteIntoSelection()
@@ -1306,7 +1306,7 @@ void SceneTab::PasteIntoSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.insert(ea::weak_ptr<Component>(component));
+        selectedComponents_.insert(WeakPtr<Component>(component));
 }
 
 void SceneTab::PasteIntuitive()
@@ -1375,7 +1375,7 @@ void SceneTab::RenderDebugInfo()
     scene->GetNodesWithTag(debugNodes, "DebugInfoAlways");
     for (Node* node : debugNodes)
     {
-        if (selection.contains(ea::weak_ptr<Node>(node)))
+        if (selection.contains(WeakPtr<Node>(node)))
             continue;
 
         for (auto& component: node->GetComponents())

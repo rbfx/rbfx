@@ -90,11 +90,11 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Scene node for the sound component.
-    ea::shared_ptr<Node> node_;
+    SharedPtr<Node> node_;
     /// Sound stream that we update.
-    ea::shared_ptr<BufferedSoundStream> soundStream_;
+    SharedPtr<BufferedSoundStream> soundStream_;
     /// Instruction text.
-    ea::shared_ptr<Text> instructionText_;
+    SharedPtr<Text> instructionText_;
     /// Filter coefficient for the sound.
     float filter_;
     /// Synthesis accumulator.

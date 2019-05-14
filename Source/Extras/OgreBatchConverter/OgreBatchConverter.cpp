@@ -9,8 +9,8 @@
 
 using namespace Urho3D;
 
-ea::shared_ptr<Context> context(new Context());
-ea::shared_ptr<FileSystem> fileSystem(new FileSystem(context));
+SharedPtr<Context> context(new Context());
+SharedPtr<FileSystem> fileSystem(new FileSystem(context));
 
 int main(int argc, char** argv)
 {

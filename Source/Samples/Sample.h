@@ -76,11 +76,11 @@ protected:
     void SetLogoVisible(bool enable);
 
     /// Logo sprite.
-    ea::shared_ptr<Sprite> logoSprite_;
+    SharedPtr<Sprite> logoSprite_;
     /// Scene.
-    ea::shared_ptr<Scene> scene_;
+    SharedPtr<Scene> scene_;
     /// Camera scene node.
-    ea::shared_ptr<Node> cameraNode_;
+    SharedPtr<Node> cameraNode_;
     /// Camera yaw angle.
     float yaw_;
     /// Camera pitch angle.

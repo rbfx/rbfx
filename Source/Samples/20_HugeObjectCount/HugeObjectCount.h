@@ -90,7 +90,7 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Box scene nodes.
-    ea::vector<ea::shared_ptr<Node> > boxNodes_;
+    ea::vector<SharedPtr<Node> > boxNodes_;
     /// Animation flag.
     bool animate_;
     /// Group optimization flag.

@@ -196,7 +196,7 @@ void Connection::SetScene(Scene* newScene)
         sceneState_.Clear();
 
         // When scene is assigned on the server, instruct the client to load it. This may require downloading packages
-        const ea::vector<ea::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+        const ea::vector<SharedPtr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
         unsigned numPackages = packages.size();
         msg_.Clear();
         msg_.WriteString(scene_->GetFileName());
@@ -510,7 +510,7 @@ void Connection::ProcessLoadScene(int msgID, MemoryBuffer& msg)
     auto* cache = GetSubsystem<ResourceCache>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    ea::vector<ea::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
+    ea::vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
     for (unsigned i = 0; i < packages.size(); ++i)
     {
         PackageFile* package = packages[i];
@@ -772,7 +772,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
             }
 
             // The package must be one of those required by the scene
-            const ea::vector<ea::shared_ptr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
+            const ea::vector<SharedPtr<PackageFile> >& packages = scene_->GetRequiredPackageFiles();
             for (unsigned i = 0; i < packages.size(); ++i)
             {
                 PackageFile* package = packages[i];
@@ -789,7 +789,7 @@ void Connection::ProcessPackageDownload(int msgID, MemoryBuffer& msg)
                     }
 
                     // Try to open the file now
-                    ea::shared_ptr<File> file(new File(context_, packageFullName));
+                    SharedPtr<File> file(new File(context_, packageFullName));
                     if (!file->IsOpen())
                     {
                         URHO3D_LOGERROR("Failed to transmit package file " + name);
@@ -1225,7 +1225,7 @@ void Connection::ProcessNewNode(Node* node)
 
     // Write node's components
     msg_.WriteVLE(node->GetNumNetworkComponents());
-    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
     for (unsigned i = 0; i < components.size(); ++i)
     {
         Component* component = components[i];
@@ -1393,7 +1393,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     // Check for new components
     if (nodeState.componentStates_.size() != node->GetNumNetworkComponents())
     {
-        const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
+        const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
         for (unsigned i = 0; i < components.size(); ++i)
         {
             Component* component = components[i];
@@ -1432,7 +1432,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
     auto* cache = GetSubsystem<ResourceCache>();
     const ea::string& packageCacheDir = GetSubsystem<Network>()->GetPackageCacheDir();
 
-    ea::vector<ea::shared_ptr<PackageFile> > packages = cache->GetPackageFiles();
+    ea::vector<SharedPtr<PackageFile> > packages = cache->GetPackageFiles();
     ea::vector<ea::string> downloadedPackages;
     bool packagesScanned = false;
 
@@ -1479,7 +1479,7 @@ bool Connection::RequestNeededPackages(unsigned numPackages, MemoryBuffer& msg)
             if (!fileName.find(checksumString) && !fileName.substr(9).comparei(name))
             {
                 // Name matches. Check file size and actual checksum to be sure
-                ea::shared_ptr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
+                SharedPtr<PackageFile> newPackage(new PackageFile(context_, packageCacheDir + fileName));
                 if (newPackage->GetTotalSize() == fileSize && newPackage->GetChecksum() == checksum)
                 {
                     // Add the package to the resource system now, as we will need it to load the scene
@@ -1570,7 +1570,7 @@ void Connection::OnPackagesReady()
     {
         // Otherwise start the async loading process
         ea::string extension = GetExtension(sceneFileName_);
-        ea::shared_ptr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
+        SharedPtr<File> file = GetSubsystem<ResourceCache>()->GetFile(sceneFileName_);
         bool success;
 
         if (extension == ".xml")

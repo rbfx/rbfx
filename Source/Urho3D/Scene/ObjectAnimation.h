@@ -75,7 +75,7 @@ public:
     float GetAttributeAnimationSpeed(const ea::string& name) const;
 
     /// Return all attribute animations infos.
-    const ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> >& GetAttributeAnimationInfos() const { return attributeAnimationInfos_; }
+    const ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo> >& GetAttributeAnimationInfos() const { return attributeAnimationInfos_; }
 
     /// Return attribute animation info by name.
     ValueAnimationInfo* GetAttributeAnimationInfo(const ea::string& name) const;
@@ -87,7 +87,7 @@ private:
     void SendAttributeAnimationRemovedEvent(const ea::string& name);
 
     /// Name to attribute animation info mapping.
-    ea::unordered_map<ea::string, ea::shared_ptr<ValueAnimationInfo> > attributeAnimationInfos_;
+    ea::unordered_map<ea::string, SharedPtr<ValueAnimationInfo> > attributeAnimationInfos_;
 };
 
 }

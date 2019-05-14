@@ -728,7 +728,7 @@ void AnimationController::SetNodeAnimationStatesAttr(const VariantVector& value)
         {
             // Note: null animation is allowed here for editing
             const ResourceRef& animRef = value[index++].GetResourceRef();
-            ea::shared_ptr<AnimationState> newState(new AnimationState(GetNode(), cache->GetResource<Animation>(animRef.name_)));
+            SharedPtr<AnimationState> newState(new AnimationState(GetNode(), cache->GetResource<Animation>(animRef.name_)));
             nodeAnimationStates_.push_back(newState);
 
             newState->SetLooped(value[index++].GetBool());
@@ -737,7 +737,7 @@ void AnimationController::SetNodeAnimationStatesAttr(const VariantVector& value)
         else
         {
             // If not enough data, just add an empty animation state
-            ea::shared_ptr<AnimationState> newState(new AnimationState(GetNode(), nullptr));
+            SharedPtr<AnimationState> newState(new AnimationState(GetNode(), nullptr));
             nodeAnimationStates_.push_back(newState);
         }
     }
@@ -855,7 +855,7 @@ AnimationState* AnimationController::AddAnimationState(Animation* animation)
         return model->AddAnimationState(animation);
 
     // Node hierarchy mode
-    ea::shared_ptr<AnimationState> newState(new AnimationState(node_, animation));
+    SharedPtr<AnimationState> newState(new AnimationState(node_, animation));
     nodeAnimationStates_.push_back(newState);
     return newState;
 }

@@ -65,13 +65,13 @@ struct SourceBatch2D
     SourceBatch2D();
 
     /// Owner.
-    ea::weak_ptr<Drawable2D> owner_;
+    WeakPtr<Drawable2D> owner_;
     /// Distance to camera.
     mutable float distance_;
     /// Draw order.
     int drawOrder_;
     /// Material.
-    ea::shared_ptr<Material> material_;
+    SharedPtr<Material> material_;
     /// Vertices.
     ea::vector<Vertex2D> vertices_;
 
@@ -146,7 +146,7 @@ protected:
     /// Source batches dirty flag.
     bool sourceBatchesDirty_;
     /// Renderer2D.
-    ea::weak_ptr<Renderer2D> renderer_;
+    WeakPtr<Renderer2D> renderer_;
 };
 
 }

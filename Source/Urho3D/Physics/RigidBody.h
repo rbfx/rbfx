@@ -270,9 +270,9 @@ private:
     /// Compound collision shape with center of mass offset applied.
     ea::unique_ptr<btCompoundShape> shiftedCompoundShape_;
     /// Physics world.
-    ea::weak_ptr<PhysicsWorld> physicsWorld_;
+    WeakPtr<PhysicsWorld> physicsWorld_;
     /// Smoothed transform, if has one.
-    ea::weak_ptr<SmoothedTransform> smoothedTransform_;
+    WeakPtr<SmoothedTransform> smoothedTransform_;
     /// Constraints that refer to this rigid body.
     ea::vector<Constraint*> constraints_;
     /// Gravity override vector.

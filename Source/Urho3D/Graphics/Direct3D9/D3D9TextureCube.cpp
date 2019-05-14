@@ -215,7 +215,7 @@ bool TextureCube::SetData(CubeMapFace face, unsigned level, int x, int y, int wi
 
 bool TextureCube::SetData(CubeMapFace face, Deserializer& source)
 {
-    ea::shared_ptr<Image> image(context_->CreateObject<Image>());
+    SharedPtr<Image> image(context_->CreateObject<Image>());
     if (!image->Load(source))
         return false;
 
@@ -231,7 +231,7 @@ bool TextureCube::SetData(CubeMapFace face, Image* image, bool useAlpha)
     }
 
     // Use a shared ptr for managing the temporary mip images created during this function
-    ea::shared_ptr<Image> mipImage;
+    SharedPtr<Image> mipImage;
     unsigned memoryUse = 0;
     MaterialQuality quality = QUALITY_HIGH;
     Renderer* renderer = GetSubsystem<Renderer>();

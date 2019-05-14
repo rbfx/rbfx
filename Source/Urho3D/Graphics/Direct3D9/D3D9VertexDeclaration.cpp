@@ -138,7 +138,7 @@ VertexDeclaration::VertexDeclaration(Graphics* graphics, const ea::vector<Vertex
     Create(graphics, elements);
 }
 
-VertexDeclaration::VertexDeclaration(Graphics* graphics, const ea::vector<ea::shared_ptr<VertexBuffer> >& buffers) :
+VertexDeclaration::VertexDeclaration(Graphics* graphics, const ea::vector<SharedPtr<VertexBuffer> >& buffers) :
     declaration_(nullptr)
 {
     ea::vector<VertexDeclarationElement> elements;

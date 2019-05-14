@@ -110,7 +110,7 @@ void Sample::InitTouchInput()
     if (!patchString.empty())
     {
         // Patch the screen joystick layout further on demand
-        ea::shared_ptr<XMLFile> patchFile(new XMLFile(context_));
+        SharedPtr<XMLFile> patchFile(new XMLFile(context_));
         if (patchFile->FromString(patchString))
             layout->Patch(patchFile);
     }
@@ -159,7 +159,7 @@ void Sample::CreateLogo()
 {
     // Get logo texture
     ResourceCache* cache = GetSubsystem<ResourceCache>();
-    Texture2D* logoTexture = cache->GetResource<Texture2D>("Textures/FishBoneLogo.png");
+    Texture2D* logoTexture = cache->GetResource<Texture2D>("Textures/rbfx-logo.png");
     if (!logoTexture)
         return;
 
@@ -196,9 +196,9 @@ void Sample::SetWindowTitleAndIcon()
 {
     ResourceCache* cache = GetSubsystem<ResourceCache>();
     Graphics* graphics = GetSubsystem<Graphics>();
-    Image* icon = cache->GetResource<Image>("Textures/UrhoIcon.png");
+    Image* icon = cache->GetResource<Image>("Textures/rbfx-icon.png");
     graphics->SetWindowIcon(icon);
-    graphics->SetWindowTitle("Urho3D Sample");
+    graphics->SetWindowTitle("rbfx Sample");
 }
 
 void Sample::CreateConsoleAndDebugHud()

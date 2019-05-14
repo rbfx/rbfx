@@ -75,7 +75,7 @@ public:
     unsigned GetUsedVertexAttributes() const { return usedVertexAttributes_; }
 
     /// Return all constant buffers.
-    const ea::shared_ptr<ConstantBuffer>* GetConstantBuffers() const { return &constantBuffers_[0]; }
+    const SharedPtr<ConstantBuffer>* GetConstantBuffers() const { return &constantBuffers_[0]; }
 
     /// Check whether a shader parameter group needs update. Does not actually check whether parameters exist in the shaders.
     bool NeedParameterUpdate(ShaderParameterGroup group, const void* source);
@@ -89,9 +89,9 @@ public:
 
 private:
     /// Vertex shader.
-    ea::weak_ptr<ShaderVariation> vertexShader_;
+    WeakPtr<ShaderVariation> vertexShader_;
     /// Pixel shader.
-    ea::weak_ptr<ShaderVariation> pixelShader_;
+    WeakPtr<ShaderVariation> pixelShader_;
     /// Shader parameters.
     ea::unordered_map<StringHash, ShaderParameter> shaderParameters_;
     /// Texture unit use.
@@ -101,7 +101,7 @@ private:
     /// Used vertex attribute location bitmask.
     unsigned usedVertexAttributes_{};
     /// Constant buffers by binding index.
-    ea::shared_ptr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS * 2];
+    SharedPtr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS * 2];
     /// Remembered shader parameter sources for individual uniform mode.
     const void* parameterSources_[MAX_SHADER_PARAMETER_GROUPS]{};
     /// Shader link error string.

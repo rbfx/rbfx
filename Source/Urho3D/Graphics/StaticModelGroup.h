@@ -83,7 +83,7 @@ private:
     void UpdateNodeIDs() const;
 
     /// Instance nodes.
-    ea::vector<ea::weak_ptr<Node> > instanceNodes_;
+    ea::vector<WeakPtr<Node> > instanceNodes_;
     /// World transforms of valid (existing and visible) instances.
     ea::vector<Matrix3x4> worldTransforms_;
     /// IDs of instance nodes for serialization.

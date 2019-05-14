@@ -162,15 +162,15 @@ public:
     const ea::string& GetPixelShaderDefineExcludes() const { return pixelShaderDefineExcludes_; }
 
     /// Return vertex shaders.
-    ea::vector<ea::shared_ptr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
+    ea::vector<SharedPtr<ShaderVariation> >& GetVertexShaders() { return vertexShaders_; }
 
     /// Return pixel shaders.
-    ea::vector<ea::shared_ptr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
+    ea::vector<SharedPtr<ShaderVariation> >& GetPixelShaders() { return pixelShaders_; }
 
     /// Return vertex shaders with extra defines from the renderpath.
-    ea::vector<ea::shared_ptr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
+    ea::vector<SharedPtr<ShaderVariation> >& GetVertexShaders(const StringHash& extraDefinesHash);
     /// Return pixel shaders with extra defines from the renderpath.
-    ea::vector<ea::shared_ptr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
+    ea::vector<SharedPtr<ShaderVariation> >& GetPixelShaders(const StringHash& extraDefinesHash);
     /// Return the effective vertex shader defines, accounting for excludes. Called internally by Renderer.
     ea::string GetEffectiveVertexShaderDefines() const;
     /// Return the effective pixel shader defines, accounting for excludes. Called internally by Renderer.
@@ -208,13 +208,13 @@ private:
     /// Pixel shader define excludes.
     ea::string pixelShaderDefineExcludes_;
     /// Vertex shaders.
-    ea::vector<ea::shared_ptr<ShaderVariation> > vertexShaders_;
+    ea::vector<SharedPtr<ShaderVariation> > vertexShaders_;
     /// Pixel shaders.
-    ea::vector<ea::shared_ptr<ShaderVariation> > pixelShaders_;
+    ea::vector<SharedPtr<ShaderVariation> > pixelShaders_;
     /// Vertex shaders with extra defines from the renderpath.
-    ea::unordered_map<StringHash, ea::vector<ea::shared_ptr<ShaderVariation> > > extraVertexShaders_;
+    ea::unordered_map<StringHash, ea::vector<SharedPtr<ShaderVariation> > > extraVertexShaders_;
     /// Pixel shaders with extra defines from the renderpath.
-    ea::unordered_map<StringHash, ea::vector<ea::shared_ptr<ShaderVariation> > > extraPixelShaders_;
+    ea::unordered_map<StringHash, ea::vector<SharedPtr<ShaderVariation> > > extraPixelShaders_;
     /// Pass name.
     ea::string name_;
 };
@@ -246,7 +246,7 @@ public:
     /// Reset shader pointers in all passes.
     void ReleaseShaders();
     /// Clone the technique. Passes will be deep copied to allow independent modification.
-    ea::shared_ptr<Technique> Clone(const ea::string& cloneName = EMPTY_STRING) const;
+    SharedPtr<Technique> Clone(const ea::string& cloneName = EMPTY_STRING) const;
 
     /// Return whether requires desktop level hardware.
     bool IsDesktop() const { return isDesktop_; }
@@ -284,7 +284,7 @@ public:
     ea::vector<Pass*> GetPasses() const;
 
     /// Return a clone with added shader compilation defines. Called internally by Material.
-    ea::shared_ptr<Technique> CloneWithDefines(const ea::string& vsDefines, const ea::string& psDefines);
+    SharedPtr<Technique> CloneWithDefines(const ea::string& vsDefines, const ea::string& psDefines);
 
     /// Return a pass type index by name. Allocate new if not used yet.
     static unsigned GetPassIndex(const ea::string& passName);
@@ -312,9 +312,9 @@ private:
     /// Cached desktop GPU support flag.
     bool desktopSupport_;
     /// Passes.
-    ea::vector<ea::shared_ptr<Pass> > passes_;
+    ea::vector<SharedPtr<Pass> > passes_;
     /// Cached clones with added shader compilation defines.
-    ea::unordered_map<ea::pair<StringHash, StringHash>, ea::shared_ptr<Technique> > cloneTechniques_;
+    ea::unordered_map<ea::pair<StringHash, StringHash>, SharedPtr<Technique> > cloneTechniques_;
 
     /// Pass index assignments.
     static ea::unordered_map<ea::string, unsigned> passIndices;

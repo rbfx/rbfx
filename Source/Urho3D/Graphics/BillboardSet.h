@@ -192,11 +192,11 @@ private:
     void CalculateFixedScreenSize(const FrameInfo& frame);
 
     /// Geometry.
-    ea::shared_ptr<Geometry> geometry_;
+    SharedPtr<Geometry> geometry_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Index buffer.
-    ea::shared_ptr<IndexBuffer> indexBuffer_;
+    SharedPtr<IndexBuffer> indexBuffer_;
     /// Transform matrices for position and billboard orientation.
     Matrix3x4 transforms_[2];
     /// Buffers need resize flag.

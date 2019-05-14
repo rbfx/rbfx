@@ -41,7 +41,7 @@ class ResourceCache;
 struct URHO3D_API BackgroundLoadItem
 {
     /// Resource.
-    ea::shared_ptr<Resource> resource_;
+    SharedPtr<Resource> resource_;
     /// Resources depended on for loading.
     ea::hash_set<ea::pair<StringHash, StringHash> > dependencies_;
     /// Resources that depend on this resource's loading.

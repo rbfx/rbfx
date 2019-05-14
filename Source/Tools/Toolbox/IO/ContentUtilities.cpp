@@ -95,7 +95,7 @@ ContentType GetContentType(const ea::string& resourcePath)
     if (extension == ".xml")
     {
         auto systemUI = (SystemUI*)ui::GetIO().UserData;
-        ea::shared_ptr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
+        SharedPtr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
         if (!xml)
             return CTYPE_UNKNOWN;
 

@@ -432,7 +432,7 @@ void PhysicsWorld2D::AddRigidBody(RigidBody2D* rigidBody)
     if (!rigidBody)
         return;
 
-    ea::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
+    WeakPtr<RigidBody2D> rigidBodyPtr(rigidBody);
     if (rigidBodies_.contains(rigidBodyPtr))
         return;
 
@@ -444,7 +444,7 @@ void PhysicsWorld2D::RemoveRigidBody(RigidBody2D* rigidBody)
     if (!rigidBody)
         return;
 
-    ea::weak_ptr<RigidBody2D> rigidBodyPtr(rigidBody);
+    WeakPtr<RigidBody2D> rigidBodyPtr(rigidBody);
     rigidBodies_.erase_first(rigidBodyPtr);
 }
 

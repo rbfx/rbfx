@@ -391,7 +391,7 @@ Input::Input(Context* context) :
 #if defined(__ANDROID__)
     SDL_SetHint(SDL_HINT_ANDROID_SEPARATE_MOUSE_AND_TOUCH, "1");
 #elif defined(__EMSCRIPTEN__)
-    emscriptenInput_ = new EmscriptenInput(this);
+    emscriptenInput_ = ea::make_unique<EmscriptenInput>(this);
 #endif
 
     // Try to initialize right now, but skip if screen mode is not yet set
@@ -1002,12 +1002,12 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     }
 
     auto* ui = GetSubsystem<UI>();
-    ea::shared_ptr<UIElement> screenJoystick = ui->LoadLayout(layoutFile, styleFile);
+    SharedPtr<UIElement> screenJoystick = ui->LoadLayout(layoutFile, styleFile);
     if (!screenJoystick)     // Error is already logged
         return -1;
 
     screenJoystick->SetSize(ui->GetRoot()->GetSize());
-    ui->GetRoot()->AddChild(screenJoystick.get());
+    ui->GetRoot()->AddChild(screenJoystick.Get());
 
     // Get an unused ID for the screen joystick
     /// \todo After a real joystick has been plugged in 1073741824 times, the ranges will overlap
@@ -1023,10 +1023,10 @@ SDL_JoystickID Input::AddScreenJoystick(XMLFile* layoutFile, XMLFile* styleFile)
     unsigned numButtons = 0;
     unsigned numAxes = 0;
     unsigned numHats = 0;
-    const ea::vector<ea::shared_ptr<UIElement> >& children = state.screenJoystick_->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& children = state.screenJoystick_->GetChildren();
     for (auto iter = children.begin(); iter != children.end(); ++iter)
     {
-        UIElement* element = iter->get();
+        UIElement* element = iter->Get();
         ea::string name = element->GetName();
         if (name.starts_with("Button"))
         {
@@ -2468,7 +2468,7 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
     // Only interested in events from screen joystick(s)
     TouchState& state = touches_[eventData[P_TOUCHID].GetInt()];
     IntVector2 position(int(state.position_.x_ / GetSubsystem<UI>()->GetScale()), int(state.position_.y_ / GetSubsystem<UI>()->GetScale()));
-    UIElement* element = eventType == E_TOUCHBEGIN ? GetSubsystem<UI>()->GetElementAt(position) : state.touchedElement_.get();
+    UIElement* element = eventType == E_TOUCHBEGIN ? GetSubsystem<UI>()->GetElementAt(position) : state.touchedElement_.Get();
     if (!element)
         return;
     Variant variant = element->GetVar(VAR_SCREEN_JOYSTICK_ID);
@@ -2477,7 +2477,7 @@ void Input::HandleScreenJoystickTouch(StringHash eventType, VariantMap& eventDat
     SDL_JoystickID joystickID = variant.GetInt();
 
     if (eventType == E_TOUCHEND)
-        state.touchedElement_.reset();
+        state.touchedElement_.Reset();
     else
         state.touchedElement_ = element;
 

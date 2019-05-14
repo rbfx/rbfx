@@ -58,7 +58,7 @@ struct Batch
         renderOrder_(rhs.material_ ? rhs.material_->GetRenderOrder() : DEFAULT_RENDER_ORDER),
         isBase_(false),
         geometry_(rhs.geometry_),
-        material_(rhs.material_.get()),
+        material_(rhs.material_.Get()),
         worldTransform_(rhs.worldTransform_),
         numWorldTransforms_(rhs.numWorldTransforms_),
         instancingData_(rhs.instancingData_),

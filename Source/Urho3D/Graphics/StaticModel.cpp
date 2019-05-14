@@ -250,7 +250,7 @@ void StaticModel::SetModel(Model* model)
 
         // Copy the subgeometry & LOD level structure
         SetNumGeometries(model->GetNumGeometries());
-        const ea::vector<ea::vector<ea::shared_ptr<Geometry> > >& geometries = model->GetGeometries();
+        const ea::vector<ea::vector<SharedPtr<Geometry> > >& geometries = model->GetGeometries();
         const ea::vector<Vector3>& geometryCenters = model->GetGeometryCenters();
         const Matrix3x4* worldTransform = node_ ? &node_->GetWorldTransform() : nullptr;
         for (unsigned i = 0; i < geometries.size(); ++i)
@@ -307,7 +307,7 @@ void StaticModel::ApplyMaterialList(const ea::string& fileName)
         useFileName = ReplaceExtension(model_->GetName(), ".txt");
 
     auto* cache = GetSubsystem<ResourceCache>();
-    ea::shared_ptr<File> file = cache->GetFile(useFileName, false);
+    SharedPtr<File> file = cache->GetFile(useFileName, false);
     if (!file)
         return;
 
@@ -422,7 +422,7 @@ void StaticModel::CalculateLodLevels()
 {
     for (unsigned i = 0; i < batches_.size(); ++i)
     {
-        const ea::vector<ea::shared_ptr<Geometry> >& batchGeometries = geometries_[i];
+        const ea::vector<SharedPtr<Geometry> >& batchGeometries = geometries_[i];
         // If only one LOD geometry, no reason to go through the LOD calculation
         if (batchGeometries.size() <= 1)
             continue;
@@ -447,7 +447,7 @@ void StaticModel::CalculateLodLevels()
 void StaticModel::HandleModelReloadFinished(StringHash eventType, VariantMap& eventData)
 {
     Model* currentModel = model_;
-    model_.reset(); // Set null to allow to be re-set
+    model_.Reset(); // Set null to allow to be re-set
     SetModel(currentModel);
 }
 

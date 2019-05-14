@@ -593,7 +593,7 @@ void ParticleEmitter::HandleScenePostUpdate(StringHash eventType, VariantMap& ev
         sendFinishedEvent_ = false;
 
         // Make a weak pointer to self to check for destruction during event handling
-        ea::weak_ptr<ParticleEmitter> self(this);
+        WeakPtr<ParticleEmitter> self(this);
 
         using namespace ParticleEffectFinished;
 
@@ -603,7 +603,7 @@ void ParticleEmitter::HandleScenePostUpdate(StringHash eventType, VariantMap& ev
 
         node_->SendEvent(E_PARTICLEEFFECTFINISHED, eventData);
 
-        if (self.expired())
+        if (self.Expired())
             return;
 
         DoAutoRemove(autoRemove_);

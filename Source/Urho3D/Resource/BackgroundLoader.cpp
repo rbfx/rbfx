@@ -79,7 +79,7 @@ void BackgroundLoader::ThreadFunction()
             backgroundLoadMutex_.Release();
 
             bool success = false;
-            ea::shared_ptr<File> file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
+            SharedPtr<File> file = owner_->GetFile(resource->GetName(), item.sendEventOnFailure_);
             if (file)
             {
                 resource->SetAsyncLoadState(ASYNC_LOADING);

@@ -86,7 +86,7 @@ protected:
     Matrix4 projection_;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
-    ea::shared_ptr<Texture2D> fontTexture_;
+    SharedPtr<Texture2D> fontTexture_;
     ea::vector<float> fontSizes_;
     ImGuiContext* imContext_;
 

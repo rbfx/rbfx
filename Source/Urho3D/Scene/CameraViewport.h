@@ -90,7 +90,7 @@ protected:
     ///
     IntRect screenRect_;
     /// Viewport used for rendering.
-    ea::shared_ptr<Viewport> viewport_;
+    SharedPtr<Viewport> viewport_;
     /// Current selected renderpath.
     ResourceRef renderPath_;
 

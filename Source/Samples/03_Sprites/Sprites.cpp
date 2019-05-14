@@ -75,7 +75,7 @@ void Sprites::CreateSprites()
     for (unsigned i = 0; i < NUM_SPRITES; ++i)
     {
         // Create a new sprite, set it to use the texture
-        ea::shared_ptr<Sprite> sprite(new Sprite(context_));
+        SharedPtr<Sprite> sprite(new Sprite(context_));
         sprite->SetTexture(decalTex);
 
         // The UI root element is as big as the rendering window, set random position within it

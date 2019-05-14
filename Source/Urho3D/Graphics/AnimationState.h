@@ -73,7 +73,7 @@ struct URHO3D_API AnimationStateTrack
     /// Bone pointer.
     Bone* bone_;
     /// Scene node pointer.
-    ea::weak_ptr<Node> node_;
+    WeakPtr<Node> node_;
     /// Blending weight.
     float weight_;
     /// Last key frame.
@@ -169,11 +169,11 @@ private:
     void ApplyTrack(AnimationStateTrack& stateTrack, float weight, bool silent);
 
     /// Animated model (model mode.)
-    ea::weak_ptr<AnimatedModel> model_;
+    WeakPtr<AnimatedModel> model_;
     /// Root scene node (node hierarchy mode.)
-    ea::weak_ptr<Node> node_;
+    WeakPtr<Node> node_;
     /// Animation.
-    ea::shared_ptr<Animation> animation_;
+    SharedPtr<Animation> animation_;
     /// Start bone.
     Bone* startBone_;
     /// Per-track data.

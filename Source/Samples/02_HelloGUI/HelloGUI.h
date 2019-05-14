@@ -80,9 +80,9 @@ private:
     void HandleClosePressed(StringHash eventType, VariantMap& eventData);
 
     /// The Window.
-    ea::shared_ptr<Window> window_;
+    SharedPtr<Window> window_;
     /// The UI's root UIElement.
-    ea::shared_ptr<UIElement> uiRoot_;
+    SharedPtr<UIElement> uiRoot_;
     /// Remembered drag begin position.
     IntVector2 dragBeginPosition_;
 };

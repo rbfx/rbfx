@@ -113,7 +113,7 @@ void CleanupGeometryCacheImpl(CollisionGeometryDataCache& cache)
     for (auto i = cache.begin(); i != cache.end();)
     {
         auto current = i++;
-        if (current->second.use_count() == 1)
+        if (current->second.Refs() == 1)
             cache.erase(current);
     }
 }
@@ -868,12 +868,12 @@ void PhysicsWorld::SendCollisionEvents()
                 !bodyA->IsActive() && !bodyB->IsActive())
                 continue;
 
-            ea::weak_ptr<RigidBody> bodyWeakA(bodyA);
-            ea::weak_ptr<RigidBody> bodyWeakB(bodyB);
+            WeakPtr<RigidBody> bodyWeakA(bodyA);
+            WeakPtr<RigidBody> bodyWeakB(bodyB);
 
             // First only store the collision pair as weak pointers and the manifold pointer, so user code can safely destroy
             // objects during collision event handling
-            ea::pair<ea::weak_ptr<RigidBody>, ea::weak_ptr<RigidBody> > bodyPair;
+            ea::pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> > bodyPair;
             if (bodyA < bodyB)
             {
                 bodyPair = ea::make_pair(bodyWeakA, bodyWeakB);
@@ -896,8 +896,8 @@ void PhysicsWorld::SendCollisionEvents()
 
             Node* nodeA = bodyA->GetNode();
             Node* nodeB = bodyB->GetNode();
-            ea::weak_ptr<Node> nodeWeakA(nodeA);
-            ea::weak_ptr<Node> nodeWeakB(nodeB);
+            WeakPtr<Node> nodeWeakA(nodeA);
+            WeakPtr<Node> nodeWeakB(nodeB);
 
             bool trigger = bodyA->IsTrigger() || bodyB->IsTrigger();
             bool newCollision = !previousCollisions_.contains(i->first);
@@ -1040,8 +1040,8 @@ void PhysicsWorld::SendCollisionEvents()
 
                 Node* nodeA = bodyA->GetNode();
                 Node* nodeB = bodyB->GetNode();
-                ea::weak_ptr<Node> nodeWeakA(nodeA);
-                ea::weak_ptr<Node> nodeWeakB(nodeB);
+                WeakPtr<Node> nodeWeakA(nodeA);
+                WeakPtr<Node> nodeWeakB(nodeB);
 
                 physicsCollisionData_[PhysicsCollisionEnd::P_BODYA] = bodyA;
                 physicsCollisionData_[PhysicsCollisionEnd::P_BODYB] = bodyB;

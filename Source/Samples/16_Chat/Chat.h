@@ -90,17 +90,17 @@ private:
     /// Strings printed so far.
     ea::vector<ea::string> chatHistory_;
     /// Chat text element.
-    ea::shared_ptr<Text> chatHistoryText_;
+    SharedPtr<Text> chatHistoryText_;
     /// Button container element.
-    ea::shared_ptr<UIElement> buttonContainer_;
+    SharedPtr<UIElement> buttonContainer_;
     /// Server address / chat message line editor element.
-    ea::shared_ptr<LineEdit> textEdit_;
+    SharedPtr<LineEdit> textEdit_;
     /// Send button.
-    ea::shared_ptr<Button> sendButton_;
+    SharedPtr<Button> sendButton_;
     /// Connect button.
-    ea::shared_ptr<Button> connectButton_;
+    SharedPtr<Button> connectButton_;
     /// Disconnect button.
-    ea::shared_ptr<Button> disconnectButton_;
+    SharedPtr<Button> disconnectButton_;
     /// Start server button.
-    ea::shared_ptr<Button> startServerButton_;
+    SharedPtr<Button> startServerButton_;
 };

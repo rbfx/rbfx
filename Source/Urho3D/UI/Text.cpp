@@ -176,7 +176,7 @@ void Text::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& vertexDat
 
     // Text batch
     TextEffect textEffect = font_->IsSDFFont() ? TE_NONE : textEffect_;
-    const ea::vector<ea::shared_ptr<Texture2D> >& textures = face->GetTextures();
+    const ea::vector<SharedPtr<Texture2D> >& textures = face->GetTextures();
     for (unsigned n = 0; n < textures.size() && n < pageGlyphLocations_.size(); ++n)
     {
         // One batch per texture/page

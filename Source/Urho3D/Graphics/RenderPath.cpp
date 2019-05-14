@@ -309,9 +309,9 @@ RenderPath::RenderPath() = default;
 
 RenderPath::~RenderPath() = default;
 
-ea::shared_ptr<RenderPath> RenderPath::Clone()
+SharedPtr<RenderPath> RenderPath::Clone()
 {
-    ea::shared_ptr<RenderPath> newRenderPath(new RenderPath());
+    SharedPtr<RenderPath> newRenderPath(new RenderPath());
     newRenderPath->renderTargets_ = renderTargets_;
     newRenderPath->commands_ = commands_;
     return newRenderPath;

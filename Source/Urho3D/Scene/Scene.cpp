@@ -224,7 +224,7 @@ bool Scene::LoadXML(Deserializer& source)
 
     StopAsyncLoading();
 
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return false;
 
@@ -247,7 +247,7 @@ bool Scene::LoadJSON(Deserializer& source)
 
     StopAsyncLoading();
 
-    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return false;
 
@@ -268,7 +268,7 @@ bool Scene::SaveXML(Serializer& dest, const ea::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneXML");
 
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     XMLElement rootElem = xml->CreateRoot("scene");
     if (!SaveXML(rootElem))
         return false;
@@ -290,7 +290,7 @@ bool Scene::SaveJSON(Serializer& dest, const ea::string& indentation) const
 {
     URHO3D_PROFILE("SaveSceneJSON");
 
-    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     JSONValue rootVal;
     if (!SaveJSON(rootVal))
         return false;
@@ -393,7 +393,7 @@ bool Scene::LoadAsyncXML(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(*file))
         return false;
 
@@ -462,7 +462,7 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 
     StopAsyncLoading();
 
-    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(*file))
         return false;
 
@@ -520,9 +520,9 @@ bool Scene::LoadAsyncJSON(File* file, LoadMode mode)
 void Scene::StopAsyncLoading()
 {
     asyncLoading_ = false;
-    asyncProgress_.file_.reset();
-    asyncProgress_.xmlFile_.reset();
-    asyncProgress_.jsonFile_.reset();
+    asyncProgress_.file_.Reset();
+    asyncProgress_.xmlFile_.Reset();
+    asyncProgress_.jsonFile_.Reset();
     asyncProgress_.xmlElement_ = XMLElement::EMPTY;
     asyncProgress_.jsonIndex_ = 0;
     asyncProgress_.resources_.clear();
@@ -600,7 +600,7 @@ Node* Scene::InstantiateJSON(const JSONValue& source, const Vector3& position, c
 
 Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    ea::shared_ptr<XMLFile> xml(context_->CreateObject<XMLFile>());
+    SharedPtr<XMLFile> xml(context_->CreateObject<XMLFile>());
     if (!xml->Load(source))
         return nullptr;
 
@@ -609,7 +609,7 @@ Node* Scene::InstantiateXML(Deserializer& source, const Vector3& position, const
 
 Node* Scene::InstantiateJSON(Deserializer& source, const Vector3& position, const Quaternion& rotation, CreateMode mode)
 {
-    ea::shared_ptr<JSONFile> json(context_->CreateObject<JSONFile>());
+    SharedPtr<JSONFile> json(context_->CreateObject<JSONFile>());
     if (!json->Load(source))
         return nullptr;
 
@@ -684,7 +684,7 @@ void Scene::AddRequiredPackageFile(PackageFile* package)
     if (!package || !package->GetNumFiles())
         return;
 
-    requiredPackageFiles_.push_back(ea::shared_ptr<PackageFile>(package));
+    requiredPackageFiles_.push_back(SharedPtr<PackageFile>(package));
 }
 
 void Scene::ClearRequiredPackageFiles()
@@ -963,10 +963,10 @@ void Scene::NodeAdded(Node* node)
     }
 
     // Add already created components and child nodes now
-    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
     for (auto i = components.begin(); i != components.end(); ++i)
         ComponentAdded(*i);
-    const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
+    const ea::vector<SharedPtr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
         NodeAdded(*i);
 }
@@ -1006,10 +1006,10 @@ void Scene::NodeRemoved(Node* node)
     }
 
     // Remove components and child nodes as well
-    const ea::vector<ea::shared_ptr<Component> >& components = node->GetComponents();
+    const ea::vector<SharedPtr<Component> >& components = node->GetComponents();
     for (auto i = components.begin(); i != components.end(); ++i)
         ComponentRemoved(*i);
-    const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
+    const ea::vector<SharedPtr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
         NodeRemoved(*i);
 }

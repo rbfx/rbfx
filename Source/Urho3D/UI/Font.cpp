@@ -119,7 +119,7 @@ bool Font::SaveXML(Serializer& dest, int pointSize, bool usedGlyphs, const ea::s
 
     URHO3D_PROFILE("FontSaveXML");
 
-    ea::shared_ptr<FontFaceBitmap> packedFontFace(new FontFaceBitmap(this));
+    SharedPtr<FontFaceBitmap> packedFontFace(new FontFaceBitmap(this));
     if (!packedFontFace->Load(fontFace, usedGlyphs))
         return false;
 
@@ -193,7 +193,7 @@ void Font::LoadParameters()
 {
     auto* cache = GetSubsystem<ResourceCache>();
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
-    ea::shared_ptr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
+    SharedPtr<XMLFile> xml = cache->GetTempResource<XMLFile>(xmlName, false);
     if (!xml)
         return;
 
@@ -222,7 +222,7 @@ void Font::LoadParameters()
 
 FontFace* Font::GetFaceFreeType(float pointSize)
 {
-    ea::shared_ptr<FontFace> newFace(new FontFaceFreeType(this));
+    SharedPtr<FontFace> newFace(new FontFaceFreeType(this));
     if (!newFace->Load(&fontData_[0], fontDataSize_, pointSize))
         return nullptr;
 
@@ -233,7 +233,7 @@ FontFace* Font::GetFaceFreeType(float pointSize)
 
 FontFace* Font::GetFaceBitmap(float pointSize)
 {
-    ea::shared_ptr<FontFace> newFace(new FontFaceBitmap(this));
+    SharedPtr<FontFace> newFace(new FontFaceBitmap(this));
     if (!newFace->Load(&fontData_[0], fontDataSize_, pointSize))
         return nullptr;
 

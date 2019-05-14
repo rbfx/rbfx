@@ -94,8 +94,8 @@ namespace Urho3D
 
 class Context;
 
-using ConstantBufferMap = ea::unordered_map<unsigned, ea::shared_ptr<ConstantBuffer> >;
-using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, ea::shared_ptr<ShaderProgram> >;
+using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer> >;
+using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram> >;
 
 /// Cached state of a frame buffer object
 struct FrameBufferObject
@@ -164,7 +164,7 @@ private:
     /// Last used instance data offset.
     unsigned lastInstanceOffset_{};
     /// Map for additional depth textures, to emulate Direct3D9 ability to mix render texture and backbuffer rendering.
-    ea::unordered_map<unsigned, ea::shared_ptr<Texture2D> > depthTextures_;
+    ea::unordered_map<unsigned, SharedPtr<Texture2D> > depthTextures_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_{};
     /// Linked shader programs.

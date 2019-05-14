@@ -532,7 +532,7 @@ Material* Terrain::GetMaterial() const
 
 TerrainPatch* Terrain::GetPatch(unsigned index) const
 {
-    return index < patches_.size() ? patches_[index].get() : nullptr;
+    return index < patches_.size() ? patches_[index].Get() : nullptr;
 }
 
 TerrainPatch* Terrain::GetPatch(int x, int z) const
@@ -1074,7 +1074,7 @@ void Terrain::CreateGeometry()
                         patch->SetOccludee(occludee_);
                     }
 
-                    patches_.push_back(ea::weak_ptr<TerrainPatch>(patch));
+                    patches_.push_back(WeakPtr<TerrainPatch>(patch));
                 }
             }
         }

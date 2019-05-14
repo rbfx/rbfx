@@ -106,7 +106,7 @@ void ShaderProgram::Release()
         for (bool& useTextureUnit : useTextureUnits_)
             useTextureUnit = false;
         for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-            constantBuffers_[i].reset();
+            constantBuffers_[i].Reset();
     }
 }
 

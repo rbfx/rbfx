@@ -96,7 +96,7 @@ private:
     void Dispose();
 
     /// Spine sprite.
-    ea::shared_ptr<Sprite2D> sprite_;
+    SharedPtr<Sprite2D> sprite_;
 
 #ifdef URHO3D_SPINE
     /// Spine json data.
@@ -114,9 +114,9 @@ private:
     /// Sprite sheet file path.
     ea::string spriteSheetFilePath_;
     /// Sprite sheet.
-    ea::shared_ptr<SpriteSheet2D> spriteSheet_;
+    SharedPtr<SpriteSheet2D> spriteSheet_;
     /// Spriter sprites.
-    ea::unordered_map<unsigned, ea::shared_ptr<Sprite2D> > spriterFileSprites_;
+    ea::unordered_map<unsigned, SharedPtr<Sprite2D> > spriterFileSprites_;
 };
 
 }

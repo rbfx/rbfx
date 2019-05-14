@@ -69,7 +69,7 @@ struct URHO3D_API TouchState
     /// Finger pressure.
     float pressure_;
     /// Last touched UI element from screen joystick.
-    ea::weak_ptr<UIElement> touchedElement_;
+    WeakPtr<UIElement> touchedElement_;
 };
 
 /// %Input state for a joystick.
@@ -367,7 +367,7 @@ private:
 #endif
 
     /// Graphics subsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// Key down state.
     ea::hash_set<int> keyDown_;
     /// Key pressed state.

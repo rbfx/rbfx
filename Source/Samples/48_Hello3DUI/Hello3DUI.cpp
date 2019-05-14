@@ -215,7 +215,7 @@ void Hello3DUI::InitScene()
 
     // Set up a viewport so 3D scene can be visible.
     auto* renderer = GetSubsystem<Renderer>();
-    ea::shared_ptr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
+    SharedPtr<Viewport> viewport(new Viewport(context_, scene_, cameraNode_->GetComponent<Camera>()));
     renderer->SetViewport(0, viewport);
 
     // Subscribe to update event and animate cube and handle input.

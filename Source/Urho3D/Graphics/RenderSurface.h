@@ -124,9 +124,9 @@ public:
 
 private:
     /// Graphics subsystem.
-    ea::weak_ptr<Graphics> graphics_;
+    WeakPtr<Graphics> graphics_;
     /// Parent texture.
-    ea::weak_ptr<Texture> parentTexture_;
+    WeakPtr<Texture> parentTexture_;
 
     union
     {
@@ -147,11 +147,11 @@ private:
     };
 
     /// Viewports.
-    ea::vector<ea::shared_ptr<Viewport> > viewports_;
+    ea::vector<SharedPtr<Viewport> > viewports_;
     /// Linked color buffer.
-    ea::weak_ptr<RenderSurface> linkedRenderTarget_;
+    WeakPtr<RenderSurface> linkedRenderTarget_;
     /// Linked depth buffer.
-    ea::weak_ptr<RenderSurface> linkedDepthStencil_;
+    WeakPtr<RenderSurface> linkedDepthStencil_;
     /// Update mode for viewports.
     RenderSurfaceUpdateMode updateMode_{SURFACE_UPDATEVISIBLE};
     /// Update queued flag.

@@ -56,7 +56,7 @@ MessageBox::MessageBox(Context* context, const ea::string& messageString, const 
     auto* ui = GetSubsystem<UI>();
     UIElement* root = ui->GetRoot();
     {
-        ea::shared_ptr<UIElement> holder = ui->LoadLayout(layoutFile, styleFile);
+        SharedPtr<UIElement> holder = ui->LoadLayout(layoutFile, styleFile);
         if (!holder)    // Error is already logged
             return;
         window_ = holder;

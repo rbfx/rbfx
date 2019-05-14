@@ -59,11 +59,11 @@ protected:
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
     /// Scene which is rendered by this view.
-    ea::shared_ptr<Scene> scene_;
+    SharedPtr<Scene> scene_;
     /// Texture to which scene is rendered.
-    ea::shared_ptr<Texture2D> texture_;
+    SharedPtr<Texture2D> texture_;
     /// Viewport which defines rendering area.
-    ea::shared_ptr<Viewport> viewport_;
+    SharedPtr<Viewport> viewport_;
 };
 
 }

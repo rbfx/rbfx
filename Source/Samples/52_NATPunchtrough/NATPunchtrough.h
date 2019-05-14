@@ -103,21 +103,21 @@ private:
     void HandleClientDisconnected(StringHash eventType, VariantMap& eventData);
 
     /// NAT master server address
-    ea::shared_ptr<LineEdit> natServerAddress_;
+    SharedPtr<LineEdit> natServerAddress_;
     /// NAT master server port
-    ea::shared_ptr<LineEdit> natServerPort_;
+    SharedPtr<LineEdit> natServerPort_;
     /// Save NAT settings button
-    ea::shared_ptr<Button> saveNatSettingsButton_;
+    SharedPtr<Button> saveNatSettingsButton_;
     /// Start server button
-    ea::shared_ptr<Button> startServerButton_;
+    SharedPtr<Button> startServerButton_;
     /// Remote server GUID input field
-    ea::shared_ptr<LineEdit> serverGuid_;
+    SharedPtr<LineEdit> serverGuid_;
     /// Connect button
-    ea::shared_ptr<Button> connectButton_;
+    SharedPtr<Button> connectButton_;
     /// Log history text element
-    ea::shared_ptr<Text> logHistoryText_;
+    SharedPtr<Text> logHistoryText_;
     /// Log messages
     ea::vector<ea::string> logHistory_;
     /// Created server GUID field
-    ea::shared_ptr<LineEdit> guid_;
+    SharedPtr<LineEdit> guid_;
 };

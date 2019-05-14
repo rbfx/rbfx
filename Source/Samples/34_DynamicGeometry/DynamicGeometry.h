@@ -80,7 +80,7 @@ private:
     void HandleUpdate(StringHash eventType, VariantMap& eventData);
 
     /// Cloned models' vertex buffers that we will animate.
-    ea::vector<ea::shared_ptr<VertexBuffer> > animatingBuffers_;
+    ea::vector<SharedPtr<VertexBuffer> > animatingBuffers_;
     /// Original vertex positions for the sphere model.
     ea::vector<Vector3> originalVertices_;
     /// If the vertices are duplicates, indices to the original vertices (to allow seamless animation.)

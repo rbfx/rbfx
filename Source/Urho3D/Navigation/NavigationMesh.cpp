@@ -999,7 +999,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
             info.component_ = area;
             info.boundingBox_ = area->GetWorldBoundingBox();
             geometryList.push_back(info);
-            areas_.push_back(ea::weak_ptr<NavArea>(area));
+            areas_.push_back(WeakPtr<NavArea>(area));
         }
     }
 }
@@ -1076,7 +1076,7 @@ void NavigationMesh::CollectGeometries(ea::vector<NavigationGeometryInfo>& geome
 
     if (recursive)
     {
-        const ea::vector<ea::shared_ptr<Node> >& children = node->GetChildren();
+        const ea::vector<SharedPtr<Node> >& children = node->GetChildren();
         for (unsigned i = 0; i < children.size(); ++i)
             CollectGeometries(geometryList, children[i], processedNodes, recursive);
     }

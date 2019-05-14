@@ -139,9 +139,9 @@ public:
         auto* overlay = static_cast<UIElement*>(eventData[UIMouseClick::P_ELEMENT].GetPtr());
         if (overlay)
         {
-            const ea::vector<ea::shared_ptr<UIElement> >& children = overlayContainer_->GetChildren();
+            const ea::vector<SharedPtr<UIElement> >& children = overlayContainer_->GetChildren();
             auto i = children.find(
-                ea::shared_ptr<UIElement>(overlay));
+                SharedPtr<UIElement>(overlay));
             if (i != children.end())
                 listView_->ToggleExpand((unsigned)(i - children.begin()));
         }
@@ -399,7 +399,7 @@ void ListView::InsertItem(unsigned index, UIElement* item, UIElement* parentItem
         SetItemExpanded(item, item->IsVisible());
 
         // Use the 'overrided' version to insert the child item
-        static_cast<HierarchyContainer*>(contentElement_.get())->InsertChild(index, item);
+        static_cast<HierarchyContainer*>(contentElement_.Get())->InsertChild(index, item);
     }
     else
     {
@@ -527,7 +527,7 @@ void ListView::SetSelection(unsigned index)
 void ListView::SetSelections(const ea::vector<unsigned>& indices)
 {
     // Make a weak pointer to self to check for destruction as a response to events
-    ea::weak_ptr<ListView> self(this);
+    WeakPtr<ListView> self(this);
 
     unsigned numItems = GetNumItems();
 
@@ -546,7 +546,7 @@ void ListView::SetSelections(const ea::vector<unsigned>& indices)
             eventData[P_SELECTION] = index;
             SendEvent(E_ITEMDESELECTED, eventData);
 
-            if (self.expired())
+            if (self.Expired())
                 return;
         }
         else
@@ -578,7 +578,7 @@ void ListView::SetSelections(const ea::vector<unsigned>& indices)
                 eventData[P_SELECTION] = *i;
                 SendEvent(E_ITEMSELECTED, eventData);
 
-                if (self.expired())
+                if (self.Expired())
                     return;
             }
         }
@@ -598,7 +598,7 @@ void ListView::SetSelections(const ea::vector<unsigned>& indices)
 void ListView::AddSelection(unsigned index)
 {
     // Make a weak pointer to self to check for destruction as a response to events
-    ea::weak_ptr<ListView> self(this);
+    WeakPtr<ListView> self(this);
 
     if (!multiselect_)
         SetSelection(index);
@@ -618,7 +618,7 @@ void ListView::AddSelection(unsigned index)
             eventData[P_SELECTION] = index;
             SendEvent(E_ITEMSELECTED, eventData);
 
-            if (self.expired())
+            if (self.Expired())
                 return;
 
             ea::quick_sort(selections_.begin(), selections_.end());
@@ -725,7 +725,7 @@ void ListView::SetHierarchyMode(bool enable)
         return;
 
     hierarchyMode_ = enable;
-    ea::shared_ptr<UIElement> container;
+    SharedPtr<UIElement> container;
     if (enable)
     {
         overlayContainer_ = context_->CreateObject<UIElement>();
@@ -743,7 +743,7 @@ void ListView::SetHierarchyMode(bool enable)
         if (overlayContainer_)
         {
             RemoveChild(overlayContainer_);
-            overlayContainer_.reset();
+            overlayContainer_.Reset();
         }
 
         container = context_->CreateObject<UIElement>();
@@ -862,7 +862,7 @@ unsigned ListView::FindItem(UIElement* item) const
     if (item->GetParent() != contentElement_)
         return M_MAX_UNSIGNED;
 
-    const ea::vector<ea::shared_ptr<UIElement> >& children = contentElement_->GetChildren();
+    const ea::vector<SharedPtr<UIElement> >& children = contentElement_->GetChildren();
 
     // Binary search for list item based on screen coordinate Y
     if (contentElement_->GetLayoutMode() == LM_VERTICAL && item->GetHeight())

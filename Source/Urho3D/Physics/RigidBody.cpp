@@ -962,7 +962,7 @@ void RigidBody::AddBodyToWorld()
     {
         // Correct inertia will be calculated below
         btVector3 localInertia(0.0f, 0.0f, 0.0f);
-        body_ = new btRigidBody(mass_, this, shiftedCompoundShape_.get(), localInertia);
+        body_ = ea::make_unique<btRigidBody>(mass_, this, shiftedCompoundShape_.get(), localInertia);
         body_->setUserPointer(this);
 
         // Check for existence of the SmoothedTransform component, which should be created by now in network client mode.

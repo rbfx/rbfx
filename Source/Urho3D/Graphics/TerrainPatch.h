@@ -115,23 +115,23 @@ private:
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
 
     /// Geometry.
-    ea::shared_ptr<Geometry> geometry_;
+    SharedPtr<Geometry> geometry_;
     /// Geometry that is locked to the max LOD level. Used for decals.
-    ea::shared_ptr<Geometry> maxLodGeometry_;
+    SharedPtr<Geometry> maxLodGeometry_;
     /// Geometry that is used for occlusion.
-    ea::shared_ptr<Geometry> occlusionGeometry_;
+    SharedPtr<Geometry> occlusionGeometry_;
     /// Vertex buffer.
-    ea::shared_ptr<VertexBuffer> vertexBuffer_;
+    SharedPtr<VertexBuffer> vertexBuffer_;
     /// Parent terrain.
-    ea::weak_ptr<Terrain> owner_;
+    WeakPtr<Terrain> owner_;
     /// North neighbor patch.
-    ea::weak_ptr<TerrainPatch> north_;
+    WeakPtr<TerrainPatch> north_;
     /// South neighbor patch.
-    ea::weak_ptr<TerrainPatch> south_;
+    WeakPtr<TerrainPatch> south_;
     /// West neighbor patch.
-    ea::weak_ptr<TerrainPatch> west_;
+    WeakPtr<TerrainPatch> west_;
     /// East neighbor patch.
-    ea::weak_ptr<TerrainPatch> east_;
+    WeakPtr<TerrainPatch> east_;
     /// Geometrical error per LOD level.
     ea::vector<float> lodErrors_;
     /// Patch coordinates in the terrain. (0,0) is the northwest corner.

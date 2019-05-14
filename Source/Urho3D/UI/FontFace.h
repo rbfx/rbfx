@@ -92,14 +92,14 @@ public:
     float GetRowHeight() const { return rowHeight_; }
 
     /// Return textures.
-    const ea::vector<ea::shared_ptr<Texture2D> >& GetTextures() const { return textures_; }
+    const ea::vector<SharedPtr<Texture2D> >& GetTextures() const { return textures_; }
 
 protected:
     friend class FontFaceBitmap;
     /// Create a texture for font rendering.
-    ea::shared_ptr<Texture2D> CreateFaceTexture();
+    SharedPtr<Texture2D> CreateFaceTexture();
     /// Load font face texture from image resource.
-    ea::shared_ptr<Texture2D> LoadFaceTexture(const ea::shared_ptr<Image>& image);
+    SharedPtr<Texture2D> LoadFaceTexture(const SharedPtr<Image>& image);
 
     /// Parent font.
     Font* font_{};
@@ -108,7 +108,7 @@ protected:
     /// Kerning mapping.
     ea::unordered_map<unsigned, float> kerningMapping_;
     /// Glyph texture pages.
-    ea::vector<ea::shared_ptr<Texture2D> > textures_;
+    ea::vector<SharedPtr<Texture2D> > textures_;
     /// Point size.
     float pointSize_{};
     /// Row height.

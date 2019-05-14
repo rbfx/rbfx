@@ -116,9 +116,9 @@ protected:
     /// Extra per-geometry data.
     ea::vector<StaticModelGeometryData> geometryData_;
     /// All geometries.
-    ea::vector<ea::vector<ea::shared_ptr<Geometry> > > geometries_;
+    ea::vector<ea::vector<SharedPtr<Geometry> > > geometries_;
     /// Model.
-    ea::shared_ptr<Model> model_;
+    SharedPtr<Model> model_;
     /// Occlusion LOD level.
     unsigned occlusionLodLevel_;
     /// Material list attribute.

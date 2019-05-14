@@ -510,7 +510,7 @@ void Sample2D::CreateBackgroundSprite(TileMapInfo2D info, float scale, const ea:
     // Create rotation animation
     if (animate)
     {
-        ea::shared_ptr<ValueAnimation> animation(new ValueAnimation(context_));
+        SharedPtr<ValueAnimation> animation(new ValueAnimation(context_));
         animation->SetKeyFrame(0, Variant(Quaternion(0.0f, 0.0f, 0.0f)));
         animation->SetKeyFrame(1, Variant(Quaternion(0.0f, 0.0f, 180.0f)));
         animation->SetKeyFrame(2, Variant(Quaternion(0.0f, 0.0f, 0.0f)));

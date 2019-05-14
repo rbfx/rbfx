@@ -75,11 +75,11 @@ public:
     /// Return active scene tab.
     Tab* GetActiveTab() { return activeTab_; }
     /// Return currently open scene tabs.
-    const ea::vector<ea::shared_ptr<Tab>>& GetSceneViews() const { return tabs_; }
+    const ea::vector<SharedPtr<Tab>>& GetSceneViews() const { return tabs_; }
     /// Return a map of names and type hashes from specified category.
     StringVector GetObjectsByCategory(const ea::string& category);
     /// Returns a list of open content tabs/docks/windows. This list does not include utility docks/tabs/windows.
-    const ea::vector<ea::shared_ptr<Tab>>& GetContentTabs() const { return tabs_; }
+    const ea::vector<SharedPtr<Tab>>& GetContentTabs() const { return tabs_; }
     /// Opens project or creates new one.
     void OpenProject(const ea::string& projectPath);
     /// Close current project.
@@ -112,13 +112,13 @@ protected:
     template<typename T> void RegisterSubcommand();
 
     /// List of active scene tabs.
-    ea::vector<ea::shared_ptr<Tab>> tabs_;
+    ea::vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
-    ea::weak_ptr<Tab> activeTab_;
+    WeakPtr<Tab> activeTab_;
     /// Prefix path of CoreData and EditorData.
     ea::string coreResourcePrefixPath_;
     /// Currently loaded project.
-    ea::shared_ptr<Project> project_;
+    SharedPtr<Project> project_;
     /// ID of dockspace root.
     ImGuiID dockspaceId_;
     /// Path to a project that editor should open on the end of the frame.
@@ -132,7 +132,7 @@ protected:
     ///
     ea::string defaultProjectPath_;
     ///
-    ea::vector<ea::shared_ptr<SubCommand>> subCommands_;
+    ea::vector<SharedPtr<SubCommand>> subCommands_;
 };
 
 }

@@ -123,7 +123,7 @@ static const int DEFAULT_FPS = 60;
 static const float DEFAULT_MAX_NETWORK_ANGULAR_VELOCITY = 100.0f;
 
 /// Cache of collision geometry data.
-using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, ea::shared_ptr<CollisionGeometryData> >;
+using CollisionGeometryDataCache = ea::unordered_map<ea::pair<Model*, unsigned>, SharedPtr<CollisionGeometryData> >;
 
 /// Physics simulation world component. Should be added only to the root scene node.
 class URHO3D_API PhysicsWorld : public Component, public btIDebugDraw
@@ -312,7 +312,7 @@ private:
     /// Bullet physics world.
     ea::unique_ptr<btDiscreteDynamicsWorld> world_;
     /// Extra weak pointer to scene to allow for cleanup in case the world is destroyed before other components.
-    ea::weak_ptr<Scene> scene_;
+    WeakPtr<Scene> scene_;
     /// Rigid bodies in the world.
     ea::vector<RigidBody*> rigidBodies_;
     /// Collision shapes in the world.
@@ -320,9 +320,9 @@ private:
     /// Constraints in the world.
     ea::vector<Constraint*> constraints_;
     /// Collision pairs on this frame.
-    ea::unordered_map<ea::pair<ea::weak_ptr<RigidBody>, ea::weak_ptr<RigidBody> >, ManifoldPair> currentCollisions_;
+    ea::unordered_map<ea::pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair> currentCollisions_;
     /// Collision pairs on the previous frame. Used to check if a collision is "new." Manifolds are not guaranteed to exist anymore.
-    ea::unordered_map<ea::pair<ea::weak_ptr<RigidBody>, ea::weak_ptr<RigidBody> >, ManifoldPair> previousCollisions_;
+    ea::unordered_map<ea::pair<WeakPtr<RigidBody>, WeakPtr<RigidBody> >, ManifoldPair> previousCollisions_;
     /// Delayed (parented) world transform assignments.
     ea::unordered_map<RigidBody*, DelayedWorldTransform> delayedWorldTransforms_;
     /// Cache for trimesh geometry data by model and LOD level.

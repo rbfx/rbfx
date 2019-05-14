@@ -310,9 +310,9 @@ void Sound::FixInterpolation()
     }
 }
 
-ea::shared_ptr<SoundStream> Sound::GetDecoderStream() const
+SharedPtr<SoundStream> Sound::GetDecoderStream() const
 {
-    return compressed_ ? ea::shared_ptr<SoundStream>(new OggVorbisSoundStream(this)) : ea::shared_ptr<SoundStream>();
+    return compressed_ ? SharedPtr<SoundStream>(new OggVorbisSoundStream(this)) : SharedPtr<SoundStream>();
 }
 
 float Sound::GetLength() const
@@ -343,7 +343,7 @@ void Sound::LoadParameters()
     auto* cache = GetSubsystem<ResourceCache>();
     ea::string xmlName = ReplaceExtension(GetName(), ".xml");
 
-    ea::shared_ptr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
+    SharedPtr<XMLFile> file(cache->GetTempResource<XMLFile>(xmlName, false));
     if (!file)
         return;
 
