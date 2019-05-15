@@ -60,7 +60,7 @@ MessageBox::MessageBox(Context* context, const ea::string& messageString, const 
         if (!holder)    // Error is already logged
             return;
         window_ = holder;
-        root->AddChild(window_);    // Take ownership of the object before ea::shared_ptr goes out of scope
+        root->AddChild(window_);    // Take ownership of the object before SharedPtr goes out of scope
     }
 
     // Set the title and message strings if they are given
