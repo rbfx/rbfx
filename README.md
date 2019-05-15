@@ -43,7 +43,7 @@ rbfx uses the following third-party libraries:
 - LZ4 1.7.5 (https://github.com/lz4/lz4)
 - MojoShader (https://icculus.org/mojoshader)
 - Open Asset Import Library 4.1.0 (http://assimp.sourceforge.net)
-- pugixml 1.7 (http://pugixml.org)
+- pugixml 1.9 (http://pugixml.org)
 - rapidjson 1.1.0 (https://github.com/miloyip/rapidjson)
 - Recast/Detour (https://github.com/recastnavigation/recastnavigation)
 - SDL 2.0.7 (https://www.libsdl.org)
