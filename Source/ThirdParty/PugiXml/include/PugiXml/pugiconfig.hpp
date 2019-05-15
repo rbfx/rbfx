@@ -24,7 +24,7 @@
 // #define PUGIXML_NO_XPATH
 
 // Uncomment this to disable STL
-#define PUGIXML_NO_STL
+//#define PUGIXML_NO_STL
 
 // Uncomment this to disable exceptions
 #define PUGIXML_NO_EXCEPTIONS
