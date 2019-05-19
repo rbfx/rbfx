@@ -122,6 +122,8 @@ public:
     void AddPolygon(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Vector3& v4, unsigned color, bool depthTest = true);
     /// Add a scene node represented as its coordinate axes.
     void AddNode(Node* node, float scale = 1.0f, bool depthTest = true);
+    /// Add an XYZ frame at the given worldTransform with optional uniform scale.
+    void AddFrame(const Matrix3x4& worldTransform, float scale = 1.0f, Color colorX = Color::RED, Color colorY = Color::GREEN, Color colorZ = Color::BLUE, bool depthTest = true);
     /// Add a bounding box.
     void AddBoundingBox(const BoundingBox& box, const Color& color, bool depthTest = true, bool solid = false);
     /// Add a bounding box with transform.

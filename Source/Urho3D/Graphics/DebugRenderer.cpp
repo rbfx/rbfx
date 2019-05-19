@@ -158,6 +158,24 @@ void DebugRenderer::AddNode(Node* node, float scale, bool depthTest)
     AddLine(start, start + rotation * (scale * Vector3::FORWARD), Color::BLUE.ToUInt(), depthTest);
 }
 
+
+void DebugRenderer::AddFrame(const Matrix3x4& worldTransform, float scale, Color colorX, Color colorY, Color colorZ, bool depthTest)
+{
+    Vector3 origin = Vector3::ZERO;
+    Vector3 x = Vector3(1.0f, 0, 0) * scale;
+    Vector3 y = Vector3(0, 1.0f, 0) * scale;
+    Vector3 z = Vector3(0, 0, 1.0f) * scale;
+
+    origin = worldTransform * origin;
+    x = worldTransform * x;
+    y = worldTransform * y;
+    z = worldTransform * z;
+
+    AddLine(origin, x, colorX, depthTest);
+    AddLine(origin, y, colorY, depthTest);
+    AddLine(origin, z, colorZ, depthTest);
+}
+
 void DebugRenderer::AddBoundingBox(const BoundingBox& box, const Color& color, bool depthTest, bool solid)
 {
     const Vector3& min = box.min_;
