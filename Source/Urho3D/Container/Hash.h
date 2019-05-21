@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "../Container/Ptr.h"
+
 #include <cstddef>
 #include <type_traits>
 
