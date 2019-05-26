@@ -670,6 +670,54 @@ void StringToBuffer(ea::vector<unsigned char>& dest, const char* source)
         dest[index] = (unsigned char)value;
 }
 
+void BufferToHexString(ea::string& dest, const void* data, unsigned size)
+{
+    dest.resize(size * 2);
+
+    const auto* bytes = static_cast<const unsigned char*>(data);
+    for (unsigned i = 0; i < size * 2; ++i)
+    {
+        const unsigned digit = i % 2
+            ? bytes[i / 2] & 0xf
+            : bytes[i / 2] >> 4;
+
+        assert(digit < 16);
+        if (digit < 10)
+            dest[i] = '0' + digit;
+        else
+            dest[i] = 'a' + digit - 10;
+    }
+}
+
+bool HexStringToBuffer(ea::vector<unsigned char>& dest, const ea::string_view& source)
+{
+    dest.resize(source.size() / 2);
+
+    for (unsigned i = 0; i < source.size(); ++i)
+    {
+        const char ch = source[i];
+
+        unsigned digit = 0;
+        if (ch >= '0' && ch <= '9')
+            digit = ch - '0';
+        else if (ch >= 'A' && ch <= 'F')
+            digit = 10 + ch - 'A';
+        else if (ch >= 'a' && ch <= 'f')
+            digit = 10 + ch - 'a';
+        else
+            return false;
+
+        assert(digit < 16);
+        if (i % 2 == 0)
+            dest[i / 2] = digit << 4;
+        else
+            dest[i / 2] |= digit;
+    }
+
+    // Fail if extra symbols in string
+    return source.size() % 2 == 0;
+}
+
 unsigned GetStringListIndex(const ea::string& value, const ea::string* strings, unsigned defaultIndex, bool caseSensitive)
 {
     return GetStringListIndex(value.c_str(), strings, defaultIndex, caseSensitive);
@@ -689,7 +737,7 @@ unsigned GetStringListIndex(const char* value, const ea::string* strings, unsign
     return defaultIndex;
 }
 
-unsigned GetStringListIndex(const char* value, const char** strings, unsigned defaultIndex, bool caseSensitive)
+unsigned GetStringListIndex(const char* value, const char* const* strings, unsigned defaultIndex, bool caseSensitive)
 {
     unsigned i = 0;
 
