@@ -26,6 +26,7 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/WorkQueue.h"
+#include "../IO/Archive.h"
 #include "../IO/File.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
@@ -112,6 +113,16 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Next Local Component ID", unsigned, localComponentID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
+}
+
+bool Scene::Serialize(Archive& archive)
+{
+    if (!Node::Serialize(archive))
+        return false;
+
+    fileName_ = archive.GetName();
+    checksum_ = archive.GetChecksum();
+    return true;
 }
 
 bool Scene::Load(Deserializer& source)

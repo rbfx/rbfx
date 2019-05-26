@@ -24,6 +24,8 @@
 
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/Log.h"
 #include "../IO/MemoryBuffer.h"
 #include "../Resource/XMLFile.h"
@@ -91,6 +93,149 @@ void Node::RegisterObject(Context* context)
         AM_NET | AM_LATESTDATA | AM_NOEDIT);
     URHO3D_ACCESSOR_ATTRIBUTE("Network Parent Node", GetNetParentAttr, SetNetParentAttr, ea::vector<unsigned char>, Variant::emptyBuffer,
         AM_NET | AM_NOEDIT);
+}
+
+bool Node::Serialize(Archive& archive)
+{
+    if (ArchiveBlockGuard block = archive.OpenUnorderedBlock("node"))
+    {
+        if (archive.IsInput())
+        {
+            SceneResolver resolver;
+
+            // Load this node ID for resolver
+            unsigned nodeID{};
+            if (!SerializeValue(archive, "id", id_))
+                return false;
+            resolver.AddNode(nodeID, this);
+
+            // Load node content
+            if (!Serialize(archive, block, &resolver))
+                return false;
+
+            // Resolve IDs and apply attributes
+            resolver.Resolve();
+            ApplyAttributes();
+        }
+        else
+        {
+            // Save node ID and content
+            bool success = true;
+            success &= SerializeValue(archive, "id", id_);
+            success &= Serialize(archive, block, nullptr);
+            return success;
+        }
+    }
+    return false;
+}
+
+bool Node::Serialize(Archive& archive, ArchiveBlockGuard& block, SceneResolver* resolver,
+    bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/, CreateMode mode /*= REPLICATED*/)
+{
+    // Resolver must be present if loading
+    const bool loading = archive.IsInput();
+    assert(loading == !!resolver);
+
+    // Remove all children and components first in case this is not a fresh load
+    if (loading)
+    {
+        RemoveAllChildren();
+        RemoveAllComponents();
+    }
+
+    // Serialize base class
+    if (!Animatable::Serialize(archive, block))
+        return false;
+
+    // Serialize components
+    const bool componentsSerialized = SerializeCustomVector(archive, "components", GetNumPersistentComponents(), components_,
+        [&](SharedPtr<Component>& component, bool loading)
+    {
+        assert(loading || component);
+
+        // Skip temporary components
+        if (component && component->IsTemporary())
+            return true;
+
+        // Serialize component
+        if (ArchiveBlockGuard componentBlock = archive.OpenUnorderedBlock("component"))
+        {
+            // Serialize component ID and type
+            unsigned componentID = component ? component->GetID() : 0;
+            StringHash componentType = component ? component->GetType() : StringHash{};
+            const ea::string& componentTypeName = component ? component->GetTypeName() : EMPTY_STRING;
+            SerializeValue(archive, "id", componentID);
+            SerializeStringHash(archive, "type", componentType, componentTypeName);
+
+            // Create component if loading
+            if (loading)
+            {
+                const bool isReplicated = mode == REPLICATED && Scene::IsReplicatedID(componentID);
+                component = SafeCreateComponent(EMPTY_STRING, componentType, isReplicated ? REPLICATED : LOCAL, componentID);
+
+                // Add component to resolver
+                resolver->AddComponent(componentID, component);
+            }
+
+            // Serialize component. Don't fail in case of errors.
+            if (!archive.IsBinary())
+                component->Serialize(archive, componentBlock);
+            else
+                assert(0); // TODO: Implement buffer
+
+            return true;
+        }
+        return false;
+    });
+
+    if (!componentsSerialized)
+        return false;
+
+    // Skip children
+    if (!serializeChildren)
+        return true;
+
+    // Serialize children
+    const bool childrenSerialized = SerializeCustomVector(archive, "children", GetNumPersistentChildren(), children_,
+        [&](SharedPtr<Node>& child, bool loading)
+    {
+        assert(loading || child);
+
+        // Skip temporary children
+        if (child && child->IsTemporary())
+            return true;
+
+        // Serialize child
+        if (ArchiveBlockGuard childBlock = archive.OpenUnorderedBlock("child"))
+        {
+            // Serialize node ID
+            unsigned nodeID = child ? child->GetID() : 0;
+            SerializeValue(archive, "id", nodeID);
+
+            // Create child if loading
+            if (loading)
+            {
+                const bool isReplicated = mode == REPLICATED && Scene::IsReplicatedID(nodeID);
+                child = CreateChild(rewriteIDs ? 0 : nodeID, isReplicated ? REPLICATED : LOCAL);
+
+                // Add child node to resolver
+                resolver->AddNode(nodeID, child);
+            }
+
+            // Serialize child
+            if (!child->Serialize(archive, childBlock, resolver, serializeChildren, rewriteIDs, mode))
+                return false;
+
+            return true;
+        }
+
+        return false;
+    });
+
+    if (!childrenSerialized)
+        return false;
+
+    return true;
 }
 
 bool Node::Load(Deserializer& source)
