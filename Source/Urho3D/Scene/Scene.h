@@ -99,6 +99,9 @@ public:
     /// Register object factory. Node must be registered first.
     static void RegisterObject(Context* context);
 
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+
     /// Load from binary data. Removes all existing child nodes and components first. Return true if successful.
     bool Load(Deserializer& source) override;
     /// Save to binary data. Return true if successful.

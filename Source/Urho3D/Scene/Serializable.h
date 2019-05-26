@@ -30,6 +30,8 @@
 namespace Urho3D
 {
 
+class Archive;
+class ArchiveBlockGuard;
 class Connection;
 class Deserializer;
 class Serializer;
@@ -59,6 +61,12 @@ public:
     virtual const ea::vector<AttributeInfo>* GetAttributes() const;
     /// Return network replication attribute descriptions, or null if none defined.
     virtual const ea::vector<AttributeInfo>* GetNetworkAttributes() const;
+
+    /// Serialize from/to archive. Return true if successful.
+    virtual bool Serialize(Archive& archive);
+    /// Serialize content from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, ArchiveBlockGuard& block);
+
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);
     /// Save as binary data. Return true if successful.

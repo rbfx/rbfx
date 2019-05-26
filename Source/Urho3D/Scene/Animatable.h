@@ -74,6 +74,11 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+    /// Serialize content from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, ArchiveBlockGuard& block);
+
     /// Load from XML data. Return true if successful.
     bool LoadXML(const XMLElement& source) override;
     /// Save as XML data. Return true if successful.
