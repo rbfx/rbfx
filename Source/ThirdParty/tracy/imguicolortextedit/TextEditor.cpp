@@ -515,9 +515,9 @@ void TextEditor::Render(const char* aTitle, const ImVec2& aSize, bool aBorder)
 			EnterCharacter('\n', false);
 		else if (!IsReadOnly() && !ctrl && !alt)
 		{
-			for (size_t i = 0; i < sizeof(io.InputCharacters) / sizeof(io.InputCharacters[0]); i++)
+			for (size_t i = 0; i < sizeof(io.InputQueueCharacters) / sizeof(io.InputQueueCharacters[0]); i++)
 			{
-				auto c = (unsigned char)io.InputCharacters[i];
+				auto c = (unsigned char)io.InputQueueCharacters[i];
 				if (c != 0)
 				{
 					if (isprint(c) || isspace(c))

@@ -181,7 +181,7 @@ ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& select
             }
 
             if (!state.wasEditing)
-                ui::GetCurrentWindow()->FocusIdxTabRequestNext = ui::GetCurrentContext()->ActiveId;
+                ui::GetCurrentContext()->FocusRequestNextCounterTab = ui::GetCurrentContext()->ActiveId;
 
             ui::PopStyleVar(2);
 

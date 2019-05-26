@@ -138,7 +138,7 @@ PreviewTab::PreviewTab(Context* context)
                     // Game preview viewport is not dimmed.
                     if (strcmp(window->Name, GetUniqueTitle().c_str()) == 0)
                         continue;
-                    ImDrawList* drawLists = ui::GetOverlayDrawList(window->Viewport);
+                    ImDrawList* drawLists = ui::GetBackgroundDrawList(window->Viewport);
                     const ImU32 color = ui::GetColorU32(ImGuiCol_ModalWindowDimBg, dim_);
                     drawLists->AddRectFilled(window->Pos, window->Pos + window->Size, color);
                 }

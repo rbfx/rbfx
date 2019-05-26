@@ -449,7 +449,7 @@ void OpenTreeNode(ImGuiID id)
     if (!storage->GetInt(id))
     {
         storage->SetInt(id, true);
-        ui::TreePushRawID(id);
+        ui::TreePushOverrideID(id);
     }
 }
 
