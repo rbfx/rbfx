@@ -1411,6 +1411,8 @@ public:
     /// Hash function for containers.
     unsigned ToHash() const;
 
+    /// Return type name list.
+    static const char* const* GetTypeNameList();
     /// Return name for variant type.
     static ea::string GetTypeName(VariantType type);
     /// Return variant type from type name.

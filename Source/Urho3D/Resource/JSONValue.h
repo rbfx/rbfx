@@ -24,6 +24,8 @@
 
 #include <EASTL/map.h>
 
+#include <utility>
+
 #include "../Core/Variant.h"
 
 namespace Urho3D
@@ -138,6 +140,12 @@ public:
     {
         *this = value;
     }
+    /// Move-construct from another JSON value.
+    JSONValue(JSONValue && value) :
+        type_(0)
+    {
+        *this = std::move(value);
+    }
     /// Destruct.
     ~JSONValue()
     {
@@ -164,6 +172,8 @@ public:
     JSONValue& operator =(const ea::map<ea::string, JSONValue>& rhs);
     /// Assign from another JSON value.
     JSONValue& operator =(const JSONValue& rhs);
+    /// Move-assign from another JSON value.
+    JSONValue& operator =(JSONValue && rhs);
     /// Value equality operator.
     bool operator ==(const JSONValue& rhs) const;
     /// Value inequality operator.
@@ -216,11 +226,11 @@ public:
     /// Return JSON value at index.
     const JSONValue& operator [](unsigned index) const;
     /// Add JSON value at end.
-    void Push(const JSONValue& value);
+    void Push(JSONValue value);
     /// Remove the last JSON value.
     void Pop();
     /// Insert an JSON value at position.
-    void Insert(unsigned pos, const JSONValue& value);
+    void Insert(unsigned pos, JSONValue value);
     /// Erase a range of JSON values.
     void Erase(unsigned pos, unsigned length = 1);
     /// Resize array.
@@ -234,7 +244,7 @@ public:
     /// Return JSON value with key.
     const JSONValue& operator [](const ea::string& key) const;
     /// Set JSON value with key.
-    void Set(const ea::string& key, const JSONValue& value);
+    void Set(const ea::string& key, JSONValue value);
     /// Return JSON value with key.
     const JSONValue& Get(const ea::string& key) const;
     /// Return JSON value with index.
