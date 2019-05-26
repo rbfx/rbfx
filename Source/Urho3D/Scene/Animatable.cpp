@@ -23,6 +23,8 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/JSONValue.h"
@@ -72,6 +74,19 @@ void Animatable::RegisterObject(Context* context)
 {
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Object Animation", GetObjectAnimationAttr, SetObjectAnimationAttr, ResourceRef,
         ResourceRef(ObjectAnimation::GetTypeStatic()), AM_DEFAULT);
+}
+
+bool Animatable::Serialize(Archive& archive)
+{
+    if (ArchiveBlockGuard block = archive.OpenUnorderedBlock("animatable"))
+        return Serialize(archive, block);
+    return false;
+}
+
+bool Animatable::Serialize(Archive& archive, ArchiveBlockGuard& block)
+{
+    // TODO: Implement me
+    return Serializable::Serialize(archive, block);
 }
 
 bool Animatable::LoadXML(const XMLElement& source)
@@ -244,10 +259,10 @@ bool Animatable::SaveJSON(JSONValue& dest) const
 
         attributeAnimationValue.Set(attr.name_, attributeValue);
     }
-    
+
     if (!attributeAnimationValue.IsNull())
         dest.Set("attributeanimation", attributeAnimationValue);
-    
+
     return true;
 }
 

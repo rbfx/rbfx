@@ -84,6 +84,12 @@ public:
     /// Register object factory.
     static void RegisterObject(Context* context);
 
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+    /// Serialize content from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, ArchiveBlockGuard& block, SceneResolver* resolver,
+        bool serializeChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED);
+
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
     /// Load from XML data. Return true if successful.
