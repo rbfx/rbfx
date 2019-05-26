@@ -511,6 +511,11 @@ VectorBuffer Variant::GetVectorBuffer() const
     return VectorBuffer(type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer);
 }
 
+const char* const* Variant::GetTypeNameList()
+{
+    return typeNames;
+}
+
 ea::string Variant::GetTypeName() const
 {
     return typeNames[type_];

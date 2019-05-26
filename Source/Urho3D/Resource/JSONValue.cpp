@@ -164,6 +164,40 @@ JSONValue& JSONValue::operator =(const JSONValue& rhs)
     return *this;
 }
 
+JSONValue& JSONValue::operator=(JSONValue && rhs)
+{
+    assert(this != &rhs);
+
+    SetType(rhs.GetValueType(), rhs.GetNumberType());
+
+    switch (GetValueType())
+    {
+    case JSON_BOOL:
+        boolValue_ = rhs.boolValue_;
+        break;
+
+    case JSON_NUMBER:
+        numberValue_ = rhs.numberValue_;
+        break;
+
+    case JSON_STRING:
+        *stringValue_ = std::move(*rhs.stringValue_);
+        break;
+
+    case JSON_ARRAY:
+        *arrayValue_ = std::move(*rhs.arrayValue_);
+        break;
+
+    case JSON_OBJECT:
+        *objectValue_ = std::move(*rhs.objectValue_);
+
+    default:
+        break;
+    }
+
+    return *this;
+}
+
 bool JSONValue::operator ==(const JSONValue& rhs) const
 {
     // Value type without number type is checked. JSON does not make a distinction between number types. It is possible
@@ -237,12 +271,12 @@ const JSONValue& JSONValue::operator [](unsigned index) const
     return (*arrayValue_)[index];
 }
 
-void JSONValue::Push(const JSONValue& value)
+void JSONValue::Push(JSONValue value)
 {
     // Convert to array type
     SetType(JSON_ARRAY);
 
-    arrayValue_->push_back(value);
+    arrayValue_->push_back(std::move(value));
 }
 
 void JSONValue::Pop()
@@ -253,12 +287,12 @@ void JSONValue::Pop()
     arrayValue_->pop_back();
 }
 
-void JSONValue::Insert(unsigned pos, const JSONValue& value)
+void JSONValue::Insert(unsigned pos, JSONValue value)
 {
     if (GetValueType() != JSON_ARRAY)
         return;
 
-    arrayValue_->insert(arrayValue_->begin() + pos, value);
+    arrayValue_->insert(arrayValue_->begin() + pos, std::move(value));
 }
 
 void JSONValue::Erase(unsigned pos, unsigned length)
@@ -303,12 +337,12 @@ const JSONValue& JSONValue::operator [](const ea::string& key) const
     return (*objectValue_)[key];
 }
 
-void JSONValue::Set(const ea::string& key, const JSONValue& value)
+void JSONValue::Set(const ea::string& key, JSONValue value)
 {
     // Convert to object type
     SetType(JSON_OBJECT);
 
-    (*objectValue_)[key] = value;
+    (*objectValue_)[key] = std::move(value);
 }
 
 const JSONValue& JSONValue::Get(const ea::string& key) const
