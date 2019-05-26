@@ -57,7 +57,7 @@ bool Tab::RenderWindow()
         std::function<ImGuiDockNode*(ImGuiDockNode*)> returnTargetDockspace = [&](ImGuiDockNode* dock) -> ImGuiDockNode* {
             if (dock == nullptr)
                 return nullptr;
-            if (dock->IsCentralNode)
+            if (dock->IsCentralNode())
                 return dock;
             else if (auto* node = returnTargetDockspace(dock->ChildNodes[0]))
                 return node;
@@ -97,7 +97,7 @@ bool Tab::RenderWindow()
         }
 
         if (targetID)
-            ui::SetNextWindowDockId(targetID, ImGuiCond_Once);
+            ui::SetNextWindowDockID(targetID, ImGuiCond_Once);
     }
     bool wasRendered = isRendered_;
     wasOpen_ = open_;
@@ -169,7 +169,7 @@ void Tab::UpdateUniqueTitle()
 
 IntRect Tab::UpdateViewRect()
 {
-    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->InnerClipRect);
+    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->ContentsRegionRect);
     return tabRect;
 }
 

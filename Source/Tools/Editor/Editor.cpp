@@ -430,7 +430,8 @@ void Editor::LoadDefaultLayout()
     auto* scene = GetTab<SceneTab>();
 
     ImGui::DockBuilderRemoveNode(dockspaceId_);
-    ImGui::DockBuilderAddNode(dockspaceId_, ui::GetMainViewport()->Size);
+    ImGui::DockBuilderAddNode(dockspaceId_, 0);
+    ImGui::DockBuilderSetNodeSize(dockspaceId_, ui::GetMainViewport()->Size);
 
     ImGuiID dock_main_id = dockspaceId_;
     ImGuiID dockHierarchy = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Left, 0.20f, nullptr, &dock_main_id);
@@ -536,7 +537,7 @@ void Editor::SetupSystemUI()
     io.IniFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
-    io.ConfigResizeWindowsFromEdges = true;
+    io.ConfigWindowsResizeFromEdges = true;
 
     // TODO: Make configurable.
     auto& style = ImGui::GetStyle();
