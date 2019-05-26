@@ -23,6 +23,8 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/Deserializer.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
@@ -626,6 +628,98 @@ bool Serializable::LoadFile(const ea::string& resourceName)
     if (extension == ".json")
         return LoadJSON(realResourceName);
     return Load(realResourceName);
+}
+
+bool Serializable::Serialize(Archive& archive)
+{
+    if (ArchiveBlockGuard block = archive.OpenUnorderedBlock("serializable"))
+        return Serialize(archive, block);
+    return false;
+}
+
+bool Serializable::Serialize(Archive& archive, ArchiveBlockGuard& block)
+{
+    const ea::vector<AttributeInfo>* attributes = GetAttributes();
+    if (!attributes)
+        return true;
+
+    if (ArchiveBlockGuard attributeBlock = archive.OpenUnorderedBlock("attributes"))
+    {
+        if (archive.IsInput())
+        {
+            for (unsigned i = 0; i < attributes->size(); ++i)
+            {
+                const AttributeInfo& attr = attributes->at(i);
+                if (!(attr.mode_ & AM_FILE))
+                    continue;
+
+                Variant varValue;
+                bool success{};
+                if (attr.enumNames_)
+                {
+                    int enumValue{};
+                    success = SerializeEnum<int, int>(archive, attr.name_.c_str(), attr.enumNames_, enumValue);
+                    varValue = enumValue;
+                }
+                else
+                {
+                    success = SerializeVariantValue(archive, attr.type_, attr.name_.c_str(), varValue);
+                }
+
+                // TODO Add error handling
+                if (success)
+                    OnSetAttribute(attr, varValue);
+#if 0
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Could not load " + GetTypeName() + ", stream not open or at end");
+                    return false;
+                }
+#endif
+            }
+            return true;
+        }
+        else
+        {
+            Variant value;
+
+            for (unsigned i = 0; i < attributes->size(); ++i)
+            {
+                const AttributeInfo& attr = attributes->at(i);
+                if (!(attr.mode_ & AM_FILE) || (attr.mode_ & AM_FILEREADONLY) == AM_FILEREADONLY)
+                    continue;
+
+                OnGetAttribute(attr, value);
+
+                // Skip default values if archive supports it
+                if (archive.IsUnorderedSupported() && !SaveDefaultAttributes())
+                {
+                    Variant defaultValue = GetAttributeDefault(i);
+                    if (value == defaultValue)
+                        continue;
+                }
+
+                bool success{};
+                if (attr.enumNames_)
+                {
+                    int enumValue = value.GetInt();
+                    success = SerializeEnum<int, int>(archive, attr.name_.c_str(), attr.enumNames_, enumValue);
+                }
+                else
+                {
+                    success = SerializeVariantValue(archive, attr.type_, attr.name_.c_str(), value);
+                }
+
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Could not save " + GetTypeName() + ", writing to stream failed");
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 bool Serializable::SetAttribute(unsigned index, const Variant& value)
