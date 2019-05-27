@@ -17,7 +17,7 @@ class ScopedZone
 public:
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
-        : m_active( is_active && s_profiler.IsConnected() )
+        : m_active( is_active && GetProfiler().IsConnected() )
 #else
         : m_active( is_active )
 #endif
@@ -26,7 +26,7 @@ public:
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBegin );
@@ -44,7 +44,7 @@ public:
 
     tracy_force_inline ScopedZone( const SourceLocationData* srcloc, int depth, bool is_active = true )
 #ifdef TRACY_ON_DEMAND
-        : m_active( is_active && s_profiler.IsConnected() )
+        : m_active( is_active && GetProfiler().IsConnected() )
 #else
         : m_active( is_active )
 #endif
@@ -53,7 +53,7 @@ public:
         const auto thread = GetThreadHandle();
         m_thread = thread;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneBeginCallstack );
@@ -68,14 +68,14 @@ public:
         MemWrite( &item->zoneBegin.srcloc, (uint64_t)srcloc );
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( depth, thread );
+        GetProfiler().SendCallstack( depth, thread );
     }
 
     tracy_force_inline ~ScopedZone()
     {
         if( !m_active ) return;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::ZoneEnd );
@@ -94,7 +94,7 @@ public:
     {
         if( !m_active ) return;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
@@ -110,7 +110,7 @@ public:
     {
         if( !m_active ) return;
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';

@@ -2,11 +2,13 @@
 #define __TRACYVARARRAY_HPP__
 
 #include <stdint.h>
+#include <string.h>
 
 #include "../common/TracyForceInline.hpp"
 #include "tracy_flat_hash_map.hpp"
 #include "TracyCharUtil.hpp"
 #include "TracyMemory.hpp"
+#include "TracyEvent.hpp"
 
 namespace tracy
 {
@@ -20,12 +22,7 @@ public:
         : m_size( size )
         , m_ptr( data )
     {
-        T hash = 5381;
-        for( uint8_t i=0; i<size; i++ )
-        {
-            hash = ( ( hash << 5 ) + hash ) ^ data[i];
-        }
-        m_hash = uint32_t( hash );
+        CalcHash();
     }
 
     VarArray( const VarArray& ) = delete;
@@ -50,6 +47,8 @@ public:
     tracy_force_inline const T& operator[]( size_t idx ) const { return m_ptr[idx]; }
 
 private:
+    tracy_force_inline void CalcHash();
+
     uint8_t m_size;
     uint32_t m_hash;
     const T* m_ptr;
@@ -57,15 +56,32 @@ private:
 #pragma pack()
 
 template<typename T>
-bool Compare( const VarArray<T>& lhs, const VarArray<T>& rhs )
+inline void VarArray<T>::CalcHash()
+{
+    T hash = 5381;
+    for( uint8_t i=0; i<m_size; i++ )
+    {
+        hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i];
+    }
+    m_hash = uint32_t( hash );
+}
+
+template<>
+inline void VarArray<CallstackFrameId>::CalcHash()
+{
+    uint64_t hash = 5381;
+    for( uint8_t i=0; i<m_size; i++ )
+    {
+        hash = ( ( hash << 5 ) + hash ) ^ m_ptr[i].data;
+    }
+    m_hash = uint32_t( hash );
+}
+
+template<typename T>
+static inline bool Compare( const VarArray<T>& lhs, const VarArray<T>& rhs )
 {
     if( lhs.size() != rhs.size() || lhs.get_hash() != rhs.get_hash() ) return false;
-    const auto sz = lhs.size();
-    for( uint8_t i=0; i<sz; i++ )
-    {
-        if( lhs[i] != rhs[i] ) return false;
-    }
-    return true;
+    return memcmp( lhs.data(), rhs.data(), lhs.size() * sizeof( T ) ) == 0;
 }
 
 template<typename T>
