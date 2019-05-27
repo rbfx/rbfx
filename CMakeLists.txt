@@ -60,6 +60,8 @@ endif ()
 
 if (NOT "$ENV{CI}" STREQUAL "")
     ucm_add_flags(-w)
+elseif (MSVC)
+    ucm_add_flags(/W1)
 endif ()
 
 if (URHO3D_STATIC_RUNTIME)
