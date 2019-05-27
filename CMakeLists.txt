@@ -58,6 +58,10 @@ if (URHO3D_SSE AND NOT MSVC)
     ucm_add_flags(-msse -msse2)
 endif ()
 
+if (NOT "$ENV{CI}" STREQUAL "")
+    ucm_add_flags(-w)
+endif ()
+
 if (URHO3D_STATIC_RUNTIME)
     ucm_set_runtime(STATIC)
 else ()
