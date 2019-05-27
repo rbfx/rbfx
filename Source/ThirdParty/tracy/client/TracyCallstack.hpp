@@ -1,24 +1,18 @@
 #ifndef __TRACYCALLSTACK_HPP__
 #define __TRACYCALLSTACK_HPP__
 
-#if defined _WIN32 || defined __CYGWIN__
-#  define TRACY_HAS_CALLSTACK 1
+#include "TracyCallstack.h"
+
+#if TRACY_HAS_CALLSTACK == 1
 extern "C"
 {
     typedef unsigned long (__stdcall *t_RtlWalkFrameChain)( void**, unsigned long, unsigned long );
     extern t_RtlWalkFrameChain RtlWalkFrameChain;
 }
-#elif defined __ANDROID__
-#  define TRACY_HAS_CALLSTACK 2
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 #  include <unwind.h>
-#elif defined __linux
-#  if defined _GNU_SOURCE && defined __GLIBC__
-#    define TRACY_HAS_CALLSTACK 3
-#    include <execinfo.h>
-#  else
-#    define TRACY_HAS_CALLSTACK 2
-#    include <unwind.h>
-#  endif
+#elif TRACY_HAS_CALLSTACK >= 3
+#  include <execinfo.h>
 #endif
 
 
@@ -41,11 +35,17 @@ struct CallstackEntry
     uint32_t line;
 };
 
-CallstackEntry DecodeCallstackPtr( uint64_t ptr );
+struct CallstackEntryData
+{
+    const CallstackEntry* data;
+    uint8_t size;
+};
+
+const char* DecodeCallstackPtrFast( uint64_t ptr );
+CallstackEntryData DecodeCallstackPtr( uint64_t ptr );
+void InitCallstack();
 
 #if TRACY_HAS_CALLSTACK == 1
-
-void InitCallstack();
 
 static tracy_force_inline void* Callstack( int depth )
 {
@@ -58,9 +58,7 @@ static tracy_force_inline void* Callstack( int depth )
     return trace;
 }
 
-#elif TRACY_HAS_CALLSTACK == 2
-
-static tracy_force_inline void InitCallstack() {}
+#elif TRACY_HAS_CALLSTACK == 2 || TRACY_HAS_CALLSTACK == 5
 
 struct BacktraceState
 {
@@ -93,9 +91,7 @@ static tracy_force_inline void* Callstack( int depth )
     return trace;
 }
 
-#elif TRACY_HAS_CALLSTACK == 3
-
-static tracy_force_inline void InitCallstack() {}
+#elif TRACY_HAS_CALLSTACK == 3 || TRACY_HAS_CALLSTACK == 4
 
 static tracy_force_inline void* Callstack( int depth )
 {

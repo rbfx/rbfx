@@ -17,13 +17,14 @@ public:
         : m_ptr( new char[BlockSize] )
         , m_offset( 0 )
         , m_buffer( { m_ptr } )
+        , m_usage( BlockSize )
     {
         memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
     }
 
     ~Slab()
     {
-        memUsage.fetch_sub( BlockSize * m_buffer.size(), std::memory_order_relaxed );
+        memUsage.fetch_sub( m_usage, std::memory_order_relaxed );
         for( auto& v : m_buffer )
         {
             delete[] v;
@@ -75,11 +76,37 @@ public:
         m_offset -= size;
     }
 
+    tracy_force_inline void* AllocBig( size_t size )
+    {
+        if( m_offset + size <= BlockSize )
+        {
+            void* ret = m_ptr + m_offset;
+            m_offset += size;
+            return ret;
+        }
+        else if( size <= BlockSize && BlockSize - m_offset <= 1024 )
+        {
+            DoAlloc();
+            void* ret = m_ptr + m_offset;
+            m_offset += size;
+            return ret;
+        }
+        else
+        {
+            memUsage.fetch_add( size );
+            m_usage += size;
+            auto ret = new char[size];
+            m_buffer.emplace_back( ret );
+            return ret;
+        }
+    }
+
     void Reset()
     {
         if( m_buffer.size() > 1 )
         {
-            memUsage.fetch_sub( BlockSize * ( m_buffer.size() - 1 ), std::memory_order_relaxed );
+            memUsage.fetch_sub( m_usage - BlockSize, std::memory_order_relaxed );
+            m_usage = BlockSize;
             for( int i=1; i<m_buffer.size(); i++ )
             {
                 delete[] m_buffer[i];
@@ -104,11 +131,13 @@ private:
         m_offset = 0;
         m_buffer.emplace_back( m_ptr );
         memUsage.fetch_add( BlockSize, std::memory_order_relaxed );
+        m_usage += BlockSize;
     }
 
     char* m_ptr;
     uint32_t m_offset;
     std::vector<char*> m_buffer;
+    size_t m_usage;
 };
 
 }

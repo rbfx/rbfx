@@ -36,6 +36,8 @@
 
 #define TracyMessage(x,y)
 #define TracyMessageL(x)
+#define TracyMessageC(x,y,z)
+#define TracyMessageLC(x,y)
 
 #define TracyAlloc(x,y)
 #define TracyFree(x)
@@ -79,8 +81,8 @@
 #define ZoneText( txt, size ) ___tracy_scoped_zone.Text( txt, size );
 #define ZoneName( txt, size ) ___tracy_scoped_zone.Name( txt, size );
 
-#define FrameMark tracy::Profiler::SendFrameMark();
-#define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsg );
+#define FrameMark tracy::Profiler::SendFrameMark( nullptr );
+#define FrameMarkNamed( name ) tracy::Profiler::SendFrameMark( name );
 #define FrameMarkStart( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart );
 #define FrameMarkEnd( name ) tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd );
 
@@ -96,6 +98,8 @@
 
 #define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
 #define TracyMessageL( txt ) tracy::Profiler::Message( txt );
+#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color );
+#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color );
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK );

@@ -16,6 +16,11 @@
 #define TracyVkZoneS(c,x,y,z)
 #define TracyVkZoneCS(c,x,y,z,w)
 
+namespace tracy
+{
+class VkCtxScope {};
+}
+
 using TracyVkCtx = void*;
 
 #else
@@ -30,8 +35,6 @@ using TracyVkCtx = void*;
 namespace tracy
 {
 
-extern std::atomic<uint8_t> s_gpuCtxCounter;
-
 class VkCtx
 {
     friend class VkCtxScope;
@@ -42,7 +45,7 @@ public:
     VkCtx( VkPhysicalDevice physdev, VkDevice device, VkQueue queue, VkCommandBuffer cmdbuf )
         : m_device( device )
         , m_queue( queue )
-        , m_context( s_gpuCtxCounter.fetch_add( 1, std::memory_order_relaxed ) )
+        , m_context( GetGpuCtxCounter().fetch_add( 1, std::memory_order_relaxed ) )
         , m_head( 0 )
         , m_tail( 0 )
         , m_oldCnt( 0 )
@@ -91,7 +94,7 @@ public:
         vkQueueWaitIdle( queue );
 
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
@@ -103,7 +106,7 @@ public:
         MemWrite( &item->gpuNewContext.accuracyBits, uint8_t( 0 ) );
 
 #ifdef TRACY_ON_DEMAND
-        s_profiler.DeferItem( *item );
+        GetProfiler().DeferItem( *item );
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
@@ -121,7 +124,7 @@ public:
         if( m_tail == m_head ) return;
 
 #ifdef TRACY_ON_DEMAND
-        if( !s_profiler.IsConnected() )
+        if( !GetProfiler().IsConnected() )
         {
             vkCmdResetQueryPool( cmdbuf, m_query, 0, QueryCount );
             m_head = m_tail = 0;
@@ -148,7 +151,7 @@ public:
         }
 
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
 
         for( unsigned int idx=0; idx<cnt; idx++ )
@@ -198,7 +201,7 @@ public:
         : m_cmdbuf( cmdbuf )
         , m_ctx( ctx )
 #ifdef TRACY_ON_DEMAND
-        , m_active( s_profiler.IsConnected() )
+        , m_active( GetProfiler().IsConnected() )
 #endif
     {
 #ifdef TRACY_ON_DEMAND
@@ -208,7 +211,7 @@ public:
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
@@ -224,7 +227,7 @@ public:
         : m_cmdbuf( cmdbuf )
         , m_ctx( ctx )
 #ifdef TRACY_ON_DEMAND
-        , m_active( s_profiler.IsConnected() )
+        , m_active( GetProfiler().IsConnected() )
 #endif
     {
 #ifdef TRACY_ON_DEMAND
@@ -236,7 +239,7 @@ public:
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
@@ -247,7 +250,7 @@ public:
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
 
-        s_profiler.SendCallstack( depth, thread );
+        GetProfiler().SendCallstack( depth, thread );
     }
 
     tracy_force_inline ~VkCtxScope()
@@ -259,7 +262,7 @@ public:
         vkCmdWriteTimestamp( m_cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, m_ctx->m_query, queryId );
 
         Magic magic;
-        auto& token = s_token.ptr;
+        auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );

@@ -1,13 +1,16 @@
 #ifndef __TRACYVECTOR_HPP__
 #define __TRACYVECTOR_HPP__
 
+#include <algorithm>
 #include <assert.h>
 #include <limits>
 #include <stdint.h>
+#include <type_traits>
 
 #include "../common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
 #include "TracyPopcnt.hpp"
+#include "TracySlab.hpp"
 
 namespace tracy
 {
@@ -29,13 +32,9 @@ public:
 
     Vector( const Vector& ) = delete;
     Vector( Vector&& src ) noexcept
-        : m_ptr( src.m_ptr )
-        , m_size( src.m_size )
-        , m_capacity( src.m_capacity )
     {
-        src.m_ptr = nullptr;
-        src.m_size = 0;
-        src.m_capacity = 0;
+        memcpy( this, &src, sizeof( Vector<T> ) );
+        memset( &src, 0, sizeof( Vector<T> ) );
     }
 
     Vector( const T& value )
@@ -49,28 +48,27 @@ public:
 
     ~Vector()
     {
-        if( m_capacity == std::numeric_limits<uint8_t>::max() )
-        {
-            memUsage.fetch_sub( m_size * sizeof( T ) );
-        }
-        else
+        if( m_capacity != std::numeric_limits<uint8_t>::max() )
         {
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            delete[] m_ptr;
         }
-        delete[] m_ptr;
     }
 
     Vector& operator=( const Vector& ) = delete;
     Vector& operator=( Vector&& src ) noexcept
     {
         delete[] m_ptr;
-        m_ptr = src.m_ptr;
-        m_size = src.m_size;
-        m_capacity = src.m_capacity;
-        src.m_ptr = nullptr;
-        src.m_size = 0;
-        src.m_capacity = 0;
+        memcpy( this, &src, sizeof( Vector<T> ) );
+        memset( &src, 0, sizeof( Vector<T> ) );
         return *this;
+    }
+
+    void swap( Vector& other )
+    {
+        std::swap( m_ptr, other.m_ptr );
+        std::swap( m_size, other.m_size );
+        std::swap( m_capacity, other.m_capacity );
     }
 
     tracy_force_inline bool empty() const { return m_size == 0; }
@@ -241,13 +239,13 @@ public:
         m_size = sz;
     }
 
-    tracy_force_inline void reserve_exact( uint32_t sz )
+    template<size_t U>
+    tracy_force_inline void reserve_exact( uint32_t sz, Slab<U>& slab )
     {
         assert( !m_ptr );
         m_capacity = std::numeric_limits<uint8_t>::max();
         m_size = sz;
-        m_ptr = new T[sz];
-        memUsage.fetch_add( sz * sizeof( T ) );
+        m_ptr = (T*)slab.AllocBig( sizeof( T ) * sz );
     }
 
     tracy_force_inline void clear()
@@ -280,7 +278,17 @@ private:
         T* ptr = new T[CapacityNoNullptrCheck()];
         if( m_size != 0 )
         {
-            memcpy( ptr, m_ptr, m_size * sizeof( T ) );
+            if( std::is_trivially_copyable<T>() )
+            {
+                memcpy( ptr, m_ptr, m_size * sizeof( T ) );
+            }
+            else
+            {
+                for( uint32_t i=0; i<m_size; i++ )
+                {
+                    ptr[i] = std::move( m_ptr[i] );
+                }
+            }
             delete[] m_ptr;
         }
         m_ptr = ptr;
