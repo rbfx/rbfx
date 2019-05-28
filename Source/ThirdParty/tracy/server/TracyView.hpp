@@ -69,8 +69,9 @@ public:
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void SetTextEditorFile( const char* fileName, int line );
-
+#if !defined TRACY_EMBED_WINDOW
 private:
+#endif
     enum class Namespace : uint8_t
     {
         Full,

@@ -27,7 +27,7 @@ file (GLOB_RECURSE CLIENT_SOURCE_FILES client/*.cpp client/*.hpp client/*.h)
 file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h imguicolortextedit/*.cpp imguicolortextedit/*.h)
 
 list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySystem.cpp)
-set (TRACY_OPTIONS_PUBLIC -DTRACY_ENABLE=1 -DTRACY_ON_DEMAND=1)
+set (TRACY_OPTIONS_PUBLIC -DTRACY_ENABLE=1 -DTRACY_ON_DEMAND=1 -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1)
 set (TRACY_OPTIONS_PRIVATE -DNOMINMAX=1 -D_CRT_SECURE_NO_DEPRECATE -D_CRT_NONSTDC_NO_DEPRECATE -DWIN32_LEAN_AND_MEAN -DNOMINMAX -D_USE_MATH_DEFINES)
 
 if (BUILD_SHARED_LIBS)
@@ -51,7 +51,7 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
     target_include_directories(tracy-profiler PRIVATE server)
     target_link_libraries(tracy-profiler Urho3D IconFontCppHeaders)
-    target_compile_definitions(tracy-profiler PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_FILESELECTOR=1 -DTRACY_EXTENDED_FONT=1 -DTRACY_ROOT_WINDOW=1 -DIMGUI_IMPL_OPENGL_LOADER_GLEW=1 PRIVATE ${TRACY_OPTIONS_PRIVATE})
+    target_compile_definitions(tracy-profiler PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_ROOT_WINDOW=1 -DIMGUI_IMPL_OPENGL_LOADER_GLEW=1 PRIVATE ${TRACY_OPTIONS_PRIVATE})
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
     if (APPLE)
         target_link_libraries(tracy-profiler pthread dl "-framework OpenGl")
@@ -68,6 +68,11 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
         RUNTIME DESTINATION ${DEST_BIN_DIR}
         ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
     )
+    # Lib for editor to easily consume profiler
+    add_library (tracy-client STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
+    target_compile_definitions(tracy-client PUBLIC ${TRACY_OPTIONS_PUBLIC} PRIVATE ${TRACY_OPTIONS_PRIVATE} -DTRACY_EMBED_WINDOW=1)
+    target_link_libraries(tracy-client Urho3D IconFontCppHeaders)
+    target_include_directories(tracy-client PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
 
 if (TARGET tracy-dll)
