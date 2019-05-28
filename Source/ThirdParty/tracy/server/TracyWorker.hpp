@@ -338,6 +338,9 @@ public:
     const FailureData& GetFailureData() const { return m_failureData; }
     static const char* GetFailureString( Failure failure );
 
+#if defined TRACY_EMBED_WINDOW
+    bool IsShuttingDown() const { return m_shutdown.load(std::memory_order_relaxed); }
+#endif
 private:
     void Exec();
     void Query( ServerQuery type, uint64_t data );

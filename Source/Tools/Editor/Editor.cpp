@@ -61,6 +61,7 @@
 #include "Pipeline/SubprocessExec.h"
 #include "Pipeline/Commands/BuildAssets.h"
 #include "Inspector/MaterialInspector.h"
+#include "Tabs/ProfilerTab.h"
 
 using namespace ui::litterals;
 
@@ -134,6 +135,8 @@ void Editor::Setup()
     context_->RegisterFactory<InspectorTab>();
     context_->RegisterFactory<ResourceTab>();
     context_->RegisterFactory<PreviewTab>();
+    context_->RegisterFactory<ProfilerTab>();
+
     RegisterToolboxTypes(context_);
     EditorSceneSettings::RegisterObject(context_);
     Inspectable::Material::RegisterObject(context_);
@@ -416,6 +419,7 @@ void Editor::CreateDefaultTabs()
     tabs_.emplace_back(new ConsoleTab(context_));
     tabs_.emplace_back(new PreviewTab(context_));
     tabs_.emplace_back(new SceneTab(context_));
+    tabs_.emplace_back(new ProfilerTab(context_));
 }
 
 void Editor::LoadDefaultLayout()
@@ -428,6 +432,7 @@ void Editor::LoadDefaultLayout()
     auto* console = GetTab<ConsoleTab>();
     auto* preview = GetTab<PreviewTab>();
     auto* scene = GetTab<SceneTab>();
+    auto* profiler = GetTab<ProfilerTab>();
 
     ImGui::DockBuilderRemoveNode(dockspaceId_);
     ImGui::DockBuilderAddNode(dockspaceId_, 0);
@@ -438,6 +443,7 @@ void Editor::LoadDefaultLayout()
     ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, nullptr, &dockHierarchy);
     ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, nullptr, &dock_main_id);
     ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, nullptr, &dock_main_id);
+    ImGuiID dockProfiler = ImGui::DockBuilderSplitNode(dockLog, ImGuiDir_Down, 0.30f, nullptr, &dockLog);
 
     ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().c_str(), dockHierarchy);
     ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().c_str(), dockResources);
@@ -445,6 +451,7 @@ void Editor::LoadDefaultLayout()
     ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().c_str(), dock_main_id);
     ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().c_str(), dock_main_id);
     ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().c_str(), dockInspector);
+    ImGui::DockBuilderDockWindow(profiler->GetUniqueTitle().c_str(), dockProfiler);
     ImGui::DockBuilderFinish(dockspaceId_);
 }
 
