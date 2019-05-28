@@ -47,9 +47,9 @@ namespace tracy
     static std::atomic<uint32_t>&(*GetLockCounter_fpt)() = get_getlockcounter();
     static std::atomic<uint8_t>&(*GetGpuCtxCounter_fpt)() = get_getgpuctxcounter();
     static GpuCtxWrapper&(*GetGpuCtx_fpt)() = get_getgpuctx();
-
-    RPMALLOC_RESTRICT void* rpmalloc(size_t size) { return rpmalloc_fpt(size); }
-    void rpfree(void* ptr) { rpfree_fpt(ptr); }
+    // Urho3D:
+    DLL_IMPORT void* rpmalloc(size_t size);
+    DLL_IMPORT void rpfree(void* ptr);
     moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetToken_fpt(); }
     Profiler& GetProfiler() { return GetProfiler_fpt(); }
     std::atomic<uint32_t>& GetLockCounter() { return GetLockCounter_fpt(); }
