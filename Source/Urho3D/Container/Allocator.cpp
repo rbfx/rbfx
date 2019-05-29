@@ -22,41 +22,18 @@
 
 #include "../Precompiled.h"
 
-#include <stdlib.h> // For alligned_alloc on MacOS
-
 #include "../Container/Allocator.h"
 #include "../Core/Profiler.h"
 
 #if URHO3D_STATIC
 URHO3D_API void* operator new[](size_t size, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
 {
-    void* memory = malloc(size);
-    if (memory == nullptr)
-        throw std::bad_alloc();
-    return memory;
+    return ::operator new(size);
 }
-
-#if _MSC_VER
-#   define aligned_alloc _aligned_malloc
-#endif
 
 URHO3D_API void* operator new[](size_t size, size_t alignment, size_t alignmentOffset, const char* pName, int flags, unsigned debugFlags, const char* file, int line)
 {
-    void* memory = nullptr;
-#if __APPLE__
-    if (posix_memalign(&memory, alignment, size) != 0)
-        memory = nullptr;
-#else
-    memory = aligned_alloc(alignment, size);
-#endif
-    if (memory == nullptr)
-        throw std::bad_alloc();
-    return memory;
-}
-URHO3D_API void operator delete[](void* memory)
-{
-    if (memory != nullptr)
-        free(memory);
+    return ::operator new(size);
 }
 #endif
 
