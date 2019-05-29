@@ -28,6 +28,7 @@
 #include "../../server/TracyWorker.hpp"
 #include "../../server/TracyVersion.hpp"
 #include "../../server/IconsFontAwesome5.h"
+#include "../../client/tracy_rpmalloc.hpp"
 
 #include "ImGui/imgui_freetype.h"
 #include "Arimo.hpp"
@@ -68,6 +69,10 @@ std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildCo
 
 int main( int argc, char** argv )
 {
+#if __APPLE__
+    // Static initialization appears to be broken on apple platforms and allocator has to be manually initialized.
+    tracy::rpmalloc_initialize();
+#endif
     std::unique_ptr<tracy::View> view;
     int badVer = 0;
 
