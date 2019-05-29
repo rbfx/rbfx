@@ -44,7 +44,8 @@ struct ThreadNameData
     const char* name;
     ThreadNameData* next;
 };
-extern std::atomic<ThreadNameData*>& s_threadNameData;
+std::atomic<ThreadNameData*>& GetThreadNameData();
+void InitRPMallocThread();
 #endif
 
 void SetThreadName( std::thread& thread, const char* name )
@@ -104,7 +105,7 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
 #endif
 #ifdef TRACY_COLLECT_THREAD_NAMES
     {
-        rpmalloc_thread_initialize();
+        InitRPMallocThread();
         const auto sz = strlen( name );
         char* buf = (char*)tracy_malloc( sz+1 );
         memcpy( buf, name, sz );
@@ -124,8 +125,8 @@ void SetThreadName( std::thread::native_handle_type handle, const char* name )
         data->id = (uint64_t)handle;
 #  endif
         data->name = buf;
-        data->next = s_threadNameData.load( std::memory_order_relaxed );
-        while( !s_threadNameData.compare_exchange_weak( data->next, data, std::memory_order_release, std::memory_order_relaxed ) ) {}
+        data->next = GetThreadNameData().load( std::memory_order_relaxed );
+        while( !GetThreadNameData().compare_exchange_weak( data->next, data, std::memory_order_release, std::memory_order_relaxed ) ) {}
     }
 #endif
 }
@@ -134,7 +135,7 @@ const char* GetThreadName( uint64_t id )
 {
     static char buf[256];
 #ifdef TRACY_COLLECT_THREAD_NAMES
-    auto ptr = s_threadNameData.load( std::memory_order_relaxed );
+    auto ptr = GetThreadNameData().load( std::memory_order_relaxed );
     while( ptr )
     {
         if( ptr->id == id )

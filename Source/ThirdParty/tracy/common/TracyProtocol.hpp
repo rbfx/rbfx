@@ -9,7 +9,7 @@
 namespace tracy
 {
 
-enum : uint32_t { ProtocolVersion = 2 };
+enum : uint32_t { ProtocolVersion = 6 };
 
 using lz4sz_t = uint32_t;
 
@@ -17,6 +17,23 @@ enum { TargetFrameSize = 256 * 1024 };
 enum { LZ4Size = LZ4_COMPRESSBOUND( TargetFrameSize ) };
 static_assert( LZ4Size <= std::numeric_limits<lz4sz_t>::max(), "LZ4Size greater than lz4sz_t" );
 static_assert( TargetFrameSize * 2 >= 64 * 1024, "Not enough space for LZ4 stream buffer" );
+
+enum { HandshakeShibbolethSize = 8 };
+static const char HandshakeShibboleth[HandshakeShibbolethSize] = { 'T', 'r', 'a', 'c', 'y', 'P', 'r', 'f' };
+
+enum HandshakeStatus : uint8_t
+{
+    HandshakePending,
+    HandshakeWelcome,
+    HandshakeProtocolMismatch,
+    HandshakeNotAvailable,
+    HandshakeDropped
+};
+
+enum { WelcomeMessageProgramNameSize = 64 };
+enum { WelcomeMessageHostInfoSize = 1024 };
+
+#pragma pack( 1 )
 
 enum ServerQuery : uint8_t
 {
@@ -29,21 +46,14 @@ enum ServerQuery : uint8_t
     ServerQueryFrameName,
 };
 
-enum { HandshakeShibbolethSize = 8 };
-static const char HandshakeShibboleth[HandshakeShibbolethSize] = { 'T', 'r', 'a', 'c', 'y', 'P', 'r', 'f' };
-
-enum HandshakeStatus : uint8_t
+struct ServerQueryPacket
 {
-    HandshakePending,
-    HandshakeWelcome,
-    HandshakeProtocolMismatch,
-    HandshakeNotAvailable
+    ServerQuery type;
+    uint64_t ptr;
 };
 
-enum { WelcomeMessageProgramNameSize = 64 };
-enum { WelcomeMessageHostInfoSize = 1024 };
+enum { ServerQueryPacketSize = sizeof( ServerQueryPacket ) };
 
-#pragma pack( 1 )
 
 struct WelcomeMessage
 {

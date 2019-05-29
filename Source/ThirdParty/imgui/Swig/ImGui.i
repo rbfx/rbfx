@@ -33,6 +33,7 @@
 %typemap(csvarout, excode=SWIGEXCODE2) float INOUT[] "get { var ret = $imcall;$excode return ret; }"
 
 %apply float *OUTPUT   { float& out_r, float& out_g, float& out_b, float& out_u, float& out_v, float& out_w };
+%apply double *INOUT   { double* v };
 %apply bool *INOUT     { bool*, unsigned int* flags };
 %apply int INOUT[]     { int*, int[ANY] };
 %apply float INOUT[]   { float*, float[ANY] };
@@ -75,6 +76,12 @@
 %ignore ImGuiViewport;
 %ignore ImGui::SetStateStorage;
 %ignore ImGui::GetStateStorage;
+%ignore ImGui::GetPlatformIO;
+%ignore ImGui::GetWindowViewport;
+%ignore ImGui::DockSpaceOverViewport;
+%ignore ImGui::GetMainViewport;
+%ignore ImGui::FindViewportByID;
+%ignore ImGui::FindViewportByPlatformHandle;
 
 %ignore ImGui::PlotEx;
 %ignore ImGui::ImFontAtlasBuildMultiplyCalcLookupTable;
@@ -93,6 +100,9 @@
 %ignore ImFormatString;
 %ignore ImFormatStringV;
 %ignore ImSwap;
+%ignore ImDrawList;
+%ignore ImGuiPlatformIO;
+%ignore ImFontGlyphRangesBuilder;
 
 %ignore ImDrawChannel;
 %ignore ImDrawCmd;
@@ -111,12 +121,15 @@
 %ignore ImGui::GetCurrentContext;
 %ignore ImGui::SetCurrentContext;
 %ignore ImGui::GetDrawListSharedData;
-%ignore ImGui::GetOverlayDrawList;
+%ignore ImGui::GetBackgroundDrawList;
+%ignore ImGui::GetForegroundDrawList;
 %ignore ImGui::GetDrawData;
 %ignore ImGui::GetIO;
 %ignore ImGui::GetWindowDrawList;
 %ignore ImGui::AcceptDragDropPayload;
 %ignore ImGuiStyle::Colors;
+%ignore ImGui::GetDragDropPayload;
+%ignore ImGui::GetDragDropPayload;
 
 %define %imgui_enum(NAME)
     %ignore NAME;
@@ -127,6 +140,7 @@
         var res = $imcall;$excode
         return ($typemap(cstype, NAME))res;
     }
+    %typemap(csvarout) NAME "get $typemap(csout, NAME)"
 %enddef
 
 %imgui_enum(ImDrawCornerFlags);

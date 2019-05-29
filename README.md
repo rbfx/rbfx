@@ -55,7 +55,7 @@ rbfx uses the following third-party libraries:
 - stb_truetype 1.15 (https://nothings.org)
 - stb_vorbis 1.13b (https://nothings.org)
 - WebP (https://chromium.googlesource.com/webm/libwebp)
-- imgui 1.66 (https://github.com/ocornut/imgui)
+- imgui 1.70 (https://github.com/ocornut/imgui/tree/docking)
 - tracy (https://bitbucket.org/wolfpld/tracy/)
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)

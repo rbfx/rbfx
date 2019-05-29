@@ -13,6 +13,7 @@
 
 #include <stddef.h>
 
+// Urho3D change
 #ifndef DLL_EXPORT
 #ifdef _WIN32
 #  define DLL_EXPORT __declspec(dllexport)
@@ -128,10 +129,10 @@ rpmalloc_thread_statistics(rpmalloc_thread_statistics_t* stats);
 
 extern void
 rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats);
-
+// Urho3D change
 DLL_EXPORT RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) RPMALLOC_ATTRIBUTE;
-
+// Urho3D change
 DLL_EXPORT void
 rpfree(void* ptr);
 

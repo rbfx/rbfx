@@ -766,7 +766,7 @@ void SceneTab::RenderNodeTree(Node* node)
                             continue;
 
                         if(selectedNode->IsChildOf(child))
-                            ui::SetNextTreeNodeOpen(true);
+                            ui::SetNextItemOpen(true);
                     }
                 }
 

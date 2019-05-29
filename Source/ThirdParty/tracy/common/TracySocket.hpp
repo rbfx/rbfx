@@ -3,8 +3,6 @@
 
 #include <functional>
 
-struct timeval;
-
 namespace tracy
 {
 
@@ -25,9 +23,10 @@ public:
     void Close();
 
     int Send( const void* buf, int len );
+    int GetSendBufSize();
 
-    bool Read( void* buf, int len, const timeval* tv, std::function<bool()> exitCb );
-    bool ReadRaw( void* buf, int len, const timeval* tv );
+    bool Read( void* buf, int len, int timeout, std::function<bool()> exitCb );
+    bool ReadRaw( void* buf, int len, int timeout );
     bool HasData();
 
     Socket( const Socket& ) = delete;
@@ -36,13 +35,12 @@ public:
     Socket& operator=( Socket&& ) = delete;
 
 private:
-    int RecvBuffered( void* buf, int len, const timeval* tv );
-    int Recv( void* buf, int len, const timeval* tv );
-
-    int m_sock;
+    int RecvBuffered( void* buf, int len, int timeout );
+    int Recv( void* buf, int len, int timeout );
 
     char* m_buf;
     char* m_bufPtr;
+    int m_sock;
     int m_bufLeft;
 };
 

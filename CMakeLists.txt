@@ -42,10 +42,10 @@ endif ()
 
 # Workarounds
 if (EMSCRIPTEN OR APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++${CMAKE_CXX_STANDARD}")
+    ucm_add_flags(CXX -std=gnu++${CMAKE_CXX_STANDARD})
 endif ()
 if (APPLE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+    ucm_add_flags(CXX -stdlib=libc++)
 endif ()
 
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -55,8 +55,13 @@ set_property(GLOBAL PROPERTY USE_FOLDERS ON)
 
 if (URHO3D_SSE AND NOT MSVC)
     # Build engine and it's dependencies with SSE/SSE2 enabled.
-    set (CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -msse -msse2")
-    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse -msse2")
+    ucm_add_flags(-msse -msse2)
+endif ()
+
+if (NOT "$ENV{CI}" STREQUAL "")
+    ucm_add_flags(-w)
+elseif (MSVC)
+    ucm_add_flags(/W1)
 endif ()
 
 if (URHO3D_STATIC_RUNTIME)

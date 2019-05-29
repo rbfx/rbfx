@@ -20,7 +20,7 @@ file(GLOB_RECURSE EASTL_SOURCES
     test/packages/EAStdC/include/*.h
     test/packages/EAStdC/source/*.cpp
 )
-add_library(EASTL STATIC ${EASTL_SOURCES})
+add_library(EASTL STATIC ${EASTL_SOURCES} doc/EASTL.natvis )
 target_compile_definitions(EASTL
     PUBLIC  -DEASTL_OPENSOURCE=1
             -DEASTL_RTTI_ENABLED=0
@@ -30,6 +30,8 @@ target_compile_definitions(EASTL
 )
 if (MSVC)
     target_compile_definitions(EASTL PRIVATE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
+elseif (UNIX)
+    target_compile_options(EASTL PUBLIC -Wno-literal-suffix)
 endif ()
 
 target_include_directories(EASTL

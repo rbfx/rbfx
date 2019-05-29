@@ -106,11 +106,6 @@ struct LockEvent
     int32_t srcloc;
     uint8_t thread;
     Type type;
-    // All above is read/saved as-is.
-
-    uint8_t lockingThread;
-    uint8_t lockCount;
-    uint64_t waitList;
 };
 
 struct LockEventShared : public LockEvent
@@ -119,11 +114,20 @@ struct LockEventShared : public LockEvent
     uint64_t sharedList;
 };
 
+struct LockEventPtr
+{
+    LockEvent* ptr;
+    uint8_t lockingThread;
+    uint8_t lockCount;
+    uint64_t waitList;
+};
+
 enum { LockEventSize = sizeof( LockEvent ) };
 enum { LockEventSharedSize = sizeof( LockEventShared ) };
+enum { LockEventPtrSize = sizeof( LockEventPtr ) };
 
-enum { MaxLockThreads = sizeof( LockEvent::waitList ) * 8 };
-static_assert( std::numeric_limits<decltype(LockEvent::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
+enum { MaxLockThreads = sizeof( LockEventPtr::waitList ) * 8 };
+static_assert( std::numeric_limits<decltype(LockEventPtr::lockCount)>::max() >= MaxLockThreads, "Not enough space for lock count." );
 
 
 struct GpuEvent
@@ -171,12 +175,36 @@ struct CallstackFrame
 
 enum { CallstackFrameSize = sizeof( CallstackFrame ) };
 
+struct CallstackFrameData
+{
+    CallstackFrame* data;
+    uint8_t size;
+};
+
+enum { CallstackFrameDataSize = sizeof( CallstackFrameData ) };
+
+// This union exploits the fact that the current implementations of x64 and arm64 do not provide
+// full 64 bit address space. The high bits must be bit-extended, so 0x80... is an invalid pointer.
+// This allows using the highest bit as a selector between a native pointer and a table index here.
+union CallstackFrameId
+{
+    struct
+    {
+        uint64_t idx : 63;
+        uint64_t sel : 1;
+    };
+    uint64_t data;
+};
+
+enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
+
+
 struct CallstackFrameTree
 {
-    uint64_t frame;
-    uint64_t allocExclusive, allocInclusive;
-    uint32_t countExclusive, countInclusive;
-    std::vector<CallstackFrameTree> children;
+    CallstackFrameId frame;
+    uint64_t alloc;
+    uint32_t count;
+    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> children;
     flat_hash_set<uint32_t, nohash<uint32_t>> callstacks;
 };
 
@@ -201,6 +229,7 @@ struct MessageData
     int64_t time;
     StringRef ref;
     uint64_t thread;
+    uint32_t color;
 };
 
 struct ThreadData
@@ -228,14 +257,23 @@ struct GpuCtxData
 
 struct LockMap
 {
+    struct TimeRange
+    {
+        int64_t start = std::numeric_limits<int64_t>::max();
+        int64_t end = std::numeric_limits<int64_t>::min();
+    };
+
     uint32_t srcloc;
-    Vector<LockEvent*> timeline;
+    Vector<LockEventPtr> timeline;
     flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;
     int64_t timeAnnounce;
     int64_t timeTerminate;
     bool valid;
+    bool isContended;
+
+    TimeRange range[64];
 };
 
 struct LockHighlight
@@ -253,10 +291,11 @@ struct PlotItem
     double val;
 };
 
-enum class PlotType
+enum class PlotType : uint8_t
 {
     User,
-    Memory
+    Memory,
+    SysTime
 };
 
 struct PlotData

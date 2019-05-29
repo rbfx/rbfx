@@ -159,7 +159,7 @@ bool Project::LoadProject(const ea::string& projectPath)
 
         ImGuiSettingsHandler handler;
         handler.TypeName = "Project";
-        handler.TypeHash = ImHash(handler.TypeName, 0, 0);
+        handler.TypeHash = ImHashStr(handler.TypeName, 0, 0);
         handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void*
         {
             if (strcmp(name, "Window") == 0)

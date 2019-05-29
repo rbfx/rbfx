@@ -144,6 +144,7 @@ int main( int argc, char** argv )
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, 15.0f * dpiScale, nullptr, rangesBasic );
     io.Fonts->AddFontFromMemoryCompressedTTF( tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, 14.0f * dpiScale, &configMerge, rangesIcons );
     auto fixedWidth = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, 15.0f * dpiScale );
+    auto bigFont = io.Fonts->AddFontFromMemoryCompressedTTF( tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, 20.0f * dpiScale );
 
     ImGuiFreeType::BuildFontAtlas( io.Fonts, ImGuiFreeType::LightHinting );
 
@@ -162,6 +163,7 @@ int main( int argc, char** argv )
 
     std::thread loadThread;
 
+    double time = 0;
     // Main loop
     bool done = false;
     while (!done)
@@ -192,10 +194,14 @@ int main( int argc, char** argv )
                 SDL_SetWindowTitle( window, title );
             }
 
-            ImGui::Begin( "Tracy server", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+            style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
+            ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             char buf[128];
-            sprintf( buf, "Tracy %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            sprintf( buf, "Urho3D Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch );
+            ImGui::PushFont( bigFont );
             tracy::TextCentered( buf );
+            ImGui::PopFont();
+            ImGui::Spacing();
             if( ImGui::Button( ICON_FA_BOOK " User manual" ) )
             {
                 OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
@@ -227,9 +233,9 @@ int main( int argc, char** argv )
                 ImGui::EndPopup();
             }
             ImGui::Separator();
-            ImGui::Text( "Connect to client" );
+            ImGui::TextUnformatted( "Connect to client" );
             bool connectClicked = false;
-            connectClicked |= ImGui::InputText( "", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+            connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
             if( !connHistVec.empty() )
             {
                 ImGui::SameLine();
@@ -261,14 +267,14 @@ int main( int argc, char** argv )
             if( connectClicked && *addr && !loadThread.joinable() )
             {
                 std::string addrStr( addr );
-                auto it = connHistMap.find( addr );
+                auto it = connHistMap.find( addrStr );
                 if( it != connHistMap.end() )
                 {
                     it->second++;
                 }
                 else
                 {
-                    connHistMap.emplace( std::move( addr ), 1 );
+                    connHistMap.emplace( std::move( addrStr ), 1 );
                 }
                 connHistVec = RebuildConnectionHistory( connHistMap );
 
@@ -331,6 +337,10 @@ int main( int argc, char** argv )
         if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
         {
             tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
+
+            time += io.DeltaTime;
+            tracy::DrawWaitingDots( time );
+
             auto currProgress = progress.progress.load( std::memory_order_relaxed );
             if( totalProgress == 0 )
             {
@@ -340,28 +350,28 @@ int main( int argc, char** argv )
             switch( currProgress )
             {
             case tracy::LoadProgress::Initialization:
-                ImGui::Text( "Initialization..." );
+                ImGui::TextUnformatted( "Initialization..." );
                 break;
             case tracy::LoadProgress::Locks:
-                ImGui::Text( "Locks..." );
+                ImGui::TextUnformatted( "Locks..." );
                 break;
             case tracy::LoadProgress::Messages:
-                ImGui::Text( "Messages..." );
+                ImGui::TextUnformatted( "Messages..." );
                 break;
             case tracy::LoadProgress::Zones:
-                ImGui::Text( "CPU zones..." );
+                ImGui::TextUnformatted( "CPU zones..." );
                 break;
             case tracy::LoadProgress::GpuZones:
-                ImGui::Text( "GPU zones..." );
+                ImGui::TextUnformatted( "GPU zones..." );
                 break;
             case tracy::LoadProgress::Plots:
-                ImGui::Text( "Plots..." );
+                ImGui::TextUnformatted( "Plots..." );
                 break;
             case tracy::LoadProgress::Memory:
-                ImGui::Text( "Memory..." );
+                ImGui::TextUnformatted( "Memory..." );
                 break;
             case tracy::LoadProgress::CallStacks:
-                ImGui::Text( "Call stacks..." );
+                ImGui::TextUnformatted( "Call stacks..." );
                 break;
             default:
                 assert( false );
@@ -369,7 +379,7 @@ int main( int argc, char** argv )
             }
             ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
 
-            ImGui::Text( "Progress..." );
+            ImGui::TextUnformatted( "Progress..." );
             auto subTotal = progress.subTotal.load( std::memory_order_relaxed );
             auto subProgress = progress.subProgress.load( std::memory_order_relaxed );
             if( subTotal == 0 )
