@@ -20,7 +20,7 @@ file(GLOB_RECURSE EASTL_SOURCES
     test/packages/EAStdC/include/*.h
     test/packages/EAStdC/source/*.cpp
 )
-add_library(EASTL STATIC ${EASTL_SOURCES})
+add_library(EASTL STATIC ${EASTL_SOURCES} doc/EASTL.natvis )
 target_compile_definitions(EASTL
     PUBLIC  -DEASTL_OPENSOURCE=1
             -DEASTL_RTTI_ENABLED=0
