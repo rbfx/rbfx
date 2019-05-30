@@ -734,15 +734,23 @@ bool View::DrawImpl()
             ImGui::EndPopup();
         }
 
+        auto* storage = ImGui::GetStateStorage();
         if (!result)    // Clear trace
         {
             if (m_worker.IsConnected())
+            {
+                storage->SetBool(ImGui::GetID("is-shutting-down"), true);
                 m_worker.Disconnect();
+            }
             else
                 return false;
         }
-        else if (!m_worker.IsConnected() && m_worker.GetFailureType() == Worker::Failure::None)
+        else if (!m_worker.IsConnected() && m_worker.GetFailureType() == Worker::Failure::None &&
+            storage->GetBool(ImGui::GetID("is-shutting-down")))
+        {
+            storage->SetBool(ImGui::GetID("is-shutting-down"), true);
             return false;
+        }
 #else
         if( !DrawConnection() ) return false;
 #endif
