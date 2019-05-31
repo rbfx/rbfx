@@ -38,8 +38,9 @@ public:
     explicit ProfilerTab(Context* context);
 
     bool RenderWindowContent() override;
-
+#if URHO3D_PROFILING
     std::unique_ptr<tracy::View> view_;
+#endif
     ea::string connectTo_{"127.0.0.1"};
 };
 
