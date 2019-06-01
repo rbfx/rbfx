@@ -233,8 +233,6 @@ URHO3D_FLAGSET_EX(ImGui, TransformResizeType, TransformResizeTypeFlags);
 
 namespace ImGui
 {
-/// Hashing function which enables use of enum type as a HashMap key.
-inline unsigned MakeHash(const TransformResizeType& value) { return value; }
 
 bool TransformRect(IntRect& inOut, TransformSelectorFlags flags)
 {
