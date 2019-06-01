@@ -168,9 +168,9 @@
 
 %include "../../../Urho3D/CSharp/Swig/Math.i"
 
-URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Vector2, ImVec2);
-URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImVec4);
-URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImColor);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Vector2, ImVec2, pod::float2);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImVec4, pod::float4);
+URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImColor, pod::float4);
 
 %include "../include/ImGui/imgui.h"
 //%include "../include/ImGui/imgui_internal.h"

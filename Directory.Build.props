@@ -10,18 +10,18 @@
     <Configurations>Debug;Release;RelWithDebInfo;MinSizeRel</Configurations>
     <HasDebugInfo Condition=" '$(Configuration)' == 'Debug' Or '$(Configuration)' == 'RelWithDebInfo'">true</HasDebugInfo>
   </PropertyGroup>
-  <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
-    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
-    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-x64</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win-x64</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-x64</RuntimeIdentifiers>
-  </PropertyGroup>
   <PropertyGroup>
     <PlatformTarget Condition=" '$(PlatformTarget)' == '' ">x64</PlatformTarget>
     <PlatformTarget Condition=" '$(Platform)' == 'x64' ">x64</PlatformTarget>
     <PlatformTarget Condition=" '$(Platform)' == 'Win32' Or '$(Platform)' == 'x86' ">x86</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == 'net471'">
+    <TargetFrameworkIdentifier>.NETFramework</TargetFrameworkIdentifier>
+    <TargetFrameworkVersion>v4.7.1</TargetFrameworkVersion>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-$(PlatformTarget)</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win7-$(PlatformTarget)</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-$(PlatformTarget)</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup>
     <BaseOutputPath>bin/</BaseOutputPath>
