@@ -48,11 +48,6 @@ static ea::unordered_map<ContentType, ea::string> contentToTabType{
     {CTYPE_UILAYOUT, "UITab"},
 };
 
-unsigned MakeHash(ContentType value)
-{
-    return (unsigned)value;
-}
-
 ResourceTab::ResourceTab(Context* context)
     : Tab(context)
 {
