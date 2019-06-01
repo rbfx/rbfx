@@ -28,6 +28,24 @@
 #include <EASTL/utility.h>
 #include <EASTL/weak_ptr.h>
 
+namespace Urho3D
+{
+
+/// Combine hash into result.
+inline void CombineHash(unsigned& result, unsigned hash)
+{
+    result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
+}
+
+/// Make hash template helper.
+template <class T>
+inline unsigned MakeHash(const T& value)
+{
+    return ea::hash<T>{}(value);
+}
+
+}
+
 namespace eastl
 {
 
