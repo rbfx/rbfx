@@ -57,8 +57,8 @@ static const char* platformDynamicLibrarySuffix = ".dylib";
 #endif
 
 #if URHO3D_CSHARP && URHO3D_PLUGINS
-extern "C" URHO3D_EXPORT_API void ParseArgumentsC(int argc, char** argv) { ParseArguments(argc, argv); }
-extern "C" URHO3D_EXPORT_API Application* CreateEditorApplication(Context* context) { return new Editor(context); }
+extern "C" URHO3D_EXPORT_API void URHO3D_STDCALL ParseArgumentsC(int argc, char** argv) { ParseArguments(argc, argv); }
+extern "C" URHO3D_EXPORT_API Application* URHO3D_STDCALL CreateEditorApplication(Context* context) { return new Editor(context); }
 #endif
 
 Plugin::Plugin(Context* context)
