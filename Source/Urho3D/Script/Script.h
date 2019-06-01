@@ -34,9 +34,14 @@
 
 namespace Urho3D
 {
+#if _WIN32
+#  define URHO3D_STDCALL __stdcall
+#else
+#  define URHO3D_STDCALL
+#endif
 
 /// Script runtime command handler callback type.
-typedef std::uintptr_t(*ScriptRuntimeCommandHandler)(int command, void** args);
+typedef std::uintptr_t(URHO3D_STDCALL*ScriptRuntimeCommandHandler)(int command, void** args);
 ///
 using ScriptCommandRange = ea::pair<int, int>;
 /// Value indicating failure.
