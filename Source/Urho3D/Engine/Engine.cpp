@@ -346,8 +346,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     ea::vector<ea::string> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS,
         "Data;CoreData").GetString().split(';');
     ea::vector<ea::string> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().split(';');
-    ea::vector<ea::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(
-        ';');
+    ea::vector<ea::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(';');
 
     for (unsigned i = 0; i < resourcePaths.size(); ++i)
     {
