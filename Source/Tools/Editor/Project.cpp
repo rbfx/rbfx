@@ -418,7 +418,7 @@ bool Project::SaveProject()
         JSONFile file(context_);
         JSONArray names;
         for (const auto& string : hashNames)
-            names.push_back(string.ToString());
+            names.push_back(string);
         file.GetRoot() = names;
 
         ea::string filePath(projectFileDir_ + "StringHashNames.json");

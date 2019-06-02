@@ -1186,17 +1186,8 @@ namespace eastl
 		{
 			eastl::vector<key_type> result{};
 			result.reserve(size());
-			for (const auto& pair : *this)
-				result.emplace_back(pair.first);
-			return result;
-		}
-
-		eastl::vector<key_type> values() const
-		{
-			eastl::vector<key_type> result{};
-			result.reserve(size());
-			for (const auto& pair : *this)
-				result.emplace_back(pair.second);
+			for (const auto& elem : *this)
+				result.emplace_back(mExtractKey(elem));
 			return result;
 		}
 #endif
