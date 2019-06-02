@@ -299,6 +299,16 @@ namespace eastl
 			this->operator [](key) = value;
 			return populate(args...);
 		}
+
+		/// Extract values from the map
+		eastl::vector<mapped_type> values() const
+		{
+			eastl::vector<mapped_type> result{};
+			result.reserve(this->size());
+			for (const auto& pair : *this)
+				result.emplace_back(pair.second);
+			return result;
+		}
 #endif
 	}; // hash_map
 
