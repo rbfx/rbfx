@@ -1491,7 +1491,7 @@ ea::string GetAbsolutePath(const ea::string& path)
     {
         if (parts[index] != ".." && parts[index + 1] == "..")
         {
-            parts.erase(index, index + 2);
+            parts.erase_at(index, index + 2);
             index = Max(0, --index);
         }
         else

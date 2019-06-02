@@ -302,7 +302,7 @@ void PhysicsWorld2D::Update(float timeStep)
         else
         {
             // Erase possible stale weak pointer
-            rigidBodies_.erase(i);
+            rigidBodies_.erase_at(i);
         }
     }
 

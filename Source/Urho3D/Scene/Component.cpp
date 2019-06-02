@@ -218,7 +218,7 @@ void Component::CleanupConnection(Connection* connection)
         for (unsigned i = networkState_->replicationStates_.size() - 1; i < networkState_->replicationStates_.size(); --i)
         {
             if (networkState_->replicationStates_[i]->connection_ == connection)
-                networkState_->replicationStates_.erase(i);
+                networkState_->replicationStates_.erase_at(i);
         }
     }
 }

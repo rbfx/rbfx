@@ -71,13 +71,13 @@ void AnimationTrack::AddKeyFrame(const AnimationKeyFrame& keyFrame)
 
 void AnimationTrack::InsertKeyFrame(unsigned index, const AnimationKeyFrame& keyFrame)
 {
-    keyFrames_.insert(index, keyFrame);
+    keyFrames_.insert_at(index, keyFrame);
     ea::quick_sort(keyFrames_.begin(), keyFrames_.end(), CompareKeyFrames);
 }
 
 void AnimationTrack::RemoveKeyFrame(unsigned index)
 {
-    keyFrames_.erase(index);
+    keyFrames_.erase_at(index);
 }
 
 void AnimationTrack::RemoveAllKeyFrames()
@@ -354,7 +354,7 @@ void Animation::AddTrigger(float time, bool timeIsNormalized, const Variant& dat
 void Animation::RemoveTrigger(unsigned index)
 {
     if (index < triggers_.size())
-        triggers_.erase(index);
+        triggers_.erase_at(index);
 }
 
 void Animation::RemoveAllTriggers()

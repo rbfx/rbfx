@@ -1048,7 +1048,7 @@ ea::vector<OffMeshConnection*> DynamicNavigationMesh::CollectOffMeshConnections(
         if (!(connection->IsEnabledEffective() && connection->GetEndPoint()))
         {
             // discard this connection
-            connections.erase(i);
+            connections.erase_at(i);
             --i;
         }
     }
