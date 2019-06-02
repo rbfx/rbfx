@@ -150,7 +150,7 @@ bool AreaAllocator::Allocate(int width, int height, int& x, int& y)
         for (unsigned i = 0; i < freeAreas_.size();)
         {
             if (SplitRect(i, reserved))
-                freeAreas_.erase(i);
+                freeAreas_.erase_at(i);
             else
                 ++i;
         }
@@ -217,7 +217,7 @@ void AreaAllocator::Cleanup()
                 (freeAreas_[i].right_ <= freeAreas_[j].right_) &&
                 (freeAreas_[i].bottom_ <= freeAreas_[j].bottom_))
             {
-                freeAreas_.erase(i);
+                freeAreas_.erase_at(i);
                 erased = true;
                 break;
             }
@@ -225,7 +225,7 @@ void AreaAllocator::Cleanup()
                 (freeAreas_[j].top_ >= freeAreas_[i].top_) &&
                 (freeAreas_[j].right_ <= freeAreas_[i].right_) &&
                 (freeAreas_[j].bottom_ <= freeAreas_[i].bottom_))
-                freeAreas_.erase(j);
+                freeAreas_.erase_at(j);
             else
                 ++j;
         }

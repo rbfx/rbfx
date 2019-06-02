@@ -132,7 +132,7 @@ void Spline::AddKnot(const Variant& knot, unsigned index)
         index = knots_.size();
 
     if (knots_.size() > 0 && knots_[0].GetType() == knot.GetType())
-        knots_.insert(index, knot);
+        knots_.insert_at(index, knot);
     else if (knots_.empty())
         knots_.push_back(knot);
     else

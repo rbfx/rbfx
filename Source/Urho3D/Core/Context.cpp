@@ -85,7 +85,7 @@ void EventReceiverGroup::EndSendEvent()
         for (unsigned i = receivers_.size() - 1; i < receivers_.size(); --i)
         {
             if (!receivers_[i])
-                receivers_.erase(i);
+                receivers_.erase_at(i);
         }
 
         dirty_ = false;

@@ -100,7 +100,7 @@ public:
     void RemoveKnot() { knots_.pop_back(); }
 
     /// Remove the knot at the specific index.
-    void RemoveKnot(unsigned index) { knots_.erase(index); }
+    void RemoveKnot(unsigned index) { knots_.erase_at(index); }
 
     /// Clear the spline.
     void Clear() { knots_.clear(); }

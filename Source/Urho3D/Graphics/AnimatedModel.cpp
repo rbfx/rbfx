@@ -524,7 +524,7 @@ void AnimatedModel::RemoveAnimationState(unsigned index)
 {
     if (index < animationStates_.size())
     {
-        animationStates_.erase(index);
+        animationStates_.erase_at(index);
         MarkAnimationDirty();
     }
 }

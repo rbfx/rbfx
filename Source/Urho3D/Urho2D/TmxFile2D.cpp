@@ -544,7 +544,7 @@ void TmxFile2D::AddLayer(unsigned index, TmxLayer2D *layer)
     if (index > layers_.size())
         layers_.push_back(layer);
     else // index <= layers_.size()
-        layers_.insert(index, layer);
+        layers_.insert_at(index, layer);
 }
 
 void TmxFile2D::AddLayer(TmxLayer2D *layer)

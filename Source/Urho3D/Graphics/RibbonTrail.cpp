@@ -191,7 +191,7 @@ void RibbonTrail::HandleScenePostUpdate(StringHash eventType, VariantMap& eventD
         if (points_.size() < 3 && viewFrameNumber_ - lastUpdateFrameNumber_ > 1)
         {
             previousPosition_ = node_->GetWorldPosition();
-            points_.erase(0, points_.size());
+            points_.erase_at(0, points_.size());
         }
 
         lastUpdateFrameNumber_ = viewFrameNumber_;

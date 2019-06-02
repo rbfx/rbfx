@@ -1,4 +1,4 @@
-﻿//
+//
 // Copyright (c) 2008-2019 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -834,7 +834,7 @@ void Node::AddChild(Node* node, unsigned index)
     }
 
     // Add to the child vector, then add to the scene if not added yet
-    children_.insert(index, nodeShared);
+    children_.insert_at(index, nodeShared);
     if (scene_ && node->GetScene() != scene_)
         scene_->NodeAdded(node);
 
@@ -1089,7 +1089,7 @@ void Node::ReorderComponent(Component* component, unsigned index)
             // Need shared ptr to insert. Also, prevent destruction when removing first
             SharedPtr<Component> componentShared(component);
             components_.erase(i);
-            components_.insert(index, componentShared);
+            components_.insert_at(index, componentShared);
             return;
         }
     }
@@ -1777,7 +1777,7 @@ void Node::CleanupConnection(Connection* connection)
         for (unsigned i = networkState_->replicationStates_.size() - 1; i < networkState_->replicationStates_.size(); --i)
         {
             if (networkState_->replicationStates_[i]->connection_ == connection)
-                networkState_->replicationStates_.erase(i);
+                networkState_->replicationStates_.erase_at(i);
         }
     }
 }
