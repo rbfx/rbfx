@@ -144,7 +144,7 @@ void SplinePath::AddControlPoint(Node* point, unsigned index)
     WeakPtr<Node> controlPoint(point);
 
     point->AddListener(this);
-    controlPoints_.insert(index, controlPoint);
+    controlPoints_.insert_at(index, controlPoint);
     spline_.AddKnot(point->GetWorldPosition(), index);
 
     UpdateNodeIds();
@@ -164,7 +164,7 @@ void SplinePath::RemoveControlPoint(Node* point)
     {
         if (controlPoints_[i] == controlPoint.Get())
         {
-            controlPoints_.erase(i);
+            controlPoints_.erase_at(i);
             spline_.RemoveKnot(i);
             break;
         }

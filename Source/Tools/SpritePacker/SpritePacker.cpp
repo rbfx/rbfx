@@ -174,7 +174,7 @@ void Run(ea::vector<ea::string>& arguments)
     {
         outputFile = inputFiles[inputFiles.size() - 1];
         URHO3D_LOGINFO("Output file set to " + outputFile + ".");
-        inputFiles.erase(inputFiles.size() - 1);
+        inputFiles.erase_at(inputFiles.size() - 1);
     }
 
     // set spritesheet name to outputfile.xml if not specified

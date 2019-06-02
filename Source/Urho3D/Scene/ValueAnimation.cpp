@@ -293,7 +293,7 @@ bool ValueAnimation::SetKeyFrame(float time, const Variant& value)
                 return false;
             if (time < keyFrames_[i].time_)
             {
-                keyFrames_.insert(i, keyFrame);
+                keyFrames_.insert_at(i, keyFrame);
                 break;
             }
         }
@@ -321,7 +321,7 @@ void ValueAnimation::SetEventFrame(float time, const StringHash& eventType, cons
         {
             if (time < eventFrames_[i].time_)
             {
-                eventFrames_.insert(i, eventFrame);
+                eventFrames_.insert_at(i, eventFrame);
                 break;
             }
         }

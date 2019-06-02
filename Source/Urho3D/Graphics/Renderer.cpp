@@ -1542,7 +1542,7 @@ void Renderer::RemoveUnusedBuffers()
         if (occlusionBuffers_[i]->GetUseTimer() > MAX_BUFFER_AGE)
         {
             URHO3D_LOGDEBUG("Removed unused occlusion buffer");
-            occlusionBuffers_.erase(i);
+            occlusionBuffers_.erase_at(i);
         }
     }
 
@@ -1558,7 +1558,7 @@ void Renderer::RemoveUnusedBuffers()
             {
                 URHO3D_LOGTRACE("Removed unused screen buffer size " + ea::to_string(buffer->GetWidth()) + "x" + ea::to_string(buffer->GetHeight()) +
                          " format " + ea::to_string(buffer->GetFormat()));
-                buffers.erase(j);
+                buffers.erase_at(j);
             }
         }
         if (buffers.empty())
