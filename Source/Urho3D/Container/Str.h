@@ -25,16 +25,11 @@
 #include <Urho3D/Urho3D.h>
 
 #include <EASTL/string.h>
-#include <EASTL/vector.h>
 #include <EASTL/unordered_map.h>
 
 #include <cstdarg>
 #include <cstring>
 #include <cctype>
-#include <string>
-
-#include <fmt/ostream.h>
-#include <fmt/format.h>
 
 #include "../Container/Hash.h"
 

@@ -22,8 +22,7 @@
 
 #pragma once
 
-#include <EASTL/shared_ptr.h>
-#include <EASTL/unique_ptr.h>
+#include <EASTL/hash_set.h>
 #include <EASTL/unordered_map.h>
 
 #include "../Core/Mutex.h"

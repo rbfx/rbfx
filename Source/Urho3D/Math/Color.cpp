@@ -25,6 +25,7 @@
 #include "../Math/Color.h"
 
 #include <cstdio>
+#include <cassert>
 
 #include "../DebugNew.h"
 

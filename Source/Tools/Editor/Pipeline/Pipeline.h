@@ -23,6 +23,7 @@
 #pragma once
 
 #include <atomic>
+#include <EASTL/hash_set.h>
 
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/Resource/XMLFile.h>
