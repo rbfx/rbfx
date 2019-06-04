@@ -1,927 +1,364 @@
-/*
-Copyright (c) 2006 - 2008 The Open Toolkit library.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
- */
+//
+// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2017-2019 the rbfx project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
-using System.Xml.Serialization;
 
 namespace Urho3DNet
 {
-    /// <summary>Represents a 2D vector using two single-precision floating-point numbers.</summary>
-    /// <remarks>
-    /// The Vector2 structure is suitable for interoperation with unmanaged code requiring two consecutive floats.
-    /// </remarks>
-    [Serializable]
+    /// Two-dimensional vector.
     [StructLayout(LayoutKind.Sequential)]
     public struct Vector2 : IEquatable<Vector2>
     {
-        /// <summary>
-        /// The X component of the Vector2.
-        /// </summary>
-        public float X;
-
-        /// <summary>
-        /// The Y component of the Vector2.
-        /// </summary>
-        public float Y;
-
-        /// <summary>
-        /// Constructs a new instance.
-        /// </summary>
-        /// <param name="value">The value that will initialize this instance.</param>
-        public Vector2(float value)
+        /// Construct from an IntVector2.
+        public Vector2(in IntVector2 vector)
         {
-            X = value;
-            Y = value;
+            X = vector.X;
+            Y = vector.Y;
         }
 
-        /// <summary>
-        /// Constructs a new Vector2.
-        /// </summary>
-        /// <param name="x">The x coordinate of the net Vector2.</param>
-        /// <param name="y">The y coordinate of the net Vector2.</param>
+        /// Construct from coordinates.
         public Vector2(float x, float y)
         {
             X = x;
             Y = y;
         }
 
-        /// <summary>
-        /// Convert vector to System.Numerics.Vector2 type.
-        /// </summary>
-        /// <param name="vector">A vector to convert.</param>
-        /// <returns></returns>
-        public static implicit operator System.Numerics.Vector2(in Vector2 vector)
+        /// Construct from a float array.
+        public Vector2(IReadOnlyList<float> data)
         {
-            return new System.Numerics.Vector2(vector.X, vector.Y);
+            X = data[0];
+            Y = data[1];
         }
 
-        /// <summary>
-        /// Gets or sets the value at the index of the Vector.
-        /// </summary>
-        public float this[int index] {
-            get{
-                if (index == 0)
-                {
-                    return X;
-                }
-                else if (index == 1)
-                {
-                    return Y;
-                }
-                throw new IndexOutOfRangeException("You tried to access this vector at index: " + index);
-            } set{
-                if (index == 0)
-                {
-                    X = value;
-                }
-                else if (index == 1)
-                {
-                    Y = value;
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException("You tried to set this vector at index: " + index);
-                }
-            }
-        }
-
-        /// <summary>
-        /// Gets the length (magnitude) of the vector.
-        /// </summary>
-        /// <see cref="LengthFast"/>
-        /// <seealso cref="LengthSquared"/>
-        public float Length
+        /// Test for equality with another vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(in Vector2 lhs, in Vector2 rhs)
         {
-            get
-            {
-                return (float)System.Math.Sqrt(X * X + Y * Y);
-            }
+            return lhs.X == rhs.X && lhs.Y == rhs.Y;
         }
 
-        /// <summary>
-        /// Gets an approximation of the vector length (magnitude).
-        /// </summary>
-        /// <remarks>
-        /// This property uses an approximation of the square root function to calculate vector magnitude, with
-        /// an upper error bound of 0.001.
-        /// </remarks>
-        /// <see cref="Length"/>
-        /// <seealso cref="LengthSquared"/>
-        public float LengthFast
+        /// Test for inequality with another vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(in Vector2 lhs, in Vector2 rhs)
         {
-            get
-            {
-                return 1.0f / MathDefs.InverseSqrtFast(X * X + Y * Y);
-            }
+            return lhs.X != rhs.X || lhs.Y != rhs.Y;
         }
 
-        /// <summary>
-        /// Gets the square of the vector length (magnitude).
-        /// </summary>
-        /// <remarks>
-        /// This property avoids the costly square root operation required by the Length property. This makes it more suitable
-        /// for comparisons.
-        /// </remarks>
-        /// <see cref="Length"/>
-        /// <seealso cref="LengthFast"/>
-        public float LengthSquared
+        /// Add a vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator +(in Vector2 lhs, in Vector2 rhs)
         {
-            get
-            {
-                return X * X + Y * Y;
-            }
+            return new Vector2(lhs.X + rhs.X, lhs.Y + rhs.Y);
         }
 
-        /// <summary>
-        /// Gets the perpendicular vector on the right side of this vector.
-        /// </summary>
-        public Vector2 PerpendicularRight
+        /// Return negation.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator -(in Vector2 v)
+        {
+            return new Vector2(-v.X, -v.Y);
+        }
+
+        /// Subtract a vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator -(in Vector2 lhs, in Vector2 rhs)
+        {
+            return new Vector2(lhs.X - rhs.X, lhs.Y - rhs.Y);
+        }
+
+        /// Multiply with a scalar.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator *(in Vector2 lhs, float rhs)
+        {
+            return new Vector2(lhs.X * rhs, lhs.Y * rhs);
+        }
+
+        /// Multiply with a vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator *(in Vector2 lhs, in Vector2 rhs)
+        {
+            return new Vector2(lhs.X * rhs.X, lhs.Y * rhs.Y);
+        }
+
+        /// Divide by a scalar.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator /(in Vector2 lhs, float rhs)
+        {
+            return new Vector2(lhs.X / rhs, lhs.Y / rhs);
+        }
+
+        /// Divide by a vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator /(in Vector2 lhs, in Vector2 rhs)
+        {
+            return new Vector2(lhs.X / rhs.X, lhs.Y / rhs.Y);
+        }
+
+        /// Multiply Vector2 with a scalar
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator *(float lhs, in Vector2 rhs)
+        {
+            return rhs * lhs;
+        }
+
+        /// Return value by index.
+        public float this[int index]
         {
             get
             {
-                return new Vector2(Y, -X);
+                if (index < 0 || index > 1)
+                    throw new IndexOutOfRangeException();
+                unsafe
+                {
+                    fixed (float* p = &X)
+                    {
+                        return p[index];
+                    }
+                }
             }
-        }
-
-        /// <summary>
-        /// Gets the perpendicular vector on the left side of this vector.
-        /// </summary>
-        public Vector2 PerpendicularLeft
-        {
-            get
+            set
             {
-                return new Vector2(-Y, X);
+                if (index < 0 || index > 1)
+                    throw new IndexOutOfRangeException();
+                unsafe
+                {
+                    fixed (float* p = &X)
+                    {
+                        p[index] = value;
+                    }
+                }
             }
         }
 
-        /// <summary>
-        /// Returns a copy of the Vector2 scaled to unit length.
-        /// </summary>
-        /// <returns></returns>
-        public Vector2 Normalized()
-        {
-            Vector2 v = this;
-            v.Normalize();
-            return v;
-        }
-        /// <summary>
-        /// Scales the Vector2 to unit length.
-        /// </summary>
+        /// Normalize to unit length.
         public void Normalize()
         {
-            float scale = 1.0f / this.Length;
-            X *= scale;
-            Y *= scale;
+            float lenSquared = LengthSquared;
+            if (!MathDefs.Equals(lenSquared, 1.0f) && lenSquared > 0.0f)
+            {
+                float invLen = 1.0f / (float) Math.Sqrt(lenSquared);
+                X *= invLen;
+                Y *= invLen;
+            }
         }
 
-        /// <summary>
-        /// Scales the Vector2 to approximately unit length.
-        /// </summary>
-        public void NormalizeFast()
+        /// Return length.
+        public float Length => (float) Math.Sqrt(X * X + Y * Y);
+
+        /// Return squared length.
+        public float LengthSquared => X * X + Y * Y;
+
+        /// Calculate dot product.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float DotProduct(in Vector2 rhs)
         {
-            float scale = MathDefs.InverseSqrtFast(X * X + Y * Y);
-            X *= scale;
-            Y *= scale;
+            return X * rhs.X + Y * rhs.Y;
         }
 
-        /// <summary>
-        /// Defines a unit-length Vector2 that points towards the X-axis.
-        /// </summary>
-        public static readonly Vector2 UnitX = new Vector2(1, 0);
-
-        /// <summary>
-        /// Defines a unit-length Vector2 that points towards the Y-axis.
-        /// </summary>
-        public static readonly Vector2 UnitY = new Vector2(0, 1);
-
-        /// <summary>
-        /// Defines a zero-length Vector2.
-        /// </summary>
-        public static readonly Vector2 Zero = new Vector2(0, 0);
-
-        /// <summary>
-        /// Defines an instance with all components set to 1.
-        /// </summary>
-        public static readonly Vector2 One = new Vector2(1, 1);
-
-        /// <summary>
-        /// Defines the size of the Vector2 struct in bytes.
-        /// </summary>
-        public static readonly int SizeInBytes = Marshal.SizeOf(new Vector2());
-
-        /// <summary>
-        /// Adds two vectors.
-        /// </summary>
-        /// <param name="a">Left operand.</param>
-        /// <param name="b">Right operand.</param>
-        /// <returns>Result of operation.</returns>
-        public static Vector2 Add(Vector2 a, in Vector2 b)
+        /// Calculate absolute dot product.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float AbsDotProduct(in Vector2 rhs)
         {
-            Add(a, b, out a);
-            return a;
+            return Math.Abs(X * rhs.X) + Math.Abs(Y * rhs.Y);
         }
 
-        /// <summary>
-        /// Adds two vectors.
-        /// </summary>
-        /// <param name="a">Left operand.</param>
-        /// <param name="b">Right operand.</param>
-        /// <param name="result">Result of operation.</param>
-        public static void Add(in Vector2 a, in Vector2 b, out Vector2 result)
+        /// Project vector onto axis.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float ProjectOntoAxis(in Vector2 axis)
         {
-            result.X = a.X + b.X;
-            result.Y = a.Y + b.Y;
+            return DotProduct(axis.Normalized);
         }
 
-        /// <summary>
-        /// Subtract one Vector from another
-        /// </summary>
-        /// <param name="a">First operand</param>
-        /// <param name="b">Second operand</param>
-        /// <returns>Result of subtraction</returns>
-        public static Vector2 Subtract(Vector2 a, in Vector2 b)
+        /// Returns the angle between this vector and another vector in degrees.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public float Angle(in Vector2 rhs)
         {
-            Subtract(a, b, out a);
-            return a;
+            return (float) Math.Acos(DotProduct(rhs) / (Length * rhs.Length));
         }
 
-        /// <summary>
-        /// Subtract one Vector from another
-        /// </summary>
-        /// <param name="a">First operand</param>
-        /// <param name="b">Second operand</param>
-        /// <param name="result">Result of subtraction</param>
-        public static void Subtract(in Vector2 a, in Vector2 b, out Vector2 result)
+        /// Return absolute vector.
+        public Vector2 Abs => new Vector2(Math.Abs(X), Math.Abs(Y));
+
+        /// Linear interpolation with another vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Vector2 Lerp(in Vector2 rhs, float t)
         {
-            result.X = a.X - b.X;
-            result.Y = a.Y - b.Y;
+            return this * (1.0f - t) + rhs * t;
         }
 
-        /// <summary>
-        /// Multiplies a vector by a scalar.
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of the operation.</returns>
-        public static Vector2 Multiply(Vector2 vector, float scale)
+        /// Test for equality with another vector with epsilon.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public bool Equals(Vector2 rhs)
         {
-            Multiply(vector, scale, out vector);
-            return vector;
+            return MathDefs.Equals(X, rhs.X) && MathDefs.Equals(Y, rhs.Y);
         }
 
-        /// <summary>
-        /// Multiplies a vector by a scalar.
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <param name="result">Result of the operation.</param>
-        public static void Multiply(in Vector2 vector, float scale, out Vector2 result)
+        /// Return whether is NaN.
+        public bool IsNaN => float.IsNaN(X) || float.IsNaN(Y);
+
+        /// Return normalized to unit length.
+        public Vector2 Normalized
         {
-            result.X = vector.X * scale;
-            result.Y = vector.Y * scale;
+            get
+            {
+                float lenSquared = LengthSquared;
+                if (!MathDefs.Equals(lenSquared, 1.0f) && lenSquared > 0.0f)
+                {
+                    float invLen = 1.0f / (float) Math.Sqrt(lenSquared);
+                    return this * invLen;
+                }
+                else
+                    return this;
+            }
         }
 
-        /// <summary>
-        /// Multiplies a vector by the components a vector (scale).
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of the operation.</returns>
-        public static Vector2 Multiply(Vector2 vector, Vector2 scale)
-        {
-            Multiply(vector, scale, out vector);
-            return vector;
-        }
+        /// Return float data.
+        public float[] Data => new float[] {X, Y};
 
-        /// <summary>
-        /// Multiplies a vector by the components of a vector (scale).
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <param name="result">Result of the operation.</param>
-        public static void Multiply(in Vector2 vector, in Vector2 scale, out Vector2 result)
-        {
-            result.X = vector.X * scale.X;
-            result.Y = vector.Y * scale.Y;
-        }
-
-        /// <summary>
-        /// Divides a vector by a scalar.
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of the operation.</returns>
-        public static Vector2 Divide(Vector2 vector, float scale)
-        {
-            Divide(vector, scale, out vector);
-            return vector;
-        }
-
-        /// <summary>
-        /// Divides a vector by a scalar.
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <param name="result">Result of the operation.</param>
-        public static void Divide(in Vector2 vector, float scale, out Vector2 result)
-        {
-            result.X = vector.X / scale;
-            result.Y = vector.Y / scale;
-        }
-
-        /// <summary>
-        /// Divides a vector by the components of a vector (scale).
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of the operation.</returns>
-        public static Vector2 Divide(Vector2 vector, in Vector2 scale)
-        {
-            Divide(vector, scale, out vector);
-            return vector;
-        }
-
-        /// <summary>
-        /// Divide a vector by the components of a vector (scale).
-        /// </summary>
-        /// <param name="vector">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <param name="result">Result of the operation.</param>
-        public static void Divide(in Vector2 vector, in Vector2 scale, out Vector2 result)
-        {
-            result.X = vector.X / scale.X;
-            result.Y = vector.Y / scale.Y;
-        }
-
-        /// <summary>
-        /// Returns a vector created from the smallest of the corresponding components of the given vectors.
-        /// </summary>
-        /// <param name="a">First operand</param>
-        /// <param name="b">Second operand</param>
-        /// <returns>The component-wise minimum</returns>
-        public static Vector2 ComponentMin(Vector2 a, in Vector2 b)
-        {
-            a.X = a.X < b.X ? a.X : b.X;
-            a.Y = a.Y < b.Y ? a.Y : b.Y;
-            return a;
-        }
-
-        /// <summary>
-        /// Returns a vector created from the smallest of the corresponding components of the given vectors.
-        /// </summary>
-        /// <param name="a">First operand</param>
-        /// <param name="b">Second operand</param>
-        /// <param name="result">The component-wise minimum</param>
-        public static void ComponentMin(in Vector2 a, in Vector2 b, out Vector2 result)
-        {
-            result.X = a.X < b.X ? a.X : b.X;
-            result.Y = a.Y < b.Y ? a.Y : b.Y;
-        }
-
-        /// <summary>
-        /// Returns a vector created from the largest of the corresponding components of the given vectors.
-        /// </summary>
-        /// <param name="a">First operand</param>
-        /// <param name="b">Second operand</param>
-        /// <returns>The component-wise maximum</returns>
-        public static Vector2 ComponentMax(Vector2 a, in Vector2 b)
-        {
-            a.X = a.X > b.X ? a.X : b.X;
-            a.Y = a.Y > b.Y ? a.Y : b.Y;
-            return a;
-        }
-
-        /// <summary>
-        /// Returns a vector created from the largest of the corresponding components of the given vectors.
-        /// </summary>
-        /// <param name="a">First operand</param>
-        /// <param name="b">Second operand</param>
-        /// <param name="result">The component-wise maximum</param>
-        public static void ComponentMax(in Vector2 a, in Vector2 b, out Vector2 result)
-        {
-            result.X = a.X > b.X ? a.X : b.X;
-            result.Y = a.Y > b.Y ? a.Y : b.Y;
-        }
-
-        /// <summary>
-        /// Returns the Vector2 with the minimum magnitude. If the magnitudes are equal, the second vector
-        /// is selected.
-        /// </summary>
-        /// <param name="left">Left operand</param>
-        /// <param name="right">Right operand</param>
-        /// <returns>The minimum Vector2</returns>
-        public static Vector2 MagnitudeMin(in Vector2 left, in Vector2 right)
-        {
-            return left.LengthSquared < right.LengthSquared ? left : right;
-        }
-
-        /// <summary>
-        /// Returns the Vector2 with the minimum magnitude. If the magnitudes are equal, the second vector
-        /// is selected.
-        /// </summary>
-        /// <param name="left">Left operand</param>
-        /// <param name="right">Right operand</param>
-        /// <param name="result">The magnitude-wise minimum</param>
-        /// <returns>The minimum Vector2</returns>
-        public static void MagnitudeMin(in Vector2 left, in Vector2 right, out Vector2 result)
-        {
-            result = left.LengthSquared < right.LengthSquared ? left : right;
-        }
-
-        /// <summary>
-        /// Returns the Vector2 with the maximum magnitude. If the magnitudes are equal, the first vector
-        /// is selected.
-        /// </summary>
-        /// <param name="left">Left operand</param>
-        /// <param name="right">Right operand</param>
-        /// <returns>The maximum Vector2</returns>
-        public static Vector2 MagnitudeMax(in Vector2 left, in Vector2 right)
-        {
-            return left.LengthSquared >= right.LengthSquared ? left : right;
-        }
-
-        /// <summary>
-        /// Returns the Vector2 with the maximum magnitude. If the magnitudes are equal, the first vector
-        /// is selected.
-        /// </summary>
-        /// <param name="left">Left operand</param>
-        /// <param name="right">Right operand</param>
-        /// <param name="result">The magnitude-wise maximum</param>
-        /// <returns>The maximum Vector2</returns>
-        public static void MagnitudeMax(in Vector2 left, in Vector2 right, out Vector2 result)
-        {
-            result = left.LengthSquared >= right.LengthSquared ? left : right;
-        }
-
-        /// <summary>
-        /// Returns the Vector3 with the minimum magnitude
-        /// </summary>
-        /// <param name="left">Left operand</param>
-        /// <param name="right">Right operand</param>
-        /// <returns>The minimum Vector3</returns>
-        [Obsolete("Use MagnitudeMin() instead.")]
-        public static Vector2 Min(in Vector2 left, in Vector2 right)
-        {
-            return left.LengthSquared < right.LengthSquared ? left : right;
-        }
-
-        /// <summary>
-        /// Returns the Vector3 with the minimum magnitude
-        /// </summary>
-        /// <param name="left">Left operand</param>
-        /// <param name="right">Right operand</param>
-        /// <returns>The minimum Vector3</returns>
-        [Obsolete("Use MagnitudeMax() instead.")]
-        public static Vector2 Max(in Vector2 left, in Vector2 right)
-        {
-            return left.LengthSquared >= right.LengthSquared ? left : right;
-        }
-
-        /// <summary>
-        /// Clamp a vector to the given minimum and maximum vectors
-        /// </summary>
-        /// <param name="vec">Input vector</param>
-        /// <param name="min">Minimum vector</param>
-        /// <param name="max">Maximum vector</param>
-        /// <returns>The clamped vector</returns>
-        public static Vector2 Clamp(Vector2 vec, in Vector2 min, in Vector2 max)
-        {
-            vec.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
-            vec.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
-            return vec;
-        }
-
-        /// <summary>
-        /// Clamp a vector to the given minimum and maximum vectors
-        /// </summary>
-        /// <param name="vec">Input vector</param>
-        /// <param name="min">Minimum vector</param>
-        /// <param name="max">Maximum vector</param>
-        /// <param name="result">The clamped vector</param>
-        public static void Clamp(in Vector2 vec, in Vector2 min, in Vector2 max, out Vector2 result)
-        {
-            result.X = vec.X < min.X ? min.X : vec.X > max.X ? max.X : vec.X;
-            result.Y = vec.Y < min.Y ? min.Y : vec.Y > max.Y ? max.Y : vec.Y;
-        }
-
-        /// <summary>
-        /// Compute the euclidean distance between two vectors.
-        /// </summary>
-        /// <param name="vec1">The first vector</param>
-        /// <param name="vec2">The second vector</param>
-        /// <returns>The distance</returns>
-        public static float Distance(in Vector2 vec1, in Vector2 vec2)
-        {
-            float result;
-            Distance(vec1, vec2, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Compute the euclidean distance between two vectors.
-        /// </summary>
-        /// <param name="vec1">The first vector</param>
-        /// <param name="vec2">The second vector</param>
-        /// <param name="result">The distance</param>
-        public static void Distance(in Vector2 vec1, in Vector2 vec2, out float result)
-        {
-            result = (float)Math.Sqrt((vec2.X - vec1.X) * (vec2.X - vec1.X) + (vec2.Y - vec1.Y) * (vec2.Y - vec1.Y));
-        }
-
-        /// <summary>
-        /// Compute the squared euclidean distance between two vectors.
-        /// </summary>
-        /// <param name="vec1">The first vector</param>
-        /// <param name="vec2">The second vector</param>
-        /// <returns>The squared distance</returns>
-        public static float DistanceSquared(in Vector2 vec1, in Vector2 vec2)
-        {
-            float result;
-            DistanceSquared(vec1, vec2, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Compute the squared euclidean distance between two vectors.
-        /// </summary>
-        /// <param name="vec1">The first vector</param>
-        /// <param name="vec2">The second vector</param>
-        /// <param name="result">The squared distance</param>
-        public static void DistanceSquared(in Vector2 vec1, in Vector2 vec2, out float result)
-        {
-            result = (vec2.X - vec1.X) * (vec2.X - vec1.X) + (vec2.Y - vec1.Y) * (vec2.Y - vec1.Y);
-        }
-
-        /// <summary>
-        /// Scale a vector to unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <returns>The normalized vector</returns>
-        public static Vector2 Normalize(Vector2 vec)
-        {
-            float scale = 1.0f / vec.Length;
-            vec.X *= scale;
-            vec.Y *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Scale a vector to unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <param name="result">The normalized vector</param>
-        public static void Normalize(in Vector2 vec, out Vector2 result)
-        {
-            float scale = 1.0f / vec.Length;
-            result.X = vec.X * scale;
-            result.Y = vec.Y * scale;
-        }
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <returns>The normalized vector</returns>
-        public static Vector2 NormalizeFast(Vector2 vec)
-        {
-            float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y);
-            vec.X *= scale;
-            vec.Y *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Scale a vector to approximately unit length
-        /// </summary>
-        /// <param name="vec">The input vector</param>
-        /// <param name="result">The normalized vector</param>
-        public static void NormalizeFast(in Vector2 vec, out Vector2 result)
-        {
-            float scale = MathDefs.InverseSqrtFast(vec.X * vec.X + vec.Y * vec.Y);
-            result.X = vec.X * scale;
-            result.Y = vec.Y * scale;
-        }
-
-        /// <summary>
-        /// Calculate the dot (scalar) product of two vectors
-        /// </summary>
-        /// <param name="left">First operand</param>
-        /// <param name="right">Second operand</param>
-        /// <returns>The dot product of the two inputs</returns>
-        public static float Dot(in Vector2 left, in Vector2 right)
-        {
-            return left.X * right.X + left.Y * right.Y;
-        }
-
-        /// <summary>
-        /// Calculate the dot (scalar) product of two vectors
-        /// </summary>
-        /// <param name="left">First operand</param>
-        /// <param name="right">Second operand</param>
-        /// <param name="result">The dot product of the two inputs</param>
-        public static void Dot(in Vector2 left, in Vector2 right, out float result)
-        {
-            result = left.X * right.X + left.Y * right.Y;
-        }
-
-        /// <summary>
-        /// Calculate the perpendicular dot (scalar) product of two vectors
-        /// </summary>
-        /// <param name="left">First operand</param>
-        /// <param name="right">Second operand</param>
-        /// <returns>The perpendicular dot product of the two inputs</returns>
-        public static float PerpDot(in Vector2 left, in Vector2 right)
-        {
-            return left.X * right.Y - left.Y * right.X;
-        }
-
-        /// <summary>
-        /// Calculate the perpendicular dot (scalar) product of two vectors
-        /// </summary>
-        /// <param name="left">First operand</param>
-        /// <param name="right">Second operand</param>
-        /// <param name="result">The perpendicular dot product of the two inputs</param>
-        public static void PerpDot(in Vector2 left, in Vector2 right, out float result)
-        {
-            result = left.X * right.Y - left.Y * right.X;
-        }
-
-        /// <summary>
-        /// Returns a new Vector that is the linear blend of the 2 given Vectors
-        /// </summary>
-        /// <param name="a">First input vector</param>
-        /// <param name="b">Second input vector</param>
-        /// <param name="blend">The blend factor. a when blend=0, b when blend=1.</param>
-        /// <returns>a when blend=0, b when blend=1, and a linear combination otherwise</returns>
-        public static Vector2 Lerp(Vector2 a, in Vector2 b, float blend)
-        {
-            a.X = blend * (b.X - a.X) + a.X;
-            a.Y = blend * (b.Y - a.Y) + a.Y;
-            return a;
-        }
-
-        /// <summary>
-        /// Returns a new Vector that is the linear blend of the 2 given Vectors
-        /// </summary>
-        /// <param name="a">First input vector</param>
-        /// <param name="b">Second input vector</param>
-        /// <param name="blend">The blend factor. a when blend=0, b when blend=1.</param>
-        /// <param name="result">a when blend=0, b when blend=1, and a linear combination otherwise</param>
-        public static void Lerp(in Vector2 a, in Vector2 b, float blend, out Vector2 result)
-        {
-            result.X = blend * (b.X - a.X) + a.X;
-            result.Y = blend * (b.Y - a.Y) + a.Y;
-        }
-
-        /// <summary>
-        /// Interpolate 3 Vectors using Barycentric coordinates
-        /// </summary>
-        /// <param name="a">First input ea::vector</param>
-        /// <param name="b">Second input ea::vector</param>
-        /// <param name="c">Third input ea::vector</param>
-        /// <param name="u">First Barycentric Coordinate</param>
-        /// <param name="v">Second Barycentric Coordinate</param>
-        /// <returns>a when u=v=0, b when u=1,v=0, c when u=0,v=1, and a linear combination of a,b,c otherwise</returns>
-        public static Vector2 BaryCentric(in Vector2 a, in Vector2 b, in Vector2 c, float u, float v)
-        {
-            return a + u * (b - a) + v * (c - a);
-        }
-
-        /// <summary>Interpolate 3 Vectors using Barycentric coordinates</summary>
-        /// <param name="a">First input Vector.</param>
-        /// <param name="b">Second input Vector.</param>
-        /// <param name="c">Third input Vector.</param>
-        /// <param name="u">First Barycentric Coordinate.</param>
-        /// <param name="v">Second Barycentric Coordinate.</param>
-        /// <param name="result">Output Vector. a when u=v=0, b when u=1,v=0, c when u=0,v=1, and a linear combination of a,b,c otherwise</param>
-        public static void BaryCentric(in Vector2 a, in Vector2 b, in Vector2 c, float u, float v, out Vector2 result)
-        {
-            result = a; // copy
-
-            Vector2 temp = b; // copy
-            Subtract(temp, a, out temp);
-            Multiply(temp, u, out temp);
-            Add(result, temp, out result);
-
-            temp = c; // copy
-            Subtract(temp, a, out temp);
-            Multiply(temp, v, out temp);
-            Add(result, temp, out result);
-        }
-
-        /// <summary>
-        /// Transforms a vector by a quaternion rotation.
-        /// </summary>
-        /// <param name="vec">The vector to transform.</param>
-        /// <param name="quat">The quaternion to rotate the vector by.</param>
-        /// <returns>The result of the operation.</returns>
-        public static Vector2 Transform(in Vector2 vec, in Quaternion quat)
-        {
-            Vector2 result;
-            Transform(vec, quat, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Transforms a vector by a quaternion rotation.
-        /// </summary>
-        /// <param name="vec">The vector to transform.</param>
-        /// <param name="quat">The quaternion to rotate the vector by.</param>
-        /// <param name="result">The result of the operation.</param>
-        public static void Transform(in Vector2 vec, in Quaternion quat, out Vector2 result)
-        {
-            Quaternion v = new Quaternion(vec.X, vec.Y, 0, 0), i, t;
-            Quaternion.Invert(quat, out i);
-            Quaternion.Multiply(quat, v, out t);
-            Quaternion.Multiply(t, i, out v);
-
-            result.X = v.X;
-            result.Y = v.Y;
-        }
-
-        /// <summary>
-        /// Gets or sets an OpenTK.Vector2 with the Y and X components of this instance.
-        /// </summary>
-        [XmlIgnore]
-        public Vector2 Yx { get { return new Vector2(Y, X); } set { Y = value.X; X = value.Y; } }
-
-        /// <summary>
-        /// Adds the specified instances.
-        /// </summary>
-        /// <param name="left">Left operand.</param>
-        /// <param name="right">Right operand.</param>
-        /// <returns>Result of addition.</returns>
-        public static Vector2 operator +(Vector2 left, in Vector2 right)
-        {
-            left.X += right.X;
-            left.Y += right.Y;
-            return left;
-        }
-
-        /// <summary>
-        /// Subtracts the specified instances.
-        /// </summary>
-        /// <param name="left">Left operand.</param>
-        /// <param name="right">Right operand.</param>
-        /// <returns>Result of subtraction.</returns>
-        public static Vector2 operator -(Vector2 left, in Vector2 right)
-        {
-            left.X -= right.X;
-            left.Y -= right.Y;
-            return left;
-        }
-
-        /// <summary>
-        /// Negates the specified instance.
-        /// </summary>
-        /// <param name="vec">Operand.</param>
-        /// <returns>Result of negation.</returns>
-        public static Vector2 operator -(Vector2 vec)
-        {
-            vec.X = -vec.X;
-            vec.Y = -vec.Y;
-            return vec;
-        }
-
-        /// <summary>
-        /// Multiplies the specified instance by a scalar.
-        /// </summary>
-        /// <param name="vec">Left operand.</param>
-        /// <param name="scale">Right operand.</param>
-        /// <returns>Result of multiplication.</returns>
-        public static Vector2 operator *(Vector2 vec, float scale)
-        {
-            vec.X *= scale;
-            vec.Y *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Multiplies the specified instance by a scalar.
-        /// </summary>
-        /// <param name="scale">Left operand.</param>
-        /// <param name="vec">Right operand.</param>
-        /// <returns>Result of multiplication.</returns>
-        public static Vector2 operator *(float scale, Vector2 vec)
-        {
-            vec.X *= scale;
-            vec.Y *= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Component-wise multiplication between the specified instance by a scale vector.
-        /// </summary>
-        /// <param name="scale">Left operand.</param>
-        /// <param name="vec">Right operand.</param>
-        /// <returns>Result of multiplication.</returns>
-        public static Vector2 operator *(Vector2 vec, in Vector2 scale)
-        {
-            vec.X *= scale.X;
-            vec.Y *= scale.Y;
-            return vec;
-        }
-
-        /// <summary>
-        /// Divides the specified instance by a scalar.
-        /// </summary>
-        /// <param name="vec">Left operand</param>
-        /// <param name="scale">Right operand</param>
-        /// <returns>Result of the division.</returns>
-        public static Vector2 operator /(Vector2 vec, float scale)
-        {
-            vec.X /= scale;
-            vec.Y /= scale;
-            return vec;
-        }
-
-        /// <summary>
-        /// Compares the specified instances for equality.
-        /// </summary>
-        /// <param name="left">Left operand.</param>
-        /// <param name="right">Right operand.</param>
-        /// <returns>True if both instances are equal; false otherwise.</returns>
-        public static bool operator ==(in Vector2 left, in Vector2 right)
-        {
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// Compares the specified instances for inequality.
-        /// </summary>
-        /// <param name="left">Left operand.</param>
-        /// <param name="right">Right operand.</param>
-        /// <returns>True if both instances are not equal; false otherwise.</returns>
-        public static bool operator !=(in Vector2 left, in Vector2 right)
-        {
-            return !left.Equals(right);
-        }
-
-        private static string listSeparator = System.Globalization.CultureInfo.CurrentCulture.TextInfo.ListSeparator;
-        /// <summary>
-        /// Returns a System.String that represents the current Vector2.
-        /// </summary>
-        /// <returns></returns>
+        /// Return as string.
         public override string ToString()
         {
-            return String.Format("({0}{2} {1})", X, Y, listSeparator);
+            return $"{X} {Y}";
         }
 
-        /// <summary>
-        /// Returns the hashcode for this instance.
-        /// </summary>
-        /// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
+        /// Return hash value for HashSet & HashMap.
         public override int GetHashCode()
         {
             unchecked
             {
-                return (this.X.GetHashCode() * 397) ^ this.Y.GetHashCode();
+                return (X.GetHashCode() * 31) ^ Y.GetHashCode();
             }
         }
 
-        /// <summary>
-        /// Indicates whether this instance and a specified object are equal.
-        /// </summary>
-        /// <param name="obj">The object to compare to.</param>
-        /// <returns>True if the instances are equal; false otherwise.</returns>
+        /// Per-component linear interpolation between two 2-vectors.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Lerp(in Vector2 lhs, in Vector2 rhs, in Vector2 t)
+        {
+            return lhs + (rhs - lhs) * t;
+        }
+
+        /// Per-component min of two 2-vectors.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Min(in Vector2 lhs, in Vector2 rhs)
+        {
+            return new Vector2(Math.Min(lhs.X, rhs.X), Math.Min(lhs.Y, rhs.Y));
+        }
+
+        /// Per-component max of two 2-vectors.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Max(in Vector2 lhs, in Vector2 rhs)
+        {
+            return new Vector2(Math.Max(lhs.X, rhs.X), Math.Max(lhs.Y, rhs.Y));
+        }
+
+        /// Per-component floor of 2-vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Floor(in Vector2 vec)
+        {
+            return new Vector2((float) Math.Floor(vec.X), (float) Math.Floor(vec.Y));
+        }
+
+        /// Per-component round of 2-vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Round(in Vector2 vec)
+        {
+            return new Vector2((float) Math.Round(vec.X), (float) Math.Round(vec.Y));
+        }
+
+        /// Per-component ceil of 2-vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 Ceil(in Vector2 vec)
+        {
+            return new Vector2((float) Math.Ceiling(vec.X), (float) Math.Ceiling(vec.Y));
+        }
+
+        /// Per-component floor of 2-vector. Returns IntVector2.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntVector2 FloorToInt(in Vector2 vec)
+        {
+            return new IntVector2((int) Math.Floor(vec.X), (int) Math.Floor(vec.Y));
+        }
+
+        /// Per-component round of 2-vector. Returns IntVector2.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntVector2 RoundToInt(in Vector2 vec)
+        {
+            return new IntVector2((int) Math.Round(vec.X), (int) Math.Round(vec.Y));
+        }
+
+        /// Per-component ceil of 2-vector. Returns IntVector2.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static IntVector2 CeilToInt(in Vector2 vec)
+        {
+            return new IntVector2((int) Math.Ceiling(vec.X), (int) Math.Ceiling(vec.Y));
+        }
+
+        /// Return a random value from [0, 1) from 2-vector seed.
+        /// http://stackoverflow.com/questions/12964279/whats-the-origin-of-this-glsl-rand-one-liner
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float StableRandom(in Vector2 seed)
+        {
+            return (float) MathDefs.Fract(
+                Math.Sin(MathDefs.RadiansToDegrees(seed.DotProduct(new Vector2(12.9898f, 78.233f)))) * 43758.5453f);
+        }
+
+        /// Return a random value from [0, 1) from scalar seed.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static float StableRandom(float seed)
+        {
+            return StableRandom(new Vector2(seed, seed));
+        }
+
+        /// X coordinate.
+        public float X;
+
+        /// Y coordinate.
+        public float Y;
+
+        /// Zero vector.
+        public static readonly Vector2 ZERO;
+
+        /// (-1,0) vector.
+        public static readonly Vector2 LEFT = new Vector2(-1, 0);
+
+        /// (1,0) vector.
+        public static readonly Vector2 RIGHT = new Vector2(1, 0);
+
+        /// (0,1) vector.
+        public static readonly Vector2 UP = new Vector2(0, 1);
+
+        /// (0,-1) vector.
+        public static readonly Vector2 DOWN = new Vector2(0, -1);
+
+        /// (1,1) vector.
+        public static readonly Vector2 ONE = new Vector2(1, 1);
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public override bool Equals(object obj)
         {
-            if (!(obj is Vector2))
-            {
-                return false;
-            }
-
-            return this.Equals((Vector2)obj);
-        }
-
-        /// <summary>Indicates whether the current vector is equal to another vector.</summary>
-        /// <param name="other">A vector to compare with this vector.</param>
-        /// <returns>true if the current vector is equal to the vector parameter; otherwise, false.</returns>
-        public bool Equals(Vector2 other)
-        {
-            return
-                X == other.X &&
-                Y == other.Y;
+            return obj is Vector2 other && Equals(other);
         }
     }
 }
