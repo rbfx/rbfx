@@ -1,1538 +1,559 @@
-/*
-Copyright (c) 2006 - 2008 The Open Toolkit library.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
- */
+//
+// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2017-2019 the rbfx project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
-    /// <summary>
-    /// Represents a 4x4 matrix containing 3D rotation, scale, transform, and projection.
-    /// </summary>
-    /// <seealso cref="Matrix4d"/>
-    [Serializable]
-    [StructLayout(LayoutKind.Sequential)]
-    public struct Matrix4 : IEquatable<Matrix4>
+
+/// 4x4 matrix for arbitrary linear transforms including projection.
+[StructLayout(LayoutKind.Sequential)]
+public struct Matrix4 : IEquatable<Matrix4>
+{
+    public override bool Equals(object obj)
     {
-        /// <summary>
-        /// Top row of the matrix.
-        /// </summary>
-        public Vector4 Row0;
-
-        /// <summary>
-        /// 2nd row of the matrix.
-        /// </summary>
-        public Vector4 Row1;
-
-        /// <summary>
-        /// 3rd row of the matrix.
-        /// </summary>
-        public Vector4 Row2;
-
-        /// <summary>
-        /// Bottom row of the matrix.
-        /// </summary>
-        public Vector4 Row3;
-
-        /// <summary>
-        /// The identity matrix.
-        /// </summary>
-        public static readonly Matrix4 Identity = new Matrix4(Vector4.UnitX, Vector4.UnitY, Vector4.UnitZ, Vector4.UnitW);
-
-        /// <summary>
-        /// The zero matrix.
-        /// </summary>
-        public static readonly Matrix4 Zero = new Matrix4(Vector4.Zero, Vector4.Zero, Vector4.Zero, Vector4.Zero);
-
-        /// <summary>
-        /// Constructs a new instance.
-        /// </summary>
-        /// <param name="row0">Top row of the matrix.</param>
-        /// <param name="row1">Second row of the matrix.</param>
-        /// <param name="row2">Third row of the matrix.</param>
-        /// <param name="row3">Bottom row of the matrix.</param>
-        public Matrix4(in Vector4 row0, in Vector4 row1, in Vector4 row2, in Vector4 row3)
-        {
-            Row0 = row0;
-            Row1 = row1;
-            Row2 = row2;
-            Row3 = row3;
-        }
-
-        /// <summary>
-        /// Constructs a new instance.
-        /// </summary>
-        /// <param name="m00">First item of the first row of the matrix.</param>
-        /// <param name="m01">Second item of the first row of the matrix.</param>
-        /// <param name="m02">Third item of the first row of the matrix.</param>
-        /// <param name="m03">Fourth item of the first row of the matrix.</param>
-        /// <param name="m10">First item of the second row of the matrix.</param>
-        /// <param name="m11">Second item of the second row of the matrix.</param>
-        /// <param name="m12">Third item of the second row of the matrix.</param>
-        /// <param name="m13">Fourth item of the second row of the matrix.</param>
-        /// <param name="m20">First item of the third row of the matrix.</param>
-        /// <param name="m21">Second item of the third row of the matrix.</param>
-        /// <param name="m22">Third item of the third row of the matrix.</param>
-        /// <param name="m23">First item of the third row of the matrix.</param>
-        /// <param name="m30">Fourth item of the fourth row of the matrix.</param>
-        /// <param name="m31">Second item of the fourth row of the matrix.</param>
-        /// <param name="m32">Third item of the fourth row of the matrix.</param>
-        /// <param name="m33">Fourth item of the fourth row of the matrix.</param>
-        public Matrix4(
-            float m00, float m01, float m02, float m03,
-            float m10, float m11, float m12, float m13,
-            float m20, float m21, float m22, float m23,
-            float m30, float m31, float m32, float m33)
-        {
-            Row0 = new Vector4(m00, m01, m02, m03);
-            Row1 = new Vector4(m10, m11, m12, m13);
-            Row2 = new Vector4(m20, m21, m22, m23);
-            Row3 = new Vector4(m30, m31, m32, m33);
-        }
-
-        /// <summary>
-        /// Constructs a new instance.
-        /// </summary>
-        /// <param name="topLeft">The top left 3x3 of the matrix.</param>
-        public Matrix4(in Matrix3 topLeft)
-        {
-            Row0.X = topLeft.Row0.X;
-            Row0.Y = topLeft.Row0.Y;
-            Row0.Z = topLeft.Row0.Z;
-            Row0.W = 0;
-            Row1.X = topLeft.Row1.X;
-            Row1.Y = topLeft.Row1.Y;
-            Row1.Z = topLeft.Row1.Z;
-            Row1.W = 0;
-            Row2.X = topLeft.Row2.X;
-            Row2.Y = topLeft.Row2.Y;
-            Row2.Z = topLeft.Row2.Z;
-            Row2.W = 0;
-            Row3.X = 0;
-            Row3.Y = 0;
-            Row3.Z = 0;
-            Row3.W = 1;
-        }
-
-        /// <summary>
-        /// Gets the determinant of this matrix.
-        /// </summary>
-        public float Determinant
-        {
-            get
-            {
-                float m11 = Row0.X, m12 = Row0.Y, m13 = Row0.Z, m14 = Row0.W,
-                      m21 = Row1.X, m22 = Row1.Y, m23 = Row1.Z, m24 = Row1.W,
-                      m31 = Row2.X, m32 = Row2.Y, m33 = Row2.Z, m34 = Row2.W,
-                      m41 = Row3.X, m42 = Row3.Y, m43 = Row3.Z, m44 = Row3.W;
-
-                return
-                    m11 * m22 * m33 * m44 - m11 * m22 * m34 * m43 + m11 * m23 * m34 * m42 - m11 * m23 * m32 * m44
-                  + m11 * m24 * m32 * m43 - m11 * m24 * m33 * m42 - m12 * m23 * m34 * m41 + m12 * m23 * m31 * m44
-                  - m12 * m24 * m31 * m43 + m12 * m24 * m33 * m41 - m12 * m21 * m33 * m44 + m12 * m21 * m34 * m43
-                  + m13 * m24 * m31 * m42 - m13 * m24 * m32 * m41 + m13 * m21 * m32 * m44 - m13 * m21 * m34 * m42
-                  + m13 * m22 * m34 * m41 - m13 * m22 * m31 * m44 - m14 * m21 * m32 * m43 + m14 * m21 * m33 * m42
-                  - m14 * m22 * m33 * m41 + m14 * m22 * m31 * m43 - m14 * m23 * m31 * m42 + m14 * m23 * m32 * m41;
-            }
-        }
-
-        /// <summary>
-        /// Gets the first column of this matrix.
-        /// </summary>
-        public Vector4 Column0
-        {
-            get { return new Vector4(Row0.X, Row1.X, Row2.X, Row3.X); }
-            set { Row0.X = value.X; Row1.X = value.Y; Row2.X = value.Z; Row3.X = value.W; }
-        }
-
-        /// <summary>
-        /// Gets the second column of this matrix.
-        /// </summary>
-        public Vector4 Column1
-        {
-            get { return new Vector4(Row0.Y, Row1.Y, Row2.Y, Row3.Y); }
-            set { Row0.Y = value.X; Row1.Y = value.Y; Row2.Y = value.Z; Row3.Y = value.W; }
-        }
-
-        /// <summary>
-        /// Gets the third column of this matrix.
-        /// </summary>
-        public Vector4 Column2
-        {
-            get { return new Vector4(Row0.Z, Row1.Z, Row2.Z, Row3.Z); }
-            set { Row0.Z = value.X; Row1.Z = value.Y; Row2.Z = value.Z; Row3.Z = value.W; }
-        }
-
-        /// <summary>
-        /// Gets the fourth column of this matrix.
-        /// </summary>
-        public Vector4 Column3
-        {
-            get { return new Vector4(Row0.W, Row1.W, Row2.W, Row3.W); }
-            set { Row0.W = value.X; Row1.W = value.Y; Row2.W = value.Z; Row3.W = value.W; }
-        }
-
-        /// <summary>
-        /// Gets or sets the value at row 1, column 1 of this instance.
-        /// </summary>
-        public float M00 { get { return Row0.X; } set { Row0.X = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 1, column 2 of this instance.
-        /// </summary>
-        public float M01 { get { return Row0.Y; } set { Row0.Y = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 1, column 3 of this instance.
-        /// </summary>
-        public float M02 { get { return Row0.Z; } set { Row0.Z = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 1, column 4 of this instance.
-        /// </summary>
-        public float M03 { get { return Row0.W; } set { Row0.W = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 2, column 1 of this instance.
-        /// </summary>
-        public float M10 { get { return Row1.X; } set { Row1.X = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 2, column 2 of this instance.
-        /// </summary>
-        public float M11 { get { return Row1.Y; } set { Row1.Y = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 2, column 3 of this instance.
-        /// </summary>
-        public float M12 { get { return Row1.Z; } set { Row1.Z = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 2, column 4 of this instance.
-        /// </summary>
-        public float M13 { get { return Row1.W; } set { Row1.W = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 3, column 1 of this instance.
-        /// </summary>
-        public float M20 { get { return Row2.X; } set { Row2.X = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 3, column 2 of this instance.
-        /// </summary>
-        public float M21 { get { return Row2.Y; } set { Row2.Y = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 3, column 3 of this instance.
-        /// </summary>
-        public float M22 { get { return Row2.Z; } set { Row2.Z = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 3, column 4 of this instance.
-        /// </summary>
-        public float M23 { get { return Row2.W; } set { Row2.W = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 4, column 1 of this instance.
-        /// </summary>
-        public float M30 { get { return Row3.X; } set { Row3.X = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 4, column 2 of this instance.
-        /// </summary>
-        public float M31 { get { return Row3.Y; } set { Row3.Y = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 4, column 3 of this instance.
-        /// </summary>
-        public float M32 { get { return Row3.Z; } set { Row3.Z = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 4, column 4 of this instance.
-        /// </summary>
-        public float M33 { get { return Row3.W; } set { Row3.W = value; } }
-
-        /// <summary>
-        /// Gets or sets the values along the main diagonal of the matrix.
-        /// </summary>
-        public Vector4 Diagonal
-        {
-            get
-            {
-                return new Vector4(Row0.X, Row1.Y, Row2.Z, Row3.W);
-            }
-            set
-            {
-                Row0.X = value.X;
-                Row1.Y = value.Y;
-                Row2.Z = value.Z;
-                Row3.W = value.W;
-            }
-        }
-
-        /// <summary>
-        /// Gets the trace of the matrix, the sum of the values along the diagonal.
-        /// </summary>
-        public float Trace { get { return Row0.X + Row1.Y + Row2.Z + Row3.W; } }
-
-        /// <summary>
-        /// Gets or sets the value at a specified row and column.
-        /// </summary>
-        public float this[int rowIndex, int columnIndex]
-        {
-            get
-            {
-                if (rowIndex == 0)
-                {
-                    return Row0[columnIndex];
-                }
-                else if (rowIndex == 1)
-                {
-                    return Row1[columnIndex];
-                }
-                else if (rowIndex == 2)
-                {
-                    return Row2[columnIndex];
-                }
-                else if (rowIndex == 3)
-                {
-                    return Row3[columnIndex];
-                }
-                throw new IndexOutOfRangeException("You tried to access this matrix at: (" + rowIndex + ", " + columnIndex + ")");
-            }
-            set
-            {
-                if (rowIndex == 0)
-                {
-                    Row0[columnIndex] = value;
-                }
-                else if (rowIndex == 1)
-                {
-                    Row1[columnIndex] = value;
-                }
-                else if (rowIndex == 2)
-                {
-                    Row2[columnIndex] = value;
-                }
-                else if (rowIndex == 3)
-                {
-                    Row3[columnIndex] = value;
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException("You tried to set this matrix at: (" + rowIndex + ", " + columnIndex + ")");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Converts this instance into its inverse.
-        /// </summary>
-        public void Invert()
-        {
-            this = Matrix4.Invert(this);
-        }
-
-        /// <summary>
-        /// Converts this instance into its transpose.
-        /// </summary>
-        public void Transpose()
-        {
-            this = Matrix4.Transpose(this);
-        }
-
-        /// <summary>
-        /// Converts this instance into its transpose.
-        /// </summary>
-        public Matrix4 Transposed()
-        {
-            return Matrix4.Transpose(this);
-        }
-
-        /// <summary>
-        /// Returns a normalised copy of this instance.
-        /// </summary>
-        public Matrix4 Normalized()
-        {
-            Matrix4 m = this;
-            m.Normalize();
-            return m;
-        }
-
-        /// <summary>
-        /// Divides each element in the Matrix by the <see cref="Determinant"/>.
-        /// </summary>
-        public void Normalize()
-        {
-            var determinant = this.Determinant;
-            Row0 /= determinant;
-            Row1 /= determinant;
-            Row2 /= determinant;
-            Row3 /= determinant;
-        }
-
-        /// <summary>
-        /// Returns an inverted copy of this instance.
-        /// </summary>
-        public Matrix4 Inverted()
-        {
-            Matrix4 m = this;
-            if (m.Determinant != 0)
-            {
-                m.Invert();
-            }
-            return m;
-        }
-
-        /// <summary>
-        /// Returns a copy of this Matrix4 without translation.
-        /// </summary>
-        public Matrix4 ClearTranslation()
-        {
-            Matrix4 m = this;
-            m.Row3.Xyz = Vector3.Zero;
-            return m;
-        }
-        /// <summary>
-        /// Returns a copy of this Matrix4 without scale.
-        /// </summary>
-        public Matrix4 ClearScale()
-        {
-            Matrix4 m = this;
-            m.Row0.Xyz = m.Row0.Xyz.Normalized();
-            m.Row1.Xyz = m.Row1.Xyz.Normalized();
-            m.Row2.Xyz = m.Row2.Xyz.Normalized();
-            return m;
-        }
-        /// <summary>
-        /// Returns a copy of this Matrix4 without rotation.
-        /// </summary>
-        public Matrix4 ClearRotation()
-        {
-            Matrix4 m = this;
-            m.Row0.Xyz = new Vector3(m.Row0.Xyz.Length, 0, 0);
-            m.Row1.Xyz = new Vector3(0, m.Row1.Xyz.Length, 0);
-            m.Row2.Xyz = new Vector3(0, 0, m.Row2.Xyz.Length);
-            return m;
-        }
-        /// <summary>
-        /// Returns a copy of this Matrix4 without projection.
-        /// </summary>
-        public Matrix4 ClearProjection()
-        {
-            Matrix4 m = this;
-            m.Column3 = Vector4.Zero;
-            return m;
-        }
-
-        /// <summary>
-        /// Returns the translation component of this instance.
-        /// </summary>
-        public Vector3 ExtractTranslation() { return Row3.Xyz; }
-
-        /// <summary>
-        /// Returns the scale component of this instance.
-        /// </summary>
-        public Vector3 ExtractScale() { return new Vector3(Row0.Xyz.Length, Row1.Xyz.Length, Row2.Xyz.Length); }
-
-        /// <summary>
-        /// Returns the rotation component of this instance. Quite slow.
-        /// </summary>
-        /// <param name="row_normalise">Whether the method should row-normalise (i.e. remove scale from) the Matrix. Pass false if you know it's already normalised.</param>
-        public Quaternion ExtractRotation(bool row_normalise = true)
-        {
-            var row0 = Row0.Xyz;
-            var row1 = Row1.Xyz;
-            var row2 = Row2.Xyz;
-
-            if (row_normalise)
-            {
-                row0 = row0.Normalized();
-                row1 = row1.Normalized();
-                row2 = row2.Normalized();
-            }
-
-            // code below adapted from Blender
-
-            Quaternion q = new Quaternion();
-            double trace = 0.25 * (row0[0] + row1[1] + row2[2] + 1.0);
-
-            if (trace > 0)
-            {
-                double sq = Math.Sqrt(trace);
-
-                q.W = (float)sq;
-                sq = 1.0 / (4.0 * sq);
-                q.X = (float)((row1[2] - row2[1]) * sq);
-                q.Y = (float)((row2[0] - row0[2]) * sq);
-                q.Z = (float)((row0[1] - row1[0]) * sq);
-            }
-            else if (row0[0] > row1[1] && row0[0] > row2[2])
-            {
-                double sq = 2.0 * Math.Sqrt(1.0 + row0[0] - row1[1] - row2[2]);
-
-                q.X = (float)(0.25 * sq);
-                sq = 1.0 / sq;
-                q.W = (float)((row2[1] - row1[2]) * sq);
-                q.Y = (float)((row1[0] + row0[1]) * sq);
-                q.Z = (float)((row2[0] + row0[2]) * sq);
-            }
-            else if (row1[1] > row2[2])
-            {
-                double sq = 2.0 * Math.Sqrt(1.0 + row1[1] - row0[0] - row2[2]);
-
-                q.Y = (float)(0.25 * sq);
-                sq = 1.0 / sq;
-                q.W = (float)((row2[0] - row0[2]) * sq);
-                q.X = (float)((row1[0] + row0[1]) * sq);
-                q.Z = (float)((row2[1] + row1[2]) * sq);
-            }
-            else
-            {
-                double sq = 2.0 * Math.Sqrt(1.0 + row2[2] - row0[0] - row1[1]);
-
-                q.Z = (float)(0.25 * sq);
-                sq = 1.0 / sq;
-                q.W = (float)((row1[0] - row0[1]) * sq);
-                q.X = (float)((row2[0] + row0[2]) * sq);
-                q.Y = (float)((row2[1] + row1[2]) * sq);
-            }
-
-            q.Normalize();
-            return q;
-        }
-
-        /// <summary>
-        /// Returns the projection component of this instance.
-        /// </summary>
-        public Vector4 ExtractProjection()
-        {
-            return Column3;
-        }
-
-        /// <summary>
-        /// Build a rotation matrix from the specified axis/angle rotation.
-        /// </summary>
-        /// <param name="axis">The axis to rotate about.</param>
-        /// <param name="angle">Angle in radians to rotate counter-clockwise (looking in the direction of the given axis).</param>
-        /// <param name="result">A matrix instance.</param>
-        public static void CreateFromAxisAngle(in Vector3 axis, float angle, out Matrix4 result)
-        {
-            // normalize and create a local copy of the vector.
-            axis.Normalize();
-            float axisX = axis.X, axisY = axis.Y, axisZ = axis.Z;
-
-            // calculate angles
-            float cos = (float)System.Math.Cos(-angle);
-            float sin = (float)System.Math.Sin(-angle);
-            float t = 1.0f - cos;
-
-            // do the conversion math once
-            float tXX = t * axisX * axisX,
-                tXY = t * axisX * axisY,
-                tXZ = t * axisX * axisZ,
-                tYY = t * axisY * axisY,
-                tYZ = t * axisY * axisZ,
-                tZZ = t * axisZ * axisZ;
-
-            float sinX = sin * axisX,
-                sinY = sin * axisY,
-                sinZ = sin * axisZ;
-
-            result.Row0.X = tXX + cos;
-            result.Row0.Y = tXY - sinZ;
-            result.Row0.Z = tXZ + sinY;
-            result.Row0.W = 0;
-            result.Row1.X = tXY + sinZ;
-            result.Row1.Y = tYY + cos;
-            result.Row1.Z = tYZ - sinX;
-            result.Row1.W = 0;
-            result.Row2.X = tXZ - sinY;
-            result.Row2.Y = tYZ + sinX;
-            result.Row2.Z = tZZ + cos;
-            result.Row2.W = 0;
-            result.Row3 = Vector4.UnitW;
-        }
-
-        /// <summary>
-        /// Build a rotation matrix from the specified axis/angle rotation.
-        /// </summary>
-        /// <param name="axis">The axis to rotate about.</param>
-        /// <param name="angle">Angle in radians to rotate counter-clockwise (looking in the direction of the given axis).</param>
-        /// <returns>A matrix instance.</returns>
-        public static Matrix4 CreateFromAxisAngle(in Vector3 axis, float angle)
-        {
-            Matrix4 result;
-            CreateFromAxisAngle(axis, angle, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix from a quaternion.
-        /// </summary>
-        /// <param name="q">The quaternion to rotate by.</param>
-        /// <param name="result">A matrix instance.</param>
-        public static void CreateFromQuaternion(in Quaternion q, out Matrix4 result)
-        {
-            Vector3 axis;
-            float angle;
-            q.ToAxisAngle(out axis, out angle);
-            CreateFromAxisAngle(axis, angle, out result);
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix from a quaternion.
-        /// </summary>
-        /// <param name="q">The quaternion to rotate by.</param>
-        /// <returns>A matrix instance.</returns>
-        public static Matrix4 CreateFromQuaternion(in Quaternion q)
-        {
-            Matrix4 result;
-            CreateFromQuaternion(q, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix for a rotation around the x-axis.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateRotationX(float angle, out Matrix4 result)
-        {
-            float cos = (float)System.Math.Cos(angle);
-            float sin = (float)System.Math.Sin(angle);
-
-            result = Identity;
-            result.Row1.Y = cos;
-            result.Row1.Z = sin;
-            result.Row2.Y = -sin;
-            result.Row2.Z = cos;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix for a rotation around the x-axis.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix4 CreateRotationX(float angle)
-        {
-            Matrix4 result;
-            CreateRotationX(angle, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix for a rotation around the y-axis.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateRotationY(float angle, out Matrix4 result)
-        {
-            float cos = (float)System.Math.Cos(angle);
-            float sin = (float)System.Math.Sin(angle);
-
-            result = Identity;
-            result.Row0.X = cos;
-            result.Row0.Z = -sin;
-            result.Row2.X = sin;
-            result.Row2.Z = cos;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix for a rotation around the y-axis.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix4 CreateRotationY(float angle)
-        {
-            Matrix4 result;
-            CreateRotationY(angle, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix for a rotation around the z-axis.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateRotationZ(float angle, out Matrix4 result)
-        {
-            float cos = (float)System.Math.Cos(angle);
-            float sin = (float)System.Math.Sin(angle);
-
-            result = Identity;
-            result.Row0.X = cos;
-            result.Row0.Y = sin;
-            result.Row1.X = -sin;
-            result.Row1.Y = cos;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix for a rotation around the z-axis.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix4 CreateRotationZ(float angle)
-        {
-            Matrix4 result;
-            CreateRotationZ(angle, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a translation matrix.
-        /// </summary>
-        /// <param name="x">X translation.</param>
-        /// <param name="y">Y translation.</param>
-        /// <param name="z">Z translation.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateTranslation(float x, float y, float z, out Matrix4 result)
-        {
-            result = Identity;
-            result.Row3.X = x;
-            result.Row3.Y = y;
-            result.Row3.Z = z;
-        }
-
-        /// <summary>
-        /// Creates a translation matrix.
-        /// </summary>
-        /// <param name="vector">The translation vector.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateTranslation(in Vector3 vector, out Matrix4 result)
-        {
-            result = Identity;
-            result.Row3.X = vector.X;
-            result.Row3.Y = vector.Y;
-            result.Row3.Z = vector.Z;
-        }
-
-        /// <summary>
-        /// Creates a translation matrix.
-        /// </summary>
-        /// <param name="x">X translation.</param>
-        /// <param name="y">Y translation.</param>
-        /// <param name="z">Z translation.</param>
-        /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix4 CreateTranslation(float x, float y, float z)
-        {
-            Matrix4 result;
-            CreateTranslation(x, y, z, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a translation matrix.
-        /// </summary>
-        /// <param name="vector">The translation vector.</param>
-        /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix4 CreateTranslation(in Vector3 vector)
-        {
-            Matrix4 result;
-            CreateTranslation(vector.X, vector.Y, vector.Z, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Single scale factor for the x, y, and z axes.</param>
-        /// <returns>A scale matrix.</returns>
-        public static Matrix4 CreateScale(float scale)
-        {
-            Matrix4 result;
-            CreateScale(scale, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Scale factors for the x, y, and z axes.</param>
-        /// <returns>A scale matrix.</returns>
-        public static Matrix4 CreateScale(in Vector3 scale)
-        {
-            Matrix4 result;
-            CreateScale(scale, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="x">Scale factor for the x axis.</param>
-        /// <param name="y">Scale factor for the y axis.</param>
-        /// <param name="z">Scale factor for the z axis.</param>
-        /// <returns>A scale matrix.</returns>
-        public static Matrix4 CreateScale(float x, float y, float z)
-        {
-            Matrix4 result;
-            CreateScale(x, y, z, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Single scale factor for the x, y, and z axes.</param>
-        /// <param name="result">A scale matrix.</param>
-        public static void CreateScale(float scale, out Matrix4 result)
-        {
-            result = Identity;
-            result.Row0.X = scale;
-            result.Row1.Y = scale;
-            result.Row2.Z = scale;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Scale factors for the x, y, and z axes.</param>
-        /// <param name="result">A scale matrix.</param>
-        public static void CreateScale(in Vector3 scale, out Matrix4 result)
-        {
-            result = Identity;
-            result.Row0.X = scale.X;
-            result.Row1.Y = scale.Y;
-            result.Row2.Z = scale.Z;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="x">Scale factor for the x axis.</param>
-        /// <param name="y">Scale factor for the y axis.</param>
-        /// <param name="z">Scale factor for the z axis.</param>
-        /// <param name="result">A scale matrix.</param>
-        public static void CreateScale(float x, float y, float z, out Matrix4 result)
-        {
-            result = Identity;
-            result.Row0.X = x;
-            result.Row1.Y = y;
-            result.Row2.Z = z;
-        }
-
-        /// <summary>
-        /// Creates an orthographic projection matrix.
-        /// </summary>
-        /// <param name="width">The width of the projection volume.</param>
-        /// <param name="height">The height of the projection volume.</param>
-        /// <param name="zNear">The near edge of the projection volume.</param>
-        /// <param name="zFar">The far edge of the projection volume.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateOrthographic(float width, float height, float zNear, float zFar, out Matrix4 result)
-        {
-            CreateOrthographicOffCenter(-width / 2, width / 2, -height / 2, height / 2, zNear, zFar, out result);
-        }
-
-        /// <summary>
-        /// Creates an orthographic projection matrix.
-        /// </summary>
-        /// <param name="width">The width of the projection volume.</param>
-        /// <param name="height">The height of the projection volume.</param>
-        /// <param name="zNear">The near edge of the projection volume.</param>
-        /// <param name="zFar">The far edge of the projection volume.</param>
-        /// <rereturns>The resulting Matrix4 instance.</rereturns>
-        public static Matrix4 CreateOrthographic(float width, float height, float zNear, float zFar)
-        {
-            Matrix4 result;
-            CreateOrthographicOffCenter(-width / 2, width / 2, -height / 2, height / 2, zNear, zFar, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates an orthographic projection matrix.
-        /// </summary>
-        /// <param name="left">The left edge of the projection volume.</param>
-        /// <param name="right">The right edge of the projection volume.</param>
-        /// <param name="bottom">The bottom edge of the projection volume.</param>
-        /// <param name="top">The top edge of the projection volume.</param>
-        /// <param name="zNear">The near edge of the projection volume.</param>
-        /// <param name="zFar">The far edge of the projection volume.</param>
-        /// <param name="result">The resulting Matrix4 instance.</param>
-        public static void CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNear, float zFar, out Matrix4 result)
-        {
-            result = Identity;
-
-            float invRL = 1.0f / (right - left);
-            float invTB = 1.0f / (top - bottom);
-            float invFN = 1.0f / (zFar - zNear);
-
-            result.Row0.X = 2 * invRL;
-            result.Row1.Y = 2 * invTB;
-            result.Row2.Z = -2 * invFN;
-
-            result.Row3.X = -(right + left) * invRL;
-            result.Row3.Y = -(top + bottom) * invTB;
-            result.Row3.Z = -(zFar + zNear) * invFN;
-        }
-
-        /// <summary>
-        /// Creates an orthographic projection matrix.
-        /// </summary>
-        /// <param name="left">The left edge of the projection volume.</param>
-        /// <param name="right">The right edge of the projection volume.</param>
-        /// <param name="bottom">The bottom edge of the projection volume.</param>
-        /// <param name="top">The top edge of the projection volume.</param>
-        /// <param name="zNear">The near edge of the projection volume.</param>
-        /// <param name="zFar">The far edge of the projection volume.</param>
-        /// <returns>The resulting Matrix4 instance.</returns>
-        public static Matrix4 CreateOrthographicOffCenter(float left, float right, float bottom, float top, float zNear, float zFar)
-        {
-            Matrix4 result;
-            CreateOrthographicOffCenter(left, right, bottom, top, zNear, zFar, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a perspective projection matrix.
-        /// </summary>
-        /// <param name="fovy">Angle of the field of view in the y direction (in radians)</param>
-        /// <param name="aspect">Aspect ratio of the view (width / height)</param>
-        /// <param name="zNear">Distance to the near clip plane</param>
-        /// <param name="zFar">Distance to the far clip plane</param>
-        /// <param name="result">A projection matrix that transforms camera space to raster space</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown under the following conditions:
-        /// <list type="bullet">
-        /// <item>fovy is zero, less than zero or larger than Math.PI</item>
-        /// <item>aspect is negative or zero</item>
-        /// <item>zNear is negative or zero</item>
-        /// <item>zFar is negative or zero</item>
-        /// <item>zNear is larger than zFar</item>
-        /// </list>
-        /// </exception>
-        public static void CreatePerspectiveFieldOfView(float fovy, float aspect, float zNear, float zFar, out Matrix4 result)
-        {
-            if (fovy <= 0 || fovy > Math.PI)
-            {
-                throw new ArgumentOutOfRangeException("fovy");
-            }
-            if (aspect <= 0)
-            {
-                throw new ArgumentOutOfRangeException("aspect");
-            }
-            if (zNear <= 0)
-            {
-                throw new ArgumentOutOfRangeException("zNear");
-            }
-            if (zFar <= 0)
-            {
-                throw new ArgumentOutOfRangeException("zFar");
-            }
-
-            float yMax = zNear * (float)System.Math.Tan(0.5f * fovy);
-            float yMin = -yMax;
-            float xMin = yMin * aspect;
-            float xMax = yMax * aspect;
-
-            CreatePerspectiveOffCenter(xMin, xMax, yMin, yMax, zNear, zFar, out result);
-        }
-
-        /// <summary>
-        /// Creates a perspective projection matrix.
-        /// </summary>
-        /// <param name="fovy">Angle of the field of view in the y direction (in radians)</param>
-        /// <param name="aspect">Aspect ratio of the view (width / height)</param>
-        /// <param name="zNear">Distance to the near clip plane</param>
-        /// <param name="zFar">Distance to the far clip plane</param>
-        /// <returns>A projection matrix that transforms camera space to raster space</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown under the following conditions:
-        /// <list type="bullet">
-        /// <item>fovy is zero, less than zero or larger than Math.PI</item>
-        /// <item>aspect is negative or zero</item>
-        /// <item>zNear is negative or zero</item>
-        /// <item>zFar is negative or zero</item>
-        /// <item>zNear is larger than zFar</item>
-        /// </list>
-        /// </exception>
-        public static Matrix4 CreatePerspectiveFieldOfView(float fovy, float aspect, float zNear, float zFar)
-        {
-            Matrix4 result;
-            CreatePerspectiveFieldOfView(fovy, aspect, zNear, zFar, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates an perspective projection matrix.
-        /// </summary>
-        /// <param name="left">Left edge of the view frustum</param>
-        /// <param name="right">Right edge of the view frustum</param>
-        /// <param name="bottom">Bottom edge of the view frustum</param>
-        /// <param name="top">Top edge of the view frustum</param>
-        /// <param name="zNear">Distance to the near clip plane</param>
-        /// <param name="zFar">Distance to the far clip plane</param>
-        /// <param name="result">A projection matrix that transforms camera space to raster space</param>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown under the following conditions:
-        /// <list type="bullet">
-        /// <item>zNear is negative or zero</item>
-        /// <item>zFar is negative or zero</item>
-        /// <item>zNear is larger than zFar</item>
-        /// </list>
-        /// </exception>
-        public static void CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float zNear, float zFar, out Matrix4 result)
-        {
-            if (zNear <= 0)
-            {
-                throw new ArgumentOutOfRangeException("zNear");
-            }
-            if (zFar <= 0)
-            {
-                throw new ArgumentOutOfRangeException("zFar");
-            }
-            if (zNear >= zFar)
-            {
-                throw new ArgumentOutOfRangeException("zNear");
-            }
-
-            float x = (2.0f * zNear) / (right - left);
-            float y = (2.0f * zNear) / (top - bottom);
-            float a = (right + left) / (right - left);
-            float b = (top + bottom) / (top - bottom);
-            float c = -(zFar + zNear) / (zFar - zNear);
-            float d = -(2.0f * zFar * zNear) / (zFar - zNear);
-
-            result.Row0.X = x;
-            result.Row0.Y = 0;
-            result.Row0.Z = 0;
-            result.Row0.W = 0;
-            result.Row1.X = 0;
-            result.Row1.Y = y;
-            result.Row1.Z = 0;
-            result.Row1.W = 0;
-            result.Row2.X = a;
-            result.Row2.Y = b;
-            result.Row2.Z = c;
-            result.Row2.W = -1;
-            result.Row3.X = 0;
-            result.Row3.Y = 0;
-            result.Row3.Z = d;
-            result.Row3.W = 0;
-        }
-
-        /// <summary>
-        /// Creates an perspective projection matrix.
-        /// </summary>
-        /// <param name="left">Left edge of the view frustum</param>
-        /// <param name="right">Right edge of the view frustum</param>
-        /// <param name="bottom">Bottom edge of the view frustum</param>
-        /// <param name="top">Top edge of the view frustum</param>
-        /// <param name="zNear">Distance to the near clip plane</param>
-        /// <param name="zFar">Distance to the far clip plane</param>
-        /// <returns>A projection matrix that transforms camera space to raster space</returns>
-        /// <exception cref="System.ArgumentOutOfRangeException">
-        /// Thrown under the following conditions:
-        /// <list type="bullet">
-        /// <item>zNear is negative or zero</item>
-        /// <item>zFar is negative or zero</item>
-        /// <item>zNear is larger than zFar</item>
-        /// </list>
-        /// </exception>
-        public static Matrix4 CreatePerspectiveOffCenter(float left, float right, float bottom, float top, float zNear, float zFar)
-        {
-            Matrix4 result;
-            CreatePerspectiveOffCenter(left, right, bottom, top, zNear, zFar, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Build a world space to camera space matrix
-        /// </summary>
-        /// <param name="eye">Eye (camera) position in world space</param>
-        /// <param name="target">Target position in world space</param>
-        /// <param name="up">Up vector in world space (should not be parallel to the camera direction, that is target - eye)</param>
-        /// <returns>A Matrix4 that transforms world space to camera space</returns>
-        public static Matrix4 LookAt(in Vector3 eye, in Vector3 target, in Vector3 up)
-        {
-            Vector3 z = Vector3.Normalize(eye - target);
-            Vector3 x = Vector3.Normalize(Vector3.Cross(up, z));
-            Vector3 y = Vector3.Normalize(Vector3.Cross(z, x));
-
-            Matrix4 result;
-
-            result.Row0.X = x.X;
-            result.Row0.Y = y.X;
-            result.Row0.Z = z.X;
-            result.Row0.W = 0;
-            result.Row1.X = x.Y;
-            result.Row1.Y = y.Y;
-            result.Row1.Z = z.Y;
-            result.Row1.W = 0;
-            result.Row2.X = x.Z;
-            result.Row2.Y = y.Z;
-            result.Row2.Z = z.Z;
-            result.Row2.W = 0;
-            result.Row3.X = -((x.X * eye.X) + (x.Y * eye.Y) + (x.Z * eye.Z));
-            result.Row3.Y = -((y.X * eye.X) + (y.Y * eye.Y) + (y.Z * eye.Z));
-            result.Row3.Z = -((z.X * eye.X) + (z.Y * eye.Y) + (z.Z * eye.Z));
-            result.Row3.W = 1;
-
-            return result;
-        }
-
-        /// <summary>
-        /// Build a world space to camera space matrix
-        /// </summary>
-        /// <param name="eyeX">Eye (camera) position in world space</param>
-        /// <param name="eyeY">Eye (camera) position in world space</param>
-        /// <param name="eyeZ">Eye (camera) position in world space</param>
-        /// <param name="targetX">Target position in world space</param>
-        /// <param name="targetY">Target position in world space</param>
-        /// <param name="targetZ">Target position in world space</param>
-        /// <param name="upX">Up vector in world space (should not be parallel to the camera direction, that is target - eye)</param>
-        /// <param name="upY">Up vector in world space (should not be parallel to the camera direction, that is target - eye)</param>
-        /// <param name="upZ">Up vector in world space (should not be parallel to the camera direction, that is target - eye)</param>
-        /// <returns>A Matrix4 that transforms world space to camera space</returns>
-        public static Matrix4 LookAt(float eyeX, float eyeY, float eyeZ, float targetX, float targetY, float targetZ, float upX, float upY, float upZ)
-        {
-            return LookAt(new Vector3(eyeX, eyeY, eyeZ), new Vector3(targetX, targetY, targetZ), new Vector3(upX, upY, upZ));
-        }
-
-        /// <summary>
-        /// Adds two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the addition.</param>
-        /// <param name="right">The right operand of the addition.</param>
-        /// <returns>A new instance that is the result of the addition.</returns>
-        public static Matrix4 Add(in Matrix4 left, in Matrix4 right)
-        {
-            Matrix4 result;
-            Add(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Adds two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the addition.</param>
-        /// <param name="right">The right operand of the addition.</param>
-        /// <param name="result">A new instance that is the result of the addition.</param>
-        public static void Add(in Matrix4 left, in Matrix4 right, out Matrix4 result)
-        {
-            result.Row0 = left.Row0 + right.Row0;
-            result.Row1 = left.Row1 + right.Row1;
-            result.Row2 = left.Row2 + right.Row2;
-            result.Row3 = left.Row3 + right.Row3;
-        }
-
-        /// <summary>
-        /// Subtracts one instance from another.
-        /// </summary>
-        /// <param name="left">The left operand of the subraction.</param>
-        /// <param name="right">The right operand of the subraction.</param>
-        /// <returns>A new instance that is the result of the subraction.</returns>
-        public static Matrix4 Subtract(in Matrix4 left, in Matrix4 right)
-        {
-            Matrix4 result;
-            Subtract(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Subtracts one instance from another.
-        /// </summary>
-        /// <param name="left">The left operand of the subraction.</param>
-        /// <param name="right">The right operand of the subraction.</param>
-        /// <param name="result">A new instance that is the result of the subraction.</param>
-        public static void Subtract(in Matrix4 left, in Matrix4 right, out Matrix4 result)
-        {
-            result.Row0 = left.Row0 - right.Row0;
-            result.Row1 = left.Row1 - right.Row1;
-            result.Row2 = left.Row2 - right.Row2;
-            result.Row3 = left.Row3 - right.Row3;
-        }
-
-        /// <summary>
-        /// Multiplies two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <returns>A new instance that is the result of the multiplication.</returns>
-        public static Matrix4 Mult(in Matrix4 left, in Matrix4 right)
-        {
-            Matrix4 result;
-            Mult(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Multiplies two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <param name="result">A new instance that is the result of the multiplication.</param>
-        public static void Mult(in Matrix4 left, in Matrix4 right, out Matrix4 result)
-        {
-            float lM00 = left.Row0.X, lM01 = left.Row0.Y, lM02 = left.Row0.Z, lM03 = left.Row0.W,
-                lM10 = left.Row1.X, lM11 = left.Row1.Y, lM12 = left.Row1.Z, lM13 = left.Row1.W,
-                lM20 = left.Row2.X, lM21 = left.Row2.Y, lM22 = left.Row2.Z, lM23 = left.Row2.W,
-                lM30 = left.Row3.X, lM31 = left.Row3.Y, lM32 = left.Row3.Z, lM33 = left.Row3.W,
-                rM00 = right.Row0.X, rM01 = right.Row0.Y, rM02 = right.Row0.Z, rM03 = right.Row0.W,
-                rM10 = right.Row1.X, rM11 = right.Row1.Y, rM12 = right.Row1.Z, rM13 = right.Row1.W,
-                rM20 = right.Row2.X, rM21 = right.Row2.Y, rM22 = right.Row2.Z, rM23 = right.Row2.W,
-                rM30 = right.Row3.X, rM31 = right.Row3.Y, rM32 = right.Row3.Z, rM33 = right.Row3.W;
-
-            result.Row0.X = (((lM00 * rM00) + (lM01 * rM10)) + (lM02 * rM20)) + (lM03 * rM30);
-            result.Row0.Y = (((lM00 * rM01) + (lM01 * rM11)) + (lM02 * rM21)) + (lM03 * rM31);
-            result.Row0.Z = (((lM00 * rM02) + (lM01 * rM12)) + (lM02 * rM22)) + (lM03 * rM32);
-            result.Row0.W = (((lM00 * rM03) + (lM01 * rM13)) + (lM02 * rM23)) + (lM03 * rM33);
-            result.Row1.X = (((lM10 * rM00) + (lM11 * rM10)) + (lM12 * rM20)) + (lM13 * rM30);
-            result.Row1.Y = (((lM10 * rM01) + (lM11 * rM11)) + (lM12 * rM21)) + (lM13 * rM31);
-            result.Row1.Z = (((lM10 * rM02) + (lM11 * rM12)) + (lM12 * rM22)) + (lM13 * rM32);
-            result.Row1.W = (((lM10 * rM03) + (lM11 * rM13)) + (lM12 * rM23)) + (lM13 * rM33);
-            result.Row2.X = (((lM20 * rM00) + (lM21 * rM10)) + (lM22 * rM20)) + (lM23 * rM30);
-            result.Row2.Y = (((lM20 * rM01) + (lM21 * rM11)) + (lM22 * rM21)) + (lM23 * rM31);
-            result.Row2.Z = (((lM20 * rM02) + (lM21 * rM12)) + (lM22 * rM22)) + (lM23 * rM32);
-            result.Row2.W = (((lM20 * rM03) + (lM21 * rM13)) + (lM22 * rM23)) + (lM23 * rM33);
-            result.Row3.X = (((lM30 * rM00) + (lM31 * rM10)) + (lM32 * rM20)) + (lM33 * rM30);
-            result.Row3.Y = (((lM30 * rM01) + (lM31 * rM11)) + (lM32 * rM21)) + (lM33 * rM31);
-            result.Row3.Z = (((lM30 * rM02) + (lM31 * rM12)) + (lM32 * rM22)) + (lM33 * rM32);
-            result.Row3.W = (((lM30 * rM03) + (lM31 * rM13)) + (lM32 * rM23)) + (lM33 * rM33);
-        }
-
-        /// <summary>
-        /// Multiplies an instance by a scalar.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <returns>A new instance that is the result of the multiplication</returns>
-        public static Matrix4 Mult(in Matrix4 left, float right)
-        {
-            Matrix4 result;
-            Mult(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Multiplies an instance by a scalar.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <param name="result">A new instance that is the result of the multiplication</param>
-        public static void Mult(in Matrix4 left, float right, out Matrix4 result)
-        {
-            result.Row0 = left.Row0 * right;
-            result.Row1 = left.Row1 * right;
-            result.Row2 = left.Row2 * right;
-            result.Row3 = left.Row3 * right;
-        }
-
-        /// <summary>
-        /// Calculate the inverse of the given matrix
-        /// </summary>
-        /// <param name="mat">The matrix to invert</param>
-        /// <param name="result">The inverse of the given matrix if it has one, or the input if it is singular</param>
-        /// <exception cref="InvalidOperationException">Thrown if the Matrix4 is singular.</exception>
-        public static void Invert(in Matrix4 mat, out Matrix4 result)
-        {
-            int[] colIdx = { 0, 0, 0, 0 };
-            int[] rowIdx = { 0, 0, 0, 0 };
-            int[] pivotIdx = { -1, -1, -1, -1 };
-
-            // convert the matrix to an array for easy looping
-            float[,] inverse = {{mat.Row0.X, mat.Row0.Y, mat.Row0.Z, mat.Row0.W},
-                                {mat.Row1.X, mat.Row1.Y, mat.Row1.Z, mat.Row1.W},
-                                {mat.Row2.X, mat.Row2.Y, mat.Row2.Z, mat.Row2.W},
-                                {mat.Row3.X, mat.Row3.Y, mat.Row3.Z, mat.Row3.W} };
-            int icol = 0;
-            int irow = 0;
-            for (int i = 0; i < 4; i++)
-            {
-                // Find the largest pivot value
-                float maxPivot = 0.0f;
-                for (int j = 0; j < 4; j++)
-                {
-                    if (pivotIdx[j] != 0)
-                    {
-                        for (int k = 0; k < 4; ++k)
-                        {
-                            if (pivotIdx[k] == -1)
-                            {
-                                float absVal = System.Math.Abs(inverse[j, k]);
-                                if (absVal > maxPivot)
-                                {
-                                    maxPivot = absVal;
-                                    irow = j;
-                                    icol = k;
-                                }
-                            }
-                            else if (pivotIdx[k] > 0)
-                            {
-                                result = mat;
-                                return;
-                            }
-                        }
-                    }
-                }
-
-                ++(pivotIdx[icol]);
-
-                // Swap rows over so pivot is on diagonal
-                if (irow != icol)
-                {
-                    for (int k = 0; k < 4; ++k)
-                    {
-                        float f = inverse[irow, k];
-                        inverse[irow, k] = inverse[icol, k];
-                        inverse[icol, k] = f;
-                    }
-                }
-
-                rowIdx[i] = irow;
-                colIdx[i] = icol;
-
-                float pivot = inverse[icol, icol];
-                // check for singular matrix
-                if (pivot == 0.0f)
-                {
-                    throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
-                }
-
-                // Scale row so it has a unit diagonal
-                float oneOverPivot = 1.0f / pivot;
-                inverse[icol, icol] = 1.0f;
-                for (int k = 0; k < 4; ++k)
-                {
-                    inverse[icol, k] *= oneOverPivot;
-                }
-
-                // Do elimination of non-diagonal elements
-                for (int j = 0; j < 4; ++j)
-                {
-                    // check this isn't on the diagonal
-                    if (icol != j)
-                    {
-                        float f = inverse[j, icol];
-                        inverse[j, icol] = 0.0f;
-                        for (int k = 0; k < 4; ++k)
-                        {
-                            inverse[j, k] -= inverse[icol, k] * f;
-                        }
-                    }
-                }
-            }
-
-            for (int j = 3; j >= 0; --j)
-            {
-                int ir = rowIdx[j];
-                int ic = colIdx[j];
-                for (int k = 0; k < 4; ++k)
-                {
-                    float f = inverse[k, ir];
-                    inverse[k, ir] = inverse[k, ic];
-                    inverse[k, ic] = f;
-                }
-            }
-
-            result.Row0.X = inverse[0, 0];
-            result.Row0.Y = inverse[0, 1];
-            result.Row0.Z = inverse[0, 2];
-            result.Row0.W = inverse[0, 3];
-            result.Row1.X = inverse[1, 0];
-            result.Row1.Y = inverse[1, 1];
-            result.Row1.Z = inverse[1, 2];
-            result.Row1.W = inverse[1, 3];
-            result.Row2.X = inverse[2, 0];
-            result.Row2.Y = inverse[2, 1];
-            result.Row2.Z = inverse[2, 2];
-            result.Row2.W = inverse[2, 3];
-            result.Row3.X = inverse[3, 0];
-            result.Row3.Y = inverse[3, 1];
-            result.Row3.Z = inverse[3, 2];
-            result.Row3.W = inverse[3, 3];
-        }
-
-        /// <summary>
-        /// Calculate the inverse of the given matrix
-        /// </summary>
-        /// <param name="mat">The matrix to invert</param>
-        /// <returns>The inverse of the given matrix if it has one, or the input if it is singular</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the Matrix4 is singular.</exception>
-        public static Matrix4 Invert(in Matrix4 mat)
-        {
-            Matrix4 result;
-            Invert(mat, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Calculate the transpose of the given matrix
-        /// </summary>
-        /// <param name="mat">The matrix to transpose</param>
-        /// <returns>The transpose of the given matrix</returns>
-        public static Matrix4 Transpose(in Matrix4 mat)
-        {
-            return new Matrix4(mat.Column0, mat.Column1, mat.Column2, mat.Column3);
-        }
-
-
-        /// <summary>
-        /// Calculate the transpose of the given matrix
-        /// </summary>
-        /// <param name="mat">The matrix to transpose</param>
-        /// <param name="result">The result of the calculation</param>
-        public static void Transpose(in Matrix4 mat, out Matrix4 result)
-        {
-            result.Row0 = mat.Column0;
-            result.Row1 = mat.Column1;
-            result.Row2 = mat.Column2;
-            result.Row3 = mat.Column3;
-        }
-
-        /// <summary>
-        /// Matrix multiplication
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix4 which holds the result of the multiplication</returns>
-        public static Matrix4 operator *(in Matrix4 left, in Matrix4 right)
-        {
-            return Matrix4.Mult(left, right);
-        }
-
-        /// <summary>
-        /// Matrix-scalar multiplication
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix4 which holds the result of the multiplication</returns>
-        public static Matrix4 operator *(in Matrix4 left, float right)
-        {
-            return Matrix4.Mult(left, right);
-        }
-
-        /// <summary>
-        /// Multiply a Vector3 which is assumed to represent position.
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix4 which holds the result of the multiplication</returns>
-        public static Vector3 operator *(in Matrix4 left, in Vector3 right)
-        {
-            float invW = 1.0f / (left.M30 * right.X + left.M31 * right.Y + left.M32 * right.Z + left.M33);
-
-            return new Vector3(
-                (left.M00 * right.X + left.M01 * right.Y + left.M02 * right.Z + left.M03) * invW,
-                (left.M10 * right.X + left.M11 * right.Y + left.M12 * right.Z + left.M13) * invW,
-                (left.M20 * right.X + left.M21 * right.Y + left.M22 * right.Z + left.M23) * invW
-            );
-        }
-
-        /// <summary>
-        /// Matrix addition
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix4 which holds the result of the addition</returns>
-        public static Matrix4 operator +(in Matrix4 left, in Matrix4 right)
-        {
-            return Matrix4.Add(left, right);
-        }
-
-        /// <summary>
-        /// Matrix subtraction
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix4 which holds the result of the subtraction</returns>
-        public static Matrix4 operator -(in Matrix4 left, in Matrix4 right)
-        {
-            return Matrix4.Subtract(left, right);
-        }
-
-        /// <summary>
-        /// Compares two instances for equality.
-        /// </summary>
-        /// <param name="left">The first instance.</param>
-        /// <param name="right">The second instance.</param>
-        /// <returns>True, if left equals right; false otherwise.</returns>
-        public static bool operator ==(in Matrix4 left, in Matrix4 right)
-        {
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// Compares two instances for inequality.
-        /// </summary>
-        /// <param name="left">The first instance.</param>
-        /// <param name="right">The second instance.</param>
-        /// <returns>True, if left does not equal right; false otherwise.</returns>
-        public static bool operator !=(in Matrix4 left, in Matrix4 right)
-        {
-            return !left.Equals(right);
-        }
-
-        /// <summary>
-        /// Returns a System.String that represents the current Matrix4.
-        /// </summary>
-        /// <returns>The string representation of the matrix.</returns>
-        public override string ToString()
-        {
-            return String.Format("{0}\n{1}\n{2}\n{3}", Row0, Row1, Row2, Row3);
-        }
-
-        /// <summary>
-        /// Returns the hashcode for this instance.
-        /// </summary>
-        /// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
-        public override int GetHashCode()
-        {
-            unchecked
-            {
-                var hashCode = this.Row0.GetHashCode();
-                hashCode = (hashCode * 397) ^ this.Row1.GetHashCode();
-                hashCode = (hashCode * 397) ^ this.Row2.GetHashCode();
-                hashCode = (hashCode * 397) ^ this.Row3.GetHashCode();
-                return hashCode;
-            }
-        }
-
-        /// <summary>
-        /// Indicates whether this instance and a specified object are equal.
-        /// </summary>
-        /// <param name="obj">The object to compare tresult.</param>
-        /// <returns>True if the instances are equal; false otherwise.</returns>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Matrix4))
-            {
-                return false;
-            }
-
-            return this.Equals((Matrix4)obj);
-        }
-
-        /// <summary>Indicates whether the current matrix is equal to another matrix.</summary>
-        /// <param name="other">An matrix to compare with this matrix.</param>
-        /// <returns>true if the current matrix is equal to the matrix parameter; otherwise, false.</returns>
-        public bool Equals(Matrix4 other)
-        {
-            return
-                Row0 == other.Row0 &&
-                Row1 == other.Row1 &&
-                Row2 == other.Row2 &&
-                Row3 == other.Row3;
+        return obj is Matrix4 other && Equals(other);
+    }
+
+    /// Copy-construct from a 3x3 matrix and set the extra elements to identity.
+    public Matrix4(in Matrix3 matrix)
+    {
+        M00 = matrix.M00;
+        M01 = matrix.M01;
+        M02 = matrix.M02;
+        M03 = 0.0f;
+        M10 = matrix.M10;
+        M11 = matrix.M11;
+        M12 = matrix.M12;
+        M13 = 0.0f;
+        M20 = matrix.M20;
+        M21 = matrix.M21;
+        M22 = matrix.M22;
+        M23 = 0.0f;
+        M30 = 0.0f;
+        M31 = 0.0f;
+        M32 = 0.0f;
+        M33 = 1.0f;
+    }
+
+    /// Construct from values or identity matrix by default.
+    public Matrix4(float v00 = 1, float v01 = 0, float v02 = 0, float v03 = 0,
+                   float v10 = 0, float v11 = 1, float v12 = 0, float v13 = 0,
+                   float v20 = 0, float v21 = 0, float v22 = 1, float v23 = 0,
+                   float v30 = 0, float v31 = 0, float v32 = 0, float v33 = 1)
+    {
+        M00 = v00;
+        M01 = v01;
+        M02 = v02;
+        M03 = v03;
+        M10 = v10;
+        M11 = v11;
+        M12 = v12;
+        M13 = v13;
+        M20 = v20;
+        M21 = v21;
+        M22 = v22;
+        M23 = v23;
+        M30 = v30;
+        M31 = v31;
+        M32 = v32;
+        M33 = v33;
+    }
+
+    /// Construct from a float array.
+    public Matrix4(IReadOnlyList<float> data)
+    {
+        M00 = data[0];
+        M01 = data[1];
+        M02 = data[2];
+        M03 = data[3];
+        M10 = data[4];
+        M11 = data[5];
+        M12 = data[6];
+        M13 = data[7];
+        M20 = data[8];
+        M21 = data[9];
+        M22 = data[10];
+        M23 = data[11];
+        M30 = data[12];
+        M31 = data[13];
+        M32 = data[14];
+        M33 = data[15];
+    }
+
+    /// Test for equality with another matrix without epsilon.
+    public static bool operator ==(in Matrix4 lhs, in Matrix4 rhs)
+    {
+        return lhs.M00 == rhs.M00 &&
+               lhs.M01 == rhs.M01 &&
+               lhs.M02 == rhs.M02 &&
+               lhs.M03 == rhs.M03 &&
+               lhs.M10 == rhs.M10 &&
+               lhs.M11 == rhs.M11 &&
+               lhs.M12 == rhs.M12 &&
+               lhs.M13 == rhs.M13 &&
+               lhs.M20 == rhs.M20 &&
+               lhs.M21 == rhs.M21 &&
+               lhs.M22 == rhs.M22 &&
+               lhs.M23 == rhs.M23 &&
+               lhs.M30 == rhs.M30 &&
+               lhs.M31 == rhs.M31 &&
+               lhs.M32 == rhs.M32 &&
+               lhs.M33 == rhs.M33;
+    }
+
+    /// Test for inequality with another matrix without epsilon.
+    public static bool operator !=(in Matrix4 lhs, in Matrix4 rhs) { return !(lhs == rhs); }
+
+    /// Multiply a Vector3 which is assumed to represent position.
+    public static Vector3 operator *(in Matrix4 lhs, in Vector3 rhs)
+    {
+        float invW = 1.0f / (lhs.M30 * rhs.X + lhs.M31 * rhs.Y + lhs.M32 * rhs.Z + lhs.M33);
+
+        return new Vector3(
+            (lhs.M00 * rhs.X + lhs.M01 * rhs.Y + lhs.M02 * rhs.Z + lhs.M03) * invW,
+            (lhs.M10 * rhs.X + lhs.M11 * rhs.Y + lhs.M12 * rhs.Z + lhs.M13) * invW,
+            (lhs.M20 * rhs.X + lhs.M21 * rhs.Y + lhs.M22 * rhs.Z + lhs.M23) * invW
+        );
+    }
+
+    /// Multiply a Vector4.
+    public static Vector4 operator *(in Matrix4 lhs, in Vector4 rhs)
+    {
+        return new Vector4(
+            lhs.M00 * rhs.X + lhs.M01 * rhs.Y + lhs.M02 * rhs.Z + lhs.M03 * rhs.W,
+            lhs.M10 * rhs.X + lhs.M11 * rhs.Y + lhs.M12 * rhs.Z + lhs.M13 * rhs.W,
+            lhs.M20 * rhs.X + lhs.M21 * rhs.Y + lhs.M22 * rhs.Z + lhs.M23 * rhs.W,
+            lhs.M30 * rhs.X + lhs.M31 * rhs.Y + lhs.M32 * rhs.Z + lhs.M33 * rhs.W
+        );
+    }
+
+    /// Add a matrix.
+    public static Matrix4 operator +(in Matrix4 lhs, in Matrix4 rhs)
+    {
+        return new Matrix4(
+            lhs.M00 + rhs.M00,
+            lhs.M01 + rhs.M01,
+            lhs.M02 + rhs.M02,
+            lhs.M03 + rhs.M03,
+            lhs.M10 + rhs.M10,
+            lhs.M11 + rhs.M11,
+            lhs.M12 + rhs.M12,
+            lhs.M13 + rhs.M13,
+            lhs.M20 + rhs.M20,
+            lhs.M21 + rhs.M21,
+            lhs.M22 + rhs.M22,
+            lhs.M23 + rhs.M23,
+            lhs.M30 + rhs.M30,
+            lhs.M31 + rhs.M31,
+            lhs.M32 + rhs.M32,
+            lhs.M33 + rhs.M33
+        );
+    }
+
+    /// Subtract a matrix.
+    public static Matrix4 operator -(in Matrix4 lhs, in Matrix4 rhs)
+    {
+        return new Matrix4(
+            lhs.M00 - rhs.M00,
+            lhs.M01 - rhs.M01,
+            lhs.M02 - rhs.M02,
+            lhs.M03 - rhs.M03,
+            lhs.M10 - rhs.M10,
+            lhs.M11 - rhs.M11,
+            lhs.M12 - rhs.M12,
+            lhs.M13 - rhs.M13,
+            lhs.M20 - rhs.M20,
+            lhs.M21 - rhs.M21,
+            lhs.M22 - rhs.M22,
+            lhs.M23 - rhs.M23,
+            lhs.M30 - rhs.M30,
+            lhs.M31 - rhs.M31,
+            lhs.M32 - rhs.M32,
+            lhs.M33 - rhs.M33
+        );
+    }
+
+    /// Multiply with a scalar.
+    public static Matrix4 operator *(in Matrix4 lhs, float rhs)
+    {
+        return new Matrix4(
+            lhs.M00 * rhs,
+            lhs.M01 * rhs,
+            lhs.M02 * rhs,
+            lhs.M03 * rhs,
+            lhs.M10 * rhs,
+            lhs.M11 * rhs,
+            lhs.M12 * rhs,
+            lhs.M13 * rhs,
+            lhs.M20 * rhs,
+            lhs.M21 * rhs,
+            lhs.M22 * rhs,
+            lhs.M23 * rhs,
+            lhs.M30 * rhs,
+            lhs.M31 * rhs,
+            lhs.M32 * rhs,
+            lhs.M33 * rhs
+        );
+    }
+
+    /// Multiply a matrix.
+    public static Matrix4 operator *(in Matrix4 lhs, in Matrix4 rhs)
+    {
+        return new Matrix4(
+            lhs.M00 * rhs.M00 + lhs.M01 * rhs.M10 + lhs.M02 * rhs.M20 + lhs.M03 * rhs.M30,
+            lhs.M00 * rhs.M01 + lhs.M01 * rhs.M11 + lhs.M02 * rhs.M21 + lhs.M03 * rhs.M31,
+            lhs.M00 * rhs.M02 + lhs.M01 * rhs.M12 + lhs.M02 * rhs.M22 + lhs.M03 * rhs.M32,
+            lhs.M00 * rhs.M03 + lhs.M01 * rhs.M13 + lhs.M02 * rhs.M23 + lhs.M03 * rhs.M33,
+            lhs.M10 * rhs.M00 + lhs.M11 * rhs.M10 + lhs.M12 * rhs.M20 + lhs.M13 * rhs.M30,
+            lhs.M10 * rhs.M01 + lhs.M11 * rhs.M11 + lhs.M12 * rhs.M21 + lhs.M13 * rhs.M31,
+            lhs.M10 * rhs.M02 + lhs.M11 * rhs.M12 + lhs.M12 * rhs.M22 + lhs.M13 * rhs.M32,
+            lhs.M10 * rhs.M03 + lhs.M11 * rhs.M13 + lhs.M12 * rhs.M23 + lhs.M13 * rhs.M33,
+            lhs.M20 * rhs.M00 + lhs.M21 * rhs.M10 + lhs.M22 * rhs.M20 + lhs.M23 * rhs.M30,
+            lhs.M20 * rhs.M01 + lhs.M21 * rhs.M11 + lhs.M22 * rhs.M21 + lhs.M23 * rhs.M31,
+            lhs.M20 * rhs.M02 + lhs.M21 * rhs.M12 + lhs.M22 * rhs.M22 + lhs.M23 * rhs.M32,
+            lhs.M20 * rhs.M03 + lhs.M21 * rhs.M13 + lhs.M22 * rhs.M23 + lhs.M23 * rhs.M33,
+            lhs.M30 * rhs.M00 + lhs.M31 * rhs.M10 + lhs.M32 * rhs.M20 + lhs.M33 * rhs.M30,
+            lhs.M30 * rhs.M01 + lhs.M31 * rhs.M11 + lhs.M32 * rhs.M21 + lhs.M33 * rhs.M31,
+            lhs.M30 * rhs.M02 + lhs.M31 * rhs.M12 + lhs.M32 * rhs.M22 + lhs.M33 * rhs.M32,
+            lhs.M30 * rhs.M03 + lhs.M31 * rhs.M13 + lhs.M32 * rhs.M23 + lhs.M33 * rhs.M33
+        );
+    }
+
+    /// Multiply with a 3x4 matrix.
+    public static Matrix4 operator *(in Matrix4 lhs, in Matrix3x4 rhs)
+    {
+        return new Matrix4(
+            lhs.M00 * rhs.M00 + lhs.M01 * rhs.M10 + lhs.M02 * rhs.M20,
+            lhs.M00 * rhs.M01 + lhs.M01 * rhs.M11 + lhs.M02 * rhs.M21,
+            lhs.M00 * rhs.M02 + lhs.M01 * rhs.M12 + lhs.M02 * rhs.M22,
+            lhs.M00 * rhs.M03 + lhs.M01 * rhs.M13 + lhs.M02 * rhs.M23 + lhs.M03,
+            lhs.M10 * rhs.M00 + lhs.M11 * rhs.M10 + lhs.M12 * rhs.M20,
+            lhs.M10 * rhs.M01 + lhs.M11 * rhs.M11 + lhs.M12 * rhs.M21,
+            lhs.M10 * rhs.M02 + lhs.M11 * rhs.M12 + lhs.M12 * rhs.M22,
+            lhs.M10 * rhs.M03 + lhs.M11 * rhs.M13 + lhs.M12 * rhs.M23 + lhs.M13,
+            lhs.M20 * rhs.M00 + lhs.M21 * rhs.M10 + lhs.M22 * rhs.M20,
+            lhs.M20 * rhs.M01 + lhs.M21 * rhs.M11 + lhs.M22 * rhs.M21,
+            lhs.M20 * rhs.M02 + lhs.M21 * rhs.M12 + lhs.M22 * rhs.M22,
+            lhs.M20 * rhs.M03 + lhs.M21 * rhs.M13 + lhs.M22 * rhs.M23 + lhs.M23,
+            lhs.M30 * rhs.M00 + lhs.M31 * rhs.M10 + lhs.M32 * rhs.M20,
+            lhs.M30 * rhs.M01 + lhs.M31 * rhs.M11 + lhs.M32 * rhs.M21,
+            lhs.M30 * rhs.M02 + lhs.M31 * rhs.M12 + lhs.M32 * rhs.M22,
+            lhs.M30 * rhs.M03 + lhs.M31 * rhs.M13 + lhs.M32 * rhs.M23 + lhs.M33
+        );
+    }
+
+    /// Multiply a 4x4 matrix with a scalar.
+    [MethodImpl(MethodImplOptions.AggressiveInlining)]
+    public static Matrix4 operator *(float lhs, in Matrix4 rhs) { return rhs * lhs; }
+
+    /// Get or set translation elements.
+    public Vector3 Translation
+    {
+        get => new Vector3(M03, M13, M23);
+        set
+        {
+            M03 = value.X;
+            M13 = value.Y;
+            M23 = value.Z;
         }
     }
+
+    /// Set rotation elements from a 3x3 matrix.
+    /// Return the rotation matrix with scaling removed.
+    public Matrix3 RotationMatrix
+    {
+        get
+        {
+            var invScale = new Vector3(
+                1.0f / (float)Math.Sqrt(M00 * M00 + M10 * M10 + M20 * M20),
+                1.0f / (float)Math.Sqrt(M01 * M01 + M11 * M11 + M21 * M21),
+                1.0f / (float)Math.Sqrt(M02 * M02 + M12 * M12 + M22 * M22)
+            );
+            return Matrix3.Scaled(invScale);
+        }
+        set
+        {
+            M00 = value.M00;
+            M01 = value.M01;
+            M02 = value.M02;
+            M10 = value.M10;
+            M11 = value.M11;
+            M12 = value.M12;
+            M20 = value.M20;
+            M21 = value.M21;
+            M22 = value.M22;
+        }
+    }
+
+    /// Get or set scaling elements.
+    public Vector3 Scale
+    {
+        get
+        {
+            return new Vector3(
+                (float)Math.Sqrt(M00 * M00 + M10 * M10 + M20 * M20),
+                (float)Math.Sqrt(M01 * M01 + M11 * M11 + M21 * M21),
+                (float)Math.Sqrt(M02 * M02 + M12 * M12 + M22 * M22)
+            );
+        }
+        set
+        {
+            M00 = value.X;
+            M11 = value.Y;
+            M22 = value.Z;
+        }
+    }
+
+    /// Set uniform scaling elements.
+    public void SetScale(float scale)
+    {
+        M00 = scale;
+        M11 = scale;
+        M22 = scale;
+    }
+
+    /// Return the combined rotation and scaling matrix.
+    public Matrix3 Matrix3 => new Matrix3(M00,M01,M02,M10,M11,M12,M20,M21,M22);
+
+    /// Return the rotation part.
+    public Quaternion Rotation => new Quaternion(RotationMatrix);
+
+    /// Return the scaling part with the sign. Reference rotation matrix is required to avoid ambiguity.
+    public Vector3 SignedScale(in Matrix3 rotation)
+    {
+        return new Vector3(
+            rotation.M00 * M00 + rotation.M10 * M10 + rotation.M20 * M20,
+            rotation.M01 * M01 + rotation.M11 * M11 + rotation.M21 * M21,
+            rotation.M02 * M02 + rotation.M12 * M12 + rotation.M22 * M22
+        );
+    }
+
+    /// Return transposed.
+    public Matrix4 Transposed => new Matrix4(M00,M10,M20,M30,M01,M11,M21,M31,M02,M12,M22,M32,M03,M13,M23,M33);
+
+    /// Test for equality with another matrix with epsilon.
+    public bool Equals(Matrix4 rhs)
+    {
+        return this == rhs;
+    }
+
+    public override int GetHashCode()
+    {
+        unchecked
+        {
+            var hashCode = M00.GetHashCode();
+            hashCode = (hashCode * 397) ^ M01.GetHashCode();
+            hashCode = (hashCode * 397) ^ M02.GetHashCode();
+            hashCode = (hashCode * 397) ^ M03.GetHashCode();
+            hashCode = (hashCode * 397) ^ M10.GetHashCode();
+            hashCode = (hashCode * 397) ^ M11.GetHashCode();
+            hashCode = (hashCode * 397) ^ M12.GetHashCode();
+            hashCode = (hashCode * 397) ^ M13.GetHashCode();
+            hashCode = (hashCode * 397) ^ M20.GetHashCode();
+            hashCode = (hashCode * 397) ^ M21.GetHashCode();
+            hashCode = (hashCode * 397) ^ M22.GetHashCode();
+            hashCode = (hashCode * 397) ^ M23.GetHashCode();
+            hashCode = (hashCode * 397) ^ M30.GetHashCode();
+            hashCode = (hashCode * 397) ^ M31.GetHashCode();
+            hashCode = (hashCode * 397) ^ M32.GetHashCode();
+            hashCode = (hashCode * 397) ^ M33.GetHashCode();
+            return hashCode;
+        }
+    }
+
+    /// Return decomposition to translation, rotation and scale.
+    public void Decompose(out Vector3 translation, out Quaternion rotation, out Vector3 scale)
+    {
+        translation.X = M03;
+        translation.Y = M13;
+        translation.Z = M23;
+
+        scale.X = (float)Math.Sqrt(M00 * M00 + M10 * M10 + M20 * M20);
+        scale.Y = (float)Math.Sqrt(M01 * M01 + M11 * M11 + M21 * M21);
+        scale.Z = (float)Math.Sqrt(M02 * M02 + M12 * M12 + M22 * M22);
+
+        var invScale = new Vector3(1.0f / scale.X, 1.0f / scale.Y, 1.0f / scale.Z);
+        rotation = new Quaternion(Matrix3.Scaled(invScale));
+    }
+
+
+    /// Return inverse.
+    public Matrix4 Inverted
+    {
+        get
+        {
+            float v0 = M20 * M31 - M21 * M30;
+            float v1 = M20 * M32 - M22 * M30;
+            float v2 = M20 * M33 - M23 * M30;
+            float v3 = M21 * M32 - M22 * M31;
+            float v4 = M21 * M33 - M23 * M31;
+            float v5 = M22 * M33 - M23 * M32;
+
+            float i00 = (v5 * M11 - v4 * M12 + v3 * M13);
+            float i10 = -(v5 * M10 - v2 * M12 + v1 * M13);
+            float i20 = (v4 * M10 - v2 * M11 + v0 * M13);
+            float i30 = -(v3 * M10 - v1 * M11 + v0 * M12);
+
+            float invDet = 1.0f / (i00 * M00 + i10 * M01 + i20 * M02 + i30 * M03);
+
+            i00 *= invDet;
+            i10 *= invDet;
+            i20 *= invDet;
+            i30 *= invDet;
+
+            float i01 = -(v5 * M01 - v4 * M02 + v3 * M03) * invDet;
+            float i11 = (v5 * M00 - v2 * M02 + v1 * M03) * invDet;
+            float i21 = -(v4 * M00 - v2 * M01 + v0 * M03) * invDet;
+            float i31 = (v3 * M00 - v1 * M01 + v0 * M02) * invDet;
+
+            v0 = M10 * M31 - M11 * M30;
+            v1 = M10 * M32 - M12 * M30;
+            v2 = M10 * M33 - M13 * M30;
+            v3 = M11 * M32 - M12 * M31;
+            v4 = M11 * M33 - M13 * M31;
+            v5 = M12 * M33 - M13 * M32;
+
+            float i02 = (v5 * M01 - v4 * M02 + v3 * M03) * invDet;
+            float i12 = -(v5 * M00 - v2 * M02 + v1 * M03) * invDet;
+            float i22 = (v4 * M00 - v2 * M01 + v0 * M03) * invDet;
+            float i32 = -(v3 * M00 - v1 * M01 + v0 * M02) * invDet;
+
+            v0 = M21 * M10 - M20 * M11;
+            v1 = M22 * M10 - M20 * M12;
+            v2 = M23 * M10 - M20 * M13;
+            v3 = M22 * M11 - M21 * M12;
+            v4 = M23 * M11 - M21 * M13;
+            v5 = M23 * M12 - M22 * M13;
+
+            float i03 = -(v5 * M01 - v4 * M02 + v3 * M03) * invDet;
+            float i13 = (v5 * M00 - v2 * M02 + v1 * M03) * invDet;
+            float i23 = -(v4 * M00 - v2 * M01 + v0 * M03) * invDet;
+            float i33 = (v3 * M00 - v1 * M01 + v0 * M02) * invDet;
+
+            return new Matrix4(
+                i00, i01, i02, i03,
+                i10, i11, i12, i13,
+                i20, i21, i22, i23,
+                i30, i31, i32, i33);
+        }
+    }
+
+    /// Return float data.
+    private float[] Data => new[]
+        {M00, M10, M20, M30, M01, M11, M21, M31, M02, M12, M22, M32, M03, M13, M23, M33};
+
+    /// Return matrix element.
+    public float this[int i, int j]
+    {
+        get
+        {
+            if (i < 0 || i > 3 || j < 0 || j > 3)
+                throw new IndexOutOfRangeException();
+            unsafe
+            {
+                fixed (float* p = &M00)
+                {
+                    return p[i * 4 + j];
+                }
+            }
+        }
+        set
+        {
+            if (i < 0 || i > 3 || j < 0 || j > 3)
+                throw new IndexOutOfRangeException();
+            unsafe
+            {
+                fixed (float* p = &M00)
+                {
+                    p[i * 4 + j] = value;
+                }
+            }
+        }
+    }
+
+    /// Return matrix row.
+    public Vector4 Row(int i) { return new Vector4(this[i, 0], this[i, 1], this[i, 2], this[i, 3]); }
+
+    /// Return matrix column.
+    public Vector4 Column(int j) { return new Vector4(this[0, j], this[1, j], this[2, j], this[3, j]); }
+
+    /// Return as string.
+    public override string ToString()
+    {
+        return
+            $"{M00} {M10} {M20} {M30} {M01} {M11} {M21} {M31} {M02} {M12} {M22} {M32} {M03} {M13} {M23} {M33}"; }
+
+    public float M00;
+    public float M01;
+    public float M02;
+    public float M03;
+    public float M10;
+    public float M11;
+    public float M12;
+    public float M13;
+    public float M20;
+    public float M21;
+    public float M22;
+    public float M23;
+    public float M30;
+    public float M31;
+    public float M32;
+    public float M33;
+
+    /// Bulk transpose matrices.
+    public static unsafe void BulkTranspose(float* dest, float* src, int count)
+    {
+        for (int i = 0; i < count; ++i)
+        {
+            dest[0] = src[0];
+            dest[1] = src[4];
+            dest[2] = src[8];
+            dest[3] = src[12];
+            dest[4] = src[1];
+            dest[5] = src[5];
+            dest[6] = src[9];
+            dest[7] = src[13];
+            dest[8] = src[2];
+            dest[9] = src[6];
+            dest[10] = src[10];
+            dest[11] = src[14];
+            dest[12] = src[3];
+            dest[13] = src[7];
+            dest[14] = src[11];
+            dest[15] = src[15];
+            dest += 16;
+            src += 16;
+        }
+    }
+
+    /// Zero matrix.
+    public static readonly Matrix4 Zero = new Matrix4(0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+    /// Identity matrix.
+    public static readonly Matrix4 Identity;
+};
+
 }

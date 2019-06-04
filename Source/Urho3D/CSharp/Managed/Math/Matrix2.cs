@@ -1,606 +1,245 @@
-﻿/*
-Copyright (c) 2006 - 2008 The Open Toolkit library.
-
-Permission is hereby granted, free of charge, to any person obtaining a copy of
-this software and associated documentation files (the "Software"), to deal in
-the Software without restriction, including without limitation the rights to
-use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
-of the Software, and to permit persons to whom the Software is furnished to do
-so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
- */
+﻿//
+// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2017-2019 the rbfx project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
 
 using System;
+using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
-    /// <summary>
-    /// Represents a 2x2 matrix
-    /// </summary>
+    /// 2x2 matrix for rotation and scaling.
     [StructLayout(LayoutKind.Sequential)]
     public struct Matrix2 : IEquatable<Matrix2>
     {
-        /// <summary>
-        /// Top row of the matrix.
-        /// </summary>
-        public Vector2 Row0;
-
-        /// <summary>
-        /// Bottom row of the matrix.
-        /// </summary>
-        public Vector2 Row1;
-
-        /// <summary>
-        /// The identity matrix.
-        /// </summary>
-        public static readonly Matrix2 Identity = new Matrix2(Vector2.UnitX, Vector2.UnitY);
-
-        /// <summary>
-        /// The zero matrix.
-        /// </summary>
-        public static readonly Matrix2 Zero = new Matrix2(Vector2.Zero, Vector2.Zero);
-
-        /// <summary>
-        /// Constructs a new instance.
-        /// </summary>
-        /// <param name="row0">Top row of the matrix.</param>
-        /// <param name="row1">Bottom row of the matrix.</param>
-        public Matrix2(in Vector2 row0, in Vector2 row1)
+        /// Construct from values.
+        public Matrix2(float v00 = 1, float v01 = 0,
+            float v10 = 0, float v11 = 1)
         {
-            Row0 = row0;
-            Row1 = row1;
+            M00 = v00;
+            M01 = v01;
+            M10 = v10;
+            M11 = v11;
         }
 
-        /// <summary>
-        /// Constructs a new instance
-        /// </summary>
-        /// <param name="m00">First item of the first row of the matrix.</param>
-        /// <param name="m01">Second item of the first row of the matrix.</param>
-        /// <param name="m10">First item of the second row of the matrix.</param>
-        /// <param name="m11">Second item of the second row of the matrix.</param>
-        public Matrix2(
-            float m00, float m01,
-            float m10, float m11)
+        /// Construct from a float array.
+        public Matrix2(IReadOnlyList<float> data)
         {
-            Row0 = new Vector2(m00, m01);
-            Row1 = new Vector2(m10, m11);
+            M00 = data[0];
+            M01 = data[1];
+            M10 = data[2];
+            M11 = data[3];
         }
 
-        /// <summary>
-        /// Gets the determinant of this matrix.
-        /// </summary>
-        public float Determinant
+        /// Test for equality with another matrix without epsilon.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator ==(in Matrix2 lhs, in Matrix2 rhs)
+        {
+            return !(lhs != rhs);
+        }
+
+        /// Test for inequality with another matrix without epsilon.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static bool operator !=(in Matrix2 lhs, in Matrix2 rhs)
+        {
+            return lhs.M00 != rhs.M00 ||
+                   lhs.M01 != rhs.M01 ||
+                   lhs.M10 != rhs.M10 ||
+                   lhs.M11 != rhs.M11;
+        }
+
+        /// Multiply a Vector2.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Vector2 operator *(in Matrix2 lhs, in Vector2 rhs)
+        {
+            return new Vector2(
+                lhs.M00 * rhs.X + lhs.M01 * rhs.Y,
+                lhs.M10 * rhs.X + lhs.M11 * rhs.Y
+            );
+        }
+
+        /// Add a matrix.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix2 operator +(in Matrix2 lhs, in Matrix2 rhs)
+        {
+            return new Matrix2(
+                lhs.M00 + rhs.M00,
+                lhs.M01 + rhs.M01,
+                lhs.M10 + rhs.M10,
+                lhs.M11 + rhs.M11
+            );
+        }
+
+        /// Subtract a matrix.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix2 operator -(in Matrix2 lhs, in Matrix2 rhs)
+        {
+            return new Matrix2(
+                lhs.M00 - rhs.M00,
+                lhs.M01 - rhs.M01,
+                lhs.M10 - rhs.M10,
+                lhs.M11 - rhs.M11
+            );
+        }
+
+        /// Multiply with a scalar.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix2 operator *(in Matrix2 lhs, float rhs)
+        {
+            return new Matrix2(
+                lhs.M00 * rhs,
+                lhs.M01 * rhs,
+                lhs.M10 * rhs,
+                lhs.M11 * rhs
+            );
+        }
+
+        /// Multiply a matrix.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix2 operator *(in Matrix2 lhs, in Matrix2 rhs)
+        {
+            return new Matrix2(
+                lhs.M00 * rhs.M00 + lhs.M01 * rhs.M10,
+                lhs.M00 * rhs.M01 + lhs.M01 * rhs.M11,
+                lhs.M10 * rhs.M00 + lhs.M11 * rhs.M10,
+                lhs.M10 * rhs.M01 + lhs.M11 * rhs.M11
+            );
+        }
+
+        /// Multiply a 2x2 matrix with a scalar.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public static Matrix2 operator *(float lhs, in Matrix2 rhs)
+        {
+            return rhs * lhs;
+        }
+
+        /// Set scaling elements.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetScale(in Vector2 scale)
+        {
+            M00 = scale.X;
+            M11 = scale.Y;
+        }
+
+        /// Set uniform scaling elements.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void SetScale(float scale)
+        {
+            M00 = scale;
+            M11 = scale;
+        }
+
+        /// Return the scaling part.
+        public Vector2 Scale => new Vector2(
+                (float) Math.Sqrt(M00 * M00 + M10 * M10),
+                (float) Math.Sqrt(M01 * M01 + M11 * M11)
+            );
+
+        /// Return transpose.
+        public Matrix2 Transposed => new Matrix2(M00, M10, M01, M11);
+
+        /// Return scaled by a vector.
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Matrix2 Scaled(in Vector2 scale)
+        {
+            return new Matrix2(
+                M00 * scale.X,
+                M01 * scale.Y,
+                M10 * scale.X,
+                M11 * scale.Y
+            );
+        }
+
+        /// Test for equality with another matrix with epsilon.
+        public bool Equals(Matrix2 rhs)
+        {
+            return MathDefs.Equals(M00, rhs.M00) &&
+                   MathDefs.Equals(M01, rhs.M01) &&
+                   MathDefs.Equals(M10, rhs.M10) &&
+                   MathDefs.Equals(M11, rhs.M11);
+        }
+
+        /// Return inverse.
+        public Matrix2 Inverse
         {
             get
             {
-                float m11 = Row0.X, m12 = Row0.Y,
-                      m21 = Row1.X, m22 = Row1.Y;
-
-                return m11 * m22 - m12 * m21;
+                float det = M00 * M11 - M01 * M10;
+                float invDet = 1.0f / det;
+                return new Matrix2(M11, -M01, -M10, M00) * invDet;
             }
         }
 
-        /// <summary>
-        /// Gets or sets the first column of this matrix.
-        /// </summary>
-        public Vector2 Column0
-        {
-            get { return new Vector2(Row0.X, Row1.X); }
-            set { Row0.X = value.X; Row1.X = value.Y; }
-        }
+        /// Return float data.
+        public float[] Data => new[] {M00, M01, M10, M11};
 
-        /// <summary>
-        /// Gets or sets the second column of this matrix.
-        /// </summary>
-        public Vector2 Column1
-        {
-            get { return new Vector2(Row0.Y, Row1.Y); }
-            set { Row0.Y = value.X; Row1.Y = value.Y; }
-        }
-
-        /// <summary>
-        /// Gets or sets the value at row 1, column 1 of this instance.
-        /// </summary>
-        public float M00 { get { return Row0.X; } set { Row0.X = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 1, column 2 of this instance.
-        /// </summary>
-        public float M01 { get { return Row0.Y; } set { Row0.Y = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 2, column 1 of this instance.
-        /// </summary>
-        public float M10 { get { return Row1.X; } set { Row1.X = value; } }
-
-        /// <summary>
-        /// Gets or sets the value at row 2, column 2 of this instance.
-        /// </summary>
-        public float M11 { get { return Row1.Y; } set { Row1.Y = value; } }
-
-        /// <summary>
-        /// Gets or sets the values along the main diagonal of the matrix.
-        /// </summary>
-        public Vector2 Diagonal
-        {
-            get
-            {
-                return new Vector2(Row0.X, Row1.Y);
-            }
-            set
-            {
-                Row0.X = value.X;
-                Row1.Y = value.Y;
-            }
-        }
-
-        /// <summary>
-        /// Gets the trace of the matrix, the sum of the values along the diagonal.
-        /// </summary>
-        public float Trace { get { return Row0.X + Row1.Y; } }
-
-        /// <summary>
-        /// Gets or sets the value at a specified row and column.
-        /// </summary>
-        public float this[int rowIndex, int columnIndex]
-        {
-            get
-            {
-                if (rowIndex == 0)
-                {
-                    return Row0[columnIndex];
-                }
-                else if (rowIndex == 1)
-                {
-                    return Row1[columnIndex];
-                }
-                throw new IndexOutOfRangeException("You tried to access this matrix at: (" + rowIndex + ", " + columnIndex + ")");
-            }
-            set
-            {
-                if (rowIndex == 0)
-                {
-                    Row0[columnIndex] = value;
-                }
-                else if (rowIndex == 1)
-                {
-                    Row1[columnIndex] = value;
-                }
-                else
-                {
-                    throw new IndexOutOfRangeException("You tried to set this matrix at: (" + rowIndex + ", " + columnIndex + ")");
-                }
-            }
-        }
-
-        /// <summary>
-        /// Converts this instance to it's transpose.
-        /// </summary>
-        public void Transpose()
-        {
-            this = Matrix2.Transpose(this);
-        }
-
-        /// <summary>
-        /// Converts this instance into its inverse.
-        /// </summary>
-        public void Invert()
-        {
-            this = Matrix2.Invert(this);
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <param name="result">The resulting Matrix2 instance.</param>
-        public static void CreateRotation(float angle, out Matrix2 result)
-        {
-            float cos = (float)System.Math.Cos(angle);
-            float sin = (float)System.Math.Sin(angle);
-
-            result.Row0.X = cos;
-            result.Row0.Y = sin;
-            result.Row1.X = -sin;
-            result.Row1.Y = cos;
-        }
-
-        /// <summary>
-        /// Builds a rotation matrix.
-        /// </summary>
-        /// <param name="angle">The counter-clockwise angle in radians.</param>
-        /// <returns>The resulting Matrix2 instance.</returns>
-        public static Matrix2 CreateRotation(float angle)
-        {
-            Matrix2 result;
-            CreateRotation(angle, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Single scale factor for the x, y, and z axes.</param>
-        /// <param name="result">A scale matrix.</param>
-        public static void CreateScale(float scale, out Matrix2 result)
-        {
-            result.Row0.X = scale;
-            result.Row0.Y = 0;
-            result.Row1.X = 0;
-            result.Row1.Y = scale;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Single scale factor for the x and y axes.</param>
-        /// <returns>A scale matrix.</returns>
-        public static Matrix2 CreateScale(float scale)
-        {
-            Matrix2 result;
-            CreateScale(scale, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Scale factors for the x and y axes.</param>
-        /// <param name="result">A scale matrix.</param>
-        public static void CreateScale(in Vector2 scale, out Matrix2 result)
-        {
-            result.Row0.X = scale.X;
-            result.Row0.Y = 0;
-            result.Row1.X = 0;
-            result.Row1.Y = scale.Y;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="scale">Scale factors for the x and y axes.</param>
-        /// <returns>A scale matrix.</returns>
-        public static Matrix2 CreateScale(in Vector2 scale)
-        {
-            Matrix2 result;
-            CreateScale(scale, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="x">Scale factor for the x axis.</param>
-        /// <param name="y">Scale factor for the y axis.</param>
-        /// <param name="result">A scale matrix.</param>
-        public static void CreateScale(float x, float y, out Matrix2 result)
-        {
-            result.Row0.X = x;
-            result.Row0.Y = 0;
-            result.Row1.X = 0;
-            result.Row1.Y = y;
-        }
-
-        /// <summary>
-        /// Creates a scale matrix.
-        /// </summary>
-        /// <param name="x">Scale factor for the x axis.</param>
-        /// <param name="y">Scale factor for the y axis.</param>
-        /// <returns>A scale matrix.</returns>
-        public static Matrix2 CreateScale(float x, float y)
-        {
-            Matrix2 result;
-            CreateScale(x, y, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Multiplies and instance by a scalar.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <param name="result">A new instance that is the result of the multiplication.</param>
-        public static void Mult(in Matrix2 left, float right, out Matrix2 result)
-        {
-            result.Row0.X = left.Row0.X * right;
-            result.Row0.Y = left.Row0.Y * right;
-            result.Row1.X = left.Row1.X * right;
-            result.Row1.Y = left.Row1.Y * right;
-        }
-
-        /// <summary>
-        /// Multiplies and instance by a scalar.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <returns>A new instance that is the result of the multiplication.</returns>
-        public static Matrix2 Mult(in Matrix2 left, float right)
-        {
-            Matrix2 result;
-            Mult(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Multiplies two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <param name="result">A new instance that is the result of the multiplication.</param>
-        public static void Mult(in Matrix2 left, in Matrix2 right, out Matrix2 result)
-        {
-            float lM00 = left.Row0.X, lM01 = left.Row0.Y,
-                lM10 = left.Row1.X, lM11 = left.Row1.Y,
-                rM00 = right.Row0.X, rM01 = right.Row0.Y,
-                rM10 = right.Row1.X, rM11 = right.Row1.Y;
-
-            result.Row0.X = (lM00 * rM00) + (lM01 * rM10);
-            result.Row0.Y = (lM00 * rM01) + (lM01 * rM11);
-            result.Row1.X = (lM10 * rM00) + (lM11 * rM10);
-            result.Row1.Y = (lM10 * rM01) + (lM11 * rM11);
-        }
-
-        /// <summary>
-        /// Multiplies two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the multiplication.</param>
-        /// <param name="right">The right operand of the multiplication.</param>
-        /// <returns>A new instance that is the result of the multiplication.</returns>
-        public static Matrix2 Mult(in Matrix2 left, in Matrix2 right)
-        {
-            Matrix2 result;
-            Mult(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Adds two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the addition.</param>
-        /// <param name="right">The right operand of the addition.</param>
-        /// <param name="result">A new instance that is the result of the addition.</param>
-        public static void Add(in Matrix2 left, in Matrix2 right, out Matrix2 result)
-        {
-            result.Row0.X = left.Row0.X + right.Row0.X;
-            result.Row0.Y = left.Row0.Y + right.Row0.Y;
-            result.Row1.X = left.Row1.X + right.Row1.X;
-            result.Row1.Y = left.Row1.Y + right.Row1.Y;
-        }
-
-        /// <summary>
-        /// Adds two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the addition.</param>
-        /// <param name="right">The right operand of the addition.</param>
-        /// <returns>A new instance that is the result of the addition.</returns>
-        public static Matrix2 Add(in Matrix2 left, in Matrix2 right)
-        {
-            Matrix2 result;
-            Add(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Subtracts two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the subtraction.</param>
-        /// <param name="right">The right operand of the subtraction.</param>
-        /// <param name="result">A new instance that is the result of the subtraction.</param>
-        public static void Subtract(in Matrix2 left, in Matrix2 right, out Matrix2 result)
-        {
-            result.Row0.X = left.Row0.X - right.Row0.X;
-            result.Row0.Y = left.Row0.Y - right.Row0.Y;
-            result.Row1.X = left.Row1.X - right.Row1.X;
-            result.Row1.Y = left.Row1.Y - right.Row1.Y;
-        }
-
-        /// <summary>
-        /// Subtracts two instances.
-        /// </summary>
-        /// <param name="left">The left operand of the subtraction.</param>
-        /// <param name="right">The right operand of the subtraction.</param>
-        /// <returns>A new instance that is the result of the subtraction.</returns>
-        public static Matrix2 Subtract(in Matrix2 left, in Matrix2 right)
-        {
-            Matrix2 result;
-            Subtract(left, right, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Calculate the inverse of the given matrix
-        /// </summary>
-        /// <param name="mat">The matrix to invert</param>
-        /// <param name="result">The inverse of the given matrix if it has one, or the input if it is singular</param>
-        /// <exception cref="InvalidOperationException">Thrown if the Matrix2 is singular.</exception>
-        public static void Invert(in Matrix2 mat, out Matrix2 result)
-        {
-            float det = mat.Determinant;
-
-            if (det == 0)
-            {
-                throw new InvalidOperationException("Matrix is singular and cannot be inverted.");
-            }
-
-            float invDet = 1f / det;
-
-            result.Row0.X = mat.Row1.Y * invDet;
-            result.Row0.Y = -mat.Row0.Y * invDet;
-            result.Row1.X = -mat.Row1.X * invDet;
-            result.Row1.Y = mat.Row0.X * invDet;
-        }
-
-        /// <summary>
-        /// Calculate the inverse of the given matrix
-        /// </summary>
-        /// <param name="mat">The matrix to invert</param>
-        /// <returns>The inverse of the given matrix if it has one, or the input if it is singular</returns>
-        /// <exception cref="InvalidOperationException">Thrown if the Matrix2 is singular.</exception>
-        public static Matrix2 Invert(in Matrix2 mat)
-        {
-            Matrix2 result;
-            Invert(mat, out result);
-            return result;
-        }
-
-
-        /// <summary>
-        /// Calculate the transpose of the given matrix.
-        /// </summary>
-        /// <param name="mat">The matrix to transpose.</param>
-        /// <param name="result">The transpose of the given matrix.</param>
-        public static void Transpose(in Matrix2 mat, out Matrix2 result)
-        {
-            result.Row0.X = mat.Row0.X;
-            result.Row0.Y = mat.Row1.X;
-            result.Row1.X = mat.Row0.Y;
-            result.Row1.Y = mat.Row1.Y;
-        }
-
-        /// <summary>
-        /// Calculate the transpose of the given matrix.
-        /// </summary>
-        /// <param name="mat">The matrix to transpose.</param>
-        /// <returns>The transpose of the given matrix.</returns>
-        public static Matrix2 Transpose(in Matrix2 mat)
-        {
-            Matrix2 result;
-            Transpose(mat, out result);
-            return result;
-        }
-
-        /// <summary>
-        /// Scalar multiplication.
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix2 which holds the result of the multiplication</returns>
-        public static Matrix2 operator *(float left, in Matrix2 right)
-        {
-            return Mult(right, left);
-        }
-
-        /// <summary>
-        /// Scalar multiplication.
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix2 which holds the result of the multiplication</returns>
-        public static Matrix2 operator *(in Matrix2 left, float right)
-        {
-            return Mult(left, right);
-        }
-
-        /// <summary>
-        /// Matrix multiplication
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix2 which holds the result of the multiplication</returns>
-        public static Matrix2 operator *(in Matrix2 left, in Matrix2 right)
-        {
-            return Mult(left, right);
-        }
-
-        /// <summary>
-        /// Matrix addition
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix2 which holds the result of the addition</returns>
-        public static Matrix2 operator +(in Matrix2 left, in Matrix2 right)
-        {
-            return Add(left, right);
-        }
-
-        /// <summary>
-        /// Matrix subtraction
-        /// </summary>
-        /// <param name="left">left-hand operand</param>
-        /// <param name="right">right-hand operand</param>
-        /// <returns>A new Matrix2 which holds the result of the subtraction</returns>
-        public static Matrix2 operator -(in Matrix2 left, in Matrix2 right)
-        {
-            return Subtract(left, right);
-        }
-
-        /// <summary>
-        /// Compares two instances for equality.
-        /// </summary>
-        /// <param name="left">The first instance.</param>
-        /// <param name="right">The second instance.</param>
-        /// <returns>True, if left equals right; false otherwise.</returns>
-        public static bool operator ==(in Matrix2 left, in Matrix2 right)
-        {
-            return left.Equals(right);
-        }
-
-        /// <summary>
-        /// Compares two instances for inequality.
-        /// </summary>
-        /// <param name="left">The first instance.</param>
-        /// <param name="right">The second instance.</param>
-        /// <returns>True, if left does not equal right; false otherwise.</returns>
-        public static bool operator !=(in Matrix2 left, in Matrix2 right)
-        {
-            return !left.Equals(right);
-        }
-
-        /// <summary>
-        /// Returns a System.String that represents the current Matrix4.
-        /// </summary>
-        /// <returns>The string representation of the matrix.</returns>
+        /// Return as string.
         public override string ToString()
         {
-            return String.Format("{0}\n{1}", Row0, Row1);
+            return $"{M00} {M01} {M10} {M11}";
         }
 
-        /// <summary>
-        /// Returns the hashcode for this instance.
-        /// </summary>
-        /// <returns>A System.Int32 containing the unique hashcode for this instance.</returns>
+        public float M00;
+        public float M01;
+        public float M10;
+        public float M11;
+
+        /// Bulk transpose matrices.
+        public static unsafe void BulkTranspose(float* dest, float* src, int count)
+        {
+            for (int i = 0; i < count; ++i)
+            {
+                dest[0] = src[0];
+                dest[1] = src[2];
+                dest[2] = src[1];
+                dest[3] = src[3];
+
+                dest += 4;
+                src += 4;
+            }
+        }
+
+        /// Zero matrix.
+        public static readonly Matrix2 ZERO = new Matrix2(0, 0, 0, 0);
+
+        /// Identity matrix.
+        public static readonly Matrix2 IDENTITY;
+
+        public override bool Equals(object obj)
+        {
+            return obj is Matrix2 other && Equals(other);
+        }
+
         public override int GetHashCode()
         {
             unchecked
             {
-                return (this.Row0.GetHashCode() * 397) ^ this.Row1.GetHashCode();
+                var hashCode = M00.GetHashCode();
+                hashCode = (hashCode * 397) ^ M01.GetHashCode();
+                hashCode = (hashCode * 397) ^ M10.GetHashCode();
+                hashCode = (hashCode * 397) ^ M11.GetHashCode();
+                return hashCode;
             }
         }
-
-        /// <summary>
-        /// Indicates whether this instance and a specified object are equal.
-        /// </summary>
-        /// <param name="obj">The object to compare to.</param>
-        /// <returns>True if the instances are equal; false otherwise.</returns>
-        public override bool Equals(object obj)
-        {
-            if (!(obj is Matrix2))
-            {
-                return false;
-            }
-
-            return this.Equals((Matrix2)obj);
-        }
-
-        /// <summary>Indicates whether the current matrix is equal to another matrix.</summary>
-        /// <param name="other">An matrix to compare with this matrix.</param>
-        /// <returns>true if the current matrix is equal to the matrix parameter; otherwise, false.</returns>
-        public bool Equals(Matrix2 other)
-        {
-            return
-                Row0 == other.Row0 &&
-                Row1 == other.Row1;
-        }
-    }
+    };
 }
