@@ -280,6 +280,10 @@ public:
     /// Register system UI subsystem and cache it's pointer.
     void RegisterSubsystem(SystemUI* subsystem);
 #endif
+    /// Register system graphics subsystem and cache it's pointer.
+    void RegisterSubsystem(Graphics* subsystem);
+    /// Register system renderer subsystem and cache it's pointer.
+    void RegisterSubsystem(Renderer* subsystem);
 
 private:
     /// Add event receiver.
@@ -357,8 +361,6 @@ private:
     WeakPtr<Graphics> graphics_;
     /// Cached pointer of renderer susbsystem.
     WeakPtr<Renderer> renderer_;
-
-    friend class Engine;
 };
 
 // Helper functions that terminate looping of argument list.

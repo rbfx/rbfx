@@ -30,6 +30,8 @@
 #include "../Engine/Engine.h"
 #include "../Core/WorkQueue.h"
 #include "../Core/Thread.h"
+#include "../Graphics/Graphics.h"
+#include "../Graphics/Renderer.h"
 #include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/Localization.h"
@@ -577,4 +579,16 @@ void Context::RegisterSubsystem(SystemUI* subsystem)
     RegisterSubsystem((Object*) subsystem);
 }
 #endif
+void Context::RegisterSubsystem(Graphics* subsystem)
+{
+    graphics_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
+void Context::RegisterSubsystem(Renderer* subsystem)
+{
+    renderer_ = subsystem;
+    RegisterSubsystem((Object*) subsystem);
+}
+
 }
