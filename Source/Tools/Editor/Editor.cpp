@@ -433,6 +433,7 @@ void Editor::LoadDefaultLayout()
     auto* preview = GetTab<PreviewTab>();
     auto* scene = GetTab<SceneTab>();
     auto* profiler = GetTab<ProfilerTab>();
+    profiler->SetOpen(false);
 
     ImGui::DockBuilderRemoveNode(dockspaceId_);
     ImGui::DockBuilderAddNode(dockspaceId_, 0);
@@ -443,16 +444,17 @@ void Editor::LoadDefaultLayout()
     ImGuiID dockResources = ImGui::DockBuilderSplitNode(dockHierarchy, ImGuiDir_Down, 0.40f, nullptr, &dockHierarchy);
     ImGuiID dockInspector = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Right, 0.30f, nullptr, &dock_main_id);
     ImGuiID dockLog = ImGui::DockBuilderSplitNode(dock_main_id, ImGuiDir_Down, 0.30f, nullptr, &dock_main_id);
-    ImGuiID dockProfiler = ImGui::DockBuilderSplitNode(dockLog, ImGuiDir_Down, 0.30f, nullptr, &dockLog);
 
     ImGui::DockBuilderDockWindow(hierarchy->GetUniqueTitle().c_str(), dockHierarchy);
     ImGui::DockBuilderDockWindow(resources->GetUniqueTitle().c_str(), dockResources);
     ImGui::DockBuilderDockWindow(console->GetUniqueTitle().c_str(), dockLog);
+    ImGui::DockBuilderDockWindow(profiler->GetUniqueTitle().c_str(), dockLog);
     ImGui::DockBuilderDockWindow(scene->GetUniqueTitle().c_str(), dock_main_id);
     ImGui::DockBuilderDockWindow(preview->GetUniqueTitle().c_str(), dock_main_id);
     ImGui::DockBuilderDockWindow(inspector->GetUniqueTitle().c_str(), dockInspector);
-    ImGui::DockBuilderDockWindow(profiler->GetUniqueTitle().c_str(), dockProfiler);
     ImGui::DockBuilderFinish(dockspaceId_);
+
+    scene->Activate();
 }
 
 void Editor::OpenProject(const ea::string& projectPath)
