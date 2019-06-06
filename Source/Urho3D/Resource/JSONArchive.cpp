@@ -27,155 +27,168 @@
 namespace Urho3D
 {
 
-JSONOutputArchiveBlock::JSONOutputArchiveBlock(ArchiveBlockType type, const ea::string& key, unsigned expectedElementCount)
-    : type_(type)
-    , key_(key)
+JSONOutputArchiveBlock::JSONOutputArchiveBlock(const char* name, ArchiveBlockType type, JSONValue* blockValue, unsigned sizeHint)
+    : name_(name)
+    , type_(type)
+    , blockValue_(blockValue)
 {
     if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
-        expectedElementCount_ = expectedElementCount;
+        expectedElementCount_ = sizeHint;
 
     if (IsArchiveBlockJSONArray(type_))
-        blockValue_.SetType(JSON_ARRAY);
+        blockValue_->SetType(JSON_ARRAY);
     else if (IsArchiveBlockJSONObject(type_))
-        blockValue_.SetType(JSON_OBJECT);
+        blockValue_->SetType(JSON_OBJECT);
     else
         assert(0);
 }
 
-bool JSONOutputArchiveBlock::CanCreateChild(const char* name, const ea::string* stringKey, const unsigned* uintKey) const
+bool JSONOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
+{
+    if (type_ != ArchiveBlockType::Map)
+    {
+        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    if (elementKey_)
+    {
+        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    elementKey_ = ea::move(key);
+    return true;
+}
+
+JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char* elementName)
 {
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
-        return false;
-
-    switch (type_)
     {
-    case ArchiveBlockType::Sequential:
-    case ArchiveBlockType::Array:
-        return true;
-    case ArchiveBlockType::Unordered:
-        return name && !blockValue_.GetObject().contains(name);
-    case ArchiveBlockType::Map:
-        if (stringKey)
-            return !blockValue_.GetObject().contains(*stringKey);
-        else if (uintKey)
-            return !blockValue_.GetObject().contains(ea::to_string(*uintKey));
-        else
-            return false;
-    default:
+        archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
         assert(0);
         return false;
     }
-}
 
-ea::string JSONOutputArchiveBlock::GetChildKey(const char* name, const ea::string* stringKey, const unsigned* uintKey)
-{
+    if (type_ == ArchiveBlockType::Map && !elementKey_)
+    {
+        archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    ea::string jsonObjectKey;
     switch (type_)
     {
-    case ArchiveBlockType::Sequential:
-    case ArchiveBlockType::Array:
-        return "";
     case ArchiveBlockType::Unordered:
-        assert(name);
-        return name;
+        jsonObjectKey = elementName;
+        break;
     case ArchiveBlockType::Map:
-        if (stringKey)
-            return *stringKey;
-        else if (uintKey)
-            return ea::to_string(*uintKey);
-        else
+        jsonObjectKey = *elementKey_;
+        break;
+    default:
+        break;
+    }
+
+    if (type_ == ArchiveBlockType::Unordered || type_ == ArchiveBlockType::Map)
+    {
+        if (blockValue_->GetObject().contains(jsonObjectKey))
         {
-            assert(0);
-            return "";
+            archive.SetError(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
+            return false;
         }
-    default:
-        assert(0);
-        return "";
     }
-}
 
-void JSONOutputArchiveBlock::CreateChild(const ea::string& key, JSONValue childValue)
-{
     switch (type_)
     {
     case ArchiveBlockType::Sequential:
     case ArchiveBlockType::Array:
         ++numElements_;
-        blockValue_.Push(std::move(childValue));
-        break;
+        blockValue_->Push(JSONValue{});
+        return &(*blockValue_)[blockValue_->Size() - 1];
     case ArchiveBlockType::Unordered:
     case ArchiveBlockType::Map:
         ++numElements_;
-        blockValue_.Set(key, std::move(childValue));
-        break;
+        elementKey_.reset();
+        blockValue_->Set(jsonObjectKey, JSONValue{});
+        return &(*blockValue_)[jsonObjectKey];
     default:
         assert(0);
-        break;
+        return nullptr;
     }
+}
+
+bool JSONOutputArchiveBlock::Close(ArchiveBase& archive)
+{
+    if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
+    {
+        if (numElements_ < expectedElementCount_)
+            archive.SetError(ArchiveBase::fatalBlockUnderflow_blockName, name_);
+        else
+            archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    return true;
 }
 
 bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
 {
-    // Check if output is closed
-    if (IsEOF())
-    {
-        SetError();
+    if (!CheckEOF(name))
         return false;
-    }
 
     // Open root block
     if (stack_.empty())
     {
-        stack_.push_back(Block{ type, "", sizeHint });
+        stack_.push_back(Block{ name, type, &jsonFile_->GetRoot(), sizeHint });
         return true;
     }
 
     // Validate new block
     Block& currentBlock = GetCurrentBlock();
-    if (!currentBlock.CanCreateChild(name, stringKey_, uintKey_))
+    if (JSONValue* blockValue = currentBlock.CreateElement(*this, name))
     {
-        SetError();
-        return false;
+        stack_.push_back(Block{ name, type, blockValue, sizeHint });
+        return true;
     }
 
-    // Postpone block assignment until the end
-    stack_.push_back(Block{ type, currentBlock.GetChildKey(name, stringKey_, uintKey_), sizeHint });
-    ResetKeys();
-    return true;
+    return false;
 }
 
 bool JSONOutputArchive::EndBlock()
 {
-    if (IsEOF())
+    if (stack_.empty())
     {
-        SetError();
+        SetError(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
-    if (!GetCurrentBlock().IsComplete())
-    {
-        SetError();
-        return false;
-    }
+    const bool blockClosed = GetCurrentBlock().Close(*this);
 
-    // Close root block
-    if (stack_.size() == 1)
-    {
-        jsonFile_->GetRoot() = std::move(stack_[0].GetValue());
-        CloseArchive();
-        stack_.clear();
-        return true;
-    }
-
-    // Close block
-    Block& parentBlock = stack_[stack_.size() - 2];
-    Block& childBlock = stack_.back();
-    parentBlock.CreateChild(childBlock.GetKey(), std::move(childBlock.GetValue()));
     stack_.pop_back();
-
-    // Close archive
     if (stack_.empty())
         CloseArchive();
-    return true;
+
+    return blockClosed;
+}
+
+bool JSONOutputArchive::SetStringKey(ea::string* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    return GetCurrentBlock().SetElementKey(*this, *key);
+}
+
+bool JSONOutputArchive::SetUnsignedKey(unsigned* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    return GetCurrentBlock().SetElementKey(*this, ea::to_string(*key));
 }
 
 bool JSONOutputArchive::Serialize(const char* name, long long& value)
@@ -221,27 +234,43 @@ bool JSONOutputArchive::SerializeVLE(const char* name, unsigned& value)
     return SerializeJSONValue(name, JSONValue{ value });
 }
 
-bool JSONOutputArchive::SerializeJSONValue(const char* name, const JSONValue& value)
+bool JSONOutputArchive::CheckEOF(const char* elementName)
 {
-    // Check if output is closed
     if (IsEOF())
     {
-        SetError();
+        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
+        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
         return false;
     }
-
-    // Validate new element
-    Block& currentBlock = GetCurrentBlock();
-    if (!currentBlock.CanCreateChild(name, stringKey_, uintKey_))
-    {
-        SetError();
-        return false;
-    }
-
-    // Create new element.
-    currentBlock.CreateChild(currentBlock.GetChildKey(name, stringKey_, uintKey_), value);
-    ResetKeys();
     return true;
+}
+
+bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName)
+{
+    if (!CheckEOF(elementName))
+        return false;
+
+    if (stack_.empty())
+    {
+        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        assert(0);
+        return false;
+    }
+
+    return true;
+}
+
+bool JSONOutputArchive::SerializeJSONValue(const char* name, const JSONValue& value)
+{
+    if (!CheckEOFAndRoot(name))
+        return false;
+
+    if (JSONValue* jsonValue = GetCurrentBlock().CreateElement(*this, name))
+    {
+        *jsonValue = value;
+        return true;
+    }
+    return false;
 }
 
 // Generate serialization implementation (JSON output)
@@ -264,77 +293,156 @@ URHO3D_JSON_OUT_IMPL(ea::string, SetString);
 
 #undef URHO3D_JSON_OUT_IMPL
 
-JSONInputArchiveBlock::JSONInputArchiveBlock(ArchiveBlockType type, const JSONValue* value)
-    : type_(type)
+JSONInputArchiveBlock::JSONInputArchiveBlock(const char* name, ArchiveBlockType type, const JSONValue* value)
+    : name_(name ? name : "")
+    , type_(type)
     , value_(value)
 {
     if (value_)
         nextMapElementIterator_ = value_->GetObject().begin();
 }
 
-bool JSONInputArchiveBlock::IsValid() const
+bool JSONInputArchiveBlock::ReadCurrentStringKey(ArchiveBase& archive, ea::string& key)
 {
-    if (!value_)
+    if (type_ != ArchiveBlockType::Map)
+    {
+        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        assert(0);
         return false;
+    }
 
-    return (IsArchiveBlockJSONArray(type_) && value_->IsArray())
-        || (IsArchiveBlockJSONObject(type_) && value_->IsObject());
+    if (keyRead_)
+    {
+        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    if (nextMapElementIterator_ == value_->GetObject().end())
+    {
+        archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
+        return false;
+    }
+
+    key = nextMapElementIterator_->first;
+    keyRead_ = true;
+    return true;
 }
 
-const Urho3D::JSONValue* JSONInputArchiveBlock::GetCurrentElement(const char* name, ea::string* stringKey, unsigned* uintKey)
+bool JSONInputArchiveBlock::ReadCurrentUIntKey(ArchiveBase& archive, unsigned& key)
 {
+    ea::string stringKey;
+    if (!ReadCurrentStringKey(archive, stringKey))
+    {
+        // Error is already set in ReadCurrentStringKey
+        return false;
+    }
+
+    key = ToUInt(stringKey);
+    return true;
+}
+
+const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* elementName, const ArchiveBlockType* elementBlockType)
+{
+    // Find appropriate value
+    const JSONValue* elementValue = nullptr;
     if (IsArchiveBlockJSONArray(type_))
     {
-        // Get next array element if any
-        if (nextElementIndex_ < value_->Size())
-            return &value_->Get(nextElementIndex_);
+        if (nextElementIndex_ >= value_->Size())
+        {
+            archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+            return nullptr;
+        }
+
+        // Read current element from the array
+        elementValue = &value_->Get(nextElementIndex_);
     }
     else if (IsArchiveBlockJSONObject(type_))
     {
-        // Get value from map by name
-        if (type_ == ArchiveBlockType::Unordered && name && value_->Contains(name))
-            return &value_->Get(name);
-
-        // Get next map element if any
-        if (type_ == ArchiveBlockType::Map && nextMapElementIterator_ != value_->GetObject().end())
+        if (type_ == ArchiveBlockType::Unordered)
         {
-            if (stringKey)
-                *stringKey = nextMapElementIterator_->first;
-            else if (uintKey)
-                *uintKey = ToUInt(nextMapElementIterator_->first);
-            return &nextMapElementIterator_->second;
+            if (!elementName)
+            {
+                archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
+                assert(0);
+                return false;
+            }
+
+            if (!value_->Contains(elementName))
+            {
+                // Not an error in Unordered block
+                return nullptr;
+            }
+
+            // Find element in map
+            elementValue = &value_->Get(elementName);
+        }
+        else if (type_ == ArchiveBlockType::Map)
+        {
+            if (!keyRead_)
+            {
+                archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+                assert(0);
+                return nullptr;
+            }
+
+            if (nextMapElementIterator_ == value_->GetObject().end())
+            {
+                archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+                return nullptr;
+            }
+
+            // Read current element from the map
+            elementValue = &nextMapElementIterator_->second;
+        }
+        else
+        {
+            assert(0);
+            return nullptr;
         }
     }
-    return nullptr;
-}
+    else
+    {
+        assert(0);
+        return nullptr;
+    }
 
-void JSONInputArchiveBlock::NextElement()
-{
-    if (IsArchiveBlockJSONArray(type_) && nextElementIndex_ < value_->Size())
+    // Check if reading block
+    assert(elementValue);
+    if (elementBlockType)
+    {
+        if (!IsArchiveBlockTypeMatching(*elementValue, *elementBlockType))
+        {
+            archive.SetError(ArchiveBase::errorUnexpectedBlockType_blockName, name_);
+            return nullptr;
+        }
+    }
+
+    // Move to next
+    keyRead_ = false;
+    if (type_ == ArchiveBlockType::Array || type_ == ArchiveBlockType::Sequential)
         ++nextElementIndex_;
-    else if (type_ == ArchiveBlockType::Map && nextMapElementIterator_ != value_->GetObject().end())
+    else if (type_ == ArchiveBlockType::Map)
         ++nextMapElementIterator_;
+
+    return elementValue;
 }
 
 bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
 {
-    // Check if output is closed
-    if (IsEOF())
-    {
-        SetError();
+    if (!CheckEOF(name))
         return false;
-    }
 
     // Open root block
     if (stack_.empty())
     {
-        Block frame{ type, &jsonFile_->GetRoot() };
-        if (!frame.IsValid())
+        if (!IsArchiveBlockTypeMatching(jsonFile_->GetRoot(), type))
         {
-            SetError();
+            SetError(ArchiveBase::errorUnexpectedBlockType_blockName, name);
             return false;
         }
 
+        Block frame{ name, type, &jsonFile_->GetRoot() };
         sizeHint = frame.GetSizeHint();
         stack_.push_back(frame);
         return true;
@@ -342,28 +450,22 @@ bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveB
 
     // Try open block
     Block& currentBlock = GetCurrentBlock();
-    const JSONValue* blockValue = currentBlock.GetCurrentElement(name, stringKey_, uintKey_);
-
-    Block blockFrame{ type, blockValue };
-    if (!blockFrame.IsValid())
+    if (const JSONValue* blockValue = currentBlock.ReadElement(*this, name, &type))
     {
-        SetError();
-        return false;
+        Block blockFrame{ name, type, blockValue };
+        sizeHint = blockFrame.GetSizeHint();
+        stack_.push_back(blockFrame);
+        return true;
     }
 
-    // Create new block
-    currentBlock.NextElement();
-    sizeHint = blockFrame.GetSizeHint();
-    stack_.push_back(blockFrame);
-    ResetKeys();
-    return true;
+    return false;
 }
 
 bool JSONInputArchive::EndBlock()
 {
     if (stack_.empty())
     {
-        SetError();
+        SetError(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
@@ -371,6 +473,24 @@ bool JSONInputArchive::EndBlock()
     if (stack_.empty())
         CloseArchive();
     return true;
+}
+
+bool JSONInputArchive::SetStringKey(ea::string* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    Block& currentBlock = GetCurrentBlock();
+    return currentBlock.ReadCurrentStringKey(*this, *key);
+}
+
+bool JSONInputArchive::SetUnsignedKey(unsigned* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    Block& currentBlock = GetCurrentBlock();
+    return currentBlock.ReadCurrentUIntKey(*this, *key);
 }
 
 bool JSONInputArchive::Serialize(const char* name, long long& value)
@@ -469,19 +589,39 @@ bool JSONInputArchive::SerializeVLE(const char* name, unsigned& value)
     return false;
 }
 
-const JSONValue* JSONInputArchive::DeserializeJSONValue(const char* name)
+bool JSONInputArchive::CheckEOF(const char* elementName)
 {
-    Block& currentBlock = GetCurrentBlock();
-    const JSONValue* elementValue = currentBlock.GetCurrentElement(name, stringKey_, uintKey_);
-    if (!elementValue)
+    if (IsEOF())
     {
-        SetError();
-        return nullptr;
+        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
+        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        return false;
+    }
+    return true;
+}
+
+bool JSONInputArchive::CheckEOFAndRoot(const char* elementName)
+{
+    if (!CheckEOF(elementName))
+        return false;
+
+    if (stack_.empty())
+    {
+        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        assert(0);
+        return false;
     }
 
-    ResetKeys();
-    currentBlock.NextElement();
-    return elementValue;
+    return true;
+}
+
+const JSONValue* JSONInputArchive::DeserializeJSONValue(const char* name)
+{
+    if (!CheckEOFAndRoot(name))
+        return nullptr;
+
+    Block& currentBlock = GetCurrentBlock();
+    return currentBlock.ReadElement(*this, name, nullptr);
 }
 
 // Generate serialization implementation (JSON input)

@@ -50,9 +50,9 @@ public:
     bool IsUnorderedSupported() const final { return true; }
 
     /// Serialize string key. Used with Map block only.
-    void SetStringKey(ea::string* key) final { stringKey_ = key; }
+    bool SetStringKey(ea::string* key) final { stringKey_ = key; return true; }
     /// Serialize unsigned integer key. Used with Map block only.
-    void SetUnsignedKey(unsigned* key) final { uintKey_ = key; }
+    bool SetUnsignedKey(unsigned* key) final { uintKey_ = key; return true; }
 
 protected:
     /// Block type.
