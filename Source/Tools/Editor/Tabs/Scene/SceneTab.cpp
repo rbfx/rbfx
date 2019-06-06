@@ -509,8 +509,6 @@ const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-
     ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
@@ -518,28 +516,34 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
+    ui::BeginButtonGroup();
     if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###Translate", "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
         gizmo_.SetOperation(GIZMOOP_TRANSLATE);
     if (ui::EditorToolbarButton(ICON_FA_SYNC "###Rotate", "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
         gizmo_.SetOperation(GIZMOOP_ROTATE);
     if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Scale", "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
         gizmo_.SetOperation(GIZMOOP_SCALE);
+    ui::EndButtonGroup();
 
     ui::SameLine(0, 3.f);
 
+    ui::BeginButtonGroup();
     if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###World", "World", gizmo_.GetTransformSpace() == TS_WORLD))
         gizmo_.SetTransformSpace(TS_WORLD);
     if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Local", "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
         gizmo_.SetTransformSpace(TS_LOCAL);
+    ui::EndButtonGroup();
 
     ui::SameLine(0, 3.f);
 
     if (EditorSceneSettings* settings = GetScene()->GetComponent<EditorSceneSettings>())
     {
+        ui::BeginButtonGroup();
         if (ui::EditorToolbarButton("3D", "3D mode in editor viewport.", !settings->GetCamera2D()))
             settings->SetCamera2D(false);
         if (ui::EditorToolbarButton("2D", "2D mode in editor viewport.", settings->GetCamera2D()))
             settings->SetCamera2D(true);
+        ui::EndButtonGroup();
     }
     ui::SameLine(0, 3.f);
 
@@ -555,8 +559,6 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
     ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
-
-    ui::PopStyleVar();
 }
 
 bool SceneTab::IsSelected(Node* node) const

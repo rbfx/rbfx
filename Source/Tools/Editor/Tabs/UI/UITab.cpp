@@ -255,8 +255,6 @@ bool UITab::RenderWindowContent()
 
 void UITab::RenderToolbarButtons()
 {
-    ui::StyleVarScope frameRoundingMod(ImGuiStyleVar_FrameRounding, 0);
-
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
 
