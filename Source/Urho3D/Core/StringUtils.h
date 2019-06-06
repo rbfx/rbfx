@@ -176,13 +176,11 @@ template <> inline Matrix4 FromString<Matrix4>(const char* source) { return ToMa
 template <class T> T FromString(const ea::string& source) { return FromString<T>(source.c_str()); }
 
 /// Return a formatted string.
-template<typename... Args> inline ea::string Format(const char* formatString, const Args&... args)
+template<typename... Args> inline ea::string Format(ea::string_view formatString, const Args&... args)
 {
     ea::string ret;
     fmt::format_to(std::back_inserter(ret), formatString, args...);
     return ret;
 }
-/// Return a formatted string.
-template<typename... Args> inline ea::string Format(const ea::string& formatString, const Args&... args) { return Format(formatString, args...); }
 
 }
