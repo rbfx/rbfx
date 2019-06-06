@@ -213,5 +213,9 @@ URHO3D_TOOLBOX_API Urho3D::SystemUI* GetSystemUI();
 URHO3D_TOOLBOX_API bool EditorToolbarButton(const char* text, const char* tooltip=nullptr, bool active=false);
 /// Opens a tree node which was rendered already.
 URHO3D_TOOLBOX_API void OpenTreeNode(ImGuiID id);
+/// Starts drawing a background behind button group.
+URHO3D_TOOLBOX_API void BeginButtonGroup();
+/// Ends drawing a background behind button group.
+URHO3D_TOOLBOX_API void EndButtonGroup();
 
 }
