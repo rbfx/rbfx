@@ -451,4 +451,29 @@ void OpenTreeNode(ImGuiID id)
     }
 }
 
+void BeginButtonGroup()
+{
+    auto* storage = ui::GetStateStorage();
+    auto* lists = ui::GetWindowDrawList();
+    ImVec2 pos = ui::GetCursorScreenPos();
+    storage->SetFloat(ui::GetID("button-group-x"), pos.x);
+    storage->SetFloat(ui::GetID("button-group-y"), pos.y);
+    lists->ChannelsSplit(2);
+    lists->ChannelsSetCurrent(1);
+}
+
+void EndButtonGroup()
+{
+    auto& style = ui::GetStyle();
+    auto* lists = ui::GetWindowDrawList();
+    auto* storage = ui::GetStateStorage();
+    ImVec2 min(
+        storage->GetFloat(ui::GetID("button-group-x")),
+        storage->GetFloat(ui::GetID("button-group-y"))
+              );
+    lists->ChannelsSetCurrent(0);
+    lists->AddRectFilled(min, ui::GetItemRectMax(), ImColor(style.Colors[ImGuiCol_Button]), style.FrameRounding);
+    lists->ChannelsMerge();
+}
+
 }
