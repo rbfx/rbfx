@@ -173,20 +173,20 @@ bool XMLOutputArchive::EndBlock()
     return blockClosed;
 }
 
-bool XMLOutputArchive::SetStringKey(ea::string* key)
+bool XMLOutputArchive::SerializeKey(ea::string& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    return GetCurrentBlock().SetElementKey(*this, *key);
+    return GetCurrentBlock().SetElementKey(*this, key);
 }
 
-bool XMLOutputArchive::SetUnsignedKey(unsigned* key)
+bool XMLOutputArchive::SerializeKey(unsigned& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    return GetCurrentBlock().SetElementKey(*this, ea::to_string(*key));
+    return GetCurrentBlock().SetElementKey(*this, ea::to_string(key));
 }
 
 bool XMLOutputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
@@ -432,15 +432,15 @@ bool XMLInputArchive::EndBlock()
     return true;
 }
 
-bool XMLInputArchive::SetStringKey(ea::string* key)
+bool XMLInputArchive::SerializeKey(ea::string& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    return GetCurrentBlock().ReadCurrentKey(*this, *key);
+    return GetCurrentBlock().ReadCurrentKey(*this, key);
 }
 
-bool XMLInputArchive::SetUnsignedKey(unsigned* key)
+bool XMLInputArchive::SerializeKey(unsigned& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
@@ -448,7 +448,7 @@ bool XMLInputArchive::SetUnsignedKey(unsigned* key)
     ea::string stringKey;
     if (GetCurrentBlock().ReadCurrentKey(*this, stringKey))
     {
-        *key = ToUInt(stringKey);
+        key = ToUInt(stringKey);
         return true;
     }
     return false;

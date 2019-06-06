@@ -182,20 +182,20 @@ bool JSONOutputArchive::EndBlock()
     return blockClosed;
 }
 
-bool JSONOutputArchive::SetStringKey(ea::string* key)
+bool JSONOutputArchive::SerializeKey(ea::string& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    return GetCurrentBlock().SetElementKey(*this, *key);
+    return GetCurrentBlock().SetElementKey(*this, key);
 }
 
-bool JSONOutputArchive::SetUnsignedKey(unsigned* key)
+bool JSONOutputArchive::SerializeKey(unsigned& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    return GetCurrentBlock().SetElementKey(*this, ea::to_string(*key));
+    return GetCurrentBlock().SetElementKey(*this, ea::to_string(key));
 }
 
 bool JSONOutputArchive::Serialize(const char* name, long long& value)
@@ -468,15 +468,15 @@ bool JSONInputArchive::EndBlock()
     return true;
 }
 
-bool JSONInputArchive::SetStringKey(ea::string* key)
+bool JSONInputArchive::SerializeKey(ea::string& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    return GetCurrentBlock().ReadCurrentKey(*this, *key);
+    return GetCurrentBlock().ReadCurrentKey(*this, key);
 }
 
-bool JSONInputArchive::SetUnsignedKey(unsigned* key)
+bool JSONInputArchive::SerializeKey(unsigned& key)
 {
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
@@ -484,7 +484,7 @@ bool JSONInputArchive::SetUnsignedKey(unsigned* key)
     ea::string stringKey;
     if (GetCurrentBlock().ReadCurrentKey(*this, stringKey))
     {
-        *key = ToUInt(stringKey);
+        key = ToUInt(stringKey);
         return true;
     }
     return false;

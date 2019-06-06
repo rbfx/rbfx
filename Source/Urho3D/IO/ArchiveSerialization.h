@@ -418,7 +418,7 @@ inline bool SerializeStringMap(Archive& ar, const char* name, const char* elemen
             {
                 ea::string key{};
                 ValueType value{};
-                ar.SetStringKey(&key);
+                ar.SerializeKey(key);
                 if (!SerializeValue(ar, element, value))
                     return false;
                 map.emplace(std::move(key), std::move(value));
@@ -429,7 +429,7 @@ inline bool SerializeStringMap(Archive& ar, const char* name, const char* elemen
         {
             for (auto& keyValue : map)
             {
-                ar.SetStringKey(const_cast<ea::string*>(&keyValue.first));
+                ar.SerializeKey(const_cast<ea::string&>(keyValue.first));
                 SerializeValue(ar, element, keyValue.second);
             }
             return true;
@@ -452,7 +452,7 @@ inline bool SerializeStringHashMap(Archive& ar, const char* name, const char* el
             {
                 ValueType value{};
                 unsigned key{};
-                ar.SetUnsignedKey(&key);
+                ar.SerializeKey(key);
                 if (!SerializeValue(ar, element, value))
                     return false;
                 map.emplace(StringHash{ key }, std::move(value));
@@ -464,7 +464,7 @@ inline bool SerializeStringHashMap(Archive& ar, const char* name, const char* el
             for (auto& keyValue : map)
             {
                 unsigned key = keyValue.first.Value();
-                ar.SetUnsignedKey(&key);
+                ar.SerializeKey(key);
                 SerializeValue(ar, element, keyValue.second);
             }
             return true;
