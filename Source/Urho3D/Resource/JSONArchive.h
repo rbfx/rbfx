@@ -26,8 +26,6 @@
 #include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
 
-#include <EASTL/optional.h>
-
 namespace Urho3D
 {
 
@@ -106,7 +104,9 @@ private:
     unsigned numElements_{};
 
     /// Key of the next created element (for Map blocks).
-    ea::optional<ea::string> elementKey_;
+    ea::string elementKey_;
+    /// Whether the key is set.
+    bool keySet_{};
 };
 
 class URHO3D_API JSONOutputArchive : public JSONArchiveBase<JSONOutputArchiveBlock>
@@ -182,10 +182,8 @@ public:
     const ea::string_view GetName() const { return name_; }
     /// Return size hint.
     unsigned GetSizeHint() const { return value_->Size(); }
-    /// Return current child's key as string.
-    bool ReadCurrentStringKey(ArchiveBase& archive, ea::string& key);
-    /// Return current child's key as unsigned integer.
-    bool ReadCurrentUIntKey(ArchiveBase& archive, unsigned& key);
+    /// Return current child's key.
+    bool ReadCurrentKey(ArchiveBase& archive, ea::string& key);
     /// Read current child and move to the next one.
     const JSONValue* ReadElement(ArchiveBase& archive, const char* elementName, const ArchiveBlockType* elementBlockType);
 
