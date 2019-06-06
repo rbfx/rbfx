@@ -126,7 +126,6 @@ public:
     /// Return a checksum if applicable.
     virtual unsigned GetChecksum() { return 0; }
 
-
     /// Begin archive block.
     virtual bool BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type) = 0;
     /// End archive block.
@@ -134,15 +133,14 @@ public:
     /// - Array or Map wasn't completely serialized for output archive.
     /// - There were no corresponding BeginBlock call.
     virtual bool EndBlock() = 0;
-    /// Set string key for the next block of element of the current Map block.
-    /// Referenced string must stay alive until the next call of Serializize or BeginBlock!
-    virtual bool SetStringKey(ea::string* key) = 0;
-    /// Serialize unsigned integer key. Used with Map block only.
-    /// Referenced integer must stay alive until the next call of Serializize or BeginBlock!
-    virtual bool SetUnsignedKey(unsigned* key) = 0;
 
     /// @name Serialize
     /// @{
+
+    /// Serialize string key of the Map block.
+    virtual bool SerializeKey(ea::string& key) = 0;
+    /// Serialize unsigned integer key of the Map block.
+    virtual bool SerializeKey(unsigned& key) = 0;
 
     /// Serialize bool.
     virtual bool Serialize(const char* name, bool& value) = 0;
