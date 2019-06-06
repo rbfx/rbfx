@@ -38,12 +38,7 @@ public:
     bool RenderWindowContent() override;
 
 protected:
-    void OnBeforeBegin() override;
     void OnAfterBegin() override;
-    void OnBeforeEnd() override;
-    void OnAfterEnd() override;
-
-    ImVec2 windowPadding_;
 };
 
 }
