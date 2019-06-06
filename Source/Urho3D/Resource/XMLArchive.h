@@ -49,11 +49,6 @@ public:
     /// Whether the Unordered blocks are supported.
     bool IsUnorderedSupported() const final { return true; }
 
-    /// Serialize string key. Used with Map block only.
-    bool SetStringKey(ea::string* key) final { stringKey_ = key; return true; }
-    /// Serialize unsigned integer key. Used with Map block only.
-    bool SetUnsignedKey(unsigned* key) final { uintKey_ = key; return true; }
-
 protected:
     /// Block type.
     using Block = T;
@@ -66,12 +61,6 @@ protected:
 
     /// Get current block.
     Block& GetCurrentBlock() { return stack_.back(); }
-    /// Reset keys.
-    void ResetKeys()
-    {
-        stringKey_ = nullptr;
-        uintKey_ = nullptr;
-    }
 
     /// XML file.
     SharedPtr<XMLFile> xmlFile_;
@@ -79,11 +68,6 @@ protected:
     bool preferStrings_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
-
-    /// String key.
-    ea::string* stringKey_{};
-    /// UInt key.
-    unsigned* uintKey_{};
 };
 
 template <class T> const char* XMLArchiveBase<T>::defaultRootName = "root";
@@ -95,26 +79,36 @@ class XMLOutputArchiveBlock
 {
 public:
     /// Construct.
-    XMLOutputArchiveBlock(ArchiveBlockType type, XMLElement blockElement, unsigned expectedElementCount);
-    /// Return whether the child with given name and key may be safely added.
-    bool CanCreateChild(const char* name, const ea::string* stringKey, const unsigned* uintKey) const;
-    /// Create child. Checks should be performed first!
-    XMLElement CreateChild(const char* name, const ea::string* stringKey, const unsigned* uintKey, const char* defaultName);
-    /// Is block complete and can be closed?
-    bool IsComplete() const { return expectedElementCount_ == M_MAX_UNSIGNED || numElements_ == expectedElementCount_; }
+    XMLOutputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement, unsigned sizeHint);
+    /// Get block name.
+    ea::string_view GetName() const { return name_; }
+    /// Set element key.
+    bool SetElementKey(ArchiveBase& archive, ea::string key);
+    /// Create element in the block.
+    XMLElement CreateElement(ArchiveBase& archive, const char* elementName, const char* defaultElementName);
+    /// Close block.
+    bool Close(ArchiveBase& archive);
 
 private:
+    /// Blcok name.
+    ea::string_view name_;
     /// Block type.
     ArchiveBlockType type_{};
     /// Block element.
     XMLElement blockElement_{};
+
     /// Expected block size (for arrays and maps).
     unsigned expectedElementCount_{M_MAX_UNSIGNED};
+    /// Number of elements in block.
+    unsigned numElements_{};
 
     /// Set of used names for checking.
     ea::hash_set<ea::string> usedNames_{};
-    /// Number of elements in block.
-    unsigned numElements_{};
+
+    /// Key of the next created element (for Map blocks).
+    ea::string elementKey_;
+    /// Whether the key is set.
+    bool keySet_{};
 };
 
 /// XML output archive.
@@ -131,6 +125,11 @@ public:
     /// End archive block.
     bool EndBlock() final;
 
+    /// Serialize string key. Used with Map block only.
+    bool SetStringKey(ea::string* key) final;
+    /// Serialize unsigned integer key. Used with Map block only.
+    bool SetUnsignedKey(unsigned* key) final;
+
     /// Serialize bool.
     bool Serialize(const char* name, bool& value) final;
     /// Serialize signed char.
@@ -166,8 +165,12 @@ public:
     bool SerializeVLE(const char* name, unsigned& value) final;
 
 private:
+    /// Check EOF.
+    bool CheckEOF(const char* elementName);
+    /// Check EOF and root block.
+    bool CheckEOFAndRoot(const char* elementName);
     /// Prepare to serialize element.
-    XMLElement PrepareToSerialize(const char* name);
+    XMLElement CreateElement(const char* name);
 
     /// Temporary string buffer.
     ea::string tempString_;
@@ -178,25 +181,28 @@ class XMLInputArchiveBlock
 {
 public:
     /// Construct valid.
-    XMLInputArchiveBlock(ArchiveBlockType type, XMLElement blockElement);
-    /// Return whether the frame valid.
-    bool IsValid() const { return !!blockElement_; }
-    /// Return number of children.
-    unsigned CountChildren() const;
-    /// Return current element.
-    XMLElement GetCurrentElement(const char* name, const char* defaultName);
-    /// Read current element key.
-    void ReadCurrentElementKey(ea::string* stringKey, unsigned* uintKey);
-    /// Move pointer to next element.
-    void NextElement() { nextChild_ = nextChild_.GetNext(); }
+    XMLInputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement);
+    /// Return name.
+    const ea::string_view GetName() const { return name_; }
+    /// Return size hint.
+    unsigned CalculateSizeHint() const;
+    /// Return current child's key.
+    bool ReadCurrentKey(ArchiveBase& archive, ea::string& key);
+    /// Read current child and move to the next one.
+    XMLElement ReadElement(ArchiveBase& archive, const char* elementName);
 
 private:
+    /// Block name.
+    ea::string_view name_;
     /// Block type.
     ArchiveBlockType type_{};
     /// Block element.
     XMLElement blockElement_{};
     /// Next child to read.
     XMLElement nextChild_{};
+
+    /// Whether the block key is read.
+    bool keyRead_{};
 };
 
 /// XML input archive.
@@ -213,6 +219,11 @@ public:
     /// End archive block.
     bool EndBlock() final;
 
+    /// Serialize string key. Used with Map block only.
+    bool SetStringKey(ea::string* key) final;
+    /// Serialize unsigned integer key. Used with Map block only.
+    bool SetUnsignedKey(unsigned* key) final;
+
     /// Serialize bool.
     bool Serialize(const char* name, bool& value) final;
     /// Serialize signed char.
@@ -248,8 +259,12 @@ public:
     bool SerializeVLE(const char* name, unsigned& value) final;
 
 private:
+    /// Check EOF.
+    bool CheckEOF(const char* elementName);
+    /// Check EOF and root block.
+    bool CheckEOFAndRoot(const char* elementName);
     /// Prepare to serialize element.
-    XMLElement PrepareToSerialize(const char* name);
+    XMLElement ReadElement(const char* name);
 
     /// Temporary buffer.
     ea::vector<unsigned char> tempBuffer_;
