@@ -1330,7 +1330,7 @@ void SceneTab::ResizeMainViewport(const IntRect& rect)
 
     rect_ = rect;
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
-    if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
+    if (rect.Width() > 0 && rect.Height() > 0 && (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight()))
     {
         texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         texture_->GetRenderSurface()->SetViewport(0, viewport_);
