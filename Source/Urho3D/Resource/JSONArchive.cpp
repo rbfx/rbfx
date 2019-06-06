@@ -52,7 +52,7 @@ bool JSONOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
         return false;
     }
 
-    if (elementKey_)
+    if (keySet_)
     {
         archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
         assert(0);
@@ -60,6 +60,7 @@ bool JSONOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
     }
 
     elementKey_ = ea::move(key);
+    keySet_ = true;
     return true;
 }
 
@@ -72,9 +73,16 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
         return false;
     }
 
-    if (type_ == ArchiveBlockType::Map && !elementKey_)
+    if (type_ == ArchiveBlockType::Map && !keySet_)
     {
         archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    if (type_ == ArchiveBlockType::Unordered && !elementName)
+    {
+        archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
         assert(0);
         return false;
     }
@@ -86,7 +94,7 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
         jsonObjectKey = elementName;
         break;
     case ArchiveBlockType::Map:
-        jsonObjectKey = *elementKey_;
+        jsonObjectKey = elementKey_;
         break;
     default:
         break;
@@ -111,7 +119,7 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
     case ArchiveBlockType::Unordered:
     case ArchiveBlockType::Map:
         ++numElements_;
-        elementKey_.reset();
+        keySet_ = false;
         blockValue_->Set(jsonObjectKey, JSONValue{});
         return &(*blockValue_)[jsonObjectKey];
     default:
@@ -148,8 +156,7 @@ bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archive
     }
 
     // Validate new block
-    Block& currentBlock = GetCurrentBlock();
-    if (JSONValue* blockValue = currentBlock.CreateElement(*this, name))
+    if (JSONValue* blockValue = GetCurrentBlock().CreateElement(*this, name))
     {
         stack_.push_back(Block{ name, type, blockValue, sizeHint });
         return true;
@@ -302,7 +309,7 @@ JSONInputArchiveBlock::JSONInputArchiveBlock(const char* name, ArchiveBlockType 
         nextMapElementIterator_ = value_->GetObject().begin();
 }
 
-bool JSONInputArchiveBlock::ReadCurrentStringKey(ArchiveBase& archive, ea::string& key)
+bool JSONInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key)
 {
     if (type_ != ArchiveBlockType::Map)
     {
@@ -326,19 +333,6 @@ bool JSONInputArchiveBlock::ReadCurrentStringKey(ArchiveBase& archive, ea::strin
 
     key = nextMapElementIterator_->first;
     keyRead_ = true;
-    return true;
-}
-
-bool JSONInputArchiveBlock::ReadCurrentUIntKey(ArchiveBase& archive, unsigned& key)
-{
-    ea::string stringKey;
-    if (!ReadCurrentStringKey(archive, stringKey))
-    {
-        // Error is already set in ReadCurrentStringKey
-        return false;
-    }
-
-    key = ToUInt(stringKey);
     return true;
 }
 
@@ -449,8 +443,7 @@ bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveB
     }
 
     // Try open block
-    Block& currentBlock = GetCurrentBlock();
-    if (const JSONValue* blockValue = currentBlock.ReadElement(*this, name, &type))
+    if (const JSONValue* blockValue = GetCurrentBlock().ReadElement(*this, name, &type))
     {
         Block blockFrame{ name, type, blockValue };
         sizeHint = blockFrame.GetSizeHint();
@@ -480,8 +473,7 @@ bool JSONInputArchive::SetStringKey(ea::string* key)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    Block& currentBlock = GetCurrentBlock();
-    return currentBlock.ReadCurrentStringKey(*this, *key);
+    return GetCurrentBlock().ReadCurrentKey(*this, *key);
 }
 
 bool JSONInputArchive::SetUnsignedKey(unsigned* key)
@@ -489,8 +481,13 @@ bool JSONInputArchive::SetUnsignedKey(unsigned* key)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    Block& currentBlock = GetCurrentBlock();
-    return currentBlock.ReadCurrentUIntKey(*this, *key);
+    ea::string stringKey;
+    if (GetCurrentBlock().ReadCurrentKey(*this, stringKey))
+    {
+        *key = ToUInt(stringKey);
+        return true;
+    }
+    return false;
 }
 
 bool JSONInputArchive::Serialize(const char* name, long long& value)
@@ -620,8 +617,7 @@ const JSONValue* JSONInputArchive::DeserializeJSONValue(const char* name)
     if (!CheckEOFAndRoot(name))
         return nullptr;
 
-    Block& currentBlock = GetCurrentBlock();
-    return currentBlock.ReadElement(*this, name, nullptr);
+    return GetCurrentBlock().ReadElement(*this, name, nullptr);
 }
 
 // Generate serialization implementation (JSON input)

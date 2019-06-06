@@ -27,127 +27,166 @@
 namespace Urho3D
 {
 
-XMLOutputArchiveBlock::XMLOutputArchiveBlock(ArchiveBlockType type, XMLElement blockElement, unsigned expectedElementCount)
-    : type_(type)
+XMLOutputArchiveBlock::XMLOutputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement, unsigned sizeHint)
+    : name_(name)
+    , type_(type)
     , blockElement_(blockElement)
 {
     if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
-        expectedElementCount_ = expectedElementCount;
+        expectedElementCount_ = sizeHint;
 }
 
-bool XMLOutputArchiveBlock::CanCreateChild(const char* name, const ea::string* stringKey, const unsigned* uintKey) const
+bool XMLOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
+{
+    if (type_ != ArchiveBlockType::Map)
+    {
+        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    if (keySet_)
+    {
+        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    elementKey_ = ea::move(key);
+    keySet_ = true;
+    return true;
+}
+
+XMLElement XMLOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char* elementName, const char* defaultElementName)
 {
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
-        return false;
+    {
+        archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
+        assert(0);
+        return {};
+    }
 
+    if (type_ == ArchiveBlockType::Map && !keySet_)
+    {
+        archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        assert(0);
+        return {};
+    }
+
+    if (type_ == ArchiveBlockType::Unordered && !elementName)
+    {
+        archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
+        assert(0);
+        return {};
+    }
+
+    if (type_ == ArchiveBlockType::Unordered && usedNames_.contains(elementName)
+        || type_ == ArchiveBlockType::Map && usedNames_.contains(elementKey_))
+    {
+        archive.SetError(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
+        return {};
+    }
+
+    XMLElement element;
     switch (type_)
     {
     case ArchiveBlockType::Sequential:
-        return true;
+        ++numElements_;
+        element = blockElement_.CreateChild(elementName ? elementName : defaultElementName);
+        break;
     case ArchiveBlockType::Unordered:
-        return name && !usedNames_.contains(name);
+        ++numElements_;
+        assert(elementName);
+        element = blockElement_.CreateChild(elementName);
+        usedNames_.emplace(elementName);
+        break;
     case ArchiveBlockType::Array:
-        return true;
+        ++numElements_;
+        element = blockElement_.CreateChild(elementName ? elementName : defaultElementName);
+        break;
     case ArchiveBlockType::Map:
-        if (stringKey)
-            return !usedNames_.contains(*stringKey);
-        else if (uintKey)
-            return !usedNames_.contains(ea::to_string(*uintKey));
-        else
-            return false;
+        ++numElements_;
+        assert(keySet_);
+        element = blockElement_.CreateChild(elementName ? elementName : defaultElementName);
+        element.SetString("key", elementKey_);
+        usedNames_.emplace(elementKey_);
+        keySet_ = false;
+        break;
     default:
         assert(0);
-        return false;
+        break;
     }
+    return element;
 }
 
-XMLElement XMLOutputArchiveBlock::CreateChild(const char* name, const ea::string* stringKey, const unsigned* uintKey, const char* defaultName)
+bool XMLOutputArchiveBlock::Close(ArchiveBase& archive)
 {
-    XMLElement child;
-    switch (type_)
+    if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
     {
-    case ArchiveBlockType::Sequential:
-        ++numElements_;
-        child = blockElement_.CreateChild(name ? name : defaultName);
-        break;
-    case ArchiveBlockType::Unordered:
-        assert(name);
-        ++numElements_;
-        child = blockElement_.CreateChild(name);
-        usedNames_.emplace(name);
-        break;
-    case ArchiveBlockType::Array:
-        ++numElements_;
-        child = blockElement_.CreateChild(name ? name : defaultName);
-        break;
-    case ArchiveBlockType::Map:
-        assert(stringKey || uintKey);
-        ++numElements_;
-        child = blockElement_.CreateChild(name ? name : defaultName);
-        if (stringKey)
-            child.SetString("key", *stringKey);
-        else if (uintKey)
-            child.SetUInt("key", *uintKey);
+        if (numElements_ < expectedElementCount_)
+            archive.SetError(ArchiveBase::fatalBlockUnderflow_blockName, name_);
         else
-            assert(0);
-        usedNames_.emplace(name);
-        break;
-    default:
+            archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
         assert(0);
-        break;
+        return false;
     }
-    return child;
+
+    return true;
 }
 
 bool XMLOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
 {
-    // Check if output is closed
-    if (IsEOF())
-    {
-        SetError();
+    if (!CheckEOF(name))
         return false;
-    }
 
     // Open root block
     if (stack_.empty())
     {
-        stack_.push_back(Block{ type, xmlFile_->CreateRoot(name ? name : defaultRootName), sizeHint });
+        stack_.push_back(Block{ name, type, xmlFile_->CreateRoot(name ? name : defaultRootName), sizeHint });
         return true;
     }
 
-    // Validate new block
-    Block& currentBlock = GetCurrentBlock();
-    if (!currentBlock.CanCreateChild(name, stringKey_, uintKey_))
+    if (XMLElement blockElement = GetCurrentBlock().CreateElement(*this, name, defaultBlockName))
     {
-        SetError();
-        return false;
+        Block block{ name, type, blockElement, sizeHint };
+        stack_.push_back(block);
+        return true;
     }
 
-    // Create new block
-    stack_.push_back(Block{ type, currentBlock.CreateChild(name, stringKey_, uintKey_, defaultBlockName), sizeHint });
-    ResetKeys();
-    return true;
+    return false;
 }
 
 bool XMLOutputArchive::EndBlock()
 {
-    if (IsEOF())
+    if (stack_.empty())
     {
-        SetError();
+        SetError(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
-    if (!GetCurrentBlock().IsComplete())
-    {
-        SetError();
-        return false;
-    }
+    const bool blockClosed = GetCurrentBlock().Close(*this);
 
-    // Pop the frame, close output if root is closed
     stack_.pop_back();
     if (stack_.empty())
         CloseArchive();
-    return true;
+
+    return blockClosed;
+}
+
+bool XMLOutputArchive::SetStringKey(ea::string* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    return GetCurrentBlock().SetElementKey(*this, *key);
+}
+
+bool XMLOutputArchive::SetUnsignedKey(unsigned* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    return GetCurrentBlock().SetElementKey(*this, ea::to_string(*key));
 }
 
 bool XMLOutputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
@@ -174,7 +213,7 @@ bool XMLOutputArchive::SerializeIntArray(const char* name, int* values, unsigned
 
 bool XMLOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (XMLElement child = PrepareToSerialize(name))
+    if (XMLElement child = CreateElement(name))
     {
         BufferToHexString(tempString_, bytes, size);
         child.SetString("value", tempString_);
@@ -185,7 +224,7 @@ bool XMLOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned si
 
 bool XMLOutputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (XMLElement child = PrepareToSerialize(name))
+    if (XMLElement child = CreateElement(name))
     {
         child.SetUInt("value", value);
         return true;
@@ -193,40 +232,45 @@ bool XMLOutputArchive::SerializeVLE(const char* name, unsigned& value)
     return false;
 }
 
-XMLElement XMLOutputArchive::PrepareToSerialize(const char* name)
+bool XMLOutputArchive::CheckEOF(const char* elementName)
 {
-    // Check if output is closed
     if (IsEOF())
     {
-        SetError();
-        return {};
+        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
+        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        return false;
     }
+    return true;
+}
 
-    // Validate new element
-    Block& currentBlock = GetCurrentBlock();
-    if (!currentBlock.CanCreateChild(name, stringKey_, uintKey_))
+bool XMLOutputArchive::CheckEOFAndRoot(const char* elementName)
+{
+    if (!CheckEOF(elementName))
+        return false;
+
+    if (stack_.empty())
     {
-        SetError();
-        return {};
+        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        assert(0);
+        return false;
     }
 
-    // Create new element
-    XMLElement child = currentBlock.CreateChild(name, stringKey_, uintKey_, defaultElementName);
-    if (!child)
-    {
-        SetError();
-        return {};
-    }
+    return true;
+}
 
-    ResetKeys();
-    return child;
+XMLElement XMLOutputArchive::CreateElement(const char* name)
+{
+    if (!CheckEOFAndRoot(name))
+        return {};
+
+    return GetCurrentBlock().CreateElement(*this, name, defaultElementName);
 }
 
 // Generate serialization implementation (XML output)
 #define URHO3D_XML_OUT_IMPL(type, function) \
     bool XMLOutputArchive::Serialize(const char* name, type& value) \
     { \
-        if (XMLElement child = PrepareToSerialize(name)) \
+        if (XMLElement child = CreateElement(name)) \
         { \
             child.function("value", value); \
             return true; \
@@ -249,15 +293,16 @@ URHO3D_XML_OUT_IMPL(ea::string, SetString);
 
 #undef URHO3D_XML_OUT_IMPL
 
-XMLInputArchiveBlock::XMLInputArchiveBlock(ArchiveBlockType type, XMLElement blockElement)
-    : type_(type)
+XMLInputArchiveBlock::XMLInputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement)
+    : name_(name)
+    , type_(type)
     , blockElement_(blockElement)
 {
     if (blockElement_)
         nextChild_ = blockElement_.GetChild();
 }
 
-unsigned XMLInputArchiveBlock::CountChildren() const
+unsigned XMLInputArchiveBlock::CalculateSizeHint() const
 {
     XMLElement child = blockElement_.GetChild();
     unsigned count = 0;
@@ -269,88 +314,114 @@ unsigned XMLInputArchiveBlock::CountChildren() const
     return count;
 }
 
-XMLElement XMLInputArchiveBlock::GetCurrentElement(const char* name, const char* defaultName)
+bool XMLInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key)
 {
-    switch (type_)
+    if (type_ != ArchiveBlockType::Map)
     {
-    case ArchiveBlockType::Sequential:
-        if (nextChild_.GetName() == (name ? name : defaultName))
-            return nextChild_;
+        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    if (keyRead_)
+    {
+        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        assert(0);
+        return false;
+    }
+
+    if (!nextChild_)
+    {
+        archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
+        return false;
+    }
+
+    if (!nextChild_.HasAttribute("key"))
+    {
+        archive.SetError(ArchiveBase::errorMissingMapKey_blockName, name_);
+        return false;
+    }
+
+    key = nextChild_.GetAttribute("key");
+    keyRead_ = true;
+    return true;
+}
+
+XMLElement XMLInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* elementName)
+{
+    if (type_ != ArchiveBlockType::Unordered && !nextChild_)
+    {
+        archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
         return {};
-    case ArchiveBlockType::Unordered:
-        if (name)
-            return blockElement_.GetChild(name);
-        return {};
-    case ArchiveBlockType::Array:
-    case ArchiveBlockType::Map:
-        return nextChild_;
-    default:
+    }
+
+    if (type_ == ArchiveBlockType::Unordered && !elementName)
+    {
+        archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
         assert(0);
         return {};
     }
-}
 
-void XMLInputArchiveBlock::ReadCurrentElementKey(ea::string* stringKey, unsigned* uintKey)
-{
-    if (type_ == ArchiveBlockType::Map)
+    if (type_ == ArchiveBlockType::Map && !keyRead_)
     {
-        if (stringKey)
-            *stringKey = nextChild_.GetAttribute("key");
-        if (uintKey)
-            *uintKey = nextChild_.GetUInt("key");
+        archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        assert(0);
+        return {};
     }
+
+    XMLElement element;
+    if (type_ == ArchiveBlockType::Unordered)
+        element = blockElement_.GetChild(elementName);
+    else
+    {
+        element = nextChild_;
+        nextChild_ = nextChild_.GetNext();
+    }
+
+    if (element)
+        keyRead_ = false;
+
+    return element;
 }
 
 bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
 {
-    // Check if output is closed
-    if (IsEOF())
-    {
-        SetError();
+    if (!CheckEOF(name))
         return false;
-    }
 
     // Open root block
     if (stack_.empty())
     {
-        Block block{ type, xmlFile_->GetRoot(name ? name : defaultRootName) };
-        if (!block.IsValid())
+        XMLElement rootElement = xmlFile_->GetRoot(name ? name : defaultRootName);
+        if (!rootElement)
         {
-            SetError();
+            SetError(ArchiveBase::errorElementNotFound_blockName_elementName, "", name);
             return false;
         }
 
-        sizeHint = block.CountChildren();
+        Block block{ name, type, rootElement };
+        sizeHint = block.CalculateSizeHint();
         stack_.push_back(block);
         return true;
     }
 
     // Try open block
-    Block& currentBlock = GetCurrentBlock();
-    Block block{ type, currentBlock.GetCurrentElement(name, defaultBlockName) };
-
-    if (!block.IsValid())
+    if (XMLElement blockElement = GetCurrentBlock().ReadElement(*this, name))
     {
-        SetError();
-        return false;
+        Block block{ name, type, blockElement };
+        sizeHint = block.CalculateSizeHint();
+        stack_.push_back(block);
+        return true;
     }
 
-    // Read key if present
-    currentBlock.ReadCurrentElementKey(stringKey_, uintKey_);
-    ResetKeys();
-
-    // Create new block
-    currentBlock.NextElement();
-    sizeHint = block.CountChildren();
-    stack_.push_back(block);
-    return true;
+    return false;
 }
 
 bool XMLInputArchive::EndBlock()
 {
-    if (IsEOF())
+    if (stack_.empty())
     {
-        SetError();
+        SetError(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
@@ -359,6 +430,28 @@ bool XMLInputArchive::EndBlock()
     if (stack_.empty())
         CloseArchive();
     return true;
+}
+
+bool XMLInputArchive::SetStringKey(ea::string* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    return GetCurrentBlock().ReadCurrentKey(*this, *key);
+}
+
+bool XMLInputArchive::SetUnsignedKey(unsigned* key)
+{
+    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+        return false;
+
+    ea::string stringKey;
+    if (GetCurrentBlock().ReadCurrentKey(*this, stringKey))
+    {
+        *key = ToUInt(stringKey);
+        return true;
+    }
+    return false;
 }
 
 bool XMLInputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
@@ -401,7 +494,7 @@ bool XMLInputArchive::SerializeIntArray(const char* name, int* values, unsigned 
 
 bool XMLInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (XMLElement child = PrepareToSerialize(name))
+    if (XMLElement child = ReadElement(name))
     {
         if (!HexStringToBuffer(tempBuffer_, child.GetAttribute("value")))
             return false;
@@ -415,7 +508,7 @@ bool XMLInputArchive::SerializeBytes(const char* name, void* bytes, unsigned siz
 
 bool XMLInputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (XMLElement child = PrepareToSerialize(name))
+    if (XMLElement child = ReadElement(name))
     {
         value = child.GetUInt("value");
         return true;
@@ -423,38 +516,45 @@ bool XMLInputArchive::SerializeVLE(const char* name, unsigned& value)
     return false;
 }
 
-XMLElement XMLInputArchive::PrepareToSerialize(const char* name)
+bool XMLInputArchive::CheckEOF(const char* elementName)
 {
-    // Check if output is closed
     if (IsEOF())
     {
-        SetError();
-        return {};
+        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
+        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        return false;
     }
+    return true;
+}
 
-    // Find element
-    Block& currentBlock = GetCurrentBlock();
-    XMLElement child = currentBlock.GetCurrentElement(name, defaultElementName);
-    if (!child)
+bool XMLInputArchive::CheckEOFAndRoot(const char* elementName)
+{
+    if (!CheckEOF(elementName))
+        return false;
+
+    if (stack_.empty())
     {
-        SetError();
-        return {};
+        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        assert(0);
+        return false;
     }
 
-    // Read key if present
-    currentBlock.ReadCurrentElementKey(stringKey_, uintKey_);
-    ResetKeys();
+    return true;
+}
 
-    // Read value.
-    currentBlock.NextElement();
-    return child;
+XMLElement XMLInputArchive::ReadElement(const char* name)
+{
+    if (!CheckEOFAndRoot(name))
+        return {};
+
+    return GetCurrentBlock().ReadElement(*this, name);
 }
 
 // Generate serialization implementation (XML input)
 #define URHO3D_XML_IN_IMPL(type, function) \
     bool XMLInputArchive::Serialize(const char* name, type& value) \
     { \
-        if (XMLElement child = PrepareToSerialize(name)) \
+        if (XMLElement child = ReadElement(name)) \
         { \
             value = child.function("value"); \
             return true; \

@@ -38,7 +38,6 @@ enum class ArchiveBlockType
     /// Sequential data block. Use for unstructured data blobs.
     /// - Order of serialization must be the same.
     /// - Names are optional and may be chosen arbitrarily.
-    /// - Names must be the same for serialization and deserialization.
     /// - Keys are ignored.
     Sequential,
     /// Unordered data block. Use for objects and structures.
