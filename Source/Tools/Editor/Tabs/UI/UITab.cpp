@@ -255,17 +255,12 @@ bool UITab::RenderWindowContent()
 
 void UITab::RenderToolbarButtons()
 {
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
+
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
 
     ui::SameLine(0, 3.f);
-
-//    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
-//        undo_.Undo();
-//    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
-//        undo_.Redo();
-//
-//    ui::SameLine(0, 3.f);
 
     ui::Checkbox("Show Internal", &showInternal_);
     ui::SameLine();
@@ -835,6 +830,28 @@ void UITab::OnFocused()
 {
     auto* editor = GetSubsystem<Editor>();
     editor->GetTab<HierarchyTab>()->SetProvider(this);
+}
+
+void UITab::OnBeforeBegin()
+{
+    // Allow viewport texture to cover entire window
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+}
+
+void UITab::OnAfterBegin()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
+void UITab::OnBeforeEnd()
+{
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+    BaseClassName::OnBeforeEnd();
+}
+
+void UITab::OnAfterEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 }

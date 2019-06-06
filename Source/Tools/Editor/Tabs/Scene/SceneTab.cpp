@@ -287,14 +287,13 @@ bool SceneTab::RenderWindowContent()
 void SceneTab::OnBeforeBegin()
 {
     // Allow viewport texture to cover entire window
-    windowPadding_ = ui::GetStyle().WindowPadding;
     ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
 }
 
 void SceneTab::OnAfterBegin()
 {
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
     // Inner part of window should have a proper padding, context menu and other controls might depend on it.
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding_);
     if (ui::BeginPopupContextItem("SceneTab context menu"))
     {
         if (ui::MenuItem("Save"))
@@ -311,8 +310,8 @@ void SceneTab::OnAfterBegin()
 
 void SceneTab::OnBeforeEnd()
 {
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
     BaseClassName::OnBeforeEnd();
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 void SceneTab::OnAfterEnd()

@@ -47,6 +47,14 @@ public:
     bool RenderWindowContent() override;
     /// Render toolbar buttons.
     void RenderToolbarButtons() override;
+    /// Handle window padding.
+    void OnBeforeEnd() override;
+    /// Handle window padding.
+    void OnBeforeBegin() override;
+    /// Handle window padding.
+    void OnAfterBegin() override;
+    /// Handle window padding.
+    void OnAfterEnd() override;
     /// Update window when it is active.
     void OnActiveUpdate() override;
     /// Load UI layout from resource path.

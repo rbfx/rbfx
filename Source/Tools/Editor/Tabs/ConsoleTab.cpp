@@ -47,17 +47,9 @@ bool ConsoleTab::RenderWindowContent()
     return true;
 }
 
-void ConsoleTab::OnBeforeBegin()
-{
-    // Allow viewport texture to cover entire window
-    windowPadding_ = ui::GetStyle().WindowPadding;
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-}
-
 void ConsoleTab::OnAfterBegin()
 {
     // Inner part of window should have a proper padding, context menu and other controls might depend on it.
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding_);
     if (ui::BeginPopupContextItem("ConsoleTab context menu"))
     {
         if (ui::BeginMenu("Levels"))
@@ -101,17 +93,6 @@ void ConsoleTab::OnAfterBegin()
 
         ui::EndPopup();
     }
-}
-
-void ConsoleTab::OnBeforeEnd()
-{
-    BaseClassName::OnBeforeEnd();
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
-}
-
-void ConsoleTab::OnAfterEnd()
-{
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 }
