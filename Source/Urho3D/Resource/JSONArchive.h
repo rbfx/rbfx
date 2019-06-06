@@ -26,8 +26,7 @@
 #include "../Resource/JSONFile.h"
 #include "../Resource/JSONValue.h"
 
-// #include <EASTL/optional.h>
-// #include <EASTL/hash_set.h>
+#include <EASTL/optional.h>
 
 namespace Urho3D
 {
@@ -37,6 +36,13 @@ inline bool IsArchiveBlockJSONArray(ArchiveBlockType type) { return type == Arch
 
 /// Return whether the block type should be serialized as JSON object.
 inline bool IsArchiveBlockJSONObject(ArchiveBlockType type) { return type == ArchiveBlockType::Map || type == ArchiveBlockType::Unordered; }
+
+/// Return whether the block type matches JSONValue type.
+inline bool IsArchiveBlockTypeMatching(const JSONValue& value, ArchiveBlockType type)
+{
+    return IsArchiveBlockJSONArray(type) && value.IsArray()
+        || IsArchiveBlockJSONObject(type) && value.IsObject();
+}
 
 /// Base archive for JSON serialization.
 template <class T>
@@ -56,23 +62,12 @@ public:
     /// Whether the Unordered blocks are supported.
     bool IsUnorderedSupported() const final { return true; }
 
-    /// Serialize string key. Used with Map block only.
-    void SetStringKey(ea::string* key) final { stringKey_ = key; }
-    /// Serialize unsigned integer key. Used with Map block only.
-    void SetUnsignedKey(unsigned* key) final { uintKey_ = key; }
-
 protected:
     /// Block type.
     using Block = T;
 
     /// Get current block.
     Block& GetCurrentBlock() { return stack_.back(); }
-    /// Reset keys.
-    void ResetKeys()
-    {
-        stringKey_ = nullptr;
-        uintKey_ = nullptr;
-    }
 
     /// JSON file.
     SharedPtr<JSONFile> jsonFile_;
@@ -80,11 +75,6 @@ protected:
     bool preferStrings_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
-
-    /// String key.
-    ea::string* stringKey_{};
-    /// UInt key.
-    unsigned* uintKey_{};
 };
 
 /// JSON output archive block. Internal.
@@ -92,32 +82,31 @@ struct JSONOutputArchiveBlock
 {
 public:
     /// Construct.
-    JSONOutputArchiveBlock(ArchiveBlockType type, const ea::string& key, unsigned expectedElementCount);
-    /// Return whether the child with given name and key may be safely added.
-    bool CanCreateChild(const char* name, const ea::string* stringKey, const unsigned* uintKey) const;
-    /// Get child key string.
-    ea::string GetChildKey(const char* name, const ea::string* stringKey, const unsigned* uintKey);
-    /// Create child. Checks should be performed first!
-    void CreateChild(const ea::string& key, JSONValue childValue);
-    /// Is block complete and can be closed?
-    bool IsComplete() const { return expectedElementCount_ == M_MAX_UNSIGNED || numElements_ == expectedElementCount_; }
-    /// Get key.
-    const ea::string& GetKey() const { return key_; }
-    /// Get value (mutable, so it can be moved away).
-    JSONValue& GetValue() { return blockValue_; }
+    JSONOutputArchiveBlock(const char* name, ArchiveBlockType type, JSONValue* blockValue, unsigned sizeHint);
+    /// Get block name.
+    ea::string_view GetName() const { return name_; }
+    /// Set element key.
+    bool SetElementKey(ArchiveBase& archive, ea::string key);
+    /// Create element in the block.
+    JSONValue* CreateElement(ArchiveBase& archive, const char* elementName);
+    /// Close block.
+    bool Close(ArchiveBase& archive);
 
 private:
+    /// Block name.
+    ea::string_view name_{};
     /// Block type.
     ArchiveBlockType type_{};
-    /// Block key (when parent block is JSON object).
-    ea::string key_;
+    /// Block value.
+    JSONValue* blockValue_;
+
     /// Expected block size (for arrays and maps).
     unsigned expectedElementCount_{ M_MAX_UNSIGNED };
-
-    /// Block value.
-    JSONValue blockValue_;
     /// Number of elements in block.
     unsigned numElements_{};
+
+    /// Key of the next created element (for Map blocks).
+    ea::optional<ea::string> elementKey_;
 };
 
 class URHO3D_API JSONOutputArchive : public JSONArchiveBase<JSONOutputArchiveBlock>
@@ -133,6 +122,11 @@ public:
     /// End archive block.
     bool EndBlock() final;
 
+    /// Serialize string key. Used with Map block only.
+    bool SetStringKey(ea::string* key) final;
+    /// Serialize unsigned integer key. Used with Map block only.
+    bool SetUnsignedKey(unsigned* key) final;
+
     /// Serialize bool.
     bool Serialize(const char* name, bool& value) final;
     /// Serialize signed char.
@@ -168,6 +162,10 @@ public:
     bool SerializeVLE(const char* name, unsigned& value) final;
 
 private:
+    /// Check EOF.
+    bool CheckEOF(const char* elementName);
+    /// Check EOF and root block.
+    bool CheckEOFAndRoot(const char* elementName);
     /// Serialize any JSON value.
     bool SerializeJSONValue(const char* name, const JSONValue& value);
     /// Temporary string.
@@ -179,17 +177,21 @@ struct JSONInputArchiveBlock
 {
 public:
     /// Construct valid.
-    JSONInputArchiveBlock(ArchiveBlockType type, const JSONValue* value);
-    /// Return whether the frame valid.
-    bool IsValid() const;
+    JSONInputArchiveBlock(const char* name, ArchiveBlockType type, const JSONValue* value);
+    /// Return name.
+    const ea::string_view GetName() const { return name_; }
     /// Return size hint.
     unsigned GetSizeHint() const { return value_->Size(); }
-    /// Return current child. Name may be used for ArchiveBlockType::Unordered blocks. Key is filled for ArchiveBlockType::Map frames.
-    const JSONValue* GetCurrentElement(const char* name, ea::string* stringKey, unsigned* uintKey);
-    /// Move stack frame to next element.
-    void NextElement();
+    /// Return current child's key as string.
+    bool ReadCurrentStringKey(ArchiveBase& archive, ea::string& key);
+    /// Return current child's key as unsigned integer.
+    bool ReadCurrentUIntKey(ArchiveBase& archive, unsigned& key);
+    /// Read current child and move to the next one.
+    const JSONValue* ReadElement(ArchiveBase& archive, const char* elementName, const ArchiveBlockType* elementBlockType);
 
 private:
+    /// Debug block name.
+    ea::string_view name_{};
     /// Frame type.
     ArchiveBlockType type_{};
     /// Frame base value.
@@ -198,6 +200,8 @@ private:
     unsigned nextElementIndex_{};
     /// Next map element iterator (for map frames).
     JSONObject::const_iterator nextMapElementIterator_{};
+    /// Whether the key was read.
+    bool keyRead_{};
 };
 
 class URHO3D_API JSONInputArchive : public JSONArchiveBase<JSONInputArchiveBlock>
@@ -213,6 +217,11 @@ public:
     /// End archive block.
     bool EndBlock() final;
 
+    /// Serialize string key. Used with Map block only.
+    bool SetStringKey(ea::string* key) final;
+    /// Serialize unsigned integer key. Used with Map block only.
+    bool SetUnsignedKey(unsigned* key) final;
+
     /// Serialize bool.
     bool Serialize(const char* name, bool& value) final;
     /// Serialize signed char.
@@ -248,6 +257,10 @@ public:
     bool SerializeVLE(const char* name, unsigned& value) final;
 
 private:
+    /// Check EOF.
+    bool CheckEOF(const char* elementName);
+    /// Check EOF and root block.
+    bool CheckEOFAndRoot(const char* elementName);
     /// Deserialize JSONValue.
     const JSONValue* DeserializeJSONValue(const char* name);
     /// Temporary buffer.
