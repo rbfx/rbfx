@@ -578,6 +578,14 @@ bool SceneTab::IsSelected(Component* component) const
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<InspectorTab>()->SetProvider(this);
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
+}
+
+void SceneTab::ClearSelection()
+{
+    UnselectAll();
 }
 
 void SceneTab::RenderInspector(const char* filter)
@@ -1215,11 +1223,8 @@ void SceneTab::RemoveComponentIcon(Component* component)
 
 void SceneTab::OnFocused()
 {
-    if (InspectorTab* inspector = GetSubsystem<Editor>()->GetTab<InspectorTab>())
-    {
-        if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
-            inspectorProvider->SetEffectSource(GetViewport()->GetRenderPath());
-    }
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
 void SceneTab::UpdateCameras()

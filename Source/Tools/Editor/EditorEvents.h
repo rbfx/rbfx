@@ -64,13 +64,6 @@ URHO3D_EVENT(E_EDITORPROJECTCLOSING, EditorProjectClosing)
 {
 }
 
-/// Notify inspector window that this instance would like to render inspector content.
-URHO3D_EVENT(E_EDITORRENDERINSPECTOR, EditorRenderInspector)
-{
-    URHO3D_PARAM(P_CATEGORY, Cagetory);               // unsigned.
-    URHO3D_PARAM(P_INSPECTABLE, Inspectable);         // RefCounted pointer.
-}
-
 /// Notify subsystems about closed editor tab.
 URHO3D_EVENT(E_EDITORTABCLOSED, EditorTabClosed)
 {

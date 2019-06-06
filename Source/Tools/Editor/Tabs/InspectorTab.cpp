@@ -37,11 +37,6 @@ InspectorTab::InspectorTab(Context* context)
     SetID("6e62fa62-811c-4bf2-9b85-bffaf7be239f");
     SetTitle("Inspector");
     isUtility_ = true;
-    SubscribeToEvent(E_EDITORRENDERINSPECTOR, [&](StringHash, VariantMap& args) {
-        auto category = args[EditorRenderInspector::P_CATEGORY].GetUInt();
-        RefCounted* instance = args[EditorRenderInspector::P_INSPECTABLE].GetPtr();
-        inspectables_[category].Update(instance);
-    });
 }
 
 bool InspectorTab::RenderWindowContent()
@@ -52,29 +47,24 @@ bool InspectorTab::RenderWindowContent()
     if (ui::IsItemHovered())
         ui::SetTooltip("Filter attributes by name.");
 
-    // Handle tab switching/closing
-    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
-        tabInspector_.Update(tab);
+    if (provider_.first.NotNull())
+        provider_.second->RenderInspector(filter_.c_str());
 
-    // Render main tab inspectors
-    if (tabInspector_)
-        tabInspector_->RenderInspector(filter_.c_str());
-
-    // Secondary inspectables
-    for (auto i = 0; i < IC_MAX; i++)
-    {
-        if (inspectables_[i])
-            inspectables_[i]->RenderInspector(filter_.c_str());
-    }
     return true;
 }
 
-IInspectorProvider* InspectorTab::GetInspector(InspectorCategory category)
+void InspectorTab::SetProvider(IInspectorProvider* provider)
 {
-    if (inspectables_[category])
-        return &inspectables_[category];
-    return nullptr;
-}
+    if (provider_.first.NotNull() && provider_.second != provider)
+        provider_.second->ClearSelection();
 
+    if (auto* ptr = dynamic_cast<RefCounted*>(provider))
+    {
+        provider_.first = ptr;
+        provider_.second = provider;
+    }
+    else
+        URHO3D_LOGERROR("Classes that inherit IInspectorProvider must also inherit RefCounted.");
+}
 
 }

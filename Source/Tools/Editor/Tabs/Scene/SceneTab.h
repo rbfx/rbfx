@@ -81,6 +81,8 @@ public:
     explicit SceneTab(Context* context);
     /// Destruct.
     ~SceneTab() override;
+    /// Clear current selection.
+    void ClearSelection() override;
     /// Render inspector window.
     void RenderInspector(const char* filter) override;
     /// Render scene hierarchy window starting from the root node (scene).

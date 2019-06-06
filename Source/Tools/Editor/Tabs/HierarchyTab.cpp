@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/IO/Log.h>
+
 #include "EditorEvents.h"
 #include "HierarchyTab.h"
 #include "Editor.h"
@@ -37,15 +39,21 @@ HierarchyTab::HierarchyTab(Context* context)
 
 bool HierarchyTab::RenderWindowContent()
 {
-    // Handle tab switching/closing
-    if (Tab* tab = GetSubsystem<Editor>()->GetActiveTab())
-        inspector_.Update(tab);
-
     // Render main tab inspectors
-    if (inspector_)
-        inspector_->RenderHierarchy();
-
+    if (provider_.first.NotNull())
+        provider_.second->RenderHierarchy();
     return true;
+}
+
+void HierarchyTab::SetProvider(IHierarchyProvider* provider)
+{
+    if (auto* ptr = dynamic_cast<RefCounted*>(provider))
+    {
+        provider_.first = ptr;
+        provider_.second = provider;
+    }
+    else
+        URHO3D_LOGERROR("Classes that inherit IHierarchyProvider must also inherit RefCounted.");
 }
 
 }

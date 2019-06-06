@@ -46,6 +46,8 @@ public:
 class IInspectorProvider
 {
 public:
+    /// Clear current selection. Usually invoked when new selection is replacing old one.
+    virtual void ClearSelection() { }
     /// Render inspector window.
     virtual void RenderInspector(const char* filter) = 0;
 };
