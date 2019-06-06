@@ -54,7 +54,7 @@ VertexBuffer::~VertexBuffer()
 
 void VertexBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<VertexBuffer>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<VertexBuffer>();
 }
 
 void VertexBuffer::SetShadowed(bool enable)
