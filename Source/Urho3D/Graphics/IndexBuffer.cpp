@@ -61,7 +61,7 @@ extern const char* GEOMETRY_CATEGORY;
 
 void IndexBuffer::RegisterObject(Context* context)
 {
-    context->RegisterFactory<IndexBuffer>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<IndexBuffer>();
 }
 
 void IndexBuffer::SetShadowed(bool enable)
