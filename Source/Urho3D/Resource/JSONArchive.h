@@ -123,9 +123,9 @@ public:
     bool EndBlock() final;
 
     /// Serialize string key. Used with Map block only.
-    bool SetStringKey(ea::string* key) final;
+    bool SerializeKey(ea::string& key) final;
     /// Serialize unsigned integer key. Used with Map block only.
-    bool SetUnsignedKey(unsigned* key) final;
+    bool SerializeKey(unsigned& key) final;
 
     /// Serialize bool.
     bool Serialize(const char* name, bool& value) final;
@@ -216,9 +216,9 @@ public:
     bool EndBlock() final;
 
     /// Serialize string key. Used with Map block only.
-    bool SetStringKey(ea::string* key) final;
+    bool SerializeKey(ea::string& key) final;
     /// Serialize unsigned integer key. Used with Map block only.
-    bool SetUnsignedKey(unsigned* key) final;
+    bool SerializeKey(unsigned& key) final;
 
     /// Serialize bool.
     bool Serialize(const char* name, bool& value) final;
