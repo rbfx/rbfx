@@ -51,6 +51,8 @@ public:
 protected:
     /// Constructs a name for newly created resource based on specified template name.
     ea::string GetNewResourcePath(const ea::string& name);
+    /// Select current item in attribute inspector.
+    void SelectCurrentItemInspector();
 
     /// Current open resource path.
     ea::string resourcePath_;
