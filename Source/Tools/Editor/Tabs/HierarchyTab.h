@@ -23,8 +23,10 @@
 #pragma once
 
 
+#include <EASTL/utility.h>
+#include <Urho3D/Container/Ptr.h>
+
 #include "Tabs/Tab.h"
-#include "Container/CachedInterfacePtr.h"
 
 
 namespace Urho3D
@@ -38,9 +40,11 @@ public:
     explicit HierarchyTab(Context* context);
     ///
     bool RenderWindowContent() override;
+    ///
+    void SetProvider(IHierarchyProvider* provider);
 
 protected:
-    CachedInterfacePtr<IHierarchyProvider> inspector_;
+    ea::pair<WeakPtr<RefCounted>, IHierarchyProvider*> provider_;
 };
 
 }

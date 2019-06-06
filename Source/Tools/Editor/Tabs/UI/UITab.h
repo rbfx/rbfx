@@ -39,6 +39,8 @@ public:
     explicit UITab(Context* context);
     /// Render scene hierarchy window.
     void RenderHierarchy() override;
+    /// Clear current selection.
+    void ClearSelection() override;
     /// Render inspector window.
     void RenderInspector(const char* filter) override;
     /// Render content of tab window.

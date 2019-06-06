@@ -38,6 +38,7 @@
 #include "Editor.h"
 #include "Widgets.h"
 #include "UITab.h"
+#include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 
 using namespace ui::litterals;
@@ -182,6 +183,11 @@ void UITab::RenderNodeTree(UIElement* element)
         }
         ui::EndDragDropTarget();
     }
+}
+
+void UITab::ClearSelection()
+{
+    selectedElement_ = nullptr;
 }
 
 void UITab::RenderInspector(const char* filter)
@@ -480,6 +486,10 @@ void UITab::SelectItem(UIElement* current)
         textureSelectorAttribute_.clear();
 
     selectedElement_ = current;
+
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<InspectorTab>()->SetProvider(this);
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
 void UITab::AutoLoadDefaultStyle()
@@ -825,6 +835,8 @@ void UITab::AttributeCustomize(VariantMap& args)
 
 void UITab::OnFocused()
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
 }
