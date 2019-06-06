@@ -22,21 +22,14 @@
 
 #pragma once
 
+#include <EASTL/utility.h>
+#include <Urho3D/Container/Ptr.h>
 
 #include "Tabs/Tab.h"
-#include "Container/CachedInterfacePtr.h"
 
 
 namespace Urho3D
 {
-
-enum InspectorCategory
-{
-    /// Secondary category for displaying resources.
-    IC_RESOURCE,
-    /// Max number of inspector categories.
-    IC_MAX,
-};
 
 class InspectorTab : public Tab
 {
@@ -46,13 +39,12 @@ public:
     ///
     bool RenderWindowContent() override;
     ///
-    IInspectorProvider* GetInspector(InspectorCategory category);
+    void SetProvider(IInspectorProvider* provider);
 
 protected:
     ea::string filter_;
 
-    CachedInterfacePtr<IInspectorProvider> tabInspector_;
-    CachedInterfacePtr<IInspectorProvider> inspectables_[IC_MAX];
+    ea::pair<WeakPtr<RefCounted>, IInspectorProvider*> provider_;
 };
 
 }
