@@ -69,7 +69,7 @@ bool Tab::RenderWindow()
         ImGuiID targetID = 0;
         ImGuiDockNode* dockspaceRoot = ui::DockBuilderGetNode(GetSubsystem<Editor>()->GetDockspaceID());
         ImGuiDockNode* currentRoot = returnTargetDockspace(dockspaceRoot);
-        if (currentRoot->Windows.empty())
+        if (currentRoot && currentRoot->Windows.empty())
         {
             // Free space exists, dock new window there.
             targetID = currentRoot->ID;
