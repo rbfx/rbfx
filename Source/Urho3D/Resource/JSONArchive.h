@@ -167,7 +167,7 @@ private:
     /// Check EOF and root block.
     bool CheckEOFAndRoot(const char* elementName);
     /// Serialize any JSON value.
-    bool SerializeJSONValue(const char* name, const JSONValue& value);
+    bool CreateElement(const char* name, const JSONValue& value);
     /// Temporary string.
     ea::string tempString_;
 };
@@ -260,7 +260,7 @@ private:
     /// Check EOF and root block.
     bool CheckEOFAndRoot(const char* elementName);
     /// Deserialize JSONValue.
-    const JSONValue* DeserializeJSONValue(const char* name);
+    const JSONValue* ReadElement(const char* name);
     /// Temporary buffer.
     ea::vector<unsigned char> tempBuffer_;
 };
