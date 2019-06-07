@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2019 the rbfx project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,51 +20,52 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/IO/Log.h>
-#include <ImGui/imgui.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 #include <ImGui/imgui_stdlib.h>
-#include "EditorEvents.h"
-#include "InspectorTab.h"
-#include "Editor.h"
-
+#if URHO3D_PROFILING
+#include <server/TracyView.hpp>
+#endif
+#include "ProfilerTab.h"
 
 namespace Urho3D
 {
 
-InspectorTab::InspectorTab(Context* context)
+ProfilerTab::ProfilerTab(Context* context)
     : Tab(context)
 {
-    SetID("6e62fa62-811c-4bf2-9b85-bffaf7be239f");
-    SetTitle("Inspector");
+    SetID("cdb45f8e-fc31-415d-9cfc-f0390e112a90");
+    SetTitle("Profiler");
     isUtility_ = true;
 }
 
-bool InspectorTab::RenderWindowContent()
+bool ProfilerTab::RenderWindowContent()
 {
-    ui::PushItemWidth(-1);
-    ui::InputText("###Filter", &filter_);
-    ui::PopItemWidth();
-    if (ui::IsItemHovered())
-        ui::SetTooltip("Filter attributes by name.");
-
-    if (provider_.first.NotNull())
-        provider_.second->RenderInspector(filter_.c_str());
-
-    return true;
-}
-
-void InspectorTab::SetProvider(IInspectorProvider* provider)
-{
-    if (provider_.first.NotNull() && provider_.second != provider)
-        provider_.second->ClearSelection();
-
-    if (auto* ptr = dynamic_cast<RefCounted*>(provider))
+    ui::PushID("Profiler");
+#if URHO3D_PROFILING
+    if (view_)
     {
-        provider_.first = ptr;
-        provider_.second = provider;
+        if (!view_->Draw())
+            view_.reset();
     }
     else
-        URHO3D_LOGERROR("Classes that inherit IInspectorProvider must also inherit RefCounted.");
+    {
+        const ImRect& rect = ui::GetCurrentWindow()->ContentsRegionRect;
+        ui::SetCursorPosY(rect.GetHeight() / 2 + ui::CalcTextSize("C").y / 2);
+
+        ui::TextUnformatted("Connect to: ");
+        ui::SameLine();
+        bool connect = ui::InputText("", &connectTo_, ImGuiInputTextFlags_EnterReturnsTrue);
+        ui::SameLine();
+        connect |= ui::Button(ICON_FA_WIFI " Connect");
+        if (connect)
+            view_ = std::make_unique<tracy::View>(connectTo_.c_str());
+    }
+#else
+    ui::TextUnformatted("Built without profiling support.");
+#endif
+    ui::PopID();
+    return true;
 }
 
 }

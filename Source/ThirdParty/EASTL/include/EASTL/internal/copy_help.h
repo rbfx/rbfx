@@ -112,6 +112,10 @@ namespace eastl
 		template <typename T>
 		static T* move_or_copy(const T* first, const T* last, T* result)
 		{
+			// Urho3D: Fix UB
+			if (first == last)
+				return result;
+			EASTL_ASSERT(result != nullptr);
 			// We could use memcpy here if there's no range overlap, but memcpy is rarely much faster than memmove.
 			return (T*)memmove(result, first, (size_t)((uintptr_t)last - (uintptr_t)first)) + (last - first);
 		}

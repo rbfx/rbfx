@@ -186,8 +186,6 @@ bool Engine::Initialize(const VariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
-        context_->graphics_ = context_->GetSubsystem<Graphics>();
-        context_->renderer_ = context_->GetSubsystem<Renderer>();
     }
     else
     {
@@ -346,8 +344,7 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
     ea::vector<ea::string> resourcePaths = GetParameter(parameters, EP_RESOURCE_PATHS,
         "Data;CoreData").GetString().split(';');
     ea::vector<ea::string> resourcePackages = GetParameter(parameters, EP_RESOURCE_PACKAGES).GetString().split(';');
-    ea::vector<ea::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(
-        ';');
+    ea::vector<ea::string> autoLoadPaths = GetParameter(parameters, EP_AUTOLOAD_PATHS, "Autoload").GetString().split(';');
 
     for (unsigned i = 0; i < resourcePaths.size(); ++i)
     {
@@ -807,7 +804,7 @@ void Engine::ApplyFrameLimit()
     if (lastTimeSteps_.size() > timeStepSmoothing_)
     {
         // If the smoothing configuration was changed, ensure correct amount of samples
-        lastTimeSteps_.erase(0, lastTimeSteps_.size() - timeStepSmoothing_);
+        lastTimeSteps_.erase_at(0, lastTimeSteps_.size() - timeStepSmoothing_);
         for (unsigned i = 0; i < lastTimeSteps_.size(); ++i)
             timeStep_ += lastTimeSteps_[i];
         timeStep_ /= lastTimeSteps_.size();

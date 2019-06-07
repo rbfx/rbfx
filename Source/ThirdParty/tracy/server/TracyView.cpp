@@ -679,7 +679,9 @@ bool View::DrawImpl()
     {
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
+#ifndef TRACY_EMBED_WINDOW
         ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+#endif
 #ifdef TRACY_EXTENDED_FONT
         TextCentered( ICON_FA_WIFI );
 #endif
@@ -688,7 +690,9 @@ bool View::DrawImpl()
         ImGui::Spacing();
         ImGui::Separator();
         bool wasCancelled = ImGui::Button( "Cancel" );
+#ifndef TRACY_EMBED_WINDOW
         ImGui::End();
+#endif
         return !wasCancelled;
     }
 
@@ -718,7 +722,38 @@ bool View::DrawImpl()
     bool* keepOpenPtr = nullptr;
     if( !m_staticView )
     {
+#ifdef TRACY_EMBED_WINDOW
+        bool result = true;
+        if (ImGui::BeginPopup("TracyConnectionPopup"))
+        {
+            bool prev_connected = m_worker.IsShuttingDown();
+            result = DrawConnection();
+            if (!result || m_worker.IsShuttingDown() != prev_connected)
+                // Close popup when "stop" or "discard" pressed.
+                ImGui::CloseCurrentPopup();
+            ImGui::EndPopup();
+        }
+
+        auto* storage = ImGui::GetStateStorage();
+        if (!result)    // Clear trace
+        {
+            if (m_worker.IsConnected())
+            {
+                storage->SetBool(ImGui::GetID("is-shutting-down"), true);
+                m_worker.Disconnect();
+            }
+            else
+                return false;
+        }
+        else if (!m_worker.IsConnected() && m_worker.GetFailureType() == Worker::Failure::None &&
+            storage->GetBool(ImGui::GetID("is-shutting-down")))
+        {
+            storage->SetBool(ImGui::GetID("is-shutting-down"), true);
+            return false;
+        }
+#else
         if( !DrawConnection() ) return false;
+#endif
     }
     else
     {
@@ -749,7 +784,7 @@ bool View::DrawImpl()
     style.WindowBorderSize = wbsPrev;
     style.WindowPadding = wpPrev;
     style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.11f, 0.11f, 0.08f, 1.f );
-#else
+#elif !defined TRACY_EMBED_WINDOW
     char tmp[2048];
     sprintf( tmp, "%s###Profiler", m_worker.GetCaptureName().c_str() );
     ImGui::SetNextWindowSize( ImVec2( 1550, 800 ), ImGuiCond_FirstUseEver );
@@ -759,6 +794,16 @@ bool View::DrawImpl()
     std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
+#if defined TRACY_EMBED_WINDOW
+#if defined TRACY_EXTENDED_FONT
+        const char* buttonTitle = ICON_FA_WIFI;
+#else
+        const char* buttonTitle = "Connection";
+#endif
+        if (ImGui::Button(buttonTitle))
+            ImGui::OpenPopup("TracyConnectionPopup");
+        ImGui::SameLine();
+#endif
         if( m_worker.IsConnected() )
         {
             if( ImGui::Button( m_pause ? MainWindowButtons[0] : MainWindowButtons[1], ImVec2( bw, 0 ) ) ) m_pause = !m_pause;
@@ -911,7 +956,9 @@ bool View::DrawImpl()
     }
     DrawFrames();
     DrawZones();
+#if !defined TRACY_EMBED_WINDOW
     ImGui::End();
+#endif
 
     m_zoneHighlight = nullptr;
     m_gpuHighlight = nullptr;
@@ -969,7 +1016,9 @@ bool View::DrawConnection()
         std::lock_guard<TracyMutex> lock( m_worker.GetMbpsDataLock() );
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
+#if !defined TRACY_EMBED_WINDOW
         ImGui::Begin( tmp, nullptr, ImGuiWindowFlags_AlwaysAutoResize );
+#endif
         const auto& mbpsVector = m_worker.GetMbpsData();
         const auto mbps = mbpsVector.back();
         char buf[64];
@@ -1080,7 +1129,9 @@ bool View::DrawConnection()
         {
             ImGui::CloseCurrentPopup();
             ImGui::EndPopup();
+#if !defined TRACY_EMBED_WINDOW
             ImGui::End();
+#endif
             return false;
         }
         ImGui::SameLine( 0, ty * 2 );
@@ -1091,7 +1142,9 @@ bool View::DrawConnection()
         ImGui::EndPopup();
     }
 
+#if !defined TRACY_EMBED_WINDOW
     ImGui::End();
+#endif
     return true;
 }
 

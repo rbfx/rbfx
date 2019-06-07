@@ -204,6 +204,7 @@ ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& select
             {
             case 1:
                 selected = item;
+                result = RBR_ITEM_SELECTED;
                 break;
             case 2:
                 path += AddTrailingSlash(item);

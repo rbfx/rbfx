@@ -155,8 +155,8 @@ bool ShaderVariation::Create()
 
         // In debug mode, check that all defines are referenced by the shader code
 #ifdef _DEBUG
-        ea::string defineCheck = defineString.Substring(8, defineString.Find(' ', 8) - 8);
-        if (originalShaderCode.Find(defineCheck) == ea::string::npos)
+        ea::string defineCheck = defineString.substr(8, defineString.find(' ', 8) - 8);
+        if (originalShaderCode.find(defineCheck) == ea::string::npos)
             URHO3D_LOGWARNING("Shader " + GetFullName() + " does not use the define " + defineCheck);
 #endif
     }

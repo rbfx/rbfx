@@ -144,7 +144,7 @@ void AnimationController::Update(float timeStep)
         {
             if (state)
                 RemoveAnimationState(state);
-            animations_.erase(i);
+            animations_.erase_at(i);
             MarkNetworkUpdate();
         }
         else

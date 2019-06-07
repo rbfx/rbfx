@@ -1334,7 +1334,7 @@ void UIElement::InsertChild(unsigned index, UIElement* element)
     if (index >= children_.size())
         children_.push_back(SharedPtr<UIElement>(element));
     else
-        children_.insert(index, SharedPtr<UIElement>(element));
+        children_.insert_at(index, SharedPtr<UIElement>(element));
 
     element->Remove();
 
@@ -1387,7 +1387,7 @@ void UIElement::RemoveChild(UIElement* element, unsigned index)
             }
 
             element->Detach();
-            children_.erase(i);
+            children_.erase_at(i);
             UpdateLayout();
             return;
         }
@@ -1414,7 +1414,7 @@ void UIElement::RemoveChildAtIndex(unsigned index)
     }
 
     children_[index]->Detach();
-    children_.erase(index);
+    children_.erase_at(index);
     UpdateLayout();
 }
 

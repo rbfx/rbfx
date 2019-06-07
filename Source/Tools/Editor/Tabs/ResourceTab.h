@@ -23,6 +23,8 @@
 #pragma once
 
 
+#include <EASTL/utility.h>
+
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 #include "Inspector/ResourceInspector.h"
 #include "Tabs/Tab.h"
@@ -32,7 +34,7 @@ namespace Urho3D
 {
 
 /// Resource browser tab.
-class ResourceTab : public Tab
+class ResourceTab : public Tab, public IInspectorProvider
 {
     URHO3D_OBJECT(ResourceTab, Tab)
 public:
@@ -41,13 +43,16 @@ public:
 
     /// Render content of tab window. Returns false if tab was closed.
     bool RenderWindowContent() override;
+    /// Clears selection of this tab and it's inspector sub-providers.
+    void ClearSelection() override;
+    /// Render inspector content.
+    void RenderInspector(const char* filter) override;
 
 protected:
     /// Constructs a name for newly created resource based on specified template name.
     ea::string GetNewResourcePath(const ea::string& name);
-    /// Sends a notification to inspector tab to show inspector of specified resource.
-    template<typename TInspector, typename TResource>
-    void OpenResourceInspector(const ea::string& resourcePath);
+    /// Select current item in attribute inspector.
+    void SelectCurrentItemInspector();
 
     /// Current open resource path.
     ea::string resourcePath_;
@@ -55,6 +60,8 @@ protected:
     ea::string resourceSelection_;
     /// Resource browser flags.
     ResourceBrowserFlags flags_{RBF_NONE};
+    /// Inspector provider of current selected resource.
+    ea::pair<SharedPtr<RefCounted>, IInspectorProvider*> inspector_;
 };
 
 }

@@ -22,6 +22,8 @@
 
 #include "../Precompiled.h"
 
+#include <cassert>
+
 #include "../Navigation/NavBuildData.h"
 
 #include <DetourTileCache/DetourTileCacheBuilder.h>

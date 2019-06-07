@@ -69,7 +69,7 @@ public:
         }
 
         // Optimize shader parameter lookup by rehashing to next power of two
-        parameters_.rehash(NextPowerOfTwo(parameters_.size()));
+        parameters_.rehash(Max(2, NextPowerOfTwo(parameters_.size())));
 
     }
 

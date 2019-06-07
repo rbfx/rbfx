@@ -450,7 +450,7 @@ void ListView::RemoveItem(UIElement* item, unsigned index)
                         if (childItem->GetIndent() > baseIndent)
                         {
                             childItem->SetSelected(false);
-                            selections_.erase(j);
+                            selections_.erase_at(j);
                             contentElement_->RemoveChildAtIndex(i + 1);
                             overlayContainer_->RemoveChildAtIndex(i + 1);
                             ++removed;

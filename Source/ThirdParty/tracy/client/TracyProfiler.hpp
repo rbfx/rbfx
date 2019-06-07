@@ -34,12 +34,6 @@
 #  endif
 #endif
 
-// Urho3D: causes crash due to invalid instruction
-#if defined __APPLE__
-#   undef TRACY_HW_TIMER
-#   undef TRACY_RDTSCP_OPT
-#endif
-
 #ifndef TracyConcat
 #  define TracyConcat(x,y) TracyConcatIndirect(x,y)
 #endif

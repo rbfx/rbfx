@@ -25,6 +25,7 @@
 #include "../Math/Color.h"
 
 #include <cstdio>
+#include <cassert>
 
 #include "../DebugNew.h"
 
@@ -38,6 +39,16 @@ unsigned Color::ToUInt() const
     auto b = (unsigned)Clamp(((int)(b_ * 255.0f)), 0, 255);
     auto a = (unsigned)Clamp(((int)(a_ * 255.0f)), 0, 255);
     return (a << 24u) | (b << 16u) | (g << 8u) | r;
+}
+
+unsigned Color::ToUIntMask(ChannelMask mask) const
+{
+    const auto max = static_cast<double>(M_MAX_UNSIGNED);
+    const auto r = static_cast<unsigned>(Clamp(static_cast<double>(r_) * mask.red_,   0.0, max)) & mask.red_;
+    const auto g = static_cast<unsigned>(Clamp(static_cast<double>(g_) * mask.green_, 0.0, max)) & mask.green_;
+    const auto b = static_cast<unsigned>(Clamp(static_cast<double>(b_) * mask.blue_,  0.0, max)) & mask.blue_;
+    const auto a = static_cast<unsigned>(Clamp(static_cast<double>(a_) * mask.alpha_, 0.0, max)) & mask.alpha_;
+    return r | g | b | a;
 }
 
 Vector3 Color::ToHSL() const
@@ -70,6 +81,15 @@ void Color::FromUInt(unsigned color)
     b_ = ((color >> 16u) & 0xffu) / 255.0f;
     g_ = ((color >> 8u)  & 0xffu) / 255.0f;
     r_ = ((color >> 0u)  & 0xffu) / 255.0f;
+}
+
+void Color::FromUIntMask(unsigned color, ChannelMask mask)
+{
+    // Channel offset is irrelevant during division, but double should be used to avoid precision loss.
+    r_ = !mask.red_   ? 0.0f : static_cast<float>((color & mask.red_)   / static_cast<double>(mask.red_));
+    g_ = !mask.green_ ? 0.0f : static_cast<float>((color & mask.green_) / static_cast<double>(mask.green_));
+    b_ = !mask.blue_  ? 0.0f : static_cast<float>((color & mask.blue_)  / static_cast<double>(mask.blue_));
+    a_ = !mask.alpha_ ? 1.0f : static_cast<float>((color & mask.alpha_) / static_cast<double>(mask.alpha_));
 }
 
 void Color::FromHSL(float h, float s, float l, float a)
@@ -339,15 +359,9 @@ void Color::FromHCM(float h, float c, float m)
     b_ += m;
 }
 
-unsigned Color::ToUIntArgb() const
-{
-    auto r = (unsigned)Clamp(((int)(r_ * 255.0f)), 0, 255);
-    auto g = (unsigned)Clamp(((int)(g_ * 255.0f)), 0, 255);
-    auto b = (unsigned)Clamp(((int)(b_ * 255.0f)), 0, 255);
-    auto a = (unsigned)Clamp(((int)(a_ * 255.0f)), 0, 255);
-    return (a << 24) | (r << 16) | (g << 8) | b;
-}
 
+const Color::ChannelMask Color::ABGR{ 0x000000ff, 0x0000ff00, 0x00ff0000, 0xff000000 };
+const Color::ChannelMask Color::ARGB{ 0x00ff0000, 0x0000ff00, 0x000000ff, 0xff000000 };
 const Color Color::WHITE;
 const Color Color::GRAY(0.5f, 0.5f, 0.5f);
 const Color Color::BLACK(0.0f, 0.0f, 0.0f);

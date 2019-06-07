@@ -328,16 +328,43 @@ ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, flo
         ea::vector<uint8_t> data;
         data.resize(fontFile->GetSize());
         auto bytesLen = fontFile->Read(&data.front(), data.size());
-        ImFontConfig cfg;
-        cfg.MergeMode = merge;
-        cfg.FontDataOwnedByAtlas = false;
-        cfg.PixelSnapH = true;
-        strncpy(cfg.Name, fontPath.c_str(), sizeof(cfg.Name));
-        if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF(&data.front(), bytesLen, size, &cfg, ranges))
-        {
-            ReallocateFontTexture();
-            return newFont;
-        }
+        return AddFont(data.data(), bytesLen, ranges, size, merge);
+    }
+    return nullptr;
+}
+
+ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* ranges, float size, bool merge)
+{
+    float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
+    fontSizes_.push_back(size);
+    size = (size == 0 ? previousSize : size) * fontScale_;
+
+    ImFontConfig cfg;
+    cfg.MergeMode = merge;
+    cfg.FontDataOwnedByAtlas = false;
+    cfg.PixelSnapH = true;
+    if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)data, dsize, size, &cfg, ranges))
+    {
+        ReallocateFontTexture();
+        return newFont;
+    }
+    return nullptr;
+}
+
+ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWchar* ranges, float size, bool merge)
+{
+    float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
+    fontSizes_.push_back(size);
+    size = (size == 0 ? previousSize : size) * fontScale_;
+
+    ImFontConfig cfg;
+    cfg.MergeMode = merge;
+    cfg.FontDataOwnedByAtlas = false;
+    cfg.PixelSnapH = true;
+    if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF((void*)data, dsize, size, &cfg, ranges))
+    {
+        ReallocateFontTexture();
+        return newFont;
     }
     return nullptr;
 }

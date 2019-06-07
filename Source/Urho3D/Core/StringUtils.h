@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/Variant.h"
-#include "../Container/Str.h"
+#include <fmt/format.h>
 
 namespace Urho3D
 {
@@ -173,6 +173,6 @@ template<typename... Args> inline ea::string Format(const char* formatString, co
     return ret;
 }
 /// Return a formatted string.
-template<typename... Args> inline ea::string Format(const ea::string& formatString, const Args&... args) { return Format(formatString.c_str(), args...); }
+template<typename... Args> inline ea::string Format(const ea::string& formatString, const Args&... args) { return Format(formatString, args...); }
 
 }

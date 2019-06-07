@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2017-2019 the rbfx project.
+// Copyright (c) 2018 Rokas Kupstys
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -23,52 +23,25 @@
 #pragma once
 
 
-#include <Urho3D/Container/Ptr.h>
+#include "Tabs/Tab.h"
+#include <memory>
 
+namespace tracy { struct View; }
 
 namespace Urho3D
 {
 
-/// Machinery for avoid dynamic_cast<> on every frame.
-template<typename T>
-struct CachedInterfacePtr
+class ProfilerTab : public Tab
 {
-    void Update(RefCounted* instance)
-    {
-        if (instance == nullptr)
-        {
-            lastInstance_ = interfaceInstance_ = nullptr;
-            interface_ = nullptr;
-            return;
-        }
+    URHO3D_OBJECT(ProfilerTab, Tab)
+public:
+    explicit ProfilerTab(Context* context);
 
-        if (lastInstance_ == instance)
-            return;
-
-        lastInstance_ = instance;
-
-        if (interfaceInstance_ != instance)
-        {
-            if (T* interfacePtr = dynamic_cast<T*>(instance))
-            {
-                interfaceInstance_ = instance;
-                interface_ = interfacePtr;
-            }
-        }
-    }
-
-    operator bool() const
-    {
-        return !interfaceInstance_.Expired() && interface_ != nullptr;
-    }
-
-    T* operator ->() { return interface_; }
-    T* operator &() { return interface_; }
-
-protected:
-    WeakPtr<RefCounted> lastInstance_;
-    WeakPtr<RefCounted> interfaceInstance_;
-    T* interface_;
+    bool RenderWindowContent() override;
+#if URHO3D_PROFILING
+    std::unique_ptr<tracy::View> view_;
+#endif
+    ea::string connectTo_{"127.0.0.1"};
 };
 
 }

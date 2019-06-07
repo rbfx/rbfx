@@ -1,4 +1,5 @@
 ﻿//
+// Copyright (c) 2008-2019 the Urho3D project.
 // Copyright (c) 2017-2019 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy

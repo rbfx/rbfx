@@ -863,8 +863,6 @@ void UI::Initialize()
     SubscribeToEvent(E_BEGINFRAME, URHO3D_HANDLER(UI, HandleBeginFrame));
     SubscribeToEvent(E_POSTUPDATE, URHO3D_HANDLER(UI, HandlePostUpdate));
     SubscribeToEvent(E_RENDERUPDATE, URHO3D_HANDLER(UI, HandleRenderUpdate));
-
-    URHO3D_LOGINFO("Initialized user interface");
 }
 
 void UI::Update(float timeStep, UIElement* element)

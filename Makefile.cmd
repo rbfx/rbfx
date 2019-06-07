@@ -18,16 +18,20 @@ if EXIST cmake-build\environment.cmd (
 
 :prepare
 if "!PROCESSOR_ARCHITECTURE!" == "AMD64" (
-    set /P "PLATFORM=Platform (x86/_x64_): " || set "PLATFORM=x64"
+    set /P "PLATFORM=Platform (x86/[x64]): " || set "PLATFORM=x64"
 ) else (
     set "PLATFORM=x86"
 )
-echo set "PLATFORM=!PLATFORM!" > cmake-build\environment.cmd
 
-set /P "VS=Visual Studio (2015/2017/_2019_): " || set "VS=2019"
+echo set "PLATFORM=!PLATFORM!" > cmake-build\environment.cmd
+set /P "VS=Visual Studio (2015/2017/[2019]): " || set "VS=2019"
 echo set "VS=!VS!" >> cmake-build\environment.cmd
 
 :process
+set "VS_PLATFORM=!PLATFORM!"
+if "!VS_PLATFORM!" == "x86" (
+	set "VS_PLATFORM=Win32"
+)
 
 set "CMAKE_GENRATOR=Visual Studio"
 if "!VS!" == "2015" (
@@ -47,10 +51,7 @@ set "CMAKE_GENRATOR=!CMAKE_GENRATOR! !vs!"
 
 if "!VS!" == "2019" (
 	set "CMAKE_GENRATOR=!CMAKE_GENRATOR!"
-	if "!PLATFORM!" == "x86" (
-		set "PLATFORM=Win32"
-	)
-	set CMAKE_ARGS=-A !PLATFORM! !CMAKE_ARGS!
+	set CMAKE_ARGS=-A !VS_PLATFORM! !CMAKE_ARGS!
 ) else if "!PLATFORM!" == "x64" (
 	set "CMAKE_GENRATOR=!CMAKE_GENRATOR! Win64"
 ) else if NOT "!PLATFORM!" == "x86" (
@@ -64,7 +65,8 @@ echo Using !CMAKE_GENRATOR! on !PLATFORM!
 pushd cmake-build
 echo cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
-msbuild Urho3D.sln /t:restore
+echo "Platform: !VS_PLATFORM!"
+msbuild Urho3D.sln /p:Platform="!VS_PLATFORM!" /t:restore
 popd
 
 :quit

@@ -287,14 +287,13 @@ bool SceneTab::RenderWindowContent()
 void SceneTab::OnBeforeBegin()
 {
     // Allow viewport texture to cover entire window
-    windowPadding_ = ui::GetStyle().WindowPadding;
     ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
 }
 
 void SceneTab::OnAfterBegin()
 {
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
     // Inner part of window should have a proper padding, context menu and other controls might depend on it.
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, windowPadding_);
     if (ui::BeginPopupContextItem("SceneTab context menu"))
     {
         if (ui::MenuItem("Save"))
@@ -311,8 +310,8 @@ void SceneTab::OnAfterBegin()
 
 void SceneTab::OnBeforeEnd()
 {
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
     BaseClassName::OnBeforeEnd();
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 void SceneTab::OnAfterEnd()
@@ -509,8 +508,6 @@ const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
-
     ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
@@ -518,28 +515,34 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
+    ui::BeginButtonGroup();
     if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###Translate", "Translate", gizmo_.GetOperation() == GIZMOOP_TRANSLATE))
         gizmo_.SetOperation(GIZMOOP_TRANSLATE);
     if (ui::EditorToolbarButton(ICON_FA_SYNC "###Rotate", "Rotate", gizmo_.GetOperation() == GIZMOOP_ROTATE))
         gizmo_.SetOperation(GIZMOOP_ROTATE);
     if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Scale", "Scale", gizmo_.GetOperation() == GIZMOOP_SCALE))
         gizmo_.SetOperation(GIZMOOP_SCALE);
+    ui::EndButtonGroup();
 
     ui::SameLine(0, 3.f);
 
+    ui::BeginButtonGroup();
     if (ui::EditorToolbarButton(ICON_FA_ARROWS_ALT "###World", "World", gizmo_.GetTransformSpace() == TS_WORLD))
         gizmo_.SetTransformSpace(TS_WORLD);
     if (ui::EditorToolbarButton(ICON_FA_EXPAND_ARROWS_ALT "###Local", "Local", gizmo_.GetTransformSpace() == TS_LOCAL))
         gizmo_.SetTransformSpace(TS_LOCAL);
+    ui::EndButtonGroup();
 
     ui::SameLine(0, 3.f);
 
     if (EditorSceneSettings* settings = GetScene()->GetComponent<EditorSceneSettings>())
     {
+        ui::BeginButtonGroup();
         if (ui::EditorToolbarButton("3D", "3D mode in editor viewport.", !settings->GetCamera2D()))
             settings->SetCamera2D(false);
         if (ui::EditorToolbarButton("2D", "2D mode in editor viewport.", settings->GetCamera2D()))
             settings->SetCamera2D(true);
+        ui::EndButtonGroup();
     }
     ui::SameLine(0, 3.f);
 
@@ -555,8 +558,6 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
     ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
-
-    ui::PopStyleVar();
 }
 
 bool SceneTab::IsSelected(Node* node) const
@@ -578,6 +579,14 @@ bool SceneTab::IsSelected(Component* component) const
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<InspectorTab>()->SetProvider(this);
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
+}
+
+void SceneTab::ClearSelection()
+{
+    UnselectAll();
 }
 
 void SceneTab::RenderInspector(const char* filter)
@@ -612,9 +621,12 @@ void SceneTab::RenderInspector(const char* filter)
 
 void SceneTab::RenderHierarchy()
 {
-    ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
-    RenderNodeTree(GetScene());
-    ui::PopStyleVar();
+    if (auto* scene = GetScene())
+    {
+        ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
+        RenderNodeTree(scene);
+        ui::PopStyleVar();
+    }
 }
 
 void SceneTab::RenderNodeTree(Node* node)
@@ -1215,11 +1227,8 @@ void SceneTab::RemoveComponentIcon(Component* component)
 
 void SceneTab::OnFocused()
 {
-    if (InspectorTab* inspector = GetSubsystem<Editor>()->GetTab<InspectorTab>())
-    {
-        if (auto* inspectorProvider = dynamic_cast<MaterialInspector*>(inspector->GetInspector(IC_RESOURCE)))
-            inspectorProvider->SetEffectSource(GetViewport()->GetRenderPath());
-    }
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
 void SceneTab::UpdateCameras()
@@ -1324,7 +1333,7 @@ void SceneTab::ResizeMainViewport(const IntRect& rect)
 
     rect_ = rect;
     viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
-    if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
+    if (rect.Width() > 0 && rect.Height() > 0 && (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight()))
     {
         texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         texture_->GetRenderSurface()->SetViewport(0, viewport_);

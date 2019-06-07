@@ -675,7 +675,7 @@ void PhysicsWorld::GetRigidBodies(ea::vector<RigidBody*>& result, const RigidBod
     {
         if (result[i] == body)
         {
-            result.erase(i);
+            result.erase_at(i);
             break;
         }
     }

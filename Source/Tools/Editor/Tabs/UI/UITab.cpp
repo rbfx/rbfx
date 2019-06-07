@@ -38,6 +38,7 @@
 #include "Editor.h"
 #include "Widgets.h"
 #include "UITab.h"
+#include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 
 using namespace ui::litterals;
@@ -77,10 +78,12 @@ UITab::UITab(Context* context)
 
 void UITab::RenderHierarchy()
 {
-    auto oldSpacing = ui::GetStyle().IndentSpacing;
-    ui::GetStyle().IndentSpacing = 10;
+    if (rootElement_.Null())
+        return;
+
+    ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
     RenderNodeTree(rootElement_);
-    ui::GetStyle().IndentSpacing = oldSpacing;
+    ui::PopStyleVar();
 }
 
 void UITab::RenderNodeTree(UIElement* element)
@@ -184,6 +187,11 @@ void UITab::RenderNodeTree(UIElement* element)
     }
 }
 
+void UITab::ClearSelection()
+{
+    selectedElement_ = nullptr;
+}
+
 void UITab::RenderInspector(const char* filter)
 {
     if (auto selected = GetSelected())
@@ -249,19 +257,12 @@ bool UITab::RenderWindowContent()
 
 void UITab::RenderToolbarButtons()
 {
-    ui::StyleVarScope frameRoundingMod(ImGuiStyleVar_FrameRounding, 0);
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
 
     ui::SameLine(0, 3.f);
-
-//    if (ui::EditorToolbarButton(ICON_FA_UNDO, "Undo"))
-//        undo_.Undo();
-//    if (ui::EditorToolbarButton(ICON_FA_REDO, "Redo"))
-//        undo_.Redo();
-//
-//    ui::SameLine(0, 3.f);
 
     ui::Checkbox("Show Internal", &showInternal_);
     ui::SameLine();
@@ -480,6 +481,10 @@ void UITab::SelectItem(UIElement* current)
         textureSelectorAttribute_.clear();
 
     selectedElement_ = current;
+
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<InspectorTab>()->SetProvider(this);
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
 void UITab::AutoLoadDefaultStyle()
@@ -825,6 +830,30 @@ void UITab::AttributeCustomize(VariantMap& args)
 
 void UITab::OnFocused()
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->GetTab<HierarchyTab>()->SetProvider(this);
+}
+
+void UITab::OnBeforeBegin()
+{
+    // Allow viewport texture to cover entire window
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+}
+
+void UITab::OnAfterBegin()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
+}
+
+void UITab::OnBeforeEnd()
+{
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
+    BaseClassName::OnBeforeEnd();
+}
+
+void UITab::OnAfterEnd()
+{
+    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 }

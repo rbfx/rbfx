@@ -2336,8 +2336,8 @@ void GetBlendData(OutModel& model, aiMesh* mesh, aiNode* meshNode, ea::vector<un
                         lowestIndex = j;
                     }
                 }
-                blendWeights[i].erase(lowestIndex);
-                blendIndices[i].erase(lowestIndex);
+                blendWeights[i].erase_at(lowestIndex);
+                blendIndices[i].erase_at(lowestIndex);
             }
         }
 

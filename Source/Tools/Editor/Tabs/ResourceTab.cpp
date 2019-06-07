@@ -48,11 +48,6 @@ static ea::unordered_map<ContentType, ea::string> contentToTabType{
     {CTYPE_UILAYOUT, "UITab"},
 };
 
-unsigned MakeHash(ContentType value)
-{
-    return (unsigned)value;
-}
-
 ResourceTab::ResourceTab(Context* context)
     : Tab(context)
 {
@@ -65,6 +60,8 @@ ResourceTab::ResourceTab(Context* context)
         resourcePath_ = GetPath(resourceName);
         resourceSelection_ = GetFileNameAndExtension(resourceName);
         flags_ |= RBF_SCROLL_TO_CURRENT;
+        if (ui::GetIO().KeyCtrl)
+            SelectCurrentItemInspector();
     });
     SubscribeToEvent(E_RESOURCEBROWSERRENAME, [&](StringHash, VariantMap& args) {
         using namespace ResourceBrowserRename;
@@ -140,31 +137,7 @@ bool ResourceTab::RenderWindowContent()
     else if (action == RBR_ITEM_CONTEXT_MENU)
         ui::OpenPopup("Resource Context Menu");
     else if (action == RBR_ITEM_SELECTED)
-    {
-        ea::string selected = resourcePath_ + resourceSelection_;
-        switch (GetContentType(selected))
-        {
-//        case CTYPE_UNKNOWN:break;
-//        case CTYPE_SCENE:break;
-//        case CTYPE_SCENEOBJECT:break;
-//        case CTYPE_UILAYOUT:break;
-//        case CTYPE_UISTYLE:break;
-       case CTYPE_MODEL:
-           OpenResourceInspector<ModelInspector, Model>(selected);
-           break;
-//        case CTYPE_ANIMATION:break;
-        case CTYPE_MATERIAL:
-            OpenResourceInspector<MaterialInspector, Material>(selected);
-            break;
-//        case CTYPE_PARTICLE:break;
-//        case CTYPE_RENDERPATH:break;
-//        case CTYPE_SOUND:break;
-//        case CTYPE_TEXTURE:break;
-//        case CTYPE_TEXTUREXML:break;
-        default:
-            break;
-        }
-    }
+        SelectCurrentItemInspector();
 
     flags_ = RBF_NONE;
 
@@ -275,12 +248,67 @@ ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
     std::abort();
 }
 
-template<typename Inspector, typename TResource>
-void ResourceTab::OpenResourceInspector(const ea::string& resourcePath)
+void ResourceTab::ClearSelection()
 {
-    ResourceInspector* inspector = new Inspector(context_, GetCache()->GetResource<TResource>(resourcePath));
-    SendEvent(E_EDITORRENDERINSPECTOR, EditorRenderInspector::P_INSPECTABLE, inspector,
-        EditorRenderInspector::P_CATEGORY, IC_RESOURCE);
+    if (inspector_.first.NotNull())
+    {
+        inspector_.second->ClearSelection();
+        inspector_.first = nullptr;
+        inspector_.second = nullptr;
+    }
+    resourceSelection_.clear();
+}
+
+void ResourceTab::RenderInspector(const char* filter)
+{
+    if (inspector_.first.NotNull())
+        inspector_.second->RenderInspector(filter);
+}
+
+void ResourceTab::SelectCurrentItemInspector()
+{
+    ea::string selected = resourcePath_ + resourceSelection_;
+    ContentType ctype = GetContentType(selected);
+
+    SharedPtr<RefCounted> newProvider;
+    switch (ctype)
+    {
+    // case CTYPE_UNKNOWN:break;
+    // case CTYPE_SCENE:break;
+    // case CTYPE_SCENEOBJECT:break;
+    // case CTYPE_UILAYOUT:break;
+    // case CTYPE_UISTYLE:break;
+    case CTYPE_MODEL:
+    {
+        newProvider = SharedPtr<RefCounted>(new ModelInspector(context_, GetCache()->GetResource<Model>(selected)));
+        break;
+    }
+    // case CTYPE_ANIMATION:break;
+    case CTYPE_MATERIAL:
+    {
+        newProvider = SharedPtr<RefCounted>(new MaterialInspector(context_, GetCache()->GetResource<Material>(selected)));
+        break;
+    }
+    // case CTYPE_PARTICLE:break;
+    // case CTYPE_RENDERPATH:break;
+    // case CTYPE_SOUND:break;
+    // case CTYPE_TEXTURE:break;
+    // case CTYPE_TEXTUREXML:break;
+    default:
+        break;
+    }
+
+    if (newProvider.Null())
+    {
+        inspector_.first = nullptr;
+        inspector_.second = nullptr;
+    }
+    else
+    {
+        inspector_.first = SharedPtr<RefCounted>((RefCounted*)newProvider.Get());
+        inspector_.second = dynamic_cast<IInspectorProvider*>(newProvider.Get());
+    }
+    GetSubsystem<Editor>()->GetTab<InspectorTab>()->SetProvider(this);
 }
 
 }

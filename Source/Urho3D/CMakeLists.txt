@@ -173,10 +173,6 @@ set (THIRD_PARTY_DEPENDENCIES
     EASTL
 )
 
-if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
-    target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
-endif ()
-
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
 elseif (TARGET Bullet)
@@ -223,7 +219,13 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
             endforeach ()
         endif ()
         if (BUILD_SHARED_LIBS OR NOT URHO3D_MERGE_STATIC_LIBS)
+            if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
+                target_link_libraries(Urho3D PRIVATE -Wl,--whole-archive)
+            endif ()
             target_link_libraries(Urho3D PRIVATE ${dep})
+            if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
+                target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
+            endif ()
         else ()
             if (${_TARGET_TYPE} STREQUAL "STATIC_LIBRARY")
                 list (APPEND DEPENDENCY_TARGET_FILES $<TARGET_FILE:${dep}>)
@@ -231,10 +233,6 @@ foreach (dep ${THIRD_PARTY_DEPENDENCIES})
         endif ()
     endif ()
 endforeach()
-
-if (BUILD_SHARED_LIBS AND NOT MSVC AND NOT APPLE)
-    target_link_libraries(Urho3D PRIVATE -Wl,--no-whole-archive)
-endif ()
 
 if (URHO3D_SSE)
     if (MSVC)
@@ -274,10 +272,7 @@ if (GNU OR Clang)
 endif ()
 
 if (URHO3D_PROFILING)
-    if (TARGET tracy-dll)
-        target_link_libraries(Urho3D INTERFACE tracy-dll)
-    endif ()
-    target_link_libraries(Urho3D PUBLIC tracy-settings)
+    target_link_libraries(Urho3D PUBLIC tracy-lib)
 endif ()
 
 # Graphics

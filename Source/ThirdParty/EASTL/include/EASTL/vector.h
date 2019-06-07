@@ -317,24 +317,24 @@ namespace eastl
 		int  validate_iterator(const_iterator i) const EA_NOEXCEPT;
 
 #if EASTL_URHO3D_EXTENSIONS
-		iterator insert(size_type position, const value_type& value)
+		iterator insert_at(size_type position, const value_type& value)
 		{
 			position = eastl::min(position, size());
 			return insert(begin() + position, value);
 		}
-		iterator insert(size_type position, size_type n, const value_type& value)
-		{
-			position = eastl::min(position, size());
-			return insert(begin() + position, value);
-		}
-
-		iterator insert(size_type position, value_type&& value)
+		iterator insert_at(size_type position, size_type n, const value_type& value)
 		{
 			position = eastl::min(position, size());
 			return insert(begin() + position, value);
 		}
 
-		iterator insert(size_type position, std::initializer_list<value_type> ilist)
+		iterator insert_at(size_type position, value_type&& value)
+		{
+			position = eastl::min(position, size());
+			return insert(begin() + position, value);
+		}
+
+		iterator insert_at(size_type position, std::initializer_list<value_type> ilist)
 		{
 			position = eastl::min(position, size());
 			return insert(begin() + position, ilist);
@@ -367,16 +367,14 @@ namespace eastl
 			return end();
 		}
 
-		template<class U>
-		eastl::enable_if_t<!eastl::is_null_pointer_v<U> && eastl::is_integral_v<U>, iterator>
-		erase(U position)
+		iterator erase_at(size_type position)
 		{
 			if (position >= size())
 				return end();
 			return erase(begin() + position);
 		}
 
-		iterator erase(size_type position, size_type length)
+		iterator erase_at(size_type position, size_type length)
 		{
 			if (position >= size())
 				return end();

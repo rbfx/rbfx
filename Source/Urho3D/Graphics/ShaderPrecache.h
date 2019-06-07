@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
+#include <EASTL/hash_set.h>
 
 #include "../Core/Object.h"
 #include "../Resource/XMLFile.h"

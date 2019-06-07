@@ -117,7 +117,7 @@ bool ResourceCache::AddResourceDir(const ea::string& pathName, unsigned priority
     }
 
     if (priority < resourceDirs_.size())
-        resourceDirs_.insert(priority, fixedPath);
+        resourceDirs_.insert_at(priority, fixedPath);
     else
         resourceDirs_.push_back(fixedPath);
 
@@ -145,7 +145,7 @@ bool ResourceCache::AddPackageFile(PackageFile* package, unsigned priority)
     }
 
     if (priority < packages_.size())
-        packages_.insert(priority, SharedPtr<PackageFile>(package));
+        packages_.insert_at(priority, SharedPtr<PackageFile>(package));
     else
         packages_.push_back(SharedPtr<PackageFile>(package));
 
@@ -190,13 +190,13 @@ void ResourceCache::RemoveResourceDir(const ea::string& pathName)
     {
         if (!resourceDirs_[i].comparei(fixedPath))
         {
-            resourceDirs_.erase(i);
+            resourceDirs_.erase_at(i);
             // Remove the filewatcher with the matching path
             for (unsigned j = 0; j < fileWatchers_.size(); ++j)
             {
                 if (!fileWatchers_[j]->GetPath().comparei(fixedPath))
                 {
-                    fileWatchers_.erase(j);
+                    fileWatchers_.erase_at(j);
                     break;
                 }
             }
@@ -481,7 +481,7 @@ void ResourceCache::RemoveResourceRouter(ResourceRouter* router)
     {
         if (resourceRouters_[i] == router)
         {
-            resourceRouters_.erase(i);
+            resourceRouters_.erase_at(i);
             return;
         }
     }

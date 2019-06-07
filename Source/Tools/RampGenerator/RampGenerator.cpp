@@ -269,7 +269,7 @@ bool ReadIES(File* data, ea::vector<float>& vertical, ea::vector<float>& horizon
     {
         if (words[i].empty() || IsWhitespace(words[i]))
         {
-            words.erase(i);
+            words.erase_at(i);
             --i;
         }
     }

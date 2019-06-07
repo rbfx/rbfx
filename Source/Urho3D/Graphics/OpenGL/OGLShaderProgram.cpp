@@ -311,8 +311,8 @@ bool ShaderProgram::Link()
     }
 
     // Rehash the parameter & vertex attributes maps to ensure minimal load factor
-    vertexAttributes_.rehash(NextPowerOfTwo(vertexAttributes_.size()));
-    shaderParameters_.rehash(NextPowerOfTwo(shaderParameters_.size()));
+    vertexAttributes_.rehash(Max(2, NextPowerOfTwo(vertexAttributes_.size())));
+    shaderParameters_.rehash(Max(2, NextPowerOfTwo(shaderParameters_.size())));
 
     return true;
 }
