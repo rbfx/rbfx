@@ -97,7 +97,7 @@ void Node::RegisterObject(Context* context)
 
 bool Node::Serialize(Archive& archive)
 {
-    if (ArchiveBlockGuard block = archive.OpenUnorderedBlock("node"))
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("node"))
     {
         if (archive.IsInput())
         {
@@ -129,7 +129,7 @@ bool Node::Serialize(Archive& archive)
     return false;
 }
 
-bool Node::Serialize(Archive& archive, ArchiveBlockGuard& block, SceneResolver* resolver,
+bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resolver,
     bool serializeChildren /*= true*/, bool rewriteIDs /*= false*/, CreateMode mode /*= REPLICATED*/)
 {
     // Resolver must be present if loading
@@ -158,7 +158,7 @@ bool Node::Serialize(Archive& archive, ArchiveBlockGuard& block, SceneResolver* 
             return true;
 
         // Serialize component
-        if (ArchiveBlockGuard componentBlock = archive.OpenUnorderedBlock("component"))
+        if (ArchiveBlock componentBlock = archive.OpenUnorderedBlock("component"))
         {
             // Serialize component ID and type
             unsigned componentID = component ? component->GetID() : 0;
@@ -206,7 +206,7 @@ bool Node::Serialize(Archive& archive, ArchiveBlockGuard& block, SceneResolver* 
             return true;
 
         // Serialize child
-        if (ArchiveBlockGuard childBlock = archive.OpenUnorderedBlock("child"))
+        if (ArchiveBlock childBlock = archive.OpenUnorderedBlock("child"))
         {
             // Serialize node ID
             unsigned nodeID = child ? child->GetID() : 0;

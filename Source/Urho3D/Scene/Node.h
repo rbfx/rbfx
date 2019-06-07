@@ -87,7 +87,7 @@ public:
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
     /// Serialize content from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlockGuard& block, SceneResolver* resolver,
+    bool Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resolver,
         bool serializeChildren = true, bool rewriteIDs = false, CreateMode mode = REPLICATED);
 
     /// Load from binary data. Return true if successful.
