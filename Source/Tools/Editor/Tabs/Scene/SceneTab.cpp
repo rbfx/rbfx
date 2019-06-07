@@ -621,9 +621,12 @@ void SceneTab::RenderInspector(const char* filter)
 
 void SceneTab::RenderHierarchy()
 {
-    ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
-    RenderNodeTree(GetScene());
-    ui::PopStyleVar();
+    if (auto* scene = GetScene())
+    {
+        ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
+        RenderNodeTree(scene);
+        ui::PopStyleVar();
+    }
 }
 
 void SceneTab::RenderNodeTree(Node* node)

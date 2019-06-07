@@ -78,10 +78,12 @@ UITab::UITab(Context* context)
 
 void UITab::RenderHierarchy()
 {
-    auto oldSpacing = ui::GetStyle().IndentSpacing;
-    ui::GetStyle().IndentSpacing = 10;
+    if (rootElement_.Null())
+        return;
+
+    ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
     RenderNodeTree(rootElement_);
-    ui::GetStyle().IndentSpacing = oldSpacing;
+    ui::PopStyleVar();
 }
 
 void UITab::RenderNodeTree(UIElement* element)
