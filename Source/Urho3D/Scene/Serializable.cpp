@@ -632,18 +632,18 @@ bool Serializable::LoadFile(const ea::string& resourceName)
 
 bool Serializable::Serialize(Archive& archive)
 {
-    if (ArchiveBlockGuard block = archive.OpenUnorderedBlock("serializable"))
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("serializable"))
         return Serialize(archive, block);
     return false;
 }
 
-bool Serializable::Serialize(Archive& archive, ArchiveBlockGuard& block)
+bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
 {
     const ea::vector<AttributeInfo>* attributes = GetAttributes();
     if (!attributes)
         return true;
 
-    if (ArchiveBlockGuard attributeBlock = archive.OpenUnorderedBlock("attributes"))
+    if (ArchiveBlock attributeBlock = archive.OpenUnorderedBlock("attributes"))
     {
         if (archive.IsInput())
         {
