@@ -189,28 +189,6 @@ bool XMLOutputArchive::SerializeKey(unsigned& key)
     return GetCurrentBlock().SetElementKey(*this, ea::to_string(key));
 }
 
-bool XMLOutputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string = Detail::FormatFloatArray(values, size);
-        return Serialize(name, string);
-    }
-}
-
-bool XMLOutputArchive::SerializeIntArray(const char* name, int* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string = Detail::FormatIntArray(values, size);
-        return Serialize(name, string);
-    }
-}
-
 bool XMLOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
     if (XMLElement child = CreateElement(name))
@@ -452,44 +430,6 @@ bool XMLInputArchive::SerializeKey(unsigned& key)
         return true;
     }
     return false;
-}
-
-bool XMLInputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string;
-        if (!Serialize(name, string))
-            return false;
-
-        const unsigned realSize = Detail::UnFormatFloatArray(string, values, size);
-
-        if (realSize != size)
-            return false;
-
-        return true;
-    }
-}
-
-bool XMLInputArchive::SerializeIntArray(const char* name, int* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string;
-        if (!Serialize(name, string))
-            return false;
-
-        const unsigned realSize = Detail::UnFormatIntArray(string, values, size);
-
-        if (realSize != size)
-            return false;
-
-        return true;
-    }
 }
 
 bool XMLInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
