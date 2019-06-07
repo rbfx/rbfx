@@ -210,28 +210,6 @@ bool JSONOutputArchive::Serialize(const char* name, unsigned long long& value)
     return CreateElement(name, JSONValue{ eastl::to_string(value) });
 }
 
-bool JSONOutputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string = Detail::FormatFloatArray(values, size);
-        return Serialize(name, string);
-    }
-}
-
-bool JSONOutputArchive::SerializeIntArray(const char* name, int* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string = Detail::FormatIntArray(values, size);
-        return Serialize(name, string);
-    }
-}
-
 bool JSONOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
     BufferToHexString(tempString_, bytes, size);
@@ -518,44 +496,6 @@ bool JSONInputArchive::Serialize(const char* name, unsigned long long& value)
         }
     }
     return false;
-}
-
-bool JSONInputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string;
-        if (!Serialize(name, string))
-            return false;
-
-        const unsigned realSize = Detail::UnFormatFloatArray(string, values, size);
-
-        if (realSize != size)
-            return false;
-
-        return true;
-    }
-}
-
-bool JSONInputArchive::SerializeIntArray(const char* name, int* values, unsigned size)
-{
-    if (!preferStrings_)
-        return Detail::SerializePrimitiveStaticArray(*this, name, values, size);
-    else
-    {
-        ea::string string;
-        if (!Serialize(name, string))
-            return false;
-
-        const unsigned realSize = Detail::UnFormatIntArray(string, values, size);
-
-        if (realSize != size)
-            return false;
-
-        return true;
-    }
 }
 
 bool JSONInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)

@@ -37,15 +37,17 @@
 
 #include <EASTL/string.h>
 
+#include <type_traits>
+
 namespace Urho3D
 {
 
 namespace Detail
 {
 
-/// Serialize array of primitive types as block. For internal use.
+/// Serialize array as block. For internal use.
 template <class T>
-bool SerializePrimitiveStaticArray(Archive& ar, const char* name, T* values, unsigned size)
+bool SerializeArrayAsBlock(Archive& ar, const char* name, T* values, unsigned size)
 {
     if (ArchiveBlockGuard block = ar.OpenArrayBlock(name, size))
     {
@@ -58,7 +60,7 @@ bool SerializePrimitiveStaticArray(Archive& ar, const char* name, T* values, uns
 }
 
 /// Format float array to string.
-inline ea::string FormatFloatArray(float* values, unsigned size)
+inline ea::string FormatArray(float* values, unsigned size)
 {
     ea::string result;
     for (unsigned i = 0; i < size; ++i)
@@ -71,7 +73,7 @@ inline ea::string FormatFloatArray(float* values, unsigned size)
 }
 
 /// Format int array to string.
-inline ea::string FormatIntArray(int* values, unsigned size)
+inline ea::string FormatArray(int* values, unsigned size)
 {
     ea::string result;
     for (unsigned i = 0; i < size; ++i)
@@ -84,7 +86,7 @@ inline ea::string FormatIntArray(int* values, unsigned size)
 }
 
 /// Un-format float array from string.
-inline unsigned UnFormatFloatArray(const ea::string& string, float* values, unsigned maxSize)
+inline unsigned UnFormatArray(const ea::string& string, float* values, unsigned maxSize)
 {
     const ea::vector<ea::string> elements = string.split(' ');
     const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
@@ -95,7 +97,7 @@ inline unsigned UnFormatFloatArray(const ea::string& string, float* values, unsi
 }
 
 /// Un-format int array from string.
-inline unsigned UnFormatIntArray(const ea::string& string, int* values, unsigned maxSize)
+inline unsigned UnFormatArray(const ea::string& string, int* values, unsigned maxSize)
 {
     const ea::vector<ea::string> elements = string.split(' ');
     const unsigned size = elements.size() < maxSize ? elements.size() : maxSize;
@@ -103,6 +105,49 @@ inline unsigned UnFormatIntArray(const ea::string& string, int* values, unsigned
         values[i] = ToInt(elements[i]);
 
     return elements.size();
+}
+
+/// Serialize array of fixed size.
+template <class T>
+bool SerializeArray(Archive& ar, const char* name, T* values, unsigned size)
+{
+    if (!ar.IsHumanReadable())
+        return Detail::SerializeArrayAsBlock(ar, name, values, size);
+    else if (ar.IsInput())
+    {
+        ea::string string;
+        if (!ar.Serialize(name, string))
+            return false;
+
+        const unsigned realSize = Detail::UnFormatArray(string, values, size);
+        return realSize == size;
+    }
+    else
+    {
+        ea::string string = Detail::FormatArray(values, size);
+        return ar.Serialize(name, string);
+    }
+}
+
+/// Serialize type as fixed array.
+template <unsigned N, class T>
+bool SerializeArrayType(Archive& ar, const char* name, T& value)
+{
+    using ElementType = std::decay_t<decltype(*value.Data())>;
+
+    if (ar.IsInput())
+    {
+        ElementType elements[N];
+        if (!SerializeArray(ar, name, elements, N))
+            return false;
+
+        value = T{ elements };
+        return true;
+    }
+    else
+    {
+        return SerializeArray(ar, name, const_cast<ElementType*>(value.Data()), N);
+    }
 }
 
 /// Serialize value of the Variant (of specific type).
@@ -145,114 +190,76 @@ inline bool SerializeValue(Archive& ar, const char* name, T& value)
     return ar.Serialize(name, value);
 }
 
-/// Serialize value as float array.
-template <unsigned N, class T>
-inline bool SerializeFloatArray(Archive& ar, const char* name, T& value)
-{
-    if (ar.IsInput())
-    {
-        float elements[N];
-        if (!ar.SerializeFloatArray(name, elements, N))
-            return false;
-
-        value = T{ elements };
-        return true;
-    }
-    else
-    {
-        return ar.SerializeFloatArray(name, const_cast<float*>(value.Data()), N);
-    }
-}
-
-/// Serialize value as int array.
-template <unsigned N, class T>
-inline bool SerializeIntArray(Archive& ar, const char* name, T& value)
-{
-    if (ar.IsInput())
-    {
-        int elements[N];
-        if (!ar.SerializeIntArray(name, elements, N))
-            return false;
-
-        value = T{ elements };
-        return true;
-    }
-    else
-    {
-        return ar.SerializeIntArray(name, const_cast<int*>(value.Data()), N);
-    }
-}
-
 /// Serialize Vector2.
 inline bool SerializeValue(Archive& ar, const char* name, Vector2& value)
 {
-    return SerializeFloatArray<2>(ar, name, value);
+    return Detail::SerializeArrayType<2>(ar, name, value);
 }
 
 /// Serialize Vector3.
 inline bool SerializeValue(Archive& ar, const char* name, Vector3& value)
 {
-    return SerializeFloatArray<3>(ar, name, value);
+    return Detail::SerializeArrayType<3>(ar, name, value);
 }
 
 /// Serialize Vector4.
 inline bool SerializeValue(Archive& ar, const char* name, Vector4& value)
 {
-    return SerializeFloatArray<4>(ar, name, value);
+    return Detail::SerializeArrayType<4>(ar, name, value);
 }
 
 /// Serialize Matrix3.
 inline bool SerializeValue(Archive& ar, const char* name, Matrix3& value)
 {
-    return SerializeFloatArray<9>(ar, name, value);
+    return Detail::SerializeArrayType<9>(ar, name, value);
 }
 
 /// Serialize Matrix3x4.
 inline bool SerializeValue(Archive& ar, const char* name, Matrix3x4& value)
 {
-    return SerializeFloatArray<12>(ar, name, value);
+    return Detail::SerializeArrayType<12>(ar, name, value);
 }
 
 /// Serialize Matrix4.
 inline bool SerializeValue(Archive& ar, const char* name, Matrix4& value)
 {
-    return SerializeFloatArray<16>(ar, name, value);
+    return Detail::SerializeArrayType<16>(ar, name, value);
 }
 
 /// Serialize Rect.
 inline bool SerializeValue(Archive& ar, const char* name, Rect& value)
 {
-    return SerializeFloatArray<4>(ar, name, value);
+    return Detail::SerializeArrayType<4>(ar, name, value);
 }
 
 /// Serialize Quaternion.
 inline bool SerializeValue(Archive& ar, const char* name, Quaternion& value)
 {
-    return SerializeFloatArray<4>(ar, name, value);
+    return Detail::SerializeArrayType<4>(ar, name, value);
 }
 
 /// Serialize Color.
 inline bool SerializeValue(Archive& ar, const char* name, Color& value)
 {
-    return SerializeFloatArray<4>(ar, name, value);
+    return Detail::SerializeArrayType<4>(ar, name, value);
 }
 
 /// Serialize IntVector2.
 inline bool SerializeValue(Archive& ar, const char* name, IntVector2& value)
 {
-    return SerializeIntArray<2>(ar, name, value);
+    return Detail::SerializeArrayType<2>(ar, name, value);
 }
 
 /// Serialize IntVector3.
 inline bool SerializeValue(Archive& ar, const char* name, IntVector3& value)
 {
-    return SerializeIntArray<3>(ar, name, value);
+    return Detail::SerializeArrayType<3>(ar, name, value);
 }
 
 /// Serialize IntRect.
 inline bool SerializeValue(Archive& ar, const char* name, IntRect& value)
 {
-    return SerializeIntArray<4>(ar, name, value);
+    return Detail::SerializeArrayType<4>(ar, name, value);
 }
 
 /// Serialize StringHash (as is).
@@ -270,7 +277,7 @@ template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumT
 inline bool SerializeEnum(Archive& ar, const char* name, const char* const* enumConstants, EnumType& value)
 {
     const bool loading = ar.IsInput();
-    if (ar.IsBinary())
+    if (!ar.IsHumanReadable())
     {
         if (loading)
         {
@@ -312,10 +319,10 @@ inline bool SerializeEnum(Archive& ar, const char* name, const char* const* enum
     }
 }
 
-/// Serialize string hash as integer (if binary) or as string (if text archive).
+/// Serialize string hash as integer or as string.
 inline bool SerializeStringHash(Archive& ar, const char* name, StringHash& value, const ea::string_view string)
 {
-    if (ar.IsBinary())
+    if (!ar.IsHumanReadable())
     {
         unsigned hashValue = value.Value();
         if (!SerializeValue(ar, name, hashValue))
@@ -476,7 +483,7 @@ inline bool SerializeStringHashMap(Archive& ar, const char* name, const char* el
 /// Serialize ResourceRef.
 inline bool SerializeValue(Archive& ar, const char* name, ResourceRef& value)
 {
-    if (ar.IsBinary())
+    if (!ar.IsHumanReadable())
     {
         if (ArchiveBlockGuard block = ar.OpenUnorderedBlock(name))
         {
@@ -519,7 +526,7 @@ inline bool SerializeValue(Archive& ar, const char* name, ResourceRef& value)
 /// Serialize ResourceRefList.
 inline bool SerializeValue(Archive& ar, const char* name, ResourceRefList& value)
 {
-    if (ar.IsBinary())
+    if (!ar.IsHumanReadable())
     {
         if (ArchiveBlockGuard block = ar.OpenUnorderedBlock(name))
         {
