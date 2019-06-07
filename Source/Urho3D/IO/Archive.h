@@ -109,14 +109,22 @@ public:
     /// Get context.
     virtual Context* GetContext() = 0;
     /// Whether the archive is in input mode.
+    /// It is guaranteed that input archive doesn't read from variable.
+    /// It is guaranteed that output archive doesn't write to variable.
     virtual bool IsInput() const = 0;
     /// Whether the archive is binary.
     virtual bool IsBinary() const = 0;
-    /// Whether the any following archive operation will result in failure.
+    /// Whether the human-readability is preferred over performance and output size.
+    /// - String hashes are serialized as strings, if possible.
+    /// - Enumerators serialized as strings, if possible.
+    /// - Simple compound types like Vector3 are serialized as formatted strings instead of blocks.
+    virtual bool IsHumanReadable() const = 0;
+    /// Whether the archive can no longer be serialized.
     virtual bool IsEOF() const = 0;
     /// Whether the serialization error occurred.
     virtual bool IsBad() const = 0;
-    /// Whether the Unordered blocks are supported.
+    /// Whether the unordered element access is supported for Unordered blocks.
+    /// If false, serializing code should treat Unordered blocks as Sequential.
     virtual bool IsUnorderedSupported() const = 0;
 
     /// Return latest error string.
@@ -167,10 +175,6 @@ public:
     /// Serialize string.
     virtual bool Serialize(const char* name, ea::string& value) = 0;
 
-    /// Serialize float array. Size is not encoded and should be provided externally!
-    virtual bool SerializeFloatArray(const char* name, float* values, unsigned size) = 0;
-    /// Serialize integer array. Size is not encoded and should be provided externally!
-    virtual bool SerializeIntArray(const char* name, int* values, unsigned size) = 0;
     /// Serialize bytes. Size is not encoded and should be provided externally!
     virtual bool SerializeBytes(const char* name, void* bytes, unsigned size) = 0;
     /// Serialize Variable Length Encoded unsigned integer, up to 29 significant bits.
