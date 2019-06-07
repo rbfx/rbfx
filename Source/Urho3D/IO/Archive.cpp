@@ -27,7 +27,7 @@
 namespace Urho3D
 {
 
-ArchiveBlockGuard::~ArchiveBlockGuard()
+ArchiveBlock::~ArchiveBlock()
 {
     if (archive_)
     {
