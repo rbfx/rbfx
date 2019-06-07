@@ -70,21 +70,21 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
     {
         archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
         assert(0);
-        return false;
+        return nullptr;
     }
 
     if (type_ == ArchiveBlockType::Map && !keySet_)
     {
         archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
         assert(0);
-        return false;
+        return nullptr;
     }
 
     if (type_ == ArchiveBlockType::Unordered && !elementName)
     {
         archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
         assert(0);
-        return false;
+        return nullptr;
     }
 
     ea::string jsonObjectKey;
@@ -105,7 +105,7 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
         if (blockValue_->GetObject().contains(jsonObjectKey))
         {
             archive.SetError(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
-            return false;
+            return nullptr;
         }
     }
 
@@ -116,12 +116,14 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
         ++numElements_;
         blockValue_->Push(JSONValue{});
         return &(*blockValue_)[blockValue_->Size() - 1];
+
     case ArchiveBlockType::Unordered:
     case ArchiveBlockType::Map:
         ++numElements_;
         keySet_ = false;
         blockValue_->Set(jsonObjectKey, JSONValue{});
         return &(*blockValue_)[jsonObjectKey];
+
     default:
         assert(0);
         return nullptr;
@@ -200,12 +202,12 @@ bool JSONOutputArchive::SerializeKey(unsigned& key)
 
 bool JSONOutputArchive::Serialize(const char* name, long long& value)
 {
-    return SerializeJSONValue(name, JSONValue{ eastl::to_string(value) });
+    return CreateElement(name, JSONValue{ eastl::to_string(value) });
 }
 
 bool JSONOutputArchive::Serialize(const char* name, unsigned long long& value)
 {
-    return SerializeJSONValue(name, JSONValue{ eastl::to_string(value) });
+    return CreateElement(name, JSONValue{ eastl::to_string(value) });
 }
 
 bool JSONOutputArchive::SerializeFloatArray(const char* name, float* values, unsigned size)
@@ -233,12 +235,12 @@ bool JSONOutputArchive::SerializeIntArray(const char* name, int* values, unsigne
 bool JSONOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
     BufferToHexString(tempString_, bytes, size);
-    return SerializeJSONValue(name, JSONValue{ tempString_ });
+    return CreateElement(name, JSONValue{ tempString_ });
 }
 
 bool JSONOutputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    return SerializeJSONValue(name, JSONValue{ value });
+    return CreateElement(name, JSONValue{ value });
 }
 
 bool JSONOutputArchive::CheckEOF(const char* elementName)
@@ -267,7 +269,7 @@ bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName)
     return true;
 }
 
-bool JSONOutputArchive::SerializeJSONValue(const char* name, const JSONValue& value)
+bool JSONOutputArchive::CreateElement(const char* name, const JSONValue& value)
 {
     if (!CheckEOFAndRoot(name))
         return false;
@@ -284,7 +286,7 @@ bool JSONOutputArchive::SerializeJSONValue(const char* name, const JSONValue& va
 #define URHO3D_JSON_OUT_IMPL(type, function) \
     bool JSONOutputArchive::Serialize(const char* name, type& value) \
     { \
-        return SerializeJSONValue(name, JSONValue{ value }); \
+        return CreateElement(name, JSONValue{ value }); \
     }
 
 URHO3D_JSON_OUT_IMPL(bool, SetBool);
@@ -359,7 +361,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
             {
                 archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
                 assert(0);
-                return false;
+                return nullptr;
             }
 
             if (!value_->Contains(elementName))
@@ -492,7 +494,7 @@ bool JSONInputArchive::SerializeKey(unsigned& key)
 
 bool JSONInputArchive::Serialize(const char* name, long long& value)
 {
-    if (const JSONValue* jsonValue = DeserializeJSONValue(name))
+    if (const JSONValue* jsonValue = ReadElement(name))
     {
         if (jsonValue->IsString())
         {
@@ -506,7 +508,7 @@ bool JSONInputArchive::Serialize(const char* name, long long& value)
 
 bool JSONInputArchive::Serialize(const char* name, unsigned long long& value)
 {
-    if (const JSONValue* jsonValue = DeserializeJSONValue(name))
+    if (const JSONValue* jsonValue = ReadElement(name))
     {
         if (jsonValue->IsString())
         {
@@ -558,7 +560,7 @@ bool JSONInputArchive::SerializeIntArray(const char* name, int* values, unsigned
 
 bool JSONInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (const JSONValue* jsonValue = DeserializeJSONValue(name))
+    if (const JSONValue* jsonValue = ReadElement(name))
     {
         if (jsonValue->IsString())
         {
@@ -575,7 +577,7 @@ bool JSONInputArchive::SerializeBytes(const char* name, void* bytes, unsigned si
 
 bool JSONInputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (const JSONValue* jsonValue = DeserializeJSONValue(name))
+    if (const JSONValue* jsonValue = ReadElement(name))
     {
         if (jsonValue->IsNumber())
         {
@@ -612,7 +614,7 @@ bool JSONInputArchive::CheckEOFAndRoot(const char* elementName)
     return true;
 }
 
-const JSONValue* JSONInputArchive::DeserializeJSONValue(const char* name)
+const JSONValue* JSONInputArchive::ReadElement(const char* name)
 {
     if (!CheckEOFAndRoot(name))
         return nullptr;
@@ -624,7 +626,7 @@ const JSONValue* JSONInputArchive::DeserializeJSONValue(const char* name)
 #define URHO3D_JSON_IN_IMPL(type, function, check) \
     bool JSONInputArchive::Serialize(const char* name, type& value) \
     { \
-        if (const JSONValue* jsonValue = DeserializeJSONValue(name)) \
+        if (const JSONValue* jsonValue = ReadElement(name)) \
         { \
             if (jsonValue->check()) \
             { \
