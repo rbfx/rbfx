@@ -49,6 +49,7 @@ ModelInspector::ModelInspector(Context* context, Model* model)
 
 void ModelInspector::RenderInspector(const char* filter)
 {
+    SharedPtr<ModelInspector> ref(this);
     if (ui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen))
     {
         RenderPreview();
