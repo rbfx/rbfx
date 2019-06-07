@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 class Archive;
-class ArchiveBlockGuard;
+class ArchiveBlock;
 class Connection;
 class Deserializer;
 class Serializer;
@@ -65,7 +65,7 @@ public:
     /// Serialize from/to archive. Return true if successful.
     virtual bool Serialize(Archive& archive);
     /// Serialize content from/to archive. Return true if successful.
-    bool Serialize(Archive& archive, ArchiveBlockGuard& block);
+    bool Serialize(Archive& archive, ArchiveBlock& block);
 
     /// Load from binary data. Return true if successful.
     virtual bool Load(Deserializer& source);

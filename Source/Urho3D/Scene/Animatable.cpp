@@ -78,12 +78,12 @@ void Animatable::RegisterObject(Context* context)
 
 bool Animatable::Serialize(Archive& archive)
 {
-    if (ArchiveBlockGuard block = archive.OpenUnorderedBlock("animatable"))
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("animatable"))
         return Serialize(archive, block);
     return false;
 }
 
-bool Animatable::Serialize(Archive& archive, ArchiveBlockGuard& block)
+bool Animatable::Serialize(Archive& archive, ArchiveBlock& block)
 {
     // TODO: Implement me
     return Serializable::Serialize(archive, block);

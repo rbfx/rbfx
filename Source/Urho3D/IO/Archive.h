@@ -34,58 +34,56 @@ namespace Urho3D
 /// Type of archive block.
 enum class ArchiveBlockType
 {
-    Invalid = -1,
-    /// Sequential data block. Use for unstructured data blobs.
-    /// - Order of serialization must be the same.
-    /// - Names are optional and may be chosen arbitrarily.
-    /// - Keys are ignored.
+    /// Default data block. Stores data in the order of serialization.
+    /// - Names are optional and arbitrary.
+    /// - Names are not checked by any means.
+    /// - Keys are not allowed.
     Sequential,
-    /// Unordered data block. Use for objects and structures.
-    /// - Order of serialization may be irrelevant if target format support it (e.g. XML or JSON).
+    /// Unordered data block. Stored data may be accessed in any order.
+    /// - May be not supported by some archive types.
+    /// - Identical to Sequential block if not supported.
+    /// - If supported, order of serialization is irrelevant.
     /// - Names are required.
     /// - Names must be unique withing block.
     /// - Names mustn't contain double underscore ("__").
-    /// - Keys are ignored.
+    /// - Keys are not allowed.
     Unordered,
-    /// Array data block. Use for arrays.
-    /// - Order of serialization must be the same.
-    /// - Names are irrelevant. Target format may use names for readability.
-    /// - Keys are ignored.
-    /// - Size hint must match actual number of elements in the array (for serialization).
-    /// - Size hint indicates actual number of elements (for deserialization).
+    /// Data block storing dynamic number of elements.
+    /// - Similar to Sequential block type.
+    /// - When reading, exact size of the array is provided.
+    /// - When writing, exact size of the array must be specified.
     Array,
-    /// Map data block. Use for maps.
-    /// - Order of serialization must be the same.
-    /// - Names are irrelevant. Target format may use names for readability.
-    /// - Keys are serialized.
+    /// Data block storing dynamic number of key-element pairs.
+    /// - Similar to Sequential block type.
+    /// - When reading, exact size of the array is provided.
+    /// - When writing, exact size of the array must be specified.
+    /// - Keys must be provided for each element exactly once.
     /// - Keys must be unique.
-    /// - Size hint must match actual number of elements in the map (for serialization).
-    /// - Size hint indicates actual number of elements (for deserialization).
     Map,
 };
 
 class Archive;
 
-/// Archive block wrapper.
-class URHO3D_API ArchiveBlockGuard
+/// Archive block scope guard.
+class URHO3D_API ArchiveBlock
 {
 public:
     /// Non-copyable.
-    ArchiveBlockGuard(const ArchiveBlockGuard& other) = delete;
+    ArchiveBlock(const ArchiveBlock& other) = delete;
     /// Non-copy-assignable.
-    ArchiveBlockGuard& operator=(const ArchiveBlockGuard& other) = delete;
+    ArchiveBlock& operator=(const ArchiveBlock& other) = delete;
     /// Construct invalid.
-    ArchiveBlockGuard() = default;
+    ArchiveBlock() = default;
     /// Construct valid.
-    explicit ArchiveBlockGuard(Archive& archive, unsigned sizeHint = 0) : archive_(&archive), sizeHint_(sizeHint) {}
+    explicit ArchiveBlock(Archive& archive, unsigned sizeHint = 0) : archive_(&archive), sizeHint_(sizeHint) {}
     /// Destruct.
-    ~ArchiveBlockGuard();
+    ~ArchiveBlock();
     /// Move-construct.
-    ArchiveBlockGuard(ArchiveBlockGuard && other) { Swap(other); }
+    ArchiveBlock(ArchiveBlock && other) { Swap(other); }
     /// Move-assign.
-    ArchiveBlockGuard& operator=(ArchiveBlockGuard && other) { Swap(other); return *this; }
+    ArchiveBlock& operator=(ArchiveBlock && other) { Swap(other); return *this; }
     /// Swap with another.
-    void Swap(ArchiveBlockGuard& other)
+    void Swap(ArchiveBlock& other)
     {
         ea::swap(archive_, other.archive_);
         ea::swap(sizeHint_, other.sizeHint_);
@@ -180,26 +178,26 @@ public:
     /// Serialize Variable Length Encoded unsigned integer, up to 29 significant bits.
     virtual bool SerializeVLE(const char* name, unsigned& value) = 0;
 
-    /// @{
+    /// @}
 
     /// Begin archive block and return the guard that will end it automatically on destruction.
-    ArchiveBlockGuard OpenBlock(const char* name, unsigned sizeHint, ArchiveBlockType type)
+    ArchiveBlock OpenBlock(const char* name, unsigned sizeHint, ArchiveBlockType type)
     {
         const bool opened = BeginBlock(name, sizeHint, type);
-        return opened ? ArchiveBlockGuard{ *this, sizeHint } : ArchiveBlockGuard{};
+        return opened ? ArchiveBlock{ *this, sizeHint } : ArchiveBlock{};
     }
 
     /// Open block helpers
     /// @{
 
     /// Open Sequential block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlockGuard OpenSequentialBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Sequential); }
+    ArchiveBlock OpenSequentialBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Sequential); }
     /// Open Unordered block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlockGuard OpenUnorderedBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Unordered); }
+    ArchiveBlock OpenUnorderedBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Unordered); }
     /// Open Array block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlockGuard OpenArrayBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Array); }
+    ArchiveBlock OpenArrayBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Array); }
     /// Open Map block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlockGuard OpenMapBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Map); }
+    ArchiveBlock OpenMapBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Map); }
 
     /// @}
 };
