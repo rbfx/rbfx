@@ -69,7 +69,9 @@ MaterialInspector::MaterialInspector(Context* context, Material* material)
 
 void MaterialInspector::RenderInspector(const char* filter)
 {
-    RenderAttributes(inspectable_, filter, &attributeInspector_);
+    SharedPtr<MaterialInspector> ref(this);
+    if (inspectable_.NotNull())
+        RenderAttributes(inspectable_, filter, &attributeInspector_);
 }
 
 void MaterialInspector::ToggleModel()
