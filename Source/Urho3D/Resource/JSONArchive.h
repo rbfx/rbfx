@@ -48,15 +48,17 @@ class JSONArchiveBase : public ArchiveBase
 {
 public:
     /// Construct.
-    explicit JSONArchiveBase(SharedPtr<JSONFile> jsonFile, bool preferStrings = true)
+    explicit JSONArchiveBase(SharedPtr<JSONFile> jsonFile, bool humanReadable = true)
         : jsonFile_(jsonFile)
-        , preferStrings_(preferStrings)
+        , humanReadable_(humanReadable)
     {}
 
     /// Get context.
     Context* GetContext() final { return jsonFile_->GetContext(); }
     /// Whether the archive is binary.
     bool IsBinary() const final { return false; }
+    /// Whether the human-readability is preferred over performance and output size.
+    bool IsHumanReadable() const final { return humanReadable_; }
     /// Whether the Unordered blocks are supported.
     bool IsUnorderedSupported() const final { return true; }
 
@@ -70,7 +72,7 @@ protected:
     /// JSON file.
     SharedPtr<JSONFile> jsonFile_;
     /// Whether to prefer string format.
-    bool preferStrings_{};
+    bool humanReadable_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
 };
@@ -152,10 +154,6 @@ public:
     /// Serialize string.
     bool Serialize(const char* name, ea::string& value) final;
 
-    /// Serialize float array. Size is not encoded and should be provided externally!
-    bool SerializeFloatArray(const char* name, float* values, unsigned size) final;
-    /// Serialize integer array. Size is not encoded and should be provided externally!
-    bool SerializeIntArray(const char* name, int* values, unsigned size) final;
     /// Serialize bytes. Size is not encoded and should be provided externally!
     bool SerializeBytes(const char* name, void* bytes, unsigned size) final;
     /// Serialize Variable Length Encoded unsigned integer, up to 29 significant bits.
@@ -245,10 +243,6 @@ public:
     /// Serialize string.
     bool Serialize(const char* name, ea::string& value) final;
 
-    /// Serialize float array. Size is not encoded and should be provided externally!
-    bool SerializeFloatArray(const char* name, float* values, unsigned size) final;
-    /// Serialize integer array. Size is not encoded and should be provided externally!
-    bool SerializeIntArray(const char* name, int* values, unsigned size) final;
     /// Serialize bytes. Size is not encoded and should be provided externally!
     bool SerializeBytes(const char* name, void* bytes, unsigned size) final;
     /// Serialize Variable Length Encoded unsigned integer, up to 29 significant bits.
