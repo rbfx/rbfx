@@ -325,40 +325,127 @@ void Editor::OnUpdate(VariantMap& args)
 
     RenderMenuBar();
 
-    dockspaceId_ = ui::GetID("Root");
-    ui::DockSpace(dockspaceId_);
-
-    auto tabsCopy = tabs_;
     bool hasModified = false;
-    for (auto& tab : tabsCopy)
+    if (project_.NotNull())
     {
-        if (tab->RenderWindow())
+        dockspaceId_ = ui::GetID("Root");
+        ui::DockSpace(dockspaceId_);
+
+        auto tabsCopy = tabs_;
+        for (auto& tab : tabsCopy)
         {
-            // Only active window may override another active window
-            if (activeTab_ != tab && tab->IsActive())
+            if (tab->RenderWindow())
             {
-                activeTab_ = tab;
-                tab->OnFocused();
+                // Only active window may override another active window
+                if (activeTab_ != tab && tab->IsActive())
+                {
+                    activeTab_ = tab;
+                    tab->OnFocused();
+                }
+                hasModified |= tab->IsModified();
             }
-            hasModified |= tab->IsModified();
+            else if (!tab->IsUtility())
+                // Content tabs get closed permanently
+                tabs_.erase(tabs_.find(tab));
         }
-        else if (!tab->IsUtility())
-            // Content tabs get closed permanently
-            tabs_.erase(tabs_.find(tab));
-    }
 
-    if (!activeTab_.Expired())
+        if (!activeTab_.Expired())
+        {
+            activeTab_->OnActiveUpdate();
+        }
+
+        if (loadDefaultLayout_ && project_)
+        {
+            loadDefaultLayout_ = false;
+            LoadDefaultLayout();
+        }
+
+        HandleHotkeys();
+    }
+    else
     {
-        activeTab_->OnActiveUpdate();
-    }
+        // Render start page
+        auto& style = ui::GetStyle();
+        auto* lists = ui::GetWindowDrawList();
+        ImRect rect{ui::GetWindowContentRegionMin(), ui::GetWindowContentRegionMax()};
 
-    if (loadDefaultLayout_ && project_)
-    {
-        loadDefaultLayout_ = false;
-        LoadDefaultLayout();
-    }
+        ImVec2 tileSize{200_dpx, 200_dpy};
+        ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{10_dpx, 10_dpy});
 
-    HandleHotkeys();
+        ui::SetCursorScreenPos(rect.GetCenter() - ImVec2{tileSize.x * 1.5f + 10_dpx, tileSize.y * 1.5f + 10_dpy});
+
+        ui::BeginGroup();
+
+        // New project tile
+        {
+            if (ui::Button("Open/Create Project", tileSize))
+                OpenOrCreateProject();
+            ui::SameLine();
+        }
+
+        struct State
+        {
+            explicit State(Editor* editor)
+            {
+                const JSONValue& recents = editor->editorSettings_["recent-projects"];
+                snapshots_.resize(recents.Size());
+                for (int i = 0; i < recents.Size(); i++)
+                {
+                    const ea::string& projectPath = recents[i].GetString();
+                    Image img(editor->context_);
+                    if (img.LoadFile(projectPath + ".snapshot.png"))
+                    {
+                        SharedPtr<Texture2D> texture(editor->context_->CreateObject<Texture2D>());
+                        texture->SetData(&img);
+                        snapshots_[i] = texture;
+                    }
+                }
+            }
+
+            ea::vector<SharedPtr<Texture2D>> snapshots_;
+        };
+
+        auto* state = ui::GetUIState<State>(this);
+        const JSONValue& recents = editorSettings_["recent-projects"];
+
+        int index = 0;
+        for (int row = 0; row < 3; row++)
+        {
+            for (int col = row == 0 ? 1 : 0; col < 3; col++, index++)
+            {
+                SharedPtr<Texture2D> snapshot;
+                if (state->snapshots_.size() > index)
+                    snapshot = state->snapshots_[index];
+
+                if (recents.Size() <= index)
+                {
+                    if (ui::Button("Open/Create Project", tileSize))
+                        OpenOrCreateProject();
+                }
+                else
+                {
+                    const ea::string& projectPath = recents[index].GetString();
+                    if (snapshot.NotNull())
+                    {
+                        if (ui::ImageButton(snapshot.Get(), tileSize - style.ItemInnerSpacing * 2))
+                            pendingOpenProject_ = projectPath;
+                    }
+                    else
+                    {
+                        if (ui::Button(recents[index].GetString().c_str(), tileSize))
+                            pendingOpenProject_ = projectPath;
+                    }
+                    if (ui::IsItemHovered())
+                        ui::SetTooltip("%s", projectPath.c_str());
+                }
+                ui::SameLine();
+            }
+            ui::NewLine();
+        }
+
+        ui::EndGroup();
+        ui::PopStyleVar();
+    }
 
     ui::End();
     ImGui::PopStyleVar();
@@ -681,6 +768,16 @@ void Editor::RegisterSubcommand()
         cmd->RegisterCommandLine(*subCommand);
     else
         URHO3D_LOGERROR("Sub-command '{}' was not registered due to user error.", T::GetTypeNameStatic());
+}
+
+void Editor::OpenOrCreateProject()
+{
+    nfdchar_t* projectDir = nullptr;
+    if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
+    {
+        OpenProject(projectDir);
+        NFD_FreePath(projectDir);
+    }
 }
 
 }
