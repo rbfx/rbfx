@@ -177,12 +177,8 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
                 resolver->AddComponent(componentID, component);
             }
 
-            // Serialize component. Don't fail in case of errors.
-            if (!archive.IsBinary())
-                component->Serialize(archive, componentBlock);
-            else
-                assert(0); // TODO: Implement buffer
-
+            // Serialize component.
+            component->Serialize(archive, componentBlock);
             return true;
         }
         return false;
