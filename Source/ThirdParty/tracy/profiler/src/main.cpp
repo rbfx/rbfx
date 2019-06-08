@@ -106,6 +106,10 @@ public:
 
     void Setup() override
     {
+        engineParameters_[EP_RESOURCE_PATHS] = "CoreData";
+        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+        engineParameters_[EP_FULL_SCREEN] = false;
+
         // Engine starts listening for profiler application connections automatically. Since we link to the engine we
         // would take over profiler port and profile ourselves. Just terminate the profiler.
         tracy::GetProfiler().RequestShutdown();
@@ -147,7 +151,10 @@ public:
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
         JSONFile config(context_);
-        if (config.LoadFile(Format("{}/Settings.json", GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler"))))
+        ea::string preferencesDir = GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler");
+        if (!GetFileSystem()->DirExists(preferencesDir))
+            GetFileSystem()->CreateDir(preferencesDir);
+        if (config.LoadFile(preferencesDir + "Settings.json"))
         {
             const auto& root = config.GetRoot();
             if (root.IsObject())
