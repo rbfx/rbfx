@@ -23,89 +23,80 @@
 #pragma once
 
 #include "../IO/Archive.h"
-#include "../Resource/XMLElement.h"
-#include "../Resource/XMLFile.h"
-
-#include <EASTL/hash_set.h>
+#include "../IO/Deserializer.h"
+#include "../IO/Serializer.h"
+#include "../IO/VectorBuffer.h"
 
 namespace Urho3D
 {
 
-/// Base archive for XML serialization.
+/// Base archive for binary serialization.
 template <class T>
-class XMLArchiveBase : public ArchiveBase
+class BinaryArchiveBase : public ArchiveBase
 {
 public:
     /// Construct.
-    explicit XMLArchiveBase(SharedPtr<XMLFile> xmlFile, bool humanReadable = true)
-        : xmlFile_(xmlFile)
-        , humanReadable_(humanReadable)
+    explicit BinaryArchiveBase(Context* context)
+        : context_(context)
     {}
 
     /// Get context.
-    Context* GetContext() final { return xmlFile_->GetContext(); }
+    Context* GetContext() final { return context_; }
     /// Whether the archive is binary.
-    bool IsBinary() const final { return false; }
+    bool IsBinary() const final { return true; }
     /// Whether the human-readability is preferred over performance and output size.
-    bool IsHumanReadable() const final { return humanReadable_; }
+    bool IsHumanReadable() const final { return false; }
     /// Whether the Unordered blocks are supported.
-    bool IsUnorderedSupported() const final { return true; }
+    bool IsUnorderedSupported() const final { return false; }
 
 protected:
     /// Block type.
     using Block = T;
-    /// Default name of the root block.
-    static const char* defaultRootName;
-    /// Default name of a block.
-    static const char* defaultBlockName;
-    /// Default name of an element.
-    static const char* defaultElementName;
 
     /// Get current block.
     Block& GetCurrentBlock() { return stack_.back(); }
 
-    /// XML file.
-    SharedPtr<XMLFile> xmlFile_;
-    /// Whether to prefer string format.
-    bool humanReadable_{};
+    /// Context.
+    Context* context_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
 };
 
-template <class T> const char* XMLArchiveBase<T>::defaultRootName = "root";
-template <class T> const char* XMLArchiveBase<T>::defaultBlockName = "block";
-template <class T> const char* XMLArchiveBase<T>::defaultElementName = "element";
-
 /// XML output archive block. Internal.
-class XMLOutputArchiveBlock
+class BinaryOutputArchiveBlock
 {
 public:
     /// Construct.
-    XMLOutputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement, unsigned sizeHint);
+    BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool checked, unsigned sizeHint);
     /// Get block name.
     ea::string_view GetName() const { return name_; }
+    /// Open block.
+    bool Open(ArchiveBase& archive);
     /// Set element key.
-    bool SetElementKey(ArchiveBase& archive, ea::string key);
+    Serializer* CreateElementKey(ArchiveBase& archive);
     /// Create element in the block.
-    XMLElement CreateElement(ArchiveBase& archive, const char* elementName, const char* defaultElementName);
+    Serializer* CreateElement(ArchiveBase& archive, const char* elementName);
     /// Close block.
     bool Close(ArchiveBase& archive);
 
 private:
+    /// Get serializer.
+    Serializer* GetSerializer();
+
     /// Block name.
     ea::string_view name_;
     /// Block type.
     ArchiveBlockType type_{};
-    /// Block element.
-    XMLElement blockElement_{};
+    /// Block checked data.
+    ea::shared_ptr<VectorBuffer> checkedData_;
+
+    /// Parent serializer object.
+    Serializer* parentSerializer_{};
 
     /// Expected block size (for arrays and maps).
-    unsigned expectedElementCount_{M_MAX_UNSIGNED};
+    unsigned expectedElementCount_{ M_MAX_UNSIGNED };
     /// Number of elements in block.
     unsigned numElements_{};
-
-    /// Set of used names for checking.
-    ea::hash_set<ea::string> usedNames_{};
 
     /// Key of the next created element (for Map blocks).
     ea::string elementKey_;
@@ -114,10 +105,11 @@ private:
 };
 
 /// XML output archive.
-class URHO3D_API XMLOutputArchive : public XMLArchiveBase<XMLOutputArchiveBlock>
+class URHO3D_API BinaryOutputArchive : public BinaryArchiveBase<BinaryOutputArchiveBlock>
 {
 public:
-    using XMLArchiveBase<XMLOutputArchiveBlock>::XMLArchiveBase;
+    /// Construct.
+    BinaryOutputArchive(Context* context, Serializer& serializer);
 
     /// Whether the archive is in input mode.
     bool IsInput() const final { return false; }
@@ -167,47 +159,66 @@ private:
     bool CheckEOF(const char* elementName);
     /// Check EOF and root block.
     bool CheckEOFAndRoot(const char* elementName);
-    /// Prepare to serialize element.
-    XMLElement CreateElement(const char* name);
+    /// Check result of the action.
+    bool CheckElementWrite(bool result, const char* elementName);
 
-    /// Temporary string buffer.
-    ea::string tempString_;
+    /// Serializer.
+    Serializer& serializer_;
 };
 
 /// XML input archive block. Internal.
-class XMLInputArchiveBlock
+class BinaryInputArchiveBlock
 {
 public:
     /// Construct valid.
-    XMLInputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement);
+    BinaryInputArchiveBlock(const char* name, ArchiveBlockType type, Deserializer* deserializer, bool checked, unsigned nextElementPosition);
     /// Return name.
     const ea::string_view GetName() const { return name_; }
+    /// Return next element position.
+    unsigned GetNextElementPosition() const { return nextElementPosition_; }
+    /// Open block.
+    void Open(ArchiveBase& archive);
     /// Return size hint.
-    unsigned CalculateSizeHint() const;
-    /// Return current child's key.
-    bool ReadCurrentKey(ArchiveBase& archive, ea::string& key);
-    /// Read current child and move to the next one.
-    XMLElement ReadElement(ArchiveBase& archive, const char* elementName);
+    unsigned GetSizeHint() const { return numElements_; }
+    /// Set element key.
+    Deserializer* ReadElementKey(ArchiveBase& archive);
+    /// Create element in the block.
+    Deserializer* ReadElement(ArchiveBase& archive, const char* elementName);
+    /// Close block.
+    void Close(ArchiveBase& archive);
 
 private:
     /// Block name.
     ea::string_view name_;
     /// Block type.
     ArchiveBlockType type_{};
-    /// Block element.
-    XMLElement blockElement_{};
-    /// Next child to read.
-    XMLElement nextChild_{};
 
-    /// Whether the block key is read.
+    /// Deserializer.
+    Deserializer* deserializer_{};
+    /// Whether the block is checked.
+    bool checked_{};
+
+    /// Number of elements.
+    unsigned numElements_{};
+    /// Block offset.
+    unsigned blockOffset_{};
+    /// Block size.
+    unsigned blockSize_{};
+    /// Next element position.
+    unsigned nextElementPosition_{};
+
+    /// Number of elements read.
+    unsigned numElementsRead_{};
+    /// Whether the key was read.
     bool keyRead_{};
 };
 
 /// XML input archive.
-class URHO3D_API XMLInputArchive : public XMLArchiveBase<XMLInputArchiveBlock>
+class URHO3D_API BinaryInputArchive : public BinaryArchiveBase<BinaryInputArchiveBlock>
 {
 public:
-    using XMLArchiveBase<XMLInputArchiveBlock>::XMLArchiveBase;
+    /// Construct.
+    BinaryInputArchive(Context* context, Deserializer& deserializer);
 
     /// Whether the archive is in input mode.
     bool IsInput() const final { return true; }
@@ -257,11 +268,12 @@ private:
     bool CheckEOF(const char* elementName);
     /// Check EOF and root block.
     bool CheckEOFAndRoot(const char* elementName);
-    /// Prepare to serialize element.
-    XMLElement ReadElement(const char* name);
+    /// Check element read.
+    bool CheckElementRead(bool result, const char* elementName);
 
-    /// Temporary buffer.
-    ea::vector<unsigned char> tempBuffer_;
+    /// Deserializer.
+    Deserializer& deserializer_;
+
 };
 
 }
