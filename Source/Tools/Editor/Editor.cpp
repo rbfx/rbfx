@@ -234,16 +234,18 @@ void Editor::Start()
         if (auto* preview = GetTab<PreviewTab>())
         {
             if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
-            {
                 exiting_ = true;
-                if (project_)
-                    project_->SaveProject();
-            }
             else
                 preview->Stop();
         }
         else
             exiting_ = true;
+
+        if (project_ && exiting_)
+        {
+            project_->SaveProject();
+            CloseProject();
+        }
     });
     if (!defaultProjectPath_.empty())
     {
