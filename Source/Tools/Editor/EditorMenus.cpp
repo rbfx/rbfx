@@ -57,14 +57,7 @@ void Editor::RenderMenuBar()
             }
 
             if (ui::MenuItem("Open/Create Project"))
-            {
-                nfdchar_t* projectDir = nullptr;
-                if (NFD_PickFolder("", &projectDir) == NFD_OKAY)
-                {
-                    OpenProject(projectDir);
-                    NFD_FreePath(projectDir);
-                }
-            }
+                OpenOrCreateProject();
 
             JSONValue& recents = editorSettings_["recent-projects"];
             // Does not show very first item, which is current project
