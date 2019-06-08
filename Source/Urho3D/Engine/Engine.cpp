@@ -98,16 +98,10 @@ extern const char* logLevelNames[];
 
 Engine::Engine(Context* context) :
     Object(context),
-    timeStep_(0.0f),
-    timeStepSmoothing_(2),
-    minFps_(10),
+    timeStepTarget_(1.0f/200.0f),
 #if defined(IOS) || defined(TVOS) || defined(__ANDROID__) || defined(__arm__) || defined(__aarch64__)
-    maxFps_(60),
-    maxInactiveFps_(10),
     pauseMinimized_(true),
 #else
-    maxFps_(200),
-    maxInactiveFps_(60),
     pauseMinimized_(false),
 #endif
 #ifdef URHO3D_TESTING
@@ -200,10 +194,6 @@ bool Engine::Initialize(const VariantMap& parameters)
 
     // Set maximally accurate low res timer
     GetSubsystem<Time>()->SetTimerPeriod(1);
-
-    // Configure max FPS
-    if (GetParameter(parameters, EP_FRAME_LIMITER, true) == false)
-        SetMaxFps(0);
 
     // Set amount of worker threads according to the available physical CPU cores. Using also hyperthreaded cores results in
     // unpredictable extra synchronization overhead. Also reserve one core for the main thread
@@ -474,6 +464,10 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 void Engine::RunFrame()
 {
     URHO3D_PROFILE("RunFrame");
+
+    float timeStepActual = frameTimer_.GetUSec(false)/1000000.0f;
+    frameTimer_.Reset();
+
     {
         assert(initialized_);
 
@@ -493,7 +487,7 @@ void Engine::RunFrame()
 
     {
         URHO3D_PROFILE("DoFrame");
-        time->BeginFrame(timeStep_);
+        time->BeginFrame(timeStepActual);
 
         // If pause when minimized -mode is in use, stop updates and audio as necessary
         if (pauseMinimized_ && input->IsMinimized())
@@ -513,12 +507,12 @@ void Engine::RunFrame()
                 audioPaused_ = false;
             }
 
-            Update();
+            Update(timeStepActual);
         }
 
-        Render();
+        Render(timeStepActual);
     }
-    ApplyFrameLimit();
+
 
     time->EndFrame();
 
@@ -565,24 +559,9 @@ DebugHud* Engine::CreateDebugHud()
 #endif
 }
 
-void Engine::SetTimeStepSmoothing(int frames)
+void Engine::SetFps(int fps)
 {
-    timeStepSmoothing_ = (unsigned)Clamp(frames, 1, 20);
-}
-
-void Engine::SetMinFps(int fps)
-{
-    minFps_ = (unsigned)Max(fps, 0);
-}
-
-void Engine::SetMaxFps(int fps)
-{
-    maxFps_ = (unsigned)Max(fps, 0);
-}
-
-void Engine::SetMaxInactiveFps(int fps)
-{
-    maxInactiveFps_ = (unsigned)Max(fps, 0);
+    timeStepTarget_ = 1.0f / float(fps);
 }
 
 void Engine::SetPauseMinimized(bool enable)
@@ -601,7 +580,7 @@ void Engine::SetAutoExit(bool enable)
 
 void Engine::SetNextTimeStep(float seconds)
 {
-    timeStep_ = Max(seconds, 0.0f);
+    timeStepTarget_ = Max(seconds, 0.0f);
 }
 
 void Engine::Exit()
@@ -691,7 +670,7 @@ void Engine::DumpMemory()
 #endif
 }
 
-void Engine::Update()
+void Engine::Update(float timeStep)
 {
     URHO3D_PROFILE("Update");
 
@@ -699,7 +678,7 @@ void Engine::Update()
     using namespace Update;
 
     VariantMap& eventData = GetEventDataMap();
-    eventData[P_TIMESTEP] = timeStep_;
+    eventData[P_TIMESTEP] = timeStep;
     SendEvent(E_UPDATE, eventData);
 
     // Logic post-update event
@@ -712,7 +691,7 @@ void Engine::Update()
     SendEvent(E_POSTRENDERUPDATE, eventData);
 }
 
-void Engine::Render()
+void Engine::Render(float timeStep)
 {
     if (headless_)
         return;
@@ -736,81 +715,6 @@ void Engine::Render()
     }
 
     graphics->EndFrame();
-}
-
-void Engine::ApplyFrameLimit()
-{
-    if (!initialized_)
-        return;
-
-    unsigned maxFps = maxFps_;
-    auto* input = GetSubsystem<Input>();
-    if (input && !input->HasFocus())
-        maxFps = Min(maxInactiveFps_, maxFps);
-
-    long long elapsed = 0;
-
-#ifndef __EMSCRIPTEN__
-    // Perform waiting loop if maximum FPS set
-#if !defined(IOS) && !defined(TVOS)
-    if (maxFps)
-#else
-    // If on iOS/tvOS and target framerate is 60 or above, just let the animation callback handle frame timing
-    // instead of waiting ourselves
-    if (maxFps < 60)
-#endif
-    {
-        URHO3D_PROFILE("ApplyFrameLimit");
-
-        long long targetMax = 1000000LL / maxFps;
-
-        for (;;)
-        {
-            elapsed = frameTimer_.GetUSec(false);
-            if (elapsed >= targetMax)
-                break;
-
-            // Sleep if 1 ms or more off the frame limiting goal
-            if (targetMax - elapsed >= 1000LL)
-            {
-                auto sleepTime = (unsigned)((targetMax - elapsed) / 1000LL);
-                Time::Sleep(sleepTime);
-            }
-        }
-    }
-#endif
-
-    elapsed = frameTimer_.GetUSec(true);
-#ifdef URHO3D_TESTING
-    if (timeOut_ > 0)
-    {
-        timeOut_ -= elapsed;
-        if (timeOut_ <= 0)
-            Exit();
-    }
-#endif
-
-    // If FPS lower than minimum, clamp elapsed time
-    if (minFps_)
-    {
-        long long targetMin = 1000000LL / minFps_;
-        if (elapsed > targetMin)
-            elapsed = targetMin;
-    }
-
-    // Perform timestep smoothing
-    timeStep_ = 0.0f;
-    lastTimeSteps_.push_back(elapsed / 1000000.0f);
-    if (lastTimeSteps_.size() > timeStepSmoothing_)
-    {
-        // If the smoothing configuration was changed, ensure correct amount of samples
-        lastTimeSteps_.erase_at(0, lastTimeSteps_.size() - timeStepSmoothing_);
-        for (unsigned i = 0; i < lastTimeSteps_.size(); ++i)
-            timeStep_ += lastTimeSteps_[i];
-        timeStep_ /= lastTimeSteps_.size();
-    }
-    else
-        timeStep_ = lastTimeSteps_.back();
 }
 
 void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameters)
