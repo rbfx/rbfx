@@ -70,6 +70,14 @@ void Editor::RenderMenuBar()
 
             if (project_)
             {
+                if (ui::MenuItem("Reset UI"))
+                {
+                    ea::string projectPath = project_->GetProjectPath();
+                    CloseProject();
+                    GetFileSystem()->Delete(projectPath + ".ui.ini");
+                    OpenProject(projectPath);
+                }
+
                 if (ui::MenuItem("Close Project"))
                 {
                     CloseProject();
