@@ -156,6 +156,7 @@ SceneTab::SceneTab(Context* context)
 
 SceneTab::~SceneTab()
 {
+    Close();
     context_->RegisterSubsystem(new UI(context_));
 }
 
