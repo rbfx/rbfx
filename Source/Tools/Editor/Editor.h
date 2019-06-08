@@ -133,6 +133,8 @@ protected:
     ea::string defaultProjectPath_;
     ///
     ea::vector<SharedPtr<SubCommand>> subCommands_;
+    /// Global editor settings.
+    JSONValue editorSettings_;
 };
 
 }
