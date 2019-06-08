@@ -205,7 +205,23 @@ void Editor::Start()
             // subsystem reads this file and loads settings.
             GetSystemUI()->Start();
             if (loaded)
+            {
+                auto* fs = GetFileSystem();
                 loadDefaultLayout_ = project_->IsNewProject();
+                JSONValue& recents = editorSettings_["recent-projects"];
+                if (!recents.IsArray())
+                    recents.SetType(JSON_ARRAY);
+                // Remove latest project if it was already opened or any projects that no longer exists.
+                for (int i = 0; i < recents.Size();)
+                {
+                    if (recents[i].GetString() == pendingOpenProject_ || !fs->DirExists(recents[i].GetString()))
+                        recents.Erase(i);
+                    else
+                        ++i;
+                }
+                // Latest project goes to front
+                recents.Insert(0, pendingOpenProject_);
+            }
             else
                 CloseProject();
             pendingOpenProject_.clear();
@@ -233,6 +249,18 @@ void Editor::Start()
     }
     else
         SetupSystemUI();
+
+    // Load editor settings
+    {
+        auto* fs = GetFileSystem();
+        ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
+        if (!fs->DirExists(editorSettingsDir))
+            fs->CreateDir(editorSettingsDir);
+
+        JSONFile file(context_);
+        if (file.LoadFile(editorSettingsDir + "Editor.json"))
+            editorSettings_ = file.GetRoot();
+    }
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
@@ -255,6 +283,19 @@ void Editor::ExecuteSubcommand(SubCommand* cmd)
 
 void Editor::Stop()
 {
+    // Save editor settings
+    {
+        auto* fs = GetFileSystem();
+        ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
+        if (!fs->DirExists(editorSettingsDir))
+            fs->CreateDir(editorSettingsDir);
+
+        JSONFile file(context_);
+        file.GetRoot() = editorSettings_;
+        if (!file.SaveFile(editorSettingsDir + "Editor.json"))
+            URHO3D_LOGERROR("Saving of editor settings failed.");
+    }
+
     GetWorkQueue()->Complete(0);
     if (auto* manager = GetSubsystem<SceneManager>())
         manager->UnloadAll();

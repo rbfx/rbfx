@@ -66,6 +66,32 @@ void Editor::RenderMenuBar()
                 }
             }
 
+            JSONValue& recents = editorSettings_["recent-projects"];
+            // Does not show very first item, which is current project
+            if (recents.Size() == (project_.NotNull() ? 1 : 0))
+            {
+                ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+                ui::MenuItem("Recent Projects");
+                ui::PopStyleColor();
+            }
+            else if (ui::BeginMenu("Recent Projects"))
+            {
+                for (int i = project_.NotNull() ? 1 : 0; i < recents.Size(); i++)
+                {
+                    const ea::string& projectPath = recents[i].GetString();
+
+                    if (ui::MenuItem(GetFileNameAndExtension(RemoveTrailingSlash(projectPath)).c_str()))
+                        OpenProject(projectPath);
+
+                    if (ui::IsItemHovered())
+                        ui::SetTooltip("%s", projectPath.c_str());
+                }
+                ui::Separator();
+                if (ui::MenuItem("Clear All"))
+                    recents.Clear();
+                ui::EndMenu();
+            }
+
             ui::Separator();
 
             if (project_)
