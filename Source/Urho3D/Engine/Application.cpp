@@ -115,8 +115,21 @@ int Application::Run()
 
         // Platforms other than iOS/tvOS and Emscripten run a blocking main loop
 #if !defined(IOS) && !defined(TVOS) && !defined(__EMSCRIPTEN__)
-        while (!engine_->IsExiting())
+
+
+        while (!engine_->IsExiting()) {
+            //free spin until the timer is near the target timestep. sleep as much as possible while maintaining the target time.
+            //sleep until the last fraction of the timestep.
+            float fps = engine_->GetFps();
+            float timeStep = 1.0f / fps;
+            float lastFractionTime = timeStep / 10.0f;
+            while (engine_->GetTimeToNextFrame() > 0.0f)
+            {
+                if(engine_->GetTimeToNextFrame() > lastFractionTime)
+                    Time::Sleep((engine_->GetTimeToNextFrame() - lastFractionTime)/1000.0f);
+            }
             engine_->RunFrame();
+        }
 
         Stop();
         // iOS/tvOS will setup a timer for running animation frames so eg. Game Center can run. In this case we do not
