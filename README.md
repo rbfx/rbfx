@@ -1,9 +1,5 @@
 ![rbfx-logo](https://user-images.githubusercontent.com/19151258/57008846-a292be00-6bfb-11e9-8303-d79e6dd36038.png)
 
-# rbfx
-
-[![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/rbfx/branch/master)
-
 **rbfx** is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE and Horde3D.
 
 This project is a fork of [urho3d.github.io](http://urho3d.github.io/).
@@ -69,3 +65,14 @@ rbfx uses the following third-party libraries:
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
+
+## Supported Platforms
+
+| Platform |      API     | Build Status | Comment |
+| -------- | ------------ | ------------ | ------- |
+| Windows | D3D9, D3D11   | [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/rbfx/branch/master) | :heavy_check_mark:  |
+| Linux   | OpenGL 2/3.1  | [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) | :heavy_check_mark: |
+| MacOS   | OpenGL 2/3.1  | [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) | :heavy_check_mark: |
+| iOS     | OpenGL 2/3.1  | - | Untested, planned |
+| Android | OpenGL ES 2/3 | - | Untested, experimental |
+| Web     | WebGL         | [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) | Experimental, builds on WSL/Unix |
