@@ -221,6 +221,9 @@ void Editor::Start()
                 }
                 // Latest project goes to front
                 recents.Insert(0, pendingOpenProject_);
+                // Limit recents list size
+                if (recents.Size() > 10)
+                    recents.Resize(10);
             }
             else
                 CloseProject();
