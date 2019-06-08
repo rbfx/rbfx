@@ -208,6 +208,10 @@ class ArchiveBase : public Archive
 public:
     /// Artificial element name used for Map keys
     static const char* keyElementName_;
+    /// Artificial element name used for block
+    static const char* blockElementName_;
+    /// Artificial element name used for checked block guard
+    static const char* checkedBlockGuardElementName_;
 
     /// Fatal error message: root block was not opened. Placeholders: {elementName}.
     static const ea::string fatalRootBlockNotOpened_elementName;
@@ -222,6 +226,8 @@ public:
     /// Fatal error message: unexpected key serialization. Placeholders: {blockName}.
     static const ea::string fatalUnexpectedKeySerialization_blockName;
 
+    /// Error message: generic input error. Placeholders: {blockName} {elementName}.
+    static const ea::string errorCannotReadData_blockName_elementName;
     /// Error message: input archive has no more data. Placeholders: {blockName} {elementName}.
     static const ea::string errorReadEOF_blockName_elementName;
     /// Error message: element or block is not found. Placeholders: {blockName} {elementName}.
@@ -231,6 +237,8 @@ public:
     /// Error message: missing map key. Placeholders: {blockName}.
     static const ea::string errorMissingMapKey_blockName;
 
+    /// Error message: generic output error. Placeholders: {blockName} {elementName}.
+    static const ea::string errorCannotWriteData_blockName_elementName;
     /// Error message: output archive is finished. Placeholders: {blockName} {elementName}.
     static const ea::string errorWriteEOF_blockName_elementName;
     /// Error message: duplicate element. Placeholders: {blockName} {elementName}.
