@@ -466,6 +466,9 @@ void Engine::RunFrame()
     URHO3D_PROFILE("RunFrame");
 
     float timeStepActual = frameTimer_.GetUSec(false)/1000000.0f;
+    //clamp the actual timestep to +- 10% of the target.  in case of extra long frame times.
+    timeStepActual = Clamp(timeStepActual, timeStepTarget_ - timeStepTarget_ * 0.1f, timeStepTarget_ + timeStepTarget_ * 0.1f);
+
     frameTimer_.Reset();
 
     {
