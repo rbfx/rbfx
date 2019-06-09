@@ -40,7 +40,7 @@ namespace Urho3D
 {
 
 /// Variant's supported types.
-enum VariantType
+enum VariantType : unsigned char
 {
     VAR_NONE = 0,
     VAR_INT,

@@ -42,8 +42,6 @@ public:
 
     /// Get context.
     Context* GetContext() final { return context_; }
-    /// Whether the archive is binary.
-    bool IsBinary() const final { return true; }
     /// Whether the human-readability is preferred over performance and output size.
     bool IsHumanReadable() const final { return false; }
     /// Whether the Unordered blocks are supported.
@@ -67,41 +65,39 @@ class BinaryOutputArchiveBlock
 {
 public:
     /// Construct.
-    BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe, unsigned sizeHint);
+    BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe);
     /// Get block name.
     ea::string_view GetName() const { return name_; }
-    /// Open block.
-    bool Open(ArchiveBase& archive);
-    /// Set element key.
-    Serializer* CreateElementKey(ArchiveBase& archive);
-    /// Create element in the block.
-    Serializer* CreateElement(ArchiveBase& archive, const char* elementName);
     /// Close block.
     bool Close(ArchiveBase& archive);
 
-private:
     /// Get serializer.
     Serializer* GetSerializer();
+    /// Open nested block.
+    void OpenNestedBlock() { ++nesting_; }
+    /// Close nested block.
+    bool CloseNestedBlock()
+    {
+        if (nesting_ > 0)
+        {
+            --nesting_;
+            return true;
+        }
+        return false;
+    }
 
+private:
     /// Block name.
     ea::string_view name_;
     /// Block type.
     ArchiveBlockType type_{};
     /// Block checked data (safe blocks only).
     ea::unique_ptr<VectorBuffer> checkedData_;
+    /// Depth of nesting.
+    unsigned nesting_{};
 
     /// Parent serializer object.
     Serializer* parentSerializer_{};
-
-    /// Expected block size (for arrays and maps).
-    unsigned expectedElementCount_{ M_MAX_UNSIGNED };
-    /// Number of elements in block.
-    unsigned numElements_{};
-
-    /// Key of the next created element (for Map blocks).
-    ea::string elementKey_;
-    /// Whether the key is set.
-    bool keySet_{};
 };
 
 /// XML output archive.
@@ -164,6 +160,8 @@ private:
 
     /// Serializer.
     Serializer* serializer_{};
+    /// Current block serializer.
+    Serializer* currentBlockSerializer_{};
 };
 
 /// XML input archive block. Internal.
@@ -178,14 +176,21 @@ public:
     unsigned GetNextElementPosition() const { return nextElementPosition_; }
     /// Open block.
     bool Open(ArchiveBase& archive);
-    /// Return size hint.
-    unsigned GetSizeHint() const { return numElements_; }
-    /// Set element key.
-    Deserializer* ReadElementKey(ArchiveBase& archive);
-    /// Create element in the block.
-    Deserializer* ReadElement(ArchiveBase& archive, const char* elementName);
     /// Close block.
     void Close(ArchiveBase& archive);
+
+    /// Open nested block.
+    void OpenNestedBlock() { ++nesting_; }
+    /// Close nested block.
+    bool CloseNestedBlock()
+    {
+        if (nesting_ > 0)
+        {
+            --nesting_;
+            return true;
+        }
+        return false;
+    }
 
 private:
     /// Block name.
@@ -197,20 +202,15 @@ private:
     Deserializer* deserializer_{};
     /// Whether the block is safe.
     bool safe_{};
+    /// Block nesting.
+    unsigned nesting_{};
 
-    /// Number of elements.
-    unsigned numElements_{};
     /// Block offset.
     unsigned blockOffset_{};
     /// Block size.
     unsigned blockSize_{};
     /// Next element position.
     unsigned nextElementPosition_{};
-
-    /// Number of elements read.
-    unsigned numElementsRead_{};
-    /// Whether the key was read.
-    bool keyRead_{};
 };
 
 /// XML input archive.

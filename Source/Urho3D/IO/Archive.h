@@ -35,29 +35,34 @@ namespace Urho3D
 /// Type of archive block.
 enum class ArchiveBlockType
 {
-    /// Default data block. Stores data in the order of serialization.
-    /// - Names are optional and arbitrary.
-    /// - Names are not checked by any means.
+    /// Default sequential data block.
+    /// Elements are saved and load in the order of serialization (even for XML, names are ignored when loading).
+    /// This is default choice for any serialization code.
+    /// - Names are optional.
+    /// - Names are used for debug purpose and/or output readability only.
     /// - Keys are not allowed.
     Sequential,
-    /// Unordered data block. Stored data may be accessed in any order.
+    /// Unordered data block.
+    /// Elements may be load in any order. Missing element is not treated as error.
+    /// This is the best choice for blocks with fixed number of named elements, e.g. classes or structures.
     /// - May be not supported by some archive types.
     /// - Identical to Sequential block if not supported.
-    /// - If supported, order of serialization is irrelevant.
     /// - Names are required.
     /// - Names must be unique withing block.
     /// - Names mustn't contain double underscore ("__").
     /// - Keys are not allowed.
     Unordered,
-    /// Data block storing dynamic number of elements.
+    /// Sequential data block with dynamic number of elements.
+    /// Used mostly internally to serialize arrays in both JSON- and binary-friendly formats.
     /// - Similar to Sequential block type.
     /// - When reading, exact size of the array is provided.
     /// - When writing, exact size of the array must be specified.
     Array,
-    /// Data block storing dynamic number of key-element pairs.
+    /// Sequential data block with dynamic number of key-element pairs.
+    /// Used mostly internally to serialize maps in both JSON- and binary-friendly formats.
     /// - Similar to Sequential block type.
-    /// - When reading, exact size of the array is provided.
-    /// - When writing, exact size of the array must be specified.
+    /// - When reading, exact size of the map is provided.
+    /// - When writing, exact size of the map must be specified.
     /// - Keys must be provided for each element exactly once.
     /// - Keys must be unique.
     Map,
@@ -107,9 +112,8 @@ public:
     /// It is guaranteed that input archive doesn't read from variable.
     /// It is guaranteed that output archive doesn't write to variable.
     virtual bool IsInput() const = 0;
-    /// Whether the archive is binary.
-    virtual bool IsBinary() const = 0;
     /// Whether the human-readability is preferred over performance and output size.
+    /// - Binary serialization is disfavored.
     /// - String hashes are serialized as strings, if possible.
     /// - Enumerators serialized as strings, if possible.
     /// - Simple compound types like Vector3 are serialized as formatted strings instead of blocks.
@@ -119,7 +123,7 @@ public:
     /// Whether the serialization error occurred.
     virtual bool IsBad() const = 0;
     /// Whether the unordered element access is supported for Unordered blocks.
-    /// If false, serializing code should treat Unordered blocks as Sequential.
+    /// If false, serialization code should treat Unordered blocks as Sequential.
     virtual bool IsUnorderedSupported() const = 0;
 
     /// Return latest error string.
@@ -130,10 +134,12 @@ public:
     virtual unsigned GetChecksum() { return 0; }
 
     /// Begin archive block.
+    /// Size is required for Array and Map blocks.
+    /// Errors occurred within safe don't propagate outside the block.
     virtual bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) = 0;
     /// End archive block.
-    /// Failure usually means implementation error, for example one of the following:
-    /// - Array or Map wasn't completely serialized for output archive.
+    /// Failure usually means code error, for example one of the following:
+    /// - Array or Map size doesn't match the number of serialized elements.
     /// - There were no corresponding BeginBlock call.
     virtual bool EndBlock() = 0;
 
