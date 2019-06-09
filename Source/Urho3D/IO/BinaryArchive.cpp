@@ -303,8 +303,9 @@ BinaryInputArchiveBlock::BinaryInputArchiveBlock(const char* name, ArchiveBlockT
 {
 }
 
-void BinaryInputArchiveBlock::Open(ArchiveBase& archive)
+bool BinaryInputArchiveBlock::Open(ArchiveBase& archive)
 {
+
     if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
     {
         numElements_ = deserializer_->ReadVLE();
@@ -314,8 +315,16 @@ void BinaryInputArchiveBlock::Open(ArchiveBase& archive)
     {
         blockSize_ = deserializer_->ReadVLE();
         blockOffset_ = deserializer_->GetPosition();
-        nextElementPosition_ = blockOffset_ + blockSize_;
+        nextElementPosition_ = ea::min(blockOffset_ + blockSize_, deserializer_->GetSize());
     }
+
+    if (deserializer_->IsEof() && blockSize_ != 0)
+    {
+        archive.SetError(ArchiveBase::errorReadEOF_blockName_elementName, name_, ArchiveBase::blockElementName_);
+        return false;
+    }
+
+    return true;
 }
 
 Deserializer* BinaryInputArchiveBlock::ReadElementKey(ArchiveBase& archive)
@@ -415,20 +424,24 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archiv
     if (stack_.empty())
     {
         Block frame{ name, type, deserializer_, true, M_MAX_UNSIGNED };
-        frame.Open(*this);
-        sizeHint = frame.GetSizeHint();
-        stack_.push_back(frame);
-        return true;
+        if (frame.Open(*this))
+        {
+            sizeHint = frame.GetSizeHint();
+            stack_.push_back(frame);
+            return true;
+        }
     }
 
     // Try open block
     if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
     {
         Block blockFrame{ name, type, deserializer, true, GetCurrentBlock().GetNextElementPosition() };
-        blockFrame.Open(*this);
-        sizeHint = blockFrame.GetSizeHint();
-        stack_.push_back(blockFrame);
-        return true;
+        if (blockFrame.Open(*this))
+        {
+            sizeHint = blockFrame.GetSizeHint();
+            stack_.push_back(blockFrame);
+            return true;
+        }
     }
 
     return false;
