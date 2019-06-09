@@ -27,94 +27,22 @@
 namespace Urho3D
 {
 
-BinaryOutputArchiveBlock::BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe, unsigned sizeHint)
+BinaryOutputArchiveBlock::BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe)
     : name_(name)
     , type_(type)
     , parentSerializer_(parentSerializer)
 {
     if (safe)
         checkedData_ = ea::make_unique<VectorBuffer>();
-
-    if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
-        expectedElementCount_ = sizeHint;
-}
-
-bool BinaryOutputArchiveBlock::Open(ArchiveBase& archive)
-{
-    if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
-    {
-        if (!parentSerializer_->WriteVLE(expectedElementCount_))
-        {
-            archive.SetError(ArchiveBase::errorWriteEOF_blockName_elementName, name_, ArchiveBase::blockElementName_);
-            return false;
-        }
-    }
-
-    return true;
-}
-
-Serializer* BinaryOutputArchiveBlock::CreateElementKey(ArchiveBase& archive)
-{
-    if (type_ != ArchiveBlockType::Map)
-    {
-        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    if (keySet_)
-    {
-        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    keySet_ = true;
-    return GetSerializer();
-}
-
-Serializer* BinaryOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char* elementName)
-{
-    if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
-    {
-        archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Map && !keySet_)
-    {
-        archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Unordered && !elementName)
-    {
-        archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    ++numElements_;
-    keySet_ = false;
-    return GetSerializer();
 }
 
 bool BinaryOutputArchiveBlock::Close(ArchiveBase& archive)
 {
-    if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
-    {
-        if (numElements_ < expectedElementCount_)
-            archive.SetError(ArchiveBase::fatalBlockUnderflow_blockName, name_);
-        else
-            archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
-        assert(0);
-        return false;
-    }
-
     if (!checkedData_)
+    {
+        assert(nesting_ == 0);
         return true;
+    }
 
     const unsigned size = checkedData_->GetSize();
     if (parentSerializer_->WriteVLE(size))
@@ -147,28 +75,37 @@ bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool 
     if (!CheckEOF(name))
         return false;
 
-    // Open root block
     if (stack_.empty())
     {
-        Block block{ name, type, serializer_, safe, sizeHint };
-        if (block.Open(*this))
-        {
-            stack_.push_back(ea::move(block));
-            return true;
-        }
+        Block block{ name, type, serializer_, safe };
+        stack_.push_back(ea::move(block));
+        currentBlockSerializer_ = GetCurrentBlock().GetSerializer();
     }
-
-    if (Serializer* parentSerializer = GetCurrentBlock().CreateElement(*this, name))
+    else
     {
-        Block block{ name, type, parentSerializer, safe, sizeHint };
-        if (block.Open(*this))
+        if (safe)
         {
+            Block block{ name, type, GetCurrentBlock().GetSerializer(), safe };
             stack_.push_back(ea::move(block));
-            return true;
+            currentBlockSerializer_ = GetCurrentBlock().GetSerializer();
+        }
+        else
+        {
+            GetCurrentBlock().OpenNestedBlock();
         }
     }
 
-    return false;
+    if (type == ArchiveBlockType::Array || type == ArchiveBlockType::Map)
+    {
+        if (!currentBlockSerializer_->WriteVLE(sizeHint))
+        {
+            SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name, ArchiveBase::blockElementName_);
+            EndBlock();
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool BinaryOutputArchive::EndBlock()
@@ -179,11 +116,19 @@ bool BinaryOutputArchive::EndBlock()
         return false;
     }
 
+    if (GetCurrentBlock().CloseNestedBlock())
+        return true;
+
     const bool blockClosed = GetCurrentBlock().Close(*this);
 
     stack_.pop_back();
-    if (stack_.empty())
+    if (!stack_.empty())
+        currentBlockSerializer_ = GetCurrentBlock().GetSerializer();
+    else
+    {
         CloseArchive();
+        currentBlockSerializer_ = nullptr;
+    }
 
     return blockClosed;
 }
@@ -193,10 +138,7 @@ bool BinaryOutputArchive::SerializeKey(ea::string& key)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Serializer* serializer = GetCurrentBlock().CreateElementKey(*this))
-        return CheckElementWrite(serializer->WriteString(key), ArchiveBase::keyElementName_);
-
-    return false;
+    return CheckElementWrite(currentBlockSerializer_->WriteString(key), ArchiveBase::keyElementName_);
 }
 
 bool BinaryOutputArchive::SerializeKey(unsigned& key)
@@ -204,10 +146,7 @@ bool BinaryOutputArchive::SerializeKey(unsigned& key)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Serializer* serializer = GetCurrentBlock().CreateElementKey(*this))
-        return CheckElementWrite(serializer->WriteUInt(key), ArchiveBase::keyElementName_);
-
-    return false;
+    return CheckElementWrite(currentBlockSerializer_->WriteUInt(key), ArchiveBase::keyElementName_);
 }
 
 bool BinaryOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
@@ -215,10 +154,7 @@ bool BinaryOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Serializer* serializer = GetCurrentBlock().CreateElement(*this, name))
-        return CheckElementWrite(serializer->Write(bytes, size) == size, name);
-
-    return false;
+    return CheckElementWrite(currentBlockSerializer_->Write(bytes, size) == size, name);
 }
 
 bool BinaryOutputArchive::SerializeVLE(const char* name, unsigned& value)
@@ -226,10 +162,7 @@ bool BinaryOutputArchive::SerializeVLE(const char* name, unsigned& value)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Serializer* serializer = GetCurrentBlock().CreateElement(*this, name))
-        return CheckElementWrite(serializer->WriteVLE(value), name);
-
-    return false;
+    return CheckElementWrite(currentBlockSerializer_->WriteVLE(value), name);
 }
 
 bool BinaryOutputArchive::CheckEOF(const char* elementName)
@@ -273,9 +206,7 @@ bool BinaryOutputArchive::CheckElementWrite(bool result, const char* elementName
     { \
         if (!CheckEOFAndRoot(ArchiveBase::keyElementName_)) \
             return false; \
-        if (Serializer* serializer = GetCurrentBlock().CreateElement(*this, name)) \
-            return CheckElementWrite(serializer->function(value), name); \
-        return false; \
+        return CheckElementWrite(currentBlockSerializer_->function(value), name); \
     }
 
 URHO3D_BINARY_OUT_IMPL(bool, WriteBool);
@@ -301,101 +232,12 @@ BinaryInputArchiveBlock::BinaryInputArchiveBlock(const char* name, ArchiveBlockT
     , safe_(safe)
     , nextElementPosition_(nextElementPosition)
 {
-}
-
-bool BinaryInputArchiveBlock::Open(ArchiveBase& archive)
-{
-
-    if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
-    {
-        numElements_ = deserializer_->ReadVLE();
-    }
-
     if (safe_)
     {
         blockSize_ = deserializer_->ReadVLE();
         blockOffset_ = deserializer_->GetPosition();
         nextElementPosition_ = ea::min(blockOffset_ + blockSize_, deserializer_->GetSize());
     }
-
-    if (deserializer_->IsEof() && blockSize_ != 0)
-    {
-        archive.SetError(ArchiveBase::errorReadEOF_blockName_elementName, name_, ArchiveBase::blockElementName_);
-        return false;
-    }
-
-    return true;
-}
-
-Deserializer* BinaryInputArchiveBlock::ReadElementKey(ArchiveBase& archive)
-{
-    if (deserializer_->GetPosition() > nextElementPosition_)
-    {
-        archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
-        return nullptr;
-    }
-
-    if (type_ != ArchiveBlockType::Map)
-    {
-        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    if (keyRead_)
-    {
-        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Array || type_ == ArchiveBlockType::Map)
-    {
-        if (numElementsRead_ >= numElements_)
-        {
-            archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
-            return nullptr;
-        }
-    }
-
-    keyRead_ = true;
-    return deserializer_;
-}
-
-Deserializer* BinaryInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* elementName)
-{
-    if (deserializer_->GetPosition() > nextElementPosition_)
-    {
-        archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Array || type_ == ArchiveBlockType::Map)
-    {
-        if (numElementsRead_ >= numElements_)
-        {
-            archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
-            return nullptr;
-        }
-    }
-
-    if (type_ == ArchiveBlockType::Unordered && !elementName)
-    {
-        archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    if (type_ == ArchiveBlockType::Map && !keyRead_)
-    {
-        archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
-        assert(0);
-        return nullptr;
-    }
-
-    keyRead_ = false;
-    ++numElementsRead_;
-    return deserializer_;
 }
 
 void BinaryInputArchiveBlock::Close(ArchiveBase& archive)
@@ -420,31 +262,35 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool s
     if (!CheckEOF(name))
         return false;
 
-    // Open root block
     if (stack_.empty())
     {
         Block frame{ name, type, deserializer_, safe, M_MAX_UNSIGNED };
-        if (frame.Open(*this))
-        {
-            sizeHint = frame.GetSizeHint();
-            stack_.push_back(frame);
-            return true;
-        }
+        stack_.push_back(frame);
     }
-
-    // Try open block
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
+    else
     {
-        Block blockFrame{ name, type, deserializer, safe, GetCurrentBlock().GetNextElementPosition() };
-        if (blockFrame.Open(*this))
+        if (safe)
         {
-            sizeHint = blockFrame.GetSizeHint();
+            Block blockFrame{ name, type, deserializer_, safe, GetCurrentBlock().GetNextElementPosition() };
             stack_.push_back(blockFrame);
-            return true;
+        }
+        else
+        {
+            GetCurrentBlock().OpenNestedBlock();
         }
     }
 
-    return false;
+    if (type == ArchiveBlockType::Array || type == ArchiveBlockType::Map)
+    {
+        sizeHint = deserializer_->ReadVLE();
+        if (deserializer_->IsEof() && sizeHint != 0)
+        {
+            SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name, ArchiveBase::blockElementName_);
+            return false;
+        }
+    }
+
+    return true;
 }
 
 bool BinaryInputArchive::EndBlock()
@@ -454,6 +300,9 @@ bool BinaryInputArchive::EndBlock()
         SetError(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
+
+    if (GetCurrentBlock().CloseNestedBlock())
+        return true;
 
     GetCurrentBlock().Close(*this);
 
@@ -468,13 +317,8 @@ bool BinaryInputArchive::SerializeKey(ea::string& key)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElementKey(*this))
-    {
-        key = deserializer->ReadString();
-        return true;
-    }
-
-    return false;
+    key = deserializer_->ReadString();
+    return CheckElementRead(true, ArchiveBase::keyElementName_);
 }
 
 bool BinaryInputArchive::SerializeKey(unsigned& key)
@@ -482,13 +326,8 @@ bool BinaryInputArchive::SerializeKey(unsigned& key)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElementKey(*this))
-    {
-        key = deserializer->ReadUInt();
-        return true;
-    }
-
-    return false;
+    key = deserializer_->ReadUInt();
+    return CheckElementRead(true, ArchiveBase::keyElementName_);
 }
 
 bool BinaryInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
@@ -496,10 +335,7 @@ bool BinaryInputArchive::SerializeBytes(const char* name, void* bytes, unsigned 
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
-        return CheckElementRead(deserializer->Read(bytes, size) == size, name);
-
-    return false;
+    return CheckElementRead(deserializer_->Read(bytes, size) == size, name);
 }
 
 bool BinaryInputArchive::SerializeVLE(const char* name, unsigned& value)
@@ -507,13 +343,8 @@ bool BinaryInputArchive::SerializeVLE(const char* name, unsigned& value)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
-    {
-        value = deserializer->ReadVLE();
-        return true;
-    }
-
-    return false;
+    value = deserializer_->ReadVLE();
+    return CheckElementRead(true, name);
 }
 
 bool BinaryInputArchive::CheckEOF(const char* elementName)
@@ -544,11 +375,12 @@ bool BinaryInputArchive::CheckEOFAndRoot(const char* elementName)
 
 bool BinaryInputArchive::CheckElementRead(bool result, const char* elementName)
 {
-    if (result)
-        return true;
-
-    SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, GetCurrentBlock().GetName(), elementName);
-    return false;
+    if (!result || deserializer_->GetPosition() > GetCurrentBlock().GetNextElementPosition())
+    {
+        SetError(ArchiveBase::errorCannotReadData_blockName_elementName, GetCurrentBlock().GetName(), elementName);
+        return false;
+    }
+    return true;
 }
 
 // Generate serialization implementation (binary input)
@@ -557,12 +389,8 @@ bool BinaryInputArchive::CheckElementRead(bool result, const char* elementName)
     { \
         if (!CheckEOFAndRoot(ArchiveBase::keyElementName_)) \
             return false; \
-        if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name)) \
-        { \
-            value = deserializer->function(); \
-            return true; \
-        } \
-        return false; \
+        value = deserializer_->function(); \
+        return CheckElementRead(true, name); \
     }
 
 URHO3D_BINARY_IN_IMPL(bool, ReadBool);

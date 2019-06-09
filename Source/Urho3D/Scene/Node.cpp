@@ -158,7 +158,7 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
             return true;
 
         // Serialize component
-        if (ArchiveBlock componentBlock = archive.OpenUnorderedBlock("component"))
+        if (ArchiveBlock componentBlock = archive.OpenSafeUnorderedBlock("component"))
         {
             // Serialize component ID and type
             unsigned componentID = component ? component->GetID() : 0;
