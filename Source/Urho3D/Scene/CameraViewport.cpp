@@ -90,7 +90,7 @@ void CameraViewport::OnNodeSet(Node* node)
                 if (Camera* camera = component->Cast<Camera>())
                 {
                     viewport_->SetCamera(camera);
-                    camera->SetViewMask(camera->GetViewMask() & ~(1U << 31));   // Do not render last layer.
+                    camera->SetViewMask(camera->GetViewMask() & ~(1U << 31U));   // Do not render last layer.
                 }
             }
         });
@@ -103,10 +103,10 @@ void CameraViewport::OnNodeSet(Node* node)
             }
         });
 
-        if (Camera* camera = node->GetComponent<Camera>())
+        if (Camera* camera = node->GetOrCreateComponent<Camera>())
         {
             viewport_->SetCamera(camera);
-            camera->SetViewMask(camera->GetViewMask() & ~(1U << 31));   // Do not render last layer.
+            camera->SetViewMask(camera->GetViewMask() & ~(1U << 31U));   // Do not render last layer.
         }
     }
 }
