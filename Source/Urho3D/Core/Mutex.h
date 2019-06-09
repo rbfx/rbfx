@@ -29,6 +29,7 @@
 #endif
 
 #include <Urho3D/Urho3D.h>
+#include "../Core/NonCopyable.h"
 #include "../Core/Profiler.h"
 
 namespace Urho3D
@@ -100,18 +101,13 @@ using ProfiledMutex = Mutex;
 
 /// Lock that automatically acquires and releases a mutex.
 template<typename Mutex>
-class MutexLock
+class MutexLock : private NonCopyable
 {
 public:
     /// Construct and acquire the mutex.
     explicit MutexLock(Mutex& mutex) : mutex_(mutex) { mutex_.Acquire(); }
     /// Destruct. Release the mutex.
     ~MutexLock() { mutex_.Release(); }
-
-    /// Prevent copy construction.
-    MutexLock(const MutexLock& rhs) = delete;
-    /// Prevent assignment.
-    MutexLock& operator =(const MutexLock& rhs) = delete;
 
 private:
     /// Mutex reference.
