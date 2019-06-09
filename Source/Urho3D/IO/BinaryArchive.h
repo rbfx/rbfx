@@ -88,7 +88,7 @@ private:
     /// Block type.
     ArchiveBlockType type_{};
     /// Block checked data.
-    ea::shared_ptr<VectorBuffer> checkedData_;
+    ea::unique_ptr<VectorBuffer> checkedData_;
 
     /// Parent serializer object.
     Serializer* parentSerializer_{};
@@ -163,7 +163,7 @@ private:
     bool CheckElementWrite(bool result, const char* elementName);
 
     /// Serializer.
-    Serializer& serializer_;
+    Serializer* serializer_{};
 };
 
 /// XML input archive block. Internal.
@@ -272,7 +272,7 @@ private:
     bool CheckElementRead(bool result, const char* elementName);
 
     /// Deserializer.
-    Deserializer& deserializer_;
+    Deserializer* deserializer_{};
 
 };
 
