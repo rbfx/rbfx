@@ -847,8 +847,8 @@ void UITab::OnAfterBegin()
 
 void UITab::OnBeforeEnd()
 {
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
     BaseClassName::OnBeforeEnd();
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
 }
 
 void UITab::OnAfterEnd()
