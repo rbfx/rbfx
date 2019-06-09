@@ -334,8 +334,8 @@ void SceneTab::OnAfterBegin()
 
 void SceneTab::OnBeforeEnd()
 {
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
     BaseClassName::OnBeforeEnd();
+    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
 }
 
 void SceneTab::OnAfterEnd()
