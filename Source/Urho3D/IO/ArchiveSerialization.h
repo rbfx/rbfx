@@ -45,20 +45,6 @@ namespace Urho3D
 namespace Detail
 {
 
-/// Serialize array as block. For internal use.
-template <class T>
-bool SerializeArrayAsBlock(Archive& archive, const char* name, T* values, unsigned size)
-{
-    if (ArchiveBlock block = archive.OpenArrayBlock(name, size))
-    {
-        bool success = true;
-        for (unsigned i = 0; i < size; ++i)
-            success &= archive.Serialize(nullptr, values[i]);
-        return success;
-    }
-    return false;
-}
-
 /// Format float array to string.
 inline ea::string FormatArray(float* values, unsigned size)
 {
@@ -112,20 +98,23 @@ template <class T>
 bool SerializeArray(Archive& archive, const char* name, T* values, unsigned size)
 {
     if (!archive.IsHumanReadable())
-        return Detail::SerializeArrayAsBlock(archive, name, values, size);
-    else if (archive.IsInput())
-    {
-        ea::string string;
-        if (!archive.Serialize(name, string))
-            return false;
-
-        const unsigned realSize = Detail::UnFormatArray(string, values, size);
-        return realSize == size;
-    }
+        return archive.SerializeBytes(name, values, size * sizeof(T));
     else
     {
-        ea::string string = Detail::FormatArray(values, size);
-        return archive.Serialize(name, string);
+        if (archive.IsInput())
+        {
+            ea::string string;
+            if (!archive.Serialize(name, string))
+                return false;
+
+            const unsigned realSize = Detail::UnFormatArray(string, values, size);
+            return realSize == size;
+        }
+        else
+        {
+            ea::string string = Detail::FormatArray(values, size);
+            return archive.Serialize(name, string);
+        }
     }
 }
 

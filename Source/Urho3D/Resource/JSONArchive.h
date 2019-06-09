@@ -55,8 +55,6 @@ public:
 
     /// Get context.
     Context* GetContext() final { return jsonFile_->GetContext(); }
-    /// Whether the archive is binary.
-    bool IsBinary() const final { return false; }
     /// Whether the human-readability is preferred over performance and output size.
     bool IsHumanReadable() const final { return humanReadable_; }
     /// Whether the Unordered blocks are supported.
