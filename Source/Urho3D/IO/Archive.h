@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Core/Context.h"
+#include "../Core/NonCopyable.h"
 #include "../Core/StringUtils.h"
 
 #include <EASTL/string.h>
@@ -65,13 +66,9 @@ enum class ArchiveBlockType
 class Archive;
 
 /// Archive block scope guard.
-class URHO3D_API ArchiveBlock
+class URHO3D_API ArchiveBlock : private NonCopyable
 {
 public:
-    /// Non-copyable.
-    ArchiveBlock(const ArchiveBlock& other) = delete;
-    /// Non-copy-assignable.
-    ArchiveBlock& operator=(const ArchiveBlock& other) = delete;
     /// Construct invalid.
     ArchiveBlock() = default;
     /// Construct valid.
@@ -203,7 +200,7 @@ public:
 };
 
 /// Archive implementation helper.
-class ArchiveBase : public Archive
+class ArchiveBase : public Archive, private NonCopyable
 {
 public:
     /// Artificial element name used for Map keys

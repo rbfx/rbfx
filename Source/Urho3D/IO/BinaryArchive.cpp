@@ -33,7 +33,7 @@ BinaryOutputArchiveBlock::BinaryOutputArchiveBlock(const char* name, ArchiveBloc
     , parentSerializer_(parentSerializer)
 {
     if (checked)
-        checkedData_ = ea::make_shared<VectorBuffer>();
+        checkedData_ = ea::make_unique<VectorBuffer>();
 
     if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
         expectedElementCount_ = sizeHint;
@@ -138,7 +138,7 @@ Serializer* BinaryOutputArchiveBlock::GetSerializer()
 
 BinaryOutputArchive::BinaryOutputArchive(Context* context, Serializer& serializer)
     : BinaryArchiveBase<BinaryOutputArchiveBlock>(context)
-    , serializer_(serializer)
+    , serializer_(&serializer)
 {
 }
 
@@ -150,7 +150,7 @@ bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archi
     // Open root block
     if (stack_.empty())
     {
-        Block block{ name, type, &serializer_, true, sizeHint };
+        Block block{ name, type, serializer_, true, sizeHint };
         if (block.Open(*this))
         {
             stack_.push_back(ea::move(block));
@@ -402,7 +402,7 @@ void BinaryInputArchiveBlock::Close(ArchiveBase& archive)
 
 BinaryInputArchive::BinaryInputArchive(Context* context, Deserializer& deserializer)
     : BinaryArchiveBase<BinaryInputArchiveBlock>(context)
-    , deserializer_(deserializer)
+    , deserializer_(&deserializer)
 {
 }
 
@@ -414,7 +414,7 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archiv
     // Open root block
     if (stack_.empty())
     {
-        Block frame{ name, type, &deserializer_, true, M_MAX_UNSIGNED };
+        Block frame{ name, type, deserializer_, true, M_MAX_UNSIGNED };
         frame.Open(*this);
         sizeHint = frame.GetSizeHint();
         stack_.push_back(frame);
