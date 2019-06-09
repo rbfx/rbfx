@@ -134,7 +134,7 @@ bool XMLOutputArchiveBlock::Close(ArchiveBase& archive)
     return true;
 }
 
-bool XMLOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
+bool XMLOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
         return false;
@@ -362,7 +362,7 @@ XMLElement XMLInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* e
     return element;
 }
 
-bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
+bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
         return false;

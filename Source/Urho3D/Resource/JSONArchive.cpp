@@ -145,7 +145,7 @@ bool JSONOutputArchiveBlock::Close(ArchiveBase& archive)
     return true;
 }
 
-bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
+bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
         return false;
@@ -402,7 +402,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
     return elementValue;
 }
 
-bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
+bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
         return false;
