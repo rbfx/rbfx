@@ -177,7 +177,7 @@ public:
     /// Return next element position.
     unsigned GetNextElementPosition() const { return nextElementPosition_; }
     /// Open block.
-    void Open(ArchiveBase& archive);
+    bool Open(ArchiveBase& archive);
     /// Return size hint.
     unsigned GetSizeHint() const { return numElements_; }
     /// Set element key.

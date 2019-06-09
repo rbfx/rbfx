@@ -568,7 +568,7 @@ inline bool SerializeValue(Archive& archive, const char* name, ResourceRefList& 
 }
 
 /// Serialize value of the Variant.
-bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value);
+URHO3D_API bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value);
 
 /// Serialize Variant.
 inline bool SerializeValue(Archive& archive, const char* name, Variant& value)
