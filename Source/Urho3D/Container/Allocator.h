@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include "../Core/NonCopyable.h"
+
 #ifdef URHO3D_IS_BUILDING
 #include "Urho3D.h"
 #else
@@ -70,7 +72,7 @@ URHO3D_API void* AllocatorReserve(AllocatorBlock* allocator);
 URHO3D_API void AllocatorFree(AllocatorBlock* allocator, void* ptr);
 
 /// %Allocator template class. Allocates objects of a specific class.
-template <class T> class Allocator
+template <class T> class Allocator : private NonCopyable
 {
 public:
     /// Construct.
@@ -86,11 +88,6 @@ public:
     {
         AllocatorUninitialize(allocator_);
     }
-
-    /// Prevent copy construction.
-    Allocator(const Allocator<T>& rhs) = delete;
-    /// Prevent assignment.
-    Allocator<T>& operator =(const Allocator<T>& rhs) = delete;
 
     /// Reserve and default-construct an object.
     template<typename... Args>
