@@ -130,7 +130,7 @@ public:
     virtual unsigned GetChecksum() { return 0; }
 
     /// Begin archive block.
-    virtual bool BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type) = 0;
+    virtual bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) = 0;
     /// End archive block.
     /// Failure usually means implementation error, for example one of the following:
     /// - Array or Map wasn't completely serialized for output archive.
@@ -178,9 +178,9 @@ public:
     /// @}
 
     /// Begin archive block and return the guard that will end it automatically on destruction.
-    ArchiveBlock OpenBlock(const char* name, unsigned sizeHint, ArchiveBlockType type)
+    ArchiveBlock OpenBlock(const char* name, unsigned sizeHint, bool safe, ArchiveBlockType type)
     {
-        const bool opened = BeginBlock(name, sizeHint, type);
+        const bool opened = BeginBlock(name, sizeHint, safe, type);
         return opened ? ArchiveBlock{ *this, sizeHint } : ArchiveBlock{};
     }
 
@@ -188,13 +188,18 @@ public:
     /// @{
 
     /// Open Sequential block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlock OpenSequentialBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Sequential); }
+    ArchiveBlock OpenSequentialBlock(const char* name) { return OpenBlock(name, 0, false, ArchiveBlockType::Sequential); }
     /// Open Unordered block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlock OpenUnorderedBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Unordered); }
+    ArchiveBlock OpenUnorderedBlock(const char* name) { return OpenBlock(name, 0, false, ArchiveBlockType::Unordered); }
     /// Open Array block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlock OpenArrayBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Array); }
+    ArchiveBlock OpenArrayBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, false, ArchiveBlockType::Array); }
     /// Open Map block. Will be automatically closed when returned object is destroyed.
-    ArchiveBlock OpenMapBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, ArchiveBlockType::Map); }
+    ArchiveBlock OpenMapBlock(const char* name, unsigned sizeHint = 0) { return OpenBlock(name, sizeHint, false, ArchiveBlockType::Map); }
+
+    /// Open safe Sequential block. Will be automatically closed when returned object is destroyed.
+    ArchiveBlock OpenSafeSequentialBlock(const char* name) { return OpenBlock(name, 0, true, ArchiveBlockType::Sequential); }
+    /// Open safe Unordered block. Will be automatically closed when returned object is destroyed.
+    ArchiveBlock OpenSafeUnorderedBlock(const char* name) { return OpenBlock(name, 0, true, ArchiveBlockType::Unordered); }
 
     /// @}
 };
@@ -207,8 +212,8 @@ public:
     static const char* keyElementName_;
     /// Artificial element name used for block
     static const char* blockElementName_;
-    /// Artificial element name used for checked block guard
-    static const char* checkedBlockGuardElementName_;
+    /// Artificial element name used for safe block guard
+    static const char* safeBlockGuardElementName_;
 
     /// Fatal error message: root block was not opened. Placeholders: {elementName}.
     static const ea::string fatalRootBlockNotOpened_elementName;
