@@ -27,12 +27,12 @@
 namespace Urho3D
 {
 
-BinaryOutputArchiveBlock::BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool checked, unsigned sizeHint)
+BinaryOutputArchiveBlock::BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe, unsigned sizeHint)
     : name_(name)
     , type_(type)
     , parentSerializer_(parentSerializer)
 {
-    if (checked)
+    if (safe)
         checkedData_ = ea::make_unique<VectorBuffer>();
 
     if (type_ == ArchiveBlockType::Map || type_ == ArchiveBlockType::Array)
@@ -123,7 +123,7 @@ bool BinaryOutputArchiveBlock::Close(ArchiveBase& archive)
             return true;
     }
 
-    archive.SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name_, ArchiveBase::checkedBlockGuardElementName_);
+    archive.SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name_, ArchiveBase::safeBlockGuardElementName_);
     return false;
 
 }
@@ -142,7 +142,7 @@ BinaryOutputArchive::BinaryOutputArchive(Context* context, Serializer& serialize
 {
 }
 
-bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
+bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
         return false;
@@ -150,7 +150,7 @@ bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archi
     // Open root block
     if (stack_.empty())
     {
-        Block block{ name, type, serializer_, true, sizeHint };
+        Block block{ name, type, serializer_, safe, sizeHint };
         if (block.Open(*this))
         {
             stack_.push_back(ea::move(block));
@@ -160,7 +160,7 @@ bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archi
 
     if (Serializer* parentSerializer = GetCurrentBlock().CreateElement(*this, name))
     {
-        Block block{ name, type, parentSerializer, true, sizeHint };
+        Block block{ name, type, parentSerializer, safe, sizeHint };
         if (block.Open(*this))
         {
             stack_.push_back(ea::move(block));
@@ -294,11 +294,11 @@ URHO3D_BINARY_OUT_IMPL(ea::string, WriteString);
 #undef URHO3D_BINARY_OUT_IMPL
 
 BinaryInputArchiveBlock::BinaryInputArchiveBlock(const char* name, ArchiveBlockType type,
-    Deserializer* deserializer, bool checked, unsigned nextElementPosition)
+    Deserializer* deserializer, bool safe, unsigned nextElementPosition)
     : name_(name)
     , type_(type)
     , deserializer_(deserializer)
-    , checked_(checked)
+    , safe_(safe)
     , nextElementPosition_(nextElementPosition)
 {
 }
@@ -311,7 +311,7 @@ bool BinaryInputArchiveBlock::Open(ArchiveBase& archive)
         numElements_ = deserializer_->ReadVLE();
     }
 
-    if (checked_)
+    if (safe_)
     {
         blockSize_ = deserializer_->ReadVLE();
         blockOffset_ = deserializer_->GetPosition();
@@ -400,7 +400,7 @@ Deserializer* BinaryInputArchiveBlock::ReadElement(ArchiveBase& archive, const c
 
 void BinaryInputArchiveBlock::Close(ArchiveBase& archive)
 {
-    if (checked_)
+    if (safe_)
     {
         assert(nextElementPosition_ != M_MAX_UNSIGNED);
         const unsigned currentPosition = deserializer_->GetPosition();
@@ -415,7 +415,7 @@ BinaryInputArchive::BinaryInputArchive(Context* context, Deserializer& deseriali
 {
 }
 
-bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type)
+bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
         return false;
@@ -423,7 +423,7 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archiv
     // Open root block
     if (stack_.empty())
     {
-        Block frame{ name, type, deserializer_, true, M_MAX_UNSIGNED };
+        Block frame{ name, type, deserializer_, safe, M_MAX_UNSIGNED };
         if (frame.Open(*this))
         {
             sizeHint = frame.GetSizeHint();
@@ -435,7 +435,7 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, Archiv
     // Try open block
     if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
     {
-        Block blockFrame{ name, type, deserializer, true, GetCurrentBlock().GetNextElementPosition() };
+        Block blockFrame{ name, type, deserializer, safe, GetCurrentBlock().GetNextElementPosition() };
         if (blockFrame.Open(*this))
         {
             sizeHint = blockFrame.GetSizeHint();
@@ -496,7 +496,7 @@ bool BinaryInputArchive::SerializeBytes(const char* name, void* bytes, unsigned 
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElementKey(*this))
+    if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
         return CheckElementRead(deserializer->Read(bytes, size) == size, name);
 
     return false;
@@ -507,7 +507,7 @@ bool BinaryInputArchive::SerializeVLE(const char* name, unsigned& value)
     if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
         return false;
 
-    if (Deserializer* deserializer = GetCurrentBlock().ReadElementKey(*this))
+    if (Deserializer* deserializer = GetCurrentBlock().ReadElement(*this, name))
     {
         value = deserializer->ReadVLE();
         return true;

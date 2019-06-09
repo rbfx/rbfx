@@ -38,7 +38,7 @@ ArchiveBlock::~ArchiveBlock()
 
 const char* ArchiveBase::keyElementName_ = "<Map key>";
 const char* ArchiveBase::blockElementName_ = "<Block>";
-const char* ArchiveBase::checkedBlockGuardElementName_ = "<Checked block guard>";
+const char* ArchiveBase::safeBlockGuardElementName_ = "<Checked block guard>";
 
 const ea::string ArchiveBase::fatalRootBlockNotOpened_elementName = "Fatal: Root block must be opened before serializing element '{0}'";
 const ea::string ArchiveBase::fatalUnexpectedEndBlock = "Fatal: Unexpected call to EndBlock";
