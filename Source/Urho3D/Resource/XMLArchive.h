@@ -123,7 +123,7 @@ public:
     bool IsInput() const final { return false; }
 
     /// Begin archive block.
-    bool BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type) final;
+    bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
     /// End archive block.
     bool EndBlock() final;
 
@@ -213,7 +213,7 @@ public:
     bool IsInput() const final { return true; }
 
     /// Begin archive block.
-    bool BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type) final;
+    bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
     /// End archive block.
     bool EndBlock() final;
 

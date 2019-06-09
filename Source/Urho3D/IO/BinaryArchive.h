@@ -67,7 +67,7 @@ class BinaryOutputArchiveBlock
 {
 public:
     /// Construct.
-    BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool checked, unsigned sizeHint);
+    BinaryOutputArchiveBlock(const char* name, ArchiveBlockType type, Serializer* parentSerializer, bool safe, unsigned sizeHint);
     /// Get block name.
     ea::string_view GetName() const { return name_; }
     /// Open block.
@@ -87,7 +87,7 @@ private:
     ea::string_view name_;
     /// Block type.
     ArchiveBlockType type_{};
-    /// Block checked data.
+    /// Block checked data (safe blocks only).
     ea::unique_ptr<VectorBuffer> checkedData_;
 
     /// Parent serializer object.
@@ -115,7 +115,7 @@ public:
     bool IsInput() const final { return false; }
 
     /// Begin archive block.
-    bool BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type) final;
+    bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
     /// End archive block.
     bool EndBlock() final;
 
@@ -171,7 +171,7 @@ class BinaryInputArchiveBlock
 {
 public:
     /// Construct valid.
-    BinaryInputArchiveBlock(const char* name, ArchiveBlockType type, Deserializer* deserializer, bool checked, unsigned nextElementPosition);
+    BinaryInputArchiveBlock(const char* name, ArchiveBlockType type, Deserializer* deserializer, bool safe, unsigned nextElementPosition);
     /// Return name.
     const ea::string_view GetName() const { return name_; }
     /// Return next element position.
@@ -195,8 +195,8 @@ private:
 
     /// Deserializer.
     Deserializer* deserializer_{};
-    /// Whether the block is checked.
-    bool checked_{};
+    /// Whether the block is safe.
+    bool safe_{};
 
     /// Number of elements.
     unsigned numElements_{};
@@ -224,7 +224,7 @@ public:
     bool IsInput() const final { return true; }
 
     /// Begin archive block.
-    bool BeginBlock(const char* name, unsigned& sizeHint, ArchiveBlockType type) final;
+    bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
     /// End archive block.
     bool EndBlock() final;
 
