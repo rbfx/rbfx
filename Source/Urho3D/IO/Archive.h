@@ -305,4 +305,17 @@ private:
     ea::string errorString_{};
 };
 
+/// Archive implementation helper (template). Provides all archive traits
+template <bool IsInputBool, bool IsHumanReadableBool, bool IsUnorderedSupportedBool>
+class ArchiveBaseT : public ArchiveBase
+{
+public:
+    /// Whether the archive is in input mode.
+    bool IsInput() const final { return IsInputBool; }
+    /// Whether the human-readability is preferred over performance and output size.
+    bool IsHumanReadable() const final { return IsHumanReadableBool; }
+    /// Whether the unordered element access is supported for Unordered blocks.
+    bool IsUnorderedSupported() const final { return IsUnorderedSupportedBool; }
+};
+
 }
