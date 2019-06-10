@@ -32,22 +32,19 @@ namespace Urho3D
 {
 
 /// Base archive for XML serialization.
-template <class T>
-class XMLArchiveBase : public ArchiveBase
+template <class T, bool IsInputBool>
+class XMLArchiveBase : public ArchiveBaseT<IsInputBool, true, true>
 {
 public:
     /// Construct.
-    explicit XMLArchiveBase(SharedPtr<XMLFile> xmlFile, bool humanReadable = true)
+    explicit XMLArchiveBase(SharedPtr<XMLFile> xmlFile)
         : xmlFile_(xmlFile)
-        , humanReadable_(humanReadable)
     {}
 
     /// Get context.
     Context* GetContext() final { return xmlFile_->GetContext(); }
-    /// Whether the human-readability is preferred over performance and output size.
-    bool IsHumanReadable() const final { return humanReadable_; }
-    /// Whether the Unordered blocks are supported.
-    bool IsUnorderedSupported() const final { return true; }
+    /// Return name of the archive.
+    ea::string_view GetName() const final { return xmlFile_->GetName(); }
 
 protected:
     /// Block type.
@@ -64,15 +61,13 @@ protected:
 
     /// XML file.
     SharedPtr<XMLFile> xmlFile_;
-    /// Whether to prefer string format.
-    bool humanReadable_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
 };
 
-template <class T> const char* XMLArchiveBase<T>::defaultRootName = "root";
-template <class T> const char* XMLArchiveBase<T>::defaultBlockName = "block";
-template <class T> const char* XMLArchiveBase<T>::defaultElementName = "element";
+template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultRootName = "root";
+template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultBlockName = "block";
+template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultElementName = "element";
 
 /// XML output archive block. Internal.
 class XMLOutputArchiveBlock
@@ -112,13 +107,10 @@ private:
 };
 
 /// XML output archive.
-class URHO3D_API XMLOutputArchive : public XMLArchiveBase<XMLOutputArchiveBlock>
+class URHO3D_API XMLOutputArchive : public XMLArchiveBase<XMLOutputArchiveBlock, false>
 {
 public:
-    using XMLArchiveBase<XMLOutputArchiveBlock>::XMLArchiveBase;
-
-    /// Whether the archive is in input mode.
-    bool IsInput() const final { return false; }
+    using XMLArchiveBase<XMLOutputArchiveBlock, false>::XMLArchiveBase;
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
@@ -202,13 +194,10 @@ private:
 };
 
 /// XML input archive.
-class URHO3D_API XMLInputArchive : public XMLArchiveBase<XMLInputArchiveBlock>
+class URHO3D_API XMLInputArchive : public XMLArchiveBase<XMLInputArchiveBlock, true>
 {
 public:
-    using XMLArchiveBase<XMLInputArchiveBlock>::XMLArchiveBase;
-
-    /// Whether the archive is in input mode.
-    bool IsInput() const final { return true; }
+    using XMLArchiveBase<XMLInputArchiveBlock, true>::XMLArchiveBase;
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
