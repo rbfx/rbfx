@@ -95,7 +95,7 @@ inline unsigned UnFormatArray(const ea::string& string, int* values, unsigned ma
 
 /// Serialize array of fixed size.
 template <class T>
-bool SerializeArray(Archive& archive, const char* name, T* values, unsigned size)
+inline bool SerializeArray(Archive& archive, const char* name, T* values, unsigned size)
 {
     if (!archive.IsHumanReadable())
         return archive.SerializeBytes(name, values, size * sizeof(T));
@@ -120,7 +120,7 @@ bool SerializeArray(Archive& archive, const char* name, T* values, unsigned size
 
 /// Serialize type as fixed array.
 template <unsigned N, class T>
-bool SerializeArrayType(Archive& archive, const char* name, T& value)
+inline bool SerializeArrayType(Archive& archive, const char* name, T& value)
 {
     using ElementType = std::decay_t<decltype(*value.Data())>;
 
@@ -366,6 +366,48 @@ inline bool SerializeVector(Archive& archive, const char* name, const char* elem
         }
     }
     return false;
+}
+
+/// Serialize vector as byte array, if possible.
+template <class T>
+inline bool SerializeVectorBytes(Archive& archive, const char* name, const char* element, T& vector)
+{
+    using ValueType = typename T::value_type;
+    static_assert(std::is_standard_layout<ValueType>::value, "Type should have standard layout to safely use byte serialization");
+    static_assert(std::is_trivially_copyable<ValueType>::value, "Type should be trivially copyable to safely use byte serialization");
+
+    if (archive.IsHumanReadable())
+        return SerializeVector(archive, name, element, vector);
+    else
+    {
+        if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+        {
+            if (archive.IsInput())
+            {
+                unsigned sizeInBytes{};
+                if (!archive.SerializeVLE("size", sizeInBytes))
+                    return false;
+
+                if (sizeInBytes % sizeof(ValueType) != 0)
+                    return false;
+
+                vector.resize(sizeInBytes / sizeof(ValueType));
+                if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
+                    return false;
+            }
+            else
+            {
+                unsigned sizeInBytes = vector.size() * sizeof(ValueType);
+                if (!archive.SerializeVLE("size", sizeInBytes))
+                    return false;
+
+                if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
 }
 
 /// Serialize custom vector.
