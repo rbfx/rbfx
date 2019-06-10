@@ -86,6 +86,9 @@ using StringVector = ea::vector<ea::string>;
 /// Map of variants.
 using VariantMap = ea::unordered_map<StringHash, Variant>;
 
+/// Byte buffer used by variant.
+using VariantBuffer = ea::vector<unsigned char>;
+
 /// Typed resource reference.
 struct URHO3D_API ResourceRef
 {
@@ -331,7 +334,7 @@ union VariantValue
     StringVector stringVector_;
     VariantVector variantVector_;
     VariantMap* variantMap_;
-    ea::vector<unsigned char> buffer_;
+    VariantBuffer buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
 
@@ -449,7 +452,7 @@ public:
     }
 
     /// Construct from a buffer.
-    Variant(const ea::vector<unsigned char>& value)      // NOLINT(google-explicit-constructor)
+    Variant(const VariantBuffer& value)      // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -713,7 +716,7 @@ public:
     }
 
     /// Assign from a buffer.
-    Variant& operator =(const ea::vector<unsigned char>& rhs)
+    Variant& operator =(const VariantBuffer& rhs)
     {
         SetType(VAR_BUFFER);
         value_.buffer_ = rhs;
@@ -896,7 +899,7 @@ public:
     }
 
     /// Test for equality with a buffer. To return true, both the type and value must match.
-    bool operator ==(const ea::vector<unsigned char>& rhs) const;
+    bool operator ==(const VariantBuffer& rhs) const;
     /// Test for equality with a %VectorBuffer. To return true, both the type and value must match.
     bool operator ==(const VectorBuffer& rhs) const;
 
@@ -1037,7 +1040,7 @@ public:
     bool operator !=(const ea::string& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a buffer.
-    bool operator !=(const ea::vector<unsigned char>& rhs) const { return !(*this == rhs); }
+    bool operator !=(const VariantBuffer& rhs) const { return !(*this == rhs); }
 
     /// Test for inequality with a %VectorBuffer.
     bool operator !=(const VectorBuffer& rhs) const { return !(*this == rhs); }
@@ -1233,7 +1236,7 @@ public:
     const ea::string& GetString() const { return type_ == VAR_STRING ? value_.string_ : EMPTY_STRING; }
 
     /// Return buffer or empty on type mismatch.
-    const ea::vector<unsigned char>& GetBuffer() const
+    const VariantBuffer& GetBuffer() const
     {
         return type_ == VAR_BUFFER ? value_.buffer_ : emptyBuffer;
     }
@@ -1373,7 +1376,7 @@ public:
     template <class T> T Get() const;
 
     /// Return a pointer to a modifiable buffer or null on type mismatch.
-    ea::vector<unsigned char>* GetBufferPtr()
+    VariantBuffer* GetBufferPtr()
     {
         return type_ == VAR_BUFFER ? &value_.buffer_ : nullptr;
     }
@@ -1423,7 +1426,7 @@ public:
     /// Empty variant.
     static const Variant EMPTY;
     /// Empty buffer.
-    static const ea::vector<unsigned char> emptyBuffer;
+    static const VariantBuffer emptyBuffer;
     /// Empty resource reference.
     static const ResourceRef emptyResourceRef;
     /// Empty resource reference list.
@@ -1485,7 +1488,7 @@ template <> inline VariantType GetVariantType<ea::string>() { return VAR_STRING;
 
 template <> inline VariantType GetVariantType<StringHash>() { return VAR_INT; }
 
-template <> inline VariantType GetVariantType<ea::vector<unsigned char> >() { return VAR_BUFFER; }
+template <> inline VariantType GetVariantType<VariantBuffer >() { return VAR_BUFFER; }
 
 template <> inline VariantType GetVariantType<ResourceRef>() { return VAR_RESOURCEREF; }
 
@@ -1548,7 +1551,7 @@ template <> URHO3D_API const IntVector2& Variant::Get<const IntVector2&>() const
 
 template <> URHO3D_API const IntVector3& Variant::Get<const IntVector3&>() const;
 
-template <> URHO3D_API const ea::vector<unsigned char>& Variant::Get<const ea::vector<unsigned char>&>() const;
+template <> URHO3D_API const VariantBuffer& Variant::Get<const VariantBuffer&>() const;
 
 template <> URHO3D_API void* Variant::Get<void*>() const;
 
@@ -1590,7 +1593,7 @@ template <> URHO3D_API IntVector2 Variant::Get<IntVector2>() const;
 
 template <> URHO3D_API IntVector3 Variant::Get<IntVector3>() const;
 
-template <> URHO3D_API ea::vector<unsigned char> Variant::Get<ea::vector<unsigned char> >() const;
+template <> URHO3D_API VariantBuffer Variant::Get<VariantBuffer >() const;
 
 template <> URHO3D_API Matrix3 Variant::Get<Matrix3>() const;
 
