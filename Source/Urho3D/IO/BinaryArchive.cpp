@@ -65,7 +65,7 @@ Serializer* BinaryOutputArchiveBlock::GetSerializer()
 }
 
 BinaryOutputArchive::BinaryOutputArchive(Context* context, Serializer& serializer)
-    : BinaryArchiveBase<BinaryOutputArchiveBlock>(context)
+    : BinaryArchiveBase<BinaryOutputArchiveBlock, false>(context)
     , serializer_(&serializer)
 {
 }
@@ -252,7 +252,7 @@ void BinaryInputArchiveBlock::Close(ArchiveBase& archive)
 }
 
 BinaryInputArchive::BinaryInputArchive(Context* context, Deserializer& deserializer)
-    : BinaryArchiveBase<BinaryInputArchiveBlock>(context)
+    : BinaryArchiveBase<BinaryInputArchiveBlock, true>(context)
     , deserializer_(&deserializer)
 {
 }

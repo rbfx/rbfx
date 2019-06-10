@@ -31,8 +31,8 @@ namespace Urho3D
 {
 
 /// Base archive for binary serialization.
-template <class T>
-class BinaryArchiveBase : public ArchiveBase
+template <class T, bool IsInputBool>
+class BinaryArchiveBase : public ArchiveBaseT<IsInputBool, false, false>
 {
 public:
     /// Construct.
@@ -42,10 +42,6 @@ public:
 
     /// Get context.
     Context* GetContext() final { return context_; }
-    /// Whether the human-readability is preferred over performance and output size.
-    bool IsHumanReadable() const final { return false; }
-    /// Whether the Unordered blocks are supported.
-    bool IsUnorderedSupported() const final { return false; }
 
 protected:
     /// Block type.
@@ -101,14 +97,26 @@ private:
 };
 
 /// XML output archive.
-class URHO3D_API BinaryOutputArchive : public BinaryArchiveBase<BinaryOutputArchiveBlock>
+class URHO3D_API BinaryOutputArchive : public BinaryArchiveBase<BinaryOutputArchiveBlock, false>
 {
 public:
     /// Construct.
     BinaryOutputArchive(Context* context, Serializer& serializer);
 
-    /// Whether the archive is in input mode.
-    bool IsInput() const final { return false; }
+    /// Return name of the archive.
+    ea::string_view GetName() const final
+    {
+        if (Deserializer* deserializer = dynamic_cast<Deserializer*>(serializer_))
+            return deserializer->GetName();
+        return {};
+    }
+    /// Return a checksum if applicable.
+    unsigned GetChecksum() final
+    {
+        if (Deserializer* deserializer = dynamic_cast<Deserializer*>(serializer_))
+            return deserializer->GetChecksum();
+        return 0;
+    }
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
@@ -214,14 +222,22 @@ private:
 };
 
 /// XML input archive.
-class URHO3D_API BinaryInputArchive : public BinaryArchiveBase<BinaryInputArchiveBlock>
+class URHO3D_API BinaryInputArchive : public BinaryArchiveBase<BinaryInputArchiveBlock, true>
 {
 public:
     /// Construct.
     BinaryInputArchive(Context* context, Deserializer& deserializer);
 
-    /// Whether the archive is in input mode.
-    bool IsInput() const final { return true; }
+    /// Return name of the archive.
+    ea::string_view GetName() const final
+    {
+        return deserializer_->GetName();
+    }
+    /// Return a checksum if applicable.
+    unsigned GetChecksum() final
+    {
+        return deserializer_->GetChecksum();
+    }
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;

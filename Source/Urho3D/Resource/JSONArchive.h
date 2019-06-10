@@ -43,22 +43,19 @@ inline bool IsArchiveBlockTypeMatching(const JSONValue& value, ArchiveBlockType 
 }
 
 /// Base archive for JSON serialization.
-template <class T>
-class JSONArchiveBase : public ArchiveBase
+template <class T, bool IsInputBool>
+class JSONArchiveBase : public ArchiveBaseT<IsInputBool, true, true>
 {
 public:
     /// Construct.
-    explicit JSONArchiveBase(SharedPtr<JSONFile> jsonFile, bool humanReadable = true)
+    explicit JSONArchiveBase(SharedPtr<JSONFile> jsonFile)
         : jsonFile_(jsonFile)
-        , humanReadable_(humanReadable)
     {}
 
     /// Get context.
     Context* GetContext() final { return jsonFile_->GetContext(); }
-    /// Whether the human-readability is preferred over performance and output size.
-    bool IsHumanReadable() const final { return humanReadable_; }
-    /// Whether the Unordered blocks are supported.
-    bool IsUnorderedSupported() const final { return true; }
+    /// Return name of the archive.
+    ea::string_view GetName() const final { return jsonFile_->GetName(); }
 
 protected:
     /// Block type.
@@ -69,8 +66,6 @@ protected:
 
     /// JSON file.
     SharedPtr<JSONFile> jsonFile_;
-    /// Whether to prefer string format.
-    bool humanReadable_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
 };
@@ -109,13 +104,10 @@ private:
     bool keySet_{};
 };
 
-class URHO3D_API JSONOutputArchive : public JSONArchiveBase<JSONOutputArchiveBlock>
+class URHO3D_API JSONOutputArchive : public JSONArchiveBase<JSONOutputArchiveBlock, false>
 {
 public:
-    using JSONArchiveBase<JSONOutputArchiveBlock>::JSONArchiveBase;
-
-    /// Whether the archive is in input mode.
-    bool IsInput() const final { return false; }
+    using JSONArchiveBase<JSONOutputArchiveBlock, false>::JSONArchiveBase;
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
@@ -198,13 +190,10 @@ private:
     bool keyRead_{};
 };
 
-class URHO3D_API JSONInputArchive : public JSONArchiveBase<JSONInputArchiveBlock>
+class URHO3D_API JSONInputArchive : public JSONArchiveBase<JSONInputArchiveBlock, true>
 {
 public:
-    using JSONArchiveBase<JSONInputArchiveBlock>::JSONArchiveBase;
-
-    /// Whether the archive is in input mode.
-    bool IsInput() const final { return true; }
+    using JSONArchiveBase<JSONInputArchiveBlock, true>::JSONArchiveBase;
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
