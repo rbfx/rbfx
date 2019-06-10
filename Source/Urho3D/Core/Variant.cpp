@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 const Variant Variant::EMPTY { };
-const ea::vector<unsigned char> Variant::emptyBuffer { };
+const VariantBuffer Variant::emptyBuffer { };
 const ResourceRef Variant::emptyResourceRef { };
 const ResourceRefList Variant::emptyResourceRefList { };
 const VariantMap Variant::emptyVariantMap;
@@ -234,10 +234,10 @@ bool Variant::operator ==(const Variant& rhs) const
     }
 }
 
-bool Variant::operator ==(const ea::vector<unsigned char>& rhs) const
+bool Variant::operator ==(const VariantBuffer& rhs) const
 {
-    // Use strncmp() instead of ea::vector<unsigned char>::operator ==()
-    const ea::vector<unsigned char>& buffer = value_.buffer_;
+    // Use strncmp() instead of VariantBuffer::operator ==()
+    const VariantBuffer& buffer = value_.buffer_;
     return type_ == VAR_BUFFER && buffer.size() == rhs.size() ?
         strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(&rhs[0]), buffer.size()) == 0 :
         false;
@@ -245,7 +245,7 @@ bool Variant::operator ==(const ea::vector<unsigned char>& rhs) const
 
 bool Variant::operator ==(const VectorBuffer& rhs) const
 {
-    const ea::vector<unsigned char>& buffer = value_.buffer_;
+    const VariantBuffer& buffer = value_.buffer_;
     return type_ == VAR_BUFFER && buffer.size() == rhs.GetSize() ?
         strncmp(reinterpret_cast<const char*>(&buffer[0]), reinterpret_cast<const char*>(rhs.GetData()), buffer.size()) == 0 :
         false;
@@ -484,7 +484,7 @@ void Variant::SetBuffer(const void* data, unsigned size)
         size = 0;
 
     SetType(VAR_BUFFER);
-    ea::vector<unsigned char>& buffer = value_.buffer_;
+    VariantBuffer& buffer = value_.buffer_;
     buffer.resize(size);
     if (size)
         memcpy(&buffer[0], data, size);
@@ -557,7 +557,7 @@ ea::string Variant::ToString() const
 
     case VAR_BUFFER:
         {
-            const ea::vector<unsigned char>& buffer = value_.buffer_;
+            const VariantBuffer& buffer = value_.buffer_;
             ea::string ret;
             BufferToString(ret, buffer.data(), buffer.size());
             return ret;
@@ -770,7 +770,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_BUFFER:
-        new(&value_.buffer_) ea::vector<unsigned char>();
+        new(&value_.buffer_) VariantBuffer();
         break;
 
     case VAR_RESOURCEREF:
@@ -909,7 +909,7 @@ template <> const IntVector3& Variant::Get<const IntVector3&>() const
     return GetIntVector3();
 }
 
-template <> const ea::vector<unsigned char>& Variant::Get<const ea::vector<unsigned char>&>() const
+template <> const VariantBuffer& Variant::Get<const VariantBuffer&>() const
 {
     return GetBuffer();
 }
@@ -1014,7 +1014,7 @@ template <> IntVector3 Variant::Get<IntVector3>() const
     return GetIntVector3();
 }
 
-template <> ea::vector<unsigned char> Variant::Get<ea::vector<unsigned char> >() const
+template <> VariantBuffer Variant::Get<VariantBuffer >() const
 {
     return GetBuffer();
 }
