@@ -108,6 +108,11 @@ class URHO3D_API Archive
 public:
     /// Get context.
     virtual Context* GetContext() = 0;
+    /// Return name of the archive.
+    virtual ea::string_view GetName() const = 0;
+    /// Return a checksum if applicable.
+    virtual unsigned GetChecksum() = 0;
+
     /// Whether the archive is in input mode.
     /// It is guaranteed that input archive doesn't read from variable.
     /// It is guaranteed that output archive doesn't write to variable.
@@ -118,20 +123,19 @@ public:
     /// - Enumerators serialized as strings, if possible.
     /// - Simple compound types like Vector3 are serialized as formatted strings instead of blocks.
     virtual bool IsHumanReadable() const = 0;
-    /// Whether the archive can no longer be serialized.
-    virtual bool IsEOF() const = 0;
-    /// Whether the serialization error occurred.
-    virtual bool IsBad() const = 0;
     /// Whether the unordered element access is supported for Unordered blocks.
     /// If false, serialization code should treat Unordered blocks as Sequential.
     virtual bool IsUnorderedSupported() const = 0;
 
+    /// Whether the archive can no longer be serialized.
+    virtual bool IsEOF() const = 0;
+    /// Whether the serialization error occurred.
+    virtual bool HasError() const = 0;
     /// Return latest error string.
-    virtual ea::string_view GetErrorString() const { return {}; }
-    /// Return name of the archive.
-    virtual ea::string_view GetName() const { return {}; }
-    /// Return a checksum if applicable.
-    virtual unsigned GetChecksum() { return 0; }
+    virtual ea::string_view GetErrorString() const = 0;
+
+    /// Set archive error.
+    virtual void SetError(ea::string_view error) = 0;
 
     /// Begin archive block.
     /// Size is required for Array and Map blocks.
@@ -210,9 +214,41 @@ public:
     /// @}
 };
 
-/// Archive implementation helper.
+/// Archive implementation helper. Provides default Archive implementation for most cases.
 class ArchiveBase : public Archive, private NonCopyable
 {
+public:
+    /// Get context.
+    Context* GetContext() override { return nullptr; }
+    /// Return name of the archive.
+    ea::string_view GetName() const override { return {}; }
+    /// Return a checksum if applicable.
+    unsigned GetChecksum() { return 0; }
+
+    /// Whether the any following archive operation will result in failure.
+    bool IsEOF() const final { return eof_; }
+    /// Whether the serialization error occurred.
+    bool HasError() const final { return hasError_; }
+    /// Return latest error string.
+    ea::string_view GetErrorString() const final { return errorString_; }
+
+    /// Set archive error.
+    void SetError(ea::string_view error) override
+    {
+        SetErrorFormatted(error);
+    }
+
+    /// Set archive error (formatted string).
+    template <class ... Args>
+    void SetErrorFormatted(ea::string_view errorString, const Args& ... args)
+    {
+        if (!hasError_)
+        {
+            hasError_ = true;
+            errorString_ = Format(errorString, args...);
+        }
+    }
+
 public:
     /// Artificial element name used for Map keys
     static const char* keyElementName_;
@@ -255,26 +291,6 @@ public:
     static const ea::string fatalBlockOverflow_blockName;
     /// Fatal error message: Archive or Map block underflow while writing archive. Placeholders: {blockName}
     static const ea::string fatalBlockUnderflow_blockName;
-
-    /// Whether the any following archive operation will result in failure.
-    bool IsEOF() const final { return eof_; }
-    /// Whether the serialization error occurred.
-    bool IsBad() const final { return hasError_; }
-    /// Return latest error string.
-    ea::string_view GetErrorString() const final { return errorString_; }
-
-    /// Set error flag.
-    void SetError() { hasError_ = true; }
-    /// Set error flag and error string.
-    template <class ... Args>
-    void SetError(ea::string_view errorString, const Args& ... args)
-    {
-        if (!hasError_)
-        {
-            hasError_ = true;
-            errorString_ = Format(errorString, args...);
-        }
-    }
 
 protected:
     /// Set EOF flag.

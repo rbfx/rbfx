@@ -51,7 +51,7 @@ bool BinaryOutputArchiveBlock::Close(ArchiveBase& archive)
             return true;
     }
 
-    archive.SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name_, ArchiveBase::safeBlockGuardElementName_);
+    archive.SetErrorFormatted(ArchiveBase::errorCannotWriteData_blockName_elementName, name_, ArchiveBase::safeBlockGuardElementName_);
     return false;
 
 }
@@ -99,7 +99,7 @@ bool BinaryOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool 
     {
         if (!currentBlockSerializer_->WriteVLE(sizeHint))
         {
-            SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name, ArchiveBase::blockElementName_);
+            SetErrorFormatted(ArchiveBase::errorCannotWriteData_blockName_elementName, name, ArchiveBase::blockElementName_);
             EndBlock();
             return false;
         }
@@ -112,7 +112,7 @@ bool BinaryOutputArchive::EndBlock()
 {
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalUnexpectedEndBlock);
+        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
@@ -170,7 +170,7 @@ bool BinaryOutputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
         return false;
     }
     return true;
@@ -183,7 +183,7 @@ bool BinaryOutputArchive::CheckEOFAndRoot(const char* elementName)
 
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
         assert(0);
         return false;
     }
@@ -196,7 +196,7 @@ bool BinaryOutputArchive::CheckElementWrite(bool result, const char* elementName
     if (result)
         return true;
 
-    SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, GetCurrentBlock().GetName(), elementName);
+    SetErrorFormatted(ArchiveBase::errorCannotWriteData_blockName_elementName, GetCurrentBlock().GetName(), elementName);
     return false;
 }
 
@@ -285,7 +285,7 @@ bool BinaryInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool s
         sizeHint = deserializer_->ReadVLE();
         if (deserializer_->IsEof() && sizeHint != 0)
         {
-            SetError(ArchiveBase::errorCannotWriteData_blockName_elementName, name, ArchiveBase::blockElementName_);
+            SetErrorFormatted(ArchiveBase::errorCannotWriteData_blockName_elementName, name, ArchiveBase::blockElementName_);
             return false;
         }
     }
@@ -297,7 +297,7 @@ bool BinaryInputArchive::EndBlock()
 {
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalUnexpectedEndBlock);
+        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
@@ -352,7 +352,7 @@ bool BinaryInputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
         return false;
     }
     return true;
@@ -365,7 +365,7 @@ bool BinaryInputArchive::CheckEOFAndRoot(const char* elementName)
 
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
         assert(0);
         return false;
     }
@@ -377,7 +377,7 @@ bool BinaryInputArchive::CheckElementRead(bool result, const char* elementName)
 {
     if (!result || deserializer_->GetPosition() > GetCurrentBlock().GetNextElementPosition())
     {
-        SetError(ArchiveBase::errorCannotReadData_blockName_elementName, GetCurrentBlock().GetName(), elementName);
+        SetErrorFormatted(ArchiveBase::errorCannotReadData_blockName_elementName, GetCurrentBlock().GetName(), elementName);
         return false;
     }
     return true;

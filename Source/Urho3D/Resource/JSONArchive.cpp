@@ -47,14 +47,14 @@ bool JSONOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
 {
     if (type_ != ArchiveBlockType::Map)
     {
-        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
         assert(0);
         return false;
     }
 
     if (keySet_)
     {
-        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
         assert(0);
         return false;
     }
@@ -68,21 +68,21 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
 {
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
     {
-        archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow_blockName, name_);
         assert(0);
         return nullptr;
     }
 
     if (type_ == ArchiveBlockType::Map && !keySet_)
     {
-        archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
         assert(0);
         return nullptr;
     }
 
     if (type_ == ArchiveBlockType::Unordered && !elementName)
     {
-        archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName_blockName, name_);
         assert(0);
         return nullptr;
     }
@@ -104,7 +104,7 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
     {
         if (blockValue_->GetObject().contains(jsonObjectKey))
         {
-            archive.SetError(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
+            archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
             return nullptr;
         }
     }
@@ -135,9 +135,9 @@ bool JSONOutputArchiveBlock::Close(ArchiveBase& archive)
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
     {
         if (numElements_ < expectedElementCount_)
-            archive.SetError(ArchiveBase::fatalBlockUnderflow_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::fatalBlockUnderflow_blockName, name_);
         else
-            archive.SetError(ArchiveBase::fatalBlockOverflow_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow_blockName, name_);
         assert(0);
         return false;
     }
@@ -171,7 +171,7 @@ bool JSONOutputArchive::EndBlock()
 {
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalUnexpectedEndBlock);
+        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
@@ -226,7 +226,7 @@ bool JSONOutputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
         return false;
     }
     return true;
@@ -239,7 +239,7 @@ bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName)
 
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
         assert(0);
         return false;
     }
@@ -293,21 +293,21 @@ bool JSONInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key
 {
     if (type_ != ArchiveBlockType::Map)
     {
-        archive.SetError(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
         assert(0);
         return false;
     }
 
     if (keyRead_)
     {
-        archive.SetError(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
         assert(0);
         return false;
     }
 
     if (nextMapElementIterator_ == value_->GetObject().end())
     {
-        archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
+        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
         return false;
     }
 
@@ -324,7 +324,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
     {
         if (nextElementIndex_ >= value_->Size())
         {
-            archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+            archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
             return nullptr;
         }
 
@@ -337,7 +337,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
         {
             if (!elementName)
             {
-                archive.SetError(ArchiveBase::fatalMissingElementName_blockName, name_);
+                archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName_blockName, name_);
                 assert(0);
                 return nullptr;
             }
@@ -355,14 +355,14 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
         {
             if (!keyRead_)
             {
-                archive.SetError(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+                archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
                 assert(0);
                 return nullptr;
             }
 
             if (nextMapElementIterator_ == value_->GetObject().end())
             {
-                archive.SetError(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+                archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
                 return nullptr;
             }
 
@@ -387,7 +387,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
     {
         if (!IsArchiveBlockTypeMatching(*elementValue, *elementBlockType))
         {
-            archive.SetError(ArchiveBase::errorUnexpectedBlockType_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::errorUnexpectedBlockType_blockName, name_);
             return nullptr;
         }
     }
@@ -412,7 +412,7 @@ bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool saf
     {
         if (!IsArchiveBlockTypeMatching(jsonFile_->GetRoot(), type))
         {
-            SetError(ArchiveBase::errorUnexpectedBlockType_blockName, name);
+            SetErrorFormatted(ArchiveBase::errorUnexpectedBlockType_blockName, name);
             return false;
         }
 
@@ -438,7 +438,7 @@ bool JSONInputArchive::EndBlock()
 {
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalUnexpectedEndBlock);
+        SetErrorFormatted(ArchiveBase::fatalUnexpectedEndBlock);
         return false;
     }
 
@@ -533,7 +533,7 @@ bool JSONInputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetError(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
         return false;
     }
     return true;
@@ -546,7 +546,7 @@ bool JSONInputArchive::CheckEOFAndRoot(const char* elementName)
 
     if (stack_.empty())
     {
-        SetError(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
         assert(0);
         return false;
     }
