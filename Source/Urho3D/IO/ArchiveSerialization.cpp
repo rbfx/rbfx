@@ -53,11 +53,10 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
     case VAR_STRING:
         return Detail::SerializeVariantValueType<ea::string>(archive, name, value);
     case VAR_BUFFER:
+        if (archive.IsInput() && !value.GetBufferPtr())
+            value = VariantBuffer{};
         if (auto ptr = value.GetBufferPtr())
-        {
-            return false;
-            //return Detail::SerializeVariantValueType<ea::vector<unsigned char>>(archive, name, value);
-        }
+            return SerializeVectorBytes(archive, name, "elem", *ptr);
         return false;
     case VAR_VOIDPTR:
         return false;
