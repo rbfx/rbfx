@@ -47,14 +47,14 @@ bool JSONOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
 {
     if (type_ != ArchiveBlockType::Map)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization);
         assert(0);
         return false;
     }
 
     if (keySet_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization);
         assert(0);
         return false;
     }
@@ -68,21 +68,21 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
 {
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow);
         assert(0);
         return nullptr;
     }
 
     if (type_ == ArchiveBlockType::Map && !keySet_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization);
         assert(0);
         return nullptr;
     }
 
     if (type_ == ArchiveBlockType::Unordered && !elementName)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
         assert(0);
         return nullptr;
     }
@@ -104,7 +104,7 @@ JSONValue* JSONOutputArchiveBlock::CreateElement(ArchiveBase& archive, const cha
     {
         if (blockValue_->GetObject().contains(jsonObjectKey))
         {
-            archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
+            archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_elementName, elementName);
             return nullptr;
         }
     }
@@ -135,9 +135,9 @@ bool JSONOutputArchiveBlock::Close(ArchiveBase& archive)
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
     {
         if (numElements_ < expectedElementCount_)
-            archive.SetErrorFormatted(ArchiveBase::fatalBlockUnderflow_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::fatalBlockUnderflow);
         else
-            archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow);
         assert(0);
         return false;
     }
@@ -226,7 +226,7 @@ bool JSONOutputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
     return true;
@@ -293,21 +293,21 @@ bool JSONInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key
 {
     if (type_ != ArchiveBlockType::Map)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization);
         assert(0);
         return false;
     }
 
     if (keyRead_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization);
         assert(0);
         return false;
     }
 
     if (nextMapElementIterator_ == value_->GetObject().end())
     {
-        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
+        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, ArchiveBase::keyElementName_);
         return false;
     }
 
@@ -324,7 +324,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
     {
         if (nextElementIndex_ >= value_->Size())
         {
-            archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+            archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, elementName);
             return nullptr;
         }
 
@@ -337,7 +337,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
         {
             if (!elementName)
             {
-                archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName_blockName, name_);
+                archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
                 assert(0);
                 return nullptr;
             }
@@ -355,14 +355,14 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
         {
             if (!keyRead_)
             {
-                archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+                archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization);
                 assert(0);
                 return nullptr;
             }
 
             if (nextMapElementIterator_ == value_->GetObject().end())
             {
-                archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+                archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, elementName);
                 return nullptr;
             }
 
@@ -533,7 +533,7 @@ bool JSONInputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
     return true;
