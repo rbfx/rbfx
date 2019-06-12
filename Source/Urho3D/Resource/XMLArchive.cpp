@@ -40,14 +40,14 @@ bool XMLOutputArchiveBlock::SetElementKey(ArchiveBase& archive, ea::string key)
 {
     if (type_ != ArchiveBlockType::Map)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization);
         assert(0);
         return false;
     }
 
     if (keySet_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization);
         assert(0);
         return false;
     }
@@ -61,21 +61,21 @@ XMLElement XMLOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char
 {
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ >= expectedElementCount_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow);
         assert(0);
         return {};
     }
 
     if (type_ == ArchiveBlockType::Map && !keySet_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization);
         assert(0);
         return {};
     }
 
     if (type_ == ArchiveBlockType::Unordered && !elementName)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
         assert(0);
         return {};
     }
@@ -83,7 +83,7 @@ XMLElement XMLOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char
     if (type_ == ArchiveBlockType::Unordered && usedNames_.contains(elementName)
         || type_ == ArchiveBlockType::Map && usedNames_.contains(elementKey_))
     {
-        archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_blockName_elementName, name_, elementName);
+        archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_elementName, elementName);
         return {};
     }
 
@@ -124,9 +124,9 @@ bool XMLOutputArchiveBlock::Close(ArchiveBase& archive)
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
     {
         if (numElements_ < expectedElementCount_)
-            archive.SetErrorFormatted(ArchiveBase::fatalBlockUnderflow_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::fatalBlockUnderflow);
         else
-            archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow_blockName, name_);
+            archive.SetErrorFormatted(ArchiveBase::fatalBlockOverflow);
         assert(0);
         return false;
     }
@@ -215,7 +215,7 @@ bool XMLOutputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
     return true;
@@ -296,27 +296,27 @@ bool XMLInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key)
 {
     if (type_ != ArchiveBlockType::Map)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalUnexpectedKeySerialization);
         assert(0);
         return false;
     }
 
     if (keyRead_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalDuplicateKeySerialization);
         assert(0);
         return false;
     }
 
     if (!nextChild_)
     {
-        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, ArchiveBase::keyElementName_);
+        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, ArchiveBase::keyElementName_);
         return false;
     }
 
     if (!nextChild_.HasAttribute("key"))
     {
-        archive.SetErrorFormatted(ArchiveBase::errorMissingMapKey_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::errorMissingMapKey);
         return false;
     }
 
@@ -329,20 +329,20 @@ XMLElement XMLInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* e
 {
     if (type_ != ArchiveBlockType::Unordered && !nextChild_)
     {
-        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, name_, elementName);
+        archive.SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, elementName);
         return {};
     }
 
     if (type_ == ArchiveBlockType::Unordered && !elementName)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
         assert(0);
         return {};
     }
 
     if (type_ == ArchiveBlockType::Map && !keyRead_)
     {
-        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization_blockName, name_);
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingKeySerialization);
         assert(0);
         return {};
     }
@@ -373,7 +373,7 @@ bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe
         XMLElement rootElement = xmlFile_->GetRoot(name ? name : defaultRootName);
         if (!rootElement)
         {
-            SetErrorFormatted(ArchiveBase::errorElementNotFound_blockName_elementName, "", name);
+            SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, name);
             return false;
         }
 
@@ -461,7 +461,7 @@ bool XMLInputArchive::CheckEOF(const char* elementName)
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorReadEOF_blockName_elementName, blockName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
     return true;

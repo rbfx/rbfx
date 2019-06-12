@@ -43,6 +43,21 @@ public:
     /// Get context.
     Context* GetContext() final { return context_; }
 
+    /// Return current string stack.
+    ea::string GetCurrentStackString() final
+    {
+        ea::string result;
+        for (const Block& block : stack_)
+        {
+            if (!result.empty())
+                result += "/";
+            result += ea::string{ block.GetName() };
+            if (block.HasNestedBlocks())
+                result += "/?";
+        }
+        return result;
+    }
+
 protected:
     /// Block type.
     using Block = T;
@@ -81,6 +96,8 @@ public:
         }
         return false;
     }
+    /// Whether the block has nested blocks.
+    bool HasNestedBlocks() const { return nesting_ > 0; }
 
 private:
     /// Block name.
@@ -199,6 +216,8 @@ public:
         }
         return false;
     }
+    /// Whether the block has nested blocks.
+    bool HasNestedBlocks() const { return nesting_ > 0; }
 
 private:
     /// Block name.

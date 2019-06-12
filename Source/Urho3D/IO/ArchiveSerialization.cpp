@@ -58,8 +58,6 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         if (auto ptr = value.GetBufferPtr())
             return SerializeVectorBytes(archive, name, "elem", *ptr);
         return false;
-    case VAR_VOIDPTR:
-        return false;
     case VAR_RESOURCEREF:
         return Detail::SerializeVariantValueType<ResourceRef>(archive, name, value);
     case VAR_RESOURCEREFLIST:
@@ -80,8 +78,6 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         return Detail::SerializeVariantValueType<IntRect>(archive, name, value);
     case VAR_INTVECTOR2:
         return Detail::SerializeVariantValueType<IntVector2>(archive, name, value);
-    case VAR_PTR:
-        return false;
     case VAR_MATRIX3:
         return Detail::SerializeVariantValueType<Matrix3>(archive, name, value);
     case VAR_MATRIX3X4:
@@ -102,6 +98,10 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         return Detail::SerializeVariantValueType<IntVector3>(archive, name, value);
     case VAR_INT64:
         return Detail::SerializeVariantValueType<long long>(archive, name, value);
+    case VAR_VOIDPTR:
+    case VAR_PTR:
+        archive.SetError(Format("Unsupported Variant type of element '{0}'", name));
+        return false;
     case VAR_CUSTOM_HEAP:
     case VAR_CUSTOM_STACK:
     case MAX_VAR_TYPES:
