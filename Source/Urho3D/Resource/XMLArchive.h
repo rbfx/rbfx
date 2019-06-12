@@ -46,6 +46,19 @@ public:
     /// Return name of the archive.
     ea::string_view GetName() const final { return xmlFile_->GetName(); }
 
+    /// Return current string stack.
+    ea::string GetCurrentStackString() final
+    {
+        ea::string result;
+        for (const Block& block : stack_)
+        {
+            if (!result.empty())
+                result += "/";
+            result += ea::string{ block.GetName() };
+        }
+        return result;
+    }
+
 protected:
     /// Block type.
     using Block = T;

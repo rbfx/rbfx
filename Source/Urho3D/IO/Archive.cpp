@@ -38,25 +38,22 @@ ArchiveBlock::~ArchiveBlock()
 
 const char* ArchiveBase::keyElementName_ = "<Map key>";
 const char* ArchiveBase::blockElementName_ = "<Block>";
-const char* ArchiveBase::safeBlockGuardElementName_ = "<Checked block guard>";
 
 const ea::string ArchiveBase::fatalRootBlockNotOpened_elementName = "Fatal: Root block must be opened before serializing element '{0}'";
 const ea::string ArchiveBase::fatalUnexpectedEndBlock = "Fatal: Unexpected call to EndBlock";
-const ea::string ArchiveBase::fatalMissingElementName_blockName = "Fatal: Missing element name in Unordered block '{0}";
-const ea::string ArchiveBase::fatalMissingKeySerialization_blockName = "Fatal: Missing key serialization in Map block '{0}'";
-const ea::string ArchiveBase::fatalDuplicateKeySerialization_blockName = "Fatal: Duplicate key serialization in Map block '{0}'";
-const ea::string ArchiveBase::fatalUnexpectedKeySerialization_blockName = "Fatal: Unexpected key serialization in non-Map block '{0}'";
+const ea::string ArchiveBase::fatalMissingElementName = "Fatal: Missing element name in Unordered block";
+const ea::string ArchiveBase::fatalMissingKeySerialization = "Fatal: Missing key serialization in Map block";
+const ea::string ArchiveBase::fatalDuplicateKeySerialization = "Fatal: Duplicate key serialization in Map block";
+const ea::string ArchiveBase::fatalUnexpectedKeySerialization = "Fatal: Unexpected key serialization in non-Map block";
+const ea::string ArchiveBase::errorEOF_elementName = "End of file before element or block '{0}'";
+const ea::string ArchiveBase::errorUnspecifiedFailure_elementName = "Unspecified I/O failure before element or block '{0}'";
 
-const ea::string ArchiveBase::errorCannotReadData_blockName_elementName = "Cannot read data";
-const ea::string ArchiveBase::errorReadEOF_blockName_elementName = "End of file before reading element or block '{1}' within block '{0}'";
-const ea::string ArchiveBase::errorElementNotFound_blockName_elementName = "Element or block '{1}' is not found in block '{0}'";
+const ea::string ArchiveBase::errorElementNotFound_elementName = "Element or block '{0}' is not found";
 const ea::string ArchiveBase::errorUnexpectedBlockType_blockName = "Block '{0}' has unexpected type";
-const ea::string ArchiveBase::errorMissingMapKey_blockName = "Map key for block '{0}' is missing";
+const ea::string ArchiveBase::errorMissingMapKey = "Map key is missing";
 
-const ea::string ArchiveBase::errorCannotWriteData_blockName_elementName = "Cannot write data";
-const ea::string ArchiveBase::errorWriteEOF_blockName_elementName = "End of file before writing element or block '{1}' within block '{0}'";
-const ea::string ArchiveBase::errorDuplicateElement_blockName_elementName = "Duplicate element or block '{1}' in block '{0}'";
-const ea::string ArchiveBase::fatalBlockOverflow_blockName = "Fatal: Array or Map block '{0}' overflow";
-const ea::string ArchiveBase::fatalBlockUnderflow_blockName = "Fatal: Array or Map block '{0}' underflow";
+const ea::string ArchiveBase::errorDuplicateElement_elementName = "Duplicate element or block '{0}'";
+const ea::string ArchiveBase::fatalBlockOverflow = "Fatal: Array or Map block overflow";
+const ea::string ArchiveBase::fatalBlockUnderflow = "Fatal: Array or Map block underflow";
 
 }

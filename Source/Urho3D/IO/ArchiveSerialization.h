@@ -265,6 +265,7 @@ inline bool SerializeValue(Archive& archive, const char* name, StringHash& value
 template <class EnumType, class UnderlyingInteger = std::underlying_type_t<EnumType>>
 inline bool SerializeEnum(Archive& archive, const char* name, const char* const* enumConstants, EnumType& value)
 {
+    assert(enumConstants);
     const bool loading = archive.IsInput();
     if (!archive.IsHumanReadable())
     {
@@ -286,11 +287,6 @@ inline bool SerializeEnum(Archive& archive, const char* name, const char* const*
     }
     else
     {
-        if (!enumConstants)
-        {
-            assert(0);
-            return false;
-        }
         if (loading)
         {
             ea::string stringValue;
@@ -389,7 +385,10 @@ inline bool SerializeVectorBytes(Archive& archive, const char* name, const char*
                     return false;
 
                 if (sizeInBytes % sizeof(ValueType) != 0)
+                {
+                    archive.SetError(Format("Unexpected size of byte array '{0}'", name));
                     return false;
+                }
 
                 vector.resize(sizeInBytes / sizeof(ValueType));
                 if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
@@ -539,7 +538,10 @@ inline bool SerializeValue(Archive& archive, const char* name, ResourceRef& valu
 
             ea::vector<ea::string> chunks = stringValue.split(';');
             if (chunks.size() != 2)
+            {
+                archive.SetError(Format("Unexpected format of ResourceRef '{0}'", name));
                 return false;
+            }
 
             value.type_ = chunks[0];
             value.name_ = chunks[1];
@@ -581,8 +583,11 @@ inline bool SerializeValue(Archive& archive, const char* name, ResourceRefList& 
                 return false;
 
             ea::vector<ea::string> chunks = stringValue.split(';');
-            if (chunks.size() != 2)
+            if (chunks.size() < 2)
+            {
+                archive.SetError(Format("Unexpected format of ResourceRefList '{0}'", name));
                 return false;
+            }
 
             value.type_ = chunks[0];
             chunks.pop_front();
