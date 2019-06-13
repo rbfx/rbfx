@@ -176,11 +176,19 @@ IntRect Tab::UpdateViewRect()
 void Tab::OnSaveUISettings(ImGuiTextBuffer* buf)
 {
     buf->appendf("\n[Project][%s###%s]\n", GetTypeName().c_str(), GetID().c_str());
+    buf->appendf("IsOpen=%d\n", open_ ? 1 : 0);
 }
 
-void Tab::OnLoadUISettings(const char* name, const char* line)
+const char* Tab::OnLoadUISettings(const char* name, const char* line)
 {
     SetID(ea::string(name).split('#')[1]);
+    int isOpen = 0;
+    if (int scanned = sscanf(line, "IsOpen=%d\n", &isOpen))
+    {
+        open_ = isOpen != 0;
+        line += scanned;
+    }
+    return line;
 }
 
 bool Tab::LoadResource(const ea::string& resourcePath)
