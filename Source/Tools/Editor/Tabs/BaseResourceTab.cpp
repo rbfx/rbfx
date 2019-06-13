@@ -81,11 +81,16 @@ void BaseResourceTab::OnSaveUISettings(ImGuiTextBuffer* buf)
         buf->appendf("Path=%s\n", resourceName_.c_str());
 }
 
-void BaseResourceTab::OnLoadUISettings(const char* name, const char* line)
+const char* BaseResourceTab::OnLoadUISettings(const char* name, const char* line)
 {
-    Tab::OnLoadUISettings(name, line);
-    if (strstr(line, "Path=") == line) // starts with
-        LoadResource(line + 5);
+    line = Tab::OnLoadUISettings(name, line);
+    char path[1024];
+    if (int scanned = sscanf(line, "Path=%s\n", path))
+    {
+        LoadResource(path);
+        line += scanned;
+    }
+    return line;
 }
 
 void BaseResourceTab::SetResourceName(const ea::string& resourceName)

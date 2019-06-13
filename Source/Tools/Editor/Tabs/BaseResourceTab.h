@@ -43,7 +43,7 @@ public:
     /// Save ui settings.
     void OnSaveUISettings(ImGuiTextBuffer* buf) override;
     /// Load ui settings.
-    void OnLoadUISettings(const char* name, const char* line) override;
+    const char* OnLoadUISettings(const char* name, const char* line) override;
     /// Returns name of opened resource.
     ea::string GetResourceName() const { return resourceName_; }
     /// Returns true when loaded resource was modified.
