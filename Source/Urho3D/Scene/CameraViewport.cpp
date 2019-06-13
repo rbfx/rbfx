@@ -22,6 +22,7 @@
 
 #include <EASTL/sort.h>
 
+#include "../Core/CoreEvents.h"
 #include "../Core/StringUtils.h"
 #include "../Engine/PluginApplication.h"
 #include "../Graphics/Camera.h"
@@ -103,10 +104,26 @@ void CameraViewport::OnNodeSet(Node* node)
             }
         });
 
-        if (Camera* camera = node->GetOrCreateComponent<Camera>())
+        if (Camera* camera = node->GetComponent<Camera>())
         {
             viewport_->SetCamera(camera);
             camera->SetViewMask(camera->GetViewMask() & ~(1U << 31U));   // Do not render last layer.
+        }
+        else
+        {
+            // If this node does not have a camera - get or create it on next frame. This is required because Camera may
+            // be created later when deserializing node.
+            SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) {
+                if (Node* node = GetNode())
+                {
+                    if (Camera* camera = node->GetOrCreateComponent<Camera>())
+                    {
+                        viewport_->SetCamera(camera);
+                        camera->SetViewMask(camera->GetViewMask() & ~(1U << 31U));   // Do not render last layer.
+                    }
+                }
+                UnsubscribeFromEvent(E_BEGINFRAME);
+            });
         }
     }
 }
