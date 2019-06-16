@@ -102,6 +102,9 @@ inline unsigned FloatToRawIntBits(float value)
 /// Check whether a floating point value is NaN.
 template <class T> inline bool IsNaN(T value) { return std::isnan(value); }
 
+/// Check whether a floating point value is positive or negative infinity
+template <class T> inline bool IsInf(T value) { return std::isinf(value); }
+
 /// Clamp a number to a range.
 template <class T>
 inline T Clamp(T value, T min, T max)
