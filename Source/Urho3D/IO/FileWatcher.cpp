@@ -116,7 +116,7 @@ bool FileWatcher::StartWatching(const ea::string& pathName, bool watchSubDirs)
         return false;
     }
 #elif defined(__linux__)
-    int flags = IN_CREATE | IN_DELETE | IN_MODIFY | IN_MOVED_FROM | IN_MOVED_TO;
+    int flags = IN_CREATE | IN_DELETE | IN_MODIFY | IN_ATTRIB | IN_MOVED_FROM | IN_MOVED_TO;
     int handle = inotify_add_watch(watchHandle_, pathName.c_str(), (unsigned)flags);
 
     if (handle < 0)
@@ -328,7 +328,7 @@ void FileWatcher::ThreadFunction()
                     AddChange({FILECHANGE_ADDED, fileName, EMPTY_STRING});
                 else if (event->mask & IN_DELETE)
                     AddChange({FILECHANGE_REMOVED, fileName, EMPTY_STRING});
-                else if (event->mask & IN_MODIFY)
+                else if (event->mask & IN_MODIFY || event->mask & IN_ATTRIB)
                     AddChange({FILECHANGE_MODIFIED, fileName, EMPTY_STRING});
                 else if (event->mask & IN_MOVE)
                 {
