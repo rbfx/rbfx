@@ -28,7 +28,7 @@
 namespace CLI
 {
 
-struct App;
+class App;
 
 }
 
