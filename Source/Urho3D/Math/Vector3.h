@@ -429,6 +429,16 @@ public:
             return *this;
     }
 
+    /// Return normalized to unit length or zero if length is too small.
+    Vector3 NormalizedOrZero(float eps = M_LARGE_EPSILON) const
+    {
+        float lenSquared = LengthSquared();
+        if (lenSquared > eps * eps)
+            return *this / sqrtf(lenSquared);
+        else
+            return Vector3::ZERO;
+    }
+
     /// Return float data.
     const float* Data() const { return &x_; }
 
