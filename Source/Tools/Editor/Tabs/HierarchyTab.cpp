@@ -40,7 +40,7 @@ HierarchyTab::HierarchyTab(Context* context)
 bool HierarchyTab::RenderWindowContent()
 {
     // Render main tab inspectors
-    if (provider_.first.NotNull())
+    if (!provider_.first.Expired())
         provider_.second->RenderHierarchy();
     return true;
 }
