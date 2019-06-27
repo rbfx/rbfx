@@ -619,8 +619,19 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
             Variant value = item->GetAttribute(info.name_);
 
-            if (info.defaultValue_.GetType() != VAR_NONE && value == info.defaultValue_)
+            Variant inheritedDefault = item->GetInstanceDefault(info.name_);
+            bool hasInherited = !inheritedDefault.IsEmpty();
+            if (!inheritedDefault.IsEmpty() /*&& inheritedDefault != info.defaultValue_*/)
+            {
+                // Inherited = green, modified = white
+                if (value == inheritedDefault)
+                    color = Color::GREEN;
+            }
+            else if (value == info.defaultValue_)
+            {
+                // Default = gray, modified = white
                 color = Color::GRAY;
+            }
 
             if (info.mode_ & AM_NOEDIT)
                 hidden = true;
@@ -658,27 +669,41 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_RIGHT))
                 ui::OpenPopup("Attribute Menu");
 
-            bool modified = false;
+            AttributeInspectorModifiedFlags modified{AttributeInspectorModified::NO_CHANGE};
             bool expireBuffers = false;
             if (ui::BeginPopup("Attribute Menu"))
             {
-                if (info.defaultValue_.GetType() != VAR_NONE)
+                if (!info.defaultValue_.IsEmpty())
                 {
-                    if (value == info.defaultValue_)
-                    {
+                    bool isSame = value == info.defaultValue_;
+                    if (isSame)
                         ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-                        ui::MenuItem("Reset to default");
-                        ui::PopStyleColor();
-                    }
-                    else
+
+                    if (ui::MenuItem("Reset to default"))
                     {
-                        if (ui::MenuItem("Reset to default"))
-                        {
-                            value = info.defaultValue_;     // For current frame to render correctly
-                            expireBuffers = true;
-                            modified = true;
-                        }
+                        value = info.defaultValue_;     // For current frame to render correctly
+                        expireBuffers = true;
+                        modified = AttributeInspectorModified::SET_DEFAULT;
                     }
+                    if (isSame)
+                        ui::PopStyleColor();
+                }
+
+                if (!inheritedDefault.IsEmpty())
+                {
+                    bool isSame = value == inheritedDefault;
+                    if (isSame)
+                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+
+                    if (ui::MenuItem("Reset to inherited"))
+                    {
+                        value = inheritedDefault;     // For current frame to render correctly
+                        expireBuffers = true;
+                        modified = AttributeInspectorModified::SET_INHERITED;
+                    }
+
+                    if (isSame)
+                        ui::PopStyleColor();
                 }
 
                 if (value.GetType() == VAR_INT && info.name_.ends_with(" Mask"))
@@ -686,17 +711,17 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                     if (ui::MenuItem("Enable All"))
                     {
                         value = M_MAX_UNSIGNED;
-                        modified = true;
+                        modified = AttributeInspectorModified::SET_BY_USER;
                     }
                     if (ui::MenuItem("Disable All"))
                     {
                         value = 0;
-                        modified = true;
+                        modified = AttributeInspectorModified::SET_BY_USER;
                     }
                     if (ui::MenuItem("Toggle"))
                     {
                         value = value.GetUInt() ^ M_MAX_UNSIGNED;
-                        modified = true;
+                        modified = AttributeInspectorModified::SET_BY_USER;
                     }
                 }
 
@@ -729,29 +754,42 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                 eventNamespace->SendEvent(E_INSPECTORRENDERATTRIBUTE, args);
                 nonVariantValue = args[P_HANDLED].GetBool();
                 if (nonVariantValue)
-                    modified |= args[P_MODIFIED].GetBool();
+                {
+                    if (args[P_MODIFIED].GetBool())
+                        modified = AttributeInspectorModified::SET_BY_USER;
+                }
                 else
+                {
                     // Rendering of default widgets for Variant values.
-                    modified |= RenderSingleAttribute(eventNamespace, &info, value);
+                    if (RenderSingleAttribute(eventNamespace, &info, value))
+                        modified = AttributeInspectorModified::SET_BY_USER;
+                }
             }
 
             // Normal attributes
-            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
-            if (modification->TrackModification(modified, [item, &info]() {
+            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant, AttributeInspectorModifiedFlags>>();
+            if (auto lastModified = modification->TrackModification(modified, [item, &info]() {
                 auto previousValue = item->GetAttribute(info.name_);
                 if (previousValue.GetType() == VAR_NONE)
                     return info.defaultValue_;
                 return previousValue;
             }))
             {
+                if (!nonVariantValue)
+                {
+                    // Update attribute value and do nothing else for now.
+                    item->SetAttribute(info.name_, value);
+                    item->ApplyAttributes();
+                }
+
                 // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                 // has ended and we can fire attribute modification event.
                 using namespace AttributeInspectorValueModified;
                 eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO,
-                                          (void*)&info, P_OLDVALUE, modification->GetInitialValue(), P_NEWVALUE, value);
+                                          (void*)&info, P_OLDVALUE, modification->GetInitialValue(), P_NEWVALUE, value,
+                                          P_MODIFIED, lastModified.AsInteger());
             }
-
-            if (!nonVariantValue && modified)
+            else if (!nonVariantValue && modified)
             {
                 // Update attribute value and do nothing else for now.
                 item->SetAttribute(info.name_, value);

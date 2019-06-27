@@ -755,16 +755,6 @@ void UITab::AttributeMenu(VariantMap& args)
 
         if (styleVariant != value)
         {
-            if (!styleVariant.IsEmpty())
-            {
-                if (ui::MenuItem("Reset to style"))
-                {
-                    item->SetAttribute(info->name_, styleVariant);
-                    item->ApplyAttributes();
-                    undo_.Track<Undo::EditAttributeAction>(item, info->name_, value, item->GetAttribute(info->name_));
-                }
-            }
-
             if (styleXml.NotNull())
             {
                 if (ui::MenuItem("Save to style"))

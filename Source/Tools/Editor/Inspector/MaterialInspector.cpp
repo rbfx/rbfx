@@ -135,7 +135,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::IdScope idScope(i);
 
             auto tech = material->GetTechniqueEntry(i);
-            auto* modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry>>();
+            auto* modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry, bool>>();
 
             ui::Columns();
             ea::string techName = tech.technique_->GetName();
@@ -284,7 +284,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         {
             const ea::string& parameterName = pair.second.name_;
             ui::IdScope id(parameterName.c_str());
-            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant>>();
+            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant, bool>>();
 
             ui::NewLine();
             ui::SameLine(20_dpx);
