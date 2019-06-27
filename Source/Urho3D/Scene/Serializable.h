@@ -84,7 +84,7 @@ public:
     virtual void ApplyAttributes() { }
 
     /// Return whether should save default-valued attributes into XML. Default false.
-    virtual bool SaveDefaultAttributes() const { return false; }
+    virtual bool SaveDefaultAttributes(const AttributeInfo& attr) const { return false; }
 
     /// Mark for attribute check on the next network update.
     virtual void MarkNetworkUpdate() { }
