@@ -37,6 +37,16 @@ namespace Urho3D
 
 class Viewport;
 
+enum class AttributeInspectorModified : unsigned
+{
+    NO_CHANGE = 0,
+    SET_BY_USER = 1,
+    SET_DEFAULT = 1u << 1u,
+    SET_INHERITED = 1u << 2u,
+    RESET = SET_DEFAULT | SET_INHERITED
+};
+URHO3D_FLAGSET(AttributeInspectorModified, AttributeInspectorModifiedFlags);
+
 URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
 {
     URHO3D_PARAM(P_NAME, ResourceName);                                         // String
@@ -56,34 +66,35 @@ URHO3D_EVENT(E_INSPECTORRENDERATTRIBUTE, InspectorRenderAttribute)
     URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                               // void*
     URHO3D_PARAM(P_SERIALIZABLE, Serializable);                                 // RefCounted*
     URHO3D_PARAM(P_HANDLED, Handled);                                           // bool
-    URHO3D_PARAM(P_MODIFIED, Modified);                                         // bool
+    URHO3D_PARAM(P_MODIFIED, Modified);                                         // unsigned (AttributeInspectorModifiedFlags)
 }
 
 /// Automate tracking of initial values that are modified by ImGui widget.
-template<typename TValue>
+template<typename TValue, typename MValue>
 struct ModifiedStateTracker
 {
-    bool TrackModification(bool modified, std::function<TValue()> getInitial)
+    MValue TrackModification(MValue modified, std::function<TValue()> getInitial)
     {
         if (modified)
         {
-            if (!lastFrameModified_)
+            if (!lastModified_)
             {
                 initial_ = getInitial();
-                lastFrameModified_ = true;
+                lastModified_ = modified;
             }
-            return false;
+            return {};
         }
-        else if (!ui::IsAnyItemActive() && lastFrameModified_)
+        else if (!ui::IsAnyItemActive() && lastModified_)
         {
-            lastFrameModified_ = false;
-            return true;
+            auto result = lastModified_;
+            lastModified_ = MValue{};
+            return result;
         }
 
-        return false;
+        return {};
     }
 
-    bool TrackModification(bool modified, const TValue& initialValue)
+    MValue TrackModification(MValue modified, const TValue& initialValue)
     {
         std::function<TValue()> fn = [&]() { return initialValue; };
         return TrackModification(modified, fn);
@@ -95,7 +106,7 @@ protected:
     /// Initial value.
     TValue initial_{};
     /// Flag indicating if value was modified on previous frame.
-    bool lastFrameModified_ = false;
+    MValue lastModified_{};
 };
 
 /// A dummy object used as namespace for subscribing to events.
