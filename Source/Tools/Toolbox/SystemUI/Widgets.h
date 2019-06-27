@@ -217,5 +217,6 @@ URHO3D_TOOLBOX_API void OpenTreeNode(ImGuiID id);
 URHO3D_TOOLBOX_API void BeginButtonGroup();
 /// Ends drawing a background behind button group.
 URHO3D_TOOLBOX_API void EndButtonGroup();
-
+/// Render text of specified width, elide it if text is longer. If shorter - cursor will still skip specified width.
+URHO3D_TOOLBOX_API void TextElided(const char* text, float width);
 }
