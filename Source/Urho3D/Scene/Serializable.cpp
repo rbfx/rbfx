@@ -532,7 +532,7 @@ bool Serializable::SaveXML(XMLElement& dest) const
         Variant defaultValue(GetAttributeDefault(i));
 
         // In XML serialization default values can be skipped. This will make the file easier to read or edit manually
-        if (value == defaultValue && !SaveDefaultAttributes())
+        if (value == defaultValue && !SaveDefaultAttributes(attr))
             continue;
 
         XMLElement attrElem = dest.CreateChild("attribute");
@@ -569,7 +569,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
         Variant defaultValue(GetAttributeDefault(i));
 
         // In JSON serialization default values can be skipped. This will make the file easier to read or edit manually
-        if (value == defaultValue && !SaveDefaultAttributes())
+        if (value == defaultValue && !SaveDefaultAttributes(attr))
             continue;
 
         JSONValue attrVal;
