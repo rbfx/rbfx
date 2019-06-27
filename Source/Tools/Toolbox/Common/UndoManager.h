@@ -574,12 +574,19 @@ class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
     XMLFile newStyle;
     unsigned elementId;
     WeakPtr<UIElement> root;
+    Variant oldValue_;
+    Variant newValue_;
+    ea::string attributeName_;
 
 public:
     EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
         : oldStyle(element->GetContext())
         , newStyle(element->GetContext())
     {
+        attributeName_ = styleElement.GetAttribute("name");
+        oldValue_ = element->GetInstanceDefault(attributeName_);
+        newValue_ = newValue;
+
         root = element->GetRoot();
         elementId = GetID(element);
         oldStyle.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
@@ -593,6 +600,7 @@ public:
     void Undo() override
     {
         UIElement* element = root->GetChild("UIElementID", elementId, true);
+        element->SetInstanceDefault(attributeName_, oldValue_);
         XMLElement root = element->GetDefaultStyle()->GetRoot();
         root.RemoveChildren();
         for (auto child = oldStyle.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
@@ -602,6 +610,7 @@ public:
     void Redo() override
     {
         UIElement* element = root->GetChild("UIElementID", elementId, true);
+        element->SetInstanceDefault(attributeName_, newValue_);
         XMLElement root = element->GetDefaultStyle()->GetRoot();
         root.RemoveChildren();
         for (auto child = newStyle.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())

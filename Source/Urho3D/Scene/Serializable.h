@@ -93,8 +93,12 @@ public:
     bool SetAttribute(unsigned index, const Variant& value);
     /// Set attribute by name. Return true if successfully set.
     bool SetAttribute(const ea::string& name, const Variant& value);
-    /// Set instance-level default flag.
+    /// (Internal use) Set instance-level default flag.
     void SetInstanceDefault(bool enable) { setInstanceDefault_ = enable; }
+    /// (Internal use) Set instance-level default value. Allocate the internal data structure as necessary.
+    void SetInstanceDefault(const ea::string& name, const Variant& defaultValue);
+    /// (Internal use) Get instance-level default value.
+    Variant GetInstanceDefault(const ea::string& name) const;
     /// Reset all editable attributes to their default values.
     void ResetToDefault();
     /// Remove instance's default values if they are set previously.
@@ -141,12 +145,6 @@ public:
 protected:
     /// Network attribute state.
     ea::unique_ptr<NetworkState> networkState_;
-
-private:
-    /// Set instance-level default value. Allocate the internal data structure as necessary.
-    void SetInstanceDefault(const ea::string& name, const Variant& defaultValue);
-    /// Get instance-level default value.
-    Variant GetInstanceDefault(const ea::string& name) const;
 
     /// Attribute default value at each instance level.
     ea::unique_ptr<VariantMap> instanceDefaultValues_;
