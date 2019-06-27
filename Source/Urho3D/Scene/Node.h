@@ -100,7 +100,7 @@ public:
     void ApplyAttributes() override;
 
     /// Return whether should save default-valued attributes into XML. Always save node transforms for readability, even if identity.
-    bool SaveDefaultAttributes() const override { return true; }
+    bool SaveDefaultAttributes(const AttributeInfo& attr) const override { return true; }
 
     /// Mark for attribute check on the next network update.
     void MarkNetworkUpdate() override;
