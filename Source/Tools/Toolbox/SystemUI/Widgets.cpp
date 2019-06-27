@@ -476,4 +476,37 @@ void EndButtonGroup()
     lists->ChannelsMerge();
 }
 
+void TextElided(const char* text, float width)
+{
+    float x = ui::GetCursorPosX();
+    if (ui::CalcTextSize(text).x <= width)
+    {
+        ui::TextUnformatted(text);
+        ui::SameLine(0, 0);
+        ui::SetCursorPosX(x + width);
+        ui::NewLine();
+        return;
+    }
+    else
+    {
+        float w = ui::CalcTextSize("...").x;
+        for (const char* c = text; *c; c++)
+        {
+            w += ui::CalcTextSize(c, c + 1).x;
+            if (w >= width)
+            {
+                ui::TextUnformatted(text, c > text ? c - 1 : c);
+                ui::SameLine(0, 0);
+                ui::TextUnformatted("...");
+                ui::SameLine(0, 0);
+                ui::SetCursorPosX(x + width);
+                ui::NewLine();
+                return;
+            }
+        }
+    }
+    ui::SetCursorPosX(x + width);
+    ui::NewLine();
+}
+
 }
