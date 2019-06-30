@@ -754,7 +754,7 @@ void BatchQueue::SortFrontToBack()
     for (unsigned i = 0; i < batches_.size(); ++i)
         sortedBatches_.push_back(&batches_[i]);
 
-    SortFrontToBack2Pass(sortedBatches_);
+    SortFrontToBack2Pass(sortedBatches_.begin(), sortedBatches_.end());
 
     // Sort each group front to back
     for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
@@ -781,24 +781,25 @@ void BatchQueue::SortFrontToBack()
     for (auto i = batchGroups_.begin(); i != batchGroups_.end(); ++i)
         sortedBatchGroups_[index++] = &i->second;
 
-    SortFrontToBack2Pass(reinterpret_cast<ea::vector<Batch*>& >(sortedBatchGroups_));
+
+    SortFrontToBack2Pass(reinterpret_cast<Batch**>(sortedBatchGroups_.begin()), reinterpret_cast<Batch**>(sortedBatchGroups_.end()) );
 }
 
-void BatchQueue::SortFrontToBack2Pass(ea::vector<Batch*>& batches)
+void BatchQueue::SortFrontToBack2Pass(Batch** begin, Batch** end)
 {
     // Mobile devices likely use a tiled deferred approach, with which front-to-back sorting is irrelevant. The 2-pass
     // method is also time consuming, so just sort with state having priority
 #ifdef GL_ES_VERSION_2_0
-    ea::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
+    ea::quick_sort(begin, end, CompareBatchesState);
 #else
     // For desktop, first sort by distance and remap shader/material/geometry IDs in the sort key
-    ea::quick_sort(batches.begin(), batches.end(), CompareBatchesFrontToBack);
+    ea::quick_sort(begin, end, CompareBatchesFrontToBack);
 
     unsigned freeShaderID = 0;
     unsigned short freeMaterialID = 0;
     unsigned short freeGeometryID = 0;
 
-    for (auto i = batches.begin(); i != batches.end(); ++i)
+    for (auto i = begin; i != end; ++i)
     {
         Batch* batch = *i;
 
@@ -840,7 +841,7 @@ void BatchQueue::SortFrontToBack2Pass(ea::vector<Batch*>& batches)
     geometryRemapping_.clear();
 
     // Finally sort again with the rewritten ID's
-    ea::quick_sort(batches.begin(), batches.end(), CompareBatchesState);
+    ea::quick_sort(begin, end, CompareBatchesState);
 #endif
 }
 
