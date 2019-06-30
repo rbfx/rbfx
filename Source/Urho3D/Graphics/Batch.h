@@ -233,7 +233,7 @@ public:
     /// Sort instanced and non-instanced draw calls front to back.
     void SortFrontToBack();
     /// Sort batches front to back while also maintaining state sorting.
-    void SortFrontToBack2Pass(ea::vector<Batch*>& batches);
+    void SortFrontToBack2Pass(Batch** begin, Batch** end);
     /// Pre-set instance data of all groups. The vertex buffer must be big enough to hold all data.
     void SetInstancingData(void* lockedData, unsigned stride, unsigned& freeIndex);
     /// Draw.
