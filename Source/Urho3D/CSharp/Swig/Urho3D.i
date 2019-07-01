@@ -337,6 +337,7 @@ public:
 %ignore Urho3D::AsyncProgress::resources_;
 %ignore Urho3D::ValueAnimation::GetKeyFrames;
 %ignore Urho3D::Serializable::networkState_;
+%ignore Urho3D::Serializable::instanceDefaultValues_;
 %ignore Urho3D::ReplicationState::connection_;
 %ignore Urho3D::Node::SetOwner;
 %ignore Urho3D::Node::GetOwner;

@@ -137,6 +137,8 @@ protected:
     ea::vector<SharedPtr<SubCommand>> subCommands_;
     /// Global editor settings.
     JSONValue editorSettings_;
+    ///
+    ea::string flavorPendingRemoval_;
 };
 
 }
