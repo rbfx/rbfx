@@ -47,6 +47,7 @@ void BuildAssets::RegisterCommandLine(CLI::App& cli)
         GetSubsystem<Editor>()->GetEngineParameters()[EP_HEADLESS] = true;
     });
     cli.add_flag("--full", full_, "Disable out-of-date checks and rebuild cache completely.");
+    cli.add_option("flavor", flavor_, "Flavor to build.");
 }
 
 void BuildAssets::Execute()
@@ -58,8 +59,11 @@ void BuildAssets::Execute()
         return;
     }
 
-    project->GetPipeline().SetSkipUpToDateAssets(full_ == 0);
-    project->GetPipeline().BuildCache(CONVERTER_ALWAYS);
+    PipelineBuildFlags flags{PipelineBuildFlag::EXECUTE_OPTIONAL};
+    if (!full_)
+        flags |= PipelineBuildFlag::SKIP_UP_TO_DATE;
+
+    project->GetPipeline().BuildCache(flavor_, flags);
     project->GetPipeline().WaitForCompletion();
 }
 

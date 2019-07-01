@@ -47,11 +47,26 @@ using namespace ImGui::litterals;
 namespace Urho3D
 {
 
-MaterialInspector::MaterialInspector(Context* context, Material* material)
+MaterialInspector::MaterialInspector(Context* context)
     : PreviewInspector(context)
-    , inspectable_(new Inspectable::Material(material))
     , attributeInspector_(context)
 {
+}
+
+void MaterialInspector::RegisterObject(Context* context)
+{
+    context->RegisterFactory<MaterialInspector>();
+}
+
+void MaterialInspector::SetResource(const ea::string& resourceName)
+{
+    auto* material = GetCache()->GetResource<Material>(resourceName);
+    if (!material)
+        return;
+
+    BaseClassName::SetResource(resourceName);
+
+    inspectable_ = new Inspectable::Material(material);
     auto autoSave = [this](StringHash, VariantMap&) {
         // Auto-save material on modification
         auto* material = inspectable_->GetMaterial();
