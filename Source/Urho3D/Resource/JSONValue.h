@@ -308,13 +308,13 @@ public:
 };
 
 /// Return iterator to the beginning.
-ea::map<ea::string, JSONValue>::iterator begin(JSONValue& value);
+URHO3D_API ea::map<ea::string, JSONValue>::iterator begin(JSONValue& value);
 /// Return iterator to the beginning.
-ea::map<ea::string, JSONValue>::const_iterator begin(const JSONValue& value);
+URHO3D_API ea::map<ea::string, JSONValue>::const_iterator begin(const JSONValue& value);
 /// Return iterator to the end.
-ea::map<ea::string, JSONValue>::iterator end(JSONValue& value);
+URHO3D_API ea::map<ea::string, JSONValue>::iterator end(JSONValue& value);
 /// Return iterator to the beginning.
-ea::map<ea::string, JSONValue>::const_iterator end(const JSONValue& value);
+URHO3D_API ea::map<ea::string, JSONValue>::const_iterator end(const JSONValue& value);
 
 /// JSON array type.
 using JSONArray = ea::vector<JSONValue>;
