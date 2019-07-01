@@ -331,7 +331,7 @@ bool UITab::LoadResource(const ea::string& resourcePath)
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
 
-    if (GetContentType(resourcePath) != CTYPE_UILAYOUT)
+    if (GetContentType(context_, resourcePath) != CTYPE_UILAYOUT)
     {
         URHO3D_LOGERRORF("%s is not a UI layout.", resourcePath.c_str());
         return false;
@@ -501,7 +501,7 @@ void UITab::AutoLoadDefaultStyle()
         {
             auto resourcePath = dir + "UI/" + fileName;
             // Icons file is also a style file. Without this ugly workaround sometimes wrong style gets applied.
-            if (GetContentType(resourcePath) == CTYPE_UISTYLE && !resourcePath.ends_with("Icons.xml"))
+            if (GetContentType(context_, resourcePath) == CTYPE_UISTYLE && !resourcePath.ends_with("Icons.xml"))
             {
                 auto* style = cache->GetResource<XMLFile>(resourcePath);
                 rootElement_->SetDefaultStyle(style);

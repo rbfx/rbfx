@@ -57,10 +57,10 @@
 #include "Tabs/ResourceTab.h"
 #include "Tabs/PreviewTab.h"
 #include "Pipeline/Commands/CookScene.h"
-#include "Pipeline/GlobResources.h"
-#include "Pipeline/SubprocessExec.h"
 #include "Pipeline/Commands/BuildAssets.h"
+#include "Pipeline/Importers/ModelImporter.h"
 #include "Inspector/MaterialInspector.h"
+#include "Inspector/ModelInspector.h"
 #include "Tabs/ProfilerTab.h"
 
 using namespace ui::litterals;
@@ -141,10 +141,13 @@ void Editor::Setup()
     EditorSceneSettings::RegisterObject(context_);
     Inspectable::Material::RegisterObject(context_);
 
-    // Pipeline
-    Converter::RegisterObject(context_);
-    GlobResources::RegisterObject(context_);
-    SubprocessExec::RegisterObject(context_);
+    // Inspectors
+    ModelInspector::RegisterObject(context_);
+    MaterialInspector::RegisterObject(context_);
+
+    // Importers
+    ModelImporter::RegisterObject(context_);
+    Asset::RegisterObject(context_);
 
     // Define custom command line parameters here
     auto& cmd = GetCommandLineParser();
@@ -247,6 +250,7 @@ void Editor::Start()
             CloseProject();
         }
     });
+    SubscribeToEvent(E_EDITORPROJECTLOADING, std::bind(&Editor::UpdateWindowTitle, this, EMPTY_STRING));
     if (!defaultProjectPath_.empty())
     {
         ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases

@@ -61,7 +61,12 @@ class MaterialInspector : public PreviewInspector
 {
     URHO3D_OBJECT(MaterialInspector, PreviewInspector);
 public:
-    explicit MaterialInspector(Context* context, Material* material);
+    ///
+    explicit MaterialInspector(Context* context);
+    ///
+    static void RegisterObject(Context* context);
+    ///
+    void SetResource(const ea::string& resourceName) override;
 
     /// Render inspector window.
     void RenderInspector(const char* filter) override;

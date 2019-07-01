@@ -37,7 +37,11 @@ class ModelInspector : public PreviewInspector
     URHO3D_OBJECT(ModelInspector, PreviewInspector);
 public:
     /// Construct.
-    explicit ModelInspector(Context* context, Model* model);
+    explicit ModelInspector(Context* context);
+    ///
+    static void RegisterObject(Context* context);
+    ///
+    void SetResource(const ea::string& resourceName) override;
 
     /// Render inspector window.
     void RenderInspector(const char* filter) override;

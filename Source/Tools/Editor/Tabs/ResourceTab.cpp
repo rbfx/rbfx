@@ -37,6 +37,7 @@
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
+#include "Pipeline/Importers/ModelImporter.h"
 #include "Editor.h"
 #include "ResourceTab.h"
 
@@ -57,8 +58,25 @@ ResourceTab::ResourceTab(Context* context)
 
     SubscribeToEvent(E_INSPECTORLOCATERESOURCE, [&](StringHash, VariantMap& args) {
         auto resourceName = args[InspectorLocateResource::P_NAME].GetString();
+
+        auto* project = GetSubsystem<Project>();
+        auto* fs = GetFileSystem();
+
         resourcePath_ = GetPath(resourceName);
-        resourceSelection_ = GetFileNameAndExtension(resourceName);
+        if (fs->FileExists(project->GetCachePath() + resourceName))
+        {
+            // File is in the cache. resourcePath_ should point to a directory of source resource. For example:
+            // We have Resources/Models/cube.fbx which is a source model.
+            // It is converted to Cache/Models/cube.fbx/Model.mdl
+            // ResourceBrowserWidget() expects:
+            // * resourcePath = Models/ (path same as if cube.fbx was selected)
+            // * resourceSelection = cube.fbx/Model.mdl (selection also includes a directory which resides in cache)
+            while (!fs->DirExists(project->GetResourcePath() + resourcePath_))
+                resourcePath_ = GetParentPath(resourcePath_);
+            resourceSelection_ = resourceName.substr(resourcePath_.length());
+        }
+        else
+            resourceSelection_ = GetFileNameAndExtension(resourceName);
         flags_ |= RBF_SCROLL_TO_CURRENT;
         if (ui::GetIO().KeyCtrl)
             SelectCurrentItemInspector();
@@ -87,11 +105,13 @@ ResourceTab::ResourceTab(Context* context)
 
 bool ResourceTab::RenderWindowContent()
 {
-    auto action = ResourceBrowserWidget(resourcePath_, resourceSelection_, flags_);
+    auto* project = GetSubsystem<Project>();
+    auto action = ResourceBrowserWidget(project->GetResourcePath(), project->GetCachePath(), resourcePath_,
+        resourceSelection_, flags_);
     if (action == RBR_ITEM_OPEN)
     {
         ea::string selected = resourcePath_ + resourceSelection_;
-        auto it = contentToTabType.find(GetContentType(selected));
+        auto it = contentToTabType.find(GetContentType(context_, selected));
         if (it != contentToTabType.end())
         {
             if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second))
@@ -222,6 +242,11 @@ bool ResourceTab::RenderWindowContent()
         if (ui::MenuItem("Delete", "Del"))
             flags_ |= RBF_DELETE_CURRENT;
 
+        using namespace EditorResourceContextMenu;
+        ea::string selected = resourcePath_ + resourceSelection_;
+        ContentType ctype = GetContentType(context_, selected);
+        SendEvent(E_EDITORRESOURCECONTEXTMENU, P_CTYPE, ctype, P_RESOURCENAME, selected);
+
         ui::EndPopup();
     }
 
@@ -268,47 +293,31 @@ void ResourceTab::RenderInspector(const char* filter)
 void ResourceTab::SelectCurrentItemInspector()
 {
     ea::string selected = resourcePath_ + resourceSelection_;
-    ContentType ctype = GetContentType(selected);
 
+    ContentType ctype = CTYPE_UNKNOWN;
     SharedPtr<RefCounted> newProvider;
-    switch (ctype)
-    {
-    // case CTYPE_UNKNOWN:break;
-    // case CTYPE_SCENE:break;
-    // case CTYPE_SCENEOBJECT:break;
-    // case CTYPE_UILAYOUT:break;
-    // case CTYPE_UISTYLE:break;
-    case CTYPE_MODEL:
-    {
-        newProvider = SharedPtr<RefCounted>(new ModelInspector(context_, GetCache()->GetResource<Model>(selected)));
-        break;
-    }
-    // case CTYPE_ANIMATION:break;
-    case CTYPE_MATERIAL:
-    {
-        newProvider = SharedPtr<RefCounted>(new MaterialInspector(context_, GetCache()->GetResource<Material>(selected)));
-        break;
-    }
-    // case CTYPE_PARTICLE:break;
-    // case CTYPE_RENDERPATH:break;
-    // case CTYPE_SOUND:break;
-    // case CTYPE_TEXTURE:break;
-    // case CTYPE_TEXTUREXML:break;
-    default:
-        break;
-    }
 
-    if (newProvider.Null())
+    // If selected item is a byproduct of asset - loop up the hierarchy until asset is found and show it in the inspector.
+    do
     {
-        inspector_.first = nullptr;
-        inspector_.second = nullptr;
-    }
-    else
+        if (Asset* asset = GetSubsystem<Project>()->GetPipeline().GetAsset(selected))
+        {
+            newProvider = dynamic_cast<RefCounted*>(asset);
+            ctype = asset->GetContentType();
+            break;
+        }
+        selected = RemoveTrailingSlash(GetParentPath(selected));
+    } while (!selected.empty());
+
+    if (!newProvider.Null())
     {
         inspector_.first = SharedPtr<RefCounted>((RefCounted*)newProvider.Get());
         inspector_.second = dynamic_cast<IInspectorProvider*>(newProvider.Get());
     }
     GetSubsystem<Editor>()->GetTab<InspectorTab>()->SetProvider(this);
+
+    using namespace EditorResourceSelected;
+    SendEvent(E_EDITORRESOURCESELECTED, P_CTYPE, ctype, P_RESOURCENAME, selected);
 }
 
 }

@@ -59,7 +59,13 @@ URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
     URHO3D_PARAM(P_NAME, Name);                                     // String
 }
 
+URHO3D_EVENT(E_RESOURCEBROWSERSELECT, ResourceBrowserSelect)
+{
+    URHO3D_PARAM(P_NAME, Name);                                     // String
+}
+
 /// Create resource browser ui inside another window.
-URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& selected, ResourceBrowserFlags flags=RBF_NONE);
+URHO3D_TOOLBOX_API ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath,
+    const ea::string& cacheDir, ea::string& path, ea::string& selected, ResourceBrowserFlags flags);
 
 }

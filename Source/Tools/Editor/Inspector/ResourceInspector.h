@@ -36,10 +36,16 @@ class ResourceInspector : public Object, public IInspectorProvider
     URHO3D_OBJECT(ResourceInspector, Object);
 public:
     explicit ResourceInspector(Context* context);
+    ///
+    virtual void SetResource(const ea::string& resourceName);
+    ///
+    const ea::string& GetResourceName() const { return resourceName_; }
 
 protected:
     /// Asset changes tracker.
     Undo::Manager undo_;
+    ///
+    ea::string resourceName_;
 };
 
 }

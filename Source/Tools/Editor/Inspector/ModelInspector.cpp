@@ -41,10 +41,23 @@
 namespace Urho3D
 {
 
-ModelInspector::ModelInspector(Context* context, Model* model)
+ModelInspector::ModelInspector(Context* context)
     : PreviewInspector(context)
 {
-    SetModel(model);
+}
+
+void ModelInspector::RegisterObject(Context* context)
+{
+    context->RegisterFactory<ModelInspector>();
+}
+
+void ModelInspector::SetResource(const ea::string& resourceName)
+{
+    if (Model* model = GetCache()->GetResource<Model>(resourceName))
+    {
+        BaseClassName::SetResource(resourceName);
+        SetModel(model);
+    }
 }
 
 void ModelInspector::RenderInspector(const char* filter)

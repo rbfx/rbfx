@@ -23,120 +23,90 @@
 #pragma once
 
 #include <atomic>
-#include <EASTL/hash_set.h>
+#include <EASTL/map.h>
+#include <EASTL/unordered_map.h>
 
+#include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Serializable.h>
 #include <Toolbox/IO/ContentUtilities.h>
 
-#include "Converter.h"
-
+#include "Importers/AssetImporter.h"
+#include "Importers/ModelImporter.h"
+#include "Asset.h"
 
 namespace Urho3D
 {
 
-class Converter;
-class Pipeline;
+static const ea::string DEFAULT_PIPELINE_FLAVOR{"default"};
 
-struct ResourcePathLock
+enum class PipelineBuildFlag : unsigned
 {
-    explicit ResourcePathLock(Pipeline* pipeline, const ea::string& resourcePath);
-
-    ~ResourcePathLock();
-
-    operator bool() { return true; }
-
-    ResourcePathLock(ResourcePathLock&& other) noexcept
-    {
-        ea::swap(pipeline_, other.pipeline_);
-        ea::swap(resourcePath_, other.resourcePath_);
-    }
-
-protected:
-    ///
-    Pipeline* pipeline_{};
-    ///
-    ea::string resourcePath_{};
+    /// Default configuration.
+    DEFAULT = 0,
+    /// Skip importing up-to-date assets.
+    SKIP_UP_TO_DATE = 1U,
+    /// Execute optional importers as well.
+    EXECUTE_OPTIONAL = 1U << 1U,
 };
+URHO3D_FLAGSET(PipelineBuildFlag, PipelineBuildFlags);
 
-class Pipeline : public Serializable
+class Pipeline : public Object
 {
-    URHO3D_OBJECT(Pipeline, Serializable);
+    URHO3D_OBJECT(Pipeline, Object);
 public:
     ///
     explicit Pipeline(Context* context);
     ///
-    bool LoadJSON(const JSONValue& source) override;
-    /// Watch directory for changed assets and automatically convert them.
-    void EnableWatcher();
-    /// Execute asset converters specified in `converterKinds` in worker threads. When `files` are specified only those files will be converted. Returns immediately.
-    void BuildCache(ConverterKinds converterKinds, const StringVector& files={});
-    /// Waits until all scheduled work items are complete.
-    void WaitForCompletion();
-    /// Returns true when assets in the cache are older than source asset.
-    bool IsCacheOutOfDate(const ea::string& resourceName) const;
+    static void RegisterObject(Context* context);
     /// Remove any cached assets belonging to specified resource.
     void ClearCache(const ea::string& resourceName);
-    /// Register converted asset with the pipeline.
-    void AddCacheEntry(const ea::string& resourceName, const ea::string& cacheResourceName);
-    /// Register converted asset with the pipeline.
-    void AddCacheEntry(const ea::string& resourceName, const StringVector& cacheResourceNames);
-    /// Acquire lock on resource path. Returns object whose lifetime is controls lifetime of the lock. Subsequent calls
-    /// when same `resourcePath` is specified will block until result of this function is destroyed.
-    /// This "lock" is used to prevent multiple pipeline converters from writing to same folder at the same time. Reason
-    /// is that converter process can be anything and it likely does not output any information of written files.
-    /// Pipeline needs to track converted files however and this is done by diffing file trees before and after conversion.
-    /// Should be called from workers only.
-    ResourcePathLock LockResourcePath(const ea::string& resourcePath);
+    /// Returns asset object, creates it for existing asset if pipeline has not done it yet. Returns nullptr if `autoCreate` is set to false and asset was not loaded yet.
+    Asset* GetAsset(const eastl::string& resourceName, bool autoCreate = true);
     ///
-    void SetSkipUpToDateAssets(bool skip) { skipUpToDateAssets_ = skip; }
+    const StringVector& GetFlavors() const { return flavors_; }
     ///
-    void Reschedule(const ea::string& resourceName);
+    void AddFlavor(const ea::string& name);
     ///
-    void CreatePaksAsync();
+    void RemoveFlavor(const ea::string& name);
+    ///
+    void RenameFlavor(const ea::string& oldName, const ea::string& newName);
+    /// Schedules import task to run on worker thread.
+    void ScheduleImport(Asset* asset, const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR,
+        PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT, const ea::string& inputFile=EMPTY_STRING);
+    ///
+    bool ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags, const ea::string& inputFile);
+    /// Mass-schedule assets for importing.
+    void BuildCache(const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
+    /// Blocks calling thread until all pipeline tasks complete.
+    void WaitForCompletion() const;
 
 protected:
-    friend class ResourcePathLock;
-    friend class Project;
+    /// Watch directory for changed assets and automatically convert them.
+    void EnableWatcher();
+    ///
+    void OnEndFrame(StringHash, VariantMap&);
 
-    /// Watches for changed files and requests asset conversion if needed.
-    void DispatchChangedAssets();
-    ///
-    void SaveCacheInfo();
-    ///
-    void StartWorkItems(const StringVector& resourcePaths);
-    ///
-    void StartWorkItems(ConverterKinds converterKinds, const StringVector& resourcePaths);
-    ///
-    void HandleEndFrame(StringHash, VariantMap&);
-
-    struct CacheEntry
-    {
-        /// Modification time of source file.
-        unsigned mtime_;
-        /// List of files that
-        ea::hash_set<ea::string> files_;
-    };
-
-    /// Collection of top level converters defined in pipeline.
-    ea::vector<SharedPtr<Converter>> converters_{};
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
+    /// List of pipeline flavors.
+    StringVector flavors_{DEFAULT_PIPELINE_FLAVOR};
+    /// A list of loaded assets.
+    ea::unordered_map<ea::string /*name*/, SharedPtr<Asset>> assets_{};
+    /// A list of all available importers. When new importer is created it should be added here.
+    ea::vector<StringHash> importers_
+    {
+        ModelImporter::GetTypeStatic()
+    };
+
     ///
-    ea::unordered_map<ea::string, CacheEntry> cacheInfo_{};
-    ///
-    Mutex lock_{};
-    ///
-    StringVector lockedPaths_{};
-    ///
-    std::atomic<bool> cacheInfoOutOfDate_{false};
-    ///
-    bool skipUpToDateAssets_ = true;
-    ///
-    StringVector reschedule_{};
-    ///
-    ConverterKinds executingConverterKinds_{};
+    Mutex mutex_;
+    /// A list of assets that were modified in non-main thread and need to be saved on main thread.
+    ea::vector<SharedPtr<Asset>> dirtyAssets_;
+
+    friend class Project;
+    friend class Asset;
 };
 
 }

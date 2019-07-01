@@ -33,4 +33,9 @@ ResourceInspector::ResourceInspector(Urho3D::Context* context)
 
 }
 
+void ResourceInspector::SetResource(const ea::string& resourceName)
+{
+    resourceName_ = resourceName;
+}
+
 }

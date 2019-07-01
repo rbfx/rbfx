@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
@@ -89,13 +90,12 @@ ea::string GetFileIcon(const ea::string& fileName)
     }
 }
 
-ContentType GetContentType(const ea::string& resourcePath)
+ContentType GetContentType(Context* context, const ea::string& resourcePath)
 {
     auto extension = GetExtension(resourcePath).to_lower();
     if (extension == ".xml")
     {
-        auto systemUI = (SystemUI*)ui::GetIO().UserData;
-        SharedPtr<XMLFile> xml(systemUI->GetCache()->GetResource<XMLFile>(resourcePath));
+        SharedPtr<XMLFile> xml(context->GetCache()->GetResource<XMLFile>(resourcePath));
         if (!xml)
             return CTYPE_UNKNOWN;
 

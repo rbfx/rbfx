@@ -253,37 +253,13 @@ bool Project::LoadProject(const ea::string& projectPath)
         }
     }
 
-    // Pipeline.json
     // Register asset dirs
     GetCache()->AddResourceDir(GetCachePath(), 0);
     GetCache()->AddResourceDir(GetResourcePath(), 1);
 
-    ea::string filePath(projectFileDir_ + "Pipeline.json");
-    if (GetFileSystem()->Exists(filePath))
-    {
-        JSONFile file(context_);
-        if (!file.LoadFile(filePath))
-        {
-            URHO3D_LOGERROR("Loading 'Pipeline.json' failed likely due to syntax error or insufficient access.");
-            return false;
-        }
-
-        if (!pipeline_.LoadJSON(file.GetRoot()))
-        {
-            URHO3D_LOGERROR("Deserialization of 'Pipeline.json' failed.");
-            return false;
-        }
-    }
-
-    if (!GetEngine()->IsHeadless())
-    {
-        pipeline_.BuildCache(CONVERTER_ALWAYS);
-        pipeline_.EnableWatcher();
-        GetSubsystem<Editor>()->UpdateWindowTitle();
-    }
-
     // Project.json
     {
+        using namespace EditorProjectLoading;
         ea::string filePath(projectFileDir_ + "Project.json");
         if (GetFileSystem()->Exists(filePath))
         {
@@ -327,9 +303,17 @@ bool Project::LoadProject(const ea::string& projectPath)
             if (defaultSceneIt != root.end())
                 defaultScene_ = defaultSceneIt->second.GetString();
 
-            using namespace EditorProjectLoading;
+            auto flavorsIt = root.find("flavors");
+            if (flavorsIt != root.end())
+            {
+                const JSONValue& flavors = flavorsIt->second;
+                for (int i = 0; i < flavors.Size(); i++)
+                    pipeline_.AddFlavor(flavors[i].GetString());
+            }
             SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
         }
+        else
+            SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)nullptr);
     }
 
     return true;
@@ -380,6 +364,9 @@ bool Project::SaveProject()
         }
 #endif
         root["default-scene"] = defaultScene_;
+
+        for (const ea::string& flavor : pipeline_.GetFlavors())
+            root["flavors"].Push(flavor);
 
         ea::string filePath(projectFileDir_ + "Project.json");
         if (!file.SaveFile(filePath))

@@ -22,57 +22,44 @@
 
 #pragma once
 
-
-#include <Urho3D/Scene/Serializable.h>
+#include "AssetImporter.h"
 
 namespace Urho3D
 {
 
-enum ConverterKind
+class ModelImporter : public AssetImporter
 {
-    /// Converter will not be executed.
-    CONVERTER_DISABLED,
-    /// converter will only run when explicitly invoked.
-    CONVERTER_OFFLINE,
-    /// Converter will run only when user is working in the editor.
-    CONVERTER_ONLINE,
-    /// Converter will run only when user is working in the editor.
-    CONVERTER_ALWAYS,
-};
-URHO3D_FLAGSET(ConverterKind, ConverterKinds);
-
-static const char* converterKindNames[] = {
-    "disabled",
-    "offline",
-    "online",
-    "always",
-    nullptr
-};
-
-class Converter : public Serializable
-{
-    URHO3D_OBJECT(Converter, Serializable);
+    URHO3D_OBJECT(ModelImporter, AssetImporter);
 public:
-    ///
-    explicit Converter(Context* context);
-    ///
+    explicit ModelImporter(Context* context);
+    /// Register object with the engine.
     static void RegisterObject(Context* context);
     ///
-    bool LoadJSON(const JSONValue& source) override;
+    void RenderInspector(const char* filter) override;
     ///
-    virtual void Execute(const StringVector& input);
+    bool Accepts(const ea::string& path) const override;
     ///
-    static StringHash GetSerializedType(const JSONValue& source);
-    ///
-    ConverterKind GetKind() const { return kind_; }
+    bool Execute(Urho3D::Asset* input, const ea::string& inputFile, const ea::string& outputPath) override;
 
 protected:
     ///
-    ea::string comment_{};
+    bool outputAnimations_ = true;
     ///
-    ConverterKind kind_ = CONVERTER_OFFLINE;
+    bool outputMaterials_ = true;
     ///
-    ea::vector<SharedPtr<Converter>> converters_;
+    bool outputMaterialTextures_ = true;
+    ///
+    bool useMaterialDiffuse_ = true;
+    ///
+    bool fixInFacingNormals_ = true;
+    ///
+    int maxBones_ = 64;
+    ///
+    int animationTick_ = 4800;
+    ///
+    bool emissiveIsAmbientOcclusion_ = false;
+    ///
+    bool noFbxPivot_ = false;
 };
 
 }

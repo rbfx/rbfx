@@ -44,6 +44,8 @@ public:
 protected:
     ///
     int full_ = 0;
+    ///
+    ea::string flavor_{DEFAULT_PIPELINE_FLAVOR};
 };
 
 }

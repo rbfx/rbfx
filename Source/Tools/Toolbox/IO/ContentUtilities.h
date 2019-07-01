@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-enum FileType
+enum FileType : unsigned
 {
     FTYPE_FILE,
     FTYPE_ARCHIVE,
@@ -47,7 +47,7 @@ enum FileType
     FTYPE_EXCEL,
 };
 
-enum ContentType
+enum ContentType : unsigned
 {
     CTYPE_UNKNOWN,
     CTYPE_SCENE,
@@ -70,6 +70,6 @@ URHO3D_TOOLBOX_API FileType GetFileType(const ea::string& fileName);
 URHO3D_TOOLBOX_API ea::string GetFileIcon(const ea::string& fileName);
 
 /// Return content type by inspecting file contents.
-URHO3D_TOOLBOX_API ContentType GetContentType(const ea::string& resourcePath);
+URHO3D_TOOLBOX_API ContentType GetContentType(Context* context, const ea::string& resourcePath);
 
 }
