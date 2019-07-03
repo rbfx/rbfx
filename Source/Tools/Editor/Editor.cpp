@@ -400,12 +400,16 @@ void Editor::OnUpdate(VariantMap& args)
                 for (int i = 0; i < recents.Size(); i++)
                 {
                     const ea::string& projectPath = recents[i].GetString();
-                    Image img(editor->context_);
-                    if (img.LoadFile(projectPath + ".snapshot.png"))
+                    ea::string snapshotFile = AddTrailingSlash(projectPath) + ".snapshot.png";
+                    if (editor->GetFileSystem()->FileExists(snapshotFile))
                     {
-                        SharedPtr<Texture2D> texture(editor->context_->CreateObject<Texture2D>());
-                        texture->SetData(&img);
-                        snapshots_[i] = texture;
+                        Image img(editor->context_);
+                        if (img.LoadFile(snapshotFile))
+                        {
+                            SharedPtr<Texture2D> texture(editor->context_->CreateObject<Texture2D>());
+                            texture->SetData(&img);
+                            snapshots_[i] = texture;
+                        }
                     }
                 }
             }
