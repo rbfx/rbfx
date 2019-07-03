@@ -747,6 +747,7 @@
 %ignore Urho3D::EP_MONITOR;
 %ignore Urho3D::EP_MULTI_SAMPLE;
 %ignore Urho3D::EP_ORGANIZATION_NAME;
+%ignore Urho3D::EP_APPLICATION_NAME;
 %ignore Urho3D::EP_ORIENTATIONS;
 %ignore Urho3D::EP_PACKAGE_CACHE_DIR;
 %ignore Urho3D::EP_RENDER_PATH;
@@ -4812,6 +4813,7 @@
   public const string EpMonitor = "Monitor";
   public const string EpMultiSample = "MultiSample";
   public const string EpOrganizationName = "OrganizationName";
+  public const string EpApplicationName = "ApplicationName";
   public const string EpOrientations = "Orientations";
   public const string EpPackageCacheDir = "PackageCacheDir";
   public const string EpRenderPath = "RenderPath";

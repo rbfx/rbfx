@@ -48,6 +48,7 @@ static const ea::string EP_MATERIAL_QUALITY = "MaterialQuality";
 static const ea::string EP_MONITOR = "Monitor";
 static const ea::string EP_MULTI_SAMPLE = "MultiSample";
 static const ea::string EP_ORGANIZATION_NAME = "OrganizationName";
+static const ea::string EP_APPLICATION_NAME = "ApplicationName";
 static const ea::string EP_ORIENTATIONS = "Orientations";
 static const ea::string EP_PACKAGE_CACHE_DIR = "PackageCacheDir";
 static const ea::string EP_RENDER_PATH = "RenderPath";
