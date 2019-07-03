@@ -318,6 +318,7 @@ void Editor::RenderProjectMenu()
             EP_MONITOR.c_str(),
             EP_MULTI_SAMPLE.c_str(),
             EP_ORGANIZATION_NAME.c_str(),
+            EP_APPLICATION_NAME.c_str(),
             EP_ORIENTATIONS.c_str(),
             EP_PACKAGE_CACHE_DIR.c_str(),
             EP_RENDER_PATH.c_str(),
@@ -368,6 +369,7 @@ void Editor::RenderProjectMenu()
             VAR_INT,    // EP_MONITOR
             VAR_INT,    // EP_MULTI_SAMPLE
             VAR_STRING, // EP_ORGANIZATION_NAME
+            VAR_STRING, // EP_APPLICATION_NAME
             VAR_STRING, // EP_ORIENTATIONS
             VAR_STRING, // EP_PACKAGE_CACHE_DIR
             VAR_STRING, // EP_RENDER_PATH
