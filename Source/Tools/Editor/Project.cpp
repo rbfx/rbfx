@@ -162,8 +162,6 @@ bool Project::LoadProject(const ea::string& projectPath)
         handler.TypeHash = ImHashStr(handler.TypeName, 0, 0);
         handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void*
         {
-            if (strcmp(name, "Window") == 0)
-                return (void*) 1;
             return (void*) name;
         };
         handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
@@ -171,26 +169,26 @@ bool Project::LoadProject(const ea::string& projectPath)
             SystemUI* systemUI = ui::GetSystemUI();
             auto* editor = systemUI->GetSubsystem<Editor>();
 
-            if (entry == (void*) 1)
+            const char* name = static_cast<const char*>(entry);
+            if (strcmp(name, "Window") == 0)
             {
                 auto* project = systemUI->GetSubsystem<Project>();
                 project->isNewProject_ = false;
                 editor->CreateDefaultTabs();
 
-                int x, y, w, h;
-                if (sscanf(line, "Rect=%d,%d,%d,%d", &x, &y, &w, &h) == 4)
-                {
-                    w = Max(w, 100);            // Foot-shooting prevention
-                    h = Max(h, 100);
-                    systemUI->GetGraphics()->SetWindowPosition(x, y);
-                    systemUI->GetGraphics()->SetMode(w, h);
-                }
-                else
-                    return;
+                // int x, y, w, h;
+                // if (sscanf(line, "Rect=%d,%d,%d,%d", &x, &y, &w, &h) == 4)
+                // {
+                //     w = Max(w, 100);            // Foot-shooting prevention
+                //     h = Max(h, 100);
+                //     systemUI->GetGraphics()->SetWindowPosition(x, y);
+                //     systemUI->GetGraphics()->SetMode(w, h);
+                // }
+                // else
+                //     return;
             }
             else
             {
-                const char* name = static_cast<const char*>(entry);
 
                 Tab* tab = editor->GetTabByName(name);
                 if (tab == nullptr)
@@ -203,14 +201,14 @@ bool Project::LoadProject(const ea::string& projectPath)
         };
         handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
         {
-            buf->appendf("[Project][Window]\n");
             auto* systemUI = ui::GetSystemUI();
             auto* editor = systemUI->GetSubsystem<Editor>();
-            IntVector2
-            wSize = systemUI->GetGraphics()->GetSize();
-            IntVector2
-            wPos = systemUI->GetGraphics()->GetWindowPosition();
-            buf->appendf("Rect=%d,%d,%d,%d\n", wPos.x_, wPos.y_, wSize.x_, wSize.y_);
+            buf->appendf("[Project][Window]\n");
+            // IntVector2
+            // wSize = systemUI->GetGraphics()->GetSize();
+            // IntVector2
+            // wPos = systemUI->GetGraphics()->GetWindowPosition();
+            // buf->appendf("Rect=%d,%d,%d,%d\n", wPos.x_, wPos.y_, wSize.x_, wSize.y_);
 
             // Save tabs
             for (auto& tab : editor->GetContentTabs())
