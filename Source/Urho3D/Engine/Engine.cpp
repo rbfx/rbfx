@@ -261,6 +261,9 @@ bool Engine::Initialize(const VariantMap& parameters)
             graphics->SetWindowPosition(GetParameter(parameters, EP_WINDOW_POSITION_X).GetInt(),
                 GetParameter(parameters, EP_WINDOW_POSITION_Y).GetInt());
 
+        if (HasParameter(parameters, EP_WINDOW_MAXIMIZE) && GetParameter(parameters, EP_WINDOW_MAXIMIZE).GetBool())
+            graphics->Maximize();
+
         graphics->SetShaderCacheDir(GetParameter(parameters, EP_SHADER_CACHE_DIR, fileSystem->GetAppPreferencesDir(
             GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(),
             GetParameter(parameters, EP_APPLICATION_NAME, "engine").GetString())).GetString() + "shadercache/");
