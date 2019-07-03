@@ -266,9 +266,13 @@ void Editor::Start()
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
 
-        JSONFile file(context_);
-        if (file.LoadFile(editorSettingsDir + "Editor.json"))
-            editorSettings_ = file.GetRoot();
+        ea::string editorSettingsFile = editorSettingsDir + "Editor.json";
+        if (fs->FileExists(editorSettingsFile))
+        {
+            JSONFile file(context_);
+            if (file.LoadFile(editorSettingsDir + "Editor.json"))
+                editorSettings_ = file.GetRoot();
+        }
     }
 }
 
