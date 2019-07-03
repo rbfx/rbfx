@@ -95,7 +95,17 @@ ContentType GetContentType(Context* context, const ea::string& resourcePath)
     auto extension = GetExtension(resourcePath).to_lower();
     if (extension == ".xml")
     {
-        SharedPtr<XMLFile> xml(context->GetCache()->GetResource<XMLFile>(resourcePath));
+        SharedPtr<XMLFile> xml;
+
+        if (IsAbsolutePath(resourcePath))
+        {
+            xml = SharedPtr<XMLFile>(new XMLFile(context));
+            if (!xml->LoadFile(resourcePath))
+                return CTYPE_UNKNOWN;
+        }
+        else
+            xml = context->GetCache()->GetResource<XMLFile>(resourcePath);
+
         if (!xml)
             return CTYPE_UNKNOWN;
 
