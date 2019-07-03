@@ -32,9 +32,10 @@
 #include <Urho3D/Scene/Serializable.h>
 #include <Toolbox/IO/ContentUtilities.h>
 
-#include "Importers/AssetImporter.h"
-#include "Importers/ModelImporter.h"
-#include "Asset.h"
+#include "Pipeline/Importers/AssetImporter.h"
+#include "Pipeline/Importers/ModelImporter.h"
+#include "Pipeline/Importers/SceneConverter.h"
+#include "Pipeline/Asset.h"
 
 namespace Urho3D
 {
@@ -97,7 +98,8 @@ protected:
     /// A list of all available importers. When new importer is created it should be added here.
     ea::vector<StringHash> importers_
     {
-        ModelImporter::GetTypeStatic()
+        ModelImporter::GetTypeStatic(),
+        SceneConverter::GetTypeStatic(),
     };
 
     ///
