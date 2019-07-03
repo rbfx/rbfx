@@ -200,7 +200,9 @@ bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBui
     ea::string outputPath = project->GetCachePath();
     if (!isDefaultFlavor)
         outputPath += AddTrailingSlash(flavor);
-    outputPath += AddTrailingSlash(asset->GetName());
+
+    if (asset->GetName().contains("/"))
+        outputPath += AddTrailingSlash(GetPath(asset->GetName()));
 
     if (inputFile.starts_with(outputPath))
     {
