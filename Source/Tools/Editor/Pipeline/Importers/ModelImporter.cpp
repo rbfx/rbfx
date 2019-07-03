@@ -74,6 +74,9 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
     auto* project = GetSubsystem<Project>();
 
     ea::string tempPath = project->GetProjectPath() + "Temp." + GenerateUUID() + "/";
+    // Models go into "{resource_name}/" subfolder in cache directory.
+    ea::string outputDir = outputPath + GetFileNameAndExtension(inputFile) + "/";
+    fs->CreateDirsRecursive(outputDir);
 
     ea::string output = tempPath + "Model.mdl";
     ea::vector<ea::string> args{"model", input->GetResourcePath(), output};
@@ -122,10 +125,11 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
     fs->ScanDir(tmpByproducts, tempPath, "*.*", SCAN_FILES, true);
     tmpByproducts.erase_first(".");
     tmpByproducts.erase_first("..");
+
     for (const ea::string& byproduct : tmpByproducts)
     {
         fs->SetLastModifiedTime(tempPath + byproduct, mtime);
-        ea::string moveTo = outputPath + byproduct;
+        ea::string moveTo = outputDir + byproduct;
         if (fs->FileExists(moveTo))
             fs->Delete(moveTo);
         else if (fs->DirExists(moveTo))
