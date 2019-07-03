@@ -330,6 +330,7 @@ void Editor::ExecuteSubcommand(SubCommand* cmd)
 void Editor::Stop()
 {
     // Save editor settings
+    if (!engine_->IsHeadless())
     {
         // Save window geometry
         {
