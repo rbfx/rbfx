@@ -113,13 +113,62 @@ void Editor::Setup()
     engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
     engineParameters_[EP_HEADLESS] = false;
     engineParameters_[EP_FULL_SCREEN] = false;
-    engineParameters_[EP_WINDOW_HEIGHT] = 1080;
-    engineParameters_[EP_WINDOW_WIDTH] = 1920;
     engineParameters_[EP_LOG_LEVEL] = LOG_DEBUG;
     engineParameters_[EP_WINDOW_RESIZABLE] = true;
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
+
+    // Load editor settings
+    {
+        auto* fs = GetFileSystem();
+        ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
+        if (!fs->DirExists(editorSettingsDir))
+            fs->CreateDir(editorSettingsDir);
+
+        bool windowGeometryLoaded = false;
+        ea::string editorSettingsFile = editorSettingsDir + "Editor.json";
+        if (fs->FileExists(editorSettingsFile))
+        {
+            JSONFile file(context_);
+            if (file.LoadFile(editorSettingsFile))
+            {
+                editorSettings_ = file.GetRoot();
+
+                // Load window geometry
+                {
+                    JSONValue& window = editorSettings_["window"];
+                    if (window.IsObject())
+                    {
+                        if (window.Contains("size"))
+                        {
+                            IntVector2 size = window["size"].GetVariantValue(VAR_INTVECTOR2).GetIntVector2();
+                            engineParameters_[EP_WINDOW_WIDTH] = size.x_;
+                            engineParameters_[EP_WINDOW_HEIGHT] = size.y_;
+                            windowGeometryLoaded = true;
+                        }
+                        if (window.Contains("pos"))
+                        {
+                            IntVector2 pos = window["pos"].GetVariantValue(VAR_INTVECTOR2).GetIntVector2();
+                            engineParameters_[EP_WINDOW_POSITION_X] = pos.x_;
+                            engineParameters_[EP_WINDOW_POSITION_Y] = pos.y_;
+                            windowGeometryLoaded = true;
+                        }
+                        if (window.Contains("maximized") && window["maximized"].GetVariantValue(VAR_BOOL).GetBool())
+                            engineParameters_[EP_WINDOW_MAXIMIZE] = true;
+                    }
+                }
+            }
+        }
+
+        // When no window geometry is saved - maximize window.
+        if (!windowGeometryLoaded)
+        {
+            engineParameters_[EP_WINDOW_WIDTH] = GetGraphics()->GetDesktopResolution(0).x_;
+            engineParameters_[EP_WINDOW_HEIGHT] = GetGraphics()->GetDesktopResolution(0).y_;
+            engineParameters_[EP_WINDOW_MAXIMIZE] = true;
+        }
+    }
 
     GetLog()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
@@ -258,22 +307,6 @@ void Editor::Start()
     }
     else
         SetupSystemUI();
-
-    // Load editor settings
-    {
-        auto* fs = GetFileSystem();
-        ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
-        if (!fs->DirExists(editorSettingsDir))
-            fs->CreateDir(editorSettingsDir);
-
-        ea::string editorSettingsFile = editorSettingsDir + "Editor.json";
-        if (fs->FileExists(editorSettingsFile))
-        {
-            JSONFile file(context_);
-            if (file.LoadFile(editorSettingsDir + "Editor.json"))
-                editorSettings_ = file.GetRoot();
-        }
-    }
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
@@ -298,6 +331,18 @@ void Editor::Stop()
 {
     // Save editor settings
     {
+        // Save window geometry
+        {
+            JSONValue& window = editorSettings_["window"];
+            window.SetType(JSON_OBJECT);
+            window["size"].SetType(JSON_NULL);
+            window["size"].SetVariantValue(GetGraphics()->GetSize(), context_);
+            window["pos"].SetType(JSON_NULL);
+            window["pos"].SetVariantValue(GetGraphics()->GetWindowPosition(), context_);
+            window["maximized"].SetType(JSON_NULL);
+            window["maximized"].SetVariantValue(GetGraphics()->GetMaximized(), context_);
+        }
+
         auto* fs = GetFileSystem();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
         if (!fs->DirExists(editorSettingsDir))
