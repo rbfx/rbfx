@@ -75,6 +75,7 @@ static const ea::string EP_WINDOW_ICON = "WindowIcon";
 static const ea::string EP_WINDOW_POSITION_X = "WindowPositionX";
 static const ea::string EP_WINDOW_POSITION_Y = "WindowPositionY";
 static const ea::string EP_WINDOW_RESIZABLE = "WindowResizable";
+static const ea::string EP_WINDOW_MAXIMIZE = "WindowMaximize";
 static const ea::string EP_WINDOW_TITLE = "WindowTitle";
 static const ea::string EP_WINDOW_WIDTH = "WindowWidth";
 static const ea::string EP_WORKER_THREADS = "WorkerThreads";

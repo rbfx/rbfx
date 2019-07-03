@@ -344,6 +344,7 @@ void Editor::RenderProjectMenu()
             EP_WINDOW_POSITION_X.c_str(),
             EP_WINDOW_POSITION_Y.c_str(),
             EP_WINDOW_RESIZABLE.c_str(),
+            EP_WINDOW_MAXIMIZE.c_str(),
             EP_WINDOW_TITLE.c_str(),
             EP_WINDOW_WIDTH.c_str(),
             EP_WORKER_THREADS.c_str(),
@@ -395,6 +396,7 @@ void Editor::RenderProjectMenu()
             VAR_INT,    // EP_WINDOW_POSITION_X
             VAR_INT,    // EP_WINDOW_POSITION_Y
             VAR_BOOL,   // EP_WINDOW_RESIZABLE
+            VAR_BOOL,   // EP_WINDOW_MAXIMIZE
             VAR_STRING, // EP_WINDOW_TITLE
             VAR_INT,    // EP_WINDOW_WIDTH
             VAR_INT,    // EP_WORKER_THREADS
