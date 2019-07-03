@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "AssetImporter.h"
+#include "Pipeline/Importers/AssetImporter.h"
 
 namespace Urho3D
 {
