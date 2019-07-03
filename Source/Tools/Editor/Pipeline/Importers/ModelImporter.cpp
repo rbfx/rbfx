@@ -20,15 +20,13 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/fixed_vector.h>
-
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Core/ProcessUtils.h>
 
 #include "Project.h"
 #include "Pipeline/Asset.h"
-#include "ModelImporter.h"
+#include "Pipeline/Importers/ModelImporter.h"
 
 namespace Urho3D
 {
@@ -146,8 +144,11 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
 
 bool ModelImporter::Accepts(const ea::string& path) const
 {
-    static ea::fixed_vector<ea::string, 2> modelExtensions{".fbx", ".blend"};
-    return modelExtensions.contains(GetExtension(path));
+    if (path.ends_with(".fbx"))
+        return true;
+    if (path.ends_with(".blend"))
+        return true;
+    return false;
 }
 
 }
