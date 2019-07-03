@@ -245,7 +245,15 @@ void AssetImporter::ClearByproducts()
 
 void AssetImporter::AddByproduct(const ea::string& byproduct)
 {
-    byproducts_.push_back(byproduct);
+    auto* project = GetSubsystem<Project>();
+    if (byproduct.starts_with(project->GetCachePath()))
+        // Byproducts should contain resource names. Trim if this is a full path.
+        byproducts_.emplace_back(byproduct.substr(project->GetCachePath().size()));
+    else
+    {
+        assert(!IsAbsolutePath(byproduct));
+        byproducts_.push_back(byproduct);
+    }
 }
 
 bool AssetImporter::SaveDefaultAttributes(const AttributeInfo& attr) const
