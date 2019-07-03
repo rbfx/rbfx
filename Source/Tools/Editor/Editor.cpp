@@ -59,6 +59,7 @@
 #include "Pipeline/Commands/CookScene.h"
 #include "Pipeline/Commands/BuildAssets.h"
 #include "Pipeline/Importers/ModelImporter.h"
+#include "Pipeline/Importers/SceneConverter.h"
 #include "Inspector/MaterialInspector.h"
 #include "Inspector/ModelInspector.h"
 #include "Tabs/ProfilerTab.h"
@@ -196,6 +197,7 @@ void Editor::Setup()
 
     // Importers
     ModelImporter::RegisterObject(context_);
+    SceneConverter::RegisterObject(context_);
     Asset::RegisterObject(context_);
 
     // Define custom command line parameters here
