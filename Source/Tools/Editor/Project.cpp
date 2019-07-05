@@ -155,6 +155,8 @@ bool Project::LoadProject(const ea::string& projectPath)
     if (GetSystemUI())
     {
         uiConfigPath_ = projectFileDir_ + ".ui.ini";
+        isNewProject_ = !GetFileSystem()->FileExists(uiConfigPath_);
+
         ui::GetIO().IniFilename = uiConfigPath_.c_str();
 
         ImGuiSettingsHandler handler;
@@ -172,8 +174,6 @@ bool Project::LoadProject(const ea::string& projectPath)
             const char* name = static_cast<const char*>(entry);
             if (strcmp(name, "Window") == 0)
             {
-                auto* project = systemUI->GetSubsystem<Project>();
-                project->isNewProject_ = false;
                 editor->CreateDefaultTabs();
 
                 // int x, y, w, h;
