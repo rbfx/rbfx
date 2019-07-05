@@ -294,12 +294,6 @@ void Editor::Start()
         }
         else
             exiting_ = true;
-
-        if (project_ && exiting_)
-        {
-            project_->SaveProject();
-            CloseProject();
-        }
     });
     SubscribeToEvent(E_EDITORPROJECTLOADING, std::bind(&Editor::UpdateWindowTitle, this, EMPTY_STRING));
     if (!defaultProjectPath_.empty())
@@ -567,6 +561,8 @@ void Editor::OnUpdate(VariantMap& args)
         else
         {
             GetWorkQueue()->Complete(0);
+            project_->SaveProject();
+            CloseProject();
             engine_->Exit();
         }
     }
