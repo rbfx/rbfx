@@ -6,7 +6,7 @@
     <ProjectGuid>{DDB6E7D9-CED3-366A-A6BD-3E8FE1AACCC9}</ProjectGuid>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratedCodePath>$(BuildDir)Source/ThirdParty/imgui</GeneratedCodePath>
+    <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/ThirdParty/imgui/</GeneratedCodePath>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="**/*.cs" />
