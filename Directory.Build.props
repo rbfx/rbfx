@@ -25,22 +25,29 @@
   </PropertyGroup>
   <PropertyGroup>
     <BaseOutputPath>bin/</BaseOutputPath>
+    <RbfxSourceDir>$(MSBuildThisFileDirectory)</RbfxSourceDir>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(OS)' == 'Windows_NT' Or '$(CMAKE_GENERATOR)' == 'Xcode' ">
     <BaseOutputPath>$(BaseOutputPath)$(Configuration)/</BaseOutputPath>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(BuildDir)' == '' ">
-    <BuildDir Condition=" '$(OS)' == 'Windows_NT' ">$(SolutionDir)</BuildDir>
-    <BuildDir Condition=" '$(OS)' != 'Windows_NT' ">$(SolutionDir)cmake-build/</BuildDir>
+  <PropertyGroup Condition=" '$(CMAKE_BINARY_DIR)' == '' ">
+    <CMAKE_BINARY_DIR Condition=" '$(OS)' == 'Windows_NT' ">$(SolutionDir)</CMAKE_BINARY_DIR>
+    <CMAKE_BINARY_DIR Condition=" '$(OS)' != 'Windows_NT' ">$(SolutionDir)cmake-build/</CMAKE_BINARY_DIR>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(BuildDir)' != '' ">
-    <BaseOutputPath>$(BuildDir)$(BaseOutputPath)/</BaseOutputPath>
-    <BaseIntermediateOutputPath>$(BuildDir)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
-    <OutDir>$(BaseOutputPath)</OutDir>
-    <OutputPath>$(BaseOutputPath)</OutputPath>
+  <PropertyGroup Condition=" '$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)' == '' ">
+    <CMAKE_RUNTIME_OUTPUT_DIRECTORY>$(CMAKE_BINARY_DIR)$(BaseOutputPath)</CMAKE_RUNTIME_OUTPUT_DIRECTORY>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(BuildDir)' != '' ">
+  <PropertyGroup Condition=" '$(RBFX_BINARY_DIR)' == '' ">
+    <RBFX_BINARY_DIR>$(CMAKE_BINARY_DIR)</RBFX_BINARY_DIR>
+  </PropertyGroup>
+  <PropertyGroup>
+    <BaseIntermediateOutputPath>$(CMAKE_BINARY_DIR)obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)</BaseOutputPath>
+    <OutDir>$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)</OutDir>
+    <OutputPath>$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)</OutputPath>
+  </PropertyGroup>
+  <PropertyGroup>
     <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(BuildDir)/CSharp.snk</AssemblyOriginatorKeyFile>
+    <AssemblyOriginatorKeyFile>$(CMAKE_BINARY_DIR)/CSharp.snk</AssemblyOriginatorKeyFile>
   </PropertyGroup>
 </Project>

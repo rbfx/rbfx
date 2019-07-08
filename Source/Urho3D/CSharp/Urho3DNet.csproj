@@ -13,7 +13,7 @@
     <PackageTags>rbfx Urho3D gamedev csharp dotnet gameengine</PackageTags>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratedCodePath>$(BuildDir)Source/Urho3D/CSharp/</GeneratedCodePath>
+    <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/CSharp/</GeneratedCodePath>
   </PropertyGroup>
   <ItemGroup>
     <BindingsSourceCode Include="$(GeneratedCodePath)/*.cs" />
@@ -37,22 +37,22 @@
     <Content Include="build/**">
       <PackagePath>build/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/CoreData/**">
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)CoreData/**">
       <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.dll">
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3D.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3D.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3D.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3DCSharp.dll">
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3DCSharp.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>
-    <Content Include="$(BuildDir)bin/$(Configuration)/Urho3DCSharp.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3DCSharp.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
     </Content>

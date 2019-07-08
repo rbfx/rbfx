@@ -298,6 +298,40 @@ function(vs_group_subdirectory_targets DIR FOLDER_NAME)
     endforeach()
 endfunction()
 
+macro (add_msbuild_target)
+    if (URHO3D_CSHARP)
+        cmake_parse_arguments(MSBUILD "AUTORUN_AT_CONFIGURE;EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS" ${ARGN})
+
+        find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+        if (NOT MSBUILD)
+            if (WIN32)
+                message(FATAL_ERROR "MSBuild could not be found.")
+            else ()
+                message(FATAL_ERROR "MSBuild could not be found. You may need to install 'msbuild' package.")
+            endif ()
+        endif ()
+        if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+            # Workaround for some cases where csc has issues when invoked by CMake.
+            set (TERM_WORKAROUND env TERM=xterm)
+        endif ()
+        add_custom_target(${MSBUILD_TARGET} COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
+            /p:CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}/"
+            /p:RBFX_BINARY_DIR="${Urho3D_BINARY_DIR}/"
+            /p:CMAKE_RUNTIME_OUTPUT_DIRECTORY="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/"
+            DEPENDS ${MSBUILD_DEPENDS}
+        )
+        if (MSBUILD_EXCLUDE_FROM_ALL)
+            set_property(TARGET ${MSBUILD_TARGET} PROPERTY EXCLUDE_FROM_ALL ON)
+        endif ()
+        if (MSBUILD_AUTORUN_AT_CONFIGURE)
+            execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
+                /p:CMAKE_BINARY_DIR="${CMAKE_BINARY_DIR}/"
+                /p:RBFX_BINARY_DIR="${Urho3D_BINARY_DIR}/"
+                /p:CMAKE_RUNTIME_OUTPUT_DIRECTORY="${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
+        endif ()
+    endif ()
+endmacro ()
+
 if (URHO3D_CSHARP)
     if (NOT SWIG_EXECUTABLE)
         set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/swig${CMAKE_EXECUTABLE_SUFFIX})
@@ -310,39 +344,21 @@ if (URHO3D_CSHARP)
     if (NOT WIN32 OR URHO3D_WITH_MONO)
         find_package(Mono REQUIRED)
     endif ()
-    find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
-    if (NOT MSBUILD)
-        if (WIN32)
-            message(FATAL_ERROR "MSBuild could not be found.")
-        else ()
-            message(FATAL_ERROR "MSBuild could not be found. You may need to install 'msbuild' package.")
-        endif ()
-    endif ()
 
     if (CMAKE_SIZEOF_VOID_P EQUAL 8)
         set (CSHARP_PLATFORM x64)
     else ()
         set (CSHARP_PLATFORM x86)
     endif ()
-    set (MSBUILD_COMMON_PARAMETERS /p:BuildDir="${CMAKE_BINARY_DIR}/" /p:Platform=${CSHARP_PLATFORM}
-                                   /p:Configuration=$<CONFIG> /consoleloggerparameters:ErrorsOnly)
-
-    if (URHO3D_WITH_MONO)
-        list (APPEND MSBUILD_COMMON_PARAMETERS /p:TargetFramework=net471)
-    endif ()
-
     if (MSVC)
-        set (CSHARP_SOLUTION ${CMAKE_BINARY_DIR}/Urho3D.sln)
+        set (CSHARP_SOLUTION ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.sln)
     else ()
         set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
     endif ()
 
     if (NOT MSVC)
-        execute_process(COMMAND
-            ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /p:BuildDir="${CMAKE_BINARY_DIR}/" /t:restore /m /consoleloggerparameters:ErrorsOnly)
-        add_custom_target(NugetRestore COMMAND
-            ${TERM_WORKAROUND} ${MSBUILD} ${CSHARP_SOLUTION} /p:BuildDir="${CMAKE_BINARY_DIR}/" /t:restore /m /consoleloggerparameters:ErrorsOnly)
-        set_property(TARGET NugetRestore PROPERTY EXCLUDE_FROM_ALL ON)
+        add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL AUTORUN_AT_CONFIGURE ARGS
+            ${CSHARP_SOLUTION} /t:restore /m /consoleloggerparameters:ErrorsOnly)
     endif ()
 
     # Strong name signatures
@@ -357,7 +373,7 @@ if (URHO3D_CSHARP)
     if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk)
         execute_process(COMMAND ${SN} -k ${CMAKE_BINARY_DIR}/CSharp.snk)
     endif ()
-    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
+    if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CSharp.snk.pub)
         execute_process(COMMAND ${SN} -p ${CMAKE_BINARY_DIR}/CSharp.snk ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
     endif ()
 
@@ -370,11 +386,6 @@ if (URHO3D_CSHARP)
     string(REGEX REPLACE "[ \r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
     set(SNK_PUB_KEY "${SNK_PUB_KEY}" CACHE STRING "Public key for .NET assemblies" FORCE)
 endif()
-
-if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
-    # Workaround for some cases where csc has issues when invoked by CMake.
-    set (TERM_WORKAROUND env TERM=xterm)
-endif ()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
@@ -395,12 +406,16 @@ macro (add_target_csharp TARGET PROJECT_FILE)
     if (WIN32 AND NOT URHO3D_WITH_MONO)
         include_external_msproject(${TARGET} ${PROJECT_FILE} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC ${ARGN})
     else ()
-        add_custom_target(${TARGET}
-            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${PROJECT_FILE} ${MSBUILD_COMMON_PARAMETERS}
-            WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-            DEPENDS ${ARGN}
-        )
-        set_target_properties(${TARGET} PROPERTIES EXCLUDE_FROM_ALL OFF)
+        set (MSBUILD_COMMON_PARAMETERS
+            /p:Platform=${CSHARP_PLATFORM}
+            /p:Configuration=$<CONFIG>
+            /consoleloggerparameters:ErrorsOnly)
+
+        if (URHO3D_WITH_MONO)
+            list (APPEND MSBUILD_COMMON_PARAMETERS /p:TargetFramework=net471)
+        endif ()
+
+        add_msbuild_target(TARGET ${TARGET} DEPENDS ${ARGN} ARGS ${PROJECT_FILE} ${MSBUILD_COMMON_PARAMETERS})
     endif ()
 endmacro ()
 
