@@ -11,6 +11,6 @@
     <Compile Include="*.cs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\..\Urho3D\CSharp\Urho3DNet.csproj" />
+    <ProjectReference Include="../../../Urho3D/CSharp/Urho3DNet.csproj" />
   </ItemGroup>
 </Project>
