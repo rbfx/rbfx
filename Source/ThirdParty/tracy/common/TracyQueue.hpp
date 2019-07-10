@@ -17,6 +17,7 @@ enum class QueueType : uint8_t
     CallstackMemory,
     Callstack,
     CallstackAlloc,
+    FrameImage,
     Terminate,
     KeepAlive,
     Crash,
@@ -61,6 +62,7 @@ enum class QueueType : uint8_t
     CallstackPayload,
     CallstackAllocPayload,
     FrameName,
+    FrameImageData,
     NUM_TYPES
 };
 
@@ -96,6 +98,15 @@ struct QueueFrameMark
 {
     int64_t time;
     uint64_t name;      // ptr
+};
+
+struct QueueFrameImage
+{
+    uint64_t image;     // ptr
+    uint64_t frame;
+    uint16_t w;
+    uint16_t h;
+    uint8_t flip;
 };
 
 struct QueueSourceLocation
@@ -310,6 +321,7 @@ struct QueueItem
         QueueZoneValidation zoneValidation;
         QueueStringTransfer stringTransfer;
         QueueFrameMark frameMark;
+        QueueFrameImage frameImage;
         QueueSourceLocation srcloc;
         QueueZoneText zoneText;
         QueueLockAnnounce lockAnnounce;
@@ -351,6 +363,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueCallstackMemory ),
     sizeof( QueueHeader ) + sizeof( QueueCallstack ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackAlloc ),
+    sizeof( QueueHeader ) + sizeof( QueueFrameImage ),
     // above items must be first
     sizeof( QueueHeader ),                                  // terminate
     sizeof( QueueHeader ),                                  // keep alive
@@ -397,6 +410,7 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // callstack alloc payload
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame name
+    sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // frame image data
 };
 
 static_assert( QueueItemSize == 32, "Queue item size not 32 bytes" );

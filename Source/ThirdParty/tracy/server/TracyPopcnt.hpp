@@ -1,9 +1,13 @@
 #ifndef __TRACYPOPCNT_HPP__
 #define __TRACYPOPCNT_HPP__
 
-#ifdef _WIN64   // Urho3D fix
+#include <limits.h>
+
+#if defined _WIN64
 #  include <intrin.h>
 #  define TracyCountBits __popcnt64
+#elif defined __GNUC__ || defined __clang__
+#  define TracyCountBits __builtin_popcountll
 #else
 static inline int TracyCountBits( uint64_t i )
 {

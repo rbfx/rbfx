@@ -49,6 +49,7 @@ public:
         , m_head( 0 )
         , m_tail( 0 )
         , m_oldCnt( 0 )
+        , m_queryCount( QueryCount )
     {
         assert( m_context != 255 );
 
@@ -58,9 +59,13 @@ public:
 
         VkQueryPoolCreateInfo poolInfo = {};
         poolInfo.sType = VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO;
-        poolInfo.queryCount = QueryCount;
+        poolInfo.queryCount = m_queryCount;
         poolInfo.queryType = VK_QUERY_TYPE_TIMESTAMP;
-        vkCreateQueryPool( device, &poolInfo, nullptr, &m_query );
+        while( vkCreateQueryPool( device, &poolInfo, nullptr, &m_query ) != VK_SUCCESS )
+        {
+            m_queryCount /= 2;
+            poolInfo.queryCount = m_queryCount;
+        }
 
         VkCommandBufferBeginInfo beginInfo = {};
         beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
@@ -72,7 +77,7 @@ public:
         submitInfo.pCommandBuffers = &cmdbuf;
 
         vkBeginCommandBuffer( cmdbuf, &beginInfo );
-        vkCmdResetQueryPool( cmdbuf, m_query, 0, QueryCount );
+        vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount );
         vkEndCommandBuffer( cmdbuf );
         vkQueueSubmit( queue, 1, &submitInfo, VK_NULL_HANDLE );
         vkQueueWaitIdle( queue );
@@ -110,10 +115,13 @@ public:
 #endif
 
         tail.store( magic + 1, std::memory_order_release );
+
+        m_res = (int64_t*)tracy_malloc( sizeof( int64_t ) * m_queryCount );
     }
 
     ~VkCtx()
     {
+        tracy_free( m_res );
         vkDestroyQueryPool( m_device, m_query, nullptr );
     }
 
@@ -126,7 +134,7 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() )
         {
-            vkCmdResetQueryPool( cmdbuf, m_query, 0, QueryCount );
+            vkCmdResetQueryPool( cmdbuf, m_query, 0, m_queryCount );
             m_head = m_tail = 0;
             return;
         }
@@ -140,11 +148,10 @@ public:
         }
         else
         {
-            cnt = m_head < m_tail ? QueryCount - m_tail : m_head - m_tail;
+            cnt = m_head < m_tail ? m_queryCount - m_tail : m_head - m_tail;
         }
 
-        int64_t res[QueryCount];
-        if( vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( res ), res, sizeof( *res ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY )
+        if( vkGetQueryPoolResults( m_device, m_query, m_tail, cnt, sizeof( int64_t ) * m_queryCount, m_res, sizeof( int64_t ), VK_QUERY_RESULT_64_BIT ) == VK_NOT_READY )
         {
             m_oldCnt = cnt;
             return;
@@ -158,7 +165,7 @@ public:
         {
             auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
-            MemWrite( &item->gpuTime.gpuTime, res[idx] );
+            MemWrite( &item->gpuTime.gpuTime, m_res[idx] );
             MemWrite( &item->gpuTime.queryId, uint16_t( m_tail + idx ) );
             MemWrite( &item->gpuTime.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
@@ -167,14 +174,14 @@ public:
         vkCmdResetQueryPool( cmdbuf, m_query, m_tail, cnt );
 
         m_tail += cnt;
-        if( m_tail == QueryCount ) m_tail = 0;
+        if( m_tail == m_queryCount ) m_tail = 0;
     }
 
 private:
     tracy_force_inline unsigned int NextQueryId()
     {
         const auto id = m_head;
-        m_head = ( m_head + 1 ) % QueryCount;
+        m_head = ( m_head + 1 ) % m_queryCount;
         assert( m_head != m_tail );
         return id;
     }
@@ -192,6 +199,9 @@ private:
     unsigned int m_head;
     unsigned int m_tail;
     unsigned int m_oldCnt;
+    unsigned int m_queryCount;
+
+    int64_t* m_res;
 };
 
 class VkCtxScope
@@ -211,13 +221,14 @@ public:
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
-        MemWrite( &item->gpuZoneBegin.thread, GetThreadHandle() );
+        MemWrite( &item->gpuZoneBegin.thread, thread );
         MemWrite( &item->gpuZoneBegin.queryId, uint16_t( queryId ) );
         MemWrite( &item->gpuZoneBegin.context, ctx->GetId() );
         tail.store( magic + 1, std::memory_order_release );
@@ -233,12 +244,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !m_active ) return;
 #endif
-        const auto thread = GetThreadHandle();
 
         const auto queryId = ctx->NextQueryId();
         vkCmdWriteTimestamp( cmdbuf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, ctx->m_query, queryId );
 
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );

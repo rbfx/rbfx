@@ -1905,8 +1905,8 @@ _memory_guard_block(void* block) {
 #endif
 
 // Extern interface
-// Urho3D change
-DLL_EXPORT RPMALLOC_RESTRICT void*
+
+TRACY_API RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) {
 #if ENABLE_VALIDATE_ARGS
 	if (size >= MAX_ALLOC_SIZE) {
@@ -1919,8 +1919,8 @@ rpmalloc(size_t size) {
 	_memory_guard_post_alloc(block, size);
 	return block;
 }
-// Urho3D change
-DLL_EXPORT void
+
+TRACY_API void
 rpfree(void* ptr) {
 	_memory_guard_validate(ptr);
 	_memory_deallocate(ptr);

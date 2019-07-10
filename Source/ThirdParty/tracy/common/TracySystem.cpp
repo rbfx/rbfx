@@ -44,8 +44,8 @@ struct ThreadNameData
     const char* name;
     ThreadNameData* next;
 };
-std::atomic<ThreadNameData*>& GetThreadNameData();
-void InitRPMallocThread();
+TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData();
+TRACY_API void InitRPMallocThread();
 #endif
 
 void SetThreadName( std::thread& thread, const char* name )
@@ -180,8 +180,14 @@ const char* GetThreadName( uint64_t id )
 #   endif
     if ( ( fd = open( path, O_RDONLY ) ) > 0) {
         int len = read( fd, buf, 255 );
-        if ( len > 0 )
+        if( len > 0 )
+        {
             buf[len] = 0;
+            if( len > 1 && buf[len-1] == '\n' )
+            {
+                buf[len-1] = 0;
+            }
+        }
         close( fd );
     }
 #   ifndef __ANDROID__

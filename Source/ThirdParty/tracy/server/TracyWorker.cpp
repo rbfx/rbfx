@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#  pragma warning( disable: 4244 4267 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #ifdef _WIN32
 #  include <winsock2.h>
 #endif
@@ -296,9 +300,13 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
     {
         s_loadProgress.total.store( 7, std::memory_order_relaxed );
     }
-    else
+    else if( fileVer <= FileVersion( 0, 4, 8 ) )
     {
         s_loadProgress.total.store( 8, std::memory_order_relaxed );
+    }
+    else
+    {
+        s_loadProgress.total.store( 9, std::memory_order_relaxed );
     }
 
     s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -379,7 +387,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
             uint64_t fsz;
             f.Read( &fsz, sizeof( fsz ) );
             ptr->frames.reserve_exact( fsz, m_slab );
-            if( fileVer >= FileVersion( 0, 4, 2 ) )
+            if( fileVer >= FileVersion( 0, 4, 9 ) )
             {
                 int64_t refTime = 0;
                 if( ptr->continuous )
@@ -388,6 +396,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         ptr->frames[j].start = ReadTimeOffset( f, refTime );
                         ptr->frames[j].end = -1;
+                        f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
                     }
                 }
                 else
@@ -396,6 +405,29 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         ptr->frames[j].start = ReadTimeOffset( f, refTime );
                         ptr->frames[j].end = ReadTimeOffset( f, refTime );
+                        f.Read( &ptr->frames[j].frameImage, sizeof( int32_t ) );
+                    }
+                }
+            }
+            else if( fileVer >= FileVersion( 0, 4, 2 ) )
+            {
+                int64_t refTime = 0;
+                if( ptr->continuous )
+                {
+                    for( uint64_t j=0; j<fsz; j++ )
+                    {
+                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                        ptr->frames[j].end = -1;
+                        ptr->frames[j].frameImage = -1;
+                    }
+                }
+                else
+                {
+                    for( uint64_t j=0; j<fsz; j++ )
+                    {
+                        ptr->frames[j].start = ReadTimeOffset( f, refTime );
+                        ptr->frames[j].end = ReadTimeOffset( f, refTime );
+                        ptr->frames[j].frameImage = -1;
                     }
                 }
             }
@@ -407,11 +439,17 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
                     {
                         f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
                         ptr->frames[j].end = -1;
+                        ptr->frames[j].frameImage = -1;
                     }
                 }
                 else
                 {
-                    f.Read( ptr->frames.data(), sizeof( FrameEvent ) * fsz );
+                    for( uint64_t j=0; j<fsz; j++ )
+                    {
+                        f.Read( &ptr->frames[j].start, sizeof( int64_t ) );
+                        f.Read( &ptr->frames[j].end, sizeof( int64_t ) );
+                        ptr->frames[j].frameImage = -1;
+                    }
                 }
             }
             m_data.frames.Data()[i] = ptr;
@@ -431,6 +469,7 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         {
             f.Read( &ptr->frames[i].start, sizeof( int64_t ) );
             ptr->frames[i].end = -1;
+            ptr->frames[i].frameImage = -1;
         }
         m_data.frames.Data().push_back( ptr );
         m_data.framesBase = ptr;
@@ -1198,10 +1237,59 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 4, 9 ) )
+    {
+        s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
+        s_loadProgress.progress.store( LoadProgress::FrameImages, std::memory_order_relaxed );
+
+        if( eventMask & EventType::FrameImages )
+        {
+            size_t tmpbufsz = 0;
+            char* tmpbuf = nullptr;
+            f.Read( sz );
+            m_data.frameImage.reserve_exact( sz, m_slab );
+            s_loadProgress.subTotal.store( sz, std::memory_order_relaxed );
+            for( uint64_t i=0; i<sz; i++ )
+            {
+                s_loadProgress.subProgress.store( i, std::memory_order_relaxed );
+                auto fi = m_slab.Alloc<FrameImage>();
+                f.Read2( fi->w, fi->h );
+                f.Read( fi->flip );
+                const auto sz = size_t( fi->w * fi->h / 2 );
+                if( tmpbufsz < sz )
+                {
+                    tmpbufsz = sz;
+                    delete[] tmpbuf;
+                    tmpbuf = new char[sz];
+                }
+                f.Read( tmpbuf, sz );
+                fi->ptr = PackFrameImage( tmpbuf, fi->w, fi->h, fi->csz );
+                m_data.frameImage[i] = fi;
+            }
+            delete[] tmpbuf;
+
+            const auto& frames = GetFramesBase()->frames;
+            const auto fsz = uint32_t( frames.size() );
+            for( uint32_t i=0; i<fsz; i++ )
+            {
+                const auto& f = frames[i];
+                if( f.frameImage != -1 )
+                {
+                    m_data.frameImage[f.frameImage]->frameRef = i;
+                }
+            }
+        }
+        else
+        {
+            // Implement skip, if more data is added after frame image section
+        }
+    }
+
 finishLoading:
     s_loadProgress.total.store( 0, std::memory_order_relaxed );
     m_loadTime = std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now() - loadStart ).count();
 
+    m_backgroundDone.store( false, std::memory_order_relaxed );
 #ifndef TRACY_NO_STATISTICS
     m_threadBackground = std::thread( [this, reconstructMemAllocPlot] {
         std::function<void(const Vector<ZoneEvent*>&, uint16_t)> ProcessTimeline;
@@ -1237,15 +1325,16 @@ finishLoading:
 #endif
         }
         {
-            std::lock_guard<TracyMutex> lock( m_data.lock );
+            std::lock_guard<std::shared_mutex> lock( m_data.lock );
             m_data.sourceLocationZonesReady = true;
         }
         if( reconstructMemAllocPlot ) ReconstructMemAllocPlot();
+        m_backgroundDone.store( true, std::memory_order_relaxed );
     } );
 #else
     if( reconstructMemAllocPlot )
     {
-        m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); } );
+        m_threadBackground = std::thread( [this] { ReconstructMemAllocPlot(); m_backgroundDone.store( true, std::memory_order_relaxed ); } );
     }
 #endif
 }
@@ -1260,11 +1349,14 @@ Worker::~Worker()
     delete[] m_buffer;
     LZ4_freeStreamDecode( m_stream );
 
+    delete[] m_frameImageBuffer;
+
     for( auto& v : m_data.threads )
     {
         v->timeline.~Vector();
         v->stack.~Vector();
         v->messages.~Vector();
+        v->zoneIdStack.~Vector();
     }
     for( auto& v : m_data.gpuData )
     {
@@ -1398,7 +1490,15 @@ int64_t Worker::GetFrameEnd( const FrameData& fd, size_t idx ) const
     }
 }
 
-std::pair <int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
+const FrameImage* Worker::GetFrameImage( const FrameData& fd, size_t idx ) const
+{
+    assert( idx < fd.frames.size() );
+    const auto& v = fd.frames[idx].frameImage;
+    if( v < 0 ) return nullptr;
+    return m_data.frameImage[v];
+}
+
+std::pair<int, int> Worker::GetFrameRange( const FrameData& fd, int64_t from, int64_t to )
 {
     auto zitbegin = std::lower_bound( fd.frames.begin(), fd.frames.end(), from, [] ( const auto& lhs, const auto& rhs ) { return lhs.start < rhs; } );
     if( zitbegin == fd.frames.end() ) zitbegin--;
@@ -1727,14 +1827,15 @@ void Worker::Exec()
         }
         m_timerMul = welcome.timerMul;
         const auto initEnd = TscTime( welcome.initEnd );
-        m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1 } );
-        m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ TscTime( welcome.initBegin ), -1, -1 } );
+        m_data.framesBase->frames.push_back( FrameEvent{ initEnd, -1, -1 } );
         m_data.lastTime = initEnd;
         m_delay = TscTime( welcome.delay );
         m_resolution = TscTime( welcome.resolution );
         m_onDemand = welcome.onDemand;
         m_captureProgram = welcome.programName;
         m_captureTime = welcome.epoch;
+        m_ignoreMemFreeFaults = welcome.onDemand || welcome.isApple;
 
         char dtmp[64];
         time_t date = welcome.epoch;
@@ -1755,10 +1856,11 @@ void Worker::Exec()
                 goto close;
             }
             m_data.frameOffset = onDemand.frames;
+            m_data.framesBase->frames.push_back( FrameEvent{ TscTime( onDemand.currentTime ), -1, -1 } );
         }
     }
 
-    m_serverQuerySpaceLeft = m_sock.GetSendBufSize() / ServerQueryPacketSize;
+    m_serverQuerySpaceLeft = ( m_sock.GetSendBufSize() / ServerQueryPacketSize ) - ServerQueryPacketSize;   // leave space for terminate request
     m_hasData.store( true, std::memory_order_release );
 
     LZ4_setStreamDecode( m_stream, nullptr, 0 );
@@ -1768,7 +1870,11 @@ void Worker::Exec()
 
     for(;;)
     {
-        if( m_shutdown.load( std::memory_order_relaxed ) ) return;
+        if( m_shutdown.load( std::memory_order_relaxed ) )
+        {
+            QueryTerminate();
+            return;
+        }
 
         auto buf = m_buffer + m_bufferOffset;
         lz4sz_t lz4sz;
@@ -1784,11 +1890,15 @@ void Worker::Exec()
         const char* end = buf + sz;
 
         {
-            std::lock_guard<TracyMutex> lock( m_data.lock );
+            std::lock_guard<std::shared_mutex> lock( m_data.lock );
             while( ptr < end )
             {
                 auto ev = (const QueueItem*)ptr;
-                if( !DispatchProcess( *ev, ptr ) ) goto close;
+                if( !DispatchProcess( *ev, ptr ) )
+                {
+                    QueryTerminate();
+                    goto close;
+                }
             }
 
             m_bufferOffset += sz;
@@ -1810,7 +1920,7 @@ void Worker::Exec()
         enum { MbpsUpdateTime = 200 };
         if( td > MbpsUpdateTime )
         {
-            std::lock_guard<TracyMutex> lock( m_mbpsData.lock );
+            std::lock_guard<std::shared_mutex> lock( m_mbpsData.lock );
             m_mbpsData.mbps.erase( m_mbpsData.mbps.begin() );
             m_mbpsData.mbps.emplace_back( bytes / ( td * 125.f ) );
             m_mbpsData.compRatio = float( bytes ) / decBytes;
@@ -1823,7 +1933,8 @@ void Worker::Exec()
         if( m_terminate )
         {
             if( m_pendingStrings != 0 || m_pendingThreads != 0 || m_pendingSourceLocation != 0 || m_pendingCallstackFrames != 0 ||
-                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 || m_pendingCallstackSubframes != 0 )
+                !m_pendingCustomStrings.empty() || m_data.plots.IsPending() || m_pendingCallstackPtr != 0 ||
+                m_pendingCallstackSubframes != 0 || !m_pendingFrameImageData.empty() )
             {
                 continue;
             }
@@ -1852,7 +1963,7 @@ close:
 
 void Worker::Query( ServerQuery type, uint64_t data )
 {
-    ServerQueryPacket query = { type, data };
+    ServerQueryPacket query { type, data };
     if( m_serverQuerySpaceLeft > 0 )
     {
         m_serverQuerySpaceLeft--;
@@ -1864,49 +1975,66 @@ void Worker::Query( ServerQuery type, uint64_t data )
     }
 }
 
+void Worker::QueryTerminate()
+{
+    ServerQueryPacket query { ServerQueryTerminate, 0 };
+    m_sock.Send( &query, ServerQueryPacketSize );
+}
+
 bool Worker::DispatchProcess( const QueueItem& ev, char*& ptr )
 {
     if( ev.hdr.idx >= (int)QueueType::StringData )
     {
         ptr += sizeof( QueueHeader ) + sizeof( QueueStringTransfer );
-        uint16_t sz;
-        memcpy( &sz, ptr, sizeof( sz ) );
-        ptr += sizeof( sz );
-        switch( ev.hdr.type )
+        if( ev.hdr.type == QueueType::FrameImageData )
         {
-        case QueueType::CustomStringData:
-            AddCustomString( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::StringData:
-            AddString( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::ThreadName:
-            AddThreadString( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::PlotName:
-            HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::SourceLocationPayload:
-            AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::CallstackPayload:
-            AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        case QueueType::FrameName:
-            HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
-            m_serverQuerySpaceLeft++;
-            break;
-        case QueueType::CallstackAllocPayload:
-            AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
-            break;
-        default:
-            assert( false );
-            break;
+            uint32_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            AddFrameImageData( ev.stringTransfer.ptr, ptr, sz );
+            ptr += sz;
         }
-        ptr += sz;
+        else
+        {
+            uint16_t sz;
+            memcpy( &sz, ptr, sizeof( sz ) );
+            ptr += sizeof( sz );
+            switch( ev.hdr.type )
+            {
+            case QueueType::CustomStringData:
+                AddCustomString( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::StringData:
+                AddString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::ThreadName:
+                AddThreadString( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::PlotName:
+                HandlePlotName( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::SourceLocationPayload:
+                AddSourceLocationPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::CallstackPayload:
+                AddCallstackPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            case QueueType::FrameName:
+                HandleFrameName( ev.stringTransfer.ptr, ptr, sz );
+                m_serverQuerySpaceLeft++;
+                break;
+            case QueueType::CallstackAllocPayload:
+                AddCallstackAllocPayload( ev.stringTransfer.ptr, ptr, sz );
+                break;
+            default:
+                assert( false );
+                break;
+            }
+            ptr += sz;
+        }
         return true;
     }
     else
@@ -2221,6 +2349,14 @@ void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
+void Worker::AddFrameImageData( uint64_t ptr, char* data, size_t sz )
+{
+    assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
+    auto image = m_slab.AllocBig( sz );
+    memcpy( image, data, sz );
+    m_pendingFrameImageData.emplace( ptr, image );
+}
+
 uint64_t Worker::GetCanonicalPointer( const CallstackFrameId& id ) const
 {
     assert( id.sel == 0 );
@@ -2483,6 +2619,9 @@ bool Worker::Process( const QueueItem& ev )
         break;
     case QueueType::FrameMarkMsgEnd:
         ProcessFrameMarkEnd( ev.frameMark );
+        break;
+    case QueueType::FrameImage:
+        ProcessFrameImage( ev.frameImage );
         break;
     case QueueType::SourceLocation:
         AddSourceLocation( ev.srcloc );
@@ -2781,6 +2920,20 @@ void Worker::FrameEndFailure()
     m_failureData.srcloc = 0;
 }
 
+void Worker::FrameImageIndexFailure()
+{
+    m_failure = Failure::FrameImageIndex;
+    m_failureData.thread = 0;
+    m_failureData.srcloc = 0;
+}
+
+void Worker::FrameImageTwiceFailure()
+{
+    m_failure = Failure::FrameImageTwice;
+    m_failureData.thread = 0;
+    m_failureData.srcloc = 0;
+}
+
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
     auto td = NoticeThread( ev.thread );
@@ -2798,10 +2951,18 @@ void Worker::ProcessFrameMark( const QueueFrameMark& ev )
         Query( ServerQueryFrameName, name );
     } );
 
+    int32_t frameImage = -1;
+    auto fis = m_frameImageStaging.find( fd->frames.size() );
+    if( fis != m_frameImageStaging.end() )
+    {
+        frameImage = fis->second;
+        m_frameImageStaging.erase( fis );
+    }
+
     assert( fd->continuous == 1 );
     const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || fd->frames.back().start <= time );
-    fd->frames.push_back( FrameEvent{ time, -1 } );
+    fd->frames.push_back( FrameEvent{ time, -1, frameImage } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -2819,7 +2980,7 @@ void Worker::ProcessFrameMarkStart( const QueueFrameMark& ev )
     assert( fd->continuous == 0 );
     const auto time = TscTime( ev.time );
     assert( fd->frames.empty() || ( fd->frames.back().end <= time && fd->frames.back().end != -1 ) );
-    fd->frames.push_back( FrameEvent{ time, -1 } );
+    fd->frames.push_back( FrameEvent{ time, -1, -1 } );
     m_data.lastTime = std::max( m_data.lastTime, time );
 }
 
@@ -2844,6 +3005,54 @@ void Worker::ProcessFrameMarkEnd( const QueueFrameMark& ev )
     assert( fd->frames.back().end == -1 );
     fd->frames.back().end = time;
     m_data.lastTime = std::max( m_data.lastTime, time );
+}
+
+void Worker::ProcessFrameImage( const QueueFrameImage& ev )
+{
+    auto it = m_pendingFrameImageData.find( ev.image );
+    assert( it != m_pendingFrameImageData.end() );
+
+    auto& frames = m_data.framesBase->frames;
+    const auto fidx = ev.frame - m_data.frameOffset + 1;
+    if( m_onDemand && fidx <= 1 )
+    {
+        m_pendingFrameImageData.erase( it );
+        return;
+    }
+    else if( fidx <= 0 )
+    {
+        FrameImageIndexFailure();
+        return;
+    }
+
+    auto fi = m_slab.Alloc<FrameImage>();
+    fi->ptr = PackFrameImage( (const char*)it->second, ev.w, ev.h, fi->csz );
+    fi->w = ev.w;
+    fi->h = ev.h;
+    fi->frameRef = fidx;
+    fi->flip = ev.flip;
+
+    const auto idx = m_data.frameImage.size();
+    m_data.frameImage.push_back( fi );
+    m_pendingFrameImageData.erase( it );
+
+    if( fidx >= frames.size() )
+    {
+        if( m_frameImageStaging.find( fidx ) != m_frameImageStaging.end() )
+        {
+            FrameImageTwiceFailure();
+            return;
+        }
+        m_frameImageStaging.emplace( fidx, idx );
+    }
+    else if( frames[fidx].frameImage >= 0 )
+    {
+        FrameImageTwiceFailure();
+    }
+    else
+    {
+        frames[fidx].frameImage = idx;
+    }
 }
 
 void Worker::ProcessZoneText( const QueueZoneText& ev )
@@ -3329,7 +3538,7 @@ bool Worker::ProcessMemFree( const QueueMemFree& ev )
     auto it = m_data.memory.active.find( ev.ptr );
     if( it == m_data.memory.active.end() )
     {
-        if( !m_onDemand )
+        if( !m_ignoreMemFreeFaults )
         {
             MemFreeFailure( ev.thread );
         }
@@ -3576,7 +3785,7 @@ void Worker::ReconstructMemAllocPlot()
 
     PlotData* plot;
     {
-        std::lock_guard<TracyMutex> lock( m_data.lock );
+        std::lock_guard<std::shared_mutex> lock( m_data.lock );
         plot = m_slab.AllocInit<PlotData>();
     }
 
@@ -3659,7 +3868,7 @@ void Worker::ReconstructMemAllocPlot()
     plot->min = 0;
     plot->max = max;
 
-    std::lock_guard<TracyMutex> lock( m_data.lock );
+    std::lock_guard<std::shared_mutex> lock( m_data.lock );
     m_data.plots.Data().insert( m_data.plots.Data().begin(), plot );
     m_data.memory.plot = plot;
 }
@@ -3974,6 +4183,7 @@ void Worker::Write( FileWrite& f )
             for( auto& fe : fd->frames )
             {
                 WriteTimeOffset( f, refTime, fe.start );
+                f.Write( &fe.frameImage, sizeof( fe.frameImage ) );
             }
         }
         else
@@ -3982,6 +4192,7 @@ void Worker::Write( FileWrite& f )
             {
                 WriteTimeOffset( f, refTime, fe.start );
                 WriteTimeOffset( f, refTime, fe.end );
+                f.Write( &fe.frameImage, sizeof( fe.frameImage ) );
             }
         }
     }
@@ -4204,6 +4415,17 @@ void Worker::Write( FileWrite& f )
         f.Write( &frame.second->size, sizeof( frame.second->size ) );
         f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
     }
+
+    sz = m_data.frameImage.size();
+    f.Write( &sz, sizeof( sz ) );
+    for( auto& fi : m_data.frameImage )
+    {
+        f.Write( &fi->w, sizeof( fi->w ) );
+        f.Write( &fi->h, sizeof( fi->h ) );
+        f.Write( &fi->flip, sizeof( fi->flip ) );
+        const auto image = UnpackFrameImage( *fi );
+        f.Write( image, fi->w * fi->h / 2 );
+    }
 }
 
 void Worker::WriteTimeline( FileWrite& f, const Vector<ZoneEvent*>& vec, int64_t& refTime )
@@ -4271,6 +4493,8 @@ static const char* s_failureReasons[] = {
     "Zone name transfer destination doesn't match active zone.",
     "Memory free event without a matching allocation.",
     "Discontinuous frame begin/end mismatch.",
+    "Frame image offset is invalid.",
+    "Multiple frame images were sent for a single frame.",
 };
 
 static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)Worker::Failure::NUM_FAILURES, "Missing failure reason description." );
@@ -4278,6 +4502,41 @@ static_assert( sizeof( s_failureReasons ) / sizeof( *s_failureReasons ) == (int)
 const char* Worker::GetFailureString( Worker::Failure failure )
 {
     return s_failureReasons[(int)failure];
+}
+
+const char* Worker::PackFrameImage( const char* image, uint16_t w, uint16_t h, uint32_t& csz )
+{
+    const auto insz = size_t( w ) * size_t( h ) / 2;
+    const auto maxout = LZ4_COMPRESSBOUND( insz );
+    if( m_frameImageBufferSize < maxout )
+    {
+        m_frameImageBufferSize = maxout;
+        delete[] m_frameImageBuffer;
+        m_frameImageBuffer = new char[maxout];
+    }
+    const auto outsz = LZ4_compress_default( image, m_frameImageBuffer, insz, maxout );
+    csz = uint32_t( outsz );
+    auto ptr = (char*)m_slab.AllocBig( outsz );
+    memcpy( ptr, m_frameImageBuffer, outsz );
+    return ptr;
+}
+
+const char* Worker::UnpackFrameImage( const FrameImage& image )
+{
+    const auto outsz = size_t( image.w ) * size_t( image.h ) / 2;
+    if( m_frameImageBufferSize < outsz )
+    {
+        m_frameImageBufferSize = outsz;
+        delete[] m_frameImageBuffer;
+        m_frameImageBuffer = new char[outsz];
+    }
+    LZ4_decompress_safe( image.ptr, m_frameImageBuffer, image.csz, outsz );
+    return m_frameImageBuffer;
+}
+
+bool Worker::HasEtc1FrameImages() const
+{
+    return m_traceVersion <= FileVersion( 0, 4, 9 );
 }
 
 }

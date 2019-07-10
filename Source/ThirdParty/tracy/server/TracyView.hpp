@@ -11,6 +11,7 @@
 
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyTexture.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -131,6 +132,7 @@ private:
     void DrawTextEditor();
     void DrawGoToFrame();
     void DrawLockInfoWindow();
+    void DrawPlayback();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -149,7 +151,7 @@ private:
 
     uint32_t GetZoneColor( const ZoneEvent& ev );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    uint32_t GetZoneHighlight( const ZoneEvent& ev, bool migration );
+    uint32_t GetZoneHighlight( const ZoneEvent& ev );
     uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );
     float GetZoneThickness( const GpuEvent& ev );
@@ -167,6 +169,7 @@ private:
     void ZoneTooltip( const ZoneEvent& ev );
     void ZoneTooltip( const GpuEvent& ev );
     void CallstackTooltip( uint32_t idx );
+    void CrashTooltip();
 
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
@@ -192,6 +195,8 @@ private:
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
+
+    void SetPlaybackFrame( uint32_t idx );
 
     flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
     flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
@@ -239,14 +244,12 @@ private:
     int64_t m_zvStart = 0;
     int64_t m_zvEnd = 0;
 
-    int8_t m_lastCpu;
-
     int m_zvHeight = 0;
     int m_zvScroll = 0;
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
-    DecayValue<uint64_t> m_zoneSrcLocHighlight = 0;
+    DecayValue<int32_t> m_zoneSrcLocHighlight = 0;
     LockHighlight m_lockHighlight { -1 };
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
@@ -260,6 +263,8 @@ private:
     int m_memoryAllocHoverWait = 0;
     const FrameData* m_frames;
     uint32_t m_lockInfoWindow = InvalidId;
+    ZoneEvent* m_zoneHover = nullptr;
+    int m_frameHover = -1;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -272,6 +277,7 @@ private:
     bool m_showMessages = false;
     bool m_showStatistics = false;
     bool m_showInfo = false;
+    bool m_showPlayback = false;
     bool m_drawGpuZones = true;
     bool m_drawZones = true;
     bool m_drawLocks = true;
@@ -288,7 +294,7 @@ private:
     bool m_allocTimeRelativeToZone = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
-    Namespace m_namespace = Namespace::Full;
+    Namespace m_namespace = Namespace::Short;
     Animation m_zoomAnim;
     BuzzAnim<int> m_callstackBuzzAnim;
     BuzzAnim<int> m_callstackTreeBuzzAnim;
@@ -304,6 +310,7 @@ private:
     std::unique_ptr<TextEditor> m_textEditor;
     const char* m_textEditorFile;
     ImFont* m_textEditorFont;
+    bool m_textEditorWhitespace = true;
 
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;
@@ -316,6 +323,19 @@ private:
     bool m_groupCallstackTreeByNameTopDown = true;
     bool m_activeOnlyBottomUp = false;
     bool m_activeOnlyTopDown = false;
+
+    enum class SaveThreadState
+    {
+        Inert,
+        Saving,
+        NeedsJoin
+    };
+
+    std::atomic<SaveThreadState> m_saveThreadState { SaveThreadState::Inert };
+    std::thread m_saveThread;
+
+    void* m_frameTexture = nullptr;
+    const void* m_frameTexturePtr = nullptr;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
@@ -357,6 +377,14 @@ private:
         bool drawSelAvgMed = true;
         bool scheduleResetMatch = false;
         int selCs = 0;
+        int minBinVal = 1;
+
+        struct
+        {
+            int numBins = -1;
+            ptrdiff_t distBegin;
+            ptrdiff_t distEnd;
+        } binCache;
 
         void Reset()
         {
@@ -393,6 +421,7 @@ private:
             selAverage = 0;
             selMedian = 0;
             selTotal = 0;
+            binCache.numBins = -1;
         }
 
         void ShowZone( int32_t srcloc, const char* name )
@@ -415,6 +444,7 @@ private:
     struct {
         bool show = false;
         bool ignoreCase = false;
+        bool link = true;
         std::unique_ptr<Worker> second;
         std::thread loadThread;
         int badVer = 0;
@@ -424,7 +454,7 @@ private:
         bool logVal = false;
         bool logTime = true;
         bool cumulateTime = false;
-        bool normalize = false;
+        bool normalize = true;
         int64_t numBins = -1;
         std::unique_ptr<CompVal[]> bins, binTime;
         std::vector<int64_t> sorted[2];
@@ -432,6 +462,7 @@ private:
         float average[2];
         float median[2];
         int64_t total[2];
+        int minBinVal = 1;
 
         void ResetSelection()
         {
@@ -479,6 +510,7 @@ private:
         bool drawAvgMed = true;
         bool limitToView = false;
         std::pair<int, int> limitRange = { -1, 0 };
+        int minBinVal = 1;
     } m_frameSortData;
 
     struct {
@@ -487,6 +519,16 @@ private:
         std::pair<const GpuEvent*, int64_t> gpuSelfTime = { nullptr, 0 };
         std::pair<const GpuEvent*, int64_t> gpuSelfTime2 = { nullptr, 0 };
     } m_cache;
+
+    struct {
+        void* texture = nullptr;
+        float timeLeft = 0;
+        float speed = 1;
+        uint32_t frame = 0;
+        uint32_t currFrame = -1;
+        bool pause = true;
+        bool sync = false;
+    } m_playback;
 };
 
 }
