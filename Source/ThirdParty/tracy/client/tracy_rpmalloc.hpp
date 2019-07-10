@@ -13,14 +13,7 @@
 
 #include <stddef.h>
 
-// Urho3D change
-#ifndef DLL_EXPORT
-#ifdef _WIN32
-#  define DLL_EXPORT __declspec(dllexport)
-#else
-#  define DLL_EXPORT __attribute__((visibility("default")))
-#endif
-#endif
+#include "../common/TracyApi.h"
 
 namespace tracy
 {
@@ -112,7 +105,7 @@ rpmalloc_config(void);
 extern void
 rpmalloc_finalize(void);
 
-extern void
+void
 rpmalloc_thread_initialize(void);
 
 extern void
@@ -129,11 +122,11 @@ rpmalloc_thread_statistics(rpmalloc_thread_statistics_t* stats);
 
 extern void
 rpmalloc_global_statistics(rpmalloc_global_statistics_t* stats);
-// Urho3D change
-DLL_EXPORT RPMALLOC_RESTRICT void*
+
+TRACY_API RPMALLOC_RESTRICT void*
 rpmalloc(size_t size) RPMALLOC_ATTRIBUTE;
-// Urho3D change
-DLL_EXPORT void
+
+TRACY_API void
 rpfree(void* ptr);
 
 extern RPMALLOC_RESTRICT void*

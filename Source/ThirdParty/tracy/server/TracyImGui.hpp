@@ -1,6 +1,10 @@
 #ifndef __TRACYIMGUI_HPP__
 #define __TRACYIMGUI_HPP__
 
+#ifdef _MSC_VER
+#  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_internal.h"
 
@@ -16,7 +20,28 @@ namespace tracy
     {
         const auto tw = ImGui::CalcTextSize( text ).x;
         ImGui::SetCursorPosX( ( ImGui::GetWindowWidth() - tw ) * 0.5f );
-        ImGui::Text( "%s", text );
+        ImGui::TextUnformatted( text );
+    }
+
+    static inline void TextColoredUnformatted( const ImVec4& col, const char* text )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, col );
+        ImGui::TextUnformatted( text );
+        ImGui::PopStyleColor();
+    }
+
+    static inline void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
+    {
+        ImGui::PushStyleColor( ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled] );
+        ImGui::TextUnformatted( begin, end );
+        ImGui::PopStyleColor();
+    }
+
+    static inline void TextFocused( const char* label, const char* value )
+    {
+        TextDisabledUnformatted( label );
+        ImGui::SameLine();
+        ImGui::TextUnformatted( value );
     }
 
     static inline void DrawWaitingDots( double time )

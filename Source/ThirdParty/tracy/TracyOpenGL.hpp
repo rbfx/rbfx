@@ -40,6 +40,14 @@ public:
 #include "common/TracyAlign.hpp"
 #include "common/TracyAlloc.hpp"
 
+#if !defined GL_TIMESTAMP && defined GL_TIMESTAMP_EXT
+#  define GL_TIMESTAMP GL_TIMESTAMP_EXT
+#  define GL_QUERY_COUNTER_BITS GL_QUERY_COUNTER_BITS_EXT
+#  define glGetQueryObjectiv glGetQueryObjectivEXT
+#  define glGetQueryObjectui64v glGetQueryObjectui64vEXT
+#  define glQueryCounter glQueryCounterEXT
+#endif
+
 #define TracyGpuContext tracy::GetGpuCtx().ptr = (tracy::GpuCtx*)tracy::tracy_malloc( sizeof( tracy::GpuCtx ) ); new(tracy::GetGpuCtx().ptr) tracy::GpuCtx;
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
 #  define TracyGpuNamedZone( varname, name ) static const tracy::SourceLocationData TracyConcat(__tracy_gpu_source_location,__LINE__) { name, __FUNCTION__,  __FILE__, (uint32_t)__LINE__, 0 }; tracy::GpuCtxScope varname( &TracyConcat(__tracy_gpu_source_location,__LINE__), TRACY_CALLSTACK );
@@ -94,13 +102,14 @@ public:
 
         const float period = 1.f;
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
-        MemWrite( &item->gpuNewContext.thread, GetThreadHandle() );
+        MemWrite( &item->gpuNewContext.thread, thread );
         MemWrite( &item->gpuNewContext.period, period );
         MemWrite( &item->gpuNewContext.context, m_context );
         MemWrite( &item->gpuNewContext.accuracyBits, (uint8_t)bits );
@@ -230,9 +239,8 @@ public:
         const auto queryId = GetGpuCtx().ptr->NextQueryId();
         glQueryCounter( GetGpuCtx().ptr->TranslateOpenGlQueryId( queryId ), GL_TIMESTAMP );
 
-        const auto thread = GetThreadHandle();
-
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );

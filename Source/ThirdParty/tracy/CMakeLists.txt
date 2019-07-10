@@ -20,8 +20,6 @@
 # THE SOFTWARE.
 #
 
-set (CMAKE_CXX_STANDARD 14)
-
 file (GLOB_RECURSE COMMON_SOURCE_FILES common/*.cpp common/*.hpp common/*.h)
 file (GLOB_RECURSE CLIENT_SOURCE_FILES client/*.cpp client/*.hpp client/*.h)
 file (GLOB_RECURSE SERVER_SOURCE_FILES server/*.cpp server/*.hpp server/*.h imguicolortextedit/*.cpp imguicolortextedit/*.h)
@@ -36,6 +34,7 @@ if (BUILD_SHARED_LIBS)
     # now enough to only link to Urho3D target.
     add_library (tracy-lib STATIC TracyClientDLL.cpp)
     target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_IMPORTS=1 PRIVATE ${TRACY_OPTIONS_PRIVATE} -DTRACY_EXPORTS=1)
+    target_link_libraries(tracy-lib INTERFACE Urho3D)
 else ()
     list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySocket.cpp)
     add_library (tracy-lib INTERFACE)
@@ -46,7 +45,7 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     # Set up common parameters of profiler target
     macro (setup_tracy_profiler_target TARGET)
         target_include_directories(${TARGET} PRIVATE server)
-        target_link_libraries(${TARGET} Urho3D IconFontCppHeaders)
+        target_link_libraries(${TARGET} PUBLIC Urho3D IconFontCppHeaders)
         target_compile_definitions(${TARGET} PUBLIC ${TRACY_OPTIONS_PUBLIC} PRIVATE ${TRACY_OPTIONS_PRIVATE})
         if (MSVC)
             target_compile_options(${TARGET} PRIVATE /permissive-)
@@ -57,6 +56,12 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
     target_compile_definitions(tracy-profiler PUBLIC -DTRACY_ROOT_WINDOW=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
+    if (LINUX)
+        find_library(TBB tbb)
+        if (TBB)
+            target_link_libraries(tracy-profiler PUBLIC ${TBB})
+        endif ()
+    endif ()
     setup_tracy_profiler_target(tracy-profiler)
     install (TARGETS tracy-profiler
         LIBRARY DESTINATION ${DEST_LIBRARY_DIR}

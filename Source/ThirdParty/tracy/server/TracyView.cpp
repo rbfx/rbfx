@@ -1,3 +1,7 @@
+#ifdef _MSC_VER
+#  pragma warning( disable: 4267 )  // conversion from don't care to whatever, possible loss of data 
+#endif
+
 #ifdef __MINGW32__
 #  define __STDC_FORMAT_MACROS
 #endif
@@ -23,6 +27,7 @@
 #include "TracyFilesystem.hpp"
 #include "TracyImGui.hpp"
 #include "TracyPopcnt.hpp"
+#include "TracyPrint.hpp"
 #include "TracyView.hpp"
 
 #include "../imguicolortextedit/TextEditor.h"
@@ -58,333 +63,6 @@ static const char* s_tracyStackFrames[] = {
     nullptr
 };
 
-static const char* IntTable100 =
-"00010203040506070809"
-"10111213141516171819"
-"20212223242526272829"
-"30313233343536373839"
-"40414243444546474849"
-"50515253545556575859"
-"60616263646566676869"
-"70717273747576777879"
-"80818283848586878889"
-"90919293949596979899";
-
-static inline void PrintTinyInt( char*& buf, uint64_t v )
-{
-    if( v >= 10 )
-    {
-        *buf++ = '0' + v/10;
-    }
-    *buf++ = '0' + v%10;
-}
-
-static inline void PrintTinyInt0( char*& buf, uint64_t v )
-{
-    if( v >= 10 )
-    {
-        *buf++ = '0' + v/10;
-    }
-    else
-    {
-        *buf++ = '0';
-    }
-    *buf++ = '0' + v%10;
-}
-
-static inline void PrintSmallInt( char*& buf, uint64_t v )
-{
-    if( v >= 100 )
-    {
-        memcpy( buf, IntTable100 + v/10*2, 2 );
-        buf += 2;
-    }
-    else if( v >= 10 )
-    {
-        *buf++ = '0' + v/10;
-    }
-    *buf++ = '0' + v%10;
-}
-
-static inline void PrintFrac00( char*& buf, uint64_t v )
-{
-    *buf++ = '.';
-    v += 5;
-    if( v/10%10 == 0 )
-    {
-        *buf++ = '0' + v/100;
-    }
-    else
-    {
-        memcpy( buf, IntTable100 + v/10*2, 2 );
-        buf += 2;
-    }
-}
-
-static inline void PrintFrac0( char*& buf, uint64_t v )
-{
-    *buf++ = '.';
-    *buf++ = '0' + (v+50)/100;
-}
-
-static inline void PrintSmallIntFrac( char*& buf, uint64_t v )
-{
-    uint64_t in = v / 1000;
-    uint64_t fr = v % 1000;
-    if( fr >= 995 )
-    {
-        PrintSmallInt( buf, in+1 );
-    }
-    else
-    {
-        PrintSmallInt( buf, in );
-        if( fr > 5 )
-        {
-            PrintFrac00( buf, fr );
-        }
-    }
-}
-
-static inline void PrintSecondsFrac( char*& buf, uint64_t v )
-{
-    uint64_t in = v / 1000;
-    uint64_t fr = v % 1000;
-    if( fr >= 950 )
-    {
-        PrintTinyInt0( buf, in+1 );
-    }
-    else
-    {
-        PrintTinyInt0( buf, in );
-        if( fr > 50 )
-        {
-            PrintFrac0( buf, fr );
-        }
-    }
-}
-
-static const char* TimeToString( int64_t _ns )
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    char* bufstart = buf;
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    uint64_t ns;
-    if( _ns < 0 )
-    {
-        *buf = '-';
-        buf++;
-        ns = -_ns;
-    }
-    else
-    {
-        ns = _ns;
-    }
-
-    if( ns < 1000 )
-    {
-        PrintSmallInt( buf, ns );
-        memcpy( buf, " ns", 4 );
-    }
-    else if( ns < 1000ll * 1000 )
-    {
-        PrintSmallIntFrac( buf, ns );
-#ifdef TRACY_EXTENDED_FONT
-        memcpy( buf, " \xce\xbcs", 5 );
-#else
-        memcpy( buf, " us", 4 );
-#endif
-    }
-    else if( ns < 1000ll * 1000 * 1000 )
-    {
-        PrintSmallIntFrac( buf, ns / 1000 );
-        memcpy( buf, " ms", 4 );
-    }
-    else if( ns < 1000ll * 1000 * 1000 * 60 )
-    {
-        PrintSmallIntFrac( buf, ns / ( 1000ll * 1000 ) );
-        memcpy( buf, " s", 3 );
-    }
-    else if( ns < 1000ll * 1000 * 1000 * 60 * 60 )
-    {
-        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) );
-        const auto s = int64_t( ns - m * ( 1000ll * 1000 * 1000 * 60 ) ) / ( 1000ll * 1000 );
-        PrintTinyInt( buf, m );
-        *buf++ = ':';
-        PrintSecondsFrac( buf, s );
-        *buf++ = '\0';
-    }
-    else if( ns < 1000ll * 1000 * 1000 * 60 * 60 * 24 )
-    {
-        const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) );
-        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - h * 60 );
-        const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - h * ( 60 * 60 ) - m * 60 );
-        PrintTinyInt( buf, h );
-        *buf++ = ':';
-        PrintTinyInt0( buf, m );
-        *buf++ = ':';
-        PrintTinyInt0( buf, s );
-        *buf++ = '\0';
-    }
-    else
-    {
-        const auto d = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 * 24 ) );
-        const auto h = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 * 60 ) - d * 24 );
-        const auto m = int64_t( ns / ( 1000ll * 1000 * 1000 * 60 ) - d * ( 60 * 24 ) - h * 60 );
-        const auto s = int64_t( ns / ( 1000ll * 1000 * 1000 ) - d * ( 60 * 60 * 24 ) - h * ( 60 * 60 ) - m * 60 );
-        if( d < 1000 )
-        {
-            PrintSmallInt( buf, d );
-            *buf++ = 'd';
-        }
-        else
-        {
-            buf += sprintf( buf, "%" PRIi64 "d", d );
-        }
-        PrintTinyInt0( buf, h );
-        *buf++ = ':';
-        PrintTinyInt0( buf, m );
-        *buf++ = ':';
-        PrintTinyInt0( buf, s );
-        *buf++ = '\0';
-    }
-    return bufstart;
-}
-
-static const char* RealToString( double val, bool separator )
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    sprintf( buf, "%f", val );
-    auto ptr = buf;
-    if( *ptr == '-' ) ptr++;
-
-    const auto vbegin = ptr;
-
-    if( separator )
-    {
-        while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
-        auto end = ptr;
-        while( *end != '\0' ) end++;
-        auto sz = end - ptr;
-
-        while( ptr - vbegin > 3 )
-        {
-            ptr -= 3;
-            memmove( ptr+1, ptr, sz );
-            *ptr = ',';
-            sz += 4;
-        }
-    }
-
-    while( *ptr != '\0' && *ptr != ',' && *ptr != '.' ) ptr++;
-
-    if( *ptr == '\0' ) return buf;
-    while( *ptr != '\0' ) ptr++;
-    ptr--;
-    while( *ptr == '0' ) ptr--;
-    if( *ptr != '.' && *ptr != ',' ) ptr++;
-    *ptr = '\0';
-    return buf;
-}
-
-static const char* MemSizeToString( int64_t val )
-{
-    enum { Pool = 8 };
-    static char bufpool[Pool][64];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
-    const auto aval = abs( val );
-
-    if( aval < 10000ll )
-    {
-        sprintf( buf, "%" PRIi64 " bytes", val );
-        return buf;
-    }
-
-    enum class Unit
-    {
-        Kilobyte,
-        Megabyte,
-        Gigabyte,
-        Terabyte
-    };
-    Unit unit;
-
-    if( aval < 10000ll * 1024 )
-    {
-        sprintf( buf, "%.2f", val / 1024. );
-        unit = Unit::Kilobyte;
-    }
-    else if( aval < 10000ll * 1024 * 1024 )
-    {
-        sprintf( buf, "%.2f", val / ( 1024. * 1024 ) );
-        unit = Unit::Megabyte;
-    }
-    else if( aval < 10000ll * 1024 * 1024 * 1024 )
-    {
-        sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 ) );
-        unit = Unit::Gigabyte;
-    }
-    else
-    {
-        sprintf( buf, "%.2f", val / ( 1024. * 1024 * 1024 * 1024 ) );
-        unit = Unit::Terabyte;
-    }
-
-    auto ptr = buf;
-    while( *ptr ) ptr++;
-    ptr--;
-    while( ptr >= buf && *ptr == '0' ) ptr--;
-    if( *ptr != '.' ) ptr++;
-
-    *ptr++ = ' ';
-    switch( unit )
-    {
-    case Unit::Kilobyte:
-        *ptr++ = 'K';
-        break;
-    case Unit::Megabyte:
-        *ptr++ = 'M';
-        break;
-    case Unit::Gigabyte:
-        *ptr++ = 'G';
-        break;
-    case Unit::Terabyte:
-        *ptr++ = 'T';
-        break;
-    default:
-        assert( false );
-        break;
-    }
-    *ptr++ = 'B';
-    *ptr++ = '\0';
-
-    return buf;
-}
-
-static void TextDisabledUnformatted( const char* begin, const char* end = nullptr )
-{
-    ImGui::PushStyleColor(ImGuiCol_Text, GImGui->Style.Colors[ImGuiCol_TextDisabled]);
-    ImGui::TextUnformatted( begin, end );
-    ImGui::PopStyleColor();
-}
-
-static void TextFocused( const char* label, const char* value )
-{
-    TextDisabledUnformatted( label );
-    ImGui::SameLine();
-    ImGui::TextUnformatted( value );
-}
 
 static void SetButtonHighlightColor()
 {
@@ -459,6 +137,10 @@ View::~View()
     m_worker.Shutdown();
 
     if( m_compare.loadThread.joinable() ) m_compare.loadThread.join();
+    if( m_saveThread.joinable() ) m_saveThread.join();
+
+    if( m_frameTexture ) FreeTexture( m_frameTexture );
+    if( m_playback.texture ) FreeTexture( m_playback.texture );
 
     assert( s_instance != nullptr );
     s_instance = nullptr;
@@ -469,6 +151,7 @@ void View::InitTextEditor()
     m_textEditor = std::make_unique<TextEditor>();
     m_textEditor->SetReadOnly( true );
     m_textEditor->SetLanguageDefinition( TextEditor::LanguageDefinition::CPlusPlus() );
+    m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
 
     m_textEditorFile = nullptr;
 }
@@ -540,7 +223,7 @@ void View::DrawHelpMarker( const char* desc ) const
 
 void View::DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text )
 {
-    draw->AddText( pos + ImVec2( 1, 1 ), 0x88000000, text );
+    draw->AddText( pos + ImVec2( 1, 1 ), 0xAA000000, text );
     draw->AddText( pos, color, text );
 }
 
@@ -696,6 +379,12 @@ bool View::DrawImpl()
         return !wasCancelled;
     }
 
+    if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::NeedsJoin )
+    {
+        m_saveThread.join();
+        m_saveThreadState.store( SaveThreadState::Inert, std::memory_order_relaxed );
+    }
+
     const auto& io = ImGui::GetIO();
 
     assert( m_shortcut == ShortcutAction::None );
@@ -720,6 +409,7 @@ bool View::DrawImpl()
 
     bool keepOpen = true;
     bool* keepOpenPtr = nullptr;
+    (void)keepOpenPtr;
     if( !m_staticView )
     {
 #ifdef TRACY_EMBED_WINDOW
@@ -791,7 +481,7 @@ bool View::DrawImpl()
     ImGui::Begin( tmp, keepOpenPtr, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoBringToFrontOnFocus );
 #endif
 
-    std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
+    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( !m_worker.IsDataStatic() )
     {
 #if defined TRACY_EMBED_WINDOW
@@ -948,12 +638,64 @@ bool View::DrawImpl()
 #else
     ImGui::Text( "View span: %-10s Time span: %-10s ", TimeToString( m_zvEnd - m_zvStart ), TimeToString( m_worker.GetLastTime() - m_worker.GetTimeBegin() ) );
 #endif
-    if( m_notificationTime > 0 )
+
+    const auto ty = ImGui::GetFontSize();
+    auto& crash = m_worker.GetCrashEvent();
+    if( crash.thread != 0 )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), ICON_FA_SKULL );
+#else
+        TextColoredUnformatted( ImVec4( 1, 0, 0, 1 ), "crash" );
+#endif
+        if( ImGui::IsItemHovered() )
+        {
+            CrashTooltip();
+            if( ImGui::IsMouseClicked( 0 ) )
+            {
+                m_showInfo = true;
+            }
+            if( ImGui::IsMouseClicked( 2 ) )
+            {
+                CenterAtTime( crash.time );
+            }
+        }
+    }
+    if( !m_worker.IsBackgroundDone() )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        TextDisabledUnformatted( ICON_FA_TASKS );
+        ImGui::SameLine();
+        const auto pos = ImGui::GetCursorPos();
+        ImGui::TextUnformatted( "  " );
+        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+#else
+        const auto pos = ImGui::GetCursorPos();
+        ImGui::TextUnformatted( "  " );
+        ImGui::GetWindowDrawList()->AddCircleFilled( pos + ImVec2( 0, ty * 0.75f ), ty * ( 0.2f + ( sin( s_time * 8 ) + 1 ) * 0.125f ), 0xFF888888, 10 );
+#endif
+    }
+    if( m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Saving )
+    {
+        ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+        ImGui::TextUnformatted( ICON_FA_SAVE " Saving trace..." );
+#else
+        ImGui::TextUnformatted( "Saving trace..." );
+#endif
+        m_notificationTime = 0;
+    }
+    else if( m_notificationTime > 0 )
     {
         m_notificationTime -= io.DeltaTime;
         ImGui::SameLine();
         TextDisabledUnformatted( m_notificationText.c_str() );
     }
+
+    m_frameHover = -1;
+
     DrawFrames();
     DrawZones();
 #if !defined TRACY_EMBED_WINDOW
@@ -978,6 +720,7 @@ bool View::DrawImpl()
     if( m_textEditorFile ) DrawTextEditor();
     if( m_goToFrame ) DrawGoToFrame();
     if( m_lockInfoWindow != InvalidId ) DrawLockInfoWindow();
+    if( m_showPlayback ) DrawPlayback();
 
     if( m_zoomAnim.active )
     {
@@ -1013,7 +756,7 @@ bool View::DrawConnection()
     const auto cs = ty * 0.9f;
 
     {
-        std::lock_guard<TracyMutex> lock( m_worker.GetMbpsDataLock() );
+        std::shared_lock<std::shared_mutex> lock( m_worker.GetMbpsDataLock() );
         char tmp[2048];
         sprintf( tmp, "%s###Connection", m_worker.GetAddr().c_str() );
 #if !defined TRACY_EMBED_WINDOW
@@ -1042,8 +785,8 @@ bool View::DrawConnection()
     const auto wpos = ImGui::GetWindowPos() + ImGui::GetWindowContentRegionMin();
     ImGui::GetWindowDrawList()->AddCircleFilled( wpos + ImVec2( 1 + cs * 0.5, 3 + ty * 0.5 ), cs * 0.5, m_worker.IsConnected() ? 0xFF2222CC : 0xFF444444, 10 );
 
-    std::lock_guard<TracyMutex> lock( m_worker.GetDataLock() );
     {
+        std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
         const auto sz = m_worker.GetFrameCount( *m_frames );
         if( sz > 1 )
         {
@@ -1055,9 +798,9 @@ bool View::DrawConnection()
     }
 
 #ifdef TRACY_EXTENDED_FONT
-    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) )
+    if( ImGui::Button( ICON_FA_SAVE " Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
 #else
-    if( ImGui::Button( "Save trace" ) )
+    if( ImGui::Button( "Save trace" ) && m_saveThreadState.load( std::memory_order_relaxed ) == SaveThreadState::Inert )
 #endif
     {
 #ifdef TRACY_FILESELECTOR
@@ -1082,7 +825,12 @@ bool View::DrawConnection()
             }
             if( f )
             {
-                m_worker.Write( *f );
+                m_saveThreadState.store( SaveThreadState::Saving, std::memory_order_relaxed );
+                m_saveThread = std::thread( [this, f{std::move( f )}] {
+                    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
+                    m_worker.Write( *f );
+                    m_saveThreadState.store( SaveThreadState::NeedsJoin, std::memory_order_relaxed );
+                } );
             }
         }
     }
@@ -1093,6 +841,7 @@ bool View::DrawConnection()
 #else
     const char* stopStr = "Stop";
 #endif
+    std::shared_lock<std::shared_mutex> lock( m_worker.GetDataLock() );
     if( m_worker.IsConnected() )
     {
         if( ImGui::Button( stopStr ) )
@@ -1256,6 +1005,7 @@ void View::DrawFrames()
                 }
                 else
                 {
+                    m_frameHover = sel;
                     if( m_frames->name == 0 )
                     {
                         const auto offset = m_worker.GetFrameOffset();
@@ -1298,21 +1048,53 @@ void View::DrawFrames()
                     }
                 }
                 TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( *m_frames, sel ) - m_worker.GetTimeBegin() ) );
+                auto fi = m_worker.GetFrameImage( *m_frames, sel );
+                if( fi )
+                {
+                    if( fi != m_frameTexturePtr )
+                    {
+                        if( !m_frameTexture ) m_frameTexture = MakeTexture();
+                        UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h, m_worker.HasEtc1FrameImages() );
+                        m_frameTexturePtr = fi;
+                    }
+                    ImGui::Separator();
+                    if( fi->flip )
+                    {
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                    }
+                    else
+                    {
+                        ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                    }
+                }
                 ImGui::EndTooltip();
 
-                if( ImGui::IsMouseClicked( 0 ) )
+                if( io.KeyCtrl )
                 {
-                    m_pause = true;
-                    m_zoomAnim.active = false;
-                    m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
-                    m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
-                    if( m_zvStart == m_zvEnd ) m_zvStart--;
+                    if( fi && ImGui::IsMouseDown( 0 ) )
+                    {
+                        m_showPlayback = true;
+                        m_playback.pause = true;
+                        SetPlaybackFrame( m_frames->frames[sel].frameImage );
+                    }
                 }
-                else if( ImGui::IsMouseDragging( 0 ) )
+                else
                 {
-                    const auto t0 = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
-                    const auto t1 = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
-                    ZoomToRange( t0, t1 );
+                    if( ImGui::IsMouseClicked( 0 ) )
+                    {
+                        m_pause = true;
+                        m_zoomAnim.active = false;
+                        if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
+                        m_zvStart = m_worker.GetFrameBegin( *m_frames, sel );
+                        m_zvEnd = m_worker.GetFrameEnd( *m_frames, sel + group - 1 );
+                        if( m_zvStart == m_zvEnd ) m_zvStart--;
+                    }
+                    else if( ImGui::IsMouseDragging( 0 ) )
+                    {
+                        const auto t0 = std::min( m_zvStart, m_worker.GetFrameBegin( *m_frames, sel ) );
+                        const auto t1 = std::max( m_zvEnd, m_worker.GetFrameEnd( *m_frames, sel + group - 1 ) );
+                        ZoomToRange( t0, t1 );
+                    }
                 }
             }
 
@@ -1341,7 +1123,7 @@ void View::DrawFrames()
             }
         }
 
-        const auto h = float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 );
+        const auto h = std::max( 1.f, float( std::min<uint64_t>( MaxFrameTime, f ) ) / MaxFrameTime * ( Height - 2 ) );
         if( fwidth != 1 )
         {
             draw->AddRectFilled( wpos + ImVec2( 1 + i*fwidth, Height-1-h ), wpos + ImVec2( fwidth + i*fwidth, Height-1 ), GetFrameColor( f ) );
@@ -1355,8 +1137,7 @@ void View::DrawFrames()
         idx += group;
     }
 
-    const std::pair <int, int> zrange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
-
+    const auto zrange = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvEnd );
     if( zrange.second > m_frameStart && zrange.first < m_frameStart + onScreen * group )
     {
         auto x1 = std::min( onScreen * fwidth, ( zrange.second - m_frameStart ) * fwidth / group );
@@ -1429,8 +1210,9 @@ void View::HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, d
 
     if( ImGui::IsMouseDragging( 1, 0 ) )
     {
-        m_zoomAnim.active = false;
         m_pause = true;
+        m_zoomAnim.active = false;
+        if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
         const auto delta = ImGui::GetMouseDragDelta( 1, 0 );
         const auto dpx = int64_t( delta.x * nspx );
         if( dpx != 0 )
@@ -1673,14 +1455,41 @@ bool View::DrawZoneFrames( const FrameData& frames )
 
             ImGui::BeginTooltip();
             ImGui::TextUnformatted( GetFrameText( frames, i, ftime, m_worker.GetFrameOffset() ) );
-            ImGui::Separator();
             TextFocused( "Time from start of program:", TimeToString( m_worker.GetFrameBegin( frames, i ) - m_worker.GetTimeBegin() ) );
+            auto fi = m_worker.GetFrameImage( frames, i );
+            if( fi )
+            {
+                if( fi != m_frameTexturePtr )
+                {
+                    if( !m_frameTexture ) m_frameTexture = MakeTexture();
+                    UpdateTexture( m_frameTexture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h, m_worker.HasEtc1FrameImages() );
+                    m_frameTexturePtr = fi;
+                }
+                ImGui::Separator();
+                if( fi->flip )
+                {
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+                }
+                else
+                {
+                    ImGui::Image( m_frameTexture, ImVec2( fi->w, fi->h ) );
+                }
+
+                if( ImGui::GetIO().KeyCtrl && ImGui::IsMouseClicked( 0 ) )
+                {
+                    m_showPlayback = true;
+                    m_playback.pause = true;
+                    SetPlaybackFrame( frames.frames[i].frameImage );
+                }
+            }
             ImGui::EndTooltip();
 
             if( ImGui::IsMouseClicked( 2 ) )
             {
                 ZoomToRange( fbegin, fend );
             }
+
+            if( activeFrameSet ) m_frameHover = i;
         }
 
         if( fsz < MinFrameSize )
@@ -1741,7 +1550,7 @@ bool View::DrawZoneFrames( const FrameData& frames )
         auto tx = ImGui::CalcTextSize( buf ).x;
         uint32_t color = ( frames.name == 0 && i == 0 ) ? redColor : activeColor;
 
-        if( fsz - 5 <= tx )
+        if( fsz - 7 <= tx )
         {
             buf = TimeToString( ftime );
             tx = ImGui::CalcTextSize( buf ).x;
@@ -1755,12 +1564,28 @@ bool View::DrawZoneFrames( const FrameData& frames )
         {
             draw->AddLine( wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, 1 ), wpos + ImVec2( ( fend - m_zvStart ) * pxns - 2, ty - 1 ), color );
         }
-        if( fsz - 5 > tx )
+        if( fsz - 7 > tx )
         {
-            const auto part = ( fsz - 5 - tx ) / 2;
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fbegin - m_zvStart ) * pxns + part ), round( ty / 2 ) ), color );
-            draw->AddText( wpos + ImVec2( ( fbegin - m_zvStart ) * pxns + 2 + part, 0 ), color, buf );
-            draw->AddLine( wpos + ImVec2( std::max( -10.0, ( fbegin - m_zvStart ) * pxns + 2 + part + tx ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, ( fend - m_zvStart ) * pxns - 2 ), round( ty / 2 ) ), color );
+            const auto f0 = ( fbegin - m_zvStart ) * pxns + 2;
+            const auto f1 = ( fend - m_zvStart ) * pxns - 2;
+            const auto x0 = f0 + 1;
+            const auto x1 = f1 - 1;
+            const auto te = x1 - tx;
+
+            auto tpos = ( x0 + te ) / 2;
+            if( tpos < 0 )
+            {
+                tpos = std::min( std::min( 0., te - tpos ), te );
+            }
+            else if( tpos > w - tx )
+            {
+                tpos = std::max( double( w - tx ), x0 );
+            }
+            tpos = round( tpos );
+
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, f0 ), round( ty / 2 ) ), wpos + ImVec2( tpos, round( ty / 2 ) ), color );
+            draw->AddLine( wpos + ImVec2( std::max( -10.0, tpos + tx + 1 ), round( ty / 2 ) ), wpos + ImVec2( std::min( w + 20.0, f1 ), round( ty / 2 ) ), color );
+            draw->AddText( wpos + ImVec2( tpos, 0 ), color, buf );
         }
         else
         {
@@ -1841,6 +1666,7 @@ void View::DrawZones()
     m_msgHighlight.Decay( nullptr );
     m_zoneSrcLocHighlight.Decay( 0 );
     m_lockHoverHighlight.Decay( InvalidId );
+    m_zoneHover = nullptr;
 
     if( m_zvStart == m_zvEnd ) return;
     assert( m_zvStart < m_zvEnd );
@@ -1881,6 +1707,9 @@ void View::DrawZones()
         }
     }
 
+    const auto yMin = ImGui::GetCursorScreenPos().y;
+    const auto yMax = linepos.y + lineh;
+
     ImGui::BeginChild( "##zoneWin", ImVec2( ImGui::GetWindowContentRegionWidth(), ImGui::GetContentRegionAvail().y ), false, ImGuiWindowFlags_AlwaysVerticalScrollbar | ImGuiWindowFlags_NoScrollWithMouse );
 
     const auto wpos = ImGui::GetCursorScreenPos();
@@ -1888,6 +1717,7 @@ void View::DrawZones()
 
     ImGui::InvisibleButton( "##zones", ImVec2( w, h ) );
     bool hover = ImGui::IsItemHovered();
+    draw = ImGui::GetWindowDrawList();
 
     if( hover )
     {
@@ -1902,9 +1732,6 @@ void View::DrawZones()
     int offset = 0;
     const auto to = 9.f;
     const auto th = ( ty - to ) * sqrt( 3 ) * 0.5;
-
-    const auto yMin = linepos.y;
-    const auto yMax = yMin + lineh;
 
     // gpu zones
     if( m_drawGpuZones )
@@ -1964,7 +1791,7 @@ void View::DrawZones()
                 {
                     sprintf( buf, "OpenGL context %zu", i );
                 }
-                draw->AddText( wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
+                DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), showFull ? 0xFFFFAAAA : 0xFF886666, buf );
 
                 if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + ImGui::CalcTextSize( buf ).x, oldOffset + ty ) ) )
                 {
@@ -2024,7 +1851,7 @@ void View::DrawZones()
     if( threadData.size() != m_threadOrder.size() )
     {
         m_threadOrder.reserve( threadData.size() );
-        for( int i=m_threadOrder.size(); i<threadData.size(); i++ )
+        for( size_t i=m_threadOrder.size(); i<threadData.size(); i++ )
         {
             m_threadOrder.push_back( threadData[i] );
         }
@@ -2041,7 +1868,7 @@ void View::DrawZones()
             vis.offset = 0;
             continue;
         }
-        bool& showFull = vis.showFull;
+        bool showFull = vis.showFull;
 
         const auto yPos = AdjustThreadPosition( vis, wpos.y, offset );
         const auto oldOffset = offset;
@@ -2051,7 +1878,6 @@ void View::DrawZones()
         offset += ostep;
         if( showFull )
         {
-            m_lastCpu = -1;
             if( m_drawZones )
             {
                 depth = DispatchZoneLevel( v->timeline, hover, pxns, int64_t( nspx ), wpos, offset, 0, yMin, yMax );
@@ -2072,6 +1898,7 @@ void View::DrawZones()
 
         if( !m_drawEmptyLabels && showFull && depth == 0 && msgit == msgend && crash.thread != v->id )
         {
+            auto& vis = Vis( v );
             vis.height = 0;
             vis.offset = 0;
             offset = oldOffset;
@@ -2092,26 +1919,40 @@ void View::DrawZones()
                     const auto dist = std::distance( msgit, next );
 
                     const auto px = ( (*msgit)->time - m_zvStart ) * pxns;
+                    const bool isMsgHovered = hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) );
+
+                    unsigned int color = 0xFFDDDDDD;
+                    float animOff = 0;
                     if( dist > 1 )
                     {
-                        unsigned int color = 0xFFDDDDDD;
                         if( m_msgHighlight && m_msgHighlight->thread == v->id )
                         {
                             const auto hTime = m_msgHighlight->time;
                             if( (*msgit)->time <= hTime && ( next == v->messages.end() || (*next)->time > hTime ) )
                             {
                                 color = 0xFF4444FF;
+                                if( !isMsgHovered )
+                                {
+                                    animOff = -fabs( sin( s_time * 8 ) ) * th;
+                                }
                             }
                         }
-                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color );
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color, 2.0f );
+                        draw->AddTriangleFilled( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color );
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color, 2.0f );
                     }
                     else
                     {
-                        const auto color = ( m_msgHighlight == *msgit ) ? 0xFF4444FF : 0xFFDDDDDD;
-                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, oldOffset + to ), wpos + ImVec2( px, oldOffset + to + th ), color, 2.0f );
+                        if( m_msgHighlight == *msgit )
+                        {
+                            color = 0xFF4444FF;
+                            if( !isMsgHovered )
+                            {
+                                animOff = -fabs( sin( s_time * 8 ) ) * th;
+                            }
+                        }
+                        draw->AddTriangle( wpos + ImVec2( px - (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px + (ty - to) * 0.5, animOff + oldOffset + to ), wpos + ImVec2( px, animOff + oldOffset + to + th ), color, 2.0f );
                     }
-                    if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
+                    if( isMsgHovered )
                     {
                         ImGui::BeginTooltip();
                         if( dist > 1 )
@@ -2155,15 +1996,11 @@ void View::DrawZones()
 #endif
 
                     auto ctw = ImGui::CalcTextSize( crashText ).x;
-                    draw->AddText( wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
+                    DrawTextContrast( draw, wpos + ImVec2( px - ctw * 0.5f, oldOffset + to + th * 0.5f - ty ), 0xFF2222FF, crashText );
 
                     if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( px - (ty - to) * 0.5 - 1, oldOffset ), wpos + ImVec2( px + (ty - to) * 0.5 + 1, oldOffset + ty ) ) )
                     {
-                        ImGui::BeginTooltip();
-                        TextFocused( "Time:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
-                        TextFocused( "Reason:", m_worker.GetString( crash.message ) );
-                        ImGui::EndTooltip();
-
+                        CrashTooltip();
                         if( ImGui::IsMouseClicked( 0 ) )
                         {
                             m_showInfo = true;
@@ -2191,7 +2028,7 @@ void View::DrawZones()
                 draw->AddRectFilled( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x4488DD88 );
                 draw->AddRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x + 4, oldOffset + ty ), 0x8888DD88 );
             }
-            draw->AddText( wpos + ImVec2( ty, oldOffset ), labelColor, txt );
+            DrawTextContrast( draw, wpos + ImVec2( ty, oldOffset ), labelColor, txt );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, oldOffset ), wpos + ImVec2( ty + txtsz.x, oldOffset + ty ) ) )
             {
@@ -2203,9 +2040,9 @@ void View::DrawZones()
                 {
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                    TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
 #else
-                    ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                    TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
                 }
 
@@ -2269,7 +2106,7 @@ void View::DrawZones()
 
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    showFull = !showFull;
+                    Vis( v ).showFull = !showFull;
                 }
                 if( last >= 0 && ImGui::IsMouseClicked( 2 ) )
                 {
@@ -2278,7 +2115,7 @@ void View::DrawZones()
             }
         }
 
-        AdjustThreadHeight( vis, oldOffset, offset );
+        AdjustThreadHeight( Vis( v ), oldOffset, offset );
         ImGui::PopClipRect();
     }
     m_lockHighlight = nextLockHighlight;
@@ -2442,10 +2279,19 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                     }
                     if( ImGui::IsMouseClicked( 0 ) )
                     {
-                        ShowZoneInfo( ev );
+                        if( ImGui::GetIO().KeyCtrl )
+                        {
+                            auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+                            m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                        }
+                        else
+                        {
+                            ShowZoneInfo( ev );
+                        }
                     }
 
                     m_zoneSrcLocHighlight = ev.srcloc;
+                    m_zoneHover = &ev;
                 }
             }
             char tmp[64];
@@ -2462,26 +2308,10 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const char* zoneName = m_worker.GetZoneName( ev );
             int dmul = ev.text.active ? 2 : 1;
 
-            bool migration = false;
-            if( m_lastCpu != ev.cpu_start )
-            {
-                if( m_lastCpu >= 0 )
-                {
-                    migration = true;
-                }
-                m_lastCpu = ev.cpu_start;
-            }
-
             if( ev.child >= 0 )
             {
                 const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
                 if( d > maxdepth ) maxdepth = d;
-            }
-
-            if( ev.end >= 0 && m_lastCpu != ev.cpu_end )
-            {
-                m_lastCpu = ev.cpu_end;
-                migration = true;
             }
 
             auto tsz = ImGui::CalcTextSize( zoneName );
@@ -2496,7 +2326,7 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
             const auto px0 = std::max( pr0, -10.0 );
             const auto px1 = std::max( { std::min( pr1, double( w + 10 ) ), px0 + pxns * 0.5, px0 + MinVisSize } );
             draw->AddRectFilled( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), color );
-            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev, migration ), 0.f, -1, GetZoneThickness( ev ) );
+            draw->AddRect( wpos + ImVec2( px0, offset ), wpos + ImVec2( px1, offset + tsz.y ), GetZoneHighlight( ev ), 0.f, -1, GetZoneThickness( ev ) );
             if( dsz * dmul > MinVisSize )
             {
                 const auto diff = dsz * dmul - MinVisSize;
@@ -2569,10 +2399,19 @@ int View::DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
                 }
                 if( ImGui::IsMouseClicked( 0 ) )
                 {
-                    ShowZoneInfo( ev );
+                    if( ImGui::GetIO().KeyCtrl )
+                    {
+                        auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
+                        m_findZone.ShowZone( ev.srcloc, m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function ) );
+                    }
+                    else
+                    {
+                        ShowZoneInfo( ev );
+                    }
                 }
 
                 m_zoneSrcLocHighlight = ev.srcloc;
+                m_zoneHover = &ev;
             }
 
             ++it;
@@ -2619,19 +2458,11 @@ int View::SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns,
         }
         else
         {
-            m_lastCpu = ev.cpu_start;
-
             if( ev.child >= 0 )
             {
                 const auto d = DispatchZoneLevel( m_worker.GetZoneChildren( ev.child ), hover, pxns, nspx, wpos, _offset, depth, yMin, yMax );
                 if( d > maxdepth ) maxdepth = d;
             }
-
-            if( ev.end >= 0 && m_lastCpu != ev.cpu_end )
-            {
-                m_lastCpu = ev.cpu_end;
-            }
-
             ++it;
         }
     }
@@ -3780,7 +3611,7 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
             }
             const auto txt = GetPlotName( v );
             txtx = ImGui::CalcTextSize( txt ).x;
-            draw->AddText( wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
+            DrawTextContrast( draw, wpos + ImVec2( ty, offset ), showFull ? 0xFF44DDDD : 0xFF226E6E, txt );
             draw->AddLine( wpos + ImVec2( 0, offset + ty - 1 ), wpos + ImVec2( w, offset + ty - 1 ), 0x8844DDDD );
 
             if( hover && ImGui::IsMouseHoveringRect( wpos + ImVec2( 0, offset ), wpos + ImVec2( ty + txtx, offset + ty ) ) )
@@ -3897,6 +3728,11 @@ int View::DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, fl
                         min = tmp[i].val < min ? tmp[i].val : min;
                         max = tmp[i].val > max ? tmp[i].val : max;
                     }
+                }
+                if( min == max )
+                {
+                    min--;
+                    max++;
                 }
 
                 auto pvit = m_plotView.find( v );
@@ -4364,6 +4200,7 @@ void View::DrawZoneInfoWindow()
 
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
+    ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
@@ -4486,15 +4323,17 @@ void View::DrawZoneInfoWindow()
     const auto selftime = GetZoneSelfTime( ev );
     TextFocused( "Time from start of program:", TimeToString( ev.start - m_worker.GetTimeBegin() ) );
     TextFocused( "Execution time:", TimeToString( ztime ) );
-    if( ImGui::IsItemHovered() )
-    {
-        ImGui::BeginTooltip();
-        TextFocused( "Without profiling:", TimeToString( ztime - m_worker.GetDelay() * dmul ) );
-        ImGui::EndTooltip();
-    }
-    TextFocused( "Self time:", TimeToString( selftime ) );
+#ifndef TRACY_NO_STATISTICS
+    auto& zoneData = m_worker.GetZonesForSourceLocation( ev.srcloc );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+#endif
+    TextFocused( "Self time:", TimeToString( selftime ) );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
 
     auto& mem = m_worker.GetMemData();
     if( !mem.data.empty() )
@@ -4782,7 +4621,7 @@ void View::DrawZoneInfoWindow()
                 pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
 
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -4908,7 +4747,7 @@ void View::DrawZoneInfoWindow()
                 pdqsort_branchless( cti.get(), cti.get() + children.size(), [&ctt] ( const auto& lhs, const auto& rhs ) { return ctt[lhs] > ctt[rhs]; } );
 
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -4961,6 +4800,7 @@ void View::DrawGpuInfoWindow()
     auto& ev = *m_gpuInfoWindow;
     const auto& srcloc = m_worker.GetSourceLocation( ev.srcloc );
 
+    ImGui::SetNextWindowSize( ImVec2( 500, 400 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Zone info", &show );
 
@@ -5061,8 +4901,11 @@ void View::DrawGpuInfoWindow()
     TextFocused( "Time from start of program:", TimeToString( ev.gpuStart - m_worker.GetTimeBegin() ) );
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
     TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
@@ -5184,7 +5027,7 @@ void View::DrawGpuInfoWindow()
                 pdqsort_branchless( cgvec.begin(), cgvec.end(), []( const auto& lhs, const auto& rhs ) { return lhs->t > rhs->t; } );
 
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -5311,7 +5154,7 @@ void View::DrawGpuInfoWindow()
 
                 const auto ty = ImGui::GetTextLineHeight();
                 ImGui::Columns( 2 );
-                ImGui::TextColored( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
+                TextColoredUnformatted( ImVec4( 1.0f, 1.0f, 0.4f, 1.0f ), "Self time" );
                 ImGui::NextColumn();
                 char buf[128];
                 sprintf( buf, "%s (%.2f%%)", TimeToString( ztime - ctime ), double( ztime - ctime ) / ztime * 100 );
@@ -5394,7 +5237,7 @@ void View::DrawOptions()
                 {
                     sprintf( buf, "OpenGL context %zu", i );
                 }
-                ImGui::Checkbox( buf, &Vis( gpuData[i] ).visible );
+                SmallCheckbox( buf, &Vis( gpuData[i] ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s top level zones", RealToString( gpuData[i]->timeline.size(), true ) );
                 ImGui::TreePush();
@@ -5460,6 +5303,7 @@ void View::DrawOptions()
         }
         if( expand )
         {
+            ImGui::SameLine();
             if( ImGui::SmallButton( "Select all" ) )
             {
                 for( const auto& l : m_worker.GetLockMap() )
@@ -5483,6 +5327,7 @@ void View::DrawOptions()
             ImGui::TextDisabled( "(%zu)", multiCntCont );
             if( multiExpand )
             {
+                ImGui::SameLine();
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
@@ -5508,7 +5353,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5549,6 +5394,7 @@ void View::DrawOptions()
             ImGui::TextDisabled( "(%zu)", multiCntUncont );
             if( multiUncontExpand )
             {
+                ImGui::SameLine();
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
@@ -5574,7 +5420,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5615,6 +5461,7 @@ void View::DrawOptions()
             ImGui::TextDisabled( "(%zu)", singleCnt );
             if( singleExpand )
             {
+                ImGui::SameLine();
                 if( ImGui::SmallButton( "Select all" ) )
                 {
                     for( const auto& l : m_worker.GetLockMap() )
@@ -5640,7 +5487,7 @@ void View::DrawOptions()
 
                         char buf[1024];
                         sprintf( buf, "%" PRIu32 ": %s", l.first, m_worker.GetString( m_worker.GetSourceLocation( l.second->srcloc ).function ) );
-                        ImGui::Checkbox( buf, &Vis( l.second ).visible );
+                        SmallCheckbox( buf, &Vis( l.second ).visible );
                         if( ImGui::IsItemHovered() )
                         {
                             m_lockHoverHighlight = l.first;
@@ -5693,6 +5540,7 @@ void View::DrawOptions()
         ImGui::TextDisabled( "(%zu)", m_worker.GetPlots().size() );
         if( expand )
         {
+            ImGui::SameLine();
             if( ImGui::SmallButton( "Select all" ) )
             {
                 for( const auto& p : m_worker.GetPlots() )
@@ -5711,7 +5559,7 @@ void View::DrawOptions()
 
             for( const auto& p : m_worker.GetPlots() )
             {
-                ImGui::Checkbox( GetPlotName( p ), &Vis( p ).visible );
+                SmallCheckbox( GetPlotName( p ), &Vis( p ).visible );
                 ImGui::SameLine();
                 ImGui::TextDisabled( "%s data points", RealToString( p->data.size(), true ) );
             }
@@ -5731,6 +5579,7 @@ void View::DrawOptions()
     {
         auto& crash = m_worker.GetCrashEvent();
 
+        ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& t : m_threadOrder )
@@ -5747,7 +5596,6 @@ void View::DrawOptions()
             }
         }
 
-        const auto th = 18.f * ImGui::GetTextLineHeight() / 15.f;
         int idIdx = 0;
         int idx = 0;
         int upIdx = -1;
@@ -5756,9 +5604,9 @@ void View::DrawOptions()
         {
             ImGui::PushID( idIdx++ );
 #ifdef TRACY_EXTENDED_FONT
-            if( ImGui::Button( ICON_FA_CARET_UP, ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( ICON_FA_CARET_UP ) )
 #else
-            if( ImGui::Button( "^", ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( "^" ) )
 #endif
             {
                 upIdx = idx;
@@ -5767,9 +5615,9 @@ void View::DrawOptions()
             ImGui::SameLine();
             ImGui::PushID( idIdx++ );
 #ifdef TRACY_EXTENDED_FONT
-            if( ImGui::Button( ICON_FA_CARET_DOWN, ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( ICON_FA_CARET_DOWN ) )
 #else
-            if( ImGui::Button( "v", ImVec2( th, 0 ) ) )
+            if( ImGui::SmallButton( "v" ) )
 #endif
             {
                 downIdx = idx;
@@ -5777,13 +5625,13 @@ void View::DrawOptions()
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::PushID( idIdx++ );
-            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
+            SmallCheckbox( m_worker.GetThreadString( t->id ), &Vis( t ).visible );
             ImGui::PopID();
             if( crash.thread == t->id )
             {
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL );
                 if( ImGui::IsItemHovered() )
                 {
                     ImGui::BeginTooltip();
@@ -5799,7 +5647,7 @@ void View::DrawOptions()
                     }
                 }
 #else
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
             }
             ImGui::SameLine();
@@ -5810,7 +5658,7 @@ void View::DrawOptions()
         {
             std::swap( m_threadOrder[upIdx], m_threadOrder[upIdx-1] );
         }
-        if( downIdx >= 0 && downIdx < m_threadOrder.size() - 1 )
+        if( downIdx >= 0 && (size_t)downIdx < m_threadOrder.size() - 1 )
         {
             std::swap( m_threadOrder[downIdx], m_threadOrder[downIdx+1] );
         }
@@ -5827,6 +5675,7 @@ void View::DrawOptions()
     ImGui::TextDisabled( "(%zu)", m_worker.GetFrames().size() );
     if( expand )
     {
+        ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& fd : m_worker.GetFrames() )
@@ -5847,7 +5696,7 @@ void View::DrawOptions()
         for( const auto& fd : m_worker.GetFrames() )
         {
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Vis( fd ).visible );
+            SmallCheckbox( fd->name == 0 ? "Frames" : m_worker.GetString( fd->name ), &Vis( fd ).visible );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "%s %sframes", RealToString( fd->frames.size(), true ), fd->continuous ? "" : "discontinuous " );
@@ -5876,6 +5725,7 @@ void View::DrawMessages()
     {
         auto& crash = m_worker.GetCrashEvent();
 
+        ImGui::SameLine();
         if( ImGui::SmallButton( "Select all" ) )
         {
             for( const auto& t : m_threadOrder )
@@ -5897,7 +5747,7 @@ void View::DrawMessages()
         {
             if( t->messages.empty() ) continue;
             ImGui::PushID( idx++ );
-            ImGui::Checkbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
+            SmallCheckbox( m_worker.GetThreadString( t->id ), &VisibleMsgThread( t->id ) );
             ImGui::PopID();
             ImGui::SameLine();
             ImGui::TextDisabled( "(%s)", RealToString( t->messages.size(), true ) );
@@ -5905,9 +5755,9 @@ void View::DrawMessages()
             {
                 ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Crashed" );
 #else
-                ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
+                TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Crashed" );
 #endif
             }
         }
@@ -5989,6 +5839,7 @@ void View::DrawFindZone()
 {
     if( m_shortcut == ShortcutAction::OpenFind ) ImGui::SetNextWindowFocus();
 
+    ImGui::SetNextWindowSize( ImVec2( 520, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Find zone", &m_findZone.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -6100,9 +5951,9 @@ void View::DrawFindZone()
             const auto ty = ImGui::GetFontSize();
 
             auto& zones = zoneData.zones;
-            const auto tmin = m_findZone.selfTime ? zoneData.selfMin : zoneData.min;
-            const auto tmax = m_findZone.selfTime ? zoneData.selfMax : zoneData.max;
-            const auto timeTotal = m_findZone.selfTime ? zoneData.selfTotal : zoneData.total;
+            auto tmin = m_findZone.selfTime ? zoneData.selfMin : zoneData.min;
+            auto tmax = m_findZone.selfTime ? zoneData.selfMax : zoneData.max;
+            auto timeTotal = m_findZone.selfTime ? zoneData.selfTotal : zoneData.total;
 
             const auto zsz = zones.size();
             if( m_findZone.sortedNum != zsz )
@@ -6196,68 +6047,186 @@ void View::DrawFindZone()
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
-                ImGui::Checkbox( "Log values", &m_findZone.logVal );
+                TextDisabledUnformatted( "Minimum values in bin:" );
                 ImGui::SameLine();
-                ImGui::Checkbox( "Log time", &m_findZone.logTime );
+                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
+                ImGui::InputInt( "##minBinVal", &m_findZone.minBinVal );
+                if( m_findZone.minBinVal < 1 ) m_findZone.minBinVal = 1;
                 ImGui::SameLine();
-                ImGui::Checkbox( "Cumulate time", &m_findZone.cumulateTime );
+                if( ImGui::Button( "Reset" ) ) m_findZone.minBinVal = 1;
+                ImGui::PopStyleVar();
+
+                SmallCheckbox( "Log values", &m_findZone.logVal );
+                ImGui::SameLine();
+                if( SmallCheckbox( "Log time", &m_findZone.logTime ) )
+                {
+                    m_findZone.binCache.numBins = -1;
+                }
+                ImGui::SameLine();
+                SmallCheckbox( "Cumulate time", &m_findZone.cumulateTime );
                 ImGui::SameLine();
                 DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
                 ImGui::SameLine();
-                if( ImGui::Checkbox( "Self time", &m_findZone.selfTime ) )
+                if( SmallCheckbox( "Self time", &m_findZone.selfTime ) )
                 {
                     m_findZone.scheduleResetMatch = true;
                 }
                 ImGui::SameLine();
                 ImGui::TextDisabled( "(%.2f%%)", 100.f * zoneData.selfTotal / zoneData.total );
 
-                TextDisabledUnformatted( "Time range:" );
-                ImGui::SameLine();
-                ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
-
-                const auto dt = double( tmax - tmin );
                 const auto cumulateTime = m_findZone.cumulateTime;
 
-                if( dt > 0 )
+                if( tmax - tmin > 0 )
                 {
                     const auto w = ImGui::GetContentRegionAvail().x;
 
                     const auto numBins = int64_t( w - 4 );
                     if( numBins > 1 )
                     {
-                        if( numBins != m_findZone.numBins )
-                        {
-                            m_findZone.numBins = numBins;
-                            m_findZone.bins = std::make_unique<int64_t[]>( numBins );
-                            m_findZone.binTime = std::make_unique<int64_t[]>( numBins );
-                            m_findZone.selBin = std::make_unique<int64_t[]>( numBins );
-                        }
-
-                        const auto& bins = m_findZone.bins;
-                        const auto& binTime = m_findZone.binTime;
-                        const auto& selBin = m_findZone.selBin;
-
-                        memset( bins.get(), 0, sizeof( int64_t ) * numBins );
-                        memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
-                        memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
-
                         int64_t selectionTime = 0;
                         const auto s = std::min( m_findZone.highlight.start, m_findZone.highlight.end );
                         const auto e = std::max( m_findZone.highlight.start, m_findZone.highlight.end );
 
                         const auto& sorted = m_findZone.sorted;
 
-                        if( m_findZone.logTime )
+                        auto sortedBegin = sorted.begin();
+                        auto sortedEnd = sorted.end();
+                        while( sortedBegin != sortedEnd && *sortedBegin == 0 ) ++sortedBegin;
+
+                        if( m_findZone.minBinVal > 1 )
                         {
-                            const auto tMinLog = log10( tmin );
-                            const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                            if( m_findZone.logTime )
                             {
-                                auto zit = sorted.begin();
-                                while( zit != sorted.end() && *zit == 0 ) ++zit;
-                                for( int64_t i=0; i<numBins; i++ )
+                                const auto tMinLog = log10( tmin );
+                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
                                 {
                                     const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                    auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( sortedBegin, nit );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, sortedEnd );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedEnd = nit;
+                                }
+                            }
+                            else
+                            {
+                                const auto zmax = tmax - tmin;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( sortedBegin, nit );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( sortedBegin, sortedEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, sortedEnd );
+                                    if( distance >= m_findZone.minBinVal ) break;
+                                    sortedEnd = nit;
+                                }
+                            }
+
+                            tmin = *sortedBegin;
+                            tmax = *(sortedEnd-1);
+                            timeTotal = tmax - tmin;
+                        }
+
+                        if( numBins > m_findZone.numBins )
+                        {
+                            m_findZone.numBins = numBins;
+                            m_findZone.bins = std::make_unique<int64_t[]>( numBins );
+                            m_findZone.binTime = std::make_unique<int64_t[]>( numBins );
+                            m_findZone.selBin = std::make_unique<int64_t[]>( numBins );
+                            m_findZone.binCache.numBins = -1;
+                        }
+
+                        const auto& bins = m_findZone.bins;
+                        const auto& binTime = m_findZone.binTime;
+                        const auto& selBin = m_findZone.selBin;
+
+                        const auto distBegin = std::distance( sorted.begin(), sortedBegin );
+                        const auto distEnd = std::distance( sorted.begin(), sortedEnd );
+                        if( m_findZone.binCache.numBins != numBins ||
+                            m_findZone.binCache.distBegin != distBegin ||
+                            m_findZone.binCache.distEnd != distEnd )
+                        {
+                            m_findZone.binCache.numBins = numBins;
+                            m_findZone.binCache.distBegin = distBegin;
+                            m_findZone.binCache.distEnd = distEnd;
+
+                            memset( bins.get(), 0, sizeof( int64_t ) * numBins );
+                            memset( binTime.get(), 0, sizeof( int64_t ) * numBins );
+                            memset( selBin.get(), 0, sizeof( int64_t ) * numBins );
+
+                            if( m_findZone.logTime )
+                            {
+                                const auto tMinLog = log10( tmin );
+                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                {
+                                    auto zit = sortedBegin;
+                                    for( int64_t i=0; i<numBins; i++ )
+                                    {
+                                        const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                        auto nit = std::lower_bound( zit, sortedEnd, nextBinVal );
+                                        const auto distance = std::distance( zit, nit );
+                                        const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
+                                        bins[i] = distance;
+                                        binTime[i] = timeSum;
+                                        if( m_findZone.highlight.active )
+                                        {
+                                            auto end = nit == zit ? zit : nit-1;
+                                            if( *zit >= s && *end <= e ) selectionTime += timeSum;
+                                        }
+                                        zit = nit;
+                                    }
+                                    const auto timeSum = std::accumulate( zit, sortedEnd, int64_t( 0 ) );
+                                    bins[numBins-1] += std::distance( zit, sortedEnd );
+                                    binTime[numBins-1] += timeSum;
+                                    if( m_findZone.highlight.active && *zit >= s && *(sortedEnd-1) <= e ) selectionTime += timeSum;
+                                }
+
+                                if( m_findZone.selGroup != m_findZone.Unselected )
+                                {
+                                    auto zit = m_findZone.selSort.begin();
+                                    while( zit != m_findZone.selSort.end() && *zit == 0 ) ++zit;
+                                    for( int64_t i=0; i<numBins; i++ )
+                                    {
+                                        const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                        auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
+                                        if( cumulateTime )
+                                        {
+                                            selBin[i] = std::accumulate( zit, nit, int64_t( 0 ) );
+                                        }
+                                        else
+                                        {
+                                            selBin[i] = std::distance( zit, nit );
+                                        }
+                                        zit = nit;
+                                    }
+                                }
+                            }
+                            else
+                            {
+                                const auto zmax = tmax - tmin;
+                                auto zit = sortedBegin;
+                                for( int64_t i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( zit, sortedEnd, nextBinVal );
                                     const auto distance = std::distance( zit, nit );
                                     const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
                                     bins[i] = distance;
@@ -6269,74 +6238,29 @@ void View::DrawFindZone()
                                     }
                                     zit = nit;
                                 }
-                                const auto timeSum = std::accumulate( zit, sorted.end(), int64_t( 0 ) );
-                                bins[numBins-1] += std::distance( zit, sorted.end() );
+                                const auto timeSum = std::accumulate( zit, sortedEnd, int64_t( 0 ) );
+                                bins[numBins-1] += std::distance( zit, sortedEnd );
                                 binTime[numBins-1] += timeSum;
-                                if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
-                            }
+                                if( m_findZone.highlight.active && *zit >= s && *(sortedEnd-1) <= e ) selectionTime += timeSum;
 
-                            if( m_findZone.selGroup != m_findZone.Unselected )
-                            {
-                                auto zit = m_findZone.selSort.begin();
-                                while( zit != m_findZone.selSort.end() && *zit == 0 ) ++zit;
-                                for( int64_t i=0; i<numBins; i++ )
+                                if( m_findZone.selGroup != m_findZone.Unselected )
                                 {
-                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                    auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
-                                    if( cumulateTime )
+                                    auto zit = m_findZone.selSort.begin();
+                                    while( zit != m_findZone.selSort.end() && *zit == 0 ) ++zit;
+                                    for( int64_t i=0; i<numBins; i++ )
                                     {
-                                        selBin[i] = std::accumulate( zit, nit, int64_t( 0 ) );
+                                        const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                        auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
+                                        if( cumulateTime )
+                                        {
+                                            selBin[i] = std::accumulate( zit, nit, int64_t( 0 ) );
+                                        }
+                                        else
+                                        {
+                                            selBin[i] = std::distance( zit, nit );
+                                        }
+                                        zit = nit;
                                     }
-                                    else
-                                    {
-                                        selBin[i] = std::distance( zit, nit );
-                                    }
-                                    zit = nit;
-                                }
-                            }
-                        }
-                        else
-                        {
-                            const auto zmax = tmax - tmin;
-                            auto zit = sorted.begin();
-                            while( zit != sorted.end() && *zit == 0 ) ++zit;
-                            for( int64_t i=0; i<numBins; i++ )
-                            {
-                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                auto nit = std::lower_bound( zit, sorted.end(), nextBinVal );
-                                const auto distance = std::distance( zit, nit );
-                                const auto timeSum = std::accumulate( zit, nit, int64_t( 0 ) );
-                                bins[i] = distance;
-                                binTime[i] = timeSum;
-                                if( m_findZone.highlight.active )
-                                {
-                                    auto end = nit == zit ? zit : nit-1;
-                                    if( *zit >= s && *end <= e ) selectionTime += timeSum;
-                                }
-                                zit = nit;
-                            }
-                            const auto timeSum = std::accumulate( zit, sorted.end(), int64_t( 0 ) );
-                            bins[numBins-1] += std::distance( zit, sorted.end() );
-                            binTime[numBins-1] += timeSum;
-                            if( m_findZone.highlight.active && *zit >= s && *(sorted.end()-1) <= e ) selectionTime += timeSum;
-
-                            if( m_findZone.selGroup != m_findZone.Unselected )
-                            {
-                                auto zit = m_findZone.selSort.begin();
-                                while( zit != m_findZone.selSort.end() && *zit == 0 ) ++zit;
-                                for( int64_t i=0; i<numBins; i++ )
-                                {
-                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                    auto nit = std::lower_bound( zit, m_findZone.selSort.end(), nextBinVal );
-                                    if( cumulateTime )
-                                    {
-                                        selBin[i] = std::accumulate( zit, nit, int64_t( 0 ) );
-                                    }
-                                    else
-                                    {
-                                        selBin[i] = std::distance( zit, nit );
-                                    }
-                                    zit = nit;
                                 }
                             }
                         }
@@ -6359,6 +6283,9 @@ void View::DrawFindZone()
                             }
                         }
 
+                        TextDisabledUnformatted( "Time range:" );
+                        ImGui::SameLine();
+                        ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
                         TextFocused( "Total time:", TimeToString( timeTotal ) );
                         ImGui::SameLine();
                         ImGui::Spacing();
@@ -6433,6 +6360,7 @@ void View::DrawFindZone()
                             TextFocused( "Group median:", "none" );
                         }
 
+                        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                         ImGui::Checkbox( "###draw1", &m_findZone.drawAvgMed );
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
@@ -6469,6 +6397,7 @@ void View::DrawFindZone()
                         {
                             TextDisabledUnformatted( "Group median" );
                         }
+                        ImGui::PopStyleVar();
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
@@ -6563,7 +6492,7 @@ void View::DrawFindZone()
                         }
                         else
                         {
-                            const auto pxns = numBins / dt;
+                            const auto pxns = numBins / double( tmax - tmin );
                             const auto nspx = 1.0 / pxns;
                             const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );
@@ -6743,8 +6672,29 @@ void View::DrawFindZone()
                                 t1 = ( e - tmin ) / float( tmax - tmin ) * numBins;
                             }
 
+                            draw->PushClipRect( wpos, wpos + ImVec2( w, Height ), true );
                             draw->AddRectFilled( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x22DD8888 );
                             draw->AddRect( wpos + ImVec2( 2 + t0, 1 ), wpos + ImVec2( 2 + t1, Height-1 ), 0x44DD8888 );
+                            draw->PopClipRect();
+                        }
+
+                        if( m_zoneHover && m_findZone.match[m_findZone.selMatch] == m_zoneHover->srcloc )
+                        {
+                            const auto zoneTime = m_worker.GetZoneEnd( *m_zoneHover ) - m_zoneHover->start;
+                            float zonePos;
+                            if( m_findZone.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+                                zonePos = round( ( log10( zoneTime ) - ltmin ) / float( ltmax - ltmin ) * numBins );
+                            }
+                            else
+                            {
+                                zonePos = round( ( zoneTime - tmin ) / float( tmax - tmin ) * numBins );
+                            }
+                            const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
+                            const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
+                            draw->AddLine( ImVec2( wpos.x + zonePos, wpos.y ), ImVec2( wpos.x + zonePos, wpos.y+Height-2 ), color );
                         }
                     }
                 }
@@ -6867,7 +6817,7 @@ void View::DrawFindZone()
         idx = 0;
         if( groupBy == FindZone::GroupBy::Callstack )
         {
-            const auto gsz = groups.size();
+            const auto gsz = (int)groups.size();
             if( gsz > 0 )
             {
                 if( m_findZone.selCs > gsz ) m_findZone.selCs = gsz;
@@ -7135,6 +7085,7 @@ void View::DrawZoneList( const Vector<ZoneEvent*>& zones )
 
 void View::DrawCompare()
 {
+    ImGui::SetNextWindowSize( ImVec2( 590, 800 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Compare traces", &m_compare.show );
 #ifdef TRACY_NO_STATISTICS
     ImGui::TextWrapped( "Collection of statistical data is disabled in this build." );
@@ -7173,7 +7124,7 @@ void View::DrawCompare()
                         } );
                     }
                 }
-                catch( const tracy::NotTracyDump& e )
+                catch( const tracy::NotTracyDump& )
                 {
                     m_compare.badVer = -1;
                 }
@@ -7195,7 +7146,7 @@ void View::DrawCompare()
     }
 
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
+    TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
     ImGui::SameLine();
 #endif
     TextDisabledUnformatted( "This trace:" );
@@ -7203,7 +7154,7 @@ void View::DrawCompare()
     ImGui::TextUnformatted( m_worker.GetCaptureName().c_str() );
 
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+    TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
     ImGui::SameLine();
 #endif
     TextDisabledUnformatted( "External trace:" );
@@ -7261,10 +7212,13 @@ void View::DrawCompare()
 
     if( ImGui::TreeNodeEx( "Matched source locations", ImGuiTreeNodeFlags_DefaultOpen ) )
     {
+        ImGui::SameLine();
+        SmallCheckbox( "Link selection", &m_compare.link );
+
         ImGui::Separator();
         ImGui::Columns( 2 );
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::TextColored( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
+        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0xDD/255.f, 0x22/255.f, 1.f ), ICON_FA_LEMON );
         ImGui::SameLine();
 #endif
         ImGui::TextUnformatted( "This trace" );
@@ -7272,7 +7226,7 @@ void View::DrawCompare()
         ImGui::TextDisabled( "(%zu)", m_compare.match[0].size() );
         ImGui::NextColumn();
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::TextColored( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
+        TextColoredUnformatted( ImVec4( 0xDD/255.f, 0x22/255.f, 0x22/255.f, 1.f ), ICON_FA_GEM );
         ImGui::SameLine();
 #endif
         ImGui::TextUnformatted( "External trace" );
@@ -7314,6 +7268,49 @@ void View::DrawCompare()
         if( prev0 != m_compare.selMatch[0] || prev1 != m_compare.selMatch[1] )
         {
             m_compare.ResetSelection();
+
+            if( m_compare.link )
+            {
+                auto& srcloc0 = m_worker.GetSourceLocation( m_compare.match[0][m_compare.selMatch[0]] );
+                auto& srcloc1 = m_compare.second->GetSourceLocation( m_compare.match[1][m_compare.selMatch[1]] );
+                auto string0 = m_worker.GetString( srcloc0.name.active ? srcloc0.name : srcloc0.function );
+                auto string1 = m_compare.second->GetString( srcloc1.name.active ? srcloc1.name : srcloc1.function );
+
+                if( strcmp( string0, string1 ) != 0 )
+                {
+                    idx = 0;
+                    if( prev0 != m_compare.selMatch[0] )
+                    {
+                        for( auto& v : m_compare.match[1] )
+                        {
+                            auto& srcloc = m_compare.second->GetSourceLocation( v );
+                            auto string = m_compare.second->GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                            if( strcmp( string0, string ) == 0 )
+                            {
+                                m_compare.selMatch[1] = idx;
+                                break;
+                            }
+                            idx++;
+                        }
+                    }
+                    else
+                    {
+                        assert( prev1 != m_compare.selMatch[1] );
+                        for( auto& v : m_compare.match[0] )
+                        {
+                            auto& srcloc = m_worker.GetSourceLocation( v );
+                            auto string = m_worker.GetString( srcloc.name.active ? srcloc.name : srcloc.function );
+                            if( strcmp( string1, string ) == 0 )
+                            {
+                                m_compare.selMatch[0] = idx;
+                                break;
+                            }
+                            idx++;
+                        }
+
+                    }
+                }
+            }
         }
     }
 
@@ -7336,7 +7333,7 @@ void View::DrawCompare()
         auto& zones1 = zoneData1.zones;
 
         auto tmin = std::min( zoneData0.min, zoneData1.min );
-        auto tmax = std::max( zoneData0.max, zoneData1.max );;
+        auto tmax = std::max( zoneData0.max, zoneData1.max );
 
         const size_t zsz[2] = { zones0.size(), zones1.size() };
         for( int k=0; k<2; k++ )
@@ -7369,15 +7366,25 @@ void View::DrawCompare()
 
         if( tmin != std::numeric_limits<int64_t>::max() )
         {
-            ImGui::Checkbox( "Log values", &m_compare.logVal );
+            TextDisabledUnformatted( "Minimum values in bin:" );
             ImGui::SameLine();
-            ImGui::Checkbox( "Log time", &m_compare.logTime );
+            ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+            ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
+            ImGui::InputInt( "##minBinVal", &m_compare.minBinVal );
+            if( m_compare.minBinVal < 1 ) m_compare.minBinVal = 1;
             ImGui::SameLine();
-            ImGui::Checkbox( "Cumulate time", &m_compare.cumulateTime );
+            if( ImGui::Button( "Reset" ) ) m_compare.minBinVal = 1;
+            ImGui::PopStyleVar();
+
+            SmallCheckbox( "Log values", &m_compare.logVal );
+            ImGui::SameLine();
+            SmallCheckbox( "Log time", &m_compare.logTime );
+            ImGui::SameLine();
+            SmallCheckbox( "Cumulate time", &m_compare.cumulateTime );
             ImGui::SameLine();
             DrawHelpMarker( "Show total time taken by calls in each bin instead of call counts." );
             ImGui::SameLine();
-            ImGui::Checkbox( "Normalize values", &m_compare.normalize );
+            SmallCheckbox( "Normalize values", &m_compare.normalize );
             ImGui::SameLine();
             DrawHelpMarker( "Normalization will fudge reported data values!" );
 
@@ -7385,17 +7392,16 @@ void View::DrawCompare()
             ImGui::SameLine();
             ImGui::Text( "%s - %s (%s)", TimeToString( tmin ), TimeToString( tmax ), TimeToString( tmax - tmin ) );
 
-            const auto dt = double( tmax - tmin );
             const auto cumulateTime = m_compare.cumulateTime;
 
-            if( dt > 0 )
+            if( tmax - tmin > 0 )
             {
                 const auto w = ImGui::GetContentRegionAvail().x;
 
                 const auto numBins = int64_t( w - 4 );
                 if( numBins > 1 )
                 {
-                    if( numBins != m_compare.numBins )
+                    if( numBins > m_compare.numBins )
                     {
                         m_compare.numBins = numBins;
                         m_compare.bins = std::make_unique<CompVal[]>( numBins );
@@ -7423,8 +7429,75 @@ void View::DrawCompare()
                     }
 
                     const auto& sorted = m_compare.sorted;
-                    auto zit0 = sorted[0].begin();
-                    auto zit1 = sorted[1].begin();
+                    auto sBegin0 = sorted[0].begin();
+                    auto sBegin1 = sorted[1].begin();
+                    auto sEnd0 = sorted[0].end();
+                    auto sEnd1 = sorted[1].end();
+
+                    if( m_compare.minBinVal > 1 )
+                    {
+                        if( m_compare.logTime )
+                        {
+                            const auto tMinLog = log10( tmin );
+                            const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                            int64_t i;
+                            for( i=0; i<numBins; i++ )
+                            {
+                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( sBegin0, nit0 );
+                                const auto distance1 = std::distance( sBegin1, nit1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sBegin0 = nit0;
+                                sBegin1 = nit1;
+                            }
+                            for( int64_t j=numBins-1; j>i; j-- )
+                            {
+                                const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( nit0, sEnd0 );
+                                const auto distance1 = std::distance( nit1, sEnd1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sEnd0 = nit0;
+                                sEnd1 = nit1;
+                            }
+                        }
+                        else
+                        {
+                            const auto zmax = tmax - tmin;
+                            int64_t i;
+                            for( i=0; i<numBins; i++ )
+                            {
+                                const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( sBegin0, nit0 );
+                                const auto distance1 = std::distance( sBegin1, nit1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sBegin0 = nit0;
+                                sBegin1 = nit1;
+                            }
+                            for( int64_t j=numBins-1; j>i; j-- )
+                            {
+                                const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                auto nit0 = std::lower_bound( sBegin0, sEnd0, nextBinVal );
+                                auto nit1 = std::lower_bound( sBegin1, sEnd1, nextBinVal );
+                                const auto distance0 = std::distance( nit0, sEnd0 );
+                                const auto distance1 = std::distance( nit1, sEnd1 );
+                                if( distance0 >= m_compare.minBinVal || distance1 >= m_compare.minBinVal ) break;
+                                sEnd0 = nit0;
+                                sEnd1 = nit1;
+                            }
+                        }
+
+                        tmin = std::min( *sBegin0, *sBegin1 );
+                        tmax = std::max( *(sEnd0-1), *(sEnd1-1) );
+                    }
+
+                    auto zit0 = sBegin0;
+                    auto zit1 = sBegin1;
                     if( m_compare.logTime )
                     {
                         const auto tMinLog = log10( tmin );
@@ -7432,8 +7505,8 @@ void View::DrawCompare()
                         for( int64_t i=0; i<numBins; i++ )
                         {
                             const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                            auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
-                            auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
+                            auto nit0 = std::lower_bound( zit0, sEnd0, nextBinVal );
+                            auto nit1 = std::lower_bound( zit1, sEnd1, nextBinVal );
                             bins[i].v0 += adj0 * std::distance( zit0, nit0 );
                             bins[i].v1 += adj1 * std::distance( zit1, nit1 );
                             binTime[i].v0 += adj0 * std::accumulate( zit0, nit0, int64_t( 0 ) );
@@ -7448,8 +7521,8 @@ void View::DrawCompare()
                         for( int64_t i=0; i<numBins; i++ )
                         {
                             const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                            auto nit0 = std::lower_bound( zit0, sorted[0].end(), nextBinVal );
-                            auto nit1 = std::lower_bound( zit1, sorted[1].end(), nextBinVal );
+                            auto nit0 = std::lower_bound( zit0, sEnd0, nextBinVal );
+                            auto nit1 = std::lower_bound( zit1, sEnd1, nextBinVal );
                             bins[i].v0 += adj0 * std::distance( zit0, nit0 );
                             bins[i].v1 += adj1 * std::distance( zit1, nit1 );
                             binTime[i].v0 += adj0 * std::accumulate( zit0, nit0, int64_t( 0 ) );
@@ -7478,7 +7551,7 @@ void View::DrawCompare()
                     }
 
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Total time (this):", TimeToString( zoneData0.total * adj0 ) );
@@ -7486,7 +7559,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Total time (ext.):", TimeToString( zoneData1.total * adj1 ) );
@@ -7496,7 +7569,7 @@ void View::DrawCompare()
                     TextFocused( "Max counts:", cumulateTime ? TimeToString( maxVal ) : RealToString( floor( maxVal ), true ) );
 
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Average time (this):", TimeToString( m_compare.average[0] ) );
@@ -7504,7 +7577,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Median time (this):", TimeToString( m_compare.median[0] ) );
@@ -7519,7 +7592,7 @@ void View::DrawCompare()
                         ImGui::Spacing();
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (this):", TimeToString( sd ) );
 #else
@@ -7535,7 +7608,7 @@ void View::DrawCompare()
 
 
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Average time (ext.):", TimeToString( m_compare.average[1] ) );
@@ -7543,7 +7616,7 @@ void View::DrawCompare()
                     ImGui::Spacing();
                     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                    ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                    TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                     ImGui::SameLine();
 #endif
                     TextFocused( "Median time (ext.):", TimeToString( m_compare.median[1] ) );
@@ -7558,7 +7631,7 @@ void View::DrawCompare()
                         ImGui::Spacing();
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
                         TextFocused( "\xcf\x83 (ext.):", TimeToString( sd ) );
 #else
@@ -7719,7 +7792,7 @@ void View::DrawCompare()
                     }
                     else
                     {
-                        const auto pxns = numBins / dt;
+                        const auto pxns = numBins / double( tmax - tmin );
                         const auto nspx = 1.0 / pxns;
                         const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                         const auto step = pow( 10, scale );
@@ -7810,13 +7883,13 @@ void View::DrawCompare()
                         TextDisabledUnformatted( "(Data is displayed as:" );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0xDD/511.f, 0x22/511.f, 1.f ), ICON_FA_LEMON );
                         ImGui::SameLine();
 #endif
                         TextDisabledUnformatted( "[this trace] /" );
                         ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-                        ImGui::TextColored( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
+                        TextColoredUnformatted( ImVec4( 0xDD/511.f, 0x22/511.f, 0x22/511.f, 1.f ), ICON_FA_GEM );
                         ImGui::SameLine();
 #endif
                         TextDisabledUnformatted( "[external trace])" );
@@ -8274,6 +8347,7 @@ void View::DrawInfo()
 
     const auto& io = ImGui::GetIO();
 
+    ImGui::SetNextWindowSize( ImVec2( 400, 650 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Trace information", &m_showInfo );
     TextFocused( "Profiler memory usage:", MemSizeToString( memUsage.load( std::memory_order_relaxed ) ) );
     TextFocused( "Profiler FPS:", RealToString( int( io.Framerate ), true ) );
@@ -8295,6 +8369,19 @@ void View::DrawInfo()
     TextFocused( "Source locations:", RealToString( m_worker.GetSrcLocCount(), true ) );
     TextFocused( "Call stacks:", RealToString( m_worker.GetCallstackPayloadCount(), true ) );
     TextFocused( "Call stack frames:", RealToString( m_worker.GetCallstackFrameCount(), true ) );
+    const auto ficnt = m_worker.GetFrameImageCount();
+    TextFocused( "Frame images:", RealToString( ficnt, true ) );
+    if( ficnt != 0 )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        if( ImGui::Button( ICON_FA_PLAY " Playback" ) )
+#else
+        if( ImGui::Button( "Playback" ) )
+#endif
+        {
+            m_showPlayback = true;
+        }
+    }
 
     const auto fsz = m_worker.GetFullFrameCount( *m_frames );
     if( fsz != 0 )
@@ -8422,14 +8509,24 @@ void View::DrawInfo()
             const auto ty = ImGui::GetFontSize();
 
             auto& frames = m_frameSortData.data;
-            const auto tmin = frames.front();
-            const auto tmax = frames.back();
+            auto tmin = frames.front();
+            auto tmax = frames.back();
 
             if( tmin != std::numeric_limits<int64_t>::max() )
             {
-                ImGui::Checkbox( "Log values", &m_frameSortData.logVal );
+                TextDisabledUnformatted( "Minimum values in bin:" );
                 ImGui::SameLine();
-                ImGui::Checkbox( "Log time", &m_frameSortData.logTime );
+                ImGui::SetNextItemWidth( ImGui::CalcTextSize( "123456890123456" ).x );
+                ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 1, 1 ) );
+                ImGui::InputInt( "##minBinVal", &m_frameSortData.minBinVal );
+                if( m_frameSortData.minBinVal < 1 ) m_frameSortData.minBinVal = 1;
+                ImGui::SameLine();
+                if( ImGui::Button( "Reset" ) ) m_frameSortData.minBinVal = 1;
+                ImGui::PopStyleVar();
+
+                SmallCheckbox( "Log values", &m_frameSortData.logVal );
+                ImGui::SameLine();
+                SmallCheckbox( "Log time", &m_frameSortData.logTime );
 
                 TextDisabledUnformatted( "Time range:" );
                 ImGui::SameLine();
@@ -8439,15 +8536,14 @@ void View::DrawInfo()
                 ImGui::SameLine();
                 ImGui::Text( "%s FPS - %s FPS", RealToString( round( 1000000000.0 / tmin ), true ), RealToString( round( 1000000000.0 / tmax ), true ) );
 
-                const auto dt = double( tmax - tmin );
-                if( dt > 0 )
+                if( tmax - tmin > 0 )
                 {
                     const auto w = ImGui::GetContentRegionAvail().x;
 
                     const auto numBins = int64_t( w - 4 );
                     if( numBins > 1 )
                     {
-                        if( numBins != m_frameSortData.numBins )
+                        if( numBins > m_frameSortData.numBins )
                         {
                             m_frameSortData.numBins = numBins;
                             m_frameSortData.bins = std::make_unique<int64_t[]>( numBins );
@@ -8457,34 +8553,86 @@ void View::DrawInfo()
 
                         memset( bins.get(), 0, sizeof( int64_t ) * numBins );
 
+                        auto framesBegin = frames.begin();
+                        auto framesEnd = frames.end();
+                        while( framesBegin != framesEnd && *framesBegin == 0 ) ++framesBegin;
+
+                        if( m_frameSortData.minBinVal > 1 )
+                        {
+                            if( m_frameSortData.logTime )
+                            {
+                                const auto tMinLog = log10( tmin );
+                                const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( framesBegin, nit );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( j-1 ) * zmax ) );
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, framesEnd );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesEnd = nit;
+                                }
+                            }
+                            else
+                            {
+                                const auto zmax = tmax - tmin;
+                                int64_t i;
+                                for( i=0; i<numBins; i++ )
+                                {
+                                    const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( framesBegin, nit );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesBegin = nit;
+                                }
+                                for( int64_t j=numBins-1; j>i; j-- )
+                                {
+                                    const auto nextBinVal = tmin + ( j-1 ) * zmax / numBins;
+                                    auto nit = std::lower_bound( framesBegin, framesEnd, nextBinVal );
+                                    const auto distance = std::distance( nit, framesEnd );
+                                    if( distance >= m_frameSortData.minBinVal ) break;
+                                    framesEnd = nit;
+                                }
+                            }
+
+                            tmin = *framesBegin;
+                            tmax = *(framesEnd-1);
+                        }
+
                         if( m_frameSortData.logTime )
                         {
                             const auto tMinLog = log10( tmin );
                             const auto zmax = ( log10( tmax ) - tMinLog ) / numBins;
-                            auto fit = frames.begin();
-                            while( fit != frames.end() && *fit == 0 ) ++fit;
+                            auto fit = framesBegin;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = int64_t( pow( 10.0, tMinLog + ( i+1 ) * zmax ) );
-                                auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
+                                auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
                                 bins[i] = std::distance( fit, nit );
                                 fit = nit;
                             }
-                            bins[numBins-1] += std::distance( fit, frames.end() );
+                            bins[numBins-1] += std::distance( fit, framesEnd );
                         }
                         else
                         {
                             const auto zmax = tmax - tmin;
-                            auto fit = frames.begin();
-                            while( fit != frames.end() && *fit == 0 ) ++fit;
+                            auto fit = framesBegin;
                             for( int64_t i=0; i<numBins; i++ )
                             {
                                 const auto nextBinVal = tmin + ( i+1 ) * zmax / numBins;
-                                auto nit = std::lower_bound( fit, frames.end(), nextBinVal );
+                                auto nit = std::lower_bound( fit, framesEnd, nextBinVal );
                                 bins[i] = std::distance( fit, nit );
                                 fit = nit;
                             }
-                            bins[numBins-1] += std::distance( fit, frames.end() );
+                            bins[numBins-1] += std::distance( fit, framesEnd );
                         }
 
                         int64_t maxVal = bins[0];
@@ -8495,6 +8643,7 @@ void View::DrawInfo()
 
                         TextFocused( "Max counts:", RealToString( maxVal, true ) );
 
+                        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
                         ImGui::Checkbox( "###draw1", &m_frameSortData.drawAvgMed );
                         ImGui::SameLine();
                         ImGui::ColorButton( "c1", ImVec4( 0xFF/255.f, 0x44/255.f, 0x44/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
@@ -8506,6 +8655,7 @@ void View::DrawInfo()
                         ImGui::ColorButton( "c2", ImVec4( 0x44/255.f, 0x88/255.f, 0xFF/255.f, 1.f ), ImGuiColorEditFlags_NoTooltip );
                         ImGui::SameLine();
                         ImGui::TextUnformatted( "Median time" );
+                        ImGui::PopStyleVar();
 
                         const auto Height = 200 * ImGui::GetTextLineHeight() / 15.f;
                         const auto wpos = ImGui::GetCursorScreenPos();
@@ -8592,7 +8742,7 @@ void View::DrawInfo()
                         }
                         else
                         {
-                            const auto pxns = numBins / dt;
+                            const auto pxns = numBins / double( tmax - tmin );
                             const auto nspx = 1.0 / pxns;
                             const auto scale = std::max<float>( 0.0f, round( log10( nspx ) + 2 ) );
                             const auto step = pow( 10, scale );
@@ -8699,6 +8849,25 @@ void View::DrawInfo()
                             TextFocused( "Count:", RealToString( bins[bin], true ) );
                             ImGui::EndTooltip();
                         }
+
+                        if( m_frameHover != -1 )
+                        {
+                            const auto frameTime = m_worker.GetFrameTime( *m_frames, m_frameHover );
+                            float framePos;
+                            if( m_frameSortData.logTime )
+                            {
+                                const auto ltmin = log10( tmin );
+                                const auto ltmax = log10( tmax );
+                                framePos = round( ( log10( frameTime ) - ltmin ) / float( ltmax - ltmin ) * numBins );
+                            }
+                            else
+                            {
+                                framePos = round( ( frameTime - tmin ) / float( tmax - tmin ) * numBins );
+                            }
+                            const auto c = uint32_t( ( sin( s_time * 10 ) * 0.25 + 0.75 ) * 255 );
+                            const auto color = 0xFF000000 | ( c << 16 ) | ( c << 8 ) | c;
+                            draw->AddLine( ImVec2( wpos.x + framePos, wpos.y ), ImVec2( wpos.x + framePos, wpos.y+Height-2 ), color );
+                        }
                     }
                 }
             }
@@ -8713,9 +8882,9 @@ void View::DrawInfo()
     {
         ImGui::Separator();
 #ifdef TRACY_EXTENDED_FONT
-        ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Application has crashed. " ICON_FA_SKULL );
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), ICON_FA_SKULL " Application has crashed. " ICON_FA_SKULL );
 #else
-        ImGui::TextColored( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
+        TextColoredUnformatted( ImVec4( 1.f, 0.2f, 0.2f, 1.f ), "Application has crashed." );
 #endif
         TextFocused( "Time of crash:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
         TextFocused( "Thread:", m_worker.GetThreadString( crash.thread ) );
@@ -8763,22 +8932,27 @@ void View::DrawInfo()
 
 void View::DrawTextEditor()
 {
+    ImGui::SetNextWindowSize( ImVec2( 700, 800 ), ImGuiCond_FirstUseEver );
     bool show = true;
     ImGui::Begin( "Source view", &show );
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
 #else
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     ImGui::SameLine();
-    ImGui::TextColored( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
+    TextColoredUnformatted( ImVec4( 1.f, 0.3f, 0.3f, 1.f ), "The source file contents might not reflect the actual profiled code!" );
     ImGui::SameLine();
 #ifdef TRACY_EXTENDED_FONT
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), ICON_FA_EXCLAMATION_TRIANGLE );
 #else
-    ImGui::TextColored( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
+    TextColoredUnformatted( ImVec4( 1.f, 1.f, 0.2f, 1.f ), "/!\\" );
 #endif
     TextFocused( "File:", m_textEditorFile );
+    if( SmallCheckbox( "Show whitespace", &m_textEditorWhitespace ) )
+    {
+        m_textEditor->SetShowWhitespaces( m_textEditorWhitespace );
+    }
     if( m_textEditorFont ) ImGui::PushFont( m_textEditorFont );
     m_textEditor->Render( m_textEditorFile, ImVec2(), true );
     if( m_textEditorFont ) ImGui::PopFont();
@@ -8797,7 +8971,11 @@ void View::DrawGoToFrame()
     ImGui::Begin( "Go to frame", &m_goToFrame, ImGuiWindowFlags_AlwaysAutoResize );
     ImGui::InputInt( "Frame", &frameNum );
     frameNum = std::min( std::max( frameNum, 1 ), int( numFrames ) );
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( ICON_FA_CROSSHAIRS " Go to" ) )
+#else
     if( ImGui::Button( "Go to" ) )
+#endif
     {
         ZoomToRange( m_worker.GetFrameBegin( *m_frames, frameNum - frameOffset ), m_worker.GetFrameEnd( *m_frames, frameNum - frameOffset ) );
     }
@@ -8955,6 +9133,159 @@ void View::DrawLockInfoWindow()
     if( !visible ) m_lockInfoWindow = InvalidId;
 }
 
+void View::SetPlaybackFrame( uint32_t idx )
+{
+    const auto frameSet = m_worker.GetFramesBase();
+    const auto& frameImages = m_worker.GetFrameImages();
+    assert( idx < frameImages.size() );
+
+    m_playback.frame = idx;
+
+    if( idx == frameImages.size() - 1 )
+    {
+        m_playback.pause = true;
+    }
+    else
+    {
+        const auto t0 = m_worker.GetFrameBegin( *frameSet, frameImages[idx]->frameRef );
+        const auto t1 = m_worker.GetFrameBegin( *frameSet, frameImages[idx+1]->frameRef );
+        m_playback.timeLeft = ( t1 - t0 ) / 1000000000.f;
+    }
+}
+
+static const char* PlaybackWindowButtons[] = {
+#ifdef TRACY_EXTENDED_FONT
+    ICON_FA_PLAY " Play",
+    ICON_FA_PAUSE " Pause",
+#else
+    "Play",
+    "Pause",
+#endif
+};
+
+enum { PlaybackWindowButtonsCount = sizeof( PlaybackWindowButtons ) / sizeof( *PlaybackWindowButtons ) };
+
+void View::DrawPlayback()
+{
+    const auto frameSet = m_worker.GetFramesBase();
+    const auto& frameImages = m_worker.GetFrameImages();
+    const auto fi = frameImages[m_playback.frame];
+    const auto ficnt = m_worker.GetFrameImageCount();
+
+    const auto tstart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
+
+    if( !m_playback.texture )
+    {
+        m_playback.texture = MakeTexture();
+    }
+    if( m_playback.currFrame != m_playback.frame )
+    {
+        m_playback.currFrame = m_playback.frame;
+        UpdateTexture( m_playback.texture, m_worker.UnpackFrameImage( *fi ), fi->w, fi->h, m_worker.HasEtc1FrameImages() );
+
+        if( m_playback.sync )
+        {
+            const auto end = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
+            m_zoomAnim.active = false;
+            m_zvStart = tstart;
+            m_zvEnd = end;
+        }
+    }
+
+    if( !m_playback.pause )
+    {
+        auto time = ImGui::GetIO().DeltaTime * m_playback.speed;
+        while( !m_playback.pause && time > 0 )
+        {
+            const auto dt = std::min( time, m_playback.timeLeft );
+            time -= dt;
+            m_playback.timeLeft -= dt;
+            if( m_playback.timeLeft == 0 )
+            {
+                SetPlaybackFrame( m_playback.frame + 1 );
+            }
+        }
+    }
+
+    ImGui::Begin( "Playback", &m_showPlayback, ImGuiWindowFlags_AlwaysAutoResize );
+    if( fi->flip )
+    {
+        ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ), ImVec2( 0, 1 ), ImVec2( 1, 0 ) );
+    }
+    else
+    {
+        ImGui::Image( m_playback.texture, ImVec2( fi->w, fi->h ) );
+    }
+    int tmp = m_playback.frame + 1;
+    if( ImGui::SliderInt( "Frame image", &tmp, 1, ficnt, "%d" ) )
+    {
+        if( tmp < 1 ) tmp = 1;
+        else if( (uint32_t)tmp > ficnt ) tmp = ficnt;
+        SetPlaybackFrame( uint32_t( tmp - 1 ) );
+    }
+    ImGui::SliderFloat( "Playback speed", &m_playback.speed, 0.1f, 4, "%.2f" );
+
+    const auto th = ImGui::GetTextLineHeight();
+    float bw = 0;
+    for( int i=0; i<PlaybackWindowButtonsCount; i++ )
+    {
+        bw = std::max( bw, ImGui::CalcTextSize( PlaybackWindowButtons[i] ).x );
+    }
+    bw += th;
+
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( " " ICON_FA_CARET_LEFT " " ) )
+#else
+    if( ImGui::Button( "<" ) )
+#endif
+    {
+        if( m_playback.frame > 0 )
+        {
+            SetPlaybackFrame( m_playback.frame - 1 );
+            m_playback.pause = true;
+        }
+    }
+    ImGui::SameLine();
+#ifdef TRACY_EXTENDED_FONT
+    if( ImGui::Button( " " ICON_FA_CARET_RIGHT " " ) )
+#else
+    if( ImGui::Button( ">" ) )
+#endif
+    {
+        if( m_playback.frame < ficnt - 1 )
+        {
+            SetPlaybackFrame( m_playback.frame + 1 );
+            m_playback.pause = true;
+        }
+    }
+    ImGui::SameLine();
+    if( m_playback.pause )
+    {
+        if( ImGui::Button( PlaybackWindowButtons[0], ImVec2( bw, 0 ) ) && m_playback.frame != frameImages.size() - 1 )
+        {
+            m_playback.pause = false;
+        }
+    }
+    else
+    {
+        if( ImGui::Button( PlaybackWindowButtons[1], ImVec2( bw, 0 ) ) )
+        {
+            m_playback.pause = true;
+        }
+    }
+    ImGui::SameLine();
+    if( ImGui::Checkbox( "Sync timeline", &m_playback.sync ) )
+    {
+        if( m_playback.sync )
+        {
+            m_zvStart = m_worker.GetFrameBegin( *frameSet, fi->frameRef );
+            m_zvEnd = m_worker.GetFrameEnd( *frameSet, fi->frameRef );
+        }
+    }
+    TextFocused( "Timestamp:", TimeToString( tstart - m_worker.GetTimeBegin() ) );
+    ImGui::End();
+}
+
 template<class T>
 void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id, int64_t startTime )
 {
@@ -9037,7 +9368,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::NextColumn();
         if( v->timeFree < 0 )
         {
-            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "%s", TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
+            TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), TimeToString( m_worker.GetLastTime() - v->timeAlloc ) );
             ImGui::NextColumn();
             ImGui::TextUnformatted( m_worker.GetThreadString( m_worker.DecompressThread( v->threadAlloc ) ) );
         }
@@ -9090,7 +9421,7 @@ void View::ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const
         ImGui::NextColumn();
         if( v->timeFree < 0 )
         {
-            ImGui::TextColored( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
+            TextColoredUnformatted( ImVec4( 0.6f, 1.f, 0.6f, 1.f ), "active" );
         }
         else
         {
@@ -9493,6 +9824,7 @@ void View::DrawMemory()
 {
     auto& mem = m_worker.GetMemData();
 
+    ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Memory", &m_memInfo.show );
 
     if( mem.data.empty() )
@@ -9855,6 +10187,7 @@ void View::DrawAllocList()
         data.emplace_back( basePtr + idx );
     }
 
+    ImGui::SetNextWindowSize( ImVec2( 1100, 500 ), ImGuiCond_FirstUseEver );
     ImGui::Begin( "Allocations list", &m_memInfo.showAllocList );
     TextFocused( "Number of allocations:", RealToString( m_memInfo.allocList.size(), true ) );
     ListMemData<decltype( data.begin() )>( data.begin(), data.end(), []( auto& v ) {
@@ -9908,7 +10241,7 @@ uint32_t View::GetZoneColor( const GpuEvent& ev )
     return color != 0 ? ( color | 0xFF000000 ) : 0xFF222288;
 }
 
-uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
+uint32_t View::GetZoneHighlight( const ZoneEvent& ev )
 {
     if( m_zoneInfoWindow == &ev )
     {
@@ -9921,10 +10254,6 @@ uint32_t View::GetZoneHighlight( const ZoneEvent& ev, bool migration )
     else if( m_zoneSrcLocHighlight == ev.srcloc )
     {
         return 0xFFEEEEEE;
-    }
-    else if( migration )
-    {
-        return 0xFFDD22DD;
     }
     else
     {
@@ -10013,6 +10342,7 @@ void View::ZoomToRange( int64_t start, int64_t end )
 
     m_pause = true;
     m_highlightZoom.active = false;
+    if( !m_playback.pause && m_playback.sync ) m_playback.pause = true;
     m_zoomAnim.active = true;
     m_zoomAnim.start0 = m_zvStart;
     m_zoomAnim.start1 = start;
@@ -10025,14 +10355,14 @@ void View::ZoomToPrevFrame()
 {
     if( m_zvStart >= m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
-        int frame;
+        size_t frame;
         if( m_frames->continuous )
         {
-            frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
+            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).first;
         }
         else
         {
-            frame = m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).second;
+            frame = (size_t)m_worker.GetFrameRange( *m_frames, m_zvStart, m_zvStart ).second;
         }
 
         if( frame > 0 )
@@ -10057,16 +10387,15 @@ void View::ZoomToNextFrame()
         start = m_zvStart;
     }
 
-    int frame;
+    size_t frame;
     if( start < m_worker.GetFrameBegin( *m_frames, 0 ) )
     {
-        frame = -1;
+        frame = 0;
     }
     else
     {
-        frame = m_worker.GetFrameRange( *m_frames, start, start ).first;
+        frame = (size_t)m_worker.GetFrameRange( *m_frames, start, start ).first + 1;
     }
-    frame++;
     if( frame >= m_worker.GetFrameCount( *m_frames ) ) return;
 
     const auto fbegin = m_worker.GetFrameBegin( *m_frames, frame );
@@ -10136,9 +10465,17 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     ImGui::TextDisabled( "(0x%" PRIX64 ")", tid );
     ImGui::Separator();
     TextFocused( "Execution time:", TimeToString( ztime ) );
-    TextFocused( "Self time:", TimeToString( selftime ) );
+#ifndef TRACY_NO_STATISTICS
+    auto& zoneData = m_worker.GetZonesForSourceLocation( ev.srcloc );
     ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    ImGui::TextDisabled( "(%.2f%% of average time)", float( ztime ) / zoneData.total * zoneData.zones.size() * 100 );
+#endif
+    TextFocused( "Self time:", TimeToString( selftime ) );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
     if( ev.cpu_start >= 0 )
     {
         TextDisabledUnformatted( "CPU:" );
@@ -10155,7 +10492,7 @@ void View::ZoneTooltip( const ZoneEvent& ev )
     if( ev.text.active )
     {
         ImGui::NewLine();
-        ImGui::TextColored( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), "%s", m_worker.GetString( ev.text ) );
+        TextColoredUnformatted( ImVec4( 0xCC / 255.f, 0xCC / 255.f, 0x22 / 255.f, 1.f ), m_worker.GetString( ev.text ) );
     }
     ImGui::EndTooltip();
 }
@@ -10179,8 +10516,11 @@ void View::ZoneTooltip( const GpuEvent& ev )
     ImGui::Separator();
     TextFocused( "GPU execution time:", TimeToString( ztime ) );
     TextFocused( "GPU self time:", TimeToString( selftime ) );
-    ImGui::SameLine();
-    ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    if( ztime != 0 )
+    {
+        ImGui::SameLine();
+        ImGui::TextDisabled( "(%.2f%%)", 100.f * selftime / ztime );
+    }
     TextFocused( "CPU command setup time:", TimeToString( ev.cpuEnd - ev.cpuStart ) );
     auto ctx = GetZoneCtx( ev );
     if( !ctx )
@@ -10248,6 +10588,15 @@ void View::CallstackTooltip( uint32_t idx )
             }
         }
     }
+    ImGui::EndTooltip();
+}
+
+void View::CrashTooltip()
+{
+    auto& crash = m_worker.GetCrashEvent();
+    ImGui::BeginTooltip();
+    TextFocused( "Time:", TimeToString( crash.time - m_worker.GetTimeBegin() ) );
+    TextFocused( "Reason:", m_worker.GetString( crash.message ) );
     ImGui::EndTooltip();
 }
 

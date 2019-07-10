@@ -137,7 +137,7 @@ struct GpuEvent
     int64_t gpuStart;
     int64_t gpuEnd;
     int32_t srcloc;
-    int32_t callstack;
+    uint32_t callstack;
     // All above is read/saved as-is.
 
     uint16_t thread;
@@ -324,6 +324,7 @@ struct FrameEvent
 {
     int64_t start;
     int64_t end;
+    int32_t frameImage;
 };
 
 struct FrameData
@@ -354,6 +355,15 @@ struct SourceLocationComparator
     {
         return memcmp( lhs, rhs, sizeof( SourceLocation ) ) == 0;
     }
+};
+
+struct FrameImage
+{
+    const char* ptr;
+    uint32_t csz;
+    uint16_t w, h;
+    uint32_t frameRef;
+    uint8_t flip;
 };
 
 }
