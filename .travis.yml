@@ -13,13 +13,16 @@ env:
 addons:
   apt:
     sources:
-      - deadsnakes
+      - ubuntu-toolchain-r-test
+      - llvm-toolchain-xenial-8
     packages:
+      - gcc-6
+      - g++-6
+      - clang-8
       - libasound2-dev
       - libxrandr-dev
       - libgl1-mesa-dev
       - libglu1-mesa-dev
-      - python3.6
 notifications:
   email:
     on_success: never
@@ -35,22 +38,29 @@ matrix:
       compiler: gcc
       env:
         - BUILD_SHARED_LIBS=OFF
+        - CC=gcc-6
+        - CXX=g++-6
     - <<: *Linux-gcc
       env:
         - BUILD_SHARED_LIBS=ON
         - URHO3D_WITH_MONO=ON
+        - CC=gcc-6
+        - CXX=g++-6
     - &Linux-clang
       os: linux
       compiler: clang
       env:
         - BUILD_SHARED_LIBS=OFF
+        - CC=clang-8
+        - CXX=clang++-8
     - <<: *Linux-clang
       env:
         - BUILD_SHARED_LIBS=ON
         - URHO3D_WITH_MONO=ON
+        - CC=clang-8
+        - CXX=clang++-8
     - &MacOS
       os: osx
-      osx_image: xcode8.3
       compiler: clang
       env:
         - BUILD_SHARED_LIBS=OFF
