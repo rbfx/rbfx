@@ -47,19 +47,21 @@ namespace tracy
 class GpuCtx;
 class Profiler;
 class Socket;
+class UdpBroadcast;
 
 struct GpuCtxWrapper
 {
     GpuCtx* ptr;
 };
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
-Profiler& GetProfiler();
-std::atomic<uint32_t>& GetLockCounter();
-std::atomic<uint8_t>& GetGpuCtxCounter();
-GpuCtxWrapper& GetGpuCtx();
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken();
+TRACY_API Profiler& GetProfiler();
+TRACY_API std::atomic<uint32_t>& GetLockCounter();
+TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
+TRACY_API GpuCtxWrapper& GetGpuCtx();
+TRACY_API uint64_t GetThreadHandle();
 
-void InitRPMallocThread();
+TRACY_API void InitRPMallocThread();
 
 struct SourceLocationData
 {
@@ -87,6 +89,16 @@ extern int64_t (*GetTimeImpl)();
 
 class Profiler
 {
+    struct FrameImageQueueItem
+    {
+        void* image;
+        uint64_t frame;
+        uint16_t w;
+        uint16_t h;
+        uint8_t offset;
+        bool flip;
+    };
+
 public:
     Profiler();
     ~Profiler();
@@ -142,6 +154,7 @@ public:
 
     static tracy_force_inline void SendFrameMark( const char* name )
     {
+        if( !name ) GetProfiler().m_frameCount.fetch_add( 1, std::memory_order_relaxed );
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
@@ -168,6 +181,27 @@ public:
         MemWrite( &item->frameMark.name, uint64_t( name ) );
         GetProfiler().m_serialQueue.commit_next();
         GetProfiler().m_serialLock.unlock();
+    }
+
+    static tracy_force_inline void SendFrameImage( void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
+    {
+        auto& profiler = GetProfiler();
+#ifdef TRACY_ON_DEMAND
+        if( !profiler.IsConnected() ) return;
+#endif
+        const auto sz = size_t( w ) * size_t( h ) * 4;
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, image, sz );
+
+        profiler.m_fiLock.lock();
+        auto fi = profiler.m_fiQueue.prepare_next();
+        fi->image = ptr;
+        fi->frame = profiler.m_frameCount.load( std::memory_order_relaxed ) - offset;
+        fi->w = w;
+        fi->h = h;
+        fi->flip = flip;
+        profiler.m_fiQueue.commit_next();
+        profiler.m_fiLock.unlock();
     }
 
     static tracy_force_inline void PlotData( const char* name, int64_t val )
@@ -227,6 +261,7 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
@@ -235,7 +270,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::Message );
         MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.thread, GetThreadHandle() );
+        MemWrite( &item->message.thread, thread );
         MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -246,12 +281,13 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
         MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.thread, GetThreadHandle() );
+        MemWrite( &item->message.thread, thread );
         MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -262,6 +298,7 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
@@ -270,7 +307,7 @@ public:
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageColor );
         MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.thread, GetThreadHandle() );
+        MemWrite( &item->messageColor.thread, thread );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
@@ -284,12 +321,13 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
         MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.thread, GetThreadHandle() );
+        MemWrite( &item->messageColor.thread, thread );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
@@ -384,9 +422,14 @@ public:
     static bool ShouldExit();
 
 #ifdef TRACY_ON_DEMAND
-    tracy_force_inline bool IsConnected()
+    tracy_force_inline bool IsConnected() const
     {
-        return m_isConnected.load( std::memory_order_relaxed );
+        return m_isConnected.load( std::memory_order_acquire );
+    }
+
+    tracy_force_inline uint64_t ConnectionId() const
+    {
+        return m_connectionId.load( std::memory_order_acquire );
     }
 
     tracy_force_inline void DeferItem( const QueueItem& item )
@@ -402,10 +445,13 @@ public:
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
 private:
-    enum DequeueStatus { Success, ConnectionLost, QueueEmpty };
+    enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
+
+    static void LaunchCompressWorker( void* ptr ) { ((Profiler*)ptr)->CompressWorker(); }
+    void CompressWorker();
 
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
@@ -422,6 +468,7 @@ private:
 
     bool SendData( const char* data, size_t len );
     void SendString( uint64_t ptr, const char* str, QueueType type );
+    void SendLongString( uint64_t ptr, const char* str, size_t len, QueueType type );
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );
     void SendCallstackPayload( uint64_t ptr );
@@ -487,6 +534,7 @@ private:
     std::atomic<bool> m_shutdownManual;
     std::atomic<bool> m_shutdownFinished;
     Socket* m_sock;
+    UdpBroadcast* m_broadcast;
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
 
@@ -501,9 +549,13 @@ private:
     FastVector<QueueItem> m_serialQueue, m_serialDequeue;
     TracyMutex m_serialLock;
 
+    FastVector<FrameImageQueueItem> m_fiQueue, m_fiDequeue;
+    TracyMutex m_fiLock;
+
+    std::atomic<uint64_t> m_frameCount;
 #ifdef TRACY_ON_DEMAND
     std::atomic<bool> m_isConnected;
-    std::atomic<uint64_t> m_frameCount;
+    std::atomic<uint64_t> m_connectionId;
 
     TracyMutex m_deferredLock;
     FastVector<QueueItem> m_deferredQueue;

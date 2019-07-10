@@ -18,10 +18,14 @@ extern "C" __declspec(dllimport) unsigned long __stdcall GetCurrentThreadId(void
 #include <stdint.h>
 #include <thread>
 
+#include "TracyApi.h"
+
 namespace tracy
 {
 
-static inline uint64_t GetThreadHandle()
+namespace detail
+{
+static inline uint64_t GetThreadHandleImpl()
 {
 #ifdef _WIN32
     static_assert( sizeof( decltype( GetCurrentThreadId() ) ) <= sizeof( uint64_t ), "Thread handle too big to fit in protocol" );
@@ -35,6 +39,16 @@ static inline uint64_t GetThreadHandle()
     return uint64_t( pthread_self() );
 #endif
 }
+}
+
+#ifdef TRACY_ENABLE
+TRACY_API uint64_t GetThreadHandle();
+#else
+static inline uint64_t GetThreadHandle()
+{
+    return detail::GetThreadHandleImpl();
+}
+#endif
 
 void SetThreadName( std::thread& thread, const char* name );
 void SetThreadName( std::thread::native_handle_type handle, const char* name );

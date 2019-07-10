@@ -9,7 +9,8 @@
 namespace tracy
 {
 
-enum : uint32_t { ProtocolVersion = 6 };
+enum : uint32_t { ProtocolVersion = 10 };
+enum : uint32_t { BroadcastVersion = 0 };
 
 using lz4sz_t = uint32_t;
 
@@ -64,6 +65,7 @@ struct WelcomeMessage
     uint64_t resolution;
     uint64_t epoch;
     uint8_t onDemand;
+    uint8_t isApple;
     char programName[WelcomeMessageProgramNameSize];
     char hostInfo[WelcomeMessageHostInfoSize];
 };
@@ -74,9 +76,21 @@ enum { WelcomeMessageSize = sizeof( WelcomeMessage ) };
 struct OnDemandPayloadMessage
 {
     uint64_t frames;
+    uint64_t currentTime;
 };
 
 enum { OnDemandPayloadMessageSize = sizeof( OnDemandPayloadMessage ) };
+
+
+struct BroadcastMessage
+{
+    uint32_t broadcastVersion;
+    uint32_t protocolVersion;
+    uint32_t activeTime;        // in seconds
+    char programName[WelcomeMessageProgramNameSize];
+};
+
+enum { BroadcastMessageSize = sizeof( BroadcastMessage ) };
 
 #pragma pack()
 

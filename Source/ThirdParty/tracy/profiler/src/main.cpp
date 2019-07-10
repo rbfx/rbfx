@@ -13,10 +13,16 @@
 #  include <shellapi.h>
 #endif
 
+#define STBI_ONLY_PNG
+#include "stb_image.h"
+
+#include "../../common/TracyProtocol.hpp"
+#include "../../server/tracy_flat_hash_map.hpp"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
 #include "../../server/TracyImGui.hpp"
+#include "../../server/TracyPrint.hpp"
 #include "../../server/TracyStorage.hpp"
 #include "../../server/TracyView.hpp"
 #include "../../server/TracyWorker.hpp"
@@ -24,9 +30,12 @@
 #include "../../server/IconsFontAwesome5.h"
 #include "../../client/tracy_rpmalloc.hpp"
 
+#include "imgui_freetype.h"
 #include "Arimo.hpp"
 #include "Cousine.hpp"
 #include "FontAwesomeSolid.hpp"
+#include "icon.hpp"
+#include "ResolvService.hpp"
 
 #include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/CoreEvents.h>
@@ -71,6 +80,16 @@ std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> RebuildCo
     tracy::pdqsort_branchless( ret.begin(), ret.end(), []( const auto& lhs, const auto& rhs ) { return lhs->second > rhs->second; } );
     return ret;
 }
+
+struct ClientData
+{
+    int64_t time;
+    uint32_t protocolVersion;
+    uint32_t activeTime;
+    std::string procName;
+    std::string address;
+};
+
 #ifdef _WIN32
 namespace tracy
 {
@@ -235,21 +254,98 @@ public:
 
         if (!view_)
         {
+            const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+            if( !broadcastListen )
+            {
+                broadcastListen = new tracy::UdpListen();
+                if( !broadcastListen->Listen( 8086 ) )
+                {
+                    delete broadcastListen;
+                    broadcastListen = nullptr;
+                }
+            }
+            else
+            {
+                tracy::IpAddress addr;
+                size_t len;
+                auto msg = broadcastListen->Read( len, addr );
+                if( msg )
+                {
+                    assert( len <= sizeof( tracy::BroadcastMessage ) );
+                    tracy::BroadcastMessage bm;
+                    memcpy( &bm, msg, len );
+
+                    if( bm.broadcastVersion == tracy::BroadcastVersion )
+                    {
+                        const uint32_t protoVer = bm.protocolVersion;
+                        const auto procname = bm.programName;
+                        const auto activeTime = bm.activeTime;
+                        auto address = addr.GetText();
+
+                        const auto ipNumerical = addr.GetNumber();
+                        auto it = clients.find( ipNumerical );
+                        if( it == clients.end() )
+                        {
+                            std::string ip( address );
+                            resolvLock.lock();
+                            if( resolvMap.find( ip ) == resolvMap.end() )
+                            {
+                                resolvMap.emplace( ip, ip );
+                                resolv.Query( ipNumerical, [this, ip] ( std::string&& name ) {
+                                    std::lock_guard<std::mutex> lock( resolvLock );
+                                    auto it = resolvMap.find( ip );
+                                    assert( it != resolvMap.end() );
+                                    std::swap( it->second, name );
+                                } );
+                            }
+                            resolvLock.unlock();
+                            clients.emplace( addr.GetNumber(), ClientData { time, protoVer, activeTime, procname, std::move( ip ) } );
+                        }
+                        else
+                        {
+                            it->second.time = time;
+                            it->second.activeTime = activeTime;
+                            if( it->second.protocolVersion != protoVer ) it->second.protocolVersion = protoVer;
+                            if( strcmp( it->second.procName.c_str(), procname ) != 0 ) it->second.procName = procname;
+                        }
+                    }
+                }
+                auto it = clients.begin();
+                while( it != clients.end() )
+                {
+                    const auto diff = time - it->second.time;
+                    if( diff > 4000 )  // 4s
+                    {
+                        it = clients.erase( it );
+                    }
+                    else
+                    {
+                        ++it;
+                    }
+                }
+            }
+            setlocale( LC_NUMERIC, "C" );
+            style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
             ImGui::Begin("Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
             char buf[128];
             sprintf(buf, "Urho3D Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch);
-            ImGui::PushFont(bigFont_);
+            ImGui::PushFont( bigFont_ );
             tracy::TextCentered(buf);
             ImGui::PopFont();
             ImGui::Spacing();
-            if (ImGui::Button(ICON_FA_BOOK " User manual"))
+            if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
             {
                 OpenWebpage("https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf");
             }
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_GLOBE_AMERICAS " Homepage"))
+            if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
             {
-                OpenWebpage("https://bitbucket.org/wolfpld/tracy");
+                OpenWebpage( "https://bitbucket.org/wolfpld/tracy" );
+            }
+            ImGui::SameLine();
+            if( ImGui::Button( ICON_FA_COMMENT " Chat" ) )
+            {
+                OpenWebpage( "https://discord.gg/pk78auc" );
             }
             ImGui::SameLine();
             if (ImGui::Button(ICON_FA_VIDEO " Tutorial"))
@@ -356,6 +452,12 @@ public:
         }
         else
         {
+            if( broadcastListen )
+            {
+                delete broadcastListen;
+                broadcastListen = nullptr;
+                clients.clear();
+            }
             if (loadThread_.joinable())
                 loadThread_.join();
             view_->NotifyRootWindowSize(GetGraphics()->GetWidth(), GetGraphics()->GetHeight());
@@ -407,6 +509,9 @@ public:
             case tracy::LoadProgress::CallStacks:
                 ImGui::TextUnformatted("Call stacks...");
                 break;
+            case tracy::LoadProgress::FrameImages:
+                ImGui::TextUnformatted( "Frame images..." );
+                break;
             default:
                 assert(false);
                 break;
@@ -432,6 +537,11 @@ public:
     char connectToAddress_[16]{};
     std::thread loadThread_{};
     int badVersion_ = 0;
+    tracy::UdpListen* broadcastListen = nullptr;
+    std::mutex resolvLock;
+    tracy::flat_hash_map<std::string, std::string> resolvMap;
+    ResolvService resolv;
+    tracy::flat_hash_map<uint32_t, ClientData> clients;
 };
 
 URHO3D_DEFINE_APPLICATION_MAIN(ProfilerApplication);

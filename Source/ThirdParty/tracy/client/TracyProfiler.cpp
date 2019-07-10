@@ -48,9 +48,11 @@
 #include "../common/tracy_lz4.hpp"
 #include "tracy_rpmalloc.hpp"
 #include "TracyCallstack.hpp"
+#include "TracyDxt1.hpp"
 #include "TracyScoped.hpp"
 #include "TracyProfiler.hpp"
 #include "TracyThread.hpp"
+#include "TracyArmCpuTable.hpp"
 #include "../TracyC.h"
 
 #ifdef __APPLE__
@@ -140,6 +142,11 @@ struct InitTimeWrapper
 struct ProducerWrapper
 {
     tracy::moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* ptr;
+};
+
+struct ThreadHandleWrapper
+{
+    uint64_t val;
 };
 #endif
 
@@ -256,6 +263,24 @@ static const char* GetProcessName()
     if( buf ) processName = buf;
 #endif
     return processName;
+}
+
+static uint32_t GetHex( char*& ptr, int skip )
+{
+    uint32_t ret;
+    ptr += skip;
+    char* end;
+    if( ptr[0] == '0' && ptr[1] == 'x' )
+    {
+        ptr += 2;
+        ret = strtol( ptr, &end, 16 );
+    }
+    else
+    {
+        ret = strtol( ptr, &end, 10 );
+    }
+    ptr = end;
+    return ret;
 }
 
 static const char* GetHostInfo()
@@ -392,6 +417,64 @@ static const char* GetHostInfo()
     }
 
     ptr += sprintf( ptr, "CPU: %s\n", cpuModel );
+#elif defined __linux__ && defined __ARM_ARCH
+    bool cpuFound = false;
+    FILE* fcpuinfo = fopen( "/proc/cpuinfo", "rb" );
+    if( fcpuinfo )
+    {
+        enum { BufSize = 4*1024 };
+        char buf[BufSize];
+        const auto sz = fread( buf, 1, BufSize, fcpuinfo );
+        fclose( fcpuinfo );
+        const auto end = buf + sz;
+        auto cptr = buf;
+
+        uint32_t impl = 0;
+        uint32_t var = 0;
+        uint32_t part = 0;
+        uint32_t rev = 0;
+
+        while( end - cptr > 20 )
+        {
+            while( end - cptr > 20 && memcmp( cptr, "CPU ", 4 ) != 0 )
+            {
+                cptr += 4;
+                while( end - cptr > 20 && *cptr != '\n' ) cptr++;
+                cptr++;
+            }
+            if( end - cptr <= 20 ) break;
+            cptr += 4;
+            if( memcmp( cptr, "implementer\t: ", 14 ) == 0 )
+            {
+                if( impl != 0 ) break;
+                impl = GetHex( cptr, 14 );
+            }
+            else if( memcmp( cptr, "variant\t: ", 10 ) == 0 ) var = GetHex( cptr, 10 );
+            else if( memcmp( cptr, "part\t: ", 7 ) == 0 ) part = GetHex( cptr, 7 );
+            else if( memcmp( cptr, "revision\t: ", 11 ) == 0 ) rev = GetHex( cptr, 11 );
+            while( *cptr != '\n' && *cptr != '\0' ) cptr++;
+            cptr++;
+        }
+
+        if( impl != 0 || var != 0 || part != 0 || rev != 0 )
+        {
+            cpuFound = true;
+            ptr += sprintf( ptr, "CPU: %s%s r%ip%i\n", DecodeArmImplementer( impl ), DecodeArmPart( impl, part ), var, rev );
+        }
+    }
+    if( !cpuFound )
+    {
+        ptr += sprintf( ptr, "CPU: unknown\n" );
+    }
+#elif defined __APPLE__ && TARGET_OS_IPHONE == 1
+    {
+        size_t sz;
+        sysctlbyname( "hw.machine", nullptr, &sz, nullptr, 0 );
+        auto str = (char*)tracy_malloc( sz );
+        sysctlbyname( "hw.machine", str, &sz, nullptr, 0 );
+        ptr += sprintf( ptr, "Device: %s\n", DecodeIosDevice( str ) );
+        tracy_free( str );
+    }
 #else
     ptr += sprintf( ptr, "CPU: unknown\n" );
 #endif
@@ -419,6 +502,20 @@ static const char* GetHostInfo()
 #endif
 
     return buf;
+}
+
+static BroadcastMessage& GetBroadcastMessage( const char* procname, size_t pnsz, int& len )
+{
+    static BroadcastMessage msg;
+
+    msg.broadcastVersion = BroadcastVersion;
+    msg.protocolVersion = ProtocolVersion;
+
+    memcpy( msg.programName, procname, pnsz );
+    memset( msg.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
+
+    len = int( offsetof( BroadcastMessage, programName ) + pnsz + 1 );
+    return msg;
 }
 
 #ifdef _WIN32
@@ -477,8 +574,8 @@ LONG WINAPI CrashFilter( PEXCEPTION_POINTERS pExp )
     }
 
     {
-        const auto thread = GetThreadHandle();
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -715,8 +812,8 @@ static void CrashHandler( int signal, siginfo_t* info, void* /*ucontext*/ )
     }
 
     {
-        const auto thread = GetThreadHandle();
         Magic magic;
+        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
@@ -768,30 +865,31 @@ enum { QueuePrealloc = 256 * 1024 };
 
 static Profiler* s_instance;
 static Thread* s_thread;
+static Thread* s_compressThread;
 
 #ifdef TRACY_DELAYED_INIT
 struct ThreadNameData;
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue();
 
 struct RPMallocInit { RPMallocInit() { rpmalloc_initialize(); } };
 struct RPMallocThreadInit { RPMallocThreadInit() { rpmalloc_thread_initialize(); } };
 
-void InitRPMallocThread()
+TRACY_API void InitRPMallocThread()
 {
     rpmalloc_initialize();
     rpmalloc_thread_initialize();
 }
-// Urho3D: fix invocation of deleted ctor in std::atomic<> initialization
+
 struct ProfilerData
 {
     int64_t initTime = SetupHwTimer();
     RPMallocInit rpmalloc_init;
     moodycamel::ConcurrentQueue<QueueItem> queue;
     Profiler profiler;
-    std::atomic<uint32_t> lockCounter{};
-    std::atomic<uint8_t> gpuCtxCounter{};
+    std::atomic<uint32_t> lockCounter { 0 };
+    std::atomic<uint8_t> gpuCtxCounter { 0 };
 #  ifdef TRACY_COLLECT_THREAD_NAMES
-    std::atomic<ThreadNameData*> threadNameData{};
+    std::atomic<ThreadNameData*> threadNameData { nullptr };
 #endif
 };
 
@@ -833,24 +931,25 @@ static ProfilerThreadData& GetProfilerThreadData()
     return data;
 }
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
-Profiler& GetProfiler() { return GetProfilerData().profiler; }
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
-int64_t GetInitTime() { return GetProfilerData().initTime; }
-std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
-std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
-GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return GetProfilerThreadData().token.ptr; }
+TRACY_API Profiler& GetProfiler() { return GetProfilerData().profiler; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return GetProfilerData().queue; }
+TRACY_API int64_t GetInitTime() { return GetProfilerData().initTime; }
+TRACY_API std::atomic<uint32_t>& GetLockCounter() { return GetProfilerData().lockCounter; }
+TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return GetProfilerData().gpuCtxCounter; }
+TRACY_API GpuCtxWrapper& GetGpuCtx() { return GetProfilerThreadData().gpuCtx; }
+TRACY_API uint64_t GetThreadHandle() { return detail::GetThreadHandleImpl(); }
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
-std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
+TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return GetProfilerData().threadNameData; }
 #  endif
 
 #  ifdef TRACY_ON_DEMAND
-LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
+TRACY_API LuaZoneState& GetLuaZoneState() { return GetProfilerThreadData().luaZoneState; }
 #  endif
 
 #else
-void InitRPMallocThread()
+TRACY_API void InitRPMallocThread()
 {
     rpmalloc_thread_initialize();
 }
@@ -865,6 +964,7 @@ thread_local RPMallocThreadInit init_order(106) s_rpmalloc_thread_init;
 // 2. If these variables would be in the .CRT$XCB section, they would be initialized only in main thread.
 thread_local moodycamel::ProducerToken init_order(107) s_token_detail( s_queue );
 thread_local ProducerWrapper init_order(108) s_token { s_queue.get_explicit_producer( s_token_detail ) };
+thread_local ThreadHandleWrapper init_order(104) s_threadHandle { detail::GetThreadHandleImpl() };
 
 #  ifdef _MSC_VER
 // 1. Initialize these static variables before all other variables.
@@ -892,62 +992,35 @@ thread_local LuaZoneState init_order(104) s_luaZoneState { 0, false };
 
 static Profiler init_order(105) s_profiler;
 
-moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
-Profiler& GetProfiler() { return s_profiler; }
-moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
-int64_t GetInitTime() { return s_initTime.val; }
-std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
-std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
-GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer* GetToken() { return s_token.ptr; }
+TRACY_API Profiler& GetProfiler() { return s_profiler; }
+TRACY_API moodycamel::ConcurrentQueue<QueueItem>& GetQueue() { return s_queue; }
+TRACY_API int64_t GetInitTime() { return s_initTime.val; }
+TRACY_API std::atomic<uint32_t>& GetLockCounter() { return s_lockCounter; }
+TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter() { return s_gpuCtxCounter; }
+TRACY_API GpuCtxWrapper& GetGpuCtx() { return s_gpuCtx; }
+TRACY_API uint64_t GetThreadHandle() { return s_threadHandle.val; }
 
 #  ifdef TRACY_COLLECT_THREAD_NAMES
-std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
+TRACY_API std::atomic<ThreadNameData*>& GetThreadNameData() { return s_threadNameData; }
 #  endif
 
 #  ifdef TRACY_ON_DEMAND
-LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
+TRACY_API LuaZoneState& GetLuaZoneState() { return s_luaZoneState; }
 #  endif
-#endif
-
-// DLL exports to enable TracyClientDLL.cpp to retrieve the instances of Tracy objects and functions
-#ifdef _WIN32
-#  define DLL_EXPORT __declspec(dllexport)
-#else
-#  define DLL_EXPORT __attribute__((visibility("default")))
-#endif
-
-DLL_EXPORT void*(*get_rpmalloc())(size_t size) { return rpmalloc; }
-DLL_EXPORT void(*get_rpfree())(void* ptr) { return rpfree; }
-DLL_EXPORT moodycamel::ConcurrentQueue<QueueItem>::ExplicitProducer*(*get_token())() { return GetToken; }
-DLL_EXPORT Profiler&(*get_profiler())() { return GetProfiler; }
-DLL_EXPORT std::atomic<uint32_t>&(*get_getlockcounter())() { return GetLockCounter; }
-DLL_EXPORT std::atomic<uint8_t>&(*get_getgpuctxcounter())() { return GetGpuCtxCounter; }
-DLL_EXPORT GpuCtxWrapper&(*get_getgpuctx())() { return GetGpuCtx; }
-
-#if defined TRACY_HW_TIMER && __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
-DLL_EXPORT int64_t(*get_GetTimeImpl())() { return GetTimeImpl; }
-#endif
-
-#ifdef TRACY_COLLECT_THREAD_NAMES
-DLL_EXPORT std::atomic<ThreadNameData*>&(*get_getthreadnamedata())() { return GetThreadNameData; }
-DLL_EXPORT void(*get_rpmalloc_thread_initialize())() { return rpmalloc_thread_initialize; }
-DLL_EXPORT void(*get_InitRPMallocThread())() { return InitRPMallocThread; }
-#endif
-
-#ifdef TRACY_ON_DEMAND
-DLL_EXPORT LuaZoneState&(*get_getluazonestate())() { return GetLuaZoneState; }
 #endif
 
 enum { BulkSize = TargetFrameSize / QueueItemSize };
 
 Profiler::Profiler()
     : m_timeBegin( 0 )
-    , m_mainThread( GetThreadHandle() )
+    , m_mainThread( detail::GetThreadHandleImpl() )
     , m_epoch( std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count() )
     , m_shutdown( false )
     , m_shutdownManual( false )
     , m_shutdownFinished( false )
     , m_sock( nullptr )
+    , m_broadcast( nullptr )
     , m_noExit( false )
     , m_zoneId( 1 )
     , m_stream( LZ4_createStream() )
@@ -958,9 +1031,12 @@ Profiler::Profiler()
     , m_lz4Buf( (char*)tracy_malloc( LZ4Size + sizeof( lz4sz_t ) ) )
     , m_serialQueue( 1024*1024 )
     , m_serialDequeue( 1024*1024 )
+    , m_fiQueue( 16 )
+    , m_fiDequeue( 16 )
+    , m_frameCount( 0 )
 #ifdef TRACY_ON_DEMAND
     , m_isConnected( false )
-    , m_frameCount( 0 )
+    , m_connectionId( 0 )
     , m_deferredQueue( 64*1024 )
 #endif
 {
@@ -972,6 +1048,7 @@ Profiler::Profiler()
     // 3. But these variables need to be initialized in main thread within the .CRT$XCB section. Do it here.
     s_token_detail = moodycamel::ProducerToken( s_queue );
     s_token = ProducerWrapper { s_queue.get_explicit_producer( s_token_detail ) };
+    s_threadHandle = ThreadHandleWrapper { m_mainThread };
 #  endif
 #endif
 
@@ -989,6 +1066,10 @@ Profiler::Profiler()
     s_thread = (Thread*)tracy_malloc( sizeof( Thread ) );
     new(s_thread) Thread( LaunchWorker, this );
     SetThreadName( s_thread->Handle(), "Tracy Profiler" );
+
+    s_compressThread = (Thread*)tracy_malloc( sizeof( Thread ) );
+    new(s_compressThread) Thread( LaunchCompressWorker, this );
+    SetThreadName( s_compressThread->Handle(), "Tracy Profiler DXT1" );
 
 #if defined PTW32_VERSION
     s_profilerThreadId = pthread_getw32threadid_np( s_thread->Handle() );
@@ -1026,6 +1107,8 @@ Profiler::Profiler()
 Profiler::~Profiler()
 {
     m_shutdown.store( true, std::memory_order_relaxed );
+    s_compressThread->~Thread();
+    tracy_free( s_compressThread );
     s_thread->~Thread();
     tracy_free( s_thread );
 
@@ -1038,6 +1121,12 @@ Profiler::~Profiler()
     {
         m_sock->~Socket();
         tracy_free( m_sock );
+    }
+
+    if( m_broadcast )
+    {
+        m_broadcast->~UdpBroadcast();
+        tracy_free( m_broadcast );
     }
 
     assert( s_instance );
@@ -1071,6 +1160,12 @@ void Profiler::Worker()
     uint8_t onDemand = 0;
 #endif
 
+#ifdef __APPLE__
+    uint8_t isApple = 1;
+#else
+    uint8_t isApple = 0;
+#endif
+
     WelcomeMessage welcome;
     MemWrite( &welcome.timerMul, m_timerMul );
     MemWrite( &welcome.initBegin, GetInitTime() );
@@ -1079,6 +1174,7 @@ void Profiler::Worker()
     MemWrite( &welcome.resolution, m_resolution );
     MemWrite( &welcome.epoch, m_epoch );
     MemWrite( &welcome.onDemand, onDemand );
+    MemWrite( &welcome.isApple, isApple );
     memcpy( welcome.programName, procname, pnsz );
     memset( welcome.programName + pnsz, 0, WelcomeMessageProgramNameSize - pnsz );
     memcpy( welcome.hostInfo, hostinfo, hisz );
@@ -1101,8 +1197,27 @@ void Profiler::Worker()
         }
     }
 
+#ifndef TRACY_NO_BROADCAST
+    m_broadcast = (UdpBroadcast*)tracy_malloc( sizeof( UdpBroadcast ) );
+    new(m_broadcast) UdpBroadcast();
+    if( !m_broadcast->Open( "255.255.255.255", "8086" ) )
+    {
+        m_broadcast->~UdpBroadcast();
+        tracy_free( m_broadcast );
+        m_broadcast = nullptr;
+    }
+#endif
+
+    int broadcastLen = 0;
+    auto& broadcastMsg = GetBroadcastMessage( procname, pnsz, broadcastLen );
+    uint64_t lastBroadcast = 0;
+
+    // Connections loop.
+    // Each iteration of the loop handles whole connection. Multiple iterations will only
+    // happen in the on-demand mode or when handshake fails.
     for(;;)
     {
+        // Wait for incoming connection
         for(;;)
         {
 #ifndef TRACY_NO_EXIT
@@ -1117,8 +1232,21 @@ void Profiler::Worker()
 #ifndef TRACY_ON_DEMAND
             ProcessSysTime();
 #endif
+
+            if( m_broadcast )
+            {
+                const auto t = std::chrono::high_resolution_clock::now().time_since_epoch().count();
+                if( t - lastBroadcast > 3000000000 )  // 3s
+                {
+                    lastBroadcast = t;
+                    const auto ts = std::chrono::duration_cast<std::chrono::seconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
+                    broadcastMsg.activeTime = uint32_t( ts - m_epoch );
+                    m_broadcast->Send( 8086, &broadcastMsg, broadcastLen );
+                }
+            }
         }
 
+        // Handshake
         {
             char shibboleth[HandshakeShibbolethSize];
             auto res = m_sock->ReadRaw( shibboleth, HandshakeShibbolethSize, 2000 );
@@ -1126,6 +1254,7 @@ void Profiler::Worker()
             {
                 m_sock->~Socket();
                 tracy_free( m_sock );
+                m_sock = nullptr;
                 continue;
             }
 
@@ -1135,6 +1264,7 @@ void Profiler::Worker()
             {
                 m_sock->~Socket();
                 tracy_free( m_sock );
+                m_sock = nullptr;
                 continue;
             }
 
@@ -1144,13 +1274,16 @@ void Profiler::Worker()
                 m_sock->Send( &status, sizeof( status ) );
                 m_sock->~Socket();
                 tracy_free( m_sock );
+                m_sock = nullptr;
                 continue;
             }
         }
 
 #ifdef TRACY_ON_DEMAND
+        const auto currentTime = GetTime();
         ClearQueues( token );
-        m_isConnected.store( true, std::memory_order_relaxed );
+        m_connectionId.fetch_add( 1, std::memory_order_release );
+        m_isConnected.store( true, std::memory_order_release );
 #endif
 
         HandshakeStatus handshake = HandshakeWelcome;
@@ -1162,6 +1295,7 @@ void Profiler::Worker()
 #ifdef TRACY_ON_DEMAND
         OnDemandPayloadMessage onDemand;
         onDemand.frames = m_frameCount.load( std::memory_order_relaxed );
+        onDemand.currentTime = currentTime;
 
         m_sock->Send( &onDemand, sizeof( onDemand ) );
 
@@ -1174,17 +1308,18 @@ void Profiler::Worker()
         m_deferredLock.unlock();
 #endif
 
+        // Main communications loop
         int keepAlive = 0;
         for(;;)
         {
             ProcessSysTime();
             const auto status = Dequeue( token );
             const auto serialStatus = DequeueSerial();
-            if( status == ConnectionLost || serialStatus == ConnectionLost )
+            if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
             {
                 break;
             }
-            else if( status == QueueEmpty && serialStatus == QueueEmpty )
+            else if( status == DequeueStatus::QueueEmpty && serialStatus == DequeueStatus::QueueEmpty )
             {
                 if( ShouldExit() ) break;
                 if( m_bufferOffset != m_bufferStart )
@@ -1211,22 +1346,26 @@ void Profiler::Worker()
                 keepAlive = 0;
             }
 
-            while( m_sock->HasData() )
+            bool connActive = true;
+            while( m_sock->HasData() && connActive )
             {
-                if( !HandleServerQuery() ) break;
+                connActive = HandleServerQuery();
             }
+            if( !connActive ) break;
         }
         if( ShouldExit() ) break;
 
 #ifdef TRACY_ON_DEMAND
-        m_isConnected.store( false, std::memory_order_relaxed );
+        m_isConnected.store( false, std::memory_order_release );
+        m_bufferOffset = 0;
 #endif
 
         m_sock->~Socket();
         tracy_free( m_sock );
+        m_sock = nullptr;
 
 #ifndef TRACY_ON_DEMAND
-        // Client is no longer available here
+        // Client is no longer available here. Accept incoming connections, but reject handshake.
         for(;;)
         {
             if( ShouldExit() )
@@ -1246,6 +1385,7 @@ void Profiler::Worker()
                 {
                     m_sock->~Socket();
                     tracy_free( m_sock );
+                    m_sock = nullptr;
                     continue;
                 }
 
@@ -1255,6 +1395,7 @@ void Profiler::Worker()
                 {
                     m_sock->~Socket();
                     tracy_free( m_sock );
+                    m_sock = nullptr;
                     continue;
                 }
 
@@ -1266,16 +1407,19 @@ void Profiler::Worker()
         }
 #endif
     }
+    // End of connections loop
 
+    // Client is exiting. Send items remaining in queues.
     for(;;)
     {
         const auto status = Dequeue( token );
         const auto serialStatus = DequeueSerial();
-        if( status == ConnectionLost || serialStatus == ConnectionLost )
+        if( status == DequeueStatus::ConnectionLost || serialStatus == DequeueStatus::ConnectionLost )
         {
-            break;
+            m_shutdownFinished.store( true, std::memory_order_relaxed );
+            return;
         }
-        else if( status == QueueEmpty && serialStatus == QueueEmpty )
+        else if( status == DequeueStatus::QueueEmpty && serialStatus == DequeueStatus::QueueEmpty )
         {
             if( m_bufferOffset != m_bufferStart ) CommitData();
             break;
@@ -1283,10 +1427,15 @@ void Profiler::Worker()
 
         while( m_sock->HasData() )
         {
-            if( !HandleServerQuery() ) break;
+            if( !HandleServerQuery() )
+            {
+                m_shutdownFinished.store( true, std::memory_order_relaxed );
+                return;
+            }
         }
     }
 
+    // Send client termination notice to the server
     QueueItem terminate;
     MemWrite( &terminate.hdr.type, QueueType::Terminate );
     if( !SendData( (const char*)&terminate, 1 ) )
@@ -1294,6 +1443,7 @@ void Profiler::Worker()
         m_shutdownFinished.store( true, std::memory_order_relaxed );
         return;
     }
+    // Handle remaining server queries
     for(;;)
     {
         if( m_sock->HasData() )
@@ -1302,13 +1452,12 @@ void Profiler::Worker()
             {
                 if( !HandleServerQuery() )
                 {
-                    if( m_bufferOffset != m_bufferStart ) CommitData();
                     m_shutdownFinished.store( true, std::memory_order_relaxed );
                     return;
                 }
             }
-            while( Dequeue( token ) == Success ) {}
-            while( DequeueSerial() == Success ) {}
+            while( Dequeue( token ) == DequeueStatus::Success ) {}
+            while( DequeueSerial() == DequeueStatus::Success ) {}
             if( m_bufferOffset != m_bufferStart )
             {
                 if( !CommitData() )
@@ -1322,6 +1471,73 @@ void Profiler::Worker()
         {
             if( m_bufferOffset != m_bufferStart ) CommitData();
             std::this_thread::sleep_for( std::chrono::milliseconds( 10 ) );
+        }
+    }
+}
+
+void Profiler::CompressWorker()
+{
+    rpmalloc_thread_initialize();
+    for(;;)
+    {
+        const auto shouldExit = ShouldExit();
+
+        {
+            bool lockHeld = true;
+            while( !m_fiLock.try_lock() )
+            {
+                if( m_shutdownManual.load( std::memory_order_relaxed ) )
+                {
+                    lockHeld = false;
+                    break;
+                }
+            }
+            if( !m_fiQueue.empty() ) m_fiQueue.swap( m_fiDequeue );
+            if( lockHeld )
+            {
+                m_fiLock.unlock();
+            }
+        }
+
+        const auto sz = m_fiDequeue.size();
+        if( sz > 0 )
+        {
+            auto fi = m_fiDequeue.data();
+            auto end = fi + sz;
+            while( fi != end )
+            {
+                const auto w = fi->w;
+                const auto h = fi->h;
+                const auto csz = size_t( w * h / 2 );
+                auto etc1buf = (char*)tracy_malloc( csz );
+                CompressImageDxt1( (const char*)fi->image, etc1buf, w, h );
+                tracy_free( fi->image );
+
+                Magic magic;
+                auto token = GetToken();
+                auto& tail = token->get_tail_index();
+                auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+                MemWrite( &item->hdr.type, QueueType::FrameImage );
+                MemWrite( &item->frameImage.image, (uint64_t)etc1buf );
+                MemWrite( &item->frameImage.frame, fi->frame );
+                MemWrite( &item->frameImage.w, w );
+                MemWrite( &item->frameImage.h, h );
+                uint8_t flip = fi->flip;
+                MemWrite( &item->frameImage.flip, flip );
+                tail.store( magic + 1, std::memory_order_release );
+
+                fi++;
+            }
+            m_fiDequeue.clear();
+        }
+        else
+        {
+            std::this_thread::sleep_for( std::chrono::milliseconds( 20 ) );
+        }
+
+        if( shouldExit )
+        {
+            return;
         }
     }
 }
@@ -1360,6 +1576,10 @@ static void FreeAssociatedMemory( const QueueItem& item )
         ptr = MemRead<uint64_t>( &item.callstackAlloc.nativePtr );
         tracy_free( (void*)ptr );
         ptr = MemRead<uint64_t>( &item.callstackAlloc.ptr );
+        tracy_free( (void*)ptr );
+        break;
+    case QueueType::FrameImage:
+        ptr = MemRead<uint64_t>( &item.frameImage.image );
         tracy_free( (void*)ptr );
         break;
     default:
@@ -1446,20 +1666,30 @@ Profiler::DequeueStatus Profiler::Dequeue( moodycamel::ConsumerToken& token )
                     SendCallstackAlloc( ptr );
                     tracy_free( (void*)ptr );
                     break;
+                case QueueType::FrameImage:
+                {
+                    ptr = MemRead<uint64_t>( &item->frameImage.image );
+                    const auto w = MemRead<uint16_t>( &item->frameImage.w );
+                    const auto h = MemRead<uint16_t>( &item->frameImage.h );
+                    const auto csz = size_t( w * h / 2 );
+                    SendLongString( ptr, (const char*)ptr, csz, QueueType::FrameImageData );
+                    tracy_free( (void*)ptr );
+                    break;
+                }
                 default:
                     assert( false );
                     break;
                 }
             }
-            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
+            if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }
     }
     else
     {
-        return QueueEmpty;
+        return DequeueStatus::QueueEmpty;
     }
-    return Success;
+    return DequeueStatus::Success;
 }
 
 Profiler::DequeueStatus Profiler::DequeueSerial()
@@ -1474,7 +1704,7 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                 break;
             }
         }
-        m_serialQueue.swap( m_serialDequeue );
+        if( !m_serialQueue.empty() ) m_serialQueue.swap( m_serialDequeue );
         if( lockHeld )
         {
             m_serialLock.unlock();
@@ -1504,16 +1734,16 @@ Profiler::DequeueStatus Profiler::DequeueSerial()
                     break;
                 }
             }
-            if( !AppendData( item, QueueDataSize[idx] ) ) return ConnectionLost;
+            if( !AppendData( item, QueueDataSize[idx] ) ) return DequeueStatus::ConnectionLost;
             item++;
         }
         m_serialDequeue.clear();
     }
     else
     {
-        return QueueEmpty;
+        return DequeueStatus::QueueEmpty;
     }
-    return Success;
+    return DequeueStatus::Success;
 }
 
 bool Profiler::AppendData( const void* data, size_t len )
@@ -1565,6 +1795,25 @@ void Profiler::SendString( uint64_t str, const char* ptr, QueueType type )
     AppendDataUnsafe( &item, QueueDataSize[(int)type] );
     AppendDataUnsafe( &l16, sizeof( l16 ) );
     AppendDataUnsafe( ptr, l16 );
+}
+
+void Profiler::SendLongString( uint64_t str, const char* ptr, size_t len, QueueType type )
+{
+    assert( type == QueueType::FrameImageData );
+
+    QueueItem item;
+    MemWrite( &item.hdr.type, type );
+    MemWrite( &item.stringTransfer.ptr, str );
+
+    assert( len <= std::numeric_limits<uint32_t>::max() );
+    assert( QueueDataSize[(int)type] + sizeof( uint32_t ) + len <= TargetFrameSize );
+    auto l32 = uint32_t( len );
+
+    NeedDataSize( QueueDataSize[(int)type] + sizeof( l32 ) + l32 );
+
+    AppendDataUnsafe( &item, QueueDataSize[(int)type] );
+    AppendDataUnsafe( &l32, sizeof( l32 ) );
+    AppendDataUnsafe( ptr, l32 );
 }
 
 void Profiler::SendSourceLocation( uint64_t ptr )
@@ -1969,15 +2218,15 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
-    const auto thread = tracy::GetThreadHandle();
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    tracy::Magic magic;
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
+    const auto thread = tracy::GetThreadHandle();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -1986,6 +2235,9 @@ TracyCZoneCtx ___tracy_emit_zone_begin( const struct ___tracy_source_location_da
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBegin );
 #ifdef TRACY_RDTSCP_OPT
@@ -2011,15 +2263,15 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     ctx.active = active;
 #endif
     if( !ctx.active ) return ctx;
-    const auto thread = tracy::GetThreadHandle();
     const auto id = tracy::GetProfiler().GetNextZoneId();
     ctx.id = id;
 
-    tracy::Magic magic;
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
+    const auto thread = tracy::GetThreadHandle();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2028,6 +2280,9 @@ TracyCZoneCtx ___tracy_emit_zone_begin_callstack( const struct ___tracy_source_l
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneBeginCallstack );
 #ifdef TRACY_RDTSCP_OPT
@@ -2050,11 +2305,11 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
 {
     if( !ctx.active ) return;
     const auto thread = tracy::GetThreadHandle();
-    tracy::Magic magic;
-    auto token = tracy::GetToken();
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2063,6 +2318,9 @@ void ___tracy_emit_zone_end( TracyCZoneCtx ctx )
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneEnd );
 #ifdef TRACY_RDTSCP_OPT
@@ -2081,14 +2339,14 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
     const auto thread = tracy::GetThreadHandle();
-    tracy::Magic magic;
-    auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2097,6 +2355,9 @@ void ___tracy_emit_zone_text( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneText );
         tracy::MemWrite( &item->zoneText.thread, thread );
@@ -2109,14 +2370,14 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
 {
     if( !ctx.active ) return;
     const auto thread = tracy::GetThreadHandle();
-    tracy::Magic magic;
-    auto token = tracy::GetToken();
     auto ptr = (char*)tracy::tracy_malloc( size+1 );
     memcpy( ptr, txt, size );
     ptr[size] = '\0';
-    auto& tail = token->get_tail_index();
 #ifndef TRACY_NO_VERIFY
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneValidation );
         tracy::MemWrite( &item->zoneValidation.thread, thread );
@@ -2125,6 +2386,9 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
     }
 #endif
     {
+        tracy::Magic magic;
+        auto token = tracy::GetToken();
+        auto& tail = token->get_tail_index();
         auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
         tracy::MemWrite( &item->hdr.type, tracy::QueueType::ZoneName );
         tracy::MemWrite( &item->zoneText.thread, thread );
@@ -2132,6 +2396,20 @@ void ___tracy_emit_zone_name( TracyCZoneCtx ctx, const char* txt, size_t size )
         tail.store( magic + 1, std::memory_order_release );
     }
 }
+
+void ___tracy_emit_memory_alloc( const void* ptr, size_t size ) { tracy::Profiler::MemAlloc( ptr, size ); }
+void ___tracy_emit_memory_alloc_callstack( const void* ptr, size_t size, int depth ) { tracy::Profiler::MemAllocCallstack( ptr, size, depth ); }
+void ___tracy_emit_memory_free( const void* ptr ) { tracy::Profiler::MemFree( ptr ); }
+void ___tracy_emit_memory_free_callstack( const void* ptr, int depth ) { tracy::Profiler::MemFreeCallstack( ptr, depth ); }
+void ___tracy_emit_frame_mark( const char* name ) { tracy::Profiler::SendFrameMark( name ); }
+void ___tracy_emit_frame_mark_start( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgStart ); }
+void ___tracy_emit_frame_mark_end( const char* name ) { tracy::Profiler::SendFrameMark( name, tracy::QueueType::FrameMarkMsgEnd ); }
+void ___tracy_emit_frame_image( void* image, uint16_t w, uint16_t h, uint8_t offset, int flip ) { tracy::Profiler::SendFrameImage( image, w, h, offset, flip ); }
+void ___tracy_emit_plot( const char* name, double val ) { tracy::Profiler::PlotData( name, val ); }
+void ___tracy_emit_message( const char* txt, size_t size ) { tracy::Profiler::Message( txt, size ); }
+void ___tracy_emit_messageL( const char* txt ) { tracy::Profiler::Message( txt ); }
+void ___tracy_emit_messageC( const char* txt, size_t size, uint32_t color ) { tracy::Profiler::MessageColor( txt, size, color ); }
+void ___tracy_emit_messageLC( const char* txt, uint32_t color ) { tracy::Profiler::MessageColor( txt, color ); }
 
 #ifdef __cplusplus
 }
