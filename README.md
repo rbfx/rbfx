@@ -68,11 +68,13 @@ rbfx optionally uses the following external third-party libraries:
 
 ## Supported Platforms
 
-| Platform |      API     | Build Status | Comment |
-| -------- | ------------ | ------------ | ------- |
-| Windows | D3D9, D3D11   | [![Build status](https://ci.appveyor.com/api/projects/status/9b57do8manc0bfsq/branch/master?svg=true)](https://ci.appveyor.com/project/rokups/rbfx/branch/master) | :heavy_check_mark:  |
-| Linux   | OpenGL 2/3.1  | [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) | :heavy_check_mark: |
-| MacOS   | OpenGL 2/3.1  | [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) | :heavy_check_mark: |
-| iOS     | OpenGL 2/3.1  | - | Untested, planned |
-| Android | OpenGL ES 2/3 | - | Untested, experimental |
-| Web     | WebGL         | [![Build Status](https://travis-ci.org/rokups/rbfx.svg?branch=master)](https://travis-ci.org/rokups/rbfx) | Experimental, builds on WSL/Unix |
+[![Build Status](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
+
+| Platform |      API      | Comment |
+| -------- | ------------- | ------- |
+| Windows  | D3D9, D3D11   | :heavy_check_mark:  |
+| Linux    | OpenGL 2/3.1  | :heavy_check_mark: |
+| MacOS    | OpenGL 2/3.1  | :heavy_check_mark: |
+| iOS      | OpenGL 2/3.1  | Untested, planned |
+| Android  | OpenGL ES 2/3 | Untested, experimental |
+| Web      | WebGL         | Experimental, builds on WSL/Unix |
