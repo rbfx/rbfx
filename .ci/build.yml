@@ -14,4 +14,8 @@ steps:
   displayName: 'Install SDK'
   inputs:
     workingDirectory: cmake-build
-    cmakeArgs: --build . --target $(CMAKE_BUILD_TARGET) --config Release
+    cmakeArgs: --build . --target install --config Release
+
+- publish: $(Build.SourcesDirectory)/SDK
+  artifact: rbfx-SDK-$(Agent.JobName)-$(Build.SourceVersion)
+
