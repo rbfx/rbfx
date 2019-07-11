@@ -1,5 +1,10 @@
 trigger:
-- master
+  branches:
+    include:
+    - '*'
+    exclude:
+    - 'no-ci-*'
+    - 'skip-ci-*'
 
 variables:
   CMAKE_BUILD_ARGS: ""
