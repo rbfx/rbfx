@@ -1,5 +1,7 @@
 ![rbfx-logo](https://user-images.githubusercontent.com/19151258/57008846-a292be00-6bfb-11e9-8303-d79e6dd36038.png)
 
+![Windows](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&label=Windows) ![Linux](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&label=Linux) ![MacOS](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&label=MacOS) ![Web](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=Web)
+
 **rbfx** is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE and Horde3D.
 
 This project is a fork of [urho3d.github.io](http://urho3d.github.io/).
@@ -68,13 +70,21 @@ rbfx optionally uses the following external third-party libraries:
 
 ## Supported Platforms
 
-[![Build Status](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master)](https://dev.azure.com/rbfx/rbfx/_build/latest?definitionId=1&branchName=master)
+| Graphics API/Platform | Windows | Linux | MacOS | iOS | Android | Web |
+| --------------------- |:-------:|:-----:|:-----:|:---:|:-------:|:---:|
+| D3D9 / D3D11          | ✔       |       |       |     |         |     |
+| OpenGL 2 / 3.1        | ✔       | ✔     | ✔     |     |         |     |
+| OpenGL ES 3           |         |       |       | ✔   | ✔       |     |
+| WebGL                 |         |       |       |     |         | ✔   |
 
-| Platform |      API      | Comment |
-| -------- | ------------- | ------- |
-| Windows  | D3D9, D3D11   | :heavy_check_mark:  |
-| Linux    | OpenGL 2/3.1  | :heavy_check_mark: |
-| MacOS    | OpenGL 2/3.1  | :heavy_check_mark: |
-| iOS      | OpenGL 2/3.1  | Untested, planned |
-| Android  | OpenGL ES 2/3 | Untested, experimental |
-| Web      | WebGL         | Experimental, builds on WSL/Unix |
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-msvc-d3d11&label=static-msvc-d3d11)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-msvc-d3d11&label=shared-msvc-d3d11)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-mingw-d3d9&label=static-mingw-d3d9)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-mingw-d3d9&label=shared-mingw-d3d9)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-gcc-opengl&label=static-gcc-opengl)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-gcc-opengl&label=shared-gcc-opengl)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-clang-opengl&label=static-clang-opengl)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-clang-opengl&label=shared-clang-opengl)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20static-clang-opengl&label=static-clang-opengl)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20shared-clang-opengl&label=shared-clang-opengl)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&label=Web&label=Web)
