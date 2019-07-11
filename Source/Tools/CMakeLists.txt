@@ -25,7 +25,6 @@ if (CMAKE_CROSSCOMPILING)
 endif ()
 
 # Urho3D tools
-set (CMAKE_INSTALL_RPATH ".:..")
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
 if (URHO3D_PACKAGING OR         # When packing resources
