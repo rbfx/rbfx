@@ -4,7 +4,6 @@ trigger:
 variables:
   CMAKE_BUILD_ARGS: ""
   CMAKE_GENERATE_ARGS: ""
-  CMAKE_BUILD_TARGET: install
   URHO3D_CSHARP: ON
 
 jobs:
