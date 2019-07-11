@@ -70,15 +70,7 @@ target_compile_definitions(SLikeNet PRIVATE
     -D_RAKNET_SUPPORT_FileListTransfer=0
 )
 
-# Check specific function availability which may be missing from different MinGW versions
-check_cxx_source_compiles ("#include <arpa/inet.h>\nint main() {\n    struct sockaddr_in sa;\n    char str[INET_ADDRSTRLEN];\n    inet_pton(AF_INET, \"192.0.2.33\", &(sa.sin_addr));\n    inet_ntop(AF_INET, &(sa.sin_addr), str, INET_ADDRSTRLEN);\n}" INET_FUNCTIONS_EXISTS_1)
-
-set (ORIG_CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES})
-set (CMAKE_REQUIRED_LIBRARIES ${CMAKE_REQUIRED_LIBRARIES} ws2_32)
-check_cxx_source_compiles ("#include <winsock2.h>\n#include <ws2tcpip.h>\nint main() {\n    struct sockaddr_in sa;\n    char str[INET_ADDRSTRLEN];\n    inet_pton(AF_INET, \"192.0.2.33\", &(sa.sin_addr));\n    inet_ntop(AF_INET, &(sa.sin_addr), str, INET_ADDRSTRLEN);\n}" INET_FUNCTIONS_EXISTS_2)
-set (CMAKE_REQUIRED_LIBRARIES ${ORIG_CMAKE_REQUIRED_LIBRARIES})
-
-if (NOT INET_FUNCTIONS_EXISTS_1 AND NOT INET_FUNCTIONS_EXISTS_2 AND NOT HAVE_INET_NTOP)
+if (WIN32)
     target_compile_definitions(SLikeNet PRIVATE -DINET_FUNCTIONS_MISSING=1)
 endif()
 
@@ -101,7 +93,7 @@ target_include_directories(SLikeNet
 )
 
 if (WIN32)
-    target_link_libraries(SLikeNet PUBLIC iphlpapi)
+    target_link_libraries(SLikeNet PUBLIC iphlpapi ws2_32)
 endif ()
 
 install (DIRECTORY Source/include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
