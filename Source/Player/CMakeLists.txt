@@ -20,6 +20,10 @@
 # THE SOFTWARE.
 #
 
+if (MINI_URHO OR WEB)
+    return ()
+endif ()
+
 add_subdirectory(Common)
 
 if (URHO3D_CSHARP)
