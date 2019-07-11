@@ -30,7 +30,7 @@ target_compile_definitions(EASTL
 )
 if (MSVC)
     target_compile_definitions(EASTL PRIVATE -D_CRT_SECURE_NO_WARNINGS -D_SCL_SECURE_NO_WARNINGS)
-elseif (UNIX)
+elseif (GCC OR WEB)
     target_compile_options(EASTL PUBLIC -Wno-literal-suffix)
 endif ()
 

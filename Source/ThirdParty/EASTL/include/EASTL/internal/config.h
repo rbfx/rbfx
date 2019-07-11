@@ -306,7 +306,7 @@ namespace eastl
 //
 #ifndef EASTL_EASTDC_API
 	#if EASTL_DLL
-		#if defined(_MSC_VER)
+		#if defined(_WIN32)
 			#if defined(EASTL_EXPORTS) || defined(Urho3D_EXPORTS)
 				#define EASTL_EASTDC_API      __declspec(dllexport)
 			#else
