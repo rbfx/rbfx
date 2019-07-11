@@ -78,6 +78,8 @@ option                (URHO3D_URHO2D             "2D subsystem enabled"         
 
 # Features
 cmake_dependent_option(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS"             OFF)
+# Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
+set                   (URHO3D_NETFX net471 CACHE STRING "TargetFramework value for .NET projects")
 if (WIN32)
     cmake_dependent_option(URHO3D_WITH_MONO      "Use Mono runtime"                                      OFF                  "URHO3D_CSHARP"                 OFF)
 else ()

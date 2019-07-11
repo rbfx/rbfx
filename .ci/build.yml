@@ -1,0 +1,17 @@
+steps:
+- task: CMake@1
+  inputs:
+    workingDirectory: cmake-build
+    cmakeArgs: $(CMAKE_GENERATE_ARGS) -DCMAKE_INSTALL_PREFIX=$(Build.SourcesDirectory)/SDK -DCMAKE_BUILD_TYPE=Release -DURHO3D_SAMPLES=ON -DURHO3D_CSHARP=$(URHO3D_CSHARP) -DURHO3D_PACKAGING=ON -DBUILD_SHARED_LIBS=$(BUILD_SHARED_LIBS) $(Build.SourcesDirectory)
+
+- task: CMake@1
+  displayName: 'Build'
+  inputs:
+    workingDirectory: cmake-build
+    cmakeArgs: --build . --config Release $(CMAKE_BUILD_ARGS)
+
+- task: CMake@1
+  displayName: 'Install SDK'
+  inputs:
+    workingDirectory: cmake-build
+    cmakeArgs: --build . --target $(CMAKE_BUILD_TARGET) --config Release
