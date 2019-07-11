@@ -27,7 +27,7 @@ if (MSVC)
     set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /MP")
 endif ()
 
-add_subdirectory(ThirdParty)
+add_subdirectory (ThirdParty)
 add_subdirectory (Urho3D)
 add_subdirectory (Tools)
 add_subdirectory (Extras)

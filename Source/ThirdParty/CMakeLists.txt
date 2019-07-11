@@ -36,11 +36,7 @@ if (URHO3D_PLUGINS)
     add_subdirectory(cr)
 endif ()
 
-if (MINI_URHO)
-    if (URHO3D_OPENGL)
-        add_subdirectory (GLEW)
-    endif ()
-else ()
+if (NOT MINI_URHO)
     add_subdirectory(FreeType)
 
     if (URHO3D_SYSTEMUI)
