@@ -20,4 +20,8 @@
 # THE SOFTWARE.
 #
 
-add_target_csharp(PlayerCSharp ${CMAKE_CURRENT_SOURCE_DIR}/PlayerCSharp.csproj Urho3DNet)
+add_target_csharp(
+    TARGET PlayerCSharp
+    PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/PlayerCSharp.csproj
+    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe
+    DEPENDS Urho3DNet)

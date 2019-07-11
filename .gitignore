@@ -109,6 +109,7 @@ configure*
 *.bak
 Thumbs.db
 .*
+!.ci
 *.DotSettings
 *.DotSettings.user
 __pycache__
