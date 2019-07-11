@@ -191,26 +191,22 @@ private:
 #define URHO3D_LOGINFO(message, ...) Urho3D::Log::GetLogger().Info(message, ##__VA_ARGS__)
 #define URHO3D_LOGWARNING(message, ...) Urho3D::Log::GetLogger().Warning(message, ##__VA_ARGS__)
 #define URHO3D_LOGERROR(message, ...) Urho3D::Log::GetLogger().Error(message, ##__VA_ARGS__)
-#define URHO3D_LOGRAW(message, ...)
 #define URHO3D_LOGTRACEF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_TRACE, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGDEBUGF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGINFOF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_INFO, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGWARNINGF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_WARNING, Urho3D::ToString(format, ##__VA_ARGS__))
 #define URHO3D_LOGERRORF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
-#define URHO3D_LOGRAWF(format, ...)
 #else
 #define URHO3D_LOGTRACE(...) ((void)0)
 #define URHO3D_LOGDEBUG(...) ((void)0)
 #define URHO3D_LOGINFO(...) ((void)0)
 #define URHO3D_LOGWARNING(...) ((void)0)
 #define URHO3D_LOGERROR(...) ((void)0)
-#define URHO3D_LOGRAW(...) ((void)0)
 #define URHO3D_LOGTRACEF(...) ((void)0)
 #define URHO3D_LOGDEBUGF(...) ((void)0)
 #define URHO3D_LOGINFOF(...) ((void)0)
 #define URHO3D_LOGWARNINGF(...) ((void)0)
 #define URHO3D_LOGERRORF(...) ((void)0)
-#define URHO3D_LOGRAWF(...) ((void)0)
 #endif
 
 }
