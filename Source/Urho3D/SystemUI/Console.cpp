@@ -109,12 +109,12 @@ void Console::RefreshInterpreters()
     {
         Object* receiver = group->receivers_[i];
         if (receiver)
-        {
             interpreters_.push_back(receiver->GetTypeName());
-            interpretersPointers_.push_back(interpreters_.back().c_str());
-        }
     }
     ea::quick_sort(interpreters_.begin(), interpreters_.end());
+
+    for (const ea::string& interpreter : interpreters_)
+        interpretersPointers_.push_back(interpreter.c_str());
 
     currentInterpreter_ = interpreters_.index_of(currentInterpreterName);
     if (currentInterpreter_ == interpreters_.size())
@@ -246,8 +246,7 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
     ImVec2 size(graphics->GetWidth(), windowSize_.y_);
     ui::SetNextWindowSize(size);
 
-    auto old_rounding = ui::GetStyle().WindowRounding;
-    ui::GetStyle().WindowRounding = 0;
+    ui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
     if (ui::Begin("Debug Console", &isOpen_, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
         ImGuiWindowFlags_NoSavedSettings))
     {
@@ -264,7 +263,7 @@ void Console::RenderUi(StringHash eventType, VariantMap& eventData)
 
     ui::End();
 
-    ui::GetStyle().WindowRounding = old_rounding;
+    ui::PopStyleVar();
 }
 
 void Console::Clear()
