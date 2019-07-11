@@ -72,8 +72,8 @@ void ConsoleInput::Start()
     SubscribeToEvent(E_KEYDOWN, URHO3D_HANDLER(ConsoleInput, HandleEscKeyDown));
     UnsubscribeFromEvent(E_KEYUP);
 
-    // Hide logo to make room for the console
-    SetLogoVisible(false);
+    // Enable filesystem interaction in console.
+    GetFileSystem()->SetExecuteConsoleCommands(true);
 
     // Show the console by default, make it large. Console will show the text edit field when there is at least one
     // subscriber for the console command event
@@ -272,5 +272,5 @@ void ConsoleInput::HandleInput(const ea::string& input)
 void ConsoleInput::Print(const ea::string& output)
 {
     // Logging appears both in the engine console and stdout
-    URHO3D_LOGRAW(output + "\n");
+    URHO3D_LOGINFO(output);
 }

@@ -121,11 +121,16 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
         return -1;
 
     // Capture the standard output stream
-    char buffer[128];
+    char buffer[0x2000];
     while (!feof(file))
     {
         if (fgets(buffer, sizeof(buffer), file))
-            URHO3D_LOGRAW(ea::string(buffer));
+        {
+            ea::string text(buffer);
+            const char array[] = { ' ', '\t', '\r', '\n', 0 };
+            text.erase(text.find_last_not_of(array) + 1);
+            URHO3D_LOGINFO(text);
+        }
     }
     int exitCode = pclose(file);
 
