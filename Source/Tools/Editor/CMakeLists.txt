@@ -30,7 +30,11 @@ if (URHO3D_CSHARP AND URHO3D_PLUGINS)
     # Use C# executable to host .net runtime and load editor.
     set (CMAKE_SHARED_LIBRARY_PREFIX lib)
     add_library (Editor SHARED ${SOURCE_FILES})
-    add_target_csharp(EditorHost ${CMAKE_CURRENT_SOURCE_DIR}/EditorHost/EditorHost.csproj Urho3DNet)
+    add_target_csharp(
+        TARGET EditorHost
+        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/EditorHost/EditorHost.csproj
+        OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Editor.exe
+        DEPENDS Urho3DNet)
 else ()
     # No C# or pugins support, editor can be a true native executable.
     if (NOT URHO3D_WIN32_CONSOLE)

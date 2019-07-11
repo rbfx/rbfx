@@ -1,0 +1,118 @@
+trigger:
+- master
+
+variables:
+  CMAKE_BUILD_ARGS: ""
+  CMAKE_GENERATE_ARGS: ""
+  CMAKE_BUILD_TARGET: install
+  URHO3D_CSHARP: ON
+
+jobs:
+  - job: Web
+    pool:
+      vmImage: 'ubuntu-16.04'
+
+    steps:
+      - bash: |
+          docker run --rm -v $(Build.SourcesDirectory):/src trzeci/emscripten bash /src/.ci/emscripten.sh
+        displayName: 'Build'
+
+  - job: Windows
+    pool:
+      vmImage: 'windows-2019'
+
+    strategy:
+      matrix:
+        static-msvc-d3d11:
+          BUILD_SHARED_LIBS: OFF
+          CMAKE_BUILD_ARGS: -- /r
+        shared-msvc-d3d11:
+          BUILD_SHARED_LIBS: ON
+          CMAKE_BUILD_ARGS: -- /r
+        static-mingw-d3d9:
+          BUILD_SHARED_LIBS: OFF
+          CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_RENDERER=D3D9
+        shared-mingw-d3d9:
+          BUILD_SHARED_LIBS: ON
+          CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_RENDERER=D3D9
+          URHO3D_CSHARP: OFF
+
+    steps:
+      - script: |
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          echo '##vso[task.setvariable variable=PATH]%PATH%;%VSINSTALLDIR%\MSBuild\%VisualStudioVersion%;%WindowsSDK_ExecutablePath_x64%'
+        displayName: 'Setup'
+      - template: .ci/build.yml
+
+  - job: Linux
+    pool:
+      vmImage: 'ubuntu-16.04'
+
+    variables:
+      CMAKE_GENERATE_ARGS: -G Ninja
+
+    strategy:
+      matrix:
+        static-gcc-opengl:
+          CC: gcc-8
+          CXX: g++-8
+          BUILD_SHARED_LIBS: OFF
+          EXTRA_PACKAGES: gcc-8 g++-8
+        shared-gcc-opengl:
+          CC: gcc-8
+          CXX: g++-8
+          BUILD_SHARED_LIBS: ON
+          EXTRA_PACKAGES: gcc-8 g++-8
+        static-clang-opengl:
+          BUILD_SHARED_LIBS: OFF
+          CC: clang-8
+          CXX: clang++-8
+          EXTRA_PACKAGES: clang-8
+        shared-clang-opengl:
+          BUILD_SHARED_LIBS: ON
+          CC: clang-8
+          CXX: clang++-8
+          EXTRA_PACKAGES: clang-8
+
+    steps:
+      - bash: |
+          # Mono
+          sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
+          echo "deb http://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
+
+          # Clang
+          wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
+          sudo add-apt-repository ppa:ubuntu-toolchain-r/test
+          sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
+
+          sudo apt-get update -qq
+
+          sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build mono-devel msbuild $(EXTRA_PACKAGES)
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/$(CC) 100
+          sudo update-alternatives --set cc /usr/bin/$(CC)
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/$(CXX) 100
+          sudo update-alternatives --set c++ /usr/bin/$(CXX)
+          mkdir "$(Build.SourcesDirectory)/SDK"
+        displayName: 'Setup'
+
+      - template: .ci/build.yml
+
+  - job: MacOS
+    pool:
+      vmImage: 'macOS-10.13'
+
+    strategy:
+      matrix:
+        static-clang-opengl:
+          BUILD_SHARED_LIBS: OFF
+        shared-clang-opengl:
+          BUILD_SHARED_LIBS: ON
+
+    steps:
+      - bash: |
+          brew install pkg-config
+          wget -q https://download.mono-project.com/archive/5.10.1/macos-10-universal/MonoFramework-MDK-5.10.1.57.macos10.xamarin.universal.pkg -O /tmp/Mono.pkg
+          sudo installer -pkg /tmp/Mono.pkg -target /
+        displayName: 'Setup'
+
+      - template: .ci/build.yml
