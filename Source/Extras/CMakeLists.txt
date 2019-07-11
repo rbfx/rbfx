@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_EXTRAS)
+if (NOT URHO3D_EXTRAS OR MINI_URHO OR WEB)
     return ()
 endif ()
 
