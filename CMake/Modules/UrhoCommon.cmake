@@ -24,6 +24,7 @@ include(ucm)
 
 # Set compiler variable
 set ("${CMAKE_CXX_COMPILER_ID}" ON)
+set (CMAKE_INSTALL_RPATH "$ORIGIN")
 
 # Configure variables
 set (URHO3D_URL "https://github.com/urho3d/Urho3D")
