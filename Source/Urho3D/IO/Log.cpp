@@ -44,6 +44,7 @@
 
 #ifdef __ANDROID__
 #include <android/log.h>
+#include <spdlog/sinks/android_sink.h>
 #endif
 #if defined(IOS) || defined(TVOS)
 extern "C" void SDL_IOS_LogMessage(const char* message);
@@ -180,7 +181,7 @@ public:
     {
         sinkProxy_ = std::make_shared<spdlog::sinks::dist_sink_mt>();
 #if defined(__ANDROID__)
-        platformSink_ = spdlog::android_logger("android", "Urho3D");
+        platformSink_ = std::make_shared<spdlog::sinks::android_sink_mt>("Urho3D");
 #elif defined(IOS) || defined(TVOS)
         platformSink_ = std::make_shared<IOSSink_mt>();
 #else
@@ -230,7 +231,7 @@ Log::~Log()
 
 void Log::Open(const ea::string& fileName)
 {
-#if !defined(__ANDROID__) && !defined(IOS) && !defined(TVOS)
+#if !defined(MOBILE) && !defined(WEB)
     if (fileName.empty())
         return;
 
@@ -247,11 +248,13 @@ void Log::Open(const ea::string& fileName)
 
 void Log::Close()
 {
+#if !defined(MOBILE) && !defined(WEB)
     if (impl_->fileSink_)
     {
         impl_->sinkProxy_->remove_sink(impl_->fileSink_);
         impl_->fileSink_ = nullptr;
     }
+#endif
 }
 
 void Log::SetLevel(LogLevel level)
@@ -279,9 +282,11 @@ void Log::SetLogFormat(const ea::string& format)
     if (impl_->platformSink_)
         impl_->platformSink_->set_pattern(format.c_str());
 
+#if !defined(MOBILE) && !defined(WEB)
     // May not be opened yet if patter is set from Application::Setup().
     if (impl_->fileSink_)
         impl_->fileSink_->set_pattern(format.c_str());
+#endif
 }
 
 Logger Log::GetLogger(const char* name)

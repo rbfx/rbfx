@@ -767,13 +767,13 @@ bool FileSystem::DirExists(const ea::string& pathName) const
         // Split the pathname into two components: the longest parent directory path and the last name component
         ea::string assetPath(URHO3D_ASSET((fixedName + "/")));
         ea::string parentPath;
-        unsigned pos = assetPath.FindLast('/', assetPath.Length() - 2);
+        unsigned pos = assetPath.find_last_of('/', assetPath.length() - 2);
         if (pos != ea::string::npos)
         {
-            parentPath = assetPath.Substring(0, pos);
-            assetPath = assetPath.Substring(pos + 1);
+            parentPath = assetPath.substr(0, pos);
+            assetPath = assetPath.substr(pos + 1);
         }
-        assetPath.Resize(assetPath.Length() - 1);
+        assetPath.resize(assetPath.length() - 1);
 
         bool exist = false;
         int count;
@@ -948,31 +948,31 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
     if (URHO3D_IS_ASSET(path))
     {
         ea::string assetPath(URHO3D_ASSET(path));
-        assetPath.Resize(assetPath.Length() - 1);       // AssetManager.list() does not like trailing slash
+        assetPath.resize(assetPath.length() - 1);       // AssetManager.list() does not like trailing slash
         int count;
         char** list = SDL_Android_GetFileList(assetPath.c_str(), &count);
         for (int i = 0; i < count; ++i)
         {
             ea::string fileName(list[i]);
-            if (!(flags & SCAN_HIDDEN) && fileName.StartsWith("."))
+            if (!(flags & SCAN_HIDDEN) && fileName.starts_with("."))
                 continue;
 
 #ifdef ASSET_DIR_INDICATOR
             // Patch the directory name back after retrieving the directory flag
-            bool isDirectory = fileName.EndsWith(ASSET_DIR_INDICATOR);
+            bool isDirectory = fileName.ends_with(ASSET_DIR_INDICATOR);
             if (isDirectory)
             {
-                fileName.Resize(fileName.Length() - sizeof(ASSET_DIR_INDICATOR) / sizeof(char) + 1);
+                fileName.resize(fileName.length() - sizeof(ASSET_DIR_INDICATOR) / sizeof(char) + 1);
                 if (flags & SCAN_DIRS)
-                    result.Push(deltaPath + fileName);
+                    result.push_back(deltaPath + fileName);
                 if (recursive)
                     ScanDirInternal(result, path + fileName, startPath, filter, flags, recursive);
             }
             else if (flags & SCAN_FILES)
 #endif
             {
-                if (filterExtension.Empty() || fileName.EndsWith(filterExtension))
-                    result.Push(deltaPath + fileName);
+                if (filterExtension.empty() || fileName.ends_with(filterExtension))
+                    result.push_back(deltaPath + fileName);
             }
         }
         SDL_Android_FreeFileList(&list, &count);

@@ -59,7 +59,7 @@ void PluginApplication::RecordPluginFactory(StringHash type, const char* categor
 #if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
 int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
 {
-#ifndef __EMSCRIPTEN__
+#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
     assert(ctx_);
     auto* ctx = static_cast<cr_plugin*>(ctx_);
 
