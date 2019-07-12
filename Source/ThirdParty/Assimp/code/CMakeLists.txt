@@ -930,7 +930,12 @@ ENDIF (ASSIMP_BUILD_NONFREE_C4D_IMPORTER)
 
 # Setup target
 add_library (Assimp STATIC ${assimp_src})
-set_property(TARGET Assimp PROPERTY CXX_STANDARD 14)  # Urho3D - Assimp uses std::mem_fun which was removed in c++17
+# Urho3D - Assimp uses std::mem_fun which was removed in c++17
+if (ANDROID)
+    target_compile_options(Assimp PUBLIC -std=c++14)
+else ()
+    set_property(TARGET Assimp PROPERTY CXX_STANDARD 14)
+endif ()
 
 # Since we only build AssetImporter as a single-arch native tool, there is no point to build Assimp as universal binary library
 set_target_properties(Assimp PROPERTIES XCODE_ATTRIBUTE_ONLY_ACTIVE_ARCH YES)
