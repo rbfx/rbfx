@@ -41,6 +41,13 @@ else ()
     target_compile_definitions (tracy-lib INTERFACE ${TRACY_OPTIONS_PUBLIC})
 endif ()
 
+if (LINUX)
+    find_library(TBB tbb)
+    if (TBB)
+        target_link_libraries(tracy-lib INTERFACE ${TBB})
+    endif ()
+endif ()
+
 if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     # Set up common parameters of profiler target
     macro (setup_tracy_profiler_target TARGET)
@@ -56,12 +63,6 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
     target_compile_definitions(tracy-profiler PUBLIC -DTRACY_ROOT_WINDOW=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
-    if (LINUX)
-        find_library(TBB tbb)
-        if (TBB)
-            target_link_libraries(tracy-profiler PUBLIC ${TBB})
-        endif ()
-    endif ()
     setup_tracy_profiler_target(tracy-profiler)
     install (TARGETS tracy-profiler
         LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
