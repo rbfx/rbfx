@@ -6,7 +6,7 @@ buildscript {
         jcenter()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.2.1'
+        classpath 'com.android.tools.build:gradle:3.4.2'
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
     }
@@ -14,21 +14,20 @@ buildscript {
 
 android {
     compileSdkVersion 21
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '28.0.3'
     defaultConfig {
         applicationId 'com.github.urho3d'
         versionCode 1
         versionName '1.0.0'
         minSdkVersion 14
-        targetSdkVersion 21
+        targetSdkVersion 26
         ndk {
             abiFilters 'armeabi-v7a', 'arm64-v8a', 'x86_64'
         }
         externalNativeBuild {
             cmake {
-                arguments '-DANDROID_STL=c++_static', '-DANDROID_TOOLCHAIN=clang',
-                          '-DANDROID_PLATFORM=android-21', '-DANDROID=1', '-DANDROID_ARM_MODE=arm',
-                          '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_ENABLE_ALL=ON', '-DURHO3D_CSHARP=OFF'
+                arguments '-DANDROID_STL=c++_static', '-DANDROID_PLATFORM=android-21', '-DANDROID=1',
+                          '-DANDROID_ARM_MODE=arm', '-DBUILD_SHARED_LIBS=ON', '-DURHO3D_SAMPLES=ON'
             }
         }
     }
@@ -58,5 +57,12 @@ android {
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+allprojects {
+    repositories {
+        google()
+        jcenter()
     }
 }

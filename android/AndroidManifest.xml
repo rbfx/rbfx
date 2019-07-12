@@ -3,11 +3,6 @@
           package="com.github.urho3d"
           android:installLocation="auto">
 
-    <!-- Android 4.1 (Jelly Bean) -->
-    <uses-sdk
-        android:minSdkVersion="16"
-        android:targetSdkVersion="27"/>
-
     <!-- OpenGL ES 2.0 -->
     <uses-feature android:glEsVersion="0x00020000"/>
 
