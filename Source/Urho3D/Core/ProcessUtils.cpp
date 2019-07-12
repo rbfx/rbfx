@@ -307,9 +307,12 @@ const ea::vector<ea::string>& ParseArguments(const ea::string& cmdLine, bool ski
     for (unsigned i = 0; i < arguments.size(); ++i)
         arguments[i].replace("\"", "");
 
-    specifiedExecutableFile = arguments.front();
-    if (skipFirstArgument)
-        arguments.pop_front();
+    if (!arguments.empty())
+    {
+        specifiedExecutableFile = arguments.front();
+        if (skipFirstArgument)
+            arguments.pop_front();
+    }
 
     return arguments;
 }
