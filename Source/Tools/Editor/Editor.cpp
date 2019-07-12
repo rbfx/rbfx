@@ -551,8 +551,11 @@ void Editor::OnUpdate(VariantMap& args)
         else
         {
             GetWorkQueue()->Complete(0);
-            project_->SaveProject();
-            CloseProject();
+            if (project_.NotNull())
+            {
+                project_->SaveProject();
+                CloseProject();
+            }
             engine_->Exit();
         }
     }
