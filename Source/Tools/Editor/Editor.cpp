@@ -119,6 +119,7 @@ void Editor::Setup()
     engineParameters_[EP_AUTOLOAD_PATHS] = "";
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
+    engineParameters_[EP_WINDOW_MAXIMIZE] = true;
 
     // Load editor settings
     {
@@ -127,7 +128,6 @@ void Editor::Setup()
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
 
-        bool windowGeometryLoaded = false;
         ea::string editorSettingsFile = editorSettingsDir + "Editor.json";
         if (fs->FileExists(editorSettingsFile))
         {
@@ -146,28 +146,18 @@ void Editor::Setup()
                             IntVector2 size = window["size"].GetVariantValue(VAR_INTVECTOR2).GetIntVector2();
                             engineParameters_[EP_WINDOW_WIDTH] = size.x_;
                             engineParameters_[EP_WINDOW_HEIGHT] = size.y_;
-                            windowGeometryLoaded = true;
                         }
                         if (window.Contains("pos"))
                         {
                             IntVector2 pos = window["pos"].GetVariantValue(VAR_INTVECTOR2).GetIntVector2();
                             engineParameters_[EP_WINDOW_POSITION_X] = pos.x_;
                             engineParameters_[EP_WINDOW_POSITION_Y] = pos.y_;
-                            windowGeometryLoaded = true;
                         }
-                        if (window.Contains("maximized") && window["maximized"].GetVariantValue(VAR_BOOL).GetBool())
-                            engineParameters_[EP_WINDOW_MAXIMIZE] = true;
+                        if (window.Contains("maximized"))
+                            engineParameters_[EP_WINDOW_MAXIMIZE] = window["maximized"].GetVariantValue(VAR_BOOL).GetBool();
                     }
                 }
             }
-        }
-
-        // When no window geometry is saved - maximize window.
-        if (!windowGeometryLoaded)
-        {
-            engineParameters_[EP_WINDOW_WIDTH] = GetGraphics()->GetDesktopResolution(0).x_;
-            engineParameters_[EP_WINDOW_HEIGHT] = GetGraphics()->GetDesktopResolution(0).y_;
-            engineParameters_[EP_WINDOW_MAXIMIZE] = true;
         }
     }
 
