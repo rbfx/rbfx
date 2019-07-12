@@ -121,7 +121,7 @@ void ShaderPrecache::LoadShaders(Graphics* graphics, Deserializer& source)
 #ifdef GL_ES_VERSION_2_0
         if (
 #ifndef __EMSCRIPTEN__
-            vsDefines.Contains("INSTANCED") ||
+            vsDefines.contains("INSTANCED") ||
 #endif
             (psDefines.contains("POINTLIGHT") && psDefines.contains("SHADOW")))
         {

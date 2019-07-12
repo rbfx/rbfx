@@ -31,6 +31,10 @@
 #include <pthread.h>
 #endif
 #include <SDL/SDL_hints.h>
+#if defined(__ANDROID_API__) && __ANDROID_API__ < 26
+#include <linux/prctl.h>
+#include <sys/prctl.h>
+#endif
 
 #include "../DebugNew.h"
 

@@ -193,11 +193,11 @@ unsigned File::Read(void* dest, unsigned size)
             {
                 readBufferSize_ = Min(size_ - position_, READ_BUFFER_SIZE);
                 readBufferOffset_ = 0;
-                ReadInternal(readBuffer_.Get(), readBufferSize_);
+                ReadInternal(readBuffer_.get(), readBufferSize_);
             }
 
             unsigned copySize = Min((readBufferSize_ - readBufferOffset_), sizeLeft);
-            memcpy(destPtr, readBuffer_.Get() + readBufferOffset_, copySize);
+            memcpy(destPtr, readBuffer_.get() + readBufferOffset_, copySize);
             destPtr += copySize;
             sizeLeft -= copySize;
             readBufferOffset_ += copySize;
