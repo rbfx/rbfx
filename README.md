@@ -87,4 +87,4 @@ rbfx optionally uses the following external third-party libraries:
 ![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-clang-opengl&label=shared-clang-opengl)  
 ![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20static-clang-opengl&label=static-clang-opengl)  
 ![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20shared-clang-opengl&label=shared-clang-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&label=Web&label=Web)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=web)
