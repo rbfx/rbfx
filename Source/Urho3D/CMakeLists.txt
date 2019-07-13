@@ -358,6 +358,14 @@ if (MINGW)
     check_struct_has_member (RTL_OSVERSIONINFOW dwOSVersionInfoSize minwindef.h\;winnt.h HAVE_RTL_OSVERSIONINFOW)
 endif ()
 
+# Workarounds
+if (WEB OR ANDROID)
+    target_compile_options(Urho3D PUBLIC -std=gnu++${URHO3D_CXX_STANDARD})
+endif ()
+if (APPLE)
+    target_link_options(Urho3D PUBLIC -stdlib=libc++)
+endif ()
+
 ################################################### SDK preparation ####################################################
 if (MINI_URHO)
     return ()
