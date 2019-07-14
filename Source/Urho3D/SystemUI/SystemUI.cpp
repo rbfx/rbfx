@@ -146,9 +146,9 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_KEYUP:
     case SDL_KEYDOWN:
     {
-        auto code = evt->key.keysym.scancode;
-        auto down = evt->type == SDL_KEYDOWN;
-        if (code < 512)
+        SDL_Scancode code = evt->key.keysym.scancode;
+        bool down = evt->type == SDL_KEYDOWN;
+        if (code < 512U)
             io.KeysDown[code] = down;
         if (evt->key.keysym.sym == SDLK_LCTRL || evt->key.keysym.sym == SDLK_RCTRL)
             io.KeyCtrl = down;
