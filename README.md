@@ -12,17 +12,59 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 
 ## Features overview
 
-* Audio
-* Graphics (d3d9. d3d11, OpenGL 2.0, OpenGL 3.2, GLES2, GLES3)
-* Input (keyboard/mouse/touch)
-* Inverse Kinematics
-* Navigation
-* Physics (2D/3D)
-* UI (retained mode game UI + ImGui for tools)
-* 2D subsystem
-* Networking
-* C# support
-* WYSIWYG editor with hot code reload (C++ and C#)
+* Multiple rendering API support
+  * Direct3D9
+  * Direct3D11
+  * OpenGL 2.0 or 3.2
+  * OpenGL ES 2.0 or 3.0
+  * WebGL
+* HLSL or GLSL shaders + caching of HLSL bytecode
+* Configurable rendering pipeline with default implementations of
+  * Forward
+  * Light pre-pass
+  * Deferred
+* Component based scene model
+* Skeletal (with hardware skinning), vertex morph and node animation
+* Automatic instancing on SM3 capable hardware
+* Point, spot and directional lights
+* Shadow mapping for all light types
+  * Cascaded shadow maps for directional lights
+  * Normal offset adjustment in addition to depth bias
+* Particle rendering
+* Geomipmapped terrain
+* Static and skinned decals
+* Auxiliary view rendering (reflections etc.)
+* Geometry, material & animation LOD
+* Software rasterized occlusion culling
+* Post-processing
+* HDR rendering and PBR rendering
+* 2D sprites and particles that integrate into the 3D scene
+* Task-based multithreading
+* Hierarchical performance profiler
+* Scene and object load/save in binary, XML and JSON formats
+* Keyframe animation of object attributes
+* Background loading of resources
+* Keyboard, mouse, joystick and touch input (if available)
+* Cross-platform support using SDL 2.0
+* Physics using Bullet
+* 2D physics using Box2D
+* Scripting using C#
+* Networking using SLikeNet + possibility to make HTTP requests
+* Pathfinding and crowd simulation using Recast/Detour
+* Inverse kinematics
+* Image loading using stb_image + DDS / KTX / PVR compressed texture support + WEBP image format support
+* 2D and “3D” audio playback, Ogg Vorbis support using stb_vorbis + WAV format support
+* TrueType font rendering using FreeType
+* Unicode string support
+* Inbuilt UI, localization
+* WYSIWYG scene editor and UI-layout editor implemented with undo & redo capabilities and hot code reload
+* Model/scene/animation/material import from formats supported by Open Asset Import Library
+* Alternative model/animation import from OGRE mesh.xml and skeleton.xml files
+* Supported IDEs: Visual Studio, Xcode, Eclipse, CodeBlocks, CodeLite, QtCreator, CLion
+* Supported compiler toolchains: MSVC, GCC, Clang, MinGW, and their cross-compiling derivatives
+* Supports both 32-bit and 64-bit build
+* Build as single external library (can be linked against statically or dynamically)
+* ImGui integration used in tools
 
 ## Screenshots
 
@@ -74,7 +116,7 @@ rbfx optionally uses the following external third-party libraries:
 | --------------------- |:-------:|:-----:|:-----:|:---:|:-------:|:---:|
 | D3D9 / D3D11          | ✔       |       |       |     |         |     |
 | OpenGL 2 / 3.1        | ✔       | ✔     | ✔     |     |         |     |
-| OpenGL ES 3           |         |       |       | ✔   | ✔       |     |
+| OpenGL ES 2 / 3       |         |       |       | ✔   | ✔       |     |
 | WebGL                 |         |       |       |     |         | ✔   |
 
 ![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-msvc-d3d11&label=static-msvc-d3d11)  
