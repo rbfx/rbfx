@@ -120,3 +120,31 @@ jobs:
         displayName: 'Setup'
 
       - template: .ci/build.yml
+
+  - job: Android
+    pool:
+      vmImage: 'ubuntu-16.04'
+
+    steps:
+    - script: |
+        cd $(Build.SourcesDirectory)/android
+        gradle wrapper
+
+    - task: Gradle@2
+      inputs:
+        workingDirectory: android
+        gradleWrapperFile: android/gradlew
+        gradleOptions: -Xmx3072m
+        publishJUnitResults: false
+        tasks: assembleRelease
+
+    - task: CopyFiles@2
+      inputs:
+        contents: '**/*.apk'
+        targetFolder: $(build.artifactStagingDirectory)
+
+    - task: PublishBuildArtifacts@1
+      inputs:
+        pathToPublish: $(build.artifactStagingDirectory)
+        artifactName: rbfx-APK-$(Agent.JobName)-$(Build.SourceVersion)
+        artifactType: container
