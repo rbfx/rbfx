@@ -135,8 +135,11 @@ endif ()
 
 if (WEB)
     set (URHO3D_PACKAGING ON)
+endif ()
+
+if (WEB OR MOBILE)
     if (URHO3D_CSHARP)
-        message(WARNING "Web builds do not support C#.")
+        message(WARNING "C# is not supported in this configuration.")
         set (URHO3D_CSHARP OFF)
     endif ()
 endif ()
