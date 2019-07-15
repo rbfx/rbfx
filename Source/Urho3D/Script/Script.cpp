@@ -46,11 +46,6 @@ Script::Script(Context* context)
     });
 }
 
-void Script::RegisterCommandHandler(int first, int last, void* handler)
-{
-    commandHandlers_.emplace_back(ea::make_pair(ScriptCommandRange{first, last}, reinterpret_cast<ScriptRuntimeCommandHandler>(handler)));
-}
-
 bool Script::ReleaseRefOnMainThread(RefCounted* object)
 {
     if (object == nullptr)

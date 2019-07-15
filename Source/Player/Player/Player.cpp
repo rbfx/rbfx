@@ -87,7 +87,7 @@ void Player::Start()
 #endif
 #if URHO3D_CSHARP
     if (Script* script = GetSubsystem<Script>())    // Graceful failure when managed runtime support is present but not in use.
-        script->LoadRuntime();
+        script->GetRuntimeApi()->LoadRuntime();
 #endif
 
     GetCache()->AddResourceRouter(new BakedResourceRouter(context_));
@@ -243,7 +243,7 @@ bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
     {
         if (Script* script = GetSubsystem<Script>())
         {
-            if (PluginApplication* plugin = script->LoadAssembly(path))
+            if (PluginApplication* plugin = script->GetRuntimeApi()->LoadAssembly(path))
             {
                 plugins_.emplace_back(SharedPtr<PluginApplication>(plugin));
                 return true;

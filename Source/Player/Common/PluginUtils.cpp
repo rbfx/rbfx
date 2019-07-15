@@ -254,7 +254,7 @@ PluginType GetPluginType(Context* context, const ea::string& path)
         {
 #if URHO3D_CSHARP
             // Verify that plugin has a class that inherits from PluginApplication.
-            if (context->GetSubsystem<Script>()->VerifyAssembly(path))
+            if (context->GetSubsystem<Script>()->GetRuntimeApi()->VerifyAssembly(path))
                 return PLUGIN_MANAGED;
 #endif
         }
