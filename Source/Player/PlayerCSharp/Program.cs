@@ -32,109 +32,29 @@ namespace Player
 {
     internal class Program
     {
-        private static readonly string ProgramFile = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
-        public static readonly string ProgramDirectory = Path.GetDirectoryName(ProgramFile);
         private Context _context;
+        private ScriptRuntimeApi _runtimeApi;
 
         private Program()
         {
-            AppDomain.CurrentDomain.ReflectionOnlyAssemblyResolve += (sender, args) => Assembly.ReflectionOnlyLoadFrom(
-                Path.Combine(ProgramDirectory, args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
-        }
-
-        private IntPtr LoadPlugin(string path)
-        {
-            if (!File.Exists(path) || !path.EndsWith(".dll"))
-                return IntPtr.Zero;
-
-            Assembly assembly;
-            try
-            {
-                assembly = Assembly.LoadFile(path);
-            }
-            catch (Exception)
-            {
-                return IntPtr.Zero;
-            }
-
-            Type pluginType = null;
-            foreach (var type in assembly.GetTypes())
-            {
-                if (!type.IsClass)
-                    continue;
-
-                if (type.BaseType == typeof(PluginApplication))
-                {
-                    pluginType = type;
-                    break;
-                }
-            }
-
-            if (pluginType == null)
-                return IntPtr.Zero;
-
-            var plugin = Activator.CreateInstance(pluginType, _context) as PluginApplication;
-            if (plugin is null)
-                return IntPtr.Zero;
-
-            plugin.Load();
-
-            return PluginApplication.getCPtr(plugin).Handle;
-        }
-        private static bool IsPlugin(string path)
-        {
-            var pluginBaseName = typeof(PluginApplication).FullName;
-            try
-            {
-                var assembly = Assembly.ReflectionOnlyLoadFrom(path);
-                var types = assembly.GetTypes();
-                return types.Any(type => type.BaseType?.FullName == pluginBaseName);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        /// Keeps delegate pointer alive.
-        private CommandHandlerDelegate _commandHandlerRef;
-        private IntPtr CommandHandler(ScriptRuntimeCommand command, IntPtr args)
-        {
-            switch (command)
-            {
-                case ScriptRuntimeCommand.LoadAssembly:
-                {
-                    var path = Marshal.PtrToStringAnsi(Marshal.ReadIntPtr(args, 0));    // TODO: utf-8
-                    return LoadPlugin(path);
-                }
-                case ScriptRuntimeCommand.VerifyAssembly:
-                {
-                    var path = Marshal.PtrToStringAnsi(Marshal.ReadIntPtr(args, 0));    // TODO: utf-8
-                    if (IsPlugin(path))
-                        return Urho3D.ScriptCommandSuccess;
-                    break;
-                }
-            }
-            return Urho3D.ScriptCommandFailed;
         }
 
         private void Run(string[] args)
         {
             var argc = args.Length + 1;                 // args + executable path
             var argv = new string[args.Length + 2];     // args + executable path + null
-            argv[0] = ProgramFile;
+            argv[0] = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
             args.CopyTo(argv, 1);
             ParseArgumentsC(argc, argv);
 
             using (_context = new Context())
             {
-                _commandHandlerRef = CommandHandler;
-                _context.RegisterSubsystem(new Script(_context));
-                _context.GetSubsystem<Script>().RegisterCommandHandler(
-                    (int) ScriptRuntimeCommand.LoadRuntime, (int) ScriptRuntimeCommand.VerifyAssembly,
-                    Marshal.GetFunctionPointerForDelegate(_commandHandlerRef));
+                var scriptSubsystem = new Script(_context);
+                _runtimeApi = new ScriptRuntimeApiImpl(_context);
+                scriptSubsystem.SetRuntimeApi(_runtimeApi);
+                _context.RegisterSubsystem(scriptSubsystem);
 
-                using (var editor = Application.wrap(CreateApplication(Context.getCPtr(_context).Handle), true))
+                using (Application editor = Application.wrap(CreateApplication(Context.getCPtr(_context).Handle), true))
                 {
                     Environment.ExitCode = editor.Run();
                 }

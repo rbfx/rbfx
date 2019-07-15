@@ -38,6 +38,7 @@
 
 // Inheritable classes go here
 %inheritable(Urho3D, Object);
+%inheritable(Urho3D, ScriptRuntimeApi);
 %inheritable(Urho3D, Application);
 %inheritable(Urho3D, Serializable);         %addOnSetupInstance(Urho3D::Serializable);
 %inheritable(Urho3D, Animatable);           %addOnSetupInstance(Urho3D::Animatable);

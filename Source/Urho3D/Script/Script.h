@@ -40,83 +40,46 @@ namespace Urho3D
 #  define URHO3D_STDCALL
 #endif
 
-/// Script runtime command handler callback type.
-typedef std::uintptr_t(URHO3D_STDCALL*ScriptRuntimeCommandHandler)(int command, void** args);
-///
-using ScriptCommandRange = ea::pair<int, int>;
-/// Value indicating failure.
-static const std::uintptr_t ScriptCommandFailed = ~0U;
-/// Value indicating success.
-static const std::uintptr_t ScriptCommandSuccess = 0;
-
-/// List of runtime commands. Warning! When reordering enum items inspect all calls to RegisterCommandHandler!
-enum ScriptRuntimeCommand: int
+/// Script API implemented in target scripting language.
+class URHO3D_API ScriptRuntimeApi : public Object
 {
-    LoadRuntime,
-    UnloadRuntime,
-    LoadAssembly,
-    VerifyAssembly,
+    URHO3D_OBJECT(ScriptRuntimeApi, Object);
+public:
+    explicit ScriptRuntimeApi(Context* context) : Object(context) { }
+    ~ScriptRuntimeApi(){
+        int a = 2;
+    }
+
+    ///
+    virtual bool LoadRuntime() = 0;
+    ///
+    virtual bool UnloadRuntime() = 0;
+    ///
+    virtual bool VerifyAssembly(const ea::string& path) = 0;
+    ///
+    virtual PluginApplication* LoadAssembly(const ea::string& path) = 0;
 };
 
+/// Script runtime subsystem.
 class URHO3D_API Script : public Object
 {
     URHO3D_OBJECT(Script, Object);
 public:
     explicit Script(Context* context);
-    /// Do not use.
-    void RegisterCommandHandler(int first, int last, void* handler);
-    /// Loads specified assembly into script runtime.
-    PluginApplication* LoadAssembly(const ea::string& path) { return reinterpret_cast<PluginApplication*>(Command(ScriptRuntimeCommand::LoadAssembly, path.c_str())); }
-    /// Checks if specified assembly is loadable by script runtime.
-    bool VerifyAssembly(const ea::string& path) { return Command(ScriptRuntimeCommand::VerifyAssembly, path.c_str()) == ScriptCommandSuccess; }
-    ///
-    void LoadRuntime() { Command(ScriptRuntimeCommand::LoadRuntime); }
-    ///
-    void UnloadRuntime() { Command(ScriptRuntimeCommand::UnloadRuntime); }
     /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread therefore this method queues them to run at the end of next frame on the main thread.
     bool ReleaseRefOnMainThread(RefCounted* object);
+    ///
+    ScriptRuntimeApi* GetRuntimeApi() const { return api_.Get(); }
+    ///
+    void SetRuntimeApi(ScriptRuntimeApi* impl) { api_ = impl; }
 
 protected:
-    ///
-    template<typename... Args>
-    std::uintptr_t Command(unsigned command, const Args&... args)
-    {
-        unsigned index = 0;
-        ea::vector<void*> runtimeArgs;
-        runtimeArgs.resize(sizeof...(args));
-        ConvertArguments(runtimeArgs, index, std::forward<const Args&>(args)...);
-        std::uintptr_t result = ScriptCommandFailed;
-        for (auto handler : commandHandlers_)
-        {
-            if (!IsInRange(handler.first, command))
-                continue;
-            result = handler.second(command, runtimeArgs.data());
-            break;
-        }
-        return result;
-    }
-    ///
-    template<typename T, typename... Args>
-    void ConvertArguments(ea::vector<void*>& runtimeArgs, unsigned index, T arg, Args... args)
-    {
-        runtimeArgs[index] = ConvertArgument(arg);
-        if (sizeof...(args) > 0)
-            ConvertArguments(runtimeArgs, ++index, std::forward<Args>(args)...);
-    }
-    void ConvertArguments(ea::vector<void*>& runtimeArgs, unsigned index) { }
-    template<typename T>
-    void* ConvertArgument(T value) { return const_cast<void*>(reinterpret_cast<const void*>(value)); }
-    ///
-    bool IsInRange(const ScriptCommandRange& range, unsigned command) const
-    {
-        return range.first <= command && command <= range.second;
-    }
-    ///
-    ea::vector<ea::pair<ScriptCommandRange, ScriptRuntimeCommandHandler>> commandHandlers_;
     ///
     Mutex destructionQueueLock_;
     ///
     ea::vector<RefCounted*> destructionQueue_;
+    ///
+    SharedPtr<ScriptRuntimeApi> api_;
 };
 
 
