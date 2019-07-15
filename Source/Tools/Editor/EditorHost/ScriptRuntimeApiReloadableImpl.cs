@@ -12,20 +12,23 @@ using Mono.Cecil.Pdb;
 
 namespace EditorHost
 {
-    /// This class runs in a context of reloadable appdomain.
-    internal class DomainManager : MarshalByRefObject, IDisposable
+    public class ScriptRuntimeApiReloadableImpl : ScriptRuntimeApiImpl
     {
-        private Context _context;
-        private readonly int _version;
+        private int Version { get; set; } = -1;
         private readonly List<PluginApplication> _plugins = new List<PluginApplication>();
 
-        public DomainManager(int version, IntPtr contextPtr)
+        public ScriptRuntimeApiReloadableImpl(Context context) : base(context)
         {
-            _context = Context.wrap(contextPtr, false);
-            _version = version;
         }
 
-        public void Dispose()
+        public override bool LoadRuntime()
+        {
+            // Noop. No longer using AppDomains.
+            Version++;
+            return true;
+        }
+
+        public override bool UnloadRuntime()
         {
             foreach (PluginApplication plugin in _plugins)
             {
@@ -34,22 +37,21 @@ namespace EditorHost
             }
             _plugins.Clear();
 
-            _context.Dispose();
-            _context = null;
-
             GC.Collect(GC.MaxGeneration);
             GC.WaitForPendingFinalizers();
+
+            return true;
         }
 
-        public IntPtr LoadAssembly(string path)
+        public override PluginApplication LoadAssembly(string path)
         {
             if (!System.IO.File.Exists(path) || !path.EndsWith(".dll"))
-                return IntPtr.Zero;
+                return null;
 
             path = VersionFile(path);
 
             if (path == null)
-                return IntPtr.Zero;
+                return null;
 
             Assembly assembly;
             try
@@ -58,27 +60,27 @@ namespace EditorHost
             }
             catch (Exception)
             {
-                return IntPtr.Zero;
+                return null;
             }
 
             Type pluginType = assembly.GetTypes().First(t => t.IsClass && t.BaseType == typeof(PluginApplication));
             if (pluginType == null)
-                return IntPtr.Zero;
+                return null;
 
-            var plugin = Activator.CreateInstance(pluginType, _context) as PluginApplication;
+            var plugin = Activator.CreateInstance(pluginType, GetContext()) as PluginApplication;
             if (plugin is null)
-                return IntPtr.Zero;
+                return null;
 
             plugin.Load();
             _plugins.Add(plugin);
 
-            return PluginApplication.getCPtr(plugin).Handle;
+            return plugin;
         }
 
         /// Returns a versioned path.
         private string GetNewPluginPath(string path)
         {
-            string version = _version.ToString();
+            string version = Version.ToString();
             string dirName = Path.GetDirectoryName(path);
             string extension = Path.GetExtension(path);
             string baseName = Path.GetFileNameWithoutExtension(path);
@@ -99,7 +101,7 @@ namespace EditorHost
             AssemblyDefinition plugin = AssemblyDefinition.ReadAssembly(path,
                 new ReaderParameters { SymbolReaderProvider = new PdbReaderProvider(), ReadSymbols = true});
             plugin.Name.Version = new Version(plugin.Name.Version.Major, plugin.Name.Version.Minor,
-                plugin.Name.Version.Build, _version);
+                plugin.Name.Version.Build, Version);
 
             ImageDebugHeaderEntry debugHeader = plugin.MainModule.GetDebugHeader().Entries
                 .First(h => h.Directory.Type == ImageDebugType.CodeView);
@@ -127,55 +129,6 @@ namespace EditorHost
             System.IO.File.Copy(pdbPath, newPdbPath, true);
 
             return newFilePath;
-        }
-    }
-
-    public class ScriptRuntimeApiReloadableImpl : ScriptRuntimeApiImpl
-    {
-        private int Version { get; set; } = -1;
-        private DomainManager _manager;
-        private AppDomain _pluginDomain;
-
-        public ScriptRuntimeApiReloadableImpl(Context context) : base(context)
-        {
-        }
-
-        public override bool LoadRuntime()
-        {
-            Type managerType = typeof(DomainManager);
-
-            if (_pluginDomain != null || _manager != null || managerType.FullName == null)
-                return false;
-
-            Version++;
-            string domainName = AppDomain.CurrentDomain.FriendlyName.Replace(".", $"{Version}.");
-            _pluginDomain = AppDomain.CreateDomain(domainName);
-            _manager = _pluginDomain.CreateInstanceAndUnwrap(managerType.Assembly.FullName,
-                managerType.FullName, false, BindingFlags.Default, null,
-                new object[]{Version, Context.getCPtr(GetContext()).Handle}, null, null) as DomainManager;
-
-            return true;
-        }
-
-        public override bool UnloadRuntime()
-        {
-            if (_pluginDomain == null || _manager == null)
-                return false;
-
-            _manager.Dispose();
-            _manager = null;
-            AppDomain.Unload(_pluginDomain);    // TODO: This may fail.
-            _pluginDomain = null;
-            return true;
-        }
-
-        public override PluginApplication LoadAssembly(string path)
-        {
-            if (_manager == null)
-                return null;
-
-            IntPtr pluginInstance = _manager.LoadAssembly(path);
-            return PluginApplication.wrap(pluginInstance, false);
         }
     }
 }
