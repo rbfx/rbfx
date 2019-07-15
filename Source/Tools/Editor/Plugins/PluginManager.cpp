@@ -132,11 +132,6 @@ Plugin* PluginManager::Load(const ea::string& name)
         if (cr_plugin_load(plugin->nativeContext_, pluginPath.c_str()))
         {
             plugin->nativeContext_.userdata = context_;
-
-            ea::string pluginTemp = GetTemporaryPluginPath();
-            GetFileSystem()->CreateDirsRecursive(pluginTemp);
-            cr_set_temporary_path(plugin->nativeContext_, pluginTemp.c_str());
-
             plugin->name_ = name;
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
@@ -333,11 +328,6 @@ ea::string PluginManager::NameToPath(const ea::string& name) const
     return EMPTY_STRING;
 }
 
-ea::string PluginManager::GetTemporaryPluginPath() const
-{
-    return GetFileSystem()->GetTemporaryDir() + ToString("Urho3D-Editor-Plugins-%d/", GetCurrentProcessID());
-}
-
 ea::string PluginManager::PathToName(const ea::string& path)
 {
 #if !_WIN32
@@ -370,8 +360,6 @@ PluginManager::~PluginManager()
     // Managed plugins can not be unloaded one at a time. Entire plugin AppDomain must be dropped.
     GetSubsystem<Script>()->GetRuntimeApi()->UnloadRuntime();
 #endif
-
-    GetFileSystem()->RemoveDir(GetTemporaryPluginPath(), true);
 }
 
 const StringVector& PluginManager::GetPluginNames()

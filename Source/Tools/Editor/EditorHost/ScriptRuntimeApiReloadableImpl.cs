@@ -5,8 +5,12 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Urho3DNet;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
+using Mono.Cecil.Pdb;
 
-namespace Urho3DNet
+namespace EditorHost
 {
     /// This class runs in a context of reloadable appdomain.
     internal class DomainManager : MarshalByRefObject, IDisposable
@@ -74,12 +78,17 @@ namespace Urho3DNet
         /// Returns a versioned path.
         private string GetNewPluginPath(string path)
         {
-            // Mimics PluginManager::GetTemporaryPluginPath().
-            string tempPath = _context.GetFileSystem().GetTemporaryDir() +
-                              $"Urho3D-Editor-Plugins-{Process.GetCurrentProcess().Id}";
-            string fileName = Path.GetFileNameWithoutExtension(path);
-            path = $"{tempPath}/{fileName}{_version}.dll";
-            return path;
+            string version = _version.ToString();
+            string dirName = Path.GetDirectoryName(path);
+            string extension = Path.GetExtension(path);
+            string baseName = Path.GetFileNameWithoutExtension(path);
+            baseName = baseName.Substring(0, baseName.Length - version.Length);
+            string newPath = $"{dirName}/{baseName}{version}{extension}";
+
+            if (baseName.Length == 0 || Path.GetDirectoryName(path) != Path.GetDirectoryName(newPath))
+                throw new ArgumentException($"Project name {Path.GetFileNameWithoutExtension(path)} is too short.");
+
+            return newPath;
         }
 
         private string VersionFile(string path)
@@ -87,61 +96,45 @@ namespace Urho3DNet
             if (path == null)
                 throw new ArgumentException($"{nameof(path)} may not be null.");
 
-            var pdbPath = Path.ChangeExtension(path, "pdb");
-            var versionedPath = GetNewPluginPath(path);
-            Directory.CreateDirectory(Path.GetDirectoryName(versionedPath));
-            Debug.Assert(versionedPath != null, $"{nameof(versionedPath)} != null");
-            System.IO.File.Copy(path, versionedPath, true);
+            AssemblyDefinition plugin = AssemblyDefinition.ReadAssembly(path,
+                new ReaderParameters { SymbolReaderProvider = new PdbReaderProvider(), ReadSymbols = true});
+            plugin.Name.Version = new Version(plugin.Name.Version.Major, plugin.Name.Version.Minor,
+                plugin.Name.Version.Build, _version);
 
-            if (System.IO.File.Exists(pdbPath))
-            {
-                var versionedPdbPath = Path.ChangeExtension(versionedPath, "pdb");
-                System.IO.File.Copy(pdbPath, versionedPdbPath, true);
-                versionedPdbPath = Path.GetFileName(versionedPdbPath);  // Do not include full path when patching dll
+            ImageDebugHeaderEntry debugHeader = plugin.MainModule.GetDebugHeader().Entries
+                .First(h => h.Directory.Type == ImageDebugType.CodeView);
 
-                // Update .pdb path in a newly copied file
-                var pathBytes = Encoding.ASCII.GetBytes(Path.GetFileName(pdbPath)); // Does this work with i18n paths?
-                var dllBytes = System.IO.File.ReadAllBytes(versionedPath);
-                int i;
-                for (i = 0; i < dllBytes.Length; i++)
-                {
-                    if (dllBytes.Skip(i).Take(pathBytes.Length).SequenceEqual(pathBytes)) // I know its slow ¯\_(ツ)_/¯
-                    {
-                        if (dllBytes[i + pathBytes.Length] != 0) // Check for null terminator
-                            continue;
+            // 000 uint magic;            // 0x53445352
+            // 004 uint[16] signature;
+            // 014 uint age;
+            // 018 string pdbPath;
+            uint magic = BitConverter.ToUInt32(debugHeader.Data, 0);
+            if (magic != 0x53445352)
+                return null;
 
-                        while (dllBytes[--i] != 0)
-                        {
-                            // We found just a file name. Time to walk back to find a start of the string. This is
-                            // required because dll is executing from non-original directory and pdb path points
-                            // somewhere else we can not predict.
-                        }
+            var pdbEnd = 0x018;
+            while (debugHeader.Data[++pdbEnd] != 0){}
 
-                        i++;
+            string pdbPath = Encoding.UTF8.GetString(debugHeader.Data, 0x018, pdbEnd - 0x018);
+            string newFilePath = GetNewPluginPath(path);
+            string newPdbPath = GetNewPluginPath(pdbPath);
+            byte[] newPdbPathBytes = Encoding.UTF8.GetBytes(newPdbPath);
+            Array.Copy(newPdbPathBytes, 0, debugHeader.Data, 0x018, newPdbPathBytes.Length);
+            debugHeader.Data[0x018 + newPdbPathBytes.Length] = 0;
 
-                        // Copy full pdb path
-                        var newPathBytes = Encoding.ASCII.GetBytes(versionedPdbPath);
-                        newPathBytes.CopyTo(dllBytes, i);
-                        dllBytes[i + newPathBytes.Length] = 0;
-                        break;
-                    }
-                }
+            plugin.Write(newFilePath,
+                new WriterParameters { SymbolWriterProvider = new PdbWriterProvider(), WriteSymbols = true});
+            System.IO.File.Copy(pdbPath, newPdbPath, true);
 
-                if (i == dllBytes.Length)
-                    return null;
-
-                System.IO.File.WriteAllBytes(versionedPath, dllBytes);
-            }
-
-            return versionedPath;
+            return newFilePath;
         }
     }
 
     public class ScriptRuntimeApiReloadableImpl : ScriptRuntimeApiImpl
     {
         private int Version { get; set; } = -1;
-        internal DomainManager _manager;
-        protected AppDomain _pluginDomain;
+        private DomainManager _manager;
+        private AppDomain _pluginDomain;
 
         public ScriptRuntimeApiReloadableImpl(Context context) : base(context)
         {
