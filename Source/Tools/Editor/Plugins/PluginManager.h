@@ -92,7 +92,7 @@ public:
     /// Construct.
     explicit PluginManager(Context* context);
     /// Unload all plugins an destruct.
-    ~PluginManager();
+    ~PluginManager() override;
     /// Load a plugin and return true if succeeded.
     virtual Plugin* Load(const ea::string& name);
     /// Unload a plugin and return true if succeeded.
@@ -111,8 +111,6 @@ public:
 protected:
     /// Converts name to a full plugin file path. Returns empty string on error.
     ea::string NameToPath(const ea::string& name) const;
-    /// Returns path to folder where temporary copies of plugin files are stored.
-    ea::string GetTemporaryPluginPath() const;
 
     struct DynamicLibraryInfo
     {

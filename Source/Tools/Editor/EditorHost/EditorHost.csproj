@@ -12,5 +12,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="../../../Urho3D/CSharp/Urho3DNet.csproj" />
+    <PackageReference Include="Mono.Cecil" Version="0.10.4" />
   </ItemGroup>
 </Project>
