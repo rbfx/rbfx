@@ -52,28 +52,10 @@ namespace Urho3DNet
 
         public override bool VerifyAssembly(string path)
         {
-            // We could use Mono.Cecil to very presence of required type. However it would pull in this dependency not
-            // only for tools but for product application as well. Therefore we do it this way even though it sucks.
-            AppDomain tmpDomain = null;
-            try
-            {
-                Type checkerType = typeof(TypePresenceVerifier);
-                tmpDomain = AppDomain.CreateDomain($"TypePresenceVerifier{_pluginCheckCounter++}");
-                InstallAssemblyLoader(tmpDomain);
-                if (tmpDomain.CreateInstanceAndUnwrap(checkerType.Assembly.FullName,
-                    checkerType.FullName) is TypePresenceVerifier checker)
-                    return checker.ContainsType(path, typeof(PluginApplication).FullName);
-            }
-            catch (Exception e)
-            {
-                System.Console.WriteLine(e.Message);
-            }
-            finally
-            {
-                if (tmpDomain != null)
-                    AppDomain.Unload(tmpDomain);
-            }
-            return false;
+            // This method is called by player. Little point in verifying if file is a plugin because it would only
+            // happen if someone tampered with application files manually. If this is not a plugin LoadAssembly() will
+            // fail gracefully later anyway. And we get faster loading times.
+            return true;
         }
 
         public override PluginApplication LoadAssembly(string path)
