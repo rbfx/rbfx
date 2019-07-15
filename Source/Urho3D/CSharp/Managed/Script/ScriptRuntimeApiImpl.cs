@@ -52,6 +52,8 @@ namespace Urho3DNet
 
         public override bool VerifyAssembly(string path)
         {
+            // We could use Mono.Cecil to very presence of required type. However it would pull in this dependency not
+            // only for tools but for product application as well. Therefore we do it this way even though it sucks.
             AppDomain tmpDomain = null;
             try
             {
