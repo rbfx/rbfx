@@ -77,6 +77,13 @@ namespace EditorHost
             return plugin;
         }
 
+        public override bool VerifyAssembly(string path)
+        {
+            string expectName = typeof(PluginApplication).FullName;
+            AssemblyDefinition plugin = AssemblyDefinition.ReadAssembly(path);
+            return plugin.MainModule.Types.Any(t => t.IsClass && t.BaseType != null && t.BaseType.FullName == expectName);
+        }
+
         /// Returns a versioned path.
         private string GetNewPluginPath(string path)
         {
