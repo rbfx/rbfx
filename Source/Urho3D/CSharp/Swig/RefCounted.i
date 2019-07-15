@@ -4,7 +4,7 @@
     %typemap(csbody) TYPE %{
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
       private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
-      protected bool swigCMemOwn;
+      private bool swigCMemOwn;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
       {
         if (cPtr == global::System.IntPtr.Zero)
@@ -18,7 +18,6 @@
             result = new $csclassname(cPtr, cMemoryOwn);
           else
             result = ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
-          result.AddRef();
           return result;
         });
       }
@@ -36,6 +35,7 @@
 
     %typemap(csbody_derived, directorsetup="\n    SetupSwigDirector();") TYPE %{
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+      private bool swigCMemOwn;
       private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
       internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
       {
@@ -50,12 +50,12 @@
             result = new $csclassname(cPtr, cMemoryOwn);
           else
             result = ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
-          result.AddRef();
           return result;
         });
       }
 
-      internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), cMemoryOwn) {
+      internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
+      swigCMemOwn = cMemoryOwn;
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
         _instanceCache.AddNew(swigCPtr);
       }
@@ -65,10 +65,10 @@
       }
     %}
 
-    // SharedPtr
     %refobject   TYPE "$this->AddRef();"  // Added in typemap above on object construction
     %unrefobject TYPE "$this->ReleaseRef();"
 
+    // SharedPtr
     %typemap(ctype)  Urho3D::SharedPtr<TYPE> "TYPE*"                               // c layer type
     %typemap(imtype) Urho3D::SharedPtr<TYPE> "global::System.IntPtr"               // pinvoke type
     %typemap(cstype) Urho3D::SharedPtr<TYPE> "$typemap(cstype, TYPE*)"             // c# type
@@ -116,15 +116,44 @@
     %typemap(csfinalize) TYPE %{
       ~$csclassname() {
         lock (this) {
-          if (swigCMemOwn) {
-            if (Urho3DNet.Context.Instance.GetSubsystem<Urho3DNet.Script>().ReleaseRefOnMainThread(this as RefCounted)) {
-              swigCMemOwn = false;
-            }
+          if (Urho3DNet.Context.Instance.GetSubsystem<Urho3DNet.Script>().ReleaseRefOnMainThread(this as RefCounted)) {
+            swigCMemOwn = false;
+            swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
+          } else {
+            Dispose();
           }
-          Dispose();
         }
       }
     %}
+
+    %typemap(csdestruct, methodname="Dispose", methodmodifiers="public") TYPE {
+        lock(this) {
+          if (swigCPtr.Handle != global::System.IntPtr.Zero) {
+            if (swigCMemOwn) {
+              swigCMemOwn = false;
+              $imcall;
+            }
+            swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
+          }
+          global::System.GC.SuppressFinalize(this);
+        }
+      }
+
+    %typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") TYPE {
+        lock(this) {
+          if (swigCPtr.Handle != global::System.IntPtr.Zero) {
+            if (swigCMemOwn) {
+              swigCMemOwn = false;
+              $imcall;
+            }
+            swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
+          }
+          global::System.GC.SuppressFinalize(this);
+          base.Dispose();
+        }
+      }
+
+
 %enddef
 
 %include "_refcounted.i"
