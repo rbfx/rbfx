@@ -2,7 +2,7 @@
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody) SWIGTYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
-  protected bool swigCMemOwn;
+  private bool swigCMemOwn;
   private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
@@ -32,6 +32,7 @@
 // Derived proxy classes
 %typemap(csbody_derived, directorsetup="\n    SetupSwigDirector();") SWIGTYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+  private bool swigCMemOwn;
   private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
   internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
@@ -47,7 +48,8 @@
     });
   }
 
-  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), cMemoryOwn) {
+  internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
+    swigCMemOwn = cMemoryOwn;
     swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
     _instanceCache.AddNew(swigCPtr);
   }
