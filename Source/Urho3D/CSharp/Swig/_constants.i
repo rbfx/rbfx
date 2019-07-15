@@ -3892,11 +3892,6 @@
 %rename(Speed) Urho3D::ValueAnimationInfo::speed_;
 %rename(CurrentTime) Urho3D::ValueAnimationInfo::currentTime_;
 %rename(LastScaledTime) Urho3D::ValueAnimationInfo::lastScaledTime_;
-%ignore Urho3D::ScriptCommandFailed;
-%constant std::uintptr_t ScriptCommandFailed = Urho3D::ScriptCommandFailed;
-%ignore Urho3D::ScriptCommandSuccess;
-%constant std::uintptr_t ScriptCommandSuccess = Urho3D::ScriptCommandSuccess;
-%rename(CommandHandlers) Urho3D::Script::commandHandlers_;
 %rename(DestructionQueueLock) Urho3D::Script::destructionQueueLock_;
 %rename(DestructionQueue) Urho3D::Script::destructionQueue_;
 %rename(Level) Urho3D::Console::LogEntry::level_;

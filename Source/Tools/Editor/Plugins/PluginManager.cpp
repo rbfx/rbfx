@@ -79,8 +79,8 @@ bool Plugin::Unload()
     else if (type_ == PLUGIN_MANAGED)
     {
         Script* script = GetSubsystem<Script>();
-        script->UnloadRuntime();        // Destroy plugin AppDomain.
-        script->LoadRuntime();          // Create new empty plugin AppDomain. Caller is responsible for plugin reinitialization.
+        script->GetRuntimeApi()->UnloadRuntime();        // Destroy plugin AppDomain.
+        script->GetRuntimeApi()->LoadRuntime();          // Create new empty plugin AppDomain. Caller is responsible for plugin reinitialization.
         return true;
     }
 #endif
@@ -109,7 +109,7 @@ PluginManager::PluginManager(Context* context)
     });
 #if URHO3D_CSHARP
     // Initialize AppDomain for managed plugins.
-    GetSubsystem<Script>()->LoadRuntime();
+    GetSubsystem<Script>()->GetRuntimeApi()->LoadRuntime();
 #endif
 #endif
 }
@@ -149,7 +149,7 @@ Plugin* PluginManager::Load(const ea::string& name)
 #if URHO3D_CSHARP
     else if (plugin->type_ == PLUGIN_MANAGED)
     {
-        if (GetSubsystem<Script>()->LoadAssembly(pluginPath))
+        if (GetSubsystem<Script>()->GetRuntimeApi()->LoadAssembly(pluginPath))
         {
             plugin->name_ = name;
             plugin->path_ = pluginPath;
@@ -203,8 +203,8 @@ void PluginManager::OnEndFrame()
             SendEvent(E_EDITORUSERCODERELOADSTART);
             eventSent = true;
         }
-        script->UnloadRuntime();
-        script->LoadRuntime();
+        script->GetRuntimeApi()->UnloadRuntime();
+        script->GetRuntimeApi()->LoadRuntime();
         for (auto& plugin : plugins_)
         {
             if (plugin->type_ == PLUGIN_MANAGED)
@@ -217,7 +217,7 @@ void PluginManager::OnEndFrame()
                         Time::Sleep(0);
                 }
                 plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(plugin->path_);
-                script->LoadAssembly(plugin->path_);
+                script->GetRuntimeApi()->LoadAssembly(plugin->path_);
             }
         }
         URHO3D_LOGINFO("Managed plugins were reloaded.");
@@ -245,7 +245,7 @@ void PluginManager::OnEndFrame()
                 {
                     if (plug == plugin || plug->type_ == PLUGIN_NATIVE)
                         continue;
-                    script->LoadAssembly(plug->path_);
+                    script->GetRuntimeApi()->LoadAssembly(plug->path_);
                 }
             }
 #endif
@@ -368,7 +368,7 @@ PluginManager::~PluginManager()
 
 #if URHO3D_CSHARP
     // Managed plugins can not be unloaded one at a time. Entire plugin AppDomain must be dropped.
-    GetSubsystem<Script>()->UnloadRuntime();
+    GetSubsystem<Script>()->GetRuntimeApi()->UnloadRuntime();
 #endif
 
     GetFileSystem()->RemoveDir(GetTemporaryPluginPath(), true);
