@@ -889,6 +889,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 // csbody typemaps... these are in macros so that the visibility of the methods can be easily changed by users.
 
+// rbfx: $directorsetup addition.
 %define SWIG_CSBODY_PROXY(PTRCTOR_VISIBILITY, CPTR_VISIBILITY, TYPE...)
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody, directorsetup="\n    SetupSwigDirector();") TYPE %{
@@ -964,7 +965,7 @@ SWIG_CSBODY_TYPEWRAPPER(internal, protected, internal, SWIGTYPE)
     Dispose();
   }
 %}
-
+// rbfx: Fix user code collision with swig-generated methods.
 %typemap(csconstruct, excode=SWIGEXCODE,directorconnect="\n    ConnectSwigDirector();") SWIGTYPE %{: this($imcall, true) {$excode$directorconnect
   }
 %}

@@ -10,7 +10,7 @@
 #include <string.h>
 #include <stdio.h>
 #ifdef __cplusplus
-#include <typeinfo>
+#include <typeinfo> // rbfx
 #endif
 %}
 
@@ -322,8 +322,9 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterStringCallback_$module(SWIG_CSharpString
 %}
 #endif // SWIG_CSHARP_NO_STRING_HELPER
 
+// rbfx
 %insert(runtime) %{
-/* Callback for returning strings to C# without leaking memory */
+/* Callback for freeing gchandles */
 typedef void(SWIGSTDCALL* SWIG_CSharpFreeGCHandleHelperCallback)(void*);
 static SWIG_CSharpFreeGCHandleHelperCallback SWIG_csharp_free_gchandle_callback = NULL;
 %}
@@ -357,6 +358,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterFreeGCHandleCallback_$module(SWIG_CSharp
   SWIG_csharp_free_gchandle_callback = callback;
 }
 %}
+// /rbfx
 
 #if !defined(SWIG_CSHARP_NO_IMCLASS_STATIC_CONSTRUCTOR)
 // Ensure the class is not marked beforefieldinit
@@ -372,6 +374,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterFreeGCHandleCallback_$module(SWIG_CSharp
 #define SWIG_contract_assert(nullreturn, expr, msg) if (!(expr)) {SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentOutOfRangeException, msg, ""); return nullreturn; } else
 %}
 
+// rbfx
 %pragma(csharp) imclasscode=%{
     internal delegate void SwigDelegateFreeGCHandle(global::System.IntPtr handle);
     internal static void FreeGCHandle(global::System.IntPtr handle)
@@ -405,3 +408,4 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterFreeGCHandleCallback_$module(SWIG_CSharp
       return hasDerivedMethod;
     }
 %}
+// /rbfx
