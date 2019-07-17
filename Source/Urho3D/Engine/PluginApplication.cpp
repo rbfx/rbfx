@@ -27,7 +27,7 @@
 #   if !defined(NDEBUG) && defined(URHO3D_LOGGING)
 #       define CR_DEBUG 1
 #       define CR_ERROR(format, ...) URHO3D_LOGERRORF(format, ##__VA_ARGS__)
-#       define CR_LOG(format, ...)   URHO3D_LOGINFOF(format, ##__VA_ARGS__)
+#       define CR_LOG(format, ...)   URHO3D_LOGTRACEF(format, ##__VA_ARGS__)
 #       define CR_TRACE
 #   endif
 #   if DESKTOP
@@ -59,7 +59,7 @@ void PluginApplication::RecordPluginFactory(StringHash type, const char* categor
 #if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
 int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
 {
-#if !defined(__EMSCRIPTEN__) && !defined(__ANDROID__)
+#if DESKTOP
     assert(ctx_);
     auto* ctx = static_cast<cr_plugin*>(ctx_);
 
@@ -68,26 +68,14 @@ int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplicatio
     case CR_LOAD:
     {
         auto* context = static_cast<Context*>(ctx->userdata);
-        auto* application = factory(context);
-        application->type_ = PLUGIN_NATIVE;
-        application->Load();
-        ctx->userdata = application;
+        ctx->userdata = factory(context);
         return 0;
     }
     case CR_UNLOAD:
     case CR_CLOSE:
     {
         auto* application = static_cast<PluginApplication*>(ctx->userdata);
-        application->Unload();
         ctx->userdata = application->GetContext();
-        if (application->Refs() != 1)
-        {
-            URHO3D_LOGERRORF("Plugin application '%s' has more than one reference remaining. "
-                             "This may lead to memory leaks or crashes.",
-                             application->GetTypeName().c_str());
-            assert(false);
-        }
-        application->ReleaseRef();
         return 0;
     }
     case CR_STEP:

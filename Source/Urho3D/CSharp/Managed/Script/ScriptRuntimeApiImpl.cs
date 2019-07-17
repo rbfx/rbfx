@@ -5,28 +5,10 @@ using System.Reflection;
 
 namespace Urho3DNet
 {
-    internal class TypePresenceVerifier : MarshalByRefObject
-    {
-        public bool ContainsType(string path, string typeFullName)
-        {
-            try
-            {
-                Assembly assembly = Assembly.ReflectionOnlyLoadFrom(path);
-                Type[] types = assembly.GetTypes();
-                return types.Any(type => type.BaseType?.FullName == typeFullName);
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-    }
-
     public class ScriptRuntimeApiImpl : ScriptRuntimeApi
     {
         private static readonly string ProgramFile = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
         private static readonly string ProgramDirectory = Path.GetDirectoryName(ProgramFile);
-        private static int _pluginCheckCounter;
 
         public ScriptRuntimeApiImpl(Context context) : base(context)
         {
@@ -38,17 +20,6 @@ namespace Urho3DNet
             domain.ReflectionOnlyAssemblyResolve += (sender, args) => Assembly.ReflectionOnlyLoadFrom(
                 Path.Combine(ProgramDirectory, args.Name.Substring(0, args.Name.IndexOf(',')) + ".dll"));
         }
-        public override bool LoadRuntime()
-        {
-            // Noop. Runtime is already loaded. Plugins will be executing in main appdomain.
-            return true;
-        }
-
-        public override bool UnloadRuntime()
-        {
-            // Noop. Main appdomain can not be unloaded.
-            return true;
-        }
 
         public override bool VerifyAssembly(string path)
         {
@@ -58,7 +29,7 @@ namespace Urho3DNet
             return true;
         }
 
-        public override PluginApplication LoadAssembly(string path)
+        public override PluginApplication LoadAssembly(string path, uint version)
         {
             Assembly assembly;
             try
@@ -75,6 +46,11 @@ namespace Urho3DNet
                 return null;
 
             return Activator.CreateInstance(pluginType, GetContext()) as PluginApplication;
+        }
+
+        public override void Dispose(RefCounted instance)
+        {
+            instance?.Dispose();
         }
     }
 }
