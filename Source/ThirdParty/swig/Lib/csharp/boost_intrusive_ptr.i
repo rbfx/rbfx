@@ -284,6 +284,7 @@
     return ret;
   }
 
+// rbfx: $directorsetup addition.
 // Base proxy classes
 %typemap(csbody, directorsetup="\n    SwigDirectorSetup();") TYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
@@ -443,6 +444,7 @@
     return (cPtr == global::System.IntPtr.Zero) ? null : new $typemap(cstype, TYPE)(cPtr, true);
   }
 
+// rbfx: $directorsetup addition.
 // Base proxy classes
 %typemap(csbody, directorsetup="\n    SwigDirectorSetup();") TYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
