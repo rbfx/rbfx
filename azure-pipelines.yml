@@ -89,7 +89,7 @@ jobs:
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
 
-          sudo apt-get update -qq
+          sudo apt-get update
 
           sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build mono-devel msbuild $(EXTRA_PACKAGES)
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/$(CC) 100
