@@ -66,7 +66,7 @@ jobs:
           CC: gcc-8
           CXX: g++-8
           BUILD_SHARED_LIBS: ON
-          EXTRA_PACKAGES: gcc-8 g++-8
+          EXTRA_PACKAGES: gcc-8 g++-8 mono-devel msbuild
         static-clang-opengl:
           BUILD_SHARED_LIBS: OFF
           CC: clang-8
@@ -76,7 +76,7 @@ jobs:
           BUILD_SHARED_LIBS: ON
           CC: clang-8
           CXX: clang++-8
-          EXTRA_PACKAGES: clang-8
+          EXTRA_PACKAGES: clang-8 mono-devel msbuild
 
     steps:
       - bash: |
@@ -91,7 +91,7 @@ jobs:
 
           sudo apt-get update
 
-          sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build mono-devel msbuild $(EXTRA_PACKAGES)
+          sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build $(EXTRA_PACKAGES)
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/$(CC) 100
           sudo update-alternatives --set cc /usr/bin/$(CC)
           sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/$(CXX) 100
