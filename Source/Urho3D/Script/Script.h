@@ -45,19 +45,15 @@ class URHO3D_API ScriptRuntimeApi : public Object
 {
     URHO3D_OBJECT(ScriptRuntimeApi, Object);
 public:
+    ///
     explicit ScriptRuntimeApi(Context* context) : Object(context) { }
-    ~ScriptRuntimeApi(){
-        int a = 2;
-    }
 
-    ///
-    virtual bool LoadRuntime() = 0;
-    ///
-    virtual bool UnloadRuntime() = 0;
-    ///
+    /// Returns true if path contains a valid managed assembly with a class that inherits from PluginApplication.
     virtual bool VerifyAssembly(const ea::string& path) = 0;
-    ///
-    virtual PluginApplication* LoadAssembly(const ea::string& path) = 0;
+    /// Loads specified managed assembly and instantiates first class that inherits from PluginApplication.
+    virtual PluginApplication* LoadAssembly(const ea::string& path, unsigned version) = 0;
+    /// Invokes managed instance.Dispose() method.
+    virtual void Dispose(RefCounted* instance) = 0;
 };
 
 /// Script runtime subsystem.
@@ -65,18 +61,21 @@ class URHO3D_API Script : public Object
 {
     URHO3D_OBJECT(Script, Object);
 public:
+    ///
     explicit Script(Context* context);
-    /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread therefore this method queues them to run at the end of next frame on the main thread.
+    /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread
+    /// therefore this method queues them to run at the end of next frame on the main thread.
     bool ReleaseRefOnMainThread(RefCounted* object);
-    ///
+    /// Returns script runtime api implemented in managed code.
     ScriptRuntimeApi* GetRuntimeApi() const { return api_.Get(); }
-    ///
+    /// Should be called from managed code and provide implementation of ScriptRuntimeApi.
     void SetRuntimeApi(ScriptRuntimeApi* impl) { api_ = impl; }
 
 protected:
-    ///
+    /// This lock protects access to `destructionQueue_`.
     Mutex destructionQueueLock_;
-    ///
+    /// A list of objects whose finalizers executed before .Dispose() was called. ReleaseRef() will be called on those
+    /// objects in a main thread. One call per frame. Last inserted object will be released first.
     ea::vector<RefCounted*> destructionQueue_;
     ///
     SharedPtr<ScriptRuntimeApi> api_;
