@@ -66,7 +66,7 @@ pushd cmake-build
 echo cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 cmake.exe -G "!CMAKE_GENRATOR!" !CMAKE_ARGS! ..
 echo "Platform: !VS_PLATFORM!"
-msbuild Urho3D.sln /p:Platform="!VS_PLATFORM!" /t:restore
+msbuild rbfx.sln /p:Platform="!VS_PLATFORM!" /t:restore
 popd
 
 :quit

@@ -153,9 +153,9 @@ A native build of Urho3D has two steps:
     - Linux: cmake_eclipse.sh, cmake_codeblocks.sh, cmake_codelite.sh, cmake_ninja.sh, or cmake_generic.sh\n
     - Raspberry Pi: cmake_rpi.sh, cmake_eclipse.sh, cmake_codeblocks.sh, cmake_codelite.sh, cmake_ninja.sh, or cmake_generic.sh\n
 -# Use the IDE of your choice to open the CMake's generated project file or solution file in the build tree. Change the build configuration (Debug/Release) and change the built-in target to ALL_BUILD to build all the targets.\n
-    - Visual Studio: open Urho3D.sln\n
+    - Visual Studio: open rbfx.sln\n
     - Xcode: open Urho3D.xcodeproj\n
-    - CodeBlocks: open Urho3D.cbp\n
+    - CodeBlocks: open rbfx.cbp\n
     - Eclipse: import project using File|Import "Existing Projects into Workspace"\n
     - Alternatively, on make-based toolchains like GCC / MinGW, execute make in the build tree
 
