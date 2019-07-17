@@ -1,10 +1,4 @@
-/* SWIG warning codes */
-
-
 %define SWIGWARN_NONE                     0 %enddef
-
-/* -- Deprecated features -- */
-
 %define SWIGWARN_DEPRECATED_EXTERN        101 %enddef
 %define SWIGWARN_DEPRECATED_VAL           102 %enddef
 %define SWIGWARN_DEPRECATED_OUT           103 %enddef
@@ -31,18 +25,12 @@
 %define SWIGWARN_DEPRECATED_TYPEMAP_LANG  124 %enddef
 %define SWIGWARN_DEPRECATED_INPUT_FILE    125 %enddef
 %define SWIGWARN_DEPRECATED_NESTED_WORKAROUND 126 %enddef
-
-/* -- Preprocessor -- */
-
 %define SWIGWARN_PP_MISSING_FILE          201 %enddef
 %define SWIGWARN_PP_EVALUATION            202 %enddef
 %define SWIGWARN_PP_INCLUDEALL_IMPORTALL  203 %enddef
 %define SWIGWARN_PP_CPP_WARNING           204 %enddef
 %define SWIGWARN_PP_CPP_ERROR             205 %enddef
 %define SWIGWARN_PP_UNEXPECTED_TOKENS     206 %enddef
-
-/* -- C/C++ Parser -- */
-
 %define SWIGWARN_PARSE_CLASS_KEYWORD      301 %enddef
 %define SWIGWARN_PARSE_REDEFINED          302 %enddef
 %define SWIGWARN_PARSE_EXTEND_UNDEF       303 %enddef
@@ -69,12 +57,10 @@
 %define SWIGWARN_PARSE_NESTED_TEMPLATE    324 %enddef
 %define SWIGWARN_PARSE_NAMED_NESTED_CLASS 325 %enddef
 %define SWIGWARN_PARSE_EXTEND_NAME        326 %enddef
-
 %define SWIGWARN_CPP11_LAMBDA             340 %enddef
 %define SWIGWARN_CPP11_ALIAS_DECLARATION  341 %enddef  /* redundant now */
 %define SWIGWARN_CPP11_ALIAS_TEMPLATE     342 %enddef  /* redundant now */
 %define SWIGWARN_CPP11_VARIADIC_TEMPLATE  343 %enddef
-
 %define SWIGWARN_IGNORE_OPERATOR_NEW        350 %enddef	/* new */
 %define SWIGWARN_IGNORE_OPERATOR_DELETE     351 %enddef	/* delete */
 %define SWIGWARN_IGNORE_OPERATOR_PLUS       352 %enddef	/* + */
@@ -122,23 +108,16 @@
 %define SWIGWARN_IGNORE_OPERATOR_NEWARR     394 %enddef	/* new [] */
 %define SWIGWARN_IGNORE_OPERATOR_DELARR     395 %enddef	/* delete [] */
 %define SWIGWARN_IGNORE_OPERATOR_REF        396 %enddef	/* operator *() */
-
-/* 394-399 are reserved */
-
-/* -- Type system and typemaps -- */
-
 %define SWIGWARN_TYPE_UNDEFINED_CLASS     401 %enddef
 %define SWIGWARN_TYPE_INCOMPLETE          402 %enddef
 %define SWIGWARN_TYPE_ABSTRACT            403 %enddef
 %define SWIGWARN_TYPE_REDEFINED           404 %enddef
 %define SWIGWARN_TYPE_RVALUE_REF_QUALIFIER_IGNORED 405 %enddef
-
 %define SWIGWARN_TYPEMAP_SOURCETARGET     450 %enddef
 %define SWIGWARN_TYPEMAP_CHARLEAK         451 %enddef
 %define SWIGWARN_TYPEMAP_SWIGTYPE         452 %enddef
 %define SWIGWARN_TYPEMAP_APPLY_UNDEF      453 %enddef
 %define SWIGWARN_TYPEMAP_SWIGTYPELEAK     454 %enddef
-
 %define SWIGWARN_TYPEMAP_IN_UNDEF         460 %enddef
 %define SWIGWARN_TYPEMAP_OUT_UNDEF        461 %enddef
 %define SWIGWARN_TYPEMAP_VARIN_UNDEF      462 %enddef
@@ -157,12 +136,7 @@
 %define SWIGWARN_TYPEMAP_OUT_OPTIMAL_MULTIPLE 475 %enddef
 %define SWIGWARN_TYPEMAP_INITIALIZER_LIST  476 %enddef
 %define SWIGWARN_TYPEMAP_DIRECTORTHROWS_UNDEF 477 %enddef
-
-/* -- Fragments -- */
 %define SWIGWARN_FRAGMENT_NOT_FOUND       490 %enddef
-
-/* -- General code generation -- */
-
 %define SWIGWARN_LANG_OVERLOAD_DECL       501 %enddef
 %define SWIGWARN_LANG_OVERLOAD_CONSTRUCT  502 %enddef
 %define SWIGWARN_LANG_IDENTIFIER          503 %enddef
@@ -186,21 +160,14 @@
 %define SWIGWARN_LANG_ILLEGAL_DESTRUCTOR  521 %enddef
 %define SWIGWARN_LANG_EXTEND_CONSTRUCTOR  522 %enddef
 %define SWIGWARN_LANG_EXTEND_DESTRUCTOR   523 %enddef
-
-/* -- Doxygen comments -- */
-
+%define SWIGWARN_LANG_EXPERIMENTAL        524 %enddef
+%define SWIGWARN_LANG_DIRECTOR_FINAL      525 %enddef
 %define SWIGWARN_DOXYGEN_UNKNOWN_COMMAND          560 %enddef
 %define SWIGWARN_DOXYGEN_UNEXPECTED_END_OF_COMMENT  561 %enddef
 %define SWIGWARN_DOXYGEN_COMMAND_EXPECTED         562 %enddef
 %define SWIGWARN_DOXYGEN_HTML_ERROR               563 %enddef
 %define SWIGWARN_DOXYGEN_COMMAND_ERROR            564 %enddef
 %define SWIGWARN_DOXYGEN_UNKNOWN_CHARACTER        565 %enddef
-
-/* -- Reserved (600-799) -- */
-
-/* -- Language module specific warnings (700 - 899) -- */
-
-
 %define SWIGWARN_D_TYPEMAP_CTYPE_UNDEF            700 %enddef
 %define SWIGWARN_D_TYPEMAP_IMTYPE_UNDEF           701 %enddef
 %define SWIGWARN_D_TYPEMAP_DTYPE_UNDEF            702 %enddef
@@ -215,22 +182,10 @@
 %define SWIGWARN_D_CANTHROW_MISSING               711 %enddef
 %define SWIGWARN_D_NO_DIRECTORCONNECT_ATTR        712 %enddef
 %define SWIGWARN_D_NAME_COLLISION                 713 %enddef
-
-/* please leave 700-719 free for D */
-
 %define SWIGWARN_SCILAB_TRUNCATED_NAME            720 %enddef
-
-/* please leave 720-739 free for Scilab */
-
 %define SWIGWARN_PYTHON_INDENT_MISMATCH           740 %enddef
-
-/* please leave 740-759 free for Python */
-
 %define SWIGWARN_RUBY_WRONG_NAME                  801 %enddef
 %define SWIGWARN_RUBY_MULTIPLE_INHERITANCE        802 %enddef
-
-/* please leave 800-809 free for Ruby */
-
 %define SWIGWARN_JAVA_TYPEMAP_JNI_UNDEF           810 %enddef
 %define SWIGWARN_JAVA_TYPEMAP_JTYPE_UNDEF         811 %enddef
 %define SWIGWARN_JAVA_TYPEMAP_JSTYPE_UNDEF        812 %enddef
@@ -248,9 +203,6 @@
 %define SWIGWARN_JAVA_TYPEMAP_DIRECTORIN_NODESC   824 %enddef
 %define SWIGWARN_JAVA_NO_DIRECTORCONNECT_ATTR     825 %enddef
 %define SWIGWARN_JAVA_NSPACE_WITHOUT_PACKAGE      826 %enddef
-
-/* please leave 810-829 free for Java */
-
 %define SWIGWARN_CSHARP_TYPEMAP_CTYPE_UNDEF       830 %enddef
 %define SWIGWARN_CSHARP_TYPEMAP_CSTYPE_UNDEF      831 %enddef
 %define SWIGWARN_CSHARP_TYPEMAP_CSWTYPE_UNDEF     832 %enddef
@@ -268,9 +220,6 @@
 %define SWIGWARN_CSHARP_EXCODE                    844 %enddef
 %define SWIGWARN_CSHARP_CANTHROW                  845 %enddef
 %define SWIGWARN_CSHARP_NO_DIRECTORCONNECT_ATTR   846 %enddef
-
-/* please leave 830-849 free for C# */
-
 %define SWIGWARN_MODULA3_TYPEMAP_TYPE_UNDEF        850 %enddef
 %define SWIGWARN_MODULA3_TYPEMAP_GETCPTR_UNDEF     851 %enddef
 %define SWIGWARN_MODULA3_TYPEMAP_CLASSMOD_UNDEF    852 %enddef
@@ -282,18 +231,7 @@
 %define SWIGWARN_MODULA3_BAD_ENUMERATION           858 %enddef
 %define SWIGWARN_MODULA3_DOUBLE_ID                 859 %enddef
 %define SWIGWARN_MODULA3_BAD_IMPORT                860 %enddef
-
-/* please leave 850-869 free for Modula 3 */
-
 %define SWIGWARN_PHP_MULTIPLE_INHERITANCE         870 %enddef
 %define SWIGWARN_PHP_UNKNOWN_PRAGMA               871 %enddef
 %define SWIGWARN_PHP_PUBLIC_BASE                  872 %enddef
-
-/* please leave 870-889 free for PHP */
-
 %define SWIGWARN_GO_NAME_CONFLICT                 890 %enddef
-
-/* please leave 890-899 free for Go */
-
-/* -- User defined warnings (900 - 999) -- */
-
