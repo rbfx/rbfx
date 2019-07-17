@@ -251,7 +251,7 @@
                        SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *,
                        SWIG_SHARED_PTR_QNAMESPACE::shared_ptr< CONST TYPE > *& "($iminput == global::System.IntPtr.Zero) ? null : new $typemap(cstype, TYPE)($iminput, true)"
 
-
+// rbfx: $directorsetup addition.
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody, directorsetup="\n    SetupSwigDirector();") TYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
