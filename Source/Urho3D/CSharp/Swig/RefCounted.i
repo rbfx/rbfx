@@ -113,46 +113,24 @@
         $1 = &$1Ref;
     %}
 
-    %typemap(csfinalize) TYPE %{
+    %typemap(csdispose) TYPE %{
       ~$csclassname() {
         lock (this) {
           if (Urho3DNet.Context.Instance.GetSubsystem<Urho3DNet.Script>().ReleaseRefOnMainThread(this as RefCounted)) {
             swigCMemOwn = false;
             swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
           } else {
-            Dispose();
+            Dispose(false);
           }
         }
+      }
+
+      public void Dispose() {
+        Dispose(true);
+        global::System.GC.SuppressFinalize(this);
       }
     %}
-
-    %typemap(csdestruct, methodname="Dispose", methodmodifiers="public") TYPE {
-        lock(this) {
-          if (swigCPtr.Handle != global::System.IntPtr.Zero) {
-            if (swigCMemOwn) {
-              swigCMemOwn = false;
-              $imcall;
-            }
-            swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
-          }
-          global::System.GC.SuppressFinalize(this);
-        }
-      }
-
-    %typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") TYPE {
-        lock(this) {
-          if (swigCPtr.Handle != global::System.IntPtr.Zero) {
-            if (swigCMemOwn) {
-              swigCMemOwn = false;
-              $imcall;
-            }
-            swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
-          }
-          global::System.GC.SuppressFinalize(this);
-          base.Dispose();
-        }
-      }
-
+    %typemap(csdispose_derived) TYPE ""
 
 %enddef
 

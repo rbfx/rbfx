@@ -14,9 +14,9 @@
 %}
 %enddef
 
-%typemap(csdestruct_derived, methodname="Dispose", methodmodifiers="public") Urho3D::Context {
+%typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") Urho3D::Context {
     OnDispose();
-    $typemap(csdestruct_derived, SWIGTYPE)
+    $typemap(csdisposing_derived, SWIGTYPE)
 }
 
 %wrapper %{

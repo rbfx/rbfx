@@ -106,6 +106,7 @@ rbfx uses the following third-party libraries:
 - fmt 4.1.0 (http://fmtlib.net)
 - spdlog 1.3.1 (https://github.com/gabime/spdlog)
 - EASTL 3.13.04 (https://github.com/electronicarts/EASTL/)
+- SWIG 4.0 (http://swig.org/)
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
@@ -119,15 +120,15 @@ rbfx optionally uses the following external third-party libraries:
 | OpenGL ES 2 / 3       |         |       |       | ✔   | ✔       |     |
 | WebGL                 |         |       |       |     |         | ✔   |
 
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-msvc-d3d11&label=static-msvc-d3d11)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-msvc-d3d11&label=shared-msvc-d3d11)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-mingw-d3d9&label=static-mingw-d3d9)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-mingw-d3d9&label=shared-mingw-d3d9)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-gcc-opengl&label=static-gcc-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-gcc-opengl&label=shared-gcc-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-clang-opengl&label=static-clang-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-clang-opengl&label=shared-clang-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20static-clang-opengl&label=static-clang-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20shared-clang-opengl&label=shared-clang-opengl)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=web)  
-![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Android&label=android)  
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-msvc-d3d11&label=static-msvc-d3d11)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-msvc-d3d11&label=shared-msvc-d3d11)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20static-mingw-d3d9&label=static-mingw-d3d9)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Windows&configuration=Windows%20shared-mingw-d3d9&label=shared-mingw-d3d9)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-gcc-opengl&label=static-gcc-opengl)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-gcc-opengl&label=shared-gcc-opengl)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20static-clang-opengl&label=static-clang-opengl)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Linux&configuration=Linux%20shared-clang-opengl&label=shared-clang-opengl)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20static-clang-opengl&label=static-clang-opengl)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=MacOS&configuration=MacOS%20shared-clang-opengl&label=shared-clang-opengl)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Web&label=web)
+![](https://dev.azure.com/rbfx/rbfx/_apis/build/status/rokups.rbfx?branchName=master&jobName=Android&label=android)

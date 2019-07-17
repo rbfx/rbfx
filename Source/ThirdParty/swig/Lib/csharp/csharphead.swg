@@ -247,6 +247,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
     [global::System.ThreadStatic]
     private static global::System.Exception pendingException = null;
     private static int numExceptionsPending = 0;
+    private static global::System.Object exceptionsLock = null;
 
     public static bool Pending {
       get {
@@ -262,7 +263,7 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
       if (pendingException != null)
         throw new global::System.ApplicationException("FATAL: An earlier pending exception from unmanaged code was missed and thus not thrown (" + pendingException.ToString() + ")", e);
       pendingException = e;
-      lock(typeof($imclassname)) {
+      lock(exceptionsLock) {
         numExceptionsPending++;
       }
     }
@@ -273,12 +274,16 @@ SWIGEXPORT void SWIGSTDCALL SWIGRegisterExceptionArgumentCallbacks_$module(
         if (pendingException != null) {
           e = pendingException;
           pendingException = null;
-          lock(typeof($imclassname)) {
+          lock(exceptionsLock) {
             numExceptionsPending--;
           }
         }
       }
       return e;
+    }
+
+    static SWIGPendingException() {
+      exceptionsLock = new global::System.Object();
     }
   }
 %}
