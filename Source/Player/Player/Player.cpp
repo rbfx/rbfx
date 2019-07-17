@@ -50,7 +50,12 @@
 #if URHO3D_CSHARP
 // Shared library build for execution by managed runtime.
 extern "C" URHO3D_EXPORT_API void URHO3D_STDCALL ParseArgumentsC(int argc, char** argv) { Urho3D::ParseArguments(argc, argv); }
-extern "C" URHO3D_EXPORT_API Urho3D::Application* URHO3D_STDCALL CreateApplication(Urho3D::Context* context) { return new Urho3D::Player(context); }
+extern "C" URHO3D_EXPORT_API Urho3D::Application* URHO3D_STDCALL CreateApplication(Urho3D::Context* context)
+{
+    auto* player = new Urho3D::Player(context);
+    player->AddRef();                       // Mimic generated bindings.
+    return player;
+}
 #elif !defined(URHO3D_STATIC)
 // Native executable build for direct execution.
 URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Player);
@@ -84,10 +89,6 @@ void Player::Start()
 {
 #if URHO3D_SYSTEMUI
     ui::GetIO().IniFilename = nullptr;              // Disable of imgui.ini creation,
-#endif
-#if URHO3D_CSHARP
-    if (Script* script = GetSubsystem<Script>())    // Graceful failure when managed runtime support is present but not in use.
-        script->GetRuntimeApi()->LoadRuntime();
 #endif
 
     GetCache()->AddResourceRouter(new BakedResourceRouter(context_));
@@ -133,13 +134,19 @@ void Player::Start()
 
 void Player::Stop()
 {
-    for (auto& plugin : plugins_)
+    for (PluginApplication* plugin : plugins_)
         plugin->Stop();
 
-    for (auto& plugin : plugins_)
+    for (PluginApplication* plugin : plugins_)
         plugin->Unload();
 
-    if (SceneManager* manager = GetSubsystem<SceneManager>())
+#if URHO3D_CSHARP
+    auto* script = GetSubsystem<Script>();
+    for (PluginApplication* plugin : plugins_)
+        script->GetRuntimeApi()->Dispose(plugin);
+#endif
+
+    if (auto* manager = GetSubsystem<SceneManager>())
         manager->UnloadAll();
 }
 
@@ -243,7 +250,7 @@ bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
     {
         if (Script* script = GetSubsystem<Script>())
         {
-            if (PluginApplication* plugin = script->GetRuntimeApi()->LoadAssembly(path))
+            if (PluginApplication* plugin = script->GetRuntimeApi()->LoadAssembly(path, 0))
             {
                 plugins_.emplace_back(SharedPtr<PluginApplication>(plugin));
                 return true;

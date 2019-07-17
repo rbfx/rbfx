@@ -71,8 +71,6 @@ protected:
 private:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
     ea::vector<ea::pair<StringHash, ea::string>> registeredTypes_;
-    /// Plugin type is set to PLUGIN_NATIVE in PluginMain(). Managed plugins however do not call this main function hence the default value.
-    PluginType type_ = PLUGIN_MANAGED;
 };
 
 template<typename T>
@@ -101,9 +99,7 @@ void PluginApplication::RegisterFactory(const char* category)
     {                                                                     \
         return Urho3D::PluginApplication::PluginMain(ctx, operation,      \
             [](Urho3D::Context* context) -> Urho3D::PluginApplication* {  \
-                auto* instance = new Class(context);                      \
-                instance->AddRef();                                       \
-                return instance;                                          \
+                return new Class(context);                                \
             });                                                           \
     }
 #endif

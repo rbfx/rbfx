@@ -33,7 +33,7 @@
 #if !defined(NDEBUG) && defined(URHO3D_LOGGING)
 #   define CR_DEBUG 1
 #   define CR_ERROR(format, ...) URHO3D_LOGERRORF(format, ##__VA_ARGS__)
-#   define CR_LOG(format, ...)   URHO3D_LOGINFOF(format, ##__VA_ARGS__)
+#   define CR_LOG(format, ...)   URHO3D_LOGTRACEF(format, ##__VA_ARGS__)
 #   define CR_TRACE
 #endif
 #include <cr/cr.h>
@@ -52,7 +52,10 @@ class Plugin : public Object
 {
     URHO3D_OBJECT(Plugin, Object);
 public:
+    ///
     explicit Plugin(Context* context);
+    ///
+    ~Plugin() override;
 
     /// Returns type of the plugin.
     PluginType GetPluginType() const { return type_; }
@@ -64,9 +67,6 @@ public:
     void SetFlags(PluginFlags flags) { flags_ = flags; }
 
 protected:
-    /// Unload plugin.
-    bool Unload();
-
     /// Base plugin file name.
     ea::string name_;
     /// Path to plugin dynamic library file.
@@ -78,9 +78,14 @@ protected:
     /// Flag indicating that plugin should unload on the end of the frame.
     bool unloading_ = false;
     /// Last modification time.
-    unsigned mtime_;
+    unsigned mtime_ = 0;
+    /// Current plugin version.
+    unsigned version_ = 1;
     ///
     PluginFlags flags_ = PLUGIN_DEFAULT;
+    /// Instance to the plugin application. This should be a single owning reference to the plugin. Managed plugins are
+    /// an exception as managed object holds reference to native object and must be disposed in order to free this object.
+    SharedPtr<PluginApplication> application_;
 
     friend class PluginManager;
 };

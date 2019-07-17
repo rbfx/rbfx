@@ -69,28 +69,26 @@ extern "C" URHO3D_EXPORT_API Application* URHO3D_STDCALL CreateEditorApplication
 Plugin::Plugin(Context* context)
     : Object(context)
 {
+    nativeContext_.userdata = context;
 }
 
-bool Plugin::Unload()
+Plugin::~Plugin()
 {
 #if URHO3D_PLUGINS
     if (type_ == PLUGIN_NATIVE)
     {
         cr_plugin_close(nativeContext_);
         nativeContext_.userdata = nullptr;
-        return true;
     }
 #if URHO3D_CSHARP
     else if (type_ == PLUGIN_MANAGED)
     {
-        Script* script = GetSubsystem<Script>();
-        script->GetRuntimeApi()->UnloadRuntime();        // Destroy plugin AppDomain.
-        script->GetRuntimeApi()->LoadRuntime();          // Create new empty plugin AppDomain. Caller is responsible for plugin reinitialization.
-        return true;
+        auto* script = GetSubsystem<Script>();
+        script->GetRuntimeApi()->Dispose(application_);
     }
 #endif
 #endif
-    return false;
+    application_ = nullptr;
 }
 
 PluginManager::PluginManager(Context* context)
@@ -99,23 +97,13 @@ PluginManager::PluginManager(Context* context)
 #if URHO3D_PLUGINS
     SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { OnEndFrame(); });
     SubscribeToEvent(E_SIMULATIONSTART, [this](StringHash, VariantMap&) {
-        for (auto& plugin : plugins_)
-        {
-            if (plugin->nativeContext_.userdata != nullptr && plugin->nativeContext_.userdata != context_)
-                reinterpret_cast<PluginApplication*>(plugin->nativeContext_.userdata)->Start();
-        }
+        for (Plugin* plugin : plugins_)
+            plugin->application_->Start();
     });
     SubscribeToEvent(E_SIMULATIONSTOP, [this](StringHash, VariantMap&) {
-        for (auto& plugin : plugins_)
-        {
-            if (plugin->nativeContext_.userdata != nullptr && plugin->nativeContext_.userdata != context_)
-                reinterpret_cast<PluginApplication*>(plugin->nativeContext_.userdata)->Stop();
-        }
+        for (Plugin* plugin : plugins_)
+            plugin->application_->Stop();
     });
-#if URHO3D_CSHARP
-    // Initialize AppDomain for managed plugins.
-    GetSubsystem<Script>()->GetRuntimeApi()->LoadRuntime();
-#endif
 #endif
 }
 
@@ -134,46 +122,52 @@ Plugin* PluginManager::Load(const ea::string& name)
 
     if (plugin->type_ == PLUGIN_NATIVE)
     {
-        if (cr_plugin_load(plugin->nativeContext_, pluginPath.c_str()))
+        if (cr_plugin_load(plugin->nativeContext_, pluginPath.c_str()) && cr_plugin_update(plugin->nativeContext_) == 0)    // Triggers CR_LOAD
         {
-            plugin->nativeContext_.userdata = context_;
             plugin->name_ = name;
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
+            plugin->version_ = plugin->nativeContext_.version;
+            plugin->application_ = reinterpret_cast<PluginApplication*>(plugin->nativeContext_.userdata);
             plugins_.push_back(plugin);
-            return plugin.Get();
         }
         else
-            URHO3D_LOGWARNINGF("Failed loading native plugin \"%s\".", name.c_str());
+            plugin = nullptr;
     }
 #if URHO3D_CSHARP
     else if (plugin->type_ == PLUGIN_MANAGED)
     {
-        if (GetSubsystem<Script>()->GetRuntimeApi()->LoadAssembly(pluginPath))
+        if (PluginApplication* app = GetSubsystem<Script>()->GetRuntimeApi()->LoadAssembly(pluginPath, plugin->version_))
         {
             plugin->name_ = name;
             plugin->path_ = pluginPath;
             plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             plugins_.push_back(plugin);
-            return plugin.Get();
+            plugin->application_ = app;
         }
+        else
+            plugin = nullptr;
     }
 #endif
 #endif
-    return nullptr;
+
+    if (plugin.NotNull())
+    {
+        plugin->application_->Load();
+        URHO3D_LOGINFO("Loaded plugin '{}' version {}.", name, plugin->version_);
+        return plugin.Get();
+    }
+    else
+    {
+        URHO3D_LOGERROR("Failed loading plugin '{}'.", name);
+        return nullptr;
+    }
 }
 
 void PluginManager::Unload(Plugin* plugin)
 {
     if (plugin == nullptr)
         return;
-
-    auto it = plugins_.find(SharedPtr<Plugin>(plugin));
-    if (it == plugins_.end())
-    {
-        URHO3D_LOGERRORF("Plugin %s was never loaded.", plugin->name_.c_str());
-        return;
-    }
 
     plugin->unloading_ = true;
 }
@@ -185,113 +179,97 @@ void PluginManager::OnEndFrame()
     const unsigned pluginLinkingTimeout = 10000;
     Timer wait;
     bool eventSent = false;
-#if URHO3D_CSHARP
-    Script* script = GetSubsystem<Script>();
-    // C# plugin auto-reloading.
-    ea::vector<Plugin*> reloadingPlugins;
-    for (auto it = plugins_.begin(); it != plugins_.end(); it++)
-    {
-        Plugin* plugin = it->Get();
-        if (plugin->type_ == PLUGIN_MANAGED && plugin->mtime_ < GetFileSystem()->GetLastModifiedTime(plugin->path_))
-            reloadingPlugins.push_back(plugin);
-    }
 
-    if (!reloadingPlugins.empty())
-    {
-        if (!eventSent)
-        {
-            SendEvent(E_EDITORUSERCODERELOADSTART);
-            eventSent = true;
-        }
-        script->GetRuntimeApi()->UnloadRuntime();
-        script->GetRuntimeApi()->LoadRuntime();
-        for (auto& plugin : plugins_)
-        {
-            if (plugin->type_ == PLUGIN_MANAGED)
-            {
-                if (reloadingPlugins.contains(plugin.Get()))
-                {
-                    // This plugin was modified and triggered a reload. Good idea before loading it would be waiting for
-                    // build to be done (should it still be in progress).
-                    while (GetPluginType(context_, plugin->path_) != plugin->type_ && wait.GetMSec(false) < pluginLinkingTimeout)
-                        Time::Sleep(0);
-                }
-                plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(plugin->path_);
-                script->GetRuntimeApi()->LoadAssembly(plugin->path_);
-            }
-        }
-        URHO3D_LOGINFO("Managed plugins were reloaded.");
-    }
-#endif
+    bool checkOutOfDatePlugins = updateCheckTimer_.GetMSec(false) >= 1000;
+    if (checkOutOfDatePlugins)
+        updateCheckTimer_.Reset();
 
     for (auto it = plugins_.begin(); it != plugins_.end();)
     {
         Plugin* plugin = it->Get();
+        bool pluginOutOfDate = false;
+        unsigned pluginVersion = plugin->version_;
 
-        if (plugin->unloading_)
+        if (plugin->application_.NotNull())
+        {
+            // Check for modified plugins once in a while, do not hammer syscalls on every frame.
+            if (checkOutOfDatePlugins)
+                pluginOutOfDate = plugin->mtime_ < GetFileSystem()->GetLastModifiedTime(plugin->path_);
+        }
+
+        if (plugin->unloading_ || pluginOutOfDate)
         {
             if (!eventSent)
             {
                 SendEvent(E_EDITORUSERCODERELOADSTART);
                 eventSent = true;
             }
-            // Actual unload
-            plugin->Unload();
-#if URHO3D_CSHARP
+
+            plugin->application_->Unload();
             if (plugin->type_ == PLUGIN_MANAGED)
+                GetSubsystem<Script>()->GetRuntimeApi()->Dispose(plugin->application_);
+
+            if (plugin->application_->Refs() != 1)
             {
-                // Now load back all managed plugins except this one.
-                for (auto& plug : plugins_)
-                {
-                    if (plug == plugin || plug->type_ == PLUGIN_NATIVE)
-                        continue;
-                    script->GetRuntimeApi()->LoadAssembly(plug->path_);
-                }
+                URHO3D_LOGERROR("Plugin application '{}' has more than one reference remaining. "
+                                 "This may lead to memory leaks or crashes.",
+                                 plugin->application_->GetTypeName());
             }
-#endif
-            URHO3D_LOGINFOF("Plugin %s was unloaded.", plugin->name_.c_str());
-            it = plugins_.erase(it);
         }
-        else if (plugin->type_ == PLUGIN_NATIVE && plugin->nativeContext_.userdata)
+
+        if (pluginOutOfDate)
         {
-            bool reloading = cr_plugin_changed(plugin->nativeContext_);
-            if (reloading)
+            // Plugin change is detected the moment compiler starts linking file. We should wait until linker is done.
+            while (GetPluginType(context_, plugin->path_) != plugin->type_ && wait.GetMSec(false) < pluginLinkingTimeout)
+                Time::Sleep(0);
+
+            // Above loop may fail if user swaps plugin file with something incompatible or linking takes too long. This
+            // did not happen yet. Code below should gracefully fail.
+        }
+
+        if (!plugin->unloading_ && pluginOutOfDate)
+        {
+            if (plugin->type_ == PLUGIN_NATIVE)
             {
-                if (!eventSent)
+                int status = cr_plugin_update(plugin->nativeContext_, pluginOutOfDate);
+                if (status == 0)
                 {
-                    SendEvent(E_EDITORUSERCODERELOADSTART);
-                    eventSent = true;
+                    plugin->application_ = reinterpret_cast<PluginApplication*>(plugin->nativeContext_.userdata);                   // Should free old version of the plugin
+                    plugin->version_ = plugin->nativeContext_.version;
                 }
-
-                // Plugin change is detected the moment compiler starts linking file. We should wait until linker is done.
-                while (GetPluginType(context_, plugin->path_) != plugin->type_ && wait.GetMSec(false) < pluginLinkingTimeout)
-                    Time::Sleep(0);
+                else
+                {
+                    cr_plugin_close(plugin->nativeContext_);
+                    plugin->unloading_ = true;
+                }
+            }
+            else if (plugin->type_ == PLUGIN_MANAGED)
+            {
+                pluginVersion += 1;
+                plugin->application_ = GetSubsystem<Script>()->GetRuntimeApi()->LoadAssembly(plugin->path_, pluginVersion);         // Should free old version of the plugin
+                if (plugin->application_.NotNull())
+                    plugin->version_ = pluginVersion;
+                else
+                    plugin->unloading_ = true;
             }
 
-            bool checkUpdatedFile = reloading || updateCheckTimer_.GetMSec(false) >= 1000;
-            if (checkUpdatedFile)
-                updateCheckTimer_.Reset();
-
-            auto status = cr_plugin_update(plugin->nativeContext_, checkUpdatedFile);
-            if (status != 0)
+            if (!plugin->unloading_)
             {
-                URHO3D_LOGERRORF("Processing plugin \"%s\" failed and it was unloaded.",
-                    GetFileNameAndExtension(plugin->name_).c_str());
-                cr_plugin_close(plugin->nativeContext_);
-                plugin->nativeContext_.userdata = nullptr;
-                it = plugins_.erase(it);
-            }
-            else if (reloading && plugin->nativeContext_.userdata != nullptr)
-            {
-                URHO3D_LOGINFOF("Loaded plugin \"%s\" version %d.", GetFileNameAndExtension(plugin->name_).c_str(),
-                    plugin->nativeContext_.version);
-                it++;
+                URHO3D_LOGINFO("Reloaded plugin '{}' version {}.", GetFileNameAndExtension(plugin->name_), plugin->version_);
+                plugin->mtime_ = GetFileSystem()->GetLastModifiedTime(plugin->path_);
             }
             else
-                it++;
+                URHO3D_LOGERROR("Reloading plugin '{}' failed and it was unloaded.", GetFileNameAndExtension(plugin->name_));
         }
+
+        if (plugin->unloading_ || plugin->application_.Null())
+            it = plugins_.erase(it);
         else
-            it++;
+        {
+            if (pluginOutOfDate)
+                plugin->application_->Load();
+            ++it;
+        }
     }
 
     if (eventSent)
@@ -301,10 +279,10 @@ void PluginManager::OnEndFrame()
 
 Plugin* PluginManager::GetPlugin(const ea::string& name)
 {
-    for (auto it = plugins_.begin(); it != plugins_.end(); it++)
+    for (Plugin* plugin : plugins_)
     {
-        if (it->Get()->name_ == name)
-            return it->Get();
+        if (plugin->name_ == name)
+            return plugin;
     }
     return nullptr;
 }
@@ -349,22 +327,12 @@ ea::string PluginManager::PathToName(const ea::string& path)
 #endif
     if (path.ends_with(".dll"))
         return GetFileName(path);
+
     return EMPTY_STRING;
 }
 
 PluginManager::~PluginManager()
 {
-    for (auto& plugin : plugins_)
-    {
-        if (plugin->type_ == PLUGIN_NATIVE)
-            // Native plugins can be unloaded one by one.
-            plugin->Unload();
-    }
-
-#if URHO3D_CSHARP
-    // Managed plugins can not be unloaded one at a time. Entire plugin AppDomain must be dropped.
-    GetSubsystem<Script>()->GetRuntimeApi()->UnloadRuntime();
-#endif
 }
 
 const StringVector& PluginManager::GetPluginNames()
