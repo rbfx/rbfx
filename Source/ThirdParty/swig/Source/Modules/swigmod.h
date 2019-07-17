@@ -354,7 +354,21 @@ private:
   static Language *this_;
 };
 
-int SWIG_main(int, char **, Language *);
+extern "C" {
+  void SWIG_typemap_lang(const char *);
+  typedef Language *(*ModuleFactory) (void);
+}
+
+enum Status {Disabled, Experimental, Supported};
+
+struct TargetLanguageModule {
+  const char *name;
+  ModuleFactory fac;
+  const char *help;
+  Status status;
+};
+
+int SWIG_main(int argc, char *argv[], const TargetLanguageModule *tlm);
 void emit_parameter_variables(ParmList *l, Wrapper *f);
 void emit_return_variable(Node *n, SwigType *rt, Wrapper *f);
 void SWIG_exit(int);		/* use EXIT_{SUCCESS,FAILURE} */
@@ -369,15 +383,15 @@ List *SWIG_output_files();
 void SWIG_library_directory(const char *);
 int emit_num_arguments(ParmList *);
 int emit_num_required(ParmList *);
-int emit_isvarargs(ParmList *);
+int emit_isvarargs(ParmList *p);
+bool emit_isvarargs_function(Node *n);
 void emit_attach_parmmaps(ParmList *, Wrapper *f);
 void emit_mark_varargs(ParmList *l);
 String *emit_action(Node *n);
 int emit_action_code(Node *n, String *wrappercode, String *action);
 void Swig_overload_check(Node *n);
-String *Swig_overload_dispatch(Node *n, const_String_or_char_ptr fmt, int *);
+String *Swig_overload_dispatch(Node *n, const_String_or_char_ptr fmt, int *, const_String_or_char_ptr fmt_fastdispatch = 0);
 String *Swig_overload_dispatch_cast(Node *n, const_String_or_char_ptr fmt, int *);
-String *Swig_overload_dispatch_fast(Node *n, const_String_or_char_ptr fmt, int *);
 List *Swig_overload_rank(Node *n, bool script_lang_wrapping);
 SwigType *cplus_value_type(SwigType *t);
 
@@ -391,14 +405,6 @@ String *Swig_director_declaration(Node *n);
 void Swig_director_emit_dynamic_cast(Node *n, Wrapper *f);
 void Swig_director_parms_fixup(ParmList *parms);
 /* directors.cxx end */
-
-extern "C" {
-  void SWIG_typemap_lang(const char *);
-  typedef Language *(*ModuleFactory) (void);
-} 
-
-void Swig_register_module(const char *name, ModuleFactory fac);
-ModuleFactory Swig_find_module(const char *name);
 
 /* Utilities */
 
