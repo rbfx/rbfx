@@ -344,7 +344,7 @@ if (URHO3D_CSHARP)
         set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/swig${CMAKE_EXECUTABLE_SUFFIX})
     endif ()
     if (NOT SWIG_LIB)
-        set (SWIG_DIR ${Urho3D_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
+        set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
     endif ()
     include(UrhoSWIG)
 
@@ -360,7 +360,7 @@ if (URHO3D_CSHARP)
     if (MSVC)
         file (GLOB CSHARP_SOLUTION ${CMAKE_BINARY_DIR}/*.sln)
     else ()
-        set (CSHARP_SOLUTION ${Urho3D_SOURCE_DIR}/Urho3D.part.sln)
+        set (CSHARP_SOLUTION ${rbfx_SOURCE_DIR}/rbfx.unix.sln)
     endif ()
 
     if (NOT MSVC)
@@ -400,11 +400,11 @@ endif()
 
 
 # For .csproj embedded into visual studio solution
-configure_file("${Urho3D_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
 # For .csproj that gets built by cmake invoking msbuild
 set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
 set (ENV{CMAKE_BINARY_DIR "${CMAKE_BINARY_DIR}/")
-set (ENV{RBFX_BINARY_DIR "${Urho3D_BINARY_DIR}/")
+set (ENV{RBFX_BINARY_DIR "${rbfx_BINARY_DIR}/")
 set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)

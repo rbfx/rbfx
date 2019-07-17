@@ -21,8 +21,8 @@
 #
 
 # Resource packaging
-file (GLOB RESOURCE_DIRS ${Urho3D_SOURCE_DIR}/bin/*Data ${CMAKE_SOURCE_DIR}/bin/*Data)
-file (GLOB AUTOLOAD_DIRS ${Urho3D_SOURCE_DIR}/bin/Autoload/* ${CMAKE_SOURCE_DIR}/bin/Autoload/*)
+file (GLOB RESOURCE_DIRS ${rbfx_SOURCE_DIR}/bin/*Data ${CMAKE_SOURCE_DIR}/bin/*Data)
+file (GLOB AUTOLOAD_DIRS ${rbfx_SOURCE_DIR}/bin/Autoload/* ${CMAKE_SOURCE_DIR}/bin/Autoload/*)
 
 # Trim packaged paks from resource dirs
 foreach (ITEM ${RESOURCE_DIRS} ${AUTOLOAD_DIRS})
@@ -43,7 +43,7 @@ if (URHO3D_PACKAGING)
             set (ALTERNATE_COMMAND ${CMAKE_COMMAND} -E env CC=${SAVED_CC} CXX=${SAVED_CXX} CI=$ENV{CI} ${CMAKE_COMMAND})
         endif ()
         ExternalProject_Add (Urho3D-Native
-            SOURCE_DIR ${Urho3D_SOURCE_DIR}
+            SOURCE_DIR ${rbfx_SOURCE_DIR}
             CMAKE_COMMAND ${ALTERNATE_COMMAND}
             CMAKE_ARGS -DURHO3D_ENABLE_ALL=OFF -DURHO3D_PACKAGING_TOOL=ON -DMINI_URHO=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/native PackageTool
         )
@@ -56,9 +56,9 @@ if (URHO3D_PACKAGING)
 
     if (URHO3D_SAMPLES)
         # Package resources for samples.
-        create_pak("${Urho3D_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
-        create_pak("${Urho3D_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
-        create_pak("${Urho3D_SOURCE_DIR}/bin/Autoload/LargeData" "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
+        create_pak("${rbfx_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
+        create_pak("${rbfx_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
+        create_pak("${rbfx_SOURCE_DIR}/bin/Autoload/LargeData" "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
         package_resources_web(
             FILES        "${CMAKE_BINARY_DIR}/bin/Data.pak"
                          "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
