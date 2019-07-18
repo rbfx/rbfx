@@ -66,7 +66,7 @@ jobs:
           CC: gcc-8
           CXX: g++-8
           BUILD_SHARED_LIBS: ON
-          EXTRA_PACKAGES: gcc-8 g++-8 mono-devel msbuild
+          EXTRA_PACKAGES: gcc-8 g++-8 mono-devel msbuild-libhostfxr msbuild-sdkresolver msbuild
         static-clang-opengl:
           BUILD_SHARED_LIBS: OFF
           CC: clang-8
@@ -76,7 +76,7 @@ jobs:
           BUILD_SHARED_LIBS: ON
           CC: clang-8
           CXX: clang++-8
-          EXTRA_PACKAGES: clang-8 mono-devel msbuild
+          EXTRA_PACKAGES: clang-8 mono-devel msbuild-libhostfxr msbuild-sdkresolver msbuild
 
     steps:
       - bash: |
