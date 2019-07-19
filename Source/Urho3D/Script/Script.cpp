@@ -29,6 +29,8 @@
 namespace Urho3D
 {
 
+SharedPtr<ScriptRuntimeApi> Script::api_{nullptr};
+
 Script::Script(Context* context)
     : Object(context)
 {

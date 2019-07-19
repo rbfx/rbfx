@@ -67,9 +67,9 @@ public:
     /// therefore this method queues them to run at the end of next frame on the main thread.
     bool ReleaseRefOnMainThread(RefCounted* object);
     /// Returns script runtime api implemented in managed code.
-    ScriptRuntimeApi* GetRuntimeApi() const { return api_.Get(); }
+    static ScriptRuntimeApi* GetRuntimeApi() { return api_.Get(); }
     /// Should be called from managed code and provide implementation of ScriptRuntimeApi.
-    void SetRuntimeApi(ScriptRuntimeApi* impl) { api_ = impl; }
+    static void SetRuntimeApi(ScriptRuntimeApi* impl) { api_ = impl; }
 
 protected:
     /// This lock protects access to `destructionQueue_`.
@@ -78,7 +78,7 @@ protected:
     /// objects in a main thread. One call per frame. Last inserted object will be released first.
     ea::vector<RefCounted*> destructionQueue_;
     ///
-    SharedPtr<ScriptRuntimeApi> api_;
+    static SharedPtr<ScriptRuntimeApi> api_;
 };
 
 
