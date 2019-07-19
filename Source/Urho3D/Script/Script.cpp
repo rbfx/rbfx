@@ -48,10 +48,10 @@ Script::Script(Context* context)
     });
 }
 
-bool Script::ReleaseRefOnMainThread(RefCounted* object)
+void Script::ReleaseRefOnMainThread(RefCounted* object)
 {
     if (object == nullptr)
-        return false;
+        return;
 
     if (Thread::IsMainThread())
         object->ReleaseRef();
@@ -60,7 +60,6 @@ bool Script::ReleaseRefOnMainThread(RefCounted* object)
         MutexLock lock(destructionQueueLock_);
         destructionQueue_.push_back(object);
     }
-    return true;
 }
 
 }

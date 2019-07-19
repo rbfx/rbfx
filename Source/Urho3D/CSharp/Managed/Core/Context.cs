@@ -65,24 +65,6 @@ namespace Urho3DNet
             Instance = this;
         }
 
-        internal void OnDispose()
-        {
-            // In order to allow clean exit we first must release all cached instances because they hold references to
-            // native objects and that prevents them being deallocated. If we failed to do that then Context destructor
-            // would run before destroctors of other objects (subsystems, etc). Everything that inherits from
-            // Urho3D.Object accesses Context on destruction and that would cause a crash.
-            Instance = null;
-
-            foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                foreach (var type in assembly.GetTypes())
-                {
-                    var memberInfo = type.GetField("_instanceCache", BindingFlags.Static | BindingFlags.NonPublic);
-                    ((IDisposable) memberInfo?.GetValue(null))?.Dispose();
-                }
-            }
-        }
-
         public void RegisterFactory<T>(string category = "") where T : Object
         {
             RegisterFactory(typeof(T), category);
