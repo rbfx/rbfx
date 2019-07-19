@@ -59,10 +59,19 @@ public:
 
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() { return refCount_; }
-
+#if URHO3D_CSHARP
+    /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
+    uintptr_t GetScriptObject() const { return scriptObject_; }
+    /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
+    void SetScriptObject(uintptr_t handle) { scriptObject_ = handle; }
+#endif
 private:
     /// Pointer to the reference count structure.
     RefCount* refCount_ = nullptr;
+#if URHO3D_CSHARP
+    /// A handle to script object that wraps this native instance.
+    uintptr_t scriptObject_ = 0;
+#endif
 };
 
 }
