@@ -33,7 +33,6 @@ namespace Player
     internal class Program
     {
         private Context _context;
-        private ScriptRuntimeApi _runtimeApi;
 
         private Program()
         {
@@ -49,10 +48,8 @@ namespace Player
 
             using (_context = new Context())
             {
-                var scriptSubsystem = new Script(_context);
-                _runtimeApi = new ScriptRuntimeApiImpl(_context);
-                scriptSubsystem.SetRuntimeApi(_runtimeApi);
-                _context.RegisterSubsystem(scriptSubsystem);
+                _context.RegisterSubsystem(new Script(_context));
+                Script.SetRuntimeApi(new ScriptRuntimeApiImpl(_context));
 
                 using (Application editor = Application.wrap(CreateApplication(Context.getCPtr(_context).Handle), true))
                 {

@@ -41,9 +41,8 @@ namespace EditorHost
 
             using (_context = new Context())
             {
-                var scriptSubsystem = new Script(_context);
-                scriptSubsystem.SetRuntimeApi(new ScriptRuntimeApiReloadableImpl(_context));
-                _context.RegisterSubsystem(scriptSubsystem);
+                _context.RegisterSubsystem(new Script(_context));
+                Script.SetRuntimeApi(new ScriptRuntimeApiReloadableImpl(_context));
 
                 using (Application editor = Application.wrap(CreateEditorApplication(Context.getCPtr(_context).Handle), true))
                 {
