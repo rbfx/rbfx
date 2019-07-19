@@ -1,3 +1,4 @@
+URHO3D_REFCOUNTED(Urho3D::RefCounted);
 URHO3D_REFCOUNTED(Urho3D::Audio);
 URHO3D_REFCOUNTED(Urho3D::BufferedSoundStream);
 URHO3D_REFCOUNTED(Urho3D::OggVorbisSoundStream);

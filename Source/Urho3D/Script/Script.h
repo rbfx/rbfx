@@ -65,7 +65,7 @@ public:
     explicit Script(Context* context);
     /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread
     /// therefore this method queues them to run at the end of next frame on the main thread.
-    bool ReleaseRefOnMainThread(RefCounted* object);
+    void ReleaseRefOnMainThread(RefCounted* object);
     /// Returns script runtime api implemented in managed code.
     static ScriptRuntimeApi* GetRuntimeApi() { return api_.Get(); }
     /// Should be called from managed code and provide implementation of ScriptRuntimeApi.

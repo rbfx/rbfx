@@ -25,6 +25,9 @@
 #include <cassert>
 
 #include "../Container/RefCounted.h"
+#if URHO3D_CSHARP
+#   include "../Script/Script.h"
+#endif
 
 namespace Urho3D
 {
@@ -53,6 +56,20 @@ RefCounted::~RefCounted()
     refCount_->mRefCount = -1;
     refCount_->weak_release();
     refCount_ = nullptr;
+
+#if URHO3D_CSHARP
+    if (scriptObject_)
+    {
+        // Last reference to this object was released while we still have a handle to managed script. This happens only
+        // when this object is wrapped as a director class and user inherited from it. User lost all managed references
+        // to this class, however engine kept a reference. It is then possible that managed finalizer was executed and
+        // wrapper replaced weak reference with a strong one and resurrected managed object. This happens because native
+        // instance depends on managed instance for logic implementation. So we likely have a strong reference and
+        // therefore we must dispose of managed object, release this strong reference in order to allow garbage
+        // collection of managed object.
+        Script::GetRuntimeApi()->Dispose(this);
+    }
+#endif
 }
 
 void RefCounted::AddRef()

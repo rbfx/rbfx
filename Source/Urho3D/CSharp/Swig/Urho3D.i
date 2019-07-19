@@ -46,7 +46,7 @@ namespace ea = eastl;
 	unsigned char*
 }
 
-%apply void* { std::uintptr_t };
+%apply void* { std::uintptr_t, uintptr_t };
 %apply unsigned { time_t };
 
 // Speed boost
