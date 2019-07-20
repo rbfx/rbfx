@@ -126,6 +126,8 @@ class MessageForwarderSink : public spdlog::sinks::base_sink<Mutex>
 protected:
     void sink_it_(const spdlog::details::log_msg& msg) override
     {
+        if (logInstance == nullptr)
+            return;
         time_t time = std::chrono::system_clock::to_time_t(msg.time);
         logInstance->SendMessageEvent(ConvertLogLevel(msg.level), time,
             ea::string(msg.logger_name->c_str()), ea::string(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
@@ -304,11 +306,8 @@ Logger Log::GetLogger(const char* name)
             logger = std::make_shared<spdlog::logger>(ea::string(name), logInstance->impl_->sinkProxy_);
             spdlog::register_logger(logger);
         }
-
-        return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
     }
-    else
-        return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
+    return Logger(reinterpret_cast<void*>(spdlog::get(name).get()));
 }
 
 void Log::SendMessageEvent(LogLevel level, time_t timestamp, const ea::string& logger, const ea::string& message)
