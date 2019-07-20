@@ -206,8 +206,10 @@ void PluginManager::OnEndFrame()
             }
 
             plugin->application_->Unload();
+#if URHO3D_CSHARP
             if (plugin->type_ == PLUGIN_MANAGED)
                 GetSubsystem<Script>()->GetRuntimeApi()->Dispose(plugin->application_);
+#endif
 
             if (plugin->application_->Refs() != 1)
             {
@@ -243,6 +245,7 @@ void PluginManager::OnEndFrame()
                     plugin->unloading_ = true;
                 }
             }
+#if URHO3D_CSHARP
             else if (plugin->type_ == PLUGIN_MANAGED)
             {
                 pluginVersion += 1;
@@ -252,7 +255,7 @@ void PluginManager::OnEndFrame()
                 else
                     plugin->unloading_ = true;
             }
-
+#endif
             if (!plugin->unloading_)
             {
                 URHO3D_LOGINFO("Reloaded plugin '{}' version {}.", GetFileNameAndExtension(plugin->name_), plugin->version_);
