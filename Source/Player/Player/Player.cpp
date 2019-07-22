@@ -235,7 +235,7 @@ bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
             if (pluginMain)
             {
                 cr_plugin dummy{};
-                dummy.userdata = reinterpret_cast<void*>(context_);
+                dummy.userdata = reinterpret_cast<void*>(context_.Get());
                 if (pluginMain(&dummy, CR_LOAD) == 0)
                 {
                     plugins_.push_back(

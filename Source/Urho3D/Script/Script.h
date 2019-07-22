@@ -41,19 +41,21 @@ namespace Urho3D
 #endif
 
 /// Script API implemented in target scripting language.
-class URHO3D_API ScriptRuntimeApi : public Object
+class URHO3D_API ScriptRuntimeApi
 {
-    URHO3D_OBJECT(ScriptRuntimeApi, Object);
 public:
-    ///
-    explicit ScriptRuntimeApi(Context* context) : Object(context) { }
-
     /// Returns true if path contains a valid managed assembly with a class that inherits from PluginApplication.
     virtual bool VerifyAssembly(const ea::string& path) = 0;
     /// Loads specified managed assembly and instantiates first class that inherits from PluginApplication.
     virtual PluginApplication* LoadAssembly(const ea::string& path, unsigned version) = 0;
     /// Invokes managed instance.Dispose() method.
     virtual void Dispose(RefCounted* instance) = 0;
+    ///
+    virtual void FreeGCHandle(int handle) = 0;
+    ///
+    virtual int RecreateGCHandle(int handle, bool strong) = 0;
+    ///
+    virtual void FullGC() = 0;
 };
 
 /// Script runtime subsystem.
@@ -67,7 +69,7 @@ public:
     /// therefore this method queues them to run at the end of next frame on the main thread.
     void ReleaseRefOnMainThread(RefCounted* object);
     /// Returns script runtime api implemented in managed code.
-    static ScriptRuntimeApi* GetRuntimeApi() { return api_.Get(); }
+    static ScriptRuntimeApi* GetRuntimeApi() { return api_; }
     /// Should be called from managed code and provide implementation of ScriptRuntimeApi.
     static void SetRuntimeApi(ScriptRuntimeApi* impl) { api_ = impl; }
 
@@ -78,7 +80,7 @@ protected:
     /// objects in a main thread. One call per frame. Last inserted object will be released first.
     ea::vector<RefCounted*> destructionQueue_;
     ///
-    static SharedPtr<ScriptRuntimeApi> api_;
+    static ScriptRuntimeApi* api_;
 };
 
 

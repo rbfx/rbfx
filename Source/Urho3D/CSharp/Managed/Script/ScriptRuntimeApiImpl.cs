@@ -2,6 +2,7 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Urho3DNet
 {
@@ -9,10 +10,19 @@ namespace Urho3DNet
     {
         private static readonly string ProgramFile = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
         private static readonly string ProgramDirectory = Path.GetDirectoryName(ProgramFile);
+        private GCHandle _selfReference;
 
-        public ScriptRuntimeApiImpl(Context context) : base(context)
+        public ScriptRuntimeApiImpl()
         {
             InstallAssemblyLoader(AppDomain.CurrentDomain);
+            _selfReference = GCHandle.Alloc(this);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (_selfReference.IsAllocated)
+                _selfReference.Free();
+            base.Dispose(disposing);
         }
 
         private static void InstallAssemblyLoader(AppDomain domain)
@@ -45,12 +55,43 @@ namespace Urho3DNet
             if (pluginType == null)
                 return null;
 
-            return Activator.CreateInstance(pluginType, GetContext()) as PluginApplication;
+            return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
         }
 
         public override void Dispose(RefCounted instance)
         {
             instance?.Dispose();
+        }
+
+        public override void FreeGCHandle(int handle)
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr(new IntPtr(handle));
+            if (gcHandle.IsAllocated)
+                gcHandle.Free();
+        }
+
+        public override int RecreateGCHandle(int handle, bool strong)
+        {
+            if (handle == 0)
+                return 0;
+
+            GCHandle gcHandle = GCHandle.FromIntPtr(new IntPtr(handle));
+            if (gcHandle.Target != null)
+            {
+                GCHandle newHandle = GCHandle.Alloc(gcHandle.Target, strong ? GCHandleType.Normal : GCHandleType.Weak);
+                GC.KeepAlive(gcHandle.Target);
+                return GCHandle.ToIntPtr(newHandle).ToInt32();
+            }
+            if (gcHandle.IsAllocated)
+                gcHandle.Free();
+            return 0;
+        }
+
+        public override void FullGC()
+        {
+            GC.Collect();                    // Find garbage and queue finalizers.
+            GC.WaitForPendingFinalizers();   // Run finalizers, release references to remaining unreferenced objects.
+            GC.Collect();                    // Collect those finalized objects.
         }
     }
 }

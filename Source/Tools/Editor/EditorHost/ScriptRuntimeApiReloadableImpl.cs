@@ -14,10 +14,6 @@ namespace EditorHost
 {
     public class ScriptRuntimeApiReloadableImpl : ScriptRuntimeApiImpl
     {
-        public ScriptRuntimeApiReloadableImpl(Context context) : base(context)
-        {
-        }
-
         public override PluginApplication LoadAssembly(string path, uint version)
         {
             if (!System.IO.File.Exists(path) || !path.EndsWith(".dll"))
@@ -42,7 +38,7 @@ namespace EditorHost
             if (pluginType == null)
                 return null;
 
-            return Activator.CreateInstance(pluginType, GetContext()) as PluginApplication;
+            return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
         }
 
         public override bool VerifyAssembly(string path)

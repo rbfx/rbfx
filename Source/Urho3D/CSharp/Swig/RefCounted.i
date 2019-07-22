@@ -9,32 +9,20 @@
           return null;
 
         cMemoryOwn = true;  // Managed instances always keep reference to subclass of RefCounted
-        var handle = $imclassname.RefCounted_GetScriptObject(new System.Runtime.InteropServices.HandleRef(null, cPtr));
+        var handle = $imclassname.RefCounted_GetScriptObject(new global::System.Runtime.InteropServices.HandleRef(null, cPtr));
         $csclassname result = null;
         if (handle != global::System.IntPtr.Zero) {
           var gchandle = global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle);
-          result = ($csclassname)gchandle.Target;
-          if (result == null) {
-            // Happens when this is not a director class and reference to managed object was lost.
-            gchandle.Free();
-          } else if (!result.GetOwnsMemory()) {
-            // Happens when managed code had lost all references to a director class object.
-            result.AddRef();
-            gchandle.Free();
-            result.SetOwnsMemory(true);
-            result.SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(result, global::System.Runtime.InteropServices.GCHandleType.WeakTrackResurrection)));
-          }
+          return ($csclassname)gchandle.Target;
         }
 
-        if (result == null) {
-          global::System.Type type;
-          if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
-            type = typeof($csclassname);
-          if (type == typeof($csclassname))
-            result = new $csclassname(cPtr, cMemoryOwn);
-          else
-            result = ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
-        }
+        global::System.Type type;
+        if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
+          type = typeof($csclassname);
+        if (type == typeof($csclassname))
+          result = new $csclassname(cPtr, cMemoryOwn);
+        else
+          result = ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
         return result;
       }
 
@@ -42,8 +30,11 @@
         swigCMemOwn = cMemoryOwn;
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
         if (cMemoryOwn) {
-          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this, global::System.Runtime.InteropServices.GCHandleType.WeakTrackResurrection)));
-          AddRef();    // This code path is invoked when user inherits from wrapped class, and only from top-most wrapper constructor.
+          bool strongRef = AddRef() > 1;
+          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
+            global::System.Runtime.InteropServices.GCHandle.Alloc(this,
+              strongRef ? global::System.Runtime.InteropServices.GCHandleType.Normal :
+                          global::System.Runtime.InteropServices.GCHandleType.Weak)));
         }
       }
 
@@ -63,31 +54,20 @@
           return null;
 
         cMemoryOwn = true;  // Managed instances always keep reference to subclass of RefCounted
-        var handle = $imclassname.RefCounted_GetScriptObject(new System.Runtime.InteropServices.HandleRef(null, cPtr));
+        var handle = $imclassname.RefCounted_GetScriptObject(new global::System.Runtime.InteropServices.HandleRef(null, cPtr));
         $csclassname result = null;
         if (handle != global::System.IntPtr.Zero) {
           var gchandle = global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle);
-          result = ($csclassname)gchandle.Target;
-          if (result == null) {
-            // Happens when this is not a director class and reference to managed object was lost.
-            gchandle.Free();
-          } else if (!result.GetOwnsMemory()) {
-            // Happens when managed code had lost all references to a director class object.
-            gchandle.Free();
-            result.SetOwnsMemory(true);
-            result.SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(result, global::System.Runtime.InteropServices.GCHandleType.WeakTrackResurrection)));
-          }
+          return ($csclassname)gchandle.Target;
         }
 
-        if (result == null) {
-          global::System.Type type;
-          if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
-            type = typeof($csclassname);
-          if (type == typeof($csclassname))
-            result = new $csclassname(cPtr, cMemoryOwn);
-          else
-            result = ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
-        }
+        global::System.Type type;
+        if (!$imclassname.SWIGTypeRegistry.TryGetValue($imclassname.$csclazznameSWIGTypeId(cPtr), out type))
+          type = typeof($csclassname);
+        if (type == typeof($csclassname))
+          result = new $csclassname(cPtr, cMemoryOwn);
+        else
+          result = ($csclassname)global::System.Activator.CreateInstance(type, global::System.Reflection.BindingFlags.Instance|global::System.Reflection.BindingFlags.NonPublic|global::System.Reflection.BindingFlags.Public, null, new object[]{cPtr, cMemoryOwn}, null);
         return result;
       }
 
@@ -95,8 +75,11 @@
         swigCMemOwn = cMemoryOwn;
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
         if (cMemoryOwn) {
-          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this, global::System.Runtime.InteropServices.GCHandleType.WeakTrackResurrection)));
-          AddRef();    // This code path is invoked when user inherits from wrapped class, and only from top-most wrapper constructor.
+          bool strongRef = AddRef() > 1;
+          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
+            global::System.Runtime.InteropServices.GCHandle.Alloc(this,
+              strongRef ? global::System.Runtime.InteropServices.GCHandleType.Normal :
+                          global::System.Runtime.InteropServices.GCHandleType.Weak)));
         }
       }
 
@@ -171,100 +154,76 @@
     %}
     %typemap(csdispose_derived) TYPE ""
 
-
-  /*
-  Disposing from finalizers is special when it comes to directors. Native class depends on managed instance for logic
-  implementation. When we loose all managed references and references are held on native side (so Refs() > 1) we do
-  following:
-  1. Replace weak gchandle with strong one to prevent deallocation.
-  2. ReleaseRef() - this managed object is OK with being deleted as soon as native code no longer holds any references.
-  3. Set swigCMemOwn=false to reflect released reference.
-
-  When Refs() == 1 then we proceed with object deallocation as usual. This was last reference anyway.
-
-  It is possible that managed code will reacquire a reference to this managed object later on. This leads to a situation
-  where class is alive but does not hold a reference. This case is handled in RefCounted.i - managed instance is reused,
-  we add a reference and set swigCMemOwn=true.
-  */
-
   %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
     lock(this) {
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
         if (swigCMemOwn) {
           swigCMemOwn = false;
-          var handle = GetScriptObject();
-          if (handle != global::System.IntPtr.Zero) {
-            global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
-            SetScriptObject(global::System.IntPtr.Zero);
-          }
           var numReferences = Refs();
           if (numReferences <= 0)
             throw new global::System.Exception("Wrapper owns instance which expired already. Wrapper is broken.");
+
+          var handle = SwapScriptObject(global::System.IntPtr.Zero);
           if (disposing) {
-            if (numReferences > 0 && typeof($csclassname) != GetType())
-              throw new global::System.Exception("Disposing of this class is not allowed because native code still holds a reference and on managed instance for behavior implementation.");
-            ReleaseRef();
+            if (numReferences > 1)
+              throw new global::System.Exception("Disposing of object that is still referenced is not allowed.");
+            ReleaseRef();           // Possible native object deallocation
           } else {
-            if (numReferences > 1) {
-              SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this)));
-              global::System.GC.ReRegisterForFinalize(this);
-              ReleaseRef();
-            } else {
-              var script = Urho3DNet.Context.Instance?.GetSubsystem<Urho3DNet.Script>();
-              if (script != null)
-                script.ReleaseRefOnMainThread(this);
-              else
-                ReleaseRef();
-            }
+            if (numReferences > 1 && GetType() != typeof($csclassname))
+              throw new global::System.Exception("Disposing of object that is still referenced is not allowed. Wrapper is broken.");
+            ReleaseRefSafe();       // Possible native object deallocation on the main thread on next frame
+          }
+          if (handle != global::System.IntPtr.Zero) {
+            global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
           }
         }
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
       }
+      $typemap(csdisposed_extra_optional, TYPE)
     }
   }
 
   %typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
     lock(this) {
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
+        $typemap(csdisposing_extra_optional, TYPE)
         if (swigCMemOwn) {
           swigCMemOwn = false;
-          var handle = GetScriptObject();
-          if (handle != global::System.IntPtr.Zero) {
-            global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
-            SetScriptObject(global::System.IntPtr.Zero);
-          }
           var numReferences = Refs();
           if (numReferences <= 0)
             throw new global::System.Exception("Wrapper owns instance which expired already. Wrapper is broken.");
+
+          if (numReferences > 1 && GetType() != typeof($csclassname))
+            throw new global::System.Exception("Disposing of object that is still referenced is not allowed.");
+          var handle = SwapScriptObject(global::System.IntPtr.Zero);
           if (disposing) {
-            if (numReferences > 0 && typeof($csclassname) != GetType())
-              throw new global::System.Exception("Disposing of this class is not allowed because native code still holds a reference and on managed instance for behavior implementation.");
-            ReleaseRef();
+            if (numReferences > 1)
+              throw new global::System.Exception("Disposing of object that is still referenced is not allowed.");
+            ReleaseRef();           // Possible native object deallocation
           } else {
-            if (numReferences > 1) {
-              SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this)));
-              global::System.GC.ReRegisterForFinalize(this);
-              ReleaseRef();
-            } else {
-              var script = Urho3DNet.Context.Instance?.GetSubsystem<Urho3DNet.Script>();
-              if (script != null)
-                script.ReleaseRefOnMainThread(this);
-              else
-                ReleaseRef();
-            }
+            if (numReferences > 1 && GetType() != typeof($csclassname))
+              throw new global::System.Exception("Disposing of object that is still referenced is not allowed. Wrapper is broken.");
+            ReleaseRefSafe();       // Possible native object deallocation on the main thread on next frame
+          }
+          if (handle != global::System.IntPtr.Zero) {
+            global::System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
           }
         }
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
       }
       base.Dispose(disposing);
+      $typemap(csdisposed_extra_optional, TYPE)
     }
   }
 %enddef
 
 %include "_refcounted.i"
 //%interface_custom("%s", "I%s", Urho3D::RefCounted);
+%director Urho3D::RefCounted;
 %ignore Urho3D::RefCounted::RefCountPtr;
+%ignore Urho3D::RefCount;
 %csmethodmodifiers Urho3D::RefCounted::SetScriptObject "internal"
 %csmethodmodifiers Urho3D::RefCounted::GetScriptObject "internal"
+%csmethodmodifiers Urho3D::RefCounted::SwapScriptObject "internal"
 %include "Urho3D/Container/RefCounted.h"
 %include "Urho3D/Container/Ptr.h"

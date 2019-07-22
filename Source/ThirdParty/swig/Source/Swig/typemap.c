@@ -2065,7 +2065,17 @@ static void replace_embedded_typemap(String *s, ParmList *parm_sublist, Wrapper 
 		match = 1;
 	      }
 	    }
-
+#ifndef WITHOUT_RBFX
+	    if (!match) {
+            int len = Len(tmap_method);
+            if (len >= 9 && strcmp("_optional", (char*)DohData(tmap_method) + len - 9) == 0) {
+                match = 1;  // Silence errors when typemap ends with "_optional".
+                String *empty = NewStringf("");
+                Replace(s, dollar_typemap, empty, DOH_REPLACE_ANY);
+                Delete(empty);
+            }
+        }
+#endif
 	    if (!match) {
 	      String *dtypemap = NewString(dollar_typemap);
 	      Replaceall(dtypemap, "$TYPEMAP", "$typemap");
