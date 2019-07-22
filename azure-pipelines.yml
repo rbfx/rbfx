@@ -35,10 +35,10 @@ jobs:
           CMAKE_BUILD_ARGS: -- /r
         static-mingw-d3d9:
           BUILD_SHARED_LIBS: OFF
-          CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_RENDERER=D3D9
+          CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_GRAPHICS_API=D3D9
         shared-mingw-d3d9:
           BUILD_SHARED_LIBS: ON
-          CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_RENDERER=D3D9
+          CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_GRAPHICS_API=D3D9
           URHO3D_CSHARP: OFF
 
     steps:
