@@ -60,7 +60,11 @@ if (URHO3D_TOOLS AND URHO3D_SYSTEMUI)
     endmacro ()
 
     file (GLOB_RECURSE TRACY_PROFILER_SOURCE_FILES profiler/src/*.cpp)
-    add_executable (tracy-profiler WIN32 ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
+    
+    if (NOT URHO3D_WIN32_CONSOLE)
+        set (TARGET_TYPE WIN32)
+    endif ()
+    add_executable (tracy-profiler ${TARGET_TYPE} ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
     target_compile_definitions(tracy-profiler PUBLIC -DTRACY_ROOT_WINDOW=1)
     set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
     setup_tracy_profiler_target(tracy-profiler)
