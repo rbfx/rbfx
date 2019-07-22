@@ -61,8 +61,6 @@ enum JSONNumberType
     JSONNT_FLOAT_DOUBLE
 };
 
-class JSONValue;
-
 /// JSON value class.
 class URHO3D_API JSONValue
 {
@@ -289,7 +287,7 @@ public:
     /// Return a value type from name; NaN if unrecognized.
     static JSONNumberType GetNumberTypeFromName(const char* typeName);
 
-//private:
+protected:
     /// type.
     unsigned type_;
     union
@@ -305,6 +303,11 @@ public:
         /// Object value.
         ea::map<ea::string, JSONValue>* objectValue_;
     };
+
+    friend URHO3D_API ea::map<ea::string, JSONValue>::iterator begin(JSONValue& value);
+    friend URHO3D_API ea::map<ea::string, JSONValue>::const_iterator begin(const JSONValue& value);
+    friend URHO3D_API ea::map<ea::string, JSONValue>::iterator end(JSONValue& value);
+    friend URHO3D_API ea::map<ea::string, JSONValue>::const_iterator end(const JSONValue& value);
 };
 
 /// Return iterator to the beginning.
