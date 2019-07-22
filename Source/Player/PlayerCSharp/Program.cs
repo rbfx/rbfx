@@ -48,9 +48,6 @@ namespace Player
 
             using (_context = new Context())
             {
-                _context.RegisterSubsystem(new Script(_context));
-                Script.SetRuntimeApi(new ScriptRuntimeApiImpl(_context));
-
                 using (Application editor = Application.wrap(CreateApplication(Context.getCPtr(_context).Handle), true))
                 {
                     Environment.ExitCode = editor.Run();

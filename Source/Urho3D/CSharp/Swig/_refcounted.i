@@ -126,7 +126,6 @@ URHO3D_REFCOUNTED(Urho3D::UnknownComponent);
 URHO3D_REFCOUNTED(Urho3D::ValueAnimation);
 URHO3D_REFCOUNTED(Urho3D::ValueAnimationInfo);
 URHO3D_REFCOUNTED(Urho3D::Script);
-URHO3D_REFCOUNTED(Urho3D::ScriptRuntimeApi);
 URHO3D_REFCOUNTED(Urho3D::Console);
 URHO3D_REFCOUNTED(Urho3D::DebugHud);
 URHO3D_REFCOUNTED(Urho3D::SystemMessageBox);

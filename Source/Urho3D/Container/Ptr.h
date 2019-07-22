@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <EASTL/internal/thread_support.h>
+
 #include "../Container/RefCounted.h"
 
 #include <cassert>
@@ -156,9 +158,9 @@ public:
         if (ptr_)
         {
             RefCount* refCount = RefCountPtr();
-            ea::Internal::atomic_increment(&refCount->mRefCount); // 2 refs
+            ea::Internal::atomic_increment(&refCount->refs_); // 2 refs
             Reset(); // 1 ref
-            ea::Internal::atomic_decrement(&refCount->mRefCount); // 0 refs
+            ea::Internal::atomic_decrement(&refCount->refs_); // 0 refs
         }
         return ptr;
     }
@@ -437,7 +439,7 @@ public:
     bool NotNull() const { return refCount_ != nullptr; }
 
     /// Return the object's reference count, or 0 if null pointer or if object has expired.
-    int Refs() const { return (refCount_ && refCount_->mRefCount >= 0) ? refCount_->mRefCount : 0; }
+    int Refs() const { return (refCount_ && refCount_->refs_ >= 0) ? refCount_->refs_ : 0; }
 
     /// Return the object's weak reference count.
     int WeakRefs() const
@@ -445,11 +447,11 @@ public:
         if (!Expired())
             return ptr_->WeakRefs();
         else
-            return refCount_ ? refCount_->mWeakRefCount : 0;
+            return refCount_ ? refCount_->weakRefs_ : 0;
     }
 
     /// Return whether the object has expired. If null pointer, always return true.
-    bool Expired() const { return refCount_ ? refCount_->mRefCount < 0 : true; }
+    bool Expired() const { return refCount_ ? refCount_->refs_ < 0 : true; }
 
     /// Return pointer to the RefCount structure.
     RefCount* RefCountPtr() const { return refCount_; }
@@ -465,8 +467,8 @@ private:
     {
         if (refCount_)
         {
-            assert(refCount_->mWeakRefCount >= 0);
-            refCount_->weak_addref();
+            assert(refCount_->weakRefs_ >= 0);
+            ea::Internal::atomic_increment(&refCount_->weakRefs_);
         }
     }
 
@@ -475,8 +477,11 @@ private:
     {
         if (refCount_)
         {
-            assert(refCount_->mWeakRefCount > 0);
-            refCount_->weak_release();
+            assert(refCount_->weakRefs_ > 0);
+            int weakRefs = ea::Internal::atomic_decrement(&refCount_->weakRefs_);
+
+            if (Expired() && weakRefs == 0)
+                RefCount::Free(refCount_);
         }
 
         ptr_ = nullptr;

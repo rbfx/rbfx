@@ -34,25 +34,28 @@ namespace Urho3DNet
         public string Category { get; set; } = "";
     }
 
-    public class CSharpCallbackHelper
-    {
-        static private List<object> callbackReferences = new List<object>();
-
-        public static void RegisterCallback(Delegate callback)
-        {
-
-        }
-    }
-
     public partial class Context
     {
         public static Context Instance { get; private set; }
 
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
 
+        internal static void SetRuntimeApi(ScriptRuntimeApi impl)
+        {
+            Script.GetRuntimeApi()?.Dispose();
+            Script.SetRuntimeApi(impl);
+        }
+
+        static Context()
+        {
+            SetRuntimeApi(new ScriptRuntimeApiImpl());
+        }
+
         // This method may be overriden in partial class in order to attach extra logic to object constructor
         internal void OnSetupInstance()
         {
+            RegisterSubsystem(new Script(this));
+
             Urho3DRegisterDirectorFactories(swigCPtr);
 
             // Register factories marked with attributes

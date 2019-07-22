@@ -22,17 +22,41 @@
 
 #pragma once
 
+#include <EASTL/allocator.h>
 
-#include <functional>
 #include <Urho3D/Urho3D.h>
-
-#include <EASTL/shared_ptr.h>
 
 namespace Urho3D
 {
 
-class RefCounted;
-using RefCount = ea::ref_count_sp_t<RefCounted*, EASTLAllocatorType, ea::default_delete<RefCounted>>;
+/// Reference count structure.
+struct URHO3D_API RefCount
+{
+protected:
+    using Allocator = EASTLAllocatorType;
+
+    /// Construct.
+    RefCount() = default;
+
+public:
+    /// Destruct.
+    ~RefCount()
+    {
+        // Set reference counts below zero to fire asserts if this object is still accessed
+        refs_ = -1;
+        weakRefs_ = -1;
+    }
+
+    /// Allocate RefCount using it's default allocator.
+    static RefCount* Allocate();
+    /// Free RefCount using it's default allocator.
+    static void Free(RefCount* instance);
+
+    /// Reference count. If below zero, the object has been destroyed.
+    int refs_ = 0;
+    /// Weak reference count.
+    int weakRefs_ = 0;
+};
 
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
 class URHO3D_API RefCounted
@@ -48,10 +72,10 @@ public:
     /// Prevent assignment.
     RefCounted& operator =(const RefCounted& rhs) = delete;
 
-    /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting.
-    void AddRef();
-    /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting.
-    void ReleaseRef();
+    /// Increment reference count. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
+    int AddRef();
+    /// Decrement reference count and delete self if no more references. Can also be called outside of a SharedPtr for traditional reference counting. Returns new reference count value. Operation is atomic.
+    int ReleaseRef();
     /// Return reference count.
     int Refs() const;
     /// Return weak reference count.
@@ -59,11 +83,15 @@ public:
 
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() { return refCount_; }
+
+protected:
 #if URHO3D_CSHARP
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
     uintptr_t GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
     void SetScriptObject(uintptr_t handle) { scriptObject_ = handle; }
+    /// Sets handle to wrapper script object and returns previous handle value.
+    uintptr_t SwapScriptObject(uintptr_t handle);
 #endif
 private:
     /// Pointer to the reference count structure.

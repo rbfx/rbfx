@@ -42,7 +42,6 @@ namespace DemoApplication
         }
     }
 
-
     class DemoApplication : Application
     {
         private Scene _scene;
@@ -53,6 +52,17 @@ namespace DemoApplication
 
         public DemoApplication(Context context) : base(context)
         {
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            GetRenderer().SetViewport(0, null);    // Enable disposal of viewport by making it unreferenced by engine.
+            _viewport.Dispose();
+            _scene.Dispose();
+            _camera.Dispose();
+            _cube.Dispose();
+            _light.Dispose();
+            base.Dispose(disposing);
         }
 
         public override void Setup()
