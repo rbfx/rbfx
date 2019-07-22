@@ -79,16 +79,19 @@ Plugin::~Plugin()
     {
         cr_plugin_close(nativeContext_);
         nativeContext_.userdata = nullptr;
+        application_ = nullptr;
     }
 #if URHO3D_CSHARP
     else if (type_ == PLUGIN_MANAGED)
     {
-        auto* script = GetSubsystem<Script>();
-        script->GetRuntimeApi()->Dispose(application_);
+        // Disposing object requires managed reference to be the last one alive.
+        WeakPtr<PluginApplication> application(application_);
+        application_ = nullptr;
+        if (!application.Expired())
+            Script::GetRuntimeApi()->Dispose(application);
     }
 #endif
 #endif
-    application_ = nullptr;
 }
 
 PluginManager::PluginManager(Context* context)
@@ -137,7 +140,7 @@ Plugin* PluginManager::Load(const ea::string& name)
 #if URHO3D_CSHARP
     else if (plugin->type_ == PLUGIN_MANAGED)
     {
-        if (PluginApplication* app = GetSubsystem<Script>()->GetRuntimeApi()->LoadAssembly(pluginPath, plugin->version_))
+        if (PluginApplication* app = Script::GetRuntimeApi()->LoadAssembly(pluginPath, plugin->version_))
         {
             plugin->name_ = name;
             plugin->path_ = pluginPath;
@@ -206,15 +209,16 @@ void PluginManager::OnEndFrame()
             }
 
             plugin->application_->Unload();
-#if URHO3D_CSHARP
-            if (plugin->type_ == PLUGIN_MANAGED)
-                GetSubsystem<Script>()->GetRuntimeApi()->Dispose(plugin->application_);
-#endif
 
-            if (plugin->application_->Refs() != 1)
+            int allowedPluginRefs = 1;
+#if URHO3D_CSHARP
+            if (plugin->application_->HasScriptObject())
+                allowedPluginRefs = 2;
+#endif
+            if (plugin->application_->Refs() != allowedPluginRefs)
             {
                 URHO3D_LOGERROR("Plugin application '{}' has more than one reference remaining. "
-                                 "This may lead to memory leaks or crashes.",
+                                 "This will lead to memory leaks or crashes.",
                                  plugin->application_->GetTypeName());
             }
         }
@@ -249,7 +253,7 @@ void PluginManager::OnEndFrame()
             else if (plugin->type_ == PLUGIN_MANAGED)
             {
                 pluginVersion += 1;
-                plugin->application_ = GetSubsystem<Script>()->GetRuntimeApi()->LoadAssembly(plugin->path_, pluginVersion);         // Should free old version of the plugin
+                plugin->application_ = Script::GetRuntimeApi()->LoadAssembly(plugin->path_, pluginVersion);         // Should free old version of the plugin
                 if (plugin->application_.NotNull())
                     plugin->version_ = pluginVersion;
                 else
