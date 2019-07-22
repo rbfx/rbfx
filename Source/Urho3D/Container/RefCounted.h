@@ -83,9 +83,11 @@ public:
 
     /// Return pointer to the reference count structure.
     RefCount* RefCountPtr() { return refCount_; }
+#if URHO3D_CSHARP
+    /// Return true if script runtime object wrapping this native object exists.
+    bool HasScriptObject() const { return scriptObject_ != 0; }
 
 protected:
-#if URHO3D_CSHARP
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
     uintptr_t GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
