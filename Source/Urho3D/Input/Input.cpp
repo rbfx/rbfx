@@ -400,7 +400,8 @@ Input::Input(Context* context) :
 
 Input::~Input()
 {
-    context_->ReleaseSDL();
+    if (!context_.Expired())
+        context_->ReleaseSDL();
 }
 
 void Input::Update()

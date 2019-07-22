@@ -14,12 +14,12 @@
 %}
 %enddef
 
-%typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") Urho3D::Context {
+%typemap(csdisposed_extra_optional) Urho3D::Context {
     global::System.GC.Collect();                    // Find garbage and queue finalizers.
     global::System.GC.WaitForPendingFinalizers();   // Run finalizers, release references to remaining unreferenced objects.
     global::System.GC.Collect();                    // Collect those finalized objects.
     Instance = null;
-    $typemap(csdisposing_derived, Urho3D::Object);
+    SetRuntimeApi(null);
   }
 
 %wrapper %{
@@ -40,9 +40,8 @@
   SWIGEXPORT void SWIGSTDCALL $moduleRegisterDirectorFactories(Urho3D::Context* context) { %}
 
 // Inheritable classes go here
-%director Urho3D::RefCounted;
+%director Urho3D::ScriptRuntimeApi;
 %inheritable(Urho3D, Object);
-%inheritable(Urho3D, ScriptRuntimeApi);
 %inheritable(Urho3D, Application);
 %inheritable(Urho3D, Serializable);         %addOnSetupInstance(Urho3D::Serializable);
 %inheritable(Urho3D, Animatable);           %addOnSetupInstance(Urho3D::Animatable);

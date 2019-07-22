@@ -80,8 +80,11 @@ Object::Object(Context* context) :
 
 Object::~Object()
 {
-    UnsubscribeFromAllEvents();
-    context_->RemoveEventSender(this);
+    if (!context_.Expired())
+    {
+        UnsubscribeFromAllEvents();
+        context_->RemoveEventSender(this);
+    }
 }
 
 void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData)

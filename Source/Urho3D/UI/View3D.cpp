@@ -161,9 +161,9 @@ void View3D::ResetScene()
     if (!ownScene_)
     {
         RefCount* refCount = scene_->RefCountPtr();
-        ea::Internal::atomic_increment(&refCount->mRefCount);
+        ea::Internal::atomic_increment(&refCount->refs_);
         scene_ = nullptr;
-        ea::Internal::atomic_decrement(&refCount->mRefCount);
+        ea::Internal::atomic_decrement(&refCount->refs_);
     }
     else
         scene_ = nullptr;

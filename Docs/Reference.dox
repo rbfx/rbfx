@@ -2900,7 +2900,7 @@ In your update function, move the controlled node using \ref SplinePath::Move "M
     path->Move(eventData[P_TIMESTEP].GetFloat());
 \endcode
 
-\page CSharp CSharp Scripting
+\page CSharp C# Scripting
 
 \section CSharp_About About C# Support
 
@@ -2918,8 +2918,8 @@ C# support is provided by customized SWIG wrapper interface generator.
 
 \subsection CSharp_Requirements Requirements
 
-* .NET framework (4.7.1) (Windows)
-* Mono (latest) (Linux/MacOS/Android/iOS)
+* .NET framework (4.7+) (Windows)
+* Mono (5.4+) (Linux/MacOS/Android/iOS)
 * `-DBUILD_SHARED_LIBS=ON` build parameter.
 * `-DURHO3D_CSHARP=ON` build parameter.
 
@@ -2929,6 +2929,74 @@ On Windows it is advised to use Visual Studio. C# projects will be automatically
 embedded into generated solution. C# code can be edited and debugged, including
 hot-reloadable plugins running in the editor. To debug these plugins set
 `EditorHost` as your startup application and start debugger.
+
+\section CSharp_Implementation Implementation details
+
+Due to differences between C++ and C# langues generated bindings are inherently unsafe. Wrapper tries to make usage as transparent as possible.
+
+There are three kinds of wrapped objects:
+
+1. Objects that inherit from RefCounted.
+2. Objects that do not inherit from RefCounted.
+
+\subsection CSharp_RefCounted_Subclass RefCounted subclasses
+
+These objects wrap native classes and expose their functionality to managed code. You may use these objects just like any other C# object.
+It is allowed to loose all native references or all managed references to such object. When last reference is lost - object will be freed.
+If all references to managed wrapper instance are lost and object is later returned by engine API - it will return same wrapper object instance.
+RefCounted object stores a GC handle to a managed object instance. This handle is used to obtain same managed object instance every
+time object is accessed.
+
+RefCounted instances may be in one of following states:
+
+1. Object is referenced only by native object(s)
+  * Refs() >= 1
+  * GCHandle to managed object is not allocated
+  * Managed wrapper object does not exist
+2. Object is referenced only by managed object(s)
+  * Refs() == 1
+  * GCHandle of type `GCHandleType.Weak` is allocated
+  * Managed object is allocated and will be allocated untl it is disposed or last reference is lost and object is disposed by finalizer
+3. Object is referenced by managed object(s) and native object(s)
+  * Refs() >= 2
+  * GCHandle of type `GCHandleType.Normal` is allocated
+  * Managed object is allocated and will be allocated until it is disposed or last reference is lost and object is disposed by finalizer
+
+RefCounted instances migrate between one of these states automatically as user references or unreferences objects.
+
+\subsection CSharp_Non_RefCounted_Subclasses Other classes
+
+When class does not inherit from \ref Urho3D::RefCounted - it's lifetime is managed manually. Managed instances of such objects can be returned as
+owning references or non-owning references.
+
+Owning reference allocates it's native object instance and frees it when instances `Dispose()` method is called. These objects must be referenced
+through their entire lifetime and disposed of manually. If such object is passed to the engine API - object must remain alive as long as engine is
+using this object.
+
+Non-owning references only provide a temporary wrapper around native object. Such instances are returned when `T&` object is accessed. In this case
+engine manages lifetime of the object and it is not safe to keep a reference to such object in managed code.
+
+Wrapper keeps a cache of wrapped native pointers and their wrappers. Non-owning wrapper object will reside in cache for some time and be reused.
+Example of such behavior is `VariantMap` parameter passed to event handler. Every time such argument is returned a hashmap lookup is performed to
+retrieve cached wrapper object from the cache.
+
+\section CSharp_Best_Practices Best practices
+
+Object reference counting is atomic, but not thread-safe. Executing RefCounted::ReleaseRef when object has one reference and calling "Dispose()"
+method of managed instance on different thread is undefined behavior. Note that "Dispose(false)" may be implicitly called from a finalizer thread
+if all the references to managed object are lost.
+
+Classes that inherit from native classes should override "Dispose(bool)" method and dispose of other native resources class owns. Failure to do so
+may or may not result in memory leaks. Wrapper does free native resources in object finalizer but managed runtime does not guarantee execution of
+finalizers, nor their execution is deterministic.
+
+It is advised to manually dispose objects by calling their "Dispose()" method. In order to dispose object it must have 1 remaining reference. This
+means that native objects may not keep any references to object that is being disposed. Dalling "Dispose()" on an object with more than 1 reference
+will throw an exception and leave an object in an unknown state, therefore caching of such exceptions is not advised. Instead application should be
+fixed to not throw them.
+
+Calling "Dispose()" on non-owning wrapper instances will dispose of managed wrapper instance only. Native object is not freed and may be accessed
+later.
 
 \page Tools Tools
 

@@ -24,7 +24,10 @@
 
 #include <cassert>
 
+#include <EASTL/internal/thread_support.h>
+
 #include "../Container/RefCounted.h"
+#include "../Core/Macros.h"
 #if URHO3D_CSHARP
 #   include "../Script/Script.h"
 #endif
@@ -32,29 +35,38 @@
 namespace Urho3D
 {
 
-RefCounted::RefCounted()
+RefCount* RefCount::Allocate()
 {
-    EASTLAllocatorType allocator;
-    ea::default_delete<RefCounted> deleter;
+    void* const memory = EASTLAlloc(*ea::get_default_allocator((Allocator*)nullptr), sizeof(RefCount));
+    assert(memory != nullptr);
+    return ::new(memory) RefCount();
+}
 
-    void* const pMemory = EASTLAlloc(allocator, sizeof(RefCount));
-    assert(pMemory != nullptr);
+void RefCount::Free(RefCount* instance)
+{
+    instance->~RefCount();
+    EASTLFree(*ea::get_default_allocator((Allocator*)nullptr), instance, sizeof(RefCount));
+}
 
-    refCount_ = ::new(pMemory) RefCount(this, eastl::move(deleter), eastl::move(allocator));
-
-    // RefCount is constructed with 1 strong ref and 1 weak ref. Urho3D expects 1 weak ref only.
-    refCount_->mRefCount = 0;
+RefCounted::RefCounted()
+    : refCount_(RefCount::Allocate())
+{
+    // Hold a weak ref to self to avoid possible double delete of the refcount
+    refCount_->weakRefs_++;
 }
 
 RefCounted::~RefCounted()
 {
     assert(refCount_);
-    assert(refCount_->mRefCount == 0);
-    assert(refCount_->mWeakRefCount > 0);
+    assert(refCount_->refs_ == 0);
+    assert(refCount_->weakRefs_ > 0);
 
     // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
-    refCount_->mRefCount = -1;
-    refCount_->weak_release();
+    refCount_->refs_ = -1;
+
+    if (ea::Internal::atomic_decrement(&refCount_->weakRefs_) == 0)
+        RefCount::Free(refCount_);
+
     refCount_ = nullptr;
 
 #if URHO3D_CSHARP
@@ -67,33 +79,67 @@ RefCounted::~RefCounted()
         // instance depends on managed instance for logic implementation. So we likely have a strong reference and
         // therefore we must dispose of managed object, release this strong reference in order to allow garbage
         // collection of managed object.
-        Script::GetRuntimeApi()->Dispose(this);
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+        {
+            api->FreeGCHandle(scriptObject_);
+            scriptObject_ = 0;
+        }
     }
 #endif
 }
 
-void RefCounted::AddRef()
+int RefCounted::AddRef()
 {
-    assert(refCount_->mRefCount >= 0);
-    refCount_->addref();
+    int refs = ea::Internal::atomic_increment(&refCount_->refs_);
+    assert(refs > 0);
+
+#if URHO3D_CSHARP
+    if (URHO3D_UNLIKELY(refs == 2 && scriptObject_))
+    {
+        // There is at least 1 script reference and 1 engine reference
+        // Convert to strong ref in order to prevent freeing of script object
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+            scriptObject_ = api->RecreateGCHandle(scriptObject_, true);
+    }
+#endif
+    return refs;
 }
 
-void RefCounted::ReleaseRef()
+int RefCounted::ReleaseRef()
 {
-    assert(refCount_->mRefCount > 0);
-    refCount_->release();
+    int refs = ea::Internal::atomic_decrement(&refCount_->refs_);
+    assert(refs >= 0);
+
+    if (refs == 0)
+        delete this;
+
+#if URHO3D_CSHARP
+    else if (URHO3D_UNLIKELY(refs == 1 && scriptObject_))
+    {
+        // Only script object holds 1 reference to this native object
+        // Convert to weak ref in order to allow object deletion when script runtime no longer references this object
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+            scriptObject_ = api->RecreateGCHandle(scriptObject_, false);
+    }
+#endif
+    return refs;
 }
 
 int RefCounted::Refs() const
 {
-    return refCount_->mRefCount;
+    return refCount_->refs_;
 }
 
 int RefCounted::WeakRefs() const
 {
     // Subtract one to not return the internally held reference
-    // Subtract strong refs because eastl increases both strong and weak refs when adding a reference
-    return refCount_->mWeakRefCount - refCount_->mRefCount - 1;
+    return refCount_->weakRefs_ - 1;
 }
-
+#if URHO3D_CSHARP
+uintptr_t RefCounted::SwapScriptObject(uintptr_t handle)
+{
+    ea::swap(handle, scriptObject_);
+    return handle;
+}
+#endif
 }

@@ -241,7 +241,7 @@ public:
 
 protected:
     /// Execution context.
-    Context* context_;
+    WeakPtr<Context> context_;
 
 private:
     /// Find the first event handler with no specific sender.

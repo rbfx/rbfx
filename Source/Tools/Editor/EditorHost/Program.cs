@@ -39,11 +39,9 @@ namespace EditorHost
             args.CopyTo(argv, 1);
             ParseArgumentsC(argc, argv);
 
+            Context.SetRuntimeApi(new ScriptRuntimeApiReloadableImpl());
             using (_context = new Context())
             {
-                _context.RegisterSubsystem(new Script(_context));
-                Script.SetRuntimeApi(new ScriptRuntimeApiReloadableImpl(_context));
-
                 using (Application editor = Application.wrap(CreateEditorApplication(Context.getCPtr(_context).Handle), true))
                 {
                     Environment.ExitCode = editor.Run();
