@@ -84,7 +84,7 @@ if (NOT MINI_URHO)
         endif ()
     endif ()
 
-    if (URHO3D_PROFILING AND URHO3D_NETWORK)
+    if (URHO3D_PROFILING)
         if (NOT TARGET GLEW AND URHO3D_TOOLS)
             add_subdirectory (GLEW)
         endif ()
