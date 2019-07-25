@@ -92,6 +92,23 @@ ea::string GetFileIcon(const ea::string& fileName)
 
 ContentType GetContentType(Context* context, const ea::string& resourcePath)
 {
+    ResourceCache* cache = context->GetCache();
+    FileSystem* fs = context->GetFileSystem();
+
+    if (IsAbsolutePath(resourcePath))
+    {
+        if (fs->DirExists(resourcePath))
+            return CTYPE_FOLDER;
+    }
+    else
+    {
+        for (const ea::string& resourceDir : cache->GetResourceDirs())
+        {
+            if (fs->DirExists(resourceDir + resourcePath))
+                return CTYPE_FOLDER;
+        }
+    }
+
     auto extension = GetExtension(resourcePath).to_lower();
     if (extension == ".xml")
     {
