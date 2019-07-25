@@ -1190,7 +1190,7 @@ ea::string ResourceCache::PrintResources(const ea::string& typeName) const
     return output;
 }
 
-bool ResourceCache::RenameResource(ea::string source, ea::string destination)
+bool ResourceCache::RenameResource(const ea::string& source, const ea::string& destination)
 {
     if (!packages_.empty())
     {
@@ -1206,19 +1206,40 @@ bool ResourceCache::RenameResource(ea::string source, ea::string destination)
 
     auto* fileSystem = GetSubsystem<FileSystem>();
 
-    if (!fileSystem->FileExists(source) && !fileSystem->DirExists(source))
+    if (!fileSystem->Exists(source))
     {
         URHO3D_LOGERROR("Source path does not exist.");
         return false;
     }
 
-    if (fileSystem->FileExists(destination) || fileSystem->DirExists(destination))
+    if (fileSystem->Exists(destination))
     {
         URHO3D_LOGERROR("Destination path already exists.");
         return false;
     }
 
-    using namespace ResourceRenamed;
+    ea::string resourceName;
+    ea::string destinationName;
+    bool dirMode = fileSystem->DirExists(source);
+    for (const auto& dir : resourceDirs_)
+    {
+        if (source.starts_with(dir))
+            resourceName = source.substr(dir.length());
+        if (destination.starts_with(dir))
+            destinationName = destination.substr(dir.length());
+    }
+
+    if (dirMode)
+    {
+        resourceName = AddTrailingSlash(resourceName);
+        destinationName = AddTrailingSlash(destinationName);
+    }
+
+    if (resourceName.empty())
+    {
+        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.c_str());
+        return false;
+    }
 
     // Ensure parent path exists
     if (!fileSystem->CreateDirsRecursive(GetPath(destination)))
@@ -1230,22 +1251,6 @@ bool ResourceCache::RenameResource(ea::string source, ea::string destination)
         return false;
     }
 
-    ea::string resourceName;
-    ea::string destinationName;
-    for (const auto& dir : resourceDirs_)
-    {
-        if (source.starts_with(dir))
-            resourceName = source.substr(dir.length());
-        if (destination.starts_with(dir))
-            destinationName = destination.substr(dir.length());
-    }
-
-    if (resourceName.empty())
-    {
-        URHO3D_LOGERRORF("'%s' does not exist in resource path.", source.c_str());
-        return false;
-    }
-
     // Update loaded resource information
     for (auto& groupPair : resourceGroups_)
     {
@@ -1254,25 +1259,40 @@ bool ResourceCache::RenameResource(ea::string source, ea::string destination)
         for (auto& resourcePair : resourcesCopy)
         {
             SharedPtr<Resource> resource = resourcePair.second;
-            if (resource->GetName().starts_with(resourceName))
+            ea::string newName;
+            if (dirMode)
             {
-                if (autoReloadResources_)
-                {
-                    ignoreResourceAutoReload_.emplace_back(destinationName);
-                    ignoreResourceAutoReload_.emplace_back(resourceName);
-                }
-
-                groupPair.second.resources_.erase(resource->GetNameHash());
-                resource->SetName(destinationName);
-                groupPair.second.resources_[resource->GetNameHash()] = resource;
-                movedAny = true;
-
-                using namespace ResourceRenamed;
-                SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
+                if (!resource->GetName().starts_with(resourceName))
+                    continue;
+                newName = destinationName + resource->GetName().substr(resourceName.length());
             }
+            else if (resource->GetName() != resourceName)
+                continue;
+            else
+                newName = destinationName;
+
+            if (autoReloadResources_)
+            {
+                ignoreResourceAutoReload_.emplace_back(destinationName);
+                ignoreResourceAutoReload_.emplace_back(resource->GetName());
+            }
+
+            groupPair.second.resources_.erase(resource->GetNameHash());
+            resource->SetName(newName);
+            groupPair.second.resources_[resource->GetNameHash()] = resource;
+            movedAny = true;
+
+            using namespace ResourceRenamed;
+            SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
         }
         if (movedAny)
             UpdateResourceGroup(groupPair.first);
+    }
+
+    if (dirMode)
+    {
+        using namespace ResourceRenamed;
+        SendEvent(E_RESOURCERENAMED, P_FROM, resourceName, P_TO, destinationName);
     }
 
     return true;
