@@ -22,6 +22,7 @@
 
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/IO/Log.h>
@@ -81,16 +82,17 @@ ResourceTab::ResourceTab(Context* context)
         if (ui::GetIO().KeyCtrl)
             SelectCurrentItemInspector();
     });
-    SubscribeToEvent(E_RESOURCEBROWSERRENAME, [&](StringHash, VariantMap& args) {
-        using namespace ResourceBrowserRename;
-        auto* project = GetSubsystem<Project>();
-        auto sourceName = project->GetResourcePath() + args[P_FROM].GetString();
-        auto destName = project->GetResourcePath() + args[P_TO].GetString();
-
-        if (GetCache()->RenameResource(sourceName, destName))
-            resourceSelection_ = GetFileNameAndExtension(destName);
-        else
-            URHO3D_LOGERRORF("Renaming '%s' to '%s' failed.", sourceName.c_str(), destName.c_str());
+    SubscribeToEvent(E_RESOURCERENAMED, [&](StringHash, VariantMap& args) {
+        using namespace ResourceRenamed;
+        const ea::string& from = args[P_FROM].GetString();
+        const ea::string& to = args[P_TO].GetString();
+        if (from == resourcePath_ + resourceSelection_)
+        {
+            resourcePath_ = GetParentPath(to);
+            resourceSelection_ = GetFileNameAndExtension(RemoveTrailingSlash(to));
+            if (to.ends_with("/"))
+                resourceSelection_ = AddTrailingSlash(resourceSelection_);
+        }
     });
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, [&](StringHash, VariantMap& args) {
         using namespace ResourceBrowserDelete;
@@ -160,6 +162,16 @@ bool ResourceTab::RenderWindowContent()
         SelectCurrentItemInspector();
 
     flags_ = RBF_NONE;
+
+    bool hasSelection = !resourceSelection_.empty();
+    if (hasSelection && ui::IsWindowFocused())
+    {
+        if (ui::IsKeyReleased(SCANCODE_F2))
+            flags_ |= RBF_RENAME_CURRENT;
+
+        if (ui::IsKeyReleased(SCANCODE_DELETE))
+            flags_ |= RBF_DELETE_CURRENT;
+    }
 
     if (ui::BeginPopup("Resource Context Menu"))
     {
@@ -233,14 +245,20 @@ bool ResourceTab::RenderWindowContent()
             ui::EndMenu();
         }
 
-        if (ui::MenuItem("Copy Path"))
+        if (!hasSelection)
+            ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+
+        if (ui::MenuItem("Copy Path") && hasSelection)
             SDL_SetClipboardText((resourcePath_ + resourceSelection_).c_str());
 
-        if (ui::MenuItem("Rename", "F2"))
+        if (ui::MenuItem("Rename", "F2") && hasSelection)
             flags_ |= RBF_RENAME_CURRENT;
 
-        if (ui::MenuItem("Delete", "Del"))
+        if (ui::MenuItem("Delete", "Del") && hasSelection)
             flags_ |= RBF_DELETE_CURRENT;
+
+        if (!hasSelection)
+            ui::PopStyleColor();
 
         using namespace EditorResourceContextMenu;
         ea::string selected = resourcePath_ + resourceSelection_;
