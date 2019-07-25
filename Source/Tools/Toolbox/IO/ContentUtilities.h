@@ -62,6 +62,7 @@ enum ContentType : unsigned
     CTYPE_SOUND,
     CTYPE_TEXTURE,
     CTYPE_TEXTUREXML,
+    CTYPE_FOLDER,
 };
 
 /// Return file type based on extension of file name.
