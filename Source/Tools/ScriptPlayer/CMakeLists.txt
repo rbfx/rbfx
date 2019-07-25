@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2008-2019 the Urho3D project.
+# Copyright (c) 2017-2019 Rokas Kupstys.
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -20,27 +20,12 @@
 # THE SOFTWARE.
 #
 
-if (CMAKE_CROSSCOMPILING)
+if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
-# Urho3D tools
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
-
-if (URHO3D_PACKAGING OR         # When packing resources
-    URHO3D_PACKAGING_TOOL OR    # When crosscompiling and tool is required
-    URHO3D_TOOLS)
-    add_subdirectory (PackageTool)
-endif ()
-if (URHO3D_TOOLS AND DESKTOP)
-    add_subdirectory (Toolbox)
-    add_subdirectory (AssetImporter)
-    add_subdirectory (AssetViewer)
-    add_subdirectory (OgreImporter)
-    add_subdirectory (RampGenerator)
-    add_subdirectory (SpritePacker)
-    add_subdirectory (Editor)
-    add_subdirectory (ScriptPlayer)
-endif ()
-
-vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Tools)
+add_target_csharp(
+    TARGET ScriptPlayer
+    PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ScriptPlayer.csproj
+    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer.exe
+    DEPENDS Urho3DNet)
