@@ -28,6 +28,7 @@
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/PackageFile.h>
@@ -53,6 +54,37 @@ Pipeline::Pipeline(Context* context)
     SubscribeToEvent(E_EDITORPROJECTLOADING, [this](StringHash, VariantMap&) {
         EnableWatcher();
         BuildCache();
+    });
+    SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
+        using namespace ResourceRenamed;
+        ea::string from = args[P_FROM].GetString();
+        ea::string to = args[P_TO].GetString();
+
+        if (from.ends_with("/"))
+        {
+            ea::unordered_map<ea::string, SharedPtr<Asset>> assets{};
+            for (auto it = assets_.begin(); it != assets_.end();)
+            {
+                if (it->first.starts_with(from))
+                {
+                    assets[to + it->first.substr(from.length())] = it->second;
+                    it = assets_.erase(it);
+                }
+                else
+                    ++it;
+            }
+            for (const auto& pair : assets)
+                assets_[pair.first] = pair.second;
+        }
+        else
+        {
+            auto it = assets_.find(from);
+            if (it != assets_.end())
+            {
+                assets_[to] = it->second;
+                assets_.erase(it);
+            }
+        }
     });
 }
 

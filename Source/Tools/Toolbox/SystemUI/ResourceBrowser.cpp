@@ -28,8 +28,11 @@
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Input/Input.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Urho3D/IO/Log.h>
+
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <ImGui/imgui_stdlib.h>
+
 #include "ResourceBrowser.h"
 #include "Widgets.h"
 #include "IO/ContentUtilities.h"
@@ -43,13 +46,15 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 {
     struct State
     {
+        bool rescanDirs = true;
         bool isEditing = false;
         bool wasEditing = false;
         bool deletionPending = false;
-        char editBuffer[250]{};
+        ea::string editBuffer;
         ea::string editStartItem;
-        ea::vector<ea::string> mergedDirs;
-        ea::vector<ea::string> mergedFiles;
+        ea::vector<ea::string> directories;
+        ea::vector<ea::string> files;
+        Timer updateTimer;
     };
 
     auto result = RBR_NOOP;
@@ -59,24 +64,28 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
     if (!selected.empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
     {
-        if (ui::IsKeyReleased(SCANCODE_F2)|| flags & RBF_RENAME_CURRENT)
+        if (flags & RBF_RENAME_CURRENT)
         {
             state.isEditing = true;
             state.deletionPending = false;
             state.editStartItem = selected;
-            strcpy(state.editBuffer, selected.c_str());
+            state.editBuffer = RemoveTrailingSlash(selected);
         }
-        if (ui::IsKeyReleased(SCANCODE_DELETE) || flags & RBF_DELETE_CURRENT)
+        if (flags & RBF_DELETE_CURRENT)
         {
             state.isEditing = false;
             state.deletionPending = true;
             state.editStartItem = selected;
         }
     }
-    if (ui::IsKeyReleased(SCANCODE_ESCAPE) || state.editStartItem != selected)
+
+    if (state.isEditing || state.deletionPending)
     {
-        state.isEditing = false;
-        state.deletionPending = false;
+        if (ui::IsKeyReleased(SCANCODE_ESCAPE) || state.editStartItem != selected)
+        {
+            state.isEditing = false;
+            state.deletionPending = false;
+        }
     }
 
     if (state.deletionPending)
@@ -97,16 +106,28 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
         ui::End();
     }
 
-    auto moveFileDropTarget = [&](const ea::string& item) {
+    auto moveFileDropTarget = [&](const ea::string& destination) {
         if (ui::BeginDragDropTarget())
         {
             const Variant& dropped = ui::AcceptDragDropVariant("path");
             if (dropped.GetType() == VAR_STRING)
             {
-                using namespace ResourceBrowserRename;
-                auto newName = AddTrailingSlash(item) + GetFileNameAndExtension(dropped.GetString());
-                if (dropped != newName && !fs->GetCache()->GetResourceFileName(dropped.GetString()).starts_with(cacheDir))
-                    fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, dropped, P_TO, newName);
+                const ea::string& source = dropped.GetString();
+                bool isDir = source.ends_with("/");
+                ea::string destinationName;
+                if (destination == "..")
+                    destinationName = GetParentPath(path);
+                else
+                    destinationName = path + destination;
+                destinationName += GetFileNameAndExtension(RemoveTrailingSlash(source));
+                if (isDir)
+                    destinationName = AddTrailingSlash(destinationName);
+
+                if (source != destinationName)
+                {
+                    fs->GetCache()->RenameResource(resourcePath + source, resourcePath + destinationName);
+                    state.rescanDirs = true;
+                }
             }
             ui::EndDragDropTarget();
         }
@@ -121,12 +142,13 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             break;
         case 2:
             path = GetParentPath(path);
+            state.rescanDirs = true;
             break;
         default:
             break;
         }
 
-        moveFileDropTarget(GetParentPath(path));
+        moveFileDropTarget("..");
     }
 
     auto renameWidget = [&](const ea::string& item, const ea::string& icon) {
@@ -139,14 +161,18 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             ui::PushStyleVar(ImGuiStyleVar_FramePadding, {0, 0});
             ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);
 
-            if (ui::InputText("", state.editBuffer, sizeof(state.editBuffer), ImGuiInputTextFlags_EnterReturnsTrue))
+            if (ui::InputText("", &state.editBuffer, ImGuiInputTextFlags_EnterReturnsTrue))
             {
-                using namespace ResourceBrowserRename;
-                auto oldName = path + selected;
-                auto newName = path + state.editBuffer;
-                if (oldName != newName)
-                    fs->SendEvent(E_RESOURCEBROWSERRENAME, P_FROM, oldName, P_TO, newName);
-                state.isEditing = false;
+                if (selected.ends_with("/"))
+                    state.editBuffer = AddTrailingSlash(state.editBuffer);
+
+                if (selected != state.editBuffer)
+                {
+                    fs->GetCache()->RenameResource(resourcePath + path + selected, resourcePath + path + state.editBuffer);
+                    selected = state.editBuffer;
+                    state.isEditing = false;
+                    state.rescanDirs = true;
+                }
             }
 
             if (!state.wasEditing)
@@ -159,46 +185,55 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
         return false;
     };
 
-    // Find resource files
-    fs->ScanDir(state.mergedFiles, resourcePath + path, "", SCAN_FILES, false);
-    // Remove internal files
-    for (auto it = state.mergedFiles.begin(); it != state.mergedFiles.end();)
+    if (state.updateTimer.GetMSec(false) >= 1000 || state.rescanDirs)
     {
-        // Internal files
-        const ea::string& name = *it;
-        if (name.ends_with(".asset"))
-            it = state.mergedFiles.erase(it);
-        else
-            ++it;
-    }
-    ea::quick_sort(state.mergedFiles.begin(), state.mergedFiles.end());
+        state.rescanDirs = false;
+        state.updateTimer.Reset();
 
-    // Find resource dirs
-    fs->ScanDir(state.mergedDirs, resourcePath + path, "", SCAN_DIRS, false);
-    state.mergedDirs.erase_first(".");
-    state.mergedDirs.erase_first("..");
-    ea::quick_sort(state.mergedDirs.begin(), state.mergedDirs.end());
+        // Find resource files
+        fs->ScanDir(state.files, resourcePath + path, "", SCAN_FILES, false);
+        // Remove internal files
+        for (auto it = state.files.begin(); it != state.files.end();)
+        {
+            // Internal files
+            const ea::string& name = *it;
+            if (name.ends_with(".asset"))
+                it = state.files.erase(it);
+            else
+                ++it;
+        }
+        ea::quick_sort(state.files.begin(), state.files.end());
+
+        // Find resource dirs
+        fs->ScanDir(state.directories, resourcePath + path, "", SCAN_DIRS, false);
+        state.directories.erase_first(".");
+        state.directories.erase_first("..");
+        ea::quick_sort(state.directories.begin(), state.directories.end());
+
+        for (ea::string& dir : state.directories)
+            dir = AddTrailingSlash(dir);
+    }
 
     // Render dirs first
-    for (const auto& item: state.mergedDirs)
+    for (const ea::string& item: state.directories)
     {
         if (!renameWidget(item, ICON_FA_FOLDER))
         {
-            // Folder selection always ends with /, but `item` does not have / appended yet.
-            auto isSelected = selected.compare(0, selected.length() - 1, item) == 0;
+            bool isSelected = selected == item;
 
             if (flags & RBF_SCROLL_TO_CURRENT && isSelected)
                 ui::SetScrollHereY();
 
-            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + item).c_str(), isSelected))
+            switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + RemoveTrailingSlash(item)).c_str(), isSelected))
             {
             case 1:
-                selected = AddTrailingSlash(item);
+                selected = item;
                 result = RBR_ITEM_SELECTED;
                 break;
             case 2:
                 path += AddTrailingSlash(item);
                 selected.clear();
+                state.rescanDirs = true;
                 break;
             default:
                 break;
@@ -222,7 +257,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
     }
 
     // Render files after dirs
-    for (const auto& item: state.mergedFiles)
+    for (const auto& item: state.files)
     {
         auto icon = GetFileIcon(item);
         if (!renameWidget(item, icon))

@@ -55,7 +55,7 @@ public:
     /// Returns true when source asset is newer than last conversion date.
     bool IsOutOfDate() const;
     /// Returns true when this asset is a settings holder for a directory.
-    bool IsMetaAsset() const { return name_.ends_with("/"); }
+    bool IsMetaAsset() const { return contentType_ == CTYPE_FOLDER; }
     /// Returns content type of this asset.
     ContentType GetContentType() const { return contentType_; }
     /// Delete all byproducts of this asset.
