@@ -35,9 +35,9 @@
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 
 #include "Project.h"
-#include "Pipeline.h"
-#include "Asset.h"
-#include "Importers/ModelImporter.h"
+#include "Pipeline/Pipeline.h"
+#include "Pipeline/Asset.h"
+#include "Pipeline/Importers/ModelImporter.h"
 
 
 namespace Urho3D
@@ -51,27 +51,41 @@ Asset::Asset(Context* context)
         const ea::string& from = args[P_FROM].GetString();
         const ea::string& to = args[P_TO].GetString();
 
+        bool isDir = from.ends_with("/");
+        if (isDir)
+        {
+            if (!name_.starts_with(from))
+                return;
+        }
+        else
+        {
+            if (name_ != from)
+                return;
+        }
+
         if (extraInspectors_.contains(from))
         {
             extraInspectors_[to] = extraInspectors_[from];
             extraInspectors_.erase(from);
         }
 
-        if (name_ != from)
-            return;
-
         auto* fs = GetFileSystem();
+        auto* project = GetSubsystem<Project>();
+        ea::string newName = to + (isDir ? name_.substr(from.size()) : "");
 
-        ea::string assetPathFrom = GetCache()->GetResourceFileName(name_) + ".asset";
-        ea::string assetPathTo = GetCache()->GetResourceFileName(to) + ".asset";
-
-        if (!fs->Rename(assetPathFrom, assetPathTo))
+        ea::string assetPathFrom = project->GetResourcePath() + RemoveTrailingSlash(name_) + ".asset";
+        if (fs->FileExists(assetPathFrom))
         {
-            URHO3D_LOGERROR("Failed to rename '{}' to '{}'", assetPathFrom, assetPathTo);
-            return;
+            ea::string assetPathTo = project->GetResourcePath() + RemoveTrailingSlash(newName) + ".asset";
+            if (!fs->Rename(assetPathFrom, assetPathTo))
+            {
+                URHO3D_LOGERROR("Failed to rename '{}' to '{}'", assetPathFrom, assetPathTo);
+                return;
+            }
         }
 
-        name_ = to;
+        name_ = newName;
+        resourcePath_ = project->GetResourcePath() + name_;
     });
 
     SubscribeToEvent(E_RESOURCEBROWSERSELECT, [this](StringHash, VariantMap& args) {

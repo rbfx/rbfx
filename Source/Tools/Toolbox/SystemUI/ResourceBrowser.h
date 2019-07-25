@@ -48,12 +48,6 @@ enum ResourceBrowserFlag
 };
 URHO3D_FLAGSET(ResourceBrowserFlag, ResourceBrowserFlags);
 
-URHO3D_EVENT(E_RESOURCEBROWSERRENAME, ResourceBrowserRename)
-{
-    URHO3D_PARAM(P_FROM, From);                                     // String
-    URHO3D_PARAM(P_TO, To);                                         // String
-}
-
 URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
 {
     URHO3D_PARAM(P_NAME, Name);                                     // String
