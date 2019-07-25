@@ -222,7 +222,7 @@ public:
     ea::string PrintResources(const ea::string& typeName = EMPTY_STRING) const;
     /// Renames resource without deleting it from cache. `source` and `destination` may be resource names or absolute
     /// paths to files in resource directories. If destination is a resource name then source file is renamed within same data directory.
-    bool RenameResource(ea::string source, ea::string destination);
+    bool RenameResource(const ea::string& source, const ea::string& destination);
     /// When resource auto-reloading is enabled ignore reloading resource once.
     void IgnoreResourceReload(const ea::string& name);
     /// When resource auto-reloading is enabled ignore reloading resource once.
