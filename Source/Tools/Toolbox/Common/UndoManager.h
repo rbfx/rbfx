@@ -325,68 +325,87 @@ public:
     }
 };
 
-static unsigned GetID(Serializable* serializable)
+using UIElementPath = ea::vector<unsigned>;
+
+static UIElementPath GetUIElementPath(UIElement* element)
 {
-    if (auto node = dynamic_cast<Node*>(serializable))
-        return node->GetID();
+    ea::vector<unsigned> path;
+    unsigned pathCount = 1;
+    for (UIElement* el = element; el->GetParent() != nullptr; el = el->GetParent())
+        pathCount++;
+    path.reserve(pathCount);
 
-    if (auto component = dynamic_cast<Component*>(serializable))
-        return component->GetID();
-
-    if (auto element = dynamic_cast<UIElement*>(serializable))
+    for (UIElement* el = element; el->GetParent() != nullptr; el = el->GetParent())
     {
-        static unsigned uiElementIdIndex = 1;
-        unsigned id = element->GetVar("UIElementID").GetUInt();
-        if (!id)
-        {
-            id = uiElementIdIndex++;
-            element->SetVar("UIElementID", id);
-        }
-        return id;
+        UIElement* parent = el->GetParent();
+        unsigned index = parent->FindChild(el);
+        assert(index != M_MAX_UNSIGNED);
+        path.push_back(index);
     }
+    ea::reverse(path.begin(), path.end());
+    return path;
+}
 
-    return M_MAX_UNSIGNED;
-};
+static UIElement* GetUIElementByPath(UIElement* el, const UIElementPath& path)
+{
+    for (unsigned index : path)
+    {
+        const ea::vector<SharedPtr<UIElement>>& children = el->GetChildren();
+        if (index >= children.size())
+            return nullptr;
+        el = children[index].Get();
+    }
+    return el;
+}
 
 class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
 {
     unsigned targetID;
-    ea::string attrName;
-    Variant undoValue;
-    Variant redoValue;
-    StringHash targetType;
-    WeakPtr<Scene> editorScene;
-    WeakPtr<UIElement> root;
-    WeakPtr<Serializable> target;
+    UIElementPath targetPath_;
+    ea::string attrName_;
+    Variant undoValue_;
+    Variant redoValue_;
+    StringHash targetType_;
+    WeakPtr<Scene> editorScene_;
+    WeakPtr<UIElement> root_;
+    WeakPtr<Serializable> target_;
 
 public:
     EditAttributeAction(Serializable* target, const ea::string& name, const Variant& oldValue, const Variant& newValue)
     {
-        attrName = name;
-        undoValue = oldValue;
-        redoValue = newValue;
-        targetID = GetID(target);
-        targetType = target->GetType();
-        this->target = target;
+        attrName_ = name;
+        undoValue_ = oldValue;
+        redoValue_ = newValue;
+        targetType_ = target->GetType();
+        target_ = target;
 
-        if (auto node = dynamic_cast<Node*>(target))
-            editorScene = node->GetScene();
-        else if (auto component = dynamic_cast<Component*>(target))
-            editorScene = component->GetScene();
-        else if (auto element = dynamic_cast<UIElement*>(target))
-            root = element->GetRoot();
+        if (auto* node = dynamic_cast<Node*>(target))
+        {
+            editorScene_ = node->GetScene();
+            targetID = node->GetID();
+        }
+        else if (auto* component = dynamic_cast<Component*>(target))
+        {
+            editorScene_ = component->GetScene();
+            targetID = component->GetID();
+        }
+        else if (auto* element = dynamic_cast<UIElement*>(target))
+        {
+            root_ = element->GetRoot();
+            targetPath_ = GetUIElementPath(element);
+        }
     }
 
     Serializable* GetTarget()
     {
-        if (targetType == Node::GetTypeStatic())
-            return editorScene->GetNode(targetID);
-        else if (targetType == Component::GetTypeStatic())
-            return editorScene->GetComponent(targetID);
-        else if (targetType == UIElement::GetTypeStatic())
-            return root->GetChild("UIElementID", targetID, true);
+        if (targetType_ == Node::GetTypeStatic())
+            return editorScene_->GetNode(targetID);
+        else if (targetType_ == Component::GetTypeStatic())
+            return editorScene_->GetComponent(targetID);
+        else if (targetType_ == UIElement::GetTypeStatic())
+            return GetUIElementByPath(root_, targetPath_);
 
-        return target.Get();
+        return target_.Get();
     }
 
     void Undo() override
@@ -394,7 +413,7 @@ public:
         Serializable* target = GetTarget();
         if (target != nullptr)
         {
-            target->SetAttribute(attrName, undoValue);
+            target->SetAttribute(attrName_, undoValue_);
             target->ApplyAttributes();
         }
     }
@@ -404,7 +423,7 @@ public:
         Serializable* target = GetTarget();
         if (target != nullptr)
         {
-            target->SetAttribute(attrName, redoValue);
+            target->SetAttribute(attrName_, redoValue_);
             target->ApplyAttributes();
         }
     }
@@ -412,73 +431,73 @@ public:
 
 class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
 {
-    Variant elementID;
-    Variant parentID;
-    XMLFile elementData;
-    SharedPtr<XMLFile> styleFile;
-    WeakPtr<UIElement> root;
+    UIElementPath elementPath_;
+    UIElementPath parentPath_;
+    XMLFile elementData_;
+    SharedPtr<XMLFile> styleFile_;
+    WeakPtr<UIElement> root_;
 
 public:
     explicit CreateUIElementAction(UIElement* element)
-        : elementData(element->GetContext())
+        : elementData_(element->GetContext())
     {
-        root = element->GetRoot();
-        elementID = GetID(element);
-        parentID = GetID(element->GetParent());
-        XMLElement rootElem = elementData.CreateRoot("element");
+        root_ = element->GetRoot();
+        elementPath_ = GetUIElementPath(element);
+        parentPath_ = GetUIElementPath(element->GetParent());
+        XMLElement rootElem = elementData_.CreateRoot("element");
         element->SaveXML(rootElem);
         rootElem.SetUInt("index", element->GetParent()->FindChild(element));
-        styleFile = element->GetDefaultStyle();
+        styleFile_ = element->GetDefaultStyle();
     }
 
     void Undo() override
     {
-        UIElement* parent = root->GetChild("UIElementID", parentID, true);
-        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        UIElement* parent = GetUIElementByPath(root_, parentPath_);
+        UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
             parent->RemoveChild(element);
     }
 
     void Redo() override
     {
-        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        UIElement* parent = GetUIElementByPath(root_, parentPath_);
         if (parent != nullptr)
-            parent->LoadChildXML(elementData.GetRoot(), styleFile);
+            parent->LoadChildXML(elementData_.GetRoot(), styleFile_);
     }
 };
 
 class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
 {
-    Variant elementID;
-    Variant parentID;
-    XMLFile elementData;
-    SharedPtr<XMLFile> styleFile;
-    WeakPtr<UIElement> root;
+    UIElementPath elementPath_;
+    UIElementPath parentPath_;
+    XMLFile elementData_;
+    SharedPtr<XMLFile> styleFile_;
+    WeakPtr<UIElement> root_;
 
 public:
     explicit DeleteUIElementAction(UIElement* element)
-        : elementData(element->GetContext())
+        : elementData_(element->GetContext())
     {
-        root = element->GetRoot();
-        elementID = GetID(element);
-        parentID = GetID(element->GetParent());
-        XMLElement rootElem = elementData.CreateRoot("element");
+        root_ = element->GetRoot();
+        elementPath_ = GetUIElementPath(element);
+        parentPath_ = GetUIElementPath(element->GetParent());
+        XMLElement rootElem = elementData_.CreateRoot("element");
         element->SaveXML(rootElem);
         rootElem.SetUInt("index", element->GetParent()->FindChild(element));
-        styleFile = SharedPtr<XMLFile>(element->GetDefaultStyle());
+        styleFile_ = SharedPtr<XMLFile>(element->GetDefaultStyle());
     }
 
     void Undo() override
     {
-        UIElement* parent = root->GetChild("UIElementID", parentID, true);
+        UIElement* parent = GetUIElementByPath(root_, parentPath_);
         if (parent != nullptr)
-            parent->LoadChildXML(elementData.GetRoot(), styleFile);
+            parent->LoadChildXML(elementData_.GetRoot(), styleFile_);
     }
 
     void Redo() override
     {
-        UIElement* parent = root->GetChild("UIElementID", parentID, true);
-        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        UIElement* parent = GetUIElementByPath(root_, parentPath_);
+        UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
             parent->RemoveChild(element);
     }
@@ -486,34 +505,34 @@ public:
 
 class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
 {
-    Variant elementID;
-    Variant oldParentID;
-    unsigned oldChildIndex;
-    Variant newParentID;
+    UIElementPath elementPath_;
+    UIElementPath oldParentPath_;
+    unsigned oldChildIndex_;
+    UIElementPath newParentPath_;
     WeakPtr<UIElement> root;
 
 public:
     ReparentUIElementAction(UIElement* element, UIElement* newParent)
     : root(element->GetRoot())
     {
-        elementID = GetID(element);
-        oldParentID = GetID(element->GetParent());
-        oldChildIndex = element->GetParent()->FindChild(element);
-        newParentID = GetID(newParent);
+        elementPath_ = GetUIElementPath(element);
+        oldParentPath_ = GetUIElementPath(element->GetParent());
+        oldChildIndex_ = element->GetParent()->FindChild(element);
+        newParentPath_ = GetUIElementPath(newParent);
     }
 
     void Undo() override
     {
-        UIElement* parent = root->GetChild("UIElementID", oldParentID, true);
-        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        UIElement* parent = GetUIElementByPath(root, oldParentPath_);
+        UIElement* element = GetUIElementByPath(root, elementPath_);
         if (parent != nullptr && element != nullptr)
-            element->SetParent(parent, oldChildIndex);
+            element->SetParent(parent, oldChildIndex_);
     }
 
     void Redo() override
     {
-        UIElement* parent = root->GetChild("UIElementID", newParentID, true);
-        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        UIElement* parent = GetUIElementByPath(root, newParentPath_);
+        UIElement* element = GetUIElementByPath(root, elementPath_);
         if (parent != nullptr && element != nullptr)
             element->SetParent(parent);
     }
@@ -521,99 +540,99 @@ public:
 
 class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
 {
-    Variant elementID;
-    Variant parentID;
-    XMLFile elementData;
-    XMLFile* styleFile;
-    ea::string elementOldStyle;
-    ea::string elementNewStyle;
-    WeakPtr<UIElement> root;
+    UIElementPath elementPath_;
+    UIElementPath parentPath_;
+    XMLFile elementData_;
+    XMLFile* styleFile_;
+    ea::string elementOldStyle_;
+    ea::string elementNewStyle_;
+    WeakPtr<UIElement> root_;
 
 public:
     ApplyUIElementStyleAction(UIElement* element, const ea::string& newStyle)
-        : elementData(element->GetContext())
+        : elementData_(element->GetContext())
     {
-        root = element->GetRoot();
-        elementID = GetID(element);
-        parentID = GetID(element->GetParent());
-        XMLElement rootElem = elementData.CreateRoot("element");
+        root_ = element->GetRoot();
+        elementPath_ = GetUIElementPath(element);
+        parentPath_ = GetUIElementPath(element->GetParent());
+        XMLElement rootElem = elementData_.CreateRoot("element");
         element->SaveXML(rootElem);
         rootElem.SetUInt("index", element->GetParent()->FindChild(element));
-        styleFile = element->GetDefaultStyle();
-        elementOldStyle = element->GetAppliedStyle();
-        elementNewStyle = newStyle;
+        styleFile_ = element->GetDefaultStyle();
+        elementOldStyle_ = element->GetAppliedStyle();
+        elementNewStyle_ = newStyle;
     }
 
     void ApplyStyle(const ea::string& style)
     {
-        UIElement* parent = root->GetChild("UIElementID", parentID, true);
-        UIElement* element = root->GetChild("UIElementID", elementID, true);
+        UIElement* parent = GetUIElementByPath(root_, parentPath_);
+        UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
         {
             // Apply the style in the XML data
-            elementData.GetRoot().SetAttribute("style", style);
+            elementData_.GetRoot().SetAttribute("style", style);
             parent->RemoveChild(element);
-            parent->LoadChildXML(elementData.GetRoot(), styleFile);
+            parent->LoadChildXML(elementData_.GetRoot(), styleFile_);
         }
     }
 
     void Undo() override
     {
-        ApplyStyle(elementOldStyle);
+        ApplyStyle(elementOldStyle_);
     }
 
     void Redo() override
     {
-        ApplyStyle(elementNewStyle);
+        ApplyStyle(elementNewStyle_);
     }
 };
 
 class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
 {
-    XMLFile oldStyle;
-    XMLFile newStyle;
-    unsigned elementId;
-    WeakPtr<UIElement> root;
+    XMLFile oldStyle_;
+    XMLFile newStyle_;
+    UIElementPath elementId_;
+    WeakPtr<UIElement> root_;
     Variant oldValue_;
     Variant newValue_;
     ea::string attributeName_;
 
 public:
     EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
-        : oldStyle(element->GetContext())
-        , newStyle(element->GetContext())
+        : oldStyle_(element->GetContext())
+        , newStyle_(element->GetContext())
     {
         attributeName_ = styleElement.GetAttribute("name");
         oldValue_ = element->GetInstanceDefault(attributeName_);
         newValue_ = newValue;
 
-        root = element->GetRoot();
-        elementId = GetID(element);
-        oldStyle.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
+        root_ = element->GetRoot();
+        elementId_ = GetUIElementPath(element);
+        oldStyle_.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
         if (newValue.IsEmpty())
             styleElement.Remove();
         else
             styleElement.SetVariantValue(newValue);
-        newStyle.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
+        newStyle_.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
     }
 
     void Undo() override
     {
-        UIElement* element = root->GetChild("UIElementID", elementId, true);
+        UIElement* element = GetUIElementByPath(root_, elementId_);
         element->SetInstanceDefault(attributeName_, oldValue_);
         XMLElement root = element->GetDefaultStyle()->GetRoot();
         root.RemoveChildren();
-        for (auto child = oldStyle.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
+        for (auto child = oldStyle_.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
             root.AppendChild(child, true);
     }
 
     void Redo() override
     {
-        UIElement* element = root->GetChild("UIElementID", elementId, true);
+        UIElement* element = GetUIElementByPath(root_, elementId_);
         element->SetInstanceDefault(attributeName_, newValue_);
         XMLElement root = element->GetDefaultStyle()->GetRoot();
         root.RemoveChildren();
-        for (auto child = newStyle.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
+        for (auto child = newStyle_.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
             root.AppendChild(child, true);
     }
 };
