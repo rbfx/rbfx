@@ -164,7 +164,6 @@ void Editor::Setup()
     GetLog()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
-    context_->RegisterSubsystem(this);
 
     // Register factories
     context_->RegisterFactory<EditorIconCache>();
@@ -201,6 +200,7 @@ void Editor::Setup()
 
 void Editor::Start()
 {
+    context_->RegisterSubsystem(this);
     // Execute specified subcommand and exit.
     for (SharedPtr<SubCommand>& cmd : subCommands_)
     {
