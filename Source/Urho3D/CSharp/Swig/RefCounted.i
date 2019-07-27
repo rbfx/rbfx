@@ -161,16 +161,16 @@
           swigCMemOwn = false;
           var numReferences = Refs();
           if (numReferences <= 0)
-            throw new global::System.Exception("Wrapper owns instance which expired already. Wrapper is broken.");
+            throw new global::System.InvalidOperationException("Wrapper owns instance which expired already. Wrapper is broken.");
 
           var handle = SwapScriptObject(global::System.IntPtr.Zero);
           if (disposing) {
             if (numReferences > 1)
-              throw new global::System.Exception("Disposing of object that is still referenced is not allowed.");
+              throw new global::System.InvalidOperationException($"Disposing of '{GetType().Name}' object that is still referenced is not allowed.");
             ReleaseRef();           // Possible native object deallocation
           } else {
             if (numReferences > 1 && GetType() != typeof($csclassname))
-              throw new global::System.Exception("Disposing of object that is still referenced is not allowed. Wrapper is broken.");
+              throw new global::System.InvalidOperationException($"Disposing of '{GetType().Name}' object that is still referenced is not allowed. Wrapper is broken.");
             ReleaseRefSafe();       // Possible native object deallocation on the main thread on next frame
           }
           if (handle != global::System.IntPtr.Zero) {
@@ -198,11 +198,11 @@
           var handle = SwapScriptObject(global::System.IntPtr.Zero);
           if (disposing) {
             if (numReferences > 1)
-              throw new global::System.Exception("Disposing of object that is still referenced is not allowed.");
+              throw new global::System.InvalidOperationException($"Disposing of '{GetType().Name}' object that is still referenced is not allowed.");
             ReleaseRef();           // Possible native object deallocation
           } else {
             if (numReferences > 1 && GetType() != typeof($csclassname))
-              throw new global::System.Exception("Disposing of object that is still referenced is not allowed. Wrapper is broken.");
+              throw new global::System.InvalidOperationException($"Disposing of '{GetType().Name}' object that is still referenced is not allowed. Wrapper is broken.");
             ReleaseRefSafe();       // Possible native object deallocation on the main thread on next frame
           }
           if (handle != global::System.IntPtr.Zero) {
