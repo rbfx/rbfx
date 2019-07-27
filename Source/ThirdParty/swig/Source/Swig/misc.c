@@ -447,11 +447,13 @@ String *Swig_string_title(String *s) {
  *
  *      camel_case -> CamelCase
  *      camelCase  -> CamelCase
+ *      CAMEL_CASE -> CamelCase (rbfx)
  * ----------------------------------------------------------------------------- */
 
 String *Swig_string_ccase(String *s) {
   String *ns;
   int first = 1;
+  int prev = 0;
   int c;
   ns = NewStringEmpty();
 
@@ -459,9 +461,13 @@ String *Swig_string_ccase(String *s) {
   while ((c = Getc(s)) != EOF) {
     if (c == '_') {
       first = 1;
+      prev = 0;
       continue;
+    } else if (prev == 0 && isupper(c)) {
+      first = 1;
     }
-    Putc(first ? toupper(c) : c, ns);
+    prev = isupper(c);
+    Putc(first ? toupper(c) : tolower(c), ns);
     first = 0;
   }
   return ns;

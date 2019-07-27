@@ -194,21 +194,19 @@ namespace Urho3DNet
             if (type == typeof(UCharArray))
                 return VariantType.VarBuffer;
             if (type == typeof(IntPtr))
-                return VariantType.VarVoidptr;
+                return VariantType.VarVoidPtr;
             if (type == typeof(ResourceRef))
-                return VariantType.VarResourceref;
+                return VariantType.VarResourceRef;
             if (type == typeof(ResourceRefList))
-                return VariantType.VarResourcereflist;
+                return VariantType.VarResourceRefList;
             if (type == typeof(VariantList))
-                return VariantType.VarVariantvector;
+                return VariantType.VarVariantVector;
             if (type == typeof(VariantMap))
-                return VariantType.VarVariantmap;
+                return VariantType.VarVariantMap;
             if (type == typeof(IntRect))
-                return VariantType.VarIntrect;
-            if (type == typeof(IntRect))
-                return VariantType.VarIntrect;
+                return VariantType.VarIntRect;
             if (type == typeof(IntVector2))
-                return VariantType.VarIntvector2;
+                return VariantType.VarIntVector2;
             if (type == typeof(RefCounted))
                 return VariantType.VarPtr;
             if (type == typeof(Matrix3))
@@ -220,11 +218,11 @@ namespace Urho3DNet
             if (type == typeof(double))
                 return VariantType.VarDouble;
             if (type == typeof(StringList))
-                return VariantType.VarStringvector;
+                return VariantType.VarStringVector;
             if (type == typeof(Rect))
                 return VariantType.VarRect;
             if (type == typeof(IntVector3))
-                return VariantType.VarIntvector3;
+                return VariantType.VarIntVector3;
             if (type == typeof(long))
                 return VariantType.VarInt64;
             return VariantType.VarNone;
