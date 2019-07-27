@@ -416,6 +416,10 @@ public:
     /// Return whether is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_); }
 
+    /// Return whether is Inf.
+    bool IsInf() const { return Urho3D::IsInf(x_) || Urho3D::IsInf(y_) || Urho3D::IsInf(z_); }
+
+
     /// Return normalized to unit length.
     Vector3 Normalized() const
     {
