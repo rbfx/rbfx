@@ -88,25 +88,25 @@ namespace Urho3DNet
                 case VariantType.VarBuffer:
                     dest.Set((UCharArray) _field.GetValue(ptr));
                     break;
-                case VariantType.VarVoidptr:
+                case VariantType.VarVoidPtr:
                     dest.Set((IntPtr) _field.GetValue(ptr));
                     break;
-                case VariantType.VarResourceref:
+                case VariantType.VarResourceRef:
                     dest.Set((ResourceRef) _field.GetValue(ptr));
                     break;
-                case VariantType.VarResourcereflist:
+                case VariantType.VarResourceRefList:
                     dest.Set((ResourceRefList) _field.GetValue(ptr));
                     break;
-                case VariantType.VarVariantvector:
+                case VariantType.VarVariantVector:
                     dest.Set((VariantList) _field.GetValue(ptr));
                     break;
-                case VariantType.VarVariantmap:
+                case VariantType.VarVariantMap:
                     dest.Set((VariantMap) _field.GetValue(ptr));
                     break;
-                case VariantType.VarIntrect:
+                case VariantType.VarIntRect:
                     dest.Set((IntRect) _field.GetValue(ptr));
                     break;
-                case VariantType.VarIntvector2:
+                case VariantType.VarIntVector2:
                     dest.Set((IntVector2) _field.GetValue(ptr));
                     break;
                 case VariantType.VarPtr:
@@ -124,13 +124,13 @@ namespace Urho3DNet
                 case VariantType.VarDouble:
                     dest.Set((double) _field.GetValue(ptr));
                     break;
-                case VariantType.VarStringvector:
+                case VariantType.VarStringVector:
                     dest.Set((StringList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarRect:
                     dest.Set((Rect) _field.GetValue(ptr));
                     break;
-                case VariantType.VarIntvector3:
+                case VariantType.VarIntVector3:
                     dest.Set((IntVector3) _field.GetValue(ptr));
                     break;
                 case VariantType.VarInt64:
@@ -184,25 +184,25 @@ namespace Urho3DNet
                 case VariantType.VarBuffer:
                     _field.SetValue(ptr, src.GetBuffer());
                     break;
-                case VariantType.VarVoidptr:
+                case VariantType.VarVoidPtr:
                     _field.SetValue(ptr, src.GetVoidPtr());
                     break;
-                case VariantType.VarResourceref:
+                case VariantType.VarResourceRef:
                     _field.SetValue(ptr, src.GetResourceRef());
                     break;
-                case VariantType.VarResourcereflist:
+                case VariantType.VarResourceRefList:
                     _field.SetValue(ptr, src.GetResourceRefList());
                     break;
-                case VariantType.VarVariantvector:
+                case VariantType.VarVariantVector:
                     _field.SetValue(ptr, src.GetVariantVector());
                     break;
-                case VariantType.VarVariantmap:
+                case VariantType.VarVariantMap:
                     _field.SetValue(ptr, src.GetVariantMap());
                     break;
-                case VariantType.VarIntrect:
+                case VariantType.VarIntRect:
                     _field.SetValue(ptr, src.GetIntRect());
                     break;
-                case VariantType.VarIntvector2:
+                case VariantType.VarIntVector2:
                     _field.SetValue(ptr, src.GetIntVector2());
                     break;
                 case VariantType.VarPtr:
@@ -220,13 +220,13 @@ namespace Urho3DNet
                 case VariantType.VarDouble:
                     _field.SetValue(ptr, src.GetDouble());
                     break;
-                case VariantType.VarStringvector:
+                case VariantType.VarStringVector:
                     _field.SetValue(ptr, src.GetStringVector());
                     break;
                 case VariantType.VarRect:
                     _field.SetValue(ptr, src.GetRect());
                     break;
-                case VariantType.VarIntvector3:
+                case VariantType.VarIntVector3:
                     _field.SetValue(ptr, src.GetIntVector3());
                     break;
                 case VariantType.VarInt64:
@@ -282,7 +282,7 @@ namespace Urho3DNet
                     continue;
 
                 // No way to serialize that in any meaningful way.
-                if (variantType == VariantType.VarVoidptr)
+                if (variantType == VariantType.VarVoidPtr)
                     continue;
 
                 var enumNames = _emptyStringList;

@@ -13,6 +13,7 @@ namespace ea = eastl;
 #define static_assert(...)
 
 %include "stl.i"
+%include "stdint.i"
 %include "typemaps.i"
 
 %{
@@ -98,9 +99,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 %include "_events.i"
 %include "_enums.i"
 
-%rename(Outside) OUTSIDE;
-%rename(Intersects) INTERSECTS;
-%rename(Inside) INSIDE;
 %ignore Urho3D::M_PI;
 %ignore Urho3D::M_HALF_PI;
 %ignore Urho3D::M_MIN_INT;
@@ -135,8 +133,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 %typemap(in)                                  void*& %{ $1 = ($1_ltype)$input; %}
 %typecheck(SWIG_TYPECHECK_CHAR_PTR)           void*& ""
 
-%include "Urho3D/Math/MathDefs.h"
-
 // ---------------------------------------  ---------------------------------------
 
 %ignore Urho3D::textureFilterModeNames;
@@ -156,6 +152,21 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 // Declare inheritable classes in this file
 %include "Context.i"
 
+%rename("%(camelcase)s", %$isenumitem) "";
+%rename("%(camelcase)s", %$isvariable) "";
+
+%rename(VarVoidPtr) VAR_VOIDPTR;
+%rename(VarResourceRef) VAR_RESOURCEREF;
+%rename(VarResourceRefList) VAR_RESOURCEREFLIST;
+%rename(VarVariantVector) VAR_VARIANTVECTOR;
+%rename(VarVariantMap) VAR_VARIANTMAP;
+%rename(VarIntRect) VAR_INTRECT;
+%rename(VarIntVector2) VAR_INTVECTOR2;
+%rename(VarMatrix3x4) VAR_MATRIX3X4;
+%rename(VarStringVector) VAR_STRINGVECTOR;
+%rename(VarIntVector3) VAR_INTVECTOR3;
+
+%include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Polyhedron.h"
 %include "Urho3D/Math/Frustum.h"
 
