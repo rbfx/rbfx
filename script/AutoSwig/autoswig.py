@@ -159,8 +159,7 @@ class DefineConstantsPass(AstPass):
             type_name = re.sub(self.rx_deconst, '', node.type.spelling)
             idiomatic_name = camel_case(node.spelling)
             if not node.type.is_const_qualified():
-                # Non const variables are simply renamed
-                self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
+                # Non const variables are ignored
                 return False
 
             if node.type.spelling in ('const Urho3D::String', 'const char*'):
@@ -203,11 +202,6 @@ class DefineConstantsPass(AstPass):
                 _, name = fqn.rsplit('::', 1)
             else:
                 name = fqn
-            idiomatic_name = camel_case(node.spelling)
-            if name != idiomatic_name:
-                if node.kind == CursorKind.ENUM_CONSTANT_DECL:
-                    fqn = name
-                self.fp.write(f'%rename({idiomatic_name}) {fqn};\n')
 
         return True
 
