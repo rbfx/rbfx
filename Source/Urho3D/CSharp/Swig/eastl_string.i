@@ -112,38 +112,19 @@ class string;
 // string&
 
 // Helpers
-%csexposefunc(runtime, CreateString, const char*, const char*) %{
-    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]
-    private static string CreateString([param: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]string str)
-    {
-        return str;
-    }
-    internal delegate string CreateStringDelegate(string str);
-}%}
-
 %wrapper %{
     SWIGEXPORT void SWIGSTDCALL CSharp_Urho3D_String_Set(eastl::string* str, const char* val) { *str = val; }
+    SWIGEXPORT const char* SWIGSTDCALL CSharp_EaStl_String_Get(eastl::string* str) { return str->c_str(); }
 %}
 
 %pragma(csharp) modulecode=%{
-    [System.Runtime.InteropServices.StructLayout(System.Runtime.InteropServices.LayoutKind.Sequential)]
-    public struct Urho3DString
-    {
-        public int length;
-        public int capacity;
-        public System.IntPtr buffer;
+    [System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="CSharp_Urho3D_String_Set")]
+    internal static extern void SetString(global::System.IntPtr str,
+        [param: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]string val);
 
-        public void SetString(string value)
-        {
-            SetString(this, value);
-        }
-
-        [System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="CSharp_Urho3D_String_Set")]
-        private static extern void SetString([param: System.Runtime.InteropServices.MarshalAs(
-            System.Runtime.InteropServices.UnmanagedType.LPStruct)]Urho3DString str,
-            [param: System.Runtime.InteropServices.MarshalAs(
-                System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]string val);
-    }
+    [System.Runtime.InteropServices.DllImport("$dllimport", EntryPoint="CSharp_Urho3D_String_Get")]
+    [return: System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]
+    internal static extern string GetString(global::System.IntPtr str);
 
     internal static System.IntPtr strdup_string(string str)
     {
@@ -197,10 +178,9 @@ class string;
 %typemap(directorin)   string& "$input = (void*)addr($1);"
 %typemap(csdirectorin, pre="
     unsafe {
-        var $iminputStr = ($module.Urho3DString*)$iminput;
-        var $iminputRef = $module.ToString((byte*)$iminputStr->buffer);
+        var $iminputRef = $module.GetString($iminput);
 ", post="
-        $iminputStr->SetString($iminputRef);
+        $module.SetString($iminput, $iminputRef);
     }
 ") string&     "ref $iminputRef"
 
