@@ -22,6 +22,9 @@
 
 #pragma once
 
+#include <EASTL/vector.h>
+#include <EASTL/string.h>
+
 namespace pugi
 {
 class xml_node;

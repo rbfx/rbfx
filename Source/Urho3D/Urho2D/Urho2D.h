@@ -22,8 +22,12 @@
 
 #pragma once
 
+#include <Urho3D/Urho3D.h>
+
 namespace Urho3D
 {
+
+class Context;
 
 /// Register Urho2D library objects.
 void URHO3D_API RegisterUrho2DLibrary(Context* context);

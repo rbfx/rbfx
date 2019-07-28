@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <EASTL/shared_array.h>
+
 #include "../Scene/Component.h"
 
 namespace Urho3D

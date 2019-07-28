@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <EASTL/shared_ptr.h>
+#include "../Container/Ptr.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D

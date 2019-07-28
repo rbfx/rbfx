@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include <EASTL/shared_ptr.h>
+#include "../Container/Ptr.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/Material.h"
 #include "../Math/MathDefs.h"
