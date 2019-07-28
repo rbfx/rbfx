@@ -1,7 +1,7 @@
 
 venv:
-	python3 -m venv ../build/python-venv
-	../build/python-venv/bin/pip install clang
+	python3 -m venv ../cmake-build/python-venv
+	../cmake-build/python-venv/bin/pip install -r AutoSwig/requirements.txt
 
 autoswig:
-	../build/python-venv/bin/python AutoSwig/autoswig.py ../build/Source/Urho3D/CSharp/generator_options.txt
+	../cmake-build/python-venv/bin/python AutoSwig/autoswig.py ../cmake-build/Source/Urho3D/CSharp/generator_options.txt
