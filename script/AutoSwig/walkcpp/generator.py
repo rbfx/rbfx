@@ -116,7 +116,10 @@ class Generator(object):
         for p in passes:
             p.on_begin()
             for file_path in files:
-                root_node = trees[file_path] = self._build_tree(file_path, compiler_parameters)
+                try:
+                    root_node = trees[file_path]
+                except KeyError:
+                    root_node = trees[file_path] = self._build_tree(file_path, compiler_parameters)
                 p.on_file_begin()
                 walk_ast(p, root_node)
                 p.on_file_end()
