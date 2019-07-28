@@ -23,6 +23,7 @@
 #pragma once
 
 #include "../Graphics/Drawable.h"
+#include "../Graphics/Texture2D.h"
 #include "../Math/Frustum.h"
 
 namespace Urho3D

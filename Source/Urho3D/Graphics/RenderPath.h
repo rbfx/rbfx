@@ -24,7 +24,7 @@
 
 
 #include "../Core/Variant.h"
-#include <EASTL/shared_ptr.h>
+#include "../Container/Ptr.h"
 #include "../Container/RefCounted.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Math/Color.h"

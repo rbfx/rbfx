@@ -24,7 +24,7 @@
 
 #include <EASTL/unordered_map.h>
 
-#include "../Container/RefCounted.h"
+#include "../Container/Ptr.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
 

@@ -22,10 +22,9 @@
 
 #pragma once
 
-#include <EASTL/shared_ptr.h>
 #include <EASTL/vector.h>
 
-#include "../Container/RefCounted.h"
+#include "../Container/Ptr.h"
 #include "../Scene/AnimationDefs.h"
 
 namespace Urho3D
