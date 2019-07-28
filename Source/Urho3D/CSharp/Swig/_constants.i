@@ -6,8 +6,6 @@
 %ignore Urho3D::STREAM_BUFFER_LENGTH;
 %ignore Urho3D::PROFILER_COLOR_EVENTS;
 %ignore Urho3D::PROFILER_COLOR_RESOURCES;
-//%ignore Urho3D::DEFAULT_TASK_SIZE;
-//%constant unsigned int DefaultTaskSize = Urho3D::DEFAULT_TASK_SIZE;   // TODO: Fix in AutoSwig
 %ignore Urho3D::VARIANT_VALUE_SIZE;
 %ignore Urho3D::EP_AUTOLOAD_PATHS;
 %ignore Urho3D::EP_BORDERLESS;
@@ -54,6 +52,7 @@
 %ignore Urho3D::EP_WINDOW_POSITION_X;
 %ignore Urho3D::EP_WINDOW_POSITION_Y;
 %ignore Urho3D::EP_WINDOW_RESIZABLE;
+%ignore Urho3D::EP_WINDOW_MAXIMIZE;
 %ignore Urho3D::EP_WINDOW_TITLE;
 %ignore Urho3D::EP_WINDOW_WIDTH;
 %ignore Urho3D::EP_WORKER_THREADS;
@@ -193,6 +192,8 @@
 %ignore Urho3D::SHADOW_MIN_VIEW;
 %ignore Urho3D::MAX_LIGHT_SPLITS;
 %ignore Urho3D::MAX_CASCADE_SPLITS;
+%ignore Urho3D::DEFAULT_LIGHTTYPE;
+%constant enum Urho3D::LightType DefaultLighttype = Urho3D::DEFAULT_LIGHTTYPE;
 %ignore Urho3D::DEFAULT_RANGE;
 %ignore Urho3D::DEFAULT_LIGHT_FOV;
 %ignore Urho3D::DEFAULT_SPECULARINTENSITY;
@@ -268,10 +269,14 @@
 %ignore Urho3D::FONT_DPI;
 %ignore Urho3D::DEFAULT_FONT_SIZE;
 %ignore Urho3D::UI_VERTEX_SIZE;
+%ignore Urho3D::PIXEL_SIZE;
+%constant float PixelSize = Urho3D::PIXEL_SIZE;
 %ignore Urho3D::FLIP_HORIZONTAL;
 %ignore Urho3D::FLIP_VERTICAL;
 %ignore Urho3D::FLIP_DIAGONAL;
 %ignore Urho3D::FLIP_RESERVED;
+%ignore Urho3D::FLIP_ALL;
+%constant unsigned int FlipAll = Urho3D::FLIP_ALL;
 %pragma(csharp) modulecode=%{
   public const string SoundMaster = "Master";
   public const string SoundEffect = "Effect";
@@ -327,6 +332,7 @@
   public const string EpWindowPositionX = "WindowPositionX";
   public const string EpWindowPositionY = "WindowPositionY";
   public const string EpWindowResizable = "WindowResizable";
+  public const string EpWindowMaximize = "WindowMaximize";
   public const string EpWindowTitle = "WindowTitle";
   public const string EpWindowWidth = "WindowWidth";
   public const string EpWorkerThreads = "WorkerThreads";
