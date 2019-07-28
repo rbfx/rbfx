@@ -217,6 +217,10 @@
   }
 %enddef
 
+// TODO: Fix autoswig script to output these as well.
+URHO3D_REFCOUNTED(Urho3D::RefCounted);
+URHO3D_REFCOUNTED(Urho3D::ShaderProgram);
+
 %include "_refcounted.i"
 //%interface_custom("%s", "I%s", Urho3D::RefCounted);
 %director Urho3D::RefCounted;
