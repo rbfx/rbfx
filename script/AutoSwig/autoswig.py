@@ -162,7 +162,7 @@ class DefineConstantsPass(AstPass):
                 # Non const variables are ignored
                 return False
 
-            if node.type.spelling in ('const Urho3D::String', 'const char*'):
+            if node.type.spelling in ('const ea::string', 'const char*'):
                 node_expr = node.find_child(kind=CursorKind.UNEXPOSED_EXPR)
                 if node_expr:
                     type_name = 'string'
@@ -191,7 +191,11 @@ class DefineConstantsPass(AstPass):
                 self.cs_code.append(f'  public const {type_name} {idiomatic_name} = {value};\n')
             else:
                 # Convert readonly variable
-                self.fp.write(f'%constant {type_name} {idiomatic_name} = {fqn};\n')
+                if node.c.type.kind == TypeKind.ENUM:
+                    enum = 'enum '
+                else:
+                    enum = ''
+                self.fp.write(f'%constant {enum}{type_name} {idiomatic_name} = {fqn};\n')
 
         elif node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL, CursorKind.FIELD_DECL, CursorKind.ENUM_CONSTANT_DECL):
             if node.kind in (CursorKind.CXX_METHOD, CursorKind.FUNCTION_DECL):
@@ -520,10 +524,10 @@ class Urho3DModule(Module):
     def __init__(self, args):
         super().__init__(args)
         self.name = 'Urho3D'
+        self.compiler_parameters += ['-std=c++17']
         if os.name == 'nt':
-            self.compiler_parameters += ['-cc1', '-x', 'c++', '-fms-extensions', '-std=c++14']
+            self.compiler_parameters += ['-cc1', '-x', 'c++', '-fms-extensions']
         else:
-            self.compiler_parameters += ['-std=c++11']
             llvm_config = find_program('llvm-config', ['/usr/local/opt/llvm/bin'])
             self.compiler_parameters += \
                 filter(lambda s: len(s), subprocess.check_output([llvm_config, '--cppflags']).decode().strip().split(' '))
@@ -571,6 +575,9 @@ def main():
     else:
         program_args = sys.argv[1:]
     args = bind.parse_args(program_args)
+
+    # Filter out CMake's generators.
+    args.parameters = filter(lambda p: '$<' not in p, args.parameters)
 
     if os.name == 'nt':
         try:
