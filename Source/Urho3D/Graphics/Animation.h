@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Container/FlagSet.h"
-#include <EASTL/shared_ptr.h>
+#include "../Container/Ptr.h"
 #include "../Math/Quaternion.h"
 #include "../Math/Vector3.h"
 #include "../Resource/Resource.h"

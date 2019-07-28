@@ -22,9 +22,11 @@
 
 #pragma once
 
-#include <EASTL/shared_ptr.h>
 #include <EASTL/unordered_map.h>
 
+#include <Urho3D/Urho3D.h>
+
+#include "../Container/Ptr.h"
 #include "../Math/AreaAllocator.h"
 
 namespace Urho3D

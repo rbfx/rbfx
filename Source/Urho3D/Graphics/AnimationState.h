@@ -23,8 +23,8 @@
 #pragma once
 
 #include <EASTL/unordered_map.h>
-#include <EASTL/shared_ptr.h>
 
+#include "../Container/Ptr.h"
 #include "../Math/StringHash.h"
 
 namespace Urho3D

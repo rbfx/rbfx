@@ -23,7 +23,7 @@
 #pragma once
 
 #include "../Core/Object.h"
-#include <EASTL/shared_ptr.h>
+#include "../Container/Ptr.h"
 #include "../Math/Ray.h"
 #include "../Math/Rect.h"
 #include "../Math/Vector2.h"

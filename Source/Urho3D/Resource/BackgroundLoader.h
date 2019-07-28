@@ -26,7 +26,7 @@
 #include <EASTL/unordered_map.h>
 
 #include "../Core/Mutex.h"
-#include "../Container/RefCounted.h"
+#include "../Container/Ptr.h"
 #include "../Core/Thread.h"
 #include "../Math/StringHash.h"
 

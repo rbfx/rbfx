@@ -24,7 +24,7 @@
 
 #include <EASTL/shared_array.h>
 
-#include <EASTL/shared_ptr.h>
+#include "../Container/Ptr.h"
 #include "../Graphics/GraphicsDefs.h"
 #include "../Graphics/Skeleton.h"
 #include "../Math/BoundingBox.h"
