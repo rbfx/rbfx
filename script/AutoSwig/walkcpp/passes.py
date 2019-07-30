@@ -13,15 +13,15 @@ class AstPass(object):
 
     def on_begin(self):
         """Called once per module on very start of ast processing."""
-        pass
+        return True
 
     def on_end(self):
         """Called once per module on very end of ast processing."""
         pass
 
-    def on_file_begin(self):
+    def on_file_begin(self, file_path):
         """Called on start of file ast processing."""
-        pass
+        return True
 
     def on_file_end(self):
         """Called on end of file ast processing."""

@@ -57,6 +57,7 @@ namespace ea = eastl;
 %include "cmalloc.i"
 %include "arrays_csharp.i"
 %include "swiginterface.i"
+%include "attribute.i"
 %include "InstanceCache.i"
 %include "Helpers.i"
 %include "Operators.i"
@@ -153,7 +154,7 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 %include "Context.i"
 
 %rename("%(camelcase)s", %$isenumitem) "";
-%rename("%(camelcase)s", %$isvariable) "";
+%rename("%(camelcase)s", %$isvariable, %$ispublic) "";
 
 %rename(VarVoidPtr) VAR_VOIDPTR;
 %rename(VarResourceRef) VAR_RESOURCEREF;
@@ -202,7 +203,7 @@ namespace SDL
   #include "../ThirdParty/SDL/include/SDL/SDL_keycode.h"
 }
 // --------------------------------------- Core ---------------------------------------
-
+%include "_properties_core.i"
 %ignore Urho3D::RegisterResourceLibrary;
 %ignore Urho3D::RegisterSceneLibrary;
 %ignore Urho3D::RegisterAudioLibrary;
@@ -244,6 +245,7 @@ namespace SDL
 %include "Urho3D/Core/Mutex.h"
 
 // --------------------------------------- Engine ---------------------------------------
+%include "_properties_engine.i"
 %ignore Urho3D::Engine::DefineParameters;
 
 %include "Urho3D/Engine/EngineDefs.h"
@@ -259,6 +261,7 @@ namespace SDL
 #endif
 
 // --------------------------------------- Input ---------------------------------------
+%include "_properties_input.i"
 %typemap(csbase) Urho3D::MouseButton "uint"
 %csconstvalue("uint.MaxValue") MOUSEB_ANY;
 
@@ -280,6 +283,7 @@ namespace SDL
 %include "Urho3D/Input/Input.h"
 
 // --------------------------------------- IO ---------------------------------------
+%include "_properties_io.i"
 %ignore Urho3D::GetWideNativePath;
 %ignore Urho3D::logLevelNames;
 
@@ -298,6 +302,7 @@ namespace SDL
 %include "Urho3D/IO/FileSystem.h"
 
 // --------------------------------------- Resource ---------------------------------------
+%include "_properties_resource.i"
 %ignore Urho3D::XMLFile::GetDocument;
 %ignore Urho3D::XMLElement::XMLElement(XMLFile* file, pugi::xml_node_struct* node);
 %ignore Urho3D::XMLElement::XMLElement(XMLFile* file, const XPathResultSet* resultSet, const pugi::xpath_node* xpathNode, unsigned xpathResultIndex);
@@ -326,6 +331,7 @@ public:
 // These expose iterators of underlying collection. Iterate object through GetObject() instead.
 %ignore Urho3D::BackgroundLoadItem;
 %ignore Urho3D::BackgroundLoader::ThreadFunction;
+%rename(GetValueType) Urho3D::PListValue::GetType;
 
 %include "Urho3D/Resource/Resource.h"
 #if defined(URHO3D_THREADING)
@@ -341,6 +347,8 @@ public:
 %include "Urho3D/Resource/ResourceCache.h"
 
 // --------------------------------------- Scene ---------------------------------------
+%include "_properties_scene.i"
+
 %ignore Urho3D::DirtyBits::data_;
 %ignore Urho3D::SceneReplicationState::dirtyNodes_;		// Needs HashSet wrapped
 %ignore Urho3D::NodeReplicationState::dirtyVars_;		// Needs HashSet wrapped
@@ -350,8 +358,6 @@ public:
 %ignore Urho3D::Serializable::networkState_;
 %ignore Urho3D::Serializable::instanceDefaultValues_;
 %ignore Urho3D::ReplicationState::connection_;
-%ignore Urho3D::Node::SetOwner;
-%ignore Urho3D::Node::GetOwner;
 %ignore Urho3D::Component::CleanupConnection;
 %ignore Urho3D::Scene::CleanupConnection;
 %ignore Urho3D::Node::CleanupConnection;
@@ -374,6 +380,7 @@ public:
 %include "Urho3D/Scene/UnknownComponent.h"
 
 // --------------------------------------- Audio ---------------------------------------
+%include "_properties_audio.i"
 %apply int FIXED[]  { int *dest }
 %apply int* OUTPUT  { int& x, int& y }
 %typemap(cstype) int *dest "ref int[]"
@@ -395,6 +402,7 @@ public:
 
 // --------------------------------------- IK ---------------------------------------
 #if defined(URHO3D_IK)
+%include "_properties_ik.i"
 %{ using Algorithm = Urho3D::IKSolver::Algorithm; %}
 
 %include "Urho3D/IK/IKConstraint.h"
@@ -403,6 +411,7 @@ public:
 %include "Urho3D/IK/IKSolver.h"
 #endif
 // --------------------------------------- Graphics ---------------------------------------
+%include "_properties_graphics.i"
 %ignore Urho3D::FrustumOctreeQuery::TestDrawables;
 %ignore Urho3D::SphereOctreeQuery::TestDrawables;
 %ignore Urho3D::AllContentOctreeQuery::TestDrawables;
@@ -520,6 +529,7 @@ public:
 
 // --------------------------------------- Navigation ---------------------------------------
 #if defined(URHO3D_NAVIGATION)
+%include "_properties_navigation.i"
 %template(CrowdAgentArray)       eastl::vector<Urho3D::CrowdAgent*>;
 
 %apply void* VOID_INT_PTR {
@@ -550,6 +560,7 @@ public:
 
 // --------------------------------------- Network ---------------------------------------
 #if defined(URHO3D_NETWORK)
+%include "_properties_network.i"
 %ignore Urho3D::Network::MakeHttpRequest;
 %ignore Urho3D::PackageDownload;
 %ignore Urho3D::PackageUpload;
@@ -576,6 +587,7 @@ public:
 
 //// --------------------------------------- Physics ---------------------------------------
 #if defined(URHO3D_PHYSICS)
+//%include "_properties_physics.i"
 //%ignore Urho3D::TriangleMeshData::meshInterface_;
 //%ignore Urho3D::TriangleMeshData::shape_;
 //%ignore Urho3D::TriangleMeshData::infoMap_;
@@ -590,6 +602,7 @@ public:
 #endif
 // --------------------------------------- SystemUI ---------------------------------------
 #if defined(URHO3D_SYSTEMUI)
+%include "_properties_systemui.i"
 %apply void* VOID_INT_PTR {
 	ImFont*
 }
@@ -619,6 +632,7 @@ public:
 %include "Urho3D/SystemUI/SystemUI.h"
 #endif
 // --------------------------------------- UI ---------------------------------------
+%include "_properties_ui.i"
 %ignore Urho3D::UIElement::GetBatches;
 %ignore Urho3D::UIElement::GetDebugDrawBatches;
 %ignore Urho3D::UIElement::GetBatchesWithOffset;
@@ -655,6 +669,9 @@ public:
 
 // --------------------------------------- Urho2D ---------------------------------------
 #if URHO3D_URHO2D
+%include "_properties_urho2d.i"
+%rename(GetMapType) Urho3D::TileMapObject2D::GetType;
+%rename(GetLayerType) Urho3D::TmxLayer2D::GetType;
 %template(Sprite2DMap) eastl::unordered_map<eastl::string, Urho3D::SharedPtr<Urho3D::Sprite2D>>;
 %template(PhysicsRaycastResult2DArray) eastl::vector<Urho3D::PhysicsRaycastResult2D>;
 %template(RigitBody2DArray) eastl::vector<Urho3D::RigidBody2D*>;
