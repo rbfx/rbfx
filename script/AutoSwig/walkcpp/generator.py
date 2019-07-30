@@ -114,16 +114,16 @@ class Generator(object):
         files = sorted(module.gather_files())
 
         for p in passes:
-            p.on_begin()
-            for file_path in files:
-                try:
-                    root_node = trees[file_path]
-                except KeyError:
-                    root_node = trees[file_path] = self._build_tree(file_path, compiler_parameters)
-                p.on_file_begin()
-                walk_ast(p, root_node)
-                p.on_file_end()
-            p.on_end()
+            if p.on_begin():
+                for file_path in files:
+                    try:
+                        root_node = trees[file_path]
+                    except KeyError:
+                        root_node = trees[file_path] = self._build_tree(file_path, compiler_parameters)
+                    if p.on_file_begin(file_path):
+                        walk_ast(p, root_node)
+                        p.on_file_end(file_path)
+                p.on_end()
 
     @staticmethod
     def _build_tree(file_path, compiler_parameters):

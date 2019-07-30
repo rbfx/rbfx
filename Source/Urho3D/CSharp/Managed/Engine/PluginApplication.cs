@@ -29,7 +29,7 @@ namespace Urho3DNet
         private void OnSetupInstance()
         {
             // Register factories marked with attributes
-            var context = GetContext();
+            var context = Context;
             foreach (var pair in GetType().Assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
             {
                 context.RegisterFactory(pair.Item1, pair.Item2.Category);

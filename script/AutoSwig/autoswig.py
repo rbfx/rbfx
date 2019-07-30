@@ -126,6 +126,7 @@ class DefineConstantsPass(AstPass):
 
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_constants.i'), 'w+')
+        return True
 
     def on_end(self):
         self.fp.write('%pragma(csharp) modulecode=%{\n')
@@ -265,6 +266,26 @@ class DefinePropertiesPass(AstPass):
         'Urho3D::Octant',
         'Urho3D::GPUObject',
     ]
+    pod_types = [
+        'ea::string',
+        'Urho3D::Color',
+        'Urho3D::Rect',
+        'Urho3D::IntRect',
+        'Urho3D::Vector2',
+        'Urho3D::IntVector2',
+        'Urho3D::Vector3',
+        'Urho3D::IntVector3',
+        'Urho3D::Vector4',
+        'Urho3D::Matrix3',
+        'Urho3D::Matrix3x4',
+        'Urho3D::Matrix4',
+        'Urho3D::Quaternion',
+        'Urho3D::Plane',
+        'Urho3D::BoundingBox',
+        'Urho3D::Sphere',
+        'Urho3D::Ray',
+        'Urho3D::StringHash',
+    ]
 
     class Property:
         name = None
@@ -281,12 +302,22 @@ class DefinePropertiesPass(AstPass):
     def access_to_str(self, m):
         return 'public' if m.access == AccessSpecifier.PUBLIC else 'protected'
 
-    def on_begin(self):
-        self.fp = open(os.path.join(self.module.args.output, '_properties.i'), 'w+')
-        self.fp.write('%include "attribute.i"\n')
+    def on_file_begin(self, file_path):
+        if os.path.abspath(file_path).startswith(self.module.args.input):
+            try:
+                dir_name = os.path.abspath(file_path)[len(self.module.args.input):].strip('/').split('/')[0].lower()
+            except:
+                return False
+            self.fp = open(os.path.join(self.module.args.output, f'_properties_{dir_name}.i'), 'a+')
+            return True
+        else:
+            return False
 
-    def on_end(self):
+    def on_file_end(self, file_path):
+        file_name = self.fp.name
         self.fp.close()
+        if os.stat(file_name).st_size == 0:
+            os.unlink(file_name)
 
     def sort_getters_and_setters(self, methods):
         sorted_methods = OrderedDict()
@@ -357,55 +388,186 @@ class DefinePropertiesPass(AstPass):
         except KeyError:
             return name
 
-    @AstPass.once
-    def visit(self, node, action: AstAction):
-        if node.kind == CursorKind.CLASS_DECL or node.kind == CursorKind.STRUCT_DECL:
-            methods = list(node.find_children(kind=CursorKind.CXX_METHOD))
-            methods = list(filter(lambda m: m.spelling.startswith('Get') or
-                                            m.spelling.startswith('Set') or
-                                            m.spelling.startswith('Is'), methods))
-            if not len(methods):
-                return True
+    def visit(self, getter, action: AstAction):
+        if action == AstAction.ENTER:
+            if getter.kind == CursorKind.CLASS_DECL:
+                self.properties = []
+                self.method_attribs = []
+        else:
+            if getter.kind == CursorKind.CLASS_DECL and len(self.properties):
+                self.fp.write(f'%typemap(cscode) {getter.fully_qualified_name} %{{\n')
+                self.fp.write('\n'.join(self.properties))
+                self.fp.write('\n%}\n')
+                self.fp.write('\n'.join(self.method_attribs))
+                self.fp.write('\n')
+            return
 
-            properties = self.sort_getters_and_setters(methods)
-            if not len(properties):
-                return True
+        # Getter must be a method
+        if getter.kind != CursorKind.CXX_METHOD:
+            return True
 
-            for basename, prop in properties.items():
-                if not prop.getter:
-                    continue
-                # base_type = desugar_type(prop.type)
-                # if base_type.kind in builtin_to_cs:
-                #     base_type = builtin_to_cs[base_type.kind]
-                # else:
-                #     if 'FlagSet' in base_type.spelling:
-                #         base_type = base_type.spelling[16:-7]
-                #     else:
-                #         base_type = prop.type.spelling
-                #     base_type = base_type.replace('Urho3D::', 'Urho3DNet.')
+        # Getter must be public
+        if getter.access != AccessSpecifier.PUBLIC:
+            return True
 
-                if prop.access == prop.getter.access:
-                    prop.getter.access = ''
+        # Getter must not be static
+        if getter.c.is_static_method():
+            return True
 
-                self.fp.write(f"""
-                %csmethodmodifiers {get_fully_qualified_name(prop.getter)} "
-                {prop.access} $typemap(cstype, {prop.type.spelling}) {prop.name} {{
-                    {prop.getter_access} get {{ return __{prop.getter.spelling}(); }}
-                """)
-                if prop.setter:
-                    if prop.access == prop.setter.access:
-                        prop.setter.access = ''
-                    self.fp.write(f"""
-                    {prop.setter_access} set {{ __{prop.setter.spelling}(value); }}
-                    """)
-                self.fp.write("""
-                }
-                private"
-                """)
-                self.fp.write(f'%rename(__{prop.getter.spelling}) {get_fully_qualified_name(prop.getter)};\n')
-                if prop.setter:
-                    self.fp.write(f'%rename(__{prop.setter.spelling}) {get_fully_qualified_name(prop.setter)};\n')
-                    self.fp.write(f'%csmethodmodifiers {get_fully_qualified_name(prop.setter)} "private"\n')
+        # Getter must start with 'Get' or 'Is'
+        if getter.spelling.startswith('Get'):
+            attribute_name = getter.spelling[3:]
+        elif getter.spelling.startswith('Is'):
+            attribute_name = getter.spelling
+        else:
+            return True
+
+        # Getter must not be virtual
+        if getter.c.is_virtual_method():
+            print(f'Ignore {getter.fully_qualified_name}: virtual')
+            return False
+
+        # Getter must have no parameters and a return type
+        if len(list(getter.c.get_arguments())) != 0:
+            print(f'Ignore {getter.fully_qualified_name}: parameters')
+            return True
+
+        # Getter must have no parameters and a return type
+        if getter.c.result_type is None or getter.c.result_type.spelling == 'void':
+            print(f'Ignore {getter.fully_qualified_name}: return type')
+            return True
+
+        # Something with the same name already exists
+        for c in getter.parent.find_children():
+            if c.access == AccessSpecifier.PUBLIC and camel_case(c.spelling) == attribute_name:
+                print(f'Ignore {getter.fully_qualified_name}: attr name taken')
+                return False
+
+        # Multiple overloads exist
+        if len(list(getter.parent.find_children(spelling=getter.spelling))) > 1:
+            print(f'Ignore {getter.fully_qualified_name}: overloads')
+            return False
+
+        # We have a getter method now. Find a setter.
+        def find_setter(n):
+            nonlocal getter
+            # Setter must be public
+            if n.access != AccessSpecifier.PUBLIC or n.c.kind != CursorKind.CXX_METHOD:
+                return False
+            if not n.c.is_virtual_method() and not n.c.is_static_method() and n.spelling == f'Set{attribute_name}':
+                setter_parameters = list(n.c.get_arguments())
+                if len(setter_parameters) != 1:
+                    return False
+                # Compare parameter type of setter and return type of getter
+                return setter_parameters[0].type.spelling == getter.result_type.spelling
+            return False
+        try:
+            setter = next(filter(find_setter, getter.parent.children))
+        except StopIteration:
+            setter = None
+        cstype = getter.c.result_type.get_canonical().spelling
+        # Clean up type we will be using to look up typemaps with. SWIG does not use canonical types but rather is
+        # matching what it gets directly. These replacements are incomplete.
+        cstype = cstype.replace('eastl::basic_string<char, eastl::allocator>', 'eastl::string')
+        cstype = cstype.replace(', eastl::allocator>', '>')
+        cstype = re.sub(r'eastl::hash_map<(.*), eastl::hash<.*>, eastl::allocator, false>', r'eastl::unordered_map<\1>', cstype)
+        cstype = re.sub(r'eastl::hash_map<(.*), eastl::hash<.*>, eastl::allocator, true>', r'eastl::map<\1>', cstype)
+        cstype = re.sub(r'Urho3D::FlagSet<(.*), .*>', r'\1', cstype)
+
+        self.properties.append(f'  public $typemap(cstype, {cstype}) {attribute_name} {{')
+        self.properties.append(f'    get {{ return {getter.spelling}(); }}')
+        self.method_attribs.append(f'%csmethodmodifiers {getter.fully_qualified_name} "private";')
+        if setter is not None:
+            self.properties.append(f'    set {{ {setter.spelling}(value); }}')
+            self.method_attribs.append(f'%csmethodmodifiers {setter.fully_qualified_name} "private";')
+        self.properties.append('  }')
+
+        # attribute = '%attribute'
+        # # attribute for T (primitive)
+        # # attribute2 for const T&
+        # # attributeref for T&
+        # # attributestring for ea::string, const char*
+        # # attributeval for T
+        # result = getter.c.result_type.spelling
+        # is_flagset = False
+        # try:
+        #     base_type = desugar_type(getter.c.result_type)
+        #     if 'FlagSet' in base_type.spelling:
+        #         result = base_type.spelling[16:-7]
+        #         is_flagset = True
+        # except AttributeError:
+        #     pass
+        #
+        # pointee = getter.c.result_type.get_pointee()
+        # if pointee.kind != TypeKind.INVALID:
+        #     if pointee.is_const_qualified():
+        #         assert pointee.spelling.startswith('const ')
+        #         result = pointee.spelling[6:]
+        #     elif setter is None and getter.c.result_type.kind not in (TypeKind.LVALUEREFERENCE, TypeKind.POINTER):
+        #         attribute = '%attributeref'
+        # elif not is_flagset and not getter.c.result_type.is_pod() and not getter.c.is_scoped_enum() and \
+        #     not result.startswith('SharedPtr<') and not result.startswith('WeakPtr<') and \
+        #     not result.startswith('ea::shared_array') and result not in self.pod_types:
+        #     attribute = '%attributeval'
+        #
+        # def arg(a):
+        #     if ',' in a:
+        #         return f'%arg({a})'
+        #     else:
+        #         return a
+        #
+        # self.fp.write(f'{attribute}({arg(getter.parent.fully_qualified_name)}, {arg(result)}, {arg(attribute_name)}, {arg(getter.spelling)}')
+        # if setter is not None:
+        #     self.fp.write(f', {arg(setter.spelling)}')
+        # self.fp.write(');\n')
+
+        # if node.kind == CursorKind.CLASS_DECL or node.kind == CursorKind.STRUCT_DECL:
+        #     methods = list(node.find_children(kind=CursorKind.CXX_METHOD))
+        #     methods = list(filter(lambda m: m.spelling.startswith('Get') or
+        #                                     m.spelling.startswith('Set') or
+        #                                     m.spelling.startswith('Is'), methods))
+        #     if not len(methods):
+        #         return True
+        #
+        #     properties = self.sort_getters_and_setters(methods)
+        #     if not len(properties):
+        #         return True
+        #
+        #     for basename, prop in properties.items():
+        #         if not prop.getter:
+        #             continue
+        #         # base_type = desugar_type(prop.type)
+        #         # if base_type.kind in builtin_to_cs:
+        #         #     base_type = builtin_to_cs[base_type.kind]
+        #         # else:
+        #         #     if 'FlagSet' in base_type.spelling:
+        #         #         base_type = base_type.spelling[16:-7]
+        #         #     else:
+        #         #         base_type = prop.type.spelling
+        #         #     base_type = base_type.replace('Urho3D::', 'Urho3DNet.')
+        #
+        #         if prop.access == prop.getter.access:
+        #             prop.getter.access = ''
+        #
+        #         self.fp.write(f"""
+        #         %csmethodmodifiers {get_fully_qualified_name(prop.getter)} "
+        #         {prop.access} $typemap(cstype, {prop.type.spelling}) {prop.name} {{
+        #             {prop.getter_access} get {{ return __{prop.getter.spelling}(); }}
+        #         """)
+        #         if prop.setter:
+        #             if prop.access == prop.setter.access:
+        #                 prop.setter.access = ''
+        #             self.fp.write(f"""
+        #             {prop.setter_access} set {{ __{prop.setter.spelling}(value); }}
+        #             """)
+        #         self.fp.write("""
+        #         }
+        #         private"
+        #         """)
+        #         self.fp.write(f'%rename(__{prop.getter.spelling}) {get_fully_qualified_name(prop.getter)};\n')
+        #         if prop.setter:
+        #             self.fp.write(f'%rename(__{prop.setter.spelling}) {get_fully_qualified_name(prop.setter)};\n')
+        #             self.fp.write(f'%csmethodmodifiers {get_fully_qualified_name(prop.setter)} "private"\n')
 
         return True
 
@@ -427,6 +589,7 @@ class CleanEnumValues(AstPass):
 
     def on_begin(self):
         self.fp = open(os.path.join(self.module.args.output, '_enums.i'), 'w+')
+        return True
 
     def on_end(self):
         self.fp.close()
@@ -467,6 +630,7 @@ class DefineEventsPass(AstPass):
             'public static class E\n' +
             '{\n'
         )
+        return True
 
     def on_end(self):
         self.fp.write('}\n%}\n')
@@ -578,6 +742,11 @@ def main():
 
     # Filter out CMake's generators.
     args.parameters = filter(lambda p: '$<' not in p, args.parameters)
+
+    # Clean up properties files because passes append to them
+    for file in os.listdir(args.output):
+        if file.startswith('_properties_') and file.endswith('.i'):
+            os.unlink(f'{args.output}/{file}')
 
     if os.name == 'nt':
         try:
