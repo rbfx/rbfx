@@ -143,7 +143,7 @@ namespace Urho3DNet
 
         public override void Set(Serializable ptr, Variant src)
         {
-            if (src == null || src.GetVariantType() == VariantType.VarNone)
+            if (src == null || src.VariantType == VariantType.VarNone)
             {
                 _field.SetValue(ptr, null);
                 return;
@@ -155,82 +155,82 @@ namespace Urho3DNet
                     // Undetermined field type.
                     return;
                 case VariantType.VarInt:
-                    _field.SetValue(ptr, src.GetInt());
+                    _field.SetValue(ptr, src.Int);
                     break;
                 case VariantType.VarBool:
-                    _field.SetValue(ptr, src.GetBool());
+                    _field.SetValue(ptr, src.Bool);
                     break;
                 case VariantType.VarFloat:
-                    _field.SetValue(ptr, src.GetFloat());
+                    _field.SetValue(ptr, src.Float);
                     break;
                 case VariantType.VarVector2:
-                    _field.SetValue(ptr, src.GetVector2());
+                    _field.SetValue(ptr, src.Vector2);
                     break;
                 case VariantType.VarVector3:
-                    _field.SetValue(ptr, src.GetVector3());
+                    _field.SetValue(ptr, src.Vector3);
                     break;
                 case VariantType.VarVector4:
-                    _field.SetValue(ptr, src.GetVector4());
+                    _field.SetValue(ptr, src.Vector4);
                     break;
                 case VariantType.VarQuaternion:
-                    _field.SetValue(ptr, src.GetQuaternion());
+                    _field.SetValue(ptr, src.Quaternion);
                     break;
                 case VariantType.VarColor:
-                    _field.SetValue(ptr, src.GetColor());
+                    _field.SetValue(ptr, src.Color);
                     break;
                 case VariantType.VarString:
-                    _field.SetValue(ptr, src.GetString());
+                    _field.SetValue(ptr, src.String);
                     break;
                 case VariantType.VarBuffer:
-                    _field.SetValue(ptr, src.GetBuffer());
+                    _field.SetValue(ptr, src.Buffer);
                     break;
                 case VariantType.VarVoidPtr:
-                    _field.SetValue(ptr, src.GetVoidPtr());
+                    _field.SetValue(ptr, src.VoidPtr);
                     break;
                 case VariantType.VarResourceRef:
-                    _field.SetValue(ptr, src.GetResourceRef());
+                    _field.SetValue(ptr, src.ResourceRef);
                     break;
                 case VariantType.VarResourceRefList:
-                    _field.SetValue(ptr, src.GetResourceRefList());
+                    _field.SetValue(ptr, src.ResourceRefList);
                     break;
                 case VariantType.VarVariantVector:
-                    _field.SetValue(ptr, src.GetVariantVector());
+                    _field.SetValue(ptr, src.VariantVector);
                     break;
                 case VariantType.VarVariantMap:
-                    _field.SetValue(ptr, src.GetVariantMap());
+                    _field.SetValue(ptr, src.VariantMap);
                     break;
                 case VariantType.VarIntRect:
-                    _field.SetValue(ptr, src.GetIntRect());
+                    _field.SetValue(ptr, src.IntRect);
                     break;
                 case VariantType.VarIntVector2:
-                    _field.SetValue(ptr, src.GetIntVector2());
+                    _field.SetValue(ptr, src.IntVector2);
                     break;
                 case VariantType.VarPtr:
-                    _field.SetValue(ptr, src.GetPtr());
+                    _field.SetValue(ptr, src.Ptr);
                     break;
                 case VariantType.VarMatrix3:
-                    _field.SetValue(ptr, src.GetMatrix3());
+                    _field.SetValue(ptr, src.Matrix3);
                     break;
                 case VariantType.VarMatrix3x4:
-                    _field.SetValue(ptr, src.GetMatrix3x4());
+                    _field.SetValue(ptr, src.Matrix3x4);
                     break;
                 case VariantType.VarMatrix4:
-                    _field.SetValue(ptr, src.GetMatrix4());
+                    _field.SetValue(ptr, src.Matrix4);
                     break;
                 case VariantType.VarDouble:
-                    _field.SetValue(ptr, src.GetDouble());
+                    _field.SetValue(ptr, src.Double);
                     break;
                 case VariantType.VarStringVector:
-                    _field.SetValue(ptr, src.GetStringVector());
+                    _field.SetValue(ptr, src.StringVector);
                     break;
                 case VariantType.VarRect:
-                    _field.SetValue(ptr, src.GetRect());
+                    _field.SetValue(ptr, src.Rect);
                     break;
                 case VariantType.VarIntVector3:
-                    _field.SetValue(ptr, src.GetIntVector3());
+                    _field.SetValue(ptr, src.IntVector3);
                     break;
                 case VariantType.VarInt64:
-                    _field.SetValue(ptr, src.GetInt64());
+                    _field.SetValue(ptr, src.Int64);
                     break;
                 default:
                     throw new ArgumentOutOfRangeException();
@@ -250,8 +250,8 @@ namespace Urho3DNet
             if (type.Assembly == serializableType.Assembly || !type.IsSubclassOf(serializableType))
                 return;
 
-            var context = GetContext();
-            var allAttributes = context.GetAllAttributes();
+            var context = Context;
+            var allAttributes = context.AllAttributes;
             // And only once per type.
             if (allAttributes.ContainsKey(GetTypeHash()))
                 return;
