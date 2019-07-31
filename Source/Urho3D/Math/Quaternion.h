@@ -410,9 +410,9 @@ public:
     }
 
     /// Test for equality with another quaternion with epsilon.
-    bool Equals(const Quaternion& rhs) const
+    bool Equals(const Quaternion& rhs, float eps = M_EPSILON) const
     {
-        return Urho3D::Equals(w_, rhs.w_) && Urho3D::Equals(x_, rhs.x_) && Urho3D::Equals(y_, rhs.y_) && Urho3D::Equals(z_, rhs.z_);
+        return Urho3D::Equals(w_, rhs.w_, eps) && Urho3D::Equals(x_, rhs.x_, eps) && Urho3D::Equals(y_, rhs.y_, eps) && Urho3D::Equals(z_, rhs.z_, eps);
     }
 
     /// Return whether any element is NaN.

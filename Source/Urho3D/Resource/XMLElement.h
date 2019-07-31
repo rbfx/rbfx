@@ -27,6 +27,8 @@
 #include "../Math/BoundingBox.h"
 #include "../Math/Rect.h"
 
+#include <EASTL/unique_ptr.h>
+
 namespace pugi
 {
 
