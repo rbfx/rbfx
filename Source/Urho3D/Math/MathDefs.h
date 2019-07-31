@@ -66,7 +66,7 @@ enum Intersection
 
 /// Check whether two floating point values are equal within accuracy.
 template <class T>
-inline bool Equals(T lhs, T rhs) { return lhs + std::numeric_limits<T>::epsilon() >= rhs && lhs - std::numeric_limits<T>::epsilon() <= rhs; }
+inline bool Equals(T lhs, T rhs, T eps = M_EPSILON) { return lhs + eps >= rhs && lhs - eps <= rhs; }
 
 /// Linear interpolation between two values.
 template <class T, class U>
