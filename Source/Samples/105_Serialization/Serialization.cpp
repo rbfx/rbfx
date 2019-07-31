@@ -442,6 +442,7 @@ void Serialization::TestStructSerialization()
 
 void Serialization::TestSceneSerialization()
 {
+    bool success = true;
     auto sourceScene = CreateTestScene(context_, 1000);
 
     // Save and load binary
@@ -449,11 +450,11 @@ void Serialization::TestSceneSerialization()
     {
         VectorBuffer binarySceneData;
         BinaryOutputArchive binaryOutputArchive{ context_, binarySceneData };
-        sourceScene->Serialize(binaryOutputArchive);
+        success &= sourceScene->Serialize(binaryOutputArchive);
 
         binarySceneData.Seek(0);
         BinaryInputArchive binaryInputArchive{ context_, binarySceneData };
-        sceneFromBinary->Serialize(binaryInputArchive);
+        success &= sceneFromBinary->Serialize(binaryInputArchive);
     }
 
     // Save and load XML
@@ -461,10 +462,10 @@ void Serialization::TestSceneSerialization()
     {
         XMLFile xmlSceneData{ context_ };
         XMLOutputArchive xmlOutputArchive{ &xmlSceneData };
-        sourceScene->Serialize(xmlOutputArchive);
+        success &= sourceScene->Serialize(xmlOutputArchive);
 
         XMLInputArchive xmlInputArchive{ &xmlSceneData };
-        sceneFromXML->Serialize(xmlInputArchive);
+        success &= sceneFromXML->Serialize(xmlInputArchive);
     }
 
     // Save and load JSON
@@ -472,23 +473,24 @@ void Serialization::TestSceneSerialization()
     {
         JSONFile jsonSceneData{ context_ };
         JSONOutputArchive jsonOutputArchive{ &jsonSceneData };
-        sourceScene->Serialize(jsonOutputArchive);
+        success &= sourceScene->Serialize(jsonOutputArchive);
 
         JSONInputArchive jsonInputArchive{ &jsonSceneData };
-        sceneFromJSON->Serialize(jsonInputArchive);
+        success &= sceneFromJSON->Serialize(jsonInputArchive);
     }
 
     // Save legacy JSON and load JSON archive
     auto sceneFromLegacyJSON = MakeShared<Scene>(context_);
     {
         JSONFile jsonLegacySceneData{ context_ };
-        sourceScene->SaveJSON(jsonLegacySceneData.GetRoot());
+        success &= sourceScene->SaveJSON(jsonLegacySceneData.GetRoot());
 
         JSONInputArchive jsonLegacyInputArchive{ &jsonLegacySceneData };
-        sceneFromLegacyJSON->Serialize(jsonLegacyInputArchive);
+        success &= sceneFromLegacyJSON->Serialize(jsonLegacyInputArchive);
     }
 
     // Compare scenes
+    URHO3D_ASSERT(success);
     URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromBinary));
     URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromXML));
     URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromJSON));
