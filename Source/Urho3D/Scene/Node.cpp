@@ -116,6 +116,7 @@ bool Node::Serialize(Archive& archive)
             // Resolve IDs and apply attributes
             resolver.Resolve();
             ApplyAttributes();
+            return true;
         }
         else
         {

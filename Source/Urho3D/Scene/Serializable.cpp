@@ -38,10 +38,14 @@
 #include "../Scene/SceneEvents.h"
 #include "../Scene/Serializable.h"
 
+#include <EASTL/fixed_vector.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
+
+static const unsigned MAX_STACK_ATTRIBUTE_COUNT = 128;
 
 static unsigned RemapAttributeIndex(const ea::vector<AttributeInfo>* attributes, const AttributeInfo& netAttr, unsigned netAttrIndex)
 {
@@ -643,62 +647,140 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
     if (!attributes)
         return true;
 
-    if (ArchiveBlock attributeBlock = archive.OpenUnorderedBlock("attributes"))
+    const unsigned numAttributes = attributes->size();
+    if (archive.IsInput())
     {
-        if (archive.IsInput())
+        if (ArchiveBlock attributeBlock = archive.OpenMapBlock("attributes"))
         {
-            for (unsigned i = 0; i < attributes->size(); ++i)
+            // It should be either fixed vector of enough size or thread-local storage to avoid allocations
+            ea::fixed_vector<StringHash, MAX_STACK_ATTRIBUTE_COUNT> attributeNames;
+            // static thread_local ea::vector<StringHash> attributeNamesTemp;
+            // auto& attributeNames = attributeNamesTemp;
+
+            // Prepare array of attribute names for cache-friendly name lookup.
+            // TODO: Move this array to Context.
+            for (unsigned j = 0; j < numAttributes; ++j)
+                attributeNames.push_back(attributes->at(j).nameHash_);
+
+            unsigned numProcessedAttribs = 0;
+            unsigned attribIndex = 0;
+            for (unsigned i = 0; i < attributeBlock.GetSizeHint(); ++i)
             {
-                const AttributeInfo& attr = attributes->at(i);
-                if (!(attr.mode_ & AM_FILE))
+                // Read attribute name hash
+                StringHash attrNameHash;
+                SerializeStringHashKey(archive, attrNameHash, EMPTY_STRING);
+
+                // Find attribute index by name hash
+                // TODO: Iterate over separate array of 
+                const AttributeInfo* attr = nullptr;
+                for (unsigned j = 0; j < numAttributes; ++j)
+                {
+                    // Start looking from attribIndex, wrap search if not found.
+                    // If attributes are ordered, the loop will stop after first iteration.
+                    unsigned newAttribIndex = j + attribIndex;
+                    if (newAttribIndex >= numAttributes)
+                        newAttribIndex -= numAttributes;
+
+                    // Keep pointer and go to next attribute index if found.
+                    if (attributeNames[newAttribIndex] == attrNameHash)
+                    {
+                        attr = &attributes->at(newAttribIndex);
+
+                        attribIndex = newAttribIndex + 1;
+                        if (attribIndex >= numAttributes)
+                            attribIndex -= numAttributes;
+
+                        break;
+                    }
+                }
+
+                // Skip if not found or not serialized
+                if (!attr || !(attr->mode_ & AM_FILE))
                     continue;
 
+                // Read attribute value
                 Variant varValue;
                 bool success{};
-                if (attr.enumNames_)
+                if (attr->enumNames_)
                 {
                     int enumValue{};
-                    success = SerializeEnum<int, int>(archive, attr.name_.c_str(), attr.enumNames_, enumValue);
+                    success = SerializeEnum<int, int>(archive, attr->name_.c_str(), attr->enumNames_, enumValue);
                     varValue = enumValue;
                 }
                 else
                 {
-                    success = SerializeVariantValue(archive, attr.type_, attr.name_.c_str(), varValue);
+                    success = SerializeVariantValue(archive, attr->type_, attr->name_.c_str(), varValue);
                 }
 
-                // TODO Add error handling
                 if (success)
-                    OnSetAttribute(attr, varValue);
-#if 0
+                    OnSetAttribute(*attr, varValue);
+
                 if (!success)
                 {
-                    URHO3D_LOGERROR("Could not load " + GetTypeName() + ", stream not open or at end");
+                    URHO3D_LOGERROR("Could not load " + GetTypeName() + ", failed to read attribute " + attr->name_);
                     return false;
                 }
-#endif
+
+                ++numProcessedAttribs;
             }
-            return true;
-        }
-        else
-        {
-            Variant value;
 
-            for (unsigned i = 0; i < attributes->size(); ++i)
+            if (numProcessedAttribs < attributeBlock.GetSizeHint())
             {
-                const AttributeInfo& attr = attributes->at(i);
-                if (!(attr.mode_ & AM_FILE) || (attr.mode_ & AM_FILEREADONLY) == AM_FILEREADONLY)
-                    continue;
+                const unsigned numSkipped = attributeBlock.GetSizeHint() - numProcessedAttribs;
+                URHO3D_LOGWARNING(ea::to_string(numSkipped) + " atributes were skipped while loading " + GetTypeName());
+            }
+        }
 
-                OnGetAttribute(attr, value);
+        // Empty attribute block is fine too
+        return true;
+    }
+    else
+    {
+        // It should be either fixed vector of enough size or thread-local storage to avoid allocations
+        ea::fixed_vector<ea::pair<unsigned, Variant>, MAX_STACK_ATTRIBUTE_COUNT> attributesToWrite;
+        // static thread_local ea::vector<ea::pair<unsigned, Variant>> attributesToWriteTemp;
+        // auto& attributesToWrite = attributesToWriteTemp;
 
-                // Skip default values if archive supports it
-                if (archive.IsUnorderedSupported() && !SaveDefaultAttributes(attr))
+        // Collect attributes to write
+        attributesToWrite.clear();
+        for (unsigned index = 0; index < numAttributes; ++index)
+        {
+            const AttributeInfo& attr = (*attributes)[index];
+
+            if (!(attr.mode_ & AM_FILE))
+                continue;
+
+            // Allocate storage and get the value
+            attributesToWrite.emplace_back(index);
+            Variant& value = attributesToWrite.back().second;
+
+            OnGetAttribute(attr, value);
+
+            // Skip default arguments for readability
+            if (archive.IsHumanReadable() && !SaveDefaultAttributes(attr))
+            {
+                Variant defaultValue = GetAttributeDefault(index);
+                if (value == defaultValue)
                 {
-                    Variant defaultValue = GetAttributeDefault(i);
-                    if (value == defaultValue)
-                        continue;
+                    // Code is optimized for binary archives that never skip arguments
+                    attributesToWrite.pop_back();
+                    continue;
                 }
+            }
+        }
 
+        // Write attributes
+        if (ArchiveBlock attributeBlock = archive.OpenMapBlock("attributes", attributesToWrite.size()))
+        {
+            for (const auto& elem : attributesToWrite)
+            {
+                const AttributeInfo& attr = (*attributes)[elem.first];
+                const Variant& value = elem.second;
+
+                // Save attribute name
+                SerializeStringHashKey(archive, const_cast<StringHash&>(attr.nameHash_), attr.name_);
+
+                // Save attribute
                 bool success{};
                 if (attr.enumNames_)
                 {
@@ -707,7 +789,7 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
                 }
                 else
                 {
-                    success = SerializeVariantValue(archive, attr.type_, attr.name_.c_str(), value);
+                    success = SerializeVariantValue(archive, attr.type_, attr.name_.c_str(), const_cast<Variant&>(value));
                 }
 
                 if (!success)
