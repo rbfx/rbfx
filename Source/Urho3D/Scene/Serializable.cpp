@@ -692,7 +692,7 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
                 OnGetAttribute(attr, value);
 
                 // Skip default values if archive supports it
-                if (archive.IsUnorderedSupported() && !SaveDefaultAttributes())
+                if (archive.IsUnorderedSupported() && !SaveDefaultAttributes(attr))
                 {
                     Variant defaultValue = GetAttributeDefault(i);
                     if (value == defaultValue)

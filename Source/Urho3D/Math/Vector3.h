@@ -405,9 +405,9 @@ public:
     Vector3 Lerp(const Vector3& rhs, float t) const { return *this * (1.0f - t) + rhs * t; }
 
     /// Test for equality with another vector with epsilon.
-    bool Equals(const Vector3& rhs) const
+    bool Equals(const Vector3& rhs, float eps = M_EPSILON) const
     {
-        return Urho3D::Equals(x_, rhs.x_) && Urho3D::Equals(y_, rhs.y_) && Urho3D::Equals(z_, rhs.z_);
+        return Urho3D::Equals(x_, rhs.x_, eps) && Urho3D::Equals(y_, rhs.y_, eps) && Urho3D::Equals(z_, rhs.z_, eps);
     }
 
     /// Returns the angle between this vector and another vector in degrees.

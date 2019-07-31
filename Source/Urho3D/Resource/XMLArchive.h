@@ -37,7 +37,7 @@ class XMLArchiveBase : public ArchiveBaseT<IsInputBool, true, true>
 {
 public:
     /// Construct.
-    explicit XMLArchiveBase(SharedPtr<XMLFile> xmlFile)
+    explicit XMLArchiveBase(XMLFile* xmlFile)
         : xmlFile_(xmlFile)
     {}
 
@@ -73,7 +73,7 @@ protected:
     Block& GetCurrentBlock() { return stack_.back(); }
 
     /// XML file.
-    SharedPtr<XMLFile> xmlFile_;
+    XMLFile* xmlFile_;
     /// Blocks stack.
     ea::vector<Block> stack_;
 };
