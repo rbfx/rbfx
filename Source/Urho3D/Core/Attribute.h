@@ -78,6 +78,7 @@ struct AttributeInfo
     AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const char** enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
+        nameHash_(name_),
         enumNames_(enumNames),
         accessor_(accessor),
         defaultValue_(defaultValue),
@@ -89,6 +90,7 @@ struct AttributeInfo
     AttributeInfo(VariantType type, const char* name, const SharedPtr<AttributeAccessor>& accessor, const ea::vector<ea::string>& enumNames, const Variant& defaultValue, AttributeModeFlags mode) :
         type_(type),
         name_(name),
+        nameHash_(name_),
         enumNames_(nullptr),
         enumNamesStorage_(enumNames),
         accessor_(accessor),
@@ -103,6 +105,7 @@ struct AttributeInfo
     {
         type_ = other.type_;
         name_ = other.name_;
+        nameHash_ = other.nameHash_;
         enumNames_ = other.enumNames_;
         accessor_ = other.accessor_;
         defaultValue_ = other.defaultValue_;
@@ -144,6 +147,8 @@ struct AttributeInfo
     VariantType type_ = VAR_NONE;
     /// Name.
     ea::string name_;
+    /// Name hash.
+    StringHash nameHash_;
     /// Enum names.
     const char** enumNames_ = nullptr;
     /// Helper object for accessor mode.

@@ -170,6 +170,44 @@ inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::st
     return result;
 }
 
+/// Serialize custom container.
+template <class T, class U>
+inline bool SerializeCustomContainer(Archive& archive, ArchiveBlockType type, const char* name, unsigned size, T& container, U serializer)
+{
+    using ValueType = typename T::value_type;
+    if (auto block = archive.OpenBlock(name, size, false, type))
+    {
+        if (archive.IsInput())
+        {
+            for (unsigned index = 0; index < block.GetSizeHint(); ++index)
+            {
+                ValueType element;
+                if (!serializer(element, true))
+                {
+                    archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            unsigned index = 0;
+            for (ValueType& value : container)
+            {
+                if (!serializer(value, false))
+                {
+                    archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
+                    return false;
+                }
+                ++index;
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 }
 
 /// Serialize value directly using archive.
@@ -333,6 +371,35 @@ inline bool SerializeStringHash(Archive& archive, const char* name, StringHash& 
     return true;
 }
 
+/// Serialize string hash map key as integer or as string.
+inline bool SerializeStringHashKey(Archive& archive, StringHash& value, const ea::string_view string)
+{
+    if (!archive.IsHumanReadable())
+    {
+        unsigned hashValue = value.Value();
+        if (!archive.SerializeKey(hashValue))
+            return false;
+        value = StringHash{ hashValue };
+    }
+    else
+    {
+        if (archive.IsInput())
+        {
+            ea::string stringValue;
+            if (!archive.SerializeKey(stringValue))
+                return false;
+            value = StringHash{ stringValue };
+        }
+        else
+        {
+            ea::string stringValue{ string };
+            if (!archive.SerializeKey(stringValue))
+                return false;
+        }
+    }
+    return true;
+}
+
 /// Serialize vector with standard interface.
 template <class T>
 inline bool SerializeVector(Archive& archive, const char* name, const char* element, T& vector)
@@ -415,30 +482,16 @@ inline bool SerializeVectorBytes(Archive& archive, const char* name, const char*
 template <class T, class U>
 inline bool SerializeCustomVector(Archive& archive, const char* name, unsigned size, T& vector, U serializer)
 {
-    using ValueType = typename T::value_type;
-    if (auto block = archive.OpenArrayBlock(name, size))
-    {
-        if (archive.IsInput())
-        {
-            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
-            {
-                ValueType element;
-                if (!serializer(element, true))
-                    return false;
-            }
-            return true;
-        }
-        else
-        {
-            for (ValueType& value : vector)
-            {
-                if (!serializer(value, false))
-                    return false;
-            }
-            return true;
-        }
-    }
-    return false;
+    return Detail::SerializeCustomContainer(archive, ArchiveBlockType::Array, name, size, vector, std::move(serializer));
+}
+
+/// Serialize custom map.
+/// While writing, serializer may skip vector elements. Size should match actual number of elements to be written.
+/// While reading, serializer must push elements into vector on its own.
+template <class T, class U>
+inline bool SerializeCustomMap(Archive& archive, const char* name, unsigned size, T& map, U serializer)
+{
+    return Detail::SerializeCustomContainer(archive, ArchiveBlockType::Map, name, size, map, std::move(serializer));
 }
 
 /// Serialize map or hash map with string key with standard interface.
@@ -583,7 +636,7 @@ inline bool SerializeValue(Archive& archive, const char* name, ResourceRefList& 
                 return false;
 
             ea::vector<ea::string> chunks = stringValue.split(';');
-            if (chunks.size() < 2)
+            if (chunks.size() < 1)
             {
                 archive.SetError(Format("Unexpected format of ResourceRefList '{0}'", name));
                 return false;
