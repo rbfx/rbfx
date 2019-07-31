@@ -202,9 +202,12 @@ public:
     Color Abs() const { return Color(Urho3D::Abs(r_), Urho3D::Abs(g_), Urho3D::Abs(b_), Urho3D::Abs(a_)); }
 
     /// Test for equality with another color with epsilon.
-    bool Equals(const Color& rhs) const
+    bool Equals(const Color& rhs, float eps = M_EPSILON) const
     {
-        return Urho3D::Equals(r_, rhs.r_) && Urho3D::Equals(g_, rhs.g_) && Urho3D::Equals(b_, rhs.b_) && Urho3D::Equals(a_, rhs.a_);
+        return Urho3D::Equals(r_, rhs.r_, eps)
+            && Urho3D::Equals(g_, rhs.g_, eps)
+            && Urho3D::Equals(b_, rhs.b_, eps)
+            && Urho3D::Equals(a_, rhs.a_, eps);
     }
 
     /// Return as string.

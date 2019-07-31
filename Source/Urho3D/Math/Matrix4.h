@@ -615,14 +615,14 @@ public:
     }
 
     /// Test for equality with another matrix with epsilon.
-    bool Equals(const Matrix4& rhs) const
+    bool Equals(const Matrix4& rhs, float eps = M_EPSILON) const
     {
         const float* leftData = Data();
         const float* rightData = rhs.Data();
 
         for (unsigned i = 0; i < 16; ++i)
         {
-            if (!Urho3D::Equals(leftData[i], rightData[i]))
+            if (!Urho3D::Equals(leftData[i], rightData[i], eps))
                 return false;
         }
 

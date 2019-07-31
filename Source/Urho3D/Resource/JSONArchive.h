@@ -48,7 +48,7 @@ class JSONArchiveBase : public ArchiveBaseT<IsInputBool, true, true>
 {
 public:
     /// Construct.
-    explicit JSONArchiveBase(SharedPtr<JSONFile> jsonFile)
+    explicit JSONArchiveBase(JSONFile* jsonFile)
         : jsonFile_(jsonFile)
     {}
 
@@ -78,7 +78,7 @@ protected:
     Block& GetCurrentBlock() { return stack_.back(); }
 
     /// JSON file.
-    SharedPtr<JSONFile> jsonFile_;
+    JSONFile* jsonFile_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
 };
