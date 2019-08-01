@@ -287,8 +287,7 @@ bool Serializer::WriteVariantData(const Variant& value)
         return WriteBuffer(value.GetBuffer());
 
         // Serializing pointers and custom values is not supported. Write null
-    case VAR_CUSTOM_STACK:
-    case VAR_CUSTOM_HEAP:
+    case VAR_CUSTOM:
     {
         if (const Serializable* object = value.GetCustom<SharedPtr<Serializable>>())
         {

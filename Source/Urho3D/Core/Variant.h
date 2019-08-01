@@ -22,8 +22,9 @@
 
 #pragma once
 
-#include <EASTL/unordered_map.h>
 #include <EASTL/vector.h>
+#include <EASTL/unordered_map.h>
+#include <EASTL/unique_ptr.h>
 
 #include "../Container/Ptr.h"
 #include "../Math/Color.h"
@@ -68,8 +69,7 @@ enum VariantType
     VAR_INTVECTOR3,
     VAR_INT64,
     // Add new types here
-    VAR_CUSTOM_HEAP,
-    VAR_CUSTOM_STACK,
+    VAR_CUSTOM,
     MAX_VAR_TYPES
 };
 
@@ -176,25 +176,24 @@ private:
 
 public:
     /// Construct empty.
-    CustomVariantValue() : typeInfo_(typeid(void)) { }      // NOLINT(modernize-redundant-void-arg)
+    CustomVariantValue() = default;
     /// Destruct.
     virtual ~CustomVariantValue() = default;
 
     /// Get the type info.
     const std::type_info& GetTypeInfo() const { return typeInfo_; }
+
     /// Return whether the specified type is stored.
     template <class T> bool IsType() const { return GetTypeInfo() == typeid(T); }
     /// Return pointer to value of the specified type. Return null pointer if type does not match.
-    template <class T> T* GetValuePtr();
+    template <class T> T* GetValuePtr() { return const_cast<T*>(const_cast<const CustomVariantValue*>(this)->GetValuePtr<T>()); }
     /// Return const pointer to value of the specified type. Return null pointer if type does not match.
     template <class T> const T* GetValuePtr() const;
 
-    /// Assign value.
-    virtual bool Assign(const CustomVariantValue& rhs) { return false; }
-    /// Clone.
-    virtual CustomVariantValue* Clone() const { return nullptr; }
-    /// Placement clone.
-    virtual void Clone(void* dest) const { }
+    /// Assign value to destination.
+    virtual bool CopyTo(CustomVariantValue& dest) const { return false; }
+    /// Clone object over destination.
+    virtual void CloneTo(void* dest) const { }
     /// Get size.
     virtual unsigned GetSize() const { return sizeof(CustomVariantValue); }
 
@@ -207,18 +206,33 @@ public:
 
 private:
     /// Type info.
-    const std::type_info& typeInfo_;
+    const std::type_info& typeInfo_{ typeid(void) };
 };
 
 /// Custom variant value type traits. Specialize the template to implement custom type behavior.
 template <class T> struct CustomVariantValueTraits
 {
-    /// Compare types.
+    /// Copy value.
+    static void Copy(T& dest, const T& src) { dest = src; }
+    /// Compare values.
     static bool Compare(const T& lhs, const T& rhs) { (void)lhs, rhs; return false; }
     /// Check whether the value is zero.
     static bool IsZero(const T& value) { (void)value; return false; }
     /// Convert type to string.
     static ea::string ToString(const T& value) { (void)value; return EMPTY_STRING; }
+};
+
+/// Custom variant value type traits for unique_ptr.
+template <class T> struct CustomVariantValueTraits<ea::unique_ptr<T>>
+{
+    /// Copy value.
+    static void Copy(ea::unique_ptr<T>& dest, const ea::unique_ptr<T>& src) { dest = ea::make_unique<T>(*src); }
+    /// Compare types.
+    static bool Compare(const ea::unique_ptr<T>& lhs, const ea::unique_ptr<T>& rhs) { return CustomVariantValueTraits<T>::Compare(*lhs, *rhs); }
+    /// Check whether the value is zero.
+    static bool IsZero(const ea::unique_ptr<T>& value) { return CustomVariantValueTraits<T>::IsZero(*value); }
+    /// Convert type to string.
+    static ea::string ToString(const ea::unique_ptr<T>& value) { return CustomVariantValueTraits<T>::ToString(*value); }
 };
 
 /// Custom variant value implementation.
@@ -230,28 +244,28 @@ public:
     /// Type traits.
     using Traits = CustomVariantValueTraits<T>;
     /// Construct from value.
-    explicit CustomVariantValueImpl(const T& value) : CustomVariantValue(typeid(T)), value_(value) {}
-    /// Set value.
-    void SetValue(const T& value) { value_ = value; }
+    explicit CustomVariantValueImpl(const T& value)
+        : CustomVariantValue(typeid(T))
+    {
+        Traits::Copy(value_, value);
+    }
     /// Get value.
     T& GetValue() { return value_; }
     /// Get const value.
     const T& GetValue() const { return value_; }
 
-    /// Assign value.
-    bool Assign(const CustomVariantValue& rhs) override
+    /// Assign value to destination.
+    bool CopyTo(CustomVariantValue& dest) const override
     {
-        if (const T* rhsValue = rhs.GetValuePtr<T>())
+        if (T* destValue = dest.GetValuePtr<T>())
         {
-            SetValue(*rhsValue);
+            Traits::Copy(*destValue, value_);
             return true;
         }
         return false;
     }
-    /// Clone.
-    CustomVariantValue* Clone() const override { return new ClassName(value_); }
-    /// Placement clone.
-    void Clone(void* dest) const override { new (dest) ClassName(value_); }
+    /// Clone object over destination.
+    void CloneTo(void* dest) const override { new (dest) ClassName(value_); }
     /// Get size.
     unsigned GetSize() const override { return sizeof(ClassName); }
 
@@ -271,11 +285,11 @@ private:
     T value_;
 };
 
-/// Make custom variant value.
-template <typename T> CustomVariantValueImpl<T> MakeCustomValue(const T& value) { return CustomVariantValueImpl<T>(value); }
-
 /// Size of variant value. 16 bytes on 32-bit platform, 32 bytes on 64-bit platform.
 static const unsigned VARIANT_VALUE_SIZE = sizeof(void*) * 4;
+
+/// Checks whether the custom variant type could be stored on stack.
+template <class T> inline bool IsCustomTypeOnStack() { return sizeof(CustomVariantValueImpl<T>) <= VARIANT_VALUE_SIZE; }
 
 /// Union for the possible variant values. Objects exceeding the VARIANT_VALUE_SIZE are allocated on the heap.
 union VariantValue
@@ -307,8 +321,7 @@ union VariantValue
     ea::vector<unsigned char> buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
-    CustomVariantValue* customValueHeap_;
-    CustomVariantValue customValueStack_;
+    CustomVariantValue customValue_;
 
     /// Construct uninitialized.
     VariantValue() { }      // NOLINT(modernize-use-equals-default)
@@ -510,13 +523,6 @@ public:
 
     /// Construct from a Matrix4.
     Variant(const Matrix4& value)       // NOLINT(google-explicit-constructor)
-    {
-        *this = value;
-    }
-
-    /// Construct from custom value.
-    template <class T>
-    Variant(const CustomVariantValueImpl<T>& value)     // NOLINT(google-explicit-constructor)
     {
         *this = value;
     }
@@ -812,14 +818,6 @@ public:
         return *this;
     }
 
-    /// Assign from custom value.
-    template <class T>
-    Variant& operator =(const CustomVariantValueImpl<T>& value)
-    {
-        SetCustomVariantValue(value);
-        return *this;
-    }
-
     /// Test for equality with another variant.
     bool operator ==(const Variant& rhs) const;
 
@@ -1085,7 +1083,24 @@ public:
     /// Set custom value.
     void SetCustomVariantValue(const CustomVariantValue& value);
     /// Set custom value.
-    template <class T> void SetCustom(const T& value) { SetCustomVariantValue(MakeCustomValue<T>(value)); }
+    template <class T> void SetCustom(T value)
+    {
+        // Try to assign value directly
+        if (T* thisValue = GetCustomPtr<T>())
+        {
+            *thisValue = ea::move(value);
+            return;
+        }
+
+        // Fall back to reallocation
+        SetType(VAR_CUSTOM);
+        value_.customValue_.~CustomVariantValue();
+
+        if (IsCustomTypeOnStack<T>())
+            new (&value_.customValue_) CustomVariantValueImpl<T>(ea::move(value));
+        else
+            new (&value_.customValue_) CustomVariantValueImpl<ea::unique_ptr<T>>(ea::make_unique<T>(ea::move(value)));
+    }
 
     /// Return int or zero on type mismatch. Floats and doubles are converted.
     int GetInt() const
@@ -1301,10 +1316,8 @@ public:
     /// Return const pointer to custom variant value.
     const CustomVariantValue* GetCustomVariantValuePtr() const
     {
-        if (type_ == VAR_CUSTOM_HEAP)
-            return value_.customValueHeap_;
-        else if (type_ == VAR_CUSTOM_STACK)
-            return &value_.customValueStack_;
+        if (type_ == VAR_CUSTOM)
+            return &value_.customValue_;
         else
             return nullptr;
     }
@@ -1312,12 +1325,9 @@ public:
     /// Return custom variant value or default-constructed on type mismatch.
     template <class T> T GetCustom() const
     {
-        if (const CustomVariantValue* value = GetCustomVariantValuePtr())
-        {
-            if (value->IsType<T>())
-                return *value->GetValuePtr<T>();
-        }
-        return T();
+        if (const T* value = GetCustomPtr<T>())
+            return *value;
+        return T{};
     }
 
     /// Return true if specified custom type is stored in the variant.
@@ -1342,9 +1352,6 @@ public:
     /// Return true when the variant is empty (i.e. not initialized yet).
     bool IsEmpty() const { return type_ == VAR_NONE; }
 
-    /// Return true when the variant stores custom type.
-    bool IsCustom() const { return type_ == VAR_CUSTOM_HEAP || type_ == VAR_CUSTOM_STACK; }
-
     /// Return the value, template version.
     template <class T> T Get() const;
 
@@ -1364,23 +1371,22 @@ public:
     VariantMap* GetVariantMapPtr() { return type_ == VAR_VARIANTMAP ? value_.variantMap_ : nullptr; }
 
     /// Return a pointer to a modifiable custom variant value or null on type mismatch.
-    template <class T> T* GetCustomPtr()
-    {
-        if (CustomVariantValue* value = GetCustomVariantValuePtr())
-        {
-            if (value->IsType<T>())
-                return value->GetValuePtr<T>();
-        }
-        return nullptr;
-    }
+    template <class T> T* GetCustomPtr() { return const_cast<T*>(const_cast<const Variant*>(this)->GetCustomPtr<T>()); }
 
-    /// Return a pointer to a modifiable custom variant value or null on type mismatch.
+    /// Return a pointer to a constant custom variant value or null on type mismatch.
     template <class T> const T* GetCustomPtr() const
     {
         if (const CustomVariantValue* value = GetCustomVariantValuePtr())
         {
-            if (value->IsType<T>())
+            if (IsCustomTypeOnStack<T>())
+            {
                 return value->GetValuePtr<T>();
+            }
+            else
+            {
+                if (auto valuePtrPtr = value->GetValuePtr<ea::unique_ptr<T>>())
+                    return valuePtrPtr->get();
+            }
         }
         return nullptr;
     }
@@ -1416,6 +1422,14 @@ private:
     /// Variant value.
     VariantValue value_;
 };
+
+/// Make custom variant value.
+template <typename T> Variant MakeCustomValue(const T& value)
+{
+    Variant var;
+    var.SetCustom(value);
+    return var;
+}
 
 /// Return variant type from type.
 template <typename T> VariantType GetVariantType();
@@ -1563,16 +1577,6 @@ template <> URHO3D_API Matrix3x4 Variant::Get<Matrix3x4>() const;
 template <> URHO3D_API Matrix4 Variant::Get<Matrix4>() const;
 
 // Implementations
-template <class T> T* CustomVariantValue::GetValuePtr()
-{
-    if (IsType<T>())
-    {
-        auto impl = static_cast<CustomVariantValueImpl<T>*>(this);
-        return &impl->GetValue();
-    }
-    return nullptr;
-}
-
 template <class T> const T* CustomVariantValue::GetValuePtr() const
 {
     if (IsType<T>())

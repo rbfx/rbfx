@@ -390,8 +390,7 @@ Variant Deserializer::ReadVariant(VariantType type, Context* context)
     case VAR_DOUBLE:
         return Variant(ReadDouble());
 
-    case VAR_CUSTOM_STACK:
-    case VAR_CUSTOM_HEAP:
+    case VAR_CUSTOM:
     {
         StringHash typeName(ReadUInt());
         if (!typeName)
@@ -406,14 +405,14 @@ Variant Deserializer::ReadVariant(VariantType type, Context* context)
         SharedPtr<Serializable> object;
         object.StaticCast(context->CreateObject(typeName));
 
-        if (object.Null())
+        if (!object)
         {
             URHO3D_LOGERROR("Creation of type '{:08X}' failed because it has no factory registered", typeName.Value());
             return Variant::EMPTY;
         }
 
         // Restore proper refcount.
-        if (object->Load((*this)))
+        if (object->Load(*this))
             return Variant(MakeCustomValue(object));
         else
             URHO3D_LOGERROR("Deserialization of '{:08X}' failed", typeName.Value());
