@@ -78,17 +78,14 @@ macro(SWIG_MODULE_INITIALIZE name language)
   endif ()
   if("x${SWIG_MODULE_${name}_LANGUAGE}" STREQUAL "xUNKNOWN")
     message(FATAL_ERROR "SWIG Error: Language \"${language}\" not found")
-  elseif("x${SWIG_MODULE_${name}_LANGUAGE}" STREQUAL "xPYTHON" AND NOT SWIG_MODULE_${name}_NOPROXY)
-    # swig will produce a module.py containing an 'import _modulename' statement,
-    # which implies having a corresponding _modulename.so (*NIX), _modulename.pyd (Win32),
-    # unless the -noproxy flag is used
-    set(SWIG_MODULE_${name}_REAL_NAME "_${name}")
-  elseif("x${SWIG_MODULE_${name}_LANGUAGE}" STREQUAL "xPERL")
-    set(SWIG_MODULE_${name}_EXTRA_FLAGS "-shadow")
   elseif("x${SWIG_MODULE_${name}_LANGUAGE}" STREQUAL "xCSHARP")
     # This makes sure that the name used in the generated DllImport
     # matches the library name created by CMake
-    set(SWIG_MODULE_${name}_EXTRA_FLAGS "-dllimport;${name}")
+    if (SWIG_MODULE_${name}_DLLIMPORT)
+      set(SWIG_MODULE_${name}_EXTRA_FLAGS "-dllimport;${SWIG_MODULE_${name}_DLLIMPORT}")
+    else ()
+      set(SWIG_MODULE_${name}_EXTRA_FLAGS "-dllimport;${name}")
+    endif ()
   endif()
 endmacro()
 
@@ -136,7 +133,7 @@ endmacro()
 #
 # Take swig (*.i) file and add proper custom commands for it
 #
-macro(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
+function(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
   set(swig_full_infile ${infile})
   get_filename_component(swig_source_file_name_we "${infile}" NAME_WE)
   get_source_file_property(swig_source_file_generated ${infile} GENERATED)
@@ -150,11 +147,13 @@ macro(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
   # If CMAKE_SWIG_OUTDIR was specified then pass it to -outdir
   if(CMAKE_SWIG_OUTDIR)
     set(swig_outdir ${CMAKE_SWIG_OUTDIR})
+  elseif (SWIG_MODULE_${name}_OUTDIR)
+    set(swig_outdir ${SWIG_MODULE_${name}_OUTDIR})
   else()
     set(swig_outdir ${CMAKE_CURRENT_BINARY_DIR})
   endif()
   if (NOT SWIG_MODULE_${name}_NOPROXY)
-    SWIG_GET_EXTRA_OUTPUT_FILES(${SWIG_MODULE_${name}_LANGUAGE}
+    SWIG_GET_EXTRA_OUTPUT_FILES("${SWIG_MODULE_${name}_LANGUAGE}"
         swig_extra_generated_files
         "${swig_outdir}"
         "${swig_source_file_fullname}")
@@ -207,19 +206,19 @@ macro(SWIG_ADD_SOURCE_TO_MODULE name outfiles infile)
       -o "${swig_generated_file_fullname}"
       #-debug-tmsearch
       "${swig_source_file_fullname}"
-      #> ${CMAKE_CURRENT_BINARY_DIR}/swig.log
+      #> ${CMAKE_CURRENT_BINARY_DIR}/swig_${name}.log
       MAIN_DEPENDENCY "${swig_source_file_fullname}"
       DEPENDS ${SWIG_MODULE_${name}_EXTRA_DEPS} swig
-      COMMENT "Swig source")
+      COMMENT "SWIG ${name}")
   set_source_files_properties("${swig_generated_file_fullname}" ${swig_extra_generated_files}
-      PROPERTIES GENERATED 1)
+      PROPERTIES GENERATED ON)
   set(${outfiles} "${swig_generated_file_fullname}" ${swig_extra_generated_files})
-endmacro()
+endfunction()
 
 #
 # Create Swig module
 #
-macro(SWIG_ADD_MODULE name language)
+function(SWIG_ADD_MODULE name language)
   SWIG_MODULE_INITIALIZE(${name} ${language})
   set(swig_dot_i_sources)
   set(swig_other_sources)
@@ -239,70 +238,27 @@ macro(SWIG_ADD_MODULE name language)
   get_directory_property(swig_extra_clean_files ADDITIONAL_MAKE_CLEAN_FILES)
   set_directory_properties(PROPERTIES
       ADDITIONAL_MAKE_CLEAN_FILES "${swig_extra_clean_files};${swig_generated_sources}")
-  add_library(${SWIG_MODULE_${name}_REAL_NAME}
-      MODULE
-      ${swig_generated_sources}
-      ${swig_other_sources})
-  set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES NO_SONAME ON)
-  if (MSVC)
-    target_compile_options(${SWIG_MODULE_${name}_REAL_NAME} PRIVATE /bigobj)
-  endif ()
-  string(TOLOWER "${language}" swig_lowercase_language)
-  if ("${swig_lowercase_language}" STREQUAL "octave")
-    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES PREFIX "")
-    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES SUFFIX ".oct")
-  elseif ("${swig_lowercase_language}" STREQUAL "go")
-    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES PREFIX "")
-  elseif ("${swig_lowercase_language}" STREQUAL "java")
-    if (APPLE)
-      # In java you want:
-      #      System.loadLibrary("LIBRARY");
-      # then JNI will look for a library whose name is platform dependent, namely
-      #   MacOS  : libLIBRARY.jnilib
-      #   Windows: LIBRARY.dll
-      #   Linux  : libLIBRARY.so
-      set_target_properties (${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES SUFFIX ".jnilib")
-    endif ()
-  elseif ("${swig_lowercase_language}" STREQUAL "lua")
-    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES PREFIX "")
-  elseif ("${swig_lowercase_language}" STREQUAL "python")
-    # this is only needed for the python case where a _modulename.so is generated
-    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES PREFIX "")
-    # Python extension modules on Windows must have the extension ".pyd"
-    # instead of ".dll" as of Python 2.5.  Older python versions do support
-    # this suffix.
-    # http://docs.python.org/whatsnew/ports.html#SECTION0001510000000000000000
-    # <quote>
-    # Windows: .dll is no longer supported as a filename extension for extension modules.
-    # .pyd is now the only filename extension that will be searched for.
-    # </quote>
-    if(WIN32 AND NOT CYGWIN)
-      set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES SUFFIX ".pyd")
-    endif()
-  elseif ("${swig_lowercase_language}" STREQUAL "r")
-    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES PREFIX "")
-  elseif ("${swig_lowercase_language}" STREQUAL "ruby")
-    # In ruby you want:
-    #      require 'LIBRARY'
-    # then ruby will look for a library whose name is platform dependent, namely
-    #   MacOS  : LIBRARY.bundle
-    #   Windows: LIBRARY.dll
-    #   Linux  : LIBRARY.so
-    set_target_properties (${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES PREFIX "")
-    if (APPLE)
-      set_target_properties (${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES SUFFIX ".bundle")
+
+  if (NOT SWIG_MODULE_${name}_NO_LIBRARY)
+    add_library(${SWIG_MODULE_${name}_REAL_NAME}
+        MODULE
+        ${swig_generated_sources}
+        ${swig_other_sources})
+    set_target_properties(${SWIG_MODULE_${name}_REAL_NAME} PROPERTIES NO_SONAME ON)
+    if (MSVC)
+      target_compile_options(${SWIG_MODULE_${name}_REAL_NAME} PRIVATE /bigobj)
     endif ()
   endif ()
-endmacro()
+endfunction()
 
 #
 # Like TARGET_LINK_LIBRARIES but for swig modules
 #
-macro(SWIG_LINK_LIBRARIES name)
+function(SWIG_LINK_LIBRARIES name)
   if(SWIG_MODULE_${name}_REAL_NAME)
     target_link_libraries(${SWIG_MODULE_${name}_REAL_NAME} PRIVATE ${ARGN})
   else()
     message(SEND_ERROR "Cannot find Swig library \"${name}\".")
   endif()
-endmacro()
+endfunction()
 
