@@ -256,8 +256,8 @@ public:
     Variant GetVariant() const;
     /// Set variant value, context must provide for resource ref.
     void SetVariantValue(const Variant& variant, Context* context = nullptr);
-    /// Return a variant with type.
-    Variant GetVariantValue(VariantType type) const;
+    /// Return a variant with type, context must be provided for serializables.
+    Variant GetVariantValue(VariantType type, Context* context = nullptr) const;
     /// Set variant map, context must provide for resource ref.
     void SetVariantMap(const VariantMap& variantMap, Context* context = nullptr);
     /// Return a variant map.

@@ -312,7 +312,7 @@ bool Serializable::Load(Deserializer& source)
             return false;
         }
 
-        Variant varValue = source.ReadVariant(attr.type_);
+        Variant varValue = source.ReadVariant(attr.type_, context_);
         OnSetAttribute(attr, varValue);
     }
 
@@ -396,7 +396,7 @@ bool Serializable::LoadXML(const XMLElement& source)
                         URHO3D_LOGWARNING("Unknown enum value " + value + " in attribute " + attr.name_);
                 }
                 else
-                    varValue = attrElem.GetVariantValue(attr.type_);
+                    varValue = attrElem.GetVariantValue(attr.type_, context_);
 
                 if (!varValue.IsEmpty())
                     OnSetAttribute(attr, varValue);
@@ -484,7 +484,7 @@ bool Serializable::LoadJSON(const JSONValue& source)
                         URHO3D_LOGWARNING("Unknown enum value " + valueStr + " in attribute " + attr.name_);
                 }
                 else
-                    varValue = value.GetVariantValue(attr.type_);
+                    varValue = value.GetVariantValue(attr.type_, context_);
 
                 if (!varValue.IsEmpty())
                     OnSetAttribute(attr, varValue);

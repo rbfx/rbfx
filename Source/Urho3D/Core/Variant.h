@@ -319,6 +319,7 @@ union VariantValue
 };
 
 // TODO: static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
+static_assert(sizeof(CustomVariantValueImpl<SharedPtr<RefCounted>>) <= VARIANT_VALUE_SIZE, "SharedPtr<> does not fit into variant.");
 
 /// Variable that supports a fixed set of types.
 class URHO3D_API Variant

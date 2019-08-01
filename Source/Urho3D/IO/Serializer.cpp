@@ -22,7 +22,9 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Macros.h"
 #include "../IO/Serializer.h"
+#include "../Scene/Serializable.h"
 
 #include "../DebugNew.h"
 
@@ -285,10 +287,20 @@ bool Serializer::WriteVariantData(const Variant& value)
         return WriteBuffer(value.GetBuffer());
 
         // Serializing pointers and custom values is not supported. Write null
+    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM_HEAP:
+    {
+        if (const Serializable* object = value.GetCustom<SharedPtr<Serializable>>())
+        {
+            WriteUInt(object->GetType().Value());
+            return object->Save(*this);
+        }
+        // When this variant contains null SharedPtr<Serializable> or something else entirely - write a null. This indicates empty value.
+        URHO3D_FALLTHROUGH;
+    }
+
     case VAR_VOIDPTR:
     case VAR_PTR:
-    case VAR_CUSTOM_HEAP:
-    case VAR_CUSTOM_STACK:
         return WriteUInt(0);
 
     case VAR_RESOURCEREF:

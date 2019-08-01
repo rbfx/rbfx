@@ -22,7 +22,10 @@
 
 #include "../Precompiled.h"
 
+#include "../Core/Context.h"
 #include "../IO/Deserializer.h"
+#include "../IO/Log.h"
+#include "../Scene/Serializable.h"
 
 #include "../DebugNew.h"
 
@@ -305,7 +308,7 @@ Variant Deserializer::ReadVariant()
     return ReadVariant(type);
 }
 
-Variant Deserializer::ReadVariant(VariantType type)
+Variant Deserializer::ReadVariant(VariantType type, Context* context)
 {
     switch (type)
     {
@@ -387,11 +390,36 @@ Variant Deserializer::ReadVariant(VariantType type)
     case VAR_DOUBLE:
         return Variant(ReadDouble());
 
-        // Deserializing custom values is not supported. Return empty
-    case VAR_CUSTOM_HEAP:
     case VAR_CUSTOM_STACK:
-        ReadUInt();
+    case VAR_CUSTOM_HEAP:
+    {
+        StringHash typeName(ReadUInt());
+        if (!typeName)
+            return Variant::EMPTY;
+
+        if (!context)
+        {
+            URHO3D_LOGERROR("Context must not be null for SharedPtr<Serializable>");
+            return Variant::EMPTY;
+        }
+
+        SharedPtr<Serializable> object;
+        object.StaticCast(context->CreateObject(typeName));
+
+        if (object.Null())
+        {
+            URHO3D_LOGERROR("Creation of type '{:08X}' failed because it has no factory registered", typeName.Value());
+            return Variant::EMPTY;
+        }
+
+        // Restore proper refcount.
+        if (object->Load((*this)))
+            return Variant(MakeCustomValue(object));
+        else
+            URHO3D_LOGERROR("Deserialization of '{:08X}' failed", typeName.Value());
+
         return Variant::EMPTY;
+    }
 
     default:
         return Variant::EMPTY;
