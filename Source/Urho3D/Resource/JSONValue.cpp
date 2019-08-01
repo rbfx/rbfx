@@ -498,8 +498,7 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
         }
         return;
 
-    case VAR_CUSTOM_STACK:
-    case VAR_CUSTOM_HEAP:
+    case VAR_CUSTOM:
         {
             if (const Serializable* object = variant.GetCustom<SharedPtr<Serializable>>())
             {
@@ -595,7 +594,7 @@ Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
         }
         break;
 
-    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM:
         {
             if (!context)
             {

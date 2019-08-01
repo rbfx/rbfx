@@ -249,7 +249,7 @@ AttributeHandle Context::RegisterAttribute(StringHash objectType, const Attribut
     }
 
     // Only SharedPtr<> of Serializable or it's subclasses are supported in attributes
-    if (attr.defaultValue_.IsCustom() && !attr.defaultValue_.IsCustomType<SharedPtr<Serializable>>())
+    if (attr.type_ == VAR_CUSTOM && !attr.defaultValue_.IsCustomType<SharedPtr<Serializable>>())
     {
         URHO3D_LOGWARNING("Attempt to register unsupported attribute of custom type to class {}", GetTypeName(objectType));
         return AttributeHandle();
