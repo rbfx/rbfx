@@ -241,11 +241,17 @@ void Context::RemoveSubsystem(StringHash objectType)
 AttributeHandle Context::RegisterAttribute(StringHash objectType, const AttributeInfo& attr)
 {
     // None or pointer types can not be supported
-    if (attr.type_ == VAR_NONE || attr.type_ == VAR_VOIDPTR || attr.type_ == VAR_PTR
-        || attr.type_ == VAR_CUSTOM_HEAP || attr.type_ == VAR_CUSTOM_STACK)
+    if (attr.type_ == VAR_NONE || attr.type_ == VAR_VOIDPTR || attr.type_ == VAR_PTR)
     {
-        URHO3D_LOGWARNING("Attempt to register unsupported attribute type " + Variant::GetTypeName(attr.type_) + " to class " +
+        URHO3D_LOGWARNING("Attempt to register unsupported attribute type {} to class {}", Variant::GetTypeName(attr.type_),
             GetTypeName(objectType));
+        return AttributeHandle();
+    }
+
+    // Only SharedPtr<> of Serializable or it's subclasses are supported in attributes
+    if (attr.defaultValue_.IsCustom() && !attr.defaultValue_.IsCustomType<SharedPtr<Serializable>>())
+    {
+        URHO3D_LOGWARNING("Attempt to register unsupported attribute of custom type to class {}", GetTypeName(objectType));
         return AttributeHandle();
     }
 

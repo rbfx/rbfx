@@ -2553,6 +2553,7 @@ The folowing macros can be used to define an attribute:
 - `URHO3D_ENUM_ATTRIBUTE_EX`: The same as `URHO3D_ATTRIBUTE_EX`, used for enumerations.
 - `URHO3D_ENUM_ACCESSOR_ATTRIBUTE`: The same as `URHO3D_ACCESSOR_ATTRIBUTE`, used for enumerations.
 - `URHO3D_CUSTOM_ENUM_ATTRIBUTE`: The same as `URHO3D_CUSTOM_ATTRIBUTE`, used for enumerations.
+- `URHO3D_OBJECT_ATTRIBUTE`: Member of the object which is another object. Must be SharedPtr<> of \ref Serializable or it's subclasses.
 
 To implement side effects to attributes, the default attribute access functions in Serializable can be overridden. See \ref Serializable::OnSetAttribute "OnSetAttribute()" and \ref Serializable::OnGetAttribute "OnGetAttribute()".
 

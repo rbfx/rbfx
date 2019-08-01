@@ -41,6 +41,7 @@ class xpath_variable_set;
 namespace Urho3D
 {
 
+class Context;
 class XMLFile;
 class XPathQuery;
 class XPathResultSet;
@@ -253,8 +254,8 @@ public:
     Quaternion GetQuaternion(const ea::string& name) const;
     /// Return a variant attribute, or empty if missing.
     Variant GetVariant() const;
-    /// Return a variant attribute with static type.
-    Variant GetVariantValue(VariantType type) const;
+    /// Return a variant attribute with static type. Context must be provided for loading SharedPtr<Serializable>.
+    Variant GetVariantValue(VariantType type, Context* context=nullptr) const;
     /// Return a resource reference attribute, or empty if missing.
     ResourceRef GetResourceRef() const;
     /// Return a resource reference list attribute, or empty if missing.
