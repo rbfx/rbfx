@@ -67,8 +67,7 @@ static const char* typeNames[] =
     "Rect",
     "IntVector3",
     "Int64",
-    "CustomHeap",
-    "CustomStack",
+    "Custom",
     nullptr
 };
 
@@ -77,7 +76,7 @@ static_assert(sizeof(typeNames) / sizeof(const char*) == (size_t)MAX_VAR_TYPES +
 Variant& Variant::operator =(const Variant& rhs)
 {
     // Handle custom types separately
-    if (rhs.IsCustom())
+    if (rhs.GetType() == VAR_CUSTOM)
     {
         SetCustomVariantValue(*rhs.GetCustomVariantValuePtr());
         return *this;
@@ -151,7 +150,7 @@ bool Variant::operator ==(const Variant& rhs) const
 {
     if (type_ == VAR_VOIDPTR || type_ == VAR_PTR)
         return GetVoidPtr() == rhs.GetVoidPtr();
-    else if (IsCustom() && rhs.IsCustom())
+    else if (type_ == VAR_CUSTOM && rhs.type_ == VAR_CUSTOM)
         return GetCustomVariantValuePtr()->Compare(*rhs.GetCustomVariantValuePtr());
     else if (type_ != rhs.type_)
         return false;
@@ -493,28 +492,18 @@ void Variant::SetBuffer(const void* data, unsigned size)
 
 void Variant::SetCustomVariantValue(const CustomVariantValue& value)
 {
+    assert(value.GetSize() <= VARIANT_VALUE_SIZE);
+
     // Assign value if destination is already initialized
-    if (CustomVariantValue* custom = GetCustomVariantValuePtr())
+    if (CustomVariantValue* thisValueWrapped = GetCustomVariantValuePtr())
     {
-        if (custom->GetTypeInfo() == value.GetTypeInfo())
-        {
-            custom->Assign(value);
+        if (value.CopyTo(*thisValueWrapped))
             return;
-        }
     }
 
-    if (value.GetSize() <= VARIANT_VALUE_SIZE)
-    {
-        SetType(VAR_CUSTOM_STACK);
-        value_.customValueStack_.~CustomVariantValue();
-        value.Clone(&value_.customValueStack_);
-    }
-    else
-    {
-        SetType(VAR_CUSTOM_HEAP);
-        delete value_.customValueHeap_;
-        value_.customValueHeap_ = value.Clone();
-    }
+    SetType(VAR_CUSTOM);
+    value_.customValue_.~CustomVariantValue();
+    value.CloneTo(&value_.customValue_);
 }
 
 VectorBuffer Variant::GetVectorBuffer() const
@@ -598,8 +587,7 @@ ea::string Variant::ToString() const
     case VAR_RECT:
         return value_.rect_.ToString();
 
-    case VAR_CUSTOM_HEAP:
-    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM:
         return GetCustomVariantValuePtr()->ToString();
 
     default:
@@ -701,8 +689,7 @@ bool Variant::IsZero() const
     case VAR_RECT:
         return value_.rect_ == Rect::ZERO;
 
-    case VAR_CUSTOM_HEAP:
-    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM:
         return GetCustomVariantValuePtr()->IsZero();
 
     default:
@@ -761,12 +748,8 @@ void Variant::SetType(VariantType newType)
         delete value_.matrix4_;
         break;
 
-    case VAR_CUSTOM_HEAP:
-        delete value_.customValueHeap_;
-        break;
-
-    case VAR_CUSTOM_STACK:
-        value_.customValueStack_.~CustomVariantValue();
+    case VAR_CUSTOM:
+        value_.customValue_.~CustomVariantValue();
         break;
 
     default:
@@ -821,14 +804,9 @@ void Variant::SetType(VariantType newType)
         value_.matrix4_ = new Matrix4();
         break;
 
-    case VAR_CUSTOM_HEAP:
-        // Must be initialized later
-        value_.customValueHeap_ = nullptr;
-        break;
-
-    case VAR_CUSTOM_STACK:
-        // Initialize virtual table with void custom object
-        new (&value_.customValueStack_) CustomVariantValue();
+    case VAR_CUSTOM:
+        // Initialize virtual table with void dummy custom object
+        new (&value_.customValue_) CustomVariantValue();
         break;
 
     default:

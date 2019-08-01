@@ -437,7 +437,7 @@ bool XMLElement::SetVariantValue(const Variant& value)
     case VAR_VARIANTMAP:
         return SetVariantMap(value.GetVariantMap());
 
-    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM:
     {
         if (const Serializable* object = value.GetCustom<SharedPtr<Serializable>>())
         {
@@ -883,7 +883,7 @@ Variant XMLElement::GetVariantValue(VariantType type, Context* context) const
         ret = GetStringVector();
     else if (type == VAR_VARIANTMAP)
         ret = GetVariantMap();
-    else if (type == VAR_CUSTOM_STACK)
+    else if (type == VAR_CUSTOM)
     {
         if (!context)
         {
