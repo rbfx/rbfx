@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../Core/StringUtils.h"
 #include "../IO/Log.h"
+#include "../Scene/Serializable.h"
 #include "../Resource/JSONValue.h"
 
 #include "../DebugNew.h"
@@ -497,12 +498,34 @@ void JSONValue::SetVariantValue(const Variant& variant, Context* context)
         }
         return;
 
+    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM_HEAP:
+        {
+            if (const Serializable* object = variant.GetCustom<SharedPtr<Serializable>>())
+            {
+                JSONValue value;
+                if (object->SaveJSON(value))
+                {
+                    Set("type", object->GetTypeName());
+                    Set("value", value);
+                }
+                else
+                    SetType(JSON_NULL);
+            }
+            else
+            {
+                SetType(JSON_NULL);
+                URHO3D_LOGERROR("Serialization of objects other than SharedPtr<Serializable> is not supported.");
+            }
+        }
+        return;
+
     default:
         *this = variant.ToString();
     }
 }
 
-Variant JSONValue::GetVariantValue(VariantType type) const
+Variant JSONValue::GetVariantValue(VariantType type, Context* context) const
 {
     Variant variant;
     switch (type)
@@ -569,6 +592,45 @@ Variant JSONValue::GetVariantValue(VariantType type) const
             for (unsigned i = 0; i < Size(); ++i)
                 vector.push_back((*this)[i].GetString());
             variant = vector;
+        }
+        break;
+
+    case VAR_CUSTOM_STACK:
+        {
+            if (!context)
+            {
+                URHO3D_LOGERROR("Context must not be null for SharedPtr<Serializable>");
+                break;
+            }
+
+            if (GetValueType() == JSON_NULL)
+                return Variant::EMPTY;
+
+            if (GetValueType() != JSON_OBJECT)
+            {
+                URHO3D_LOGERROR("SharedPtr<Serializable> expects json object");
+                break;
+            }
+
+            const ea::string& typeName = (*this)["type"].GetString();
+            if (!typeName.empty())
+            {
+                SharedPtr<Serializable> object;
+                object.StaticCast(context->CreateObject(typeName));
+
+                if (object.NotNull())
+                {
+                    // Restore proper refcount.
+                    if (object->LoadJSON((*this)["value"]))
+                        variant.SetCustom(object);
+                    else
+                        URHO3D_LOGERROR("Deserialization of '{}' failed", typeName);
+                }
+                else
+                    URHO3D_LOGERROR("Creation of type '{}' failed because it has no factory registered", typeName);
+            }
+            else
+                URHO3D_LOGERROR("Malformed json input: 'type' is required when deserializing an object");
         }
         break;
 

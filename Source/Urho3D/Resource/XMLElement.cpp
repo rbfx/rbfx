@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Resource/XMLFile.h"
+#include "../Scene/Serializable.h"
 
 #include <PugiXml/pugixml.hpp>
 
@@ -435,6 +436,24 @@ bool XMLElement::SetVariantValue(const Variant& value)
 
     case VAR_VARIANTMAP:
         return SetVariantMap(value.GetVariantMap());
+
+    case VAR_CUSTOM_STACK:
+    {
+        if (const Serializable* object = value.GetCustom<SharedPtr<Serializable>>())
+        {
+            SetAttribute("type", object->GetTypeName());
+            if (!object->SaveXML(*this))
+            {
+                RemoveAttribute("type");
+                RemoveChildren();
+            }
+            else
+                return true;
+        }
+        else
+            URHO3D_LOGERROR("Serialization of objects other than SharedPtr<Serializable> is not supported.");
+        return false;
+    }
 
     default:
         return SetAttribute("value", value.ToString().c_str());
@@ -850,7 +869,7 @@ Variant XMLElement::GetVariant() const
     return GetVariantValue(type);
 }
 
-Variant XMLElement::GetVariantValue(VariantType type) const
+Variant XMLElement::GetVariantValue(VariantType type, Context* context) const
 {
     Variant ret;
 
@@ -864,6 +883,34 @@ Variant XMLElement::GetVariantValue(VariantType type) const
         ret = GetStringVector();
     else if (type == VAR_VARIANTMAP)
         ret = GetVariantMap();
+    else if (type == VAR_CUSTOM_STACK)
+    {
+        if (!context)
+        {
+            URHO3D_LOGERROR("Context must not be null for SharedPtr<Serializable>");
+            return ret;
+        }
+
+        const ea::string& typeName = GetAttribute("type");
+        if (!typeName.empty())
+        {
+            SharedPtr<Serializable> object;
+            object.StaticCast(context->CreateObject(typeName));
+
+            if (object.NotNull())
+            {
+                // Restore proper refcount.
+                if (object->LoadXML(*this))
+                    ret.SetCustom(object);
+                else
+                    URHO3D_LOGERROR("Deserialization of '{}' failed", typeName);
+            }
+            else
+                URHO3D_LOGERROR("Creation of type '{}' failed because it has no factory registered", typeName);
+        }
+        else if (!GetChild().IsNull())
+            URHO3D_LOGERROR("Malformed xml input: 'type' attribute is required when deserializing an object");
+    }
     else
         ret.FromString(type, GetAttributeCString("value"));
 
