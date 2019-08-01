@@ -109,11 +109,11 @@ namespace Urho3DNet
         #region Interop
 
         [SuppressUnmanagedCodeSecurity]
-        [DllImport("Urho3DCSharp")]
+        [DllImport("Urho3D")]
         private static extern void Urho3DRegisterDirectorFactories(HandleRef context);
 
         [SuppressUnmanagedCodeSecurity]
-        [DllImport("Urho3DCSharp")]
+        [DllImport("Urho3D")]
         private static extern void Urho3D_Context_RegisterFactory(HandleRef context,
             [MarshalAs(UnmanagedType.LPStr)]string typeName, uint baseType,
             [MarshalAs(UnmanagedType.LPStr)]string category);

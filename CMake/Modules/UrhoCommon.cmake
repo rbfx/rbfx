@@ -449,18 +449,14 @@ function (add_target_csharp)
     endif ()
 endfunction ()
 
-macro (csharp_bind_target)
+function (csharp_bind_target)
     if (NOT URHO3D_CSHARP)
         return ()
     endif ()
 
-    cmake_parse_arguments(BIND "" "TARGET;MANAGED_TARGET" "" ${ARGN})
+    cmake_parse_arguments(BIND "" "TARGET;CSPROJ;SWIG;NAMESPACE;NATIVE" "" ${ARGN})
 
     get_target_property(BIND_SOURCE_DIR ${BIND_TARGET} SOURCE_DIR)
-
-    if (NOT BIND_MANAGED_TARGET)
-        set (BIND_MANAGED_TARGET ${BIND_TARGET}Net)
-    endif ()
 
     # Parse bindings using same compile definitions as built target
     __TARGET_GET_PROPERTIES_RECURSIVE(INCLUDES ${BIND_TARGET} INTERFACE_INCLUDE_DIRECTORIES)
@@ -494,9 +490,13 @@ macro (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS -D${item})
     endforeach()
 
+    if (NOT BIND_NATIVE)
+        set (BIND_NATIVE ${BIND_TARGET})
+    endif ()
+
     # Swig
     set(CMAKE_SWIG_FLAGS
-        -namespace ${BIND_MANAGED_TARGET}
+        -namespace ${BIND_NAMESPACE}
         -fastdispatch
         -I${CMAKE_CURRENT_BINARY_DIR}
         ${GENERATOR_OPTIONS}
@@ -506,20 +506,9 @@ macro (csharp_bind_target)
         list(APPEND GENERATOR_OPTIONS -O${item})
     endforeach()
 
-    #    get_target_property(_TARGET_TYPE ${BIND_TARGET} TYPE)
-    #    if(_TARGET_TYPE STREQUAL "STATIC_LIBRARY")
-    #        list (APPEND GENERATOR_OPTIONS --static)
-    #    endif ()
-    #    if (SNK_PUB_KEY)
-    #        list (APPEND GENERATOR_OPTIONS --signed-with=${SNK_PUB_KEY})
-    #    endif ()
-
-    set (CSHARP_LIBRARY_NAME ${BIND_TARGET}CSharp)
-    set (COMMON_DIR ${CSHARP_SOURCE_DIR}/Common)
-
     # Finalize option list
     list (APPEND GENERATOR_OPTIONS ${BIND_SOURCE_DIR} ${CMAKE_CURRENT_SOURCE_DIR}/Swig)
-    set (CSHARP_BINDING_GENERATOR_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/generator_options.txt")
+    set (CSHARP_BINDING_GENERATOR_OPTIONS "${CMAKE_CURRENT_BINARY_DIR}/generator_options_${BIND_TARGET}.txt")
     file (WRITE ${CSHARP_BINDING_GENERATOR_OPTIONS} "")
     foreach (opt ${GENERATOR_OPTIONS})
         file(APPEND ${CSHARP_BINDING_GENERATOR_OPTIONS} "${opt}\n")
@@ -528,26 +517,15 @@ macro (csharp_bind_target)
     set (SWIG_SYSTEM_INCLUDE_DIRS "${CMAKE_CXX_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_C_IMPLICIT_INCLUDE_DIRECTORIES};${CMAKE_SYSTEM_INCLUDE_PATH};${CMAKE_EXTRA_GENERATOR_CXX_SYSTEM_INCLUDE_DIRS}")
     string (REPLACE ";" ";-I" SWIG_SYSTEM_INCLUDE_DIRS "${SWIG_SYSTEM_INCLUDE_DIRS}")
 
-    set_source_files_properties(Swig/${BIND_TARGET}.i PROPERTIES
+    set_source_files_properties(${BIND_SWIG} PROPERTIES
         CPLUSPLUS ON
         SWIG_FLAGS "-I${SWIG_SYSTEM_INCLUDE_DIRS}"
     )
-
-    swig_add_module(${CSHARP_LIBRARY_NAME} csharp Swig/${BIND_TARGET}.i)
-    swig_link_libraries(${CSHARP_LIBRARY_NAME} ${BIND_TARGET})
-    set_target_properties(${CSHARP_LIBRARY_NAME} PROPERTIES PREFIX "${CMAKE_SHARED_LIBRARY_PREFIX}")
-
-    # Etc
-    #    if (CLANG)
-    #        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE -Wno-return-type-c-linkage)
-    #    endif ()
-    #
-    #    if (URHO3D_WITH_MONO)
-    #        find_package(Mono REQUIRED)
-    #        target_include_directories(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_INCLUDE_DIRS})
-    #        target_link_libraries(${CSHARP_LIBRARY_NAME} ${MONO_LIBRARIES})
-    #        target_compile_options(${CSHARP_LIBRARY_NAME} PRIVATE ${MONO_CFLAGS})
-    #    endif ()
+    set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT ${BIND_NATIVE})
+    set (SWIG_MODULE_${BIND_TARGET}_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp)
+    set (SWIG_MODULE_${BIND_TARGET}_NO_LIBRARY ON)
+    swig_add_module(${BIND_TARGET} csharp ${BIND_SWIG})
+    unset (CMAKE_SWIG_FLAGS)
 
     if (MULTI_CONFIG_PROJECT)
         set (NET_OUTPUT_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/$<CONFIG>)
@@ -556,19 +534,16 @@ macro (csharp_bind_target)
         # Needed for mono on unixes but not on windows.
         set (FACADES Facades/)
     endif ()
-    if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj")
+    if (BIND_CSPROJ)
+        get_filename_component(BIND_MANAGED_TARGET "${BIND_CSPROJ}" NAME_WE)
         add_target_csharp(
             TARGET ${BIND_MANAGED_TARGET}
-            PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/${BIND_MANAGED_TARGET}.csproj
-            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll
-            DEPENDS ${CSHARP_LIBRARY_NAME})
-        install (TARGETS ${CSHARP_LIBRARY_NAME} EXPORT Urho3D LIBRARY DESTINATION ${DEST_LIBRARY_DIR})
+            PROJECT ${BIND_CSPROJ}
+            OUTPUT ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll)
+        add_dependencies(${BIND_MANAGED_TARGET} ${BIND_TARGET})
         install (FILES ${NET_OUTPUT_DIRECTORY}/${BIND_MANAGED_TARGET}.dll DESTINATION ${DEST_LIBRARY_DIR})
     endif ()
-
-    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/Native/*.cpp)
-    target_sources(${CSHARP_LIBRARY_NAME} PRIVATE ${EXTRA_NATIVE_FILES})
-endmacro ()
+endfunction ()
 
 function (create_pak PAK_DIR PAK_FILE)
     cmake_parse_arguments(PARSE_ARGV 2 PAK "NO_COMPRESS" "" "DEPENDS")

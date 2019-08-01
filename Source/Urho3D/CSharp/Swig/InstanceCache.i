@@ -3,7 +3,7 @@
 %typemap(csbody) SWIGTYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
   private bool swigCMemOwn;
-  private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
+  private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
@@ -33,7 +33,7 @@
 %typemap(csbody_derived, directorsetup="\n    SetupSwigDirector();") SWIGTYPE %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
   private bool swigCMemOwn;
-  private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
+  private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
   internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
@@ -149,7 +149,7 @@
 
 %typemap(csbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE &&, SWIGTYPE [] %{
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
-  private static InstanceCache<$csclassname> _instanceCache = new InstanceCache<$csclassname>();
+  private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
     if (cPtr == global::System.IntPtr.Zero)
