@@ -27,7 +27,7 @@ namespace Urho3DNet
 {
     public partial class Object
     {
-        [DllImport("Urho3DCSharp", EntryPoint = "Urho3D_Object_SubscribeToEvent")]
+        [DllImport("Urho3D", EntryPoint = "Urho3D_Object_SubscribeToEvent")]
         private static extern void Urho3D_Object_SubscribeToEvent(HandleRef receiver, HandleRef sender, uint eventType,
             IntPtr callback, IntPtr callbackHandle);
 

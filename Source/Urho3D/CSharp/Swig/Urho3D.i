@@ -1,5 +1,7 @@
 %module(directors="1", dirprot="1", allprotected="1", naturalvar=1) Urho3D
 
+%include "Common.i"
+
 namespace eastl{}
 namespace ea = eastl;
 
@@ -9,12 +11,6 @@ namespace ea = eastl;
 #ifndef URHO3D_API
 #   define URHO3D_API
 #endif
-#define final
-#define static_assert(...)
-
-%include "stl.i"
-%include "stdint.i"
-%include "typemaps.i"
 
 %{
 #include <Urho3D/Urho3DAll.h>
@@ -24,43 +20,13 @@ namespace ea = eastl;
 #include <EASTL/unordered_map.h>
 %}
 
-%typemap(csvarout) void* VOID_INT_PTR %{
-  get {
-    var ret = $imcall;$excode
-    return ret;
-  }
-%}
-
-%typemap(csvarin, excode=SWIGEXCODE2) void* VOID_INT_PTR %{
-  set {
-    $imcall;$excode
-  }
-%}
-
 %apply void* VOID_INT_PTR {
-	void*,
 	SDL_Cursor*,
 	SDL_Surface*,
 	SDL_Window*,
 	Urho3D::GraphicsImpl*,
-	signed char*,
-	unsigned char*
+    ImFont*
 }
-
-%apply void* { std::uintptr_t, uintptr_t };
-%apply unsigned { time_t };
-
-// Speed boost
-%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
-%typemap(csclassmodifiers) SWIGTYPE "public partial class"
-
-%include "cmalloc.i"
-%include "arrays_csharp.i"
-%include "swiginterface.i"
-%include "attribute.i"
-%include "InstanceCache.i"
-%include "Helpers.i"
-%include "Operators.i"
 
 // String typemap returns 0 if null string is passed. This fails to initialize SafeArray.
 %ignore Urho3D::Node::GetChildrenWithTag(const String& tag, bool recursive = false) const;
@@ -69,32 +35,6 @@ namespace ea = eastl;
 
 %include "StringHash.i"
 %include "eastl_string.i"
-
-// --------------------------------------- Math ---------------------------------------
-%include "Math.i"
-
-namespace Urho3D
-{
-
-URHO3D_BINARY_COMPATIBLE_TYPE(Color, pod::float4);
-URHO3D_BINARY_COMPATIBLE_TYPE(Rect, pod::float4);
-URHO3D_BINARY_COMPATIBLE_TYPE(IntRect, pod::int4);
-URHO3D_BINARY_COMPATIBLE_TYPE(Vector2, pod::float2);
-URHO3D_BINARY_COMPATIBLE_TYPE(IntVector2, pod::int2);
-URHO3D_BINARY_COMPATIBLE_TYPE(Vector3, pod::float3);
-URHO3D_BINARY_COMPATIBLE_TYPE(IntVector3, pod::int3);
-URHO3D_BINARY_COMPATIBLE_TYPE(Vector4, pod::float4);
-URHO3D_BINARY_COMPATIBLE_TYPE(Matrix3, pod::float9);
-URHO3D_BINARY_COMPATIBLE_TYPE(Matrix3x4, pod::float12);
-URHO3D_BINARY_COMPATIBLE_TYPE(Matrix4, pod::float16);
-URHO3D_BINARY_COMPATIBLE_TYPE(Quaternion, pod::float4);
-URHO3D_BINARY_COMPATIBLE_TYPE(Plane, pod::float7);
-URHO3D_BINARY_COMPATIBLE_TYPE(BoundingBox, pod::float8);
-URHO3D_BINARY_COMPATIBLE_TYPE(Sphere, pod::float4);
-//URHO3D_BINARY_COMPATIBLE_TYPE(Frustum);
-URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
-
-}
 
 %include "_constants.i"
 %include "_events.i"
@@ -122,17 +62,6 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 // These should be implemented in C# anyway.
 %ignore Urho3D::Polyhedron::Polyhedron(const Vector<eastl::vector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
-
-%apply float *INOUT        { float& sin, float& cos, float& accumulator };
-%apply unsigned int* INOUT { unsigned int* randomRef, unsigned int* nearestRef }
-
-// ref global::System.IntPtr
-%typemap(ctype, out="void *")                 void*& "void *"
-%typemap(imtype, out="global::System.IntPtr") void*& "ref global::System.IntPtr"
-%typemap(cstype, out="$csclassname")          void*& "ref global::System.IntPtr"
-%typemap(csin)                                void*& "ref $csinput"
-%typemap(in)                                  void*& %{ $1 = ($1_ltype)$input; %}
-%typecheck(SWIG_TYPECHECK_CHAR_PTR)           void*& ""
 
 // ---------------------------------------  ---------------------------------------
 
@@ -166,6 +95,29 @@ URHO3D_BINARY_COMPATIBLE_TYPE(Ray, pod::float6);
 %rename(VarMatrix3x4) VAR_MATRIX3X4;
 %rename(VarStringVector) VAR_STRINGVECTOR;
 %rename(VarIntVector3) VAR_INTVECTOR3;
+
+AddEqualityOperators(Urho3D::ResourceRef);
+AddEqualityOperators(Urho3D::ResourceRefList);
+AddEqualityOperators(Urho3D::AttributeInfo);
+AddEqualityOperators(Urho3D::Splite);
+AddEqualityOperators(Urho3D::JSONValue);
+AddEqualityOperators(Urho3D::PListValue);
+AddEqualityOperators(Urho3D::VertexElement);
+AddEqualityOperators(Urho3D::RenderTargetInfo);
+AddEqualityOperators(Urho3D::RenderPathCommand);
+AddEqualityOperators(Urho3D::Bone);
+AddEqualityOperators(Urho3D::ModelMorph);
+AddEqualityOperators(Urho3D::AnimationKeyFrame);
+AddEqualityOperators(Urho3D::AnimationTrack);
+AddEqualityOperators(Urho3D::AnimationTriggerPoint);
+AddEqualityOperators(Urho3D::AnimationControl);
+AddEqualityOperators(Urho3D::Billboard);
+AddEqualityOperators(Urho3D::DecalVertex);
+AddEqualityOperators(Urho3D::TechniqueEntry);
+AddEqualityOperators(Urho3D::CustomGeometryVertex);
+AddEqualityOperators(Urho3D::ColorFrame);
+AddEqualityOperators(Urho3D::TextureFrame);
+AddEqualityOperators(Urho3D::Variant);
 
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Polyhedron.h"
@@ -603,10 +555,6 @@ public:
 // --------------------------------------- SystemUI ---------------------------------------
 #if defined(URHO3D_SYSTEMUI)
 %include "_properties_systemui.i"
-%apply void* VOID_INT_PTR {
-	ImFont*
-}
-
 %ignore ToImGui;
 %ignore ToIntVector2;
 %ignore ToIntRect;

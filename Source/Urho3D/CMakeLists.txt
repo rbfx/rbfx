@@ -268,7 +268,7 @@ endif ()
 
 # Disable very annoying warning
 if (GNU OR Clang)
-    target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
+    target_compile_options(Urho3D PRIVATE $<$<COMPILE_LANGUAGE:CXX>:-Wno-invalid-offsetof>)
 endif ()
 
 if (URHO3D_PROFILING)
@@ -334,10 +334,6 @@ else ()
     target_compile_definitions (Urho3D PUBLIC -DURHO3D_STATIC)
 endif ()
 
-if (URHO3D_CSHARP)
-    add_subdirectory(CSharp)
-endif ()
-
 # Check existence of various header files and their functions required by some of the third-party libraries and Urho3D library
 # Set the CMake variables in this scope but only add the compiler defines in the respective library's scope
 include (CheckIncludeFile)
@@ -364,6 +360,34 @@ if (WEB OR ANDROID)
 endif ()
 if (APPLE)
     target_link_options(Urho3D PUBLIC -stdlib=libc++)
+endif ()
+
+if (URHO3D_CSHARP)
+    csharp_bind_target(
+        TARGET Urho3D
+        SWIG CSharp/Swig/Urho3D.i
+        CSPROJ ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.csproj
+        NAMESPACE Urho3DNet
+    )
+    if (URHO3D_SYSTEMUI)
+        csharp_bind_target(
+            TARGET ImGui
+            NATIVE Urho3D
+            SWIG CSharp/Swig/ImGui.i
+            NAMESPACE ImGuiNet
+        )
+    endif ()
+    unset (CMAKE_SWIG_OUTDIR)
+    configure_file(CSharp/Managed/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Managed/AssemblyInfo.cs @ONLY)
+    file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
+    file (GLOB_RECURSE WRAPPER_FILES )
+    target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx)
+    if (URHO3D_SYSTEMUI)
+        target_sources(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ImGuiCSharp/ImGuiCSHARP_wrap.cxx)
+    endif ()
+    if (MSVC)
+        target_compile_options(Urho3D PRIVATE /bigobj)
+    endif ()
 endif ()
 
 ################################################### SDK preparation ####################################################

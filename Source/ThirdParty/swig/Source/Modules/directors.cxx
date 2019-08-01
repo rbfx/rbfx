@@ -57,7 +57,7 @@ String *Swig_class_declaration(Node *n, String *name) {
   }
   String *result = NewString("");
   String *kind = Getattr(n, "kind");
-  Printf(result, "%s %s", kind, name);
+  Printf(result, "%s SWIGEXPORT %s", kind, name);   // rbfx
   return result;
 }
 

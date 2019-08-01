@@ -5,7 +5,7 @@
     <LangVersion>7.2</LangVersion>
     <ProjectGuid>{3AFB9939-96CE-36A9-9740-54DCD7B2DE94}</ProjectGuid>
     <PackageId>rbfx.Urho3DNet</PackageId>
-    <Version>0.0.1.0-alpha</Version>
+    <Version>0.0.3.0-alpha</Version>
     <Authors>Rokas Kupstys</Authors>
     <PackageLicenseExpression>MIT</PackageLicenseExpression>
     <RepositoryUrl>https://github.com/rokups/rbfx</RepositoryUrl>
@@ -13,48 +13,48 @@
     <PackageTags>rbfx Urho3D gamedev csharp dotnet gameengine</PackageTags>
   </PropertyGroup>
   <PropertyGroup>
-    <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/CSharp/</GeneratedCodePath>
+    <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/</GeneratedCodePath>
+    <CoreCompileDependsOn>GatherBuildFilesUrho3D;GatherBuildFilesImGui;$(CoreCompileDependsOn)</CoreCompileDependsOn>
   </PropertyGroup>
   <ItemGroup>
-    <BindingsSourceCode Include="$(GeneratedCodePath)/*.cs" />
+    <BindingsSourceCodeUrho3D Include="$(GeneratedCodePath)Urho3DCSharp/*.cs" />
+    <BindingsSourceCodeImGui Include="$(GeneratedCodePath)ImGuiCSharp/*.cs" />
     <Compile Include="Managed/**/*.cs" />
-    <Compile Include="$(GeneratedCodePath)/Managed/**/*.cs" />
-    <Compile Include="@(BindingsSourceCode)" />
+    <Compile Include="$(RBFX_BINARY_DIR)Source/Urho3D/Urho3DCSharp/Managed/*.cs" />
+    <Compile Include="@(BindingsSourceCodeUrho3D)" />
+    <Compile Include="@(BindingsSourceCodeImGui)" />
   </ItemGroup>
-  <Target Name="GatherBuildFiles" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCode)' == ''">
+  <Target Name="GatherBuildFilesUrho3D" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCodeUrho3D)' == ''">
     <ItemGroup>
-      <BindingsSourceCode Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)&quot;, &quot;*.cs&quot;))" />
-      <Compile Include="@(BindingsSourceCode)" />
+      <BindingsSourceCodeUrho3D Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)Urho3DCSharp&quot;, &quot;*.cs&quot;))" />
+      <Compile Include="@(BindingsSourceCodeUrho3D)" />
+    </ItemGroup>
+  </Target>
+  <Target Name="GatherBuildFilesImGui" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCodeImGui)' == ''">
+    <ItemGroup>
+      <BindingsSourceCodeImGui Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)ImGuiCSharp&quot;, &quot;*.cs&quot;))" />
+      <Compile Include="@(BindingsSourceCodeImGui)" />
     </ItemGroup>
   </Target>
   <ItemGroup>
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
-  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' ">
+  <ItemGroup Condition=" '$(OS)' == 'Windows_NT' And '$(NoBuild)' == 'true' And '$(ExcludeRestorePackageImports)' != 'true' ">
     <Content Include="../../../LICENSE">
       <PackagePath>.</PackagePath>
     </Content>
     <Content Include="build/**">
       <PackagePath>build/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
-    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)CoreData/**">
-      <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
-    </Content>
-    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3D.dll">
+    <Content Include="C:/rbfx/cmake-build/bin/RelWithDebInfo/Urho3D.dll">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
+      <Link>Urho3D.dll</Link>
     </Content>
-    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3D.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
+    <Content Include="C:/rbfx/cmake-build/bin/RelWithDebInfo/Urho3D.pdb">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
       <PackagePath>runtimes/win-x64/native/</PackagePath>
+      <Link>Urho3D.pdb</Link>
     </Content>
-    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3DCSharp.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <PackagePath>runtimes/win-x64/native/</PackagePath>
-    </Content>
-    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3DCSharp.pdb" Condition=" '$(HasDebugInfo)' == 'true' ">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <PackagePath>runtimes/win-x64/native/</PackagePath>
-    </Content>
- </ItemGroup>
+  </ItemGroup>
 </Project>
