@@ -29,6 +29,8 @@
 namespace Urho3D
 {
 
+class Context;
+
 /// Abstract stream for reading.
 class URHO3D_API Deserializer
 {
@@ -127,8 +129,8 @@ public:
     ResourceRefList ReadResourceRefList();
     /// Read a variant.
     Variant ReadVariant();
-    /// Read a variant whose type is already known.
-    Variant ReadVariant(VariantType type);
+    /// Read a variant whose type is already known. Context is required for SharedPtr<Serializable>.
+    Variant ReadVariant(VariantType type, Context* context = nullptr);
     /// Read a variant vector.
     VariantVector ReadVariantVector();
     /// Read a string vector.

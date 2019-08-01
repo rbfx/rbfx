@@ -225,6 +225,11 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
     [](const ClassName& self, Urho3D::Variant& value) { value = static_cast<int>(self.getFunction()); }, \
     [](ClassName& self, const Urho3D::Variant& value) { self.setFunction(static_cast<typeName>(value.Get<int>())); })
 
+/// Make get/set object attribute accessor.
+#define URHO3D_MAKE_MEMBER_OBJECT_ATTRIBUTE_ACCESSOR(variable) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
+    [](const ClassName& self, Urho3D::Variant& value) { value.SetCustom(SharedPtr<Serializable>(static_cast<Serializable*>(self.variable.Get()))); }, \
+    [](ClassName& self, const Urho3D::Variant& value) { self.variable.StaticCast(value.GetCustom<SharedPtr<Serializable>>()); })
+
 /// Attribute metadata.
 namespace AttributeMetadata
 {
@@ -268,6 +273,10 @@ namespace AttributeMetadata
 /// Define an enum attribute with custom setter and getter. Zero-based enum values are mapped to names through an array of C string pointers.
 #define URHO3D_CUSTOM_ENUM_ATTRIBUTE(name, getFunction, setFunction, enumNames, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
     Urho3D::VAR_INT, name, Urho3D::MakeVariantAttributeAccessor<ClassName>(getFunction, setFunction), enumNames, static_cast<int>(defaultValue), mode))
+/// Define an object attribute. Object must be SharedPtr<> of Serializable or it's subclass.
+#define URHO3D_OBJECT_ATTRIBUTE(name, variable, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+    sizeof(CustomVariantValueImpl<SharedPtr<Serializable>>) <= VARIANT_VALUE_SIZE ? VAR_CUSTOM_STACK : VAR_CUSTOM_HEAP, name, \
+    URHO3D_MAKE_MEMBER_OBJECT_ATTRIBUTE_ACCESSOR(variable), nullptr, Urho3D::MakeCustomValue(SharedPtr<Serializable>()), mode))
 
 /// Deprecated. Use URHO3D_ACCESSOR_ATTRIBUTE instead.
 #define URHO3D_MIXED_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)
