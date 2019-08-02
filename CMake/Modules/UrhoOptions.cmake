@@ -92,6 +92,10 @@ cmake_dependent_option(URHO3D_MINIDUMPS          "Enable writing minidumps on cr
 cmake_dependent_option(URHO3D_PLUGINS            "Enable plugins"                                        ${URHO3D_ENABLE_ALL} "BUILD_SHARED_LIBS"             OFF)
 cmake_dependent_option(URHO3D_THREADING          "Enable multithreading"                                 ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 option                (URHO3D_WEBP               "WEBP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
+# Web
+cmake_dependent_option(URHO3D_WEB_ASSEMBLY       "Use wasm instead of asm.js"                            ON                   "WEB"                           OFF)
+cmake_dependent_option(EMSCRIPTEN_MEMORY_GROWTH  "Allow memory growth. Disables some optimizations."     OFF                  "WEB"                           OFF)
+set                   (EMSCRIPTEN_MEMORY_LIMIT 128 CACHE NUMBER "Memory limit in megabytes. Set to 0 for dynamic growth.")
 
 # Misc
 cmake_dependent_option(URHO3D_EXTRAS             "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
@@ -124,10 +128,6 @@ endif ()
 # Implicit configuration
 if (ANDROID OR WEB OR IOS)
     set (URHO3D_SSE OFF)
-    if (WEB)
-        set (EMSCRIPTEN_MEMORY_LIMIT 128 CACHE NUMBER "Memory limit in megabytes. Set to 0 for dynamic growth.")
-        option (EMSCRIPTEN_MEMORY_GROWTH "Allow memory growth. Disables some optimizations." OFF)
-    endif ()
 elseif (URHO3D_TOOLS)
     set (URHO3D_SYSTEMUI ON)
     set (URHO3D_FILEWATCHER ON)
