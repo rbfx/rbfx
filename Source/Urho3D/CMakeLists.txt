@@ -302,9 +302,7 @@ if (NOT MINI_URHO)
 endif ()
 
 if (WEB)
-    # Switching to WASM may be possible after https://github.com/kripken/emscripten-fastcomp/pull/195 lands and
-    # https://github.com/kripken/emscripten/issues/5436 is fixed.
-    target_link_libraries(Urho3D PUBLIC "-s WASM=0")
+    target_link_libraries(Urho3D PUBLIC "-s WASM=$<BOOL:URHO3D_WEB_ASSEMBLY>")
     target_compile_options(Urho3D PRIVATE -Wno-warn-absolute-paths -Wno-unknown-warning-option)
     if (URHO3D_THREADING)
         target_compile_options(Urho3D PRIVATE "-s USE_PTHREADS=1")
@@ -319,12 +317,11 @@ if (WEB)
     if (NOT EMSCRIPTEN_EMCC_VERSION VERSION_LESS 1.37.28)
         target_link_libraries(Urho3D PUBLIC "-s FORCE_FILESYSTEM=1")
     endif ()
-    target_compile_options(Urho3D PUBLIC -Oz -DNDEBUG)
     # Remove variables to make the -O3 regalloc easier, embed data in asm.js to reduce number of moving part
-    target_compile_options(Urho3D PUBLIC -O3 --memory-init-file 0)
+    target_compile_options(Urho3D PUBLIC --memory-init-file 0)
     target_link_libraries(Urho3D PUBLIC "-s AGGRESSIVE_VARIABLE_ELIMINATION=1")
     # Preserve LLVM debug information, show line number debug comments, and generate source maps; always disable exception handling codegen
-    target_compile_options(Urho3D PUBLIC -g4)
+    target_compile_options(Urho3D PUBLIC $<$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>:-g4>)
     target_link_libraries(Urho3D PUBLIC "-s DISABLE_EXCEPTION_CATCHING=1")
 endif ()
 
