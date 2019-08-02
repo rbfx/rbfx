@@ -28,6 +28,8 @@
 namespace Urho3D
 {
 
+class Archive;
+class ArchiveBlock;
 class XMLElement;
 class JSONValue;
 
@@ -74,6 +76,11 @@ public:
     ~ValueAnimation() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
+
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive);
+    /// Serialize content from/to archive. Return true if successful.
+    bool Serialize(Archive& archive, ArchiveBlock& block);
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
