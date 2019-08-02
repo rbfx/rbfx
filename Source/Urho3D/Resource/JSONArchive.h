@@ -38,13 +38,13 @@ inline bool IsArchiveBlockJSONObject(ArchiveBlockType type) { return type == Arc
 /// Return whether the block type matches JSONValue type.
 inline bool IsArchiveBlockTypeMatching(const JSONValue& value, ArchiveBlockType type)
 {
-    return IsArchiveBlockJSONArray(type) && value.IsArray()
-        || IsArchiveBlockJSONObject(type) && value.IsObject();
+    return IsArchiveBlockJSONArray(type) && (value.IsArray() || value.IsNull())
+        || IsArchiveBlockJSONObject(type) && (value.IsObject() || value.IsNull());
 }
 
 /// Base archive for JSON serialization.
 template <class T, bool IsInputBool>
-class JSONArchiveBase : public ArchiveBaseT<IsInputBool, true, true>
+class JSONArchiveBase : public ArchiveBaseT<IsInputBool, true>
 {
 public:
     /// Construct.
@@ -56,6 +56,9 @@ public:
     Context* GetContext() final { return jsonFile_->GetContext(); }
     /// Return name of the archive.
     ea::string_view GetName() const final { return jsonFile_->GetName(); }
+
+    /// Whether the unordered element access is supported for Unordered blocks.
+    bool IsUnorderedSupportedNow() const final { return !stack_.empty() && stack_.back().GetType() == ArchiveBlockType::Unordered; }
 
     /// Return current string stack.
     ea::string GetCurrentStackString() final
@@ -91,6 +94,8 @@ public:
     JSONOutputArchiveBlock(const char* name, ArchiveBlockType type, JSONValue* blockValue, unsigned sizeHint);
     /// Get block name.
     ea::string_view GetName() const { return name_; }
+    /// Return block type.
+    ArchiveBlockType GetType() const { return type_; }
     /// Set element key.
     bool SetElementKey(ArchiveBase& archive, ea::string key);
     /// Create element in the block.
@@ -181,6 +186,8 @@ public:
     JSONInputArchiveBlock(const char* name, ArchiveBlockType type, const JSONValue* value);
     /// Return name.
     const ea::string_view GetName() const { return name_; }
+    /// Return block type.
+    ArchiveBlockType GetType() const { return type_; }
     /// Return size hint.
     unsigned GetSizeHint() const { return value_->Size(); }
     /// Return current child's key.

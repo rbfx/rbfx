@@ -24,6 +24,8 @@
 
 #include "../Core/Context.h"
 #include "../Core/StringUtils.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/Deserializer.h"
 #include "../IO/Log.h"
 #include "../IO/Serializer.h"
@@ -46,6 +48,29 @@ const char* interpMethodNames[] =
     nullptr
 };
 
+bool SerializeValue(Archive& archive, const char* name, VAnimKeyFrame& keyFrame)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeValue(archive, "time", keyFrame.time_);
+        SerializeValue(archive, "value", keyFrame.value_);
+        return true;
+    }
+    return false;
+}
+
+bool SerializeValue(Archive& archive, const char* name, VAnimEventFrame& eventFrame)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeValue(archive, "time", eventFrame.time_);
+        SerializeValue(archive, "eventtype", eventFrame.eventType_);
+        SerializeValue(archive, "eventdata", eventFrame.eventData_);
+        return true;
+    }
+    return false;
+}
+
 ValueAnimation::ValueAnimation(Context* context) :
     Resource(context),
     owner_(nullptr),
@@ -64,6 +89,48 @@ ValueAnimation::~ValueAnimation() = default;
 void ValueAnimation::RegisterObject(Context* context)
 {
     context->RegisterFactory<ValueAnimation>();
+}
+
+bool ValueAnimation::Serialize(Archive& archive)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("valueanimation"))
+        return Serialize(archive, block);
+    return false;
+}
+
+bool ValueAnimation::Serialize(Archive& archive, ArchiveBlock& /*block*/)
+{
+    const bool loading = archive.IsInput();
+
+    if (loading)
+    {
+        valueType_ = VAR_NONE;
+        eventFrames_.clear();
+    }
+
+    bool success = true;
+
+    SerializeEnumEx(archive, "interpolationmethod", interpMethodNames, interpolationMethod_,
+        [&](InterpMethod value) { SetInterpolationMethod(value); });
+
+    if (interpolationMethod_ == IM_SPLINE)
+        success &= SerializeValue(archive, "splinetension", splineTension_);
+
+    success &= SerializeCustomVector(archive, "keyframes", keyFrames_.size(), keyFrames_,
+        [&](VAnimKeyFrame& keyFrame, bool loading)
+    {
+        return SerializeValueEx(archive, "keyframe", keyFrame,
+            [&](const VAnimKeyFrame& value) { SetKeyFrame(value.time_, value.value_); });
+    });
+
+    success &= SerializeCustomVector(archive, "eventframes", eventFrames_.size(), eventFrames_,
+        [&](VAnimEventFrame& eventFrame, bool loading)
+    {
+        return SerializeValueEx(archive, "eventframe", eventFrame,
+            [&](const VAnimEventFrame& value) { SetEventFrame(value.time_, value.eventType_, value.eventData_); });
+    });
+
+    return success;
 }
 
 bool ValueAnimation::BeginLoad(Deserializer& source)
