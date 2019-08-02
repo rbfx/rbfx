@@ -34,7 +34,9 @@
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLArchive.h>
+#include <Urho3D/Scene/ObjectAnimation.h>
 #include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/ValueAnimation.h>
 
 #include "Serialization.h"
 
@@ -350,25 +352,105 @@ SharedPtr<Scene> CreateTestScene(Context* context, int numObjects)
         auto model = node->CreateComponent<StaticModel>();
         model->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
         model->SetMaterial(cache->GetResource<Material>("Materials/Stone.mdl"));
+
+        auto scaleAnimation = MakeShared<ValueAnimation>(context);
+        scaleAnimation->SetKeyFrame(0.0f, 1.0f);
+        scaleAnimation->SetKeyFrame(1.0f, 1.5f);
+        scaleAnimation->SetKeyFrame(2.0f, 1.0f);
+
+        auto textAnimation = MakeShared<ValueAnimation>(context);
+        textAnimation->SetKeyFrame(0.0f, "Object");
+        textAnimation->SetKeyFrame(1.0f, "Box");
+        textAnimation->SetKeyFrame(2.0f, "Object");
+
+        auto objectAnimation = MakeShared<ObjectAnimation>(context);
+        objectAnimation->AddAttributeAnimation("Scale", scaleAnimation);
+        node->SetObjectAnimation(objectAnimation);
+
+        node->SetAttributeAnimation("Name", textAnimation);
     }
 
     return scene;
+}
+
+/// Compare value animations.
+bool CompareValueAnimations(const ValueAnimation* lhs, const ValueAnimation* rhs)
+{
+    const auto& lhsFrames = lhs->GetKeyFrames();
+    const auto& rhsFrames = rhs->GetKeyFrames();
+
+    const bool metaEqual =
+        lhsFrames.size() == rhsFrames.size()
+        && lhs->GetInterpolationMethod() == rhs->GetInterpolationMethod();
+
+    if (!metaEqual)
+        return false;
+
+    for (unsigned i = 0; i < lhsFrames.size(); ++i)
+    {
+        if (!Equals(lhsFrames[i].time_, rhsFrames[i].time_) || lhsFrames[i].value_ != rhsFrames[i].value_)
+            return false;
+    }
+
+    return true;
+}
+
+/// Compare value animation infos.
+bool CompareValueAnimationInfos(const ValueAnimationInfo* lhs, const ValueAnimationInfo* rhs)
+{
+    return lhs->GetSpeed() == rhs->GetSpeed()
+        && lhs->GetWrapMode() == rhs->GetWrapMode()
+        && CompareValueAnimations(lhs->GetAnimation(), rhs->GetAnimation());
 }
 
 /// Compare nodes (recursive).
 bool CompareNodes(Node* lhs, Node* rhs)
 {
     // Compare contents
-    const bool metaEqual = lhs->GetPosition().Equals(rhs->GetPosition())
+    ObjectAnimation* lhsObjectAnimation = lhs->GetObjectAnimation();
+    ObjectAnimation* rhsObjectAnimation = rhs->GetObjectAnimation();
+
+    ValueAnimation* lhsAttributeAnimation = lhs->GetAttributeAnimation("Name");
+    ValueAnimation* rhsAttributeAnimation = rhs->GetAttributeAnimation("Name");
+
+    const bool metaEqual =
+        lhs->GetPosition().Equals(rhs->GetPosition())
         && lhs->GetRotation().Equals(rhs->GetRotation())
         && lhs->GetScale().Equals(rhs->GetScale())
         && lhs->GetNumChildren() == rhs->GetNumChildren()
         && lhs->GetNumComponents() == rhs->GetNumComponents()
         && lhs->GetName() == rhs->GetName()
+        && !!lhsObjectAnimation == !!rhsObjectAnimation
+        && !!lhsAttributeAnimation == !!rhsAttributeAnimation
         ;
 
     if (!metaEqual)
         return false;
+
+    // Compare animations
+    if (lhsObjectAnimation)
+    {
+        const auto& lhsInfos = lhsObjectAnimation->GetAttributeAnimationInfos();
+        const auto& rhsInfos = rhsObjectAnimation->GetAttributeAnimationInfos();
+
+        if (lhsInfos.size() != rhsInfos.size())
+            return false;
+
+        auto lhsIter = lhsInfos.begin();
+        auto rhsIter = rhsInfos.begin();
+
+        for (unsigned i = 0; i < lhsInfos.size(); ++i)
+        {
+            if (!CompareValueAnimationInfos(lhsIter->second, rhsIter->second))
+                return false;
+        }
+    }
+
+    if (lhsAttributeAnimation)
+    {
+        if (!CompareValueAnimations(lhsAttributeAnimation, rhsAttributeAnimation))
+            return false;
+    }
 
     // Compare components
     for (unsigned i = 0; i < lhs->GetNumComponents(); ++i)
@@ -491,6 +573,7 @@ void Serialization::TestSceneSerialization()
 
     // Compare scenes
     URHO3D_ASSERT(success);
+    URHO3D_ASSERT(CompareNodes(sourceScene, sourceScene));
     URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromBinary));
     URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromXML));
     URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromJSON));
