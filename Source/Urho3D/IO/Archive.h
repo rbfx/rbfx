@@ -123,10 +123,10 @@ public:
     /// - Enumerators serialized as strings, if possible.
     /// - Simple compound types like Vector3 are serialized as formatted strings instead of blocks.
     virtual bool IsHumanReadable() const = 0;
-    /// Whether the unordered element access is supported for Unordered blocks.
-    /// If false, serialization code should treat Unordered blocks as Sequential.
-    virtual bool IsUnorderedSupported() const = 0;
 
+    /// Whether the unordered element access is supported for Unordered blocks.
+    /// Always false if current block is not Unordered.
+    virtual bool IsUnorderedSupportedNow() const = 0;
     /// Whether the archive can no longer be serialized.
     virtual bool IsEOF() const = 0;
     /// Whether the serialization error occurred.
@@ -309,7 +309,7 @@ private:
 };
 
 /// Archive implementation helper (template). Provides all archive traits
-template <bool IsInputBool, bool IsHumanReadableBool, bool IsUnorderedSupportedBool>
+template <bool IsInputBool, bool IsHumanReadableBool>
 class ArchiveBaseT : public ArchiveBase
 {
 public:
@@ -317,8 +317,6 @@ public:
     bool IsInput() const final { return IsInputBool; }
     /// Whether the human-readability is preferred over performance and output size.
     bool IsHumanReadable() const final { return IsHumanReadableBool; }
-    /// Whether the unordered element access is supported for Unordered blocks.
-    bool IsUnorderedSupported() const final { return IsUnorderedSupportedBool; }
 };
 
 }

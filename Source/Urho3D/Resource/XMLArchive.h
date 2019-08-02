@@ -33,7 +33,7 @@ namespace Urho3D
 
 /// Base archive for XML serialization.
 template <class T, bool IsInputBool>
-class XMLArchiveBase : public ArchiveBaseT<IsInputBool, true, true>
+class XMLArchiveBase : public ArchiveBaseT<IsInputBool, true>
 {
 public:
     /// Construct.
@@ -45,6 +45,9 @@ public:
     Context* GetContext() final { return xmlFile_->GetContext(); }
     /// Return name of the archive.
     ea::string_view GetName() const final { return xmlFile_->GetName(); }
+
+    /// Whether the unordered element access is supported for Unordered blocks.
+    bool IsUnorderedSupportedNow() const final { return !stack_.empty() && stack_.back().GetType() == ArchiveBlockType::Unordered; }
 
     /// Return current string stack.
     ea::string GetCurrentStackString() final
@@ -88,7 +91,9 @@ class XMLOutputArchiveBlock
 public:
     /// Construct.
     XMLOutputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement, unsigned sizeHint);
-    /// Get block name.
+    /// Return block type.
+    ArchiveBlockType GetType() const { return type_; }
+    /// Return block name.
     ea::string_view GetName() const { return name_; }
     /// Set element key.
     bool SetElementKey(ArchiveBase& archive, ea::string key);
@@ -185,6 +190,8 @@ public:
     XMLInputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement);
     /// Return name.
     const ea::string_view GetName() const { return name_; }
+    /// Return block type.
+    ArchiveBlockType GetType() const { return type_; }
     /// Return size hint.
     unsigned CalculateSizeHint() const;
     /// Return current child's key.

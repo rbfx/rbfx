@@ -32,7 +32,7 @@ namespace Urho3D
 
 /// Base archive for binary serialization.
 template <class T, bool IsInputBool>
-class BinaryArchiveBase : public ArchiveBaseT<IsInputBool, false, false>
+class BinaryArchiveBase : public ArchiveBaseT<IsInputBool, false>
 {
 public:
     /// Construct.
@@ -42,6 +42,9 @@ public:
 
     /// Get context.
     Context* GetContext() final { return context_; }
+
+    /// Whether the unordered element access is supported for Unordered blocks.
+    bool IsUnorderedSupportedNow() const final { return false; }
 
     /// Return current string stack.
     ea::string GetCurrentStackString() final
