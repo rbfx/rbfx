@@ -502,8 +502,8 @@ void Variant::SetCustomVariantValue(const CustomVariantValue& value)
     }
 
     SetType(VAR_CUSTOM);
-    value_.customValue_.~CustomVariantValue();
-    value.CloneTo(&value_.customValue_);
+    value_.AsCustomValue().~CustomVariantValue();
+    value.CloneTo(value_.storage_);
 }
 
 VectorBuffer Variant::GetVectorBuffer() const
@@ -749,7 +749,7 @@ void Variant::SetType(VariantType newType)
         break;
 
     case VAR_CUSTOM:
-        value_.customValue_.~CustomVariantValue();
+        value_.AsCustomValue().~CustomVariantValue();
         break;
 
     default:
@@ -806,7 +806,7 @@ void Variant::SetType(VariantType newType)
 
     case VAR_CUSTOM:
         // Initialize virtual table with void dummy custom object
-        new (&value_.customValue_) CustomVariantValue();
+        new (&value_.storage_) CustomVariantValue();
         break;
 
     default:
