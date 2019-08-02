@@ -354,9 +354,9 @@ SharedPtr<Scene> CreateTestScene(Context* context, int numObjects)
         model->SetMaterial(cache->GetResource<Material>("Materials/Stone.mdl"));
 
         auto scaleAnimation = MakeShared<ValueAnimation>(context);
-        scaleAnimation->SetKeyFrame(0.0f, 1.0f);
-        scaleAnimation->SetKeyFrame(1.0f, 1.5f);
-        scaleAnimation->SetKeyFrame(2.0f, 1.0f);
+        scaleAnimation->SetKeyFrame(0.0f, Vector3::ONE * 1.0f);
+        scaleAnimation->SetKeyFrame(1.0f, Vector3::ONE * 1.5f);
+        scaleAnimation->SetKeyFrame(2.0f, Vector3::ONE * 1.0f);
 
         auto textAnimation = MakeShared<ValueAnimation>(context);
         textAnimation->SetKeyFrame(0.0f, "Object");
@@ -525,7 +525,7 @@ void Serialization::TestStructSerialization()
 void Serialization::TestSceneSerialization()
 {
     bool success = true;
-    auto sourceScene = CreateTestScene(context_, 1000);
+    auto sourceScene = CreateTestScene(context_, 10);
 
     // Save and load binary
     auto sceneFromBinary = MakeShared<Scene>(context_);

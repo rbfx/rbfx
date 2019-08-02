@@ -170,44 +170,6 @@ inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::st
     return result;
 }
 
-/// Serialize custom container.
-template <class T, class U>
-inline bool SerializeCustomContainer(Archive& archive, ArchiveBlockType type, const char* name, unsigned size, T& container, U serializer)
-{
-    using ValueType = typename T::value_type;
-    if (auto block = archive.OpenBlock(name, size, false, type))
-    {
-        if (archive.IsInput())
-        {
-            for (unsigned index = 0; index < block.GetSizeHint(); ++index)
-            {
-                ValueType element;
-                if (!serializer(element, true))
-                {
-                    archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
-                    return false;
-                }
-            }
-            return true;
-        }
-        else
-        {
-            unsigned index = 0;
-            for (ValueType& value : container)
-            {
-                if (!serializer(value, false))
-                {
-                    archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
-                    return false;
-                }
-                ++index;
-            }
-            return true;
-        }
-    }
-    return false;
-}
-
 }
 
 /// Serialize value directly using archive.
@@ -482,16 +444,82 @@ inline bool SerializeVectorBytes(Archive& archive, const char* name, const char*
 template <class T, class U>
 inline bool SerializeCustomVector(Archive& archive, const char* name, unsigned size, T& vector, U serializer)
 {
-    return Detail::SerializeCustomContainer(archive, ArchiveBlockType::Array, name, size, vector, std::move(serializer));
+    using ValueType = typename T::value_type;
+    if (auto block = archive.OpenArrayBlock(name, size))
+    {
+        if (archive.IsInput())
+        {
+            for (unsigned index = 0; index < block.GetSizeHint(); ++index)
+            {
+                ValueType element;
+                if (!serializer(element, true))
+                {
+                    archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            unsigned index = 0;
+            for (ValueType& value : vector)
+            {
+                if (!serializer(value, false))
+                {
+                    archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
+                    return false;
+                }
+                ++index;
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 /// Serialize custom map.
-/// While writing, serializer may skip vector elements. Size should match actual number of elements to be written.
-/// While reading, serializer must push elements into vector on its own.
+/// While writing, serializer may skip map elements. Size should match actual number of elements to be written.
+/// While reading, serializer must push elements into map on its own.
 template <class T, class U>
 inline bool SerializeCustomMap(Archive& archive, const char* name, unsigned size, T& map, U serializer)
 {
-    return Detail::SerializeCustomContainer(archive, ArchiveBlockType::Map, name, size, map, std::move(serializer));
+    using KeyType = typename T::key_type;
+    using MappedType = typename T::mapped_type;
+    if (auto block = archive.OpenMapBlock(name, size))
+    {
+        if (archive.IsInput())
+        {
+            for (unsigned index = 0; index < block.GetSizeHint(); ++index)
+            {
+                KeyType keyType;
+                MappedType mappedType;
+                if (!serializer(keyType, mappedType, true))
+                {
+                    archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
+                    return false;
+                }
+            }
+            return true;
+        }
+        else
+        {
+            unsigned index = 0;
+            for (auto& elem : map)
+            {
+                // Copy the key so it could be passed by reference
+                KeyType key = elem.first;
+                if (!serializer(key, elem.second, false))
+                {
+                    archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
+                    return false;
+                }
+                ++index;
+            }
+            return true;
+        }
+    }
+    return false;
 }
 
 /// Serialize map or hash map with string key with standard interface.
@@ -561,6 +589,24 @@ inline bool SerializeStringHashMap(Archive& archive, const char* name, const cha
         }
     }
     return false;
+}
+
+/// Serialize StringVector.
+inline bool SerializeValue(Archive& archive, const char* name, StringVector& value)
+{
+    return SerializeVector(archive, name, nullptr, value);
+}
+
+/// Serialize VariantVector.
+inline bool SerializeValue(Archive& archive, const char* name, VariantVector& value)
+{
+    return SerializeVector(archive, name, nullptr, value);
+}
+
+/// Serialize VariantMap.
+inline bool SerializeValue(Archive& archive, const char* name, VariantMap& value)
+{
+    return SerializeStringHashMap(archive, name, nullptr, value);
 }
 
 /// Serialize ResourceRef.
@@ -671,6 +717,79 @@ inline bool SerializeValue(Archive& archive, const char* name, Variant& value)
         return SerializeVariantValue(archive, variantType, "value", value);
     }
     return false;
+}
+
+/// Serialize optional element or block.
+template <class T>
+inline bool SerializeOptional(Archive& archive, bool cond, T serializer, bool emulate = true)
+{
+    const bool loading = archive.IsInput();
+    if (archive.IsUnorderedSupportedNow())
+    {
+        // If unordered blocks supported, use it
+        if (loading)
+        {
+            // Try to serialize, check for error if failed
+            if (!serializer(true))
+                return !archive.HasError();
+            return true;
+        }
+        else
+        {
+            // If condition is met, serialize
+            if (cond)
+                return serializer(false);
+            return true;
+        }
+    }
+    else if (emulate)
+    {
+        if (ArchiveBlock block = archive.OpenUnorderedBlock("optional"))
+        {
+            if (!SerializeValue(archive, "exists", cond))
+                return false;
+
+            if (cond)
+                return serializer(loading);
+
+            return true;
+        }
+        return false;
+    }
+    else
+    {
+        return serializer(loading);
+    }
+}
+
+/// Serialize value with specified setter callback.
+template <class T, class U>
+inline bool SerializeValueEx(Archive& archive, const char* name, const T& value, U setter)
+{
+    if (archive.IsInput())
+    {
+        T tempValue;
+        const bool success = SerializeValue(archive, name, tempValue);
+        setter(tempValue);
+        return success;
+    }
+    else
+        return SerializeValue(archive, name, const_cast<T&>(value));
+}
+
+/// Serialize value with specified setter callback.
+template <class T, class U>
+inline bool SerializeEnumEx(Archive& archive, const char* name, const char* const* enumConstants, const T& value, U setter)
+{
+    if (archive.IsInput())
+    {
+        T tempValue;
+        const bool success = SerializeEnum(archive, name, enumConstants, tempValue);
+        setter(tempValue);
+        return success;
+    }
+    else
+        return SerializeEnum(archive, name, enumConstants, const_cast<T&>(value));
 }
 
 }

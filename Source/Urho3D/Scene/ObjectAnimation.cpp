@@ -23,6 +23,8 @@
 #include "../Precompiled.h"
 
 #include "../Core/Context.h"
+#include "../IO/Archive.h"
+#include "../IO/ArchiveSerialization.h"
 #include "../Resource/XMLFile.h"
 #include "../Resource/JSONFile.h"
 #include "../Scene/ObjectAnimation.h"
@@ -53,6 +55,46 @@ ObjectAnimation::~ObjectAnimation() = default;
 void ObjectAnimation::RegisterObject(Context* context)
 {
     context->RegisterFactory<ObjectAnimation>();
+}
+
+bool ObjectAnimation::Serialize(Archive& archive)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("objectanimation"))
+        return Serialize(archive, block);
+    return false;
+}
+
+bool ObjectAnimation::Serialize(Archive& archive, ArchiveBlock& block)
+{
+    return SerializeCustomMap(archive, "attributeanimations", attributeAnimationInfos_.size(), attributeAnimationInfos_,
+        [&](ea::string& name, SharedPtr<ValueAnimationInfo>& info, bool loading)
+    {
+        bool success = true;
+
+        success &= archive.SerializeKey(name);
+
+        if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
+        {
+            // Get value animation to serialize
+            SharedPtr<ValueAnimation> animation = info
+                ? SharedPtr<ValueAnimation>(info->GetAnimation())
+                : MakeShared<ValueAnimation>(context_);
+
+            success &= animation->Serialize(archive, infoBlock);
+
+            WrapMode wrapMode = info ? info->GetWrapMode() : WM_LOOP;
+            success &= SerializeEnum(archive, "wrapmode", wrapModeNames, wrapMode);
+
+            float speed = info ? info->GetSpeed() : 1.0f;
+            success &= SerializeValue(archive, "speed", speed);
+
+            if (loading)
+                AddAttributeAnimation(name, animation, wrapMode, speed);
+
+            return success;
+        }
+        return false;
+    });
 }
 
 bool ObjectAnimation::BeginLoad(Deserializer& source)
