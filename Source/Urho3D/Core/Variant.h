@@ -321,7 +321,6 @@ union VariantValue
     ea::vector<unsigned char> buffer_;
     ResourceRef resourceRef_;
     ResourceRefList resourceRefList_;
-    CustomVariantValue customValue_;
 
     /// Construct uninitialized.
     VariantValue() { }      // NOLINT(modernize-use-equals-default)
@@ -329,6 +328,11 @@ union VariantValue
     VariantValue(const VariantValue& value) = delete;
     /// Destruct.
     ~VariantValue() { }     // NOLINT(modernize-use-equals-default)
+
+    /// Get custom variant value.
+    CustomVariantValue& AsCustomValue() { return *reinterpret_cast<CustomVariantValue*>(&storage_[0]); }
+    /// Get custom variant value.
+    const CustomVariantValue& AsCustomValue() const { return *reinterpret_cast<const CustomVariantValue*>(&storage_[0]); }
 };
 
 // TODO: static_assert(sizeof(VariantValue) == VARIANT_VALUE_SIZE, "Unexpected size of VariantValue");
@@ -1094,12 +1098,12 @@ public:
 
         // Fall back to reallocation
         SetType(VAR_CUSTOM);
-        value_.customValue_.~CustomVariantValue();
+        value_.AsCustomValue().~CustomVariantValue();
 
         if (IsCustomTypeOnStack<T>())
-            new (&value_.customValue_) CustomVariantValueImpl<T>(ea::move(value));
+            new (value_.storage_) CustomVariantValueImpl<T>(ea::move(value));
         else
-            new (&value_.customValue_) CustomVariantValueImpl<ea::unique_ptr<T>>(ea::make_unique<T>(ea::move(value)));
+            new (value_.storage_) CustomVariantValueImpl<ea::unique_ptr<T>>(ea::make_unique<T>(ea::move(value)));
     }
 
     /// Return int or zero on type mismatch. Floats and doubles are converted.
@@ -1317,7 +1321,7 @@ public:
     const CustomVariantValue* GetCustomVariantValuePtr() const
     {
         if (type_ == VAR_CUSTOM)
-            return &value_.customValue_;
+            return &value_.AsCustomValue();
         else
             return nullptr;
     }
