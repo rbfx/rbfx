@@ -81,7 +81,7 @@ unsigned StringHash::Calculate(const char* str, unsigned hash)
 }
 #endif
 
-unsigned int StringHash::Calculate(void* data, unsigned int length, unsigned int hash)
+unsigned StringHash::Calculate(void* data, unsigned int length, unsigned int hash)
 {
     if (!data)
         return hash;
