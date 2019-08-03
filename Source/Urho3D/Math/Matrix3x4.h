@@ -665,6 +665,46 @@ public:
     /// Return matrix column.
     Vector3 Column(unsigned j) const { return Vector3(Element(0, j), Element(1, j), Element(2, j)); }
 
+
+    /// Return whether is NaN.
+    bool IsNaN() const {
+        return (
+            Urho3D::IsNaN(m00_) ||
+            Urho3D::IsNaN(m01_) ||
+            Urho3D::IsNaN(m02_) ||
+            Urho3D::IsNaN(m03_) ||
+
+            Urho3D::IsNaN(m10_) ||
+            Urho3D::IsNaN(m11_) ||
+            Urho3D::IsNaN(m12_) ||
+            Urho3D::IsNaN(m13_) ||
+
+            Urho3D::IsNaN(m20_) ||
+            Urho3D::IsNaN(m21_) ||
+            Urho3D::IsNaN(m22_) ||
+            Urho3D::IsNaN(m23_));
+    }
+
+    /// Return whether is Inf.
+    bool IsInf() const {
+        return (
+            Urho3D::IsInf(m00_) ||
+            Urho3D::IsInf(m01_) ||
+            Urho3D::IsInf(m02_) ||
+            Urho3D::IsInf(m03_) ||
+
+            Urho3D::IsInf(m10_) ||
+            Urho3D::IsInf(m11_) ||
+            Urho3D::IsInf(m12_) ||
+            Urho3D::IsInf(m13_) ||
+
+            Urho3D::IsInf(m20_) ||
+            Urho3D::IsInf(m21_) ||
+            Urho3D::IsInf(m22_) ||
+            Urho3D::IsInf(m23_));
+    }
+
+
     /// Return as string.
     ea::string ToString() const;
 
