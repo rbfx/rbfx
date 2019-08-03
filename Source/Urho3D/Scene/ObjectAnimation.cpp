@@ -69,9 +69,7 @@ bool ObjectAnimation::Serialize(Archive& archive, ArchiveBlock& block)
     return SerializeCustomMap(archive, "attributeanimations", attributeAnimationInfos_.size(), attributeAnimationInfos_,
         [&](ea::string& name, SharedPtr<ValueAnimationInfo>& info, bool loading)
     {
-        bool success = true;
-
-        success &= archive.SerializeKey(name);
+        archive.SerializeKey(name);
 
         if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
         {
@@ -80,18 +78,18 @@ bool ObjectAnimation::Serialize(Archive& archive, ArchiveBlock& block)
                 ? SharedPtr<ValueAnimation>(info->GetAnimation())
                 : MakeShared<ValueAnimation>(context_);
 
-            success &= animation->Serialize(archive, infoBlock);
+            animation->Serialize(archive, infoBlock);
 
             WrapMode wrapMode = info ? info->GetWrapMode() : WM_LOOP;
-            success &= SerializeEnum(archive, "wrapmode", wrapModeNames, wrapMode);
+            SerializeEnum(archive, "wrapmode", wrapModeNames, wrapMode);
 
             float speed = info ? info->GetSpeed() : 1.0f;
-            success &= SerializeValue(archive, "speed", speed);
+            SerializeValue(archive, "speed", speed);
 
             if (loading)
                 AddAttributeAnimation(name, animation, wrapMode, speed);
 
-            return success;
+            return true;
         }
         return false;
     });

@@ -108,29 +108,27 @@ bool ValueAnimation::Serialize(Archive& archive, ArchiveBlock& /*block*/)
         eventFrames_.clear();
     }
 
-    bool success = true;
-
     SerializeEnumEx(archive, "interpolationmethod", interpMethodNames, interpolationMethod_,
         [&](InterpMethod value) { SetInterpolationMethod(value); });
 
     if (interpolationMethod_ == IM_SPLINE)
-        success &= SerializeValue(archive, "splinetension", splineTension_);
+        SerializeValue(archive, "splinetension", splineTension_);
 
-    success &= SerializeCustomVector(archive, "keyframes", keyFrames_.size(), keyFrames_,
+    SerializeCustomVector(archive, "keyframes", keyFrames_.size(), keyFrames_,
         [&](VAnimKeyFrame& keyFrame, bool loading)
     {
         return SerializeValueEx(archive, "keyframe", keyFrame,
             [&](const VAnimKeyFrame& value) { SetKeyFrame(value.time_, value.value_); });
     });
 
-    success &= SerializeCustomVector(archive, "eventframes", eventFrames_.size(), eventFrames_,
+    SerializeCustomVector(archive, "eventframes", eventFrames_.size(), eventFrames_,
         [&](VAnimEventFrame& eventFrame, bool loading)
     {
         return SerializeValueEx(archive, "eventframe", eventFrame,
             [&](const VAnimEventFrame& value) { SetEventFrame(value.time_, value.eventType_, value.eventData_); });
     });
 
-    return success;
+    return true;
 }
 
 bool ValueAnimation::BeginLoad(Deserializer& source)
