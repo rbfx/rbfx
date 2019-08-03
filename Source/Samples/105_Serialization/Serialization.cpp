@@ -319,7 +319,7 @@ SharedPtr<ResourceType> SaveTestStruct(Context* context, const TestStruct& data)
 {
     SharedPtr<ResourceType> resource = MakeShared<ResourceType>(context);
     ArchiveType archive{ resource };
-    SerializeValue(archive, "MyStruct", const_cast<TestStruct&>(data));
+    SerializeValue(archive, "TestStruct", const_cast<TestStruct&>(data));
 
     if (archive.HasError())
         return nullptr;
@@ -332,7 +332,7 @@ VectorBuffer SaveTestStructBinary(Context* context, const TestStruct& data)
 {
     VectorBuffer buffer;
     ArchiveType archive{ context, buffer };
-    SerializeValue(archive, "MyStruct", const_cast<TestStruct&>(data));
+    SerializeValue(archive, "TestStruct", const_cast<TestStruct&>(data));
 
     if (archive.HasError())
         return {};
@@ -346,7 +346,7 @@ ea::unique_ptr<TestStruct> LoadTestStruct(Context* context, ResourceType& resour
     ArchiveType archive{ &resource };
 
     TestStruct data;
-    SerializeValue(archive, "MyStruct", data);
+    SerializeValue(archive, "TestStruct", data);
 
     if (archive.HasError())
         return nullptr;
@@ -361,7 +361,7 @@ ea::unique_ptr<TestStruct> LoadTestStructBinary(Context* context, VectorBuffer& 
     ArchiveType archive{ context, buffer };
 
     TestStruct data;
-    SerializeValue(archive, "MyStruct", data);
+    SerializeValue(archive, "TestStruct", data);
 
     if (archive.HasError())
         return nullptr;
@@ -533,37 +533,82 @@ void Serialization::TestStructSerialization()
     const TestStruct sourceObject = CreateTestStruct(context_);
 
     // Save and load binary
-    auto binaryData = SaveTestStructBinary<BinaryOutputArchive>(context_, sourceObject);
-    URHO3D_ASSERT(binaryData.GetSize() != 0);
-    const auto objectFromBinary = LoadTestStructBinary<BinaryInputArchive>(context_, binaryData);
-    URHO3D_ASSERT(objectFromBinary);
+    {
+        auto binaryData = SaveTestStructBinary<BinaryOutputArchive>(context_, sourceObject);
+        URHO3D_ASSERT(binaryData.GetSize() != 0);
+        const auto objectFromBinary = LoadTestStructBinary<BinaryInputArchive>(context_, binaryData);
+        URHO3D_ASSERT(objectFromBinary);
+        URHO3D_ASSERT(sourceObject == *objectFromBinary);
+    }
 
     // Save and load XML
-    auto xmlData = SaveTestStruct<XMLOutputArchive, XMLFile>(context_, sourceObject);
-    URHO3D_ASSERT(xmlData);
-    auto objectFromXML = LoadTestStruct<XMLInputArchive, XMLFile>(context_, *xmlData);
-    URHO3D_ASSERT(objectFromXML);
+    {
+        auto xmlData = SaveTestStruct<XMLOutputArchive, XMLFile>(context_, sourceObject);
+        URHO3D_ASSERT(xmlData);
+        auto objectFromXML = LoadTestStruct<XMLInputArchive, XMLFile>(context_, *xmlData);
+        URHO3D_ASSERT(objectFromXML);
+        URHO3D_ASSERT(sourceObject == *objectFromXML);
+    }
 
     // Save and load JSON
-    auto jsonData = SaveTestStruct<JSONOutputArchive, JSONFile>(context_, sourceObject);
-    URHO3D_ASSERT(jsonData);
-    auto objectFromJSON = LoadTestStruct<JSONInputArchive, JSONFile>(context_, *jsonData);
-    URHO3D_ASSERT(objectFromJSON);
+    {
+        auto jsonData = SaveTestStruct<JSONOutputArchive, JSONFile>(context_, sourceObject);
+        URHO3D_ASSERT(jsonData);
+        auto objectFromJSON = LoadTestStruct<JSONInputArchive, JSONFile>(context_, *jsonData);
+        URHO3D_ASSERT(objectFromJSON);
+        URHO3D_ASSERT(sourceObject == *objectFromJSON);
+    }
+}
 
-    // Check content
-    URHO3D_ASSERT(sourceObject == *objectFromBinary);
-    URHO3D_ASSERT(sourceObject == *objectFromXML);
-    URHO3D_ASSERT(sourceObject == *objectFromJSON);
+void Serialization::TestPartialSerialization()
+{
+    bool success = true;
+    TestStruct sourceObject = CreateTestStruct(context_);
+
+    {
+        auto xmlFile = MakeShared<XMLFile>(context_);
+        XMLElement root = xmlFile->CreateRoot("root");
+
+        XMLOutputArchive xmlOutputArchive{ context_, root.CreateChild("child") };
+        success &= SerializeValue(xmlOutputArchive, "TestStruct", sourceObject);
+
+        XMLInputArchive xmlInputArchive{ context_, root.GetChild("child") };
+        TestStruct objectFromXML;
+        success &= SerializeValue(xmlInputArchive, "TestStruct", objectFromXML);
+
+        URHO3D_ASSERT(sourceObject == objectFromXML);
+    }
+
+    {
+        auto jsonFile = MakeShared<JSONFile>(context_);
+        JSONValue& root = jsonFile->GetRoot();
+
+        JSONValue child;
+        JSONOutputArchive jsonOutputArchive{ context_, child };
+        success &= SerializeValue(jsonOutputArchive, "TestStruct", sourceObject);
+        root.Set("child", child);
+
+        JSONInputArchive jsonInputArchive{ context_, root.Get("child") };
+        TestStruct objectFromJSON;
+        success &= SerializeValue(jsonInputArchive, "TestStruct", objectFromJSON);
+
+        URHO3D_ASSERT(sourceObject == objectFromJSON);
+    }
+
+    URHO3D_ASSERT(success);
 }
 
 void Serialization::TestSceneSerialization()
 {
     bool success = true;
+
     auto sourceScene = CreateTestScene(context_, 10);
+    URHO3D_ASSERT(CompareNodes(sourceScene, sourceScene));
 
     // Save and load binary
-    auto sceneFromBinary = MakeShared<Scene>(context_);
     {
+        auto sceneFromBinary = MakeShared<Scene>(context_);
+
         VectorBuffer binarySceneData;
         BinaryOutputArchive binaryOutputArchive{ context_, binarySceneData };
         success &= sourceScene->Serialize(binaryOutputArchive);
@@ -573,11 +618,14 @@ void Serialization::TestSceneSerialization()
         BinaryInputArchive binaryInputArchive{ context_, binarySceneData };
         success &= sceneFromBinary->Serialize(binaryInputArchive);
         success &= !binaryInputArchive.HasError();
+
+        URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromBinary));
     }
 
     // Save and load XML
-    auto sceneFromXML = MakeShared<Scene>(context_);
     {
+        auto sceneFromXML = MakeShared<Scene>(context_);
+
         XMLFile xmlSceneData{ context_ };
         XMLOutputArchive xmlOutputArchive{ &xmlSceneData };
         success &= sourceScene->Serialize(xmlOutputArchive);
@@ -586,11 +634,14 @@ void Serialization::TestSceneSerialization()
         XMLInputArchive xmlInputArchive{ &xmlSceneData };
         success &= sceneFromXML->Serialize(xmlInputArchive);
         success &= !xmlInputArchive.HasError();
+
+        URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromXML));
     }
 
     // Save and load JSON
-    auto sceneFromJSON = MakeShared<Scene>(context_);
     {
+        auto sceneFromJSON = MakeShared<Scene>(context_);
+
         JSONFile jsonSceneData{ context_ };
         JSONOutputArchive jsonOutputArchive{ &jsonSceneData };
         success &= sourceScene->Serialize(jsonOutputArchive);
@@ -599,26 +650,26 @@ void Serialization::TestSceneSerialization()
         JSONInputArchive jsonInputArchive{ &jsonSceneData };
         success &= sceneFromJSON->Serialize(jsonInputArchive);
         success &= !jsonInputArchive.HasError();
+
+        URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromJSON));
     }
 
     // Save legacy JSON and load JSON archive
-    auto sceneFromLegacyJSON = MakeShared<Scene>(context_);
     {
+        auto sceneFromLegacyJSON = MakeShared<Scene>(context_);
+
         JSONFile jsonLegacySceneData{ context_ };
         success &= sourceScene->SaveJSON(jsonLegacySceneData.GetRoot());
 
         JSONInputArchive jsonLegacyInputArchive{ &jsonLegacySceneData };
         success &= sceneFromLegacyJSON->Serialize(jsonLegacyInputArchive);
         success &= !jsonLegacyInputArchive.HasError();
+
+        URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromLegacyJSON));
     }
 
     // Compare scenes
     URHO3D_ASSERT(success);
-    URHO3D_ASSERT(CompareNodes(sourceScene, sourceScene));
-    URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromBinary));
-    URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromXML));
-    URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromJSON));
-    URHO3D_ASSERT(CompareNodes(sourceScene, sceneFromLegacyJSON));
 }
 
 void Serialization::TestSerializationPerformance()

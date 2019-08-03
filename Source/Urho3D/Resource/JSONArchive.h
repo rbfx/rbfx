@@ -47,15 +47,10 @@ template <class T, bool IsInputBool>
 class JSONArchiveBase : public ArchiveBaseT<IsInputBool, true>
 {
 public:
-    /// Construct.
-    explicit JSONArchiveBase(JSONFile* jsonFile)
-        : jsonFile_(jsonFile)
-    {}
-
     /// Get context.
-    Context* GetContext() final { return jsonFile_->GetContext(); }
+    Context* GetContext() final { return context_; }
     /// Return name of the archive.
-    ea::string_view GetName() const final { return jsonFile_->GetName(); }
+    ea::string_view GetName() const final { return jsonFile_ ? jsonFile_->GetName() : ""; }
 
     /// Whether the unordered element access is supported for Unordered blocks.
     bool IsUnorderedSupportedNow() const final { return !stack_.empty() && stack_.back().GetType() == ArchiveBlockType::Unordered; }
@@ -74,16 +69,27 @@ public:
     }
 
 protected:
+    /// Construct from context and optional file.
+    explicit JSONArchiveBase(Context* context, const JSONFile* jsonFile)
+        : context_(context)
+        , jsonFile_(jsonFile)
+    {
+    }
+
     /// Block type.
     using Block = T;
 
     /// Get current block.
     Block& GetCurrentBlock() { return stack_.back(); }
 
-    /// JSON file.
-    JSONFile* jsonFile_{};
+    /// Context.
+    Context* context_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
+
+private:
+    /// JSON file.
+    const JSONFile* jsonFile_{};
 };
 
 /// JSON output archive block. Internal.
@@ -125,7 +131,20 @@ private:
 class URHO3D_API JSONOutputArchive : public JSONArchiveBase<JSONOutputArchiveBlock, false>
 {
 public:
-    using JSONArchiveBase<JSONOutputArchiveBlock, false>::JSONArchiveBase;
+    /// Base type.
+    using Base = JSONArchiveBase<JSONOutputArchiveBlock, false>;
+
+    /// Construct from element.
+    JSONOutputArchive(Context* context, JSONValue& value, JSONFile* jsonFile = nullptr)
+        : Base(context, jsonFile)
+        , rootValue_(value)
+    {
+    }
+    /// Construct from file.
+    explicit JSONOutputArchive(JSONFile* jsonFile)
+        : Base(jsonFile->GetContext(), jsonFile)
+        , rootValue_(jsonFile->GetRoot())
+    {}
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
@@ -176,6 +195,9 @@ private:
     bool CreateElement(const char* name, const JSONValue& value);
     /// Temporary string.
     ea::string tempString_;
+
+    /// Root value.
+    JSONValue& rootValue_;
 };
 
 /// Archive stack frame helper.
@@ -213,7 +235,20 @@ private:
 class URHO3D_API JSONInputArchive : public JSONArchiveBase<JSONInputArchiveBlock, true>
 {
 public:
-    using JSONArchiveBase<JSONInputArchiveBlock, true>::JSONArchiveBase;
+    /// Base type.
+    using Base = JSONArchiveBase<JSONInputArchiveBlock, true>;
+
+    /// Construct from element.
+    JSONInputArchive(Context* context, const JSONValue& value, const JSONFile* jsonFile = nullptr)
+        : Base(context, jsonFile)
+        , rootValue_(value)
+    {
+    }
+    /// Construct from file.
+    explicit JSONInputArchive(const JSONFile* jsonFile)
+        : Base(jsonFile->GetContext(), jsonFile)
+        , rootValue_(jsonFile->GetRoot())
+    {}
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
@@ -264,6 +299,8 @@ private:
     const JSONValue* ReadElement(const char* name);
     /// Temporary buffer.
     ea::vector<unsigned char> tempBuffer_;
+    /// Root value.
+    const JSONValue& rootValue_;
 };
 
 }

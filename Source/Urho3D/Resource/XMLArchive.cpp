@@ -142,7 +142,8 @@ bool XMLOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool saf
     // Open root block
     if (stack_.empty())
     {
-        stack_.push_back(Block{ name, type, xmlFile_->CreateRoot(name ? name : defaultRootName), sizeHint });
+        rootElement_.SetName(name ? name : defaultRootName);
+        stack_.push_back(Block{ name, type, rootElement_, sizeHint });
         return true;
     }
 
@@ -374,14 +375,13 @@ bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe
     // Open root block
     if (stack_.empty())
     {
-        XMLElement rootElement = xmlFile_->GetRoot(name ? name : defaultRootName);
-        if (!rootElement)
+        if (rootElement_.GetName() != (name ? name : defaultRootName))
         {
             SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, name);
             return false;
         }
 
-        Block block{ name, type, rootElement };
+        Block block{ name, type, rootElement_ };
         sizeHint = block.CalculateSizeHint();
         stack_.push_back(block);
         return true;

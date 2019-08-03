@@ -36,15 +36,10 @@ template <class T, bool IsInputBool>
 class XMLArchiveBase : public ArchiveBaseT<IsInputBool, true>
 {
 public:
-    /// Construct.
-    explicit XMLArchiveBase(XMLFile* xmlFile)
-        : xmlFile_(xmlFile)
-    {}
-
     /// Get context.
-    Context* GetContext() final { return xmlFile_->GetContext(); }
+    Context* GetContext() final { return context_; }
     /// Return name of the archive.
-    ea::string_view GetName() const final { return xmlFile_->GetName(); }
+    ea::string_view GetName() const final { return xmlFile_ ? xmlFile_->GetName() : ""; }
 
     /// Whether the unordered element access is supported for Unordered blocks.
     bool IsUnorderedSupportedNow() const final { return !stack_.empty() && stack_.back().GetType() == ArchiveBlockType::Unordered; }
@@ -63,6 +58,15 @@ public:
     }
 
 protected:
+    /// Construct from element.
+    XMLArchiveBase(Context* context, XMLElement element, XMLFile* xmlFile = nullptr)
+        : context_(context)
+        , rootElement_(element)
+        , xmlFile_(xmlFile)
+    {
+        assert(element);
+    }
+
     /// Block type.
     using Block = T;
     /// Default name of the root block.
@@ -75,10 +79,16 @@ protected:
     /// Get current block.
     Block& GetCurrentBlock() { return stack_.back(); }
 
-    /// XML file.
-    XMLFile* xmlFile_;
+    /// Context.
+    Context* context_{};
+    /// Root XML element.
+    XMLElement rootElement_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
+
+private:
+    /// XML file.
+    XMLFile* xmlFile_{};
 };
 
 template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultRootName = "root";
@@ -128,7 +138,18 @@ private:
 class URHO3D_API XMLOutputArchive : public XMLArchiveBase<XMLOutputArchiveBlock, false>
 {
 public:
-    using XMLArchiveBase<XMLOutputArchiveBlock, false>::XMLArchiveBase;
+    /// Base type.
+    using Base = XMLArchiveBase<XMLOutputArchiveBlock, false>;
+
+    /// Construct from element.
+    XMLOutputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr)
+        : Base(context, element, xmlFile)
+    {
+    }
+    /// Construct from file.
+    explicit XMLOutputArchive(XMLFile* xmlFile)
+        : Base(xmlFile->GetContext(), xmlFile->GetOrCreateRoot(defaultRootName), xmlFile)
+    {}
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
@@ -217,7 +238,18 @@ private:
 class URHO3D_API XMLInputArchive : public XMLArchiveBase<XMLInputArchiveBlock, true>
 {
 public:
-    using XMLArchiveBase<XMLInputArchiveBlock, true>::XMLArchiveBase;
+    /// Base type.
+    using Base = XMLArchiveBase<XMLInputArchiveBlock, true>;
+
+    /// Construct from element.
+    XMLInputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr)
+        : Base(context, element, xmlFile)
+    {
+    }
+    /// Construct from file.
+    explicit XMLInputArchive(XMLFile* xmlFile)
+        : Base(xmlFile->GetContext(), xmlFile->GetRoot(), xmlFile)
+    {}
 
     /// Begin archive block.
     bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) final;
