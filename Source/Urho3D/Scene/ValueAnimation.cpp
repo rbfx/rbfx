@@ -108,7 +108,7 @@ bool ValueAnimation::Serialize(Archive& archive, ArchiveBlock& /*block*/)
         eventFrames_.clear();
     }
 
-    SerializeEnumEx(archive, "interpolationmethod", interpMethodNames, interpolationMethod_,
+    SerializeCustomEnum(archive, "interpolationmethod", interpMethodNames, interpolationMethod_,
         [&](InterpMethod value) { SetInterpolationMethod(value); });
 
     if (interpolationMethod_ == IM_SPLINE)
@@ -117,14 +117,14 @@ bool ValueAnimation::Serialize(Archive& archive, ArchiveBlock& /*block*/)
     SerializeCustomVector(archive, "keyframes", keyFrames_.size(), keyFrames_,
         [&](VAnimKeyFrame& keyFrame, bool loading)
     {
-        return SerializeValueEx(archive, "keyframe", keyFrame,
+        return SerializeCustomValue(archive, "keyframe", keyFrame,
             [&](const VAnimKeyFrame& value) { SetKeyFrame(value.time_, value.value_); });
     });
 
     SerializeCustomVector(archive, "eventframes", eventFrames_.size(), eventFrames_,
         [&](VAnimEventFrame& eventFrame, bool loading)
     {
-        return SerializeValueEx(archive, "eventframe", eventFrame,
+        return SerializeCustomValue(archive, "eventframe", eventFrame,
             [&](const VAnimEventFrame& value) { SetEventFrame(value.time_, value.eventType_, value.eventData_); });
     });
 
