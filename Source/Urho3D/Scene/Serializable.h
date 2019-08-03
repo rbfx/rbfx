@@ -63,7 +63,7 @@ public:
     virtual const ea::vector<AttributeInfo>* GetNetworkAttributes() const;
 
     /// Serialize from/to archive. Return true if successful.
-    virtual bool Serialize(Archive& archive);
+    bool Serialize(Archive& archive) override;
     /// Serialize content from/to archive. Return true if successful.
     bool Serialize(Archive& archive, ArchiveBlock& block);
 
