@@ -202,6 +202,26 @@ public:
     /// Return float data.
     const float* Data() const { return &m00_; }
 
+
+    /// Return whether is NaN.
+    bool IsNaN() const {
+        return (
+            Urho3D::IsInf(m00_) ||
+            Urho3D::IsInf(m01_) ||
+            Urho3D::IsInf(m10_) ||
+            Urho3D::IsInf(m11_));
+    }
+
+    /// Return whether is Inf.
+    bool IsInf() const {
+        return (
+            Urho3D::IsInf(m00_) ||
+            Urho3D::IsInf(m01_) ||
+            Urho3D::IsInf(m10_) ||
+            Urho3D::IsInf(m11_));
+    }
+
+
     /// Return as string.
     ea::string ToString() const;
 
