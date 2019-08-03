@@ -65,6 +65,10 @@ public:
     /// Assignment operator.
     XMLElement& operator =(const XMLElement& rhs);
 
+    /// Set element name.
+    void SetName(const ea::string& name);
+    /// Set element name.
+    void SetName(const char* name);
     /// Create a child element.
     XMLElement CreateChild(const ea::string& name);
     /// Create a child element.
