@@ -726,17 +726,12 @@ inline bool SerializeOptional(Archive& archive, bool cond, T serializer, bool em
     const bool loading = archive.IsInput();
     if (archive.IsUnorderedSupportedNow())
     {
-        // If unordered blocks supported, use it
         if (loading)
         {
-            // Try to serialize, check for error if failed
-            if (!serializer(true))
-                return !archive.HasError();
-            return true;
+            return serializer(true);
         }
         else
         {
-            // If condition is met, serialize
             if (cond)
                 return serializer(false);
             return true;

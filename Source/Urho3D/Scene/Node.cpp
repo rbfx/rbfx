@@ -116,16 +116,14 @@ bool Node::Serialize(Archive& archive)
             // Resolve IDs and apply attributes
             resolver.Resolve();
             ApplyAttributes();
-            return true;
         }
         else
         {
             // Save node ID and content
-            bool success = true;
-            success &= SerializeValue(archive, "id", id_);
-            success &= Serialize(archive, block, nullptr);
-            return success;
+            SerializeValue(archive, "id", id_);
+            Serialize(archive, block, nullptr);
         }
+        return true;
     }
     return false;
 }

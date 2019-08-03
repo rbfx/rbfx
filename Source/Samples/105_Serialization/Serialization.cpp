@@ -533,10 +533,12 @@ void Serialization::TestSceneSerialization()
         VectorBuffer binarySceneData;
         BinaryOutputArchive binaryOutputArchive{ context_, binarySceneData };
         success &= sourceScene->Serialize(binaryOutputArchive);
+        success &= !binaryOutputArchive.HasError();
 
         binarySceneData.Seek(0);
         BinaryInputArchive binaryInputArchive{ context_, binarySceneData };
         success &= sceneFromBinary->Serialize(binaryInputArchive);
+        success &= !binaryInputArchive.HasError();
     }
 
     // Save and load XML
@@ -545,9 +547,11 @@ void Serialization::TestSceneSerialization()
         XMLFile xmlSceneData{ context_ };
         XMLOutputArchive xmlOutputArchive{ &xmlSceneData };
         success &= sourceScene->Serialize(xmlOutputArchive);
+        success &= !xmlOutputArchive.HasError();
 
         XMLInputArchive xmlInputArchive{ &xmlSceneData };
         success &= sceneFromXML->Serialize(xmlInputArchive);
+        success &= !xmlInputArchive.HasError();
     }
 
     // Save and load JSON
@@ -556,9 +560,11 @@ void Serialization::TestSceneSerialization()
         JSONFile jsonSceneData{ context_ };
         JSONOutputArchive jsonOutputArchive{ &jsonSceneData };
         success &= sourceScene->Serialize(jsonOutputArchive);
+        success &= !jsonOutputArchive.HasError();
 
         JSONInputArchive jsonInputArchive{ &jsonSceneData };
         success &= sceneFromJSON->Serialize(jsonInputArchive);
+        success &= !jsonInputArchive.HasError();
     }
 
     // Save legacy JSON and load JSON archive
@@ -569,6 +575,7 @@ void Serialization::TestSceneSerialization()
 
         JSONInputArchive jsonLegacyInputArchive{ &jsonLegacySceneData };
         success &= sceneFromLegacyJSON->Serialize(jsonLegacyInputArchive);
+        success &= !jsonLegacyInputArchive.HasError();
     }
 
     // Compare scenes
