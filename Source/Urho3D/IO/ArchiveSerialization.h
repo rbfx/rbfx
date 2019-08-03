@@ -789,9 +789,9 @@ inline bool SerializeOptional(Archive& archive, bool cond, T serializer, bool em
     }
 }
 
-/// Serialize value with specified setter callback.
+/// Serialize value with custom setter callback.
 template <class T, class U>
-inline bool SerializeValueEx(Archive& archive, const char* name, const T& value, U setter)
+inline bool SerializeCustomValue(Archive& archive, const char* name, const T& value, U setter)
 {
     if (archive.IsInput())
     {
@@ -804,9 +804,9 @@ inline bool SerializeValueEx(Archive& archive, const char* name, const T& value,
         return SerializeValue(archive, name, const_cast<T&>(value));
 }
 
-/// Serialize value with specified setter callback.
+/// Serialize value with custom setter callback.
 template <class T, class U>
-inline bool SerializeEnumEx(Archive& archive, const char* name, const char* const* enumConstants, const T& value, U setter)
+inline bool SerializeCustomEnum(Archive& archive, const char* name, const char* const* enumConstants, const T& value, U setter)
 {
     if (archive.IsInput())
     {
