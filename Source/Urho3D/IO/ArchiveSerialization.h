@@ -172,12 +172,41 @@ inline ea::string FormatResourceRefList(ea::string_view typeString, const ea::st
 
 }
 
-/// Serialize value directly using archive.
-template <class T>
-inline bool SerializeValue(Archive& archive, const char* name, T& value)
-{
-    return archive.Serialize(name, value);
-}
+/// Serialize bool.
+inline bool SerializeValue(Archive& archive, const char* name, bool& value) { return archive.Serialize(name, value); }
+
+/// Serialize signed char.
+inline bool SerializeValue(Archive& archive, const char* name, signed char& value) { return archive.Serialize(name, value); }
+
+/// Serialize unsigned char.
+inline bool SerializeValue(Archive& archive, const char* name, unsigned char& value) { return archive.Serialize(name, value); }
+
+/// Serialize signed short.
+inline bool SerializeValue(Archive& archive, const char* name, short& value) { return archive.Serialize(name, value); }
+
+/// Serialize unsigned short.
+inline bool SerializeValue(Archive& archive, const char* name, unsigned short& value) { return archive.Serialize(name, value); }
+
+/// Serialize signed int.
+inline bool SerializeValue(Archive& archive, const char* name, int& value) { return archive.Serialize(name, value); }
+
+/// Serialize unsigned int.
+inline bool SerializeValue(Archive& archive, const char* name, unsigned int& value) { return archive.Serialize(name, value); }
+
+/// Serialize signed long.
+inline bool SerializeValue(Archive& archive, const char* name, long long& value) { return archive.Serialize(name, value); }
+
+/// Serialize unsigned long.
+inline bool SerializeValue(Archive& archive, const char* name, unsigned long long& value) { return archive.Serialize(name, value); }
+
+/// Serialize float.
+inline bool SerializeValue(Archive& archive, const char* name, float& value) { return archive.Serialize(name, value); }
+
+/// Serialize double.
+inline bool SerializeValue(Archive& archive, const char* name, double& value) { return archive.Serialize(name, value); }
+
+/// Serialize string.
+inline bool SerializeValue(Archive& archive, const char* name, ea::string& value) { return archive.Serialize(name, value); }
 
 /// Serialize Vector2.
 inline bool SerializeValue(Archive& archive, const char* name, Vector2& value)
