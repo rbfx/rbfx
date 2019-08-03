@@ -153,7 +153,7 @@ bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool sa
     // Open root block
     if (stack_.empty())
     {
-        stack_.push_back(Block{ name, type, &jsonFile_->GetRoot(), sizeHint });
+        stack_.push_back(Block{ name, type, &rootValue_, sizeHint });
         return true;
     }
 
@@ -414,13 +414,13 @@ bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool saf
     // Open root block
     if (stack_.empty())
     {
-        if (!IsArchiveBlockTypeMatching(jsonFile_->GetRoot(), type))
+        if (!IsArchiveBlockTypeMatching(rootValue_, type))
         {
             SetErrorFormatted(ArchiveBase::errorUnexpectedBlockType_blockName, name);
             return false;
         }
 
-        Block frame{ name, type, &jsonFile_->GetRoot() };
+        Block frame{ name, type, &rootValue_ };
         sizeHint = frame.GetSizeHint();
         stack_.push_back(frame);
         return true;

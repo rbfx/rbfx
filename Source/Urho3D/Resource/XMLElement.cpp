@@ -92,6 +92,20 @@ XMLElement& XMLElement::operator =(const XMLElement& rhs)
     return *this;
 }
 
+void XMLElement::SetName(const ea::string& name)
+{
+    SetName(name.c_str());
+}
+
+void XMLElement::SetName(const char* name)
+{
+    if (!file_ || (!node_ && !xpathNode_))
+        return;
+
+    pugi::xml_node node = xpathNode_ ? xpathNode_->node() : pugi::xml_node(node_);
+    node.set_name(name);
+}
+
 XMLElement XMLElement::CreateChild(const ea::string& name)
 {
     return CreateChild(name.c_str());
