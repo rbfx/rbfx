@@ -35,6 +35,7 @@
 namespace Urho3D
 {
 
+class Archive;
 class Context;
 class EventHandler;
 class Engine;
@@ -126,6 +127,9 @@ public:
     virtual const TypeInfo* GetTypeInfo() const = 0;
     /// Handle event.
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
+
+    /// Serialize object.
+    virtual bool Serialize(Archive& /*archive*/) { return false; }
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }
