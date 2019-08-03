@@ -95,10 +95,8 @@ bool Animatable::Serialize(Archive& archive, ArchiveBlock& block)
     }
 
     // Object animation without name is serialized every time
-    bool success = true;
-
     const bool uniqueObjectAnimation = objectAnimation_ && objectAnimation_->GetName().empty();
-    success &= SerializeOptional(archive, uniqueObjectAnimation,
+    SerializeOptional(archive, uniqueObjectAnimation,
         [&](bool loading)
     {
         if (ArchiveBlock block = archive.OpenUnorderedBlock("objectanimation"))
@@ -110,50 +108,46 @@ bool Animatable::Serialize(Archive& archive, ArchiveBlock& block)
         return false;
     });
 
-    success &= SerializeOptional(archive, !attributeAnimationInfos_.empty(),
-        [&](bool /*loading*/)
+    // Count animations without owners
+    unsigned numFreeAnimations = 0;
+    for (const auto& elem : attributeAnimationInfos_)
     {
-        // Count animations without owners
-        unsigned numFreeAnimations = 0;
-        for (const auto& elem : attributeAnimationInfos_)
+        if (!elem.second->GetAnimation()->GetOwner())
+            ++numFreeAnimations;
+    }
+
+    SerializeCustomMap(archive, "attributeanimation", numFreeAnimations, attributeAnimationInfos_,
+        [&](ea::string& name, SharedPtr<AttributeAnimationInfo>& info, bool loading)
+    {
+        // Skip animations with owners
+        SharedPtr<ValueAnimation> attributeAnimation{ info ? info->GetAnimation() : nullptr };
+        if (attributeAnimation && attributeAnimation->GetOwner())
+            return true;
+
+        archive.SerializeKey(name);
+
+        if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
         {
-            if (!elem.second->GetAnimation()->GetOwner())
-                ++numFreeAnimations;
+            if (!attributeAnimation)
+                attributeAnimation = MakeShared<ValueAnimation>(context_);
+
+            attributeAnimation->Serialize(archive, infoBlock);
+
+            WrapMode wrapMode = info ? info->GetWrapMode() : WM_LOOP;
+            SerializeEnum(archive, "wrapmode", wrapModeNames, wrapMode);
+
+            float speed = info ? info->GetSpeed() : 1.0f;
+            SerializeValue(archive, "speed", speed);
+
+            if (loading)
+                SetAttributeAnimation(name, attributeAnimation, wrapMode, speed);
+
+            return true;
         }
-
-        return SerializeCustomMap(archive, "attributeanimation", numFreeAnimations, attributeAnimationInfos_,
-            [&](ea::string& name, SharedPtr<AttributeAnimationInfo>& info, bool loading)
-        {
-            // Skip animations with owners
-            SharedPtr<ValueAnimation> attributeAnimation{ info ? info->GetAnimation() : nullptr };
-            if (attributeAnimation && attributeAnimation->GetOwner())
-                return true;
-
-            success &= archive.SerializeKey(name);
-
-            if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
-            {
-                if (!attributeAnimation)
-                    attributeAnimation = MakeShared<ValueAnimation>(context_);
-
-                success &= attributeAnimation->Serialize(archive, infoBlock);
-
-                WrapMode wrapMode = info ? info->GetWrapMode() : WM_LOOP;
-                success &= SerializeEnum(archive, "wrapmode", wrapModeNames, wrapMode);
-
-                float speed = info ? info->GetSpeed() : 1.0f;
-                success &= SerializeValue(archive, "speed", speed);
-
-                if (loading)
-                    SetAttributeAnimation(name, attributeAnimation, wrapMode, speed);
-
-                return success;
-            }
-            return false;
-        });
+        return false;
     });
 
-    return success;
+    return true;
 }
 
 bool Animatable::LoadXML(const XMLElement& source)

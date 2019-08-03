@@ -167,12 +167,16 @@ bool BinaryOutputArchive::SerializeVLE(const char* name, unsigned& value)
 
 bool BinaryOutputArchive::CheckEOF(const char* elementName)
 {
+    if (HasError())
+        return false;
+
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
         SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
+
     return true;
 }
 
@@ -350,12 +354,16 @@ bool BinaryInputArchive::SerializeVLE(const char* name, unsigned& value)
 
 bool BinaryInputArchive::CheckEOF(const char* elementName)
 {
+    if (HasError())
+        return false;
+
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
         SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
+
     return true;
 }
 

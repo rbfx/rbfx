@@ -223,12 +223,16 @@ bool JSONOutputArchive::SerializeVLE(const char* name, unsigned& value)
 
 bool JSONOutputArchive::CheckEOF(const char* elementName)
 {
+    if (HasError())
+        return false;
+
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
         SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
+
     return true;
 }
 
@@ -530,12 +534,16 @@ bool JSONInputArchive::SerializeVLE(const char* name, unsigned& value)
 
 bool JSONInputArchive::CheckEOF(const char* elementName)
 {
+    if (HasError())
+        return false;
+
     if (IsEOF())
     {
         const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
         SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
         return false;
     }
+
     return true;
 }
 
