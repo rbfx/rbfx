@@ -123,7 +123,7 @@
     <DisplayString Condition="type_==Urho3D::VAR_INTVECTOR3">(ivec3) {value_.intVector3_}</DisplayString>
     <DisplayString Condition="type_==Urho3D::VAR_INT64">(int64) {value_.int64_}</DisplayString>
     <!-- Add new types here -->
-    <DisplayString Condition="type_==Urho3D::VAR_CUSTOM">(custom) {value_.customValue_}</DisplayString>
+    <DisplayString Condition="type_==Urho3D::VAR_CUSTOM">(custom) {(*(Urho3D::CustomVariantValue*)value_.storage_)}</DisplayString>
     <Expand>
       <Item Name="[value]" Condition="type_==Urho3D::VAR_INT">value_.int_</Item>
       <Item Name="[value]" Condition="type_==Urho3D::VAR_BOOL">value_.bool_</Item>
@@ -152,7 +152,7 @@
       <ExpandedItem Condition="type_==Urho3D::VAR_INTVECTOR3">value_.intVector3_</ExpandedItem>
       <Item Name="[value]" Condition="type_==Urho3D::VAR_INT64">value_.int64_</Item>
       <!-- Add new types here -->
-      <ExpandedItem Condition="type_==Urho3D::VAR_CUSTOM">value_.customValue_</ExpandedItem>
+      <ExpandedItem Condition="type_==Urho3D::VAR_CUSTOM">(*(Urho3D::CustomVariantValue*)value_.storage_)</ExpandedItem>
     </Expand>
   </Type>
 
