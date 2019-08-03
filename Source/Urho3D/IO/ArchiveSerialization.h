@@ -719,6 +719,9 @@ inline bool SerializeValue(Archive& archive, const char* name, Variant& value)
     return false;
 }
 
+/// Serialize Serializable.
+URHO3D_API bool SerializeValue(Archive& archive, const char* name, SharedPtr<Serializable>& value);
+
 /// Serialize optional element or block.
 template <class T>
 inline bool SerializeOptional(Archive& archive, bool cond, T serializer, bool emulate = true)

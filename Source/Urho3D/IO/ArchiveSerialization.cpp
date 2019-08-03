@@ -23,13 +23,14 @@
 #pragma once
 
 #include "../IO/ArchiveSerialization.h"
+#include "../Scene/Serializable.h"
 
 namespace Urho3D
 {
 
 bool SerializeVariantValue(Archive& archive, VariantType variantType, const char* name, Variant& value)
 {
-    static_assert(MAX_VAR_TYPES == 29, "Update me");
+    static_assert(MAX_VAR_TYPES == 28, "Update me");
     switch (variantType)
     {
     case VAR_NONE:
@@ -102,13 +103,62 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
     case VAR_PTR:
         archive.SetError(Format("Unsupported Variant type of element '{0}'", name));
         return false;
-    case VAR_CUSTOM_HEAP:
-    case VAR_CUSTOM_STACK:
+    case VAR_CUSTOM:
+        if (archive.IsInput())
+            value.SetCustom(SharedPtr<Serializable>{});
+        if (auto ptr = value.GetCustomPtr<SharedPtr<Serializable>>())
+            return SerializeValue(archive, name, *ptr);
+
+        archive.SetError(Format("Unsupported custom Variant type of element '{0}'", name));
+        return false;
     case MAX_VAR_TYPES:
     default:
         assert(0);
         return false;
     }
+}
+
+URHO3D_API bool SerializeValue(Archive& archive, const char* name, SharedPtr<Serializable>& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        // Serialize type
+        StringHash type = value ? value->GetType() : StringHash{};
+        const ea::string_view typeName = value ? ea::string_view{ value->GetTypeName() } : "";
+        if (!SerializeStringHash(archive, "type", type, typeName))
+            return false;
+
+        // Serialize empty object
+        if (type == StringHash{})
+        {
+            value = nullptr;
+            return true;
+        }
+
+        // Create instance if loading
+        if (archive.IsInput())
+        {
+            Context* context = archive.GetContext();
+            if (!context)
+            {
+                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
+                return false;
+            }
+
+            value.StaticCast(context->CreateObject(type));
+
+            if (!value)
+            {
+                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
+                return false;
+            }
+        }
+
+        // Serialize object
+        if (ArchiveBlock valueBlock = archive.OpenUnorderedBlock("value"))
+            return value->Serialize(archive);
+    }
+    return false;
 }
 
 }
