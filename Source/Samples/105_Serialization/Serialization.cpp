@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Audio/SoundListener.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -175,6 +176,11 @@ struct ContainerStruct
     /// Variant buffer stored as Variant.
     Variant variantBuffer_;
 
+    /// Empty serializable.
+    SharedPtr<Serializable> emptySerializable_;
+    /// Serializable (sound listener).
+    SharedPtr<Serializable> soundListener_;
+
     /// Create tuple for comparison.
     auto Tie() const
     {
@@ -185,11 +191,33 @@ struct ContainerStruct
             mapOfFloats_,
             variantMap_,
             variantVector_,
-            variantBuffer_
+            variantBuffer_,
+            emptySerializable_
         );
     }
     /// Compare.
-    bool operator ==(const ContainerStruct& other) const { return Tie() == other.Tie(); }
+    bool operator ==(const ContainerStruct& other) const
+    {
+        if (Tie() != other.Tie())
+            return false;
+
+        if (!!soundListener_ != !!other.soundListener_)
+            return false;
+
+        if (soundListener_ && soundListener_->GetType() != other.soundListener_->GetType())
+            return false;
+
+        const auto component = dynamic_cast<const Component*>(soundListener_.Get());
+        const auto otherComponent = dynamic_cast<const Component*>(other.soundListener_.Get());
+
+        if (!!component != !!otherComponent)
+            return false;
+
+        if (component && component->IsEnabled() != otherComponent->IsEnabled())
+            return false;
+
+        return true;
+    }
 };
 
 /// Serialize struct of containers.
@@ -204,6 +232,8 @@ bool SerializeValue(Archive& archive, const char* name, ContainerStruct& value)
         SerializeValue(archive, "variantMap_", value.variantMap_);
         SerializeValue(archive, "variantVector_", value.variantVector_);
         SerializeValue(archive, "variantBuffer_", value.variantBuffer_);
+        SerializeValue(archive, "emptySerializable_", value.emptySerializable_);
+        SerializeValue(archive, "soundListener_", value.soundListener_);
         return true;
     }
     return false;
@@ -236,7 +266,7 @@ bool SerializeValue(Archive& archive, const char* name, TestStruct& value)
 }
 
 /// Create test struct.
-TestStruct CreateTestStruct()
+TestStruct CreateTestStruct(Context* context)
 {
     const Quaternion rot = Quaternion(30.0f, Vector3::UP);
 
@@ -275,6 +305,10 @@ TestStruct CreateTestStruct()
     result.container_.variantMap_ = VariantMap{ ea::make_pair(StringHash("key1"), 1.0f), ea::make_pair(StringHash("key2"), 2.0f) };
     result.container_.variantVector_ = VariantVector{ 1.0f, "string" };
     result.container_.variantBuffer_ = VariantBuffer{ 1, 2, 3, 4, 5 };
+
+    auto soundListener = MakeShared<SoundListener>(context);
+    soundListener->SetEnabled(false);
+    result.container_.soundListener_ = soundListener;
 
     return result;
 }
@@ -496,7 +530,7 @@ void Serialization::Start()
 
 void Serialization::TestStructSerialization()
 {
-    const TestStruct sourceObject = CreateTestStruct();
+    const TestStruct sourceObject = CreateTestStruct(context_);
 
     // Save and load binary
     auto binaryData = SaveTestStructBinary<BinaryOutputArchive>(context_, sourceObject);
