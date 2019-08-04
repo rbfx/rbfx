@@ -12,6 +12,8 @@ namespace ea = eastl;
 #   define URHO3D_API
 #endif
 
+#define URHO3D_TYPE_TRAIT(...)
+
 %{
 #if _WIN32
 #   include <Urho3D/WindowsSupport.h>
