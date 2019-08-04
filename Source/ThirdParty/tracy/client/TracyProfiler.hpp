@@ -7,7 +7,7 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "concurrentqueue.h"
+#include "tracy_concurrentqueue.h"
 #include "TracyCallstack.hpp"
 #include "TracySysTime.hpp"
 #include "TracyFastVector.hpp"
@@ -161,7 +161,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
@@ -183,7 +183,7 @@ public:
         GetProfiler().m_serialLock.unlock();
     }
 
-    static tracy_force_inline void SendFrameImage( void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
+    static tracy_force_inline void SendFrameImage( const void* image, uint16_t w, uint16_t h, uint8_t offset, bool flip )
     {
         auto& profiler = GetProfiler();
 #ifdef TRACY_ON_DEMAND
@@ -212,7 +212,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -229,7 +229,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -246,7 +246,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
@@ -261,16 +261,14 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Message );
         MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.thread, thread );
         MemWrite( &item->message.text, (uint64_t)ptr );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -281,13 +279,11 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteral );
         MemWrite( &item->message.time, GetTime() );
-        MemWrite( &item->message.thread, thread );
         MemWrite( &item->message.text, (uint64_t)txt );
         tail.store( magic + 1, std::memory_order_release );
     }
@@ -298,16 +294,14 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageColor );
         MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.thread, thread );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
@@ -321,17 +315,35 @@ public:
         if( !GetProfiler().IsConnected() ) return;
 #endif
         Magic magic;
-        const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
         MemWrite( &item->messageColor.time, GetTime() );
-        MemWrite( &item->messageColor.thread, thread );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
+    static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
+    {
+        Magic magic;
+        auto token = GetToken();
+        auto ptr = (char*)tracy_malloc( size+1 );
+        memcpy( ptr, txt, size );
+        ptr[size] = '\0';
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::MessageAppInfo );
+        MemWrite( &item->message.time, GetTime() );
+        MemWrite( &item->message.text, (uint64_t)ptr );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+
         tail.store( magic + 1, std::memory_order_release );
     }
 
@@ -401,22 +413,21 @@ public:
 #endif
     }
 
-    static tracy_force_inline void SendCallstack( int depth, uint64_t thread )
+    static tracy_force_inline void SendCallstack( int depth )
     {
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
-        MemWrite( &item->callstack.thread, thread );
         tail.store( magic + 1, std::memory_order_release );
 #endif
     }
 
-    void SendCallstack( int depth, uint64_t thread, const char* skipBefore );
+    void SendCallstack( int depth, const char* skipBefore );
     static void CutCallstack( void* callstack, const char* skipBefore );
 
     static bool ShouldExit();
@@ -476,6 +487,7 @@ private:
     void SendCallstackFrame( uint64_t ptr );
 
     bool HandleServerQuery();
+    void HandleDisconnect();
 
     void CalibrateTimer();
     void CalibrateDelay();
@@ -537,6 +549,8 @@ private:
     UdpBroadcast* m_broadcast;
     bool m_noExit;
     std::atomic<uint32_t> m_zoneId;
+
+    uint64_t m_threadCtx;
 
     void* m_stream;     // LZ4_stream_t*
     char* m_buffer;

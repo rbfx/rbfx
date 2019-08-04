@@ -137,7 +137,7 @@ private:
 
     struct DataBlock
     {
-        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ) {}
+        DataBlock() : zonesCnt( 0 ), lastTime( 0 ), frameOffset( 0 ), threadLast( std::numeric_limits<uint64_t>::max(), 0 ), threadDataLast( std::numeric_limits<uint64_t>::max(), nullptr ) {}
 
         std::shared_mutex lock;
         StringDiscovery<FrameData*> frames;
@@ -177,6 +177,7 @@ private:
         flat_hash_map<uint64_t, uint16_t, nohash<uint64_t>> threadMap;
         Vector<uint64_t> threadExpand;
         std::pair<uint64_t, uint16_t> threadLast;
+        std::pair<uint64_t, ThreadData*> threadDataLast;
 
         Vector<Vector<ZoneEvent*>> zoneChildren;
         Vector<Vector<GpuEvent*>> gpuChildren;
@@ -184,6 +185,7 @@ private:
         Vector<Vector<ZoneEvent*>> zoneVectorCache;
 
         Vector<FrameImage*> frameImage;
+        Vector<StringRef> appInfo;
 
         CrashEvent crashEvent;
     };
@@ -278,6 +280,7 @@ public:
     const Vector<ThreadData*>& GetThreadData() const { return m_data.threads; }
     const MemData& GetMemData() const { return m_data.memory; }
     const Vector<FrameImage*>& GetFrameImages() const { return m_data.frameImage; }
+    const Vector<StringRef>& GetAppInfo() const { return m_data.appInfo; }
 
     const VarArray<CallstackFrameId>& GetCallstack( uint32_t idx ) const { return *m_data.callstackPayload[idx]; }
     const CallstackFrameData* GetCallstackFrame( const CallstackFrameId& ptr ) const;
@@ -334,7 +337,7 @@ public:
     bool IsDataStatic() const { return !m_thread.joinable(); }
     bool IsBackgroundDone() const { return m_backgroundDone.load( std::memory_order_relaxed ); }
     void Shutdown() { m_shutdown.store( true, std::memory_order_relaxed ); }
-    void Disconnect() { Shutdown(); }   // TODO: Needs proper implementation.
+    void Disconnect();
 
     void Write( FileWrite& f );
     int GetTraceVersion() const { return m_traceVersion; }
@@ -352,9 +355,6 @@ public:
     const char* UnpackFrameImage( const FrameImage& image );
     bool HasEtc1FrameImages() const;
 
-#if defined TRACY_EMBED_WINDOW
-    bool IsShuttingDown() const { return m_shutdown.load(std::memory_order_relaxed); }
-#endif
 private:
     void Exec();
     void Query( ServerQuery type, uint64_t data );
@@ -362,6 +362,7 @@ private:
 
     tracy_force_inline bool DispatchProcess( const QueueItem& ev, char*& ptr );
     tracy_force_inline bool Process( const QueueItem& ev );
+    tracy_force_inline void ProcessThreadContext( const QueueThreadContext& ev );
     tracy_force_inline void ProcessZoneBegin( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginCallstack( const QueueZoneBegin& ev );
     tracy_force_inline void ProcessZoneBeginAllocSrcLoc( const QueueZoneBegin& ev );
@@ -388,6 +389,7 @@ private:
     tracy_force_inline void ProcessMessageLiteral( const QueueMessage& ev );
     tracy_force_inline void ProcessMessageColor( const QueueMessageColor& ev );
     tracy_force_inline void ProcessMessageLiteralColor( const QueueMessageColor& ev );
+    tracy_force_inline void ProcessMessageAppInfo( const QueueMessage& ev );
     tracy_force_inline void ProcessGpuNewContext( const QueueGpuNewContext& ev );
     tracy_force_inline void ProcessGpuZoneBegin( const QueueGpuZoneBegin& ev );
     tracy_force_inline void ProcessGpuZoneBeginCallstack( const QueueGpuZoneBegin& ev );
@@ -429,8 +431,13 @@ private:
 
     void InsertMessageData( MessageData* msg, uint64_t thread );
 
+    ThreadData* NoticeThreadReal( uint64_t thread );
     ThreadData* NewThread( uint64_t thread );
-    ThreadData* NoticeThread( uint64_t thread );
+    ThreadData* NoticeThread( uint64_t thread )
+    {
+        if( m_data.threadDataLast.first == thread ) return m_data.threadDataLast.second;
+        return NoticeThreadReal( thread );
+    }
 
     tracy_force_inline void NewZone( ZoneEvent* zone, uint64_t thread );
 
@@ -498,6 +505,7 @@ private:
     std::string m_hostInfo;
     bool m_terminate = false;
     bool m_crashed = false;
+    bool m_disconnect = false;
     LZ4_streamDecode_t* m_stream;
     char* m_buffer;
     int m_bufferOffset;
@@ -550,6 +558,8 @@ private:
     flat_hash_map<uint64_t, int32_t> m_frameImageStaging;
     char* m_frameImageBuffer = nullptr;
     size_t m_frameImageBufferSize = 0;
+
+    uint64_t m_threadCtx = 0;
 };
 
 }

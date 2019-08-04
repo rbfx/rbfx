@@ -105,7 +105,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::GpuNewContext );
         MemWrite( &item->gpuNewContext.cpuTime, tcpu );
         MemWrite( &item->gpuNewContext.gpuTime, tgpu );
@@ -135,42 +135,26 @@ public:
         }
 #endif
 
-        auto start = m_tail;
-        auto end = m_head + QueryCount;
-        auto cnt = ( end - start ) % QueryCount;
-        while( cnt > 1 )
-        {
-            auto mid = start + cnt / 2;
-            GLint available;
-            glGetQueryObjectiv( m_query[mid % QueryCount], GL_QUERY_RESULT_AVAILABLE, &available );
-            if( available )
-            {
-                start = mid;
-            }
-            else
-            {
-                end = mid;
-            }
-            cnt = ( end - start ) % QueryCount;
-        }
-
-        start %= QueryCount;
-
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
 
-        while( m_tail != start )
+        while( m_tail != m_head )
         {
+            GLint available;
+            glGetQueryObjectiv( m_query[m_tail], GL_QUERY_RESULT_AVAILABLE, &available );
+            if( !available ) return;
+
             uint64_t time;
             glGetQueryObjectui64v( m_query[m_tail], GL_QUERY_RESULT, &time );
 
-            auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+            auto item = token->enqueue_begin( magic );
             MemWrite( &item->hdr.type, QueueType::GpuTime );
             MemWrite( &item->gpuTime.gpuTime, (int64_t)time );
             MemWrite( &item->gpuTime.queryId, (uint16_t)m_tail );
             MemWrite( &item->gpuTime.context, m_context );
             tail.store( magic + 1, std::memory_order_release );
+
             m_tail = ( m_tail + 1 ) % QueryCount;
         }
     }
@@ -218,7 +202,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBegin );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
@@ -243,7 +227,7 @@ public:
         const auto thread = GetThreadHandle();
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneBeginCallstack );
         MemWrite( &item->gpuZoneBegin.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneBegin.srcloc, (uint64_t)srcloc );
@@ -252,7 +236,7 @@ public:
         MemWrite( &item->gpuZoneBegin.context, GetGpuCtx().ptr->GetId() );
         tail.store( magic + 1, std::memory_order_release );
 
-        GetProfiler().SendCallstack( depth, thread );
+        GetProfiler().SendCallstack( depth );
     }
 
     tracy_force_inline ~GpuCtxScope()
@@ -266,7 +250,7 @@ public:
         Magic magic;
         auto token = GetToken();
         auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin<tracy::moodycamel::CanAlloc>( magic );
+        auto item = token->enqueue_begin( magic );
         MemWrite( &item->hdr.type, QueueType::GpuZoneEnd );
         MemWrite( &item->gpuZoneEnd.cpuTime, Profiler::GetTime() );
         MemWrite( &item->gpuZoneEnd.queryId, uint16_t( queryId ) );

@@ -229,7 +229,7 @@ struct EntryDefaultTable
 template<typename T>
 constexpr const sherwood_v3_entry_constexpr<T> EntryDefaultTable<T>::table[min_lookups];
 
-inline int8_t log2(size_t value)
+inline int8_t log2(uint64_t value)
 {
     static constexpr int8_t table[64] =
     {
@@ -275,7 +275,7 @@ struct AssignIfTrue<T, false>
     }
 };
 
-inline size_t next_power_of_two(size_t i)
+inline size_t next_power_of_two(uint64_t i)
 {
     --i;
     i |= i >> 1;

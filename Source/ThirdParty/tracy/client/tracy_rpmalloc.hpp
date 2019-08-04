@@ -105,7 +105,7 @@ rpmalloc_config(void);
 extern void
 rpmalloc_finalize(void);
 
-void
+TRACY_API void
 rpmalloc_thread_initialize(void);
 
 extern void
