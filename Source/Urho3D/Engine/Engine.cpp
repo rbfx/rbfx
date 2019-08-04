@@ -264,9 +264,7 @@ bool Engine::Initialize(const VariantMap& parameters)
         if (HasParameter(parameters, EP_WINDOW_MAXIMIZE) && GetParameter(parameters, EP_WINDOW_MAXIMIZE).GetBool())
             graphics->Maximize();
 
-        graphics->SetShaderCacheDir(GetParameter(parameters, EP_SHADER_CACHE_DIR, fileSystem->GetAppPreferencesDir(
-            GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(),
-            GetParameter(parameters, EP_APPLICATION_NAME, "engine").GetString())).GetString() + "shadercache/");
+        graphics->SetShaderCacheDir(GetParameter(parameters, EP_SHADER_CACHE_DIR, appPreferencesDir_).GetString() + "shadercache/");
 
         if (HasParameter(parameters, EP_DUMP_SHADERS))
             graphics->BeginDumpShaders(GetParameter(parameters, EP_DUMP_SHADERS, EMPTY_STRING).GetString());
@@ -327,6 +325,11 @@ bool Engine::InitializeResourceCache(const VariantMap& parameters, bool removeOl
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* fileSystem = GetSubsystem<FileSystem>();
+
+    // Initialize app preferences directory
+    appPreferencesDir_ = fileSystem->GetAppPreferencesDir(
+        GetParameter(parameters, EP_ORGANIZATION_NAME, "urho3d").GetString(),
+        GetParameter(parameters, EP_APPLICATION_NAME, "engine").GetString());
 
     // Remove all resource paths and packages
     if (removeOld)
