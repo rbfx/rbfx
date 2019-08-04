@@ -27,6 +27,7 @@
 namespace Urho3D
 {
 
+#ifndef URHO3D_TYPE_TRAIT
 /// Helper macro that creates type trait. Expression should be any well-formed C++ expression over template type U.
 #define URHO3D_TYPE_TRAIT(name, expr) \
     template <typename U> struct name \
@@ -36,5 +37,6 @@ namespace Urho3D
         using type = decltype(func<U>(nullptr)); \
         static constexpr bool value{ type::value }; \
     }
+#endif
 
 }
