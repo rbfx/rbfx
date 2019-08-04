@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include "../Core/Object.h"
 #include "../Core/StringUtils.h"
 #include "../Core/Variant.h"
 #include "../IO/Archive.h"
@@ -748,8 +749,50 @@ inline bool SerializeValue(Archive& archive, const char* name, Variant& value)
     return false;
 }
 
-/// Serialize Serializable.
-URHO3D_API bool SerializeValue(Archive& archive, const char* name, SharedPtr<Serializable>& value);
+/// Serialize Object.
+template <class T, std::enable_if_t<std::is_base_of<Object, T>::value, int> = 0>
+inline bool SerializeValue(Archive& archive, const char* name, SharedPtr<T>& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        // Serialize type
+        StringHash type = value ? value->GetType() : StringHash{};
+        const ea::string_view typeName = value ? ea::string_view{ value->GetTypeName() } : "";
+        if (!SerializeStringHash(archive, "type", type, typeName))
+            return false;
+
+        // Serialize empty object
+        if (type == StringHash{})
+        {
+            value = nullptr;
+            return true;
+        }
+
+        // Create instance if loading
+        if (archive.IsInput())
+        {
+            Context* context = archive.GetContext();
+            if (!context)
+            {
+                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
+                return false;
+            }
+
+            value.StaticCast(context->CreateObject(type));
+
+            if (!value)
+            {
+                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
+                return false;
+            }
+        }
+
+        // Serialize object
+        if (ArchiveBlock valueBlock = archive.OpenUnorderedBlock("value"))
+            return value->Serialize(archive);
+    }
+    return false;
+}
 
 /// Serialize optional element or block.
 template <class T>

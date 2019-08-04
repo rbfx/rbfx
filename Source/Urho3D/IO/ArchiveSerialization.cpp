@@ -23,7 +23,6 @@
 #pragma once
 
 #include "../IO/ArchiveSerialization.h"
-#include "../Scene/Serializable.h"
 
 namespace Urho3D
 {
@@ -105,8 +104,8 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         return false;
     case VAR_CUSTOM:
         if (archive.IsInput())
-            value.SetCustom(SharedPtr<Serializable>{});
-        if (auto ptr = value.GetCustomPtr<SharedPtr<Serializable>>())
+            value.SetCustom(SharedPtr<Object>{});
+        if (auto ptr = value.GetCustomPtr<SharedPtr<Object>>())
             return SerializeValue(archive, name, *ptr);
 
         archive.SetError(Format("Unsupported custom Variant type of element '{0}'", name));
@@ -116,49 +115,6 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         assert(0);
         return false;
     }
-}
-
-URHO3D_API bool SerializeValue(Archive& archive, const char* name, SharedPtr<Serializable>& value)
-{
-    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-    {
-        // Serialize type
-        StringHash type = value ? value->GetType() : StringHash{};
-        const ea::string_view typeName = value ? ea::string_view{ value->GetTypeName() } : "";
-        if (!SerializeStringHash(archive, "type", type, typeName))
-            return false;
-
-        // Serialize empty object
-        if (type == StringHash{})
-        {
-            value = nullptr;
-            return true;
-        }
-
-        // Create instance if loading
-        if (archive.IsInput())
-        {
-            Context* context = archive.GetContext();
-            if (!context)
-            {
-                archive.SetError(Format("Context is required to serialize Serializable '{0}'", name));
-                return false;
-            }
-
-            value.StaticCast(context->CreateObject(type));
-
-            if (!value)
-            {
-                archive.SetError(Format("Failed to create instance of type '{0}'", type.Value()));
-                return false;
-            }
-        }
-
-        // Serialize object
-        if (ArchiveBlock valueBlock = archive.OpenUnorderedBlock("value"))
-            return value->Serialize(archive);
-    }
-    return false;
 }
 
 }
