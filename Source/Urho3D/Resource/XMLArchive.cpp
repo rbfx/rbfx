@@ -142,7 +142,8 @@ bool XMLOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool saf
     // Open root block
     if (stack_.empty())
     {
-        rootElement_.SetName(name ? name : defaultRootName);
+        if (serializeRootName_)
+            rootElement_.SetName(name ? name : defaultRootName);
         stack_.push_back(Block{ name, type, rootElement_, sizeHint });
         return true;
     }
@@ -375,7 +376,7 @@ bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe
     // Open root block
     if (stack_.empty())
     {
-        if (rootElement_.GetName() != (name ? name : defaultRootName))
+        if (serializeRootName_ && rootElement_.GetName() != (name ? name : defaultRootName))
         {
             SetErrorFormatted(ArchiveBase::errorElementNotFound_elementName, name);
             return false;
