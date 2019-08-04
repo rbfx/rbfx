@@ -128,6 +128,12 @@ void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData
     }
 }
 
+bool Object::Serialize(Archive& /*archive*/)
+{
+    assert(0);
+    return false;
+}
+
 bool Object::IsInstanceOf(StringHash type) const
 {
     return GetTypeInfo()->IsTypeOf(type);

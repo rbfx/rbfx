@@ -179,7 +179,7 @@ struct ContainerStruct
     /// Empty serializable.
     SharedPtr<Serializable> emptySerializable_;
     /// Serializable (sound listener).
-    SharedPtr<Serializable> soundListener_;
+    SharedPtr<SoundListener> soundListener_;
 
     /// Create tuple for comparison.
     auto Tie() const
@@ -207,13 +207,10 @@ struct ContainerStruct
         if (soundListener_ && soundListener_->GetType() != other.soundListener_->GetType())
             return false;
 
-        const auto component = dynamic_cast<const Component*>(soundListener_.Get());
-        const auto otherComponent = dynamic_cast<const Component*>(other.soundListener_.Get());
-
-        if (!!component != !!otherComponent)
+        if (!!soundListener_ != !!other.soundListener_)
             return false;
 
-        if (component && component->IsEnabled() != otherComponent->IsEnabled())
+        if (soundListener_ && soundListener_->IsEnabled() != other.soundListener_->IsEnabled())
             return false;
 
         return true;
