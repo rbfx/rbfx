@@ -82,6 +82,9 @@ public:
     /// Dump information of all memory allocations to the log. Supported in MSVC debug mode only.
     void DumpMemory();
 
+    /// Return preference directory name.
+    const ea::string& GetAppPreferencesDir() const { return appPreferencesDir_; }
+
     /// Get timestep of the next frame. Updated by ApplyFrameLimit().
     float GetNextTimeStep() const { return timeStep_; }
 
@@ -133,6 +136,8 @@ private:
     /// Actually perform the exit actions.
     void DoExit();
 
+    /// App preference directory.
+    ea::string appPreferencesDir_;
     /// Frame update timer.
     HiresTimer frameTimer_;
     /// Previous timesteps for smoothing.
