@@ -109,6 +109,12 @@ public:
     /// Return whether the file originates from a package.
     bool IsPackaged() const { return offset_ != 0; }
 
+    /// Reads a binary file to buffer.
+    void ReadBinary(ea::vector<unsigned char>& buffer);
+
+    /// Reads a binary file to buffer.
+    ea::vector<unsigned char> ReadBinary() { ea::vector<unsigned char> retValue; ReadBinary(retValue); return retValue; }
+
     /// Reads a text file, ensuring data from file is 0 terminated
     virtual void ReadText(ea::string& text);
 

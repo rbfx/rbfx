@@ -549,6 +549,18 @@ void File::SeekInternal(unsigned newPosition)
         fseek((FILE*)handle_, newPosition, SEEK_SET);
 }
 
+void File::ReadBinary(ea::vector<unsigned char>& buffer)
+{
+    buffer.clear();
+
+    if (!size_)
+        return;
+
+    buffer.resize(size_);
+
+    Read(static_cast<void*>(buffer.data()), size_);
+}
+
 void File::ReadText(ea::string& text)
 {
     text.clear();
@@ -558,7 +570,7 @@ void File::ReadText(ea::string& text)
 
     text.resize(size_);
 
-    Read((void*)text.c_str(), size_);
+    Read(static_cast<void*>(&text[0]), size_);
 }
 
 bool File::Copy(File* srcFile)
