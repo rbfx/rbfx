@@ -216,13 +216,13 @@ public:
     virtual unsigned GetSize() const { return sizeof(CustomVariantValue); }
 
     /// Compare to another custom value.
-    virtual bool Compare(const CustomVariantValue& rhs) const { (void)rhs; return false; }
+    virtual bool Compare(const CustomVariantValue& /*rhs*/) const { return false; }
     /// Compare to zero.
     virtual bool IsZero() const { return false; }
     /// Convert custom value to string.
     virtual ea::string ToString() const { return EMPTY_STRING; }
     /// Serialize to Archive.
-    virtual bool Serialize(Archive& archive) { (void)archive; return false; }
+    virtual bool Serialize(Archive& /*archive*/) { return false; }
 
 private:
     /// Type info.
@@ -250,7 +250,8 @@ template <class T> struct CustomVariantValueTraits
         }
         else
         {
-            (void)lhs, rhs;
+            (void)lhs;
+            (void)rhs;
             return false;
         }
     }
@@ -289,7 +290,8 @@ template <class T> struct CustomVariantValueTraits
         }
         else
         {
-            (void)value, archive;
+            (void)value;
+            (void)archive;
             return false;
         }
     }
