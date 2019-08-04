@@ -43,6 +43,9 @@
     <Content Include="../../../LICENSE">
       <PackagePath>.</PackagePath>
     </Content>
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)CoreData/**">
+      <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+    </Content>
     <Content Include="build/**">
       <PackagePath>build/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
