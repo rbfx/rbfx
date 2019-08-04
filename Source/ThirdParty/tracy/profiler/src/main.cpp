@@ -7,6 +7,7 @@
 #include <cassert>
 #include "../nfd/nfd.h"
 #include <sys/stat.h>
+#include <client/tracy_rpmalloc.hpp>
 
 #ifdef _WIN32
 #  include <windows.h>
@@ -125,6 +126,10 @@ public:
 
     void Setup() override
     {
+#if __APPLE__
+        // Static initialization appears to be broken on apple platforms and allocator has to be manually initialized.
+        tracy::rpmalloc_initialize();
+#endif
         engineParameters_[EP_RESOURCE_PATHS] = "CoreData";
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
         engineParameters_[EP_FULL_SCREEN] = false;
@@ -133,7 +138,7 @@ public:
         // would take over profiler port and profile ourselves. Just terminate the profiler.
         tracy::GetProfiler().RequestShutdown();
 
-        GetCommandLineParser().add_option("capture", readCapture_);
+        GetCommandLineParser().add_option("capture", readCapture);
 
 #if _WIN32
         uint32_t regs[4]{};
@@ -185,7 +190,7 @@ public:
             }
         }
 
-        strncpy(connectToAddress_, "127.0.0.1", sizeof(connectToAddress_));
+        strncpy(addr, "127.0.0.1", sizeof(addr));
     }
 
     void Start() override
@@ -211,18 +216,21 @@ public:
             0x03C3, 0x03C3, // small sigma
             0,
         };
-        static const ImWchar rangesIcons[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
+    static const ImWchar rangesIcons[] = {
+        ICON_MIN_FA, ICON_MAX_FA,
+        0
+    };
 
         GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, rangesBasic, 15.0f);
         GetSystemUI()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, rangesIcons, 14.0f, true);
-        fixedWidthFont_ = GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, nullptr, 15.0f);
-        bigFont_ = GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 20.0f);
+        fixedWidth = GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, nullptr, 15.0f);
+        bigFont = GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 20.0f);
 
-        if (!readCapture_.empty())
+        if (!readCapture.empty())
         {
-            std::unique_ptr<tracy::FileRead> file(tracy::FileRead::Open(readCapture_.c_str()));
+            std::unique_ptr<tracy::FileRead> file(tracy::FileRead::Open(readCapture.c_str()));
             if (file)
-                view_ = std::make_unique<tracy::View>(*file);
+                view = std::make_unique<tracy::View>(*file);
         }
 
         SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { Update(); });
@@ -252,7 +260,7 @@ public:
         auto& io = ImGui::GetIO();
         float dpiScale = GetDPIScale();
 
-        if (!view_)
+        if( !view )
         {
             const auto time = std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() ).count();
             if( !broadcastListen )
@@ -324,18 +332,19 @@ public:
                     }
                 }
             }
+
             setlocale( LC_NUMERIC, "C" );
             style.Colors[ImGuiCol_WindowBg] = ImVec4( 0.129f, 0.137f, 0.11f, 1.f );
-            ImGui::Begin("Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize);
+            ImGui::Begin( "Get started", nullptr, ImGuiWindowFlags_AlwaysAutoResize );
             char buf[128];
             sprintf(buf, "Urho3D Profiler %i.%i.%i", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch);
-            ImGui::PushFont( bigFont_ );
-            tracy::TextCentered(buf);
+            ImGui::PushFont( bigFont );
+            tracy::TextCentered( buf );
             ImGui::PopFont();
             ImGui::Spacing();
             if( ImGui::Button( ICON_FA_BOOK " Manual" ) )
             {
-                OpenWebpage("https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf");
+                OpenWebpage( "https://bitbucket.org/wolfpld/tracy/downloads/tracy.pdf" );
             }
             ImGui::SameLine();
             if( ImGui::Button( ICON_FA_GLOBE_AMERICAS " Web" ) )
@@ -348,104 +357,161 @@ public:
                 OpenWebpage( "https://discord.gg/pk78auc" );
             }
             ImGui::SameLine();
-            if (ImGui::Button(ICON_FA_VIDEO " Tutorial"))
+            if( ImGui::Button( ICON_FA_VIDEO " Tutorial" ) )
             {
-                ImGui::OpenPopup("tutorial");
+                ImGui::OpenPopup( "tutorial" );
             }
-            if (ImGui::BeginPopup("tutorial"))
+            if( ImGui::BeginPopup( "tutorial" ) )
             {
-                if (ImGui::Selectable(ICON_FA_VIDEO " Introduction to the Tracy Profiler"))
+                if( ImGui::Selectable( ICON_FA_VIDEO " Introduction to the Tracy Profiler" ) )
                 {
-                    OpenWebpage("https://www.youtube.com/watch?v=fB5B46lbapc");
+                    OpenWebpage( "https://www.youtube.com/watch?v=fB5B46lbapc" );
                 }
-                if (ImGui::Selectable(ICON_FA_VIDEO " New features in Tracy Profiler v0.3"))
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.3" ) )
                 {
-                    OpenWebpage("https://www.youtube.com/watch?v=3SXpDpDh2Uo");
+                    OpenWebpage( "https://www.youtube.com/watch?v=3SXpDpDh2Uo" );
                 }
-                if (ImGui::Selectable(ICON_FA_VIDEO " New features in Tracy Profiler v0.4"))
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.4" ) )
                 {
-                    OpenWebpage("https://www.youtube.com/watch?v=eAkgkaO8B9o");
+                    OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
                 }
                 ImGui::EndPopup();
             }
             ImGui::Separator();
-            ImGui::TextUnformatted("Connect to client");
+            ImGui::TextUnformatted( "Client address" );
             bool connectClicked = false;
-            connectClicked |= ImGui::InputTextWithHint("###connectaddress", "Enter address", connectToAddress_, 1024, ImGuiInputTextFlags_EnterReturnsTrue);
-            if (!connectionHistoryVector_.empty())
+            connectClicked |= ImGui::InputTextWithHint( "###connectaddress", "Enter address", addr, 1024, ImGuiInputTextFlags_EnterReturnsTrue );
+            if( !connHistVec.empty() )
             {
                 ImGui::SameLine();
-                if (ImGui::BeginCombo("##frameCombo", nullptr, ImGuiComboFlags_NoPreview))
+                if( ImGui::BeginCombo( "##frameCombo", nullptr, ImGuiComboFlags_NoPreview ) )
                 {
                     int idxRemove = -1;
-                    const auto sz = std::min<size_t>(5, connectionHistoryVector_.size());
-                    for (size_t i = 0; i < sz; i++)
+                    const auto sz = std::min<size_t>( 5, connHistVec.size() );
+                    for( size_t i=0; i<sz; i++ )
                     {
-                        const auto& str = connectionHistoryVector_[i]->first;
-                        if (ImGui::Selectable(str.c_str()))
-                            memcpy(connectToAddress_, str.c_str(), str.size() + 1);
-
-                        if (ImGui::IsItemHovered() && ImGui::IsKeyPressed(ImGui::GetKeyIndex(ImGuiKey_Delete), false))
-                            idxRemove = (int) i;
+                        const auto& str = connHistVec[i]->first;
+                        if( ImGui::Selectable( str.c_str() ) )
+                        {
+                            memcpy( addr, str.c_str(), str.size() + 1 );
+                        }
+                        if( ImGui::IsItemHovered() && ImGui::IsKeyPressed( ImGui::GetKeyIndex( ImGuiKey_Delete ), false ) )
+                        {
+                            idxRemove = (int)i;
+                        }
                     }
-                    if (idxRemove >= 0)
+                    if( idxRemove >= 0 )
                     {
-                        connectionHistoryMap_.erase(connectionHistoryVector_[idxRemove]);
-                        connectionHistoryVector_ = RebuildConnectionHistory(connectionHistoryMap_);
+                        connHistMap.erase( connHistVec[idxRemove] );
+                        connHistVec = RebuildConnectionHistory( connHistMap );
                     }
                     ImGui::EndCombo();
                 }
             }
-            connectClicked |= ImGui::Button(ICON_FA_WIFI " Connect");
-            if (connectClicked && *connectToAddress_ && !loadThread_.joinable())
+            connectClicked |= ImGui::Button( ICON_FA_WIFI " Connect" );
+            if( connectClicked && *addr && !loadThread.joinable() )
             {
-                std::string addrStr(connectToAddress_);
-                auto it = connectionHistoryMap_.find(addrStr);
-                if (it != connectionHistoryMap_.end())
+                std::string addrStr( addr );
+                auto it = connHistMap.find( addrStr );
+                if( it != connHistMap.end() )
+                {
                     it->second++;
+                }
                 else
-                    connectionHistoryMap_.emplace(std::move(addrStr), 1);
-                connectionHistoryVector_ = RebuildConnectionHistory(connectionHistoryMap_);
+                {
+                    connHistMap.emplace( std::move( addrStr ), 1 );
+                }
+                connHistVec = RebuildConnectionHistory( connHistMap );
 
-                view_ = std::make_unique<tracy::View>(connectToAddress_, fixedWidthFont_, SetWindowTitleCallback);
+                view = std::make_unique<tracy::View>( addr, fixedWidth, bigFont, SetWindowTitleCallback );
             }
-            ImGui::Separator();
-            if (ImGui::Button(ICON_FA_FOLDER_OPEN " Open saved trace") && !loadThread_.joinable())
+            ImGui::SameLine( 0, ImGui::GetFontSize() * 2 );
+            if( ImGui::Button( ICON_FA_FOLDER_OPEN " Open saved trace" ) && !loadThread.joinable() )
             {
                 nfdchar_t* fn;
-                auto res = NFD_OpenDialog("tracy", nullptr, &fn);
-                if (res == NFD_OKAY)
+                auto res = NFD_OpenDialog( "tracy", nullptr, &fn );
+                if( res == NFD_OKAY )
                 {
                     try
                     {
-                        auto file = std::shared_ptr<tracy::FileRead>(tracy::FileRead::Open(fn));
-                        if (file)
+                        auto f = std::shared_ptr<tracy::FileRead>( tracy::FileRead::Open( fn ) );
+                        if( f )
                         {
-                            loadThread_ = std::thread([this, file]()
-                            {
+                            loadThread = std::thread([this, f] {
                                 try
                                 {
-                                    view_ = std::make_unique<tracy::View>(*file, fixedWidthFont_, SetWindowTitleCallback);
+                                    view = std::make_unique<tracy::View>( *f, fixedWidth, bigFont, SetWindowTitleCallback );
                                 }
-                                catch (const tracy::UnsupportedVersion& e)
+                                catch( const tracy::UnsupportedVersion& e )
                                 {
-                                    badVersion_ = e.version;
+                                    badVer = e.version;
                                 }
-                            });
+                            } );
                         }
                     }
-                    catch (const tracy::NotTracyDump& e)
+                    catch( const tracy::NotTracyDump& )
                     {
-                        badVersion_ = -1;
+                        badVer = -1;
                     }
                 }
             }
 
-            if (badVersion_ != 0)
+            if( badVer != 0 )
             {
-                if (loadThread_.joinable())
-                    loadThread_.join();
-                tracy::BadVersion(badVersion_);
+                if( loadThread.joinable() ) { loadThread.join(); }
+                tracy::BadVersion( badVer );
+            }
+
+            if( !clients.empty() )
+            {
+                ImGui::Separator();
+                ImGui::TextUnformatted( "Discovered clients:" );
+                ImGui::Separator();
+                static bool widthSet = false;
+                ImGui::Columns( 3 );
+                if( !widthSet )
+                {
+                    widthSet = true;
+                    const auto w = ImGui::GetWindowWidth();
+                    ImGui::SetColumnWidth( 0, w * 0.35f );
+                    ImGui::SetColumnWidth( 1, w * 0.175f );
+                    ImGui::SetColumnWidth( 2, w * 0.425f );
+                }
+                std::lock_guard<std::mutex> lock( resolvLock );
+                for( auto& v : clients )
+                {
+                    const bool badProto = v.second.protocolVersion != tracy::ProtocolVersion;
+                    bool sel = false;
+                    const auto& name = resolvMap.find( v.second.address );
+                    assert( name != resolvMap.end() );
+                    ImGuiSelectableFlags flags = ImGuiSelectableFlags_SpanAllColumns;
+                    if( badProto ) flags |= ImGuiSelectableFlags_Disabled;
+                    if( ImGui::Selectable( name->second.c_str(), &sel, flags ) && !loadThread.joinable() )
+                    {
+                        view = std::make_unique<tracy::View>( v.second.address.c_str(), fixedWidth, bigFont, SetWindowTitleCallback );
+                    }
+                    ImGui::NextColumn();
+                    const auto acttime = ( v.second.activeTime + ( time - v.second.time ) / 1000 ) * 1000000000ll;
+                    if( badProto )
+                    {
+                        tracy::TextDisabledUnformatted( tracy::TimeToString( acttime ) );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( tracy::TimeToString( acttime ) );
+                    }
+                    ImGui::NextColumn();
+                    if( badProto )
+                    {
+                        tracy::TextDisabledUnformatted( v.second.procName.c_str() );
+                    }
+                    else
+                    {
+                        ImGui::TextUnformatted( v.second.procName.c_str() );
+                    }
+                    ImGui::NextColumn();
+                }
+                ImGui::EndColumns();
             }
 
             ImGui::End();
@@ -458,86 +524,117 @@ public:
                 broadcastListen = nullptr;
                 clients.clear();
             }
-            if (loadThread_.joinable())
-                loadThread_.join();
-            view_->NotifyRootWindowSize(GetGraphics()->GetWidth(), GetGraphics()->GetHeight());
-            if (!view_->Draw())
+            if( loadThread.joinable() ) loadThread.join();
+            view->NotifyRootWindowSize(GetGraphics()->GetWidth(), GetGraphics()->GetHeight());
+            if( !view->Draw() )
             {
-                view_.reset();
+                viewShutdown = ViewShutdown::True;
+                loadThread = std::thread([this, view = std::move( view)]() mutable {
+                    tracy::rpmalloc_thread_initialize();
+                    view.reset();
+                    viewShutdown = ViewShutdown::Join;
+                } );
             }
         }
         auto& progress = tracy::Worker::GetLoadProgress();
-        auto totalProgress = progress.total.load(std::memory_order_relaxed);
+        auto totalProgress = progress.total.load( std::memory_order_relaxed );
         if( totalProgress != 0 )
-            ImGui::OpenPopup("Loading trace...");
-
-        if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ))
         {
-            tracy::TextCentered(ICON_FA_HOURGLASS_HALF);
+            ImGui::OpenPopup( "Loading trace..." );
+        }
+        if( ImGui::BeginPopupModal( "Loading trace...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+        {
+            tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
 
             tracy::DrawWaitingDots(GetTime()->GetElapsedTime());
 
-            auto currProgress = progress.progress.load(std::memory_order_relaxed);
-            if (totalProgress == 0)
+            auto currProgress = progress.progress.load( std::memory_order_relaxed );
+            if( totalProgress == 0 )
             {
                 ImGui::CloseCurrentPopup();
                 totalProgress = currProgress;
             }
-            switch (currProgress)
+            switch( currProgress )
             {
             case tracy::LoadProgress::Initialization:
-                ImGui::TextUnformatted("Initialization...");
+                ImGui::TextUnformatted( "Initialization..." );
                 break;
             case tracy::LoadProgress::Locks:
-                ImGui::TextUnformatted("Locks...");
+                ImGui::TextUnformatted( "Locks..." );
                 break;
             case tracy::LoadProgress::Messages:
-                ImGui::TextUnformatted("Messages...");
+                ImGui::TextUnformatted( "Messages..." );
                 break;
             case tracy::LoadProgress::Zones:
-                ImGui::TextUnformatted("CPU zones...");
+                ImGui::TextUnformatted( "CPU zones..." );
                 break;
             case tracy::LoadProgress::GpuZones:
-                ImGui::TextUnformatted("GPU zones...");
+                ImGui::TextUnformatted( "GPU zones..." );
                 break;
             case tracy::LoadProgress::Plots:
-                ImGui::TextUnformatted("Plots...");
+                ImGui::TextUnformatted( "Plots..." );
                 break;
             case tracy::LoadProgress::Memory:
-                ImGui::TextUnformatted("Memory...");
+                ImGui::TextUnformatted( "Memory..." );
                 break;
             case tracy::LoadProgress::CallStacks:
-                ImGui::TextUnformatted("Call stacks...");
+                ImGui::TextUnformatted( "Call stacks..." );
                 break;
             case tracy::LoadProgress::FrameImages:
                 ImGui::TextUnformatted( "Frame images..." );
                 break;
             default:
-                assert(false);
+                assert( false );
                 break;
             }
-            ImGui::ProgressBar(float(currProgress) / totalProgress, ImVec2(200 * dpiScale, 0));
+            ImGui::ProgressBar( float( currProgress ) / totalProgress, ImVec2( 200 * dpiScale, 0 ) );
 
-            ImGui::TextUnformatted("Progress...");
-            auto subTotal = progress.subTotal.load(std::memory_order_relaxed);
-            auto subProgress = progress.subProgress.load(std::memory_order_relaxed);
-            if (subTotal == 0)
-                ImGui::ProgressBar(1.f, ImVec2(200 * dpiScale, 0));
+            ImGui::TextUnformatted( "Progress..." );
+            auto subTotal = progress.subTotal.load( std::memory_order_relaxed );
+            auto subProgress = progress.subProgress.load( std::memory_order_relaxed );
+            if( subTotal == 0 )
+            {
+                ImGui::ProgressBar( 1.f, ImVec2( 200 * dpiScale, 0 ) );
+            }
             else
-                ImGui::ProgressBar(float(subProgress) / subTotal, ImVec2(200 * dpiScale, 0));
+            {
+                ImGui::ProgressBar( float( subProgress ) / subTotal, ImVec2( 200 * dpiScale, 0 ) );
+            }
+            ImGui::EndPopup();
+        }
+        switch( viewShutdown )
+        {
+        case ViewShutdown::True:
+            ImGui::OpenPopup( "Capture cleanup..." );
+            break;
+        case ViewShutdown::Join:
+            loadThread.join();
+            viewShutdown = ViewShutdown::False;
+            break;
+        default:
+            break;
+        }
+        if( ImGui::BeginPopupModal( "Capture cleanup...", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+        {
+            if( viewShutdown != ViewShutdown::True ) ImGui::CloseCurrentPopup();
+            tracy::TextCentered( ICON_FA_BROOM );
+            tracy::DrawWaitingDots( GetTime()->GetElapsedTime() );
+            ImGui::Text( "Please wait, cleanup is in progress" );
             ImGui::EndPopup();
         }
     }
-    ea::string readCapture_{};
-    std::unordered_map<std::string, uint64_t> connectionHistoryMap_{};
-    std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> connectionHistoryVector_{};
-    std::unique_ptr<tracy::View> view_{};
-    ImFont* fixedWidthFont_ = nullptr;
-    ImFont* bigFont_ = nullptr;
-    char connectToAddress_[16]{};
-    std::thread loadThread_{};
-    int badVersion_ = 0;
+    ea::string readCapture{};
+    std::unordered_map<std::string, uint64_t> connHistMap{};
+    std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> connHistVec{};
+    std::unique_ptr<tracy::View> view{};
+    ImFont* fixedWidth = nullptr;
+    ImFont* bigFont = nullptr;
+    char addr[16]{};
+    std::thread loadThread{};
+    int badVer = 0;
     tracy::UdpListen* broadcastListen = nullptr;
+    enum class ViewShutdown { False, True, Join };
+    ViewShutdown viewShutdown = ViewShutdown::False;
     std::mutex resolvLock;
     tracy::flat_hash_map<std::string, std::string> resolvMap;
     ResolvService resolv;
