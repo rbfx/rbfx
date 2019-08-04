@@ -227,7 +227,7 @@ void CameraViewport::RebuildAttributes()
                     path->Append(GetCache()->GetResource<XMLFile>(effect.second));
                 path->SetEnabled(effect.first, value.GetBool());
             };
-            URHO3D_CUSTOM_ATTRIBUTE(effect.first.c_str(), getter, setter, bool, false, AM_DEFAULT);
+            URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE(effect.first.c_str(), getter, setter, bool, false, AM_DEFAULT);
         }
     }
 
