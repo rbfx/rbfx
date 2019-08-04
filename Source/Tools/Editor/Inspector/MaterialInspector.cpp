@@ -394,56 +394,56 @@ void Inspectable::Material::RegisterObject(Context* context)
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)       { value = inspectable.GetMaterial()->GetCullMode(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value) { inspectable.GetMaterial()->SetCullMode(static_cast<CullMode>(value.GetUInt())); };
-        URHO3D_CUSTOM_ENUM_ATTRIBUTE("Cull", getter, setter, cullModeNames, CULL_NONE, AM_EDIT);
+        URHO3D_CUSTOM_ENUM_ACCESSOR_ATTRIBUTE("Cull", getter, setter, cullModeNames, CULL_NONE, AM_EDIT);
     }
 
     // Shadow Cull Mode
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)       { value = inspectable.GetMaterial()->GetShadowCullMode(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value) { inspectable.GetMaterial()->SetShadowCullMode(static_cast<CullMode>(value.GetUInt())); };
-        URHO3D_CUSTOM_ENUM_ATTRIBUTE("Shadow Cull", getter, setter, cullModeNames, CULL_NONE, AM_EDIT);
+        URHO3D_CUSTOM_ENUM_ACCESSOR_ATTRIBUTE("Shadow Cull", getter, setter, cullModeNames, CULL_NONE, AM_EDIT);
     }
 
     // Fill Mode
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)       { value = inspectable.GetMaterial()->GetFillMode(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value) { inspectable.GetMaterial()->SetFillMode(static_cast<FillMode>(value.GetUInt())); };
-        URHO3D_CUSTOM_ENUM_ATTRIBUTE("Fill", getter, setter, fillModeNames, FILL_SOLID, AM_EDIT);
+        URHO3D_CUSTOM_ENUM_ACCESSOR_ATTRIBUTE("Fill", getter, setter, fillModeNames, FILL_SOLID, AM_EDIT);
     }
 
     // Alpha To Coverage
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)       { value = inspectable.GetMaterial()->GetAlphaToCoverage(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value) { inspectable.GetMaterial()->SetAlphaToCoverage(value.GetBool()); };
-        URHO3D_CUSTOM_ATTRIBUTE("Alpha To Coverage", getter, setter, bool, false, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Alpha To Coverage", getter, setter, bool, false, AM_EDIT);
     }
 
     // Line Anti Alias
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)       { value = inspectable.GetMaterial()->GetLineAntiAlias(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value) { inspectable.GetMaterial()->SetLineAntiAlias(value.GetBool()); };
-        URHO3D_CUSTOM_ATTRIBUTE("Line Anti Alias", getter, setter, bool, false, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Line Anti Alias", getter, setter, bool, false, AM_EDIT);
     }
 
     // Render Order
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)       { value = inspectable.GetMaterial()->GetRenderOrder(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value) { inspectable.GetMaterial()->SetRenderOrder(static_cast<unsigned char>(value.GetUInt())); };
-        URHO3D_CUSTOM_ATTRIBUTE("Render Order", getter, setter, unsigned, DEFAULT_RENDER_ORDER, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Render Order", getter, setter, unsigned, DEFAULT_RENDER_ORDER, AM_EDIT);
     }
 
     // Occlusion
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetOcclusion(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  { inspectable.GetMaterial()->SetOcclusion(value.GetBool()); };
-        URHO3D_CUSTOM_ATTRIBUTE("Occlusion", getter, setter, bool, false, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Occlusion", getter, setter, bool, false, AM_EDIT);
     }
 
     // Specular
     {
         auto getter = [](const Inspectable::Material& inspectable, Variant& value)        { value = inspectable.GetMaterial()->GetSpecular(); };
         auto setter = [](const Inspectable::Material& inspectable, const Variant& value)  { inspectable.GetMaterial()->SetSpecular(value.GetBool()); };
-        URHO3D_CUSTOM_ATTRIBUTE("Specular", getter, setter, bool, false, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Specular", getter, setter, bool, false, AM_EDIT);
     }
 
     // Constant Bias
@@ -454,7 +454,7 @@ void Inspectable::Material::RegisterObject(Context* context)
             bias.constantBias_ = value.GetFloat();
             inspectable.GetMaterial()->SetDepthBias(bias);
         };
-        URHO3D_CUSTOM_ATTRIBUTE("Constant Bias", getter, setter, float, 0.0f, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Constant Bias", getter, setter, float, 0.0f, AM_EDIT);
     }
 
     // Slope Scaled Bias
@@ -465,7 +465,7 @@ void Inspectable::Material::RegisterObject(Context* context)
             bias.slopeScaledBias_ = value.GetFloat();
             inspectable.GetMaterial()->SetDepthBias(bias);
         };
-        URHO3D_CUSTOM_ATTRIBUTE("Slope Scaled Bias", getter, setter, float, 0.0f, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Slope Scaled Bias", getter, setter, float, 0.0f, AM_EDIT);
     }
 
     // Normal Offset
@@ -476,12 +476,12 @@ void Inspectable::Material::RegisterObject(Context* context)
             bias.normalOffset_ = value.GetFloat();
             inspectable.GetMaterial()->SetDepthBias(bias);
         };
-        URHO3D_CUSTOM_ATTRIBUTE("Normal Offset", getter, setter, float, 0.0f, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Normal Offset", getter, setter, float, 0.0f, AM_EDIT);
     }
 
     // Dummy attributes used for rendering custom widgets in inspector.
-    URHO3D_CUSTOM_ATTRIBUTE("Techniques", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
-    URHO3D_CUSTOM_ATTRIBUTE("Shader Parameters", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
+    URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Techniques", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
+    URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Shader Parameters", [](const Inspectable::Material&, Variant&){}, [](const Inspectable::Material&, const Variant&){}, unsigned, Variant{}, AM_EDIT);
 
     for (auto i = 0; i < MAX_MATERIAL_TEXTURE_UNITS; i++)
     {
@@ -502,7 +502,7 @@ void Inspectable::Material::RegisterObject(Context* context)
             if (auto* texture = inspectable.GetCache()->GetResource(ref.type_, ref.name_)->Cast<Texture>())
                 inspectable.GetMaterial()->SetTexture(textureUnit, texture);
         };
-        URHO3D_CUSTOM_ATTRIBUTE(finalName.c_str(), getter, setter, ResourceRef, ResourceRef{Texture2D::GetTypeStatic()}, AM_EDIT);
+        URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE(finalName.c_str(), getter, setter, ResourceRef, ResourceRef{Texture2D::GetTypeStatic()}, AM_EDIT);
     }
 }
 
