@@ -709,6 +709,9 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
                 }
                 else
                 {
+                    // Reset value to default so it could use custom serialization
+                    if (attr->type_ == VAR_CUSTOM)
+                        varValue = attr->defaultValue_;
                     success = SerializeVariantValue(archive, attr->type_, attr->name_.c_str(), varValue);
                 }
 
