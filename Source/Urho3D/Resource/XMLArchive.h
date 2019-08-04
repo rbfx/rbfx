@@ -59,10 +59,11 @@ public:
 
 protected:
     /// Construct from element.
-    XMLArchiveBase(Context* context, XMLElement element, XMLFile* xmlFile = nullptr)
+    XMLArchiveBase(Context* context, XMLElement element, XMLFile* xmlFile, bool serializeRootName)
         : context_(context)
         , rootElement_(element)
         , xmlFile_(xmlFile)
+        , serializeRootName_(serializeRootName)
     {
         assert(element);
     }
@@ -85,6 +86,8 @@ protected:
     XMLElement rootElement_{};
     /// Blocks stack.
     ea::vector<Block> stack_;
+    /// Whether to serialize root name.
+    const bool serializeRootName_{};
 
 private:
     /// XML file.
@@ -142,13 +145,13 @@ public:
     using Base = XMLArchiveBase<XMLOutputArchiveBlock, false>;
 
     /// Construct from element.
-    XMLOutputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr)
-        : Base(context, element, xmlFile)
+    XMLOutputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr, bool serializeRootName = false)
+        : Base(context, element, xmlFile, serializeRootName)
     {
     }
     /// Construct from file.
     explicit XMLOutputArchive(XMLFile* xmlFile)
-        : Base(xmlFile->GetContext(), xmlFile->GetOrCreateRoot(defaultRootName), xmlFile)
+        : Base(xmlFile->GetContext(), xmlFile->GetOrCreateRoot(defaultRootName), xmlFile, true)
     {}
 
     /// Begin archive block.
@@ -242,13 +245,13 @@ public:
     using Base = XMLArchiveBase<XMLInputArchiveBlock, true>;
 
     /// Construct from element.
-    XMLInputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr)
-        : Base(context, element, xmlFile)
+    XMLInputArchive(Context* context, XMLElement element, XMLFile* xmlFile = nullptr, bool serializeRootName = false)
+        : Base(context, element, xmlFile, serializeRootName)
     {
     }
     /// Construct from file.
     explicit XMLInputArchive(XMLFile* xmlFile)
-        : Base(xmlFile->GetContext(), xmlFile->GetRoot(), xmlFile)
+        : Base(xmlFile->GetContext(), xmlFile->GetRoot(), xmlFile, true)
     {}
 
     /// Begin archive block.
