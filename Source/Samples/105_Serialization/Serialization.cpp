@@ -243,9 +243,11 @@ struct TestStruct
     PlainStruct plain_;
     /// Struct of containers.
     ContainerStruct container_;
+    /// Custom Variant with ContainerStruct.
+    Variant containerVariant_ = MakeCustomValue(ContainerStruct{});
 
     /// Create tuple for comparison.
-    auto Tie() const { return std::tie(plain_, container_); }
+    auto Tie() const { return std::tie(plain_, container_, containerVariant_); }
     /// Compare.
     bool operator ==(const TestStruct& other) const { return Tie() == other.Tie(); }
 };
@@ -257,6 +259,7 @@ bool SerializeValue(Archive& archive, const char* name, TestStruct& value)
     {
         SerializeValue(archive, "plain_", value.plain_);
         SerializeValue(archive, "container_", value.container_);
+        SerializeValue(archive, "containerVariant_", value.containerVariant_);
         return true;
     }
     return false;
@@ -306,6 +309,8 @@ TestStruct CreateTestStruct(Context* context)
     auto soundListener = MakeShared<SoundListener>(context);
     soundListener->SetEnabled(false);
     result.container_.soundListener_ = soundListener;
+
+    result.containerVariant_ = MakeCustomValue(result.container_);
 
     return result;
 }
@@ -519,6 +524,7 @@ void Serialization::Start()
     // Test serialization.
     TestStructSerialization();
     TestSceneSerialization();
+    TestPartialSerialization();
     TestSerializationPerformance();
 
     // Close sample
