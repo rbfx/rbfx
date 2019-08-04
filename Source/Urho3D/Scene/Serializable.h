@@ -213,6 +213,11 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
     [](const ClassName& self, Urho3D::Variant& value) { value = self.variable; }, \
     [](ClassName& self, const Urho3D::Variant& value) { self.variable = value.Get<typeName>(); self.postSetCallback(); })
 
+/// Make custom member attribute accessor.
+#define URHO3D_MAKE_CUSTOM_MEMBER_ATTRIBUTE_ACCESSOR(typeName, variable) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
+    [](const ClassName& self, Urho3D::Variant& value) { value.SetCustom(static_cast<typeName>(self.variable)); }, \
+    [](ClassName& self, const Urho3D::Variant& value) { self.variable = value.GetCustom<typeName>(); })
+
 /// Make get/set attribute accessor.
 #define URHO3D_MAKE_GET_SET_ATTRIBUTE_ACCESSOR(getFunction, setFunction, typeName) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
     [](const ClassName& self, Urho3D::Variant& value) { value = self.getFunction(); }, \
@@ -232,11 +237,6 @@ SharedPtr<AttributeAccessor> MakeVariantAttributeAccessor(TGetFunction getFuncti
 #define URHO3D_MAKE_GET_SET_ENUM_ATTRIBUTE_ACCESSOR(getFunction, setFunction, typeName) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
     [](const ClassName& self, Urho3D::Variant& value) { value = static_cast<int>(self.getFunction()); }, \
     [](ClassName& self, const Urho3D::Variant& value) { self.setFunction(static_cast<typeName>(value.Get<int>())); })
-
-/// Make get/set object attribute accessor.
-#define URHO3D_MAKE_MEMBER_OBJECT_ATTRIBUTE_ACCESSOR(variable) Urho3D::MakeVariantAttributeAccessor<ClassName>( \
-    [](const ClassName& self, Urho3D::Variant& value) { value.SetCustom(Urho3D::SharedPtr<Urho3D::Serializable>(static_cast<Urho3D::Serializable*>(self.variable.Get()))); }, \
-    [](ClassName& self, const Urho3D::Variant& value) { self.variable.StaticCast(value.GetCustom<Urho3D::SharedPtr<Urho3D::Serializable>>()); })
 
 /// Attribute metadata.
 namespace AttributeMetadata
@@ -276,16 +276,21 @@ namespace AttributeMetadata
     Urho3D::VAR_INT, name, URHO3D_MAKE_GET_SET_ENUM_ATTRIBUTE_ACCESSOR(getFunction, setFunction, typeName), enumNames, static_cast<int>(defaultValue), mode))
 
 /// Define an attribute with custom setter and getter.
-#define URHO3D_CUSTOM_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+#define URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
     Urho3D::GetVariantType<typeName >(), name, Urho3D::MakeVariantAttributeAccessor<ClassName>(getFunction, setFunction), nullptr, defaultValue, mode))
 /// Define an enum attribute with custom setter and getter. Zero-based enum values are mapped to names through an array of C string pointers.
-#define URHO3D_CUSTOM_ENUM_ATTRIBUTE(name, getFunction, setFunction, enumNames, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+#define URHO3D_CUSTOM_ENUM_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, enumNames, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
     Urho3D::VAR_INT, name, Urho3D::MakeVariantAttributeAccessor<ClassName>(getFunction, setFunction), enumNames, static_cast<int>(defaultValue), mode))
-/// Define an object attribute. Object must be SharedPtr<> of Serializable or it's subclass.
-#define URHO3D_OBJECT_ATTRIBUTE(name, variable, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
-    Urho3D::VAR_CUSTOM, name, URHO3D_MAKE_MEMBER_OBJECT_ATTRIBUTE_ACCESSOR(variable), nullptr, Urho3D::MakeCustomValue(Urho3D::SharedPtr<Urho3D::Serializable>()), mode))
+
+/// Define an object member attribute of any type.
+#define URHO3D_ATTRIBUTE_CUSTOM(name, typeName, variable, defaultValue, mode) context->RegisterAttribute<ClassName>(Urho3D::AttributeInfo( \
+    Urho3D::VAR_CUSTOM, name, URHO3D_MAKE_CUSTOM_MEMBER_ATTRIBUTE_ACCESSOR(typeName, variable), nullptr, defaultValue, mode))
 
 /// Deprecated. Use URHO3D_ACCESSOR_ATTRIBUTE instead.
 #define URHO3D_MIXED_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)
+/// Deprecated. Use URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE instead.
+#define URHO3D_CUSTOM_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)
+/// Deprecated. Use URHO3D_CUSTOM_ENUM_ACCESSOR_ATTRIBUTE instead.
+#define URHO3D_CUSTOM_ENUM_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode) URHO3D_CUSTOM_ENUM_ACCESSOR_ATTRIBUTE(name, getFunction, setFunction, typeName, defaultValue, mode)
 
 }
