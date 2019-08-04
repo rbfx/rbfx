@@ -103,12 +103,12 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         archive.SetError(Format("Unsupported Variant type of element '{0}'", name));
         return false;
     case VAR_CUSTOM:
-        if (archive.IsInput())
-            value.SetCustom(SharedPtr<Object>{});
-        if (auto ptr = value.GetCustomPtr<SharedPtr<Object>>())
-            return SerializeValue(archive, name, *ptr);
+        // Even if loading, value should be initialized to default value.
+        // It's the only way to know type.
+        if (CustomVariantValue* ptr = value.GetCustomVariantValuePtr())
+            return ptr->Serialize(archive);
 
-        archive.SetError(Format("Unsupported custom Variant type of element '{0}'", name));
+        archive.SetError(Format("Custom Variant is not initialized for element '{0}'", name));
         return false;
     case MAX_VAR_TYPES:
     default:
