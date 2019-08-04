@@ -161,30 +161,24 @@ void Console::RenderContent()
         {
         case LOG_TRACE:
             debugLevel = "T";
-            color = ImColor(135, 135, 135);
             break;
         case LOG_DEBUG:
             debugLevel = "D";
-            color = ImColor(200, 200, 200);
             break;
         case LOG_INFO:
             debugLevel = "I";
-            color = IM_COL32_WHITE;
             break;
         case LOG_WARNING:
             debugLevel = "W";
-            color = ImColor(247, 247, 168);
             break;
         case LOG_ERROR:
             debugLevel = "E";
-            color = ImColor(247, 168, 168);
             break;
         default:
             debugLevel = "?";
-            color = IM_COL32_WHITE;
             break;
         }
-
+        color = ToImGui(LOG_LEVEL_COLORS[row.level_]);
         ui::TextColored(color, "[%s] [%s] [%s] : %s", Time::GetTimeStamp(row.timestamp_, "%H:%M:%S").c_str(),
             debugLevel, row.logger_.c_str(), row.message_.c_str());
     }

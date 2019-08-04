@@ -51,7 +51,7 @@ extern "C" void SDL_IOS_LogMessage(const char* message);
 #endif
 
 #include "../DebugNew.h"
-#include "Log.h"
+#include "../IO/Log.h"
 
 
 namespace Urho3D
@@ -315,6 +315,10 @@ void Log::SendMessageEvent(LogLevel level, time_t timestamp, const ea::string& l
     // No-op if illegal level
     if (level < LOG_TRACE || level >= LOG_NONE)
         return;
+
+#if URHO3D_PROFILING
+    TracyMessageC(message.c_str(), message.size(), LOG_LEVEL_COLORS[level].ToUIntArgb());
+#endif
 
     // If not in the main thread, store message for later processing
     if (!Thread::IsMainThread())
