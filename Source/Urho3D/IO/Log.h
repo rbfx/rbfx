@@ -24,6 +24,7 @@
 
 #include <EASTL/list.h>
 
+#include "../Core/Macros.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Core/StringUtils.h"
@@ -54,6 +55,16 @@ enum LogLevel
     /// Number of log levels
     MAX_LOGLEVELS,
 };
+
+static Color LOG_LEVEL_COLORS[] = {
+    Color(0.529f, 0.529f, 0.529f),
+    Color(0.784f, 0.784f, 0.784f),
+    Color(1.f, 1.f, 1.f),
+    Color(0.969f, 0.969f, 0.659f),
+    Color(0.969f, 0.659f, 0.659f),
+    Color(1.f, 1.f, 1.f),
+};
+static_assert(URHO3D_ARRAYSIZE(LOG_LEVEL_COLORS) == MAX_LOGLEVELS, "Inconsistent number of log levels and log colors.");
 
 static const char* logLevelNames[] =
 {
