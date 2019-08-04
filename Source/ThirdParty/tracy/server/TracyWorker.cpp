@@ -1237,6 +1237,16 @@ Worker::Worker( FileRead& f, EventType::Type eventMask )
         }
     }
 
+    if( fileVer >= FileVersion( 0, 4, 11 ) )
+    {
+        f.Read( sz );
+        if( sz > 0 )
+        {
+            m_data.appInfo.reserve_exact( sz, m_slab );
+            f.Read( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
+        }
+    }
+
     if( fileVer >= FileVersion( 0, 4, 9 ) )
     {
         s_loadProgress.subTotal.store( 0, std::memory_order_relaxed );
@@ -1938,7 +1948,7 @@ void Worker::Exec()
             {
                 continue;
             }
-            if( !m_crashed )
+            if( !m_crashed && !m_disconnect )
             {
                 bool done = true;
                 for( auto& v : m_data.threads )
@@ -2121,11 +2131,13 @@ void Worker::InsertMessageData( MessageData* msg, uint64_t thread )
     }
 }
 
-ThreadData* Worker::NoticeThread( uint64_t thread )
+ThreadData* Worker::NoticeThreadReal( uint64_t thread )
 {
     auto it = m_threadMap.find( thread );
     if( it != m_threadMap.end() )
     {
+        m_data.threadDataLast.first = thread;
+        m_data.threadDataLast.second = it->second;
         return it->second;
     }
     else
@@ -2143,6 +2155,8 @@ ThreadData* Worker::NewThread( uint64_t thread )
     td->nextZoneId = 0;
     m_data.threads.push_back( td );
     m_threadMap.emplace( thread, td );
+    m_data.threadDataLast.first = thread;
+    m_data.threadDataLast.second = td;
     return td;
 }
 
@@ -2349,11 +2363,39 @@ void Worker::AddCustomString( uint64_t ptr, char* str, size_t sz )
     m_pendingCustomStrings.emplace( ptr, StoreString( str, sz ) );
 }
 
+static const uint8_t DxtcIndexTable[256] = {
+    85,     87,     86,     84,     93,     95,     94,     92,     89,     91,     90,     88,     81,     83,     82,     80,
+    117,    119,    118,    116,    125,    127,    126,    124,    121,    123,    122,    120,    113,    115,    114,    112,
+    101,    103,    102,    100,    109,    111,    110,    108,    105,    107,    106,    104,    97,     99,     98,     96,
+    69,     71,     70,     68,     77,     79,     78,     76,     73,     75,     74,     72,     65,     67,     66,     64,
+    213,    215,    214,    212,    221,    223,    222,    220,    217,    219,    218,    216,    209,    211,    210,    208,
+    245,    247,    246,    244,    253,    255,    254,    252,    249,    251,    250,    248,    241,    243,    242,    240,
+    229,    231,    230,    228,    237,    239,    238,    236,    233,    235,    234,    232,    225,    227,    226,    224,
+    197,    199,    198,    196,    205,    207,    206,    204,    201,    203,    202,    200,    193,    195,    194,    192,
+    149,    151,    150,    148,    157,    159,    158,    156,    153,    155,    154,    152,    145,    147,    146,    144,
+    181,    183,    182,    180,    189,    191,    190,    188,    185,    187,    186,    184,    177,    179,    178,    176,
+    165,    167,    166,    164,    173,    175,    174,    172,    169,    171,    170,    168,    161,    163,    162,    160,
+    133,    135,    134,    132,    141,    143,    142,    140,    137,    139,    138,    136,    129,    131,    130,    128,
+    21,     23,     22,     20,     29,     31,     30,     28,     25,     27,     26,     24,     17,     19,     18,     16,
+    53,     55,     54,     52,     61,     63,     62,     60,     57,     59,     58,     56,     49,     51,     50,     48,
+    37,     39,     38,     36,     45,     47,     46,     44,     41,     43,     42,     40,     33,     35,     34,     32,
+    5,      7,      6,      4,      13,     15,     14,     12,     9,      11,     10,     8,      1,      3,      2,      0
+};
+
 void Worker::AddFrameImageData( uint64_t ptr, char* data, size_t sz )
 {
     assert( m_pendingFrameImageData.find( ptr ) == m_pendingFrameImageData.end() );
     auto image = m_slab.AllocBig( sz );
-    memcpy( image, data, sz );
+    auto src = (uint8_t*)data;
+    auto dst = (uint8_t*)image;
+    assert( sz % 8 == 0 );
+    for( size_t i=0; i<sz; i+=8 )
+    {
+        memcpy( dst, src, 4 );
+        dst += 4;
+        src += 4;
+        for( int j=0; j<4; j++ ) *dst++ = DxtcIndexTable[*src++];
+    }
     m_pendingFrameImageData.emplace( ptr, image );
 }
 
@@ -2593,6 +2635,9 @@ bool Worker::Process( const QueueItem& ev )
 {
     switch( ev.hdr.type )
     {
+    case QueueType::ThreadContext:
+        ProcessThreadContext( ev.threadCtx );
+        break;
     case QueueType::ZoneBegin:
         ProcessZoneBegin( ev.zoneBegin );
         break;
@@ -2675,6 +2720,9 @@ bool Worker::Process( const QueueItem& ev )
     case QueueType::MessageLiteralColor:
         ProcessMessageLiteralColor( ev.messageColor );
         break;
+    case QueueType::MessageAppInfo:
+        ProcessMessageAppInfo( ev.message );
+        break;
     case QueueType::GpuNewContext:
         ProcessGpuNewContext( ev.gpuNewContext );
         break;
@@ -2740,6 +2788,11 @@ bool Worker::Process( const QueueItem& ev )
     return m_failure == Failure::None;
 }
 
+void Worker::ProcessThreadContext( const QueueThreadContext& ev )
+{
+    m_threadCtx = ev.thread;
+}
+
 void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 {
     CheckSourceLocation( ev.srcloc );
@@ -2754,7 +2807,7 @@ void Worker::ProcessZoneBeginImpl( ZoneEvent* zone, const QueueZoneBegin& ev )
 
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 
-    NewZone( zone, ev.thread );
+    NewZone( zone, m_threadCtx );
 }
 
 void Worker::ProcessZoneBegin( const QueueZoneBegin& ev )
@@ -2768,7 +2821,7 @@ void Worker::ProcessZoneBeginCallstack( const QueueZoneBegin& ev )
     auto zone = m_slab.AllocInit<ZoneEvent>();
     ProcessZoneBeginImpl( zone, ev );
 
-    auto& next = m_nextCallstack[ev.thread];
+    auto& next = m_nextCallstack[m_threadCtx];
     next.type = NextCallstackType::Zone;
     next.zone = zone;
 }
@@ -2788,7 +2841,7 @@ void Worker::ProcessZoneBeginAllocSrcLocImpl( ZoneEvent* zone, const QueueZoneBe
 
     m_data.lastTime = std::max( m_data.lastTime, zone->start );
 
-    NewZone( zone, ev.thread );
+    NewZone( zone, m_threadCtx );
 
     m_pendingSourceLocationPayload.erase( it );
 }
@@ -2804,17 +2857,17 @@ void Worker::ProcessZoneBeginAllocSrcLocCallstack( const QueueZoneBegin& ev )
     auto zone = m_slab.AllocInit<ZoneEvent>();
     ProcessZoneBeginAllocSrcLocImpl( zone, ev );
 
-    auto& next = m_nextCallstack[ev.thread];
+    auto& next = m_nextCallstack[m_threadCtx];
     next.type = NextCallstackType::Zone;
     next.zone = zone;
 }
 
 void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
 {
-    auto tit = m_threadMap.find( ev.thread );
+    auto tit = m_threadMap.find( m_threadCtx );
     if( tit == m_threadMap.end() || tit->second->zoneIdStack.empty() )
     {
-        ZoneEndFailure( ev.thread );
+        ZoneEndFailure( m_threadCtx );
         return;
     }
 
@@ -2822,7 +2875,7 @@ void Worker::ProcessZoneEnd( const QueueZoneEnd& ev )
     auto zoneId = td->zoneIdStack.back_and_pop();
     if( zoneId != td->nextZoneId )
     {
-        ZoneStackFailure( ev.thread, td->stack.back() );
+        ZoneStackFailure( m_threadCtx, td->stack.back() );
         return;
     }
     td->nextZoneId = 0;
@@ -2936,7 +2989,7 @@ void Worker::FrameImageTwiceFailure()
 
 void Worker::ProcessZoneValidation( const QueueZoneValidation& ev )
 {
-    auto td = NoticeThread( ev.thread );
+    auto td = NoticeThread( m_threadCtx );
     td->nextZoneId = ev.id;
 }
 
@@ -3057,10 +3110,10 @@ void Worker::ProcessFrameImage( const QueueFrameImage& ev )
 
 void Worker::ProcessZoneText( const QueueZoneText& ev )
 {
-    auto tit = m_threadMap.find( ev.thread );
+    auto tit = m_threadMap.find( m_threadCtx );
     if( tit == m_threadMap.end() || tit->second->stack.empty() || tit->second->nextZoneId != tit->second->zoneIdStack.back() )
     {
-        ZoneTextFailure( ev.thread );
+        ZoneTextFailure( m_threadCtx );
         return;
     }
 
@@ -3076,10 +3129,10 @@ void Worker::ProcessZoneText( const QueueZoneText& ev )
 
 void Worker::ProcessZoneName( const QueueZoneText& ev )
 {
-    auto tit = m_threadMap.find( ev.thread );
+    auto tit = m_threadMap.find( m_threadCtx );
     if( tit == m_threadMap.end() || tit->second->stack.empty() || tit->second->nextZoneId != tit->second->zoneIdStack.back() )
     {
-        ZoneNameFailure( ev.thread );
+        ZoneNameFailure( m_threadCtx );
         return;
     }
 
@@ -3156,7 +3209,7 @@ void Worker::ProcessLockWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::Wait;
     lev->srcloc = 0;
 
-    InsertLockEvent( *it->second, lev, ev.thread );
+    InsertLockEvent( *it->second, lev, m_threadCtx );
 }
 
 void Worker::ProcessLockObtain( const QueueLockObtain& ev )
@@ -3170,7 +3223,7 @@ void Worker::ProcessLockObtain( const QueueLockObtain& ev )
     lev->type = LockEvent::Type::Obtain;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, m_threadCtx );
 }
 
 void Worker::ProcessLockRelease( const QueueLockRelease& ev )
@@ -3184,7 +3237,7 @@ void Worker::ProcessLockRelease( const QueueLockRelease& ev )
     lev->type = LockEvent::Type::Release;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, m_threadCtx );
 }
 
 void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
@@ -3205,7 +3258,7 @@ void Worker::ProcessLockSharedWait( const QueueLockWait& ev )
     lev->type = LockEvent::Type::WaitShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( *it->second, lev, ev.thread );
+    InsertLockEvent( *it->second, lev, m_threadCtx );
 }
 
 void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
@@ -3220,7 +3273,7 @@ void Worker::ProcessLockSharedObtain( const QueueLockObtain& ev )
     lev->type = LockEvent::Type::ObtainShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, m_threadCtx );
 }
 
 void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
@@ -3235,7 +3288,7 @@ void Worker::ProcessLockSharedRelease( const QueueLockRelease& ev )
     lev->type = LockEvent::Type::ReleaseShared;
     lev->srcloc = 0;
 
-    InsertLockEvent( lock, lev, ev.thread );
+    InsertLockEvent( lock, lev, m_threadCtx );
 }
 
 void Worker::ProcessLockMark( const QueueLockMark& ev )
@@ -3244,7 +3297,7 @@ void Worker::ProcessLockMark( const QueueLockMark& ev )
     auto lit = m_data.lockMap.find( ev.id );
     assert( lit != m_data.lockMap.end() );
     auto& lockmap = *lit->second;
-    auto tid = lockmap.threadMap.find( ev.thread );
+    auto tid = lockmap.threadMap.find( m_threadCtx );
     assert( tid != lockmap.threadMap.end() );
     const auto thread = tid->second;
     auto it = lockmap.timeline.end();
@@ -3305,10 +3358,10 @@ void Worker::ProcessMessage( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
-    msg->thread = ev.thread;
+    msg->thread = m_threadCtx;
     msg->color = 0xFFFFFFFF;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
-    InsertMessageData( msg, ev.thread );
+    InsertMessageData( msg, m_threadCtx );
     m_pendingCustomStrings.erase( it );
 }
 
@@ -3318,10 +3371,10 @@ void Worker::ProcessMessageLiteral( const QueueMessage& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    msg->thread = ev.thread;
+    msg->thread = m_threadCtx;
     msg->color = 0xFFFFFFFF;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
-    InsertMessageData( msg, ev.thread );
+    InsertMessageData( msg, m_threadCtx );
 }
 
 void Worker::ProcessMessageColor( const QueueMessageColor& ev )
@@ -3331,10 +3384,10 @@ void Worker::ProcessMessageColor( const QueueMessageColor& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Idx, it->second.idx );
-    msg->thread = ev.thread;
+    msg->thread = m_threadCtx;
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
-    InsertMessageData( msg, ev.thread );
+    InsertMessageData( msg, m_threadCtx );
     m_pendingCustomStrings.erase( it );
 }
 
@@ -3344,10 +3397,19 @@ void Worker::ProcessMessageLiteralColor( const QueueMessageColor& ev )
     auto msg = m_slab.Alloc<MessageData>();
     msg->time = TscTime( ev.time );
     msg->ref = StringRef( StringRef::Type::Ptr, ev.text );
-    msg->thread = ev.thread;
+    msg->thread = m_threadCtx;
     msg->color = 0xFF000000 | ( ev.r << 16 ) | ( ev.g << 8 ) | ev.b;
     m_data.lastTime = std::max( m_data.lastTime, msg->time );
-    InsertMessageData( msg, ev.thread );
+    InsertMessageData( msg, m_threadCtx );
+}
+
+void Worker::ProcessMessageAppInfo( const QueueMessage& ev )
+{
+    auto it = m_pendingCustomStrings.find( ev.text );
+    assert( it != m_pendingCustomStrings.end() );
+    m_data.appInfo.push_back( StringRef( StringRef::Type::Idx, it->second.idx ) );
+    m_data.lastTime = std::max( m_data.lastTime, TscTime( ev.time ) );
+    m_pendingCustomStrings.erase( it );
 }
 
 void Worker::ProcessGpuNewContext( const QueueGpuNewContext& ev )
@@ -3604,7 +3666,7 @@ void Worker::ProcessCallstack( const QueueCallstack& ev )
     assert( m_pendingCallstackPtr == ev.ptr );
     m_pendingCallstackPtr = 0;
 
-    auto nit = m_nextCallstack.find( ev.thread );
+    auto nit = m_nextCallstack.find( m_threadCtx );
     assert( nit != m_nextCallstack.end() );
     auto& next = nit->second;
 
@@ -3630,7 +3692,7 @@ void Worker::ProcessCallstackAlloc( const QueueCallstackAlloc& ev )
     assert( m_pendingCallstackPtr == ev.ptr );
     m_pendingCallstackPtr = 0;
 
-    auto nit = m_nextCallstack.find( ev.thread );
+    auto nit = m_nextCallstack.find( m_threadCtx );
     assert( nit != m_nextCallstack.end() );
     auto& next = nit->second;
 
@@ -3708,10 +3770,10 @@ void Worker::ProcessCrashReport( const QueueCrashReport& ev )
 {
     CheckString( ev.text );
 
-    auto& next = m_nextCallstack[ev.thread];
+    auto& next = m_nextCallstack[m_threadCtx];
     next.type = NextCallstackType::Crash;
 
-    m_data.crashEvent.thread = ev.thread;
+    m_data.crashEvent.thread = m_threadCtx;
     m_data.crashEvent.time = TscTime( ev.time );
     m_data.crashEvent.message = ev.text;
     m_data.crashEvent.callstack = 0;
@@ -4143,6 +4205,12 @@ void Worker::ReadTimelinePre044( FileRead& f, Vector<GpuEvent*>& vec, uint64_t s
     }
 }
 
+void Worker::Disconnect()
+{
+    Query( ServerQueryDisconnect, 0 );
+    m_disconnect = true;
+}
+
 void Worker::Write( FileWrite& f )
 {
     f.Write( FileHeader, sizeof( FileHeader ) );
@@ -4415,6 +4483,10 @@ void Worker::Write( FileWrite& f )
         f.Write( &frame.second->size, sizeof( frame.second->size ) );
         f.Write( frame.second->data, sizeof( CallstackFrame ) * frame.second->size );
     }
+
+    sz = m_data.appInfo.size();
+    f.Write( &sz, sizeof( sz ) );
+    f.Write( m_data.appInfo.data(), sizeof( m_data.appInfo[0] ) * sz );
 
     sz = m_data.frameImage.size();
     f.Write( &sz, sizeof( sz ) );

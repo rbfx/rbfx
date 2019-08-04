@@ -1695,7 +1695,7 @@ rpmalloc_finalize(void) {
 }
 
 //! Initialize thread, assign heap
-void
+TRACY_API void
 rpmalloc_thread_initialize(void) {
 	if (!get_thread_heap()) {
 		atomic_incr32(&_memory_active_heaps);

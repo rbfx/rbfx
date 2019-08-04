@@ -10,7 +10,7 @@
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h> // abs()
+#include <stdlib.h> // llabs()
 #include <string.h>
 
 #include "TracyPrint.hpp"
@@ -263,7 +263,7 @@ const char* MemSizeToString( int64_t val )
     char* buf = bufpool[bufsel];
     bufsel = ( bufsel + 1 ) % Pool;
 
-    const auto aval = abs( val );
+    const auto aval = llabs( val );
 
     if( aval < 10000ll )
     {

@@ -12,6 +12,7 @@
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
 #include "TracyTexture.hpp"
+#include "TracyUserData.hpp"
 #include "TracyVector.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
@@ -61,18 +62,17 @@ public:
 
     using SetTitleCallback = void(*)( const char* );
 
-    View( ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, stcb ) {}
-    View( const char* addr, ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr );
-    View( FileRead& f, ImFont* fixedWidth = nullptr, SetTitleCallback stcb = nullptr );
+    View( ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, bigFont, stcb ) {}
+    View( const char* addr, ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
     ~View();
 
     static bool Draw();
 
     void NotifyRootWindowSize( float w, float h ) { m_rootWidth = w; m_rootHeight = h; }
     void SetTextEditorFile( const char* fileName, int line );
-#if !defined TRACY_EMBED_WINDOW
+
 private:
-#endif
     enum class Namespace : uint8_t
     {
         Full,
@@ -203,6 +203,7 @@ private:
     flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
     flat_hash_map<const PlotData*, PlotView, nohash<const PlotData*>> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
+    Vector<float> m_threadDnd;
 
     tracy_force_inline VisData& Vis( const void* ptr )
     {
@@ -253,7 +254,7 @@ private:
     LockHighlight m_lockHighlight { -1 };
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
-    const MessageData* m_msgToFocus = nullptr;
+    DecayValue<const MessageData*> m_msgToFocus = nullptr;
     const GpuEvent* m_gpuInfoWindow = nullptr;
     const GpuEvent* m_gpuHighlight;
     uint64_t m_gpuInfoWindowThread;
@@ -265,6 +266,12 @@ private:
     uint32_t m_lockInfoWindow = InvalidId;
     ZoneEvent* m_zoneHover = nullptr;
     int m_frameHover = -1;
+    bool m_messagesScrollBottom;
+    size_t m_prevMessages = 0;
+    ImGuiTextFilter m_messageFilter;
+    bool m_messageFilterWasActive = false;
+    int m_visibleMessages = 0;
+    bool m_disconnectIssued = false;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -312,6 +319,8 @@ private:
     ImFont* m_textEditorFont;
     bool m_textEditorWhitespace = true;
 
+    ImFont* m_bigFont;
+
     float m_rootWidth, m_rootHeight;
     SetTitleCallback m_stcb;
     bool m_titleSet = false;
@@ -336,6 +345,8 @@ private:
 
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
+
+    UserData m_userData;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
@@ -446,6 +457,7 @@ private:
         bool ignoreCase = false;
         bool link = true;
         std::unique_ptr<Worker> second;
+        std::unique_ptr<UserData> userData;
         std::thread loadThread;
         int badVer = 0;
         char pattern[1024] = {};
@@ -528,6 +540,7 @@ private:
         uint32_t currFrame = -1;
         bool pause = true;
         bool sync = false;
+        bool zoom = false;
     } m_playback;
 };
 

@@ -1,4 +1,8 @@
+#ifdef __MINGW32__
+#  define __STDC_FORMAT_MACROS
+#endif
 #include <assert.h>
+#include <inttypes.h>
 #include <string>
 #include <string.h>
 
@@ -50,18 +54,11 @@ static bool CreateDirStruct( const std::string& path )
     return true;
 }
 
-const char* GetSavePath( const char* file )
+static void GetConfigDirectory( char* buf, size_t& sz )
 {
-    enum { Pool = 8 };
-    enum { MaxPath = 512 };
-    static char bufpool[Pool][MaxPath];
-    static int bufsel = 0;
-    char* buf = bufpool[bufsel];
-    bufsel = ( bufsel + 1 ) % Pool;
-
 #ifdef _WIN32
     auto path = getenv( "APPDATA" );
-    auto sz = strlen( path );
+    sz = strlen( path );
     memcpy( buf, path, sz );
 
     for( size_t i=0; i<sz; i++ )
@@ -73,7 +70,6 @@ const char* GetSavePath( const char* file )
     }
 #else
     auto path = getenv( "XDG_CONFIG_HOME" );
-    size_t sz;
     if( path && *path )
     {
         sz = strlen( path );
@@ -90,12 +86,114 @@ const char* GetSavePath( const char* file )
         sz += 8;
     }
 #endif
+}
+
+const char* GetSavePath( const char* file )
+{
+    assert( file && *file );
+
+    enum { Pool = 8 };
+    enum { MaxPath = 512 };
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetConfigDirectory( buf, sz );
 
     memcpy( buf+sz, "/tracy/", 8 );
     sz += 7;
 
     auto status = CreateDirStruct( buf );
     assert( status );
+
+    const auto fsz = strlen( file );
+    assert( sz + fsz < MaxPath );
+    memcpy( buf+sz, file, fsz+1 );
+
+    return buf;
+}
+
+const char* GetSavePath( const char* program, uint64_t time, const char* file, bool create )
+{
+    assert( file && *file );
+    assert( program && *program );
+
+    enum { Pool = 8 };
+    enum { MaxPath = 512 };
+    static char bufpool[Pool][MaxPath];
+    static int bufsel = 0;
+    char* buf = bufpool[bufsel];
+    bufsel = ( bufsel + 1 ) % Pool;
+
+    size_t sz;
+    GetConfigDirectory( buf, sz );
+
+    const auto psz = strlen( program );
+    assert( psz < 512 );
+    char tmp[512];
+    strcpy( tmp, program );
+    for( size_t i=0; i<psz; i++ )
+    {
+        switch( tmp[i] )
+        {
+        case 1:
+        case 2:
+        case 3:
+        case 4:
+        case 5:
+        case 6:
+        case 7:
+        case 8:
+        case 9:
+        case 10:
+        case 11:
+        case 12:
+        case 13:
+        case 14:
+        case 15:
+        case 16:
+        case 17:
+        case 18:
+        case 19:
+        case 20:
+        case 21:
+        case 22:
+        case 23:
+        case 24:
+        case 25:
+        case 26:
+        case 27:
+        case 28:
+        case 29:
+        case 30:
+        case 31:
+        case 0x7F:
+        case '<':
+        case '>':
+        case ':':
+        case '"':
+        case '/':
+        case '\\':
+        case '|':
+        case '?':
+        case '*':
+            tmp[i] = '_';
+            break;
+        default:
+            break;
+        }
+    }
+
+    // 604800 = 7 days
+    sz += sprintf( buf+sz, "/tracy/user/%c/%s/%" PRIu64 "/%" PRIu64 "/", tmp[0], tmp, uint64_t( time / 604800 ), time );
+
+    if( create )
+    {
+        auto status = CreateDirStruct( buf );
+        assert( status );
+    }
 
     const auto fsz = strlen( file );
     assert( sz + fsz < MaxPath );
