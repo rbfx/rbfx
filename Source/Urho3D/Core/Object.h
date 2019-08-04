@@ -129,7 +129,7 @@ public:
     virtual void OnEvent(Object* sender, StringHash eventType, VariantMap& eventData);
 
     /// Serialize object.
-    virtual bool Serialize(Archive& /*archive*/) { return false; }
+    virtual bool Serialize(Archive& archive);
 
     /// Return type info static.
     static const TypeInfo* GetTypeInfoStatic() { return nullptr; }
