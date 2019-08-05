@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#pragma once
-
 #include "../IO/ArchiveSerialization.h"
 
 namespace Urho3D
