@@ -219,7 +219,8 @@ public:
 
 Log::Log(Context* context) :
     Object(context),
-    impl_(new LogImpl(context))
+    impl_(new LogImpl(context)),
+    formatPattern_("[%H:%M:%S] [%l] [%n] : %v")
 {
     logInstance = this;
 
