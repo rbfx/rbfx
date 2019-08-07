@@ -74,9 +74,9 @@ else ()
     ucm_set_runtime(DYNAMIC)
 endif ()
 
-add_subdirectory(Source)
-
 include(UrhoPackaging)
+
+add_subdirectory(Source)
 
 # Print current build configuration
 message(STATUS "Urho3D Configuration:")

@@ -27,9 +27,7 @@ endif ()
 # Urho3D tools
 set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_TOOLS_DIR})
 
-if (URHO3D_PACKAGING OR         # When packing resources
-    URHO3D_PACKAGING_TOOL OR    # When crosscompiling and tool is required
-    URHO3D_TOOLS)
+if (URHO3D_PACKAGING OR URHO3D_TOOLS)
     add_subdirectory (PackageTool)
 endif ()
 if (URHO3D_TOOLS AND DESKTOP)
