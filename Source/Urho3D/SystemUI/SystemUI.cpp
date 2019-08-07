@@ -94,6 +94,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
         ReallocateFontTexture();
     });
     SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
+        if (GetInput()->IsMinimized())
+            return;
         float timeStep = GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
@@ -101,6 +103,8 @@ SystemUI::SystemUI(Urho3D::Context* context)
     });
     SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&)
     {
+        if (GetInput()->IsMinimized())
+            return;
         URHO3D_PROFILE("SystemUiRender");
         SendEvent(E_ENDRENDERINGSYSTEMUI);
         ImGui::Render();
