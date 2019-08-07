@@ -32,6 +32,17 @@ foreach (ITEM ${RESOURCE_DIRS} ${AUTOLOAD_DIRS})
     endif ()
 endforeach ()
 
+if (XCODE)
+    if (NOT RESOURCE_FILES)
+        # Default app bundle icon
+        set(RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/UrhoIcon.icns)
+        if (IOS)
+            # Default app icon on the iOS/tvOS home screen
+            list(APPEND RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/rbfx-icon.png)
+        endif ()
+    endif ()
+endif ()
+
 if (URHO3D_PACKAGING)
     if (CMAKE_CROSSCOMPILING)
         include (ExternalProject)
@@ -45,13 +56,11 @@ if (URHO3D_PACKAGING)
         ExternalProject_Add (Urho3D-Native
             SOURCE_DIR ${rbfx_SOURCE_DIR}
             CMAKE_COMMAND ${ALTERNATE_COMMAND}
-            CMAKE_ARGS -DURHO3D_ENABLE_ALL=OFF -DURHO3D_PACKAGING_TOOL=ON -DMINI_URHO=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/native PackageTool
+            CMAKE_ARGS -DURHO3D_ENABLE_ALL=OFF -DURHO3D_PACKAGING=ON -DMINI_URHO=ON -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=${CMAKE_BINARY_DIR}/native PackageTool
         )
         set (PACKAGE_TOOL "${CMAKE_BINARY_DIR}/native/bin/PackageTool" CACHE STRING "" FORCE)
-    elseif (TARGET PackageTool)
-        set (PACKAGE_TOOL "$<TARGET_FILE:PackageTool>" CACHE STRING "" FORCE)
     else ()
-        message(FATAL_ERROR "CMake misconfiguration")
+        set (PACKAGE_TOOL "$<TARGET_FILE:PackageTool>" CACHE STRING "" FORCE)
     endif ()
 
     if (URHO3D_SAMPLES)
@@ -59,6 +68,9 @@ if (URHO3D_PACKAGING)
         create_pak("${rbfx_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
         create_pak("${rbfx_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
         create_pak("${rbfx_SOURCE_DIR}/bin/Autoload/LargeData" "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
+
+        set_property (SOURCE ${RESOURCE_PAKS} PROPERTY GENERATED TRUE)
+
         package_resources_web(
             FILES        "${CMAKE_BINARY_DIR}/bin/Data.pak"
                          "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
@@ -66,5 +78,7 @@ if (URHO3D_PACKAGING)
             RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
             OUTPUT       "Resources.js"
         )
+        add_custom_target(PackageResources SOURCES ${RESOURCE_PAKS})
     endif ()
+
 endif ()

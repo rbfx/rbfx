@@ -121,6 +121,18 @@ jobs:
 
       - template: .ci/build.yml
 
+  - job: iOS
+    pool:
+      vmImage: 'macOS-10.13'
+
+    variables:
+        BUILD_SHARED_LIBS: OFF
+        URHO3D_CSHARP: OFF
+        CMAKE_GENERATE_ARGS: -G Xcode -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake -DPLATFORM=SIMULATOR64 -DIOS=ON
+
+    steps:
+      - template: .ci/build.yml
+
   - job: Android
     pool:
       vmImage: 'ubuntu-16.04'

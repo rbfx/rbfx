@@ -248,13 +248,33 @@ macro (add_sample)
             install(TARGETS ${SAMPLE_TARGET}
                 RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
                 LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
+                BUNDLE DESTINATION  ${DEST_SAMPLES_DIR}
             )
+        endif ()
+
+        if (TARGET PackageResources)
+            add_dependencies (${SAMPLE_TARGET} PackageResources)
         endif ()
 
         if (WEB)
             web_executable(${SAMPLE_TARGET})
             web_link_resources(${SAMPLE_TARGET} Resources.js)
             target_link_libraries(${SAMPLE_TARGET} PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
+        endif ()
+
+        if (IOS)
+            set_target_properties(${SAMPLE_TARGET}
+                PROPERTIES MACOSX_BUNDLE TRUE
+                           MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
+                           MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
+            )
+            if (TARGET)
+                set_target_properties(${SAMPLE_TARGET} PROPERTIES RESOURCE "${RESOURCE_PAKS};${RESOURCE_FILES}")
+                target_sources(${SAMPLE_TARGET} PRIVATE ${RESOURCE_PAKS} ${RESOURCE_FILES})
+            else ()
+                set_target_properties(${SAMPLE_TARGET} PROPERTIES RESOURCE "${RESOURCE_DIRS};${RESOURCE_FILES}")
+                target_sources(${SAMPLE_TARGET} PRIVATE ${RESOURCE_DIRS} ${RESOURCE_FILES})
+            endif ()
         endif ()
     endif ()
 endmacro ()
@@ -565,6 +585,11 @@ function (create_pak PAK_DIR PAK_FILE)
         DEPENDS ${DEPENDENCY} ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
+    list (FIND RESOURCE_PAKS ${PAK_FILE} CONTAINS)
+    if (CONTAINS EQUAL -1)
+        list (APPEND RESOURCE_PAKS ${PAK_FILE})
+        set (RESOURCE_PAKS "${RESOURCE_PAKS}" CACHE INTERNAL "RESOURCE_PAKS")
+    endif ()
 endfunction ()
 
 macro(web_executable TARGET)

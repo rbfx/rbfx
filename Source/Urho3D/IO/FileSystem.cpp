@@ -63,7 +63,7 @@
 #define MAX_PATH 256
 #endif
 
-#if defined(__APPLE__)
+#if defined(__APPLE__) && !IOS
 #include <mach-o/dyld.h>
 #include <crt_externs.h>
 #define environ (*_NSGetEnviron())
@@ -161,7 +161,7 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, SystemRunFlags flags, ea::string& output)
 {
-#if defined(TVOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
+#if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
     return -1;
 #else
     ea::string fixedFileName = GetNativePath(fileName);

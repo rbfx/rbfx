@@ -95,7 +95,7 @@ option                (URHO3D_WEBP               "WEBP support enabled"         
 # Web
 cmake_dependent_option(URHO3D_WEB_ASSEMBLY       "Use wasm instead of asm.js"                            ON                   "WEB"                           OFF)
 cmake_dependent_option(EMSCRIPTEN_MEMORY_GROWTH  "Allow memory growth. Disables some optimizations."     OFF                  "WEB"                           OFF)
-set                   (EMSCRIPTEN_MEMORY_LIMIT 128 CACHE NUMBER "Memory limit in megabytes. Set to 0 for dynamic growth.")
+set                   (EMSCRIPTEN_MEMORY_LIMIT 128 CACHE STRING "Memory limit in megabytes. Set to 0 for dynamic growth.")
 
 # Misc
 cmake_dependent_option(URHO3D_EXTRAS             "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
