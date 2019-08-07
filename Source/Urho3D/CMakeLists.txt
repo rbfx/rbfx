@@ -96,7 +96,7 @@ endif ()
 # Group source code in VS solution
 group_sources()
 
-if (APPLE)
+if (APPLE AND NOT IOS)
     list (APPEND SOURCE_FILES IO/MacFileWatcher.m)
 endif ()
 
@@ -340,12 +340,10 @@ foreach (HEADER stdint.h inttypes.h malloc.h)
     check_include_file (${HEADER} ${HAVE_HEADER})
 endforeach ()
 include (CheckFunctionExists)
-foreach (FUNCT __sincosf malloc_usable_size)
+foreach (FUNCT __sincosf sincosf malloc_usable_size)
     string (TOUPPER HAVE_${FUNCT} HAVE_FUNCT)
-    check_function_exists (${FUNCT} ${HAVE_FUNCT})
+    check_symbol_exists (${FUNCT} "math.h;malloc.h" ${HAVE_FUNCT})
 endforeach ()
-include (CheckLibraryExists)
-check_library_exists (m sincosf "" HAVE_SINCOSF)
 if (MINGW)
     include (CheckStructHasMember)
     check_struct_has_member (RTL_OSVERSIONINFOW dwOSVersionInfoSize minwindef.h\;winnt.h HAVE_RTL_OSVERSIONINFOW)
@@ -358,6 +356,9 @@ endif ()
 if (APPLE)
     target_link_options(Urho3D PUBLIC -stdlib=libc++)
 endif ()
+# Group them together under 'Resources' in Xcode IDE
+source_group(Resources FILES ${RESOURCE_FILES})     # RESOURCE_PAKS could be empty if packaging is not requested
+target_sources(Urho3D PRIVATE ${RESOURCE_DIRS})
 
 if (URHO3D_CSHARP)
     csharp_bind_target(
