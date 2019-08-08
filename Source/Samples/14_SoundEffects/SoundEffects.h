@@ -30,6 +30,7 @@ namespace Urho3D
 class Button;
 class Scene;
 class Slider;
+class SoundSource;
 
 }
 

@@ -25,4 +25,6 @@ if (WEB)
     return ()
 endif ()
 
-add_sample (TARGET 42_PBRMaterials)
+file (GLOB SAMPLE_CODE *.h *.cpp)
+list (APPEND SOURCE_CODE ${SAMPLE_CODE})
+set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

@@ -20,31 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Engine/Application.h>
-#include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/SystemUI/Console.h>
-#include <Urho3D/UI/Cursor.h>
-#include <Urho3D/SystemUI/DebugHud.h>
-#include <Urho3D/Engine/Engine.h>
-#include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Graphics/Graphics.h>
-#include <Urho3D/Input/Input.h>
-#include <Urho3D/Input/InputEvents.h>
-#include <Urho3D/Graphics/Renderer.h>
-#include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/UI/Sprite.h>
-#include <Urho3D/Graphics/Texture2D.h>
-#include <Urho3D/Core/Timer.h>
-#include <Urho3D/UI/UI.h>
-#include <Urho3D/Resource/XMLFile.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/Core/Profiler.h>
+#include "Sample.h"
 
 Sample::Sample(Context* context) :
-    Application(context),
+    Object(context),
     yaw_(0.0f),
     pitch_(0.0f),
     touchEnabled_(false),
@@ -57,15 +36,6 @@ Sample::Sample(Context* context) :
 
 void Sample::Setup()
 {
-    // Modify engine startup parameters
-    engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
-    engineParameters_[EP_LOG_NAME]     = GetSubsystem<FileSystem>()->GetAppPreferencesDir("urho3d", "logs") + GetTypeName() + ".log";
-    engineParameters_[EP_FULL_SCREEN]  = false;
-    engineParameters_[EP_HEADLESS]     = false;
-    engineParameters_[EP_SOUND]        = false;
-
-    if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
-        engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
 }
 
 void Sample::Start()
@@ -96,7 +66,6 @@ void Sample::Start()
 
 void Sample::Stop()
 {
-    engine_->DumpResources(true);
 }
 
 void Sample::InitTouchInput()
@@ -129,13 +98,11 @@ void Sample::InitMouseMode(MouseMode mode)
         if (useMouseMode_ == MM_FREE)
             input->SetMouseVisible(true);
 
-#if URHO3D_SYSTEMUI
-        Console* console = GetSubsystem<Console>();
-#endif
         if (useMouseMode_ != MM_ABSOLUTE)
         {
             input->SetMouseMode(useMouseMode_);
 #if URHO3D_SYSTEMUI
+            Console* console = GetSubsystem<Console>();
             if (console && console->IsVisible())
                 input->SetMouseMode(MM_ABSOLUTE, true);
 #endif
@@ -204,10 +171,10 @@ void Sample::SetWindowTitleAndIcon()
 void Sample::CreateConsoleAndDebugHud()
 {
     // Create console
-    Console* console = engine_->CreateConsole();
+    Console* console = GetEngine()->CreateConsole();
 
     // Create debug HUD.
-    DebugHud* debugHud = engine_->CreateDebugHud();
+    DebugHud* debugHud = GetEngine()->CreateDebugHud();
 }
 
 
@@ -226,16 +193,7 @@ void Sample::HandleKeyUp(StringHash /*eventType*/, VariantMap& eventData)
             console->SetVisible(false);
         else
 #endif
-        {
-            if (GetPlatform() == "Web")
-            {
-                GetSubsystem<Input>()->SetMouseVisible(true);
-                if (useMouseMode_ != MM_ABSOLUTE)
-                    GetSubsystem<Input>()->SetMouseMode(MM_FREE);
-            }
-            else
-                engine_->Exit();
-        }
+            SendEvent(E_EXITREQUESTED);
     }
 }
 
@@ -255,7 +213,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
     // Toggle debug HUD with F2
     else if (key == KEY_F2)
     {
-        engine_->CreateDebugHud()->ToggleAll();
+        GetEngine()->CreateDebugHud()->ToggleAll();
         return;
     }
 #endif

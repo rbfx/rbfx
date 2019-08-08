@@ -31,13 +31,13 @@ const float MOVE_SPEED_X = 4.0f;
 const int LIFES = 3;
 
 /// Character2D component controling Imp behavior.
-class Character2D : public LogicComponent
+class CharacterIsometric : public LogicComponent
 {
-    URHO3D_OBJECT(Character2D, LogicComponent);
+    URHO3D_OBJECT(CharacterIsometric, LogicComponent);
 
 public:
     /// Construct.
-    explicit Character2D(Context* context);
+    explicit CharacterIsometric(Context* context);
 
     /// Register object factory and attributes.
     static void RegisterObject(Context* context);

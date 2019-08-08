@@ -48,7 +48,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Ragdolls)
 
 Ragdolls::Ragdolls(Context* context) :
     Sample(context),
@@ -76,7 +75,7 @@ void Ragdolls::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    Sample::InitMouseMode(MM_RELATIVE);
 }
 
 void Ragdolls::CreateScene()

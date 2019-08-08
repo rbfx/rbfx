@@ -48,7 +48,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Physics)
 
 Physics::Physics(Context* context) :
     Sample(context),

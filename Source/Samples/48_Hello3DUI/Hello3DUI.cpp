@@ -46,7 +46,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Hello3DUI)
 
 Hello3DUI::Hello3DUI(Context* context) :
     Sample(context),
@@ -275,7 +274,7 @@ void Hello3DUI::HandleDragEnd(StringHash eventType, VariantMap& eventData) // Fo
 void Hello3DUI::HandleClosePressed(StringHash eventType, VariantMap& eventData)
 {
     if (GetPlatform() != "Web")
-        engine_->Exit();
+        SendEvent(E_EXITREQUESTED);
 }
 
 void Hello3DUI::HandleControlClicked(StringHash eventType, VariantMap& eventData)

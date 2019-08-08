@@ -24,4 +24,6 @@ if (NOT URHO3D_NETWORK)
     return ()
 endif ()
 
-add_sample(TARGET 53_LANDiscovery)
+file (GLOB SAMPLE_CODE *.h *.cpp)
+list (APPEND SOURCE_CODE ${SAMPLE_CODE})
+set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

@@ -20,8 +20,16 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_TOOLS)
+if (NOT URHO3D_TOOLS OR NOT URHO3D_PLUGINS)
     return ()
 endif ()
 
-add_sample (TARGET 103_GamePlugin TYPE SHARED)
+file (GLOB SOURCE_FILES *.cpp *.h)
+add_library (103_GamePlugin MODULE ${SOURCE_FILES})
+target_link_libraries (103_GamePlugin PUBLIC Urho3D)
+target_include_directories(103_GamePlugin PRIVATE ..)
+install(TARGETS 103_GamePlugin
+    RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
+    LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
+    BUNDLE DESTINATION  ${DEST_SAMPLES_DIR}
+)

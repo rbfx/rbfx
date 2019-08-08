@@ -25,7 +25,7 @@
 #include "Sample.h"
 #include "Utilities2D/Sample2D.h"
 
-class Character2D;
+class CharacterIsometric;
 class Sample2D;
 
 /// Urho2D tile map example.
@@ -72,7 +72,7 @@ private:
     void HandlePlayButton(StringHash eventType, VariantMap& eventData);
 
     /// The controllable character component.
-    WeakPtr<Character2D> character2D_;
+    WeakPtr<CharacterIsometric> character2D_;
     /// Camera's zoom (used to scale movement speed based on camera zoom).
     float zoom_;
     /// Flag for drawing debug geometry.

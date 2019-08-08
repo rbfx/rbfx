@@ -41,7 +41,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(SignedDistanceFieldText)
 
 SignedDistanceFieldText::SignedDistanceFieldText(Context* context) :
     Sample(context)

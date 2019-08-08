@@ -62,8 +62,8 @@ Urho2DIsometricDemo::Urho2DIsometricDemo(Context* context) :
     zoom_(2.0f),
     drawDebug_(false)
 {
-    // Register factory for the Character2D component so it can be created via CreateComponent
-    Character2D::RegisterObject(context);
+    // Register factory for the CharacterIsometric component so it can be created via CreateComponent
+    CharacterIsometric::RegisterObject(context);
     // Register factory and attributes for the Mover component so it can be created via CreateComponent, and loaded / saved
     Mover::RegisterObject(context);
 }
@@ -71,7 +71,6 @@ Urho2DIsometricDemo::Urho2DIsometricDemo(Context* context) :
 void Urho2DIsometricDemo::Setup()
 {
     Sample::Setup();
-    engineParameters_[EP_SOUND] = true;
 }
 
 void Urho2DIsometricDemo::Start()
@@ -133,7 +132,7 @@ void Urho2DIsometricDemo::CreateScene()
 
     // Create Spriter Imp character (from sample 33_SpriterAnimation)
     Node* spriteNode = sample2D_->CreateCharacter(info, 0.0f, Vector3(-5.0f, 11.0f, 0.0f), 0.15f);
-    character2D_ = spriteNode->CreateComponent<Character2D>(); // Create a logic component to handle character behavior
+    character2D_ = spriteNode->CreateComponent<CharacterIsometric>(); // Create a logic component to handle character behavior
     // Scale character's speed on the Y axis according to tiles' aspect ratio
     character2D_->moveSpeedScale_ = info.tileHeight_ / info.tileWidth_;
     character2D_->zoom_ = camera->GetZoom();
@@ -296,11 +295,11 @@ void Urho2DIsometricDemo::ReloadScene(bool reInit)
 
     File loadFile(context_, GetSubsystem<FileSystem>()->GetProgramDir() + "Data/Scenes/" + filename + ".xml", FILE_READ);
     scene_->LoadXML(loadFile);
-    // After loading we have to reacquire the weak pointer to the Character2D component, as it has been recreated
+    // After loading we have to reacquire the weak pointer to the CharacterIsometric component, as it has been recreated
     // Simply find the character's scene node by name as there's only one of them
     Node* character2DNode = scene_->GetChild("Imp", true);
     if (character2DNode)
-        character2D_ = character2DNode->GetComponent<Character2D>();
+        character2D_ = character2DNode->GetComponent<CharacterIsometric>();
 
     // Set what number to use depending whether reload is requested from 'PLAY' button (reInit=true) or 'F7' key (reInit=false)
     int lifes = character2D_->remainingLifes_;
@@ -347,4 +346,3 @@ void Urho2DIsometricDemo::HandlePlayButton(StringHash eventType, VariantMap& eve
     input->SetMouseVisible(false);
 }
 
-URHO3D_DEFINE_APPLICATION_MAIN(Urho2DIsometricDemo)

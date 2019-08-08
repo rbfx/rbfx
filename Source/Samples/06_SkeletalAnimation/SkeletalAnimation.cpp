@@ -45,14 +45,13 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(SkeletalAnimation)
 
 SkeletalAnimation::SkeletalAnimation(Context* context) :
     Sample(context),
     drawDebug_(false)
 {
-    // Register an object factory for our custom Mover component so that we can create them to scene nodes
-    context->RegisterFactory<Mover>();
+    // Register an object factory for our custom Mover3D component so that we can create them to scene nodes
+    context->RegisterFactory<Mover3D>();
 }
 
 void SkeletalAnimation::Start()
@@ -73,7 +72,7 @@ void SkeletalAnimation::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    Sample::InitMouseMode(MM_RELATIVE);
 }
 
 void SkeletalAnimation::CreateScene()
@@ -146,8 +145,8 @@ void SkeletalAnimation::CreateScene()
             state->SetTime(Random(walkAnimation->GetLength()));
         }
 
-        // Create our custom Mover component that will move & animate the model during each frame's update
-        auto* mover = modelNode->CreateComponent<Mover>();
+        // Create our custom Mover3D component that will move & animate the model during each frame's update
+        auto* mover = modelNode->CreateComponent<Mover3D>();
         mover->SetParameters(MODEL_MOVE_SPEED, MODEL_ROTATE_SPEED, bounds);
     }
 

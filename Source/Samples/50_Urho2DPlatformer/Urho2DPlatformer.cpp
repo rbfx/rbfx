@@ -62,7 +62,6 @@
 #include "Urho2DPlatformer.h"
 
 
-URHO3D_DEFINE_APPLICATION_MAIN(Urho2DPlatformer)
 
 Urho2DPlatformer::Urho2DPlatformer(Context* context) :
     Sample(context)
@@ -76,7 +75,6 @@ Urho2DPlatformer::Urho2DPlatformer(Context* context) :
 void Urho2DPlatformer::Setup()
 {
     Sample::Setup();
-    engineParameters_[EP_SOUND] = true;
 }
 
 void Urho2DPlatformer::Start()

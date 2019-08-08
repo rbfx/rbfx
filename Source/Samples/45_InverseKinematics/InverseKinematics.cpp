@@ -47,7 +47,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(InverseKinematics)
 
 InverseKinematics::InverseKinematics(Context* context) :
     Sample(context)

@@ -40,7 +40,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(StaticScene)
 
 StaticScene::StaticScene(Context* context) :
     Sample(context)

@@ -39,8 +39,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(HelloGUI)
-
 HelloGUI::HelloGUI(Context* context) :
     Sample(context),
     uiRoot_(GetSubsystem<UI>()->GetRoot()),
@@ -202,7 +200,7 @@ void HelloGUI::HandleDragEnd(StringHash eventType, VariantMap& eventData) // For
 void HelloGUI::HandleClosePressed(StringHash eventType, VariantMap& eventData)
 {
     if (GetPlatform() != "Web")
-        engine_->Exit();
+        SendEvent(E_EXITREQUESTED);
 }
 
 void HelloGUI::HandleControlClicked(StringHash eventType, VariantMap& eventData)

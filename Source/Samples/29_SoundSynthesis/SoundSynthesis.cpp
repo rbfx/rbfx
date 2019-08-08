@@ -38,7 +38,6 @@
 #include <Urho3D/DebugNew.h>
 
 // Expands to this example's entry-point
-URHO3D_DEFINE_APPLICATION_MAIN(SoundSynthesis)
 
 SoundSynthesis::SoundSynthesis(Context* context) :
     Sample(context),
@@ -52,8 +51,6 @@ SoundSynthesis::SoundSynthesis(Context* context) :
 void SoundSynthesis::Setup()
 {
     // Modify engine startup parameters
-    Sample::Setup();
-    engineParameters_[EP_SOUND] = true;
 }
 
 void SoundSynthesis::Start()

@@ -29,10 +29,17 @@ namespace Urho3D
 
 class Node;
 class Scene;
+class TileMapLayer2D;
+class CollisionBox2D;
+class CollisionCircle2D;
+class CollisionPolygon2D;
+class CollisionChain2D;
+class TileMapObject2D;
+class TileMapInfo2D;
 
 }
 
-class Character2D;
+class CharacterIsometric;
 
 // All Urho3D classes reside in namespace Urho3D
 using namespace Urho3D;

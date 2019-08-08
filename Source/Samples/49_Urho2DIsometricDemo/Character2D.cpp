@@ -34,8 +34,8 @@
 
 #include <Urho3D/DebugNew.h>
 
-// Character2D logic component
-Character2D::Character2D(Context* context) :
+// CharacterIsometric logic component
+CharacterIsometric::CharacterIsometric(Context* context) :
     LogicComponent(context),
     wounded_(false),
     killed_(false),
@@ -48,9 +48,9 @@ Character2D::Character2D(Context* context) :
 {
 }
 
-void Character2D::RegisterObject(Context* context)
+void CharacterIsometric::RegisterObject(Context* context)
 {
-    context->RegisterFactory<Character2D>();
+    context->RegisterFactory<CharacterIsometric>();
 
     // These macros register the class attributes to the Context for automatic load / save handling.
     // We specify the 'Default' attribute mode which means it will be used both for saving into file, and network replication.
@@ -61,7 +61,7 @@ void Character2D::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Remaining Lifes", int, remainingLifes_, 3, AM_DEFAULT);
 }
 
-void Character2D::Update(float timeStep)
+void CharacterIsometric::Update(float timeStep)
 {
     // Handle wounded/killed states
     if (killed_)
@@ -121,7 +121,7 @@ void Character2D::Update(float timeStep)
     }
 }
 
-void Character2D::HandleWoundedState(float timeStep)
+void CharacterIsometric::HandleWoundedState(float timeStep)
 {
     auto* body = GetComponent<RigidBody2D>();
     auto* animatedSprite = GetComponent<AnimatedSprite2D>();
@@ -170,7 +170,7 @@ void Character2D::HandleWoundedState(float timeStep)
     }
 }
 
-void Character2D::HandleDeath()
+void CharacterIsometric::HandleDeath()
 {
     auto* body = GetComponent<RigidBody2D>();
     auto* animatedSprite = GetComponent<AnimatedSprite2D>();

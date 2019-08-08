@@ -44,7 +44,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Billboards)
 
 Billboards::Billboards(Context* context) :
     Sample(context),
@@ -70,7 +69,7 @@ void Billboards::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_ABSOLUTE);
+    Sample::InitMouseMode(MM_RELATIVE);
 }
 
 void Billboards::CreateScene()

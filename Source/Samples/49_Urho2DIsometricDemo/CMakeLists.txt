@@ -24,5 +24,6 @@ if (NOT URHO3D_URHO2D)
     return ()
 endif ()
 
-add_sample (TARGET 49_Urho2DIsometricDemo)
-target_link_libraries(49_Urho2DIsometricDemo PRIVATE Utilities2D)
+file (GLOB SAMPLE_CODE *.h *.cpp)
+list (APPEND SOURCE_CODE ${SAMPLE_CODE})
+set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

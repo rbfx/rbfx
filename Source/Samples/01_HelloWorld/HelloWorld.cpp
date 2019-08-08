@@ -31,9 +31,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-// Expands to this example's entry-point
-URHO3D_DEFINE_APPLICATION_MAIN(HelloWorld)
-
 HelloWorld::HelloWorld(Context* context) :
     Sample(context)
 {
