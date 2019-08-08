@@ -215,7 +215,7 @@ template <class T> struct CustomVariantValueTraits
     /// Copy value.
     static void Copy(T& dest, const T& src) { dest = src; }
     /// Compare values.
-    static bool Compare(const T& lhs, const T& rhs) { (void)lhs, rhs; return false; }
+    static bool Compare(const T& lhs, const T& rhs) { (void)lhs, (void)rhs; return false; }
     /// Check whether the value is zero.
     static bool IsZero(const T& value) { (void)value; return false; }
     /// Convert type to string.
