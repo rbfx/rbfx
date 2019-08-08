@@ -23,6 +23,7 @@
 #pragma once
 
 #include <EASTL/internal/thread_support.h>
+#include <EASTL/utility.h>
 
 #include "../Container/RefCounted.h"
 
