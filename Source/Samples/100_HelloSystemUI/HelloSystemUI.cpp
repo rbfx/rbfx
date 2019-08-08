@@ -38,7 +38,6 @@
 #include <Urho3D/DebugNew.h>
 
 // Expands to this example's entry-point
-URHO3D_DEFINE_APPLICATION_MAIN(HelloSystemUi)
 
 HelloSystemUi::HelloSystemUi(Context* context) :
     Sample(context)

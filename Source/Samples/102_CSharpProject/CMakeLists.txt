@@ -20,8 +20,13 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_CSHARP)
+if (NOT URHO3D_CSHARP OR NOT URHO3D_PLUGINS)
     return ()
 endif ()
 
-add_sample (TARGET 102_CSharpProject LANG CSHARP)
+add_target_csharp(
+    TARGET 102_CSharpProject
+    PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/102_CSharpProject.csproj
+    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/102_CSharpProject.exe
+    DEPENDS Urho3DNet)
+install (FILES ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/102_CSharpProject.exe DESTINATION ${DEST_BIN_DIR})

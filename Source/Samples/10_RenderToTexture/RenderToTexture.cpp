@@ -45,13 +45,10 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(RenderToTexture)
 
 RenderToTexture::RenderToTexture(Context* context) :
     Sample(context)
 {
-    // Register an object factory for our custom Rotator component so that we can create them to scene nodes
-    context->RegisterFactory<Rotator>();
 }
 
 void RenderToTexture::Start()

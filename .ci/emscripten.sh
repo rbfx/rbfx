@@ -11,4 +11,4 @@ mkdir -p SDK
 
 cd cmake-build
 cmake -DURHO3D_SAMPLES=ON -DCMAKE_BUILD_TYPE=MinSizeRel -DCMAKE_INSTALL_PREFIX=$SOURCE_DIR/SDK -DCMAKE_TOOLCHAIN_FILE=$CI_DIR/../CMake/Toolchains/Emscripten.cmake $SOURCE_DIR
-cmake --build . --target 11_Physics -- -j $(nproc --all)
+cmake --build . -- -j $(nproc --all)

@@ -48,7 +48,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(PhysicsStressTest)
 
 PhysicsStressTest::PhysicsStressTest(Context* context) :
     Sample(context),

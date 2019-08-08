@@ -20,4 +20,6 @@
 # THE SOFTWARE.
 #
 
-add_sample (TARGET 14_SoundEffects)
+file (GLOB SAMPLE_CODE *.h *.cpp)
+list (APPEND SOURCE_CODE ${SAMPLE_CODE})
+set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

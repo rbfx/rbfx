@@ -35,7 +35,6 @@
 #include <Urho3D/DebugNew.h>
 
 // Expands to this example's entry-point
-URHO3D_DEFINE_APPLICATION_MAIN(ConsoleInput)
 
 // Hunger level descriptions
 const char* hungerLevels[] = {
@@ -115,8 +114,12 @@ void ConsoleInput::HandleUpdate(StringHash eventType, VariantMap& eventData)
 void ConsoleInput::HandleEscKeyDown(StringHash eventType, VariantMap& eventData)
 {
     // Unlike the other samples, exiting the engine when ESC is pressed instead of just closing the console
-    if (eventData[KeyDown::P_KEY].GetInt() == KEY_ESCAPE && GetPlatform() != "Web")
-        engine_->Exit();
+    if (eventData[KeyDown::P_KEY].GetInt() == KEY_ESCAPE)
+    {
+        GetSubsystem<Console>()->SetVisible(false);
+        if (GetPlatform() != "Web")
+            SendEvent(E_EXITREQUESTED);
+    }
 }
 
 void ConsoleInput::StartGame()
@@ -202,7 +205,7 @@ void ConsoleInput::HandleInput(const ea::string& input)
     }
 
     if (inputLower == "quit" || inputLower == "exit")
-        engine_->Exit();
+        SendEvent(E_EXITREQUESTED);
     else if (gameOn_)
     {
         // Game is on
@@ -263,7 +266,7 @@ void ConsoleInput::HandleInput(const ea::string& input)
         if (inputLower[0] == 'y')
             StartGame();
         else if (inputLower[0] == 'n')
-            engine_->Exit();
+            SendEvent(E_EXITREQUESTED);
         else
             Print("Please answer 'y' or 'n'.");
     }

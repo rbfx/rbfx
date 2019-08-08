@@ -52,13 +52,12 @@
 
 const float CAMERA_DISTANCE = 10.0f;
 
-URHO3D_DEFINE_APPLICATION_MAIN(RaycastVehicleDemo)
 
 RaycastVehicleDemo::RaycastVehicleDemo(Context* context)
     : Sample(context)
 {
     // Register factory and attributes for the Vehicle component so it can be created via CreateComponent, and loaded / saved
-    Vehicle::RegisterObject(context);
+    Vehicle2::RegisterObject(context);
 }
 
 void RaycastVehicleDemo::Start()
@@ -151,7 +150,7 @@ void RaycastVehicleDemo::CreateVehicle()
     Node* vehicleNode = scene_->CreateChild("Vehicle");
     vehicleNode->SetPosition(Vector3(0.0f, 25.0f, 0.0f));
     // Create the vehicle logic component
-    vehicle_ = vehicleNode->CreateComponent<Vehicle>();
+    vehicle_ = vehicleNode->CreateComponent<Vehicle2>();
     // Create the rendering and physics components
     vehicle_->Init();
 }
@@ -243,10 +242,10 @@ void RaycastVehicleDemo::HandleUpdate(StringHash eventType,
                 scene_->LoadXML(loadFile);
                 // After loading we have to reacquire the weak pointer to the Vehicle component, as it has been recreated
                 // Simply find the vehicle's scene node by name as there's only one of them
-                Node* vehicleNode = scene_->GetChild("Vehicle", true);
+                Node* vehicleNode = scene_->GetChild("Vehicle2", true);
                 if (vehicleNode)
                 {
-                    vehicle_ = vehicleNode->GetComponent<Vehicle>();
+                    vehicle_ = vehicleNode->GetComponent<Vehicle2>();
                 }
             }
         }

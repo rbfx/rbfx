@@ -34,8 +34,6 @@ class UIElement;
 
 }
 
-const int SERVER_PORT = 54654;
-
 /// Chat example
 /// This sample demonstrates:
 ///     - Starting up a network server or connecting to it
@@ -73,7 +71,7 @@ private:
     Button* CreateButton(const ea::string& text, int width, IntVector2 position);
     /// Create label
     Text* CreateLabel(const ea::string& text, IntVector2 pos);
-    
+
     /// Handle found LAN server
     void HandleNetworkHostDiscovered(StringHash eventType, VariantMap& eventData);
     /// Start server

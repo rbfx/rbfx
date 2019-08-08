@@ -30,7 +30,7 @@ namespace Urho3D
     class Scene;
 }
 
-class Vehicle;
+class Vehicle2;
 
 /// Vehicle example.
 /// This sample demonstrates:
@@ -70,5 +70,5 @@ private:
     void HandlePostUpdate(StringHash eventType, VariantMap& eventData);
 
     /// The controllable vehicle component.
-    WeakPtr<Vehicle> vehicle_;
+    WeakPtr<Vehicle2> vehicle_;
 };

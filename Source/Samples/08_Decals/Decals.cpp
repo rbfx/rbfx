@@ -44,7 +44,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Decals)
 
 Decals::Decals(Context* context) :
     Sample(context),
@@ -70,7 +69,7 @@ void Decals::Start()
     SubscribeToEvents();
 
     // Set the mouse mode to use in the sample
-    Sample::InitMouseMode(MM_FREE);
+    Sample::InitMouseMode(MM_RELATIVE);
 }
 
 void Decals::CreateScene()

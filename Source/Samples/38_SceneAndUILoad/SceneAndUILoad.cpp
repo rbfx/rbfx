@@ -35,7 +35,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(SceneAndUILoad)
 
 SceneAndUILoad::SceneAndUILoad(Context* context) :
     Sample(context)

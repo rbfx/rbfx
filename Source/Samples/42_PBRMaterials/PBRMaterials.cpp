@@ -36,15 +36,11 @@
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIEvents.h>
 #include <Urho3D/UI/Text.h>
-#ifdef URHO3D_ANGELSCRIPT
-#include <Urho3D/AngelScript/Script.h>
-#endif
 
 #include "PBRMaterials.h"
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(PBRMaterials)
 
 PBRMaterials::PBRMaterials(Context* context) :
     Sample(context),
@@ -72,6 +68,9 @@ void PBRMaterials::Start()
 
     // Subscribe to global events for camera movement
     SubscribeToEvents();
+
+    // Set the mouse mode to use in the sample
+    Sample::InitMouseMode(MM_RELATIVE);
 }
 
 void PBRMaterials::CreateInstructions()
@@ -95,11 +94,6 @@ void PBRMaterials::CreateInstructions()
 void PBRMaterials::CreateScene()
 {
     auto* cache = GetSubsystem<ResourceCache>();
-
-#ifdef URHO3D_ANGELSCRIPT
-    // The scene uses an AngelScript component for animation. Instantiate the subsystem if possible
-    context_->RegisterSubsystem(new Script(context_));
-#endif
 
     scene_ = new Scene(context_);
 

@@ -34,8 +34,6 @@ class UIElement;
 
 }
 
-const int SERVER_PORT = 54654;
-
 /// Chat example
 /// This sample demonstrates:
 ///     - Starting up a network server or connecting to it

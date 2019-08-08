@@ -42,7 +42,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(RibbonTrailDemo)
 
 RibbonTrailDemo::RibbonTrailDemo(Context* context) :
     Sample(context),

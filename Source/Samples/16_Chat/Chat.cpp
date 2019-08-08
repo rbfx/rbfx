@@ -55,7 +55,6 @@ const int MSG_CHAT = 153;
 // UDP port we will use
 const unsigned short CHAT_SERVER_PORT = 2345;
 
-URHO3D_DEFINE_APPLICATION_MAIN(Chat)
 
 Chat::Chat(Context* context) :
     Sample(context)
