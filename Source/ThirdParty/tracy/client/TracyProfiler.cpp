@@ -258,7 +258,8 @@ static int64_t SetupHwTimer()
     CpuId( regs, 0x80000001 );
     if( !( regs[3] & ( 1 << 27 ) ) ) InitFailure( "CPU doesn't support RDTSCP instruction." );
     CpuId( regs, 0x80000007 );
-    if( !( regs[3] & ( 1 << 8 ) ) ) InitFailure( "CPU doesn't support invariant TSC." );
+    if( !( regs[3] & ( 1 << 8 ) ) )
+        fprintf( stderr, "CPU doesn't support invariant TSC. Timer readings may be inaccurate.\n" );    // rbfx fix: allow running profiled applications on incompatible VMs at expense of accuracy.
 
     return Profiler::GetTime();
 }
