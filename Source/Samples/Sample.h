@@ -23,16 +23,29 @@
 #pragma once
 
 #include <Urho3D/Engine/Application.h>
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/UI/Cursor.h>
+#include <Urho3D/SystemUI/DebugHud.h>
+#include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Input/Input.h>
+#include <Urho3D/Input/InputEvents.h>
+#include <Urho3D/Graphics/Renderer.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/Scene/SceneEvents.h>
+#include <Urho3D/UI/Sprite.h>
+#include <Urho3D/Graphics/Texture2D.h>
+#include <Urho3D/Core/Timer.h>
+#include <Urho3D/UI/UI.h>
+#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/IO/Log.h>
+#include <Urho3D/Core/Profiler.h>
 
-namespace Urho3D
-{
-
-class Node;
-class Scene;
-class Sprite;
-
-}
 
 // All Urho3D classes reside in namespace Urho3D
 using namespace Urho3D;
@@ -49,21 +62,21 @@ const float TOUCH_SENSITIVITY = 2.0f;
 ///    - Take screenshot with key 9
 ///    - Handle Esc key down to hide Console or exit application
 ///    - Init touch input on mobile platform using screen joysticks (patched for each individual sample)
-class Sample : public Application
+class Sample : public Object
 {
     // Enable type information.
-    URHO3D_OBJECT(Sample, Application);
+    URHO3D_OBJECT(Sample, Object);
 
 public:
     /// Construct.
     explicit Sample(Context* context);
 
     /// Setup before engine initialization. Modifies the engine parameters.
-    void Setup() override;
+    virtual void Setup();
     /// Setup after engine initialization. Creates the logo, console & debug HUD.
-    void Start() override;
+    virtual void Start();
     /// Cleanup after the main loop. Called by Application.
-    void Stop() override;
+    virtual void Stop();
 
 protected:
     /// Return XML patch instructions for screen joystick layout for a specific sample app, if any.
@@ -117,5 +130,3 @@ private:
     /// Pause flag.
     bool paused_;
 };
-
-#include "Sample.inl"

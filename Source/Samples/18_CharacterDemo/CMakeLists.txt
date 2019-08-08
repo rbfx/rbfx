@@ -24,4 +24,6 @@ if (NOT URHO3D_PHYSICS)
     return ()
 endif ()
 
-add_sample (TARGET 18_CharacterDemo)
+file (GLOB SAMPLE_CODE *.h *.cpp)
+list (APPEND SOURCE_CODE ${SAMPLE_CODE})
+set (SOURCE_CODE "${SOURCE_CODE}" PARENT_SCOPE)

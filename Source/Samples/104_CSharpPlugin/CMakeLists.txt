@@ -24,4 +24,9 @@ if (NOT URHO3D_CSHARP)
     return ()
 endif ()
 
-add_sample (TARGET 104_CSharpPlugin LANG CSHARP TYPE SHARED)
+add_target_csharp(
+    TARGET 104_CSharpPlugin
+    PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/104_CSharpPlugin.csproj
+    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/104_CSharpPlugin.dll
+    DEPENDS Urho3DNet)
+install (FILES ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/104_CSharpPlugin.dll DESTINATION ${DEST_BIN_DIR})

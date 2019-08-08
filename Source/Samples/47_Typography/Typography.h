@@ -22,6 +22,8 @@
 
 #pragma once
 
+#include <Urho3D/UI/CheckBox.h>
+#include <Urho3D/UI/DropDownList.h>
 #include "Sample.h"
 
 /// Text rendering example.

@@ -56,7 +56,6 @@ static const char* soundResourceNames[] = {
     "Sounds/Powerup.wav"
 };
 
-URHO3D_DEFINE_APPLICATION_MAIN(SoundEffects)
 
 SoundEffects::SoundEffects(Context* context) :
     Sample(context),
@@ -67,8 +66,6 @@ SoundEffects::SoundEffects(Context* context) :
 void SoundEffects::Setup()
 {
     // Modify engine startup parameters
-    Sample::Setup();
-    engineParameters_[EP_SOUND] = true;
 }
 
 void SoundEffects::Start()

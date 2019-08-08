@@ -44,7 +44,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Navigation)
 
 Navigation::Navigation(Context* context) :
     Sample(context),

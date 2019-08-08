@@ -30,6 +30,7 @@ namespace Urho3D
 class Node;
 class Scene;
 class RibbonTrail;
+class AnimationController;
 
 }
 

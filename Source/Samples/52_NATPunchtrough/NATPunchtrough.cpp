@@ -50,7 +50,8 @@
 #undef SendMessage
 #endif
 
-URHO3D_DEFINE_APPLICATION_MAIN(NATPunchtrough)
+static const int SERVER_PORT = 54654;
+
 
 NATPunchtrough::NATPunchtrough(Context* context) :
     Sample(context)

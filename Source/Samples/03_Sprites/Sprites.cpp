@@ -37,7 +37,6 @@ static const unsigned NUM_SPRITES = 100;
 // Custom variable identifier for storing sprite velocity within the UI element
 static const StringHash VAR_VELOCITY("Velocity");
 
-URHO3D_DEFINE_APPLICATION_MAIN(Sprites)
 
 Sprites::Sprites(Context* context) :
     Sample(context)

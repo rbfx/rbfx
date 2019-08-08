@@ -50,7 +50,7 @@
 #undef SendMessage
 #endif
 
-URHO3D_DEFINE_APPLICATION_MAIN(LANDiscovery)
+static const int SERVER_PORT = 54654;
 
 LANDiscovery::LANDiscovery(Context* context) :
     Sample(context)

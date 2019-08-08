@@ -30,7 +30,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(UIDrag)
 
 UIDrag::UIDrag(Context* context) :
     Sample(context)

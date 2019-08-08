@@ -171,7 +171,7 @@ if (URHO3D_SSE)
 endif ()
 
 # Macro for setting symbolic link on platform that supports it
-macro (create_symlink SOURCE DESTINATION)
+function (create_symlink SOURCE DESTINATION)
     # Make absolute paths so they work more reliably on cmake-gui
     if (IS_ABSOLUTE ${SOURCE})
         set (ABS_SOURCE ${SOURCE})
@@ -212,72 +212,7 @@ macro (create_symlink SOURCE DESTINATION)
     else ()
         execute_process (COMMAND ${CMAKE_COMMAND} -E create_symlink ${ABS_SOURCE} ${ABS_DESTINATION})
     endif ()
-endmacro ()
-
-macro (add_sample)
-    cmake_parse_arguments(SAMPLE "" "TARGET;LANG;TYPE" "" ${ARGN})
-    if ("${SAMPLE_LANG}" STREQUAL CSHARP)
-        add_target_csharp(
-            TARGET ${SAMPLE_TARGET}
-            PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/${SAMPLE_TARGET}.csproj
-            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/${SAMPLE_TARGET}.${SAMPLE_EXT}
-            DEPENDS Urho3DNet)
-        if ("${SAMPLE_TYPE}" STREQUAL "SHARED")
-            set (SAMPLE_EXT "dll")
-        else ()
-            set (SAMPLE_EXT "exe")
-        endif ()
-        install (FILES ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/${SAMPLE_TARGET}.${SAMPLE_EXT} DESTINATION ${DEST_BIN_DIR})
-    else ()
-        file (GLOB SOURCE_FILES *.cpp *.h)
-        if (NOT URHO3D_WIN32_CONSOLE)
-            set (TARGET_TYPE WIN32)
-        endif ()
-        if (ANDROID)
-            add_library(${SAMPLE_TARGET} SHARED ${SOURCE_FILES})
-        else ()
-            if ("${SAMPLE_TYPE}" STREQUAL "SHARED")
-                add_library (${SAMPLE_TARGET} SHARED ${SOURCE_FILES})
-            else ()
-                add_executable (${SAMPLE_TARGET} ${TARGET_TYPE} ${SOURCE_FILES})
-            endif ()
-        endif ()
-        target_link_libraries (${SAMPLE_TARGET} PUBLIC Urho3D)
-        target_include_directories(${SAMPLE_TARGET} PRIVATE ..)
-        if (NOT ANDROID)
-            install(TARGETS ${SAMPLE_TARGET}
-                RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
-                LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
-                BUNDLE DESTINATION  ${DEST_SAMPLES_DIR}
-            )
-        endif ()
-
-        if (TARGET PackageResources)
-            add_dependencies (${SAMPLE_TARGET} PackageResources)
-        endif ()
-
-        if (WEB)
-            web_executable(${SAMPLE_TARGET})
-            web_link_resources(${SAMPLE_TARGET} Resources.js)
-            target_link_libraries(${SAMPLE_TARGET} PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
-        endif ()
-
-        if (IOS)
-            set_target_properties(${SAMPLE_TARGET}
-                PROPERTIES MACOSX_BUNDLE TRUE
-                           MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
-                           MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
-            )
-            if (TARGET)
-                set_target_properties(${SAMPLE_TARGET} PROPERTIES RESOURCE "${RESOURCE_PAKS};${RESOURCE_FILES}")
-                target_sources(${SAMPLE_TARGET} PRIVATE ${RESOURCE_PAKS} ${RESOURCE_FILES})
-            else ()
-                set_target_properties(${SAMPLE_TARGET} PROPERTIES RESOURCE "${RESOURCE_DIRS};${RESOURCE_FILES}")
-                target_sources(${SAMPLE_TARGET} PRIVATE ${RESOURCE_DIRS} ${RESOURCE_FILES})
-            endif ()
-        endif ()
-    endif ()
-endmacro ()
+endfunction ()
 
 # Groups sources into subfolders.
 macro(group_sources)
@@ -643,8 +578,8 @@ function (web_link_resources TARGET RESOURCES)
         return ()
     endif ()
     file (WRITE "${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js" "var Module;if(typeof Module==='undefined')Module=eval('(function(){try{return Module||{}}catch(e){return{}}})()');var s=document.createElement('script');s.src='${RESOURCES}';document.body.appendChild(s);Module['preRun'].push(function(){Module['addRunDependency']('${RESOURCES}.loader')});s.onload=function(){Module['removeRunDependency']('${RESOURCES}.loader')};")
-    target_link_libraries(${SAMPLE_TARGET} PRIVATE "--pre-js ${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js")
-    add_dependencies(${SAMPLE_TARGET} ${RESOURCES})
+    target_link_libraries(${TARGET} PRIVATE "--pre-js ${CMAKE_CURRENT_BINARY_DIR}/${RESOURCES}.load.js")
+    add_dependencies(${TARGET} ${RESOURCES})
 endfunction ()
 
 # Configure for MingW

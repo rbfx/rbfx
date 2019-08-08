@@ -39,7 +39,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(L10n)
 
 L10n::L10n(Context* context) :
     Sample(context)
@@ -221,8 +220,7 @@ void L10n::HandleChangeLangButtonPressed(StringHash eventType, VariantMap& event
 
 void L10n::HandleQuitButtonPressed(StringHash eventType, VariantMap& eventData)
 {
-    if (GetPlatform() != "Web")
-        engine_->Exit();
+    SendEvent(E_EXITREQUESTED);
 }
 
 // You can manually change texts, sprites and other aspects of the game when language is changed

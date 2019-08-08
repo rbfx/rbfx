@@ -45,7 +45,6 @@
 
 #include <Urho3D/DebugNew.h>
 
-URHO3D_DEFINE_APPLICATION_MAIN(Urho2DPhysics)
 
 static const unsigned NUM_OBJECTS = 100;
 

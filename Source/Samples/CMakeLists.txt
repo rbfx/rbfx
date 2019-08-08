@@ -24,13 +24,9 @@ if (NOT URHO3D_SAMPLES)
     return ()
 endif ()
 
-# Set project name
-project (Urho3D-Samples)
-
-set (CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/${DEST_SAMPLES_DIR})
-
-set (COMMON_SAMPLE_H_FILES "${CMAKE_CURRENT_SOURCE_DIR}/Sample.h" "${CMAKE_CURRENT_SOURCE_DIR}/Sample.inl")
-set (INCLUDE_DIRS ${CMAKE_CURRENT_SOURCE_DIR})
+if (NOT URHO3D_WIN32_CONSOLE)
+    set (PLATFORM WIN32)
+endif ()
 
 ## Add samples
 file (GLOB_RECURSE DIRS RELATIVE ${CMAKE_CURRENT_SOURCE_DIR} CMakeLists.txt)
@@ -42,4 +38,42 @@ foreach (DIR ${DIRS})
     endif ()
 endforeach ()
 
+add_executable(Samples ${PLATFORM} MACOSX_BUNDLE SamplesManager.h SamplesManager.cpp Sample.h Sample.cpp Rotator.h Rotator.cpp ${SOURCE_CODE})
+target_link_libraries(Samples PUBLIC Urho3D)
+if (TARGET Utilities2D)
+    target_link_libraries(Samples PUBLIC Utilities2D)
+endif ()
+
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Samples)
+
+if (TARGET PackageResources)
+    add_dependencies (Samples PackageResources)
+endif ()
+
+if (WEB)
+    web_executable(Samples)
+    web_link_resources(Samples Resources.js)
+    target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
+endif ()
+
+if (IOS)
+    set_target_properties(Samples
+        PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
+                   MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
+    )
+    if (TARGET)
+        set_target_properties(Samples PROPERTIES RESOURCE "${RESOURCE_PAKS};${RESOURCE_FILES}")
+        target_sources(Samples PRIVATE ${RESOURCE_PAKS} ${RESOURCE_FILES})
+    else ()
+        set_target_properties(Samples PROPERTIES RESOURCE "${RESOURCE_DIRS};${RESOURCE_FILES}")
+        target_sources(Samples PRIVATE ${RESOURCE_DIRS} ${RESOURCE_FILES})
+    endif ()
+endif ()
+
+if (NOT ANDROID)
+    install(TARGETS Samples
+        RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
+        LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
+        BUNDLE DESTINATION  ${DEST_SAMPLES_DIR}
+    )
+endif ()
