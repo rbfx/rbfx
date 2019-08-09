@@ -117,8 +117,7 @@ void ConsoleInput::HandleEscKeyDown(StringHash eventType, VariantMap& eventData)
     if (eventData[KeyDown::P_KEY].GetInt() == KEY_ESCAPE)
     {
         GetSubsystem<Console>()->SetVisible(false);
-        if (GetPlatform() != "Web")
-            SendEvent(E_EXITREQUESTED);
+        CloseSample();
     }
 }
 
@@ -205,7 +204,7 @@ void ConsoleInput::HandleInput(const ea::string& input)
     }
 
     if (inputLower == "quit" || inputLower == "exit")
-        SendEvent(E_EXITREQUESTED);
+        CloseSample();
     else if (gameOn_)
     {
         // Game is on
@@ -266,7 +265,7 @@ void ConsoleInput::HandleInput(const ea::string& input)
         if (inputLower[0] == 'y')
             StartGame();
         else if (inputLower[0] == 'n')
-            SendEvent(E_EXITREQUESTED);
+            CloseSample();
         else
             Print("Please answer 'y' or 'n'.");
     }

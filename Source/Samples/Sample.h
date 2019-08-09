@@ -87,6 +87,8 @@ protected:
     void InitMouseMode(MouseMode mode);
     /// Control logo visibility.
     void SetLogoVisible(bool enable);
+    ///
+    void CloseSample();
 
     /// Logo sprite.
     SharedPtr<Sprite> logoSprite_;

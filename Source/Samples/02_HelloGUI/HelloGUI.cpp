@@ -199,8 +199,7 @@ void HelloGUI::HandleDragEnd(StringHash eventType, VariantMap& eventData) // For
 
 void HelloGUI::HandleClosePressed(StringHash eventType, VariantMap& eventData)
 {
-    if (GetPlatform() != "Web")
-        SendEvent(E_EXITREQUESTED);
+    CloseSample();
 }
 
 void HelloGUI::HandleControlClicked(StringHash eventType, VariantMap& eventData)

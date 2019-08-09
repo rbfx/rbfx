@@ -273,8 +273,7 @@ void Hello3DUI::HandleDragEnd(StringHash eventType, VariantMap& eventData) // Fo
 
 void Hello3DUI::HandleClosePressed(StringHash eventType, VariantMap& eventData)
 {
-    if (GetPlatform() != "Web")
-        SendEvent(E_EXITREQUESTED);
+    CloseSample();
 }
 
 void Hello3DUI::HandleControlClicked(StringHash eventType, VariantMap& eventData)

@@ -170,8 +170,6 @@ void Urho2DStretchableSprite::OnKeyUp(StringHash /*eventType*/, VariantMap& even
         ++selectTransform_;
         selectTransform_ %= 3;
     }
-    else if (key == KEY_ESCAPE)
-        SendEvent(E_EXITREQUESTED);
 }
 
 
