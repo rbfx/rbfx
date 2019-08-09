@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (MINI_URHO OR WEB)
+if (MINI_URHO OR WEB OR MOBILE)
     return ()
 endif ()
 

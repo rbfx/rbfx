@@ -100,13 +100,17 @@ SamplesManager::SamplesManager(Context* context) :
 void SamplesManager::Setup()
 {
     // Modify engine startup parameters
-    engineParameters_[EP_WINDOW_TITLE] = GetTypeName();
+    engineParameters_[EP_WINDOW_TITLE] = "rbfx samples";
     engineParameters_[EP_LOG_NAME]     = GetSubsystem<FileSystem>()->GetAppPreferencesDir("rbfx", "samples") + GetTypeName() + ".log";
     engineParameters_[EP_FULL_SCREEN]  = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
-    engineParameters_[EP_WINDOW_TITLE] = "rbfx samples";
-
+#if MOBILE
+    engineParameters_[EP_ORIENTATIONS] = "Portrait";
+#else
+    engineParameters_[EP_WINDOW_WIDTH] = 1440;
+    engineParameters_[EP_WINDOW_HEIGHT] = 900;
+#endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
 }
@@ -116,16 +120,13 @@ void SamplesManager::Start()
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
     context_->RegisterFactory<Rotator>();
 
-    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap& args) { OnExitRequested(args); });
-    SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-    SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
-
     GetInput()->SetMouseMode(MM_FREE);
     GetInput()->SetMouseVisible(true);
 
-    GetUI()->GetRoot()->SetDefaultStyle(GetCache()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
+    SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
 
-    GetEngine()->SetAutoExit(false);
+    GetUI()->GetRoot()->SetDefaultStyle(GetCache()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
     auto* layout = GetUI()->GetRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
@@ -249,26 +250,6 @@ void SamplesManager::Stop()
     engine_->DumpResources(true);
 }
 
-void SamplesManager::OnExitRequested(VariantMap& args)
-{
-    if (runningSample_.NotNull())
-    {
-        runningSample_->Stop();
-        runningSample_ = nullptr;
-        GetInput()->SetMouseMode(MM_FREE);
-        GetInput()->SetMouseVisible(true);
-        GetUI()->SetCursor(nullptr);
-        GetUI()->GetRoot()->RemoveAllChildren();
-        GetUI()->GetRoot()->AddChild(listViewHolder_);
-        GetUI()->GetRoot()->AddChild(logoSprite_);
-        SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
-        SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
-        exitTime_ = GetTime()->GetElapsedTime();
-    }
-    else
-        GetEngine()->Exit();
-}
-
 void SamplesManager::OnClickSample(VariantMap& args)
 {
     using namespace Released;
@@ -276,11 +257,14 @@ void SamplesManager::OnClickSample(VariantMap& args)
     if (!sampleType)
         return;
 
-    UnsubscribeFromEvent(E_RELEASED);
-    UnsubscribeFromEvent(E_KEYUP);
     GetUI()->GetRoot()->RemoveAllChildren();
     GetUI()->SetFocusElement(nullptr);
 
+#if MOBILE
+    GetGraphics()->SetOrientations("LandscapeLeft LandscapeRight");
+    IntVector2 screenSize = GetGraphics()->GetSize();
+    GetGraphics()->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
+#endif
     runningSample_.StaticCast<Object>(context_->CreateObject(sampleType));
     runningSample_->Start();
 }
@@ -292,8 +276,36 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     int key = args[P_KEY].GetInt();
 
     // Close console (if open) or exit when ESC is pressed
-    if (key == KEY_ESCAPE && (GetTime()->GetElapsedTime() - exitTime_) > 1)
-        SendEvent(E_EXITREQUESTED);
+    if (key == KEY_ESCAPE && (GetTime()->GetElapsedTime() - exitTime_) > 0.1f)
+    {
+        if (runningSample_.NotNull())
+        {
+            runningSample_->Stop();
+            runningSample_ = nullptr;
+            GetInput()->SetMouseMode(MM_FREE);
+            GetInput()->SetMouseVisible(true);
+            GetUI()->SetCursor(nullptr);
+            GetUI()->GetRoot()->RemoveAllChildren();
+            GetUI()->GetRoot()->AddChild(listViewHolder_);
+            GetUI()->GetRoot()->AddChild(logoSprite_);
+            exitTime_ = GetTime()->GetElapsedTime();
+#if MOBILE
+            GetGraphics()->SetOrientations("Portrait");
+            IntVector2 screenSize = GetGraphics()->GetSize();
+            GetGraphics()->SetMode(Min(screenSize.x_, screenSize.y_), Max(screenSize.x_, screenSize.y_));
+#endif
+        }
+        else
+        {
+#if URHO3D_SYSTEMUI
+            Console* console = GetSubsystem<Console>();
+            if (console->IsVisible())
+                console->SetVisible(false);
+            else
+#endif
+                GetEngine()->Exit();
+        }
+    }
 }
 
 template<typename T>
