@@ -50,7 +50,7 @@ if (TARGET Utilities2D)
     target_link_libraries(Samples PUBLIC Utilities2D)
 endif ()
 
-vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} Samples)
+vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} "Sample Projects")
 
 if (TARGET PackageResources)
     add_dependencies (Samples PackageResources)
