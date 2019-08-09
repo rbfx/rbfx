@@ -80,5 +80,6 @@ if (URHO3D_PACKAGING)
         )
         add_custom_target(PackageResources SOURCES ${RESOURCE_PAKS})
     endif ()
-
+else ()
+    unset (RESOURCE_PAKS CACHE)
 endif ()
