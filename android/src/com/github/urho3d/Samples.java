@@ -23,17 +23,14 @@
 
 package com.github.urho3d;
 
-import android.content.Intent;
-
 import org.libsdl.app.SDLActivity;
 
 import java.util.*;
 
-public class Urho3D extends SDLActivity {
+public class Samples extends SDLActivity {
 
     private static final String TAG = "Urho3D";
     private static String[] mArguments = new String[0];
-    private String mSelectedSharedLib;
 
     @Override
     protected String[] getArguments() {
@@ -54,38 +51,11 @@ public class Urho3D extends SDLActivity {
                 return sortName(lhs).compareTo(sortName(rhs));
             }
         });
-
-        // All shared shared libraries must always be loaded if available, so exclude it from return result and all list operations below
-        int startIndex = libraryNames.indexOf("01_HelloWorld");
-
-        // Determine the intention
-        Intent intent = getIntent();
-        String pickedLibrary = mSelectedSharedLib = intent.getStringExtra(SampleLauncher.PICKED_LIBRARY);
-        if (pickedLibrary == null) {
-            // Intention for obtaining library names
-            String[] array = libraryNames.subList(startIndex, libraryNames.size()).toArray(new String[libraryNames.size() - startIndex]);
-            if (array.length > 1) {
-                setResult(RESULT_OK, intent.putExtra(SampleLauncher.LIBRARY_NAMES, array));
-
-                // End Urho3D activity lifecycle
-                finish();
-
-                // Return false to indicate no library is being loaded yet
-                return false;
-            } else {
-                // There is only one library available, so cancel the intention for obtaining the library name and by not returning any result
-                // However, since we have already started Urho3D activity, let's the activity runs its whole lifecycle by falling through to call the super implementation
-                setResult(RESULT_CANCELED);
-            }
-        } else {
-            mSelectedSharedLib = "lib" + mSelectedSharedLib + ".so";
-        }
-
         return super.onLoadLibrary(libraryNames);
     }
 
     protected String getMainSharedObject() {
-        return mSelectedSharedLib;
+        return "libSamples.so";
     }
 
     @Override

@@ -180,21 +180,6 @@ void Sample::CreateConsoleAndDebugHud()
 
 void Sample::HandleKeyUp(StringHash /*eventType*/, VariantMap& eventData)
 {
-    using namespace KeyUp;
-
-    int key = eventData[P_KEY].GetInt();
-
-    // Close console (if open) or exit when ESC is pressed
-    if (key == KEY_ESCAPE)
-    {
-#if URHO3D_SYSTEMUI
-        Console* console = GetSubsystem<Console>();
-        if (console->IsVisible())
-            console->SetVisible(false);
-        else
-#endif
-            SendEvent(E_EXITREQUESTED);
-    }
 }
 
 void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
@@ -376,4 +361,26 @@ void Sample::HandleMouseModeChange(StringHash /*eventType*/, VariantMap& eventDa
     Input* input = GetSubsystem<Input>();
     bool mouseLocked = eventData[MouseModeChanged::P_MOUSELOCKED].GetBool();
     input->SetMouseVisible(!mouseLocked);
+}
+
+void Sample::CloseSample()
+{
+    VariantMap args;
+    {
+        using namespace KeyDown;
+        args[P_KEY] = KEY_ESCAPE;
+        args[P_SCANCODE] = SCANCODE_ESCAPE;
+        args[P_BUTTONS] = 0;
+        args[P_QUALIFIERS] = 0;
+        args[P_REPEAT] = false;
+        SendEvent(E_KEYDOWN, args);
+    }
+    {
+        using namespace KeyUp;
+        args[P_KEY] = KEY_ESCAPE;
+        args[P_SCANCODE] = SCANCODE_ESCAPE;
+        args[P_BUTTONS] = 0;
+        args[P_QUALIFIERS] = 0;
+        SendEvent(E_KEYUP, args);
+    }
 }

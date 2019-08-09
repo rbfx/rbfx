@@ -220,7 +220,7 @@ void L10n::HandleChangeLangButtonPressed(StringHash eventType, VariantMap& event
 
 void L10n::HandleQuitButtonPressed(StringHash eventType, VariantMap& eventData)
 {
-    SendEvent(E_EXITREQUESTED);
+    CloseSample();
 }
 
 // You can manually change texts, sprites and other aspects of the game when language is changed

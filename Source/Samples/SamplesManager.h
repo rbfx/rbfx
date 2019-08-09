@@ -50,8 +50,6 @@ public:
     void Stop() override;
 
 private:
-    /// Manage lifetime of samples.
-    void OnExitRequested(VariantMap& args);
     ///
     void OnClickSample(VariantMap& args);
     ///
