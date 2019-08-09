@@ -67,13 +67,13 @@ if (IOS)
         PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
                    MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
     )
-    if (TARGET)
-        set_target_properties(Samples PROPERTIES RESOURCE "${RESOURCE_PAKS};${RESOURCE_FILES}")
-        target_sources(Samples PRIVATE ${RESOURCE_PAKS} ${RESOURCE_FILES})
+    if (RESOURCE_PAKS)
+        set_source_files_properties (${RESOURCE_PAKS} PROPERTIES GENERATED TRUE)
+        set_source_files_properties (${RESOURCE_PAKS} ${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     else ()
-        set_target_properties(Samples PROPERTIES RESOURCE "${RESOURCE_DIRS};${RESOURCE_FILES}")
-        target_sources(Samples PRIVATE ${RESOURCE_DIRS} ${RESOURCE_FILES})
+        set_source_files_properties (${RESOURCE_DIRS} ${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
     endif ()
+    target_sources(Samples PRIVATE ${RESOURCE_PAKS} ${RESOURCE_DIRS} ${RESOURCE_FILES})
 endif ()
 
 if (NOT ANDROID)
