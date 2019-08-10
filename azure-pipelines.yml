@@ -10,6 +10,7 @@ variables:
   CMAKE_BUILD_ARGS: ""
   CMAKE_GENERATE_ARGS: ""
   URHO3D_CSHARP: ON
+  TRACY_NO_INVARIANT_CHECK: 1
 
 jobs:
   - job: Web
