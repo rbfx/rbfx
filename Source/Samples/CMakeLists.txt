@@ -52,28 +52,56 @@ endif ()
 
 vs_group_subdirectory_targets(${CMAKE_CURRENT_SOURCE_DIR} "Sample Projects")
 
-if (TARGET PackageResources)
-    add_dependencies (Samples PackageResources)
+# Package resources for samples.
+if (WEB OR MOBILE)
+    create_pak("${rbfx_SOURCE_DIR}/bin/Data"               "${CMAKE_BINARY_DIR}/bin/Data.pak")
+    create_pak("${rbfx_SOURCE_DIR}/bin/CoreData"           "${CMAKE_BINARY_DIR}/bin/CoreData.pak")
+    create_pak("${rbfx_SOURCE_DIR}/bin/Autoload/LargeData" "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
 endif ()
 
 if (WEB)
     web_executable(Samples)
+    package_resources_web(
+        FILES        "${CMAKE_BINARY_DIR}/bin/Data.pak"
+                     "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
+                     "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak"
+        RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
+        OUTPUT       "Resources.js"
+    )
     web_link_resources(Samples Resources.js)
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
 endif ()
 
-if (IOS)
-    set_target_properties(Samples
-        PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
-                   MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
-    )
-    if (RESOURCE_PAKS)
-        set_source_files_properties (${RESOURCE_PAKS} PROPERTIES GENERATED TRUE)
-        set_source_files_properties (${RESOURCE_PAKS} ${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
-    else ()
-        set_source_files_properties (${RESOURCE_DIRS} ${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+if (XCODE)
+    # Default app bundle icon
+    set(RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/UrhoIcon.icns)
+    if (IOS)
+        # Default app icon on the iOS/tvOS home screen
+        list(APPEND RESOURCE_FILES ${rbfx_SOURCE_DIR}/bin/Data/Textures/rbfx-icon.png)
     endif ()
-    target_sources(Samples PRIVATE ${RESOURCE_PAKS} ${RESOURCE_DIRS} ${RESOURCE_FILES})
+    set_source_files_properties (${RESOURCE_FILES} PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+    target_sources(Samples PRIVATE ${RESOURCE_FILES})
+
+    if (IOS)
+        set_target_properties(Samples
+            PROPERTIES MACOSX_BUNDLE_BUNDLE_NAME \${PRODUCT_NAME}
+                       MACOSX_BUNDLE_GUI_IDENTIFIER com.github.rbfx.\${PRODUCT_NAME:rfc1034identifier:lower}
+        )
+        if (RESOURCE_PAKS)
+            set_source_files_properties ("${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
+                PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+            set_source_files_properties ("${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak"
+                PROPERTIES MACOSX_PACKAGE_LOCATION Resources/Autoload)
+            target_sources(Samples PRIVATE "${CMAKE_BINARY_DIR}/bin/Data.pak" "${CMAKE_BINARY_DIR}/bin/CoreData.pak"
+                "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak")
+        else ()
+            set_source_files_properties (
+                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData" "${rbfx_SOURCE_DIR}/bin/Autoload"
+                PROPERTIES MACOSX_PACKAGE_LOCATION Resources)
+            target_sources(Samples PRIVATE
+                "${rbfx_SOURCE_DIR}/bin/Data" "${rbfx_SOURCE_DIR}/bin/CoreData" "${rbfx_SOURCE_DIR}/bin/Autoload")
+        endif ()
+    endif ()
 endif ()
 
 if (NOT ANDROID)

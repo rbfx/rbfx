@@ -101,7 +101,6 @@ set                   (EMSCRIPTEN_MEMORY_LIMIT 128 CACHE STRING "Memory limit in
 cmake_dependent_option(URHO3D_EXTRAS             "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
 cmake_dependent_option(URHO3D_TOOLS              "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
 option                (URHO3D_SAMPLES            "Build samples"                                         OFF)
-option                (URHO3D_PACKAGING          "Package resources"                                     OFF)
 option                (URHO3D_DOCS               "Build documentation."                                  OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS  "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 
@@ -133,10 +132,6 @@ elseif (URHO3D_TOOLS)
     set (URHO3D_FILEWATCHER ON)
     set (URHO3D_LOGGING ON)
     set (URHO3D_HASH_DEBUG ON)
-endif ()
-
-if (WEB)
-    set (URHO3D_PACKAGING ON)
 endif ()
 
 if (WEB OR MOBILE)
