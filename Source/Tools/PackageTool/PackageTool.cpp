@@ -51,8 +51,8 @@ struct FileEntry
     unsigned checksum_{};
 };
 
-SharedPtr<Context> context_(new Context());
-SharedPtr<FileSystem> fileSystem_(new FileSystem(context_));
+Context* context_ = nullptr;
+FileSystem* fileSystem_ = nullptr;
 ea::string basePath_;
 ea::vector<FileEntry> entries_;
 unsigned checksum_ = 0;
@@ -73,7 +73,11 @@ void WriteHeader(File& dest);
 
 int main(int argc, char** argv)
 {
+    SharedPtr<Context> context(new Context());
+    SharedPtr<FileSystem> fileSystem(new FileSystem(context));
     ea::vector<ea::string> arguments;
+    context_ = context;
+    fileSystem_ = fileSystem;
 
     #ifdef WIN32
     arguments = ParseArguments(GetCommandLineW());
