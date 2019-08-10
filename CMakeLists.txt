@@ -74,8 +74,6 @@ else ()
     ucm_set_runtime(DYNAMIC)
 endif ()
 
-include(UrhoPackaging)
-
 add_subdirectory(Source)
 
 # Print current build configuration
@@ -104,7 +102,6 @@ if (WIN32)
     message(STATUS "  MiniDumps       ${URHO3D_MINIDUMPS}")
 endif()
 message(STATUS "Developer options:")
-message(STATUS "  Packaging       ${URHO3D_PACKAGING}")
 message(STATUS "  SystemUI        ${URHO3D_SYSTEMUI}")
 message(STATUS "  Logging         ${URHO3D_LOGGING}")
 message(STATUS "  Profiling       ${URHO3D_PROFILING}")
