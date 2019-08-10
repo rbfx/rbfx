@@ -146,10 +146,14 @@ public:
     operator T*() const { return ptr_; }    // NOLINT(google-explicit-constructor)
 
     /// Swap with another SharedPtr.
-    void Swap(SharedPtr& rhs) { ea::swap(ptr_, rhs.ptr_); }
+    void Swap(SharedPtr<T>& rhs) { ea::swap(ptr_, rhs.ptr_); }
 
-    /// Reset to null and release the object reference.
-    void Reset() { ReleaseRef(); }
+    /// Reset with another pointer.
+    void Reset(T* ptr = nullptr)
+    {
+        SharedPtr<T> copy(ptr);
+        Swap(copy);
+    }
 
     /// Detach without destroying the object even if the refcount goes zero. To be used for scripting language interoperation.
     T* Detach()
@@ -405,8 +409,19 @@ public:
     /// Convert to a raw pointer, null if the object is expired.
     operator T*() const { return Get(); }   // NOLINT(google-explicit-constructor)
 
-    /// Reset to null and release the weak reference.
-    void Reset() { ReleaseRef(); }
+    /// Swap with another WeakPtr.
+    void Swap(WeakPtr<T>& rhs)
+    {
+        ea::swap(ptr_, rhs.ptr_);
+        ea::swap(refCount_, rhs.refCount_);
+    }
+
+    /// Reset with another pointer.
+    void Reset(T* ptr = nullptr)
+    {
+        WeakPtr<T> copy(ptr);
+        Swap(copy);
+    }
 
     /// Perform a static cast from a weak pointer of another type.
     template <class U> void StaticCast(const WeakPtr<U>& rhs)
