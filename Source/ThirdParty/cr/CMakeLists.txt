@@ -22,7 +22,7 @@
 
 add_library(cr INTERFACE)
 target_include_directories(cr INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
-if (MSVC)
+if (WIN32)
     target_link_libraries(cr INTERFACE dbghelp)
 endif ()
 install (TARGETS cr EXPORT Urho3D)
