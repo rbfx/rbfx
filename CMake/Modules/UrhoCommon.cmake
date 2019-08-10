@@ -514,17 +514,13 @@ function (create_pak PAK_DIR PAK_FILE)
         list (APPEND PAK_FLAGS -c)
     endif ()
 
+    set_property (SOURCE ${PAK_FILE} PROPERTY GENERATED TRUE)
     add_custom_command(
         OUTPUT "${PAK_FILE}"
         COMMAND "${PACKAGE_TOOL}" "${PAK_DIR}" "${PAK_FILE}" -q ${PAK_FLAGS}
         DEPENDS ${DEPENDENCY} ${PAK_DEPENDS}
         COMMENT "Packaging ${NAME}"
     )
-    list (FIND RESOURCE_PAKS ${PAK_FILE} CONTAINS)
-    if (CONTAINS EQUAL -1)
-        list (APPEND RESOURCE_PAKS ${PAK_FILE})
-        set (RESOURCE_PAKS "${RESOURCE_PAKS}" CACHE INTERNAL "RESOURCE_PAKS")
-    endif ()
 endfunction ()
 
 macro(web_executable TARGET)
@@ -563,6 +559,7 @@ function (package_resources_web)
     get_filename_component(LOADER_DIR "${PAK_OUTPUT}" DIRECTORY)
     add_custom_target("${PAK_OUTPUT}"
         COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}
+        SOURCES ${PAK_FILES}
         DEPENDS ${PAK_FILES}
         COMMENT "Packaging ${PAK_OUTPUT}"
     )
