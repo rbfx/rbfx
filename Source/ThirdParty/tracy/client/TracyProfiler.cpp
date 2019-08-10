@@ -245,7 +245,35 @@ static inline void CpuId( uint32_t* regs, uint32_t leaf )
 static void InitFailure( const char* msg )
 {
 #if defined _WIN32 || defined __CYGWIN__
-    MessageBoxA( nullptr, msg, "Tracy Profiler initialization failure", MB_ICONSTOP );
+    bool hasConsole = false;
+    bool reopen = false;
+    const auto attached = AttachConsole( ATTACH_PARENT_PROCESS );
+    if( attached )
+    {
+        hasConsole = true;
+        reopen = true;
+    }
+    else
+    {
+        const auto err = GetLastError();
+        if( err == ERROR_ACCESS_DENIED )
+        {
+            hasConsole = true;
+        }
+    }
+    if( hasConsole )
+    {
+        fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
+        if( reopen )
+        {
+            freopen( "CONOUT$", "w", stderr );
+            fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
+        }
+    }
+    else
+    {
+        MessageBoxA( nullptr, msg, "Tracy Profiler initialization failure", MB_ICONSTOP );
+    }
 #else
     fprintf( stderr, "Tracy Profiler initialization failure: %s\n", msg );
 #endif
@@ -259,7 +287,13 @@ static int64_t SetupHwTimer()
     if( !( regs[3] & ( 1 << 27 ) ) ) InitFailure( "CPU doesn't support RDTSCP instruction." );
     CpuId( regs, 0x80000007 );
     if( !( regs[3] & ( 1 << 8 ) ) )
-        fprintf( stderr, "CPU doesn't support invariant TSC. Timer readings may be inaccurate.\n" );    // rbfx fix: allow running profiled applications on incompatible VMs at expense of accuracy.
+    {
+        const char* noCheck = getenv( "TRACY_NO_INVARIANT_CHECK" );
+        if( !noCheck || noCheck[0] != '1' )
+        {
+            InitFailure( "CPU doesn't support invariant TSC.\nDefine TRACY_NO_INVARIANT_CHECK=1 to ignore this error, *if you know what you are doing*." );
+        }
+    }
 
     return Profiler::GetTime();
 }
