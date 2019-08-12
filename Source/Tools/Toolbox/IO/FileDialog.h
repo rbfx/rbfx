@@ -22,7 +22,7 @@
 
 #pragma once
 
-
+#include "ToolboxAPI.h"
 #include <Urho3D/Container/Str.h>
 
 namespace Urho3D
@@ -35,10 +35,10 @@ enum FileDialogResult
     DIALOG_CANCEL
 };
 
-URHO3D_API FileDialogResult OpenDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath);
-URHO3D_API FileDialogResult OpenDialogMultiple(const ea::string& filterList, const ea::string& defaultPath,
+URHO3D_TOOLBOX_API FileDialogResult OpenDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath);
+URHO3D_TOOLBOX_API FileDialogResult OpenDialogMultiple(const ea::string& filterList, const ea::string& defaultPath,
                                                ea::vector<ea::string>& outPaths);
-URHO3D_API FileDialogResult SaveDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath);
-URHO3D_API FileDialogResult PickFolder(const ea::string& defaultPath, ea::string& outPath);
+URHO3D_TOOLBOX_API FileDialogResult SaveDialog(const ea::string& filterList, const ea::string& defaultPath, ea::string& outPath);
+URHO3D_TOOLBOX_API FileDialogResult PickFolder(const ea::string& defaultPath, ea::string& outPath);
 
 }
