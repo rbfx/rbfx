@@ -84,6 +84,7 @@
 #include "52_NATPunchtrough/NATPunchtrough.h"
 #include "53_LANDiscovery/LANDiscovery.h"
 #include "100_HelloSystemUI/HelloSystemUI.h"
+#include "105_Serialization/Serialization.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -248,6 +249,7 @@ void SamplesManager::Start()
 #if URHO3D_SYSTEMUI
     RegisterSample<HelloSystemUi>();
 #endif
+    RegisterSample<Serialization>();
 
     if (!startSample_.empty())
         StartSample(startSample_);
