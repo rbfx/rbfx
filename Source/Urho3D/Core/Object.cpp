@@ -130,6 +130,7 @@ void Object::OnEvent(Object* sender, StringHash eventType, VariantMap& eventData
 
 bool Object::Serialize(Archive& /*archive*/)
 {
+    URHO3D_LOGERROR("Serialization is not supported for " + GetTypeInfo()->GetTypeName());
     assert(0);
     return false;
 }

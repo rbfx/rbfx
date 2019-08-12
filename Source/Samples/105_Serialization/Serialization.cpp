@@ -508,9 +508,6 @@ bool CompareNodes(Node* lhs, Node* rhs)
 /// Assert and call ErrorExit.
 #define URHO3D_ASSERT(expr) (!!(expr) || (ErrorExit(Format("File: {}\nLine: {}\nAssertion failed!", __FILE__, __LINE__)), 0))
 
-// Expands to this example's entry-point
-URHO3D_DEFINE_APPLICATION_MAIN(Serialization)
-
 Serialization::Serialization(Context* context) :
     Sample(context)
 {
@@ -528,7 +525,7 @@ void Serialization::Start()
     TestSerializationPerformance();
 
     // Close sample
-    engine_->Exit();
+    CloseSample();
 }
 
 void Serialization::TestStructSerialization()
