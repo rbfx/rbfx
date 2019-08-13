@@ -5970,24 +5970,10 @@ void View::DrawMessages()
     }
     m_visibleMessages = msgcnt;
 
-    if( !filterActive )
+    if( ImGui::GetScrollY() >= ImGui::GetScrollMaxY() )
     {
-        const auto maxScroll = ImGui::GetScrollMaxY();
-        if( maxScroll != 0 )
-        {
-            const auto msgssize = msgs.size();
-            if( m_prevMessages == msgssize && !m_messageFilterWasActive )
-            {
-                m_messagesScrollBottom = ImGui::GetScrollY() == maxScroll;
-            }
-            else
-            {
-                m_prevMessages = msgssize;
-                if( m_messagesScrollBottom ) ImGui::SetScrollHereY();
-            }
-        }
+        ImGui::SetScrollHereY( 1.f );
     }
-    m_messageFilterWasActive = filterActive;
 
     ImGui::EndColumns();
     ImGui::EndChild();
@@ -7317,14 +7303,15 @@ void View::DrawCompare()
                             }
                             catch( const tracy::UnsupportedVersion& e )
                             {
-                                m_compare.badVer = e.version;
+                                m_compare.badVer.state = BadVersionState::UnsupportedVersion;
+                                m_compare.badVer.version = e.version;
                             }
                         } );
                     }
                 }
                 catch( const tracy::NotTracyDump& )
                 {
-                    m_compare.badVer = -1;
+                    m_compare.badVer.state = BadVersionState::BadFile;
                 }
             }
         }

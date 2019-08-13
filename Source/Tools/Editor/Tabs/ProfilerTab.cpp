@@ -24,6 +24,7 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <ImGui/imgui_stdlib.h>
 #if URHO3D_PROFILING
+#include <server/TracyBadVersion.hpp>
 #include <server/TracyView.hpp>
 #endif
 #include "ProfilerTab.h"
