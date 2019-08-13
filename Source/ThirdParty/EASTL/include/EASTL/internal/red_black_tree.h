@@ -592,14 +592,14 @@ namespace eastl
 	// rbtree_node_base functions
 	///////////////////////////////////////////////////////////////////////
 
-	EASTL_API inline rbtree_node_base* RBTreeGetMinChild(const rbtree_node_base* pNodeBase)
+	/*rbfx warning fix EASTL_API*/ inline rbtree_node_base* RBTreeGetMinChild(const rbtree_node_base* pNodeBase)
 	{
 		while(pNodeBase->mpNodeLeft) 
 			pNodeBase = pNodeBase->mpNodeLeft;
 		return const_cast<rbtree_node_base*>(pNodeBase);
 	}
 
-	EASTL_API inline rbtree_node_base* RBTreeGetMaxChild(const rbtree_node_base* pNodeBase)
+	/*rbfx warning fix EASTL_API*/ inline rbtree_node_base* RBTreeGetMaxChild(const rbtree_node_base* pNodeBase)
 	{
 		while(pNodeBase->mpNodeRight) 
 			pNodeBase = pNodeBase->mpNodeRight;
