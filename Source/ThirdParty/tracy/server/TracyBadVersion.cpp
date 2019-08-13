@@ -10,31 +10,24 @@ namespace tracy
 namespace detail
 {
 
-void BadVersionImpl( int& badVer )
+void BadVersionImpl( BadVersionState& badVer )
 {
-    assert( badVer != 0 );
+    assert( badVer.state != BadVersionState::Ok );
 
-    if( badVer > 0 )
+    switch( badVer.state )
     {
-        ImGui::OpenPopup( "Unsupported file version" );
-    }
-    else
-    {
+    case BadVersionState::BadFile:
         ImGui::OpenPopup( "Bad file" );
-    }
-    if( ImGui::BeginPopupModal( "Unsupported file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
-    {
-#ifdef TRACY_EXTENDED_FONT
-        TextCentered( ICON_FA_CLOUD_DOWNLOAD_ALT );
-#endif
-        ImGui::Text( "The file you are trying to open is unsupported.\nYou should update to tracy %i.%i.%i or newer and try again.", badVer >> 16, ( badVer >> 8 ) & 0xFF, badVer & 0xFF );
-        ImGui::Separator();
-        if( ImGui::Button( "I understand" ) )
-        {
-            ImGui::CloseCurrentPopup();
-            badVer = 0;
-        }
-        ImGui::EndPopup();
+        break;
+    case BadVersionState::UnsupportedVersion:
+        ImGui::OpenPopup( "Unsupported file version" );
+        break;
+    case BadVersionState::LegacyVersion:
+        ImGui::OpenPopup( "Legacy file version" );
+        break;
+    default:
+        assert( false );
+        break;
     }
     if( ImGui::BeginPopupModal( "Bad file", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
     {
@@ -46,7 +39,35 @@ void BadVersionImpl( int& badVer )
         if( ImGui::Button( "Oops" ) )
         {
             ImGui::CloseCurrentPopup();
-            badVer = 0;
+            badVer.state = BadVersionState::Ok;
+        }
+        ImGui::EndPopup();
+    }
+    if( ImGui::BeginPopupModal( "Unsupported file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_CLOUD_DOWNLOAD_ALT );
+#endif
+        ImGui::Text( "The file you are trying to open is unsupported.\nYou should update to tracy %i.%i.%i or newer and try again.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
+        ImGui::Separator();
+        if( ImGui::Button( "I understand" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            badVer.state = BadVersionState::Ok;
+        }
+        ImGui::EndPopup();
+    }
+    if( ImGui::BeginPopupModal( "Legacy file version", nullptr, ImGuiWindowFlags_AlwaysAutoResize ) )
+    {
+#ifdef TRACY_EXTENDED_FONT
+        TextCentered( ICON_FA_GHOST );
+#endif
+        ImGui::Text( "You are trying to open a file which was created by legacy version %i.%i.%i.\nUse the update utility from an older version of the profiler to convert the file to a supported version.", badVer.version >> 16, ( badVer.version >> 8 ) & 0xFF, badVer.version & 0xFF );
+        ImGui::Separator();
+        if( ImGui::Button( "Maybe I don't need it" ) )
+        {
+            ImGui::CloseCurrentPopup();
+            badVer.state = BadVersionState::Ok;
         }
         ImGui::EndPopup();
     }
