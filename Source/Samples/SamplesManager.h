@@ -54,6 +54,8 @@ private:
     void OnClickSample(VariantMap& args);
     ///
     void OnKeyPress(VariantMap& args);
+    ///
+    void OnFrameStart();
     /// Add a sample to sample list.
     template<typename T> void RegisterSample();
 
@@ -61,10 +63,10 @@ private:
     SharedPtr<Application> runningSample_;
     ///
     SharedPtr<UIElement> listViewHolder_;
-    ///
-    float exitTime_ = 0;
     /// Logo sprite.
     SharedPtr<Sprite> logoSprite_;
+    ///
+    bool isClosing_ = false;
 };
 
 }
