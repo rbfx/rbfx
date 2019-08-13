@@ -26,9 +26,7 @@
 
 #if defined(_WIN32) && !defined(URHO3D_WIN32_CONSOLE)
 #include "../Core/MiniDump.h"
-#include <windows.h>
-#undef GetObject
-#undef SendMessage
+#   include "Urho3D/WindowsSupport.h"
 #ifdef _MSC_VER
 #include <crtdbg.h>
 #endif

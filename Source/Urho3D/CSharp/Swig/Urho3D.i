@@ -13,6 +13,9 @@ namespace ea = eastl;
 #endif
 
 %{
+#if _WIN32
+#   include <Urho3D/WindowsSupport.h>
+#endif
 #include <Urho3D/Urho3DAll.h>
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
