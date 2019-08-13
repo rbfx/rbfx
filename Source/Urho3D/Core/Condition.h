@@ -22,11 +22,12 @@
 
 #pragma once
 
-#ifdef URHO3D_IS_BUILDING
-#include "Urho3D.h"
+#if _WIN32
+#   include <windows.h>
 #else
-#include <Urho3D/Urho3D.h>
+#   include <condition_variable>
 #endif
+#include <Urho3D/Urho3D.h>
 
 namespace Urho3D
 {
@@ -35,25 +36,52 @@ namespace Urho3D
 class URHO3D_API Condition
 {
 public:
+#if _WIN32
     /// Construct.
-    Condition();
-
+    Condition()
+    {
+        event_ = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+    }
     /// Destruct.
-    ~Condition();
+    ~Condition()
+    {
+        CloseHandle(event_);
+        event_ = nullptr;
+    }
+#endif
 
     /// Set the condition. Will be automatically reset once a waiting thread wakes up.
-    void Set();
+    void Set()
+    {
+#if _WIN32
+        SetEvent(event_);
+#else
+        event_.notify_all();
+#endif
+    }
 
     /// Wait on the condition.
-    void Wait();
+    void Wait()
+    {
+#if _WIN32
+        WaitForSingleObject(event_, INFINITE);
+#else
+        std::unique_lock<std::mutex> lock(mutex_);
+        event_.wait(lock);
+        lock.unlock();
+#endif
+    }
 
 private:
-#ifndef _WIN32
-    /// Mutex for the event, necessary for pthreads-based implementation.
-    void* mutex_;
-#endif
+#if _WIN32
     /// Operating system specific event.
-    void* event_;
+    HANDLE event_;
+#else
+    /// Mutex for the event, necessary for std-based implementation.
+    std::mutex mutex_;
+    /// Event variable.
+    std::condition_variable event_;
+#endif
 };
 
 }
