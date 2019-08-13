@@ -22,44 +22,91 @@
 
 #pragma once
 
-#ifdef URHO3D_IS_BUILDING
-#include "Urho3D.h"
+#ifdef _WIN32
+#   include <windows.h>
 #else
-#include <Urho3D/Urho3D.h>
+#   include <mutex>
 #endif
+
+#include <Urho3D/Urho3D.h>
+#include "../Core/Profiler.h"
 
 namespace Urho3D
 {
+
+#if _WIN32
+namespace Detail
+{
+struct URHO3D_API CriticalSection
+{
+    /// Construct.
+    inline CriticalSection() noexcept { InitializeCriticalSection(&lock_); }
+    /// Destruct.
+    inline ~CriticalSection() { DeleteCriticalSection(&lock_); }
+
+    /// Acquire the mutex. Block if already acquired.
+    inline void lock() { EnterCriticalSection(&lock_); }
+    /// Try to acquire the mutex without locking. Return true if successful.
+    inline bool try_lock() { return TryEnterCriticalSection(&lock_) != FALSE; }
+    /// Release the mutex.
+    inline void unlock() { LeaveCriticalSection(&lock_); }
+
+private:
+    CRITICAL_SECTION lock_;
+};
+}
+using MutexType = Detail::CriticalSection;
+#else
+using MutexType = std::mutex;
+#endif
 
 /// Operating system mutual exclusion primitive.
 class URHO3D_API Mutex
 {
 public:
-    /// Construct.
-    Mutex();
-    /// Destruct.
-    ~Mutex();
-
     /// Acquire the mutex. Block if already acquired.
-    void Acquire();
+    void Acquire() { lock_.lock(); }
     /// Try to acquire the mutex without locking. Return true if successful.
-    bool TryAcquire();
+    bool TryAcquire() { return lock_.try_lock(); }
     /// Release the mutex.
-    void Release();
+    void Release() { lock_.unlock(); }
 
 private:
-    /// Mutex handle.
-    void* handle_;
+    /// Underlying mutex object.
+    MutexType lock_;
 };
 
+#if URHO3D_PROFILING
+class URHO3D_API ProfiledMutex
+{
+public:
+    /// Construct. Pass URHO3D_PROFILE_SRC_LOCATION("custom comment") as parameter.
+    explicit ProfiledMutex(const tracy::SourceLocationData* sourceLocationData) : lock_(sourceLocationData) { }
+
+    /// Acquire the mutex. Block if already acquired.
+    void Acquire() { lock_.lock(); }
+    /// Try to acquire the mutex without locking. Return true if successful.
+    bool TryAcquire() { return lock_.try_lock(); }
+    /// Release the mutex.
+    void Release() { lock_.unlock(); }
+
+private:
+    /// Underlying mutex object.
+    tracy::Lockable<MutexType> lock_;
+};
+#else
+using ProfiledMutex = Mutex;
+#endif
+
 /// Lock that automatically acquires and releases a mutex.
-class URHO3D_API MutexLock
+template<typename Mutex>
+class MutexLock
 {
 public:
     /// Construct and acquire the mutex.
-    explicit MutexLock(Mutex& mutex);
+    explicit MutexLock(Mutex& mutex) : mutex_(mutex) { mutex_.Acquire(); }
     /// Destruct. Release the mutex.
-    ~MutexLock();
+    ~MutexLock() { mutex_.Release(); }
 
     /// Prevent copy construction.
     MutexLock(const MutexLock& rhs) = delete;

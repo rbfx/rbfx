@@ -25,7 +25,8 @@ namespace ea = eastl;
 	SDL_Surface*,
 	SDL_Window*,
 	Urho3D::GraphicsImpl*,
-    ImFont*
+    ImFont*,
+    tracy::SourceLocationData*
 }
 
 // String typemap returns 0 if null string is passed. This fails to initialize SafeArray.
@@ -186,6 +187,8 @@ namespace SDL
 %ignore Urho3D::AttributeInfo::enumNamesPointers_;
 %ignore Urho3D::AttributeInfo::enumNames_;
 
+%ignore Urho3D::Detail::CriticalSection;
+%ignore Urho3D::MutexLock;
 %include "Urho3D/Core/Variant.h"
 %include "Object.i"
 %director Urho3D::AttributeAccessor;
@@ -238,6 +241,7 @@ namespace SDL
 %include "_properties_io.i"
 %ignore Urho3D::GetWideNativePath;
 %ignore Urho3D::logLevelNames;
+%ignore Urho3D::LOG_LEVEL_COLORS;
 
 %interface_custom("%s", "I%s", Urho3D::Serializer);
 %include "Urho3D/IO/Serializer.h"
