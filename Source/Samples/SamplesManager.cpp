@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Input/InputEvents.h>
@@ -125,6 +126,7 @@ void SamplesManager::Start()
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
+    SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
     GetUI()->GetRoot()->SetDefaultStyle(GetCache()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
@@ -276,8 +278,15 @@ void SamplesManager::OnKeyPress(VariantMap& args)
     int key = args[P_KEY].GetInt();
 
     // Close console (if open) or exit when ESC is pressed
-    if (key == KEY_ESCAPE && (GetTime()->GetElapsedTime() - exitTime_) > 0.1f)
+    if (key == KEY_ESCAPE)
+        isClosing_ = true;
+}
+
+void SamplesManager::OnFrameStart()
+{
+    if (isClosing_)
     {
+        isClosing_ = false;
         if (runningSample_.NotNull())
         {
             runningSample_->Stop();
@@ -288,7 +297,6 @@ void SamplesManager::OnKeyPress(VariantMap& args)
             GetUI()->GetRoot()->RemoveAllChildren();
             GetUI()->GetRoot()->AddChild(listViewHolder_);
             GetUI()->GetRoot()->AddChild(logoSprite_);
-            exitTime_ = GetTime()->GetElapsedTime();
 #if MOBILE
             GetGraphics()->SetOrientations("Portrait");
             IntVector2 screenSize = GetGraphics()->GetSize();
@@ -298,12 +306,16 @@ void SamplesManager::OnKeyPress(VariantMap& args)
         else
         {
 #if URHO3D_SYSTEMUI
-            Console* console = GetSubsystem<Console>();
-            if (console->IsVisible())
-                console->SetVisible(false);
-            else
+            if (auto* console = GetSubsystem<Console>())
+            {
+                if (console->IsVisible())
+                {
+                    console->SetVisible(false);
+                    return;
+                }
+            }
 #endif
-                GetEngine()->Exit();
+            GetEngine()->Exit();
         }
     }
 }
@@ -326,4 +338,5 @@ void SamplesManager::RegisterSample()
 
     GetUI()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
+
 }
