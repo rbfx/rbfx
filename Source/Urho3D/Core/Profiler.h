@@ -22,9 +22,7 @@
 
 #pragma once
 
-#if URHO3D_PROFILING
-#   include "ThirdParty/tracy/Tracy.hpp"
-#endif
+#include "ThirdParty/tracy/Tracy.hpp"
 
 namespace Urho3D
 {

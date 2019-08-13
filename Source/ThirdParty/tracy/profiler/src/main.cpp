@@ -375,6 +375,10 @@ public:
                 {
                     OpenWebpage( "https://www.youtube.com/watch?v=eAkgkaO8B9o" );
                 }
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.5" ) )
+                {
+                    OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
+                }
                 ImGui::EndPopup();
             }
             ImGui::Separator();
@@ -444,19 +448,25 @@ public:
                                 }
                                 catch( const tracy::UnsupportedVersion& e )
                                 {
-                                    badVer = e.version;
+                                    badVer.state = tracy::BadVersionState::UnsupportedVersion;
+                                    badVer.version = e.version;
+                                }
+                                catch( const tracy::LegacyVersion& e )
+                                {
+                                    badVer.state = tracy::BadVersionState::LegacyVersion;
+                                    badVer.version = e.version;
                                 }
                             } );
                         }
                     }
                     catch( const tracy::NotTracyDump& )
                     {
-                        badVer = -1;
+                        badVer.state = tracy::BadVersionState::BadFile;
                     }
                 }
             }
 
-            if( badVer != 0 )
+            if( badVer.state != tracy::BadVersionState::Ok )
             {
                 if( loadThread.joinable() ) { loadThread.join(); }
                 tracy::BadVersion( badVer );
@@ -627,11 +637,11 @@ public:
     std::unordered_map<std::string, uint64_t> connHistMap{};
     std::vector<std::unordered_map<std::string, uint64_t>::const_iterator> connHistVec{};
     std::unique_ptr<tracy::View> view{};
+    tracy::BadVersionState badVer;
     ImFont* fixedWidth = nullptr;
     ImFont* bigFont = nullptr;
     char addr[16]{};
     std::thread loadThread{};
-    int badVer = 0;
     tracy::UdpListen* broadcastListen = nullptr;
     enum class ViewShutdown { False, True, Join };
     ViewShutdown viewShutdown = ViewShutdown::False;
