@@ -399,11 +399,11 @@ Ray Camera::GetScreenRay(float x, float y) const
     // The parameters range from 0.0 to 1.0. Expand to normalized device coordinates (-1.0 to 1.0) & flip Y axis
     x = 2.0f * x - 1.0f;
     y = 1.0f - 2.0f * y;
-    Vector3 near(x, y, 0.0f);
-    Vector3 far(x, y, 1.0f);
+    Vector3 nearPlane(x, y, 0.0f);
+    Vector3 farPlane(x, y, 1.0f);
 
-    ret.origin_ = viewProjInverse * near;
-    ret.direction_ = ((viewProjInverse * far) - ret.origin_).Normalized();
+    ret.origin_ = viewProjInverse * nearPlane;
+    ret.direction_ = ((viewProjInverse * farPlane) - ret.origin_).Normalized();
     return ret;
 }
 
@@ -462,17 +462,17 @@ Matrix4 Camera::GetGPUProjection() const
 #endif
 }
 
-void Camera::GetFrustumSize(Vector3& near, Vector3& far) const
+void Camera::GetFrustumSize(Vector3& nearSize, Vector3& farSize) const
 {
     Frustum viewSpaceFrustum = GetViewSpaceFrustum();
-    near = viewSpaceFrustum.vertices_[0];
-    far = viewSpaceFrustum.vertices_[4];
+    nearSize = viewSpaceFrustum.vertices_[0];
+    farSize = viewSpaceFrustum.vertices_[4];
 
     /// \todo Necessary? Explain this
     if (flipVertical_)
     {
-        near.y_ = -near.y_;
-        far.y_ = -far.y_;
+        nearSize.y_ = -nearSize.y_;
+        farSize.y_ = -farSize.y_;
     }
 }
 

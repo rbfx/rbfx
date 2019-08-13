@@ -45,6 +45,7 @@ extern "C" unsigned SDL_TVOS_GetActiveProcessorCount();
 
 #if defined(_WIN32)
 #include <windows.h>
+#include <rpc.h>
 #include <io.h>
 #include <direct.h>
 #define getcwd _getcwd
