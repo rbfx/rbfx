@@ -51,18 +51,19 @@ namespace eastl
 	class EASTL_API allocator
 	{
 	public:
-		EASTL_ALLOCATOR_EXPLICIT allocator(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME));
-		allocator(const allocator& x);
-		allocator(const allocator& x, const char* pName);
+		// rbfx fix: functions marked as inline to fix excessive warnings.
+		EASTL_ALLOCATOR_EXPLICIT inline allocator(const char* pName = EASTL_NAME_VAL(EASTL_ALLOCATOR_DEFAULT_NAME));
+		inline allocator(const allocator& x);
+		inline allocator(const allocator& x, const char* pName);
 
-		allocator& operator=(const allocator& x);
+		inline allocator& operator=(const allocator& x);
 
-		void* allocate(size_t n, int flags = 0);
-		void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0);
-		void  deallocate(void* p, size_t n);
+		inline void* allocate(size_t n, int flags = 0);
+		inline void* allocate(size_t n, size_t alignment, size_t offset, int flags = 0);
+		inline void  deallocate(void* p, size_t n);
 
-		const char* get_name() const;
-		void        set_name(const char* pName);
+		inline const char* get_name() const;
+		inline void        set_name(const char* pName);
 
 	protected:
 		#if EASTL_NAME_ENABLED
