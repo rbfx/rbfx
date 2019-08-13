@@ -437,7 +437,7 @@ install(TARGETS Urho3D
 
 if (URHO3D_MONOLITHIC_HEADER)
     # Generate include header with all engine headers
-    list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h Core/Main.h)
+    list (REMOVE_ITEM HEADER_FILES Urho3D.h DebugNew.h Precompiled.h Core/Main.h WindowsSupport.h)
     string (REPLACE ";" ">\n#include <Urho3D/" HEADER_FILES "${HEADER_FILES}")
     set (HEADER_FILES "#include <Urho3D/${HEADER_FILES}>")
     configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3DAll.h.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DAll.h @ONLY)

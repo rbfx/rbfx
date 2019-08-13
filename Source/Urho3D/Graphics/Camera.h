@@ -149,7 +149,7 @@ public:
     /// Return view matrix.
     const Matrix3x4& GetView() const;
     /// Return frustum near and far sizes.
-    void GetFrustumSize(Vector3& near, Vector3& far) const;
+    void GetFrustumSize(Vector3& nearSize, Vector3& farSize) const;
     /// Return half view size.
     float GetHalfViewSize() const;
     /// Return frustum split by custom near and far clip distances.

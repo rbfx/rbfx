@@ -23,7 +23,7 @@
 #pragma once
 
 #ifdef _WIN32
-#   include <windows.h>
+#   include "Urho3D/WindowsSupport.h"
 #else
 #   include <mutex>
 #endif
