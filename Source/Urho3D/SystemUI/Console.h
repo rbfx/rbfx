@@ -53,6 +53,8 @@ public:
     void SetCommandInterpreter(const ea::string& interpreter);
     /// Set command history maximum size, 0 disables history.
     void SetNumHistoryRows(unsigned rows);
+    /// Set console height.
+    void SetConsoleHeight(unsigned height);
     /// Return whether is visible.
     bool IsVisible() const;
     /// Return true when console is set to automatically visible when receiving an error log message.
