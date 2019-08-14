@@ -87,6 +87,11 @@ void Console::SetNumHistoryRows(unsigned rows)
         history_.resize(rows);
 }
 
+void Console::SetConsoleHeight(unsigned height)
+{
+    windowSize_.y_ = static_cast<int>(height);
+}
+
 bool Console::IsVisible() const
 {
     return isOpen_;
