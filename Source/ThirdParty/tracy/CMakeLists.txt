@@ -34,7 +34,7 @@ if (URHO3D_PROFILING)
         # TracyClientDLL.cpp as part of it's sources. Putting it into a static library allows us automating the process and it is
         # now enough to only link to Urho3D target.
         add_library (tracy-lib STATIC TracyClientDLL.cpp)
-        target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_IMPORTS=1 PRIVATE ${TRACY_OPTIONS_PRIVATE} -DTRACY_EXPORTS=1)
+        target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_IMPORTS=1 PRIVATE ${TRACY_OPTIONS_PRIVATE} -DTRACY_EXPORTS=1 -DUrho3D_EXPORTS)
         target_link_libraries(tracy-lib INTERFACE Urho3D)
     else ()
         list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySocket.cpp)

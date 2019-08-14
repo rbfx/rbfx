@@ -19,7 +19,7 @@ target_include_directories(nativefiledialog
            $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
 )
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(nativefiledialog PRIVATE -DNFD_EXPORTS=1)
+    target_compile_definitions(nativefiledialog PRIVATE -DNFD_EXPORTS=1 -DUrho3D_EXPORTS)
 endif ()
 if (WIN32)
     target_link_libraries(nativefiledialog shell32)
