@@ -23,7 +23,7 @@
 file (GLOB_RECURSE SOURCE_FILES *.c *.h)
 add_library (LZ4 STATIC ${SOURCE_FILES})
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(LZ4 PRIVATE -DLZ4_DLL_EXPORT=1)
+    target_compile_definitions(LZ4 PRIVATE -DLZ4_DLL_EXPORT=1 -DUrho3D_EXPORTS)
 endif ()
 target_include_directories(LZ4
     INTERFACE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>

@@ -1493,7 +1493,7 @@ target_include_directories (SDL
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>
 )
 if (BUILD_SHARED_LIBS)
-  target_compile_definitions(SDL PRIVATE -DSDL_EXPORTS)
+  target_compile_definitions(SDL PRIVATE -DSDL_EXPORTS -DUrho3D_EXPORTS)
 endif ()
 if (WIN32)
   target_link_libraries (SDL user32 gdi32 imm32 version winmm)
