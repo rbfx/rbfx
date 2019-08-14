@@ -43,7 +43,7 @@ target_include_directories(fmt INTERFACE
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
 )
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(fmt PUBLIC -DFMT_SHARED PRIVATE -DFMT_EXPORT)
+    target_compile_definitions(fmt PUBLIC -DFMT_SHARED PRIVATE -DFMT_EXPORT -DUrho3D_EXPORTS)
 endif ()
 install (DIRECTORY fmt DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
 

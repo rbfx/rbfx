@@ -179,7 +179,7 @@ source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 add_library (Box2D STATIC ${SOURCE_FILES})
 target_include_directories(Box2D PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(Box2D PRIVATE -DBOX2D_EXPORTS)
+    target_compile_definitions(Box2D PRIVATE -DBOX2D_EXPORTS -DUrho3D_EXPORTS)
 endif ()
 
 install(DIRECTORY Box2D DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR} FILES_MATCHING PATTERN *.h)
