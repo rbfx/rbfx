@@ -20,6 +20,9 @@
 # THE SOFTWARE.
 #
 
+# Third party warnings are irrelevant to us.
+ucm_add_flags(-w)
+
 add_subdirectory(EASTL)
 add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
