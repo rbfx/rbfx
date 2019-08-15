@@ -57,7 +57,7 @@ private:
 }
 using MutexType = Detail::CriticalSection;
 #else
-using MutexType = std::mutex;
+using MutexType = std::recursive_mutex;
 #endif
 
 /// Operating system mutual exclusion primitive.
