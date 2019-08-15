@@ -279,7 +279,10 @@ void SamplesManager::StartSample(StringHash sampleType)
     GetGraphics()->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
     runningSample_.StaticCast<Object>(context_->CreateObject(sampleType));
-    runningSample_->Start();
+    if (runningSample_.NotNull())
+        runningSample_->Start();
+    else
+        ErrorExit("Specified sample does not exist.");
 }
 
 void SamplesManager::OnKeyPress(VariantMap& args)
