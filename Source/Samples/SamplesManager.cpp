@@ -21,6 +21,7 @@
 //
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Core/CoreEvents.h>
+#include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Input/InputEvents.h>
@@ -114,6 +115,8 @@ void SamplesManager::Setup()
 #endif
     if (!engineParameters_.contains(EP_RESOURCE_PREFIX_PATHS))
         engineParameters_[EP_RESOURCE_PREFIX_PATHS] = ";..;../..";
+
+    GetCommandLineParser().add_option("--sample", startSample_);
 }
 
 void SamplesManager::Start()
@@ -245,6 +248,9 @@ void SamplesManager::Start()
 #if URHO3D_SYSTEMUI
     RegisterSample<HelloSystemUi>();
 #endif
+
+    if (!startSample_.empty())
+        StartSample(startSample_);
 }
 
 void SamplesManager::Stop()
@@ -259,6 +265,11 @@ void SamplesManager::OnClickSample(VariantMap& args)
     if (!sampleType)
         return;
 
+    StartSample(sampleType);
+}
+
+void SamplesManager::StartSample(StringHash sampleType)
+{
     GetUI()->GetRoot()->RemoveAllChildren();
     GetUI()->SetFocusElement(nullptr);
 
