@@ -43,7 +43,7 @@ PluginApplication::~PluginApplication()
     for (const auto& pair : registeredTypes_)
     {
         if (!pair.second.empty())
-            context_->RemoveFactory(pair.first, pair.second.c_str());
+            context_->RemoveFactory(pair.first, pair.second.empty() ? nullptr : pair.second.c_str());
         else
             context_->RemoveFactory(pair.first);
         context_->RemoveAllAttributes(pair.first);
@@ -53,7 +53,7 @@ PluginApplication::~PluginApplication()
 
 void PluginApplication::RecordPluginFactory(StringHash type, const char* category)
 {
-    registeredTypes_.push_back({type, category});
+    registeredTypes_.push_back({type, category ? category : ""});
 }
 
 #if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
