@@ -61,7 +61,6 @@ endif ()
 include(CMakeDependentOption)
 
 # Build properties
-option(BUILD_SHARED_LIBS                        "Build engine as shared library."       ON)
 option(URHO3D_ENABLE_ALL                        "Enable (almost) all engine features."  ON)
 option(URHO3D_STATIC_RUNTIME                    "Link to static runtime"               OFF)
 set   (URHO3D_SSE             SSE2 CACHE STRING "Enable SSE instructions")
@@ -140,3 +139,7 @@ if (WEB OR MOBILE)
         set (URHO3D_CSHARP OFF)
     endif ()
 endif ()
+
+foreach (feature ${URHO3D_FEATURES})
+    set (URHO3D_${feature} ON)
+endforeach()
