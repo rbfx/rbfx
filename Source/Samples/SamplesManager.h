@@ -58,6 +58,8 @@ private:
     void OnFrameStart();
     /// Add a sample to sample list.
     template<typename T> void RegisterSample();
+    /// Start execution of specified sample.
+    void StartSample(StringHash sampleType);
 
     ///
     SharedPtr<Application> runningSample_;
@@ -67,6 +69,8 @@ private:
     SharedPtr<Sprite> logoSprite_;
     ///
     bool isClosing_ = false;
+    /// Sample which will be started automatically.
+    ea::string startSample_;
 };
 
 }
