@@ -1212,9 +1212,10 @@ void SceneTab::AddComponentIcon(Component* component)
             billboard->SetNumBillboards(1);
             billboard->SetMaterial(material);
             billboard->SetViewMask(EDITOR_VIEW_LAYER);
+            billboard->SetFixedScreenSize(true);
             if (auto* bb = billboard->GetBillboard(0))
             {
-                bb->size_ = Vector2::ONE * 0.2f;
+                bb->size_ = Vector2::ONE * 32.0f;
                 bb->enabled_ = true;
                 bb->position_ = {0, count * 0.4f, 0};
             }
