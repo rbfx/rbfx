@@ -24,6 +24,7 @@
 
 #include "../Container/Ptr.h"
 #include "../Core/Context.h"
+#include "../Core/Macros.h"
 #include "../Core/Main.h"
 #include "../Engine/Engine.h"
 
@@ -91,6 +92,19 @@ int RunApplication() \
     return application->Run(); \
 } \
 URHO3D_DEFINE_MAIN(RunApplication());
+#endif
+
+#if URHO3D_CSHARP
+#define URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Class)                                                  \
+extern "C"                                                                                            \
+{                                                                                                     \
+    URHO3D_EXPORT_API Urho3D::Application* URHO3D_STDCALL CreateApplication(Urho3D::Context* context) \
+    {                                                                                                 \
+        return new Class(context);                                                                    \
+    }                                                                                                 \
+}
+#else
+#   define URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Class)
 #endif
 
 }

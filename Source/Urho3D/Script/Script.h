@@ -27,6 +27,7 @@
 #include <EASTL/unique_ptr.h>
 #include <EASTL/vector.h>
 
+#include "../Core/Macros.h"
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 #include "../Engine/PluginApplication.h"
@@ -34,11 +35,6 @@
 
 namespace Urho3D
 {
-#if _WIN32
-#  define URHO3D_STDCALL __stdcall
-#else
-#  define URHO3D_STDCALL
-#endif
 
 /// Script API implemented in target scripting language.
 class URHO3D_API ScriptRuntimeApi
@@ -46,8 +42,12 @@ class URHO3D_API ScriptRuntimeApi
 public:
     /// Returns true if path contains a valid managed assembly with a class that inherits from PluginApplication.
     virtual bool VerifyAssembly(const ea::string& path) = 0;
-    /// Loads specified managed assembly and instantiates first class that inherits from PluginApplication.
-    virtual PluginApplication* LoadAssembly(const ea::string& path, unsigned version) = 0;
+    /// Modifies specified assembly by setting it's version to specified one.
+    virtual bool SetAssemblyVersion(const ea::string& path, unsigned version) = 0;
+    /// Loads specified managed assembly and returns it's gc handle.
+    virtual int LoadAssembly(const ea::string& path) = 0;
+    /// Looks for class inheriting from PluginApplication and creates an instance of it.
+    virtual PluginApplication* CreatePluginApplication(int assembly) = 0;
     /// Invokes managed instance.Dispose() method.
     virtual void Dispose(RefCounted* instance) = 0;
     ///

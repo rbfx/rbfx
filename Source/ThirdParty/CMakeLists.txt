@@ -35,10 +35,6 @@ add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(crunch)
 
-if (URHO3D_PLUGINS)
-    add_subdirectory(cr)
-endif ()
-
 if (NOT MINI_URHO)
     add_subdirectory(FreeType)
 

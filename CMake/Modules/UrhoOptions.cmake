@@ -88,7 +88,7 @@ cmake_dependent_option(URHO3D_FILEWATCHER        "Watch filesystem for resource 
 option                (URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )
 option                (URHO3D_MONOLITHIC_HEADER  "Create Urho3DAll.h which includes all engine headers." OFF                                                     )
 cmake_dependent_option(URHO3D_MINIDUMPS          "Enable writing minidumps on crash"                     ${URHO3D_ENABLE_ALL} "MSVC"                          OFF)
-cmake_dependent_option(URHO3D_PLUGINS            "Enable plugins"                                        ${URHO3D_ENABLE_ALL} "BUILD_SHARED_LIBS"             OFF)
+option                (URHO3D_PLUGINS            "Enable plugins"                                        ${URHO3D_ENABLE_ALL})
 cmake_dependent_option(URHO3D_THREADING          "Enable multithreading"                                 ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 option                (URHO3D_WEBP               "WEBP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
 # Web
@@ -102,6 +102,7 @@ cmake_dependent_option(URHO3D_TOOLS              "Tools enabled"                
 option                (URHO3D_SAMPLES            "Build samples"                                         OFF)
 option                (URHO3D_DOCS               "Build documentation."                                  OFF)
 cmake_dependent_option(URHO3D_MERGE_STATIC_LIBS  "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
+option                (URHO3D_NO_EDITOR_PLAYER_EXE "Do not build editor or player executables."          OFF)
 
 if (WIN32)
     set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")

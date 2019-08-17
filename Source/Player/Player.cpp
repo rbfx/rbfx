@@ -19,15 +19,9 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#if URHO3D_PLUGINS
-#   define CR_ROLLBACK 0
-#   define CR_HOST CR_DISABLE
-#   include <cr/cr.h>
-#endif
 #if _WIN32
 #   undef GetObject
 #endif
-#include <../Common/PluginUtils.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -45,16 +39,6 @@
 #   include <Urho3D/SystemUI/SystemUI.h>
 #endif
 #include "Player.h"
-
-
-#if URHO3D_CSHARP
-// Shared library build for execution by managed runtime.
-extern "C" URHO3D_EXPORT_API void URHO3D_STDCALL ParseArgumentsC(int argc, char** argv) { Urho3D::ParseArguments(argc, argv); }
-extern "C" URHO3D_EXPORT_API Urho3D::Application* URHO3D_STDCALL CreateApplication(Urho3D::Context* context) { return new Urho3D::Player(context); }
-#elif !defined(URHO3D_STATIC)
-// Native executable build for direct execution.
-URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Player);
-#endif
 
 namespace Urho3D
 {
@@ -112,12 +96,12 @@ void Player::Start()
     if (!LoadPlugins(plugins))
         ErrorExit("Loading of required plugins failed.");
 
-    for (auto& plugin : plugins_)
-        plugin->Start();
+    for (LoadedModule& plugin : plugins_)
+        plugin.application_->Start();
 
     // Load main scene.
     {
-        SceneManager* manager = GetSubsystem<SceneManager>();
+        auto* manager = GetSubsystem<SceneManager>();
         Scene* scene = manager->CreateScene();
 
         if (scene->LoadFile(projectRoot["default-scene"].GetString()))
@@ -129,16 +113,15 @@ void Player::Start()
 
 void Player::Stop()
 {
-    for (PluginApplication* plugin : plugins_)
-        plugin->Stop();
+    for (LoadedModule& plugin : plugins_)
+        plugin.application_->Stop();
 
-    for (PluginApplication* plugin : plugins_)
-        plugin->Unload();
+    for (LoadedModule& plugin : plugins_)
+        plugin.application_->Unload();
 
 #if URHO3D_CSHARP
-    auto* script = GetSubsystem<Script>();
-    for (PluginApplication* plugin : plugins_)
-        script->GetRuntimeApi()->Dispose(plugin);
+    for (LoadedModule& plugin : plugins_)
+        Script::GetRuntimeApi()->Dispose(plugin.application_);
 #endif
 
     if (auto* manager = GetSubsystem<SceneManager>())
@@ -148,8 +131,7 @@ void Player::Stop()
 bool Player::LoadPlugins(const JSONValue& plugins)
 {
     // Load plugins.
-    bool failure = false;
-#if URHO3D_PLUGINS || URHO3D_CSHARP
+#if URHO3D_PLUGINS
     for (auto i = 0; i < plugins.Size(); i++)
     {
         if (plugins[i]["private"].GetBool())
@@ -166,7 +148,6 @@ bool Player::LoadPlugins(const JSONValue& plugins)
         pluginFileName = "lib" + pluginName + ".dylib";
 #endif
 
-#if URHO3D_PLUGINS
 #if MOBILE
         // On mobile libraries are loaded already so it is ok to not check for existence, TODO: iOS
         loaded = LoadAssembly(pluginFileName, PLUGIN_NATIVE);
@@ -181,7 +162,6 @@ bool Player::LoadPlugins(const JSONValue& plugins)
                 loaded = LoadAssembly(pluginFileName);
         }
 #endif  // MOBILE
-#endif  // URHO3D_PLUGINS
 #endif  // !_WIN32
 
 #if _WIN32 || URHO3D_CSHARP
@@ -216,43 +196,20 @@ bool Player::LoadPlugins(const JSONValue& plugins)
 }
 
 #if URHO3D_PLUGINS
-bool Player::LoadAssembly(const ea::string& path, PluginType assumeType)
+bool Player::LoadAssembly(const ea::string& path)
 {
-    if (assumeType == PLUGIN_INVALID)
-        assumeType = GetPluginType(context_, path);
+    LoadedModule moduleInfo;
 
-    if (assumeType == PLUGIN_NATIVE)
+    moduleInfo.module_ = new PluginModule(context_);
+    if (moduleInfo.module_->Load(path))
     {
-        auto sharedLibrary = cr_so_load(path.c_str());
-        if (sharedLibrary != nullptr)
+        moduleInfo.application_ = moduleInfo.module_->InstantiatePlugin();
+        if (moduleInfo.application_.NotNull())
         {
-            cr_plugin_main_func pluginMain = cr_so_symbol(sharedLibrary);
-            if (pluginMain)
-            {
-                cr_plugin dummy{};
-                dummy.userdata = reinterpret_cast<void*>(context_.Get());
-                if (pluginMain(&dummy, CR_LOAD) == 0)
-                {
-                    plugins_.push_back(
-                        SharedPtr<PluginApplication>(reinterpret_cast<PluginApplication*>(dummy.userdata)));
-                    return true;
-                }
-            }
+            plugins_.emplace_back(moduleInfo);
+            return true;
         }
     }
-#if URHO3D_CSHARP
-    else if (assumeType == PLUGIN_MANAGED)
-    {
-        if (Script* script = GetSubsystem<Script>())
-        {
-            if (PluginApplication* plugin = script->GetRuntimeApi()->LoadAssembly(path, 0))
-            {
-                plugins_.emplace_back(SharedPtr<PluginApplication>(plugin));
-                return true;
-            }
-        }
-    }
-#endif
     return false;
 }
 #endif
@@ -264,11 +221,11 @@ BakedResourceRouter::BakedResourceRouter(Context* context)
     if (file)
     {
         const auto& info = file->GetRoot().GetObject();
-        for (auto it = info.begin(); it != info.end(); it++)
+        for (const auto & it : info)
         {
-            const JSONArray& files = it->second["files"].GetArray();
+            const JSONArray& files = it.second["files"].GetArray();
             if (files.size() == 1)
-                routes_[it->first] = files[0].GetString();
+                routes_[it.first] = files[0].GetString();
         }
     }
 }

@@ -23,24 +23,58 @@
 #pragma once
 
 
-#if __GNUC__ || __clang__
-#   define URHO3D_LIKELY(cond)   __builtin_expect((cond), 1)
-#   define URHO3D_UNLIKELY(cond) __builtin_expect((cond), 0)
-#else
-#   define URHO3D_LIKELY(cond)   (cond)
-#   define URHO3D_UNLIKELY(cond) (cond)
+#include <Urho3D/Engine/Application.h>
+#include <Urho3D/Engine/PluginApplication.h>
+#include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/Scene/Scene.h>
+
+
+namespace Urho3D
+{
+
+/// Routes raw resource names to baked versions.
+class BakedResourceRouter : public ResourceRouter
+{
+    URHO3D_OBJECT(BakedResourceRouter, ResourceRouter);
+public:
+    ///
+    explicit BakedResourceRouter(Context* context);
+    ///
+    void Route(ea::string& name, ResourceRequest requestType) override;
+
+protected:
+    ///
+    ea::unordered_map<ea::string, ea::string> routes_;
+};
+
+class Player : public Application
+{
+public:
+    ///
+    explicit Player(Context* context);
+    ///
+    void Setup() override;
+    ///
+    void Start() override;
+    ///
+    void Stop() override;
+
+protected:
+    ///
+    virtual bool LoadPlugins(const JSONValue& plugins);
+#if URHO3D_PLUGINS
+    ///
+    bool LoadAssembly(const ea::string& path);
 #endif
 
-#define URHO3D_ARRAYSIZE(array) (sizeof(array) / sizeof(array[0]))
+    struct LoadedModule
+    {
+        SharedPtr<PluginModule> module_;
+        SharedPtr<PluginApplication> application_;
+    };
 
-#if __cplusplus >= 201703L
-#   define URHO3D_FALLTHROUGH [[fallthrough]]
-#else
-#   define URHO3D_FALLTHROUGH
-#endif
+    ///
+    ea::vector<LoadedModule> plugins_;
+};
 
-#if _WIN32
-#  define URHO3D_STDCALL __stdcall
-#else
-#  define URHO3D_STDCALL
-#endif
+}

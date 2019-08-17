@@ -23,6 +23,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/Mutex.h>
+#include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/Thread.h>
 
 #if _WIN32
@@ -85,6 +86,11 @@ extern "C"
 URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_Context_RegisterFactory(Context* context, const char* typeName, unsigned baseType, const char* category)
 {
     context->RegisterFactory(new ManagedObjectFactory(context, typeName, StringHash(baseType)), category);
+}
+
+URHO3D_EXPORT_API void SWIGSTDCALL Urho3D_ParseArguments(int argc, char** argv)
+{
+    ParseArguments(argc, argv);
 }
 
 }

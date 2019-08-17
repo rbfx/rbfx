@@ -8,11 +8,11 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "102_CSharpProject", "Source
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tools", "Tools", "{5FD75C10-4C14-4132-BC8F-D83FC93AE424}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EditorHost", "Source\Tools\Editor\EditorHost\EditorHost.csproj", "{0BA08346-0D8A-4690-A78E-3A03502B56BD}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Editor", "Source\Tools\Editor\ManagedHost\Editor.csproj", "{0BA08346-0D8A-4690-A78E-3A03502B56BD}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "104_CSharpEditorPlugin", "Source\Samples\104_CSharpPlugin\104_CSharpPlugin.csproj", "{149F0EAC-9851-4775-90D7-35B700DBD5A4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "PlayerCSharp", "Source\Player\PlayerCSharp\PlayerCSharp.csproj", "{5D8637D1-2E78-47EC-B022-AB3019EC2F3A}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Player", "Source\Player\ManagedHost\Player.csproj", "{5D8637D1-2E78-47EC-B022-AB3019EC2F3A}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ScriptPlayer", "Source\Tools\ScriptPlayer\ScriptPlayer.csproj", "{30200AB5-2FD2-4ECE-A9AC-6EC4F29618E5}"
 EndProject

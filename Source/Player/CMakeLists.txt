@@ -24,9 +24,41 @@ if (MINI_URHO OR WEB OR MOBILE)
     return ()
 endif ()
 
-add_subdirectory(Common)
+file (GLOB SOURCE_FILES *.cpp *.h)
 
-if (URHO3D_CSHARP)
-    add_subdirectory(PlayerCSharp)
+if (URHO3D_NO_EDITOR_PLAYER_EXE)
+    add_library (libPlayer STATIC ${SOURCE_FILES})
+    set (PLAYER_TARGET libPlayer)
+elseif (ANDROID OR URHO3D_CSHARP)
+    add_library (libPlayer MODULE ${SOURCE_FILES} PlayerHost.cpp)
+    set (PLAYER_TARGET libPlayer)
+    if (URHO3D_CSHARP)
+        add_target_csharp(
+            TARGET Player
+            PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Player.csproj
+            OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe
+            DEPENDS Urho3DNet)
+    endif ()
+else ()
+    if (NOT URHO3D_WIN32_CONSOLE)
+        set (TARGET_TYPE WIN32)
+    endif ()
+    add_executable (Player ${TARGET_TYPE} ${SOURCE_FILES} PlayerHost.cpp)
+    set (PLAYER_TARGET Player)
 endif ()
-add_subdirectory(Player)
+
+if (TARGET libPlayer)
+    set_target_properties(libPlayer PROPERTIES PREFIX "")
+endif ()
+
+target_link_libraries(${PLAYER_TARGET} Urho3D)
+
+if (URHO3D_SAMPLES AND NOT BUILD_SHARED_LIBS)
+    target_link_libraries(${PLAYER_TARGET} 103_GamePlugin)
+endif ()
+
+install(TARGETS ${PLAYER_TARGET}
+    LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
+    RUNTIME DESTINATION ${DEST_BIN_DIR}
+    ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+)

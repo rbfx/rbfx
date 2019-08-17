@@ -33,7 +33,7 @@ TO CHANGE WITHOUT NOTICE.
 #define IMAGE_DOS_SIGNATURE                 0x5A4D      // MZ
 #define IMAGE_OS2_SIGNATURE                 0x454E      // NE
 #define IMAGE_OS2_SIGNATURE_LE              0x454C      // LE
-#define IMAGE_NT_SIGNATURE                  0x00004550  // PE00  
+#define IMAGE_NT_SIGNATURE                  0x00004550  // PE00
 #define IMAGE_EDOS_SIGNATURE                0x44454550  // PEED
 
 
@@ -628,3 +628,17 @@ typedef struct _IMAGE_IMPORT_DESCRIPTOR {
     uint32_t   Name;
     PIMAGE_THUNK_DATA FirstThunk;
 } IMAGE_IMPORT_DESCRIPTOR, *PIMAGE_IMPORT_DESCRIPTOR;
+
+typedef struct _IMAGE_DEBUG_DIRECTORY {
+    uint32_t   Characteristics;
+    uint32_t   TimeDateStamp;
+    uint16_t   MajorVersion;
+    uint16_t   MinorVersion;
+    uint32_t   Type;
+    uint32_t   SizeOfData;
+    uint32_t   AddressOfRawData;
+    uint32_t   PointerToRawData;
+} IMAGE_DEBUG_DIRECTORY, *PIMAGE_DEBUG_DIRECTORY;
+
+const uint32_t IMAGE_DEBUG_TYPE_CODEVIEW = 2;
+

@@ -223,6 +223,21 @@ void Context::RemoveFactory(StringHash type, const char* category)
         objectCategories_[category].erase_first_unsorted(type);
 }
 
+void Context::RegisterSubsystem(Object* object, StringHash type)
+{
+    if (!object)
+        return;
+
+    bool isTypeValid = false;
+    for (const TypeInfo* typeInfo = object->GetTypeInfo(); typeInfo != nullptr && !isTypeValid; typeInfo = typeInfo->GetBaseTypeInfo())
+        isTypeValid = typeInfo->GetType() == type;
+
+    if (isTypeValid)
+        subsystems_[type] = object;
+    else
+        URHO3D_LOGERROR("Type supplied to RegisterSubsystem() does not belong to object inheritance hierarchy.");
+}
+
 void Context::RegisterSubsystem(Object* object)
 {
     if (!object)

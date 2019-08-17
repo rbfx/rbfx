@@ -192,7 +192,7 @@ void Editor::RenderMenuBar()
 
 void Editor::RenderProjectMenu()
 {
-#if URHO3D_PLUGINS
+#if URHO3D_PLUGINS && !URHO3D_STATIC
     if (ui::BeginMenu("Plugins"))
     {
         ui::PushID("Plugins");
@@ -209,30 +209,28 @@ void Editor::RenderProjectMenu()
             {
                 PluginManager* plugins = project_->GetPlugins();
                 Plugin* plugin = plugins->GetPlugin(baseName);
-                bool loaded = plugin != nullptr;
+                bool loaded = plugin != nullptr && plugin->IsLoaded();
                 bool editorOnly = plugin && plugin->GetFlags() & PLUGIN_PRIVATE;
 
                 ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_EMPTY, "Inactive", !loaded) && loaded)
-                    plugins->Unload(plugin);
+                    plugin->Unload();
 
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_HALF, "Editor-only", loaded && editorOnly))
                 {
                     if (!loaded)
-                    {
-                        plugins->Load(baseName);
-                        plugin = plugins->GetPlugin(baseName);
-                    }
-                    plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                        plugin = plugins->Load(baseName);
+
+                    if (plugin != nullptr)
+                        plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
                 }
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_FULL, "Editor and Game", loaded && !editorOnly))
                 {
                     if (!loaded)
-                    {
-                        plugins->Load(baseName);
-                        plugin = plugins->GetPlugin(baseName);
-                    }
-                    plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);
+                        plugin = plugins->Load(baseName);
+
+                    if (plugin != nullptr)
+                        plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);
                 }
                 ui::PopStyleVar();
                 ui::SameLine();
