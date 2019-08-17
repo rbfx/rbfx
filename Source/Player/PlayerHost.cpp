@@ -19,19 +19,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
-#pragma once
-
-
-#include <Urho3D/Core/Context.h>
-#include <Urho3D/Engine/PluginApplication.h>
-
+#include "Player.h"
+#if URHO3D_SAMPLES && URHO3D_STATIC
+#   include "../Samples/103_GamePlugin/GamePlugin.h"
+#endif
 
 namespace Urho3D
 {
 
-/// Checks specified file and recognizes it's plugin type.
-PluginType GetPluginType(Context* context, const ea::string& path);
-
+/// A simple player loader.
+class PlayerHost : public Player
+{
+    URHO3D_OBJECT(PlayerHost, Player);
+public:
+    /// Construct.
+    explicit PlayerHost(Context* context) : Player(context) { }
+    /// Extend initialization of player application.
+    void Start() override
+    {
+        BaseClassName::Start();
+#if URHO3D_SAMPLES && URHO3D_STATIC
+        // Static plugins must be initialized manually.
+        URHO3D_DEFINE_PLUGIN_STATIC(GamePlugin);
+#endif
+    }
+};
 
 }
+
+#if URHO3D_CSHARP
+URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::PlayerHost);
+#else
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::PlayerHost);
+#endif

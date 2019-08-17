@@ -19,55 +19,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
-#pragma once
-
-
-#include <Urho3D/Engine/Application.h>
-#include <Urho3D/Engine/PluginApplication.h>
-#include <Urho3D/Scene/Scene.h>
-
+#if URHO3D_CSHARP
+#   include <Urho3D/Script/Script.h>
+#endif
+#include "Editor.h"
+#if URHO3D_SAMPLES && URHO3D_STATIC
+#   include "../Samples/103_GamePlugin/GamePlugin.h"
+#endif
 
 namespace Urho3D
 {
 
-/// Routes raw resource names to baked versions.
-class BakedResourceRouter : public ResourceRouter
+/// A simple editor loader.
+class EditorHost : public Editor
 {
-    URHO3D_OBJECT(BakedResourceRouter, ResourceRouter);
+    URHO3D_OBJECT(EditorHost, Editor);
 public:
-    ///
-    explicit BakedResourceRouter(Context* context);
-    ///
-    void Route(ea::string& name, ResourceRequest requestType) override;
-
-protected:
-    ///
-    ea::unordered_map<ea::string, ea::string> routes_;
-};
-
-class Player : public Application
-{
-public:
-    ///
-    explicit Player(Context* context);
-    ///
-    void Setup() override;
-    ///
-    void Start() override;
-    ///
-    void Stop() override;
-
-protected:
-    ///
-    virtual bool LoadPlugins(const JSONValue& plugins);
-#if URHO3D_PLUGINS
-    ///
-    bool LoadAssembly(const ea::string& path, PluginType assumeType=PLUGIN_INVALID);
+    /// Construct.
+    explicit EditorHost(Context* context) : Editor(context) { }
+    /// Extend initialization of editor application.
+    void Start() override
+    {
+        BaseClassName::Start();
+#if URHO3D_SAMPLES && URHO3D_STATIC
+        // Static plugins must be initialized manually.
+        URHO3D_DEFINE_PLUGIN_STATIC(GamePlugin);
 #endif
-
-    ///
-    ea::vector<SharedPtr<PluginApplication>> plugins_;
+    }
 };
 
 }
+
+#if URHO3D_CSHARP
+URHO3D_DEFINE_APPLICATION_MAIN_CSHARP(Urho3D::EditorHost);
+#else
+URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::EditorHost);
+#endif

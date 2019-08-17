@@ -39,7 +39,24 @@ namespace Urho3DNet
             return true;
         }
 
-        public override PluginApplication LoadAssembly(string path, uint version)
+        public override bool SetAssemblyVersion(string path, uint version)
+        {
+            throw new Exception("Assembly versioning is not supported in this build.");
+        }
+
+        public override PluginApplication CreatePluginApplication(int assembly)
+        {
+            var instance = GCHandle.FromIntPtr(new IntPtr(assembly)).Target as Assembly;
+            if (instance == null)
+                return null;
+
+            Type pluginType = instance.GetTypes().First(t => t.IsClass && t.BaseType == typeof(PluginApplication));
+            if (pluginType == null)
+                return null;
+            return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
+        }
+
+        public override int LoadAssembly(string path)
         {
             Assembly assembly;
             try
@@ -48,14 +65,9 @@ namespace Urho3DNet
             }
             catch (Exception)
             {
-                return null;
+                return 0;
             }
-
-            Type pluginType = assembly.GetTypes().First(t => t.IsClass && t.BaseType == typeof(PluginApplication));
-            if (pluginType == null)
-                return null;
-
-            return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
+            return GCHandle.ToIntPtr(GCHandle.Alloc(assembly)).ToInt32();
         }
 
         public override void Dispose(RefCounted instance)

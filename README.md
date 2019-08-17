@@ -100,7 +100,6 @@ rbfx uses the following third-party libraries:
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
 - ImGuizmo 1.61 (https://github.com/CedricGuillemet/ImGuizmo)
-- cr (https://github.com/fungos/cr)
 - crunch (https://github.com/Unity-Technologies/crunch/)
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
 - fmt 4.1.0 (http://fmtlib.net)

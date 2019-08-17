@@ -21,45 +21,17 @@
 //
 
 using System;
-using System.Reflection;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
-using Urho3DNet;
 
-namespace EditorHost
+namespace Urho3DNet
 {
-    internal class Program
+    [System.Security.SuppressUnmanagedCodeSecurity]
+    public partial class Urho3D
     {
-        private Context _context;
-
-        private void Run(string[] args)
-        {
-            int argc = args.Length + 1;                 // args + executable path
-            var argv = new string[args.Length + 2];     // args + executable path + null
-            argv[0] = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
-            args.CopyTo(argv, 1);
-            ParseArgumentsC(argc, argv);
-
-            Context.SetRuntimeApi(new ScriptRuntimeApiReloadableImpl());
-            using (_context = new Context())
-            {
-                using (Application editor = Application.wrap(CreateEditorApplication(Context.getCPtr(_context).Handle), true))
-                {
-                    Environment.ExitCode = editor.Run();
-                }
-            }
-        }
-
-        [STAThread]
-        public static void Main(string[] args)
-        {
-            new Program().Run(args);
-        }
-
-        [DllImport("libEditor")]
-        private static extern IntPtr CreateEditorApplication(IntPtr context);
-
-        [DllImport("libEditor")]
-        private static extern void ParseArgumentsC(int argc,
+        [DllImport("libUrho3D", EntryPoint="Urho3D_ParseArguments")]
+        public static extern void ParseArguments(int argc,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
     }
 }

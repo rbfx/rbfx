@@ -57,6 +57,7 @@
 
 // Speed boost
 %pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
+%pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic partial class"
 %typemap(csclassmodifiers) SWIGTYPE "public partial class"
 
 %include "cmalloc.i"

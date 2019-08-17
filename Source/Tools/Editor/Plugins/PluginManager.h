@@ -27,16 +27,11 @@
 
 #include <atomic>
 #include <Urho3D/Core/Object.h>
+#include <Urho3D/Core/PluginModule.h>
+#include <Urho3D/Engine/PluginApplication.h>
+#include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/IO/Log.h>
-#include <Player/Common/PluginUtils.h>
-#if !defined(NDEBUG) && defined(URHO3D_LOGGING)
-#   define CR_DEBUG 1
-#   define CR_ERROR(format, ...) URHO3D_LOGERRORF(format, ##__VA_ARGS__)
-#   define CR_LOG(format, ...)   URHO3D_LOGTRACEF(format, ##__VA_ARGS__)
-#   define CR_TRACE
-#endif
-#include <cr/cr.h>
 
 namespace Urho3D
 {
@@ -58,29 +53,46 @@ public:
     ~Plugin() override;
 
     /// Returns type of the plugin.
-    PluginType GetPluginType() const { return type_; }
+    ModuleType GetModuleType() const { return module_.GetModuleType(); }
     /// Returns file name of plugin.
-    ea::string GetName() const { return name_; }
+    const ea::string& GetName() const { return name_; }
     ///
     PluginFlags GetFlags() const { return flags_; }
     ///
     void SetFlags(PluginFlags flags) { flags_ = flags; }
+    ///
+    PluginModule& GetModule() { return module_; }
+    ///
+    bool Load(const ea::string& name);
+    ///
+    bool Reload();
+    ///
+    void Unload() { unloading_ = true; }
+    ///
+    bool IsLoaded() const { return module_.GetModuleType() != MODULE_INVALID && !unloading_ && application_.NotNull(); }
+    ///
+    const ea::string& GetPath() const { return path_; }
 
 protected:
+    /// Converts name to a full plugin file path. Returns empty string on error.
+    ea::string NameToPath(const ea::string& name) const;
+    ///
+    ea::string VersionModule(const ea::string& path, unsigned version);
+    ///
+    bool InternalUnload();
+
     /// Base plugin file name.
     ea::string name_;
-    /// Path to plugin dynamic library file.
+    /// Unversioned plugin module path.
     ea::string path_;
-    /// Type of plugin (invalid/native/managed).
-    PluginType type_ = PLUGIN_INVALID;
-    /// Context of native plugin. Not initialized for managed plugins.
-    cr_plugin nativeContext_{};
+    ///
+    PluginModule module_{context_};
     /// Flag indicating that plugin should unload on the end of the frame.
     bool unloading_ = false;
     /// Last modification time.
     unsigned mtime_ = 0;
     /// Current plugin version.
-    unsigned version_ = 1;
+    unsigned version_ = 0;
     ///
     PluginFlags flags_ = PLUGIN_DEFAULT;
     /// Instance to the plugin application. This should be a single owning reference to the plugin. Managed plugins are
@@ -97,11 +109,9 @@ public:
     /// Construct.
     explicit PluginManager(Context* context);
     /// Unload all plugins an destruct.
-    ~PluginManager() override;
+    ~PluginManager() override = default;
     /// Load a plugin and return true if succeeded.
     virtual Plugin* Load(const ea::string& name);
-    /// Unload a plugin and return true if succeeded.
-    virtual void Unload(Plugin* plugin);
     /// Returns a loaded plugin with specified name.
     Plugin* GetPlugin(const ea::string& name);
     /// Returns a vector containing all loaded plugins.
@@ -114,15 +124,13 @@ public:
     static ea::string PathToName(const ea::string& path);
 
 protected:
-    /// Converts name to a full plugin file path. Returns empty string on error.
-    ea::string NameToPath(const ea::string& name) const;
-
+    /// Entry about dynamic library on the disk. It may or may not be loaded.
     struct DynamicLibraryInfo
     {
         /// Last modification time.
         unsigned mtime_ = 0;
         /// Type of plugin.
-        PluginType pluginType_ = PLUGIN_INVALID;
+        ModuleType pluginType_ = MODULE_INVALID;
     };
 
     /// Loaded plugins.
