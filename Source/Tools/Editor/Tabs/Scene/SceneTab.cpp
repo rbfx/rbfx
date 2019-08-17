@@ -791,7 +791,7 @@ void SceneTab::RenderNodeTree(Node* node)
             // Do not use element->GetChildren() because child may be deleted during this loop.
             ea::vector<Node*> children;
             node->GetChildren(children);
-            for (Node* child : children) 
+            for (Node* child : children)
             {
                 // ensure the tree is expanded to the currently selected node if there is one node selected.
                 if (GetSelection().size() == 1)
@@ -1021,6 +1021,7 @@ void SceneTab::RenderNodeContextMenu()
                 auto* editor = GetSubsystem<Editor>();
                 auto categories = context_->GetObjectCategories().keys();
                 categories.erase_first("UI");
+                ea::quick_sort(categories.begin(), categories.end());
 
                 for (const ea::string& category : categories)
                 {
@@ -1042,8 +1043,7 @@ void SceneTab::RenderNodeContextMenu()
                                 {
                                     if (!selectedNode.Expired())
                                     {
-                                        if (selectedNode->CreateComponent(StringHash(component),
-                                                                          alternative ? LOCAL : REPLICATED))
+                                        if (selectedNode->CreateComponent(StringHash(component), alternative ? LOCAL : REPLICATED))
                                             openHierarchyNodes_.push_back(selectedNode);
                                     }
                                 }
