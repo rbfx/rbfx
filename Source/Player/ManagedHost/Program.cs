@@ -44,7 +44,7 @@ namespace Player
             var argv = new string[args.Length + 2];     // args + executable path + null
             argv[0] = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
             args.CopyTo(argv, 1);
-            ParseArgumentsC(argc, argv);
+            Urho3D.ParseArguments(argc, argv);
 
             using (_context = new Context())
             {
@@ -63,9 +63,5 @@ namespace Player
 
         [DllImport("libPlayer")]
         private static extern IntPtr CreateApplication(IntPtr context);
-
-        [DllImport("libPlayer")]
-        private static extern void ParseArgumentsC(int argc,
-            [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
     }
 }

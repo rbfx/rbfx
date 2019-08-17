@@ -90,6 +90,8 @@ public:
     void RemoveFactory(StringHash type);
     /// remove object factory.
     void RemoveFactory(StringHash type, const char* category);
+    /// Register a subsystem by explicitly using a type. Type must belong to inheritance hierarchy.
+    void RegisterSubsystem(Object* object, StringHash type);
     /// Register a subsystem.
     void RegisterSubsystem(Object* object);
     /// Remove a subsystem.

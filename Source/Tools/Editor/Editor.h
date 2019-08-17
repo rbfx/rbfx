@@ -26,6 +26,7 @@
 #include <Urho3D/Engine/Application.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "Project.h"
+#include "SubCommand.h"
 
 using namespace std::placeholders;
 
@@ -34,8 +35,6 @@ namespace Urho3D
 
 class Tab;
 class SceneTab;
-class AssetConverter;
-class SubCommand;
 
 static const unsigned EDITOR_VIEW_LAYER = 1U << 31;
 

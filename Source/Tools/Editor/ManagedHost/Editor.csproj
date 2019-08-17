@@ -2,7 +2,6 @@
   <PropertyGroup>
     <AssemblyName>Editor</AssemblyName>
     <OutputType>WinExe</OutputType>
-    <RootNamespace>EditorHost</RootNamespace>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <LangVersion>7.2</LangVersion>
     <ProjectGuid>{FA73A110-AD6A-3F47-8E38-02303C95FE7A}</ProjectGuid>

@@ -20,15 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/IO/File.h>
+#include "../Core/PluginModule.h"
+#include "../IO/Log.h"
+#include "../IO/File.h"
+
 #if URHO3D_CSHARP
-#   include <Urho3D/Script/Script.h>
+#   include "../Script/Script.h"
 #endif
-#include "PluginUtils.h"
 #if _WIN32
 #   include <windows.h>
 #else
 #   include "PE.h"
+#   include <dlfcn.h>
 #endif
 #if __linux__
 #   include <elf.h>
@@ -132,13 +135,117 @@ static bool IsValidPtr(const ea::vector<unsigned char>& data, const T* p, unsign
            reinterpret_cast<std::uintptr_t>(p) + len <= reinterpret_cast<std::uintptr_t>(data.data() + data.size());
 }
 
-PluginType GetPluginType(Context* context, const ea::string& path)
+PluginModule::~PluginModule()
+{
+    if (handle_ != 0)
+        Unload();
+}
+
+bool PluginModule::Load(const ea::string& path)
+{
+#if URHO3D_PLUGINS
+    if (handle_ != 0)
+    {
+        URHO3D_LOGERROR("Plugin {} is already loaded.", path_);
+        return false;
+    }
+
+    moduleType_ = ReadModuleInformation(context_, path);
+    if (moduleType_ == MODULE_INVALID)
+        return false;
+
+#if URHO3D_CSHARP
+    if (moduleType_ == MODULE_MANAGED)
+        handle_ = Script::GetRuntimeApi()->LoadAssembly(path.data());
+    else
+#endif  // URHO3D_CSHARP
+    {
+#if _WIN32
+        handle_ = (uintptr_t)LoadLibrary(path.data());
+#elif __linux__ || __APPLE__
+        handle_ = (uintptr_t)dlopen(path.c_str(), RTLD_NOW);
+#else
+        URHO3D_LOGERROR("Plugin loading is not supported on this platform.");
+#endif
+    }
+    if (handle_ != 0)
+    {
+        path_ = path;
+        return true;
+    }
+    else
+    {
+        path_.clear();
+        moduleType_ = MODULE_INVALID;
+    }
+#endif  // URHO3D_PLUGINS
+    return false;
+}
+
+bool PluginModule::Unload()
+{
+#if URHO3D_PLUGINS
+    if (handle_ == 0)
+        return false;
+
+#if URHO3D_CSHARP
+    if (moduleType_ == MODULE_MANAGED)
+    {
+        Script::GetRuntimeApi()->FreeGCHandle(handle_);
+    }
+    else
+#endif  // URHO3D_CSHARP
+    {
+#if _WIN32
+        FreeLibrary((HMODULE)handle_);
+#elif __linux__ || __APPLE__
+        dlclose((void*)handle_);
+#else
+        URHO3D_LOGERROR("Plugin loading is not supported on this platform.");
+        return false;
+#endif  // __linux__ || __APPLE__
+    }
+
+    handle_ = 0;
+    path_.clear();
+    moduleType_ = MODULE_INVALID;
+    return true;
+#else
+    return false;
+#endif  // URHO3D_PLUGINS
+}
+
+void* PluginModule::GetSymbol(const ea::string& symbol)
+{
+#if URHO3D_PLUGINS
+#if URHO3D_CSHARP
+    if (moduleType_ != MODULE_NATIVE)
+    {
+        URHO3D_LOGERROR("Symbol retrieval is not supported for this type of module.");
+        return nullptr;
+    }
+#endif  // URHO3D_CSHARP
+
+#if _WIN32
+    return (void*)GetProcAddress((HMODULE)handle_, symbol.c_str());
+#elif __linux__ || __APPLE__
+    return dlsym((void*)handle_, symbol.c_str());
+#else
+    URHO3D_LOGERROR("Plugin symbol retrieval is not supported on this platform.");
+    return nullptr;
+#endif  // __linux__ || __APPLE__
+#else
+    return nullptr;
+#endif  // URHO3D_PLUGINS
+}
+
+ModuleType PluginModule::ReadModuleInformation(Context* context, const ea::string& path, unsigned* pdbPathOffset, unsigned* pdbPathLength)
 {
 #if URHO3D_PLUGINS
     // This function implements a naive check for plugin validity. Proper check would parse executable headers and look
     // for relevant exported function names.
     ea::vector<unsigned char> data;
-    const char pluginEntryPoint[] = "cr_main";
+    const char pluginEntryPoint[] = "PluginApplicationMain";
 
 #if __linux__
     // ELF magic
@@ -146,27 +253,27 @@ PluginType GetPluginType(Context* context, const ea::string& path)
     {
         File file(context);
         if (!file.Open(path, FILE_READ))
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         data.resize(file.GetSize());
         if (file.Read(data.data(), data.size()) != data.size())
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         // Elf header parsing code based on elfdump by Owen Klan.
-        Elf_Ehdr* hdr = reinterpret_cast<Elf_Ehdr*>(data.data());
+        auto* hdr = reinterpret_cast<Elf_Ehdr*>(data.data());
         if (!IsValidPtr(data, hdr) || strncmp(reinterpret_cast<const char*>(hdr->e_ident), ELFMAG, SELFMAG) != 0)
             // Not elf.
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         if (hdr->e_type != ET_DYN)
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         // Find symbol name table
         unsigned symNameTableOffset = 0;
         {
-            Elf_Shdr* shdr = reinterpret_cast<Elf_Shdr*>(data.data() + hdr->e_shoff + sizeof(Elf_Shdr) * hdr->e_shstrndx);
+            auto* shdr = reinterpret_cast<Elf_Shdr*>(data.data() + hdr->e_shoff + sizeof(Elf_Shdr) * hdr->e_shstrndx);
             if (!IsValidPtr(data, shdr))
-                return PLUGIN_INVALID;
+                return MODULE_INVALID;
 
             auto nameTableOffset = shdr->sh_offset;
             shdr = reinterpret_cast<Elf_Shdr*>(data.data() + hdr->e_shoff);
@@ -174,13 +281,13 @@ PluginType GetPluginType(Context* context, const ea::string& path)
             for (auto i = 0; i < hdr->e_shnum; i++)
             {
                 if (!IsValidPtr(data, shdr))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
 
                 const char* tabNamePtr = reinterpret_cast<const char*>(data.data() + nameTableOffset + shdr->sh_name);
                 const char strTabName[] = ".strtab";
 
                 if (!IsValidPtr(data, tabNamePtr, sizeof(strTabName)))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
 
                 if (strncmp(tabNamePtr, strTabName, sizeof(strTabName)) == 0)
                 {
@@ -193,9 +300,9 @@ PluginType GetPluginType(Context* context, const ea::string& path)
         }
 
         if (symNameTableOffset == 0)
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
-        // Find cr_main symbol
+        // Find PluginApplicationMain symbol
         {
             auto shoff = hdr->e_shoff;
             Elf_Shdr* sectab = nullptr;
@@ -203,7 +310,7 @@ PluginType GetPluginType(Context* context, const ea::string& path)
             {
                 sectab = reinterpret_cast<Elf_Shdr*>(data.data() + shoff);
                 if (!IsValidPtr(data, sectab))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
                 shoff += sizeof(Elf_Shdr);
             } while (sectab->sh_type != SHT_SYMTAB);
 
@@ -212,65 +319,124 @@ PluginType GetPluginType(Context* context, const ea::string& path)
             ea::string funcName;
             for (auto i = 0; i < num; i++)
             {
-                Elf_Sym* symbol = reinterpret_cast<Elf_Sym*>(data.data() + shoff);
+                auto* symbol = reinterpret_cast<Elf_Sym*>(data.data() + shoff);
                 if (!IsValidPtr(data, symbol))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
                 shoff += sizeof(Elf_Sym);
 
                 const char* funcNamePtr = reinterpret_cast<const char*>(data.data() + symNameTableOffset + symbol->st_name);
                 if (!IsValidPtr(data, funcNamePtr, sizeof(pluginEntryPoint)))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
 
                 if (strncmp(funcNamePtr, pluginEntryPoint, sizeof(pluginEntryPoint)) == 0)
-                    return PLUGIN_NATIVE;
+                    return MODULE_NATIVE;
             }
         }
     }
-#endif
+#endif  // __linux__
 
 #if _WIN32 || URHO3D_CSHARP
     if (path.ends_with(".dll"))
     {
         File file(context);
-        if (!file.Open(path, FILE_READ))
-            return PLUGIN_INVALID;
+        if (!file.Open(path.data(), FILE_READ))
+            return MODULE_INVALID;
 
         data.resize(file.GetSize());
         if (file.Read(data.data(), data.size()) != data.size())
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
-        PIMAGE_DOS_HEADER dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.data());
+        auto* dos = reinterpret_cast<PIMAGE_DOS_HEADER>(data.data());
 
         if (!IsValidPtr(data, dos) || dos->e_magic != IMAGE_DOS_SIGNATURE)
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
-        PIMAGE_NT_HEADERS nt = reinterpret_cast<PIMAGE_NT_HEADERS>(data.data() + dos->e_lfanew);
+        auto* nt = reinterpret_cast<PIMAGE_NT_HEADERS>(data.data() + dos->e_lfanew);
         if (!IsValidPtr(data, dos) || nt->OptionalHeader.Magic != IMAGE_NT_OPTIONAL_HDR_MAGIC)
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         const auto& eatDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_EXPORT];
         const auto& netDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_COM_DESCRIPTOR];
+        const auto& dbgDir = nt->OptionalHeader.DataDirectory[IMAGE_DIRECTORY_ENTRY_DEBUG];
+
+        // Find pdb
+        if (pdbPathOffset != nullptr)
+        {
+            *pdbPathOffset = 0;
+            if (dbgDir.VirtualAddress && dbgDir.Size)
+            {
+                uint32_t offset = 0;
+                // Convert dbgDir.VirtualAddress virtual address to offset in physical file.
+                for (auto *sect = IMAGE_FIRST_SECTION(nt), *end = sect + nt->FileHeader.NumberOfSections; sect < end && offset == 0; sect++)
+                {
+                    if (dbgDir.VirtualAddress >= sect->VirtualAddress && dbgDir.VirtualAddress < sect->VirtualAddress + sect->Misc.VirtualSize)
+                        offset = dbgDir.VirtualAddress - (sect->VirtualAddress - sect->PointerToRawData);
+                }
+
+                if (offset != 0)
+                {
+                    auto* debugEntries = reinterpret_cast<PIMAGE_DEBUG_DIRECTORY>(data.data() + offset);
+                    if (IsValidPtr(data, debugEntries, dbgDir.Size))
+                    {
+                        for (unsigned i = 0, numEntries = dbgDir.Size / sizeof(IMAGE_DEBUG_DIRECTORY); i < numEntries; i++)
+                        {
+                            if (debugEntries[i].Type == IMAGE_DEBUG_TYPE_CODEVIEW)
+                            {
+                                struct CodeViewData
+                                {
+                                    /* 000 */ uint32_t magic;
+                                    /* 004 */ uint8_t guid[16];
+                                    /* 014 */ uint32_t age;
+                                    /* 018 */ char pdbPath[];
+                                };
+
+                                auto* codeViewData = reinterpret_cast<CodeViewData*>(data.data() + debugEntries[i].PointerToRawData);
+                                if (IsValidPtr(data, codeViewData, debugEntries[i].SizeOfData))
+                                {
+                                    if (codeViewData->magic == 0x53445352)
+                                    {
+                                        *pdbPathOffset = (uintptr_t)&codeViewData->pdbPath - (uintptr_t)data.data();
+                                        if (pdbPathLength != nullptr)
+                                            *pdbPathLength = strnlen(codeViewData->pdbPath, debugEntries[i].PointerToRawData - offsetof(CodeViewData, pdbPath));
+                                    }
+                                    else
+                                    {
+                                        URHO3D_LOGERROR("Unsupported CodeView version.");
+                                        return MODULE_INVALID;
+                                    }
+                                }
+                                else
+                                    return MODULE_INVALID;
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Detect if dll is native or managed
         if (netDir.VirtualAddress != 0)
         {
 #if URHO3D_CSHARP
             // Verify that plugin has a class that inherits from PluginApplication.
-            if (context->GetSubsystem<Script>()->GetRuntimeApi()->VerifyAssembly(path))
-                return PLUGIN_MANAGED;
+            if (Script::GetRuntimeApi()->VerifyAssembly(path.data()))
+                return MODULE_MANAGED;
 #endif
         }
 #if _WIN32
         else if (eatDir.VirtualAddress > 0)
         {
-            // Verify that plugin has exported function named cr_main.
+            // Verify that plugin has exported function named PluginApplicationMain.
             // Find section that contains EAT.
 
             unsigned firstSectionOffset = dos->e_lfanew + FIELD_OFFSET(IMAGE_NT_HEADERS, OptionalHeader) + nt->FileHeader.SizeOfOptionalHeader;
             uint32_t eatModifier = 0;
             for (auto i = 0; i < nt->FileHeader.NumberOfSections; i++)
             {
-                PIMAGE_SECTION_HEADER section = reinterpret_cast<PIMAGE_SECTION_HEADER>(data.data() + firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
+                auto* section = reinterpret_cast<PIMAGE_SECTION_HEADER>(data.data() + firstSectionOffset + i * sizeof(IMAGE_SECTION_HEADER));
                 if (!IsValidPtr(data, section))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
 
                 if (eatDir.VirtualAddress >= section->VirtualAddress && eatDir.VirtualAddress < (section->VirtualAddress + section->SizeOfRawData))
                 {
@@ -279,64 +445,64 @@ PluginType GetPluginType(Context* context, const ea::string& path)
                 }
             }
 
-            PIMAGE_EXPORT_DIRECTORY eat = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(data.data() + eatDir.VirtualAddress - eatModifier);
+            auto* eat = reinterpret_cast<PIMAGE_EXPORT_DIRECTORY>(data.data() + eatDir.VirtualAddress - eatModifier);
             if (!IsValidPtr(data, eat))
-                return PLUGIN_INVALID;
+                return MODULE_INVALID;
 
             unsigned namesOffset = eat->AddressOfNames - eatModifier;
             for (auto i = 0; i < eat->NumberOfFunctions; i++)
             {
                 uint32_t* nameOffset = reinterpret_cast<unsigned*>(data.data() + namesOffset + i * sizeof(uint32_t));
                 if (!IsValidPtr(data, nameOffset))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
 
                 const char* funcNamePtr = reinterpret_cast<const char*>(data.data() + *nameOffset - eatModifier);
                 if (!IsValidPtr(data, funcNamePtr, sizeof(pluginEntryPoint)))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
 
                 if (strncmp(funcNamePtr, pluginEntryPoint, sizeof(pluginEntryPoint)) == 0)
-                    return PLUGIN_NATIVE;
+                    return MODULE_NATIVE;
             }
         }
 #endif  // _WIN32
     }
-#endif  // _WIN32
+#endif  // _WIN32 || URHO3D_CSHARP
 #if __APPLE__
     if (path.ends_with(".dylib"))
     {
         File file(context);
-        if (!file.Open(path, FILE_READ))
-            return PLUGIN_INVALID;
+        if (!file.Open(path.data(), FILE_READ))
+            return MODULE_INVALID;
 
         data.resize(file.GetSize());
         if (file.Read(data.data(), data.size()) != data.size())
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
-        mach_header* hdr = reinterpret_cast<mach_header*>(data.data());
+        auto* hdr = reinterpret_cast<mach_header*>(data.data());
 
         if (!IsValidPtr(data, hdr) || hdr->magic != MACHO_MAGIC || hdr->filetype != 6 /*dylib*/)
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         symtab_command* symtab = nullptr;
         dysymtab_command* dysymtab = nullptr;
         unsigned offset = sizeof(mach_header);
         for (unsigned i = 0; i < hdr->ncmds; i++)
         {
-            load_command* cmd = reinterpret_cast<load_command*>(data.data() + offset);
+            auto* cmd = reinterpret_cast<load_command*>(data.data() + offset);
             if (!IsValidPtr(data, cmd))
-                return PLUGIN_INVALID;
+                return MODULE_INVALID;
 
             if (cmd->cmd == 0x2)            // SYMTAB
             {
                 symtab = reinterpret_cast<symtab_command*>(cmd);
                 if (!IsValidPtr(data, symtab))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
             }
             else if (cmd->cmd == 0xB)   // DYSYMTAB
             {
                 dysymtab = reinterpret_cast<dysymtab_command*>(cmd);
                 if (!IsValidPtr(data, dysymtab))
-                    return PLUGIN_INVALID;
+                    return MODULE_INVALID;
             }
 
             if (symtab && dysymtab)
@@ -346,28 +512,41 @@ PluginType GetPluginType(Context* context, const ea::string& path)
         }
 
         if (!symtab || !dysymtab)
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         const char* strtab = reinterpret_cast<const char*>(data.data() + symtab->stroff);
         const nlist* lists = reinterpret_cast<nlist*>(data.data() + symtab->symoff);
 
         if (!IsValidPtr(data, lists, sizeof(nlist) * symtab->nsyms))
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         if (!IsValidPtr(data, strtab, symtab->strsize))
-            return PLUGIN_INVALID;
+            return MODULE_INVALID;
 
         for (unsigned i = dysymtab->ilocalsym; i < dysymtab->ilocalsym + dysymtab->nlocalsym; i++)
         {
             const char* name = strtab + lists[i].n_strx;
             if (strncmp(name, pluginEntryPoint, sizeof(pluginEntryPoint)) == 0)
-                return PLUGIN_NATIVE;
+                return MODULE_NATIVE;
         }
     }
-#endif
-#endif
-    return PLUGIN_INVALID;
+#endif  // __APPLE__
+#endif  // URHO3D_PLUGINS
+    return MODULE_INVALID;
 }
 
+PluginApplication* PluginModule::InstantiatePlugin()
+{
+    if (moduleType_ == MODULE_NATIVE)
+    {
+        if (void* main = GetSymbol("PluginApplicationMain"))
+            return reinterpret_cast<PluginApplication*(*)(Context*)>(main)(context_);
+    }
+#if URHO3D_CSHARP
+    else if (moduleType_ == MODULE_MANAGED)
+        return Script::GetRuntimeApi()->CreatePluginApplication(handle_);
+#endif
+    return nullptr;
+}
 
 }

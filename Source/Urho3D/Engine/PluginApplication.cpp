@@ -23,17 +23,6 @@
 #include "../Core/Context.h"
 #include "../Engine/PluginApplication.h"
 #include "../IO/Log.h"
-#if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
-#   if !defined(NDEBUG) && defined(URHO3D_LOGGING)
-#       define CR_DEBUG 1
-#       define CR_ERROR(format, ...) URHO3D_LOGERRORF(format, ##__VA_ARGS__)
-#       define CR_LOG(format, ...)   URHO3D_LOGTRACEF(format, ##__VA_ARGS__)
-#       define CR_TRACE
-#   endif
-#   if DESKTOP
-#       include <cr/cr.h>
-#   endif
-#endif
 
 namespace Urho3D
 {
@@ -49,46 +38,12 @@ PluginApplication::~PluginApplication()
         context_->RemoveAllAttributes(pair.first);
         context_->RemoveSubsystem(pair.first);
     }
+    context_->RemoveFactory(GetType());
 }
 
 void PluginApplication::RecordPluginFactory(StringHash type, const char* category)
 {
     registeredTypes_.push_back({type, category ? category : ""});
 }
-
-#if !defined(URHO3D_STATIC) && defined(URHO3D_PLUGINS)
-int PluginApplication::PluginMain(void* ctx_, size_t operation, PluginApplication*(*factory)(Context*))
-{
-#if DESKTOP
-    assert(ctx_);
-    auto* ctx = static_cast<cr_plugin*>(ctx_);
-
-    switch (operation)
-    {
-    case CR_LOAD:
-    {
-        auto* context = static_cast<Context*>(ctx->userdata);
-        ctx->userdata = factory(context);
-        return 0;
-    }
-    case CR_UNLOAD:
-    case CR_CLOSE:
-    {
-        auto* application = static_cast<PluginApplication*>(ctx->userdata);
-        ctx->userdata = application->GetContext();
-        return 0;
-    }
-    case CR_STEP:
-    {
-        return 0;
-    }
-    default:
-		break;
-    }
-	assert(false);
-#endif
-	return -3;
-}
-#endif
 
 }

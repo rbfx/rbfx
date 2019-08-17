@@ -66,9 +66,6 @@
 
 using namespace ui::litterals;
 
-URHO3D_DEFINE_APPLICATION_MAIN(Urho3D::Editor);
-
-
 namespace Urho3D
 {
 
@@ -200,7 +197,7 @@ void Editor::Setup()
 
 void Editor::Start()
 {
-    context_->RegisterSubsystem(this);
+    context_->RegisterSubsystem(this, Editor::GetTypeStatic());
     // Execute specified subcommand and exit.
     for (SharedPtr<SubCommand>& cmd : subCommands_)
     {
