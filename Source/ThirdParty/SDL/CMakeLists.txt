@@ -1487,7 +1487,7 @@ add_library (SDL STATIC ${SOURCE_FILES})
 
 # General includes
 # Urho3D - use 'generated' path suffix for generated config header file, the suffic prevents overwriting the header file with the same name in the source tree in case of non out-of-source build tree is being used
-target_include_directories (SDL
+target_include_directories (SDL SYSTEM
     PUBLIC $<BUILD_INTERFACE:${SDL2_BINARY_DIR}/include/SDL/generated>
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include/SDL>
            $<BUILD_INTERFACE:${SDL2_SOURCE_DIR}/include>

@@ -53,7 +53,7 @@ if (NOT WIN32)
 endif ()
 
 add_library (crnlib STATIC ${CRNLIB_SOURCE_FILES})
-target_include_directories(crnlib
+target_include_directories(crnlib SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/crunch>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/crnlib>

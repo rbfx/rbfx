@@ -34,7 +34,7 @@ elseif (GCC OR WEB)
     target_compile_options(EASTL PUBLIC -Wno-literal-suffix)
 endif ()
 
-target_include_directories(EASTL
+target_include_directories(EASTL SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test/packages/EABase/include/Common>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test/packages/EAAssert/include>
