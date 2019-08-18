@@ -77,6 +77,45 @@ macro(ucm_set_flags)
     ucm_add_flags(CLEAR_OLD ${ARGN})
 endmacro()
 
+# ucm_replace_flag
+# Replaces specified flag with a new one compiler flags to CMAKE_<LANG>_FLAGS or to a specific config
+macro(ucm_replace_flag FLAG NEW_FLAG)
+    cmake_parse_arguments(ARG "C;CXX;REGEX" "" "CONFIG" ${ARGN})
+
+    if(NOT ARG_CONFIG)
+        set(ARG_CONFIG " ")
+    endif()
+
+    foreach(CONFIG ${ARG_CONFIG})
+        # determine to which flags to add
+        if(NOT ${CONFIG} STREQUAL " ")
+            string(TOUPPER ${CONFIG} CONFIG)
+            set(CXX_FLAGS CMAKE_CXX_FLAGS_${CONFIG})
+            set(C_FLAGS CMAKE_C_FLAGS_${CONFIG})
+        else()
+            set(CXX_FLAGS CMAKE_CXX_FLAGS)
+            set(C_FLAGS CMAKE_C_FLAGS)
+        endif()
+
+        # add all the passed flags
+        if("${ARG_CXX}" OR NOT "${ARG_C}")
+            if (ARG_REGEX)
+                string (REGEX REPLACE "${FLAG}" "${NEW_FLAG}" ${CXX_FLAGS} "${${CXX_FLAGS}}")
+            else ()
+                string (REPLACE "${FLAG}" "${NEW_FLAG}" ${CXX_FLAGS} "${${CXX_FLAGS}}")
+            endif ()
+        endif()
+        if("${ARG_C}" OR NOT "${ARG_CXX}")
+            if (ARG_REGEX)
+                string (REGEX REPLACE "${FLAG}" "${NEW_FLAG}" ${C_FLAGS} "${${C_FLAGS}}")
+            else ()
+                string (REPLACE "${FLAG}" "${NEW_FLAG}" ${C_FLAGS} "${${C_FLAGS}}")
+            endif ()
+        endif()
+    endforeach()
+
+endmacro()
+
 # ucm_add_linker_flags
 # Adds linker flags to CMAKE_<TYPE>_LINKER_FLAGS or to a specific config
 macro(ucm_add_linker_flags)

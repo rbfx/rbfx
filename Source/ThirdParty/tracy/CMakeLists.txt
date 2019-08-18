@@ -79,7 +79,7 @@ if (URHO3D_PROFILING)
         add_library (tracy-embedded-profiler STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
         setup_tracy_profiler_target(tracy-embedded-profiler)
         target_compile_definitions(tracy-embedded-profiler PRIVATE -DTRACY_EMBED_WINDOW=1)
-        target_include_directories(tracy-embedded-profiler PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+        target_include_directories(tracy-embedded-profiler SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     endif ()
 
     install (TARGETS tracy-lib EXPORT Urho3D
