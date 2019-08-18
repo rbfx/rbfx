@@ -29,7 +29,7 @@ endif ()
 file (GLOB_RECURSE SOURCE_FILES *.h *.cpp)
 set (SOURCE_FILES ${SOURCE_FILES})
 add_library (Bullet STATIC ${SOURCE_FILES})
-target_include_directories(Bullet
+target_include_directories(Bullet SYSTEM
     PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Bullet>
            $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
            $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}/Bullet>

@@ -72,7 +72,7 @@ configure_file (include/ik/config.h.in ${CMAKE_CURRENT_BINARY_DIR}/include/gener
 
 add_library (ik STATIC ${SOURCE_FILES})
 target_compile_definitions(ik PUBLIC -DIK_STATIC)
-target_include_directories(ik PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/generated> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
+target_include_directories(ik SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include/generated> $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>)
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
     install(TARGETS ik EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})

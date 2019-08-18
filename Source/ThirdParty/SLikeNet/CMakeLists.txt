@@ -89,7 +89,7 @@ if (NOT VSNPRINTFS_FUNCTION_EXISTS)
 endif()
 
 target_include_directories(SLikeNet
-    PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source/include>
+    SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/Source/include>
 )
 
 if (WIN32)

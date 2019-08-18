@@ -21,7 +21,11 @@
 #
 
 # Third party warnings are irrelevant to us.
-ucm_add_flags(-w)
+if (MSVC)
+	ucm_add_flags("/W0")
+else ()
+	ucm_add_flags("-w")
+endif ()
 
 add_subdirectory(EASTL)
 add_subdirectory(LZ4)

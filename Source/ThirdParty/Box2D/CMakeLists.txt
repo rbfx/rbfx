@@ -145,7 +145,7 @@ set(BOX2D_General_HDRS
 )
 
 # Define source files
-file (GLOB CPP_FILES 
+file (GLOB CPP_FILES
     ${BOX2D_Collision_SRCS}
     ${BOX2D_Shapes_SRCS}
     ${BOX2D_Common_SRCS}
@@ -154,7 +154,7 @@ file (GLOB CPP_FILES
     ${BOX2D_Joints_SRCS}
     ${BOX2D_Rope_SRCS})
 
-file (GLOB H_FILES 
+file (GLOB H_FILES
     ${BOX2D_Collision_HDRS}
     ${BOX2D_Shapes_HDRS}
     ${BOX2D_Common_HDRS}
@@ -177,7 +177,7 @@ source_group(Include FILES ${BOX2D_General_HDRS})
 source_group(Rope FILES ${BOX2D_Rope_SRCS} ${BOX2D_Rope_HDRS})
 
 add_library (Box2D STATIC ${SOURCE_FILES})
-target_include_directories(Box2D PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
+target_include_directories(Box2D SYSTEM PUBLIC $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>)
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Box2D PRIVATE -DBOX2D_EXPORTS -DUrho3D_EXPORTS)
 endif ()
