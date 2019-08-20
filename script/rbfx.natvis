@@ -191,7 +191,7 @@
 
   <!-- Urho3D::Node -->
   <Type Name = "Urho3D::Node">
-    <DisplayString>name_ = {impl_.ptr_->name_}</DisplayString>
+    <DisplayString>name_ = {impl_.mPair.mFirst->name_}</DisplayString>
   </Type>
 
   <!-- Urho3D::Resource -->
