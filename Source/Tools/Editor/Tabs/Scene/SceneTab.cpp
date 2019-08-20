@@ -1185,30 +1185,38 @@ void SceneTab::AddComponentIcon(Component* component)
 
     Node* node = component->GetNode();
 
-    if (node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__") ||
+    if (node == nullptr || node->IsTemporary() || node->HasTag("__EDITOR_OBJECT__") ||
         (node->GetName().starts_with("__") && node->GetName().ends_with("__")))
         return;
 
-    auto* material = GetCache()->GetResource<Material>("Materials/Editor/DebugIcon" + component->GetTypeName() + ".xml", false);
+    auto* material = GetCache()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
     if (material != nullptr)
     {
-        if (node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()).size() > 0)
-            return;
-
         auto iconTag = "DebugIcon" + component->GetTypeName();
-        if (node->GetChildrenWithTag(iconTag).empty())
-        {
-            Undo::SetTrackingScoped tracking(undo_, false);
-            int count = node->GetChildrenWithTag("DebugIcon").size();
-            node = node->CreateChild();
-            node->AddTag("DebugIcon");
-            node->AddTag("DebugIcon" + component->GetTypeName());
-            node->AddTag("__EDITOR_OBJECT__");
-            node->SetVar("ComponentType", component->GetType());
-            node->SetTemporary(true);
+        if (!node->GetChildrenWithTag(iconTag).empty())
+            return;                                                 // Icon for component of this type is already added
 
-            auto* billboard = node->CreateComponent<BillboardSet>();
-            billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_XYZ);
+        Undo::SetTrackingScoped tracking(undo_, false);
+        int count = node->GetChildrenWithTag("DebugIcon").size();
+        node = node->CreateChild();                                 // !! from now on `node` is a container for debug icon
+        node->AddTag("DebugIcon");
+        node->AddTag(iconTag);
+        node->AddTag("__EDITOR_OBJECT__");
+        node->SetVar("ComponentType", component->GetType());
+        node->SetTemporary(true);
+
+        auto* billboard = node->CreateComponent<BillboardSet>();
+        billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_XYZ);
+        if (auto* settings = GetScene()->GetComponent<EditorSceneSettings>())
+        {
+            bool is2D = settings->GetCamera2D();
+            if (is2D)
+            {
+                node->LookAt(node->GetWorldPosition() + Vector3::FORWARD);
+                billboard->SetFaceCameraMode(FaceCameraMode::FC_NONE);
+            }
+        }
+
             billboard->SetNumBillboards(1);
             billboard->SetMaterial(material);
             billboard->SetViewMask(EDITOR_VIEW_LAYER);
