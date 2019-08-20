@@ -21,6 +21,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Graphics/BillboardSet.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/DebugRenderer.h>
 #include <Urho3D/Graphics/RenderPath.h>
@@ -178,6 +179,24 @@ void EditorSceneSettings::SetCamera2D(bool is2D)
             camera->RemoveComponent<DebugCameraController2D>();
             camera->GetOrCreateComponent<DebugCameraController>();
             camera->GetComponent<Camera>()->SetOrthographic(false);
+        }
+
+        ea::vector<Node*> nodes;
+        GetScene()->GetNodesWithTag(nodes, "DebugIcon");
+        for (Node* node : nodes)
+        {
+            auto* billboard = node->GetComponent<BillboardSet>();
+            if (!billboard)
+                continue;
+
+            if (is2D)
+            {
+                billboard->SetFaceCameraMode(FaceCameraMode::FC_NONE);
+                node->LookAt(node->GetWorldPosition() + Vector3::FORWARD);
+            }
+            else
+                billboard->SetFaceCameraMode(FaceCameraMode::FC_LOOKAT_XYZ);
+            billboard->Commit();
         }
     }
 
