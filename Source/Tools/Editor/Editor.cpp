@@ -286,7 +286,7 @@ void Editor::Start()
     if (!defaultProjectPath_.empty())
     {
         ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
-        pendingOpenProject_ = defaultProjectPath_.c_str();
+        OpenProject(defaultProjectPath_);
     }
     else
         SetupSystemUI();
@@ -472,12 +472,12 @@ void Editor::OnUpdate(VariantMap& args)
                     if (snapshot.NotNull())
                     {
                         if (ui::ImageButton(snapshot.Get(), tileSize - style.ItemInnerSpacing * 2))
-                            pendingOpenProject_ = projectPath;
+                            OpenProject(projectPath);
                     }
                     else
                     {
                         if (ui::Button(recents[index].GetString().c_str(), tileSize))
-                            pendingOpenProject_ = projectPath;
+                            OpenProject(projectPath);
                     }
                     if (ui::IsItemHovered())
                         ui::SetTooltip("%s", projectPath.c_str());
@@ -641,7 +641,7 @@ void Editor::LoadDefaultLayout()
 
 void Editor::OpenProject(const ea::string& projectPath)
 {
-    pendingOpenProject_ = projectPath;
+    pendingOpenProject_ = AddTrailingSlash(projectPath);
 }
 
 void Editor::CloseProject()
