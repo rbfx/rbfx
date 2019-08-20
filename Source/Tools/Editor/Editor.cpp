@@ -290,6 +290,8 @@ void Editor::Start()
     }
     else
         SetupSystemUI();
+
+    GetEngine()->CreateDebugHud();
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
