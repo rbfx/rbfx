@@ -1217,16 +1217,17 @@ void SceneTab::AddComponentIcon(Component* component)
             }
         }
 
-            billboard->SetNumBillboards(1);
-            billboard->SetMaterial(material);
-            billboard->SetViewMask(EDITOR_VIEW_LAYER);
-            if (auto* bb = billboard->GetBillboard(0))
-            {
-                bb->size_ = Vector2::ONE * 0.2f;
-                bb->enabled_ = true;
-                bb->position_ = {0, count * 0.4f, 0};
-            }
-            billboard->Commit();
+        billboard->SetNumBillboards(1);
+        billboard->SetMaterial(material);
+        billboard->SetViewMask(EDITOR_VIEW_LAYER);
+
+        if (auto* bb = billboard->GetBillboard(0))
+        {
+            auto* graphics = GetGraphics();
+            float scale = graphics->GetDisplayDPI(graphics->GetCurrentMonitor()).z_ / 96.f;
+            bb->size_ = Vector2::ONE * 0.2f * scale;
+            bb->enabled_ = true;
+            bb->position_ = {0, (float)count * 0.4f * scale, 0};
         }
     }
 }
