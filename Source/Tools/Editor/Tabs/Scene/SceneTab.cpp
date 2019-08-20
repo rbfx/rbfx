@@ -559,7 +559,7 @@ void SceneTab::RenderToolbarButtons()
 
     ui::SameLine(0, 3.f);
 
-    if (EditorSceneSettings* settings = GetScene()->GetComponent<EditorSceneSettings>())
+    if (auto* settings = GetScene()->GetComponent<EditorSceneSettings>())
     {
         ui::BeginButtonGroup();
         if (ui::EditorToolbarButton("3D", "3D mode in editor viewport.", !settings->GetCamera2D()))
@@ -573,7 +573,7 @@ void SceneTab::RenderToolbarButtons()
     if (auto* hud = GetSubsystem<DebugHud>())
     {
         if (ui::EditorToolbarButton(ICON_FA_BUG, "Display debug hud.", hud->GetMode() == DEBUGHUD_SHOW_ALL))
-            hud->SetMode(hud->GetMode() == DEBUGHUD_SHOW_ALL ? DEBUGHUD_SHOW_NONE : DEBUGHUD_SHOW_ALL);
+            hud->ToggleAll();
     }
 
     ui::SameLine(0, 3.f);
