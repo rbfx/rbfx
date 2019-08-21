@@ -42,8 +42,6 @@
 #include "MaterialInspectorUndo.h"
 #include "Editor.h"
 
-using namespace ImGui::litterals;
-
 namespace Urho3D
 {
 
@@ -135,11 +133,12 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
     using namespace InspectorRenderAttribute;
     AttributeInfo& info = *reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
     Material* material = (static_cast<Inspectable::Material*>(args[P_SERIALIZABLE].GetPtr()))->GetMaterial();
+    const ImGuiStyle& style = ui::GetStyle();
 
     if (info.name_ == "Techniques")
     {
         ui::NextColumn();
-        auto secondColWidth = ui::GetColumnWidth(1) - ui::GetStyle().ItemSpacing.x * 2;
+        auto secondColWidth = ui::GetColumnWidth(1) - style.ItemSpacing.x * 2;
 
         bool modified = false;
         for (unsigned i = 0; i < material->GetNumTechniques(); i++)
@@ -154,7 +153,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
             ui::Columns();
             ea::string techName = tech.technique_->GetName();
-            UI_ITEMWIDTH(material->GetNumTechniques() > 1 ? -44_dpx : -22_dpx)
+            UI_ITEMWIDTH(material->GetNumTechniques() > 1 ? -44_dp : -22_dp)
                 ui::InputText("###techniqueName_", const_cast<char*>(techName.c_str()), techName.length(),
                               ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
@@ -211,7 +210,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             // ---------------------------------------------------------------------------------------------------------
 
             ui::NewLine();
-            ui::SameLine(20_dpx);
+            ui::SameLine(20_dp);
             ui::TextUnformatted("LOD Distance");
             ui::NextColumn();
             UI_ITEMWIDTH(secondColWidth)
@@ -225,7 +224,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             };
 
             ui::NewLine();
-            ui::SameLine(20_dpx);
+            ui::SameLine(20_dp);
             ui::TextUnformatted("Quality");
             ui::NextColumn();
             UI_ITEMWIDTH(secondColWidth)
@@ -302,12 +301,12 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             auto* modification = ui::GetUIState<ModifiedStateTracker<Variant, bool>>();
 
             ui::NewLine();
-            ui::SameLine(20_dpx);
+            ui::SameLine(20_dp);
             ui::TextUnformatted(parameterName.c_str());
             ui::NextColumn();
             Variant value = pair.second.value_;
 
-            UI_ITEMWIDTH(-22_dpx)
+            UI_ITEMWIDTH(-22_dp)
             {
                 bool modifiedNow = RenderSingleAttribute(value);
                 if (modification->TrackModification(modifiedNow, [material, &parameterName]() { return material->GetShaderParameter(parameterName); }))
@@ -358,11 +357,11 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SetHelpTooltip("Shader parameter name.");
 
             ui::NextColumn();
-            UI_ITEMWIDTH(-22_dpx) // Space for OK button
+            UI_ITEMWIDTH(-22_dp) // Space for OK button
                 ui::Combo("###Type", &paramState->variantTypeIndex_, shaderParameterVariantNames, SDL_arraysize(shaderParameterVariantTypes));
             ui::SetHelpTooltip("Shader parameter type.");
 
-            ui::SameLine(0, 4_dpx);
+            ui::SameLine(0, 4_dp);
             if (ui::Button(ICON_FA_CHECK))
             {
                 if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name

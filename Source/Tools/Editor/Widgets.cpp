@@ -41,7 +41,7 @@ void Image(const ea::string& name)
         IntRect rect = iconData->rect_;
         ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
         auto* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
-        ui::Image(texture, {pdpx(rect.Width()), pdpy(rect.Height())},
+        ui::Image(texture, {dp(rect.Width()), dp(rect.Height())},
             {(float) rect.left_ / texture->GetWidth(), (float) rect.top_ / texture->GetHeight()},
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});
     }
@@ -58,7 +58,7 @@ bool ImageButton(const ea::string& name)
         IntRect rect = iconData->rect_;
         ResourceCache* cache = ui::GetSystemUI()->GetSubsystem<ResourceCache>();
         auto* texture = cache->GetResource<Texture2D>(iconData->textureRef_.name_);
-        return ui::ImageButton(texture, {pdpx(rect.Width()), pdpy(rect.Height())},
+        return ui::ImageButton(texture, {dp(rect.Width()), dp(rect.Height())},
             {(float) rect.left_ / texture->GetWidth(), (float) rect.top_ / texture->GetHeight()},
             {(float) rect.right_ / texture->GetWidth(), (float) rect.bottom_ / texture->GetHeight()});
     }

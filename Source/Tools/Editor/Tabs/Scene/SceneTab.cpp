@@ -58,8 +58,6 @@
 namespace Urho3D
 {
 
-using namespace ui::litterals;
-
 static const IntVector2 cameraPreviewSize{320, 200};
 
 SceneTab::SceneTab(Context* context)
@@ -532,7 +530,7 @@ const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dp, 4_dp});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
@@ -581,7 +579,7 @@ void SceneTab::RenderToolbarButtons()
     SendEvent(E_EDITORTOOLBARBUTTONS);
 
     ui::SameLine(0, 3.f);
-    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
+    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dp);
 }
 
 bool SceneTab::IsSelected(Node* node) const
