@@ -117,10 +117,9 @@ void ExpireUIStateP()
 
 int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags, const ImVec2& size)
 {
-    bool wasSelected = p_selected && *p_selected;
     if (ui::Selectable(label, p_selected, flags | ImGuiSelectableFlags_AllowDoubleClick, size))
     {
-        if (wasSelected && ui::IsMouseDoubleClicked(MOUSEB_LEFT))
+        if (ui::IsMouseDoubleClicked(MOUSEB_LEFT))
             return 2;
         else
             return 1;
