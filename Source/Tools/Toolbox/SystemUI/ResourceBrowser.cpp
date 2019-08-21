@@ -32,6 +32,7 @@
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stdlib.h>
+#include <ImGui/imgui_internal.h>
 
 #include "ResourceBrowser.h"
 #include "Widgets.h"
@@ -55,6 +56,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
         ea::vector<ea::string> directories;
         ea::vector<ea::string> files;
         Timer updateTimer;
+        std::function<void()> singleClickPending;
     };
 
     auto result = RBR_NOOP;
@@ -138,9 +140,13 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
         switch (ui::DoubleClickSelectable("..", selected == ".."))
         {
         case 1:
-            selected = "..";
+            state.singleClickPending = [&]()
+            {
+                selected = "..";
+            };
             break;
         case 2:
+            state.singleClickPending = nullptr;
             path = GetParentPath(path);
             state.rescanDirs = true;
             break;
@@ -227,10 +233,14 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             switch (ui::DoubleClickSelectable((ICON_FA_FOLDER " " + RemoveTrailingSlash(item)).c_str(), isSelected))
             {
             case 1:
-                selected = item;
-                result = RBR_ITEM_SELECTED;
+                state.singleClickPending = [&]()
+                {
+                    selected = item;
+                    result = RBR_ITEM_SELECTED;
+                };
                 break;
             case 2:
+                state.singleClickPending = nullptr;
                 path += AddTrailingSlash(item);
                 selected.clear();
                 state.rescanDirs = true;
@@ -270,12 +280,16 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             switch (ui::DoubleClickSelectable((icon + " " + item).c_str(), isSelected))
             {
             case 1:
-                selected = item;
-                result = RBR_ITEM_SELECTED;
-                using namespace ResourceBrowserSelect;
-                fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
+                state.singleClickPending = [&]()
+                {
+                    selected = item;
+                    result = RBR_ITEM_SELECTED;
+                    using namespace ResourceBrowserSelect;
+                    fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
+                };
                 break;
             case 2:
+                state.singleClickPending = nullptr;
                 result = RBR_ITEM_OPEN;
                 break;
             default:
@@ -317,12 +331,17 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
                         switch (ui::DoubleClickSelectable((icon + " " + cachedFile).c_str(), isSelected))
                         {
                         case 1:
-                            selected = item + "/" + cachedFile;
-                            result = RBR_ITEM_SELECTED;
-                            using namespace ResourceBrowserSelect;
-                            fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
+                            state.singleClickPending = [&]()
+                            {
+                                selected = item + "/" + cachedFile;
+                                result = RBR_ITEM_SELECTED;
+                                using namespace ResourceBrowserSelect;
+                                fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
+                            };
                             break;
                         case 2:
+                            state.singleClickPending = nullptr;
+                            selected = item + "/" + cachedFile;
                             result = RBR_ITEM_OPEN;
                             break;
                         default:
@@ -360,6 +379,16 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
     }
 
     state.wasEditing = state.isEditing;
+
+    if (state.singleClickPending)
+    {
+        auto& g = *ui::GetCurrentContext();
+        if ((float)(g.Time - g.IO.MouseClickedTime[0]) > g.IO.MouseDoubleClickTime)
+        {
+            state.singleClickPending();
+            state.singleClickPending = nullptr;
+        }
+    }
 
     return result;
 }
