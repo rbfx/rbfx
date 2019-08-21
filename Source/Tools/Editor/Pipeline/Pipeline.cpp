@@ -53,7 +53,7 @@ Pipeline::Pipeline(Context* context)
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, OnEndFrame));
     SubscribeToEvent(E_EDITORPROJECTLOADING, [this](StringHash, VariantMap&) {
         EnableWatcher();
-        BuildCache();
+        BuildCache(DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlag::SKIP_UP_TO_DATE);
     });
     SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
         using namespace ResourceRenamed;
@@ -128,7 +128,7 @@ void Pipeline::ClearCache(const ea::string& resourceName)
 
 Asset* Pipeline::GetAsset(const eastl::string& resourceName, bool autoCreate)
 {
-    if (resourceName.empty())
+    if (resourceName.empty() || resourceName.ends_with(".asset"))
         return nullptr;
 
     auto* project = GetSubsystem<Project>();
@@ -252,7 +252,7 @@ bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBui
             // Default flavor does not execute
             continue;
 
-        GetLog()->GetLogger("pipeline").Info("{} is importing '{}'.", importer->GetTypeName(), GetFileNameAndExtension(inputFile));
+        Log::GetLogger("pipeline").Info("{} is importing '{}'.", importer->GetTypeName(), GetFileNameAndExtension(inputFile));
 
         if (importer->Execute(asset, inputFile, outputPath))
         {
@@ -275,6 +275,9 @@ void Pipeline::BuildCache(const ea::string& flavor, PipelineBuildFlags flags)
 
     for (const ea::string& resourceName : results)
     {
+        if (resourceName.ends_with(".asset"))
+            continue;
+
         if (Asset* asset = GetAsset(resourceName))
         {
             if (flags & PipelineBuildFlag::SKIP_UP_TO_DATE && !asset->IsOutOfDate())
