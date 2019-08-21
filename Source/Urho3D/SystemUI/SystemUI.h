@@ -86,7 +86,6 @@ public:
 protected:
     float uiZoom_ = 1.f;
     float fontScale_ = 1.f;
-    Matrix4 projection_;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;
@@ -94,7 +93,6 @@ protected:
     ImGuiContext* imContext_;
 
     void ReallocateFontTexture();
-    void UpdateProjectionMatrix();
     void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
 };
@@ -126,55 +124,13 @@ URHO3D_API bool IsItemClicked(Urho3D::MouseButton button);
 URHO3D_API bool SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond = 0);
 URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags = 0);
 
-namespace litterals
-{
-
-/// Scale a literal value according to x axis DPI.
-URHO3D_API float operator "" _dpx(long double x);
-/// Scale a literal value according to x axis DPI.
-URHO3D_API float operator "" _dpx(unsigned long long x);
-
-/// Scale a literal value according to y axis DPI.
-URHO3D_API float operator "" _dpy(long double y);
-/// Scale a literal value according to y axis DPI.
-URHO3D_API float operator "" _dpy(unsigned long long y);
-
-/// Scale a literal value according to diagonal axis DPI.
-URHO3D_API float operator "" _dp(long double z);
-/// Scale a literal value according to diagonal axis DPI.
-URHO3D_API float operator "" _dp(unsigned long long z);
-
-/// Scale a literal value according to x axis DPI which was rounded to the nearest power of two.
-URHO3D_API float operator "" _pdpx(long double x);
-/// Scale a literal value according to x axis DPI which was rounded to the nearest power of two.
-URHO3D_API float operator "" _pdpx(unsigned long long x);
-
-/// Scale a literal value according to y axis DPI which was rounded to the nearest power of two.
-URHO3D_API float operator "" _pdpy(long double y);
-/// Scale a literal value according to y axis DPI which was rounded to the nearest power of two.
-URHO3D_API float operator "" _pdpy(unsigned long long y);
-
-/// Scale a literal value according to diagonal axis DPI which was rounded to the nearest power of two.
-URHO3D_API float operator "" _pdp(long double z);
-/// Scale a literal value according to diagonal axis DPI which was rounded to the nearest power of two.
-URHO3D_API float operator "" _pdp(unsigned long long z);
-
 }
 
-/// Scale a value according to x axis DPI.
-URHO3D_API float dpx(float x);
-/// Scale a value according to y axis DPI.
-URHO3D_API float dpy(float y);
-/// Scale a value according to diagonal axis DPI.
-URHO3D_API float dp(float z);
-
-/// Scale a literal value according to x axis DPI which was rounded to the nearest power of two.
-URHO3D_API float pdpx(float x);
-/// Scale a literal value according to y axis DPI which was rounded to the nearest power of two.
-URHO3D_API float pdpy(float y);
-/// Scale a literal value according to diagonal axis DPI which was rounded to the nearest power of two.
-URHO3D_API float pdp(float z);
-
-}
+/// Scale a value according to io.FontGlobalScale.
+inline float dp(float value) { return value / ImGui::GetIO().FontGlobalScale; }
+/// Scale a literal value according to io.FontGlobalScale.
+inline float operator "" _dp(long double value) { return dp((float)value); }
+/// Scale a literal value according to io.FontGlobalScale.
+inline float operator "" _dp(unsigned long long value) { return dp((float)value); }
 
 namespace ui = ImGui;

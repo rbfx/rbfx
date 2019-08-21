@@ -48,8 +48,6 @@
 #include <Urho3D/Graphics/Graphics.h>
 #include <Graphics/SceneView.h>
 
-using namespace ui::litterals;
-
 namespace Urho3D
 {
 
@@ -108,17 +106,12 @@ const char* supportedVariantNames[] = {
     "Int64",
 };
 
-static const float buttonWidth()
-{
-    return 26_dpx;  // TODO: this should not exist
-}
-
 bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string& name, ea::string& result)
 {
     SharedPtr<Resource> resource;
     auto returnValue = false;
 
-    UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-buttonWidth()))
+    UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-26_dp))
         ui::InputText("", const_cast<char*>(name.c_str()), name.length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
     if (eventNamespace != nullptr)
@@ -335,7 +328,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             }
             if (refList.names_.empty())
             {
-                ui::SetCursorPosY(ui::GetCursorPosY() + 5_dpy);
+                ui::SetCursorPosY(ui::GetCursorPosY() + 5_dp);
                 ui::TextUnformatted("...");
             }
             break;
@@ -374,7 +367,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
                 // Column-friendly indent
                 ui::NewLine();
-                ui::SameLine(20_dpx);
+                ui::SameLine(20_dp);
                 ui::TextUnformatted((name.empty() ? it->first.ToString() : name).c_str());
 #else
                 // Column-friendly indent
@@ -385,7 +378,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
                 ui::NextColumn();
                 ui::IdScope entryIdScope(index++);
-                UI_ITEMWIDTH(-buttonWidth()) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                UI_ITEMWIDTH(-26_dp) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
                     modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second);
                 ui::SameLine(it->second.GetType());
                 if (ui::Button(ICON_FA_TRASH))
@@ -405,9 +398,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 UI_ITEMWIDTH(-1)
                     ui::InputText("###Key", &mapState->fieldName);
                 ui::NextColumn();
-                UI_ITEMWIDTH(-buttonWidth()) // Space for OK button
+                UI_ITEMWIDTH(-26_dp) // Space for OK button
                     ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
-                ui::SameLine(0, 4_dpx);
+                ui::SameLine(0, 4);
                 if (ui::Button(ICON_FA_CHECK))
                 {
                     if (map->find(mapState->fieldName.c_str()) == map->end())   // TODO: Show warning about duplicate name
@@ -838,7 +831,7 @@ void ImGui::SameLine(Urho3D::VariantType type)
         spacingFix = 0;
         break;
     default:
-        spacingFix = 4_dpx;
+        spacingFix = 4_dp;
         break;
     }
 

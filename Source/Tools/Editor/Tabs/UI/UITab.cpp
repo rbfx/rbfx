@@ -41,8 +41,6 @@
 #include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 
-using namespace ui::litterals;
-
 namespace Urho3D
 {
 
@@ -168,7 +166,7 @@ void UITab::RenderNodeTree(UIElement* element)
 
     ImRect bb{ui::GetItemRectMin(), ui::GetItemRectMax()};
     bb.Min.y = bb.Max.y;
-    bb.Max.y += 2_dpy;
+    bb.Max.y += 2_dp;
     if (ui::BeginDragDropTargetCustom(bb, ui::GetID("reorder")))
     {
         // Reparent by drag&drop between elements, insert after current item
@@ -257,7 +255,7 @@ bool UITab::RenderWindowContent()
 
 void UITab::RenderToolbarButtons()
 {
-    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dpx, 4_dpy});
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dp, 4_dp});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
@@ -269,7 +267,7 @@ void UITab::RenderToolbarButtons()
     ui::Checkbox("Hide Resize Handles", &hideResizeHandles_);
 
     ui::SameLine(0, 3.f);
-    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dpx);
+    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dp);
 }
 
 void UITab::OnActiveUpdate()
