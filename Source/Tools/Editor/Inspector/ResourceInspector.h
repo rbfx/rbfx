@@ -31,6 +31,7 @@
 namespace Urho3D
 {
 
+/// Base class for resource inspectors.
 class ResourceInspector : public Object, public IInspectorProvider
 {
     URHO3D_OBJECT(ResourceInspector, Object);
