@@ -64,8 +64,6 @@
 #include "Inspector/ModelInspector.h"
 #include "Tabs/ProfilerTab.h"
 
-using namespace ui::litterals;
-
 namespace Urho3D
 {
 
@@ -409,10 +407,10 @@ void Editor::OnUpdate(VariantMap& args)
         auto* lists = ui::GetWindowDrawList();
         ImRect rect{ui::GetWindowContentRegionMin(), ui::GetWindowContentRegionMax()};
 
-        ImVec2 tileSize{200_dpx, 200_dpy};
-        ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{10_dpx, 10_dpy});
+        ImVec2 tileSize{200_dp, 200_dp};
+        ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{10_dp, 10_dp});
 
-        ui::SetCursorScreenPos(rect.GetCenter() - ImVec2{tileSize.x * 1.5f + 10_dpx, tileSize.y * 1.5f + 10_dpy});
+        ui::SetCursorScreenPos(rect.GetCenter() - ImVec2{tileSize.x * 1.5f + 10_dp, tileSize.y * 1.5f + 10_dp});
 
         ui::BeginGroup();
 
@@ -722,6 +720,8 @@ void Editor::SetupSystemUI()
     GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
     monoFont_ = GetSystemUI()->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
     GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
+    // Vector3 dpi = GetGraphics()->GetDisplayDPI(GetGraphics()->GetCurrentMonitor());
+    // GetSystemUI()->SetScale({3.0f, 3.0f, 3.0f}, false);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     auto& io = ui::GetIO();

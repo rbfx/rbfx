@@ -43,9 +43,6 @@ using namespace std::placeholders;
 namespace Urho3D
 {
 
-static Vector3 systemUiScale{Vector3::ONE};
-static Vector3 systemUiScalePixelPerfect{Vector3::ONE};
-
 SystemUI::SystemUI(Urho3D::Context* context)
     : Object(context)
     , vertexBuffer_(context)
@@ -90,7 +87,6 @@ SystemUI::SystemUI(Urho3D::Context* context)
     // Subscribe to events
     SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
     SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap&) {
-        UpdateProjectionMatrix();
         ReallocateFontTexture();
     });
     SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
@@ -117,28 +113,6 @@ SystemUI::~SystemUI()
         ImGui::EndFrame();
     ImGui::Shutdown(imContext_);
     ImGui::DestroyContext(imContext_);
-}
-
-void SystemUI::UpdateProjectionMatrix()
-{
-    // Update screen size
-    auto graphics = GetSubsystem<Graphics>();
-    ImGui::GetIO().DisplaySize = ImVec2((float)graphics->GetWidth(), (float)graphics->GetHeight());
-
-    // Update projection matrix
-    IntVector2 viewSize = graphics->GetViewport().Size();
-    Vector2 invScreenSize(1.0f / viewSize.x_, 1.0f / viewSize.y_);
-    Vector2 scale(2.0f * invScreenSize.x_, -2.0f * invScreenSize.y_);
-    Vector2 offset(-1.0f, 1.0f);
-
-    projection_ = Matrix4(Matrix4::IDENTITY);
-    projection_.m00_ = scale.x_ * uiZoom_;
-    projection_.m03_ = offset.x_;
-    projection_.m11_ = scale.y_ * uiZoom_;
-    projection_.m13_ = offset.y_;
-    projection_.m22_ = 1.0f;
-    projection_.m23_ = 0.0f;
-    projection_.m33_ = 1.0f;
 }
 
 void SystemUI::OnRawEvent(VariantMap& args)
@@ -197,8 +171,8 @@ void SystemUI::OnRawEvent(VariantMap& args)
     }
     URHO3D_FALLTHROUGH;
     case SDL_MOUSEMOTION:
-        io.MousePos.x = evt->motion.x / uiZoom_;
-        io.MousePos.y = evt->motion.y / uiZoom_;
+        io.MousePos.x = evt->motion.x / uiZoom_ / io.DisplayFramebufferScale.x;
+        io.MousePos.y = evt->motion.y / uiZoom_ / io.DisplayFramebufferScale.y;
         break;
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
@@ -208,8 +182,8 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_FINGERDOWN:
         io.MouseDown[0] = true;
     case SDL_FINGERMOTION:
-        io.MousePos.x = evt->tfinger.x / uiZoom_;
-        io.MousePos.y = evt->tfinger.y / uiZoom_;
+        io.MousePos.x = evt->tfinger.x / uiZoom_ / io.DisplayFramebufferScale.x;
+        io.MousePos.y = evt->tfinger.y / uiZoom_ / io.DisplayFramebufferScale.y;
         break;
     case SDL_TEXTINPUT:
         ImGui::GetIO().AddInputCharactersUTF8(evt->text.text);
@@ -227,6 +201,32 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
 
     ImGuiIO& io = ImGui::GetIO();
 
+    // Assemble UI buffers as if it was 96 DPI.
+    io.DisplaySize = {(float)graphics->GetWidth() / data->FramebufferScale.x, (float)graphics->GetHeight() / data->FramebufferScale.y};
+
+    // But render them at full resolution
+    graphics->SetViewport({0, 0,
+        (int)(data->DisplaySize.x * data->FramebufferScale.x),
+        (int)(data->DisplaySize.y * data->FramebufferScale.y)});
+
+    // Our visible imgui space lies from data->DisplayPos (top left) to data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
+    float L = data->DisplayPos.x * data->FramebufferScale.x;
+    float R = (data->DisplayPos.x + data->DisplaySize.x) * data->FramebufferScale.x;
+    float T = data->DisplayPos.y * data->FramebufferScale.y;
+    float B = (data->DisplayPos.y + data->DisplaySize.y) * data->FramebufferScale.y;
+
+    Matrix4 projection(Matrix4::IDENTITY);
+    projection.m00_ = 2.0f / (R - L);
+    projection.m03_ = (R + L) / (L - R);
+    projection.m11_ = 2.0f / (T - B);
+    projection.m13_ = (T + B) / (B - T);
+    projection.m22_ = -1.0f;
+    projection.m33_ = 1.0f;
+
+    bool scaledDisplay = data->FramebufferScale.x != 1.f || data->FramebufferScale.y != 1.f;
+    if (scaledDisplay)
+        data->ScaleClipRects(data->FramebufferScale);
+
     for (int n = 0; n < data->CmdListsCount; n++)
     {
         const ImDrawList* cmdList = data->CmdLists[n];
@@ -237,9 +237,10 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
         // in rendering loop.
         if (cmdList->VtxBuffer.Size > vertexBuffer_.GetVertexCount())
         {
-            ea::vector<VertexElement> elems = {VertexElement(TYPE_VECTOR2, SEM_POSITION),
-                                              VertexElement(TYPE_VECTOR2, SEM_TEXCOORD),
-                                              VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR)
+            ea::vector<VertexElement> elems = {
+                VertexElement(TYPE_VECTOR2, SEM_POSITION),
+                VertexElement(TYPE_VECTOR2, SEM_TEXCOORD),
+                VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR)
             };
             vertexBuffer_.SetSize((unsigned int)(cmdList->VtxBuffer.Size * 2), elems, true);
         }
@@ -254,6 +255,16 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
             v.pos.y += 0.5f;
         }
 #endif
+        if (scaledDisplay)
+        {
+            // Scale buffers up (experimental)
+            for (int i = 0; i < cmdList->VtxBuffer.Size; i++)
+            {
+                ImDrawVert& v = cmdList->VtxBuffer.Data[i];
+                v.pos.x *= data->FramebufferScale.x;
+                v.pos.y *= data->FramebufferScale.y;
+            }
+        }
 
         vertexBuffer_.SetDataRange(cmdList->VtxBuffer.Data, 0, (unsigned int)cmdList->VtxBuffer.Size, true);
         indexBuffer_.SetDataRange(cmdList->IdxBuffer.Data, 0, (unsigned int)cmdList->IdxBuffer.Size, true);
@@ -297,7 +308,7 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
                 if (graphics->NeedParameterUpdate(SP_OBJECT, this))
                     graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
                 if (graphics->NeedParameterUpdate(SP_CAMERA, this))
-                    graphics->SetShaderParameter(VSP_VIEWPROJ, projection_);
+                    graphics->SetShaderParameter(VSP_VIEWPROJ, projection);
                 if (graphics->NeedParameterUpdate(SP_MATERIAL, this))
                     graphics->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
 
@@ -404,7 +415,6 @@ void SystemUI::SetZoom(float zoom)
     if (uiZoom_ == zoom)
         return;
     uiZoom_ = zoom;
-    UpdateProjectionMatrix();
 }
 
 void SystemUI::SetScale(Vector3 scale, bool pixelPerfect)
@@ -421,19 +431,18 @@ void SystemUI::SetScale(Vector3 scale, bool pixelPerfect)
         return;
     }
 
-    systemUiScalePixelPerfect = {
-        static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.x_))),
-        static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.y_))),
-        static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.z_)))
-    };
-
     if (pixelPerfect)
-        scale = systemUiScalePixelPerfect;
+    {
+        scale = {
+            static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.x_))),
+            static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.y_))),
+            static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.z_)))
+        };
+    }
 
-    systemUiScale = scale;
-
-    io.DisplayFramebufferScale = {scale.x_, scale.y_};
+    // io.DisplayFramebufferScale = {scale.x_, scale.y_};
     fontScale_ = scale.z_;
+    io.FontGlobalScale = 1.f / scale.z_;
 
     float prevSize = SYSTEMUI_DEFAULT_FONT_SIZE;
     for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
@@ -479,7 +488,9 @@ void SystemUI::Start()
         io.Fonts->AddFontDefault();
         ReallocateFontTexture();
     }
-    UpdateProjectionMatrix();
+    auto graphics = GetGraphics();
+    io.DisplaySize = {(float)graphics->GetWidth(), (float)graphics->GetHeight()};
+
     // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
     // check on every frame in E_ENDRENDERING.
     ImGui::NewFrame();
@@ -556,94 +567,4 @@ const Urho3D::Variant& ImGui::AcceptDragDropVariant(const char* type, ImGuiDragD
         return systemUI->GetContext()->GetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type));
     }
     return Urho3D::Variant::EMPTY;
-}
-
-float ImGui::dpx(float x)
-{
-    return x * Urho3D::systemUiScale.x_;
-}
-
-float ImGui::dpy(float y)
-{
-    return y * Urho3D::systemUiScale.y_;
-}
-
-float ImGui::dp(float z)
-{
-    return z * Urho3D::systemUiScale.z_;
-}
-
-float ImGui::pdpx(float x)
-{
-    return x * Urho3D::systemUiScalePixelPerfect.x_;
-}
-
-float ImGui::pdpy(float y)
-{
-    return y * Urho3D::systemUiScalePixelPerfect.y_;
-}
-
-float ImGui::pdp(float z)
-{
-    return z * Urho3D::systemUiScalePixelPerfect.z_;
-}
-
-float ImGui::litterals::operator "" _dpx(long double x)
-{
-    return x * Urho3D::systemUiScale.x_;
-}
-
-float ImGui::litterals::operator "" _dpx(unsigned long long x)
-{
-    return x * Urho3D::systemUiScale.x_;
-}
-
-float ImGui::litterals::operator "" _dpy(long double y)
-{
-    return y * Urho3D::systemUiScale.y_;
-}
-
-float ImGui::litterals::operator "" _dpy(unsigned long long y)
-{
-    return y * Urho3D::systemUiScale.y_;
-}
-
-float ImGui::litterals::operator "" _dp(long double z)
-{
-    return z * Urho3D::systemUiScale.z_;
-}
-
-float ImGui::litterals::operator "" _dp(unsigned long long z)
-{
-    return z * Urho3D::systemUiScale.z_;
-}
-
-float ImGui::litterals::operator "" _pdpx(long double x)
-{
-    return x * Urho3D::systemUiScalePixelPerfect.x_;
-}
-
-float ImGui::litterals::operator "" _pdpx(unsigned long long x)
-{
-    return x * Urho3D::systemUiScalePixelPerfect.x_;
-}
-
-float ImGui::litterals::operator "" _pdpy(long double y)
-{
-    return y * Urho3D::systemUiScalePixelPerfect.y_;
-}
-
-float ImGui::litterals::operator "" _pdpy(unsigned long long y)
-{
-    return y * Urho3D::systemUiScalePixelPerfect.y_;
-}
-
-float ImGui::litterals::operator "" _pdp(long double z)
-{
-    return z * Urho3D::systemUiScalePixelPerfect.z_;
-}
-
-float ImGui::litterals::operator "" _pdp(unsigned long long z)
-{
-    return z * Urho3D::systemUiScalePixelPerfect.z_;
 }

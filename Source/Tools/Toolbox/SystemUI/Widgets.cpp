@@ -28,7 +28,6 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 
 using namespace Urho3D;
-using namespace ui::litterals;
 
 namespace ImGui
 {
@@ -176,8 +175,8 @@ bool IconButton(const char* label)
 bool MaskSelector(unsigned int* mask)
 {
     bool modified = false;
-    auto style = ui::GetStyle();
-    auto pos = ui::GetCursorPos();
+    const ImGuiStyle& style = ui::GetStyle();
+    ImVec2 pos = ui::GetCursorPos();
 
     for (auto row = 0; row < 2; row++)
     {
@@ -198,7 +197,7 @@ bool MaskSelector(unsigned int* mask)
             }
 
             ui::PushID(bitMask);
-            if (ui::Button("", {8_dpx, 9_dpy}))
+            if (ui::Button("", {8_dp, 9_dp}))
             {
                 modified = true;
                 *mask ^= bitMask;
@@ -211,7 +210,7 @@ bool MaskSelector(unsigned int* mask)
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + 9_dpy});
+            ui::SetCursorPos({pos.x, pos.y + 9_dp});
     }
 
     return modified;

@@ -33,10 +33,6 @@
 #include "Editor.h"
 #include "EditorEvents.h"
 
-
-using namespace ui::litterals;
-
-
 namespace Urho3D
 {
 
@@ -419,18 +415,18 @@ void Editor::RenderProjectMenu()
             float startPos = ui::GetCursorPosX();
             ui::TextUnformatted(settingName.c_str());
             ui::SameLine();
-            ui::SetCursorPosX(startPos = startPos + 180_dpx + ui::GetStyle().ItemSpacing.x);
-            UI_ITEMWIDTH(100_dpx)
+            ui::SetCursorPosX(startPos = startPos + 180_dp + ui::GetStyle().ItemSpacing.x);
+            UI_ITEMWIDTH(100_dp)
                 RenderSingleAttribute(value);
             ui::SameLine();
-            ui::SetCursorPosX(startPos + 100_dpx + ui::GetStyle().ItemSpacing.x);
+            ui::SetCursorPosX(startPos + 100_dp + ui::GetStyle().ItemSpacing.x);
             if (ui::Button(ICON_FA_TRASH))
                 it = settings.erase(it);
             else
                 ++it;
         }
 
-        UI_ITEMWIDTH(280_dpx)
+        UI_ITEMWIDTH(280_dp)
             ui::Combo("###Selector", &state->predefinedItem, predefinedNames, URHO3D_ARRAYSIZE(predefinedNames));
 
         ui::SameLine();
@@ -466,12 +462,12 @@ void Editor::RenderProjectMenu()
 
         if (state->predefinedItem == 1)
         {
-            UI_ITEMWIDTH(180_dpx)
+            UI_ITEMWIDTH(180_dp)
                 ui::InputText("###Key", &state->customName);
 
             // Custom entry type selector
             ui::SameLine();
-            UI_ITEMWIDTH(100_dpx)
+            UI_ITEMWIDTH(100_dp)
                 ui::Combo("###Type", &state->customType, variantNames, SDL_arraysize(variantTypes));
         }
         ui::EndMenu();
