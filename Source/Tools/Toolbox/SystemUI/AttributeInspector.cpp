@@ -110,8 +110,9 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string
 {
     SharedPtr<Resource> resource;
     auto returnValue = false;
+    const ImGuiStyle& style = ui::GetStyle();
 
-    UI_ITEMWIDTH((eventNamespace != nullptr ? 2 : 1) * (-26_dp))
+    UI_ITEMWIDTH((-style.ItemSpacing.x - ui::GetCurrentContext()->FontSize) * (eventNamespace != nullptr ? 2 : 1) - style.WindowPadding.x)
         ui::InputText("", const_cast<char*>(name.c_str()), name.length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
     if (eventNamespace != nullptr)
@@ -135,7 +136,7 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string
             returnValue = true;
         }
 
-        ui::SameLine(VAR_RESOURCEREF);
+        ui::SameLine();
         if (ui::IconButton(ICON_FA_CROSSHAIRS))
         {
             eventNamespace->SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
@@ -143,7 +144,7 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string
         ui::SetHelpTooltip("Locate resource.");
     }
 
-    ui::SameLine(VAR_RESOURCEREF);
+    ui::SameLine();
     if (ui::IconButton(ICON_FA_TRASH))
     {
         result.clear();
@@ -807,33 +808,4 @@ bool RenderSingleAttribute(Variant& value)
     return RenderSingleAttribute(nullptr, nullptr, value);
 }
 
-}
-
-void ImGui::SameLine(Urho3D::VariantType type)
-{
-    using namespace Urho3D;
-
-    float spacingFix;
-    switch (type)
-    {
-    case VAR_VECTOR2:
-    case VAR_VECTOR3:
-    case VAR_VECTOR4:
-    case VAR_QUATERNION:
-    case VAR_COLOR:
-    case VAR_INTRECT:
-    case VAR_INTVECTOR2:
-    case VAR_MATRIX3:
-    case VAR_MATRIX3X4:
-    case VAR_MATRIX4:
-    case VAR_RECT:
-    case VAR_INTVECTOR3:
-        spacingFix = 0;
-        break;
-    default:
-        spacingFix = 4_dp;
-        break;
-    }
-
-    ui::SameLine(0, spacingFix);
 }
