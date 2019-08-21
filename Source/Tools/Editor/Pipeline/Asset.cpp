@@ -88,19 +88,6 @@ Asset::Asset(Context* context)
         resourcePath_ = project->GetResourcePath() + name_;
     });
 
-    SubscribeToEvent(E_RESOURCEBROWSERSELECT, [this](StringHash, VariantMap& args) {
-        if (IsMetaAsset())
-            return;
-
-        using namespace ResourceBrowserSelect;
-        const ea::string& resourceName = args[P_NAME].GetString();
-        if (resourceName.starts_with(name_))
-        {
-            // Selected resource is a child of current asset.
-            UpdateExtraInspectors(resourceName);
-        }
-    });
-
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
         using namespace ResourceBrowserDelete;
         extraInspectors_.erase(args[P_NAME].GetString());
@@ -453,39 +440,6 @@ void Asset::RenameFlavor(const ea::string& oldName, const ea::string& newName)
     ea::swap(importers_[oldName], importers_[newName]);
 
     importers_.erase(oldName);
-}
-
-void Asset::UpdateExtraInspectors(const ea::string& resourceName)
-{
-    auto it = extraInspectors_.find(resourceName);
-    if (it != extraInspectors_.end())
-    {
-        currentExtraInspectorProvider_ = it->second.Get();
-        return;
-    }
-
-    ResourceInspector* inspector = nullptr;
-    switch (::Urho3D::GetContentType(context_, resourceName))
-    {
-    case CTYPE_MODEL:
-    {
-        currentExtraInspectorProvider_ = inspector = extraInspectors_[resourceName] =
-            context_->CreateObject<ModelInspector>();
-        break;
-    }
-    case CTYPE_MATERIAL:
-    {
-        currentExtraInspectorProvider_ = inspector = extraInspectors_[resourceName] =
-            context_->CreateObject<MaterialInspector>();
-        break;
-    }
-    default:
-        currentExtraInspectorProvider_ = nullptr;
-        break;
-    }
-
-    if (inspector != nullptr)
-        inspector->SetResource(resourceName);
 }
 
 }
