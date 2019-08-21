@@ -154,7 +154,8 @@ IntRect PreviewTab::UpdateViewRect()
     {
         viewRect_ = tabRect;
         view_->SetSize(tabRect.Width(), tabRect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
-        view_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+        if (auto* surface = view_->GetRenderSurface())
+            surface->SetUpdateMode(SURFACE_UPDATEALWAYS);
         static_cast<RootUIElement*>(GetUI()->GetRoot())->SetOffset(tabRect.Min());
         UpdateViewports();
     }
