@@ -153,7 +153,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
             ui::Columns();
             ea::string techName = tech.technique_->GetName();
-            UI_ITEMWIDTH(material->GetNumTechniques() > 1 ? -44_dp : -22_dp)
+            UI_ITEMWIDTH((-style.ItemSpacing.x - ui::GetCurrentContext()->FontSize) * (material->GetNumTechniques() > 1 ? 2 : 1) - style.WindowPadding.x)
                 ui::InputText("###techniqueName_", const_cast<char*>(techName.c_str()), techName.length(),
                               ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
@@ -174,7 +174,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             }
             ui::SetHelpTooltip("Drag resource here.");
 
-            ui::SameLine(VAR_NONE);
+            ui::SameLine();
             if (ui::IconButton(ICON_FA_CROSSHAIRS))
             {
                 SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, material->GetTechnique(i)->GetName());
@@ -183,7 +183,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
             if (material->GetNumTechniques() > 1)
             {
-                ui::SameLine(VAR_NONE);
+                ui::SameLine();
                 if (ui::IconButton(ICON_FA_TRASH))
                 {
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
@@ -318,7 +318,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                     material->SetShaderParameter(parameterName, value);
             }
 
-            ui::SameLine(value.GetType());
+            ui::SameLine();
             if (ui::Button(ICON_FA_TRASH))
             {
                 undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second.value_, Variant{});
