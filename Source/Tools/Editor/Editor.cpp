@@ -734,6 +734,7 @@ void Editor::SetupSystemUI()
     auto& style = ImGui::GetStyle();
     style.FrameBorderSize = 0;
     style.WindowBorderSize = 0;
+    style.ItemSpacing = {4, 4};
     ImVec4* colors = ImGui::GetStyle().Colors;
     colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);
     colors[ImGuiCol_TextDisabled]           = ImVec4(0.50f, 0.50f, 0.50f, 1.00f);

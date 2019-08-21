@@ -124,10 +124,3 @@ URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=
 URHO3D_TOOLBOX_API bool RenderSingleAttribute(Variant& value);
 
 }
-
-namespace ImGui
-{
-
-URHO3D_TOOLBOX_API void SameLine(Urho3D::VariantType type);
-
-}
