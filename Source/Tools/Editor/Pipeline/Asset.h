@@ -83,8 +83,6 @@ protected:
     void RemoveFlavor(const ea::string& name);
     ///
     void RenameFlavor(const ea::string& oldName, const ea::string& newName);
-    ///
-    void UpdateExtraInspectors(const ea::string& resourceName);
 
     /// Resource name.
     ea::string name_;

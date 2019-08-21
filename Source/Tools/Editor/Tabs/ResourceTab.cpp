@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <EASTL/sort.h>
+
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
@@ -293,49 +295,71 @@ ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
 
 void ResourceTab::ClearSelection()
 {
-    if (inspector_.first.NotNull())
-    {
-        inspector_.second->ClearSelection();
-        inspector_.first = nullptr;
-        inspector_.second = nullptr;
-    }
+    inspectors_.clear();
     resourceSelection_.clear();
 }
 
 void ResourceTab::RenderInspector(const char* filter)
 {
-    if (inspector_.first.NotNull())
-        inspector_.second->RenderInspector(filter);
+    for (auto& pair : inspectors_)
+    {
+        if (pair.first.NotNull())
+            pair.second->RenderInspector(filter);
+    }
 }
 
 void ResourceTab::SelectCurrentItemInspector()
 {
     ea::string selected = resourcePath_ + resourceSelection_;
 
-    ContentType ctype = CTYPE_UNKNOWN;
-    SharedPtr<RefCounted> newProvider;
+    inspectors_.clear();
 
-    // If selected item is a byproduct of asset - loop up the hierarchy until asset is found and show it in the inspector.
-    do
+    if (Asset* asset = GetSubsystem<Project>()->GetPipeline().GetAsset(selected))
     {
-        if (Asset* asset = GetSubsystem<Project>()->GetPipeline().GetAsset(selected))
+        // This is a meta-asset or a source asset whose byproducts we would like to view.
+        inspectors_.push_back({SharedPtr(asset), dynamic_cast<IInspectorProvider*>(asset)});
+
+        StringVector byproducts;
+        for (AssetImporter* importer : asset->GetImporters().at(DEFAULT_PIPELINE_FLAVOR))
+            byproducts.insert(byproducts.end(), importer->GetByproducts().begin(), importer->GetByproducts().end());
+
+        ea::quick_sort(byproducts.begin(), byproducts.end());
+        for (const ea::string& resourceName : byproducts)
         {
-            newProvider = dynamic_cast<RefCounted*>(asset);
-            ctype = asset->GetContentType();
-            break;
+            if (ResourceInspector* inspector = CreateInspector(resourceName))
+                inspectors_.push_back({SharedPtr(inspector), dynamic_cast<IInspectorProvider*>(inspector)});
         }
-        selected = RemoveTrailingSlash(GetParentPath(selected));
-    } while (!selected.empty());
-
-    if (!newProvider.Null())
-    {
-        inspector_.first = SharedPtr<RefCounted>((RefCounted*)newProvider.Get());
-        inspector_.second = dynamic_cast<IInspectorProvider*>(newProvider.Get());
     }
+
+    // This may be a byproduct, or preprocessed resource.
+    if (ResourceInspector* inspector = CreateInspector(selected))
+        inspectors_.push_back({SharedPtr(inspector), dynamic_cast<IInspectorProvider*>(inspector)});
+
     GetSubsystem<Editor>()->GetTab<InspectorTab>()->SetProvider(this);
 
     using namespace EditorResourceSelected;
-    SendEvent(E_EDITORRESOURCESELECTED, P_CTYPE, ctype, P_RESOURCENAME, selected);
+    SendEvent(E_EDITORRESOURCESELECTED, P_CTYPE, GetContentType(context_, selected), P_RESOURCENAME, selected);
+}
+
+ResourceInspector* ResourceTab::CreateInspector(const ea::string& resourceName) const
+{
+    ResourceInspector* result = nullptr;
+    switch (GetContentType(context_, resourceName))
+    {
+    case CTYPE_MODEL:
+        result = context_->CreateObject<ModelInspector>().Detach();
+        break;
+    case CTYPE_MATERIAL:
+        result = context_->CreateObject<MaterialInspector>().Detach();
+        break;
+    default:
+        break;
+    }
+
+    if (result != nullptr)
+        result->SetResource(resourceName);
+
+    return result;
 }
 
 }

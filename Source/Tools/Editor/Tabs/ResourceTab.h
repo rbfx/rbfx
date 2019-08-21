@@ -53,6 +53,8 @@ protected:
     ea::string GetNewResourcePath(const ea::string& name);
     /// Select current item in attribute inspector.
     void SelectCurrentItemInspector();
+    /// Create resource inspector instance and set a resource to it. Callee owns returned pointer.
+    ResourceInspector* CreateInspector(const ea::string& resourceName) const;
 
     /// Current open resource path.
     ea::string resourcePath_;
@@ -61,7 +63,7 @@ protected:
     /// Resource browser flags.
     ResourceBrowserFlags flags_{RBF_NONE};
     /// Inspector provider of current selected resource.
-    ea::pair<SharedPtr<RefCounted>, IInspectorProvider*> inspector_;
+    ea::vector<ea::pair<SharedPtr<RefCounted>, IInspectorProvider*>> inspectors_;
 };
 
 }
