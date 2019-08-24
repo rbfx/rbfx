@@ -124,7 +124,7 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
     SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) {
         using namespace SceneActivated;
-        if (Scene* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
+        if (auto* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
         {
             SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
             SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
@@ -133,6 +133,9 @@ SceneTab::SceneTab(Context* context)
             undo_.Clear();
             undo_.Connect(scene);
 
+            // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
+            // updates per frame.
+            scene->SetUpdateEnabled(false);
             cameraPreviewViewport_->SetScene(scene);
             viewport_->SetScene(scene);
             selectedComponents_.clear();
