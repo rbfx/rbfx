@@ -216,12 +216,8 @@ void SystemUI::OnRenderDrawLists(ImDrawData* data)
     float B = (data->DisplayPos.y + data->DisplaySize.y) * data->FramebufferScale.y;
 
     Matrix4 projection(Matrix4::IDENTITY);
-    projection.m00_ = 2.0f / (R - L);
-    projection.m03_ = (R + L) / (L - R);
-    projection.m11_ = 2.0f / (T - B);
-    projection.m13_ = (T + B) / (B - T);
-    projection.m22_ = -1.0f;
-    projection.m33_ = 1.0f;
+    projection.SetScale({2.0f / (R - L), 2.0f / (T - B), -1.0f});
+    projection.SetTranslation({(R + L) / (L - R), (T + B) / (B - T)});
 
     bool scaledDisplay = data->FramebufferScale.x != 1.f || data->FramebufferScale.y != 1.f;
     if (scaledDisplay)
