@@ -73,7 +73,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
 
     ea::string tempPath = project->GetProjectPath() + "Temp." + GenerateUUID() + "/";
     // Models go into "{resource_name}/" subfolder in cache directory.
-    ea::string outputDir = outputPath + GetFileNameAndExtension(inputFile) + "/";
+    ea::string outputDir = outputPath + GetFileName(inputFile) + "/";
     fs->CreateDirsRecursive(outputDir);
 
     ea::string output = tempPath + "Model.mdl";
@@ -114,7 +114,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
         return false;
     }
 
-    ea::string byproductNameStart = input->GetName() + "/";
+    ea::string byproductNameStart = GetPath(input->GetName()) + GetFileName(input->GetName()) + "/";    // Strip file extension
     unsigned mtime = fs->GetLastModifiedTime(input->GetResourcePath());
 
     ClearByproducts();
