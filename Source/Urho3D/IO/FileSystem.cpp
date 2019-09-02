@@ -151,11 +151,11 @@ int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* 
 #endif
 }
 
-enum SystemRunFlag
+enum SystemRunFlag : unsigned
 {
     SR_DEFAULT,
     SR_WAIT_FOR_EXIT,
-    SR_READ_OUTPUT = 1 << 1 | SR_WAIT_FOR_EXIT,
+    SR_READ_OUTPUT = 1u << 1u | SR_WAIT_FOR_EXIT,
 };
 URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
@@ -270,7 +270,7 @@ int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& argume
         posix_spawn_file_actions_addclose(&actions, STDERR_FILENO);
         posix_spawn_file_actions_adddup2(&actions, desc[1], STDERR_FILENO);
     }
-    posix_spawnp(&pid, fixedFileName.c_str(), &actions, 0, (char**)&argPtrs[0], environ);
+    posix_spawnp(&pid, fixedFileName.c_str(), &actions, nullptr, (char**)&argPtrs[0], environ);
     posix_spawn_file_actions_destroy(&actions);
 
     if (pid > 0)
