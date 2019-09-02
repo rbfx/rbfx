@@ -86,7 +86,7 @@ public:
     /// Add a work item and resume worker threads.
     void AddWorkItem(const SharedPtr<WorkItem>& item);
     /// Add a work item and resume worker threads.
-    WorkItem* AddWorkItem(std::function<void()> workFunction, unsigned priority = 0);
+    SharedPtr<WorkItem> AddWorkItem(std::function<void()> workFunction, unsigned priority = 0);
     /// Remove a work item before it has started executing. Return true if successfully removed.
     bool RemoveWorkItem(SharedPtr<WorkItem> item);
     /// Remove a number of work items before they have started executing. Return the number of items successfully removed.
