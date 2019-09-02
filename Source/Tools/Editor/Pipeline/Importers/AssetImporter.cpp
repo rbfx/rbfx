@@ -111,10 +111,6 @@ bool AssetImporter::LoadJSON(const JSONValue& source)
 
 bool AssetImporter::IsModified()
 {
-    if (!byproducts_.empty())
-        return true;
-
-    bool isModified = false;
     if (const ea::vector<AttributeInfo>* attributes = GetAttributes())
     {
         for (const AttributeInfo& info : *attributes)
@@ -122,10 +118,11 @@ bool AssetImporter::IsModified()
             Variant value;
             // Side-step attribute inheritance.
             Serializable::OnGetAttribute(info, value);
-            isModified |= value != GetAttributeDefault(info.name_);
+            if (value != GetAttributeDefault(info.name_))
+                return true;
         }
     }
-    return isModified;
+    return false;
 }
 
 void AssetImporter::OnGetAttribute(const AttributeInfo& attr, Variant& dest) const
