@@ -74,6 +74,8 @@ Editor::Editor(Context* context)
 
 void Editor::Setup()
 {
+    context_->RegisterSubsystem(this, Editor::GetTypeStatic());
+
 #ifdef _WIN32
     // Required until SDL supports hdpi on windows
     if (HMODULE hLibrary = LoadLibraryA("Shcore.dll"))
@@ -195,7 +197,6 @@ void Editor::Setup()
 
 void Editor::Start()
 {
-    context_->RegisterSubsystem(this, Editor::GetTypeStatic());
     // Execute specified subcommand and exit.
     for (SharedPtr<SubCommand>& cmd : subCommands_)
     {
