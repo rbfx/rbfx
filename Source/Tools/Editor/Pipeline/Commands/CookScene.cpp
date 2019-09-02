@@ -58,9 +58,12 @@ void CookScene::RegisterCommandLine(CLI::App& cli)
 void CookScene::Execute()
 {
     auto* project = GetSubsystem<Project>();
+    auto* editor = GetSubsystem<Editor>();
+    auto* fs = GetFileSystem();
+
     if (project == nullptr)
     {
-        GetSubsystem<Editor>()->ErrorExit("CookScene subcommand requires project being loaded.");
+        editor->ErrorExit("CookScene subcommand requires project being loaded.");
         return;
     }
 
@@ -77,22 +80,24 @@ void CookScene::Execute()
             // Cook scene
             assert(input_.starts_with(project->GetResourcePath()));
             auto resourceName = input_.substr(project->GetResourcePath().length());
-            GetFileSystem()->CreateDirsRecursive(GetPath(output_));
+            fs->CreateDirsRecursive(GetPath(output_));
 
             File output(context_);
             if (output.Open(output_, FILE_WRITE))
             {
                 if (!scene.Save(output))
-                    GetSubsystem<Editor>()->ErrorExit(Format("Could not convert '%s' to binary version.", input_.c_str()));
+                    editor->ErrorExit(Format("Could not convert '{}' to binary version.", input_));
+                else
+                    fs->SetLastModifiedTime(output_, fs->GetLastModifiedTime(input_));
             }
             else
-                GetSubsystem<Editor>()->ErrorExit(Format("Could not open '%s' for writing.", output_.c_str()));
+                editor->ErrorExit(Format("Could not open '{}' for writing.", output_));
         }
         else
-            GetSubsystem<Editor>()->ErrorExit(Format("Could not open load scene '%s'.", input_.c_str()));
+            editor->ErrorExit(Format("Could not open load scene '{}'.", input_));
     }
     else
-        GetSubsystem<Editor>()->ErrorExit(Format("Could not open open '%s' for reading.", input_.c_str()));
+        editor->ErrorExit(Format("Could not open open '{}' for reading.", input_));
 }
 
 }
