@@ -497,7 +497,13 @@ int FileSystem::SystemRun(const ea::string& fileName, const ea::vector<ea::strin
 int FileSystem::SystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments)
 {
     ea::string output;
-    return SystemRun(fileName, arguments, output);
+    if (allowedPaths_.empty())
+        return DoSystemRun(fileName, arguments, SR_WAIT_FOR_EXIT, output);
+    else
+    {
+        URHO3D_LOGERROR("Executing an external command is not allowed");
+        return -1;
+    }
 }
 
 int FileSystem::SystemSpawn(const ea::string& fileName, const ea::vector<ea::string>& arguments)
