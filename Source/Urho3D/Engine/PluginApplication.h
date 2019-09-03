@@ -38,7 +38,11 @@ public:
     /// Construct.
     explicit PluginApplication(Context* context) : Object(context) { }
     /// Destruct.
-    ~PluginApplication() override;
+    ~PluginApplication() override = default;
+    /// Internal, optional. Finalize object initialization. Depends on calling virtual methods and thus can not be done from constructor. Should be called after creating this object. May not be called if module reloading is not required.
+    void InitializeReloadablePlugin();
+    /// Internal, optional. Unregister plugin and it's types from the engine. Should be called before freeing this object. May not be called if module reloading is not required.
+    void UninitializeReloadablePlugin();
     /// Called when plugin is being loaded. Register all custom components and subscribe to events here.
     virtual void Load() { }
     /// Called when application is started. May be called multiple times but no earlier than before next Stop() call.
@@ -58,7 +62,7 @@ protected:
 
 private:
     /// Types registered with the engine. They will be unloaded when plugin is reloaded.
-    ea::vector<ea::pair<StringHash, ea::string>> registeredTypes_;
+    ea::vector<ea::pair<StringHash, ea::string>> registeredTypes_{};
 };
 
 template<typename T>

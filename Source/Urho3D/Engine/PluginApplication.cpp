@@ -27,7 +27,17 @@
 namespace Urho3D
 {
 
-PluginApplication::~PluginApplication()
+void PluginApplication::RecordPluginFactory(StringHash type, const char* category)
+{
+    registeredTypes_.push_back({type, category ? category : ""});
+}
+
+void PluginApplication::InitializeReloadablePlugin()
+{
+    RecordPluginFactory(GetType(), nullptr);
+}
+
+void PluginApplication::UninitializeReloadablePlugin()
 {
     for (const auto& pair : registeredTypes_)
     {
@@ -38,12 +48,7 @@ PluginApplication::~PluginApplication()
         context_->RemoveAllAttributes(pair.first);
         context_->RemoveSubsystem(pair.first);
     }
-    context_->RemoveFactory(GetType());
-}
-
-void PluginApplication::RecordPluginFactory(StringHash type, const char* category)
-{
-    registeredTypes_.push_back({type, category ? category : ""});
+    registeredTypes_.clear();
 }
 
 }

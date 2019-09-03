@@ -211,7 +211,9 @@ namespace SDL
 
 %ignore Urho3D::Application::engine_;
 %ignore Urho3D::Application::GetCommandLineParser;
-%ignore Urho3D::PluginApplication::PluginMain;
+%ignore Urho3D::PluginApplication::PluginApplicationMain;
+%ignore Urho3D::PluginApplication::InitializeReloadablePlugin;
+%ignore Urho3D::PluginApplication::UninitializeReloadablePlugin;
 %include "Urho3D/Engine/Application.h"
 %include "Urho3D/Engine/PluginApplication.h"
 #if URHO3D_CSHARP
