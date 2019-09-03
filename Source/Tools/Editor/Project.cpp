@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <regex>
 #include <EASTL/sort.h>
 
 #include <Urho3D/Resource/XMLFile.h>
@@ -267,6 +268,18 @@ bool Project::LoadProject(const ea::string& projectPath)
 
             const auto& root = file.GetRoot().GetObject();
 #if URHO3D_PLUGINS
+            if (!GetEngine()->IsHeadless())
+            {
+                // Normal execution cleans up old versions of plugins.
+                StringVector files;
+                GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+                for (const ea::string& fileName : files)
+                {
+                    if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
+                        GetFileSystem()->Delete(GetFileSystem()->GetProgramDir() + fileName);
+                }
+            }
+
             auto pluginsIt = root.find("plugins");
             if (pluginsIt != root.end())
             {
