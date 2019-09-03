@@ -65,7 +65,7 @@ public:
     ///
     bool Load(const ea::string& name);
     ///
-    bool Reload();
+    bool Load() { return Load(name_); }
     ///
     void Unload() { unloading_ = true; }
     ///
@@ -77,7 +77,7 @@ protected:
     /// Converts name to a full plugin file path. Returns empty string on error.
     ea::string NameToPath(const ea::string& name) const;
     ///
-    ea::string VersionModule(const ea::string& path, unsigned version);
+    ea::string VersionModule(const ea::string& path);
     ///
     bool InternalUnload();
 

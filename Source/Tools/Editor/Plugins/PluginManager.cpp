@@ -59,7 +59,6 @@ Plugin::Plugin(Context* context)
 
 Plugin::~Plugin()
 {
-    InternalUnload();
 }
 
 ea::string Plugin::NameToPath(const ea::string& name) const
@@ -86,7 +85,7 @@ ea::string Plugin::NameToPath(const ea::string& name) const
     return EMPTY_STRING;
 }
 
-ea::string Plugin::VersionModule(const ea::string& path, unsigned version)
+ea::string Plugin::VersionModule(const ea::string& path)
 {
     auto* fs = GetFileSystem();
     unsigned pdbOffset = 0, pdbSize = 0;
@@ -95,8 +94,19 @@ ea::string Plugin::VersionModule(const ea::string& path, unsigned version)
     ModuleType type = PluginModule::ReadModuleInformation(context_, path, &pdbOffset, &pdbSize);
     SplitPath(path, dir, name, ext);
 
-    ea::string versionString = ea::to_string(version);
-    ea::string shortenedName = name.substr(0, name.length() - versionString.length());
+    ea::string versionString, shortenedName;
+
+    // Headless utilities do not reuqire reloading. They will load module directly.
+    if (GetEngine()->IsHeadless())
+    {
+        versionString = "";
+        shortenedName = name;
+    }
+    else
+    {
+        versionString = ea::to_string(version_ + 1);
+        shortenedName = name.substr(0, name.length() - versionString.length());
+    }
 
     if (shortenedName.length() < 3)
     {
@@ -105,6 +115,10 @@ ea::string Plugin::VersionModule(const ea::string& path, unsigned version)
     }
 
     ea::string versionedPath = dir + shortenedName + versionString + ext;
+
+    // Non-versioned modules do not need pdb/version patching.
+    if (GetEngine()->IsHeadless())
+        return versionedPath;
 
     if (!fs->Copy(path, versionedPath))
     {
@@ -155,7 +169,7 @@ ea::string Plugin::VersionModule(const ea::string& path, unsigned version)
     if (type == MODULE_MANAGED)
     {
         // Managed runtime will modify file version in specified file.
-        Script::GetRuntimeApi()->SetAssemblyVersion(versionedPath, version);
+        Script::GetRuntimeApi()->SetAssemblyVersion(versionedPath, version_ + 1);
     }
 #endif
 #endif
@@ -165,7 +179,8 @@ ea::string Plugin::VersionModule(const ea::string& path, unsigned version)
 bool Plugin::Load(const ea::string& name)
 {
     ea::string path = NameToPath(name);
-    ea::string pluginPath = VersionModule(path, version_ + 1);
+    ea::string pluginPath = VersionModule(path);
+
     if (pluginPath.empty())
         return false;
 
@@ -174,28 +189,27 @@ bool Plugin::Load(const ea::string& name)
         application_ = module_.InstantiatePlugin();
         if (application_.NotNull())
         {
+            application_->InitializeReloadablePlugin();
             name_ = name;
             path_ = path;
             mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
             version_++;
+            unloading_ = false;
             return true;
         }
     }
     return false;
 }
 
-bool Plugin::Reload()
-{
-    if (!InternalUnload())
-        return false;
-    return Load(name_);
-}
-
 bool Plugin::InternalUnload()
 {
+    if (application_.Null())
+        return false;
+
     ModuleType moduleType = GetModuleType();
     // Disposing object requires managed reference to be the last one alive.
     WeakPtr<PluginApplication> application(application_);
+    application_->UninitializeReloadablePlugin();
     application_ = nullptr;
     if (!module_.Unload())
         return false;
@@ -257,9 +271,13 @@ void PluginManager::OnEndFrame()
 
     for (Plugin* plugin : plugins_)
     {
+        if (plugin->application_.Null())
+            continue;
+
         bool pluginOutOfDate = false;
 
-        if (plugin->application_.NotNull())
+        // Plugin reloading is not used in headless executions.
+        if (!GetEngine()->IsHeadless())
         {
             // Check for modified plugins once in a while, do not hammer syscalls on every frame.
             if (checkOutOfDatePlugins)
@@ -287,6 +305,7 @@ void PluginManager::OnEndFrame()
                                  "This will lead to memory leaks or crashes.",
                                  plugin->application_->GetTypeName());
             }
+            plugin->InternalUnload();
         }
 
         if (pluginOutOfDate)
@@ -308,15 +327,13 @@ void PluginManager::OnEndFrame()
 
         if (!plugin->unloading_ && pluginOutOfDate)
         {
-            if (plugin->Reload())
+            if (plugin->Load())
                 URHO3D_LOGINFO("Reloaded plugin '{}' version {}.", GetFileNameAndExtension(plugin->name_), plugin->version_);
             else
                 URHO3D_LOGERROR("Reloading plugin '{}' failed and it was unloaded.", GetFileNameAndExtension(plugin->name_));
         }
 
-        if (plugin->unloading_)
-            plugin->application_ = nullptr;
-        else
+        if (!plugin->unloading_)
         {
             if (plugin->application_.NotNull())
             {
