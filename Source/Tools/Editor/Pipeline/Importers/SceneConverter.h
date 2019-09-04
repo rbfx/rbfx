@@ -39,7 +39,7 @@ public:
     ///
     bool Accepts(const ea::string& path) const override;
     ///
-    bool Execute(Urho3D::Asset* input, const ea::string& inputFile, const ea::string& outputPath) override;
+    bool Execute(Urho3D::Asset* input, const ea::string& outputPath) override;
 };
 
 }

@@ -54,6 +54,8 @@ AssetImporter::AssetImporter(Context* context)
             isAttributeSet_[attr.name_] = false;
         }
 
+        if (flavor_ == DEFAULT_PIPELINE_FLAVOR)
+            asset_->ReimportOutOfDateRecursive();
     });
     SubscribeToEvent(&inspector_, E_ATTRIBUTEINSPECTOATTRIBUTE, [this](StringHash, VariantMap& args) {
         using namespace AttributeInspectorAttribute;
@@ -65,6 +67,13 @@ AssetImporter::AssetImporter(Context* context)
 void AssetImporter::RenderInspector(const char* filter)
 {
     RenderAttributes(this, filter, &inspector_);
+}
+
+bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
+{
+    lastAttributeHash_ = HashEffectiveAttributeValues();
+    ClearByproducts();
+    return true;
 }
 
 bool AssetImporter::SaveJSON(JSONValue& dest) const
@@ -100,22 +109,46 @@ bool AssetImporter::LoadJSON(const JSONValue& source)
         }
     }
 
+    lastAttributeHash_ = HashEffectiveAttributeValues();
+
     return true;
 }
 
-bool AssetImporter::IsModified()
+bool AssetImporter::IsModified() const
 {
-    if (const ea::vector<AttributeInfo>* attributes = GetAttributes())
+    for (const auto& nameStatus : isAttributeSet_)
     {
-        for (const AttributeInfo& info : *attributes)
-        {
-            Variant value;
-            // Side-step attribute inheritance.
-            Serializable::OnGetAttribute(info, value);
-            if (value != GetAttributeDefault(info.name_))
-                return true;
-        }
+        if (nameStatus.second)
+            return true;
     }
+    return false;
+}
+
+bool AssetImporter::IsOutOfDate() const
+{
+    if (!Accepts(asset_->GetResourcePath()))
+        return false;
+
+    if (byproducts_.empty())
+        return true;
+
+    if (lastAttributeHash_ != HashEffectiveAttributeValues())
+        return true;
+
+    auto* fs = GetFileSystem();
+    auto* project = GetSubsystem<Project>();
+
+    unsigned mtime = fs->GetLastModifiedTime(asset_->GetResourcePath());
+    for (const ea::string& byproduct : byproducts_)
+    {
+        ea::string byproductPath = project->GetCachePath() + byproduct;
+        if (!fs->FileExists(byproductPath))
+            return true;
+
+        if (fs->GetLastModifiedTime(byproductPath) < mtime)
+            return true;
+    }
+
     return false;
 }
 
@@ -205,6 +238,37 @@ Variant AssetImporter::GetInstanceDefault(const ea::string& name) const
     }
 
     return Variant::EMPTY;
+}
+
+unsigned AssetImporter::HashEffectiveAttributeValues() const
+{
+    unsigned hash = 16777619;
+    Variant value;
+
+    if (const ea::vector<AttributeInfo>* attributes = GetAttributes())
+    {
+        for (const AttributeInfo& attr : *attributes)
+        {
+            if (IsAttributeSet(attr.name_))
+                OnGetAttribute(attr, value);
+            else
+            {
+                value = GetInstanceDefault(attr.name_);
+                if (value.IsEmpty())
+                    value = attr.defaultValue_;
+            }
+
+            hash = hash * 31 + value.ToHash();
+        }
+    }
+
+    return hash;
+}
+
+bool AssetImporter::IsAttributeSet(const eastl::string& name) const
+{
+    auto it = isAttributeSet_.find(name);
+    return it != isAttributeSet_.end() && it->second;
 }
 
 }

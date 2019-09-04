@@ -66,17 +66,24 @@ void ModelImporter::RenderInspector(const char* filter)
     BaseClassName::RenderInspector(filter);
 }
 
-bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, const ea::string& outputPath)
+bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 {
+    // outputPath - absolute path to Cache or Cache/{flavor} folder.
+    if (!BaseClassName::Execute(input, outputPath))
+        return false;
+
     auto* fs = GetFileSystem();
     auto* project = GetSubsystem<Project>();
 
+    // A path mimicking structure of cache directory, but with byproducts of this import procedure only. It serves us to allow easy
+    // detection of all byproducts of this import procedure.
     ea::string tempPath = project->GetProjectPath() + "Temp." + GenerateUUID() + "/";
-    // Models go into "{resource_name}/" subfolder in cache directory.
-    ea::string outputDir = outputPath + GetFileName(inputFile) + "/";
-    fs->CreateDirsRecursive(outputDir);
+    // Actual output destination AssetImporter will be writing.
+    ea::string resourceBaseName = GetPath(input->GetName()) + GetFileName(input->GetName()) + "/";  // Strips file extension
+    ea::string tempOutput = tempPath + resourceBaseName;
+    fs->CreateDirsRecursive(tempOutput);
 
-    ea::string output = tempPath + "Model.mdl";
+    ea::string output = tempOutput + "Model.mdl";
     ea::vector<ea::string> args{"model", input->GetResourcePath(), output};
 
     if (!GetAttribute(MODEL_IMPORTER_OUTPUT_ANIM).GetBool())
@@ -93,6 +100,9 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
 
     if (!GetAttribute(MODEL_IMPORTER_FIX_INFACING_NORMALS).GetBool())
         args.emplace_back("-nf");
+
+    args.emplace_back("-pp");
+    args.emplace_back(resourceBaseName);
 
     args.emplace_back("-mb");
     args.emplace_back(ea::to_string(GetAttribute(MODEL_IMPORTER_MAX_BONES).GetBool()));
@@ -114,10 +124,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
         return false;
     }
 
-    ea::string byproductNameStart = GetPath(input->GetName()) + GetFileName(input->GetName()) + "/";    // Strip file extension
     unsigned mtime = fs->GetLastModifiedTime(input->GetResourcePath());
-
-    ClearByproducts();
 
     StringVector tmpByproducts;
     fs->ScanDir(tmpByproducts, tempPath, "*.*", SCAN_FILES, true);
@@ -126,20 +133,20 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& inputFile, c
 
     for (const ea::string& byproduct : tmpByproducts)
     {
-        fs->SetLastModifiedTime(tempPath + byproduct, mtime);
-        ea::string moveTo = outputDir + byproduct;
+        ea::string byproductPath = tempPath + byproduct;
+        ea::string moveTo = outputPath + byproduct;
         if (fs->FileExists(moveTo))
             fs->Delete(moveTo);
         else if (fs->DirExists(moveTo))
             fs->RemoveDir(moveTo, true);
         fs->CreateDirsRecursive(GetPath(moveTo));
-        fs->Rename(tempPath + byproduct, moveTo);
+        fs->Rename(byproductPath, moveTo);
         fs->SetLastModifiedTime(moveTo, mtime);
-        AddByproduct(byproductNameStart + byproduct);
+        AddByproduct(byproduct);
     }
 
     fs->RemoveDir(tempPath, true);
-    return true;
+    return !tmpByproducts.empty();
 }
 
 bool ModelImporter::Accepts(const ea::string& path) const

@@ -53,7 +53,7 @@ public:
     ///
     const ea::string& GetResourcePath() const { return resourcePath_; }
     /// Returns true when source asset is newer than last conversion date.
-    bool IsOutOfDate() const;
+    bool IsOutOfDate(const ea::string& flavor) const;
     /// Returns true when this asset is a settings holder for a directory.
     bool IsMetaAsset() const { return contentType_ == CTYPE_FOLDER; }
     /// Returns content type of this asset.
@@ -87,6 +87,8 @@ protected:
     void RemoveFlavor(const ea::string& name);
     ///
     void RenameFlavor(const ea::string& oldName, const ea::string& newName);
+    ///
+    void ReimportOutOfDateRecursive() const;
 
     /// Resource name.
     ea::string name_;
