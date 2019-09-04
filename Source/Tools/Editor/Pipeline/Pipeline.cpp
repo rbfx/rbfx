@@ -35,8 +35,7 @@
 #include <Urho3D/Resource/JSONFile.h>
 #include "EditorEvents.h"
 #include "Project.h"
-#include "Packager.h"
-#include "Pipeline.h"
+#include "Pipeline/Pipeline.h"
 
 namespace Urho3D
 {
@@ -128,6 +127,8 @@ void Pipeline::ClearCache(const ea::string& resourceName)
 
 Asset* Pipeline::GetAsset(const eastl::string& resourceName, bool autoCreate)
 {
+    MutexLock lock(mutex_);
+
     if (resourceName.empty() || resourceName.ends_with(".asset"))
         return nullptr;
 
@@ -199,31 +200,30 @@ void Pipeline::RenameFlavor(const ea::string& oldName, const ea::string& newName
         asset.second->RenameFlavor(oldName, newName);
 }
 
-void Pipeline::ScheduleImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags,
-    const ea::string& inputFile)
+SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags)
 {
     assert(asset != nullptr);
     if (asset->importing_)
-        return;
+        return {};
 
-    const ea::string& importFile = !inputFile.empty() ? inputFile : asset->GetResourcePath();
+    if (flags & PipelineBuildFlag::SKIP_UP_TO_DATE && !asset->IsOutOfDate(flavor))
+        return {};
 
     asset->AddRef();
     asset->importing_ = true;
-    GetWorkQueue()->AddWorkItem([this, asset, flavor, importFile, flags]()
+    return GetWorkQueue()->AddWorkItem([this, asset, flavor, flags]()
     {
-        if (ExecuteImport(asset, flavor, flags, importFile))
+        if (ExecuteImport(asset, flavor, flags))
         {
             MutexLock lock(mutex_);
-            dirtyAssets_.push_back(SharedPtr<Asset>(asset));
+            dirtyAssets_.push_back(SharedPtr(asset));
         }
         asset->importing_ = false;
-        asset->ReleaseRef();
+        asset->ReleaseRef();            // TODO: Chance to free asset on non-main thread.
     }, PIPELINE_TASK_PRIORITY);
 }
 
-bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags,
-    const ea::string& inputFile)
+bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags)
 {
     bool importedAnything = false;
     auto* project = GetSubsystem<Project>();
@@ -233,32 +233,25 @@ bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBui
     if (!isDefaultFlavor)
         outputPath += AddTrailingSlash(flavor);
 
-    if (asset->GetName().contains("/"))
-        outputPath += AddTrailingSlash(GetPath(asset->GetName()));
-
-    if (inputFile.starts_with(outputPath))
-    {
-        // inputFile points to a byproduct of this asset. Append a subdirectory of input file to the output.
-        outputPath += GetPath(inputFile).substr(outputPath.length());
-    }
-
     for (AssetImporter* importer : asset->importers_[flavor])
     {
         // Skip optional importers (importing default flavor when editor is running most likely)
         if (!(flags & PipelineBuildFlag::EXECUTE_OPTIONAL) && importer->IsOptional())
             continue;
 
-        if (!importer->Accepts(inputFile))
-            // Default flavor does not execute
+        if (!importer->Accepts(asset->GetResourcePath()))
             continue;
 
-        Log::GetLogger("pipeline").Info("{} is importing '{}'.", importer->GetTypeName(), GetFileNameAndExtension(inputFile));
+        Log::GetLogger("pipeline").Info("{} is importing '{}'.", importer->GetTypeName(), asset->GetName());
 
-        if (importer->Execute(asset, inputFile, outputPath))
+        if (importer->Execute(asset, outputPath))
         {
             importedAnything = true;
             for (const ea::string& byproduct : importer->GetByproducts())
-                ExecuteImport(asset, flavor, Urho3D::PipelineBuildFlags(), byproduct);
+            {
+                if (Asset* byproductAsset = GetAsset(byproduct))
+                    ExecuteImport(byproductAsset, flavor, flags);
+            }
         }
     }
 
@@ -279,11 +272,7 @@ void Pipeline::BuildCache(const ea::string& flavor, PipelineBuildFlags flags)
             continue;
 
         if (Asset* asset = GetAsset(resourceName))
-        {
-            if (flags & PipelineBuildFlag::SKIP_UP_TO_DATE && !asset->IsOutOfDate())
-                continue;
             ScheduleImport(asset, flavor, flags);
-        }
     }
 }
 

@@ -51,27 +51,30 @@ void SceneConverter::RenderInspector(const char* filter)
     BaseClassName::RenderInspector(filter);
 }
 
-bool SceneConverter::Execute(Urho3D::Asset* input, const ea::string& inputFile, const ea::string& outputPath)
+bool SceneConverter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 {
+    if (!BaseClassName::Execute(input, outputPath))
+        return false;
+
     auto* fs = GetFileSystem();
     auto* project = GetSubsystem<Project>();
 
     // A subproces is used to cook a scene because resource loading is reserved to a main thread, but asset importers run in worker threads.
 
     ea::string output;
-    ea::string outputFile = outputPath + GetFileName(inputFile) + ".bin";
-    int result = fs->SystemRun(fs->GetProgramFileName(), {project->GetProjectPath(), "CookScene", "--input", inputFile,
+    ea::string outputFile = outputPath + GetPath(input->GetName()) + GetFileName(input->GetName()) + ".bin";
+    int result = fs->SystemRun(fs->GetProgramFileName(), {project->GetProjectPath(), "CookScene", "--input", input->GetResourcePath(),
         "--output", outputFile}, output);
 
     if (result != 0)
     {
-        URHO3D_LOGERROR("Converting '{}' to '{}' failed.", inputFile, outputFile);
+        URHO3D_LOGERROR("Converting '{}' to '{}' failed.", input->GetResourcePath(), outputFile);
         if (!output.empty())
             URHO3D_LOGERROR(output);
         return false;
     }
     else
-        URHO3D_LOGINFO("Converted '{}' to '{}'.", inputFile, outputFile);
+        URHO3D_LOGINFO("Converted '{}' to '{}'.", input->GetResourcePath(), outputFile);
 
     AddByproduct(outputFile);
     return true;
