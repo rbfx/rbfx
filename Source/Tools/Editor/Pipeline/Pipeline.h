@@ -74,10 +74,9 @@ public:
     ///
     void RenameFlavor(const ea::string& oldName, const ea::string& newName);
     /// Schedules import task to run on worker thread.
-    void ScheduleImport(Asset* asset, const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR,
-        PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT, const ea::string& inputFile=EMPTY_STRING);
+    SharedPtr <WorkItem> ScheduleImport(Asset* asset, const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
     ///
-    bool ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags, const ea::string& inputFile);
+    bool ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags);
     /// Mass-schedule assets for importing.
     void BuildCache(const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
     /// Blocks calling thread until all pipeline tasks complete.

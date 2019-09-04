@@ -117,43 +117,14 @@ void Asset::Initialize(const ea::string& resourceName)
     contentType_ = ::Urho3D::GetContentType(context_, resourceName);
 }
 
-bool Asset::IsOutOfDate() const
+bool Asset::IsOutOfDate(const ea::string& flavor) const
 {
-    if (importers_.empty())
-        // Asset is used as is and never converted.
-        return false;
-
-    auto* project = GetSubsystem<Project>();
-    auto* fs = GetSubsystem<FileSystem>();
-    unsigned mtime = fs->GetLastModifiedTime(resourcePath_);
-
-    bool hasByproducts = false;
-    bool hasAcceptingImporters = false;
-    for (const auto& flavor : importers_)
+    for (const auto& importer : GetImporters(flavor))
     {
-        for (const auto& importer : flavor.second)
-        {
-            hasAcceptingImporters |= importer->Accepts(resourcePath_);
-            hasByproducts |= !importer->GetByproducts().empty();
-            for (const ea::string& byproduct : importer->GetByproducts())
-            {
-                const ea::string& byproductPath = project->GetCachePath() + byproduct;
-                if (fs->FileExists(byproductPath))
-                {
-                    if (fs->GetLastModifiedTime(byproductPath) < mtime)
-                        // Out of date when resource is newer than any of byproducts.
-                        return true;
-                }
-            }
-        }
+        if (importer->IsOutOfDate())
+            return true;
     }
-
-    if (!hasAcceptingImporters)
-        // Nothing to import.
-        return false;
-
-    // Out of date when nothing was imported.
-    return !hasByproducts;
+    return false;
 }
 
 void Asset::ClearCache()
@@ -283,6 +254,7 @@ bool Asset::Save()
         for (const auto& importer : flavor.second)
         {
             isModified |= importer->IsModified();
+            isModified |= !importer->GetByproducts().empty();
             if (isModified)
                 break;
         }
@@ -453,6 +425,27 @@ AssetImporter* Asset::GetImporter(const ea::string& flavor, StringHash type) con
             return importer;
     }
     return nullptr;
+}
+
+void Asset::ReimportOutOfDateRecursive() const
+{
+    if (!IsMetaAsset())
+        return;
+
+    auto* fs = GetFileSystem();
+    auto* project = GetSubsystem<Project>();
+
+    StringVector files;
+    fs->ScanDir(files, GetResourcePath(), "", SCAN_FILES, true);
+
+    for (const ea::string& file : files)
+    {
+        if (Asset* asset = project->GetPipeline().GetAsset(GetName() + file))
+        {
+            if (asset->IsOutOfDate(DEFAULT_PIPELINE_FLAVOR))
+                project->GetPipeline().ScheduleImport(asset);
+        }
+    }
 }
 
 }
