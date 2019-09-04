@@ -1044,4 +1044,69 @@ VariantType Variant::GetTypeFromName(const char* typeName)
     return (VariantType)GetStringListIndex(typeName, typeNames, VAR_NONE);
 }
 
+unsigned Variant::ToHash() const
+{
+    switch (GetType())
+    {
+    case Urho3D::VAR_NONE:
+        return 0;
+    case Urho3D::VAR_INT:
+        return ea::hash<int>()(Get<int>());
+    case Urho3D::VAR_BOOL:
+        return ea::hash<bool>()(Get<bool>());
+    case Urho3D::VAR_FLOAT:
+        return ea::hash<float>()(Get<float>());
+    case Urho3D::VAR_VECTOR2:
+        return ea::hash<Urho3D::Vector2>()(Get<Urho3D::Vector2>());
+    case Urho3D::VAR_VECTOR3:
+        return ea::hash<Urho3D::Vector3>()(Get<Urho3D::Vector3>());
+    case Urho3D::VAR_VECTOR4:
+        return ea::hash<Urho3D::Vector4>()(Get<Urho3D::Vector4>());
+    case Urho3D::VAR_QUATERNION:
+        return ea::hash<Urho3D::Quaternion>()(Get<Urho3D::Quaternion>());
+    case Urho3D::VAR_COLOR:
+        return ea::hash<Urho3D::Color>()(Get<Urho3D::Color>());
+    case Urho3D::VAR_STRING:
+        return ea::hash<ea::string>()(Get<ea::string>());
+    case Urho3D::VAR_BUFFER:
+        return ea::hash<ea::vector<unsigned char>>()(Get<ea::vector<unsigned char>>());
+    case Urho3D::VAR_VOIDPTR:
+        return ea::hash<void*>()(Get<void*>());
+    case Urho3D::VAR_RESOURCEREF:
+        return ea::hash<Urho3D::ResourceRef>()(Get<Urho3D::ResourceRef>());
+    case Urho3D::VAR_RESOURCEREFLIST:
+        return ea::hash<Urho3D::ResourceRefList>()(Get<Urho3D::ResourceRefList>());
+    case Urho3D::VAR_VARIANTVECTOR:
+        return ea::hash<Urho3D::VariantVector>()(Get<Urho3D::VariantVector>());
+    case Urho3D::VAR_VARIANTMAP:
+        return ea::hash<Urho3D::VariantMap>()(Get<Urho3D::VariantMap>());
+    case Urho3D::VAR_INTRECT:
+        return ea::hash<Urho3D::IntRect>()(Get<Urho3D::IntRect>());
+    case Urho3D::VAR_INTVECTOR2:
+        return ea::hash<Urho3D::IntVector2>()(Get<Urho3D::IntVector2>());
+    case Urho3D::VAR_PTR:
+        return ea::hash<Urho3D::RefCounted*>()(Get<Urho3D::RefCounted*>());
+    case Urho3D::VAR_MATRIX3:
+        return ea::hash<Urho3D::Matrix3>()(Get<Urho3D::Matrix3>());
+    case Urho3D::VAR_MATRIX3X4:
+        return ea::hash<Urho3D::Matrix3x4>()(Get<Urho3D::Matrix3x4>());
+    case Urho3D::VAR_MATRIX4:
+        return ea::hash<Urho3D::Matrix4>()(Get<Urho3D::Matrix4>());
+    case Urho3D::VAR_DOUBLE:
+        return ea::hash<double>()(Get<double>());
+    case Urho3D::VAR_STRINGVECTOR:
+        return ea::hash<Urho3D::StringVector>()(Get<Urho3D::StringVector>());
+    case Urho3D::VAR_RECT:
+        return ea::hash<Urho3D::Rect>()(Get<Urho3D::Rect>());
+    case Urho3D::VAR_INTVECTOR3:
+        return ea::hash<Urho3D::IntVector3>()(Get<Urho3D::IntVector3>());
+    case Urho3D::VAR_INT64:
+        return ea::hash<long long>()(Get<long long>());
+    case Urho3D::VAR_CUSTOM:
+    default:
+        assert(false);
+        return 0;
+    }
+}
+
 }

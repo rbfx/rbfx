@@ -27,24 +27,8 @@
 
 #include <EASTL/utility.h>
 #include <EASTL/weak_ptr.h>
-
-namespace Urho3D
-{
-
-/// Combine hash into result.
-inline void CombineHash(unsigned& result, unsigned hash)
-{
-    result ^= hash + 0x9e3779b9 + (result << 6) + (result >> 2);
-}
-
-/// Make hash template helper.
-template <class T>
-inline unsigned MakeHash(const T& value)
-{
-    return ea::hash<T>{}(value);
-}
-
-}
+#include <EASTL/vector.h>
+#include <EASTL/unordered_map.h>
 
 namespace eastl
 {
@@ -85,10 +69,32 @@ struct hash<weak_ptr<U>>
 
 template <class T, class U> struct hash<pair<T, U>>
 {
-size_t operator()(const pair<T, U>& s) const
+    size_t operator()(const pair<T, U>& s) const
+    {
+        return hash<T>()(s.first) ^ hash<U>()(s.second) * 16777619;
+    }
+};
+
+template <class T, class Allocator> struct hash<vector<T, Allocator>>
 {
-    return hash<T>()(s.first) ^ hash<U>()(s.second) * 16777619;
-}
+    size_t operator()(const vector<T, Allocator>& s) const
+    {
+        size_t result = 16777619;
+        for (const T& value : s)
+            result = result * 31 + hash<T>()(value);
+        return result;
+    }
+};
+
+template <typename Key, typename T> struct hash<unordered_map<Key, T>>
+{
+    size_t operator()(const unordered_map<Key, T>& s) const
+    {
+        size_t result = 16777619;
+        for (const auto& pair : s)
+            result = result * 31 * 31 + hash<Key>()(pair.first) * 31 + hash<T>()(pair.second);
+        return result;
+    }
 };
 
 }

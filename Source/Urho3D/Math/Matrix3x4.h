@@ -708,6 +708,15 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const
+    {
+        unsigned hash = 37;
+        for (int i = 0; i < 3 * 4; i++)
+            hash = 37 * hash + FloatToRawIntBits(Data()[i]);
+        return hash;
+    }
+
     float m00_;
     float m01_;
     float m02_;
