@@ -98,7 +98,7 @@ public:
     /// (Internal use) Set instance-level default value. Allocate the internal data structure as necessary.
     void SetInstanceDefault(const ea::string& name, const Variant& defaultValue);
     /// (Internal use) Get instance-level default value.
-    Variant GetInstanceDefault(const ea::string& name) const;
+    virtual Variant GetInstanceDefault(const ea::string& name) const;
     /// Reset all editable attributes to their default values.
     void ResetToDefault();
     /// Remove instance's default values if they are set previously.

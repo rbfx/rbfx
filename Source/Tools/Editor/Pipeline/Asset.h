@@ -72,7 +72,11 @@ public:
     ///
     bool LoadJSON(const JSONValue& source) override;
     ///
-    const AssetImporterMap& GetImporters() { return importers_; }
+    const AssetImporterMap& GetImporters() const { return importers_; }
+    ///
+    const ea::vector<SharedPtr<AssetImporter>>& GetImporters(const ea::string& flavor) const;
+    ///
+    AssetImporter* GetImporter(const ea::string& flavor, StringHash type) const;
 
 protected:
     /// Set resource name. Also loads resource configuration. Used only by Pipeline class.

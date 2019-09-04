@@ -58,6 +58,8 @@ public:
     void OnSetAttribute(const AttributeInfo& attr, const Variant& src) override;
     ///
     const StringVector& GetByproducts() const { return byproducts_; }
+    ///
+    Variant GetInstanceDefault(const ea::string& name) const override;
 
 protected:
     /// Sets needed asset information. Called after creating every importer.
@@ -69,11 +71,9 @@ protected:
     ///
     bool SaveDefaultAttributes(const AttributeInfo& attr) const override;
     ///
-    bool SetInheritedDefaultsForImporter(const AttributeInfo& attr, const Variant& src);
+    unsigned HashEffectiveAttributeValues() const;
     ///
-    void SetInheritedDefaultsIfSet();
-    ///
-    void SetInheritedDefaults(const AttributeInfo& attr, const Variant& src);
+    bool IsAttributeSet(const eastl::string& name) const;
 
     /// Asset this importer belongs to.
     WeakPtr<Asset> asset_;
