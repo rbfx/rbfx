@@ -398,12 +398,6 @@ bool Asset::LoadJSON(const JSONValue& source)
         }
     }
 
-    for (const ea::string& flavor : project->GetPipeline().GetFlavors())
-    {
-        for (const auto& importer : importers_[flavor])
-            importer->SetInheritedDefaultsIfSet();
-    }
-
     return true;
 }
 
@@ -440,6 +434,25 @@ void Asset::RenameFlavor(const ea::string& oldName, const ea::string& newName)
     ea::swap(importers_[oldName], importers_[newName]);
 
     importers_.erase(oldName);
+}
+
+const ea::vector<SharedPtr<AssetImporter>>& Asset::GetImporters(const ea::string& flavor) const
+{
+    static ea::vector<SharedPtr<AssetImporter>> empty;
+    auto it = importers_.find(flavor);
+    if (it == importers_.end())
+        return empty;
+    return it->second;
+}
+
+AssetImporter* Asset::GetImporter(const ea::string& flavor, StringHash type) const
+{
+    for (AssetImporter* importer : GetImporters(flavor))
+    {
+        if (importer->GetType() == type)
+            return importer;
+    }
+    return nullptr;
 }
 
 }
