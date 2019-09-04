@@ -310,7 +310,8 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             }
 
             // Render cache items
-            ea::string resourceCachePath = cacheDir + path + item;
+            ea::string cacheItem = GetFileName(item);
+            ea::string resourceCachePath = cacheDir + path + cacheItem;
             if (fs->DirExists(resourceCachePath))
             {
                 StringVector cacheFiles;
@@ -318,12 +319,13 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
                 if (!cacheFiles.empty())
                 {
+                    ui::PushID(resourceCachePath.c_str());
                     ui::Indent();
 
                     for (const ea::string& cachedFile : cacheFiles)
                     {
                         icon = GetFileIcon(resourceCachePath + cachedFile);
-                        isSelected = selected == item + "/" + cachedFile;
+                        isSelected = selected == cacheItem + "/" + cachedFile;
 
                         if (flags & RBF_SCROLL_TO_CURRENT && isSelected)
                             ui::SetScrollHereY();
@@ -333,7 +335,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
                         case 1:
                             state.singleClickPending = [&]()
                             {
-                                selected = item + "/" + cachedFile;
+                                selected = cacheItem + "/" + cachedFile;
                                 result = RBR_ITEM_SELECTED;
                                 using namespace ResourceBrowserSelect;
                                 fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
@@ -341,7 +343,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
                             break;
                         case 2:
                             state.singleClickPending = nullptr;
-                            selected = item + "/" + cachedFile;
+                            selected = cacheItem + "/" + cachedFile;
                             result = RBR_ITEM_OPEN;
                             break;
                         default:
@@ -352,10 +354,10 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
                         {
                             if (ui::BeginDragDropSource())
                             {
-                                ui::SetDragDropVariant("path", path + item + "/" + cachedFile);
+                                ui::SetDragDropVariant("path", path + cacheItem + "/" + cachedFile);
 
                                 // TODO: show actual preview of a resource.
-                                ui::Text("%s%s", path.c_str(), cachedFile.c_str());
+                                ui::Text("%s%s/%s", path.c_str(), cacheItem.c_str(), cachedFile.c_str());
 
                                 ui::EndDragDropSource();
                             }
@@ -363,6 +365,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
                     }
 
                     ui::Unindent();
+                    ui::PopID();
                 }
             }
         }
