@@ -27,6 +27,7 @@
 #include <EASTL/unique_ptr.h>
 
 #include "../Container/Ptr.h"
+#include "../Container/Hash.h"
 #include "../Math/Color.h"
 #include "../Math/Matrix3.h"
 #include "../Math/Matrix3x4.h"
@@ -121,6 +122,12 @@ struct URHO3D_API ResourceRef
     /// Construct from another ResourceRef.
     ResourceRef(const ResourceRef& rhs) = default;
 
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const
+    {
+        return type_.ToHash() * 31 + ea::hash<ea::string>()(name_);
+    }
+
     /// Object type.
     StringHash type_;
     /// Object name.
@@ -150,6 +157,12 @@ struct URHO3D_API ResourceRefList
         type_(type),
         names_(names)
     {
+    }
+
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const
+    {
+        return type_.ToHash() * 31 + ea::hash<StringVector>()(names_);
     }
 
     /// Object type.
@@ -1394,6 +1407,9 @@ public:
         }
         return nullptr;
     }
+
+    /// Hash function for containers.
+    unsigned ToHash() const;
 
     /// Return name for variant type.
     static ea::string GetTypeName(VariantType type);

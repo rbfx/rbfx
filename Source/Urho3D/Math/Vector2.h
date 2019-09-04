@@ -356,6 +356,16 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const
+    {
+        unsigned hash = 37;
+        hash = 37 * hash + FloatToRawIntBits(x_);
+        hash = 37 * hash + FloatToRawIntBits(y_);
+
+        return hash;
+    }
+
     /// X coordinate.
     float x_;
     /// Y coordinate.
@@ -420,20 +430,5 @@ inline float StableRandom(const Vector2& seed) { return Fract(Sin(seed.DotProduc
 
 /// Return a random value from [0, 1) from scalar seed.
 inline float StableRandom(float seed) { return StableRandom(Vector2(seed, seed)); }
-
-}
-
-namespace eastl
-{
-
-template <class T, typename Enable> struct hash;
-
-template <> struct hash<Urho3D::IntVector2>
-{
-    size_t operator()(const Urho3D::IntVector2& value) const
-    {
-        return value.ToHash();
-    }
-};
 
 }

@@ -237,6 +237,12 @@ public:
     /// Return as string.
     ea::string ToString() const;
 
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const
+    {
+        return min_.ToHash() * 37 + max_.ToHash();
+    }
+
     /// Return left-top corner position.
     Vector2 Min() const { return min_; }
 
@@ -427,6 +433,9 @@ public:
 
     /// Return as string.
     ea::string ToString() const;
+
+    /// Return hash value for HashSet & HashMap.
+    unsigned ToHash() const { return (unsigned)left_ * 31 * 31 * 31 + (unsigned)right_ * 31 * 31 + (unsigned)top_ * 31 + (unsigned)bottom_; }
 
     /// Return left-top corner position.
     IntVector2 Min() const { return {left_, top_}; }
