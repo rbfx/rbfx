@@ -36,6 +36,7 @@
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Asset.h"
+#include "Pipeline/Packager.h"
 
 namespace Urho3D
 {
@@ -65,28 +66,34 @@ public:
     void ClearCache(const ea::string& resourceName);
     /// Returns asset object, creates it for existing asset if pipeline has not done it yet. Returns nullptr if `autoCreate` is set to false and asset was not loaded yet.
     Asset* GetAsset(const eastl::string& resourceName, bool autoCreate = true);
-    ///
+    /// Returns a list of currently present flavors. List always has at least "default" flavor.
     const StringVector& GetFlavors() const { return flavors_; }
-    ///
+    /// Add a custom flavor.
     void AddFlavor(const ea::string& name);
-    ///
+    /// Remove a custom flavor.
     void RemoveFlavor(const ea::string& name);
-    ///
+    /// Rename a custom flavor.
     void RenameFlavor(const ea::string& oldName, const ea::string& newName);
     /// Schedules import task to run on worker thread.
     SharedPtr <WorkItem> ScheduleImport(Asset* asset, const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
-    ///
+    /// Executes importers of specified asset asychronously.
     bool ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags);
     /// Mass-schedule assets for importing.
     void BuildCache(const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
     /// Blocks calling thread until all pipeline tasks complete.
     void WaitForCompletion() const;
+    /// Queue packaging of resources for specified flavor. This function returns immediately, however user will be blocked from interacting with editor by modal window until process is done.
+    void CreatePaksAsync(const ea::string& flavor);
+    /// Returns true if resource or any of it's parent directories have non-default flavor settings.
+    bool HasFlavorSettings(const ea::string& resourceName);
 
 protected:
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
-    ///
+    /// Handles file watchers.
     void OnEndFrame(StringHash, VariantMap&);
+    /// Handles modal dialogs.
+    void OnUpdate();
 
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
@@ -105,6 +112,12 @@ protected:
     Mutex mutex_;
     /// A list of assets that were modified in non-main thread and need to be saved on main thread.
     ea::vector<SharedPtr<Asset>> dirtyAssets_;
+    /// A list of flavors that are yet to be packaged.
+    StringVector pendingPackageFlavor_{};
+    /// Current active packager. Null when packaging is not in progress.
+    SharedPtr<Packager> packager_{};
+    /// Title of the modal dialog that shows when packaging files.
+    ea::string packagerModalTitle_{};
 
     friend class Project;
     friend class Asset;

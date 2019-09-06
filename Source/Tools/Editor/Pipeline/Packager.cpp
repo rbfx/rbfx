@@ -20,12 +20,18 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/unique_ptr.h>
+#include <EASTL/sort.h>
 
+#include <Urho3D/Core/WorkQueue.h>
+#include <Urho3D/Core/Thread.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/FileSystem.h>
 #include <LZ4/lz4.h>
 #include <LZ4/lz4hc.h>
-#include "Packager.h"
+
+#include "Project.h"
+#include "Pipeline/Asset.h"
+#include "Pipeline/Packager.h"
 
 
 namespace Urho3D
@@ -35,113 +41,104 @@ Packager::Packager(Context* context)
     : Object(context)
     , output_(context)
 {
-    SetCompress(true);
+    compressBuffer_.resize(LZ4_compressBound(blockSize_));
 }
 
-bool Packager::OpenPackage(const ea::string& path)
+Packager::~Packager()
 {
-    return output_.Open(path, FILE_WRITE);
+    assert(IsCompleted());
 }
 
-void Packager::AddFile(const ea::string& root, const ea::string& path)
+bool Packager::OpenPackage(const ea::string& path, ea::string& flavor, bool compress/*=true*/)
 {
-    FileEntry entry{};
-    entry.root_ = root;
-    entry.name_ = path;
-    entry.checksum_ = 0;
-    entry.offset_ = 0;
-    entry.size_ = File(context_, root + path).GetSize();
-    if (entry.size_)
-        entries_.push_back(entry);
-}
+    assert(IsCompleted());
+    outputPath_ = path;
+    logger_ = Log::GetLogger(GetFileNameAndExtension(path));
 
-void Packager::Write()
-{
-    WriteHeaders();
+    flavor_ = flavor;
+    compress_ = compress;
 
-    unsigned totalDataSize = 0;
-    unsigned lastOffset = 0;
-    const unsigned blockSize_ = 32768;
-    ea::vector<uint8_t> buffer;
-
-    auto logger = Log::GetLogger("packager");
-    // Write file data, calculate checksums & correct offsets
-    for (FileEntry& entry : entries_)
+    if (output_.Open(path, FILE_WRITE))
     {
-        lastOffset = entry.offset_ = output_.GetSize();
-        ea::string fileFullPath = entry.root_ + "/" + entry.name_;
+        WriteHeaders();
+        return true;
+    }
+    logger_.Error("Opening '{}' failed, package was not created.", GetFileNameAndExtension(path));
+    return false;
+}
 
-        File srcFile(context_, fileFullPath);
-        if (!srcFile.IsOpen())
-        {
-            logger.Error("Could not open file {}. Skipped!", fileFullPath);
-            continue;
-        }
+float Packager::GetProgress() const
+{
+    return (float)(1.0 / filesTotal_ * filesDone_);
+}
 
-        unsigned dataSize = entry.size_;
-        totalDataSize += dataSize;
-        buffer.resize(dataSize);
+bool Packager::IsCompleted() const
+{
+    return filesTotal_ == filesDone_;
+}
 
-        if (srcFile.Read(&buffer[0], dataSize) != dataSize)
-        {
-            logger.Error("Could not read file {}. Skipped!", fileFullPath);
-            continue;
-        }
-        srcFile.Close();
+void Packager::AddAsset(Asset* asset)
+{
+    assert(IsCompleted());
+    queuedAssets_.push_back(SharedPtr(asset));
+}
 
-        for (unsigned j = 0; j < dataSize; ++j)
-        {
-            header_.checksum_ = SDBMHash(header_.checksum_, buffer[j]);
-            entry.checksum_ = SDBMHash(entry.checksum_, buffer[j]);
-        }
+void Packager::Start()
+{
+    assert(IsCompleted());
+    filesTotal_ = queuedAssets_.size();
 
-        if (!compress_)
-        {
-            logger.Info("Added {} size {}", entry.name_, dataSize);
-            output_.Write(&buffer[0], entry.size_);
-        }
-        else
-        {
-            ea::unique_ptr<unsigned char[]> compressBuffer(new unsigned char[LZ4_compressBound(blockSize_)]);
-
-            unsigned pos = 0;
-
-            while (pos < dataSize)
-            {
-                unsigned unpackedSize = blockSize_;
-                if (pos + unpackedSize > dataSize)
-                    unpackedSize = dataSize - pos;
-
-                auto packedSize = (unsigned)LZ4_compress_HC((const char*)&buffer[pos], (char*)compressBuffer.get(), unpackedSize, LZ4_compressBound(unpackedSize), 0);
-                if (!packedSize)
-                    logger.Error("LZ4 compression failed for file {} at offset {}.", entry.name_, pos);
-
-                output_.WriteUShort((unsigned short)unpackedSize);
-                output_.WriteUShort((unsigned short)packedSize);
-                output_.Write(compressBuffer.get(), packedSize);
-
-                pos += unpackedSize;
-            }
-
-            unsigned totalPackedBytes = output_.GetSize() - lastOffset;
-            logger.Info("{} in: {} out: {} ratio: {}", entry.name_, dataSize, totalPackedBytes,
-                totalPackedBytes ? 1.f * dataSize / totalPackedBytes : 0.f);
-        }
+    if (filesTotal_ == 0)
+    {
+        logger_.Warning("Resources directory is empty, package was not created.");
+        output_.Close();
+        GetFileSystem()->Delete(outputPath_);
+        return;
     }
 
-    // Write package size to the end of file to allow finding it linked to an executable file
-    unsigned currentSize = output_.GetSize();
-    output_.WriteUInt(currentSize + sizeof(unsigned));
-
-    WriteHeaders();
+    GetWorkQueue()->AddWorkItem([this]() { WritePackage(); });
 }
 
-void Packager::WriteHeaders()
+void Packager::WritePackage()
 {
-    header_.numEntries_ = entries_.size();
+    assert(!IsCompleted());
+    logger_.Info("Packaging started.");
 
-    output_.Seek(0);
-    output_.Write(&header_, sizeof(header_));
+    ea::quick_sort(queuedAssets_.begin(), queuedAssets_.end(), [](const SharedPtr<Asset>& a, const SharedPtr<Asset>& b) {
+        return a->GetName() < b->GetName();
+    });
+
+    auto* project = GetSubsystem<Project>();
+    const ea::string& resourcePath = project->GetResourcePath();
+    ea::string cachePath = project->GetCachePath();
+    if (flavor_ != DEFAULT_PIPELINE_FLAVOR)
+        cachePath += flavor_ + "/";
+
+    for (Asset* asset : queuedAssets_)
+    {
+        // Asset may be importing at this time. We have to wait. Can not package another asset in this time because we want reproducible
+        // packages.
+        while (asset->IsImporting())
+            Time::Sleep(1);
+
+        bool writtenAny = false;
+        for (AssetImporter* importer : asset->GetImporters(flavor_))
+        {
+            for (const ea::string& byproduct : importer->GetByproducts())   // Byproducts are sorted on import
+            {
+                AddFile(cachePath, byproduct);
+                writtenAny = true;
+            }
+        }
+
+        // Raw assets are only written to default flavor pak
+        if (!writtenAny && flavor_ == DEFAULT_PIPELINE_FLAVOR)
+            AddFile(resourcePath, asset->GetResourcePath());
+
+        filesDone_++;
+    }
+
+    entriesOffset_ = output_.GetSize();
 
     for (const FileEntry& entry : entries_)
     {
@@ -150,16 +147,111 @@ void Packager::WriteHeaders()
         output_.WriteUInt(entry.size_);
         output_.WriteUInt(entry.checksum_);
     }
+    // Write package size to the end of file to allow finding it linked to an executable file
+    unsigned currentSize = output_.GetSize();
+    output_.WriteUInt(currentSize + sizeof(unsigned));
+
+    WriteHeaders();
+
+    logger_.Info("Packaging completed.");
 }
 
-void Packager::SetCompress(bool compress)
+void Packager::WriteHeaders()
 {
-    compress_ = compress;
+    output_.Seek(0);
+    output_.WriteFileID(compress_ ? "RLZ4" : "RPAK");
+    output_.WriteUInt(entries_.size());
+    output_.WriteUInt(checksum_);
+    output_.WriteUInt(0);                                   // Version. Reserved for future use.
+    output_.WriteInt64(entriesOffset_);
+}
 
-    if (compress)
-        memcpy(&header_.id_, "ULZ4", 4);
+bool Packager::AddFile(const ea::string& root, const ea::string& path)
+{
+    assert(root.ends_with("/"));
+
+    FileEntry entry{};
+    ea::string fileFullPath;
+
+    if (IsAbsolutePath(path))
+    {
+        assert(root.starts_with(root));
+        fileFullPath = path;
+        entry.name_ = path.substr(root.length());
+    }
     else
-        memcpy(&header_.id_, "UPAK", 4);
+    {
+        fileFullPath = root + path;
+        entry.name_ = path;
+    }
+    entry.checksum_ = 0;
+    entry.offset_ = 0;
+    entry.size_ = File(context_, fileFullPath).GetSize();
+    if (!entry.size_)
+    {
+        logger_.Warning("Skipped empty/missing file '{}'.", fileFullPath);
+        return false;
+    }
+    entries_.push_back(entry);
+
+    unsigned lastOffset = entry.offset_ = output_.GetSize();
+
+    File srcFile(context_, fileFullPath);
+    if (!srcFile.IsOpen())
+    {
+        logger_.Error("Could not open file {}. Skipped!", fileFullPath);
+        return false;
+    }
+
+    unsigned dataSize = entry.size_;
+    buffer_.resize(dataSize);
+
+    if (srcFile.Read(&buffer_[0], dataSize) != dataSize)
+    {
+        logger_.Error("Could not read file {}. Skipped!", fileFullPath);
+        return false;
+    }
+    srcFile.Close();
+
+    for (unsigned j = 0; j < dataSize; ++j)
+    {
+        checksum_ = SDBMHash(checksum_, buffer_[j]);
+        entry.checksum_ = SDBMHash(entry.checksum_, buffer_[j]);
+    }
+
+    if (!compress_)
+    {
+        logger_.Info("Added {} size {}", entry.name_, dataSize);
+        output_.Write(&buffer_[0], entry.size_);
+    }
+    else
+    {
+        unsigned pos = 0;
+
+        // TODO: This could be parallelized.
+        while (pos < dataSize)
+        {
+            int unpackedSize = blockSize_;
+            if (pos + unpackedSize > dataSize)
+                unpackedSize = static_cast<int>(dataSize) - pos;
+
+            auto packedSize = (unsigned) LZ4_compress_HC((const char*) &buffer_[pos], (char*) compressBuffer_.data(), unpackedSize,
+                LZ4_compressBound(unpackedSize), 0);
+            if (!packedSize)
+                logger_.Error("LZ4 compression failed for file {} at offset {}.", entry.name_, pos);
+
+            output_.WriteUShort((unsigned short) unpackedSize);
+            output_.WriteUShort((unsigned short) packedSize);
+            output_.Write(compressBuffer_.data(), packedSize);
+
+            pos += unpackedSize;
+        }
+
+        unsigned totalPackedBytes = output_.GetSize() - lastOffset;
+        logger_.Info("{} in: {} out: {} ratio: {}", entry.name_, dataSize, totalPackedBytes,
+            totalPackedBytes ? 1.f * dataSize / totalPackedBytes : 0.f);
+    }
+    return true;
 }
 
 }

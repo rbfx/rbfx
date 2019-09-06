@@ -77,6 +77,8 @@ public:
     const ea::vector<SharedPtr<AssetImporter>>& GetImporters(const ea::string& flavor) const;
     ///
     AssetImporter* GetImporter(const ea::string& flavor, StringHash type) const;
+    /// Returns true when asset importers of any flavor are being executed in worker threads.
+    bool IsImporting() const { return importing_; }
 
 protected:
     /// Set resource name. Also loads resource configuration. Used only by Pipeline class.
