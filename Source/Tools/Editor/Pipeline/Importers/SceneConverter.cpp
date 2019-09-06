@@ -63,9 +63,17 @@ bool SceneConverter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 
     ea::string output;
     ea::string outputFile = outputPath + GetPath(input->GetName()) + GetFileName(input->GetName()) + ".bin";
-    int result = fs->SystemRun(fs->GetProgramFileName(), {project->GetProjectPath(), "CookScene", "--input", input->GetResourcePath(),
-        "--output", outputFile}, output);
 
+    StringVector arguments{project->GetProjectPath(), "CookScene", "--input", input->GetResourcePath(), "--output", outputFile};
+    ea::string program;
+#if URHO3D_CSHARP && !_WIN32
+    // Editor executable is a C# program interpreted by .net runtime.
+    program = fs->GetInterpreterFileName();
+    arguments.push_front(fs->GetProgramFileName());
+#else
+    program = fs->GetProgramFileName();
+#endif
+    int result = fs->SystemRun(program, arguments, output);
     if (result != 0)
     {
         URHO3D_LOGERROR("Converting '{}' to '{}' failed.", input->GetResourcePath(), outputFile);
