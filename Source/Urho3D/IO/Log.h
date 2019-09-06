@@ -115,6 +115,7 @@ protected:
     friend class Log;
 
 public:
+    Logger() = default;
     ///
     template<typename... Args> void Trace(const char* format, Args... args)   { Write(LOG_TRACE, format, args...); }
     template<typename... Args> void Debug(const char* format, Args... args)   { Write(LOG_DEBUG, format, args...); }
@@ -133,7 +134,7 @@ public:
 
 protected:
     /// Instance of spdlog logger.
-    void* logger_;
+    void* logger_ = nullptr;
 };
 
 /// Logging subsystem.
@@ -167,7 +168,7 @@ public:
     bool IsQuiet() const { return quiet_; }
 
     /// Returns a logger with specified name.
-    static Logger GetLogger(const char* name=nullptr);
+    static Logger GetLogger(const ea::string& name="");
 
     ///
     void PumpThreadMessages();
