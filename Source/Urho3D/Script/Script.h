@@ -50,11 +50,11 @@ public:
     virtual PluginApplication* CreatePluginApplication(int assembly) = 0;
     /// Invokes managed instance.Dispose() method.
     virtual void Dispose(RefCounted* instance) = 0;
-    ///
+    /// Release specified gc handle. It becomes invalid.
     virtual void FreeGCHandle(int handle) = 0;
-    ///
+    /// Creates a new gc handle pointing to same object as specified gc handle. Specified gc handle will be freed.
     virtual int RecreateGCHandle(int handle, bool strong) = 0;
-    ///
+    /// Warning! This is slow! Perform a full garbage collection.
     virtual void FullGC() = 0;
 };
 
@@ -63,7 +63,7 @@ class URHO3D_API Script : public Object
 {
     URHO3D_OBJECT(Script, Object);
 public:
-    ///
+    /// Construct.
     explicit Script(Context* context);
     /// Destruct.
     ~Script() override;
@@ -81,7 +81,7 @@ protected:
     /// A list of objects whose finalizers executed before .Dispose() was called. ReleaseRef() will be called on those
     /// objects in a main thread. One call per frame. Last inserted object will be released first.
     ea::vector<RefCounted*> destructionQueue_;
-    ///
+    /// API implemented in scripting environment.
     static ScriptRuntimeApi* api_;
 };
 
