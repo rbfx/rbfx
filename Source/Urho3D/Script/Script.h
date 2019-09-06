@@ -65,6 +65,8 @@ class URHO3D_API Script : public Object
 public:
     ///
     explicit Script(Context* context);
+    /// Destruct.
+    ~Script() override;
     /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread
     /// therefore this method queues them to run at the end of next frame on the main thread.
     void ReleaseRefOnMainThread(RefCounted* object);

@@ -48,6 +48,16 @@ Script::Script(Context* context)
     });
 }
 
+Script::~Script()
+{
+    URHO3D_PROFILE("Script::~Script");
+    while (!destructionQueue_.empty())
+    {
+        destructionQueue_.back()->ReleaseRef();
+        destructionQueue_.pop_back();
+    }
+}
+
 void Script::ReleaseRefOnMainThread(RefCounted* object)
 {
     if (object == nullptr)
