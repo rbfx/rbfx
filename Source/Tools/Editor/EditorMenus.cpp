@@ -539,10 +539,25 @@ void Editor::RenderProjectMenu()
 
     ui::Separator();
 
-    // if (ui::MenuItem(ICON_FA_BOXES " Package files"))
-    // {
-    //     GetSubsystem<Project>()->GetPipeline().CreatePaksAsync();
-    // }
+    if (ui::BeginMenu(ICON_FA_BOXES " Repackage files"))
+    {
+        Pipeline& pipeline = project_->GetPipeline();
+
+        if (ui::MenuItem("All Flavors"))
+        {
+            for (const ea::string& flavor : pipeline.GetFlavors())
+                pipeline.CreatePaksAsync(flavor);
+        }
+
+        for (const ea::string& flavor : pipeline.GetFlavors())
+        {
+            if (ui::MenuItem(flavor.c_str()))
+                pipeline.CreatePaksAsync(flavor);
+        }
+
+        ui::EndMenu();
+    }
+    ui::SetHelpTooltip("(Re)Packages all resources from scratch. Existing packages will be removed!");
 }
 
 }

@@ -40,8 +40,6 @@
 namespace Urho3D
 {
 
-static const unsigned PIPELINE_TASK_PRIORITY = 1000;
-
 Pipeline::Pipeline(Context* context)
     : Object(context)
     , watcher_(context)
@@ -85,6 +83,7 @@ Pipeline::Pipeline(Context* context)
             }
         }
     });
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { OnUpdate(); });
 }
 
 void Pipeline::RegisterObject(Context* context)
@@ -220,7 +219,7 @@ SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, const ea::string& fla
         }
         asset->importing_ = false;
         asset->ReleaseRef();            // TODO: Chance to free asset on non-main thread.
-    }, PIPELINE_TASK_PRIORITY);
+    }, 0);                              // Lowest possible priority.
 }
 
 bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags)
@@ -278,7 +277,129 @@ void Pipeline::BuildCache(const ea::string& flavor, PipelineBuildFlags flags)
 
 void Pipeline::WaitForCompletion() const
 {
-    GetWorkQueue()->Complete(PIPELINE_TASK_PRIORITY);
+    GetWorkQueue()->Complete(0);
+}
+
+void Pipeline::CreatePaksAsync(const ea::string& flavor)
+{
+    pendingPackageFlavor_.push_back(flavor);
+    /*
+     * Packaging 010
+     *
+     * Each project has one or more flavors. "default" flavor is present in all projects and is special. Package of "default" flavor
+     * contains common assets required by all builds of the project.
+     *
+     * If asset is not imported by the engine, but used in it's raw form - it will always be included in Resources-default.pak
+     *
+     * If asset is imported by the engine and has no custom importer settings or if custom settings are set to "default" flavor - byproducts
+     * of import procedure will always be included in Resources-default.pak while source asset will not be included in any pak.
+     *
+     * If asset is imported by the engine and has custom importer settings for flavors other than "default" - each flavor will execute asset
+     * import and include byproducts in Resources-flavor.pak. If flavor has no custom settings - settings of default flavor will be used.
+     * Source asset will not be included in any paks. No byproducts will be included in Resources-default.pak.
+     *
+     * Final product must always include Resources-default.pak and any additional paks. For example mobile games may ship
+     * Resources-default.pak + Resources-android.pak for android builds as well as Resources-default.pak + Resources-ios.pak for iOS builds.
+     * A game meant for desktop computers may ship Resources-default.pak + Resources-low.pak + Resources-medium.pak + Resources-high.pak
+     * where low/medium/high flavors have asset import configurations for different asset quality. User would load resources from one of
+     * these paks depending on game quality settings.
+     *
+     */
+}
+
+void Pipeline::OnUpdate()
+{
+    if (packager_.NotNull())
+    {
+        ui::OpenPopup("Packaging Files");
+        if (ui::BeginPopupModal(packagerModalTitle_.c_str(), nullptr,
+            ImGuiWindowFlags_NoDocking | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
+        {
+            ui::ProgressBar(packager_->GetProgress());
+            ui::SetCursorPosX(ui::GetCursorPosX() + 200);
+            ui::EndPopup();
+        }
+
+        if (packager_->IsCompleted())
+        {
+            packager_ = nullptr;
+        }
+    }
+    else if (!pendingPackageFlavor_.empty())
+    {
+        auto* fs = GetFileSystem();
+        auto* project = GetSubsystem<Project>();
+
+        ea::string flavor = pendingPackageFlavor_.front();
+        ea::string packageFile = Format("{}/Resources-{}.pak", project->GetProjectPath(), flavor);
+        packagerModalTitle_ = "Packaging " + GetFileNameAndExtension(packageFile);
+        pendingPackageFlavor_.pop_front();
+
+        packager_ = new Packager(context_);
+        if (!packager_->OpenPackage(packageFile, flavor))
+            return;
+
+        StringVector results;
+        fs->ScanDir(results, project->GetResourcePath(), "*.*", SCAN_FILES, true);
+
+        bool isDefaultFlavor = flavor == DEFAULT_PIPELINE_FLAVOR;
+        for (const ea::string& resourceName : results)
+        {
+            if (resourceName.ends_with(".asset"))
+                continue;
+
+            bool hasCustomFlavorSettings = HasFlavorSettings(resourceName);
+            // Accept default flavor with no custom settings or non-default flavor with custom settings.
+            if (isDefaultFlavor == hasCustomFlavorSettings)
+                continue;
+
+            if (Asset* asset = GetAsset(resourceName))
+            {
+                ScheduleImport(asset, flavor, PipelineBuildFlag::EXECUTE_OPTIONAL | PipelineBuildFlag::SKIP_UP_TO_DATE);
+                packager_->AddAsset(asset);
+            }
+        }
+        packager_->Start();
+    }
+}
+
+bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
+{
+    StringVector parts = resourceName.split('/');
+    bool isDir = resourceName.ends_with('/');
+
+    while (!parts.empty())
+    {
+        ea::string checkName;
+        for (const ea::string& part : parts)
+        {
+            checkName += part;
+            checkName += "/";
+        }
+        if (!isDir)
+        {
+            checkName = checkName.substr(0, checkName.length() - 1);    // Strip /
+            isDir = true;                                               // next iteration will be dir
+        }
+        parts.pop_back();
+
+        if (Asset* asset = GetAsset(checkName))
+        {
+            for (const auto& flavors : asset->GetImporters())
+            {
+                if (flavors.first == DEFAULT_PIPELINE_FLAVOR)
+                    continue;
+
+                for (const auto& importer : flavors.second)
+                {
+                    if (importer->IsModified())
+                        return true;
+                }
+            }
+        }
+    }
+
+    return false;
 }
 
 }
