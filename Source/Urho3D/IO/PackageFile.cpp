@@ -60,7 +60,7 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
     // Check ID, then read the directory
     file->Seek(startOffset);
     ea::string id = file->ReadFileID();
-    if (id != "UPAK" && id != "ULZ4")
+    if (id != "UPAK" && id != "ULZ4" && id != "RPAK" && id != "RLZ4")
     {
         // If start offset has not been explicitly specified, also try to read package size from the end of file
         // to know how much we must rewind to find the package start
@@ -77,7 +77,7 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
             }
         }
 
-        if (id != "UPAK" && id != "ULZ4")
+        if (id != "UPAK" && id != "ULZ4" && id != "RPAK" && id != "RLZ4")
         {
             URHO3D_LOGERROR(fileName + " is not a valid package file");
             return false;
@@ -87,10 +87,21 @@ bool PackageFile::Open(const ea::string& fileName, unsigned startOffset)
     fileName_ = fileName;
     nameHash_ = fileName_;
     totalSize_ = file->GetSize();
-    compressed_ = id == "ULZ4";
-
+    compressed_ = id == "ULZ4" || id == "RLZ4";
     unsigned numFiles = file->ReadUInt();
     checksum_ = file->ReadUInt();
+
+    if (id == "RPAK" || id == "RLZ4")
+    {
+        // New PAK file format includes two extra PAK header fields:
+        // * Version. At this time this field is unused and is always 0. It will be used in the future if PAK format needs to be extended.
+        // * File list offset. New format writes file list in the end of the file. This allows PAK creation without knowing entire file list
+        //   beforehand.
+        unsigned version = file->ReadUInt();                        // Reserved for future use.
+        assert(version == 0);
+        int64_t fileListOffset = file->ReadInt64();                 // New format has file list at the end of the file.
+        file->Seek(fileListOffset);                                 // TODO: Serializer/Deserializer do not support files bigger than 4 GB
+    }
 
     for (unsigned i = 0; i < numFiles; ++i)
     {
