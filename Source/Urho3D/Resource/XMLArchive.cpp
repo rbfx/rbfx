@@ -119,6 +119,32 @@ XMLElement XMLOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char
     return element;
 }
 
+XMLAttributeReference XMLOutputArchiveBlock::CreateElementOrAttribute(ArchiveBase& archive, const char* elementName, const char* defaultElementName)
+{
+    if (type_ != ArchiveBlockType::Unordered)
+    {
+        XMLElement child = CreateElement(archive, elementName, defaultElementName);
+        return { child, "value" };
+    }
+
+    // Special case for Unordered    
+    if (!elementName)
+    {
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
+        assert(0);
+        return {};
+    }
+
+    if (usedNames_.contains(elementName))
+    {
+        archive.SetErrorFormatted(ArchiveBase::errorDuplicateElement_elementName, elementName);
+        return {};
+    }
+
+    ++numElements_;
+    return { blockElement_, elementName };
+}
+
 bool XMLOutputArchiveBlock::Close(ArchiveBase& archive)
 {
     if (expectedElementCount_ != M_MAX_UNSIGNED && numElements_ != expectedElementCount_)
@@ -193,10 +219,10 @@ bool XMLOutputArchive::SerializeKey(unsigned& key)
 
 bool XMLOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (XMLElement child = CreateElement(name))
+    if (XMLAttributeReference ref = CreateElement(name))
     {
         BufferToHexString(tempString_, bytes, size);
-        child.SetString("value", tempString_);
+        ref.GetElement().SetString(ref.GetAttributeName(), tempString_);
         return true;
     }
     return false;
@@ -204,9 +230,9 @@ bool XMLOutputArchive::SerializeBytes(const char* name, void* bytes, unsigned si
 
 bool XMLOutputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (XMLElement child = CreateElement(name))
+    if (XMLAttributeReference ref = CreateElement(name))
     {
-        child.SetUInt("value", value);
+        ref.GetElement().SetUInt(ref.GetAttributeName(), value);
         return true;
     }
     return false;
@@ -242,21 +268,22 @@ bool XMLOutputArchive::CheckEOFAndRoot(const char* elementName)
     return true;
 }
 
-XMLElement XMLOutputArchive::CreateElement(const char* name)
+XMLAttributeReference XMLOutputArchive::CreateElement(const char* name)
 {
     if (!CheckEOFAndRoot(name))
         return {};
 
-    return GetCurrentBlock().CreateElement(*this, name, defaultElementName);
+    XMLOutputArchiveBlock& block = GetCurrentBlock();
+    return GetCurrentBlock().CreateElementOrAttribute(*this, name, defaultElementName);
 }
 
 // Generate serialization implementation (XML output)
 #define URHO3D_XML_OUT_IMPL(type, function) \
     bool XMLOutputArchive::Serialize(const char* name, type& value) \
     { \
-        if (XMLElement child = CreateElement(name)) \
+        if (XMLAttributeReference ref = CreateElement(name)) \
         { \
-            child.function("value", value); \
+            ref.GetElement().function(ref.GetAttributeName(), value); \
             return true; \
         } \
         return false; \
@@ -368,6 +395,28 @@ XMLElement XMLInputArchiveBlock::ReadElement(ArchiveBase& archive, const char* e
     return element;
 }
 
+XMLAttributeReference XMLInputArchiveBlock::ReadElementOrAttribute(ArchiveBase& archive, const char* elementName)
+{
+    if (type_ != ArchiveBlockType::Unordered)
+    {
+        XMLElement child = ReadElement(archive, elementName);
+        return { child, "value" };
+    }
+
+    // Special case for Unordered    
+    if (!elementName)
+    {
+        archive.SetErrorFormatted(ArchiveBase::fatalMissingElementName);
+        assert(0);
+        return {};
+    }
+
+    if (!blockElement_.HasAttribute(elementName))
+        return {};
+    
+    return { blockElement_, elementName };
+}
+
 bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
     if (!CheckEOF(name))
@@ -439,9 +488,9 @@ bool XMLInputArchive::SerializeKey(unsigned& key)
 
 bool XMLInputArchive::SerializeBytes(const char* name, void* bytes, unsigned size)
 {
-    if (XMLElement child = ReadElement(name))
+    if (XMLAttributeReference ref = ReadElement(name))
     {
-        if (!HexStringToBuffer(tempBuffer_, child.GetAttribute("value")))
+        if (!HexStringToBuffer(tempBuffer_, ref.GetElement().GetAttribute(ref.GetAttributeName())))
             return false;
         if (tempBuffer_.size() != size)
             return false;
@@ -453,9 +502,9 @@ bool XMLInputArchive::SerializeBytes(const char* name, void* bytes, unsigned siz
 
 bool XMLInputArchive::SerializeVLE(const char* name, unsigned& value)
 {
-    if (XMLElement child = ReadElement(name))
+    if (XMLAttributeReference ref = ReadElement(name))
     {
-        value = child.GetUInt("value");
+        value = ref.GetElement().GetUInt(ref.GetAttributeName());
         return true;
     }
     return false;
@@ -491,21 +540,21 @@ bool XMLInputArchive::CheckEOFAndRoot(const char* elementName)
     return true;
 }
 
-XMLElement XMLInputArchive::ReadElement(const char* name)
+XMLAttributeReference XMLInputArchive::ReadElement(const char* name)
 {
     if (!CheckEOFAndRoot(name))
         return {};
 
-    return GetCurrentBlock().ReadElement(*this, name);
+    return GetCurrentBlock().ReadElementOrAttribute(*this, name);
 }
 
 // Generate serialization implementation (XML input)
 #define URHO3D_XML_IN_IMPL(type, function) \
     bool XMLInputArchive::Serialize(const char* name, type& value) \
     { \
-        if (XMLElement child = ReadElement(name)) \
+        if (XMLAttributeReference ref = ReadElement(name)) \
         { \
-            value = child.function("value"); \
+            value = ref.GetElement().function(ref.GetAttributeName()); \
             return true; \
         } \
         return false; \
