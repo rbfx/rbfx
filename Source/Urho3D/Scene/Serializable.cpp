@@ -704,7 +704,7 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
                 if (attr->enumNames_)
                 {
                     int enumValue{};
-                    success = SerializeEnum<int, int>(archive, attr->name_.c_str(), attr->enumNames_, enumValue);
+                    success = SerializeEnum<int, int>(archive, "attribute", attr->enumNames_, enumValue);
                     varValue = enumValue;
                 }
                 else
@@ -712,7 +712,7 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
                     // Reset value to default so it could use custom serialization
                     if (attr->type_ == VAR_CUSTOM)
                         varValue = attr->defaultValue_;
-                    success = SerializeVariantValue(archive, attr->type_, attr->name_.c_str(), varValue);
+                    success = SerializeVariantValue(archive, attr->type_, "attribute", varValue);
                 }
 
                 if (success)
@@ -788,11 +788,11 @@ bool Serializable::Serialize(Archive& archive, ArchiveBlock& block)
                 if (attr.enumNames_)
                 {
                     int enumValue = value.GetInt();
-                    success = SerializeEnum<int, int>(archive, attr.name_.c_str(), attr.enumNames_, enumValue);
+                    success = SerializeEnum<int, int>(archive, "attribute", attr.enumNames_, enumValue);
                 }
                 else
                 {
-                    success = SerializeVariantValue(archive, attr.type_, attr.name_.c_str(), const_cast<Variant&>(value));
+                    success = SerializeVariantValue(archive, attr.type_, "attribute", const_cast<Variant&>(value));
                 }
 
                 if (!success)

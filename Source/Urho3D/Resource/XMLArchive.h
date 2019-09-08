@@ -98,6 +98,29 @@ template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultRootName = "
 template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultBlockName = "block";
 template <class T, bool B> const char* XMLArchiveBase<T, B>::defaultElementName = "element";
 
+/// XML attribute reference for input and output archives.
+class XMLAttributeReference
+{
+public:
+    /// Construct invalid.
+    XMLAttributeReference() = default;
+    /// Construct valid.
+    XMLAttributeReference(XMLElement element, const char* attribute) : element_(element), attribute_(attribute) {}
+
+    /// Return the element.
+    XMLElement GetElement() const { return element_; }
+    /// Return attribute name.
+    const char* GetAttributeName() const { return attribute_; }
+    /// Return whether the element valid.
+    explicit operator bool() const { return !!element_; }
+
+private:
+    /// XML element.
+    XMLElement element_;
+    /// Attribute name.
+    const char* attribute_{};
+};
+
 /// XML output archive block. Internal.
 class XMLOutputArchiveBlock
 {
@@ -112,6 +135,8 @@ public:
     bool SetElementKey(ArchiveBase& archive, ea::string key);
     /// Create element in the block.
     XMLElement CreateElement(ArchiveBase& archive, const char* elementName, const char* defaultElementName);
+    /// Create attribute (for Unordered blocks) or element (for the rest of the block types).
+    XMLAttributeReference CreateElementOrAttribute(ArchiveBase& archive, const char* elementName, const char* defaultElementName);
     /// Close block.
     bool Close(ArchiveBase& archive);
 
@@ -200,7 +225,7 @@ private:
     /// Check EOF and root block.
     bool CheckEOFAndRoot(const char* elementName);
     /// Prepare to serialize element.
-    XMLElement CreateElement(const char* name);
+    XMLAttributeReference CreateElement(const char* name);
 
     /// Temporary string buffer.
     ea::string tempString_;
@@ -222,6 +247,8 @@ public:
     bool ReadCurrentKey(ArchiveBase& archive, ea::string& key);
     /// Read current child and move to the next one.
     XMLElement ReadElement(ArchiveBase& archive, const char* elementName);
+    /// Read attribute (for Unordered blocks only) or the element and move to the next one.
+    XMLAttributeReference ReadElementOrAttribute(ArchiveBase& archive, const char* elementName);
 
 private:
     /// Block name.
@@ -300,7 +327,7 @@ private:
     /// Check EOF and root block.
     bool CheckEOFAndRoot(const char* elementName);
     /// Prepare to serialize element.
-    XMLElement ReadElement(const char* name);
+    XMLAttributeReference ReadElement(const char* name);
 
     /// Temporary buffer.
     ea::vector<unsigned char> tempBuffer_;
