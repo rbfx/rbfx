@@ -72,6 +72,9 @@ captures/
 /android/local.properties
 /android/build
 
+# VSCode project settings
+/build/*
+
 # Android output directories
 gradle*
 
