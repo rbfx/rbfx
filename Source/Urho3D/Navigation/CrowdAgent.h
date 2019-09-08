@@ -74,7 +74,7 @@ class URHO3D_API CrowdAgent : public Component
     URHO3D_OBJECT(CrowdAgent, Component);
 
     friend class CrowdManager;
-    friend void CrowdAgentUpdateCallback(dtCrowdAgent* ag, float dt);
+    friend void CrowdAgentUpdateCallback(bool positionReady, dtCrowdAgent** agents, int nagents, float dt);
 
 public:
     /// Construct.
@@ -178,6 +178,8 @@ public:
     bool IsInCrowd() const;
 
 protected:
+    /// Handle crowd agent pre-update. 
+    virtual void OnCrowdPreUpdate(dtCrowdAgent* ag, float dt);
     /// Handle crowd agent being updated. It is called by CrowdManager::Update() via callback.
     virtual void OnCrowdUpdate(dtCrowdAgent* ag, float dt);
     /// Handle node being assigned.
