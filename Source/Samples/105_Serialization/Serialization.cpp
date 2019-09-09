@@ -387,7 +387,7 @@ SharedPtr<Scene> CreateTestScene(Context* context, int numObjects)
 
         auto model = node->CreateComponent<StaticModel>();
         model->SetModel(cache->GetResource<Model>("Models/Box.mdl"));
-        model->SetMaterial(cache->GetResource<Material>("Materials/Stone.mdl"));
+        model->SetMaterial(cache->GetResource<Material>("Materials/Stone.xml"));
 
         auto scaleAnimation = MakeShared<ValueAnimation>(context);
         scaleAnimation->SetKeyFrame(0.0f, Vector3::ONE * 1.0f);
@@ -495,6 +495,42 @@ bool CompareNodes(Node* lhs, Node* rhs)
             return false;
     }
 
+    // Compare StaticModel component
+    auto lhsStaticModel = lhs->GetComponent<StaticModel>();
+    auto rhsStaticModel = rhs->GetComponent<StaticModel>();
+
+    if (!!lhsStaticModel != !!rhsStaticModel)
+        return false;
+
+    if (lhsStaticModel)
+    {
+        Model* lhsModel = lhsStaticModel->GetModel();
+        Model* rhsModel = rhsStaticModel->GetModel();
+
+        if (!!lhsModel != !!rhsModel)
+            return false;
+
+        if (lhsModel)
+        {
+            if (lhsModel->GetName() != rhsModel->GetName())
+                return false;
+        }
+
+        if (lhsStaticModel->GetNumGeometries() != rhsStaticModel->GetNumGeometries())
+            return false;
+        
+        Material* lhsMaterial = lhsStaticModel->GetMaterial();
+        Material* rhsMaterial = rhsStaticModel->GetMaterial();
+        if (!!lhsMaterial != !!rhsMaterial)
+            return false;
+
+        if (lhsMaterial)
+        {
+            if (lhsMaterial->GetName() != rhsMaterial->GetName())
+                return false;
+        }
+    }
+
     // Compare children
     for (unsigned i = 0; i < lhs->GetNumChildren(); ++i)
     {
@@ -506,7 +542,7 @@ bool CompareNodes(Node* lhs, Node* rhs)
 }
 
 /// Assert and call ErrorExit.
-#define URHO3D_ASSERT(expr) (!!(expr) || (ErrorExit(Format("File: {}\nLine: {}\nAssertion failed!", __FILE__, __LINE__)), 0))
+#define URHO3D_ASSERT(expr) (!!(expr) || (ErrorDialog("Assertion failed!", Format("File: {}\nLine: {}\nAssertion failed!", __FILE__, __LINE__)), 0))
 
 Serialization::Serialization(Context* context) :
     Sample(context)
