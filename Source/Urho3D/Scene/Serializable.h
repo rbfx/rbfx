@@ -150,6 +150,12 @@ public:
     /// Return the network attribute state, if allocated.
     NetworkState* GetNetworkState() const { return networkState_.get(); }
 
+private:
+    /// Save to archive.
+    bool SaveToArchive(Archive& archive);
+    /// Load from archive.
+    bool LoadFromArchive(Archive& archive);
+
 protected:
     /// Network attribute state.
     ea::unique_ptr<NetworkState> networkState_;
