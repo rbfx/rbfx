@@ -43,7 +43,7 @@ enum TransformSelector
 
 }
 
-URHO3D_FLAGSET_EX(ImGui, TransformSelector, TransformSelectorFlags);
+URHO3D_FLAGSET(ImGui::TransformSelector, TransformSelectorFlags);
 
 namespace ImGui
 {
