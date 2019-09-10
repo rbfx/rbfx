@@ -472,17 +472,19 @@ inline bool SerializeVectorBytes(Archive& archive, const char* name, const char*
 /// While writing, serializer may skip vector elements. Size should match actual number of elements to be written.
 /// While reading, serializer must push elements into vector on its own.
 template <class T, class U>
-inline bool SerializeCustomVector(Archive& archive, const char* name, unsigned size, T& vector, U serializer)
+inline bool SerializeCustomVector(Archive& archive, ArchiveBlockType blockType, const char* name, unsigned sizeToWrite, const T& vector, U serializer)
 {
+    assert(blockType == ArchiveBlockType::Array || blockType == ArchiveBlockType::Map);
+
     using ValueType = typename T::value_type;
-    if (auto block = archive.OpenArrayBlock(name, size))
+    if (auto block = archive.OpenBlock(name, sizeToWrite, false, blockType))
     {
         if (archive.IsInput())
         {
             for (unsigned index = 0; index < block.GetSizeHint(); ++index)
             {
-                ValueType element;
-                if (!serializer(element, true))
+                static const ValueType valuePlaceholder;
+                if (!serializer(index, valuePlaceholder, true))
                 {
                     archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
                     return false;
@@ -492,15 +494,13 @@ inline bool SerializeCustomVector(Archive& archive, const char* name, unsigned s
         }
         else
         {
-            unsigned index = 0;
-            for (ValueType& value : vector)
+            for (unsigned index = 0; index < vector.size(); ++index)
             {
-                if (!serializer(value, false))
+                if (!serializer(index, vector[index], false))
                 {
                     archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
                     return false;
                 }
-                ++index;
             }
             return true;
         }
@@ -512,19 +512,21 @@ inline bool SerializeCustomVector(Archive& archive, const char* name, unsigned s
 /// While writing, serializer may skip map elements. Size should match actual number of elements to be written.
 /// While reading, serializer must push elements into map on its own.
 template <class T, class U>
-inline bool SerializeCustomMap(Archive& archive, const char* name, unsigned size, T& map, U serializer)
+inline bool SerializeCustomMap(Archive& archive, ArchiveBlockType blockType, const char* name, unsigned sizeToWrite, const T& map, U serializer)
 {
+    assert(blockType == ArchiveBlockType::Array || blockType == ArchiveBlockType::Map);
+
     using KeyType = typename T::key_type;
     using MappedType = typename T::mapped_type;
-    if (auto block = archive.OpenMapBlock(name, size))
+    if (auto block = archive.OpenBlock(name, sizeToWrite, false, blockType))
     {
         if (archive.IsInput())
         {
             for (unsigned index = 0; index < block.GetSizeHint(); ++index)
             {
-                KeyType keyType;
-                MappedType mappedType;
-                if (!serializer(keyType, mappedType, true))
+                static const KeyType keyPlaceholder;
+                static const MappedType valuePlaceholder;
+                if (!serializer(index, keyPlaceholder, valuePlaceholder, true))
                 {
                     archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
                     return false;
@@ -538,8 +540,7 @@ inline bool SerializeCustomMap(Archive& archive, const char* name, unsigned size
             for (auto& elem : map)
             {
                 // Copy the key so it could be passed by reference
-                KeyType key = elem.first;
-                if (!serializer(key, elem.second, false))
+                if (!serializer(index, elem.first, elem.second, false))
                 {
                     archive.SetError(Format("Failed to write {0}-th element of container '{1}'", index, name));
                     return false;
