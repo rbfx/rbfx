@@ -116,15 +116,16 @@ bool Animatable::Serialize(Archive& archive, ArchiveBlock& block)
             ++numFreeAnimations;
     }
 
-    SerializeCustomMap(archive, "attributeanimation", numFreeAnimations, attributeAnimationInfos_,
-        [&](ea::string& name, SharedPtr<AttributeAnimationInfo>& info, bool loading)
+    SerializeCustomMap(archive, ArchiveBlockType::Map, "attributeanimation", numFreeAnimations, attributeAnimationInfos_,
+        [&](unsigned /*index*/, const ea::string& name, const SharedPtr<AttributeAnimationInfo>& info, bool loading)
     {
         // Skip animations with owners
         SharedPtr<ValueAnimation> attributeAnimation{ info ? info->GetAnimation() : nullptr };
         if (attributeAnimation && attributeAnimation->GetOwner())
             return true;
 
-        archive.SerializeKey(name);
+        ea::string animationName = name;
+        archive.SerializeKey(animationName);
 
         if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
         {
@@ -140,7 +141,7 @@ bool Animatable::Serialize(Archive& archive, ArchiveBlock& block)
             SerializeValue(archive, "speed", speed);
 
             if (loading)
-                SetAttributeAnimation(name, attributeAnimation, wrapMode, speed);
+                SetAttributeAnimation(animationName, attributeAnimation, wrapMode, speed);
 
             return true;
         }

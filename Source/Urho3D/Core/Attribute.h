@@ -120,18 +120,24 @@ struct AttributeInfo
             InitializeEnumNamesFromStorage();
     }
 
-    /// Get attribute metadata.
+    /// Return attribute metadata.
     const Variant& GetMetadata(const StringHash& key) const
     {
         auto elem = metadata_.find(key);
         return elem != metadata_.end() ? elem->second : Variant::EMPTY;
     }
 
-    /// Get attribute metadata of specified type.
+    /// Return attribute metadata of specified type.
     template <class T> T GetMetadata(const StringHash& key) const
     {
         return GetMetadata(key).Get<T>();
     }
+
+    /// Return whether the attribute should be saved.
+    bool ShouldSave() const { return (mode_ & AM_FILE) && !(mode_ & AM_READONLY); }
+
+    /// Return whether the attribute should be loaded.
+    bool ShouldLoad() const { return !!(mode_ & AM_FILE); }
 
     /// Instance equality operator.
     bool operator ==(const AttributeInfo& rhs) const

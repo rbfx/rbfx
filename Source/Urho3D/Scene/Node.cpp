@@ -147,8 +147,9 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
         return false;
 
     // Serialize components
-    const bool componentsSerialized = SerializeCustomVector(archive, "components", GetNumPersistentComponents(), components_,
-        [&](SharedPtr<Component>& component, bool loading)
+    const unsigned numComponentsToWrite = loading ? 0 : GetNumPersistentComponents();
+    const bool componentsSerialized = SerializeCustomVector(archive, ArchiveBlockType::Array, "components", numComponentsToWrite, components_,
+        [&](unsigned /*index*/, SharedPtr<Component> component, bool loading)
     {
         assert(loading || component);
 
@@ -191,8 +192,9 @@ bool Node::Serialize(Archive& archive, ArchiveBlock& block, SceneResolver* resol
         return true;
 
     // Serialize children
-    const bool childrenSerialized = SerializeCustomVector(archive, "children", GetNumPersistentChildren(), children_,
-        [&](SharedPtr<Node>& child, bool loading)
+    const unsigned numChildrenToWrite = loading ? 0 : GetNumPersistentChildren();
+    const bool childrenSerialized = SerializeCustomVector(archive, ArchiveBlockType::Array, "children", numChildrenToWrite, children_,
+        [&](unsigned /*index*/, SharedPtr<Node> child, bool loading)
     {
         assert(loading || child);
 
