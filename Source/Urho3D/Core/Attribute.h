@@ -52,7 +52,7 @@ enum AttributeMode
     /// Attribute is readonly.
     AM_READONLY = 0x80,
     /// Attribute is readonly. Can't be used with binary serialized objects.
-    AM_FILEREADONLY = 0x81
+    AM_FILEREADONLY = AM_FILE | AM_READONLY,
 };
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
