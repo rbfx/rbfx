@@ -114,15 +114,15 @@ bool ValueAnimation::Serialize(Archive& archive, ArchiveBlock& /*block*/)
     if (interpolationMethod_ == IM_SPLINE)
         SerializeValue(archive, "splinetension", splineTension_);
 
-    SerializeCustomVector(archive, "keyframes", keyFrames_.size(), keyFrames_,
-        [&](VAnimKeyFrame& keyFrame, bool loading)
+    SerializeCustomVector(archive, ArchiveBlockType::Array, "keyframes", keyFrames_.size(), keyFrames_,
+        [&](unsigned /*index*/, const VAnimKeyFrame& keyFrame, bool loading)
     {
         return SerializeCustomValue(archive, "keyframe", keyFrame,
             [&](const VAnimKeyFrame& value) { SetKeyFrame(value.time_, value.value_); });
     });
 
-    SerializeCustomVector(archive, "eventframes", eventFrames_.size(), eventFrames_,
-        [&](VAnimEventFrame& eventFrame, bool loading)
+    SerializeCustomVector(archive, ArchiveBlockType::Array, "eventframes", eventFrames_.size(), eventFrames_,
+        [&](unsigned /*index*/, const VAnimEventFrame& eventFrame, bool loading)
     {
         return SerializeCustomValue(archive, "eventframe", eventFrame,
             [&](const VAnimEventFrame& value) { SetEventFrame(value.time_, value.eventType_, value.eventData_); });

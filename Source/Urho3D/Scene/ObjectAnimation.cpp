@@ -66,10 +66,11 @@ bool ObjectAnimation::Serialize(Archive& archive)
 
 bool ObjectAnimation::Serialize(Archive& archive, ArchiveBlock& block)
 {
-    return SerializeCustomMap(archive, "attributeanimations", attributeAnimationInfos_.size(), attributeAnimationInfos_,
-        [&](ea::string& name, SharedPtr<ValueAnimationInfo>& info, bool loading)
+    return SerializeCustomMap(archive, ArchiveBlockType::Map, "attributeanimations", attributeAnimationInfos_.size(), attributeAnimationInfos_,
+        [&](unsigned /*index*/, const ea::string& name, const SharedPtr<ValueAnimationInfo>& info, bool loading)
     {
-        archive.SerializeKey(name);
+        ea::string animationName = name;
+        archive.SerializeKey(animationName);
 
         if (ArchiveBlock infoBlock = archive.OpenUnorderedBlock("attributeanimation"))
         {
@@ -87,7 +88,7 @@ bool ObjectAnimation::Serialize(Archive& archive, ArchiveBlock& block)
             SerializeValue(archive, "speed", speed);
 
             if (loading)
-                AddAttributeAnimation(name, animation, wrapMode, speed);
+                AddAttributeAnimation(animationName, animation, wrapMode, speed);
 
             return true;
         }
