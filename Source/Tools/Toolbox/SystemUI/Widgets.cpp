@@ -227,7 +227,7 @@ enum TransformResizeType
 
 }
 /// Flag manipuation operators.
-URHO3D_FLAGSET_EX(ImGui, TransformResizeType, TransformResizeTypeFlags);
+URHO3D_FLAGSET(ImGui, TransformResizeType, TransformResizeTypeFlags);
 
 namespace ImGui
 {
