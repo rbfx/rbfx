@@ -443,24 +443,32 @@ bool CompareValueAnimationInfos(const ValueAnimationInfo* lhs, const ValueAnimat
 bool CompareNodes(Node* lhs, Node* rhs)
 {
     // Compare contents
+    if (!lhs->GetPosition().Equals(rhs->GetPosition()))
+        return false;
+
+    if (!lhs->GetRotation().Equals(rhs->GetRotation()))
+        return false;
+
+    if (!lhs->GetScale().Equals(rhs->GetScale()))
+        return false;
+
+    if (lhs->GetNumChildren() != rhs->GetNumChildren())
+        return false;
+
+    if (lhs->GetNumComponents() != rhs->GetNumComponents())
+        return false;
+
+    if (lhs->GetName() != rhs->GetName())
+        return false;
+
     ObjectAnimation* lhsObjectAnimation = lhs->GetObjectAnimation();
     ObjectAnimation* rhsObjectAnimation = rhs->GetObjectAnimation();
+    if (!!lhsObjectAnimation != !!rhsObjectAnimation)
+        return false;
 
     ValueAnimation* lhsAttributeAnimation = lhs->GetAttributeAnimation("Name");
     ValueAnimation* rhsAttributeAnimation = rhs->GetAttributeAnimation("Name");
-
-    const bool metaEqual =
-        lhs->GetPosition().Equals(rhs->GetPosition())
-        && lhs->GetRotation().Equals(rhs->GetRotation())
-        && lhs->GetScale().Equals(rhs->GetScale())
-        && lhs->GetNumChildren() == rhs->GetNumChildren()
-        && lhs->GetNumComponents() == rhs->GetNumComponents()
-        && lhs->GetName() == rhs->GetName()
-        && !!lhsObjectAnimation == !!rhsObjectAnimation
-        && !!lhsAttributeAnimation == !!rhsAttributeAnimation
-        ;
-
-    if (!metaEqual)
+    if (!!lhsAttributeAnimation != !!rhsAttributeAnimation)
         return false;
 
     // Compare animations
