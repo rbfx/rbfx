@@ -227,7 +227,7 @@ public:
     /// Return name of the archive.
     ea::string_view GetName() const override { return {}; }
     /// Return a checksum if applicable.
-    unsigned GetChecksum() { return 0; }
+    unsigned GetChecksum() override { return 0; }
 
     /// Whether the any following archive operation will result in failure.
     bool IsEOF() const final { return eof_; }

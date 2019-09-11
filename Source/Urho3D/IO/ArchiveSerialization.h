@@ -483,7 +483,7 @@ inline bool SerializeCustomVector(Archive& archive, ArchiveBlockType blockType, 
         {
             for (unsigned index = 0; index < block.GetSizeHint(); ++index)
             {
-                static const ValueType valuePlaceholder;
+                static const ValueType valuePlaceholder{};
                 if (!serializer(index, valuePlaceholder, true))
                 {
                     archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));
@@ -524,8 +524,8 @@ inline bool SerializeCustomMap(Archive& archive, ArchiveBlockType blockType, con
         {
             for (unsigned index = 0; index < block.GetSizeHint(); ++index)
             {
-                static const KeyType keyPlaceholder;
-                static const MappedType valuePlaceholder;
+                static const KeyType keyPlaceholder{};
+                static const MappedType valuePlaceholder{};
                 if (!serializer(index, keyPlaceholder, valuePlaceholder, true))
                 {
                     archive.SetError(Format("Failed to read {0}-th element of container '{1}'", index, name));

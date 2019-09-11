@@ -41,12 +41,8 @@ enum TransformSelector
     TSF_HIDEHANDLES = 4,
 };
 
-}
+URHO3D_FLAGSET(TransformSelector, TransformSelectorFlags);
 
-URHO3D_FLAGSET(ImGui::TransformSelector, TransformSelectorFlags);
-
-namespace ImGui
-{
 /// Helper for running `for` loop just once.
 struct ScopeHelper
 {

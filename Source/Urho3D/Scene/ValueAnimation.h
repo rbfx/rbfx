@@ -48,20 +48,20 @@ enum InterpMethod
 struct VAnimKeyFrame
 {
     /// Time.
-    float time_;
+    float time_{};
     /// Value.
-    Variant value_;
+    Variant value_{};
 };
 
 /// Value animation event frame.
 struct VAnimEventFrame
 {
     /// Time.
-    float time_;
+    float time_{};
     /// Event type.
-    StringHash eventType_;
+    StringHash eventType_{};
     /// Event data.
-    VariantMap eventData_;
+    VariantMap eventData_{};
 };
 
 /// Value animation class.
