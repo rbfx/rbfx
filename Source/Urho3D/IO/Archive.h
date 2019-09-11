@@ -33,38 +33,39 @@ namespace Urho3D
 {
 
 /// Type of archive block.
+/// - Default block type is Sequential.
+/// - Other block types are used to improve quality of human-readable formats.
+/// - Directly nested blocks and elements are called "items".
 enum class ArchiveBlockType
 {
-    /// Default sequential data block.
-    /// Elements are saved and load in the order of serialization (even for XML, names are ignored when loading).
-    /// This is default choice for any serialization code.
-    /// - Names are optional.
-    /// - Names are used for debug purpose and/or output readability only.
-    /// - Keys are not allowed.
+    /// Sequential data block.
+    /// - Items are saved and loaded in the order of serialization.
+    /// - Names of items are optional and have no functional purpose.
     Sequential,
     /// Unordered data block.
-    /// Elements may be load in any order. Missing element is not treated as error.
-    /// This is the best choice for blocks with fixed number of named elements, e.g. classes or structures.
-    /// - May be not supported by some archive types.
-    /// - Identical to Sequential block if not supported.
-    /// - Names are required.
-    /// - Names must be unique withing block.
-    /// - Names mustn't contain double underscore ("__").
-    /// - Keys are not allowed.
+    /// - Items are saved and loaded in the order of serialization.
+    /// - Name must be unique for each item since it is used for input file lookup.
+    /// - Input file may contain items of Unordered block in arbitrary order, if it is supported by actual archive format.
+    /// - Syntax sugar for structures in human-readable and human-editible formats.
+    /// - Best choise when number of items is known and fixed (e.g. structure or object).
     Unordered,
-    /// Sequential data block with dynamic number of elements.
-    /// Used mostly internally to serialize arrays in both JSON- and binary-friendly formats.
-    /// - Similar to Sequential block type.
-    /// - When reading, exact size of the array is provided.
-    /// - When writing, exact size of the array must be specified.
+    /// Array data block.
+    /// - Items are saved and loaded in the order of serialization.
+    /// - Names of items are optional and have no functional purpose.
+    /// - When reading, number of items is known when the block is opened.
+    /// - When writing, number of items must be provided when the block is opened.
+    /// - Syntax sugar for arrays in human-readable and human-editible formats.
+    /// - Best choise when items are ordered and number of items is dynamic (e.g. dynamic array).
     Array,
-    /// Sequential data block with dynamic number of key-element pairs.
-    /// Used mostly internally to serialize maps in both JSON- and binary-friendly formats.
-    /// - Similar to Sequential block type.
-    /// - When reading, exact size of the map is provided.
-    /// - When writing, exact size of the map must be specified.
-    /// - Keys must be provided for each element exactly once.
-    /// - Keys must be unique.
+    /// Map data block.
+    /// - Order of serialization is not guaranteed.
+    /// - Names of items are optional and have no functional purpose.
+    /// - Before every item, key should be serialized via SerializeKey exactly once.
+    /// - When reading, number of items is known when the block is opened.
+    /// - When writing, number of items must be provided when the block is opened.
+    /// - Key must be unique for each item.
+    /// - Syntax sugar for maps in human-readable and human-editible formats.
+    /// - Best choise when there are key-value pais (e.g. map or hash map).
     Map,
 };
 
@@ -103,6 +104,11 @@ private:
 };
 
 /// Archive interface.
+/// - Archive is a hierarchical structure of blocks and elements.
+/// - Archive must have exactly one root block.
+/// - Any block may contain other blocks or elements of any type.
+/// - Any block or element may have name. Use C++ naming conventions for identifiers, arbirtary strings are not allowed.
+/// - Unsafe block must not be closed until all the items are serialized.
 class URHO3D_API Archive
 {
 public:
@@ -116,6 +122,7 @@ public:
     /// Whether the archive is in input mode.
     /// It is guaranteed that input archive doesn't read from variable.
     /// It is guaranteed that output archive doesn't write to variable.
+    /// It is save to cast away const-ness when serializing into output archive.
     virtual bool IsInput() const = 0;
     /// Whether the human-readability is preferred over performance and output size.
     /// - Binary serialization is disfavored.
@@ -124,7 +131,7 @@ public:
     /// - Simple compound types like Vector3 are serialized as formatted strings instead of blocks.
     virtual bool IsHumanReadable() const = 0;
 
-    /// Whether the unordered element access is supported for Unordered blocks.
+    /// Whether the unordered element access is supported in currently open block.
     /// Always false if current block is not Unordered.
     virtual bool IsUnorderedSupportedNow() const = 0;
     /// Whether the archive can no longer be serialized.
@@ -143,21 +150,26 @@ public:
 
     /// Begin archive block.
     /// Size is required for Array and Map blocks.
-    /// Errors occurred within safe don't propagate outside the block.
+    /// It is guaranteed that errors occurred during serialization of the safe block don't affect data outside of the block.
     virtual bool BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type) = 0;
     /// End archive block.
     /// Failure usually means code error, for example one of the following:
     /// - Array or Map size doesn't match the number of serialized elements.
-    /// - There were no corresponding BeginBlock call.
+    /// - There is no corresponding BeginBlock call.
     virtual bool EndBlock() = 0;
 
-    /// @name Serialize
+    /// @name Serialize keys
     /// @{
 
     /// Serialize string key of the Map block.
     virtual bool SerializeKey(ea::string& key) = 0;
     /// Serialize unsigned integer key of the Map block.
     virtual bool SerializeKey(unsigned& key) = 0;
+
+    /// @}
+
+    /// @name Serialize elements
+    /// @{
 
     /// Serialize bool.
     virtual bool Serialize(const char* name, bool& value) = 0;
@@ -191,7 +203,8 @@ public:
 
     /// @}
 
-    /// Begin archive block and return the guard that will end it automatically on destruction.
+    /// Do BeginBlock and return the guard that will call EndBlock automatically on destruction.
+    /// Return null block in case of error.
     ArchiveBlock OpenBlock(const char* name, unsigned sizeHint, bool safe, ArchiveBlockType type)
     {
         const bool opened = BeginBlock(name, sizeHint, safe, type);
