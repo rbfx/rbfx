@@ -225,9 +225,9 @@ enum TransformResizeType
     RESIZE_MOVE = 15,
 };
 
+URHO3D_FLAGSET(TransformResizeType, TransformResizeTypeFlags);
+
 }
-/// Flag manipuation operators.
-URHO3D_FLAGSET(ImGui::TransformResizeType, TransformResizeTypeFlags);
 
 namespace ImGui
 {
