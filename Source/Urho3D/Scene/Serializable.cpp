@@ -353,7 +353,7 @@ bool Serializable::Load(Deserializer& source)
     for (unsigned i = 0; i < attributes->size(); ++i)
     {
         const AttributeInfo& attr = attributes->at(i);
-        if (!(attr.mode_ & AM_FILE))
+        if (!attr.ShouldLoad())
             continue;
 
         if (source.IsEof())
@@ -380,7 +380,7 @@ bool Serializable::Save(Serializer& dest) const
     for (unsigned i = 0; i < attributes->size(); ++i)
     {
         const AttributeInfo& attr = attributes->at(i);
-        if (!(attr.mode_ & AM_FILE) || (attr.mode_ & AM_FILEREADONLY) == AM_FILEREADONLY)
+        if (!attr.ShouldSave())
             continue;
 
         OnGetAttribute(attr, value);
@@ -419,7 +419,7 @@ bool Serializable::LoadXML(const XMLElement& source)
         while (attempts)
         {
             const AttributeInfo& attr = attributes->at(i);
-            if ((attr.mode_ & AM_FILE) && !attr.name_.compare(name))
+            if (attr.ShouldLoad() && !attr.name_.compare(name))
             {
                 Variant varValue;
 
@@ -507,7 +507,7 @@ bool Serializable::LoadJSON(const JSONValue& source)
         while (attempts)
         {
             const AttributeInfo& attr = attributes->at(i);
-            if ((attr.mode_ & AM_FILE) && !attr.name_.compare(name))
+            if (attr.ShouldLoad() && !attr.name_.compare(name))
             {
                 Variant varValue;
 
@@ -575,7 +575,7 @@ bool Serializable::SaveXML(XMLElement& dest) const
     for (unsigned i = 0; i < attributes->size(); ++i)
     {
         const AttributeInfo& attr = attributes->at(i);
-        if (!(attr.mode_ & AM_FILE) || (attr.mode_ & AM_FILEREADONLY) == AM_FILEREADONLY)
+        if (!attr.ShouldSave())
             continue;
 
         OnGetAttribute(attr, value);
@@ -612,7 +612,7 @@ bool Serializable::SaveJSON(JSONValue& dest) const
     for (unsigned i = 0; i < attributes->size(); ++i)
     {
         const AttributeInfo& attr = attributes->at(i);
-        if (!(attr.mode_ & AM_FILE) || (attr.mode_ & AM_FILEREADONLY) == AM_FILEREADONLY)
+        if (!attr.ShouldSave())
             continue;
 
         OnGetAttribute(attr, value);

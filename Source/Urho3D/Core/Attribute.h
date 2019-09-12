@@ -49,10 +49,8 @@ enum AttributeMode
     AM_COMPONENTID = 0x20,
     /// Attribute is a node ID vector where first element is the amount of nodes.
     AM_NODEIDVECTOR = 0x40,
-    /// Attribute is readonly.
-    AM_READONLY = 0x80,
     /// Attribute is readonly. Can't be used with binary serialized objects.
-    AM_FILEREADONLY = AM_FILE | AM_READONLY,
+    AM_READONLY = 0x80,
 };
 URHO3D_FLAGSET(AttributeMode, AttributeModeFlags);
 
