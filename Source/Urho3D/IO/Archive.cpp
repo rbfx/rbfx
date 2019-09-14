@@ -36,6 +36,34 @@ ArchiveBlock::~ArchiveBlock()
     }
 }
 
+bool Archive::ValidateName(ea::string_view name)
+{
+    // Empty names are allowed
+    if (name.empty())
+        return true;
+
+    // Name must start with letter or underscore.
+    if (!isalpha(name[0]) && name[0] != '_')
+        return false;
+
+    // Name must contain only letters, digits or underscores.
+    for (const char ch : name)
+    {
+        if (!isalnum(ch) && ch != '_')
+            return false;
+    }
+
+    // Name must not be reserved
+    static const ea::string keywords[] = { "key" };
+    for (ea::string_view keyword : keywords)
+    {
+        if (name == keyword)
+            return false;
+    }
+
+    return true;
+}
+
 const char* ArchiveBase::keyElementName_ = "<Map key>";
 const char* ArchiveBase::blockElementName_ = "<Block>";
 
@@ -45,6 +73,7 @@ const ea::string ArchiveBase::fatalMissingElementName = "Fatal: Missing element 
 const ea::string ArchiveBase::fatalMissingKeySerialization = "Fatal: Missing key serialization in Map block";
 const ea::string ArchiveBase::fatalDuplicateKeySerialization = "Fatal: Duplicate key serialization in Map block";
 const ea::string ArchiveBase::fatalUnexpectedKeySerialization = "Fatal: Unexpected key serialization in non-Map block";
+const ea::string ArchiveBase::fatalInvalidName = "Fatal: Invalid element or block name '{0}'";
 const ea::string ArchiveBase::errorEOF_elementName = "End of file before element or block '{0}'";
 const ea::string ArchiveBase::errorUnspecifiedFailure_elementName = "Unspecified I/O failure before element or block '{0}'";
 

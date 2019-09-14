@@ -28,7 +28,7 @@ namespace Urho3D
 {
 
 /// Name of internal key attribue of Map block.
-static const char* keyAttribute = "__key__";
+static const char* keyAttribute = "key";
 
 XMLOutputArchiveBlock::XMLOutputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement, unsigned sizeHint)
     : name_(name)
@@ -165,7 +165,7 @@ bool XMLOutputArchiveBlock::Close(ArchiveBase& archive)
 
 bool XMLOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name))
+    if (!CheckEOF(name, name))
         return false;
 
     // Open root block
@@ -206,7 +206,7 @@ bool XMLOutputArchive::EndBlock()
 
 bool XMLOutputArchive::SerializeKey(ea::string& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     return GetCurrentBlock().SetElementKey(*this, key);
@@ -214,7 +214,7 @@ bool XMLOutputArchive::SerializeKey(ea::string& key)
 
 bool XMLOutputArchive::SerializeKey(unsigned& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     return GetCurrentBlock().SetElementKey(*this, ea::to_string(key));
@@ -241,29 +241,34 @@ bool XMLOutputArchive::SerializeVLE(const char* name, unsigned& value)
     return false;
 }
 
-bool XMLOutputArchive::CheckEOF(const char* elementName)
+bool XMLOutputArchive::CheckEOF(const char* elementName, const char* debugName)
 {
     if (HasError())
         return false;
 
+    if (!ValidateName(elementName))
+    {
+        SetErrorFormatted(ArchiveBase::fatalInvalidName, debugName);
+        return false;
+    }
+
     if (IsEOF())
     {
-        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, debugName);
         return false;
     }
 
     return true;
 }
 
-bool XMLOutputArchive::CheckEOFAndRoot(const char* elementName)
+bool XMLOutputArchive::CheckEOFAndRoot(const char* elementName, const char* debugName)
 {
-    if (!CheckEOF(elementName))
+    if (!CheckEOF(elementName, debugName))
         return false;
 
     if (stack_.empty())
     {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, debugName);
         assert(0);
         return false;
     }
@@ -273,7 +278,7 @@ bool XMLOutputArchive::CheckEOFAndRoot(const char* elementName)
 
 XMLAttributeReference XMLOutputArchive::CreateElement(const char* name)
 {
-    if (!CheckEOFAndRoot(name))
+    if (!CheckEOFAndRoot(name, name))
         return {};
 
     XMLOutputArchiveBlock& block = GetCurrentBlock();
@@ -422,7 +427,7 @@ XMLAttributeReference XMLInputArchiveBlock::ReadElementOrAttribute(ArchiveBase& 
 
 bool XMLInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name))
+    if (!CheckEOF(name, name))
         return false;
 
     // Open root block
@@ -469,7 +474,7 @@ bool XMLInputArchive::EndBlock()
 
 bool XMLInputArchive::SerializeKey(ea::string& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     return GetCurrentBlock().ReadCurrentKey(*this, key);
@@ -477,7 +482,7 @@ bool XMLInputArchive::SerializeKey(ea::string& key)
 
 bool XMLInputArchive::SerializeKey(unsigned& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     ea::string stringKey;
@@ -513,29 +518,34 @@ bool XMLInputArchive::SerializeVLE(const char* name, unsigned& value)
     return false;
 }
 
-bool XMLInputArchive::CheckEOF(const char* elementName)
+bool XMLInputArchive::CheckEOF(const char* elementName, const char* debugName)
 {
     if (HasError())
         return false;
 
+    if (!ValidateName(elementName))
+    {
+        SetErrorFormatted(ArchiveBase::fatalInvalidName, debugName);
+        return false;
+    }
+
     if (IsEOF())
     {
-        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, debugName);
         return false;
     }
 
     return true;
 }
 
-bool XMLInputArchive::CheckEOFAndRoot(const char* elementName)
+bool XMLInputArchive::CheckEOFAndRoot(const char* elementName, const char* debugName)
 {
-    if (!CheckEOF(elementName))
+    if (!CheckEOF(elementName, debugName))
         return false;
 
     if (stack_.empty())
     {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, debugName);
         assert(0);
         return false;
     }
@@ -545,7 +555,7 @@ bool XMLInputArchive::CheckEOFAndRoot(const char* elementName)
 
 XMLAttributeReference XMLInputArchive::ReadElement(const char* name)
 {
-    if (!CheckEOFAndRoot(name))
+    if (!CheckEOFAndRoot(name, name))
         return {};
 
     return GetCurrentBlock().ReadElementOrAttribute(*this, name);
