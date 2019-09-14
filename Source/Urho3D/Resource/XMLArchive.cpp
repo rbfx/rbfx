@@ -27,6 +27,9 @@
 namespace Urho3D
 {
 
+/// Name of internal key attribue of Map block.
+static const char* keyAttribute = "__key__";
+
 XMLOutputArchiveBlock::XMLOutputArchiveBlock(const char* name, ArchiveBlockType type, XMLElement blockElement, unsigned sizeHint)
     : name_(name)
     , type_(type)
@@ -108,7 +111,7 @@ XMLElement XMLOutputArchiveBlock::CreateElement(ArchiveBase& archive, const char
         ++numElements_;
         assert(keySet_);
         element = blockElement_.CreateChild(elementName ? elementName : defaultElementName);
-        element.SetString("key", elementKey_);
+        element.SetString(keyAttribute, elementKey_);
         usedNames_.emplace(elementKey_);
         keySet_ = false;
         break;
@@ -347,13 +350,13 @@ bool XMLInputArchiveBlock::ReadCurrentKey(ArchiveBase& archive, ea::string& key)
         return false;
     }
 
-    if (!nextChild_.HasAttribute("key"))
+    if (!nextChild_.HasAttribute(keyAttribute))
     {
         archive.SetErrorFormatted(ArchiveBase::errorMissingMapKey);
         return false;
     }
 
-    key = nextChild_.GetAttribute("key");
+    key = nextChild_.GetAttribute(keyAttribute);
     keyRead_ = true;
     return true;
 }

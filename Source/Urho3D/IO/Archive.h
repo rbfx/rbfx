@@ -270,9 +270,9 @@ public:
     }
 
 public:
-    /// Artificial element name used for Map keys.
+    /// Artificial element name used for error reporting related to Map keys.
     static const char* keyElementName_;
-    /// Artificial element name used for block-related data.
+    /// Artificial element name used for error reporting related to block itself.
     static const char* blockElementName_;
 
     /// Fatal error message: root block was not opened. Placeholders: {elementName}.
