@@ -147,7 +147,7 @@ bool JSONOutputArchiveBlock::Close(ArchiveBase& archive)
 
 bool JSONOutputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name))
+    if (!CheckEOF(name, name))
         return false;
 
     // Open root block
@@ -186,7 +186,7 @@ bool JSONOutputArchive::EndBlock()
 
 bool JSONOutputArchive::SerializeKey(ea::string& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     return GetCurrentBlock().SetElementKey(*this, key);
@@ -194,7 +194,7 @@ bool JSONOutputArchive::SerializeKey(ea::string& key)
 
 bool JSONOutputArchive::SerializeKey(unsigned& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     return GetCurrentBlock().SetElementKey(*this, ea::to_string(key));
@@ -221,29 +221,34 @@ bool JSONOutputArchive::SerializeVLE(const char* name, unsigned& value)
     return CreateElement(name, JSONValue{ value });
 }
 
-bool JSONOutputArchive::CheckEOF(const char* elementName)
+bool JSONOutputArchive::CheckEOF(const char* elementName, const char* debugName)
 {
     if (HasError())
         return false;
 
+    if (!ValidateName(elementName))
+    {
+        SetErrorFormatted(ArchiveBase::fatalInvalidName, debugName);
+        return false;
+    }
+    
     if (IsEOF())
     {
-        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, debugName);
         return false;
     }
 
     return true;
 }
 
-bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName)
+bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName, const char* debugName)
 {
-    if (!CheckEOF(elementName))
+    if (!CheckEOF(elementName, debugName))
         return false;
 
     if (stack_.empty())
     {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, debugName);
         assert(0);
         return false;
     }
@@ -253,7 +258,7 @@ bool JSONOutputArchive::CheckEOFAndRoot(const char* elementName)
 
 bool JSONOutputArchive::CreateElement(const char* name, const JSONValue& value)
 {
-    if (!CheckEOFAndRoot(name))
+    if (!CheckEOFAndRoot(name, name))
         return false;
 
     if (JSONValue* jsonValue = GetCurrentBlock().CreateElement(*this, name))
@@ -408,7 +413,7 @@ const JSONValue* JSONInputArchiveBlock::ReadElement(ArchiveBase& archive, const 
 
 bool JSONInputArchive::BeginBlock(const char* name, unsigned& sizeHint, bool safe, ArchiveBlockType type)
 {
-    if (!CheckEOF(name))
+    if (!CheckEOF(name, name))
         return false;
 
     // Open root block
@@ -454,7 +459,7 @@ bool JSONInputArchive::EndBlock()
 
 bool JSONInputArchive::SerializeKey(ea::string& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     return GetCurrentBlock().ReadCurrentKey(*this, key);
@@ -462,7 +467,7 @@ bool JSONInputArchive::SerializeKey(ea::string& key)
 
 bool JSONInputArchive::SerializeKey(unsigned& key)
 {
-    if (!CheckEOFAndRoot(ArchiveBase::keyElementName_))
+    if (!CheckEOFAndRoot("", ArchiveBase::keyElementName_))
         return false;
 
     ea::string stringKey;
@@ -532,29 +537,34 @@ bool JSONInputArchive::SerializeVLE(const char* name, unsigned& value)
     return false;
 }
 
-bool JSONInputArchive::CheckEOF(const char* elementName)
+bool JSONInputArchive::CheckEOF(const char* elementName, const char* debugName)
 {
     if (HasError())
         return false;
 
+    if (!ValidateName(elementName))
+    {
+        SetErrorFormatted(ArchiveBase::fatalInvalidName, debugName);
+        return false;
+    }
+
     if (IsEOF())
     {
-        const ea::string_view blockName = !stack_.empty() ? GetCurrentBlock().GetName() : "";
-        SetErrorFormatted(ArchiveBase::errorEOF_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::errorEOF_elementName, debugName);
         return false;
     }
 
     return true;
 }
 
-bool JSONInputArchive::CheckEOFAndRoot(const char* elementName)
+bool JSONInputArchive::CheckEOFAndRoot(const char* elementName, const char* debugName)
 {
-    if (!CheckEOF(elementName))
+    if (!CheckEOF(elementName, debugName))
         return false;
 
     if (stack_.empty())
     {
-        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, elementName);
+        SetErrorFormatted(ArchiveBase::fatalRootBlockNotOpened_elementName, debugName);
         assert(0);
         return false;
     }
@@ -564,7 +574,7 @@ bool JSONInputArchive::CheckEOFAndRoot(const char* elementName)
 
 const JSONValue* JSONInputArchive::ReadElement(const char* name)
 {
-    if (!CheckEOFAndRoot(name))
+    if (!CheckEOFAndRoot(name, name))
         return nullptr;
 
     return GetCurrentBlock().ReadElement(*this, name, nullptr);

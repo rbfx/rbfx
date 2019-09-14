@@ -221,9 +221,9 @@ public:
 
 private:
     /// Check EOF.
-    bool CheckEOF(const char* elementName);
+    bool CheckEOF(const char* elementName, const char* debugName);
     /// Check EOF and root block.
-    bool CheckEOFAndRoot(const char* elementName);
+    bool CheckEOFAndRoot(const char* elementName, const char* debugName);
     /// Prepare to serialize element.
     XMLAttributeReference CreateElement(const char* name);
 
@@ -323,9 +323,9 @@ public:
 
 private:
     /// Check EOF.
-    bool CheckEOF(const char* elementName);
+    bool CheckEOF(const char* elementName, const char* debugName);
     /// Check EOF and root block.
-    bool CheckEOFAndRoot(const char* elementName);
+    bool CheckEOFAndRoot(const char* elementName, const char* debugName);
     /// Prepare to serialize element.
     XMLAttributeReference ReadElement(const char* name);
 

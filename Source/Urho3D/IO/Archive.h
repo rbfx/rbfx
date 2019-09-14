@@ -107,7 +107,7 @@ private:
 /// - Archive is a hierarchical structure of blocks and elements.
 /// - Archive must have exactly one root block.
 /// - Any block may contain other blocks or elements of any type.
-/// - Any block or element may have name. Use C++ naming conventions for identifiers, arbirtary strings are not allowed.
+/// - Any block or element may have name. Use C++ naming conventions for identifiers, arbirtary strings are not allowed. Name "key" is reserved.
 /// - Unsafe block must not be closed until all the items are serialized.
 class URHO3D_API Archive
 {
@@ -203,6 +203,9 @@ public:
 
     /// @}
 
+    /// Validate element or block name.
+    static bool ValidateName(ea::string_view name);
+
     /// Do BeginBlock and return the guard that will call EndBlock automatically on destruction.
     /// Return null block in case of error.
     ArchiveBlock OpenBlock(const char* name, unsigned sizeHint, bool safe, ArchiveBlockType type)
@@ -287,6 +290,8 @@ public:
     static const ea::string fatalDuplicateKeySerialization;
     /// Fatal error message: unexpected key serialization.
     static const ea::string fatalUnexpectedKeySerialization;
+    /// Fatal error message: invalid element or block name.
+    static const ea::string fatalInvalidName;
     /// Error message: input archive has no more data. Placeholders: {elementName}.
     static const ea::string errorEOF_elementName;
     /// Error message: unspecified I/O failure. Placeholders: {elementName}.
