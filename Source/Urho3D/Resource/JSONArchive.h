@@ -188,9 +188,9 @@ public:
 
 private:
     /// Check EOF.
-    bool CheckEOF(const char* elementName);
+    bool CheckEOF(const char* elementName, const char* debugName);
     /// Check EOF and root block.
-    bool CheckEOFAndRoot(const char* elementName);
+    bool CheckEOFAndRoot(const char* elementName, const char* debugName);
     /// Serialize any JSON value.
     bool CreateElement(const char* name, const JSONValue& value);
     /// Temporary string.
@@ -292,9 +292,9 @@ public:
 
 private:
     /// Check EOF.
-    bool CheckEOF(const char* elementName);
+    bool CheckEOF(const char* elementName, const char* debugName);
     /// Check EOF and root block.
-    bool CheckEOFAndRoot(const char* elementName);
+    bool CheckEOFAndRoot(const char* elementName, const char* debugName);
     /// Deserialize JSONValue.
     const JSONValue* ReadElement(const char* name);
     /// Temporary buffer.
