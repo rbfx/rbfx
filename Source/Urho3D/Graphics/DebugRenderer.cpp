@@ -338,7 +338,7 @@ void DebugRenderer::AddSphereSector(const Sphere& sphere, const Quaternion& rota
         AddLine(
             sphere.center_ + rotation * sphere.GetLocalPoint(j * 360.0f / numCircleSegments, halfAngle),
             sphere.center_ + rotation * sphere.GetLocalPoint((j + 1) * 360.0f / numCircleSegments, halfAngle),
-            uintColor);
+            uintColor, depthTest);
     }
 
     // Draw arcs
@@ -351,7 +351,7 @@ void DebugRenderer::AddSphereSector(const Sphere& sphere, const Quaternion& rota
             AddLine(
                 sphere.center_ + rotation * sphere.GetLocalPoint(j * 360.0f / numCircleSegments, i * arcStep),
                 sphere.center_ + rotation * sphere.GetLocalPoint(j * 360.0f / numCircleSegments, nextPhi),
-                uintColor);
+                uintColor, depthTest);
         }
     }
 
@@ -362,7 +362,7 @@ void DebugRenderer::AddSphereSector(const Sphere& sphere, const Quaternion& rota
         {
             AddLine(sphere.center_,
                 sphere.center_ + rotation * sphere.GetLocalPoint(j * 360.0f / numCircleSegments, halfAngle),
-                uintColor);
+                uintColor, depthTest);
         }
     }
 }

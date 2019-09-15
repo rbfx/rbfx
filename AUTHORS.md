@@ -99,6 +99,7 @@ Urho3D development, contributions and bugfixes by:
 - Ner'zhul
 - Newb I the Newbd
 - OvermindDL1
+- Polynominal
 - PredatorMF
 - Scellow
 - Skrylar
@@ -114,6 +115,7 @@ Urho3D development, contributions and bugfixes by:
 - att-kin9
 - celeron55
 - chenjie199234
+- codexhound
 - cosmy1
 - damu
 - dragonCASTjosh
@@ -128,6 +130,7 @@ Urho3D development, contributions and bugfixes by:
 - marynate
 - meshonline
 - mightyCelu
+- MystMagus
 - neat3d
 - nemerle
 - ninjastone
@@ -140,6 +143,7 @@ Urho3D development, contributions and bugfixes by:
 - rifai
 - rikorin
 - skaiware
+- smortex
 - ssinai1
 - sssooonnnggg
 - svifylabs

@@ -54,7 +54,7 @@ struct BOX2D_API b2BodyDef
 	/// This constructor sets the body definition default values.
 	b2BodyDef()
 	{
-		userData = NULL;
+		userData = nullptr;
 		position.Set(0.0f, 0.0f);
 		angle = 0.0f;
 		linearVelocity.Set(0.0f, 0.0f);
@@ -90,11 +90,13 @@ struct BOX2D_API b2BodyDef
 	/// Linear damping is use to reduce the linear velocity. The damping parameter
 	/// can be larger than 1.0f but the damping effect becomes sensitive to the
 	/// time step when the damping parameter is large.
+	/// Units are 1/time
 	float32 linearDamping;
 
 	/// Angular damping is use to reduce the angular velocity. The damping parameter
 	/// can be larger than 1.0f but the damping effect becomes sensitive to the
 	/// time step when the damping parameter is large.
+	/// Units are 1/time
 	float32 angularDamping;
 
 	/// Set this flag to false if this body should never fall asleep. Note that
@@ -639,11 +641,8 @@ inline void b2Body::SetAwake(bool flag)
 {
 	if (flag)
 	{
-		if ((m_flags & e_awakeFlag) == 0)
-		{
-			m_flags |= e_awakeFlag;
-			m_sleepTime = 0.0f;
-		}
+		m_flags |= e_awakeFlag;
+		m_sleepTime = 0.0f;
 	}
 	else
 	{
