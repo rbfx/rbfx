@@ -171,10 +171,10 @@ public:
 
     /// Return UI element double click interval in seconds.
     float GetDoubleClickInterval() const { return doubleClickInterval_; }
-    
-    /// Get max screen distance in pixels for double clicks to register. 
+
+    /// Get max screen distance in pixels for double clicks to register.
     float GetMaxDoubleClickDistance() const { return maxDoubleClickDist_;}
-    
+
     /// Return UI drag start event interval in seconds.
     float GetDragBeginInterval() const { return dragBeginInterval_; }
 
@@ -270,6 +270,8 @@ private:
     void GetElementAt(UIElement*& result, UIElement* current, const IntVector2& position, bool enabledOnly);
     /// Return the first element in hierarchy that can alter focus.
     UIElement* GetFocusableElement(UIElement* element);
+    /// Return the first element in hierarchy that can handle wheel.
+    UIElement* GetWheelHandlerElement(UIElement* element);
     /// Return cursor position and visibility either from the cursor element, or the Input subsystem.
     void GetCursorPositionAndVisible(IntVector2& pos, bool& visible);
     /// Set active cursor's shape.
@@ -296,7 +298,7 @@ private:
 
     /// Send a UI double click event
     void SendDoubleClickEvent(UIElement* beginElement, UIElement* endElement, const IntVector2& firstPos, const IntVector2& secondPos, MouseButton button, MouseButtonFlags buttons, QualifierFlags qualifiers);
-    
+
     /// Handle screen mode event.
     void HandleScreenMode(StringHash eventType, VariantMap& eventData);
     /// Handle mouse button down event.

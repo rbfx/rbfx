@@ -158,18 +158,18 @@ public:
     /// - There is no corresponding BeginBlock call.
     virtual bool EndBlock() = 0;
 
-    /// @name Serialize keys
-    /// @{
+    /// \name Serialize keys
+    /// \{
 
     /// Serialize string key of the Map block.
     virtual bool SerializeKey(ea::string& key) = 0;
     /// Serialize unsigned integer key of the Map block.
     virtual bool SerializeKey(unsigned& key) = 0;
 
-    /// @}
+    /// \}
 
-    /// @name Serialize elements
-    /// @{
+    /// \name Serialize elements
+    /// \{
 
     /// Serialize bool.
     virtual bool Serialize(const char* name, bool& value) = 0;
@@ -201,7 +201,7 @@ public:
     /// Serialize Variable Length Encoded unsigned integer, up to 29 significant bits.
     virtual bool SerializeVLE(const char* name, unsigned& value) = 0;
 
-    /// @}
+    /// \}
 
     /// Validate element or block name.
     static bool ValidateName(ea::string_view name);
@@ -215,7 +215,7 @@ public:
     }
 
     /// Open block helpers
-    /// @{
+    /// \{
 
     /// Open Sequential block. Will be automatically closed when returned object is destroyed.
     ArchiveBlock OpenSequentialBlock(const char* name) { return OpenBlock(name, 0, false, ArchiveBlockType::Sequential); }
@@ -231,7 +231,7 @@ public:
     /// Open safe Unordered block. Will be automatically closed when returned object is destroyed.
     ArchiveBlock OpenSafeUnorderedBlock(const char* name) { return OpenBlock(name, 0, true, ArchiveBlockType::Unordered); }
 
-    /// @}
+    /// \}
 };
 
 /// Archive implementation helper. Provides default Archive implementation for most cases.
