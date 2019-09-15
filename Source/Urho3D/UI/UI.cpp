@@ -1215,6 +1215,17 @@ UIElement* UI::GetFocusableElement(UIElement* element)
     return element;
 }
 
+UIElement* UI::GetWheelHandlerElement(UIElement* element)
+{
+    while (element)
+    {
+        if (element->IsWheelHandler())
+            break;
+        element = element->GetParent();
+    }
+    return element;
+}
+
 void UI::GetCursorPositionAndVisible(IntVector2& pos, bool& visible)
 {
     // Prefer software cursor then OS-specific cursor
@@ -1795,25 +1806,19 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
     GetCursorPositionAndVisible(cursorPos, cursorVisible);
 
     if (!nonFocusedMouseWheel_ && focusElement_)
-        focusElement_->OnWheel(delta, mouseButtons_, qualifiers_);
+    {
+        UIElement* element = GetWheelHandlerElement(focusElement_);
+        element->OnWheel(delta, mouseButtons_, qualifiers_);
+    }
     else
     {
         // If no element has actual focus or in non-focused mode, get the element at cursor
         if (cursorVisible)
         {
             UIElement* element = GetElementAt(cursorPos);
-            if (nonFocusedMouseWheel_)
-            {
-                // Going up the hierarchy chain to find element that could handle mouse wheel
-                while (element && !element->IsWheelHandler())
-                {
-                    element = element->GetParent();
-                }
-            }
-            else
-                // If the element itself is not focusable, search for a focusable parent,
-                // although the focusable element may not actually handle mouse wheel
-                element = GetFocusableElement(element);
+
+            // Going up the hierarchy chain to find element that could handle mouse wheel
+            element = GetWheelHandlerElement(element);
 
             if (element && (nonFocusedMouseWheel_ || element->GetFocusMode() >= FM_FOCUSABLE))
                 element->OnWheel(delta, mouseButtons_, qualifiers_);
