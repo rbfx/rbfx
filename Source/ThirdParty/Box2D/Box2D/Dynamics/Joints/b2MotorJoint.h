@@ -60,11 +60,11 @@ struct BOX2D_API b2MotorJointDef : public b2JointDef
 class BOX2D_API b2MotorJoint : public b2Joint
 {
 public:
-	b2Vec2 GetAnchorA() const;
-	b2Vec2 GetAnchorB() const;
+	b2Vec2 GetAnchorA() const override;
+	b2Vec2 GetAnchorB() const override;
 
-	b2Vec2 GetReactionForce(float32 inv_dt) const;
-	float32 GetReactionTorque(float32 inv_dt) const;
+	b2Vec2 GetReactionForce(float32 inv_dt) const override;
+	float32 GetReactionTorque(float32 inv_dt) const override;
 
 	/// Set/get the target linear offset, in frame A, in meters.
 	void SetLinearOffset(const b2Vec2& linearOffset);
@@ -93,7 +93,7 @@ public:
 	float32 GetCorrectionFactor() const;
 
 	/// Dump to b2Log
-	void Dump();
+	void Dump() override;
 
 protected:
 
@@ -101,9 +101,9 @@ protected:
 
 	b2MotorJoint(const b2MotorJointDef* def);
 
-	void InitVelocityConstraints(const b2SolverData& data);
-	void SolveVelocityConstraints(const b2SolverData& data);
-	bool SolvePositionConstraints(const b2SolverData& data);
+	void InitVelocityConstraints(const b2SolverData& data) override;
+	void SolveVelocityConstraints(const b2SolverData& data) override;
+	bool SolvePositionConstraints(const b2SolverData& data) override;
 
 	// Solver shared
 	b2Vec2 m_linearOffset;

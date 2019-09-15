@@ -61,10 +61,16 @@ public:
     void SetHoverOffset(const IntVector2& offset);
     /// Set offset to image rectangle used on hover.
     void SetHoverOffset(int x, int y);
+    /// Set offset to image rectangle used when disabled.
+    void SetDisabledOffset(const IntVector2& offset);
+    /// Set offset to image rectangle used when disabled.
+    void SetDisabledOffset(int x, int y);
     /// Set blend mode.
     void SetBlendMode(BlendMode mode);
     /// Set tiled mode.
     void SetTiled(bool enable);
+    /// Set material for custom rendering.
+    void SetMaterial(Material* material);
 
     /// Return texture.
     Texture* GetTexture() const { return texture_; }
@@ -81,17 +87,27 @@ public:
     /// Return offset to image rectangle used on hover.
     const IntVector2& GetHoverOffset() const { return hoverOffset_; }
 
+    /// Return offset to image rectangle used when disabled.
+    const IntVector2& GetDisabledOffset() const { return disabledOffset_; }
+
     /// Return blend mode.
     BlendMode GetBlendMode() const { return blendMode_; }
 
     /// Return whether is tiled.
     bool IsTiled() const { return tiled_; }
 
+    /// Get material used for custom rendering.
+    Material* GetMaterial() const;
+
     /// Set texture attribute.
     void SetTextureAttr(const ResourceRef& value);
     /// Return texture attribute.
     ResourceRef GetTextureAttr() const;
 
+    /// Set material attribute.
+    void SetMaterialAttr(const ResourceRef& value);
+    /// Get material attribute.
+    ResourceRef GetMaterialAttr() const;
 protected:
     /// Return UI rendering batches with offset to image rectangle.
     void GetBatches
@@ -107,10 +123,14 @@ protected:
     IntRect imageBorder_;
     /// Offset to image rectangle on hover.
     IntVector2 hoverOffset_;
+    /// Offset to image rectangle when disabled.
+    IntVector2 disabledOffset_;
     /// Blend mode flag.
     BlendMode blendMode_;
     /// Tiled flag.
     bool tiled_;
+    /// Material used for custom rendering.
+    SharedPtr<Material> material_;
 };
 
 }

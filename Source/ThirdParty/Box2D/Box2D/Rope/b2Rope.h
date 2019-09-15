@@ -29,9 +29,9 @@ struct BOX2D_API b2RopeDef
 {
 	b2RopeDef()
 	{
-		vertices = NULL;
+		vertices = nullptr;
 		count = 0;
-		masses = NULL;
+		masses = nullptr;
 		gravity.SetZero();
 		damping = 0.1f;
 		k2 = 0.9f;

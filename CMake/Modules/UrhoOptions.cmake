@@ -144,3 +144,7 @@ endif ()
 foreach (feature ${URHO3D_FEATURES})
     set (URHO3D_${feature} ON)
 endforeach()
+
+if (ANDROID)
+    set (SDL_CPUINFO ON)
+endif ()

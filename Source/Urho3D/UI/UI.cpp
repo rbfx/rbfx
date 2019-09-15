@@ -34,6 +34,7 @@
 #include "../Graphics/Octree.h"
 #include "../Graphics/Viewport.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Technique.h"
 #include "../Scene/Scene.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
@@ -969,22 +970,44 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
         ShaderVariation* ps;
         ShaderVariation* vs;
 
-        if (!batch.texture_)
+        if (!batch.custom_material_)
         {
-            ps = noTexturePS;
-            vs = noTextureVS;
-        }
-        else
-        {
-            // If texture contains only an alpha channel, use alpha shader (for fonts)
-            vs = diffTextureVS;
+            if (!batch.texture_)
+            {
+                ps = noTexturePS;
+                vs = noTextureVS;
+            } else
+            {
+                // If texture contains only an alpha channel, use alpha shader (for fonts)
+                vs = diffTextureVS;
 
-            if (batch.texture_->GetFormat() == alphaFormat)
-                ps = alphaTexturePS;
-            else if (batch.blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
-                ps = diffMaskTexturePS;
-            else
-                ps = diffTexturePS;
+                if (batch.texture_->GetFormat() == alphaFormat)
+                    ps = alphaTexturePS;
+                else if (batch.blendMode_ != BLEND_ALPHA && batch.blendMode_ != BLEND_ADDALPHA && batch.blendMode_ != BLEND_PREMULALPHA)
+                    ps = diffMaskTexturePS;
+                else
+                    ps = diffTexturePS;
+            }
+        } else
+        {
+            vs = diffTextureVS;
+            ps = diffTexturePS;
+
+            Technique* technique = batch.custom_material_->GetTechnique(0);
+            if (technique)
+            {
+                Pass* pass = nullptr;
+                for (int i = 0; i < technique->GetNumPasses(); ++i)
+                {
+                    pass = technique->GetPass(i);
+                    if (pass)
+                    {
+                        vs = graphics_->GetShader(VS, pass->GetVertexShader(), batch.custom_material_->GetVertexShaderDefines());
+                        ps = graphics_->GetShader(PS, pass->GetPixelShader(), batch.custom_material_->GetPixelShaderDefines());
+                        break;
+                    }
+                }
+            }
         }
 
         graphics_->SetShaders(vs, ps);
@@ -1018,9 +1041,40 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
 
         graphics_->SetBlendMode(batch.blendMode_);
         graphics_->SetScissorTest(true, scissor);
-        graphics_->SetTexture(0, batch.texture_);
+        if (!batch.custom_material_)
+        {
+            graphics_->SetTexture(0, batch.texture_);
+        } else
+        {
+            // Update custom shader parameters if needed
+            if (graphics_->NeedParameterUpdate(SP_MATERIAL, reinterpret_cast<const void*>(batch.custom_material_->GetShaderParameterHash())))
+            {
+                auto shader_parameters = batch.custom_material_->GetShaderParameters();
+                for (auto it = shader_parameters.begin(); it != shader_parameters.end(); ++it)
+                {
+                    graphics_->SetShaderParameter(it->second.name_, it->second.value_);
+                }
+            }
+            // Apply custom shader textures
+            auto textures = batch.custom_material_->GetTextures();
+            for (auto it = textures.begin(); it != textures.end(); ++it)
+            {
+                graphics_->SetTexture(it->first, it->second);
+            }
+        }
+
         graphics_->Draw(TRIANGLE_LIST, batch.vertexStart_ / UI_VERTEX_SIZE,
             (batch.vertexEnd_ - batch.vertexStart_) / UI_VERTEX_SIZE);
+
+        if (batch.custom_material_)
+        {
+            // Reset textures used by the batch custom material
+            auto textures = batch.custom_material_->GetTextures();
+            for (auto it = textures.begin(); it != textures.end(); ++it)
+            {
+                graphics_->SetTexture(it->first, 0);
+            }
+        }
     }
 }
 
