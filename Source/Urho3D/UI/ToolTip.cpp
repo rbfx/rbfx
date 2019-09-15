@@ -34,7 +34,7 @@ extern const char* UI_CATEGORY;
 ToolTip::ToolTip(Context* context) :
     UIElement(context),
     delay_(0.0f),
-    parentHovered_(false)
+    hovered_(false)
 {
     SetVisible(false);
 }
@@ -66,13 +66,28 @@ void ToolTip::Update(float timeStep)
         return;
     }
 
-    if (target_->IsHovering() && target_->IsVisibleEffective())
+    bool hovering = target_->IsHovering() && target_->IsVisibleEffective();
+    if (!hovering)
+    {
+        for (auto it = altTargets_.begin(); it != altTargets_.end();)
+        {
+            SharedPtr<UIElement> target = it->Lock();
+            if (!target)
+                it = altTargets_.erase(it);
+            else if (hovering = target->IsHovering() && target->IsVisibleEffective())
+                break;
+            else
+                ++it;
+        }
+    }
+
+    if (hovering)
     {
         float effectiveDelay = delay_ > 0.0f ? delay_ : GetSubsystem<UI>()->GetDefaultToolTipDelay();
 
-        if (!parentHovered_)
+        if (!hovered_)
         {
-            parentHovered_ = true;
+            hovered_ = true;
             displayAt_.Reset();
         }
         else if (displayAt_.GetMSec(false) >= (unsigned)(effectiveDelay * 1000.0f) && parent_ == target_.Get())
@@ -89,15 +104,25 @@ void ToolTip::Update(float timeStep)
     }
     else
     {
-        if (IsVisible() && parent_ == root)
-        {
-            SetParent(target_.Get());
-            SetPosition(originalPosition_);
-            SetVisible(false);
-        }
-        parentHovered_ = false;
-        displayAt_.Reset();
+        Reset();
     }
+}
+
+void ToolTip::Reset()
+{
+    if (IsVisible() && parent_ == GetRoot())
+    {
+        SetParent(target_.Get());
+        SetPosition(originalPosition_);
+        SetVisible(false);
+    }
+    hovered_ = false;
+    displayAt_.Reset();
+}
+
+void ToolTip::AddAltTarget(UIElement* target)
+{
+    altTargets_.push_back(WeakPtr<UIElement>(target));
 }
 
 void ToolTip::SetDelay(float delay)

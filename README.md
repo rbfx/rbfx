@@ -48,7 +48,10 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 * Cross-platform support using SDL 2.0
 * Physics using Bullet
 * 2D physics using Box2D
+- Polynominal
 * Scripting using C#
+- codexhound
+- MystMagus
 * Networking using SLikeNet + possibility to make HTTP requests
 * Pathfinding and crowd simulation using Recast/Detour
 * Inverse kinematics
@@ -86,7 +89,7 @@ rbfx uses the following third-party libraries:
 - pugixml 1.9 (http://pugixml.org)
 - rapidjson 1.1.0 (https://github.com/miloyip/rapidjson)
 - Recast/Detour (https://github.com/recastnavigation/recastnavigation)
-- SDL 2.0.7 (https://www.libsdl.org)
+- SDL 2.0.10+ (https://www.libsdl.org)
 - StanHull (https://codesuppository.blogspot.com/2006/03/john-ratcliffs-code-suppository-blog.html)
 - stb_image 2.18 (https://nothings.org)
 - stb_image_write 1.08 (https://nothings.org)
