@@ -311,6 +311,10 @@ Logger Log::GetLogger(const ea::string& name)
     else
         logger = spdlog::get(actualName);
 
+    if (logger == nullptr) {
+        logger = spdlog::get("");
+    }
+
     return Logger(reinterpret_cast<void*>(logger.get()));
 }
 
