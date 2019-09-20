@@ -73,11 +73,15 @@ int Application::Run()
     try
     {
 #endif
-        // Register engine command line arguments
-        Engine::DefineParameters(commandLine_, engineParameters_);
-
         // Register application command line arguments or set up engine parameters
         Setup();
+
+        if (engine_->GetParameter(engineParameters_, EP_ENGINE_CLI_PARAMETERS, true).GetBool())
+        {
+            // Register engine command line arguments
+            Engine::DefineParameters(commandLine_, engineParameters_);
+        }
+
         if (exitCode_)
             return exitCode_;
 
