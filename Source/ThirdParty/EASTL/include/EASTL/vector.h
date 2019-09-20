@@ -322,22 +322,11 @@ namespace eastl
 			position = eastl::min(position, size());
 			return insert(begin() + position, value);
 		}
-		iterator insert_at(size_type position, size_type n, const value_type& value)
-		{
-			position = eastl::min(position, size());
-			return insert(begin() + position, value);
-		}
 
 		iterator insert_at(size_type position, value_type&& value)
 		{
 			position = eastl::min(position, size());
-			return insert(begin() + position, value);
-		}
-
-		iterator insert_at(size_type position, std::initializer_list<value_type> ilist)
-		{
-			position = eastl::min(position, size());
-			return insert(begin() + position, ilist);
+			return insert(begin() + position, eastl::move(value));
 		}
 
 		const_iterator find(const value_type& value) const EA_NOEXCEPT
@@ -391,6 +380,60 @@ namespace eastl
 		{
 			return insert(end(), value.begin(), value.end());
 		}
+
+#ifdef URHO3D_CONTAINER_ADAPTERS
+		using Iterator = iterator;
+		using ConstIterator = const_iterator;
+
+		vector(const value_type* data, size_type size) : vector(data, data + size) {}
+
+		size_type Size() const { return size(); }
+		size_type Capacity() const { return capacity(); }
+		bool Empty() const { return empty(); }
+
+		reference At(size_type n) { return (*this)[n]; }
+		const_reference At(size_type n) const { return (*this)[n]; }
+
+		iterator Begin() { return begin(); }
+		iterator End() { return end(); }
+		const_iterator Begin() const { return begin(); }
+		const_iterator End() const { return end(); }
+		reference Front() { return front(); }
+		reference Back() { return back(); }
+		const_reference Front() const { return front(); }
+		const_reference Back() const { return back(); }
+		pointer Buffer() { return data(); }
+		const_pointer Buffer() const { return data(); }
+
+		template <class ... Args>
+		reference EmplaceBack(Args&&... args) { return emplace_back(std::forward<Args>(args)...); }
+		void Push(const value_type& value) { push_back(value); }
+		void Push(const this_type& value) { push_back(value); }
+		void Pop() { pop_back(); }
+
+		void Insert(size_type position, const value_type& value) { insert_at(position, value); }
+		iterator Insert(const_iterator position, const value_type& value) { return insert(position, value); }
+		template <typename InputIterator>
+		iterator Insert(const_iterator position, InputIterator first, InputIterator last) { return insert(position, first, last); }
+
+		void Erase(size_type position, size_type length = 1) { erase_at(position, length); }
+		void EraseSwap(size_type position) { erase_unsorted(begin() + position); }
+
+		iterator Erase(const_iterator position) { return erase(position); }
+		iterator Erase(const_iterator first, const_iterator last) { return erase(first, last); }
+
+		void Reserve(size_type size) { reserve(size); }
+		void Resize(size_type size) { resize(size); }
+		void Resize(size_type size, const value_type& value) { resize(size, value); }
+		void Clear() { clear(); }
+		void Compact() { shrink_to_fit(); }
+		void Swap(this_type& other) { swap(other); }
+
+		iterator Find(const value_type& value) { return find(value); }
+		const_iterator Find(const value_type& value) const { return find(value); }
+		size_type IndexOf(const value_type& value) const { return index_of(value); }
+		bool Contains(const value_type& value) const { return contains(value); }
+#endif
 #endif
 
 	protected:
