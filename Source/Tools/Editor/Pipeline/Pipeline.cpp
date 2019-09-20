@@ -366,7 +366,7 @@ void Pipeline::OnUpdate()
 bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
 {
     StringVector parts = resourceName.split('/');
-    bool isDir = resourceName.ends_with('/');
+    bool isDir = resourceName.ends_with("/");
 
     while (!parts.empty())
     {

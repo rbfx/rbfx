@@ -1190,6 +1190,32 @@ namespace eastl
 				result.emplace_back(mExtractKey(elem));
 			return result;
 		}
+		
+#ifdef URHO3D_CONTAINER_ADAPTERS
+		using Iterator = iterator;
+		using ConstIterator = const_iterator;
+		using KeyType = key_type;
+
+		size_type Size() const { return size(); }
+		bool Empty() const { return empty(); }
+
+		iterator Begin() { return begin(); }
+		iterator End() { return end(); }
+		const_iterator Begin() const { return begin(); }
+		const_iterator End() const { return end(); }
+
+		iterator Find(const key_type& key) { return find(key); }
+		const_iterator Find(const key_type& key) const { return find(key); }
+		bool Contains(const key_type& key) const { return contains(key); }
+		eastl::vector<key_type> Keys() const { return keys(); }
+
+		iterator Insert(const value_type& value) { return insert(value).first; }
+		bool Erase(const key_type& key) { return erase(key) != 0; }
+		iterator Erase(const_iterator position) { return erase(position); }
+
+		void Rehash(size_type nBucketCount) { rehash(nBucketCount); }
+		void Clear() { clear(); }
+#endif
 #endif
 
 	protected:

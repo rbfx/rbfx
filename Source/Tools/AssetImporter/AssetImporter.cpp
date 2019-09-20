@@ -20,7 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Container/Utility.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -631,7 +630,7 @@ void DumpNodes(aiNode* rootNode, unsigned level)
     if (!rootNode)
         return;
 
-    ea::string indent(' ', level * 2);
+    ea::string indent(level * 2, ' ');
     Vector3 pos, scale;
     Quaternion rot;
     aiMatrix4x4 transform = GetDerivedTransform(rootNode, rootNode_);

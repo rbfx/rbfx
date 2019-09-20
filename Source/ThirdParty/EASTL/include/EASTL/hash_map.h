@@ -309,6 +309,13 @@ namespace eastl
 				result.emplace_back(pair.second);
 			return result;
 		}
+
+#ifdef URHO3D_CONTAINER_ADAPTERS
+		using ValueType = mapped_type;
+
+		template <typename... Args> this_type& Populate(const Args&... args) { return populate(args...); }
+		eastl::vector<mapped_type> Values() const { return values(); }
+#endif
 #endif
 	}; // hash_map
 
