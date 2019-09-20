@@ -22,15 +22,47 @@
 
 #pragma once
 
-#include <cstddef>
+#ifdef URHO3D_CONTAINER_ADAPTERS
 
-namespace eastl
+#include <EASTL/sort.h>
+#include <EASTL/string.h>
+#include <EASTL/unordered_map.h>
+#include <EASTL/unordered_set.h>
+#include <EASTL/utility.h>
+#include <EASTL/vector.h>
+
+namespace Urho3D
 {
 
-template<typename T, typename U>
-inline bool contains(const T& container, const U& value)
-{
-    return container.find(value) != container.end();
-}
+template <class T>
+using Vector = ea::vector<T>;
+
+template <class T>
+using PODVector = ea::vector<T>;
+
+template <class T>
+using RandomAccessIterator = typename ea::vector<T>::iterator;
+
+template <class T>
+using RandomAccessConstIterator = typename ea::vector<T>::const_iterator;
+
+using String = ea::string;
+
+template <class T, class U>
+using HashMap = ea::unordered_map<T, U>;
+
+template <class T>
+using HashSet = ea::unordered_set<T>;
+
+template <class T, class U>
+using Pair = ea::pair<T, U>;
+
+template <class T, class U>
+Pair<T, U> MakePair(T&& first, U&& second) { return ea::make_pair(ea::forward<T>(first), ea::forward<U>(second)); }
+
+template <class Iterator>
+void Sort(Iterator first, Iterator last) { ea::sort(first, last); }
 
 }
+
+#endif

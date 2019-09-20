@@ -217,7 +217,7 @@ Variant AssetImporter::GetInstanceDefault(const ea::string& name) const
 
     ea::string resourceName = asset_->GetName();
 
-    if (resourceName.ends_with('/'))
+    if (resourceName.ends_with("/"))
         resourceName.resize(resourceName.length() - 1);         // Meta assets always end with /, remove it so we can "cd .."
 
     if (!resourceName.contains('/'))                            // Top level asset
