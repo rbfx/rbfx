@@ -739,136 +739,79 @@ namespace eastl
 			return result;
 		}
 
-		void replace(value_type needle, value_type replacement)
+		size_type find(view_type x, size_type position = 0) const
 		{
-			for (auto& c : *this)
+			return find(x.data(), position, x.length());
+		}
+
+		void replace(value_type old_value, value_type new_value)
+		{
+			eastl::replace(begin(), end(), old_value, new_value);
+		}
+
+		void replace(view_type old_value, view_type new_value)
+		{
+			size_type next = 0;
+			for (size_type start = find(old_value); start != npos; start = find(old_value, next))
 			{
-				if (c == needle)
-					c = replacement;
+				replace(begin() + start, begin() + start + old_value.length(), new_value.begin(), new_value.end());
+				next = start + new_value.length();
 			}
 		}
 
-		void replace(const value_type* needle, const value_type* replacement)
-		{
-			if (needle == nullptr || replacement == nullptr)
-				return;
-
-			const size_type needle_length = strlen(needle);
-			const size_type replacement_length = strlen(replacement);
-			size_type position = 0;
-			for (auto pos = find(needle, position); pos != npos; pos = find(needle, position))
-			{
-				replace(begin() + pos, begin() + pos + needle_length, replacement);
-				position = pos + replacement_length;
-			}
-		}
-
-		this_type replaced(value_type needle, value_type replacement) const
+		this_type replaced(value_type old_value, value_type new_value) const
 		{
 			this_type result(*this);
-			result.replace(needle, replacement);
+			result.replace(old_value, new_value);
 			return result;
 		}
 
-		this_type replaced(const value_type* needle, const value_type* replacement) const
+		this_type replaced(view_type old_value, view_type new_value) const
 		{
 			this_type result(*this);
-			result.replace(needle, replacement);
+			result.replace(old_value, new_value);
 			return result;
 		}
 
-		bool contains(value_type c, bool caseSensitive=true) const
+		static bool comparei_char(value_type c1, value_type c2)
+		{
+			return CharToLower(c1) == CharToLower(c2);
+		}
+
+		bool contains(value_type x, bool caseSensitive = true) const
 		{
 			if (caseSensitive)
-				return find(c) != npos;
+				return find(x) != npos;
 			else
 			{
-				this_type needle;
-				needle.resize(1);
-				needle[0] = c;
-				auto it = eastl::search(begin(), end(), needle.begin(), needle.end(),
-					[](value_type a, value_type b) { return CharToLower(a) == CharToLower(b); });
-				return it != end();
+				auto predicate = [x](value_type y) { return comparei_char(x, y); };
+				return eastl::find_if(begin(), end(), predicate) != end();
 			}
 		}
 
-		bool contains(const value_type* substring, bool caseSensitive=true) const
+		bool contains(view_type x, bool caseSensitive = true) const
 		{
-			if (substring == nullptr)
+			if (caseSensitive)
+				return find(x) != npos;
+			else
+				return eastl::search(begin(), end(), x.begin(), x.end(), comparei_char) != end();
+		}
+
+		bool starts_with(const view_type& substring, bool caseSensitive = true) const
+		{
+			if (substring.length() > length())
 				return false;
-
-			if (caseSensitive)
-				return find(substring) != npos;
-			else
-			{
-				view_type needle(substring);
-				auto it = eastl::search(begin(), end(), needle.begin(), needle.end(),
-					[](value_type a, value_type b) { return CharToLower(a) == CharToLower(b); });
-				return it != end();
-			}
-		}
-
-		bool contains(const this_type& substring, bool caseSensitive=true) const
-		{
-			if (caseSensitive)
-				return find(substring) != npos;
-			else
-			{
-				view_type needle(substring);
-				auto it = eastl::search(begin(), end(), needle.begin(), needle.end(),
-					[](value_type a, value_type b) { return CharToLower(a) == CharToLower(b); });
-				return it != end();
-			}
-		}
-
-		bool starts_with(value_type c, bool caseSensitive=true) const
-		{
-			value_type str[2]{c, 0};
-			return starts_with(view_type(str, 1), caseSensitive);
-		}
-
-		bool starts_with(const value_type* substring, bool caseSensitive=true) const
-		{
-			if (substring == nullptr)
-				return false;
-			return starts_with(view_type(substring, strlen(substring)), caseSensitive);
-		}
-
-		bool starts_with(const this_type& substring, bool caseSensitive=true) const
-		{
-			return starts_with(view_type(substring), caseSensitive);
-		}
-
-		bool starts_with(const view_type& substring, bool caseSensitive=true) const
-		{
-			if (caseSensitive)
+			else if (caseSensitive)
 				return compare(begin(), begin() + substring.length(), substring.begin(), substring.end()) == 0;
 			else
 				return comparei(begin(), begin() + substring.length(), substring.begin(), substring.end()) == 0;
 		}
 
-		bool ends_with(value_type c, bool caseSensitive=true) const
+		bool ends_with(const view_type& substring, bool caseSensitive = true) const
 		{
-			value_type str[2]{c, 0};
-			return ends_with(view_type(str, 1), caseSensitive);
-		}
-
-		bool ends_with(const value_type* substring, bool caseSensitive=true) const
-		{
-			if (substring == nullptr)
+			if (substring.length() > length())
 				return false;
-
-			return ends_with(view_type(substring, strlen(substring)));
-		}
-
-		bool ends_with(const this_type& substring, bool caseSensitive=true) const
-		{
-			return ends_with(view_type(substring));
-		}
-
-		bool ends_with(const view_type& substring, bool caseSensitive=true) const
-		{
-			if (caseSensitive)
+			else if (caseSensitive)
 				return compare(end() - substring.length(), end(), substring.begin(), substring.end()) == 0;
 			else
 				return comparei(end() - substring.length(), end(), substring.begin(), substring.end()) == 0;
@@ -888,33 +831,43 @@ namespace eastl
 			return result;
 		}
 
-		static eastl::vector<this_type> split(const value_type* str, value_type separator, bool keepEmptyStrings = false)
+		static eastl::vector<this_type> split(view_type v, view_type separator, bool keepEmptyStrings = false)
 		{
 			eastl::vector<this_type> ret;
-			const char* strEnd = str + strlen(str);
 
-			for (const char* splitEnd = str; splitEnd != strEnd; ++splitEnd)
+			size_type start = 0;
+			size_type end = v.find(separator);
+			while (end != npos)
 			{
-				if (*splitEnd == separator)
-				{
-					const ptrdiff_t splitLen = splitEnd - str;
-					if (splitLen > 0 || keepEmptyStrings)
-						ret.push_back(this_type(str, splitLen));
-					str = splitEnd + 1;
-				}
+				view_type token = v.substr(start, end - start);
+				if (keepEmptyStrings || !token.empty())
+					ret.push_back(this_type(token));
+				start = end + separator.length();
+				end = v.find(separator, start);
 			}
 
-			const ptrdiff_t splitLen = strEnd - str;
-			if (splitLen > 0 || keepEmptyStrings)
-				ret.push_back(this_type(str, splitLen));
+			view_type token = v.substr(start, end);
+			if (keepEmptyStrings || !token.empty())
+				ret.push_back(this_type(token));
 
 			return ret;
 		}
 
+		static eastl::vector<this_type> split(view_type v, value_type separator, bool keepEmptyStrings = false)
+		{
+			return split(v, view_type(&separator, 1), keepEmptyStrings);
+		}
+
+		eastl::vector<this_type> split(view_type separator, bool keepEmptyStrings = false) const
+		{
+			return split(*this, separator, keepEmptyStrings);
+		}
+
 		eastl::vector<this_type> split(value_type separator, bool keepEmptyStrings = false) const
 		{
-			return split(c_str(), separator, keepEmptyStrings);
+			return split(*this, separator, keepEmptyStrings);
 		}
+
 		/// Return a string by joining substrings with a 'glue' string.
 		static this_type joined(const eastl::vector<this_type>& subStrings, const this_type& glue)
 		{
@@ -934,6 +887,111 @@ namespace eastl
 			return joinedString;
 		}
 
+#ifdef URHO3D_CONTAINER_ADAPTERS
+		using Iterator = iterator;
+		using ConstIterator = const_iterator;
+
+		basic_string(value_type x, size_type n) : basic_string(n, x)
+		{
+			static_assert(0, "This constructor is deprecated. "
+				"Change the order of arguments from { character, size } to { size, character }.");
+		}
+
+		explicit basic_string(int value) : basic_string(CtorSprintf(), "%d", value) {}
+		explicit basic_string(unsigned value) : basic_string(CtorSprintf(), "%u", value) {}
+		explicit basic_string(long long value) : basic_string(CtorSprintf(), "%lld", value) {}
+		explicit basic_string(unsigned long long value) : basic_string(CtorSprintf(), "%llu", value) {}
+		explicit basic_string(float value) : basic_string(CtorSprintf(), "%g", value) {}
+		explicit basic_string(double value) : basic_string(CtorSprintf(), "%.15g", value) {}
+		explicit basic_string(bool value) : basic_string(value ? "true" : "false") {}
+		explicit basic_string(char value) : basic_string(1, value) {}
+		
+		size_type Length() const { return size(); }
+		size_type Capacity() const { return capacity(); }
+		bool Empty() const { return empty(); }
+
+		reference At(size_type n) { return (*this)[n]; }
+		const_reference At(size_type n) const { return (*this)[n]; }
+
+		iterator Begin() { return begin(); }
+		iterator End() { return end(); }
+		const_iterator Begin() const { return begin(); }
+		const_iterator End() const { return end(); }
+		reference Front() { return front(); }
+		reference Back() { return back(); }
+		const_reference Front() const { return front(); }
+		const_reference Back() const { return back(); }
+		const_pointer CString() const { return c_str(); }
+
+		void Replace(value_type old_value, value_type new_value) { replace(old_value, new_value); }
+		void Replace(view_type old_value, view_type new_value) { replace(old_value, new_value); }
+		void Replace(size_type position, size_type n, const this_type& x) { replace(position, n, x); }
+		void Replace(size_type position, size_type n, const value_type* x) { replace(position, n, x); }
+		iterator Replace(const_iterator first, const_iterator last, const this_type& x)
+		{
+			size_type pos = first - begin();
+			replace(first, last, x);
+			return begin() + pos;
+		}
+		this_type Replaced(value_type old_value, value_type new_value) const { return replaced(old_value, new_value); }
+		this_type Replaced(view_type old_value, view_type new_value) const { return replaced(old_value, new_value); }
+
+		this_type& Append(const this_type& x) { return append(x); }
+		this_type& Append(const value_type* p) { return append(p); }
+		this_type& Append(const value_type* p, size_type n) { return append(p, n); }
+		this_type& Append(value_type x) { return append(&x, 1); }
+		this_type& AppendWithFormat(const char* pFormat, ...)
+		{
+			va_list args;
+			va_start(args, pFormat);
+			append_sprintf_va_list(pFormat, args);
+			va_end(args);
+			return *this;
+		}
+
+		void Insert(size_type position, const this_type& x) { insert(position, x); }
+		void Insert(size_type position, value_type x) { insert(position, 1, x); }
+		iterator Insert(const_iterator p, const this_type& x) { return insert(p, x.begin(), x.end()); }
+		iterator Insert(const_iterator p, const value_type* pBegin, const value_type* pEnd) { return insert(p, pBegin, pEnd); }
+		iterator Insert(const_iterator p, value_type x) { return insert(p, x); }
+		void Erase(size_type position, size_type n = 1) { erase(position, n); }
+		iterator Erase(const_iterator p) { return erase(p, p + 1); }
+		iterator Erase(const_iterator pBegin, const_iterator pEnd) { return erase(pBegin, pEnd); }
+
+		void Reserve(size_type size) { reserve(size); }
+		void Resize(size_type size) { resize(size); }
+		void Resize(size_type size, value_type value) { resize(size, value); }
+		void Clear() { clear(); }
+		void Compact() { shrink_to_fit(); }
+		void Swap(this_type& other) { swap(other); }
+
+		this_type Substring(size_type position, size_type n = npos) const { return substr(position, n); }
+		this_type Trimmed() const { return trimmed(); }
+		this_type ToUpper() const { return to_upper(); }
+		this_type ToLower() const { return to_lower(); }
+
+		size_type Find(const this_type& x, size_type position = 0) const { return find(x, position); }
+		size_type Find(value_type x, size_type position = 0) const { return find(x, position); }
+		size_type FindLast(const this_type& x, size_type position = npos) const { return rfind(x, position); }
+		size_type FindLast(value_type x, size_type position = npos) const { return rfind(x, position); }
+		bool StartsWith(const this_type& x, bool caseSensitive = true) const { return starts_with(x, caseSensitive); }
+		bool EndsWith(const this_type& x, bool caseSensitive = true) const { return ends_with(x, caseSensitive); }
+		bool Contains(const this_type& x, bool caseSensitive = true) const { return contains(x, caseSensitive); }
+		bool Contains(value_type x, bool caseSensitive = true) const { return contains(x, caseSensitive); }
+
+		eastl::vector<this_type> Split(value_type separator, bool keepEmptyStrings = false) const
+		{
+			return split(separator, keepEmptyStrings);
+		}
+		static eastl::vector<this_type> Split(const value_type* str, value_type separator, bool keepEmptyStrings = false)
+		{
+			return split(str, separator, keepEmptyStrings);
+		}
+		static this_type Joined(const eastl::vector<this_type>& subStrings, const this_type& glue) { return joined(subStrings, glue); }
+
+		static const size_type NPOS = npos;
+		static const this_type EMPTY;
+#endif
 #endif
 
 	protected:
@@ -4072,6 +4130,10 @@ namespace eastl
 	///    hash_set<string> stringHashSet;
 	///
 #if EASTL_URHO3D_EXTENSIONS
+#ifdef URHO3D_CONTAINER_ADAPTERS
+	template <typename T, typename Allocator> const basic_string<T, Allocator> basic_string<T, Allocator>::EMPTY;
+#endif
+
 	template <typename T, typename Enable> struct hash;
 #else
 	template <typename T> struct hash;

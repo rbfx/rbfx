@@ -22,7 +22,6 @@
 
 #include "../Precompiled.h"
 
-#include "Container/Utility.h"
 #include "../Core/Context.h"
 #include "../Core/Profiler.h"
 #include "../IO/File.h"
@@ -1198,7 +1197,7 @@ void Connection::ProcessNewNode(Node* node)
     for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
-        if (ea::contains(sceneState_.dirtyNodes_, nodeID))
+        if (sceneState_.dirtyNodes_.contains(nodeID))
             ProcessNode(nodeID);
     }
 
@@ -1257,7 +1256,7 @@ void Connection::ProcessExistingNode(Node* node, NodeReplicationState& nodeState
     for (auto i = dependencyNodes.begin(); i != dependencyNodes.end(); ++i)
     {
         unsigned nodeID = (*i)->GetID();
-        if (ea::contains(sceneState_.dirtyNodes_, nodeID))
+        if (sceneState_.dirtyNodes_.contains(nodeID))
             ProcessNode(nodeID);
     }
 
