@@ -177,6 +177,7 @@ bool PluginModule::Load(const ea::string& path)
     {
         path_.clear();
         moduleType_ = MODULE_INVALID;
+        URHO3D_LOGERROR("dlerror: {}", dlerror());
     }
 #endif  // URHO3D_PLUGINS
     return false;
