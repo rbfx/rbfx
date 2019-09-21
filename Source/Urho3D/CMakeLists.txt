@@ -378,7 +378,30 @@ if (URHO3D_CSHARP)
     configure_file(CSharp/Managed/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Managed/AssemblyInfo.cs @ONLY)
     file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
     file (GLOB_RECURSE WRAPPER_FILES )
-    target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx)
+
+    # Prefer binary dir - generated msvc solution with .csproj projects included in it.
+    file (GLOB VS_SOLUTIONS ${CMAKE_BINARY_DIR}/*.sln)
+    if (NOT VS_SOLUTIONS)
+        # On unixes source directory will contain manually crafted .sln
+        file (GLOB VS_SOLUTIONS ${CMAKE_SOURCE_DIR}/*.sln)
+        if (NOT VS_SOLUTIONS)
+            # Otherwise use engine .sln
+            file (GLOB VS_SOLUTIONS ${rbfx_SOURCE_DIR}/*.sln)
+        endif ()
+    endif ()
+
+    add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
+    # Dummy file which is used by Urho3D target and causes nuget restore to run at
+    # least once automatically.
+    add_custom_command (OUTPUT ${CMAKE_BINARY_DIR}/NugetRestore.h
+        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
+            /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
+        COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/NugetRestore.h
+        COMMENT "Nuget restore"
+    )
+
+    target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx
+        ${CMAKE_BINARY_DIR}/NugetRestore.h)
     if (URHO3D_SYSTEMUI)
         target_sources(Urho3D PRIVATE ${CMAKE_CURRENT_BINARY_DIR}/ImGuiCSharp/ImGuiCSHARP_wrap.cxx)
     endif ()
