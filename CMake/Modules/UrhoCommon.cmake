@@ -262,7 +262,7 @@ endfunction()
 
 function (add_msbuild_target)
     if (URHO3D_CSHARP)
-        cmake_parse_arguments(MSBUILD "AUTORUN_AT_CONFIGURE;EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS;BYPRODUCTS" ${ARGN})
+        cmake_parse_arguments(MSBUILD "EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS;BYPRODUCTS" ${ARGN})
 
         find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
         if (NOT MSBUILD)
@@ -279,16 +279,11 @@ function (add_msbuild_target)
         add_custom_target(${MSBUILD_TARGET} ALL
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
             /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
-            /consoleloggerparameters:ErrorsOnly
+            /consoleloggerparameters:ErrorsOnly /nologo
             BYPRODUCTS ${MSBUILD_BYPRODUCTS}
             DEPENDS ${MSBUILD_DEPENDS})
         if (MSBUILD_EXCLUDE_FROM_ALL)
-            set_property(TARGET ${MSBUILD_TARGET} PROPERTY EXCLUDE_FROM_ALL ON)
-        endif ()
-        if (MSBUILD_AUTORUN_AT_CONFIGURE)
-            execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
-                /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
-                /consoleloggerparameters:ErrorsOnly)
+            set_target_properties(${MSBUILD_TARGET} PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
         endif ()
     endif ()
 endfunction ()
@@ -311,16 +306,6 @@ if (URHO3D_CSHARP)
         set (CSHARP_PLATFORM x64)
     else ()
         set (CSHARP_PLATFORM x86)
-    endif ()
-    if (MSVC)
-        file (GLOB CSHARP_SOLUTION ${CMAKE_BINARY_DIR}/*.sln)
-    else ()
-        set (CSHARP_SOLUTION ${rbfx_SOURCE_DIR}/rbfx.unix.sln)
-    endif ()
-
-    if (NOT MSVC)
-        add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL AUTORUN_AT_CONFIGURE ARGS
-            ${CSHARP_SOLUTION} /t:restore /m)
     endif ()
 
     # Strong name signatures
