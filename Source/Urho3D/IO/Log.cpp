@@ -297,19 +297,20 @@ Logger Log::GetLogger(const ea::string& name)
     const ea::string& actualName = name.empty() ? "main" : name;
     std::shared_ptr<spdlog::logger> logger;
 
-    if (logInstance != nullptr)
-    {
-        MutexLock lock(logInstance->logMutex_);
-        logger = spdlog::get(actualName);
+    bool locking = logInstance != nullptr;
+    if (locking)
+        logInstance->logMutex_.Acquire();
 
-        if (!logger)
-        {
-            logger = std::make_shared<spdlog::logger>(actualName, logInstance->impl_->sinkProxy_);
-            spdlog::register_logger(logger);
-        }
+    logger = spdlog::get(actualName);
+
+    if (!logger)
+    {
+        logger = std::make_shared<spdlog::logger>(actualName, logInstance->impl_->sinkProxy_);
+        spdlog::register_logger(logger);
     }
-    else
-        logger = spdlog::get(actualName);
+
+    if (locking)
+        logInstance->logMutex_.Release();
 
     return Logger(reinterpret_cast<void*>(logger.get()));
 }
