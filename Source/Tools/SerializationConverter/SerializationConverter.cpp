@@ -20,6 +20,9 @@
 // THE SOFTWARE.
 //
 
+// Command line utility always uses console.
+#define URHO3D_WIN32_CONSOLE
+
 #include <Urho3D/Core/CommandLine.h>
 #include <Urho3D/Engine/Application.h>
 #include <Urho3D/Engine/EngineDefs.h>
