@@ -128,7 +128,7 @@ if (CLANG_TIDY)
         COMMAND ${CLANG_TIDY} -p . -export-fixes=clang-tidy.yml -fix ${SOURCE_FILES}
         WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     )
-    set_target_properties(tidy PROPERTIES EXCLUDE_FROM_ALL 1 EXCLUDE_FROM_DEFAULT_BUILD 1)
+    set_target_properties(tidy PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 endif()
 
 ################################################### SDK preparation ####################################################
@@ -155,3 +155,5 @@ if (NOT ANDROID)
         install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${DEST_RESOURCE_DIR}/${dir}/../)
     endforeach()
 endif ()
+
+set (URHO3D_CMAKE_CONFIGURED ON CACHE STRING "" FORCE)
