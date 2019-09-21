@@ -177,7 +177,9 @@ bool PluginModule::Load(const ea::string& path)
     {
         path_.clear();
         moduleType_ = MODULE_INVALID;
+#if __linux__ || __APPLE__
         URHO3D_LOGERROR("dlerror: {}", dlerror());
+#endif
     }
 #endif  // URHO3D_PLUGINS
     return false;
