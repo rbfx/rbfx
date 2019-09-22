@@ -37,15 +37,13 @@ class EditorHost : public Editor
 public:
     /// Construct.
     explicit EditorHost(Context* context) : Editor(context) { }
-    /// Extend initialization of editor application.
-    void Start() override
-    {
-        BaseClassName::Start();
 #if URHO3D_SAMPLES && URHO3D_STATIC
+    void RegisterPlugins() override
+    {
         // Static plugins must be initialized manually.
-        URHO3D_DEFINE_PLUGIN_STATIC(GamePlugin);
-#endif
+        RegisterPlugin(new GamePlugin(context_));
     }
+#endif
 };
 
 }

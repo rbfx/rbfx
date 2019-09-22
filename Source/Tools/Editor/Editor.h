@@ -97,6 +97,12 @@ public:
     void UpdateWindowTitle(const ea::string& resourcePath=EMPTY_STRING);
     ///
     VariantMap& GetEngineParameters() { return engineParameters_; }
+#if URHO3D_STATIC && URHO3D_PLUGINS
+    /// Called when application requires user to register static plugins.
+    virtual void RegisterPlugins() { }
+    /// Register static plugin.
+    bool RegisterPlugin(PluginApplication* plugin);
+#endif
 
 protected:
     /// Process console commands.

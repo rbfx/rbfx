@@ -49,6 +49,7 @@ endif ()
 
 if (TARGET libPlayer)
     set_target_properties(libPlayer PROPERTIES PREFIX "")
+    target_include_directories(libPlayer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
 
 target_link_libraries(${PLAYER_TARGET} Urho3D)

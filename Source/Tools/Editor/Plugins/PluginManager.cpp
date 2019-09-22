@@ -424,6 +424,18 @@ const StringVector& PluginManager::GetPluginNames()
     return *pluginNames;
 }
 
+#if URHO3D_STATIC
+bool PluginManager::RegisterPlugin(PluginApplication* application)
+{
+    Plugin* plugin = new Plugin(context_);
+    plugin->application_ = application;
+    plugin->name_ = application->GetTypeName();
+    plugin->application_->Load();
+    plugins_.push_back(SharedPtr(plugin));
+    return true;
+}
+#endif
+
 }
 
 #endif // URHO3D_PLUGINS
