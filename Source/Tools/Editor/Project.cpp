@@ -279,7 +279,10 @@ bool Project::LoadProject(const ea::string& projectPath)
                         GetFileSystem()->Delete(GetFileSystem()->GetProgramDir() + fileName);
                 }
             }
-
+#if URHO3D_STATIC
+            GetSubsystem<Editor>()->RegisterPlugins();
+#else
+            // In static builds plugins are loaded manuall by user linking to libPlayer/libEditor.
             auto pluginsIt = root.find("plugins");
             if (pluginsIt != root.end())
             {
@@ -309,6 +312,7 @@ bool Project::LoadProject(const ea::string& projectPath)
                 // provided by plugins. Not doing this would cause scenes to load these components as UnknownComponent.
                 plugins_.OnEndFrame();
             }
+#endif
 #endif
             auto defaultSceneIt = root.find("default-scene");
             if (defaultSceneIt != root.end())

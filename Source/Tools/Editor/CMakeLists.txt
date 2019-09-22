@@ -52,6 +52,7 @@ endif ()
 
 if (TARGET libEditor)
     set_target_properties(libEditor PROPERTIES PREFIX "")
+    target_include_directories(libEditor PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
 
 target_link_libraries (${EDITOR_TARGET} Toolbox Urho3D)

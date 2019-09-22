@@ -86,6 +86,9 @@ void Player::Start()
     }
 
     const JSONValue& projectRoot = projectFile->GetRoot();
+#if URHO3D_STATIC
+    RegisterPlugins();
+#else
     if (!projectRoot.Contains("plugins"))
     {
         ErrorExit("Project.json does not have 'plugins' section.");
@@ -95,6 +98,7 @@ void Player::Start()
     const JSONValue& plugins = projectRoot["plugins"];
     if (!LoadPlugins(plugins))
         ErrorExit("Loading of required plugins failed.");
+#endif
 
     for (LoadedModule& plugin : plugins_)
         plugin.application_->Start();
@@ -212,6 +216,21 @@ bool Player::LoadAssembly(const ea::string& path)
     }
     return false;
 }
+#if URHO3D_STATIC
+bool Player::RegisterPlugin(PluginApplication* plugin)
+{
+    if (plugin == nullptr)
+    {
+        URHO3D_LOGERROR("PluginApplication may not be null.");
+        return false;
+    }
+    LoadedModule moduleInfo;
+    moduleInfo.application_ = plugin;
+    plugins_.emplace_back(moduleInfo);
+    plugin->Load();
+    return true;
+}
+#endif
 #endif
 
 BakedResourceRouter::BakedResourceRouter(Context* context)

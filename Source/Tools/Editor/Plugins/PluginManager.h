@@ -122,6 +122,10 @@ public:
     const StringVector& GetPluginNames();
     /// Converts relative or absolute plugin path to universal plugin name. Returns empty string on failure.
     static ea::string PathToName(const ea::string& path);
+#if URHO3D_STATIC
+    /// Registers static plugin.
+    bool RegisterPlugin(PluginApplication* application);
+#endif
 
 protected:
     /// Entry about dynamic library on the disk. It may or may not be loaded.
