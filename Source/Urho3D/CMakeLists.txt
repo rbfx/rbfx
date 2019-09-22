@@ -271,7 +271,7 @@ if (GNU OR Clang)
 endif ()
 
 if (URHO3D_PROFILING)
-    target_link_libraries(Urho3D PUBLIC tracy-lib)
+    target_link_libraries(Urho3D PUBLIC Tracy)
 endif ()
 
 # Graphics

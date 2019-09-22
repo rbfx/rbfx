@@ -55,8 +55,8 @@ if (TARGET libEditor)
 endif ()
 
 target_link_libraries (${EDITOR_TARGET} Toolbox Urho3D)
-if (TARGET tracy-embedded-profiler)
-    target_link_libraries (${EDITOR_TARGET} tracy-embedded-profiler)
+if (TARGET TracyEmbedded)
+    target_link_libraries (${EDITOR_TARGET} TracyEmbedded)
 endif ()
 
 if (NOT BUILD_SHARED_LIBS AND URHO3D_SAMPLES)
