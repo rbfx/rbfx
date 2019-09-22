@@ -35,14 +35,13 @@ public:
     /// Construct.
     explicit PlayerHost(Context* context) : Player(context) { }
     /// Extend initialization of player application.
-    void Start() override
-    {
-        BaseClassName::Start();
 #if URHO3D_SAMPLES && URHO3D_STATIC
+    void RegisterPlugins() override
+    {
         // Static plugins must be initialized manually.
-        URHO3D_DEFINE_PLUGIN_STATIC(GamePlugin);
-#endif
+        RegisterPlugin(new GamePlugin(context_));
     }
+#endif
 };
 
 }

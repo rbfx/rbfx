@@ -831,4 +831,11 @@ void Editor::OpenOrCreateProject()
     }
 }
 
+#if URHO3D_STATIC && URHO3D_PLUGINS
+bool Editor::RegisterPlugin(PluginApplication* plugin)
+{
+    return project_->GetPlugins()->RegisterPlugin(plugin);
+}
+#endif
+
 }

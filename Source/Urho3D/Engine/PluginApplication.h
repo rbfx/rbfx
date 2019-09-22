@@ -89,13 +89,7 @@ void PluginApplication::RegisterFactory(const char* category)
     /// Noop in static builds.
 #   define URHO3D_DEFINE_PLUGIN_MAIN(Class)
     /// Creates an instance of plugin application and calls its Load() method. Use this macro in Application::Start() method.
-#   define URHO3D_DEFINE_PLUGIN_STATIC(Class)                                               \
-        {                                                                                   \
-            context_->RegisterFactory<Class>();                                             \
-            Urho3D::SharedPtr plugin(context_->CreateObject<Class>());                      \
-            context_->RegisterSubsystem(plugin);                                            \
-            plugin->Load();                                                                 \
-        }
+#   define URHO3D_DEFINE_PLUGIN_STATIC(Class) RegisterPlugin(new Class(context_))
 #else
      /// Noop in shared builds.
 #    define URHO3D_DEFINE_PLUGIN_STATIC(Class)
