@@ -377,7 +377,7 @@ bool Image::BeginLoad(Deserializer& source)
         unsigned dataSize = 0;
         if (compressedFormat_ != CF_RGBA)
         {
-            const unsigned blockSize = compressedFormat_ == CF_DXT1 ? 8 : 16; //DXT1/BC1 is 8 bytes, DXT3/BC2 and DXT5/BC3 are 16 bytes
+            const unsigned blockSize = (compressedFormat_ == CF_DXT1 || compressedFormat_ == CF_ETC1 || compressedFormat_ == CF_ETC2_RGB) ? 8 : 16; //DXT1/BC1, ETC1 and ETC2 are 8 bytes, DXT3/BC2, DXT5/BC3 and ETC2A are 16 bytes
             // Add 3 to ensure valid block: ie 2x2 fits uses a whole 4x4 block
             unsigned blocksWide = (ddsd.dwWidth_ + 3) / 4;
             unsigned blocksHeight = (ddsd.dwHeight_ + 3) / 4;
