@@ -110,7 +110,7 @@ ea::string Plugin::VersionModule(const ea::string& path)
 
     if (shortenedName.length() < 3)
     {
-        URHO3D_LOGERROR("Plugin file name '{}' is too short.");
+        URHO3D_LOGERROR("Plugin file name '{}' is too short.", name);
         return EMPTY_STRING;
     }
 
