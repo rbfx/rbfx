@@ -33,19 +33,19 @@ if (URHO3D_PROFILING)
         # A workaround library. Usually each dll or executable that wishes to use profiling functionality would have to compile
         # TracyClientDLL.cpp as part of it's sources. Putting it into a static library allows us automating the process and it is
         # now enough to only link to Urho3D target.
-        add_library (tracy-lib STATIC TracyClientDLL.cpp)
-        target_compile_definitions (tracy-lib PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_IMPORTS=1 PRIVATE ${TRACY_OPTIONS_PRIVATE} -DTRACY_EXPORTS=1 -DUrho3D_EXPORTS)
-        target_link_libraries(tracy-lib INTERFACE Urho3D)
+        add_library (Tracy STATIC TracyClientDLL.cpp)
+        target_compile_definitions (Tracy PUBLIC ${TRACY_OPTIONS_PUBLIC} -DTRACY_IMPORTS=1 PRIVATE ${TRACY_OPTIONS_PRIVATE} -DTRACY_EXPORTS=1 -DUrho3D_EXPORTS)
+        target_link_libraries(Tracy INTERFACE Urho3D)
     else ()
         list (REMOVE_ITEM COMMON_SOURCE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/common/TracySocket.cpp)
-        add_library (tracy-lib INTERFACE)
-        target_compile_definitions (tracy-lib INTERFACE ${TRACY_OPTIONS_PUBLIC})
+        add_library (Tracy INTERFACE)
+        target_compile_definitions (Tracy INTERFACE ${TRACY_OPTIONS_PUBLIC})
     endif ()
 
     if (LINUX)
         find_library(TBB tbb)
         if (TBB)
-            target_link_libraries(tracy-lib INTERFACE ${TBB})
+            target_link_libraries(Tracy INTERFACE ${TBB})
         endif ()
     endif ()
 
@@ -65,24 +65,24 @@ if (URHO3D_PROFILING)
         if (NOT URHO3D_WIN32_CONSOLE)
             set (TARGET_TYPE WIN32)
         endif ()
-        add_executable (tracy-profiler ${TARGET_TYPE} ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
-        target_compile_definitions(tracy-profiler PUBLIC -DTRACY_ROOT_WINDOW=1)
-        set_target_properties(tracy-profiler PROPERTIES OUTPUT_NAME Profiler)
-        setup_tracy_profiler_target(tracy-profiler)
-        install (TARGETS tracy-profiler
+        add_executable (TracyProfiler ${TARGET_TYPE} ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
+        target_compile_definitions(TracyProfiler PUBLIC -DTRACY_ROOT_WINDOW=1)
+        set_target_properties(TracyProfiler PROPERTIES OUTPUT_NAME Profiler)
+        setup_tracy_profiler_target(TracyProfiler)
+        install (TARGETS TracyProfiler
             LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
             RUNTIME DESTINATION ${DEST_BIN_DIR}
             ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
         )
 
         # Lib for editor to easily consume profiler
-        add_library (tracy-embedded-profiler STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
-        setup_tracy_profiler_target(tracy-embedded-profiler)
-        target_compile_definitions(tracy-embedded-profiler PRIVATE -DTRACY_EMBED_WINDOW=1)
-        target_include_directories(tracy-embedded-profiler SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+        add_library (TracyEmbedded STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
+        setup_tracy_profiler_target(TracyEmbedded)
+        target_compile_definitions(TracyEmbedded PRIVATE -DTRACY_EMBED_WINDOW=1)
+        target_include_directories(TracyEmbedded SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
     endif ()
 
-    install (TARGETS tracy-lib EXPORT Urho3D
+    install (TARGETS Tracy EXPORT Urho3D
         LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
         RUNTIME DESTINATION ${DEST_BIN_DIR}
         ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
