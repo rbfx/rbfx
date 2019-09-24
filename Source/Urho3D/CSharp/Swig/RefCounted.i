@@ -156,6 +156,7 @@
 
   %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
     lock(this) {
+      $typemap(csdisposed_extra_early_optional, TYPE)
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
         if (swigCMemOwn) {
           swigCMemOwn = false;
@@ -185,6 +186,7 @@
 
   %typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
     lock(this) {
+      $typemap(csdisposed_extra_early_optional, TYPE)
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
         $typemap(csdisposing_extra_optional, TYPE)
         if (swigCMemOwn) {
