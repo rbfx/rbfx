@@ -56,6 +56,8 @@ public:
     virtual int RecreateGCHandle(int handle, bool strong) = 0;
     /// Warning! This is slow! Perform a full garbage collection.
     virtual void FullGC() = 0;
+    /// Implement any logic that is required before Application::Start() runs.
+    virtual void ApplicationStart() = 0;
 };
 
 /// Script runtime subsystem.

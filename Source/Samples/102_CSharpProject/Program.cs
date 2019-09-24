@@ -27,21 +27,6 @@ using ImGuiNet;
 
 namespace DemoApplication
 {
-    [ObjectFactory]
-    class RotateObject : LogicComponent
-    {
-        public RotateObject(Context context) : base(context)
-        {
-            UpdateEventMask = UpdateEvent.UseUpdate;
-        }
-
-        public override void Update(float timeStep)
-        {
-            var d = new Quaternion(10 * timeStep, 20 * timeStep, 30 * timeStep);
-            Node.Rotate(d);
-        }
-    }
-
     class DemoApplication : Application
     {
         private Scene _scene;
@@ -101,7 +86,9 @@ namespace DemoApplication
             var model = _cube.CreateComponent<StaticModel>();
             model.SetModel(Cache.GetResource<Model>("Models/Box.mdl"));
             model.SetMaterial(0, Cache.GetResource<Material>("Materials/Stone.xml"));
-            var rotator = _cube.CreateComponent<RotateObject>();
+
+            // RotateObject component is implemented in Data/Scripts/RotateObject.cs
+            _cube.CreateComponent("RotateObject");
 
             // Light
             _light = _scene.CreateChild("Light");

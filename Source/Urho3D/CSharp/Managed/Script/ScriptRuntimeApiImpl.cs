@@ -1,8 +1,13 @@
 using System;
+using System.CodeDom.Compiler;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using System.Text;
+using Microsoft.CSharp;
+using Urho3DNet.CSharp;
 
 namespace Urho3DNet
 {
@@ -104,6 +109,56 @@ namespace Urho3DNet
             GC.Collect();                    // Find garbage and queue finalizers.
             GC.WaitForPendingFinalizers();   // Run finalizers, release references to remaining unreferenced objects.
             GC.Collect();                    // Collect those finalized objects.
+        }
+
+        public override unsafe void ApplicationStart()
+        {
+            var sourceCode = new List<string>();
+            var scriptFiles = new StringList();
+            Context.Instance.Cache.Scan(scriptFiles, "Scripts/", "*.cs", Urho3D.ScanFiles, true);
+
+            foreach (string fileName in scriptFiles)
+            {
+                File file = Context.Instance.Cache.GetFile($"Scripts/{fileName}");
+                var buffer = new byte[file.GetSize()];
+                fixed (byte* bufferPtr = buffer)
+                {
+                    file.Read(new IntPtr(bufferPtr), (uint)buffer.Length);
+                    sourceCode.Add(Encoding.UTF8.GetString(bufferPtr, buffer.Length));
+                }
+            }
+
+            var csc = new CSharpCodeProvider();
+            var compileParameters = new CompilerParameters(new[]    // TODO: User may need to extend this list
+            {
+                "mscorlib.dll",
+                "System.dll",
+                "System.Core.dll",
+                "System.Data.dll",
+                "System.Drawing.dll",
+                "System.Numerics.dll",
+                "System.Runtime.Serialization.dll",
+                "System.Xml.dll",
+                "System.Xml.Linq.dll",
+                "Urho3DNet.dll",
+            })
+            {
+                GenerateExecutable = false,
+                GenerateInMemory = true,
+                TreatWarningsAsErrors = false,
+            };
+
+            CompilerResults results = csc.CompileAssemblyFromSource(compileParameters, sourceCode.ToArray());
+            if (results.Errors.HasErrors)
+            {
+                foreach (CompilerError error in results.Errors)
+                    System.Console.WriteLine(error.ErrorText);    // TODO: Use Logging subsystem
+            }
+            else
+            {
+                foreach ((Type type, ObjectFactoryAttribute attr) in results.CompiledAssembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
+                    Context.Instance.RegisterFactory(type, attr.Category);
+            }
         }
     }
 }
