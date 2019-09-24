@@ -66,7 +66,6 @@ public static class Program
             "System.Xml.dll",
             "System.Xml.Linq.dll",
             "Urho3DNet.dll",
-            "ImGuiNet.dll"
         })
         {
             GenerateExecutable = true,
