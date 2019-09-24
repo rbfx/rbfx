@@ -28,6 +28,9 @@
 #include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
+#if URHO3D_CSHARP
+#include "../Script/Script.h"
+#endif
 
 #if defined(IOS) || defined(TVOS)
 #include "../Graphics/Graphics.h"
@@ -107,6 +110,10 @@ int Application::Run()
             ErrorExit();
             return exitCode_;
         }
+
+#if URHO3D_CSHARP
+        Script::GetRuntimeApi()->ApplicationStart();
+#endif
 
         Start();
         if (exitCode_ || engine_->IsExiting())
