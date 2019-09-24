@@ -256,6 +256,7 @@ void PreviewTab::RenderButtons()
         break;
     }
 
+    ui::BeginButtonGroup();
     if (ui::EditorToolbarButton(ICON_FA_FAST_BACKWARD, "Restore"))
         Stop();
 
@@ -268,7 +269,8 @@ void PreviewTab::RenderButtons()
         Step(1.f / 60.f);
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save current state as master state.\n" ICON_FA_EXCLAMATION_TRIANGLE " Clears scene undo state!"))
-    Snapshot();
+        Snapshot();
+    ui::EndButtonGroup();
 }
 
 void PreviewTab::Play()
