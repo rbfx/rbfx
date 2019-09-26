@@ -57,7 +57,7 @@ public:
     /// Warning! This is slow! Perform a full garbage collection.
     virtual void FullGC() = 0;
     /// Implement any logic that is required before Application::Start() runs.
-    virtual void ApplicationStart() = 0;
+    virtual PluginApplication* CompileResourceScriptPlugin(const ea::string& resourceFolderName) = 0;
 };
 
 /// Script runtime subsystem.

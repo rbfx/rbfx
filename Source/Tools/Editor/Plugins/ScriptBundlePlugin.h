@@ -22,65 +22,34 @@
 
 #pragma once
 
+#include "Plugins/Plugin.h"
 
-#include <Urho3D/Engine/Application.h>
-#include <Urho3D/Engine/PluginApplication.h>
-#include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/Scene.h>
-
-
+#if URHO3D_PLUGINS && URHO3D_CSHARP
 namespace Urho3D
 {
 
-/// Routes raw resource names to baked versions.
-class BakedResourceRouter : public ResourceRouter
+class ScriptBundlePlugin : public Plugin
 {
-    URHO3D_OBJECT(BakedResourceRouter, ResourceRouter);
+    URHO3D_OBJECT(ScriptBundlePlugin, Plugin);
 public:
     ///
-    explicit BakedResourceRouter(Context* context);
+    explicit ScriptBundlePlugin(Context* context);
     ///
-    void Route(ea::string& name, ResourceRequest requestType) override;
+    bool Load() override;
+    ///
+    bool IsLoaded() const override { return application_.NotNull(); }
+    ///
+    bool IsOutOfDate() const override { return outOfDate_; }
 
 protected:
     ///
-    ea::unordered_map<ea::string, ea::string> routes_;
-};
-
-class Player : public Application
-{
-public:
+    bool PerformUnload() override;
     ///
-    explicit Player(Context* context);
-    ///
-    void Setup() override;
-    ///
-    void Start() override;
-    ///
-    void Stop() override;
-
-protected:
-    ///
-    virtual bool LoadPlugins(const JSONValue& plugins);
-#if URHO3D_PLUGINS
-    ///
-    bool LoadAssembly(const ea::string& path);
-#if URHO3D_STATIC
-    ///
-    virtual void RegisterPlugins() { }
-#endif
-    ///
-    bool RegisterPlugin(PluginApplication* plugin);
-#endif
-
-    struct LoadedModule
-    {
-        SharedPtr<PluginModule> module_;
-        SharedPtr<PluginApplication> application_;
-    };
+    void OnFileChanged(VariantMap& args);
 
     ///
-    ea::vector<LoadedModule> plugins_;
+    bool outOfDate_ = false;
 };
 
 }
+#endif

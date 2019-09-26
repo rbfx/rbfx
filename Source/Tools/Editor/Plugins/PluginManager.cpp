@@ -32,6 +32,7 @@
 #include "Editor.h"
 #include "Plugins/PluginManager.h"
 #include "Plugins/ModulePlugin.h"
+#include "Plugins/ScriptBundlePlugin.h"
 
 #if URHO3D_PLUGINS
 
@@ -62,7 +63,12 @@ Plugin* PluginManager::Load(const ea::string& name)
 
     if (plugin == nullptr)
     {
-        plugin = new ModulePlugin(context_);
+#if URHO3D_CSHARP
+        if (name == "Scripts")   // TODO: sucks
+            plugin = new ScriptBundlePlugin(context_);
+        else
+#endif
+            plugin = new ModulePlugin(context_);
         plugin->SetName(name);
     }
     else if (plugin->IsLoaded())

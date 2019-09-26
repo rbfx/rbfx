@@ -313,6 +313,9 @@ bool Project::LoadProject(const ea::string& projectPath)
                 plugins_.OnEndFrame();
             }
 #endif
+#if URHO3D_CSHARP
+           plugins_.Load("Scripts");
+#endif
 #endif
             auto defaultSceneIt = root.find("default-scene");
             if (defaultSceneIt != root.end())
