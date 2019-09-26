@@ -35,6 +35,7 @@
 #include "Pipeline/Importers/AssetImporter.h"
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
+#include "Pipeline/Importers/TextureImporter.h"
 #include "Pipeline/Asset.h"
 #include "Pipeline/Packager.h"
 
@@ -106,6 +107,7 @@ protected:
     {
         ModelImporter::GetTypeStatic(),
         SceneConverter::GetTypeStatic(),
+        TextureImporter::GetTypeStatic(),
     };
 
     ///

@@ -38,8 +38,6 @@
 
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_stdlib.h>
-#include <Toolbox/IO/ContentUtilities.h>
-#include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <Toolbox/ToolboxAPI.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
@@ -60,6 +58,7 @@
 #include "Pipeline/Commands/BuildAssets.h"
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
+#include "Pipeline/Importers/TextureImporter.h"
 #include "Inspector/MaterialInspector.h"
 #include "Inspector/ModelInspector.h"
 #include "Tabs/ProfilerTab.h"
@@ -184,6 +183,7 @@ void Editor::Setup()
     // Importers
     ModelImporter::RegisterObject(context_);
     SceneConverter::RegisterObject(context_);
+    TextureImporter::RegisterObject(context_);
     Asset::RegisterObject(context_);
 
     // Define custom command line parameters here

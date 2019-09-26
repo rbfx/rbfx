@@ -31,6 +31,7 @@
 #include <Urho3D/Scene/Serializable.h>
 #include <Inspector/ModelInspector.h>
 #include <Inspector/MaterialInspector.h>
+#include <Toolbox/IO/ContentUtilities.h>
 
 #include "Importers/AssetImporter.h"
 
