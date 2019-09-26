@@ -34,6 +34,7 @@ namespace DemoApplication
         private Node _camera;
         private Node _cube;
         private Node _light;
+        private PluginApplication _scripts;
 
         public DemoApplication(Context context) : base(context)
         {
@@ -62,6 +63,10 @@ namespace DemoApplication
 
         public override void Start()
         {
+            // Load and set up plain scripts.
+            _scripts = Script.GetRuntimeApi().CompileResourceScriptPlugin("Scripts");
+            _scripts.Load();
+
             Input.SetMouseVisible(true);
 
             // Viewport
@@ -88,7 +93,7 @@ namespace DemoApplication
             model.SetMaterial(0, Cache.GetResource<Material>("Materials/Stone.xml"));
 
             // RotateObject component is implemented in Data/Scripts/RotateObject.cs
-            _cube.CreateComponent("RotateObject");
+            _cube.CreateComponent("ScriptRotateObject");
 
             // Light
             _light = _scene.CreateChild("Light");

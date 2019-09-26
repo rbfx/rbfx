@@ -99,6 +99,9 @@ void Player::Start()
     if (!LoadPlugins(plugins))
         ErrorExit("Loading of required plugins failed.");
 #endif
+#if URHO3D_CSHARP && URHO3D_PLUGINS
+    RegisterPlugin(Script::GetRuntimeApi()->CompileResourceScriptPlugin("Scripts"));
+#endif
 
     for (LoadedModule& plugin : plugins_)
         plugin.application_->Start();
@@ -185,9 +188,9 @@ bool Player::LoadPlugins(const JSONValue& plugins)
                 if (GetFileSystem()->Exists(pluginFileName))
                     loaded = LoadAssembly(pluginFileName);
             }
-#endif
+#endif  // DESKTOP
         }
-#endif
+#endif  // URHO3D_PLUGINS
 
         if (!loaded)
         {
@@ -198,7 +201,6 @@ bool Player::LoadPlugins(const JSONValue& plugins)
 #endif  // URHO3D_PLUGINS
     return true;
 }
-
 #if URHO3D_PLUGINS
 bool Player::LoadAssembly(const ea::string& path)
 {
@@ -216,7 +218,7 @@ bool Player::LoadAssembly(const ea::string& path)
     }
     return false;
 }
-#if URHO3D_STATIC
+
 bool Player::RegisterPlugin(PluginApplication* plugin)
 {
     if (plugin == nullptr)
@@ -231,8 +233,6 @@ bool Player::RegisterPlugin(PluginApplication* plugin)
     return true;
 }
 #endif
-#endif
-
 BakedResourceRouter::BakedResourceRouter(Context* context)
     : ResourceRouter(context)
 {

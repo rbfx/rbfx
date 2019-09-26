@@ -111,19 +111,33 @@ namespace Urho3DNet
             GC.Collect();                    // Collect those finalized objects.
         }
 
-        public override void ApplicationStart()
+        public override PluginApplication CompileResourceScriptPlugin(string resourceFolderName)
         {
             // TODO: This wont work with hot-reload.
             var sourceCode = new List<string>();
             var scriptFiles = new StringList();
-            Context.Instance.Cache.Scan(scriptFiles, "Scripts/", "*.cs", Urho3D.ScanFiles, true);
+            Context.Instance.Cache.Scan(scriptFiles, resourceFolderName, "*.cs", Urho3D.ScanFiles, true);
 
             foreach (string fileName in scriptFiles)
             {
-                File file = Context.Instance.Cache.GetFile($"Scripts/{fileName}");
+                File file = Context.Instance.Cache.GetFile($"{resourceFolderName}/{fileName}");
                 if (file != null)
                     sourceCode.Add(file.ReadText());
             }
+
+            // a dummy plugin application class that gets compiled into script bundle assembly and enables
+            // PluginApplication to automatically register factories.
+            sourceCode.Add(@"
+            using Urho3DNet;
+            namespace Urho3DNet
+            {
+                internal class ScriptBundlePlugin : PluginApplication
+                {
+                    public ScriptBundlePlugin(Context context) : base(context)
+                    {
+                    }
+                }
+            }");
 
             var csc = new CSharpCodeProvider();
             var compileParameters = new CompilerParameters(new[]    // TODO: User may need to extend this list
@@ -150,11 +164,15 @@ namespace Urho3DNet
             {
                 foreach (CompilerError error in results.Errors)
                     System.Console.WriteLine(error.ErrorText);    // TODO: Use Logging subsystem
+                return null;
             }
             else
             {
-                foreach ((Type type, ObjectFactoryAttribute attr) in results.CompiledAssembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
-                    Context.Instance.RegisterFactory(type, attr.Category);
+
+                Type pluginType = results.CompiledAssembly.GetTypes().First(t => t.IsClass && t.BaseType == typeof(PluginApplication));
+                if (pluginType == null)
+                    throw new Exception("Subclass of PluginApplication does not exist in script bundle.");
+                return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
             }
         }
     }
