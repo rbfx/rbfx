@@ -68,9 +68,20 @@ if (WEB)
                      "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak"
         RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
         OUTPUT       "Resources.js"
+        INSTALL_TO   ${DEST_SAMPLES_DIR}
     )
     web_link_resources(Samples Resources.js)
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
+    install(FILES
+        "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.js"
+        DESTINATION ${DEST_SAMPLES_DIR}
+    )
+    if (EXISTS "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm")
+        install(FILES
+            "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm"
+            DESTINATION ${DEST_SAMPLES_DIR}
+        )
+    endif ()
 endif ()
 
 if (XCODE)
