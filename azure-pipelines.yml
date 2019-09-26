@@ -22,6 +22,9 @@ jobs:
           docker run --rm -v $(Build.SourcesDirectory):/src trzeci/emscripten-ubuntu bash /src/.ci/emscripten.sh
         displayName: 'Build'
 
+      - publish: $(Build.SourcesDirectory)/SDK
+        artifact: rbfx-SDK-$(Agent.JobName)-$(Build.SourceVersion)
+
   - job: Windows
     pool:
       vmImage: 'windows-2019'
