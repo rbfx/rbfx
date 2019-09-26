@@ -26,81 +26,13 @@
 #if URHO3D_PLUGINS
 
 #include <atomic>
-#include <Urho3D/Core/Object.h>
-#include <Urho3D/Core/PluginModule.h>
-#include <Urho3D/Engine/PluginApplication.h>
-#include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/IO/Log.h>
 
+#include "Plugins/Plugin.h"
+
 namespace Urho3D
 {
-
-enum PluginFlag
-{
-    PLUGIN_DEFAULT = 0,
-    PLUGIN_PRIVATE = 1,
-};
-URHO3D_FLAGSET(PluginFlag, PluginFlags);
-
-class Plugin : public Object
-{
-    URHO3D_OBJECT(Plugin, Object);
-public:
-    ///
-    explicit Plugin(Context* context);
-    ///
-    ~Plugin() override;
-
-    /// Returns type of the plugin.
-    ModuleType GetModuleType() const { return module_.GetModuleType(); }
-    /// Returns file name of plugin.
-    const ea::string& GetName() const { return name_; }
-    ///
-    PluginFlags GetFlags() const { return flags_; }
-    ///
-    void SetFlags(PluginFlags flags) { flags_ = flags; }
-    ///
-    PluginModule& GetModule() { return module_; }
-    ///
-    bool Load(const ea::string& name);
-    ///
-    bool Load() { return Load(name_); }
-    ///
-    void Unload() { unloading_ = true; }
-    ///
-    bool IsLoaded() const { return module_.GetModuleType() != MODULE_INVALID && !unloading_ && application_.NotNull(); }
-    ///
-    const ea::string& GetPath() const { return path_; }
-
-protected:
-    /// Converts name to a full plugin file path. Returns empty string on error.
-    ea::string NameToPath(const ea::string& name) const;
-    ///
-    ea::string VersionModule(const ea::string& path);
-    ///
-    bool InternalUnload();
-
-    /// Base plugin file name.
-    ea::string name_;
-    /// Unversioned plugin module path.
-    ea::string path_;
-    ///
-    PluginModule module_{context_};
-    /// Flag indicating that plugin should unload on the end of the frame.
-    bool unloading_ = false;
-    /// Last modification time.
-    unsigned mtime_ = 0;
-    /// Current plugin version.
-    unsigned version_ = 0;
-    ///
-    PluginFlags flags_ = PLUGIN_DEFAULT;
-    /// Instance to the plugin application. This should be a single owning reference to the plugin. Managed plugins are
-    /// an exception as managed object holds reference to native object and must be disposed in order to free this object.
-    SharedPtr<PluginApplication> application_;
-
-    friend class PluginManager;
-};
 
 class PluginManager : public Object
 {
@@ -111,7 +43,7 @@ public:
     /// Unload all plugins an destruct.
     ~PluginManager() override = default;
     /// Load a plugin and return true if succeeded.
-    virtual Plugin* Load(const ea::string& name);
+    Plugin* Load(const ea::string& name);
     /// Returns a loaded plugin with specified name.
     Plugin* GetPlugin(const ea::string& name);
     /// Returns a vector containing all loaded plugins.
