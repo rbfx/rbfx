@@ -70,6 +70,8 @@ protected:
     void ClearByproducts();
     /// Register a new byproduct. Should be called from AssetImporter::Execute() if asset import succeeded.
     void AddByproduct(const ea::string& byproduct);
+    /// Unregister a byproduct. Should be called from AssetImporter::Execute().
+    void RemoveByproduct(const ea::string& byproduct);
     /// Returns true if user has modified the attribute even if attribute value is equal to default value.
     bool SaveDefaultAttributes(const AttributeInfo& attr) const override;
     /// Returns a hash of all attribute values that are in effect (including unset/default/inherited values). Used for detecting a change in settings.
