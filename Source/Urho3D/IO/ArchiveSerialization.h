@@ -563,7 +563,7 @@ inline bool SerializeStringMap(Archive& archive, const char* name, const char* e
         if (archive.IsInput())
         {
             map.clear();
-            for (int i = 0; i < block.GetSizeHint(); ++i)
+            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
                 ea::string key{};
                 ValueType value{};
@@ -597,7 +597,7 @@ inline bool SerializeStringHashMap(Archive& archive, const char* name, const cha
         if (archive.IsInput())
         {
             map.clear();
-            for (int i = 0; i < block.GetSizeHint(); ++i)
+            for (unsigned i = 0; i < block.GetSizeHint(); ++i)
             {
                 ValueType value{};
                 unsigned key{};
