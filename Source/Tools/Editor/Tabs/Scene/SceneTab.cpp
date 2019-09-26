@@ -200,7 +200,11 @@ bool SceneTab::RenderWindowContent()
     IntRect tabRect = UpdateViewRect();
     ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
     ImVec2 contentSize = ToImGui(tabRect.Size());
-    ui::BeginChild("Scene view", contentSize, false, windowFlags_);
+    if (!ui::BeginChild("Scene view", contentSize, false, windowFlags_))
+    {
+        ui::EndChild();
+        return open;
+    }
     ui::Image(texture_, contentSize);
     gizmo_.ManipulateSelection(GetCamera());
 
@@ -304,10 +308,14 @@ bool SceneTab::RenderWindowContent()
     RenderNodeContextMenu();
     RenderToolbarButtons();
 
-    if (auto* hud = GetSubsystem<DebugHud>())
+    if (debugHudVisible_)
     {
-        tabRect.top_ += (int)(ui::GetCursorPosY() + ui::GetIO().Fonts->Fonts[0]->FontSize);
-        hud->SetExtents(tabRect.Min(), tabRect.Size());
+        if (auto* hud = GetSubsystem<DebugHud>())
+        {
+            tabRect.top_ += (int) (ui::GetCursorPosY() + ui::GetIO().Fonts->Fonts[0]->FontSize);
+            hud->SetExtents(tabRect.Min(), tabRect.Size());
+            hud->RenderUI(DEBUGHUD_SHOW_ALL);
+        }
     }
 
     ui::EndChild(); // Scene view
@@ -579,8 +587,8 @@ void SceneTab::RenderToolbarButtons()
 
     if (auto* hud = GetSubsystem<DebugHud>())
     {
-        if (ui::EditorToolbarButton(ICON_FA_BUG, "Display debug hud.", hud->GetMode() == DEBUGHUD_SHOW_ALL))
-            hud->ToggleAll();
+        if (ui::EditorToolbarButton(ICON_FA_BUG, "Display debug hud.", debugHudVisible_))
+            debugHudVisible_ ^= true;
     }
 
     ui::SameLine(0, 3.f);
