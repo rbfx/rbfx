@@ -217,6 +217,8 @@ protected:
     SharedPtr<RootUIElement> rootElement_;
     ///
     SharedPtr<XMLFile> defaultStyle_;
+    ///
+    bool debugHudVisible_ = false;
 };
 
 };

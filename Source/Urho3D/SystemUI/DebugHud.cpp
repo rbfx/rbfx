@@ -66,7 +66,7 @@ DebugHud::DebugHud(Context* context) :
     fps_(0)
 {
     SetExtents();
-    SubscribeToEvent(E_UPDATE, std::bind(&DebugHud::RenderUi, this, std::placeholders::_2));
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { RenderUI(mode_); });
 }
 
 DebugHud::~DebugHud()
@@ -149,11 +149,13 @@ void DebugHud::ClearAppStats()
     appStats_.clear();
 }
 
-void DebugHud::RenderUi(VariantMap& eventData)
+void DebugHud::RenderUI(DebugHudModeFlags mode)
 {
+    if (mode == DEBUGHUD_SHOW_NONE)
+        return;
+
     Renderer* renderer = GetSubsystem<Renderer>();
     Graphics* graphics = GetSubsystem<Graphics>();
-
 
     ui::SetNextWindowPos(ToImGui(Vector2(extents_.Min())));
     ui::SetNextWindowSize(ToImGui(Vector2(extents_.Size())));
@@ -161,7 +163,7 @@ void DebugHud::RenderUi(VariantMap& eventData)
     if (ui::Begin("DebugHud", nullptr, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|
                                        ImGuiWindowFlags_NoInputs|ImGuiWindowFlags_NoScrollbar))
     {
-        if (mode_ & DEBUGHUD_SHOW_STATS)
+        if (mode & DEBUGHUD_SHOW_STATS)
         {
             // Update stats regardless of them being shown.
             if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
@@ -196,7 +198,7 @@ void DebugHud::RenderUi(VariantMap& eventData)
                 ui::Text("%s %s", i->first.c_str(), i->second.c_str());
         }
 
-        if (mode_ & DEBUGHUD_SHOW_MODE)
+        if (mode & DEBUGHUD_SHOW_MODE)
         {
             auto& style = ui::GetStyle();
             ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - 10});

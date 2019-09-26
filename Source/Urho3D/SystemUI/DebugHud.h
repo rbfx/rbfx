@@ -87,11 +87,10 @@ public:
     /// \param size specifies size of debug hud rect. Pass zero vector to occupy entire screen and automatically resize
     /// debug hud to the size of the screen later. Calling this method with non-zero size parameter requires user to manually resize debug hud on screen size changes later.
     void SetExtents(const IntVector2& position = IntVector2::ZERO, IntVector2 size = IntVector2::ZERO);
+    /// Render system ui.
+    void RenderUI(DebugHudModeFlags mode);
 
 private:
-    /// Render system ui.
-    void RenderUi(VariantMap& eventData);
-
     /// Hashmap containing application specific stats.
     ea::map<ea::string, ea::string> appStats_;
     /// Profiler max block depth.
