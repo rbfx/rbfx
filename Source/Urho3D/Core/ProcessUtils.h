@@ -31,6 +31,14 @@ namespace Urho3D
 
 class Mutex;
 
+#if _WIN32
+static const char* DYN_LIB_SUFFIX = ".dll";
+#elif __APPLE__
+static const char* DYN_LIB_SUFFIX = ".dylib";
+#else
+static const char* DYN_LIB_SUFFIX = ".so";
+#endif
+
 /// Initialize the FPU to round-to-nearest, single precision mode.
 URHO3D_API void InitFPU();
 /// Display an error dialog with the specified title and message.
