@@ -33,6 +33,7 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Console.h>
+#include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/LibraryInfo.h>
 #include <Urho3D/Core/CommandLine.h>
 
@@ -289,7 +290,8 @@ void Editor::Start()
         OpenProject(defaultProjectPath_);
     }
 
-    GetEngine()->CreateDebugHud();
+    // Hud will be rendered manually.
+    GetEngine()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
