@@ -24,10 +24,10 @@ using Urho3DNet;
 
 namespace DemoApplication
 {
-    [ObjectFactory]
-    class RotateObject : LogicComponent
+    [ObjectFactory(Category = "Script Components")]
+    class ScriptRotateObject : LogicComponent
     {
-        public RotateObject(Context context) : base(context)
+        public ScriptRotateObject(Context context) : base(context)
         {
             UpdateEventMask = UpdateEvent.UseUpdate;
         }
