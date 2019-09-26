@@ -111,8 +111,9 @@ namespace Urho3DNet
             GC.Collect();                    // Collect those finalized objects.
         }
 
-        public override unsafe void ApplicationStart()
+        public override void ApplicationStart()
         {
+            // TODO: This wont work with hot-reload.
             var sourceCode = new List<string>();
             var scriptFiles = new StringList();
             Context.Instance.Cache.Scan(scriptFiles, "Scripts/", "*.cs", Urho3D.ScanFiles, true);
@@ -120,12 +121,8 @@ namespace Urho3DNet
             foreach (string fileName in scriptFiles)
             {
                 File file = Context.Instance.Cache.GetFile($"Scripts/{fileName}");
-                var buffer = new byte[file.GetSize()];
-                fixed (byte* bufferPtr = buffer)
-                {
-                    file.Read(new IntPtr(bufferPtr), (uint)buffer.Length);
-                    sourceCode.Add(Encoding.UTF8.GetString(bufferPtr, buffer.Length));
-                }
+                if (file != null)
+                    sourceCode.Add(file.ReadText());
             }
 
             var csc = new CSharpCodeProvider();
