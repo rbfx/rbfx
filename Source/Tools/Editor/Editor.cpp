@@ -282,13 +282,12 @@ void Editor::Start()
             exiting_ = true;
     });
     SubscribeToEvent(E_EDITORPROJECTLOADING, std::bind(&Editor::UpdateWindowTitle, this, EMPTY_STRING));
+    SetupSystemUI();
     if (!defaultProjectPath_.empty())
     {
         ui::GetIO().IniFilename = nullptr;  // Avoid creating imgui.ini in some cases
         OpenProject(defaultProjectPath_);
     }
-    else
-        SetupSystemUI();
 
     GetEngine()->CreateDebugHud();
 }
