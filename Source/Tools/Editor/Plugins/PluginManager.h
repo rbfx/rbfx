@@ -26,6 +26,7 @@
 #if URHO3D_PLUGINS
 
 #include <atomic>
+#include <Urho3D/IO/Archive.h>
 #include <Urho3D/IO/FileWatcher.h>
 #include <Urho3D/IO/Log.h>
 
@@ -58,6 +59,7 @@ public:
     /// Registers static plugin.
     bool RegisterPlugin(PluginApplication* application);
 #endif
+    bool Serialize(Archive& archive) override;
 
 protected:
     /// Entry about dynamic library on the disk. It may or may not be loaded.

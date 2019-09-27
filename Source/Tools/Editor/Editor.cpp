@@ -288,7 +288,7 @@ void Editor::Start()
         else
             exiting_ = true;
     });
-    SubscribeToEvent(E_EDITORPROJECTLOADING, std::bind(&Editor::UpdateWindowTitle, this, EMPTY_STRING));
+    SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
     SetupSystemUI();
     if (!defaultProjectPath_.empty())
     {
@@ -794,6 +794,42 @@ void Editor::SetupSystemUI()
     colors[ImGuiCol_NavWindowingHighlight]  = ImVec4(1.00f, 1.00f, 1.00f, 0.70f);
     colors[ImGuiCol_NavWindowingDimBg]      = ImVec4(0.80f, 0.80f, 0.80f, 0.20f);
     colors[ImGuiCol_ModalWindowDimBg]       = ImVec4(0.44f, 0.44f, 0.44f, 0.35f);
+
+    ImGuiSettingsHandler handler;
+    handler.TypeName = "Project";
+    handler.TypeHash = ImHashStr(handler.TypeName, 0, 0);
+    handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void*
+    {
+        return (void*) name;
+    };
+    handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
+    {
+        auto* systemUI = ui::GetSystemUI();
+        auto* editor = systemUI->GetSubsystem<Editor>();
+        const char* name = static_cast<const char*>(entry);
+        if (strcmp(name, "Window") == 0)
+            editor->CreateDefaultTabs();
+        else
+        {
+            Tab* tab = editor->GetTabByName(name);
+            if (tab == nullptr)
+            {
+                StringVector parts = ea::string(name).split('#');
+                tab = editor->CreateTab(parts.front());
+            }
+            tab->OnLoadUISettings(name, line);
+        }
+    };
+    handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
+    {
+        auto* systemUI = ui::GetSystemUI();
+        auto* editor = systemUI->GetSubsystem<Editor>();
+        buf->appendf("[Project][Window]\n");
+        // Save tabs
+        for (auto& tab : editor->GetContentTabs())
+            tab->OnSaveUISettings(buf);
+    };
+    ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
 }
 
 void Editor::UpdateWindowTitle(const ea::string& resourcePath)

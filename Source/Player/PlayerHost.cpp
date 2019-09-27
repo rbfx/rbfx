@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#include <Urho3D/Engine/EngineEvents.h>
 #include "Player.h"
 #if URHO3D_SAMPLES && URHO3D_STATIC
 #   include "../Samples/103_GamePlugin/GamePlugin.h"
@@ -35,13 +36,16 @@ public:
     /// Construct.
     explicit PlayerHost(Context* context) : Player(context) { }
     /// Extend initialization of player application.
-#if URHO3D_SAMPLES && URHO3D_STATIC
-    void RegisterPlugins() override
+    void Start() override
     {
+#if URHO3D_SAMPLES && URHO3D_STATIC
         // Static plugins must be initialized manually.
-        RegisterPlugin(new GamePlugin(context_));
-    }
+        SubscribeToEvent(E_REGISTERSTATICPLUGINS, [this](StringHash, VariantMap&) {
+            RegisterPlugin(new GamePlugin(context_));
+        });
 #endif
+        BaseClassName::Start();
+    }
 };
 
 }
