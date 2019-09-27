@@ -42,6 +42,8 @@
 #include "Editor.h"
 #include "EditorEvents.h"
 #include "Project.h"
+#include "Plugins/ModulePlugin.h"
+#include "Plugins/ScriptBundlePlugin.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 
@@ -298,7 +300,7 @@ bool Project::LoadProject(const ea::string& projectPath)
                     }
 
                     const ea::string& pluginName = nameIt->second.GetString();
-                    if (Plugin* plugin = plugins_.Load(pluginName))
+                    if (Plugin* plugin = plugins_.Load(ModulePlugin::GetTypeStatic(), pluginName))
                     {
                         auto privateIt = pluginInfo.find("private");
                         if (privateIt != pluginInfo.end() && privateIt->second.GetBool())
@@ -314,7 +316,7 @@ bool Project::LoadProject(const ea::string& projectPath)
             }
 #endif
 #if URHO3D_CSHARP
-           plugins_.Load("Scripts");
+            plugins_.Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
 #endif
 #endif
             auto defaultSceneIt = root.find("default-scene");
@@ -368,6 +370,10 @@ bool Project::SaveProject()
             JSONArray plugins{};
             for (const auto& plugin : plugins_.GetPlugins())
             {
+#if URHO3D_CSHARP
+                if (plugin->GetType() == ScriptBundlePlugin::GetTypeStatic())
+                    continue;
+#endif
                 plugins.push_back(JSONObject{{"name",    plugin->GetName()},
                                              {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
             }

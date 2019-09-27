@@ -101,6 +101,38 @@ public static class E
     }
     public static ApplicationStartedEvent ApplicationStarted = new ApplicationStartedEvent();
 
+    public class PluginLoadEvent {
+        private StringHash _event = new StringHash("PluginLoad");
+
+        public PluginLoadEvent() { }
+        public static implicit operator StringHash(PluginLoadEvent e) { return e._event; }
+    }
+    public static PluginLoadEvent PluginLoad = new PluginLoadEvent();
+
+    public class PluginUnloadEvent {
+        private StringHash _event = new StringHash("PluginUnload");
+
+        public PluginUnloadEvent() { }
+        public static implicit operator StringHash(PluginUnloadEvent e) { return e._event; }
+    }
+    public static PluginUnloadEvent PluginUnload = new PluginUnloadEvent();
+
+    public class PluginStartEvent {
+        private StringHash _event = new StringHash("PluginStart");
+
+        public PluginStartEvent() { }
+        public static implicit operator StringHash(PluginStartEvent e) { return e._event; }
+    }
+    public static PluginStartEvent PluginStart = new PluginStartEvent();
+
+    public class PluginStopEvent {
+        private StringHash _event = new StringHash("PluginStop");
+
+        public PluginStopEvent() { }
+        public static implicit operator StringHash(PluginStopEvent e) { return e._event; }
+    }
+    public static PluginStopEvent PluginStop = new PluginStopEvent();
+
     public class BoneHierarchyCreatedEvent {
         private StringHash _event = new StringHash("BoneHierarchyCreated");
 
@@ -856,6 +888,14 @@ public static class E
         public static implicit operator StringHash(ConnectFailedEvent e) { return e._event; }
     }
     public static ConnectFailedEvent ConnectFailed = new ConnectFailedEvent();
+
+    public class ConnectionInProgressEvent {
+        private StringHash _event = new StringHash("ConnectionInProgress");
+
+        public ConnectionInProgressEvent() { }
+        public static implicit operator StringHash(ConnectionInProgressEvent e) { return e._event; }
+    }
+    public static ConnectionInProgressEvent ConnectionInProgress = new ConnectionInProgressEvent();
 
     public class ClientConnectedEvent {
         private StringHash _event = new StringHash("ClientConnected");

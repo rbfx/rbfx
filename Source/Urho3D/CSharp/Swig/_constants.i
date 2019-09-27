@@ -56,6 +56,8 @@
 %ignore Urho3D::EP_WINDOW_TITLE;
 %ignore Urho3D::EP_WINDOW_WIDTH;
 %ignore Urho3D::EP_WORKER_THREADS;
+%ignore Urho3D::EP_ENGINE_CLI_PARAMETERS;
+%ignore Urho3D::EP_ENGINE_AUTO_LOAD_SCRIPTS;
 %ignore Urho3D::DEFAULT_NEARCLIP;
 %ignore Urho3D::DEFAULT_FARCLIP;
 %ignore Urho3D::DEFAULT_CAMERA_FOV;
@@ -336,6 +338,8 @@
   public const string EpWindowTitle = "WindowTitle";
   public const string EpWindowWidth = "WindowWidth";
   public const string EpWorkerThreads = "WorkerThreads";
+  public const string EpEngineCliParameters = "EngineCliParameters";
+  public const string EpEngineAutoLoadScripts = "EngineAutoLoadScripts";
   public const float DefaultNearclip = 0.1f;
   public const float DefaultFarclip = 1000.0f;
   public const float DefaultCameraFov = 45.0f;

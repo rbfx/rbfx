@@ -57,7 +57,10 @@ public:
     /// Warning! This is slow! Perform a full garbage collection.
     virtual void FullGC() = 0;
     /// Implement any logic that is required before Application::Start() runs.
-    virtual PluginApplication* CompileResourceScriptPlugin(const ea::string& resourceFolderName) = 0;
+    virtual PluginApplication* CompileResourceScriptPlugin() = 0;
+    /// Invokes managed instance.Dispose() if passed instance has one native reference and has managed object attached to it.
+    /// This method should be used with instances detached from SharedPtr<>.
+    void DereferenceAndDispose(RefCounted* instance);
 };
 
 /// Script runtime subsystem.

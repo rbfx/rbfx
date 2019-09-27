@@ -111,16 +111,16 @@ namespace Urho3DNet
             GC.Collect();                    // Collect those finalized objects.
         }
 
-        public override PluginApplication CompileResourceScriptPlugin(string resourceFolderName)
+        public override PluginApplication CompileResourceScriptPlugin()
         {
             // TODO: This wont work with hot-reload.
             var sourceCode = new List<string>();
             var scriptFiles = new StringList();
-            Context.Instance.Cache.Scan(scriptFiles, resourceFolderName, "*.cs", Urho3D.ScanFiles, true);
+            Context.Instance.Cache.Scan(scriptFiles, "", "*.cs", Urho3D.ScanFiles, true);
 
             foreach (string fileName in scriptFiles)
             {
-                File file = Context.Instance.Cache.GetFile($"{resourceFolderName}/{fileName}");
+                File file = Context.Instance.Cache.GetFile(fileName);
                 if (file != null)
                     sourceCode.Add(file.ReadText());
             }
