@@ -22,6 +22,7 @@
 
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/ProcessUtils.h>
+#include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Engine/PluginApplication.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -49,26 +50,28 @@ PluginManager::PluginManager(Context* context)
     SubscribeToEvent(E_ENDFRAMEPRIVATE, [this](StringHash, VariantMap&) { OnEndFrame(); });
     SubscribeToEvent(E_SIMULATIONSTART, [this](StringHash, VariantMap&) {
         for (Plugin* plugin : plugins_)
+        {
+            plugin->application_->SendEvent(E_PLUGINSTART);
             plugin->application_->Start();
+        }
     });
     SubscribeToEvent(E_SIMULATIONSTOP, [this](StringHash, VariantMap&) {
         for (Plugin* plugin : plugins_)
+        {
+            plugin->application_->SendEvent(E_PLUGINSTOP);
             plugin->application_->Stop();
+        }
     });
 }
 
-Plugin* PluginManager::Load(const ea::string& name)
+Plugin* PluginManager::Load(StringHash type, const ea::string& name)
 {
     Plugin* plugin = GetPlugin(name);
 
     if (plugin == nullptr)
     {
-#if URHO3D_CSHARP
-        if (name == "Scripts")   // TODO: sucks
-            plugin = new ScriptBundlePlugin(context_);
-        else
-#endif
-            plugin = new ModulePlugin(context_);
+        plugin = static_cast<Plugin*>(context_->CreateObject(type).Detach());
+        assert(plugin != nullptr && plugin->GetTypeInfo()->GetBaseTypeInfo()->GetType() == Plugin::GetTypeStatic());
         plugin->SetName(name);
     }
     else if (plugin->IsLoaded())
@@ -76,6 +79,7 @@ Plugin* PluginManager::Load(const ea::string& name)
 
     if (plugin->Load())
     {
+        plugin->application_->SendEvent(E_PLUGINLOAD);
         plugin->application_->Load();
         URHO3D_LOGINFO("Loaded plugin '{}' version {}.", name, plugin->version_);
         plugins_.push_back(SharedPtr(plugin));
@@ -119,6 +123,7 @@ void PluginManager::OnEndFrame()
                 eventSent = true;
             }
 
+            plugin->application_->SendEvent(E_PLUGINUNLOAD);
             plugin->application_->Unload();
 
             int allowedPluginRefs = 1;
@@ -154,7 +159,10 @@ void PluginManager::OnEndFrame()
             if (plugin->application_.NotNull())
             {
                 if (pluginOutOfDate)
+                {
+                    plugin->application_->SendEvent(E_PLUGINLOAD);
                     plugin->application_->Load();
+                }
             }
             else
                 plugin->unloading_ = true;
@@ -246,11 +254,21 @@ bool PluginManager::RegisterPlugin(PluginApplication* application)
     auto* plugin = new Plugin(context_);
     plugin->SetName(application->GetTypeName());
     plugin->application_ = application;
+    plugin->application_->SendEvent(E_PLUGINLOAD);
     plugin->application_->Load();
     plugins_.push_back(SharedPtr(plugin));
     return true;
 }
 #endif
+
+void RegisterPluginsLibrary(Context* context)
+{
+    context->RegisterFactory<PluginManager>();
+    context->RegisterFactory<ModulePlugin>();
+#if URHO3D_CSHARP
+    context->RegisterFactory<ScriptBundlePlugin>();
+#endif
+}
 
 }
 

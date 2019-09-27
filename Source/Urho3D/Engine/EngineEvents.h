@@ -44,4 +44,24 @@ URHO3D_EVENT(E_APPLICATIONSTARTED, ApplicationStarted)
 {
 }
 
+/// Plugin::Load() is about to get called.
+URHO3D_EVENT(E_PLUGINLOAD, PluginLoad)
+{
+}
+
+/// Plugin::Unload() is about to get called.
+URHO3D_EVENT(E_PLUGINUNLOAD, PluginUnload)
+{
+}
+
+/// Plugin::Start() is about to get called.
+URHO3D_EVENT(E_PLUGINSTART, PluginStart)
+{
+}
+
+/// Plugin::Stop() is about to get called.
+URHO3D_EVENT(E_PLUGINSTOP, PluginStop)
+{
+}
+
 }
