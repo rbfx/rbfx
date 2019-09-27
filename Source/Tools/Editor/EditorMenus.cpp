@@ -343,6 +343,8 @@ void Editor::RenderProjectMenu()
             EP_WINDOW_TITLE.c_str(),
             EP_WINDOW_WIDTH.c_str(),
             EP_WORKER_THREADS.c_str(),
+            EP_ENGINE_CLI_PARAMETERS.c_str(),
+            EP_ENGINE_AUTO_LOAD_SCRIPTS.c_str(),
         };
 
         static VariantType predefinedTypes[] = {
@@ -395,6 +397,8 @@ void Editor::RenderProjectMenu()
             VAR_STRING, // EP_WINDOW_TITLE
             VAR_INT,    // EP_WINDOW_WIDTH
             VAR_INT,    // EP_WORKER_THREADS
+            VAR_BOOL,   // EP_ENGINE_CLI_PARAMETERS
+            VAR_BOOL,   // EP_ENGINE_AUTO_LOAD_SCRIPTS
         };
 
         static_assert(URHO3D_ARRAYSIZE(predefinedNames) == URHO3D_ARRAYSIZE(predefinedNames), "Sizes must match.");
