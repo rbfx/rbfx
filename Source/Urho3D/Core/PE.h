@@ -29,6 +29,7 @@ TO CHANGE WITHOUT NOTICE.
 #pragma once
 
 #include <cstdint>
+#include <cstddef>
 
 #define IMAGE_DOS_SIGNATURE                 0x5A4D      // MZ
 #define IMAGE_OS2_SIGNATURE                 0x454E      // NE
