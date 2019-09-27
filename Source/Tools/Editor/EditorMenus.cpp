@@ -207,7 +207,7 @@ void Editor::RenderProjectMenu()
                 PluginManager* plugins = project_->GetPlugins();
                 Plugin* plugin = plugins->GetPlugin(baseName);
                 bool loaded = plugin != nullptr && plugin->IsLoaded();
-                bool editorOnly = plugin && plugin->GetFlags() & PLUGIN_PRIVATE;
+                bool editorOnly = plugin && plugin->IsPrivate();
 
                 ui::PushStyleVar(ImGuiStyleVar_FrameRounding, 0);
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_EMPTY, "Inactive", !loaded) && loaded)
@@ -219,7 +219,7 @@ void Editor::RenderProjectMenu()
                         plugin = plugins->Load(ModulePlugin::GetTypeStatic(), baseName);
 
                     if (plugin != nullptr)
-                        plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                        plugin->SetPrivate(true);
                 }
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_FULL, "Editor and Game", loaded && !editorOnly))
                 {
@@ -227,7 +227,7 @@ void Editor::RenderProjectMenu()
                         plugin = plugins->Load(ModulePlugin::GetTypeStatic(), baseName);
 
                     if (plugin != nullptr)
-                        plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);
+                        plugin->SetPrivate(false);
                 }
                 ui::PopStyleVar();
                 ui::SameLine();
