@@ -30,16 +30,6 @@
 namespace Urho3D
 {
 
-/// Various plugin flags.
-enum PluginFlag
-{
-    /// Default plugin. It is loaded both in final application and in the editor. Use for implementing application logic and similar.
-    PLUGIN_DEFAULT,
-    /// Private plugin. It will be loaded only in the editor. Use for implementing editor tools.
-    PLUGIN_PRIVATE,
-};
-URHO3D_FLAGSET(PluginFlag, PluginFlags);
-
 /// A base class for plugins of all kinds. It only provides a common plugin interface.
 class Plugin : public Object
 {
@@ -54,10 +44,10 @@ public:
     const ea::string& GetName() const { return name_; }
     /// Name must be set right after creating a plugin object.
     void SetName(const ea::string& name) { name_ = name; }
-    /// Returns plugin flags.
-    PluginFlags GetFlags() const { return flags_; }
-    /// Sets plugin flags. See %PluginFlag for more information.
-    void SetFlags(PluginFlags flags) { flags_ = flags; }
+    /// Returns true when plugin is private (meant for developer tools only).
+    bool IsPrivate() const { return isPrivate_; }
+    /// Sets plugin privacy status. Private plugins are meant for developer tools and not shipped with a final product.
+    void SetPrivate(bool isPrivate) { isPrivate_ = isPrivate; }
     /// Mark plugin for unloading. Plugin will be unloaded at the end of current frame.
     void Unload() { unloading_ = true; }
     /// Loads plugin into application memory space and initializes it.
@@ -80,7 +70,7 @@ protected:
     /// Current plugin version.
     unsigned version_ = 0;
     /// Plugin flags.
-    PluginFlags flags_ = PLUGIN_DEFAULT;
+    bool isPrivate_ = false;
     /// Instance to the plugin application. This should be a single owning reference to the plugin. Managed plugins are
     /// an exception as managed object holds reference to native object and must be disposed in order to free this object.
     SharedPtr<PluginApplication> application_;
