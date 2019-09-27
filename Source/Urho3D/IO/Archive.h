@@ -46,16 +46,16 @@ enum class ArchiveBlockType
     /// - Items are saved and loaded in the order of serialization.
     /// - Name must be unique for each item since it is used for input file lookup.
     /// - Input file may contain items of Unordered block in arbitrary order, if it is supported by actual archive format.
-    /// - Syntax sugar for structures in human-readable and human-editible formats.
-    /// - Best choise when number of items is known and fixed (e.g. structure or object).
+    /// - Syntax sugar for structures in human-readable and human-editable formats.
+    /// - Best choice when number of items is known and fixed (e.g. structure or object).
     Unordered,
     /// Array data block.
     /// - Items are saved and loaded in the order of serialization.
     /// - Names of items are optional and have no functional purpose.
     /// - When reading, number of items is known when the block is opened.
     /// - When writing, number of items must be provided when the block is opened.
-    /// - Syntax sugar for arrays in human-readable and human-editible formats.
-    /// - Best choise when items are ordered and number of items is dynamic (e.g. dynamic array).
+    /// - Syntax sugar for arrays in human-readable and human-editable formats.
+    /// - Best choice when items are ordered and number of items is dynamic (e.g. dynamic array).
     Array,
     /// Map data block.
     /// - Order of serialization is not guaranteed.
@@ -64,8 +64,8 @@ enum class ArchiveBlockType
     /// - When reading, number of items is known when the block is opened.
     /// - When writing, number of items must be provided when the block is opened.
     /// - Key must be unique for each item.
-    /// - Syntax sugar for maps in human-readable and human-editible formats.
-    /// - Best choise when there are key-value pais (e.g. map or hash map).
+    /// - Syntax sugar for maps in human-readable and human-editable formats.
+    /// - Best choice when there are key-value pairs (e.g. map or hash map).
     Map,
 };
 
@@ -107,7 +107,7 @@ private:
 /// - Archive is a hierarchical structure of blocks and elements.
 /// - Archive must have exactly one root block.
 /// - Any block may contain other blocks or elements of any type.
-/// - Any block or element may have name. Use C++ naming conventions for identifiers, arbirtary strings are not allowed. Name "key" is reserved.
+/// - Any block or element may have name. Use C++ naming conventions for identifiers, arbitrary strings are not allowed. Name "key" is reserved.
 /// - Unsafe block must not be closed until all the items are serialized.
 class URHO3D_API Archive
 {
