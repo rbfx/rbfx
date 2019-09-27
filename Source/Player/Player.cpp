@@ -25,6 +25,7 @@
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Engine/EngineDefs.h>
+#include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
@@ -100,11 +101,14 @@ void Player::Start()
         ErrorExit("Loading of required plugins failed.");
 #endif
 #if URHO3D_CSHARP && URHO3D_PLUGINS
-    RegisterPlugin(Script::GetRuntimeApi()->CompileResourceScriptPlugin("Scripts"));
+    RegisterPlugin(Script::GetRuntimeApi()->CompileResourceScriptPlugin());
 #endif
 
     for (LoadedModule& plugin : plugins_)
+    {
+        plugin.application_->SendEvent(E_PLUGINSTART);
         plugin.application_->Start();
+    }
 
     // Load main scene.
     {
@@ -121,18 +125,25 @@ void Player::Start()
 void Player::Stop()
 {
     for (LoadedModule& plugin : plugins_)
+    {
+        plugin.application_->SendEvent(E_PLUGINSTOP);
         plugin.application_->Stop();
-
-    for (LoadedModule& plugin : plugins_)
-        plugin.application_->Unload();
-
-#if URHO3D_CSHARP
-    for (LoadedModule& plugin : plugins_)
-        Script::GetRuntimeApi()->Dispose(plugin.application_);
-#endif
+    }
 
     if (auto* manager = GetSubsystem<SceneManager>())
         manager->UnloadAll();
+
+    for (LoadedModule& plugin : plugins_)
+    {
+        plugin.application_->SendEvent(E_PLUGINUNLOAD);
+        plugin.application_->Unload();
+    }
+
+#if URHO3D_CSHARP
+    for (LoadedModule& plugin : plugins_)
+        Script::GetRuntimeApi()->DereferenceAndDispose(plugin.application_.Detach());
+#endif
+
 }
 
 bool Player::LoadPlugins(const JSONValue& plugins)
@@ -213,6 +224,8 @@ bool Player::LoadAssembly(const ea::string& path)
         if (moduleInfo.application_.NotNull())
         {
             plugins_.emplace_back(moduleInfo);
+            moduleInfo.application_->SendEvent(E_PLUGINLOAD);
+            moduleInfo.application_->Load();
             return true;
         }
     }
@@ -229,6 +242,7 @@ bool Player::RegisterPlugin(PluginApplication* plugin)
     LoadedModule moduleInfo;
     moduleInfo.application_ = plugin;
     plugins_.emplace_back(moduleInfo);
+    plugin->SendEvent(E_PLUGINLOAD);
     plugin->Load();
     return true;
 }

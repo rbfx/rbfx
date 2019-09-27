@@ -80,5 +80,5 @@ static const ea::string EP_WINDOW_TITLE = "WindowTitle";
 static const ea::string EP_WINDOW_WIDTH = "WindowWidth";
 static const ea::string EP_WORKER_THREADS = "WorkerThreads";
 static const ea::string EP_ENGINE_CLI_PARAMETERS = "EngineCliParameters";
-
+static const ea::string EP_ENGINE_AUTO_LOAD_SCRIPTS = "EngineAutoLoadScripts";
 }

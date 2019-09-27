@@ -28,6 +28,9 @@
 #include "../Engine/EngineEvents.h"
 #include "../IO/IOEvents.h"
 #include "../IO/Log.h"
+#if URHO3D_CSHARP
+#include "../Script/Script.h"
+#endif
 
 #if defined(IOS) || defined(TVOS)
 #include "../Graphics/Graphics.h"
@@ -108,6 +111,17 @@ int Application::Run()
             return exitCode_;
         }
 
+#if URHO3D_PLUGINS && URHO3D_CSHARP
+        if (engine_->GetParameter(engineParameters_, EP_ENGINE_AUTO_LOAD_SCRIPTS, true).GetBool())
+        {
+            scriptsPlugin_ = Script::GetRuntimeApi()->CompileResourceScriptPlugin();
+            scriptsPlugin_->SendEvent(E_PLUGINLOAD);
+            scriptsPlugin_->Load();
+            scriptsPlugin_->SendEvent(E_PLUGINSTART);
+            scriptsPlugin_->Start();
+        }
+#endif
+
         Start();
         if (exitCode_ || engine_->IsExiting())
         {
@@ -122,7 +136,25 @@ int Application::Run()
         while (!engine_->IsExiting())
             engine_->RunFrame();
 
+#if URHO3D_PLUGINS && URHO3D_CSHARP
+        if (scriptsPlugin_.NotNull())
+        {
+            scriptsPlugin_->SendEvent(E_PLUGINSTOP);
+            scriptsPlugin_->Stop();
+        }
+#endif
+
         Stop();
+
+#if URHO3D_PLUGINS && URHO3D_CSHARP
+        if (scriptsPlugin_.NotNull())
+        {
+            scriptsPlugin_->SendEvent(E_PLUGINUNLOAD);
+            scriptsPlugin_->Unload();
+            Script::GetRuntimeApi()->DereferenceAndDispose(scriptsPlugin_.Detach());
+        }
+#endif
+
         // iOS/tvOS will setup a timer for running animation frames so eg. Game Center can run. In this case we do not
         // support calling the Stop() function, as the application will never stop manually
 #else

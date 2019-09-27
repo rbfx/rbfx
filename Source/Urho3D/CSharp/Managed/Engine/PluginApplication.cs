@@ -28,9 +28,13 @@ namespace Urho3DNet
     {
         private void OnSetupInstance()
         {
-            // Register factories marked with attributes
-            foreach (var pair in GetType().Assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
-                RegisterFactory(pair.Item1, pair.Item2.Category);
+            SubscribeToEvent(E.PluginLoad, this, map =>
+            {
+                // Register factories marked with attributes
+                foreach ((Type type, ObjectFactoryAttribute attr) in GetType().Assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
+                    RegisterFactory(type, attr.Category);
+                UnsubscribeFromEvent(E.PluginLoad);
+            });
         }
 
         public void RegisterFactory(Type type, string category = "")

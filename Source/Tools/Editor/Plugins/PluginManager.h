@@ -43,7 +43,7 @@ public:
     /// Unload all plugins an destruct.
     ~PluginManager() override = default;
     /// Load a plugin and return true if succeeded.
-    Plugin* Load(const ea::string& name);
+    Plugin* Load(StringHash type, const ea::string& name);
     /// Returns a loaded plugin with specified name.
     Plugin* GetPlugin(const ea::string& name);
     /// Returns a vector containing all loaded plugins.
@@ -78,6 +78,9 @@ protected:
 
     friend class Plugin;
 };
+
+/// Reigsters all plugin-related objects with the engine.
+void RegisterPluginsLibrary(Context* context);
 
 }
 #endif

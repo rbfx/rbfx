@@ -23,6 +23,7 @@
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Core/Thread.h"
+#include "../IO/Log.h"
 #include "../Script/Script.h"
 
 
@@ -72,4 +73,17 @@ void Script::ReleaseRefOnMainThread(RefCounted* object)
     }
 }
 
+void ScriptRuntimeApi::DereferenceAndDispose(RefCounted* instance)
+{
+    if (instance == nullptr || !instance->HasScriptObject())
+        return;
+
+    if (instance->Refs() > 2)
+    {
+        URHO3D_LOGERROR("Disposing of object with multiple native references is not allowed. It leads to crashes.");
+        assert(false);
+        return;
+    }
+    Dispose(instance);
+}
 }

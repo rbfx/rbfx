@@ -60,6 +60,8 @@
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Importers/TextureImporter.h"
+#include "Plugins/ModulePlugin.h"
+#include "Plugins/ScriptBundlePlugin.h"
 #include "Inspector/MaterialInspector.h"
 #include "Inspector/ModelInspector.h"
 #include "Tabs/ProfilerTab.h"
@@ -117,6 +119,7 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PATHS] = "CoreData;EditorData";
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
+    engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
 
     // Load editor settings
     {
@@ -173,6 +176,9 @@ void Editor::Setup()
     context_->RegisterFactory<PreviewTab>();
     context_->RegisterFactory<ProfilerTab>();
 
+#if URHO3D_PLUGINS
+    RegisterPluginsLibrary(context_);
+#endif
     RegisterToolboxTypes(context_);
     EditorSceneSettings::RegisterObject(context_);
     Inspectable::Material::RegisterObject(context_);

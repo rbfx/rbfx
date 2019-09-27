@@ -28,6 +28,7 @@
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include "Plugins/ModulePlugin.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/PreviewTab.h"
 #include "Editor.h"
@@ -215,7 +216,7 @@ void Editor::RenderProjectMenu()
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_HALF, "Editor-only", loaded && editorOnly))
                 {
                     if (!loaded)
-                        plugin = plugins->Load(baseName);
+                        plugin = plugins->Load(ModulePlugin::GetTypeStatic(), baseName);
 
                     if (plugin != nullptr)
                         plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
@@ -223,7 +224,7 @@ void Editor::RenderProjectMenu()
                 if (ui::EditorToolbarButton(ICON_FA_BATTERY_FULL, "Editor and Game", loaded && !editorOnly))
                 {
                     if (!loaded)
-                        plugin = plugins->Load(baseName);
+                        plugin = plugins->Load(ModulePlugin::GetTypeStatic(), baseName);
 
                     if (plugin != nullptr)
                         plugin->SetFlags(plugin->GetFlags() & ~PLUGIN_PRIVATE);

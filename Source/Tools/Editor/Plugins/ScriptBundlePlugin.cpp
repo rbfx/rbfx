@@ -36,12 +36,13 @@ ScriptBundlePlugin::ScriptBundlePlugin(Context* context)
 
 bool ScriptBundlePlugin::Load()
 {
-    application_ = Script::GetRuntimeApi()->CompileResourceScriptPlugin(name_);
+    application_ = Script::GetRuntimeApi()->CompileResourceScriptPlugin();
     if (application_.NotNull())
     {
         application_->InitializeReloadablePlugin();
         unloading_ = false;
         outOfDate_ = false;
+        version_++;
         return true;
     }
     return false;
@@ -49,11 +50,8 @@ bool ScriptBundlePlugin::Load()
 
 bool ScriptBundlePlugin::PerformUnload()
 {
-    WeakPtr<PluginApplication> application(application_);
     application_->UninitializeReloadablePlugin();
-    application_ = nullptr;
-    if (!application.Expired())
-        Script::GetRuntimeApi()->Dispose(application);
+    Script::GetRuntimeApi()->Dispose(application_.Detach());
     return true;
 }
 

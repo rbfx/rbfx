@@ -72,16 +72,13 @@ bool ModulePlugin::PerformUnload()
     // Disposing object requires managed reference to be the last one alive.
     WeakPtr<PluginApplication> application(application_);
     application_->UninitializeReloadablePlugin();
+#if URHO3D_CSHARP
+    if (moduleType == MODULE_MANAGED)
+         Script::GetRuntimeApi()->Dispose(application_.Detach());
+#endif
     application_ = nullptr;
     if (!module_.Unload())
         return false;
-#if URHO3D_CSHARP
-    if (moduleType == MODULE_MANAGED)
-    {
-        if (!application.Expired())
-            Script::GetRuntimeApi()->Dispose(application);
-    }
-#endif
     return true;
 }
 
