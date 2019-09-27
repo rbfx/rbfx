@@ -416,6 +416,9 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
 
 bool SceneTab::SaveResource()
 {
+    if (GetScene() == nullptr)
+        return false;
+
     if (!BaseClassName::SaveResource())
         return false;
 
