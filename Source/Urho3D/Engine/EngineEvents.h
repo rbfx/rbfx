@@ -64,4 +64,9 @@ URHO3D_EVENT(E_PLUGINSTOP, PluginStop)
 {
 }
 
+/// A request for user to manually register static plugins.
+URHO3D_EVENT(E_REGISTERSTATICPLUGINS, RegisterStaticPlugins)
+{
+}
+
 }

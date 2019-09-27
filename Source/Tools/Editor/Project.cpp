@@ -29,15 +29,15 @@
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/Archive.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Tabs/ConsoleTab.h>
 #include <Tabs/ResourceTab.h>
-#include <Tabs/HierarchyTab.h>
-#include <Tabs/InspectorTab.h>
 #include <Toolbox/SystemUI/Widgets.h>
-#include <ThirdParty/tracy/server/IconsFontAwesome5.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"
@@ -45,7 +45,6 @@
 #include "Plugins/ModulePlugin.h"
 #include "Plugins/ScriptBundlePlugin.h"
 #include "Tabs/Scene/SceneTab.h"
-#include "Tabs/UI/UITab.h"
 
 
 namespace Urho3D
@@ -58,7 +57,7 @@ Project::Project(Context* context)
     , plugins_(context)
 #endif
 {
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
+    SubscribeToEvent(E_EDITORRESOURCESAVED, [this](StringHash, VariantMap&) { SaveProject(); });
     SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
         using namespace ResourceRenamed;
         if (args[P_FROM].GetString() == defaultScene_)
@@ -159,65 +158,7 @@ bool Project::LoadProject(const ea::string& projectPath)
     {
         uiConfigPath_ = projectFileDir_ + ".ui.ini";
         isNewProject_ = !GetFileSystem()->FileExists(uiConfigPath_);
-
         ui::GetIO().IniFilename = uiConfigPath_.c_str();
-
-        ImGuiSettingsHandler handler;
-        handler.TypeName = "Project";
-        handler.TypeHash = ImHashStr(handler.TypeName, 0, 0);
-        handler.ReadOpenFn = [](ImGuiContext* context, ImGuiSettingsHandler* handler, const char* name) -> void*
-        {
-            return (void*) name;
-        };
-        handler.ReadLineFn = [](ImGuiContext*, ImGuiSettingsHandler*, void* entry, const char* line)
-        {
-            SystemUI* systemUI = ui::GetSystemUI();
-            auto* editor = systemUI->GetSubsystem<Editor>();
-
-            const char* name = static_cast<const char*>(entry);
-            if (strcmp(name, "Window") == 0)
-            {
-                editor->CreateDefaultTabs();
-
-                // int x, y, w, h;
-                // if (sscanf(line, "Rect=%d,%d,%d,%d", &x, &y, &w, &h) == 4)
-                // {
-                //     w = Max(w, 100);            // Foot-shooting prevention
-                //     h = Max(h, 100);
-                //     systemUI->GetGraphics()->SetWindowPosition(x, y);
-                //     systemUI->GetGraphics()->SetMode(w, h);
-                // }
-                // else
-                //     return;
-            }
-            else
-            {
-
-                Tab* tab = editor->GetTabByName(name);
-                if (tab == nullptr)
-                {
-                    StringVector parts = ea::string(name).split('#');
-                    tab = editor->CreateTab(parts.front());
-                }
-                tab->OnLoadUISettings(name, line);
-            }
-        };
-        handler.WriteAllFn = [](ImGuiContext* imgui_ctx, ImGuiSettingsHandler* handler, ImGuiTextBuffer* buf)
-        {
-            auto* systemUI = ui::GetSystemUI();
-            auto* editor = systemUI->GetSubsystem<Editor>();
-            buf->appendf("[Project][Window]\n");
-            // IntVector2
-            // wSize = systemUI->GetGraphics()->GetSize();
-            // IntVector2
-            // wPos = systemUI->GetGraphics()->GetWindowPosition();
-            // buf->appendf("Rect=%d,%d,%d,%d\n", wPos.x_, wPos.y_, wSize.x_, wSize.y_);
-
-            // Save tabs
-            for (auto& tab : editor->GetContentTabs())
-                tab->OnSaveUISettings(buf);
-        };
-        ui::GetCurrentContext()->SettingsHandlers.push_back(handler);
     }
 
 #if URHO3D_HASH_DEBUG
@@ -240,102 +181,35 @@ bool Project::LoadProject(const ea::string& projectPath)
     }
 #endif
 
-    // Settings.json
-    {
-        ea::string filePath(projectFileDir_ + "Settings.json");
-        if (GetFileSystem()->Exists(filePath))
-        {
-            JSONFile file(context_);
-            if (!file.LoadFile(filePath))
-                return false;
-
-            for (auto& pair : file.GetRoot().GetObject())
-                engineParameters_[pair.first] = pair.second.GetVariant();
-        }
-    }
-
     // Register asset dirs
     GetCache()->AddResourceDir(GetCachePath(), 0);
     GetCache()->AddResourceDir(GetResourcePath(), 1);
 
-    // Project.json
-    {
-        using namespace EditorProjectLoading;
-        ea::string filePath(projectFileDir_ + "Project.json");
-        if (GetFileSystem()->Exists(filePath))
-        {
-            JSONFile file(context_);
-            if (!file.LoadFile(filePath))
-                return false;
-
-            const auto& root = file.GetRoot().GetObject();
 #if URHO3D_PLUGINS
-            if (!GetEngine()->IsHeadless())
-            {
-                // Normal execution cleans up old versions of plugins.
-                StringVector files;
-                GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
-                for (const ea::string& fileName : files)
-                {
-                    if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
-                        GetFileSystem()->Delete(GetFileSystem()->GetProgramDir() + fileName);
-                }
-            }
-#if URHO3D_STATIC
-            GetSubsystem<Editor>()->RegisterPlugins();
-#else
-            // In static builds plugins are loaded manuall by user linking to libPlayer/libEditor.
-            auto pluginsIt = root.find("plugins");
-            if (pluginsIt != root.end())
-            {
-                const auto& plugins = pluginsIt->second.GetArray();
-                for (const auto& pluginInfoValue : plugins)
-                {
-                    const JSONObject& pluginInfo = pluginInfoValue.GetObject();
-                    auto nameIt = pluginInfo.find("name");
-                    if (nameIt == pluginInfo.end())
-                    {
-                        URHO3D_LOGERRORF("Loading plugin failed: 'name' is missing.");
-                        continue;
-                    }
-
-                    const ea::string& pluginName = nameIt->second.GetString();
-                    if (Plugin* plugin = plugins_.Load(ModulePlugin::GetTypeStatic(), pluginName))
-                    {
-                        auto privateIt = pluginInfo.find("private");
-                        if (privateIt != pluginInfo.end() && privateIt->second.GetBool())
-                            plugin->SetPrivate(true);
-                    }
-                    else
-                        URHO3D_LOGERRORF("Loading plugin '%s' failed.", pluginName.c_str());
-                }
-                // Tick plugins once to ensure plugins are loaded before loading any possibly open scenes. This makes
-                // plugins register themselves with the engine so that loaded scenes can properly load components
-                // provided by plugins. Not doing this would cause scenes to load these components as UnknownComponent.
-                plugins_.OnEndFrame();
-            }
-#endif
-#if URHO3D_CSHARP
-            plugins_.Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
-#endif
-#endif
-            auto defaultSceneIt = root.find("default-scene");
-            if (defaultSceneIt != root.end())
-                defaultScene_ = defaultSceneIt->second.GetString();
-
-            auto flavorsIt = root.find("flavors");
-            if (flavorsIt != root.end())
-            {
-                const JSONValue& flavors = flavorsIt->second;
-                for (int i = 0; i < flavors.Size(); i++)
-                    pipeline_.AddFlavor(flavors[i].GetString());
-            }
-            SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)&root);
+    if (!GetEngine()->IsHeadless())
+    {
+        // Normal execution cleans up old versions of plugins.
+        StringVector files;
+        GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+        for (const ea::string& fileName : files)
+        {
+            if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
+                GetFileSystem()->Delete(GetFileSystem()->GetProgramDir() + fileName);
         }
-        else
-            SendEvent(E_EDITORPROJECTLOADING, P_ROOT, (void*)nullptr);
     }
+#endif
 
+    // Project.json
+    ea::string filePath(projectFileDir_ + "Project.json");
+    if (GetFileSystem()->Exists(filePath))
+    {
+        JSONFile file(context_);
+        if (!file.LoadFile(filePath))
+            return false;
+
+        JSONInputArchive archive(&file);
+        return Serialize(archive);
+    }
     return true;
 }
 
@@ -357,69 +231,7 @@ bool Project::SaveProject()
         return false;
     }
 
-    // Project.json
-    {
-        JSONFile file(context_);
-        JSONValue& root = file.GetRoot();
-
-        root["version"] = 0;
-
-        // Plugins
-#if URHO3D_PLUGINS
-        {
-            JSONArray plugins{};
-            for (const auto& plugin : plugins_.GetPlugins())
-            {
-#if URHO3D_CSHARP
-                if (plugin->GetType() == ScriptBundlePlugin::GetTypeStatic())
-                    continue;
-#endif
-                plugins.push_back(JSONObject{{"name",    plugin->GetName()},
-                                             {"private", plugin->IsPrivate()}});
-            }
-            ea::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
-                auto aNameIt = a.GetObject().find("name");
-                auto bNameIt = b.GetObject().find("name");
-                const ea::string& nameA = aNameIt != a.GetObject().end() ? aNameIt->second.GetString() : EMPTY_STRING;
-                const ea::string& nameB = bNameIt != b.GetObject().end() ? bNameIt->second.GetString() : EMPTY_STRING;
-                return nameA.compare(nameB);
-            });
-            root["plugins"] = plugins;
-        }
-#endif
-        root["default-scene"] = defaultScene_;
-
-        for (const ea::string& flavor : pipeline_.GetFlavors())
-            root["flavors"].Push(flavor);
-
-        ea::string filePath(projectFileDir_ + "Project.json");
-        if (!file.SaveFile(filePath))
-        {
-            projectFileDir_.clear();
-            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.c_str());
-            return false;
-        }
-
-        using namespace EditorProjectSaving;
-        SendEvent(E_EDITORPROJECTSAVING, P_ROOT, (void*)&root);
-    }
-
-    // Settings.json
-    {
-        JSONFile file(context_);
-        JSONValue& root = file.GetRoot();
-
-        for (const auto& pair : engineParameters_)
-            root[pair.first].SetVariant(pair.second, context_);
-
-        ea::string filePath(projectFileDir_ + "Settings.json");
-        if (!file.SaveFile(filePath))
-        {
-            projectFileDir_.clear();
-            URHO3D_LOGERRORF("Saving project to '%s' failed", filePath.c_str());
-            return false;
-        }
-    }
+    ui::SaveIniSettingsToDisk(uiConfigPath_.c_str());
 
 #if URHO3D_HASH_DEBUG
     // StringHashNames.json
@@ -442,9 +254,76 @@ bool Project::SaveProject()
     }
 #endif
 
-    ui::SaveIniSettingsToDisk(uiConfigPath_.c_str());
+    // Project.json
+    JSONFile file(context_);
+    JSONOutputArchive archive(&file);
+    if (!Serialize(archive))
+        return false;
 
-    SubscribeToEvent(E_EDITORRESOURCESAVED, std::bind(&Project::SaveProject, this));
+    ea::string filePath(projectFileDir_ + "Project.json");
+    if (!file.SaveFile(filePath))
+    {
+        projectFileDir_.clear();
+        URHO3D_LOGERROR("Saving project to '{}' failed", filePath);
+        return false;
+    }
+    return true;
+}
+
+bool Project::Serialize(Archive& archive)
+{
+    const int version = 1;
+    if (!archive.IsInput() && GetEngine()->IsHeadless())
+    {
+        URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
+        return false;
+    }
+
+    // Saving project data of tabs may trigger saving resources, which in turn triggers saving editor project. Avoid that loop.
+    UnsubscribeFromEvent(E_EDITORRESOURCESAVED);
+
+    if (auto projectBlock = archive.OpenUnorderedBlock("project"))
+    {
+        int archiveVersion = version;
+        SerializeValue(archive, "version", archiveVersion);
+        SerializeValue(archive, "defaultScene", defaultScene_);
+
+        if (!pipeline_.Serialize(archive))
+            return false;
+
+        if (!plugins_.Serialize(archive))
+            return false;
+
+        // TODO: Settings should be per-flavor, move into Pipeline::Serialize
+        if (auto settingsBlock = archive.OpenMapBlock("settings", engineParameters_.size()))
+        {
+            ea::string key;
+            if (archive.IsInput())
+            {
+                Variant value;
+                if (!archive.SerializeKey(key))
+                    return false;
+                if (!SerializeValue(archive, "value", engineParameters_[key]))
+                    return false;
+            }
+            else
+            {
+                for (auto& pair : engineParameters_)
+                {
+                    key = pair.first;
+                    if (!archive.SerializeKey(key))
+                        return false;
+                    if (!SerializeValue(archive, "value", pair.second))
+                        return false;
+                }
+            }
+        }
+
+        using namespace EditorProjectSerialize;
+        SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);
+    }
+
+    SubscribeToEvent(E_EDITORRESOURCESAVED, [this](StringHash, VariantMap&) { SaveProject(); });
 
     return true;
 }
