@@ -98,8 +98,6 @@ public:
     ///
     VariantMap& GetEngineParameters() { return engineParameters_; }
 #if URHO3D_STATIC && URHO3D_PLUGINS
-    /// Called when application requires user to register static plugins.
-    virtual void RegisterPlugins() { }
     /// Register static plugin.
     bool RegisterPlugin(PluginApplication* plugin);
 #endif

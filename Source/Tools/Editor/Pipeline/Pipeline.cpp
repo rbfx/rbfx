@@ -29,6 +29,7 @@
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/PackageFile.h>
@@ -48,9 +49,13 @@ Pipeline::Pipeline(Context* context)
         return;
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, OnEndFrame));
-    SubscribeToEvent(E_EDITORPROJECTLOADING, [this](StringHash, VariantMap&) {
-        EnableWatcher();
-        BuildCache(DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlag::SKIP_UP_TO_DATE);
+    SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap& args) {
+        auto* archive = static_cast<Archive*>(args[EditorProjectSerialize::P_ARCHIVE].GetVoidPtr());
+        if (archive->IsInput())
+        {
+            EnableWatcher();
+            BuildCache(DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlag::SKIP_UP_TO_DATE);
+        }
     });
     SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
         using namespace ResourceRenamed;
@@ -400,6 +405,25 @@ bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
     }
 
     return false;
+}
+
+bool Pipeline::Serialize(Archive& archive)
+{
+    if (auto block = archive.OpenUnorderedBlock("pipeline"))
+    {
+        if (!SerializeValue(archive, "flavors", flavors_))
+            return false;
+
+        if (archive.IsInput())
+        {
+            for (const ea::string& flavor : flavors_)
+            {
+                for (auto& asset : assets_)
+                    asset.second->AddFlavor(flavor);
+            }
+        }
+    }
+    return true;
 }
 
 }

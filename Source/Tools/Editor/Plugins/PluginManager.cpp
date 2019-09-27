@@ -24,6 +24,7 @@
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Engine/PluginApplication.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/File.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
@@ -246,6 +247,57 @@ const StringVector& PluginManager::GetPluginNames()
         }
     }
     return *pluginNames;
+}
+
+bool PluginManager::Serialize(Archive& archive)
+{
+#if URHO3D_STATIC
+    // In static builds plugins are registered manually by the user.
+    SendEvent(E_REGISTERSTATICPLUGINS);
+#else
+    if (auto block = archive.OpenSequentialBlock("plugins"))
+    {
+        ea::string name;
+        bool isPrivate;
+        for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : plugins_.size(); i < num; i++)
+        {
+            if (!archive.IsInput())
+            {
+                // ScriptBundlePlugin is special. Only one instance of this plugin exists and it is loaded manually. No point in serializing it.
+                Plugin* plugin = plugins_[i];
+#if URHO3D_CSHARP
+                if (plugin->GetType() == ScriptBundlePlugin::GetTypeStatic())
+                    continue;
+#endif
+                if (!plugin->IsLoaded())
+                    continue;
+
+                name = plugin->GetName();
+                isPrivate = plugin->IsPrivate();
+            }
+
+            if (auto block = archive.OpenUnorderedBlock("plugin"))
+            {
+                if (!SerializeValue(archive, "name", name))
+                    return false;
+                if (!SerializeValue(archive, "private", isPrivate))
+                    return false;
+                if (archive.IsInput())
+                {
+                    if (Plugin* plugin = Load(ModulePlugin::GetTypeStatic(), name))
+                        plugin->SetPrivate(isPrivate);
+                }
+            }
+        }
+    }
+#endif
+
+#if URHO3D_CSHARP
+    if (archive.IsInput())
+        Load(ScriptBundlePlugin::GetTypeStatic(), "__Scripts__");
+#endif
+
+    return true;
 }
 
 #if URHO3D_STATIC

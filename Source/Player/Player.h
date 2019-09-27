@@ -65,10 +65,6 @@ protected:
 #if URHO3D_PLUGINS
     ///
     bool LoadAssembly(const ea::string& path);
-#if URHO3D_STATIC
-    ///
-    virtual void RegisterPlugins() { }
-#endif
     ///
     bool RegisterPlugin(PluginApplication* plugin);
 #endif

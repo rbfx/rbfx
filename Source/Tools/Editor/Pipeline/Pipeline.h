@@ -28,6 +28,7 @@
 
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/IO/FileWatcher.h>
+#include <Urho3D/IO/Archive.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Serializable.h>
 #include <Toolbox/IO/ContentUtilities.h>
@@ -87,6 +88,8 @@ public:
     void CreatePaksAsync(const ea::string& flavor);
     /// Returns true if resource or any of it's parent directories have non-default flavor settings.
     bool HasFlavorSettings(const ea::string& resourceName);
+    ///
+    bool Serialize(Archive& archive) override;
 
 protected:
     /// Watch directory for changed assets and automatically convert them.

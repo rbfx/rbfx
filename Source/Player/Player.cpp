@@ -88,7 +88,7 @@ void Player::Start()
 
     const JSONValue& projectRoot = projectFile->GetRoot();
 #if URHO3D_STATIC
-    RegisterPlugins();
+    SendEvent(E_REGISTERSTATICPLUGINS);
 #else
     if (!projectRoot.Contains("plugins"))
     {
