@@ -23,7 +23,7 @@ class AstPass(object):
         """Called on start of file ast processing."""
         return True
 
-    def on_file_end(self):
+    def on_file_end(self, file_path):
         """Called on end of file ast processing."""
         pass
 
