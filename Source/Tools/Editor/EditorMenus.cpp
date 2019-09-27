@@ -504,6 +504,7 @@ void Editor::RenderProjectMenu()
                 if (ui::ToolbarButton(ICON_FA_CHECK))
                 {
                     pipeline.RenameFlavor(state->editFlavor_, state->editBuffer_);
+                    state->editFlavor_.clear();
                     ui::PopID();
                     break;
                 }
