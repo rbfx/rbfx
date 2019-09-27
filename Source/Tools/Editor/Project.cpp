@@ -304,7 +304,7 @@ bool Project::LoadProject(const ea::string& projectPath)
                     {
                         auto privateIt = pluginInfo.find("private");
                         if (privateIt != pluginInfo.end() && privateIt->second.GetBool())
-                            plugin->SetFlags(plugin->GetFlags() | PLUGIN_PRIVATE);
+                            plugin->SetPrivate(true);
                     }
                     else
                         URHO3D_LOGERRORF("Loading plugin '%s' failed.", pluginName.c_str());
@@ -375,7 +375,7 @@ bool Project::SaveProject()
                     continue;
 #endif
                 plugins.push_back(JSONObject{{"name",    plugin->GetName()},
-                                             {"private", plugin->GetFlags() & PLUGIN_PRIVATE ? true : false}});
+                                             {"private", plugin->IsPrivate()}});
             }
             ea::quick_sort(plugins.begin(), plugins.end(), [](const JSONValue& a, const JSONValue& b) {
                 auto aNameIt = a.GetObject().find("name");
