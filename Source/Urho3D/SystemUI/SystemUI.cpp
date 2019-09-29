@@ -438,7 +438,7 @@ void SystemUI::SetScale(Vector3 scale, bool pixelPerfect)
 
     // io.DisplayFramebufferScale = {scale.x_, scale.y_};
     fontScale_ = scale.z_;
-    io.FontGlobalScale = 1.f / scale.z_;
+    // io.FontGlobalScale = 1.f / scale.z_;
 
     float prevSize = SYSTEMUI_DEFAULT_FONT_SIZE;
     for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
