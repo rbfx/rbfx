@@ -90,6 +90,8 @@ public:
     bool HasFlavorSettings(const ea::string& resourceName);
     ///
     bool Serialize(Archive& archive) override;
+    /// Returns a map of default engine settings that will be applied on the start of player application.
+    ea::map<ea::string, Variant>& GetDefaultEngineSettings(const ea::string& flavor) { return engineParameters_[flavor]; }
 
 protected:
     /// Watch directory for changed assets and automatically convert them.
@@ -123,6 +125,9 @@ protected:
     SharedPtr<Packager> packager_{};
     /// Title of the modal dialog that shows when packaging files.
     ea::string packagerModalTitle_{};
+    ///
+    ea::unordered_map<ea::string /*flavor*/, ea::map<ea::string /*EP_**/, Variant>> engineParameters_;
+
 
     friend class Project;
     friend class Asset;

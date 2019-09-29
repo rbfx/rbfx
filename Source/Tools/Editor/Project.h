@@ -63,8 +63,6 @@ public:
     const ea::string& GetDefaultSceneName() const { return defaultScene_; }
     /// Set resource name of scene that will be executed first by the player.
     void SetDefaultSceneName(const ea::string& defaultScene) { defaultScene_ = defaultScene; }
-    /// Returns a map of default engine settings that will be applied on the start of player application.
-    ea::unordered_map<ea::string, Variant>& GetDefaultEngineSettings() { return engineParameters_; }
     ///
     Pipeline& GetPipeline() { return pipeline_; }
 
@@ -85,8 +83,6 @@ protected:
     bool isNewProject_ = true;
     /// Resource name of scene that will be started by player first.
     ea::string defaultScene_;
-    ///
-    ea::unordered_map<ea::string, Variant> engineParameters_;
     ///
     Timer saveProjectTimer_;
 };

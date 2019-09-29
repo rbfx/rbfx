@@ -294,31 +294,6 @@ bool Project::Serialize(Archive& archive)
         if (!plugins_.Serialize(archive))
             return false;
 
-        // TODO: Settings should be per-flavor, move into Pipeline::Serialize
-        if (auto settingsBlock = archive.OpenMapBlock("settings", engineParameters_.size()))
-        {
-            ea::string key;
-            if (archive.IsInput())
-            {
-                Variant value;
-                if (!archive.SerializeKey(key))
-                    return false;
-                if (!SerializeValue(archive, "value", engineParameters_[key]))
-                    return false;
-            }
-            else
-            {
-                for (auto& pair : engineParameters_)
-                {
-                    key = pair.first;
-                    if (!archive.SerializeKey(key))
-                        return false;
-                    if (!SerializeValue(archive, "value", pair.second))
-                        return false;
-                }
-            }
-        }
-
         using namespace EditorProjectSerialize;
         SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);
     }

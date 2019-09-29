@@ -411,8 +411,46 @@ bool Pipeline::Serialize(Archive& archive)
 {
     if (auto block = archive.OpenUnorderedBlock("pipeline"))
     {
-        if (!SerializeValue(archive, "flavors", flavors_))
-            return false;
+        if (auto block = archive.OpenSequentialBlock("flavors"))
+        {
+            if (archive.IsInput())
+                flavors_.resize(block.GetSizeHint());
+            for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors_.size(); i < num; i++)
+            {
+                if (auto block = archive.OpenUnorderedBlock("flavor"))
+                {
+                    ea::string& flavor = flavors_[i];
+                    if (!SerializeValue(archive, "name", flavor))
+                        return false;
+
+                    ea::map<ea::string, Variant>& parameters = engineParameters_[flavor];
+                    if (auto block = archive.OpenMapBlock("settings", parameters.size()))
+                    {
+                        if (archive.IsInput())
+                        {
+                            for (unsigned j = 0; j < block.GetSizeHint(); ++j)
+                            {
+                                ea::string key;
+                                if (!archive.SerializeKey(key))
+                                    return false;
+                                if (!SerializeValue(archive, "value", parameters[key]))
+                                    return false;
+                            }
+                        }
+                        else
+                        {
+                            for (auto& pair : parameters)
+                            {
+                                if (!archive.SerializeKey(const_cast<ea::string&>(pair.first)))
+                                    return false;
+                                if (!SerializeValue(archive, "value", pair.second))
+                                    return false;
+                            }
+                        }
+                    }
+                }
+            }
+        }
 
         if (archive.IsInput())
         {
