@@ -144,7 +144,7 @@ Logger::Logger(void* logger)
 {
 }
 
-void Logger::WriteFormatted(LogLevel level, const ea::string& message)
+void Logger::Write(LogLevel level, const ea::string& message)
 {
     if (logger_ == nullptr)
         return;
@@ -294,18 +294,17 @@ void Log::SetLogFormat(const ea::string& format)
 
 Logger Log::GetLogger(const ea::string& name)
 {
-    const ea::string& actualName = name.empty() ? "main" : name;
     std::shared_ptr<spdlog::logger> logger;
 
     bool locking = logInstance != nullptr;
     if (locking)
         logInstance->logMutex_.Acquire();
 
-    logger = spdlog::get(actualName);
+    logger = spdlog::get(name);
 
     if (!logger)
     {
-        logger = std::make_shared<spdlog::logger>(actualName, logInstance->impl_->sinkProxy_);
+        logger = std::make_shared<spdlog::logger>(name, logInstance->impl_->sinkProxy_);
         spdlog::register_logger(logger);
     }
 
@@ -313,6 +312,12 @@ Logger Log::GetLogger(const ea::string& name)
         logInstance->logMutex_.Release();
 
     return Logger(reinterpret_cast<void*>(logger.get()));
+}
+
+Logger Log::GetLogger()
+{
+    static Logger defaultLogger = Log::GetLogger("main");
+    return defaultLogger;
 }
 
 void Log::SendMessageEvent(LogLevel level, time_t timestamp, const ea::string& logger, const ea::string& message)

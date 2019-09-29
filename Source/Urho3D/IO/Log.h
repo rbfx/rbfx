@@ -116,13 +116,14 @@ protected:
 
 public:
     Logger() = default;
+    Logger(const Logger& other) = default;
     ///
     template<typename... Args> void Trace(const char* format, Args... args)   { Write(LOG_TRACE, format, args...); }
     template<typename... Args> void Debug(const char* format, Args... args)   { Write(LOG_DEBUG, format, args...); }
     template<typename... Args> void Info(const char* format, Args... args)    { Write(LOG_INFO, format, args...); }
     template<typename... Args> void Warning(const char* format, Args... args) { Write(LOG_WARNING, format, args...); }
     template<typename... Args> void Error(const char* format, Args... args)   { Write(LOG_ERROR, format, args...); }
-    template<typename... Args> void Write(LogLevel level, const char* format, Args... args) { WriteFormatted(level, Format(format, args...)); }
+    template<typename... Args> void Write(LogLevel level, const char* format, Args... args) { Write(level, Format(format, args...)); }
 
     template<typename... Args> void Trace(const ea::string& message)   { Write(LOG_TRACE, message.c_str()); }
     template<typename... Args> void Debug(const ea::string& message)   { Write(LOG_DEBUG, message.c_str()); }
@@ -130,7 +131,7 @@ public:
     template<typename... Args> void Warning(const ea::string& message) { Write(LOG_WARNING, message.c_str()); }
     template<typename... Args> void Error(const ea::string& message)   { Write(LOG_ERROR, message.c_str()); }
 
-    void WriteFormatted(LogLevel level, const ea::string& message);
+    void Write(LogLevel level, const ea::string& message);
 
 protected:
     /// Instance of spdlog logger.
@@ -168,7 +169,9 @@ public:
     bool IsQuiet() const { return quiet_; }
 
     /// Returns a logger with specified name.
-    static Logger GetLogger(const ea::string& name="");
+    static Logger GetLogger(const ea::string& name);
+    /// Returns default logger.
+    static Logger GetLogger();
 
     ///
     void PumpThreadMessages();
@@ -203,11 +206,11 @@ private:
 #define URHO3D_LOGINFO(message, ...) Urho3D::Log::GetLogger().Info(message, ##__VA_ARGS__)
 #define URHO3D_LOGWARNING(message, ...) Urho3D::Log::GetLogger().Warning(message, ##__VA_ARGS__)
 #define URHO3D_LOGERROR(message, ...) Urho3D::Log::GetLogger().Error(message, ##__VA_ARGS__)
-#define URHO3D_LOGTRACEF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_TRACE, Urho3D::ToString(format, ##__VA_ARGS__))
-#define URHO3D_LOGDEBUGF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
-#define URHO3D_LOGINFOF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_INFO, Urho3D::ToString(format, ##__VA_ARGS__))
-#define URHO3D_LOGWARNINGF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_WARNING, Urho3D::ToString(format, ##__VA_ARGS__))
-#define URHO3D_LOGERRORF(format, ...) Urho3D::Log::GetLogger().WriteFormatted(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
+#define URHO3D_LOGTRACEF(format, ...) Urho3D::Log::GetLogger().Write(Urho3D::LOG_TRACE, Urho3D::ToString(format, ##__VA_ARGS__))
+#define URHO3D_LOGDEBUGF(format, ...) Urho3D::Log::GetLogger().Write(Urho3D::LOG_DEBUG, Urho3D::ToString(format, ##__VA_ARGS__))
+#define URHO3D_LOGINFOF(format, ...) Urho3D::Log::GetLogger().Write(Urho3D::LOG_INFO, Urho3D::ToString(format, ##__VA_ARGS__))
+#define URHO3D_LOGWARNINGF(format, ...) Urho3D::Log::GetLogger().Write(Urho3D::LOG_WARNING, Urho3D::ToString(format, ##__VA_ARGS__))
+#define URHO3D_LOGERRORF(format, ...) Urho3D::Log::GetLogger().Write(Urho3D::LOG_ERROR, Urho3D::ToString(format, ##__VA_ARGS__))
 #else
 #define URHO3D_LOGTRACE(...) ((void)0)
 #define URHO3D_LOGDEBUG(...) ((void)0)
