@@ -114,11 +114,14 @@ int Application::Run()
 #if URHO3D_PLUGINS && URHO3D_CSHARP
         if (engine_->GetParameter(engineParameters_, EP_ENGINE_AUTO_LOAD_SCRIPTS, true).GetBool())
         {
-            scriptsPlugin_ = Script::GetRuntimeApi()->CompileResourceScriptPlugin();
-            scriptsPlugin_->SendEvent(E_PLUGINLOAD);
-            scriptsPlugin_->Load();
-            scriptsPlugin_->SendEvent(E_PLUGINSTART);
-            scriptsPlugin_->Start();
+            if (auto* api = Script::GetRuntimeApi())
+            {
+                scriptsPlugin_ = api->CompileResourceScriptPlugin();
+                scriptsPlugin_->SendEvent(E_PLUGINLOAD);
+                scriptsPlugin_->Load();
+                scriptsPlugin_->SendEvent(E_PLUGINSTART);
+                scriptsPlugin_->Start();
+            }
         }
 #endif
 
