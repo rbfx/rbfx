@@ -370,6 +370,7 @@ void Editor::OnUpdate(VariantMap& args)
     ImGui::PopStyleVar();
 
     RenderMenuBar();
+    RenderSettingsWindow();
 
     bool hasModified = false;
     if (project_.NotNull())
@@ -741,7 +742,7 @@ void Editor::SetupSystemUI()
     // TODO: Make configurable.
     auto& style = ImGui::GetStyle();
     style.FrameBorderSize = 0;
-    style.WindowBorderSize = 0;
+    style.WindowBorderSize = 1;
     style.ItemSpacing = {4, 4};
     ImVec4* colors = ImGui::GetStyle().Colors;
     colors[ImGuiCol_Text]                   = ImVec4(1.00f, 1.00f, 1.00f, 1.00f);

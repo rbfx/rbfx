@@ -110,6 +110,8 @@ protected:
     /// Renders a project plugins submenu.
     void RenderProjectMenu();
     ///
+    void RenderSettingsWindow();
+    ///
     void SetupSystemUI();
     ///
     template<typename T> void RegisterSubcommand();
@@ -134,6 +136,8 @@ protected:
     ImFont* monoFont_ = nullptr;
     ///
     bool exiting_ = false;
+    ///
+    bool settingsOpen_ = false;
     ///
     ea::string defaultProjectPath_;
     ///
