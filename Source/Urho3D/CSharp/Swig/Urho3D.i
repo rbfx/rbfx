@@ -250,6 +250,15 @@ namespace SDL
 %ignore Urho3D::logLevelNames;
 %ignore Urho3D::LOG_LEVEL_COLORS;
 
+%extend Urho3D::Log {
+public:
+    static void Trace(const char* message)   { Log::GetLogger().Write(LOG_TRACE, message); }
+    static void Debug(const char* message)   { Log::GetLogger().Write(LOG_DEBUG, message); }
+    static void Info(const char* message)    { Log::GetLogger().Write(LOG_INFO, message); }
+    static void Warning(const char* message) { Log::GetLogger().Write(LOG_WARNING, message); }
+    static void Error(const char* message)   { Log::GetLogger().Write(LOG_ERROR, message); }
+}
+
 %interface_custom("%s", "I%s", Urho3D::Serializer);
 %include "Urho3D/IO/Serializer.h"
 %interface_custom("%s", "I%s", Urho3D::Deserializer);
