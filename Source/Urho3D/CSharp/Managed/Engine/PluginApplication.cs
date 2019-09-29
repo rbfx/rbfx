@@ -20,18 +20,29 @@
 // THE SOFTWARE.
 //
 using System;
+using System.Reflection;
 using Urho3DNet.CSharp;
 
 namespace Urho3DNet
 {
     public partial class PluginApplication
     {
+        private Assembly _hostAssembly;
+        /// Sets assembly that is being managed by this plugin.
+        internal void SetHostAssembly(Assembly assembly)
+        {
+            _hostAssembly = assembly;
+        }
+
         private void OnSetupInstance()
         {
             SubscribeToEvent(E.PluginLoad, this, map =>
             {
+                if (_hostAssembly == null)
+                    _hostAssembly = GetType().Assembly;
+
                 // Register factories marked with attributes
-                foreach ((Type type, ObjectFactoryAttribute attr) in GetType().Assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
+                foreach ((Type type, ObjectFactoryAttribute attr) in _hostAssembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
                     RegisterFactory(type, attr.Category);
                 UnsubscribeFromEvent(E.PluginLoad);
             });

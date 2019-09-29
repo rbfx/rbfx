@@ -5,9 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
 using Microsoft.CSharp;
-using Urho3DNet.CSharp;
 
 namespace Urho3DNet
 {
@@ -113,31 +111,11 @@ namespace Urho3DNet
 
         public override PluginApplication CompileResourceScriptPlugin()
         {
-            // TODO: This wont work with hot-reload.
             var sourceCode = new List<string>();
             var scriptFiles = new StringList();
             Context.Instance.Cache.Scan(scriptFiles, "", "*.cs", Urho3D.ScanFiles, true);
-
             foreach (string fileName in scriptFiles)
-            {
-                File file = Context.Instance.Cache.GetFile(fileName);
-                if (file != null)
-                    sourceCode.Add(file.ReadText());
-            }
-
-            // a dummy plugin application class that gets compiled into script bundle assembly and enables
-            // PluginApplication to automatically register factories.
-            sourceCode.Add(@"
-            using Urho3DNet;
-            namespace Urho3DNet
-            {
-                internal class ScriptBundlePlugin : PluginApplication
-                {
-                    public ScriptBundlePlugin(Context context) : base(context)
-                    {
-                    }
-                }
-            }");
+                sourceCode.Add(Context.Instance.Cache.GetResourceFileName(fileName));
 
             var csc = new CSharpCodeProvider();
             var compileParameters = new CompilerParameters(new[]    // TODO: User may need to extend this list
@@ -159,21 +137,19 @@ namespace Urho3DNet
                 TreatWarningsAsErrors = false,
             };
 
-            CompilerResults results = csc.CompileAssemblyFromSource(compileParameters, sourceCode.ToArray());
+            CompilerResults results = csc.CompileAssemblyFromFile(compileParameters, sourceCode.ToArray());
             if (results.Errors.HasErrors)
             {
                 foreach (CompilerError error in results.Errors)
-                    System.Console.WriteLine(error.ErrorText);    // TODO: Use Logging subsystem
+                {
+                    string kind = error.IsWarning ? "W" : "E";
+                    Log.Error($"{kind}: {error.FileName}:{error.Line}:{error.Column}: {error.ErrorText}");
+                }
                 return null;
             }
-            else
-            {
-
-                Type pluginType = results.CompiledAssembly.GetTypes().First(t => t.IsClass && t.BaseType == typeof(PluginApplication));
-                if (pluginType == null)
-                    throw new Exception("Subclass of PluginApplication does not exist in script bundle.");
-                return Activator.CreateInstance(pluginType, Context.Instance) as PluginApplication;
-            }
+            var plugin = new PluginApplication(Context.Instance);
+            plugin.SetHostAssembly(results.CompiledAssembly);
+            return plugin;
         }
     }
 }
