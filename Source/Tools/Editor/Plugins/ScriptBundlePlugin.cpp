@@ -59,7 +59,12 @@ void ScriptBundlePlugin::OnFileChanged(VariantMap& args)
 {
     using namespace FileChanged;
     const ea::string& name = args[P_RESOURCENAME].GetString();
-    outOfDate_ |= name.starts_with(name_ + "/") && name.ends_with(".cs");
+    outOfDate_ |= name.ends_with(".cs");
+    if (outOfDate_ && !IsLoaded())
+    {
+        Load();
+        outOfDate_ = false;
+    }
 }
 
 }
