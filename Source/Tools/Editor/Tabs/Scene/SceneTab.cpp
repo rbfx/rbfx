@@ -1447,11 +1447,10 @@ void SceneTab::Close()
 {
     Undo::SetTrackingScoped noTrack(undo_, false);
 
-    BaseClassName::Close();
-
     SceneManager* manager = GetSubsystem<SceneManager>();
-    manager->SetActiveScene(nullptr);
-    manager->UnloadAllButActiveScene();
+    manager->UnloadScene(GetScene());
+
+    BaseClassName::Close();
 
     GetSubsystem<Editor>()->UpdateWindowTitle();
 }

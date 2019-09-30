@@ -79,18 +79,19 @@ Scene* SceneManager::GetOrCreateScene(const ea::string& name)
 
 void SceneManager::UnloadScene(Scene* scene)
 {
-    auto it = scenes_.find(SharedPtr<Scene>(scene));
-    if (it != scenes_.end())
-        scenes_.erase(it);
-    if (activeScene_.Expired())
-        UpdateViewports();
+    if (scene == nullptr)
+        return;
+
+    if (activeScene_ == scene)
+        SetActiveScene(nullptr);
+
+    scenes_.erase_first(SharedPtr<Scene>(scene));
 }
 
 void SceneManager::UnloadScene(const ea::string& name)
 {
-    scenes_.erase_first(SharedPtr<Scene>(GetScene(name)));
-    if (activeScene_.Expired())
-        UpdateViewports();
+    SharedPtr<Scene> scene(GetScene(name));
+    UnloadScene(scene);
 }
 
 void SceneManager::UnloadAll()
