@@ -966,7 +966,7 @@ void SceneTab::RestoreState(SceneState& source)
         editorObjects->Save(editorObjectsState);
     }
 
-    source.Load(rootElement_);
+    source.Load(GetScene(), rootElement_);
     GetSubsystem<SceneManager>()->UnloadAllButActiveScene();
 
     if (editorObjectsState.GetSize() > 0)
