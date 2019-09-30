@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include <Urho3D/IO/BinaryArchive.h>
 #include <Urho3D/Scene/SceneManager.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
@@ -36,7 +37,6 @@ namespace Urho3D
 {
 
 class EditorSceneSettings;
-class SceneEffects;
 
 struct SceneState
 {
@@ -44,27 +44,28 @@ struct SceneState
     {
         sceneState_.Clear();
         uiState_.Clear();
-        startScene_ = scene;
-        scene->SaveXML(sceneState_);
-        root->GetUI()->SaveLayout(uiState_, root);
+        BinaryOutputArchive sceneArchive(scene->GetContext(), sceneState_);
+        scene->Serialize(sceneArchive);
+        BinaryOutputArchive uiArchive(scene->GetContext(), uiState_);
+        root->Serialize(uiArchive);
         defaultStyle_ = root->GetDefaultStyle();
     }
 
-    void Load(UIElement* root)
+    void Load(Scene* scene, UIElement* root)
     {
         sceneState_.Seek(0);
-        startScene_->LoadXML(sceneState_);
-        startScene_->GetUI()->Clear();
+        BinaryInputArchive sceneArchive(scene->GetContext(), sceneState_);
+        scene->Serialize(sceneArchive);
+        scene->GetUI()->Clear();
         root->SetDefaultStyle(defaultStyle_);
-        root->LoadXML(uiState_);
+        BinaryInputArchive uiArchive(scene->GetContext(), uiState_);
+        root->Serialize(uiArchive);
         defaultStyle_ = nullptr;
         sceneState_.Clear();
         uiState_.Clear();
-        startScene_->GetSubsystem<SceneManager>()->SetActiveScene(startScene_);
+        scene->GetSubsystem<SceneManager>()->SetActiveScene(scene);
     }
 
-    ///
-    WeakPtr<Scene> startScene_;
     ///
     VectorBuffer sceneState_;
     ///
