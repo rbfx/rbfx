@@ -142,8 +142,20 @@ namespace Urho3DNet
             {
                 foreach (CompilerError error in results.Errors)
                 {
-                    string kind = error.IsWarning ? "W" : "E";
-                    Log.Error($"{kind}: {error.FileName}:{error.Line}:{error.Column}: {error.ErrorText}");
+                    string resourceName = error.FileName;
+                    foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
+                    {
+                        if (resourceName.StartsWith(resourceDir))
+                        {
+                            resourceName = resourceName.Substring(resourceDir.Length);
+                            break;
+                        }
+                    }
+                    string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
+                    if (error.IsWarning)
+                        Log.Warning(message);
+                    else
+                        Log.Error(message);
                 }
                 return null;
             }
