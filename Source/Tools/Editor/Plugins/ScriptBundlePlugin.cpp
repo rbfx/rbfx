@@ -23,6 +23,7 @@
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/Script/Script.h>
 #include "Plugins/ScriptBundlePlugin.h"
+#include "Project.h"
 
 #if URHO3D_PLUGINS && URHO3D_CSHARP
 namespace Urho3D
@@ -62,7 +63,7 @@ void ScriptBundlePlugin::OnFileChanged(VariantMap& args)
     outOfDate_ |= name.ends_with(".cs");
     if (outOfDate_ && !IsLoaded())
     {
-        Load();
+        GetSubsystem<Project>()->GetPlugins()->Load(ScriptBundlePlugin::GetTypeStatic(), name_);
         outOfDate_ = false;
     }
 }
