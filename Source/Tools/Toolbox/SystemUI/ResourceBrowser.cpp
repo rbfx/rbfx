@@ -280,16 +280,12 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             switch (ui::DoubleClickSelectable((icon + " " + item).c_str(), isSelected))
             {
             case 1:
-                state.singleClickPending = [&]()
-                {
-                    selected = item;
-                    result = RBR_ITEM_SELECTED;
-                    using namespace ResourceBrowserSelect;
-                    fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
-                };
+                selected = item;
+                result = RBR_ITEM_SELECTED;
+                using namespace ResourceBrowserSelect;
+                fs->SendEvent(E_RESOURCEBROWSERSELECT, P_NAME, path + selected);
                 break;
             case 2:
-                state.singleClickPending = nullptr;
                 result = RBR_ITEM_OPEN;
                 break;
             default:
