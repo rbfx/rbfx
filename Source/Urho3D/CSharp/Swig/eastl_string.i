@@ -156,7 +156,8 @@ class string;
         SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "null string", 0);
         return $null;
     }
-    $*1_ltype $input_str(*(const char**)$input);
+    const char* p_$input = *(const char**)$input;
+    $*1_ltype $input_str(p_$input ? p_$input : "");
     $1 = &$input_str;
 %}
 %typemap(argout) string& %{ *(const char**)$input = SWIG_csharp_string_callback($input_str.c_str()); %}
