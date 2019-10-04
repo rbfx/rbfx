@@ -127,6 +127,8 @@ protected:
     ea::string packagerModalTitle_{};
     ///
     ea::unordered_map<ea::string /*flavor*/, ea::map<ea::string /*EP_**/, Variant>> engineParameters_;
+    ///
+    Logger logger_ = Log::GetLogger("pipeline");
 
 
     friend class Project;

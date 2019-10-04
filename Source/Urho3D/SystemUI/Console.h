@@ -87,6 +87,8 @@ private:
     void HandleLogMessage(StringHash eventType, VariantMap& eventData);
     /// Render system ui.
     void RenderUi(StringHash eventType, VariantMap& eventData);
+    /// Scroll console to the end.
+    void ScrollToEnd() { scrollToEnd_ = 2; }
 
     struct LogEntry
     {
@@ -118,8 +120,8 @@ private:
     char inputBuffer_[0x1000]{};
     /// Console window size.
     IntVector2 windowSize_{M_MAX_INT, 200};
-    /// Flag indicating that console should scroll to end of the log on the next frame.
-    bool scrollToEnd_ = false;
+    /// Number of frames to attempt scrolling to the end. Usually two tries are required to properly complete the action (for some reason).
+    int scrollToEnd_ = 0;
     ///Flag indicating that console input should be focused on the next frame.
     bool focusInput_ = false;
     /// Set of loggers to be omitted from rendering.
@@ -138,10 +140,10 @@ private:
     };
     /// Current selection in console window. This range denote start and end of selected characters and may span multiple log lines.
     IntVector2 selection_{};
-    /// Temporary variable for formatting a row.
-    ea::string formattedRow_{};
     /// Temporary variable for accumulating selection in order to copy it to clipboard.
     ea::string copyBuffer_{};
+    /// When set to true scrollbar of messages panel is at the bottom.
+    bool isAtEnd_ = false;
 };
 
 }

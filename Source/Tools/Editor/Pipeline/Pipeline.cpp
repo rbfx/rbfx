@@ -246,7 +246,7 @@ bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBui
         if (!importer->Accepts(asset->GetResourcePath()))
             continue;
 
-        Log::GetLogger("pipeline").Info("{} is importing '{}'.", importer->GetTypeName(), asset->GetName());
+        logger_.Info("{} is importing 'res://{}'.", importer->GetTypeName(), asset->GetName());
 
         if (importer->Execute(asset, outputPath))
         {

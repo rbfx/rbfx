@@ -289,6 +289,7 @@ void Editor::Start()
             exiting_ = true;
     });
     SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
+    SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
     SetupSystemUI();
     if (!defaultProjectPath_.empty())
     {
@@ -881,5 +882,17 @@ bool Editor::RegisterPlugin(PluginApplication* plugin)
     return project_->GetPlugins()->RegisterPlugin(plugin);
 }
 #endif
+
+void Editor::OnConsoleUriClick(VariantMap& args)
+{
+    using namespace ConsoleUriClick;
+    if (ui::IsMouseClicked(MOUSEB_LEFT))
+    {
+        const ea::string& protocol = args[P_PROTOCOL].GetString();
+        const ea::string& address = args[P_ADDRESS].GetString();
+        if (protocol == "res")
+            GetFileSystem()->SystemOpen(GetCache()->GetResourceFileName(address));
+    }
+}
 
 }
