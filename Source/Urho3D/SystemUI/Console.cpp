@@ -41,6 +41,8 @@
 namespace Urho3D
 {
 
+static const char* debugLevelAbbreviations[] = {"T", "D", "I", "W", "E", 0};
+
 Console::Console(Context* context) :
     Object(context)
 {
@@ -147,53 +149,106 @@ void Console::HandleLogMessage(StringHash eventType, VariantMap& eventData)
 
 void Console::RenderContent()
 {
-    auto region = ui::GetContentRegionAvail();
-    auto showCommandInput = !interpretersPointers_.empty();
-    ui::BeginChild("ConsoleScrollArea", ImVec2(region.x, region.y - (showCommandInput ? 30 : 0)), false,
-                   ImGuiWindowFlags_HorizontalScrollbar);
-
-    for (const auto& row : history_)
+    ImVec2 region = ui::GetContentRegionAvail();
+    bool showCommandInput = !interpretersPointers_.empty();
+    bool copying = (ui::IsKeyDown(SDL_SCANCODE_LCTRL) || ui::IsKeyDown(SDL_SCANCODE_RCTRL)) && ui::IsKeyPressed(SDL_SCANCODE_C);
+    if (ui::BeginChild("ConsoleScrollArea", ImVec2(region.x, region.y - (showCommandInput ? 30 : 0)), false,
+        ImGuiWindowFlags_HorizontalScrollbar))
     {
-        if (!levelVisible_[row.level_])
-            continue;
-
-        if (loggersHidden_.contains(row.logger_))
-            continue;
-
-        ImColor color;
-        const char* debugLevel;
-        switch (row.level_)
+        const ImGuiIO& io = ui::GetIO();
+        int textStart = 0;
+        for (const auto& row : history_)
         {
-        case LOG_TRACE:
-            debugLevel = "T";
-            break;
-        case LOG_DEBUG:
-            debugLevel = "D";
-            break;
-        case LOG_INFO:
-            debugLevel = "I";
-            break;
-        case LOG_WARNING:
-            debugLevel = "W";
-            break;
-        case LOG_ERROR:
-            debugLevel = "E";
-            break;
-        default:
-            debugLevel = "?";
-            break;
+            formattedRow_ = Format("[{}] [{}] [{}] : {}", Time::GetTimeStamp(row.timestamp_, "%H:%M:%S"),
+                debugLevelAbbreviations[row.level_], row.logger_, row.message_);
+            int textEnd = textStart + (int) formattedRow_.length();
+
+            if (!levelVisible_[row.level_])
+            {
+                textStart = textEnd;
+                continue;
+            }
+
+            if (loggersHidden_.contains(row.logger_))
+            {
+                textStart = textEnd;
+                continue;
+            }
+
+            const char* rowStart = formattedRow_.c_str();
+            const char* rowEnd = formattedRow_.c_str() + formattedRow_.length();
+
+            // Perform selection
+            if (ui::IsMouseDown(MOUSEB_LEFT))
+            {
+                ImVec2 rowSize = ui::CalcTextSize(rowStart, rowEnd);
+                ImRect rowRect{};
+                rowRect.Min = rowRect.Max = ui::GetCursorScreenPos();
+                rowRect.Max.x = region.x;
+                rowRect.Max.y += rowSize.y + ui::GetStyle().ItemSpacing.y;   // So clicking between rows still does a selection
+                if (rowRect.Contains(ui::GetMousePos()) && ui::IsWindowHovered())
+                {
+                    ImVec2 pos = ui::GetCursorScreenPos();
+                    int hoverChar;
+                    for (hoverChar = 0; hoverChar < (int)formattedRow_.length(); hoverChar++)
+                    {
+                        ImVec2 charSize = ui::CalcTextSize(rowStart + hoverChar, rowStart + hoverChar + 1);
+                        if (ImRect(pos, pos + charSize).Contains(ui::GetMousePos()))
+                            break;
+                        pos.x += charSize.x;
+                    }
+                    selection_.y_ = textStart + hoverChar;
+                    if (ui::IsMouseClicked(MOUSEB_LEFT))
+                        selection_.x_ = selection_.y_;
+                }
+            }
+
+            // Render selection. This is not exactly optimal as each line renders it's own selection rectangle.
+            const char* selectedStart = Clamp(rowStart + (Min(selection_.x_, selection_.y_) - textStart), rowStart, rowEnd);
+            const char* selectedEnd = Clamp(rowEnd + (Max(selection_.x_, selection_.y_) - textEnd), rowStart, rowEnd);
+            if (selectedStart < selectedEnd)
+            {
+                if (copying && ui::IsWindowFocused())
+                {
+                    copyBuffer_.append(selectedStart, selectedEnd - selectedStart);
+                    if (selectedEnd == rowEnd && Max(selection_.x_, selection_.y_) > textEnd)
+                    {
+                        // Append new line if this line is selected to the end and selection on the next line exists.
+#if _WIN32
+                        const char* eol = "\r\n";
+#else
+                        const char* eol = "\n";
+#endif
+                        copyBuffer_.append(eol);
+                    }
+                }
+                ImVec2 sizeUnselected = ui::CalcTextSize(rowStart, selectedStart);
+                ImVec2 sizeSelected = ui::CalcTextSize(selectedStart, selectedEnd);
+                ImRect selection{};
+                selection.Min = ui::GetCursorScreenPos();
+                selection.Min.x += sizeUnselected.x;
+                selection.Max = selection.Min + sizeSelected;
+                selection.Max.y += ui::GetStyle().ItemSpacing.y;   // Fill in spaces between lines
+                ui::GetWindowDrawList()->AddRectFilled(selection.Min, selection.Max, ui::GetColorU32(ImGuiCol_TextSelectedBg));
+            }
+            ui::PushStyleColor(ImGuiCol_Text, ToImGui(LOG_LEVEL_COLORS[row.level_]));
+            ui::TextUnformatted(rowStart, rowEnd);
+            ui::PopStyleColor();
+            textStart = textEnd;
         }
-        color = ToImGui(LOG_LEVEL_COLORS[row.level_]);
-        ui::TextColored(color, "[%s] [%s] [%s] : %s", Time::GetTimeStamp(row.timestamp_, "%H:%M:%S").c_str(),
-            debugLevel, row.logger_.c_str(), row.message_.c_str());
-    }
 
-    if (scrollToEnd_)
-    {
-        ui::SetScrollHereY(1.f);
-        scrollToEnd_ = false;
-    }
+        if (scrollToEnd_)
+        {
+            ui::SetScrollHereY(1.f);
+            scrollToEnd_ = false;
+        }
 
+        if (!copyBuffer_.empty())
+        {
+            ui::SetClipboardText(copyBuffer_.c_str());
+            copyBuffer_.clear();
+        }
+    }
     ui::EndChild();
 
     if (showCommandInput)

@@ -136,6 +136,12 @@ private:
         true,   // LOG_WARNING
         true    // LOG_ERROR
     };
+    /// Current selection in console window. This range denote start and end of selected characters and may span multiple log lines.
+    IntVector2 selection_{};
+    /// Temporary variable for formatting a row.
+    ea::string formattedRow_{};
+    /// Temporary variable for accumulating selection in order to copy it to clipboard.
+    ea::string copyBuffer_{};
 };
 
 }
