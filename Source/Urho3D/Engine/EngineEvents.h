@@ -34,6 +34,13 @@ URHO3D_EVENT(E_CONSOLECOMMAND, ConsoleCommand)
     URHO3D_PARAM(P_ID, Id);                        // String
 }
 
+/// A command has been entered on the console.
+URHO3D_EVENT(E_CONSOLEURICLICK, ConsoleUriClick)
+{
+    URHO3D_PARAM(P_ADDRESS, Address);              // String
+    URHO3D_PARAM(P_PROTOCOL, Protocol);            // String
+}
+
 /// Engine finished initialization, but Application::Start() was not claled yet.
 URHO3D_EVENT(E_ENGINEINITIALIZED, EngineInitialized)
 {
