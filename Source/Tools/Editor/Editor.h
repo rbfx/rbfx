@@ -117,6 +117,8 @@ protected:
     template<typename T> void RegisterSubcommand();
     /// Opens a file dialog for folder selection. Project is opened or created in selected folder.
     void OpenOrCreateProject();
+    ///
+    void OnConsoleUriClick(VariantMap& args);
 
     /// List of active scene tabs.
     ea::vector<SharedPtr<Tab>> tabs_;
