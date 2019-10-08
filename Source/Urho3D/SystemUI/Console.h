@@ -143,7 +143,7 @@ private:
     /// Temporary variable for accumulating selection in order to copy it to clipboard.
     ea::string copyBuffer_{};
     /// When set to true scrollbar of messages panel is at the bottom.
-    bool isAtEnd_ = false;
+    bool isAtEnd_ = true;
 };
 
 }
