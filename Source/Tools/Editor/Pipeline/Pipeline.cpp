@@ -246,10 +246,10 @@ bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBui
         if (!importer->Accepts(asset->GetResourcePath()))
             continue;
 
-        logger_.Info("{} is importing 'res://{}'.", importer->GetTypeName(), asset->GetName());
-
         if (importer->Execute(asset, outputPath))
         {
+            logger_.Info("{} imported 'res://{}'.", importer->GetTypeName(), asset->GetName());
+
             importedAnything = true;
             for (const ea::string& byproduct : importer->GetByproducts())
             {

@@ -141,11 +141,7 @@ bool TextureImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath
     int pixelFormatValue = GetAttribute("Pixel Format").GetInt();
 
     if (pixelFormatValue == (int)PixelFormat::None)
-    {
-        GetFileSystem()->Delete(outputFile);
-        RemoveByproduct(outputFile);
-        return true;
-    }
+        return false;
     else
         GetFileSystem()->CreateDirsRecursive(outputDirectory);
 
@@ -217,13 +213,11 @@ bool TextureImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath
     int result = GetFileSystem()->SystemRun(GetFileSystem()->GetProgramDir() + "/crunch", arguments, output);
     if (result != 0)
     {
-        URHO3D_LOGERROR("{}-Compressing '{}' to '{}' failed.", pixelFormat, input->GetResourcePath(), outputFile);
+        logger_.Error("Error {}-compressing 'res://{}' to '{}' failed.", pixelFormat, input->GetName(), outputFile);
         if (!output.empty())
             URHO3D_LOGERROR(output);
         return false;
     }
-    else
-        URHO3D_LOGINFO("{}-Compressed '{}' to '{}'.", pixelFormat, input->GetResourcePath(), outputFile);
 
     AddByproduct(outputFile);
     return true;

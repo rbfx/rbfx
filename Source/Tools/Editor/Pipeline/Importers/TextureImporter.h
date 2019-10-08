@@ -165,6 +165,8 @@ protected:
     bool useTransparentIndicesForBlack_ = false;
     ///
     PixelFormat pixelFormat_ = PixelFormat::None;
+    ///
+    Logger logger_ = Log::GetLogger(ClassName::GetTypeNameStatic());
 };
 
 
