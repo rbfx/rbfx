@@ -22,6 +22,7 @@
 
 #pragma once
 
+#include <Urho3D/IO/Archive.h>
 #include <Urho3D/Scene/Serializable.h>
 
 #include "Tabs/Tab.h"
@@ -46,9 +47,7 @@ public:
     /// May be called from non-main thread. Returns a list of produced files in `byproducts` vector and `true` on success.
     virtual bool Execute(Urho3D::Asset* input, const ea::string& outputPath);
     ///
-    bool SaveJSON(JSONValue& dest) const override;
-    ///
-    bool LoadJSON(const JSONValue& source) override;
+    bool Serialize(Archive& archive, ArchiveBlock& block);
     /// Returns true when importer is not required to run during editing session.
     bool IsOptional() const { return isOptional_; }
     /// Returns true when settings of this importer were modified by the user.
