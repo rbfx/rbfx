@@ -27,6 +27,7 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
@@ -259,11 +260,10 @@ bool Asset::Save()
 
     if (isModified)
     {
-        JSONValue root{ };
-        if (SaveJSON(root))
+        JSONFile file(context_);
+        JSONOutputArchive archive(&file);
+        if (Serialize(archive))
         {
-            JSONFile file(context_);
-            file.GetRoot() = root;
             if (file.SaveFile(assetPath))
                 return true;
         }
@@ -282,15 +282,19 @@ bool Asset::Load()
 {
     assert(!name_.empty());
     ea::string assetPath = RemoveTrailingSlash(resourcePath_) + ".asset";
+    JSONFile file(context_);
     if (GetFileSystem()->FileExists(assetPath))
     {
-        JSONFile file(context_);
-        if (!file.LoadFile(assetPath) || !LoadJSON(file.GetRoot()))
+        if (!file.LoadFile(assetPath))
         {
             URHO3D_LOGERROR("Loading {} failed.", assetPath);
             return false;
         }
     }
+
+    JSONInputArchive archive(&file);
+    if (!Serialize(archive))
+        return false;
 
     // Initialize flavor importers.
     for (Flavor* flavor : GetSubsystem<Pipeline>()->GetFlavors())
@@ -299,68 +303,46 @@ bool Asset::Load()
     return true;
 }
 
-bool Asset::SaveJSON(JSONValue& dest) const
+bool Asset::Serialize(Archive& archive)
 {
-    if (!Serializable::SaveJSON(dest))
-        return false;
-
-    const auto& flavors = GetSubsystem<Pipeline>()->GetFlavors();
-
-    JSONValue& flavorsDest = dest["flavors"];
-    flavorsDest.SetType(JSON_OBJECT);
-
-    for (const SharedPtr<Flavor>& flavor : flavors)
+    if (auto block = archive.OpenUnorderedBlock("asset"))
     {
-        JSONValue& flavorDest = flavorsDest[flavor->GetName()];
-        flavorDest.SetType(JSON_OBJECT);
-
-        JSONValue& importersDest = flavorDest["importers"];
-        importersDest.SetType(JSON_OBJECT);
-
-        // TODO: sort importers by type name
-        for (const auto& importer : importers_.find(flavor)->second)
-        {
-            JSONValue& importerDest = importersDest[importer->GetTypeName()];
-            importerDest.SetType(JSON_OBJECT);
-            if (!importer->SaveJSON(importerDest))
-                return false;
-        }
-    }
-
-    return true;
-}
-
-bool Asset::LoadJSON(const JSONValue& source)
-{
-    if (!Serializable::LoadJSON(source))
-        return false;
-
-    const JSONValue& flavorsSrc = source["flavors"];
-    if (!flavorsSrc.IsObject())
-        return false;
-
-    for (const SharedPtr<Flavor>& flavor : GetSubsystem<Pipeline>()->GetFlavors())
-    {
-        const JSONValue& flavorSrc = flavorsSrc[flavor->GetName()];
-        if (!flavorSrc.IsObject())
+        if (!BaseClassName::Serialize(archive, block))
             return false;
 
-        const JSONValue& importersSrc = flavorSrc["importers"];
-        if (!importersSrc.IsObject())
-            return false;
-
-        for (const auto& importerSrc : importersSrc)
+        auto* pipeline = GetSubsystem<Pipeline>();
+        const ea::vector<SharedPtr<Flavor>>& flavors = pipeline->GetFlavors();
+        if (auto block = archive.OpenUnorderedBlock("flavors"))
         {
-            if (!importerSrc.second.IsObject())
-                return false;
-            SharedPtr<AssetImporter> importer(context_->CreateObject(importerSrc.first)->Cast<AssetImporter>());
-            importer->Initialize(this, flavor);
-            if (!importer->LoadJSON(importerSrc.second))
-                return false;
-            importers_[flavor].emplace_back(importer);
+            for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors.size(); i < num; i++)
+            {
+                SharedPtr<Flavor> flavor = flavors[i];
+                if (auto block = archive.OpenUnorderedBlock(flavor->GetName().c_str()))
+                {
+                    if (auto block = archive.OpenUnorderedBlock("importers"))
+                    {
+                        for (const TypeInfo* importerType : pipeline->GetImporterTypes())
+                        {
+                            SharedPtr<AssetImporter> importer;
+                            if (archive.IsInput())
+                            {
+                                importer = context_->CreateObject(importerType->GetType())->Cast<AssetImporter>();
+                                importer->Initialize(this, flavor);
+                                importers_[flavor].emplace_back(importer);
+                            }
+                            else
+                                importer = GetImporter(flavor, importerType->GetType());
+                            if (auto block = archive.OpenUnorderedBlock(importerType->GetTypeName().c_str()))
+                            {
+                                if (!importer->Serialize(archive, block))
+                                    return false;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-
     return true;
 }
 
@@ -370,9 +352,9 @@ void Asset::AddFlavor(Flavor* flavor)
         return;
 
     ea::vector<SharedPtr<AssetImporter>>& importers = importers_[SharedPtr(flavor)];
-    for (StringHash importerType : GetSubsystem<Pipeline>()->importers_)
+    for (const TypeInfo* importerType : GetSubsystem<Pipeline>()->GetImporterTypes())
     {
-        SharedPtr<AssetImporter> importer(context_->CreateObject(importerType)->Cast<AssetImporter>());
+        SharedPtr<AssetImporter> importer(context_->CreateObject(importerType->GetType())->Cast<AssetImporter>());
         importer->Initialize(this, flavor);
         importers.emplace_back(importer);
     }

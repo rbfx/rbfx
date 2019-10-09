@@ -93,6 +93,8 @@ public:
     bool Serialize(Archive& archive) override;
     ///
     Flavor* GetDefaultFlavor() const { return flavors_.front(); }
+    ///
+    const ea::vector<const TypeInfo*>& GetImporterTypes() const { return importers_; }
 
 protected:
     /// Watch directory for changed assets and automatically convert them.
@@ -113,11 +115,11 @@ protected:
     /// A list of loaded assets.
     ea::unordered_map<ea::string /*name*/, SharedPtr<Asset>> assets_{};
     /// A list of all available importers. When new importer is created it should be added here.
-    ea::vector<StringHash> importers_
+    ea::vector<const TypeInfo*> importers_
     {
-        ModelImporter::GetTypeStatic(),
-        SceneConverter::GetTypeStatic(),
-        TextureImporter::GetTypeStatic(),
+        ModelImporter::GetTypeInfoStatic(),
+        SceneConverter::GetTypeInfoStatic(),
+        TextureImporter::GetTypeInfoStatic(),
     };
 
     ///
