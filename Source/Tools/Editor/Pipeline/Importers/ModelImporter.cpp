@@ -120,7 +120,7 @@ bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 
     if (result != 0)
     {
-        URHO3D_LOGERROR("Importing asset '{}' failed.", input->GetName());
+        URHO3D_LOGERROR("Importing asset 'res://{}' failed.", input->GetName());
         return false;
     }
 
