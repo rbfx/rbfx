@@ -541,7 +541,10 @@ void Pipeline::OnImporterModified(VariantMap& args)
     if (!importer->GetFlavor()->IsImportedByDefault())
         return;
 
-    ScheduleImport(asset);
+    if (!importer->IsOutOfDate())
+        return;
+
+    ScheduleImport(asset, importer->GetFlavor());
 }
 
 }
