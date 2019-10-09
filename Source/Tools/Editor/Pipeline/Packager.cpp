@@ -49,13 +49,13 @@ Packager::~Packager()
     assert(IsCompleted());
 }
 
-bool Packager::OpenPackage(const ea::string& path, ea::string& flavor, bool compress/*=true*/)
+bool Packager::OpenPackage(const ea::string& path, Flavor* flavor, bool compress/*=true*/)
 {
     assert(IsCompleted());
     outputPath_ = path;
     logger_ = Log::GetLogger(GetFileNameAndExtension(path));
 
-    flavor_ = flavor;
+    flavor_ = WeakPtr(flavor);
     compress_ = compress;
 
     if (output_.Open(path, FILE_WRITE))
@@ -111,8 +111,8 @@ void Packager::WritePackage()
     auto* project = GetSubsystem<Project>();
     const ea::string& resourcePath = project->GetResourcePath();
     ea::string cachePath = project->GetCachePath();
-    if (flavor_ != DEFAULT_PIPELINE_FLAVOR)
-        cachePath += flavor_ + "/";
+    if (!flavor_->IsDefault())
+        cachePath += AddTrailingSlash(flavor_->GetName());
 
     for (Asset* asset : queuedAssets_)
     {
@@ -132,7 +132,7 @@ void Packager::WritePackage()
         }
 
         // Raw assets are only written to default flavor pak
-        if (!writtenAny && flavor_ == DEFAULT_PIPELINE_FLAVOR)
+        if (!writtenAny && flavor_->IsDefault())
             AddFile(resourcePath, asset->GetResourcePath());
 
         filesDone_++;

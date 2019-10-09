@@ -88,4 +88,33 @@ URHO3D_EVENT(E_EDITORRESOURCECONTEXTMENU, EditorResourceContextMenu)
     URHO3D_PARAM(P_RESOURCENAME, ResourceName);         // String
 }
 
+/// Sent when user adds a new flavor.
+URHO3D_EVENT(E_EDITORFLAVORADDED, EditorFlavorAdded)
+{
+    URHO3D_PARAM(P_FLAVOR, Flavor);                     // Ptr
+}
+
+/// Sent when user adds a new flavor.
+URHO3D_EVENT(E_EDITORFLAVORREMOVED, EditorFlavorRemoved)
+{
+    URHO3D_PARAM(P_FLAVOR, Flavor);                     // Ptr
+}
+
+/// Sent when user adds a new flavor.
+URHO3D_EVENT(E_EDITORFLAVORRENAMED, EditorFlavorRenamed)
+{
+    URHO3D_PARAM(P_FLAVOR, Flavor);                     // Ptr
+    URHO3D_PARAM(P_OLDNAME, OldName);                   // String
+    URHO3D_PARAM(P_NEWNAME, NewName);                   // String
+}
+
+/// Sent when user adds a new flavor.
+URHO3D_EVENT(E_EDITORIMPORTERATTRIBUTEMODIFIED, EditorImporterAttributeModified)
+{
+    URHO3D_PARAM(P_ASSET, Asset);                       // Ptr
+    URHO3D_PARAM(P_IMPORTER, Importer);                 // Ptr
+    URHO3D_PARAM(P_ATTRINFO, AttrInfo);                 // Void Ptr
+    URHO3D_PARAM(P_NEWVALUE, NewValue);                 // Variant
+}
+
 }

@@ -63,8 +63,9 @@ void BuildAssets::Execute()
     if (!full_)
         flags |= PipelineBuildFlag::SKIP_UP_TO_DATE;
 
-    project->GetPipeline().BuildCache(flavor_, flags);
-    project->GetPipeline().WaitForCompletion();
+    auto* pipeline = GetSubsystem<Pipeline>();
+    pipeline->BuildCache(pipeline->GetFlavor(flavor_), flags);
+    pipeline->WaitForCompletion();
 }
 
 }

@@ -39,11 +39,13 @@
 namespace Urho3D
 {
 
+class Flavor;
+
 class Asset : public Serializable, public IInspectorProvider
 {
     URHO3D_OBJECT(Asset, Serializable);
 public:
-    using AssetImporterMap = ea::unordered_map<ea::string, ea::vector<SharedPtr<AssetImporter>>>;
+    using AssetImporterMap = ea::unordered_map<SharedPtr<Flavor>, ea::vector<SharedPtr<AssetImporter>>>;
 
     ///
     explicit Asset(Context* context);
@@ -51,10 +53,12 @@ public:
     static void RegisterObject(Context* context);
     /// Returns resource name.
     const ea::string& GetName() const { return name_; }
+    /// Set resource name.
+    void SetName(const ea::string& name);
     ///
     const ea::string& GetResourcePath() const { return resourcePath_; }
     /// Returns true when source asset is newer than last conversion date.
-    bool IsOutOfDate(const ea::string& flavor) const;
+    bool IsOutOfDate(Flavor* flavor) const;
     /// Returns true when this asset is a settings holder for a directory.
     bool IsMetaAsset() const { return contentType_ == CTYPE_FOLDER; }
     /// Returns content type of this asset.
@@ -75,23 +79,21 @@ public:
     ///
     const AssetImporterMap& GetImporters() const { return importers_; }
     ///
-    const ea::vector<SharedPtr<AssetImporter>>& GetImporters(const ea::string& flavor) const;
+    const ea::vector<SharedPtr<AssetImporter>>& GetImporters(Flavor* flavor) const;
     ///
-    AssetImporter* GetImporter(const ea::string& flavor, StringHash type) const;
+    AssetImporter* GetImporter(Flavor* flavor, StringHash type) const;
     /// Returns true when asset importers of any flavor are being executed in worker threads.
     bool IsImporting() const { return importing_; }
 
 protected:
-    /// Set resource name. Also loads resource configuration. Used only by Pipeline class.
-    void Initialize(const ea::string& resourceName);
     ///
-    void AddFlavor(const ea::string& name);
-    ///
-    void RemoveFlavor(const ea::string& name);
-    ///
-    void RenameFlavor(const ea::string& oldName, const ea::string& newName);
+    void AddFlavor(Flavor* flavor);
     ///
     void ReimportOutOfDateRecursive() const;
+    ///
+    void OnFlavorAdded(VariantMap& args);
+    ///
+    void OnFlavorRemoved(VariantMap& args);
 
     /// Resource name.
     ea::string name_;

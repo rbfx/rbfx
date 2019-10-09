@@ -54,7 +54,7 @@ Pipeline::Pipeline(Context* context)
         if (archive->IsInput())
         {
             EnableWatcher();
-            BuildCache(DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlag::SKIP_UP_TO_DATE);
+            BuildCache(nullptr, PipelineBuildFlag::SKIP_UP_TO_DATE);
         }
     });
     SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
@@ -89,6 +89,7 @@ Pipeline::Pipeline(Context* context)
         }
     });
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { OnUpdate(); });
+    SubscribeToEvent(E_EDITORIMPORTERATTRIBUTEMODIFIED, [this](StringHash, VariantMap& args) { OnImporterModified(args); });
 }
 
 void Pipeline::RegisterObject(Context* context)
@@ -129,7 +130,7 @@ void Pipeline::ClearCache(const ea::string& resourceName)
         asset.second->ClearCache();
 }
 
-Asset* Pipeline::GetAsset(const eastl::string& resourceName, bool autoCreate)
+Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
 {
     MutexLock lock(mutex_);
 
@@ -158,7 +159,8 @@ Asset* Pipeline::GetAsset(const eastl::string& resourceName, bool autoCreate)
     if (fs->Exists(resourcePath))
     {
         SharedPtr<Asset> asset(context_->CreateObject<Asset>());
-        asset->Initialize(actualResourceName);
+        asset->SetName(actualResourceName);
+        asset->Load();
         assert(asset->GetName() == actualResourceName);
         assets_[actualResourceName] = asset;
         return asset.Get();
@@ -167,48 +169,82 @@ Asset* Pipeline::GetAsset(const eastl::string& resourceName, bool autoCreate)
     return nullptr;
 }
 
-void Pipeline::AddFlavor(const ea::string& name)
+Flavor* Pipeline::AddFlavor(const ea::string& name)
 {
-    if (flavors_.contains(name))
-        return;
+    auto it = ea::find(flavors_.begin(), flavors_.end(), name, [](const Flavor* flavor, const ea::string& name) {
+        return flavor->GetName() == name;
+    });
+    if (it != flavors_.end())
+        return {};
 
-    flavors_.push_back(name);
+    SharedPtr<Flavor> flavor(new Flavor(context_));
+    flavor->SetName(name);
+    flavors_.push_back(flavor);
 
-    for (auto& asset : assets_)
-        asset.second->AddFlavor(name);
+    using namespace EditorFlavorAdded;
+    VariantMap& args = GetEventDataMap();
+    args[P_FLAVOR] = flavor;
+    SendEvent(E_EDITORFLAVORADDED);
+
+    SortFlavors();
+    return flavor;
 }
 
-void Pipeline::RemoveFlavor(const ea::string& name)
+bool Pipeline::RemoveFlavor(const ea::string& name)
 {
     if (name == DEFAULT_PIPELINE_FLAVOR)
-        return;
+        return false;
 
-    for (auto& asset : assets_)
-        asset.second->RemoveFlavor(name);
+    auto it = ea::find(flavors_.begin(), flavors_.end(), name, [](const Flavor* flavor, const ea::string& name) {
+        return flavor->GetName() == name;
+    });
+    if (it == flavors_.end())
+        return false;
 
-    flavors_.erase_first(name);
+    Flavor* flavor = *it;
+
+    using namespace EditorFlavorRemoved;
+    VariantMap& args = GetEventDataMap();
+    args[P_FLAVOR] = flavor;
+    SendEvent(E_EDITORFLAVORREMOVED);
+
+    flavors_.erase(it);
+    return true;
 }
 
-void Pipeline::RenameFlavor(const ea::string& oldName, const ea::string& newName)
+bool Pipeline::RenameFlavor(const ea::string& oldName, const ea::string& newName)
 {
     if (oldName == DEFAULT_PIPELINE_FLAVOR || newName == DEFAULT_PIPELINE_FLAVOR)
-        return;
+        return false;
 
-    auto it = flavors_.find(oldName);
+    auto it = ea::find(flavors_.begin(), flavors_.end(), oldName, [](const Flavor* flavor, const ea::string& name) {
+        return flavor->GetName() == name;
+    });
     if (it == flavors_.end())
-        return;
+        return false;
 
-    *it = newName;
+    Flavor* flavor = *it;
+    flavor->SetName(newName);
+    SortFlavors();
 
-    for (auto& asset : assets_)
-        asset.second->RenameFlavor(oldName, newName);
+    using namespace EditorFlavorRenamed;
+    VariantMap& args = GetEventDataMap();
+    args[P_FLAVOR] = flavor;
+    args[P_OLDNAME] = oldName;
+    args[P_NEWNAME] = newName;
+    SendEvent(E_EDITORFLAVORRENAMED);
+
+    return true;
 }
 
-SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags)
+SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, Flavor* flavor, PipelineBuildFlags flags)
 {
     assert(asset != nullptr);
     if (asset->importing_)
         return {};
+
+    if (flavor == nullptr)
+        flavor = GetDefaultFlavor();
 
     if (flags & PipelineBuildFlag::SKIP_UP_TO_DATE && !asset->IsOutOfDate(flavor))
         return {};
@@ -227,17 +263,16 @@ SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, const ea::string& fla
     }, 0);                              // Lowest possible priority.
 }
 
-bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags)
+bool Pipeline::ExecuteImport(Asset* asset, Flavor* flavor, PipelineBuildFlags flags)
 {
     bool importedAnything = false;
     auto* project = GetSubsystem<Project>();
-    bool isDefaultFlavor = flavor == DEFAULT_PIPELINE_FLAVOR;
 
     ea::string outputPath = project->GetCachePath();
-    if (!isDefaultFlavor)
-        outputPath += AddTrailingSlash(flavor);
+    if (!flavor->IsDefault())
+        outputPath += AddTrailingSlash(flavor->GetName());
 
-    for (AssetImporter* importer : asset->importers_[flavor])
+    for (AssetImporter* importer : asset->importers_[SharedPtr(flavor)])
     {
         // Skip optional importers (importing default flavor when editor is running most likely)
         if (!(flags & PipelineBuildFlag::EXECUTE_OPTIONAL) && importer->IsOptional())
@@ -262,10 +297,13 @@ bool Pipeline::ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBui
     return importedAnything;
 }
 
-void Pipeline::BuildCache(const ea::string& flavor, PipelineBuildFlags flags)
+void Pipeline::BuildCache(Flavor* flavor, PipelineBuildFlags flags)
 {
     auto* project = GetSubsystem<Project>();
     auto* fs = GetFileSystem();
+
+    if (flavor == nullptr)
+        flavor = GetDefaultFlavor();
 
     StringVector results;
     fs->ScanDir(results, project->GetResourcePath(), "*.*", SCAN_FILES, true);
@@ -285,9 +323,9 @@ void Pipeline::WaitForCompletion() const
     GetWorkQueue()->Complete(0);
 }
 
-void Pipeline::CreatePaksAsync(const ea::string& flavor)
+void Pipeline::CreatePaksAsync(Flavor* flavor)
 {
-    pendingPackageFlavor_.push_back(flavor);
+    pendingPackageFlavor_.push_back(SharedPtr(flavor));
     /*
      * Packaging 010
      *
@@ -335,8 +373,8 @@ void Pipeline::OnUpdate()
         auto* fs = GetFileSystem();
         auto* project = GetSubsystem<Project>();
 
-        ea::string flavor = pendingPackageFlavor_.front();
-        ea::string packageFile = Format("{}/Resources-{}.pak", project->GetProjectPath(), flavor);
+        Flavor* flavor = pendingPackageFlavor_.front();
+        ea::string packageFile = Format("{}/Resources-{}.pak", project->GetProjectPath(), flavor->GetName());
         packagerModalTitle_ = "Packaging " + GetFileNameAndExtension(packageFile);
         pendingPackageFlavor_.pop_front();
 
@@ -347,7 +385,6 @@ void Pipeline::OnUpdate()
         StringVector results;
         fs->ScanDir(results, project->GetResourcePath(), "*.*", SCAN_FILES, true);
 
-        bool isDefaultFlavor = flavor == DEFAULT_PIPELINE_FLAVOR;
         for (const ea::string& resourceName : results)
         {
             if (resourceName.ends_with(".asset"))
@@ -355,7 +392,7 @@ void Pipeline::OnUpdate()
 
             bool hasCustomFlavorSettings = HasFlavorSettings(resourceName);
             // Accept default flavor with no custom settings or non-default flavor with custom settings.
-            if (isDefaultFlavor == hasCustomFlavorSettings)
+            if (flavor->IsDefault() == hasCustomFlavorSettings)
                 continue;
 
             if (Asset* asset = GetAsset(resourceName))
@@ -392,7 +429,7 @@ bool Pipeline::HasFlavorSettings(const ea::string& resourceName)
         {
             for (const auto& flavors : asset->GetImporters())
             {
-                if (flavors.first == DEFAULT_PIPELINE_FLAVOR)
+                if (flavors.first->IsDefault())
                     continue;
 
                 for (const auto& importer : flavors.second)
@@ -413,17 +450,24 @@ bool Pipeline::Serialize(Archive& archive)
     {
         if (auto block = archive.OpenSequentialBlock("flavors"))
         {
-            if (archive.IsInput())
-                flavors_.resize(block.GetSizeHint());
             for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors_.size(); i < num; i++)
             {
                 if (auto block = archive.OpenUnorderedBlock("flavor"))
                 {
-                    ea::string& flavor = flavors_[i];
-                    if (!SerializeValue(archive, "name", flavor))
+                    Flavor* flavor = nullptr;
+                    ea::string flavorName;
+                    if (!archive.IsInput())
+                    {
+                        flavor = flavors_[i];
+                        flavorName = flavor->GetName();
+                    }
+                    if (!SerializeValue(archive, "name", flavorName))
                         return false;
 
-                    ea::map<ea::string, Variant>& parameters = engineParameters_[flavor];
+                    if (archive.IsInput())
+                        flavor = AddFlavor(flavorName);
+
+                    ea::map<ea::string, Variant>& parameters = flavor->GetEngineParameters();
                     if (auto block = archive.OpenMapBlock("settings", parameters.size()))
                     {
                         if (archive.IsInput())
@@ -451,17 +495,53 @@ bool Pipeline::Serialize(Archive& archive)
                 }
             }
         }
-
-        if (archive.IsInput())
-        {
-            for (const ea::string& flavor : flavors_)
-            {
-                for (auto& asset : assets_)
-                    asset.second->AddFlavor(flavor);
-            }
-        }
     }
+
+    // Add default flavor if:
+    // * This is a new proejct and no flavors were loaded from project file.
+    // * User modified project file and renamed default flavor to something else.
+    if (archive.IsInput() && (flavors_.empty() || GetDefaultFlavor()->GetName() != DEFAULT_PIPELINE_FLAVOR))
+        AddFlavor(DEFAULT_PIPELINE_FLAVOR);
+
     return true;
+}
+
+void Pipeline::SortFlavors()
+{
+    if (flavors_.size() < 2)
+        return;
+    auto it = ea::find(flavors_.begin(), flavors_.end(), DEFAULT_PIPELINE_FLAVOR, [](const Flavor* flavor, const ea::string& name) {
+        return flavor->GetName() == name;
+    });
+    if (it != flavors_.end())
+        ea::swap(*it, *flavors_.begin());                 // default first
+    ea::quick_sort(flavors_.begin() + 1, flavors_.end()); // sort the rest
+}
+
+Flavor* Pipeline::GetFlavor(const ea::string& name) const
+{
+    auto it = ea::find(flavors_.begin(), flavors_.end(), DEFAULT_PIPELINE_FLAVOR, [](const Flavor* flavor, const ea::string& name) {
+        return flavor->GetName() == name;
+    });
+    if (it == flavors_.end())
+        return nullptr;
+    return *it;
+}
+
+void Pipeline::OnImporterModified(VariantMap& args)
+{
+    using namespace EditorImporterAttributeModified;
+    auto* asset = static_cast<Asset*>(args[P_ASSET].GetPtr());
+    auto* importer = static_cast<AssetImporter*>(args[P_IMPORTER].GetPtr());
+
+    if (asset->IsMetaAsset())
+        // Meta-assets (directories) are not imported.
+        return;
+
+    if (!importer->GetFlavor()->IsImportedByDefault())
+        return;
+
+    ScheduleImport(asset);
 }
 
 }

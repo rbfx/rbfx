@@ -52,9 +52,9 @@ namespace Urho3D
 
 Project::Project(Context* context)
     : Object(context)
-    , pipeline_(context)
+    , pipeline_(new Pipeline(context))
 #if URHO3D_PLUGINS
-    , plugins_(context)
+    , plugins_(new PluginManager(context))
 #endif
 {
     SubscribeToEvent(E_EDITORRESOURCESAVED, [this](StringHash, VariantMap&) { SaveProject(); });
@@ -78,10 +78,15 @@ Project::Project(Context* context)
             saveProjectTimer_.Reset();
         }
     });
+    context_->RegisterSubsystem(pipeline_);
+    context_->RegisterSubsystem(plugins_);
 }
 
 Project::~Project()
 {
+    context_->RemoveSubsystem(pipeline_->GetType());
+    context_->RemoveSubsystem(plugins_->GetType());
+
     if (GetSystemUI())
         ui::GetIO().IniFilename = nullptr;
 
@@ -201,16 +206,15 @@ bool Project::LoadProject(const ea::string& projectPath)
 
     // Project.json
     ea::string filePath(projectFileDir_ + "Project.json");
+    JSONFile file(context_);
     if (GetFileSystem()->Exists(filePath))
     {
-        JSONFile file(context_);
         if (!file.LoadFile(filePath))
             return false;
-
-        JSONInputArchive archive(&file);
-        return Serialize(archive);
     }
-    return true;
+    // Loading is performed even on empty file. Give a chance for serialization function to do default setup in case of missing data.
+    JSONInputArchive archive(&file);
+    return Serialize(archive);
 }
 
 bool Project::SaveProject()
@@ -288,10 +292,10 @@ bool Project::Serialize(Archive& archive)
         SerializeValue(archive, "version", archiveVersion);
         SerializeValue(archive, "defaultScene", defaultScene_);
 
-        if (!pipeline_.Serialize(archive))
+        if (!pipeline_->Serialize(archive))
             return false;
 
-        if (!plugins_.Serialize(archive))
+        if (!plugins_->Serialize(archive))
             return false;
 
         using namespace EditorProjectSerialize;
