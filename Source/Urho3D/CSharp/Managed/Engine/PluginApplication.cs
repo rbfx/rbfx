@@ -36,14 +36,15 @@ namespace Urho3DNet
 
         private void OnSetupInstance()
         {
+            _hostAssembly = GetType().Assembly;
             SubscribeToEvent(E.PluginLoad, this, map =>
             {
-                if (_hostAssembly == null)
-                    _hostAssembly = GetType().Assembly;
-
                 // Register factories marked with attributes
-                foreach ((Type type, ObjectFactoryAttribute attr) in _hostAssembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
-                    RegisterFactory(type, attr.Category);
+                if (_hostAssembly != null)
+                {
+                    foreach ((Type type, ObjectFactoryAttribute attr) in _hostAssembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
+                        RegisterFactory(type, attr.Category);
+                }
                 UnsubscribeFromEvent(E.PluginLoad);
             });
         }
