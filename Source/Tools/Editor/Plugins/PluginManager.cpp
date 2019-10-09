@@ -65,6 +65,14 @@ PluginManager::PluginManager(Context* context)
     });
 }
 
+PluginManager::~PluginManager()
+{
+    for (Plugin* plugin : plugins_)
+        plugin->Unload();
+    // Could have called PerformUnload() above, but this way we get a consistent log message informing that module was unloaded.
+    OnEndFrame();
+}
+
 Plugin* PluginManager::Load(StringHash type, const ea::string& name)
 {
     Plugin* plugin = GetPlugin(name);
@@ -154,6 +162,8 @@ void PluginManager::OnEndFrame()
             else
                 URHO3D_LOGERROR("Reloading plugin '{}' failed and it was unloaded.", GetFileNameAndExtension(plugin->name_));
         }
+        else if (plugin->unloading_)
+            URHO3D_LOGERROR("Unloaded plugin '{}'.", GetFileNameAndExtension(plugin->name_));
 
         if (!plugin->unloading_)
         {

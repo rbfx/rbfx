@@ -42,7 +42,7 @@ public:
     /// Construct.
     explicit PluginManager(Context* context);
     /// Unload all plugins an destruct.
-    ~PluginManager() override = default;
+    ~PluginManager() override;
     /// Load a plugin and return true if succeeded.
     Plugin* Load(StringHash type, const ea::string& name);
     /// Returns a loaded plugin with specified name.
