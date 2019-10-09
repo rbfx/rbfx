@@ -22,6 +22,7 @@
 
 #include <Urho3D/IO/FileSystem.h>
 
+#include "EditorEvents.h"
 #include "Project.h"
 #include "Pipeline/Importers/AssetImporter.h"
 #include "Pipeline/Pipeline.h"
@@ -54,7 +55,7 @@ AssetImporter::AssetImporter(Context* context)
             isAttributeSet_[attr.name_] = false;
         }
 
-        if (flavor_ == DEFAULT_PIPELINE_FLAVOR)
+        if (flavor_->IsDefault())
             asset_->ReimportOutOfDateRecursive();
     });
     SubscribeToEvent(&inspector_, E_ATTRIBUTEINSPECTOATTRIBUTE, [this](StringHash, VariantMap& args) {
@@ -165,14 +166,20 @@ void AssetImporter::OnSetAttribute(const AttributeInfo& attr, const Variant& src
 {
     isAttributeSet_[attr.name_] = true;
     Serializable::OnSetAttribute(attr, src);
-    if (!asset_->IsMetaAsset() && flavor_ == DEFAULT_PIPELINE_FLAVOR)
-        GetSubsystem<Project>()->GetPipeline().ScheduleImport(asset_);
+
+    using namespace EditorImporterAttributeModified;
+    VariantMap& args = GetEventDataMap();
+    args[P_ASSET] = asset_;
+    args[P_IMPORTER] = this;
+    args[P_ATTRINFO] = (void*)&attr;
+    args[P_NEWVALUE] = src;
+    SendEvent(E_EDITORIMPORTERATTRIBUTEMODIFIED, args);
 }
 
-void AssetImporter::Initialize(Asset* asset, const ea::string& flavor)
+void AssetImporter::Initialize(Asset* asset, Flavor* flavor)
 {
     asset_ = asset;
-    flavor_ = flavor;
+    flavor_ = WeakPtr(flavor);
 }
 
 void AssetImporter::ClearByproducts()
@@ -218,10 +225,12 @@ bool AssetImporter::SaveDefaultAttributes(const AttributeInfo& attr) const
 
 Variant AssetImporter::GetInstanceDefault(const ea::string& name) const
 {
-    if (flavor_ != DEFAULT_PIPELINE_FLAVOR)
+    Pipeline* pipeline = GetSubsystem<Pipeline>();
+    if (!flavor_->IsDefault())
     {
         // Attempt inheriting value from a sibling default flavor.
-        if (AssetImporter* importer = asset_->GetImporter(DEFAULT_PIPELINE_FLAVOR, GetType()))
+        Flavor* defaultFlavor = pipeline->GetDefaultFlavor();
+        if (AssetImporter* importer = asset_->GetImporter(defaultFlavor, GetType()))
         {
             if (importer->isAttributeSet_[name])
                 return importer->GetAttribute(name);
@@ -239,7 +248,7 @@ Variant AssetImporter::GetInstanceDefault(const ea::string& name) const
     resourceName.resize(resourceName.find_last_of('/') + 1);    // cd ..
 
     // Get value from same importer at meta asset of parent path.
-    if (Asset* asset = GetSubsystem<Project>()->GetPipeline().GetAsset(resourceName))
+    if (Asset* asset = pipeline->GetAsset(resourceName))
     {
         if (AssetImporter* importer = asset->GetImporter(flavor_, GetType()))
         {

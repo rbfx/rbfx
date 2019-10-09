@@ -248,45 +248,44 @@ void Editor::RenderSettingsWindow()
             }
             if (ui::BeginTabItem("Pipeline"))
             {
-                auto& pipeline = project_->GetPipeline();
+                auto* pipeline = project_->GetPipeline();
                 const auto& style = ui::GetStyle();
 
                 // Add new flavor
                 ea::string& newFlavorName = *ui::GetUIState<ea::string>();
-                bool canAdd = newFlavorName != DEFAULT_PIPELINE_FLAVOR && !newFlavorName.empty() && !pipeline.GetFlavors().contains(newFlavorName);
+                bool canAdd = newFlavorName != DEFAULT_PIPELINE_FLAVOR && !newFlavorName.empty() && pipeline->GetFlavor(newFlavorName) == nullptr;
                 if (!canAdd)
                     ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
                 bool addNew = ui::InputText("Flavor Name", &newFlavorName, ImGuiInputTextFlags_EnterReturnsTrue);
                 ui::SameLine();
                 addNew |= ui::ToolbarButton(ICON_FA_PLUS " Add New");
                 if (addNew && canAdd)
-                    pipeline.AddFlavor(newFlavorName);
+                    pipeline->AddFlavor(newFlavorName);
                 if (!canAdd)
                     ui::PopStyleColor();
 
                 // Flavor tabs
                 if (ui::BeginTabBar("Flavors", ImGuiTabBarFlags_AutoSelectNewTabs))
                 {
-                    for (const ea::string& flavor : pipeline.GetFlavors())
+                    for (Flavor* flavor : pipeline->GetFlavors())
                     {
-                        ui::PushID(flavor.c_str());
-                        ea::string& editBuffer = *ui::GetUIState<ea::string>(flavor);
+                        ui::PushID(flavor);
+                        ea::string& editBuffer = *ui::GetUIState<ea::string>(flavor->GetName());
                         bool isOpen = true;
-                        bool isDefault = flavor == DEFAULT_PIPELINE_FLAVOR;
-                        if (ui::BeginTabItem(flavor.c_str(), &isOpen, isDefault ? ImGuiTabItemFlags_NoCloseButton | ImGuiTabItemFlags_NoCloseWithMiddleMouseButton : 0))
+                        if (ui::BeginTabItem(flavor->GetName().c_str(), &isOpen, flavor->IsDefault() ? ImGuiTabItemFlags_NoCloseButton | ImGuiTabItemFlags_NoCloseWithMiddleMouseButton : 0))
                         {
-                            bool canRename = editBuffer != DEFAULT_PIPELINE_FLAVOR && !editBuffer.empty() && !pipeline.GetFlavors().contains(editBuffer);
-                            if (isDefault || !canRename)
+                            bool canRename = editBuffer != DEFAULT_PIPELINE_FLAVOR && !editBuffer.empty() && pipeline->GetFlavor(editBuffer) == nullptr;
+                            if (flavor->IsDefault() || !canRename)
                                 ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
 
                             bool save = ui::InputText("Flavor Name", &editBuffer, ImGuiInputTextFlags_EnterReturnsTrue);
                             ui::SameLine();
                             save |= ui::ToolbarButton(ICON_FA_CHECK);
                             ui::SetHelpTooltip("Rename flavor", KEY_UNKNOWN);
-                            if (save && canRename && !isDefault)
-                                pipeline.RenameFlavor(flavor, editBuffer);
+                            if (save && canRename && !flavor->IsDefault())
+                                pipeline->RenameFlavor(flavor->GetName(), editBuffer);
 
-                            if (isDefault || !canRename)
+                            if (flavor->IsDefault() || !canRename)
                                 ui::PopStyleColor();
 
                             ui::Separator();
@@ -304,7 +303,7 @@ void Editor::RenderSettingsWindow()
                             };
 
                             auto* state = ui::GetUIState<NewEntryState>();
-                            ea::map<ea::string, Variant>& settings = project_->GetPipeline().GetDefaultEngineSettings(flavor);
+                            ea::map<ea::string, Variant>& settings = flavor->GetEngineParameters();
                             for (auto it = settings.begin(); it != settings.end();)
                             {
                                 const ea::string& settingName = it->first;
@@ -371,7 +370,7 @@ void Editor::RenderSettingsWindow()
 
                             ui::EndTabItem();
                         }
-                        if (!isOpen && !isDefault)
+                        if (!isOpen && !flavor->IsDefault())
                             flavorPendingRemoval_ = flavor;
                         ui::PopID();    // flavor.c_str()
                     }

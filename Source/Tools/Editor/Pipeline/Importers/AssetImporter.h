@@ -30,6 +30,7 @@ namespace Urho3D
 {
 
 class Asset;
+class Flavor;
 
 /// A base class for all asset importers. Classes that inherit from this class must be added to Pipeline::importers_ list.
 class AssetImporter : public Serializable, public IInspectorProvider
@@ -62,10 +63,12 @@ public:
     const StringVector& GetByproducts() const { return byproducts_; }
     /// Implements inheritance of default importer settings.
     Variant GetInstanceDefault(const ea::string& name) const override;
+    /// Returns flavor this importer belongs to.
+    Flavor* GetFlavor() const { return flavor_; }
 
 protected:
     /// Sets needed asset information. Called after creating every importer.
-    void Initialize(Asset* asset, const ea::string& flavor);
+    void Initialize(Asset* asset, Flavor* flavor);
     /// Removes all known byproducts from the cache.
     void ClearByproducts();
     /// Register a new byproduct. Should be called from AssetImporter::Execute() if asset import succeeded.
@@ -80,11 +83,11 @@ protected:
     bool IsAttributeSet(const eastl::string& name) const;
 
     /// Asset this importer belongs to.
-    WeakPtr<Asset> asset_;
+    WeakPtr<Asset> asset_{};
     /// Flavor this importer belongs to.
-    ea::string flavor_{};
+    WeakPtr<Flavor> flavor_{};
     /// Assets that were created by running this asset through conversion pipeline.
-    StringVector byproducts_;
+    StringVector byproducts_{};
     /// Set to true when attributes are modified in inspector.
     bool attributesModified_ = false;
     /// Attribute inspector "namespace" object.

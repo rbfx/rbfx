@@ -314,13 +314,14 @@ void ResourceTab::SelectCurrentItemInspector()
 
     inspectors_.clear();
 
-    if (Asset* asset = GetSubsystem<Project>()->GetPipeline().GetAsset(selected))
+    auto* pipeline = GetSubsystem<Pipeline>();
+    if (Asset* asset = pipeline->GetAsset(selected))
     {
         // This is a meta-asset or a source asset whose byproducts we would like to view.
         inspectors_.push_back({SharedPtr(asset), dynamic_cast<IInspectorProvider*>(asset)});
 
         StringVector byproducts;
-        for (AssetImporter* importer : asset->GetImporters().at(DEFAULT_PIPELINE_FLAVOR))
+        for (AssetImporter* importer : asset->GetImporters(pipeline->GetDefaultFlavor()))
             byproducts.insert(byproducts.end(), importer->GetByproducts().begin(), importer->GetByproducts().end());
 
         ea::quick_sort(byproducts.begin(), byproducts.end());
