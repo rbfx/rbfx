@@ -60,7 +60,7 @@ public:
     /// Destruct.
     ~Packager() override;
     /// Opens pak file for writing.
-    bool OpenPackage(const ea::string& path, ea::string& flavor, bool compress=true);
+    bool OpenPackage(const ea::string& path, Flavor* flavor, bool compress=true);
     /// Returns value between 0.0f and 1.0f.
     float GetProgress() const;
     /// Returns true if packager is still packaging files.
@@ -70,7 +70,7 @@ public:
     /// Begins packaging process and returns immediately. Object must remain alive until IsCompleted() returns true.
     void Start();
     /// Returns flavor packager is packaging.
-    const ea::string& GetFlavor() const { return flavor_; }
+    Flavor* GetFlavor() const { return flavor_; }
 
 protected:
     /// Add a file to the package. This is a blocking operation.
@@ -89,7 +89,7 @@ protected:
     /// List of files that will be present in the package.
     ea::vector<FileEntry> entries_{};
     /// Flavor that is being compressed.
-    ea::string flavor_;
+    WeakPtr<Flavor> flavor_;
     /// A list of assets that are to be written into the package.
     ea::vector<SharedPtr<Asset>> queuedAssets_{};
     /// Flag indicating whether file content is compressed or not.

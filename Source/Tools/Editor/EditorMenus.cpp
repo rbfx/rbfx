@@ -160,26 +160,26 @@ void Editor::RenderMenuBar()
         ui::EndMainMenuBar();
     }
 
-    if (!flavorPendingRemoval_.empty())
+    if (!flavorPendingRemoval_.Expired())
         ui::OpenPopup("Remove Flavor?");
 
     if (ui::BeginPopupModal("Remove Flavor?"))
     {
-        ui::Text("You are about to remove '%s' flavor.", flavorPendingRemoval_.c_str());
+        ui::Text("You are about to remove '%s' flavor.", flavorPendingRemoval_->GetName().c_str());
         ui::TextUnformatted("All asset settings of this flavor will be removed permanently.");
         ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone! " ICON_FA_EXCLAMATION_TRIANGLE);
         ui::NewLine();
 
         if (ui::Button(ICON_FA_TRASH " Remove"))
         {
-            project_->GetPipeline().RemoveFlavor(flavorPendingRemoval_);
-            flavorPendingRemoval_.clear();
+            project_->GetPipeline()->RemoveFlavor(flavorPendingRemoval_->GetName());
+            flavorPendingRemoval_ = nullptr;
             ui::CloseCurrentPopup();
         }
         ui::SameLine();
         if (ui::Button(ICON_FA_TIMES " Cancel"))
         {
-            flavorPendingRemoval_.clear();
+            flavorPendingRemoval_ = nullptr;
             ui::CloseCurrentPopup();
         }
 
@@ -193,18 +193,18 @@ void Editor::RenderProjectMenu()
 
     if (ui::BeginMenu(ICON_FA_BOXES " Repackage files"))
     {
-        Pipeline& pipeline = project_->GetPipeline();
+        Pipeline* pipeline = project_->GetPipeline();
 
         if (ui::MenuItem("All Flavors"))
         {
-            for (const ea::string& flavor : pipeline.GetFlavors())
-                pipeline.CreatePaksAsync(flavor);
+            for (Flavor* flavor : pipeline->GetFlavors())
+                pipeline->CreatePaksAsync(flavor);
         }
 
-        for (const ea::string& flavor : pipeline.GetFlavors())
+        for (Flavor* flavor : pipeline->GetFlavors())
         {
-            if (ui::MenuItem(flavor.c_str()))
-                pipeline.CreatePaksAsync(flavor);
+            if (ui::MenuItem(flavor->GetName().c_str()))
+                pipeline->CreatePaksAsync(flavor);
         }
 
         ui::EndMenu();

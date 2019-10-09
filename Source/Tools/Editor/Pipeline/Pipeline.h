@@ -39,11 +39,10 @@
 #include "Pipeline/Importers/TextureImporter.h"
 #include "Pipeline/Asset.h"
 #include "Pipeline/Packager.h"
+#include "Pipeline/Flavor.h"
 
 namespace Urho3D
 {
-
-static const ea::string DEFAULT_PIPELINE_FLAVOR{"default"};
 
 enum class PipelineBuildFlag : unsigned
 {
@@ -67,31 +66,33 @@ public:
     /// Remove any cached assets belonging to specified resource.
     void ClearCache(const ea::string& resourceName);
     /// Returns asset object, creates it for existing asset if pipeline has not done it yet. Returns nullptr if `autoCreate` is set to false and asset was not loaded yet.
-    Asset* GetAsset(const eastl::string& resourceName, bool autoCreate = true);
+    Asset* GetAsset(const ea::string& resourceName, bool autoCreate = true);
     /// Returns a list of currently present flavors. List always has at least "default" flavor.
-    const StringVector& GetFlavors() const { return flavors_; }
+    const ea::vector<SharedPtr<Flavor>>& GetFlavors() const { return flavors_; }
+    /// Returns a list of currently present flavors. List always has at least "default" flavor.
+    Flavor* GetFlavor(const ea::string& name) const;
     /// Add a custom flavor.
-    void AddFlavor(const ea::string& name);
+    Flavor* AddFlavor(const ea::string& name);
     /// Remove a custom flavor.
-    void RemoveFlavor(const ea::string& name);
+    bool RemoveFlavor(const ea::string& name);
     /// Rename a custom flavor.
-    void RenameFlavor(const ea::string& oldName, const ea::string& newName);
+    bool RenameFlavor(const ea::string& oldName, const ea::string& newName);
     /// Schedules import task to run on worker thread.
-    SharedPtr <WorkItem> ScheduleImport(Asset* asset, const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
+    SharedPtr <WorkItem> ScheduleImport(Asset* asset, Flavor* flavor=nullptr, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
     /// Executes importers of specified asset asychronously.
-    bool ExecuteImport(Asset* asset, const ea::string& flavor, PipelineBuildFlags flags);
+    bool ExecuteImport(Asset* asset, Flavor* flavor, PipelineBuildFlags flags);
     /// Mass-schedule assets for importing.
-    void BuildCache(const ea::string& flavor=DEFAULT_PIPELINE_FLAVOR, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
+    void BuildCache(Flavor* flavor=nullptr, PipelineBuildFlags flags=PipelineBuildFlag::DEFAULT);
     /// Blocks calling thread until all pipeline tasks complete.
     void WaitForCompletion() const;
     /// Queue packaging of resources for specified flavor. This function returns immediately, however user will be blocked from interacting with editor by modal window until process is done.
-    void CreatePaksAsync(const ea::string& flavor);
+    void CreatePaksAsync(Flavor* flavor);
     /// Returns true if resource or any of it's parent directories have non-default flavor settings.
     bool HasFlavorSettings(const ea::string& resourceName);
     ///
     bool Serialize(Archive& archive) override;
-    /// Returns a map of default engine settings that will be applied on the start of player application.
-    ea::map<ea::string, Variant>& GetDefaultEngineSettings(const ea::string& flavor) { return engineParameters_[flavor]; }
+    ///
+    Flavor* GetDefaultFlavor() const { return flavors_.front(); }
 
 protected:
     /// Watch directory for changed assets and automatically convert them.
@@ -100,11 +101,15 @@ protected:
     void OnEndFrame(StringHash, VariantMap&);
     /// Handles modal dialogs.
     void OnUpdate();
+    ///
+    void SortFlavors();
+    ///
+    void OnImporterModified(VariantMap& args);
 
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
     /// List of pipeline flavors.
-    StringVector flavors_{DEFAULT_PIPELINE_FLAVOR};
+    ea::vector<SharedPtr<Flavor>> flavors_{};
     /// A list of loaded assets.
     ea::unordered_map<ea::string /*name*/, SharedPtr<Asset>> assets_{};
     /// A list of all available importers. When new importer is created it should be added here.
@@ -120,13 +125,11 @@ protected:
     /// A list of assets that were modified in non-main thread and need to be saved on main thread.
     ea::vector<SharedPtr<Asset>> dirtyAssets_;
     /// A list of flavors that are yet to be packaged.
-    StringVector pendingPackageFlavor_{};
+    ea::vector<SharedPtr<Flavor>> pendingPackageFlavor_{};
     /// Current active packager. Null when packaging is not in progress.
     SharedPtr<Packager> packager_{};
     /// Title of the modal dialog that shows when packaging files.
     ea::string packagerModalTitle_{};
-    ///
-    ea::unordered_map<ea::string /*flavor*/, ea::map<ea::string /*EP_**/, Variant>> engineParameters_;
     ///
     Logger logger_ = Log::GetLogger("pipeline");
 

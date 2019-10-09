@@ -55,7 +55,7 @@ public:
     ea::string GetResourcePath() const;
 #if URHO3D_PLUGINS
     /// Returns plugin manager.
-    PluginManager* GetPlugins() { return &plugins_; }
+    PluginManager* GetPlugins() { return plugins_; }
 #endif
     /// Returns true in very first session of new project.
     bool IsNewProject() const { return isNewProject_; }
@@ -64,20 +64,20 @@ public:
     /// Set resource name of scene that will be executed first by the player.
     void SetDefaultSceneName(const ea::string& defaultScene) { defaultScene_ = defaultScene; }
     ///
-    Pipeline& GetPipeline() { return pipeline_; }
+    Pipeline* GetPipeline() { return pipeline_; }
 
 protected:
     /// Directory containing project.
     ea::string projectFileDir_;
     ///
-    Pipeline pipeline_;
+    SharedPtr<Pipeline> pipeline_;
     /// Copy of engine resource paths that get unregistered when project is loaded.
     StringVector cachedEngineResourcePaths_;
     /// Path to imgui settings ini file.
     ea::string uiConfigPath_;
 #if URHO3D_PLUGINS
     /// Native plugin manager.
-    PluginManager plugins_;
+    SharedPtr<PluginManager> plugins_;
 #endif
     /// Flag indicating that project was just created.
     bool isNewProject_ = true;

@@ -147,7 +147,7 @@ protected:
     /// Global editor settings.
     JSONValue editorSettings_;
     ///
-    ea::string flavorPendingRemoval_;
+    WeakPtr<Flavor> flavorPendingRemoval_;
 };
 
 }
