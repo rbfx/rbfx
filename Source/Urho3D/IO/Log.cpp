@@ -294,11 +294,12 @@ void Log::SetLogFormat(const ea::string& format)
 
 Logger Log::GetLogger(const ea::string& name)
 {
-    std::shared_ptr<spdlog::logger> logger;
+    // Loggers may be used only after initializing Log subsystem, therefore do not use logging from static initializers.
+    if (logInstance == nullptr)
+        return {};
 
-    bool locking = logInstance != nullptr;
-    if (locking)
-        logInstance->logMutex_.Acquire();
+    std::shared_ptr<spdlog::logger> logger;
+    MutexLock lock(logInstance->logMutex_);
 
     logger = spdlog::get(name);
 
@@ -308,14 +309,13 @@ Logger Log::GetLogger(const ea::string& name)
         spdlog::register_logger(logger);
     }
 
-    if (locking)
-        logInstance->logMutex_.Release();
-
     return Logger(reinterpret_cast<void*>(logger.get()));
 }
 
 Logger Log::GetLogger()
 {
+    if (logInstance == nullptr)
+        return {};
     static Logger defaultLogger = Log::GetLogger("main");
     return defaultLogger;
 }
