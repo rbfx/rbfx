@@ -117,50 +117,60 @@ namespace Urho3DNet
             foreach (string fileName in scriptFiles)
                 sourceCode.Add(Context.Instance.Cache.GetResourceFileName(fileName));
 
-            var csc = new CSharpCodeProvider();
-            var compileParameters = new CompilerParameters(new[]    // TODO: User may need to extend this list
+            Assembly compiledAssembly = null;
+            if (sourceCode.Count > 0)
             {
-                "mscorlib.dll",
-                "System.dll",
-                "System.Core.dll",
-                "System.Data.dll",
-                "System.Drawing.dll",
-                "System.Numerics.dll",
-                "System.Runtime.Serialization.dll",
-                "System.Xml.dll",
-                "System.Xml.Linq.dll",
-                "Urho3DNet.dll",
-            })
-            {
-                GenerateExecutable = false,
-                GenerateInMemory = true,
-                TreatWarningsAsErrors = false,
-            };
-
-            CompilerResults results = csc.CompileAssemblyFromFile(compileParameters, sourceCode.ToArray());
-            if (results.Errors.HasErrors)
-            {
-                foreach (CompilerError error in results.Errors)
+                var csc = new CSharpCodeProvider();
+                var compileParameters = new CompilerParameters(new[] // TODO: User may need to extend this list
                 {
-                    string resourceName = error.FileName;
-                    foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
+                    "mscorlib.dll",
+                    "System.dll",
+                    "System.Core.dll",
+                    "System.Data.dll",
+                    "System.Drawing.dll",
+                    "System.Numerics.dll",
+                    "System.Runtime.Serialization.dll",
+                    "System.Xml.dll",
+                    "System.Xml.Linq.dll",
+                    "Urho3DNet.dll",
+                })
+                {
+                    GenerateExecutable = false,
+                    GenerateInMemory = true,
+                    TreatWarningsAsErrors = false,
+                };
+
+                CompilerResults results = csc.CompileAssemblyFromFile(compileParameters, sourceCode.ToArray());
+                if (results.Errors.HasErrors)
+                {
+                    foreach (CompilerError error in results.Errors)
                     {
-                        if (resourceName.StartsWith(resourceDir))
+                        string resourceName = error.FileName;
+                        foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
                         {
-                            resourceName = resourceName.Substring(resourceDir.Length);
-                            break;
+                            if (resourceName.StartsWith(resourceDir))
+                            {
+                                resourceName = resourceName.Substring(resourceDir.Length);
+                                break;
+                            }
                         }
+
+                        string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
+                        if (error.IsWarning)
+                            Log.Warning(message);
+                        else
+                            Log.Error(message);
                     }
-                    string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
-                    if (error.IsWarning)
-                        Log.Warning(message);
-                    else
-                        Log.Error(message);
+
+                    return null;
                 }
-                return null;
+                compiledAssembly = results.CompiledAssembly;
             }
+
+            // New projects may have no C# scripts. In this case a dummy plugin instance that does nothing will be
+            // returned. Once new scripts appear - plugin will be reloaded properly.
             var plugin = new PluginApplication(Context.Instance);
-            plugin.SetHostAssembly(results.CompiledAssembly);
+            plugin.SetHostAssembly(compiledAssembly);
             return plugin;
         }
     }
