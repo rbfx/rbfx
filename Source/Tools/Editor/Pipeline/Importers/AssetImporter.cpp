@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 
 #include "EditorEvents.h"
@@ -77,41 +78,15 @@ bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
     return true;
 }
 
-bool AssetImporter::SaveJSON(JSONValue& dest) const
+bool AssetImporter::Serialize(Archive& archive, ArchiveBlock& block)
 {
-    if (!Serializable::SaveJSON(dest))
+    if (!BaseClassName::Serialize(archive, block))
         return false;
 
-    JSONValue& byproductsDest = dest["byproducts"];
-    byproductsDest.SetType(JSON_ARRAY);
-    for (const ea::string& byproduct : byproducts_)
-        byproductsDest.Push(byproduct);
-
-    const_cast<AssetImporter*>(this)->attributesModified_ = false;   // TODO: sucks
-    return true;
-}
-
-bool AssetImporter::LoadJSON(const JSONValue& source)
-{
-    if (!Serializable::LoadJSON(source))
+    if (!SerializeVector(archive, "byproducts", "resourceName", byproducts_))
         return false;
-
-    const JSONValue& byproductsSrc = source["byproducts"];
-    if (byproductsSrc.IsArray())
-    {
-        auto* project = GetSubsystem<Project>();
-        auto* fs = GetFileSystem();
-
-        for (int i = 0; i < byproductsSrc.Size(); i++)
-        {
-            ea::string resourceName = byproductsSrc[i].GetString();
-            if (fs->FileExists(project->GetCachePath() + resourceName))
-                byproducts_.push_back(resourceName);
-        }
-    }
 
     lastAttributeHash_ = HashEffectiveAttributeValues();
-
     return true;
 }
 

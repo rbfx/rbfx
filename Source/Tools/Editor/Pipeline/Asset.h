@@ -28,6 +28,7 @@
 #include <EASTL/vector.h>
 
 #include <Urho3D/Container/FlagSet.h>
+#include <Urho3D/IO/Archive.h>
 #include <Urho3D/Scene/Serializable.h>
 #include <Inspector/ModelInspector.h>
 #include <Inspector/MaterialInspector.h>
@@ -73,9 +74,7 @@ public:
     ///
     bool Load();
     ///
-    bool SaveJSON(JSONValue& dest) const override;
-    ///
-    bool LoadJSON(const JSONValue& source) override;
+    bool Serialize(Archive& archive);
     ///
     const AssetImporterMap& GetImporters() const { return importers_; }
     ///
