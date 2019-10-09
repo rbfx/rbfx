@@ -33,9 +33,8 @@ class ModulePlugin : public Plugin
 {
     URHO3D_OBJECT(ModulePlugin, Plugin);
 public:
-    explicit ModulePlugin(Context* context) : Plugin(context)
-    { }
-
+    /// Construct.
+    explicit ModulePlugin(Context* context) : Plugin(context) { }
     /// Loads plugin into application memory space and initializes it.
     bool Load() override;
     /// Returns true if plugin is loaded and functional.
