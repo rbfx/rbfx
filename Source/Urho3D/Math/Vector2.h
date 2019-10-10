@@ -350,7 +350,7 @@ public:
     }
 
     /// Return normalized vector with length in given range.
-    Vector2 ReNormalized(float minLength, float maxLength, const Vector2& defaultValue = Vector2::ZERO, float eps = M_LARGE_EPSILON)
+    Vector2 ReNormalized(float minLength, float maxLength, const Vector2& defaultValue = Vector2::ZERO, float eps = M_LARGE_EPSILON) const
     {
         const float lenSquared = LengthSquared();
         if (lenSquared < eps * eps)
