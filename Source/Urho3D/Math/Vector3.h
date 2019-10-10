@@ -443,7 +443,7 @@ public:
     }
 
     /// Return normalized vector with length in given range.
-    Vector3 ReNormalized(float minLength, float maxLength, const Vector3& defaultValue = Vector3::ZERO, float eps = M_LARGE_EPSILON)
+    Vector3 ReNormalized(float minLength, float maxLength, const Vector3& defaultValue = Vector3::ZERO, float eps = M_LARGE_EPSILON) const
     {
         const float lenSquared = LengthSquared();
         if (lenSquared < eps * eps)
