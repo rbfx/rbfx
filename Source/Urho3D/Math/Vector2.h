@@ -330,10 +330,10 @@ public:
     /// Return normalized to unit length.
     Vector2 Normalized() const
     {
-        float lenSquared = LengthSquared();
+        const float lenSquared = LengthSquared();
         if (!Urho3D::Equals(lenSquared, 1.0f) && lenSquared > 0.0f)
         {
-            float invLen = 1.0f / sqrtf(lenSquared);
+            const float invLen = 1.0f / sqrtf(lenSquared);
             return *this * invLen;
         }
         else
@@ -341,13 +341,24 @@ public:
     }
 
     /// Return normalized to unit length or zero if length is too small.
-    Vector2 NormalizedOrZero(float eps = M_LARGE_EPSILON) const
+    Vector2 NormalizedOrDefault(const Vector2& defaultValue = Vector2::ZERO, float eps = M_LARGE_EPSILON) const
     {
-        float lenSquared = LengthSquared();
-        if (lenSquared > eps * eps)
-            return *this / sqrtf(lenSquared);
-        else
-            return Vector2::ZERO;
+        const float lenSquared = LengthSquared();
+        if (lenSquared < eps * eps)
+            return defaultValue;
+        return *this / sqrtf(lenSquared);
+    }
+
+    /// Return normalized vector with length in given range.
+    Vector2 ReNormalized(float minLength, float maxLength, const Vector2& defaultValue = Vector2::ZERO, float eps = M_LARGE_EPSILON)
+    {
+        const float lenSquared = LengthSquared();
+        if (lenSquared < eps * eps)
+            return defaultValue;
+
+        const float len = sqrtf(lenSquared);
+        const float newLen = Clamp(len, minLength, maxLength);
+        return *this * (newLen / len);
     }
 
     /// Return float data.
