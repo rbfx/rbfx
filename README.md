@@ -50,10 +50,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 * Cross-platform support using SDL 2.0
 * Physics using Bullet
 * 2D physics using Box2D
-- Polynominal
 * Scripting using C#
-- codexhound
-- MystMagus
 * Networking using SLikeNet + possibility to make HTTP requests
 * Pathfinding and crowd simulation using Recast/Detour
 * Inverse kinematics
