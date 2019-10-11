@@ -19,25 +19,33 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include <Urho3D/IO/FileSystem.h>
-#include "Pipeline/Flavor.h"
-#include "Project.h"
+
+#pragma once
+
+#include "../Core/Object.h"
+#include "../Core/Variant.h"
+#include "../IO/Archive.h"
 
 namespace Urho3D
 {
 
-Flavor::Flavor(Urho3D::Context* context)
-    : Object(context)
+/// A class responsible for serializing application settings. It will be used by editor to save initial settings for player application to load them.
+class URHO3D_API ApplicationSettings : public Object
 {
-}
+    URHO3D_OBJECT(ApplicationSettings, Object);
+public:
+    explicit ApplicationSettings(Context* context);
 
-void Flavor::SetName(const ea::string& newName)
-{
-    name_ = newName;
-    isDefault_ = newName == DEFAULT_PIPELINE_FLAVOR;
-    cachePath_ = GetSubsystem<Project>()->GetCachePath();
-    if (!isDefault_)
-        cachePath_ += AddTrailingSlash(newName);
-}
+    ///
+    bool Serialize(Archive& archive) override;
+
+    /// Resource name of scene that player application will start.
+    ea::string defaultScene_{};
+    /// A map of settings which will be loaded into Application::engineParameters_ on player startup.
+    ea::unordered_map<ea::string, Variant> engineParameters_{};
+    /// Plugins to be loaded by the player application.
+    StringVector plugins_{};
+};
+
 
 }

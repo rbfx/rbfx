@@ -271,6 +271,13 @@ bool Project::SaveProject()
         URHO3D_LOGERROR("Saving project to '{}' failed", filePath);
         return false;
     }
+
+    if (!pipeline_->CookSettings())
+    {
+        URHO3D_LOGERROR("Cooking settings failed");
+        return false;
+    }
+
     return true;
 }
 
