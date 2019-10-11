@@ -314,7 +314,7 @@ bool Asset::Serialize(Archive& archive)
         const ea::vector<SharedPtr<Flavor>>& flavors = pipeline->GetFlavors();
         if (auto block = archive.OpenUnorderedBlock("flavors"))
         {
-            for (unsigned i = 0, num = archive.IsInput() ? block.GetSizeHint() : flavors.size(); i < num; i++)
+            for (unsigned i = 0; i < flavors.size(); i++)
             {
                 SharedPtr<Flavor> flavor = flavors[i];
                 if (auto block = archive.OpenUnorderedBlock(flavor->GetName().c_str()))
