@@ -163,7 +163,7 @@ void PluginManager::OnEndFrame()
                 URHO3D_LOGERROR("Reloading plugin '{}' failed and it was unloaded.", GetFileNameAndExtension(plugin->name_));
         }
         else if (plugin->unloading_)
-            URHO3D_LOGERROR("Unloaded plugin '{}'.", GetFileNameAndExtension(plugin->name_));
+            URHO3D_LOGINFO("Unloaded plugin '{}'.", GetFileNameAndExtension(plugin->name_));
 
         if (!plugin->unloading_)
         {
