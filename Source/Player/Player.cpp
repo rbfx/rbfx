@@ -30,7 +30,7 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Resource/XMLFile.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Scene/SceneManager.h>
 #include <Urho3D/Scene/SceneMetadata.h>
 #if URHO3D_CSHARP
@@ -57,12 +57,33 @@ void Player::Setup()
 #endif
     engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
 
-    JSONFile file(context_);
-    if (!file.LoadFile(ToString("%s%s", APK, "Settings.json")))
-        return;
-
-    for (auto& pair : file.GetRoot().GetObject())
-        engineParameters_[pair.first] = pair.second.GetVariant();
+    JSONFile settings(context_);
+#if DESKTOP
+    // Try file in current directory for release builds.
+    // If not found try to load settings of default flavor from cache dir.
+    StringVector tryPrefixes{"", "Cache/"};
+#elif ANDROID
+    // Always load file from root of the apk bundle.
+    StringVector tryPrefixes{APK};
+#else
+    // iOS should load file from root of it's appbundle. FIXME: WebGL untested.
+    StringVector tryPrefixes{""};
+#endif
+    for (const ea::string& prefix : tryPrefixes)
+    {
+        ea::string settingsFilePath = Format("{}{}", prefix, "Settings.json");
+        if (!GetFileSystem()->Exists(settingsFilePath))
+            continue;
+        if (settings.LoadFile(settingsFilePath))
+        {
+            JSONInputArchive archive(&settings);
+            if (settings_.Serialize(archive))
+            {
+                for (const auto& pair : settings_.engineParameters_)
+                    engineParameters_[pair.first] = pair.second;
+            }
+        }
+    }
 }
 
 void Player::Start()
@@ -75,29 +96,10 @@ void Player::Start()
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
-    SharedPtr<JSONFile> projectFile(GetCache()->GetResource<JSONFile>("Project.json", false));
-    if (!projectFile)
-    {
-        projectFile = new JSONFile(context_);
-        if (!projectFile->LoadFile(ToString("%s%s", APK, "Project.json")))
-        {
-            ErrorExit("Project.json missing.");
-            return;
-        }
-    }
-
-    const JSONValue& projectRoot = projectFile->GetRoot();
 #if URHO3D_STATIC
     SendEvent(E_REGISTERSTATICPLUGINS);
 #else
-    if (!projectRoot.Contains("plugins"))
-    {
-        ErrorExit("Project.json does not have 'plugins' section.");
-        return;
-    }
-
-    const JSONValue& plugins = projectRoot["plugins"];
-    if (!LoadPlugins(plugins))
+    if (!LoadPlugins(settings_.plugins_))
         ErrorExit("Loading of required plugins failed.");
 #endif
 #if URHO3D_CSHARP && URHO3D_PLUGINS
@@ -115,7 +117,7 @@ void Player::Start()
         auto* manager = GetSubsystem<SceneManager>();
         Scene* scene = manager->CreateScene();
 
-        if (scene->LoadFile(projectRoot["default-scene"].GetString()))
+        if (scene->LoadFile(settings_.defaultScene_))
             manager->SetActiveScene(scene);
         else
             ErrorExit("Invalid scene file.");
@@ -146,16 +148,12 @@ void Player::Stop()
 
 }
 
-bool Player::LoadPlugins(const JSONValue& plugins)
+bool Player::LoadPlugins(const StringVector& plugins)
 {
     // Load plugins.
 #if URHO3D_PLUGINS
-    for (auto i = 0; i < plugins.Size(); i++)
+    for (const ea::string& pluginName : plugins)
     {
-        if (plugins[i]["private"].GetBool())
-            continue;
-
-        ea::string pluginName = plugins[i]["name"].GetString();
         ea::string pluginFileName;
         bool loaded = false;
 #if !_WIN32

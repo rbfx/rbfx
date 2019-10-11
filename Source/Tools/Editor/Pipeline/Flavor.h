@@ -54,6 +54,8 @@ public:
     bool IsImportedByDefault() const { return IsDefault(); }
     /// Returns hash of this flavor.
     StringHash ToHash() const { return StringHash(name_); }
+    /// Returns absolute path to cache subdirectory of this flavor.
+    const ea::string& GetCachePath() const { return cachePath_; }
 
     /// Equality operator.
     bool operator ==(const Flavor& rhs) const { return name_ == rhs.name_; }
@@ -61,6 +63,8 @@ public:
 protected:
     /// Flavor name.
     ea::string name_{};
+    /// Absolute path to cache subdirectory of this flavor.
+    ea::string cachePath_{};
     /// Engine parameters specific to this flavor. Player will fill Application::engineParameters_ with these values.
     EngineParametersMap engineParameters_;
     /// Flag indicating that this flavor is default.
