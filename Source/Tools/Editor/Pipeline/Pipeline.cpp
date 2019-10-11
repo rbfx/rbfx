@@ -520,7 +520,7 @@ void Pipeline::SortFlavors()
 
 Flavor* Pipeline::GetFlavor(const ea::string& name) const
 {
-    auto it = ea::find(flavors_.begin(), flavors_.end(), DEFAULT_PIPELINE_FLAVOR, [](const Flavor* flavor, const ea::string& name) {
+    auto it = ea::find(flavors_.begin(), flavors_.end(), name, [](const Flavor* flavor, const ea::string& name) {
         return flavor->GetName() == name;
     });
     if (it == flavors_.end())
