@@ -160,6 +160,7 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
     ui::SetNextWindowPos(ToImGui(Vector2(extents_.Min())));
     ui::SetNextWindowSize(ToImGui(Vector2(extents_.Size())));
     ui::PushStyleColor(ImGuiCol_WindowBg, 0);
+    ui::PushStyleColor(ImGuiCol_Border, 0);
     if (ui::Begin("DebugHud", nullptr, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|
                                        ImGuiWindowFlags_NoInputs|ImGuiWindowFlags_NoScrollbar))
     {
@@ -215,7 +216,7 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
         }
     }
     ui::End();
-    ui::PopStyleColor();
+    ui::PopStyleColor(2);
 }
 
 }
