@@ -514,21 +514,22 @@ bool CrowdAgent::IsInCrowd() const
     return crowdManager_ && agentCrowdId_ != -1;
 }
 
-void CrowdAgent::OnCrowdPreUpdate(dtCrowdAgent* ag, float dt)
+void CrowdAgent::OnCrowdVelocityUpdate(dtCrowdAgent* ag, float* pos, float dt)
 {
     assert (ag);
     if (node_)
     {
-        Vector3 desiredVelocity{ ag->dvel };
-        desiredVelocity = crowdManager_->AdjustDesiredVelocity(this, desiredVelocity, dt);
+        // Yes, pos actually stores desired velocity in this callback
+        Vector3 desiredVelocity{ pos };
+        crowdManager_->UpdateAgentVelocity(this, dt, desiredVelocity, ag->desiredSpeed);
 
-        ag->dvel[0] = desiredVelocity.x_;
-        ag->dvel[1] = desiredVelocity.y_;
-        ag->dvel[2] = desiredVelocity.z_;
+        pos[0] = desiredVelocity.x_;
+        pos[1] = desiredVelocity.y_;
+        pos[2] = desiredVelocity.z_;
     }
 }
 
-void CrowdAgent::OnCrowdUpdate(dtCrowdAgent* ag, float dt)
+void CrowdAgent::OnCrowdPositionUpdate(dtCrowdAgent* ag, float* /*pos*/, float dt)
 {
     assert (ag);
     if (node_)

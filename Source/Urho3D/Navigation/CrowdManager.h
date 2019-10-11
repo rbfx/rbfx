@@ -56,7 +56,7 @@ struct CrowdObstacleAvoidanceParams
 };
 
 /// Callback used to adjust crowd agent velocity.
-using CrowdAgentVelocityShader = std::function<Vector3(CrowdAgent* agent, const Vector3& desiredVelocity, float timeStep)>;
+using CrowdAgentVelocityShader = std::function<void(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed)>;
 
 /// Crowd manager scene component. Should be added only to the root scene node.
 class URHO3D_API CrowdManager : public Component
@@ -82,8 +82,8 @@ public:
 
     /// Set velocity shader.
     void SetVelocityShader(const CrowdAgentVelocityShader& shader) { velocityShader_ = shader; }
-    /// Adjust desired velocity.
-    Vector3 AdjustDesiredVelocity(CrowdAgent* agent, const Vector3& desiredVelocity, float timeStep) const { return velocityShader_ ? velocityShader_(agent, desiredVelocity, timeStep) : desiredVelocity; }
+    /// Update agent velocity using velocity shader.
+    void UpdateAgentVelocity(CrowdAgent* agent, float timeStep, Vector3& desiredVelocity, float& desiredSpeed) const { if (velocityShader_) velocityShader_(agent, timeStep, desiredVelocity, desiredSpeed); }
 
     /// Set the crowd target position. The target position is set to all crowd agents found in the specified node. Defaulted to scene node.
     void SetCrowdTarget(const Vector3& position, Node* node = nullptr);
