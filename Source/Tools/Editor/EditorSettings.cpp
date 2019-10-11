@@ -205,22 +205,35 @@ void Editor::RenderSettingsWindow()
                 ui::PopID();    // Default Scene
 
                 // Plugins
-#if URHO3D_PLUGINS && !URHO3D_STATIC
+#if URHO3D_PLUGINS
                 ui::PushID("Plugins");
                 ui::Separator();
                 ui::Text("Active plugins:");
-                const StringVector& pluginNames = project_->GetPlugins()->GetPluginNames();
+#if URHO3D_STATIC
+                static const char* pluginStates[] = {"Loaded"};
+#else
                 static const char* pluginStates[] = {"Inactive", "Editor", "Editor and Application"};
+#endif
+                const StringVector& pluginNames = project_->GetPlugins()->GetPluginNames();
+                bool hasPlugins = false;
+                PluginManager* plugins = project_->GetPlugins();
+#if URHO3D_STATIC
+                for (Plugin* plugin : plugins->GetPlugins())
+                {
+                    const ea::string& baseName = plugin->GetName();
+                    int currentState = 0;
+#else
                 for (const ea::string& baseName : pluginNames)
                 {
-                    PluginManager* plugins = project_->GetPlugins();
                     Plugin* plugin = plugins->GetPlugin(baseName);
                     bool loaded = plugin != nullptr && plugin->IsLoaded();
                     bool editorOnly = plugin && plugin->IsPrivate();
                     int currentState = loaded ? (editorOnly ? 1 : 2) : 0;
-
+#endif
+                    hasPlugins = true;
                     if (ui::Combo(baseName.c_str(), &currentState, pluginStates, URHO3D_ARRAYSIZE(pluginStates)))
                     {
+#if !URHO3D_STATIC
                         if (currentState == 0)
                         {
                             if (loaded)
@@ -234,9 +247,13 @@ void Editor::RenderSettingsWindow()
                             if (plugin != nullptr)
                                 plugin->SetPrivate(currentState == 1);
                         }
+#endif
                     }
+#if URHO3D_STATIC
+                    ui::SetHelpTooltip("Plugin state is read-only in static builds.");
+#endif
                 }
-                if (pluginNames.empty())
+                if (!hasPlugins)
                 {
                     ui::TextUnformatted("No available files.");
                     ui::SetHelpTooltip("Plugins are shared libraries that have a class inheriting from PluginApplication and "
