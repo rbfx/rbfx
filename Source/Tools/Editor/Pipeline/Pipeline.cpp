@@ -26,6 +26,7 @@
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/ApplicationSettings.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
@@ -34,6 +35,7 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/Resource/JSONFile.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include "EditorEvents.h"
 #include "Project.h"
 #include "Pipeline/Pipeline.h"
@@ -545,6 +547,42 @@ void Pipeline::OnImporterModified(VariantMap& args)
         return;
 
     ScheduleImport(asset, importer->GetFlavor());
+}
+
+bool Pipeline::CookSettings() const
+{
+    auto* project = GetSubsystem<Project>();
+    ApplicationSettings settings(context_);
+    settings.defaultScene_ = project->GetDefaultSceneName();
+
+    for (Flavor* flavor : GetFlavors())
+    {
+        settings.engineParameters_.clear();
+        if (!flavor->IsDefault())
+        {
+            // All flavors inherit default flavor settings
+            auto* defaultFlavor = GetDefaultFlavor();
+            settings.engineParameters_.insert(defaultFlavor->GetEngineParameters().begin(), defaultFlavor->GetEngineParameters().end());
+        }
+        // And then override these any of default settings with ones from the flavor itself
+        for (const auto& pair : flavor->GetEngineParameters())
+            settings.engineParameters_[pair.first] = pair.second;
+
+        settings.plugins_.clear();
+        for (Plugin* plugin : project->GetPlugins()->GetPlugins())
+        {
+            if (!plugin->IsPrivate())
+                settings.plugins_.push_back(plugin->GetName());
+        }
+
+        JSONFile file(context_);
+        JSONOutputArchive archive(&file);
+        if (!settings.Serialize(archive))
+            return false;
+        GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
+        file.SaveFile(flavor->GetCachePath() + "Settings.json");
+    }
+    return true;
 }
 
 }

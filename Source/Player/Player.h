@@ -24,6 +24,7 @@
 
 
 #include <Urho3D/Engine/Application.h>
+#include <Urho3D/Engine/ApplicationSettings.h>
 #include <Urho3D/Engine/PluginApplication.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/Scene.h>
@@ -61,7 +62,7 @@ public:
 
 protected:
     ///
-    virtual bool LoadPlugins(const JSONValue& plugins);
+    virtual bool LoadPlugins(const StringVector& plugins);
 #if URHO3D_PLUGINS
     ///
     bool LoadAssembly(const ea::string& path);
@@ -75,6 +76,8 @@ protected:
         SharedPtr<PluginApplication> application_;
     };
 
+    ///
+    ApplicationSettings settings_{context_};
     ///
     ea::vector<LoadedModule> plugins_;
 };

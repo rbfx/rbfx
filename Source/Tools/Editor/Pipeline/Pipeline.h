@@ -95,6 +95,8 @@ public:
     Flavor* GetDefaultFlavor() const { return flavors_.front(); }
     ///
     const ea::vector<const TypeInfo*>& GetImporterTypes() const { return importers_; }
+    /// Create per-flavor settings files that will be shipped along with the player executable.
+    bool CookSettings() const;
 
 protected:
     /// Watch directory for changed assets and automatically convert them.
