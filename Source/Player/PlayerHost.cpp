@@ -42,6 +42,7 @@ public:
         // Static plugins must be initialized manually.
         SubscribeToEvent(E_REGISTERSTATICPLUGINS, [this](StringHash, VariantMap&) {
             RegisterPlugin(new GamePlugin(context_));
+            UnsubscribeFromEvent(E_REGISTERSTATICPLUGINS);
         });
 #endif
         BaseClassName::Start();
