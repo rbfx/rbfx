@@ -1220,6 +1220,10 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			dtVscale(dvel, dvel, ag->desiredSpeed * speedScale);
 		}
 
+		// Urho3D: Update velocity callback
+		if (m_updateCallback)
+			m_updateCallback(false, ag, dvel, dt);
+
 		// Separation
 		if (ag->params.updateFlags & DT_CROWD_SEPARATION)
 		{
@@ -1265,10 +1269,6 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 		// Set the desired velocity.
 		dtVcopy(ag->dvel, dvel);
 	}
-
-	// Urho3D: Add update callback support
-	if (m_updateCallback)
-		m_updateCallback(false, agents, nagents, dt);
 
 	// Velocity planning.
 	for (int i = 0; i < nagents; ++i)
@@ -1424,11 +1424,11 @@ void dtCrowd::update(const float dt, dtCrowdAgentDebugInfo* debug)
 			ag->corridor.reset(ag->corridor.getFirstPoly(), ag->npos);
 			ag->partial = false;
 		}
+
+		// Urho3D: Update position callback support
+		if (m_updateCallback)
+			m_updateCallback(true, ag, ag->npos, dt);
 	}
-	
-	// Urho3D: Add update callback support
-	if (m_updateCallback)
-		m_updateCallback(true, agents, nagents, dt);
 
 	// Update agents using off-mesh connection.
 	for (int i = 0; i < m_maxAgents; ++i)

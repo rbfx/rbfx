@@ -69,20 +69,13 @@ static const StringVector obstacleAvoidanceTypesStructureElementNames =
     "   Adaptive Depth"
 };
 
-void CrowdAgentUpdateCallback(bool positionReady, dtCrowdAgent** agents, int nagents, float dt)
+void CrowdAgentUpdateCallback(bool positionUpdate, dtCrowdAgent* ag, float* pos, float dt)
 {
-    for (int i = 0; i < nagents; ++i)
-    {
-        dtCrowdAgent* ag = agents[i];
-        if (ag->state != DT_CROWDAGENT_STATE_WALKING)
-            continue;
-
-        auto crowdAgent = static_cast<CrowdAgent*>(ag->params.userData);
-        if (positionReady)
-            crowdAgent->OnCrowdUpdate(ag, dt);
-        else
-            crowdAgent->OnCrowdPreUpdate(ag, dt);
-    }
+    auto crowdAgent = static_cast<CrowdAgent*>(ag->params.userData);
+    if (positionUpdate)
+        crowdAgent->OnCrowdPositionUpdate(ag, pos, dt);
+    else
+        crowdAgent->OnCrowdVelocityUpdate(ag, pos, dt);
 }
 
 CrowdManager::CrowdManager(Context* context) :

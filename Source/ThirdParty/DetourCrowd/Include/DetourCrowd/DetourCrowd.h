@@ -202,7 +202,7 @@ struct dtCrowdAgentDebugInfo
 
 // Urho3D: Add update callback support
 /// Type for the update callback.
-typedef void (*dtUpdateCallback)(bool positionReady, dtCrowdAgent** agents, int nagents, float dt);
+typedef void (*dtUpdateCallback)(bool positionUpdate, dtCrowdAgent* agent, float* pos, float dt);
 
 /// Provides local steering behaviors for a group of agents. 
 /// @ingroup crowd
