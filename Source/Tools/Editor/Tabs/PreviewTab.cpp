@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 
+#include <Urho3D/Audio/Audio.h>
 #include <Urho3D/Core/Timer.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/Graphics/GraphicsEvents.h>
@@ -285,6 +286,7 @@ void PreviewTab::Play()
         tab->GetUndo().SetTrackingEnabled(false);
         tab->SaveState(sceneState_);
         GetUI()->SetBlockEvents(false);
+        GetAudio()->Play();
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
         inputGrabbed_ = true;
@@ -296,6 +298,7 @@ void PreviewTab::Play()
         // Scene was paused. When resuming restore saved scene input parameters.
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         GetUI()->SetBlockEvents(false);
+        GetAudio()->Play();
         break;
     }
     default:
@@ -308,6 +311,7 @@ void PreviewTab::Pause()
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
     GetUI()->SetBlockEvents(true);
+    GetAudio()->Stop();
 }
 
 void PreviewTab::Toggle()
@@ -336,6 +340,7 @@ void PreviewTab::Step(float timeStep)
 
     scene->Update(timeStep);
     GetUI()->Update(timeStep);
+    GetAudio()->Update(timeStep);
 }
 
 void PreviewTab::Stop()
@@ -349,6 +354,7 @@ void PreviewTab::Stop()
         tab->RestoreState(sceneState_);
         tab->GetUndo().SetTrackingEnabled(true);
         GetUI()->SetBlockEvents(true);
+        GetAudio()->Stop();
     }
 }
 
