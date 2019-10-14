@@ -32,6 +32,7 @@ namespace Urho3D
 ScriptBundlePlugin::ScriptBundlePlugin(Context* context)
     : Plugin(context)
 {
+    isManagedManually_ = false;
     SubscribeToEvent(E_FILECHANGED, [this](StringHash, VariantMap& args) { OnFileChanged(args); });
 }
 

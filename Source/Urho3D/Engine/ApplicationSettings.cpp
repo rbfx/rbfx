@@ -63,8 +63,10 @@ bool ApplicationSettings::Serialize(Archive& archive)
             }
         }
 
+#if URHO3D_PLUGINS
         if (!SerializeVector(archive, "plugins", "plugin", plugins_))
             return false;
+#endif
     }
 
     return true;
