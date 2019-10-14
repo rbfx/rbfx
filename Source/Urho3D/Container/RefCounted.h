@@ -89,18 +89,18 @@ public:
 
 protected:
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
-    uintptr_t GetScriptObject() const { return scriptObject_; }
+    void* GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
-    void SetScriptObject(uintptr_t handle) { scriptObject_ = handle; }
+    void SetScriptObject(void* handle) { scriptObject_ = handle; }
     /// Sets handle to wrapper script object and returns previous handle value.
-    uintptr_t SwapScriptObject(uintptr_t handle);
+    void* SwapScriptObject(void* handle);
 #endif
 private:
     /// Pointer to the reference count structure.
     RefCount* refCount_ = nullptr;
 #if URHO3D_CSHARP
     /// A handle to script object that wraps this native instance.
-    uintptr_t scriptObject_ = 0;
+    void* scriptObject_ = 0;
 #endif
 };
 

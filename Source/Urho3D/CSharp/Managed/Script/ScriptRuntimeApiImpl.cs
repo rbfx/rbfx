@@ -78,28 +78,28 @@ namespace Urho3DNet
             instance?.Dispose();
         }
 
-        public override void FreeGCHandle(int handle)
+        public override void FreeGCHandle(IntPtr handle)
         {
-            GCHandle gcHandle = GCHandle.FromIntPtr(new IntPtr(handle));
+            GCHandle gcHandle = GCHandle.FromIntPtr(handle);
             if (gcHandle.IsAllocated)
                 gcHandle.Free();
         }
 
-        public override int RecreateGCHandle(int handle, bool strong)
+        public override IntPtr RecreateGCHandle(IntPtr handle, bool strong)
         {
-            if (handle == 0)
-                return 0;
+            if (handle == IntPtr.Zero)
+                return IntPtr.Zero;
 
-            GCHandle gcHandle = GCHandle.FromIntPtr(new IntPtr(handle));
+            GCHandle gcHandle = GCHandle.FromIntPtr(handle);
             if (gcHandle.Target != null)
             {
                 GCHandle newHandle = GCHandle.Alloc(gcHandle.Target, strong ? GCHandleType.Normal : GCHandleType.Weak);
                 GC.KeepAlive(gcHandle.Target);
-                return GCHandle.ToIntPtr(newHandle).ToInt32();
+                return GCHandle.ToIntPtr(newHandle);
             }
             if (gcHandle.IsAllocated)
                 gcHandle.Free();
-            return 0;
+            return IntPtr.Zero;
         }
 
         public override void FullGC()
