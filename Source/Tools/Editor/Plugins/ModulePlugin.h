@@ -62,7 +62,6 @@ protected:
     unsigned mtime_ = 0;
     /// Last loaded module type.
     ModuleType lastModuleType_ = MODULE_INVALID;
-
 };
 
 
