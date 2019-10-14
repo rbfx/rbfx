@@ -72,10 +72,15 @@ EditorIconCache::EditorIconCache(Context* context)
 
 EditorIconCache::IconData* EditorIconCache::GetIconData(const ea::string& name)
 {
-    auto it = iconCache_.find(name);
-    if (it != iconCache_.end())
-        return &it->second;
-    return &iconCache_.find("Unknown")->second;
+    const auto iterIcon = iconCache_.find(name);
+    if (iterIcon != iconCache_.end())
+        return &iterIcon->second;
+
+    const auto iterUnknown = iconCache_.find("Unknown");
+    if (iterUnknown != iconCache_.end())
+        return &iterUnknown->second;
+
+    return nullptr;
 }
 
 }
