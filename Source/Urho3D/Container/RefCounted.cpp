@@ -136,7 +136,7 @@ int RefCounted::WeakRefs() const
     return refCount_->weakRefs_ - 1;
 }
 #if URHO3D_CSHARP
-uintptr_t RefCounted::SwapScriptObject(uintptr_t handle)
+void* RefCounted::SwapScriptObject(void* handle)
 {
     ea::swap(handle, scriptObject_);
     return handle;

@@ -194,7 +194,7 @@ bool PluginModule::Unload()
 #if URHO3D_CSHARP
     if (moduleType_ == MODULE_MANAGED)
     {
-        Script::GetRuntimeApi()->FreeGCHandle(handle_);
+        Script::GetRuntimeApi()->FreeGCHandle((void*)handle_);
     }
     else
 #endif  // URHO3D_CSHARP
