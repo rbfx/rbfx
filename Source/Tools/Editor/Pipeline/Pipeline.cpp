@@ -568,12 +568,19 @@ bool Pipeline::CookSettings() const
         for (const auto& pair : flavor->GetEngineParameters())
             settings.engineParameters_[pair.first] = pair.second;
 
+#if URHO3D_PLUGINS
         settings.plugins_.clear();
         for (Plugin* plugin : project->GetPlugins()->GetPlugins())
         {
-            if (!plugin->IsPrivate())
-                settings.plugins_.push_back(plugin->GetName());
+            if (!plugin->IsManagedManually())
+                continue;
+
+            if (plugin->IsPrivate())
+                continue;
+
+            settings.plugins_.push_back(plugin->GetName());
         }
+#endif
 
         JSONFile file(context_);
         JSONOutputArchive archive(&file);

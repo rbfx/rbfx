@@ -58,6 +58,8 @@ public:
     virtual bool IsOutOfDate() const { return false; }
     /// This function will block until plugin file is complete and ready to be loaded. Returns false if timeout exceeded, but file is still incomplete.
     virtual bool WaitForCompleteFile(unsigned timeoutMs) const { return true; }
+    /// Returns true if user may configure loading or unloading plugin.
+    bool IsManagedManually() const { return isManagedManually_; }
 
 protected:
     /// Actually unloads the module. Called by %PluginManager at the end of frame when unloading_ flag is set.
@@ -74,6 +76,8 @@ protected:
     /// Instance to the plugin application. This should be a single owning reference to the plugin. Managed plugins are
     /// an exception as managed object holds reference to native object and must be disposed in order to free this object.
     SharedPtr<PluginApplication> application_;
+    /// Flag indicating that user may configure loading or unloading plugin.
+    bool isManagedManually_ = true;
 
     friend class PluginManager;
 };

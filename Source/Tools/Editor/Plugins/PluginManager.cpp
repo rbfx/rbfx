@@ -275,10 +275,10 @@ bool PluginManager::Serialize(Archive& archive)
             {
                 // ScriptBundlePlugin is special. Only one instance of this plugin exists and it is loaded manually. No point in serializing it.
                 Plugin* plugin = plugins_[i];
-#if URHO3D_CSHARP
-                if (plugin->GetType() == ScriptBundlePlugin::GetTypeStatic())
+
+                if (!plugin->IsManagedManually())
                     continue;
-#endif
+
                 if (!plugin->IsLoaded())
                     continue;
 
