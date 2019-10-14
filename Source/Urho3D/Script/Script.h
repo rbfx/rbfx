@@ -51,9 +51,9 @@ public:
     /// Invokes managed instance.Dispose() method.
     virtual void Dispose(RefCounted* instance) = 0;
     /// Release specified gc handle. It becomes invalid.
-    virtual void FreeGCHandle(int handle) = 0;
+    virtual void FreeGCHandle(void* handle) = 0;
     /// Creates a new gc handle pointing to same object as specified gc handle. Specified gc handle will be freed.
-    virtual int RecreateGCHandle(int handle, bool strong) = 0;
+    virtual void* RecreateGCHandle(void* handle, bool strong) = 0;
     /// Warning! This is slow! Perform a full garbage collection.
     virtual void FullGC() = 0;
     /// Implement any logic that is required before Application::Start() runs.
