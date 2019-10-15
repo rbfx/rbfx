@@ -97,6 +97,7 @@ Project::~Project()
 
         for (const auto& path : cachedEngineResourcePaths_)
             GetCache()->AddResourceDir(path);
+        cache->SetAutoReloadResources(false);
     }
 
     if (auto* editor = GetSubsystem<Editor>())
@@ -189,6 +190,7 @@ bool Project::LoadProject(const ea::string& projectPath)
     // Register asset dirs
     GetCache()->AddResourceDir(GetCachePath(), 0);
     GetCache()->AddResourceDir(GetResourcePath(), 1);
+    GetCache()->SetAutoReloadResources(true);
 
 #if URHO3D_PLUGINS
     if (!GetEngine()->IsHeadless())
