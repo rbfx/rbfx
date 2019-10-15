@@ -104,6 +104,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
         SendEvent(E_ENDRENDERINGSYSTEMUI);
         ImGui::Render();
         OnRenderDrawLists(ImGui::GetDrawData());
+        referencedTextures_.clear();
     });
 }
 
@@ -563,4 +564,18 @@ const Urho3D::Variant& ImGui::AcceptDragDropVariant(const char* type, ImGuiDragD
         return systemUI->GetContext()->GetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type));
     }
     return Urho3D::Variant::EMPTY;
+}
+
+void ImGui::Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+{
+    auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
+    systemUI->ReferenceTexture(user_texture_id);
+    Image((ImTextureID)user_texture_id, size, uv0, uv1, tint_col, border_col);
+}
+
+bool ImGui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
+{
+    auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
+    systemUI->ReferenceTexture(user_texture_id);
+    return ImageButton((ImTextureID)user_texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
 }

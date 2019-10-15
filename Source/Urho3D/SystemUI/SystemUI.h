@@ -82,6 +82,8 @@ public:
     float GetFontScale() const { return fontScale_; }
     /// Prepares font textures, updates projection matrix and does other things that are required to start this subsystem.
     void Start();
+    /// Hold a reference to this texture until end of frame.
+    void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
 
 protected:
     float uiZoom_ = 1.f;
@@ -91,6 +93,7 @@ protected:
     SharedPtr<Texture2D> fontTexture_;
     ea::vector<float> fontSizes_;
     ImGuiContext* imContext_;
+    ea::vector<SharedPtr<Texture2D>> referencedTextures_;
 
     void ReallocateFontTexture();
     void OnRenderDrawLists(ImDrawData* data);
@@ -123,6 +126,8 @@ URHO3D_API bool IsMouseClicked(Urho3D::MouseButton button, bool repeat=false);
 URHO3D_API bool IsItemClicked(Urho3D::MouseButton button);
 URHO3D_API bool SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond = 0);
 URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags = 0);
+URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
+URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4 & bg_col = ImVec4(0, 0, 0, 0), const ImVec4 & tint_col = ImVec4(1, 1, 1, 1));
 
 }
 
