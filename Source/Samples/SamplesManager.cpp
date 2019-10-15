@@ -44,46 +44,74 @@
 #include "08_Decals/Decals.h"
 #include "09_MultipleViewports/MultipleViewports.h"
 #include "10_RenderToTexture/RenderToTexture.h"
+#if URHO3D_PHYSICS
 #include "11_Physics/Physics.h"
 #include "12_PhysicsStressTest/PhysicsStressTest.h"
 #include "13_Ragdolls/Ragdolls.h"
+#endif
 #include "14_SoundEffects/SoundEffects.h"
+#if URHO3D_NAVIGATION
 #include "15_Navigation/Navigation.h"
+#endif
+#if URHO3D_NETWORK
 #include "16_Chat/Chat.h"
 #include "17_SceneReplication/SceneReplication.h"
+#endif
+#if URHO3D_PHYSICS
 #include "18_CharacterDemo/CharacterDemo.h"
 #include "19_VehicleDemo/VehicleDemo.h"
+#endif
 #include "20_HugeObjectCount/HugeObjectCount.h"
 #include "23_Water/Water.h"
+#if URHO3D_URHO2D
 #include "24_Urho2DSprite/Urho2DSprite.h"
 #include "25_Urho2DParticle/Urho2DParticle.h"
 #include "26_ConsoleInput/ConsoleInput.h"
 #include "27_Urho2DPhysics/Urho2DPhysics.h"
 #include "28_Urho2DPhysicsRope/Urho2DPhysicsRope.h"
+#endif
 #include "29_SoundSynthesis/SoundSynthesis.h"
 #include "30_LightAnimation/LightAnimation.h"
 #include "31_MaterialAnimation/MaterialAnimation.h"
+#if URHO3D_URHO2D
 #include "32_Urho2DConstraints/Urho2DConstraints.h"
 #include "33_Urho2DSpriterAnimation/Urho2DSpriterAnimation.h"
+#endif
 #include "34_DynamicGeometry/DynamicGeometry.h"
 #include "35_SignedDistanceFieldText/SignedDistanceFieldText.h"
+#if URHO3D_URHO2D
 #include "36_Urho2DTileMap/Urho2DTileMap.h"
+#endif
 #include "37_UIDrag/UIDrag.h"
 #include "38_SceneAndUILoad/SceneAndUILoad.h"
+#if URHO3D_NAVIGATION
 #include "39_CrowdNavigation/CrowdNavigation.h"
+#endif
 #include "40_Localization/L10n.h"
 #include "42_PBRMaterials/PBRMaterials.h"
+#if URHO3D_NETWORK
 #include "43_HttpRequestDemo/HttpRequestDemo.h"
+#endif
 #include "44_RibbonTrailDemo/RibbonTrailDemo.h"
+#if URHO3D_PHYSICS
+#if URHO3D_IK
 #include "45_InverseKinematics/InverseKinematics.h"
+#endif
 #include "46_RaycastVehicle/RaycastVehicleDemo.h"
+#endif
 #include "47_Typography/Typography.h"
 #include "48_Hello3DUI/Hello3DUI.h"
+#if URHO3D_URHO2D
 #include "49_Urho2DIsometricDemo/Urho2DIsometricDemo.h"
 #include "50_Urho2DPlatformer/Urho2DPlatformer.h"
+#endif
+#if URHO3D_NETWORK
 #include "52_NATPunchtrough/NATPunchtrough.h"
 #include "53_LANDiscovery/LANDiscovery.h"
+#endif
+#if URHO3D_SYSTEMUI
 #include "100_HelloSystemUI/HelloSystemUI.h"
+#endif
 #include "105_Serialization/Serialization.h"
 #include "Rotator.h"
 
@@ -190,8 +218,10 @@ void SamplesManager::Start()
     RegisterSample<Chat>();
     RegisterSample<SceneReplication>();
 #endif
+#if URHO3D_PHYSICS
     RegisterSample<CharacterDemo>();
     RegisterSample<VehicleDemo>();
+#endif
     RegisterSample<HugeObjectCount>();
     RegisterSample<Water>();
 #if URHO3D_URHO2D
