@@ -1807,8 +1807,8 @@ void UI::HandleMouseWheel(StringHash eventType, VariantMap& eventData)
 
     if (!nonFocusedMouseWheel_ && focusElement_)
     {
-        UIElement* element = GetWheelHandlerElement(focusElement_);
-        element->OnWheel(delta, mouseButtons_, qualifiers_);
+        if (UIElement* element = GetWheelHandlerElement(focusElement_))
+            element->OnWheel(delta, mouseButtons_, qualifiers_);
     }
     else
     {
