@@ -34,6 +34,11 @@ namespace ImGui
 
 struct UIStateWrapper
 {
+    ~UIStateWrapper()
+    {
+        Unset();
+    }
+
     void Set(void* state, void(*deleter)(void*)=nullptr)
     {
         lastUse_ = ui::GetCurrentContext()->FrameCount;
