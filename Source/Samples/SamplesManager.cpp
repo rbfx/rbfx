@@ -156,6 +156,8 @@ void SamplesManager::Start()
     GetInput()->SetMouseMode(MM_FREE);
     GetInput()->SetMouseVisible(true);
 
+    GetEngine()->CreateDebugHud()->ToggleAll();
+
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
