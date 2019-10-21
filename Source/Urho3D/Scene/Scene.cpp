@@ -95,6 +95,14 @@ Scene::~Scene()
         i->second->ResetScene();
     for (auto i = localNodes_.begin(); i != localNodes_.end(); ++i)
         i->second->ResetScene();
+
+    // Validate registry
+    if (registryActive_)
+    {
+        assert(reg_.alive() == 1);
+        for (auto& storage : singleComponentIndexes_)
+            assert(storage.empty());
+    }
 }
 
 void Scene::RegisterObject(Context* context)
@@ -113,6 +121,37 @@ void Scene::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Next Local Component ID", unsigned, localComponentID_, FIRST_LOCAL_ID, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Variables", VariantMap, vars_, Variant::emptyVariantMap, AM_FILE); // Network replication of vars uses custom data
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
+}
+
+void Scene::CreateComponentIndex(StringHash componentType)
+{
+    if (replicatedNodes_.size() != 1 || localNodes_.size() != 0 || replicatedComponents_.size() != 0 || localComponents_.size() != 0)
+    {
+        URHO3D_LOGERROR("Index may be changed only for empty Scene");
+        return;
+    }
+
+    // Initialize Scene entity
+    if (!registryActive_)
+    {
+        const entt::entity entity = reg_.create();
+        SetEntity(entity);
+    }
+
+    registryActive_ = true;
+    indexedComponentTypes_.push_back(componentType);
+    singleComponentIndexes_.emplace_back();
+}
+
+ea::span<Component* const> Scene::GetComponentIndex(StringHash componentType) const
+{
+    const unsigned idx = indexedComponentTypes_.index_of(componentType);
+    if (idx < singleComponentIndexes_.size())
+    {
+        auto& storage = singleComponentIndexes_[idx];
+        return { storage.raw(), static_cast<ptrdiff_t>(storage.size()) };
+    }
+    return {};
 }
 
 bool Scene::Serialize(Archive& archive)
@@ -939,6 +978,13 @@ void Scene::NodeAdded(Node* node)
         node->SetID(id);
     }
 
+    // Initialize entity
+    if (registryActive_)
+    {
+        const entt::entity entity = reg_.create();
+        node->SetEntity(entity);
+    }
+
     // If node with same ID exists, remove the scene reference from it and overwrite with the new node
     if (IsReplicatedID(id))
     {
@@ -1023,6 +1069,13 @@ void Scene::NodeRemoved(Node* node)
     const ea::vector<SharedPtr<Node> >& children = node->GetChildren();
     for (auto i = children.begin(); i != children.end(); ++i)
         NodeRemoved(*i);
+
+    // Remove node from registry
+    if (registryActive_)
+    {
+        const entt::entity entity = node->GetEntity();
+        reg_.destroy(entity);
+    }
 }
 
 void Scene::ComponentAdded(Component* component)
@@ -1063,12 +1116,38 @@ void Scene::ComponentAdded(Component* component)
     }
 
     component->OnSceneSet(this);
+
+    if (registryActive_)
+    {
+        const unsigned idx = indexedComponentTypes_.index_of(component->GetType());
+        if (idx < singleComponentIndexes_.size())
+        {
+            auto& storage = singleComponentIndexes_[idx];
+            const entt::entity entity = component->GetNode()->GetEntity();
+            if (storage.has(entity))
+                storage.get(entity) = component;
+            else
+                storage.construct(entity, component);
+        }
+    }
 }
 
 void Scene::ComponentRemoved(Component* component)
 {
     if (!component)
         return;
+
+    if (registryActive_)
+    {
+        const unsigned idx = indexedComponentTypes_.index_of(component->GetType());
+        if (idx < singleComponentIndexes_.size())
+        {
+            auto& storage = singleComponentIndexes_[idx];
+            const entt::entity entity = component->GetNode()->GetEntity();
+            if (storage.has(entity))
+                storage.destroy(entity);
+        }
+    }
 
     unsigned id = component->GetID();
     if (Scene::IsReplicatedID(id))
