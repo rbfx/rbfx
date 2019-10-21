@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include <EASTL/span.h>
 #include <EASTL/unique_ptr.h>
 
 #include "../Core/Mutex.h"
@@ -100,6 +101,15 @@ public:
     ~Scene() override;
     /// Register object factory. Node must be registered first.
     static void RegisterObject(Context* context);
+
+    /// Create component index. Scene must be empty.
+    void CreateComponentIndex(StringHash componentType);
+    /// Create component index for template type.
+    template <class T> void CreateComponentIndex() { CreateComponentIndex(T::GetTypeStatic()); }
+    /// Get component index.
+    ea::span<Component* const> GetComponentIndex(StringHash componentType) const;
+    /// Get component index for template type.
+    template <class T> void GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
@@ -283,6 +293,15 @@ private:
     void PreloadResourcesXML(const XMLElement& element);
     /// Preload resources from a JSON scene or object prefab file.
     void PreloadResourcesJSON(const JSONValue& value);
+
+    /// Whether the registry is active.
+    bool registryActive_{ false };
+    /// Registry.
+    entt::registry reg_;
+    /// Types of components that should be indexed.
+    ea::vector<StringHash> indexedComponentTypes_;
+    /// Indexes of components.
+    ea::vector<entt::storage<entt::entity, Component*>> singleComponentIndexes_;
 
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, Node*> replicatedNodes_;

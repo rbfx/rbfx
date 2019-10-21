@@ -1580,6 +1580,11 @@ void Node::SetID(unsigned id)
     id_ = id;
 }
 
+void Node::SetEntity(entt::entity entity)
+{
+    entity_ = entity;
+}
+
 void Node::SetScene(Scene* scene)
 {
     scene_ = scene;
