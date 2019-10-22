@@ -97,10 +97,10 @@ Scene::~Scene()
         i->second->ResetScene();
 
     // Validate registry
-    if (registryActive_)
+    if (registryEnabled_)
     {
         assert(reg_.alive() == 1);
-        for (auto& storage : singleComponentIndexes_)
+        for (auto& storage : componentIndexes_)
             assert(storage.empty());
     }
 }
@@ -123,34 +123,40 @@ void Scene::RegisterObject(Context* context)
     URHO3D_MIXED_ACCESSOR_ATTRIBUTE("Variable Names", GetVarNamesAttr, SetVarNamesAttr, ea::string, EMPTY_STRING, AM_FILE | AM_NOEDIT);
 }
 
-void Scene::CreateComponentIndex(StringHash componentType)
+bool Scene::EnableRegistry()
 {
-    if (replicatedNodes_.size() != 1 || localNodes_.size() != 0 || replicatedComponents_.size() != 0 || localComponents_.size() != 0)
+    if (!registryEnabled_)
     {
-        URHO3D_LOGERROR("Index may be changed only for empty Scene");
-        return;
-    }
+        const bool hasNodesExceptSelf = replicatedNodes_.size() != 1 || localNodes_.size() != 0;
+        const bool hasComponents = replicatedComponents_.size() != 0 || localComponents_.size() != 0;
+        if (hasNodesExceptSelf || hasComponents)
+        {
+            URHO3D_LOGERROR("Registry may be enabled only for empty Scene");
+            return false;
+        }
 
-    // Initialize Scene entity
-    if (!registryActive_)
-    {
+        registryEnabled_ = true;
+
+        // Add self to registry
         const entt::entity entity = reg_.create();
         SetEntity(entity);
     }
-
-    registryActive_ = true;
-    indexedComponentTypes_.push_back(componentType);
-    singleComponentIndexes_.emplace_back();
+    return true;
 }
 
-ea::span<Component* const> Scene::GetComponentIndex(StringHash componentType) const
+bool Scene::CreateComponentIndex(StringHash componentType)
 {
-    const unsigned idx = indexedComponentTypes_.index_of(componentType);
-    if (idx < singleComponentIndexes_.size())
-    {
-        auto& storage = singleComponentIndexes_[idx];
-        return { storage.raw(), static_cast<ptrdiff_t>(storage.size()) };
-    }
+    if (!EnableRegistry())
+        return false;
+
+    indexedComponentTypes_.push_back(componentType);
+    componentIndexes_.emplace_back();
+}
+
+ea::span<Component* const> Scene::GetComponentIndex(StringHash componentType)
+{
+    if (auto storage = GetComponentIndexStorage(componentType))
+        return { storage->raw(), static_cast<ptrdiff_t>(storage->size()) };
     return {};
 }
 
@@ -979,7 +985,7 @@ void Scene::NodeAdded(Node* node)
     }
 
     // Initialize entity
-    if (registryActive_)
+    if (registryEnabled_)
     {
         const entt::entity entity = reg_.create();
         node->SetEntity(entity);
@@ -1071,7 +1077,7 @@ void Scene::NodeRemoved(Node* node)
         NodeRemoved(*i);
 
     // Remove node from registry
-    if (registryActive_)
+    if (registryEnabled_)
     {
         const entt::entity entity = node->GetEntity();
         reg_.destroy(entity);
@@ -1117,17 +1123,15 @@ void Scene::ComponentAdded(Component* component)
 
     component->OnSceneSet(this);
 
-    if (registryActive_)
+    if (registryEnabled_)
     {
-        const unsigned idx = indexedComponentTypes_.index_of(component->GetType());
-        if (idx < singleComponentIndexes_.size())
+        if (auto storage = GetComponentIndexStorage(component->GetType()))
         {
-            auto& storage = singleComponentIndexes_[idx];
             const entt::entity entity = component->GetNode()->GetEntity();
-            if (storage.has(entity))
-                storage.get(entity) = component;
+            if (storage->has(entity))
+                storage->get(entity) = component;
             else
-                storage.construct(entity, component);
+                storage->construct(entity, component);
         }
     }
 }
@@ -1137,15 +1141,13 @@ void Scene::ComponentRemoved(Component* component)
     if (!component)
         return;
 
-    if (registryActive_)
+    if (registryEnabled_)
     {
-        const unsigned idx = indexedComponentTypes_.index_of(component->GetType());
-        if (idx < singleComponentIndexes_.size())
+        if (auto storage = GetComponentIndexStorage(component->GetType()))
         {
-            auto& storage = singleComponentIndexes_[idx];
             const entt::entity entity = component->GetNode()->GetEntity();
-            if (storage.has(entity))
-                storage.destroy(entity);
+            if (storage->has(entity))
+                storage->destroy(entity);
         }
     }
 
@@ -1621,6 +1623,14 @@ void Scene::PreloadResourcesJSON(const JSONValue& value)
         PreloadResourcesJSON(childVal);
     }
 #endif
+}
+
+entt::storage<entt::entity, Component*>* Scene::GetComponentIndexStorage(StringHash componentType)
+{
+    const unsigned idx = indexedComponentTypes_.index_of(componentType);
+    if (idx < componentIndexes_.size())
+        return &componentIndexes_[idx];
+    return nullptr;
 }
 
 void RegisterSceneLibrary(Context* context)

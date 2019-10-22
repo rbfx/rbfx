@@ -102,14 +102,18 @@ public:
     /// Register object factory. Node must be registered first.
     static void RegisterObject(Context* context);
 
+    /// Enable registry. Scene must be empty.
+    bool EnableRegistry();
     /// Create component index. Scene must be empty.
-    void CreateComponentIndex(StringHash componentType);
-    /// Create component index for template type.
+    bool CreateComponentIndex(StringHash componentType);
+    /// Create component index for template type. Scene must be empty.
     template <class T> void CreateComponentIndex() { CreateComponentIndex(T::GetTypeStatic()); }
-    /// Get component index.
-    ea::span<Component* const> GetComponentIndex(StringHash componentType) const;
-    /// Get component index for template type.
-    template <class T> void GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }
+    /// Return registry.
+    entt::registry& GetRegistry() { return reg_; }
+    /// Return component index. Iteratable. Invalidated when indexed component is added or removed!
+    ea::span<Component* const> GetComponentIndex(StringHash componentType);
+    /// Return component index for template type. Invalidated when indexed component is added or removed!
+    template <class T> ea::span<Component* const> GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
@@ -293,15 +297,17 @@ private:
     void PreloadResourcesXML(const XMLElement& element);
     /// Preload resources from a JSON scene or object prefab file.
     void PreloadResourcesJSON(const JSONValue& value);
+    /// Return component index storage for given type.
+    entt::storage<entt::entity, Component*>* GetComponentIndexStorage(StringHash componentType);
 
     /// Whether the registry is active.
-    bool registryActive_{ false };
+    bool registryEnabled_{ false };
     /// Registry.
     entt::registry reg_;
     /// Types of components that should be indexed.
     ea::vector<StringHash> indexedComponentTypes_;
     /// Indexes of components.
-    ea::vector<entt::storage<entt::entity, Component*>> singleComponentIndexes_;
+    ea::vector<entt::storage<entt::entity, Component*>> componentIndexes_;
 
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, Node*> replicatedNodes_;
