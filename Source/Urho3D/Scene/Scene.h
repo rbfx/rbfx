@@ -33,6 +33,8 @@
 #include "../Scene/Node.h"
 #include "../Scene/SceneResolver.h"
 
+#include <entt/entity/registry.hpp>
+
 namespace Urho3D
 {
 

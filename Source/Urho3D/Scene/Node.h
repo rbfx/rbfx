@@ -28,7 +28,8 @@
 #include "../Math/Matrix3x4.h"
 #include "../Scene/Animatable.h"
 
-#include <entt/entity/registry.hpp>
+#include <entt/entity/entity.hpp>
+#include <entt/entity/fwd.hpp>
 
 namespace Urho3D
 {
