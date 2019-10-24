@@ -32,12 +32,10 @@
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
+#include "../Scene/CameraViewport.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
-
-#include "SceneMetadata.h"
-#include "CameraViewport.h"
 
 
 namespace Urho3D
@@ -130,19 +128,6 @@ void CameraViewport::OnNodeSet(Node* node)
 
 void CameraViewport::OnSceneSet(Scene* scene)
 {
-    if (scene)
-    {
-        if (SceneMetadata* manager = scene->GetOrCreateComponent<SceneMetadata>())
-            manager->RegisterComponent(this);
-    }
-    else
-    {
-        if (Scene* oldScene = GetScene())
-        {
-            if (SceneMetadata* manager = oldScene->GetComponent<SceneMetadata>())
-                manager->UnregisterComponent(this);
-        }
-    }
     viewport_->SetScene(scene);
 }
 

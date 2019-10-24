@@ -304,12 +304,6 @@
 %}
 %csmethodmodifiers Urho3D::SceneManager::GetActiveScene "private";
 %csmethodmodifiers Urho3D::SceneManager::SetActiveScene "private";
-%typemap(cscode) Urho3D::SceneMetadata %{
-  public $typemap(cstype, const eastl::vector<Urho3D::WeakPtr<Urho3D::CameraViewport>> &) CameraViewportComponents {
-    get { return GetCameraViewportComponents(); }
-  }
-%}
-%csmethodmodifiers Urho3D::SceneMetadata::GetCameraViewportComponents "private";
 %typemap(cscode) Urho3D::Serializable %{
   public $typemap(cstype, unsigned int) NumAttributes {
     get { return GetNumAttributes(); }

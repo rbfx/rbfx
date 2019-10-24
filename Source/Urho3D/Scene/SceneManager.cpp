@@ -26,10 +26,10 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/RenderSurface.h"
 #include "../IO/Log.h"
+#include "../Scene/CameraViewport.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/SceneManager.h"
-#include "../Scene/SceneMetadata.h"
 
 
 namespace Urho3D
@@ -54,8 +54,8 @@ Scene* SceneManager::CreateScene(const ea::string& name)
     }
     SharedPtr<Scene> scene(context_->CreateObject<Scene>());
     scene->SetName(name);
+    scene->CreateComponentIndex<CameraViewport>();
     scene->GetOrCreateComponent<Octree>();
-    scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
     scenes_.push_back(scene);
     return scene;
 }
@@ -123,7 +123,6 @@ void SceneManager::SetActiveScene(Scene* scene)
         activeScene_->SetUpdateEnabled(false);
 
     activeScene_ = scene;
-    missingMetadataWarned_ = false;
     SendEvent(E_SCENEACTIVATED, eventData);
     UpdateViewports();
 }
@@ -149,30 +148,16 @@ void SceneManager::UpdateViewports()
     if (activeScene_.Expired())
         return;
 
-    SceneMetadata* meta = activeScene_->GetComponent<SceneMetadata>();
-    if (meta == nullptr)
-    {
-        if (!missingMetadataWarned_)
-        {
-            URHO3D_LOGERRORF("Viewports can not be updated active scene does not have '%s' component.",
-                SceneMetadata::GetTypeNameStatic().c_str());
-            missingMetadataWarned_ = true;
-        }
-        return;
-    }
-
     unsigned index = 0;
-    const auto& viewportComponents = meta->GetCameraViewportComponents();
+    ea::span<Component* const> viewportComponents = activeScene_->GetComponentIndex<CameraViewport>();
     if (renderSurface_.Expired())
         GetRenderer()->SetNumViewports(viewportComponents.size());
     else
         renderSurface_->SetNumViewports(viewportComponents.size());
 
-    for (const auto& cameraViewport : viewportComponents)
+    for (Component* const component : viewportComponents)
     {
-        if (cameraViewport.Expired())
-            continue;
-
+        auto* const cameraViewport = static_cast<CameraViewport* const>(component);
         // Trigger resizing of underlying viewport
         if (renderSurface_.Expired())
             cameraViewport->SetScreenRect({0, 0, GetGraphics()->GetWidth(), GetGraphics()->GetHeight()});

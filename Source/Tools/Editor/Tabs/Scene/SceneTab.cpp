@@ -35,7 +35,6 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Scene/SceneManager.h>
-#include <Urho3D/Scene/SceneMetadata.h>
 #include <Urho3D/SystemUI/DebugHud.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
@@ -403,7 +402,6 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     manager->UnloadAllButActiveScene();
     scene->SetUpdateEnabled(false);    // Scene is updated manually.
     scene->GetOrCreateComponent<Octree>();
-    scene->GetOrCreateComponent<SceneMetadata>(LOCAL);
     scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
 
     undo_.Clear();
