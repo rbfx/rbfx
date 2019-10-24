@@ -21,18 +21,7 @@
 //
 
 #include <Urho3D/Core/Object.h>
-
-#if _WIN32
-#  define SWIGSTDCALL __stdcall
-#else
-#  define SWIGSTDCALL
-#endif
-
-typedef void* (SWIGSTDCALL* Urho3D_CSharpCloneGCHandleCallback)(void*);
-extern URHO3D_EXPORT_API Urho3D_CSharpCloneGCHandleCallback Urho3D_CSharpCloneGCHandle;
-
-typedef void (SWIGSTDCALL* Urho3D_CSharpFreeGCHandleCallback)(void*);
-extern URHO3D_EXPORT_API Urho3D_CSharpFreeGCHandleCallback Urho3D_CSharpFreeGCHandle;
+#include <Urho3D/Script/Script.h>
 
 namespace Urho3D
 {
@@ -51,8 +40,8 @@ public:
 
     ~ManagedEventHandler() override
     {
-        Urho3D_CSharpFreeGCHandle(callbackHandle_);
-        callbackHandle_ = 0;
+        Script::GetRuntimeApi()->FreeGCHandle(callbackHandle_);
+        callbackHandle_ = nullptr;
     }
 
     void Invoke(VariantMap& eventData) override
@@ -62,7 +51,7 @@ public:
 
     EventHandler* Clone() const override
     {
-        return new ManagedEventHandler(receiver_, callback_, Urho3D_CSharpCloneGCHandle(callbackHandle_));
+        return new ManagedEventHandler(receiver_, callback_, Script::GetRuntimeApi()->CloneGCHandle(callbackHandle_));
     }
 
 public:

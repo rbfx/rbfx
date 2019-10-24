@@ -4626,9 +4626,6 @@ public:
       Printf(w->def, "%s::~%s() {\n", dirclassname, dirclassname);
     }
 
-// #ifndef WITHOUT_RBFX
-//     Printv(w->code, "SWIG_csharp_free_gchandle_callback(swig_managedObjectHandle);\n", NIL);
-// #endif
     Printv(w->code, "}\n", NIL);
 
     Wrapper_print(w, f_directors);
