@@ -112,7 +112,7 @@ public:
     template <class T> void CreateComponentIndex() { CreateComponentIndex(T::GetTypeStatic()); }
     /// Return registry.
     entt::registry& GetRegistry() { return reg_; }
-    /// Return component index. Iteratable. Invalidated when indexed component is added or removed!
+    /// Return component index. Iterable. Invalidated when indexed component is added or removed!
     ea::span<Component* const> GetComponentIndex(StringHash componentType);
     /// Return component index for template type. Invalidated when indexed component is added or removed!
     template <class T> ea::span<Component* const> GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }

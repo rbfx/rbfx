@@ -151,6 +151,7 @@ bool Scene::CreateComponentIndex(StringHash componentType)
 
     indexedComponentTypes_.push_back(componentType);
     componentIndexes_.emplace_back();
+    return true;
 }
 
 ea::span<Component* const> Scene::GetComponentIndex(StringHash componentType)
