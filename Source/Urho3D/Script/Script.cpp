@@ -86,4 +86,49 @@ void ScriptRuntimeApi::DereferenceAndDispose(RefCounted* instance)
     }
     Dispose(instance);
 }
+
+GCHandleRef::GCHandleRef(void* handle) noexcept
+    : handle_(handle)
+{
+}
+
+GCHandleRef::~GCHandleRef()
+{
+    if (handle_ != nullptr)
+    {
+        Script::GetRuntimeApi()->FreeGCHandle(handle_);
+        handle_ = nullptr;
+    }
+}
+
+GCHandleRef::GCHandleRef(const GCHandleRef& other)
+{
+    operator=(other);
+}
+
+GCHandleRef::GCHandleRef(GCHandleRef&& other) noexcept
+{
+    ea::swap(handle_, other.handle_);
+}
+
+GCHandleRef& GCHandleRef::operator=(void* handle)
+{
+    if (handle_ != nullptr)
+        Script::GetRuntimeApi()->FreeGCHandle(handle_);
+    handle_ = handle;
+    return *this;
+}
+
+GCHandleRef& GCHandleRef::operator=(const GCHandleRef& rhs)
+{
+    handle_ = Script::GetRuntimeApi()->CloneGCHandle(rhs.handle_);
+    return *this;
+}
+
+GCHandleRef& GCHandleRef::operator=(GCHandleRef&& rhs) noexcept
+{
+    ea::swap(handle_, rhs.handle_);
+    return *this;
+}
+
 }

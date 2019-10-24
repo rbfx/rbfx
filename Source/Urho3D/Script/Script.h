@@ -99,5 +99,34 @@ protected:
     static ScriptRuntimeApi* api_;
 };
 
+/// Object that manages lifetime of gc handle.
+class URHO3D_API GCHandleRef
+{
+public:
+    /// Construct.
+    explicit GCHandleRef() noexcept = default;
+    /// Construct.
+    explicit GCHandleRef(void* handle) noexcept;
+    /// Destruct.
+    ~GCHandleRef();
+    /// Copy-construct.
+    GCHandleRef(const GCHandleRef& other);
+    /// Move-construct.
+    GCHandleRef(GCHandleRef&& other) noexcept;
+    /// Assign from raw gc handle.
+    GCHandleRef& operator=(void* handle);
+    /// Copy-assign.
+    GCHandleRef& operator=(const GCHandleRef& rhs);
+    /// Move-assign.
+    GCHandleRef& operator=(GCHandleRef&& rhs) noexcept;
+    /// Cast to raw gc handle.
+    explicit operator void*() const { return GetHandle(); }
+    /// Get raw gc handle.
+    void* GetHandle() const { return handle_; }
+
+private:
+    /// Raw gc handle value.
+    void* handle_ = nullptr;
+};
 
 }
