@@ -41,7 +41,6 @@
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
 #include "../Scene/SceneManager.h"
-#include "../Scene/SceneMetadata.h"
 #include "../Scene/SmoothedTransform.h"
 #include "../Scene/SplinePath.h"
 #include "../Scene/UnknownComponent.h"
@@ -1644,7 +1643,6 @@ void RegisterSceneLibrary(Context* context)
     UnknownComponent::RegisterObject(context);
     SplinePath::RegisterObject(context);
     SceneManager::RegisterObject(context);
-    SceneMetadata::RegisterObject(context);
     CameraViewport::RegisterObject(context);
 }
 
