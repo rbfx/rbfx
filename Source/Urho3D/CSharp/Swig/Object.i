@@ -32,22 +32,3 @@ IGNORE_SUBSYSTEM(Tasks)
 %ignore Urho3D::Object::GetEventHandler;
 %ignore Urho3D::Object::SubscribeToEvent;
 %ignore Urho3D::Object::context_;
-
-%csexposefunc(runtime, CloneGCHandle, void*, void*) %{
-    private static System.IntPtr CloneGCHandle(System.IntPtr handle)
-    {
-        return System.Runtime.InteropServices.GCHandle.ToIntPtr(
-            System.Runtime.InteropServices.GCHandle.Alloc(
-                System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Target));
-    }
-    internal delegate System.IntPtr CloneGCHandleDelegate(System.IntPtr handle);
-}%}
-
-%csexposefunc(runtime, FreeGCHandle, void, void*) %{
-    private static void FreeGCHandle(System.IntPtr handle)
-    {
-        System.Runtime.InteropServices.GCHandle.FromIntPtr(handle).Free();
-    }
-    internal delegate void FreeGCHandleDelegate(System.IntPtr handle);
-}%}
-

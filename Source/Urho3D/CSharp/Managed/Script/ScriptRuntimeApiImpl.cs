@@ -85,6 +85,14 @@ namespace Urho3DNet
                 gcHandle.Free();
         }
 
+        public override IntPtr CloneGCHandle(IntPtr handle)
+        {
+            GCHandle gcHandle = GCHandle.FromIntPtr(handle);
+            if (gcHandle.IsAllocated)
+                return GCHandle.ToIntPtr(GCHandle.Alloc(gcHandle.Target));
+            return IntPtr.Zero;
+        }
+
         public override IntPtr RecreateGCHandle(IntPtr handle, bool strong)
         {
             if (handle == IntPtr.Zero)
