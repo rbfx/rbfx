@@ -32,7 +32,6 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Scene/SceneManager.h>
-#include <Urho3D/Scene/SceneMetadata.h>
 #if URHO3D_CSHARP
 #   include <Urho3D/Script/Script.h>
 #endif

@@ -74,8 +74,6 @@ protected:
     WeakPtr<Scene> activeScene_;
     /// Surface for rendering active scene into.
     WeakPtr<RenderSurface> renderSurface_;
-    ///
-    bool missingMetadataWarned_ = false;
 };
 
 }

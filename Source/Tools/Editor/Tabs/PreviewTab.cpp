@@ -33,7 +33,6 @@
 #include <Urho3D/Scene/CameraViewport.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/SceneEvents.h>
-#include <Urho3D/Scene/SceneMetadata.h>
 #include <Urho3D/SystemUI/Console.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
@@ -74,13 +73,12 @@ PreviewTab::PreviewTab(Context* context)
         {
             if (resource->GetName().starts_with("RenderPaths/") || resource->GetName().starts_with("PostProcess/"))
             {
-                if (auto* manager = scene->GetOrCreateComponent<SceneMetadata>())
+                for (Component* const component : scene->GetComponentIndex<CameraViewport>())
                 {
-                    auto& viewportComponents = manager->GetCameraViewportComponents();
-                    for (auto& component : viewportComponents)
-                        component->RebuildRenderPath();
-                    Clear();
+                    CameraViewport* const cameraViewport = static_cast<CameraViewport* const>(component);
+                    cameraViewport->RebuildRenderPath();
                 }
+                Clear();
             }
         }
     });
