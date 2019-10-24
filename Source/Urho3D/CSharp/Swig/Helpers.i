@@ -1,4 +1,5 @@
 // Various marshalling helpers
+%include <typemaps.i>
 
 %typemap(ctype)  char* strdup "char*"
 %typemap(imtype) char* strdup "global::System.IntPtr"

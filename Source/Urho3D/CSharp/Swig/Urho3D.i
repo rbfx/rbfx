@@ -501,6 +501,7 @@ public:
 
 // --------------------------------------- Navigation ---------------------------------------
 #if defined(URHO3D_NAVIGATION)
+%apply float* INOUT { float& desiredSpeed };
 %include "_properties_navigation.i"
 %template(CrowdAgentArray)       eastl::vector<Urho3D::CrowdAgent*>;
 
