@@ -518,6 +518,7 @@ public:
 	rcPolyMesh*,
 	rcPolyMeshDetail*
 }
+%ignore Urho3D::CrowdManager::SetVelocityShader;
 %ignore Urho3D::NavBuildData::navAreas_;
 %ignore Urho3D::NavigationMesh::FindPath;
 %include "Urho3D/Navigation/CrowdAgent.h"
