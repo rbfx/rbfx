@@ -25,12 +25,7 @@
 #include <Urho3D/Core/Mutex.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/Thread.h>
-
-#if _WIN32
-#  define SWIGSTDCALL __stdcall
-#else
-#  define SWIGSTDCALL
-#endif
+#include <Urho3D/Script/Script.h>
 
 extern "C"
 {

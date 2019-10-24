@@ -32,6 +32,13 @@
 #include "../Core/Object.h"
 #include "../Engine/PluginApplication.h"
 
+#ifndef SWIGSTDCALL
+#   if _WIN32
+#       define SWIGSTDCALL __stdcall
+#   else
+#       define SWIGSTDCALL
+#   endif
+#endif
 
 namespace Urho3D
 {
@@ -52,6 +59,8 @@ public:
     virtual void Dispose(RefCounted* instance) = 0;
     /// Release specified gc handle. It becomes invalid.
     virtual void FreeGCHandle(void* handle) = 0;
+    /// Allocates a new gc handle which points to same object as provided handle.
+    virtual void* CloneGCHandle(void* handle) = 0;
     /// Creates a new gc handle pointing to same object as specified gc handle. Specified gc handle will be freed.
     virtual void* RecreateGCHandle(void* handle, bool strong) = 0;
     /// Warning! This is slow! Perform a full garbage collection.
