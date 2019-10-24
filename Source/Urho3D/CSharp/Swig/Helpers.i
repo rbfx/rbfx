@@ -22,6 +22,26 @@ void* malloc(int size);
 char* strdup(const char* void_ptr_string);
 int strlen(const char* void_ptr_string);
 
+%typemap(ctype)  const char* const* "char**"
+%typemap(imtype) const char* const* "global::System.IntPtr"
+%typemap(cstype) const char* const* "string[]"
+// FIXME: %typemap(in)     const char* const* "$1 = $input;"
+%typemap(out)    const char* const* "$result = $1;"
+// FIXME: %typemap(csin)   const char* const* "$csinput"
+%typemap(csout, excode=SWIGEXCODE) const char* const* {
+    unsafe {
+      var ptr = (byte**)$imcall;$excode
+      var len = 0;
+      if (ptr != null)
+      {
+          for (; ptr[len] != null; len++) { }
+      }
+      var ret = new string[len];
+      for (var i = 0; i < len; i++)
+        ret[i] = global::System.Text.Encoding.UTF8.GetString(ptr[i], Urho3D.strlen(new global::System.IntPtr(ptr[i])));
+      return ret;
+    }
+  }
 
 %define CS_CONSTANT(fqn, name, value)
   %csconst(1) fqn;
