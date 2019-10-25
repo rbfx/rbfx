@@ -97,6 +97,7 @@ rbfx uses the following third-party libraries:
 - stb_truetype 1.15 (https://nothings.org)
 - stb_vorbis 1.13b (https://nothings.org)
 - WebP (https://chromium.googlesource.com/webm/libwebp)
+- ETCPACK (https://github.com/Ericsson/ETCPACK)
 - imgui 1.74 (https://github.com/ocornut/imgui/tree/docking)
 - tracy (https://bitbucket.org/wolfpld/tracy/)
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)

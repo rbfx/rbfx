@@ -99,7 +99,7 @@ static long long HiresTick()
     else
         return GetTickCount();
 #elif __EMSCRIPTEN__
-    return (unsigned)(emscripten_get_now()*1000.0);
+    return (long long)(emscripten_get_now()*1000.0);
 #else
     struct timeval time{};
     gettimeofday(&time, nullptr);

@@ -39,6 +39,7 @@ add_subdirectory(fmt)
 add_subdirectory(spdlog)
 add_subdirectory(SDL)
 add_subdirectory(crunch)
+add_subdirectory(ETCPACK)
 
 if (NOT MINI_URHO)
     add_subdirectory(FreeType)
