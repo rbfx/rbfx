@@ -51,9 +51,9 @@
 #define FOURCC_DXT5 (MAKEFOURCC('D','X','T','5'))
 #define FOURCC_DX10 (MAKEFOURCC('D','X','1','0'))
 
-#define FOURCC_ETC1 (MAKEFOURCC('E', 'T', 'C', '1'))
-#define FOURCC_ETC2 (MAKEFOURCC('E', 'T', 'C', '2'))
-#define FOURCC_ETC2A (MAKEFOURCC('E', 'T', '2', 'A'))
+#define FOURCC_ETC1 (MAKEFOURCC('E','T','C','1'))
+#define FOURCC_ETC2 (MAKEFOURCC('E','T','C','2'))
+#define FOURCC_ETC2A (MAKEFOURCC('E','T','2','A'))
 
 static const unsigned DDSCAPS_COMPLEX = 0x00000008U;
 static const unsigned DDSCAPS_TEXTURE = 0x00001000U;
@@ -226,14 +226,15 @@ bool CompressedLevel::Decompress(unsigned char* dest)
     case CF_DXT5:
         DecompressImageDXT(dest, data_, width_, height_, depth_, format_);
         return true;
-
+	
+    // ETC2 format is compatible with ETC1, so we just use the same function.
     case CF_ETC1:
-        DecompressImageETC(dest, data_, width_, height_);
-        return true;
-
     case CF_ETC2_RGB:
+        DecompressImageETC(dest, data_, width_, height_, false);
+        return true;
     case CF_ETC2_RGBA:
-        return false;
+        DecompressImageETC(dest, data_, width_, height_, true);
+        return true;
 
     case CF_PVRTC_RGB_2BPP:
     case CF_PVRTC_RGBA_2BPP:
@@ -735,6 +736,7 @@ bool Image::BeginLoad(Deserializer& source)
             components_ = 4;
             break;
 
+        // .pvr files also support ETC2 texture format.
         case 22:
             compressedFormat_ = CF_ETC2_RGB;
             components_ = 3;

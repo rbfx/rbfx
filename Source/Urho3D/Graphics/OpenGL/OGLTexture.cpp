@@ -182,9 +182,9 @@ bool Texture::IsCompressed() const
 {
     return format_ == GL_COMPRESSED_RGBA_S3TC_DXT1_EXT || format_ == GL_COMPRESSED_RGBA_S3TC_DXT3_EXT ||
            format_ == GL_COMPRESSED_RGBA_S3TC_DXT5_EXT || format_ == GL_ETC1_RGB8_OES ||
+           format_ == GL_ETC2_RGB8_OES || format_ == GL_ETC2_RGBA8_OES ||
            format_ == COMPRESSED_RGB_PVRTC_4BPPV1_IMG || format_ == COMPRESSED_RGBA_PVRTC_4BPPV1_IMG ||
-           format_ == COMPRESSED_RGB_PVRTC_2BPPV1_IMG || format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG ||
-           format_ == GL_ETC2_RGB8_OES || format_ == GL_ETC2_RGBA8_OES;
+           format_ == COMPRESSED_RGB_PVRTC_2BPPV1_IMG || format_ == COMPRESSED_RGBA_PVRTC_2BPPV1_IMG;
 }
 
 unsigned Texture::GetRowDataSize(int width) const
@@ -242,11 +242,11 @@ unsigned Texture::GetRowDataSize(int width) const
 
     case COMPRESSED_RGB_PVRTC_4BPPV1_IMG:
     case COMPRESSED_RGBA_PVRTC_4BPPV1_IMG:
-        return (unsigned)(width * 4 + 7) >> 3u;
+        return ((unsigned)(width + 3) >> 2u) * 8;
 
     case COMPRESSED_RGB_PVRTC_2BPPV1_IMG:
     case COMPRESSED_RGBA_PVRTC_2BPPV1_IMG:
-        return (unsigned)(width * 2 + 7) >> 3u;
+        return ((unsigned)(width + 7) >> 3u) * 8;
 
     default:
         return 0;
