@@ -171,6 +171,7 @@ set (THIRD_PARTY_DEPENDENCIES
     spdlog
     EASTL
     entt
+    ETCPACK
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
