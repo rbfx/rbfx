@@ -5,7 +5,9 @@
 #include "Utils.h"
 
 #include <stdlib.h>
-#include <malloc.h>
+#if !NV_OS_DARWIN
+    #include <malloc.h>
+#endif
 
 #define USE_EFENCE 0
 

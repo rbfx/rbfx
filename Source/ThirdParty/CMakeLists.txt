@@ -44,6 +44,10 @@ add_subdirectory(ETCPACK)
 if (NOT MINI_URHO)
     add_subdirectory(FreeType)
 
+    if (URHO3D_GLOW)
+        add_subdirectory(thekla)
+    endif ()
+
     if (URHO3D_SYSTEMUI)
         add_subdirectory(imgui)
     endif ()
