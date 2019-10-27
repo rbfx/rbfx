@@ -40,7 +40,7 @@ IF(NVIMAGE_SHARED)
     ADD_DEFINITIONS(-DNVIMAGE_SHARED=1)
     ADD_LIBRARY(nvimage SHARED ${IMAGE_SRCS})
 ELSE(NVIMAGE_SHARED)
-    ADD_LIBRARY(nvimage ${IMAGE_SRCS})
+    ADD_LIBRARY(nvimage STATIC ${IMAGE_SRCS}) # Urho3D: Fix library type
 ENDIF(NVIMAGE_SHARED)
 
 TARGET_LINK_LIBRARIES(nvimage ${LIBS} nvcore nvmath posh)
@@ -50,3 +50,7 @@ INSTALL(TARGETS nvimage
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib/static)
 
+# Urho3D: Get rid of it when CMake is updgaded to 3.13
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS nvimage EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
