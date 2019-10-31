@@ -352,6 +352,9 @@ public:
 %ignore Urho3D::Scene::CleanupConnection;
 %ignore Urho3D::Node::CleanupConnection;
 %ignore Urho3D::NodeImpl;
+%ignore Urho3D::Node::GetEntity;
+%ignore Urho3D::Scene::GetRegistry;
+%ignore Urho3D::Scene::GetComponentIndex;
 
 %include "Urho3D/Scene/AnimationDefs.h"
 %include "Urho3D/Scene/ValueAnimationInfo.h"
