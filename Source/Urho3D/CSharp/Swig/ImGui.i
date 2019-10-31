@@ -68,6 +68,7 @@
 %ignore ImFormatStringV;
 %ignore ImSwap;
 %ignore ImDrawList;
+%ignore ImDrawListSplitter;
 %ignore ImGuiPlatformIO;
 %ignore ImFontGlyphRangesBuilder;
 
