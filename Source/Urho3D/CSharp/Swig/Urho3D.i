@@ -34,11 +34,6 @@ namespace ea = eastl;
     tracy::SourceLocationData*
 }
 
-// String typemap returns 0 if null string is passed. This fails to initialize SafeArray.
-%ignore Urho3D::Node::GetChildrenWithTag(const String& tag, bool recursive = false) const;
-%ignore Urho3D::UIElement::GetChildrenWithTag(const String& tag, bool recursive = false) const;
-%ignore Urho3D::XMLElement::GetBuffer;
-
 %include "StringHash.i"
 %include "eastl_string.i"
 
@@ -68,6 +63,18 @@ namespace ea = eastl;
 // These should be implemented in C# anyway.
 %ignore Urho3D::Polyhedron::Polyhedron(const Vector<eastl::vector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
+
+%apply bool* INOUT                  { bool& };
+%apply signed char* INOUT           { signed char& };
+%apply unsigned char* INOUT         { unsigned char& };
+%apply short* INOUT                 { short& };
+%apply unsigned short* INOUT        { unsigned short& };
+%apply int* INOUT                   { int& };
+%apply unsigned int* INOUT          { unsigned int& };
+%apply long long* INOUT             { long long& };
+%apply unsigned long long* INOUT    { unsigned long long& };
+%apply float* INOUT                 { float& };
+%apply double* INOUT                { double& };
 
 // ---------------------------------------  ---------------------------------------
 
@@ -273,6 +280,17 @@ public:
 %include "Urho3D/IO/VectorBuffer.h"
 %include "Urho3D/IO/FileSystem.h"
 
+%ignore Urho3D::NonCopyable;
+%ignore Urho3D::ArchiveBase;
+%ignore Urho3D::Archive::OpenBlock;
+%ignore Urho3D::Archive::OpenSequentialBlock;
+%ignore Urho3D::Archive::OpenUnorderedBlock;
+%ignore Urho3D::Archive::OpenArrayBlock;
+%ignore Urho3D::Archive::OpenMapBlock;
+%ignore Urho3D::Archive::OpenSafeSequentialBlock;
+%ignore Urho3D::Archive::OpenSafeUnorderedBlock;
+%include "Urho3D/IO/Archive.h"
+
 // --------------------------------------- Resource ---------------------------------------
 %include "_properties_resource.i"
 %ignore Urho3D::XMLFile::GetDocument;
@@ -432,7 +450,6 @@ public:
 
 
 %apply unsigned *OUTPUT { unsigned& minVertex, unsigned& vertexCount };
-%apply unsigned *INOUT  { unsigned& index };
 %apply float INPUT[]    { const float* };
 %apply unsigned char INPUT[] { const unsigned char* blendIndices };
 %apply void* VOID_INT_PTR {
@@ -502,7 +519,6 @@ public:
 
 // --------------------------------------- Navigation ---------------------------------------
 #if defined(URHO3D_NAVIGATION)
-%apply float* INOUT { float& desiredSpeed };
 %include "_properties_navigation.i"
 %template(CrowdAgentArray)       eastl::vector<Urho3D::CrowdAgent*>;
 
