@@ -422,6 +422,7 @@ public:
 %ignore Urho3D::ShaderProgram::GetVertexAttributes;
 %ignore Urho3D::ShaderVariation::elementSemanticNames;
 %ignore Urho3D::CustomGeometry::DrawOcclusion;
+%ignore Urho3D::CustomGeometry::MakeCircleGraph;
 %ignore Urho3D::CustomGeometry::ProcessRayQuery;
 %ignore Urho3D::OcclusionBufferData::dataWithSafety_;
 %ignore Urho3D::ScenePassInfo::batchQueue_;
