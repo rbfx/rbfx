@@ -49,27 +49,6 @@
   public $typemap(cstype, Urho3D::JSONNumberType) NumberType {
     get { return GetNumberType(); }
   }
-  public $typemap(cstype, bool) Bool {
-    get { return GetBool(); }
-  }
-  public $typemap(cstype, int) Int {
-    get { return GetInt(); }
-  }
-  public $typemap(cstype, unsigned int) UInt {
-    get { return GetUInt(); }
-  }
-  public $typemap(cstype, float) Float {
-    get { return GetFloat(); }
-  }
-  public $typemap(cstype, double) Double {
-    get { return GetDouble(); }
-  }
-  public $typemap(cstype, const eastl::string &) String {
-    get { return GetString(); }
-  }
-  public $typemap(cstype, const char *) CString {
-    get { return GetCString(); }
-  }
   public $typemap(cstype, const eastl::vector<Urho3D::JSONValue> &) Array {
     get { return GetArray(); }
   }
@@ -88,13 +67,6 @@
 %}
 %csmethodmodifiers Urho3D::JSONValue::GetValueType "private";
 %csmethodmodifiers Urho3D::JSONValue::GetNumberType "private";
-%csmethodmodifiers Urho3D::JSONValue::GetBool "private";
-%csmethodmodifiers Urho3D::JSONValue::GetInt "private";
-%csmethodmodifiers Urho3D::JSONValue::GetUInt "private";
-%csmethodmodifiers Urho3D::JSONValue::GetFloat "private";
-%csmethodmodifiers Urho3D::JSONValue::GetDouble "private";
-%csmethodmodifiers Urho3D::JSONValue::GetString "private";
-%csmethodmodifiers Urho3D::JSONValue::GetCString "private";
 %csmethodmodifiers Urho3D::JSONValue::GetArray "private";
 %csmethodmodifiers Urho3D::JSONValue::GetObject "private";
 %csmethodmodifiers Urho3D::JSONValue::GetVariant "private";
@@ -244,6 +216,36 @@
 %csmethodmodifiers Urho3D::ResourceCache::GetFinishBackgroundResourcesMs "private";
 %csmethodmodifiers Urho3D::ResourceCache::SetFinishBackgroundResourcesMs "private";
 %csmethodmodifiers Urho3D::ResourceCache::GetNumResourceDirs "private";
+%typemap(cscode) Urho3D::XMLAttributeReference %{
+  public $typemap(cstype, Urho3D::XMLElement) Element {
+    get { return GetElement(); }
+  }
+  public $typemap(cstype, const char *) AttributeName {
+    get { return GetAttributeName(); }
+  }
+%}
+%csmethodmodifiers Urho3D::XMLAttributeReference::GetElement "private";
+%csmethodmodifiers Urho3D::XMLAttributeReference::GetAttributeName "private";
+%typemap(cscode) Urho3D::XMLOutputArchiveBlock %{
+  public $typemap(cstype, Urho3D::ArchiveBlockType) Type {
+    get { return GetType(); }
+  }
+  public $typemap(cstype, eastl::basic_string_view<char>) Name {
+    get { return GetName(); }
+  }
+%}
+%csmethodmodifiers Urho3D::XMLOutputArchiveBlock::GetType "private";
+%csmethodmodifiers Urho3D::XMLOutputArchiveBlock::GetName "private";
+%typemap(cscode) Urho3D::XMLInputArchiveBlock %{
+  public $typemap(cstype, const eastl::basic_string_view<char>) Name {
+    get { return GetName(); }
+  }
+  public $typemap(cstype, Urho3D::ArchiveBlockType) Type {
+    get { return GetType(); }
+  }
+%}
+%csmethodmodifiers Urho3D::XMLInputArchiveBlock::GetName "private";
+%csmethodmodifiers Urho3D::XMLInputArchiveBlock::GetType "private";
 %typemap(cscode) Urho3D::XMLElement %{
   public $typemap(cstype, eastl::string) Name {
     get { return GetName(); }

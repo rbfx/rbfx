@@ -19,12 +19,23 @@
     get { return GetHoverOffset(); }
     set { SetHoverOffset(value); }
   }
+  public $typemap(cstype, const Urho3D::IntVector2 &) DisabledOffset {
+    get { return GetDisabledOffset(); }
+    set { SetDisabledOffset(value); }
+  }
   public $typemap(cstype, Urho3D::BlendMode) BlendMode {
     get { return GetBlendMode(); }
     set { SetBlendMode(value); }
   }
+  public $typemap(cstype, Urho3D::Material *) Material {
+    get { return GetMaterial(); }
+    set { SetMaterial(value); }
+  }
   public $typemap(cstype, Urho3D::ResourceRef) TextureAttr {
     get { return GetTextureAttr(); }
+  }
+  public $typemap(cstype, Urho3D::ResourceRef) MaterialAttr {
+    get { return GetMaterialAttr(); }
   }
 %}
 %csmethodmodifiers Urho3D::BorderImage::GetTexture "private";
@@ -37,17 +48,18 @@
 %csmethodmodifiers Urho3D::BorderImage::SetImageBorder "private";
 %csmethodmodifiers Urho3D::BorderImage::GetHoverOffset "private";
 %csmethodmodifiers Urho3D::BorderImage::SetHoverOffset "private";
+%csmethodmodifiers Urho3D::BorderImage::GetDisabledOffset "private";
+%csmethodmodifiers Urho3D::BorderImage::SetDisabledOffset "private";
 %csmethodmodifiers Urho3D::BorderImage::GetBlendMode "private";
 %csmethodmodifiers Urho3D::BorderImage::SetBlendMode "private";
+%csmethodmodifiers Urho3D::BorderImage::GetMaterial "private";
+%csmethodmodifiers Urho3D::BorderImage::SetMaterial "private";
 %csmethodmodifiers Urho3D::BorderImage::GetTextureAttr "private";
+%csmethodmodifiers Urho3D::BorderImage::GetMaterialAttr "private";
 %typemap(cscode) Urho3D::Button %{
   public $typemap(cstype, const Urho3D::IntVector2 &) PressedOffset {
     get { return GetPressedOffset(); }
     set { SetPressedOffset(value); }
-  }
-  public $typemap(cstype, const Urho3D::IntVector2 &) DisabledOffset {
-    get { return GetDisabledOffset(); }
-    set { SetDisabledOffset(value); }
   }
   public $typemap(cstype, const Urho3D::IntVector2 &) PressedChildOffset {
     get { return GetPressedChildOffset(); }
@@ -64,8 +76,6 @@
 %}
 %csmethodmodifiers Urho3D::Button::GetPressedOffset "private";
 %csmethodmodifiers Urho3D::Button::SetPressedOffset "private";
-%csmethodmodifiers Urho3D::Button::GetDisabledOffset "private";
-%csmethodmodifiers Urho3D::Button::SetDisabledOffset "private";
 %csmethodmodifiers Urho3D::Button::GetPressedChildOffset "private";
 %csmethodmodifiers Urho3D::Button::SetPressedChildOffset "private";
 %csmethodmodifiers Urho3D::Button::GetRepeatDelay "private";

@@ -576,9 +576,10 @@ class FindFlagEnums(AstPass):
     flag_enums = []
 
     def visit(self, node, action: AstAction):
-        if node.kind == CursorKind.STRUCT_DECL:
-            if node.spelling == 'IsFlagSet':
-                enum = node.children[0].type.spelling
+        if node.kind == CursorKind.TYPE_ALIAS_DECL:
+            underlying_type = node.type.get_canonical()
+            if underlying_type.spelling.startswith('Urho3D::FlagSet<'):
+                enum = node.children[2].type.spelling
                 self.flag_enums.append(enum)
 
         return True
@@ -597,20 +598,21 @@ class CleanEnumValues(AstPass):
     @AstPass.once
     def visit(self, node, action: AstAction):
         if node.kind == CursorKind.ENUM_DECL:
-            if node.type.spelling in FindFlagEnums.flag_enums:
+            if node.type.spelling in FindFlagEnums.flag_enums or \
+                (node.type.spelling.startswith('Im') and node.type.spelling.endswith('Flags_')):
                 self.fp.write(f'%typemap(csattributes) {node.type.spelling} "[global::System.Flags]";\n')
 
-            if node.type.spelling.startswith('Urho3D::'):
+            if node.type.spelling.startswith('Urho3D::') or node.type.spelling.startswith('Im'):
                 for child in node.children:
                     code = read_raw_code(child)
-                    if ' = SDL' in code:
+                    if ' = SDL' in code or node.type.spelling in code:
                         # Enum uses symbols from SDL. Redefine it with raw enum values.
                         self.fp.write(f'%csconstvalue("{child.enum_value}") {child.spelling};\n')
 
         elif node.kind == CursorKind.TYPE_ALIAS_DECL:
             underlying_type = node.type.get_canonical()
             if underlying_type.spelling.startswith('Urho3D::FlagSet<'):
-                enum_name = node.children[1].type.spelling
+                enum_name = node.children[2].type.spelling
                 target_name = node.spelling.strip("'")
                 self.fp.write(f'using {target_name} = {enum_name};\n')
                 self.fp.write(f'%typemap(ctype) {target_name} "size_t";\n')
@@ -707,12 +709,13 @@ class Urho3DModule(Module):
         self.exclude_headers = [re.compile(pattern, re.IGNORECASE) for pattern in self.exclude_headers]
 
     def register_passes(self, passes: list):
-        passes += [DefineConstantsPass, DefineRefCountedPass, FindFlagEnums, CleanEnumValues, DefineEventsPass]
+        passes += [DefineConstantsPass, DefineRefCountedPass, FindFlagEnums, CleanEnumValues, DefineEventsPass, DefinePropertiesPass]
 
     def gather_files(self):
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_joystick.h')
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_gamecontroller.h')
         yield os.path.join(self.args.input, '../ThirdParty/SDL/include/SDL/SDL_keycode.h')
+        yield os.path.join(self.args.input, '../ThirdParty/imgui/include/ImGui/imgui.h')
         for root, dirs, files in os.walk(self.args.input):
             for file in files:
                 if not file.endswith('.h'):

@@ -1,4 +1,7 @@
 %typemap(cscode) Urho3D::Engine %{
+  public $typemap(cstype, const eastl::string &) AppPreferencesDir {
+    get { return GetAppPreferencesDir(); }
+  }
   public $typemap(cstype, float) NextTimeStep {
     get { return GetNextTimeStep(); }
     set { SetNextTimeStep(value); }
@@ -28,6 +31,7 @@
     set { SetAutoExit(value); }
   }
 %}
+%csmethodmodifiers Urho3D::Engine::GetAppPreferencesDir "private";
 %csmethodmodifiers Urho3D::Engine::GetNextTimeStep "private";
 %csmethodmodifiers Urho3D::Engine::SetNextTimeStep "private";
 %csmethodmodifiers Urho3D::Engine::GetMinFps "private";

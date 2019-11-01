@@ -226,6 +226,16 @@
 %csmethodmodifiers Urho3D::EventHandler::GetSender "private";
 %csmethodmodifiers Urho3D::EventHandler::GetEventType "private";
 %csmethodmodifiers Urho3D::EventHandler::GetUserData "private";
+%typemap(cscode) Urho3D::PluginModule %{
+  public $typemap(cstype, Urho3D::ModuleType) ModuleType {
+    get { return GetModuleType(); }
+  }
+  public $typemap(cstype, const eastl::string &) Path {
+    get { return GetPath(); }
+  }
+%}
+%csmethodmodifiers Urho3D::PluginModule::GetModuleType "private";
+%csmethodmodifiers Urho3D::PluginModule::GetPath "private";
 %typemap(cscode) Urho3D::Spline %{
   public $typemap(cstype, Urho3D::InterpolationMode) InterpolationMode {
     get { return GetInterpolationMode(); }
