@@ -1,3 +1,29 @@
+%typemap(cscode) Urho3D::ArchiveBlock %{
+  public $typemap(cstype, unsigned int) SizeHint {
+    get { return GetSizeHint(); }
+  }
+%}
+%csmethodmodifiers Urho3D::ArchiveBlock::GetSizeHint "private";
+%typemap(cscode) Urho3D::BinaryOutputArchiveBlock %{
+  public $typemap(cstype, eastl::basic_string_view<char>) Name {
+    get { return GetName(); }
+  }
+  public $typemap(cstype, Urho3D::Serializer *) Serializer {
+    get { return GetSerializer(); }
+  }
+%}
+%csmethodmodifiers Urho3D::BinaryOutputArchiveBlock::GetName "private";
+%csmethodmodifiers Urho3D::BinaryOutputArchiveBlock::GetSerializer "private";
+%typemap(cscode) Urho3D::BinaryInputArchiveBlock %{
+  public $typemap(cstype, const eastl::basic_string_view<char>) Name {
+    get { return GetName(); }
+  }
+  public $typemap(cstype, unsigned int) NextElementPosition {
+    get { return GetNextElementPosition(); }
+  }
+%}
+%csmethodmodifiers Urho3D::BinaryInputArchiveBlock::GetName "private";
+%csmethodmodifiers Urho3D::BinaryInputArchiveBlock::GetNextElementPosition "private";
 %typemap(cscode) Urho3D::Deserializer %{
   public $typemap(cstype, unsigned int) Position {
     get { return GetPosition(); }

@@ -67,6 +67,10 @@
     get { return GetID(); }
     set { SetID(value); }
   }
+  /*public _typemap(cstype, entt::entity) Entity {
+    get { return GetEntity(); }
+    set { SetEntity(value); }
+  }*/
   public $typemap(cstype, const eastl::string &) Name {
     get { return GetName(); }
     set { SetName(value); }
@@ -150,6 +154,7 @@
   }
   public $typemap(cstype, const Urho3D::Matrix3x4 &) WorldTransform {
     get { return GetWorldTransform(); }
+    set { SetWorldTransform(value); }
   }
   public $typemap(cstype, unsigned int) NumComponents {
     get { return GetNumComponents(); }
@@ -187,6 +192,8 @@
 %}
 %csmethodmodifiers Urho3D::Node::GetID "private";
 %csmethodmodifiers Urho3D::Node::SetID "private";
+%csmethodmodifiers Urho3D::Node::GetEntity "private";
+%csmethodmodifiers Urho3D::Node::SetEntity "private";
 %csmethodmodifiers Urho3D::Node::GetName "private";
 %csmethodmodifiers Urho3D::Node::SetName "private";
 %csmethodmodifiers Urho3D::Node::GetNameHash "private";
@@ -221,6 +228,7 @@
 %csmethodmodifiers Urho3D::Node::GetSignedWorldScale "private";
 %csmethodmodifiers Urho3D::Node::GetWorldScale2D "private";
 %csmethodmodifiers Urho3D::Node::GetWorldTransform "private";
+%csmethodmodifiers Urho3D::Node::SetWorldTransform "private";
 %csmethodmodifiers Urho3D::Node::GetNumComponents "private";
 %csmethodmodifiers Urho3D::Node::GetNumNetworkComponents "private";
 %csmethodmodifiers Urho3D::Node::GetListeners "private";
@@ -241,6 +249,9 @@
 %}
 %csmethodmodifiers Urho3D::ObjectAnimation::GetAttributeAnimationInfos "private";
 %typemap(cscode) Urho3D::Scene %{
+  /*public _typemap(cstype, entt::basic_registry<entt::entity> &) Registry {
+    get { return GetRegistry(); }
+  }*/
   public $typemap(cstype, float) AsyncProgress {
     get { return GetAsyncProgress(); }
   }
@@ -280,6 +291,7 @@
     get { return GetVarNamesAttr(); }
   }
 %}
+%csmethodmodifiers Urho3D::Scene::GetRegistry "private";
 %csmethodmodifiers Urho3D::Scene::GetAsyncProgress "private";
 %csmethodmodifiers Urho3D::Scene::GetAsyncLoadMode "private";
 %csmethodmodifiers Urho3D::Scene::GetFileName "private";
