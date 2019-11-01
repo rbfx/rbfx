@@ -1466,7 +1466,7 @@ String *Swig_name_make(Node *n, String *prefix, const_String_or_char_ptr cname, 
       rn = name_nameobj_lget(name_rename_list(), n, prefix, name, decl);
       if (rn) {
 	String *sfmt = Getattr(rn, "sourcefmt");
-	int fullname = GetFlag(rn, "fullname");
+	int fullname = 0;//GetFlag(rn, "fullname"); // rbfx: fixes issue where %rename(..., fullname=1, regextarget=1) causes printing of invalid source code (enums prefixed with enum name in this case)
 	if (fullname && prefix) {
 	  String *sname = NewStringf("%s::%s", prefix, name);
 	  Delete(name);
