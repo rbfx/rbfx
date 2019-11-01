@@ -1,12 +1,46 @@
 %module(naturalvar=1) ImGui
 
-%include "Common.i"
+%import "Urho3D.i"
 
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS 1
 %{
+#include <Urho3D/CSharp/Native/SWIGHelpers.h>
 #include <ImGui/imgui.h>
 //#include <ImGui/imgui_internal.h>
 %}
+
+// imgui defines this to ints
+%ignore ImGuiCol;
+%ignore ImGuiCond;
+%ignore ImGuiDataType;
+%ignore ImGuiDir;
+%ignore ImGuiKey;
+%ignore ImGuiNavInput;
+%ignore ImGuiMouseCursor;
+%ignore ImGuiStyleVar;
+%ignore ImDrawCornerFlags;
+%ignore ImDrawListFlags;
+%ignore ImFontAtlasFlags;
+%ignore ImGuiBackendFlags;
+%ignore ImGuiColorEditFlags;
+%ignore ImGuiConfigFlags;
+%ignore ImGuiComboFlags;
+%ignore ImGuiDockNodeFlags;
+%ignore ImGuiDragDropFlags;
+%ignore ImGuiFocusedFlags;
+%ignore ImGuiHoveredFlags;
+%ignore ImGuiInputTextFlags;
+%ignore ImGuiSelectableFlags;
+%ignore ImGuiTabBarFlags;
+%ignore ImGuiTabItemFlags;
+%ignore ImGuiTreeNodeFlags;
+%ignore ImGuiViewportFlags;
+%ignore ImGuiWindowFlags;
+
+%include "_enums.i"
+%rename("%(camelcase)s", %$isenum) "";
+%rename("%(camelcase)s", %$isenumitem) "";
+%rename("%(camelcase)s", %$isvariable, %$ispublic) "";
 
 %apply void* VOID_INT_PTR {
     ImFont*,
