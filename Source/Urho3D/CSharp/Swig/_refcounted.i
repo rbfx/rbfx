@@ -16,6 +16,7 @@ URHO3D_REFCOUNTED(Urho3D::Time);
 URHO3D_REFCOUNTED(Urho3D::WorkItem);
 URHO3D_REFCOUNTED(Urho3D::WorkQueue);
 URHO3D_REFCOUNTED(Urho3D::Application);
+URHO3D_REFCOUNTED(Urho3D::ApplicationSettings);
 URHO3D_REFCOUNTED(Urho3D::Engine);
 URHO3D_REFCOUNTED(Urho3D::PluginApplication);
 URHO3D_REFCOUNTED(Urho3D::AnimatedModel);

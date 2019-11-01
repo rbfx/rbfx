@@ -85,6 +85,16 @@ public static class E
     }
     public static ConsoleCommandEvent ConsoleCommand = new ConsoleCommandEvent();
 
+    public class ConsoleUriClickEvent {
+        private StringHash _event = new StringHash("ConsoleUriClick");
+
+        public StringHash Address = new StringHash("Address");
+        public StringHash Protocol = new StringHash("Protocol");
+        public ConsoleUriClickEvent() { }
+        public static implicit operator StringHash(ConsoleUriClickEvent e) { return e._event; }
+    }
+    public static ConsoleUriClickEvent ConsoleUriClick = new ConsoleUriClickEvent();
+
     public class EngineInitializedEvent {
         private StringHash _event = new StringHash("EngineInitialized");
 
@@ -132,6 +142,14 @@ public static class E
         public static implicit operator StringHash(PluginStopEvent e) { return e._event; }
     }
     public static PluginStopEvent PluginStop = new PluginStopEvent();
+
+    public class RegisterStaticPluginsEvent {
+        private StringHash _event = new StringHash("RegisterStaticPlugins");
+
+        public RegisterStaticPluginsEvent() { }
+        public static implicit operator StringHash(RegisterStaticPluginsEvent e) { return e._event; }
+    }
+    public static RegisterStaticPluginsEvent RegisterStaticPlugins = new RegisterStaticPluginsEvent();
 
     public class BoneHierarchyCreatedEvent {
         private StringHash _event = new StringHash("BoneHierarchyCreated");
