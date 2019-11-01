@@ -374,6 +374,7 @@ if (URHO3D_CSHARP)
             NATIVE Urho3D
             SWIG CSharp/Swig/ImGui.i
             NAMESPACE ImGuiNet
+            INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/.."
         )
     endif ()
     unset (CMAKE_SWIG_OUTDIR)

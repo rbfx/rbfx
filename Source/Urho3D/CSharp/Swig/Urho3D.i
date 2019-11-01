@@ -1,7 +1,86 @@
 %module(directors="1", dirprot="1", allprotected="1", naturalvar=1) Urho3D
 
-%include "Common.i"
+#define final
+#define static_assert(...)
 
+%include "stl.i"
+%include "stdint.i"
+%include "typemaps.i"
+%include "arrays_csharp.i"
+%include "cmalloc.i"
+%include "swiginterface.i"
+%include "attribute.i"
+
+%include "InstanceCache.i"
+
+%typemap(csvarout) void* VOID_INT_PTR %{
+  get {
+    var ret = $imcall;$excode
+    return ret;
+  }
+%}
+
+%apply void* VOID_INT_PTR {
+	void*,
+	signed char*,
+	unsigned char*
+}
+
+%typemap(csvarin, excode=SWIGEXCODE2) void* VOID_INT_PTR %{
+  set {
+    $imcall;$excode
+  }
+%}
+
+%apply void* { std::uintptr_t, uintptr_t };
+%apply unsigned { time_t };
+%apply float *INOUT        { float& sin, float& cos, float& accumulator };
+%apply unsigned int* INOUT { unsigned int* randomRef, unsigned int* nearestRef }
+%typemap(csvarout, excode=SWIGEXCODE2) float INOUT[] "get { var ret = $imcall;$excode return ret; }"
+%apply float *OUTPUT   { float& out_r, float& out_g, float& out_b, float& out_u, float& out_v, float& out_w };
+%apply double *INOUT   { double* v };
+%apply bool *INOUT     { bool*, unsigned int* flags };
+%apply int INOUT[]     { int*, int[ANY] };
+%apply float INOUT[]   { float*, float[ANY] };
+%apply unsigned char OUTPUT[] { unsigned char out_table[256] };
+%apply unsigned char INPUT[]  { unsigned char const table[256], unsigned char *pixels };
+%apply bool INOUT[]    { bool[5] };
+%typemap(ctype)   const char* INPUT[] "char**"
+%typemap(cstype)  const char* INPUT[] "string[]"
+%typemap(imtype, inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]") const char* INPUT[] "string[]"
+%typemap(csin)    const char* INPUT[] "$csinput"
+%typemap(in)      const char* INPUT[] "$1 = $input;"
+%typemap(freearg) const char* INPUT[] ""
+%typemap(argout)  const char* INPUT[] ""
+%apply const char* INPUT[]   { char const *const items[] };
+
+// ref global::System.IntPtr
+%typemap(ctype, out="void *")                 void*& "void *"
+%typemap(imtype, out="global::System.IntPtr") void*& "ref global::System.IntPtr"
+%typemap(cstype, out="$csclassname")          void*& "ref global::System.IntPtr"
+%typemap(csin)                                void*& "ref $csinput"
+%typemap(in)                                  void*& %{ $1 = ($1_ltype)$input; %}
+%typecheck(SWIG_TYPECHECK_CHAR_PTR)           void*& ""
+
+// Speed boost
+%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
+%pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic partial class"
+%typemap(csclassmodifiers) SWIGTYPE "public partial class"
+
+%{
+#if _WIN32
+#   include <Urho3D/WindowsSupport.h>
+#endif
+#include <Urho3D/Urho3DAll.h>
+#include <SDL/SDL_joystick.h>
+#include <SDL/SDL_gamecontroller.h>
+#include <SDL/SDL_keycode.h>
+#include <EASTL/unordered_map.h>
+#include <Urho3D/CSharp/Native/SWIGHelpers.h>
+%}
+
+%include "Helpers.i"
+%include "Operators.i"
 namespace eastl{}
 namespace ea = eastl;
 
@@ -14,17 +93,6 @@ namespace ea = eastl;
 
 #define URHO3D_TYPE_TRAIT(...)
 
-%{
-#if _WIN32
-#   include <Urho3D/WindowsSupport.h>
-#endif
-#include <Urho3D/Urho3DAll.h>
-#include <SDL/SDL_joystick.h>
-#include <SDL/SDL_gamecontroller.h>
-#include <SDL/SDL_keycode.h>
-#include <EASTL/unordered_map.h>
-%}
-
 %apply void* VOID_INT_PTR {
 	SDL_Cursor*,
 	SDL_Surface*,
@@ -36,6 +104,24 @@ namespace ea = eastl;
 
 %include "StringHash.i"
 %include "eastl_string.i"
+
+%apply bool* INOUT                  { bool& };
+%apply signed char* INOUT           { signed char& };
+%apply unsigned char* INOUT         { unsigned char& };
+%apply short* INOUT                 { short& };
+%apply unsigned short* INOUT        { unsigned short& };
+%apply int* INOUT                   { int& };
+%apply unsigned int* INOUT          { unsigned int& };
+%apply long long* INOUT             { long long& };
+%apply unsigned long long* INOUT    { unsigned long long& };
+%apply float* INOUT                 { float& };
+%apply double* INOUT                { double& };
+
+%rename("%(camelcase)s", %$isenumitem) "";
+%rename("%(camelcase)s", %$isvariable, %$ispublic) "";
+
+// --------------------------------------- Math ---------------------------------------
+%include "Math.i"
 
 %include "_constants.i"
 %include "_events.i"
@@ -57,26 +143,19 @@ namespace ea = eastl;
 %ignore Urho3D::M_DEGTORAD_2;
 %ignore Urho3D::M_RADTODEG;
 
-%ignore Urho3D::begin;
-%ignore Urho3D::end;
-
+%ignore Urho3D::Frustum::planes_;
+%ignore Urho3D::Frustum::vertices_;
 // These should be implemented in C# anyway.
 %ignore Urho3D::Polyhedron::Polyhedron(const Vector<eastl::vector<Vector3> >& faces);
 %ignore Urho3D::Polyhedron::faces_;
 
-%apply bool* INOUT                  { bool& };
-%apply signed char* INOUT           { signed char& };
-%apply unsigned char* INOUT         { unsigned char& };
-%apply short* INOUT                 { short& };
-%apply unsigned short* INOUT        { unsigned short& };
-%apply int* INOUT                   { int& };
-%apply unsigned int* INOUT          { unsigned int& };
-%apply long long* INOUT             { long long& };
-%apply unsigned long long* INOUT    { unsigned long long& };
-%apply float* INOUT                 { float& };
-%apply double* INOUT                { double& };
+%include "Urho3D/Math/MathDefs.h"
+%include "Urho3D/Math/Polyhedron.h"
+%include "Urho3D/Math/Frustum.h"
 
 // ---------------------------------------  ---------------------------------------
+%ignore Urho3D::begin;
+%ignore Urho3D::end;
 
 %ignore Urho3D::textureFilterModeNames;
 %ignore Urho3D::textureUnitNames;
@@ -86,17 +165,11 @@ namespace ea = eastl;
 %ignore Urho3D::compareModeNames;
 %ignore Urho3D::lightingModeNames;
 
-%ignore Urho3D::Frustum::planes_;
-%ignore Urho3D::Frustum::vertices_;
-
 %include "RefCounted.i"
 %include "Vector.i"
 %include "HashMap.i"
 // Declare inheritable classes in this file
 %include "Context.i"
-
-%rename("%(camelcase)s", %$isenumitem) "";
-%rename("%(camelcase)s", %$isvariable, %$ispublic) "";
 
 %rename(VarVoidPtr) VAR_VOIDPTR;
 %rename(VarResourceRef) VAR_RESOURCEREF;
@@ -131,10 +204,6 @@ AddEqualityOperators(Urho3D::CustomGeometryVertex);
 AddEqualityOperators(Urho3D::ColorFrame);
 AddEqualityOperators(Urho3D::TextureFrame);
 AddEqualityOperators(Urho3D::Variant);
-
-%include "Urho3D/Math/MathDefs.h"
-%include "Urho3D/Math/Polyhedron.h"
-%include "Urho3D/Math/Frustum.h"
 
 %ignore Urho3D::GPUObject::OnDeviceLost;
 %ignore Urho3D::GPUObject::OnDeviceReset;
@@ -353,6 +422,7 @@ public:
 %ignore Urho3D::Node::CleanupConnection;
 %ignore Urho3D::NodeImpl;
 %ignore Urho3D::Node::GetEntity;
+%ignore Urho3D::Node::SetEntity;
 %ignore Urho3D::Scene::GetRegistry;
 %ignore Urho3D::Scene::GetComponentIndex;
 
