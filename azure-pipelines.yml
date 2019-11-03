@@ -10,21 +10,35 @@ variables:
   CMAKE_BUILD_ARGS: ""
   CMAKE_GENERATE_ARGS: ""
   URHO3D_CSHARP: ON
-  TRACY_NO_INVARIANT_CHECK: 1
   URHO3D_SAMPLES: ON
+  URHO3D_PACKAGING: ON
+  TRACY_NO_INVARIANT_CHECK: 1
 
 jobs:
   - job: Web
     pool:
       vmImage: 'ubuntu-16.04'
 
+    variables:
+      URHO3D_CSHARP: OFF
+      CMAKE_GENERATE_ARGS: -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake
+      EMSCRIPTEN_ROOT_PATH: $(Build.SourcesDirectory)/emsdk-master/fastcomp/emscripten
+
     steps:
       - bash: |
-          docker run --rm -v $(Build.SourcesDirectory):/src trzeci/emscripten-ubuntu bash /src/.ci/emscripten.sh
-        displayName: 'Build'
-
-      - publish: $(Build.SourcesDirectory)/SDK
-        artifact: rbfx-SDK-$(Agent.JobName)-$(Build.SourceVersion)
+          sudo apt-get update
+          # Default compiler on this build worker image does not support c++17.
+          sudo apt-get install -y --no-install-recommends uuid-dev gcc-8 g++-8
+          sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-8 100
+          sudo update-alternatives --set cc /usr/bin/gcc-8
+          sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-8 100
+          sudo update-alternatives --set c++ /usr/bin/g++-8
+          wget -q https://github.com/emscripten-core/emsdk/archive/master.tar.gz
+          tar -xvf master.tar.gz
+          emsdk-master/emsdk install latest-fastcomp
+          emsdk-master/emsdk activate latest-fastcomp
+        displayName: 'Setup'
+      - template: .ci/build.yml
 
   - job: Windows
     pool:
