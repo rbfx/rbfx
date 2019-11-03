@@ -11,6 +11,7 @@ variables:
   CMAKE_GENERATE_ARGS: ""
   URHO3D_CSHARP: ON
   TRACY_NO_INVARIANT_CHECK: 1
+  URHO3D_SAMPLES: ON
 
 jobs:
   - job: Web
