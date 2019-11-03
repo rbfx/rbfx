@@ -21,8 +21,9 @@ jobs:
 
     variables:
       URHO3D_CSHARP: OFF
+      BUILD_SHARED_LIBS: OFF
       CMAKE_GENERATE_ARGS: -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/Emscripten.cmake
-      EMSCRIPTEN_ROOT_PATH: $(Build.SourcesDirectory)/emsdk-master/fastcomp/emscripten
+      EMSCRIPTEN_ROOT_PATH: $(Build.SourcesDirectory)/emsdk-master/upstream/emscripten
 
     steps:
       - bash: |
@@ -35,8 +36,8 @@ jobs:
           sudo update-alternatives --set c++ /usr/bin/g++-8
           wget -q https://github.com/emscripten-core/emsdk/archive/master.tar.gz
           tar -xvf master.tar.gz
-          emsdk-master/emsdk install latest-fastcomp
-          emsdk-master/emsdk activate latest-fastcomp
+          emsdk-master/emsdk install latest
+          emsdk-master/emsdk activate latest
         displayName: 'Setup'
       - template: .ci/build.yml
 

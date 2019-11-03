@@ -165,6 +165,11 @@ if (WEB OR MOBILE)
     endif ()
 endif ()
 
+if (WEB AND BUILD_SHARED_LIBS)
+    set (BUILD_SHARED_LIBS OFF)
+    message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.
+endif ()
+
 foreach (feature ${URHO3D_FEATURES})
     set (URHO3D_${feature} ON)
 endforeach()
