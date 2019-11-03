@@ -38,7 +38,7 @@ endif ()
 add_library(fmt STATIC ${FMT_HEADERS} ${FMT_SOURCES})
 target_link_libraries(fmt PUBLIC EASTL)
 target_compile_definitions(fmt INTERFACE FMT_USE_RVALUE_REFERENCES=1 FMT_USE_VARIADIC_TEMPLATES=1)
-target_include_directories(fmt SYSTEM INTERFACE
+target_include_directories(fmt SYSTEM PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
 )
