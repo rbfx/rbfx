@@ -49,7 +49,7 @@ configure_file(Source/Include/swigconfig.h.in ${CMAKE_CURRENT_BINARY_DIR}/swigco
 file (GLOB_RECURSE SWIG_SOURCES Source/*.c Source/*.cxx Source/*.h)
 add_executable(swig ${SWIG_SOURCES})
 target_link_libraries(swig PUBLIC pcre)
-target_include_directories(swig PRIVATE Source/CParse Source/DOH Source/Include Source/Modules Source/Preprocessor Source/Swig)
+target_include_directories(swig PRIVATE Source/CParse Source/DOH Source/Include Source/Modules Source/Preprocessor Source/Swig ${CMAKE_CURRENT_BINARY_DIR})
 
 # A lame way to detect that target is built alone, with a native toolchain when corsscompiling.
 if (NOT TARGET Urho3D)
