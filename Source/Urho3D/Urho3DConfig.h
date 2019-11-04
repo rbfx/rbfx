@@ -22,11 +22,7 @@
 
 #pragma once
 
-#ifdef URHO3D_IS_BUILDING
-    #include "Urho3D.h"
-#else
-    #include <Urho3D/Urho3D.h>
-#endif
+#include <Urho3D/Urho3D.h>
 
 // Macros with identifiers of c++ version.
 #define URHO_CPP11_STANDARD (201103L)
