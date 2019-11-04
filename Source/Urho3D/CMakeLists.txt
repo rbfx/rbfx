@@ -107,7 +107,6 @@ endif ()
 
 add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES} $<$<CXX_COMPILER_ID:MSVC>:${rbfx_SOURCE_DIR}/script/rbfx.natvis>)
 target_include_directories(Urho3D PUBLIC
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>           # For #include "Urho3D.h"
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
@@ -128,7 +127,7 @@ endforeach()
 if (MINI_URHO)
     target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
 endif ()
-target_compile_definitions(Urho3D PRIVATE -DURHO3D_IS_BUILDING PUBLIC -DNOMINMAX)
+target_compile_definitions(Urho3D PUBLIC -DNOMINMAX)
 
 # Set platform definitions
 foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
@@ -472,7 +471,7 @@ endif ()
 
 # Generate import/export header with engine configuration defines
 get_property(URHO3D_ENGINE_CONFIG TARGET Urho3D PROPERTY INTERFACE_COMPILE_DEFINITIONS)
-list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT URHO3D_IS_BUILDING)
+list (REMOVE_ITEM URHO3D_ENGINE_CONFIG URHO3D_64BIT)
 # TODO: Maybe these should be directly in header?
 foreach(HAVE HAVE___SINCOSF HAVE_MALLOC_USABLE_SIZE HAVE_STDINT_H HAVE_INTTYPES_H HAVE_MALLOC_H HAVE_SINCOSF HAVE_RTL_OSVERSIONINFOW)
     if (${${HAVE}})
