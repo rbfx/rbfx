@@ -59,10 +59,13 @@ bool TypeInfo::IsTypeOf(StringHash type) const
 
 bool TypeInfo::IsTypeOf(const TypeInfo* typeInfo) const
 {
+    if (typeInfo == nullptr)
+        return false;
+    
     const TypeInfo* current = this;
     while (current)
     {
-        if (current == typeInfo)
+        if (current == typeInfo || current->GetType() == typeInfo->GetType())
             return true;
 
         current = current->GetBaseTypeInfo();
