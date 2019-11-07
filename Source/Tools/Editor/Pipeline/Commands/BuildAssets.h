@@ -23,7 +23,7 @@
 #pragma once
 
 
-#include "SubCommand.h"
+#include "Pipeline/Commands/SubCommand.h"
 
 namespace Urho3D
 {

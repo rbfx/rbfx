@@ -30,7 +30,7 @@
 #include "Tabs/Scene/EditorSceneSettings.h"
 #include "Editor.h"
 #include "Project.h"
-#include "CookScene.h"
+#include "Pipeline/Commands/CookScene.h"
 
 
 namespace Urho3D
