@@ -3,7 +3,6 @@
 
 #include <assert.h>
 #include <atomic>
-#include <chrono>
 #include <stdint.h>
 #include <string.h>
 
@@ -15,7 +14,6 @@
 #include "../common/TracyAlign.hpp"
 #include "../common/TracyAlloc.hpp"
 #include "../common/TracyMutex.hpp"
-#include "../common/TracySystem.hpp"
 
 #if defined _WIN32 || defined __CYGWIN__
 #  include <intrin.h>
@@ -27,11 +25,10 @@
 
 #if defined _WIN32 || defined __CYGWIN__ || ( ( defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64 ) && !defined __ANDROID__ ) || __ARM_ARCH >= 6
 #  define TRACY_HW_TIMER
-#  if defined _WIN32 || defined __CYGWIN__
-     // Enable optimization for MSVC __rdtscp() intrin, saving one LHS of a cpu value on the stack.
-     // This comes at the cost of an unaligned memory write.
-#    define TRACY_RDTSCP_OPT
-#  endif
+#endif
+
+#if !defined TRACY_HW_TIMER || ( __ARM_ARCH >= 6 && !defined CLOCK_MONOTONIC_RAW )
+  #include <chrono>
 #endif
 
 #ifndef TracyConcat
@@ -82,10 +79,6 @@ struct LuaZoneState
 
 using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
-#if __ARM_ARCH >= 6 && !defined TARGET_OS_IOS
-extern int64_t (*GetTimeImpl)();
-#endif
-
 
 class Profiler
 {
@@ -103,44 +96,29 @@ public:
     Profiler();
     ~Profiler();
 
-    static tracy_force_inline int64_t GetTime( uint32_t& cpu )
-    {
-#ifdef TRACY_HW_TIMER
-#  if TARGET_OS_IOS == 1
-        cpu = 0xFFFFFFFF;
-        return mach_absolute_time();
-#  elif __ARM_ARCH >= 6
-        cpu = 0xFFFFFFFF;
-        return GetTimeImpl();
-#  elif defined _WIN32 || defined __CYGWIN__
-        const auto t = int64_t( __rdtscp( &cpu ) );
-        return t;
-#  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
-        uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx), "=c" (cpu) :: );
-        return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
-#  endif
-#else
-        cpu = 0xFFFFFFFF;
-        return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
-#endif
-    }
-
     static tracy_force_inline int64_t GetTime()
     {
 #ifdef TRACY_HW_TIMER
 #  if TARGET_OS_IOS == 1
         return mach_absolute_time();
 #  elif __ARM_ARCH >= 6
-        return GetTimeImpl();
+#    ifdef CLOCK_MONOTONIC_RAW
+        struct timespec ts;
+        clock_gettime( CLOCK_MONOTONIC_RAW, &ts );
+        return int64_t( ts.tv_sec ) * 1000000000ll + int64_t( ts.tv_nsec );
+#    else
+        return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
+#    endif
 #  elif defined _WIN32 || defined __CYGWIN__
-        unsigned int dontcare;
-        const auto t = int64_t( __rdtscp( &dontcare ) );
-        return t;
-#  elif defined __i386 || defined _M_IX86 || defined __x86_64__ || defined _M_X64
+        return int64_t( __rdtsc() );
+#  elif defined __i386 || defined _M_IX86
         uint32_t eax, edx;
-        asm volatile ( "rdtscp" : "=a" (eax), "=d" (edx) :: "%ecx" );
+        asm volatile ( "rdtsc" : "=a" (eax), "=d" (edx) );
         return ( uint64_t( edx ) << 32 ) + uint64_t( eax );
+#  elif defined __x86_64__ || defined _M_X64
+        uint64_t rax, rdx;
+        asm volatile ( "rdtsc" : "=a" (rax), "=d" (rdx) );
+        return ( rdx << 32 ) + rax;
 #  endif
 #else
         return std::chrono::duration_cast<std::chrono::nanoseconds>( std::chrono::high_resolution_clock::now().time_since_epoch() ).count();
@@ -267,6 +245,23 @@ public:
         tail.store( magic + 1, std::memory_order_release );
     }
 
+    static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type )
+    {
+        Magic magic;
+        auto token = GetToken();
+        auto& tail = token->get_tail_index();
+        auto item = token->enqueue_begin( magic );
+        MemWrite( &item->hdr.type, QueueType::PlotConfig );
+        MemWrite( &item->plotConfig.name, (uint64_t)name );
+        MemWrite( &item->plotConfig.type, (uint8_t)type );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+
+        tail.store( magic + 1, std::memory_order_release );
+    }
+
     static tracy_force_inline void Message( const char* txt, size_t size )
     {
 #ifdef TRACY_ON_DEMAND
@@ -385,8 +380,8 @@ public:
 
     static tracy_force_inline void MemAllocCallstack( const void* ptr, size_t size, int depth )
     {
-        auto& profiler = GetProfiler();
 #ifdef TRACY_HAS_CALLSTACK
+        auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #  endif
@@ -406,8 +401,8 @@ public:
 
     static tracy_force_inline void MemFreeCallstack( const void* ptr, int depth )
     {
-        auto& profiler = GetProfiler();
 #ifdef TRACY_HAS_CALLSTACK
+        auto& profiler = GetProfiler();
 #  ifdef TRACY_ON_DEMAND
         if( !profiler.IsConnected() ) return;
 #  endif
@@ -467,6 +462,8 @@ public:
     void RequestShutdown() { m_shutdown.store( true, std::memory_order_relaxed ); m_shutdownManual.store( true, std::memory_order_relaxed ); }
     bool HasShutdownFinished() const { return m_shutdownFinished.load( std::memory_order_relaxed ); }
 
+    void SendString( uint64_t ptr, const char* str, QueueType type );
+
 private:
     enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
 
@@ -477,7 +474,9 @@ private:
     void CompressWorker();
 
     void ClearQueues( tracy::moodycamel::ConsumerToken& token );
+    void ClearSerial();
     DequeueStatus Dequeue( tracy::moodycamel::ConsumerToken& token );
+    DequeueStatus DequeueContextSwitches( tracy::moodycamel::ConsumerToken& token, int64_t& timeStop );
     DequeueStatus DequeueSerial();
     bool AppendData( const void* data, size_t len );
     bool CommitData();
@@ -490,7 +489,6 @@ private:
     }
 
     bool SendData( const char* data, size_t len );
-    void SendString( uint64_t ptr, const char* str, QueueType type );
     void SendLongString( uint64_t ptr, const char* str, size_t len, QueueType type );
     void SendSourceLocation( uint64_t ptr );
     void SendSourceLocationPayload( uint64_t ptr );
@@ -563,6 +561,10 @@ private:
     std::atomic<uint32_t> m_zoneId;
 
     uint64_t m_threadCtx;
+    int64_t m_refTimeThread;
+    int64_t m_refTimeSerial;
+    int64_t m_refTimeCtx;
+    int64_t m_refTimeGpu;
 
     void* m_stream;     // LZ4_stream_t*
     char* m_buffer;

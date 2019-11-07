@@ -26,7 +26,7 @@ void FreeTexture( void* _tex )
     // glDeleteTextures( 1, &tex );
 }
 
-void UpdateTexture( void* _tex, const char* data, int w, int h, bool etc )
+void UpdateTexture( void* _tex, const char* data, int w, int h )
 {
     // auto tex = (GLuint)(intptr_t)_tex;
     // glBindTexture( GL_TEXTURE_2D, tex );
