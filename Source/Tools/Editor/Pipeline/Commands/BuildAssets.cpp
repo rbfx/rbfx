@@ -20,12 +20,10 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/EngineDefs.h>
-#include <Urho3D/IO/Log.h>
 #include "Project.h"
 #include "Editor.h"
-#include "BuildAssets.h"
+#include "Pipeline/Commands/BuildAssets.h"
 
 
 namespace Urho3D

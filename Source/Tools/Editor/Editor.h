@@ -26,7 +26,7 @@
 #include <Urho3D/Engine/Application.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include "Project.h"
-#include "SubCommand.h"
+#include "Pipeline/Commands/SubCommand.h"
 
 using namespace std::placeholders;
 
