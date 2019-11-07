@@ -1,36 +1,35 @@
-// #include <GL/gl3w.h>
+#include "../../../Urho3D/Graphics/GraphicsImpl.h"
+#include "../../../Urho3D/Graphics/Texture2D.h"
+#include "../../../Urho3D/SystemUI/SystemUI.h"
 
 #include "TracyTexture.hpp"
-
-#ifndef COMPRESSED_RGB_S3TC_DXT1_EXT
-#  define COMPRESSED_RGB_S3TC_DXT1_EXT 0x83F0
-#endif
 
 namespace tracy
 {
 
 void* MakeTexture()
 {
-    // GLuint tex;
-    // glGenTextures( 1, &tex );
-    // glBindTexture( GL_TEXTURE_2D, tex );
-    // glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    // glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-    // return (void*)(intptr_t)tex;
-    return nullptr;
+    auto* systemUI = static_cast<Urho3D::SystemUI*>(ui::GetIO().UserData);
+    return new Urho3D::Texture2D(systemUI->GetContext());
 }
 
 void FreeTexture( void* _tex )
 {
-    // auto tex = (GLuint)(intptr_t)_tex;
-    // glDeleteTextures( 1, &tex );
+    delete static_cast<Urho3D::Texture2D*>(_tex);
 }
 
 void UpdateTexture( void* _tex, const char* data, int w, int h )
 {
-    // auto tex = (GLuint)(intptr_t)_tex;
-    // glBindTexture( GL_TEXTURE_2D, tex );
-    // glCompressedTexImage2D( GL_TEXTURE_2D, 0, etc ? GL_COMPRESSED_RGB8_ETC2 : COMPRESSED_RGB_S3TC_DXT1_EXT, w, h, 0, w * h / 2, data );
+    auto* texture = static_cast<Urho3D::Texture2D*>(_tex);
+#if defined(URHO3D_OPENGL)
+    unsigned format = GL_COMPRESSED_RGB_S3TC_DXT1_EXT;
+#elif defined(URHO3D_D3D11)
+    unsigned format = DXGI_FORMAT_BC1_UNORM;
+#else
+    unsigned format = D3DFMT_DXT1;
+#endif
+    texture->SetSize(w, h, format);
+    texture->SetData(0, 0, 0, w, h, data);
 }
 
 }
