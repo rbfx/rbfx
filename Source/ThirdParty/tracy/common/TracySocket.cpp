@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <assert.h>
 #include <new>
 #include <stdio.h>
@@ -10,6 +9,9 @@
 #include "TracySocket.hpp"
 
 #ifdef _WIN32
+#  ifndef NOMINMAX
+#    define NOMINMAX
+#  endif
 #  include <winsock2.h>
 #  include <ws2tcpip.h>
 #  ifdef _MSC_VER
@@ -86,7 +88,7 @@ Socket::~Socket()
     }
 }
 
-bool Socket::Connect( const char* addr, const char* port )
+bool Socket::Connect( const char* addr, int port )
 {
     assert( m_sock == -1 );
 
@@ -97,7 +99,10 @@ bool Socket::Connect( const char* addr, const char* port )
     hints.ai_family = AF_UNSPEC;
     hints.ai_socktype = SOCK_STREAM;
 
-    if( getaddrinfo( addr, port, &hints, &res ) != 0 ) return false;
+    char portbuf[32];
+    sprintf( portbuf, "%i", port );
+
+    if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
     int sock = 0;
     for( ptr = res; ptr; ptr = ptr->ai_next )
     {
@@ -186,7 +191,7 @@ int Socket::RecvBuffered( void* buf, int len, int timeout )
     m_bufLeft = Recv( m_buf, BufSize, timeout );
     if( m_bufLeft <= 0 ) return m_bufLeft;
 
-    const auto sz = std::min( len, m_bufLeft );
+    const auto sz = len < m_bufLeft ? len : m_bufLeft;
     memcpy( buf, m_buf, sz );
     m_bufPtr = m_buf + sz;
     m_bufLeft -= sz;
@@ -279,7 +284,7 @@ ListenSocket::~ListenSocket()
     if( m_sock != -1 ) Close();
 }
 
-bool ListenSocket::Listen( const char* port, int backlog )
+bool ListenSocket::Listen( int port, int backlog )
 {
     assert( m_sock == -1 );
 
@@ -291,7 +296,10 @@ bool ListenSocket::Listen( const char* port, int backlog )
     hints.ai_socktype = SOCK_STREAM;
     hints.ai_flags = AI_PASSIVE;
 
-    if( getaddrinfo( nullptr, port, &hints, &res ) != 0 ) return false;
+    char portbuf[32];
+    sprintf( portbuf, "%i", port );
+
+    if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
 
     m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
 #if defined _WIN32 || defined __CYGWIN__
@@ -301,8 +309,9 @@ bool ListenSocket::Listen( const char* port, int backlog )
     int val = 1;
     setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
 #endif
-    if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) return false;
-    if( listen( m_sock, backlog ) == -1 ) return false;
+    if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) { freeaddrinfo( res ); return false; }
+    if( listen( m_sock, backlog ) == -1 ) { freeaddrinfo( res ); return false; }
+    freeaddrinfo( res );
     return true;
 }
 
@@ -359,7 +368,7 @@ UdpBroadcast::~UdpBroadcast()
     if( m_sock != -1 ) Close();
 }
 
-bool UdpBroadcast::Open( const char* addr, const char* port )
+bool UdpBroadcast::Open( const char* addr, int port )
 {
     assert( m_sock == -1 );
 
@@ -370,7 +379,10 @@ bool UdpBroadcast::Open( const char* addr, const char* port )
     hints.ai_family = AF_INET;
     hints.ai_socktype = SOCK_DGRAM;
 
-    if( getaddrinfo( addr, port, &hints, &res ) != 0 ) return false;
+    char portbuf[32];
+    sprintf( portbuf, "%i", port );
+
+    if( getaddrinfo( addr, portbuf, &hints, &res ) != 0 ) return false;
     int sock = 0;
     for( ptr = res; ptr; ptr = ptr->ai_next )
     {

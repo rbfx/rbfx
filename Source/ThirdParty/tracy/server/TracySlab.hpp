@@ -44,7 +44,7 @@ public:
     }
 
     template<typename T>
-    T* AllocInit()
+    tracy_force_inline T* AllocInit()
     {
         const auto size = sizeof( T );
         assert( size <= BlockSize );
@@ -54,6 +54,26 @@ public:
         }
         void* ret = m_ptr + m_offset;
         new( ret ) T;
+        m_offset += size;
+        return (T*)ret;
+    }
+
+    template<typename T>
+    tracy_force_inline T* AllocInit( size_t sz )
+    {
+        const auto size = sizeof( T ) * sz;
+        assert( size <= BlockSize );
+        if( m_offset + size > BlockSize )
+        {
+            DoAlloc();
+        }
+        void* ret = m_ptr + m_offset;
+        T* ptr = (T*)ret;
+        for( size_t i=0; i<sz; i++ )
+        {
+            new( ptr ) T;
+            ptr++;
+        }
         m_offset += size;
         return (T*)ret;
     }

@@ -30,7 +30,7 @@ void SigInt( int )
 
 void Usage()
 {
-    printf( "Usage: capture -a address -o output.tracy\n" );
+    printf( "Usage: capture -a address -o output.tracy [-p port]\n" );
     exit( 1 );
 }
 
@@ -46,9 +46,10 @@ int main( int argc, char** argv )
 
     const char* address = nullptr;
     const char* output = nullptr;
+    int port = 8086;
 
     int c;
-    while( ( c = getopt( argc, argv, "a:o:" ) ) != -1 )
+    while( ( c = getopt( argc, argv, "a:o:p:" ) ) != -1 )
     {
         switch( c )
         {
@@ -58,6 +59,9 @@ int main( int argc, char** argv )
         case 'o':
             output = optarg;
             break;
+        case 'p':
+            port = atoi( optarg );
+            break;
         default:
             Usage();
             break;
@@ -66,9 +70,9 @@ int main( int argc, char** argv )
 
     if( !address || !output ) Usage();
 
-    printf( "Connecting to %s...", address );
+    printf( "Connecting to %s:%i...", address, port );
     fflush( stdout );
-    tracy::Worker worker( address );
+    tracy::Worker worker( address, port );
     while( !worker.IsConnected() )
     {
         const auto handshake = worker.GetHandshakeStatus();
@@ -100,6 +104,7 @@ int main( int argc, char** argv )
 
     auto& lock = worker.GetMbpsDataLock();
 
+    const auto t0 = std::chrono::high_resolution_clock::now();
     while( worker.IsConnected() )
     {
 #ifndef _MSC_VER
@@ -113,6 +118,7 @@ int main( int argc, char** argv )
         lock.lock();
         const auto mbps = worker.GetMbpsData().back();
         const auto compRatio = worker.GetCompRatio();
+        const auto netTotal = worker.GetDataTransferred();
         lock.unlock();
 
         if( mbps < 0.1f )
@@ -123,11 +129,17 @@ int main( int argc, char** argv )
         {
             printf( "\33[2K\r\033[36;1m%7.2f Mbps", mbps );
         }
-        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| Mem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m", compRatio * 100.f, mbps / compRatio, tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ), tracy::TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ) );
+        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mNet: \033[32m%s \033[0m| \033[33mMem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m",
+            compRatio * 100.f,
+            mbps / compRatio,
+            tracy::MemSizeToString( netTotal ),
+            tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ),
+            tracy::TimeToString( worker.GetLastTime() ) );
         fflush( stdout );
 
         std::this_thread::sleep_for( std::chrono::milliseconds( 100 ) );
     }
+    const auto t1 = std::chrono::high_resolution_clock::now();
 
     const auto& failure = worker.GetFailureType();
     if( failure != tracy::Worker::Failure::None )
@@ -135,7 +147,9 @@ int main( int argc, char** argv )
         printf( "\n\033[31;1mInstrumentation failure: %s\033[0m", tracy::Worker::GetFailureString( failure ) );
     }
 
-    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nSaving trace...", worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() - worker.GetTimeBegin() ), tracy::RealToString( worker.GetZoneCount(), true ) );
+    printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
+        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount(), true ),
+        tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
     if( f )
