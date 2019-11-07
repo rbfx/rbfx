@@ -11,9 +11,11 @@
 
 #include "TracyBuzzAnim.hpp"
 #include "TracyDecayValue.hpp"
+#include "TracyShortPtr.hpp"
 #include "TracyTexture.hpp"
 #include "TracyUserData.hpp"
 #include "TracyVector.hpp"
+#include "TracyViewData.hpp"
 #include "TracyWorker.hpp"
 #include "tracy_flat_hash_map.hpp"
 
@@ -27,6 +29,7 @@ struct MemoryPage;
 struct QueueItem;
 class FileRead;
 class TextEditor;
+struct ZoneTimeData;
 
 class View
 {
@@ -43,6 +46,12 @@ class View
         bool active = false;
         int64_t start;
         int64_t end;
+    };
+
+    struct ZoneTimeData
+    {
+        int64_t time;
+        uint64_t count;
     };
 
 public:
@@ -62,9 +71,9 @@ public:
 
     using SetTitleCallback = void(*)( const char* );
 
-    View( ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", fixedWidth, bigFont, stcb ) {}
-    View( const char* addr, ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
-    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr ) : View( "127.0.0.1", 8086, fixedWidth, smallFont, bigFont, stcb ) {}
+    View( const char* addr, int port, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
+    View( FileRead& f, ImFont* fixedWidth = nullptr, ImFont* smallFont = nullptr, ImFont* bigFont = nullptr, SetTitleCallback stcb = nullptr );
     ~View();
 
     static bool Draw();
@@ -103,22 +112,25 @@ private:
     void DrawTextContrast( ImDrawList* draw, const ImVec2& pos, uint32_t color, const char* text );
 
     bool DrawImpl();
+    void DrawNotificationArea();
     bool DrawConnection();
     void DrawFrames();
     bool DrawZoneFramesHeader();
     bool DrawZoneFrames( const FrameData& frames );
     void DrawZones();
-    int DispatchZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
-    int DrawZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
-    int SkipZoneLevel( const Vector<ZoneEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax );
-    int DispatchGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
-    int DrawGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
-    int SkipGpuZoneLevel( const Vector<GpuEvent*>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset );
+    int DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int SkipZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    int DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int DrawGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    int SkipGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
     void DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint8_t tid );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight, float yMin, float yMax );
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
-    void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, float PlotHeight );
-    void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, PlotType type, float PlotHeight );
+    void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, const PlotItem* item, double prev, bool merged, PlotType type, PlotValueFormatting format, float PlotHeight );
+    void DrawPlotPoint( const ImVec2& wpos, float x, float y, int offset, uint32_t color, bool hover, bool hasPrev, double val, double prev, bool merged, PlotValueFormatting format, float PlotHeight );
+    int DrawCpuData( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
     void DrawOptions();
     void DrawMessages();
     void DrawFindZone();
@@ -133,6 +145,9 @@ private:
     void DrawGoToFrame();
     void DrawLockInfoWindow();
     void DrawPlayback();
+    void DrawCpuDataWindow();
+    void DrawSelectedAnnotation();
+    void DrawAnnotationList();
 
     template<class T>
     void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
@@ -141,7 +156,7 @@ private:
     flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
     flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
     void DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, int& idx );
-    void DrawZoneList( const Vector<ZoneEvent*>& zones );
+    void DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
@@ -149,9 +164,15 @@ private:
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
-    uint32_t GetZoneColor( const ZoneEvent& ev );
+    uint32_t GetThreadColor( uint64_t thread, int depth );
+    uint32_t GetSrcLocColor( const SourceLocation& srcloc, int depth );
+    uint32_t GetRawSrcLocColor( const SourceLocation& srcloc, int depth );
+    uint32_t GetZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneColor( const GpuEvent& ev );
-    uint32_t GetZoneHighlight( const ZoneEvent& ev );
+    uint32_t GetRawZoneColor( const ZoneEvent& ev, uint64_t thread, int depth );
+    uint32_t GetRawZoneColor( const GpuEvent& ev );
+    uint32_t HighlightColor( uint32_t color );
+    uint32_t GetZoneHighlight( const ZoneEvent& ev, uint64_t thread, int depth );
     uint32_t GetZoneHighlight( const GpuEvent& ev );
     float GetZoneThickness( const ZoneEvent& ev );
     float GetZoneThickness( const GpuEvent& ev );
@@ -171,13 +192,16 @@ private:
     void CallstackTooltip( uint32_t idx );
     void CrashTooltip();
 
+    int GetZoneDepth( const ZoneEvent& zone, uint64_t tid ) const;
     const ZoneEvent* GetZoneParent( const ZoneEvent& zone ) const;
+    const ZoneEvent* GetZoneParent( const ZoneEvent& zone, uint64_t tid ) const;
     const GpuEvent* GetZoneParent( const GpuEvent& zone ) const;
     const ThreadData* GetZoneThreadData( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const ZoneEvent& zone ) const;
     uint64_t GetZoneThread( const GpuEvent& zone ) const;
     const GpuCtxData* GetZoneCtx( const GpuEvent& zone ) const;
     const ZoneEvent* FindZoneAtTime( uint64_t thread, int64_t time ) const;
+    uint64_t GetFrameNumber( const FrameData& fd, int i, uint64_t offset ) const;
     const char* GetFrameText( const FrameData& fd, int i, uint64_t ftime, uint64_t offset ) const;
 
 #ifndef TRACY_NO_STATISTICS
@@ -195,6 +219,10 @@ private:
     int64_t GetZoneChildTimeFast( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const ZoneEvent& zone );
     int64_t GetZoneSelfTime( const GpuEvent& zone );
+    bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
+
+    void CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
+    void CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
 
     void SetPlaybackFrame( uint32_t idx );
 
@@ -236,21 +264,15 @@ private:
     }
 
     Worker m_worker;
+    std::string m_filename;
     bool m_staticView;
-
-    int m_frameScale = 0;
     bool m_pause;
-    int m_frameStart = 0;
 
-    int64_t m_zvStart = 0;
-    int64_t m_zvEnd = 0;
-
-    int m_zvHeight = 0;
-    int m_zvScroll = 0;
+    ViewData m_vd;
 
     const ZoneEvent* m_zoneInfoWindow = nullptr;
     const ZoneEvent* m_zoneHighlight;
-    DecayValue<int32_t> m_zoneSrcLocHighlight = 0;
+    DecayValue<int16_t> m_zoneSrcLocHighlight = 0;
     LockHighlight m_lockHighlight { -1 };
     DecayValue<const MessageData*> m_msgHighlight = nullptr;
     DecayValue<uint32_t> m_lockHoverHighlight = InvalidId;
@@ -264,12 +286,16 @@ private:
     int m_memoryAllocHoverWait = 0;
     const FrameData* m_frames;
     uint32_t m_lockInfoWindow = InvalidId;
-    ZoneEvent* m_zoneHover = nullptr;
+    const ZoneEvent* m_zoneHover = nullptr;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
+    ImGuiTextFilter m_statisticsFilter;
     int m_visibleMessages = 0;
     bool m_disconnectIssued = false;
+    DecayValue<uint64_t> m_drawThreadMigrations = 0;
+    DecayValue<uint64_t> m_drawThreadHighlight = 0;
+    Annotation* m_selectedAnnotation = nullptr;
 
     Region m_highlight;
     Region m_highlightZoom;
@@ -283,13 +309,20 @@ private:
     bool m_showStatistics = false;
     bool m_showInfo = false;
     bool m_showPlayback = false;
-    bool m_drawGpuZones = true;
-    bool m_drawZones = true;
-    bool m_drawLocks = true;
-    bool m_drawPlots = true;
-    bool m_onlyContendedLocks = true;
+    bool m_showCpuDataWindow = false;
     bool m_goToFrame = false;
-    bool m_drawEmptyLabels = false;
+    bool m_showAnnotationList = false;
+
+    enum class CpuDataSortBy
+    {
+        Pid,
+        Name,
+        Time,
+        Regions,
+        Migrations
+    };
+
+    CpuDataSortBy m_cpuDataSort = CpuDataSortBy::Pid;
 
     int m_statSort = 0;
     bool m_statSelf = false;
@@ -297,6 +330,7 @@ private:
     bool m_showUnknownFrames = true;
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;
+    bool m_ctxSwitchTimeRelativeToZone = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Short;
@@ -305,7 +339,7 @@ private:
     BuzzAnim<int> m_callstackTreeBuzzAnim;
     BuzzAnim<const void*> m_zoneinfoBuzzAnim;
     BuzzAnim<int> m_findZoneBuzzAnim;
-    BuzzAnim<uint32_t> m_optionsLockBuzzAnim;
+    BuzzAnim<int16_t> m_optionsLockBuzzAnim;
     BuzzAnim<uint32_t> m_lockInfoAnim;
     BuzzAnim<uint32_t> m_statBuzzAnim;
 
@@ -317,6 +351,7 @@ private:
     ImFont* m_textEditorFont;
     bool m_textEditorWhitespace = true;
 
+    ImFont* m_smallFont;
     ImFont* m_bigFont;
 
     float m_rootWidth, m_rootHeight;
@@ -344,23 +379,24 @@ private:
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
 
+    std::vector<std::unique_ptr<Annotation>> m_annotations;
     UserData m_userData;
 
     struct FindZone {
         enum : uint64_t { Unselected = std::numeric_limits<uint64_t>::max() - 1 };
-        enum class GroupBy : int { Thread, UserText, Callstack };
+        enum class GroupBy : int { Thread, UserText, Callstack, Parent, NoGrouping };
         enum class SortBy : int { Order, Count, Time, Mtpc };
         enum class TableSortBy : int { Starttime, Runtime, Name };
 
         struct Group
         {
-            Vector<ZoneEvent*> zones;
+            Vector<short_ptr<ZoneEvent>> zones;
             int64_t time = 0;
         };
 
         bool show = false;
         bool ignoreCase = false;
-        std::vector<int32_t> match;
+        std::vector<int16_t> match;
         std::map<uint64_t, Group> groups;
         size_t processed;
         int selMatch = 0;
@@ -370,6 +406,7 @@ private:
         bool logTime = true;
         bool cumulateTime = false;
         bool selfTime = false;
+        bool runningTime = false;
         GroupBy groupBy = GroupBy::Thread;
         SortBy sortBy = SortBy::Count;
         TableSortBy tableSortBy = TableSortBy::Starttime;
@@ -387,6 +424,7 @@ private:
         bool scheduleResetMatch = false;
         int selCs = 0;
         int minBinVal = 1;
+        int64_t tmin, tmax;
 
         struct
         {
@@ -412,6 +450,8 @@ private:
             average = 0;
             median = 0;
             total = 0;
+            tmin = std::numeric_limits<int64_t>::max();
+            tmax = std::numeric_limits<int64_t>::min();
         }
 
         void ResetGroups()
@@ -433,7 +473,7 @@ private:
             binCache.numBins = -1;
         }
 
-        void ShowZone( int32_t srcloc, const char* name )
+        void ShowZone( int16_t srcloc, const char* name )
         {
             show = true;
             Reset();
@@ -459,7 +499,7 @@ private:
         std::thread loadThread;
         BadVersionState badVer;
         char pattern[1024] = {};
-        std::vector<int32_t> match[2];
+        std::vector<int16_t> match[2];
         int selMatch[2] = { 0, 0 };
         bool logVal = false;
         bool logTime = true;
@@ -473,6 +513,7 @@ private:
         float median[2];
         int64_t total[2];
         int minBinVal = 1;
+        int compareMode = 0;
 
         void ResetSelection()
         {
@@ -540,6 +581,15 @@ private:
         bool sync = false;
         bool zoom = false;
     } m_playback;
+
+    struct TimeDistribution {
+        enum class SortBy : int { Count, Time, Mtpc };
+        SortBy sortBy = SortBy::Time;
+        bool runningTime = false;
+        flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
+        const ZoneEvent* dataValidFor = nullptr;
+        float fztime;
+    } m_timeDist;
 };
 
 }

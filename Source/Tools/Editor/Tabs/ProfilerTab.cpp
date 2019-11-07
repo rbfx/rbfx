@@ -60,7 +60,7 @@ bool ProfilerTab::RenderWindowContent()
         ui::SameLine();
         connect |= ui::Button(ICON_FA_WIFI " Connect");
         if (connect)
-            view_ = std::make_unique<tracy::View>(connectTo_.c_str());
+            view_ = std::make_unique<tracy::View>(connectTo_.c_str(), port_);
     }
 #else
     ui::TextUnformatted("Built without profiling support.");

@@ -1695,6 +1695,7 @@ rpmalloc_finalize(void) {
 }
 
 //! Initialize thread, assign heap
+// rbfx
 TRACY_API void
 rpmalloc_thread_initialize(void) {
 	if (!get_thread_heap()) {

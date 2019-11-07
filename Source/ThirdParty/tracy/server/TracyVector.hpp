@@ -10,7 +10,10 @@
 #include "../common/TracyForceInline.hpp"
 #include "TracyMemory.hpp"
 #include "TracyPopcnt.hpp"
+#include "TracyShortPtr.hpp"
 #include "TracySlab.hpp"
+
+//#define TRACY_VECTOR_DEBUG
 
 namespace tracy
 {
@@ -23,7 +26,7 @@ public:
     using iterator = T*;
     using const_iterator = const T*;
 
-    Vector()
+    tracy_force_inline Vector()
         : m_ptr( nullptr )
         , m_size( 0 )
         , m_capacity( 0 )
@@ -31,13 +34,13 @@ public:
     }
 
     Vector( const Vector& ) = delete;
-    Vector( Vector&& src ) noexcept
+    tracy_force_inline Vector( Vector&& src ) noexcept
     {
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
     }
 
-    Vector( const T& value )
+    tracy_force_inline Vector( const T& value )
         : m_ptr( new T[1] )
         , m_size( 1 )
         , m_capacity( 0 )
@@ -46,25 +49,25 @@ public:
         m_ptr[0] = value;
     }
 
-    ~Vector()
+    tracy_force_inline ~Vector()
     {
         if( m_capacity != std::numeric_limits<uint8_t>::max() )
         {
             memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
-            delete[] m_ptr;
+            delete[] (T*)m_ptr;
         }
     }
 
     Vector& operator=( const Vector& ) = delete;
-    Vector& operator=( Vector&& src ) noexcept
+    tracy_force_inline Vector& operator=( Vector&& src ) noexcept
     {
-        delete[] m_ptr;
+        delete[] (T*)m_ptr;
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
         return *this;
     }
 
-    void swap( Vector& other )
+    tracy_force_inline void swap( Vector& other )
     {
         std::swap( m_ptr, other.m_ptr );
         std::swap( m_size, other.m_size );
@@ -289,7 +292,7 @@ private:
                     ptr[i] = std::move( m_ptr[i] );
                 }
             }
-            delete[] m_ptr;
+            delete[] (T*)m_ptr;
         }
         m_ptr = ptr;
     }
@@ -304,11 +307,17 @@ private:
         return 1 << m_capacity;
     }
 
+#ifdef TRACY_VECTOR_DEBUG
     T* m_ptr;
+#else
+    short_ptr<T> m_ptr;
+#endif
     uint32_t m_size;
     uint8_t m_capacity;
 };
 #pragma pack()
+
+enum { VectorSize = sizeof( Vector<int> ) };
 
 }
 

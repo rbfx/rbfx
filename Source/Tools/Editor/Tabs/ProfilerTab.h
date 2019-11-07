@@ -42,6 +42,7 @@ public:
     std::unique_ptr<tracy::View> view_;
 #endif
     ea::string connectTo_{"127.0.0.1"};
+    int port_ = 8086;
 };
 
 }

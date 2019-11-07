@@ -5,6 +5,8 @@
 #  pragma warning( disable: 4244 )  // conversion from don't care to whatever, possible loss of data 
 #endif
 
+#include <stdint.h>
+
 #include "../imgui/imgui.h"
 #include "../imgui/imgui_internal.h"
 
@@ -63,6 +65,28 @@ namespace tracy
         auto ret = ImGui::Checkbox( label, var );
         ImGui::PopStyleVar();
         return ret;
+    }
+
+    static inline void SmallColorBox( uint32_t color )
+    {
+        ImGui::PushStyleVar( ImGuiStyleVar_FramePadding, ImVec2( 0, 0 ) );
+        ImGui::ColorButton( "c1", ImVec4( (color & 0xFF) / 255.f, ((color>>8) & 0xFF ) / 255.f, ((color>>16) & 0xFF ) / 255.f, 1.f ), ImGuiColorEditFlags_NoTooltip | ImGuiColorEditFlags_NoDragDrop );
+        ImGui::PopStyleVar();
+    }
+
+    static inline bool ButtonDisablable( const char* label, bool disabled )
+    {
+        if( disabled )
+        {
+            ImGui::PushStyleColor( ImGuiCol_Button, (ImVec4)ImColor( 0.3f, 0.3f, 0.3f, 1.0f ) );
+            ImGui::ButtonEx( label, ImVec2( 0, 0 ), ImGuiButtonFlags_Disabled );
+            ImGui::PopStyleColor( 1 );
+            return false;
+        }
+        else
+        {
+            return ImGui::Button( label );
+        }
     }
 
 }
