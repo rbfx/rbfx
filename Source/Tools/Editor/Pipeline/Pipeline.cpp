@@ -277,7 +277,7 @@ bool Pipeline::ExecuteImport(Asset* asset, Flavor* flavor, PipelineBuildFlags fl
     for (AssetImporter* importer : asset->importers_[SharedPtr(flavor)])
     {
         // Skip optional importers (importing default flavor when editor is running most likely)
-        if (!(flags & PipelineBuildFlag::EXECUTE_OPTIONAL) && importer->IsOptional())
+        if (!(flags & PipelineBuildFlag::EXECUTE_OPTIONAL) && (importer->GetFlags() & AssetImporterFlag::IsOptional))
             continue;
 
         if (!importer->Accepts(asset->GetResourcePath()))
