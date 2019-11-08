@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (MINI_URHO OR WEB OR MOBILE)
+if (MINI_URHO OR WEB)
     return ()
 endif ()
 
@@ -49,17 +49,18 @@ endif ()
 
 if (TARGET libPlayer)
     set_target_properties(libPlayer PROPERTIES PREFIX "")
-    target_include_directories(libPlayer PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 endif ()
 
-target_link_libraries(${PLAYER_TARGET} Urho3D)
+target_link_libraries(${PLAYER_TARGET} PUBLIC Urho3D)
+target_include_directories(${PLAYER_TARGET} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-if (URHO3D_SAMPLES AND NOT BUILD_SHARED_LIBS)
-    target_link_libraries(${PLAYER_TARGET} 103_GamePlugin)
+if (URHO3D_SAMPLES AND URHO3D_PLUGINS AND NOT BUILD_SHARED_LIBS)
+    target_link_libraries(${PLAYER_TARGET} PRIVATE 103_GamePlugin)
 endif ()
 
 install(TARGETS ${PLAYER_TARGET}
     LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
     RUNTIME DESTINATION ${DEST_BIN_DIR}
     ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+    BUNDLE  DESTINATION ${DEST_BIN_DIR}
 )
