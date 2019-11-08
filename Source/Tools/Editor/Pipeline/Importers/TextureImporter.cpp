@@ -91,6 +91,7 @@ const char* TextureImporter::pixelFormatNames[] = {
 TextureImporter::TextureImporter(Context* context)
     : AssetImporter(context)
 {
+    flags_ = AssetImporterFlag::IsOptional | AssetImporterFlag::IsRemapped;
 }
 
 void TextureImporter::RegisterObject(Context* context)
