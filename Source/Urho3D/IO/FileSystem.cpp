@@ -954,7 +954,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
     if (URHO3D_IS_ASSET(path))
     {
         ea::string assetPath(URHO3D_ASSET(path));
-        assetPath.resize(assetPath.length() - 1);       // AssetManager.list() does not like trailing slash
+        assetPath = RemoveTrailingSlash(assetPath);       // AssetManager.list() does not like trailing slash
         int count;
         char** list = SDL_Android_GetFileList(assetPath.c_str(), &count);
         for (int i = 0; i < count; ++i)
