@@ -54,6 +54,10 @@ public:
     StringHash ToHash() const { return StringHash(name_); }
     /// Returns absolute path to cache subdirectory of this flavor.
     const ea::string& GetCachePath() const { return cachePath_; }
+    /// Returns a list of platforms supported by this flavor.
+    const StringVector& GetPlatforms() const { return platforms_; }
+    /// Returns a list of platforms supported by this flavor.
+    StringVector& GetPlatforms() { return platforms_; }
 
     /// Equality operator.
     bool operator ==(const Flavor& rhs) const { return name_ == rhs.name_; }
@@ -70,6 +74,8 @@ protected:
     EngineParametersMap engineParameters_{};
     /// Flag indicating that this flavor is default.
     bool isDefault_ = false;
+    /// A list of platforms on which flavor is to be used. Values may be a result of GetPlatform(). Empty list means no platform restrictions are in place.
+    StringVector platforms_{};
 };
 
 }
