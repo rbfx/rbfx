@@ -306,6 +306,36 @@ void Editor::RenderSettingsWindow()
                                 ui::PopStyleColor();
 
                             ui::Separator();
+
+                            static const ea::string platforms[] = {"Windows", "Linux", "Android", "iOS", "tvOS", "macOS", "Web"};
+                            ea::string platformPreview;
+                            for (const ea::string& platform : flavor->GetPlatforms())
+                            {
+                                platformPreview += platform;
+                                platformPreview += ", ";
+                            }
+                            if (platformPreview.empty())
+                                platformPreview = "Any";
+                            else
+                                platformPreview = platformPreview.substr(0, platformPreview.length() - 2);
+
+                            if (ui::BeginCombo("Available on platforms", platformPreview.c_str()))
+                            {
+                                for (const ea::string& platform : platforms)
+                                {
+                                    bool enabled = flavor->GetPlatforms().contains(platform);
+                                    if (ui::Checkbox(platform.c_str(), &enabled))
+                                    {
+                                        if (enabled)
+                                            flavor->GetPlatforms().push_back(platform);
+                                        else
+                                            flavor->GetPlatforms().erase_first(platform);
+                                    }
+                                }
+                                ImGui::EndCombo();
+                            }
+
+                            ui::Separator();
                             ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
                             ui::TextUnformatted("Engine Settings:");
                             ui::PushID("Engine Settings");

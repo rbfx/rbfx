@@ -456,18 +456,27 @@ bool Pipeline::Serialize(Archive& archive)
             {
                 if (auto block = archive.OpenUnorderedBlock("flavor"))
                 {
+                    // TODO: This sucks. Flavor should serialize itself. Flavor also has many similarities to ApplicationSettings. Can they share some serialization code?
                     Flavor* flavor = nullptr;
                     ea::string flavorName;
+                    StringVector flavorPlatforms;
                     if (!archive.IsInput())
                     {
                         flavor = flavors_[i];
                         flavorName = flavor->GetName();
+                        flavorPlatforms = flavor->GetPlatforms();
                     }
                     if (!SerializeValue(archive, "name", flavorName))
                         return false;
 
+                    // Fine to not exist.
+                    SerializeValue(archive, "platforms", flavorPlatforms);
+
                     if (archive.IsInput())
+                    {
                         flavor = AddFlavor(flavorName);
+                        flavor->GetPlatforms() = flavorPlatforms;
+                    }
 
                     ea::map<ea::string, Variant>& parameters = flavor->GetEngineParameters();
                     if (auto block = archive.OpenMapBlock("settings", parameters.size()))
@@ -557,6 +566,7 @@ bool Pipeline::CookSettings() const
 
     for (Flavor* flavor : GetFlavors())
     {
+        settings.platforms_ = flavor->GetPlatforms();
         settings.engineParameters_.clear();
         if (!flavor->IsDefault())
         {

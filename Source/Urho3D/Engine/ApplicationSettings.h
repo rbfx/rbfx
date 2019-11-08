@@ -45,6 +45,8 @@ public:
     ea::unordered_map<ea::string, Variant> engineParameters_{};
     /// Plugins to be loaded by the player application.
     StringVector plugins_{};
+    /// List on platforms this package is valid on.
+    StringVector platforms_{};
 };
 
 
