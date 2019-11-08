@@ -401,6 +401,13 @@ void Editor::RenderSettingsWindow()
         }
     }
     ui::End();
+
+    if (!settingsOpen_)
+    {
+        // Settings window is closing.
+        if (!project_->GetPipeline()->CookSettings())
+            URHO3D_LOGERROR("Cooking settings failed");
+    }
 }
 
 }
