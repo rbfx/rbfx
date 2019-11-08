@@ -192,7 +192,6 @@ bool Packager::AddFile(const ea::string& root, const ea::string& path)
         logger_.Warning("Skipped empty/missing file '{}'.", fileFullPath);
         return false;
     }
-    entries_.push_back(entry);
 
     unsigned lastOffset = entry.offset_ = output_.GetSize();
 
@@ -219,6 +218,7 @@ bool Packager::AddFile(const ea::string& root, const ea::string& path)
         entry.checksum_ = SDBMHash(entry.checksum_, buffer_[j]);
     }
 
+    entries_.push_back(entry);
     if (!compress_)
     {
         logger_.Info("Added {} size {}", entry.name_, dataSize);
