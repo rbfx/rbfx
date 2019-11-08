@@ -23,51 +23,25 @@
 #pragma once
 
 
-#include <Urho3D/Engine/Application.h>
-#include <Urho3D/Engine/ApplicationSettings.h>
-#include <Urho3D/Engine/PluginApplication.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Urho3D/Scene/Scene.h>
-
-#include "CacheRouter.h"
 
 namespace Urho3D
 {
 
-class Player : public Application
+class CacheRouter : public ResourceRouter
 {
+    URHO3D_OBJECT(CacheRouter, ResourceRouter);
 public:
+    /// Construct.
+    explicit CacheRouter(Context* context);
     ///
-    explicit Player(Context* context);
+    void Route(ea::string& name, ResourceRequest requestType) override;
     ///
-    void Setup() override;
-    ///
-    void Start() override;
-    ///
-    void Stop() override;
+    bool AddPackage(PackageFile* packageFile);
 
-protected:
+private:
     ///
-    virtual bool LoadPlugins(const StringVector& plugins);
-#if URHO3D_PLUGINS
-    ///
-    bool LoadAssembly(const ea::string& path);
-    ///
-    bool RegisterPlugin(PluginApplication* plugin);
-#endif
-
-    struct LoadedModule
-    {
-        SharedPtr<PluginModule> module_;
-        SharedPtr<PluginApplication> application_;
-    };
-
-    ///
-    ApplicationSettings settings_{context_};
-    ///
-    ea::vector<LoadedModule> plugins_;
-    ///
-    CacheRouter cacheRouter_{context_};
+    ea::unordered_map<ea::string, ea::string> mapping_;
 };
 
 }

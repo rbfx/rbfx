@@ -22,6 +22,7 @@
 #if _WIN32
 #   undef GetObject
 #endif
+#include <EASTL/sort.h>
 #include <Urho3D/Core/ProcessUtils.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Engine/EngineDefs.h>
@@ -29,6 +30,7 @@
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Scene/SceneManager.h>
@@ -50,37 +52,98 @@ Player::Player(Context* context)
 
 void Player::Setup()
 {
-#if DESKTOP
     FileSystem* fs = GetFileSystem();
+
+#if MOBILE
+    engineParameters_[EP_RESOURCE_PATHS] = "";
+#else
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = fs->GetProgramDir() + ";" + fs->GetCurrentDir();
 #endif
-    engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
 
-    JSONFile settings(context_);
-#if DESKTOP
-    // Try file in current directory for release builds.
-    // If not found try to load settings of default flavor from cache dir.
-    StringVector tryPrefixes{"", "Cache/"};
-#elif ANDROID
-    // Always load file from root of the apk bundle.
-    StringVector tryPrefixes{APK};
-#else
-    // iOS should load file from root of it's appbundle. FIXME: WebGL untested.
-    StringVector tryPrefixes{""};
-#endif
-    for (const ea::string& prefix : tryPrefixes)
+#if DESKTOP && URHO3D_DEBUG
+    // Developer builds. Try loading from filesystem first.
+    const ea::string settingsFilePath = "Cache/Settings.json";
+    if (GetFileSystem()->Exists(settingsFilePath))
     {
-        ea::string settingsFilePath = Format("{}{}", prefix, "Settings.json");
-        if (!GetFileSystem()->Exists(settingsFilePath))
-            continue;
-        if (settings.LoadFile(settingsFilePath))
+        JSONFile jsonFile(context_);
+        if (jsonFile.LoadFile(settingsFilePath))
         {
-            JSONInputArchive archive(&settings);
+            JSONInputArchive archive(&jsonFile);
             if (settings_.Serialize(archive))
             {
                 for (const auto& pair : settings_.engineParameters_)
                     engineParameters_[pair.first] = pair.second;
+                engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
+                // Unpacked application is executing. Do not attempt to load paks.
+                return;
             }
+        }
+    }
+#endif
+
+    const ea::string defaultPak("Resources-default.pak");
+
+    // 1. Enumerate pak files
+    StringVector pakFiles;
+#if ANDROID
+    const ea::string scanDir = ea::string(APK);
+#else
+    const ea::string scanDir = fs->GetCurrentDir();
+#endif
+    fs->ScanDir(pakFiles, scanDir, "*.pak", SCAN_FILES, false);
+
+    // 2. Sort paks. If something funny happens at least we will have a deterministic behavior.
+    ea::quick_sort(pakFiles.begin(), pakFiles.end());
+
+    // 3. Default pak file goes to the front of the list. It is available on all platforms, but we may desire that platform-specific pak
+    // would override settings defined in main pak.
+    auto it = pakFiles.find(defaultPak);
+    if (it != pakFiles.end())
+    {
+        pakFiles.erase(it);
+        pakFiles.push_front(defaultPak);
+    }
+
+    // 3. Find pak file for current platform
+    for (const ea::string& pakFile : pakFiles)
+    {
+        SharedPtr<PackageFile> package(new PackageFile(context_));
+        if (!package->Open(APK + pakFile))
+        {
+            URHO3D_LOGERROR("Failed to open {}", pakFile);
+            continue;
+        }
+
+        if (!package->Exists("Settings.json"))
+            // Likely a custom pak file from user. User is responsible for loading it.
+            continue;
+
+        SharedPtr<File> file(new File(context_));
+        if (!file->Open(package, "Settings.json"))
+        {
+            URHO3D_LOGERROR("Unable to open Settings.json in {}", pakFile);
+            continue;
+        }
+
+        JSONFile jsonFile(context_);
+        if (!jsonFile.BeginLoad(*file))
+        {
+            URHO3D_LOGERROR("Unable to load Settings.json in {}", pakFile);
+            continue;
+        }
+
+        JSONInputArchive archive(&jsonFile);
+        if (!settings_.Serialize(archive))
+        {
+            URHO3D_LOGERROR("Unable to deserialize Settings.json in {}", pakFile);
+            continue;
+        }
+
+        if (settings_.platforms_.empty() || settings_.platforms_.contains(GetPlatform()))
+        {
+            GetCache()->AddPackageFile(package);
+            for (const auto& pair : settings_.engineParameters_)
+                engineParameters_[pair.first] = pair.second;
         }
     }
 }
@@ -91,7 +154,14 @@ void Player::Start()
     ui::GetIO().IniFilename = nullptr;              // Disable of imgui.ini creation,
 #endif
 
-    GetCache()->AddResourceRouter(new BakedResourceRouter(context_));
+    // Add resource router that maps cooked resources to their original resource names.
+    auto* router = new CacheRouter(context_);
+    for (PackageFile* package : GetCache()->GetPackageFiles())
+    {
+        if (package->Exists("CacheInfo.json"))
+            router->AddPackage(package);
+    }
+    GetCache()->AddResourceRouter(router);
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
@@ -244,27 +314,5 @@ bool Player::RegisterPlugin(PluginApplication* plugin)
     return true;
 }
 #endif
-BakedResourceRouter::BakedResourceRouter(Context* context)
-    : ResourceRouter(context)
-{
-    SharedPtr<JSONFile> file(GetCache()->GetResource<JSONFile>("CacheInfo.json"));
-    if (file)
-    {
-        const auto& info = file->GetRoot().GetObject();
-        for (const auto & it : info)
-        {
-            const JSONArray& files = it.second["files"].GetArray();
-            if (files.size() == 1)
-                routes_[it.first] = files[0].GetString();
-        }
-    }
-}
-
-void BakedResourceRouter::Route(ea::string& name, ResourceRequest requestType)
-{
-    auto it = routes_.find(name);
-    if (it != routes_.end())
-        name = it->second;
-}
 
 }
