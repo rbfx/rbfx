@@ -38,6 +38,9 @@ bool ApplicationSettings::Serialize(Archive& archive)
         if (!archive.Serialize("defaultScene", defaultScene_))
             return false;
 
+        if (!SerializeValue(archive, "platforms", platforms_))
+            return false;
+
         if (auto block = archive.OpenMapBlock("settings", engineParameters_.size()))
         {
             if (archive.IsInput())
