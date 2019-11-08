@@ -144,7 +144,7 @@ Logger::Logger(void* logger)
 {
 }
 
-void Logger::Write(LogLevel level, const ea::string& message)
+void Logger::Write(LogLevel level, const ea::string& message) const
 {
     if (logger_ == nullptr)
         return;
