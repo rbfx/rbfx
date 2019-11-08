@@ -60,14 +60,9 @@ public class UrhoActivity extends SDLActivity {
 
             // Load engine first and player last
             int index = libraryNames.indexOf("Urho3D");
-            libraryNames.add(0, libraryNames.remove(index));
-            index = libraryNames.indexOf("Player");
             if (index >= 0) {
-                libraryNames.add(libraryNames.remove(index));
-            }
-            index = libraryNames.indexOf("Samples");
-            if (index >= 0) {
-                libraryNames.add(libraryNames.remove(index));
+                // Static builds would not contain this library.
+                libraryNames.add(0, libraryNames.remove(index));
             }
             return libraryNames;
         }
