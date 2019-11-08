@@ -97,6 +97,8 @@ public:
     const ea::vector<const TypeInfo*>& GetImporterTypes() const { return importers_; }
     /// Create per-flavor settings files that will be shipped along with the player executable.
     bool CookSettings() const;
+    /// Create per-flavor mappings between source resource names imported names.
+    bool CookCacheInfo() const;
 
 protected:
     /// Watch directory for changed assets and automatically convert them.
