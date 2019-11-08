@@ -602,4 +602,50 @@ bool Pipeline::CookSettings() const
     return true;
 }
 
+bool Pipeline::CookCacheInfo() const
+{
+    for (Flavor* flavor : GetFlavors())
+    {
+        ea::unordered_map<ea::string, ea::string> mapping;
+        for (const ea::pair<ea::string, SharedPtr<Asset>> assetPair : assets_)
+        {
+            Asset* asset = assetPair.second;
+
+            for (AssetImporter* importer : asset->GetImporters(flavor))
+            {
+                if (!(importer->GetFlags() & AssetImporterFlag::IsRemapped))
+                    continue;
+
+                if (importer->GetByproducts().empty())
+                    continue;
+
+                if (importer->GetByproducts().size() > 1)
+                {
+                    logger_.Warning("res://{} importer {} has more than one byproduct and can not be remapped.", asset->GetName(),
+                        importer->GetTypeName());
+                    continue;
+                }
+
+                const ea::string& remapCandidate = importer->GetByproducts().front();
+                if (mapping.contains(asset->name_))
+                {
+                    logger_.Warning("res://{} has a remapping candidate res://{}, but previous res://{} remapping is used.",
+                        asset->GetName(), remapCandidate, mapping[asset->name_]);
+                    continue;
+                }
+
+                mapping[asset->name_] = remapCandidate;
+            }
+        }
+        JSONFile file(context_);
+        JSONOutputArchive archive(&file);
+        if (!SerializeStringMap(archive, "cacheInfo", "map", mapping))
+            return false;
+
+        GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
+        file.SaveFile(Format("{}CacheInfo.json", flavor->GetCachePath(), flavor->GetName()));
+    }
+    return true;
+}
+
 }

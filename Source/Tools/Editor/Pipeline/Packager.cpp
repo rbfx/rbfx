@@ -86,7 +86,7 @@ void Packager::AddAsset(Asset* asset)
 void Packager::Start()
 {
     assert(IsCompleted());
-    filesTotal_ = queuedAssets_.size();
+    filesTotal_ = queuedAssets_.size() + 2;     // CacheInfo.json + Settings.json
 
     if (filesTotal_ == 0)
     {
@@ -110,9 +110,7 @@ void Packager::WritePackage()
 
     auto* project = GetSubsystem<Project>();
     const ea::string& resourcePath = project->GetResourcePath();
-    ea::string cachePath = project->GetCachePath();
-    if (!flavor_->IsDefault())
-        cachePath += AddTrailingSlash(flavor_->GetName());
+    ea::string cachePath = flavor_->GetCachePath();
 
     for (Asset* asset : queuedAssets_)
     {
@@ -137,6 +135,12 @@ void Packager::WritePackage()
 
         filesDone_++;
     }
+
+    // Has to be done here in case any resources were imported during packaging.
+    project->GetPipeline()->CookSettings(); // TODO: Thread safety
+    project->GetPipeline()->CookCacheInfo();// TODO: Thread safety
+    AddFile(cachePath, "CacheInfo.json");   filesDone_++;
+    AddFile(cachePath, "Settings.json");    filesDone_++;
 
     entriesOffset_ = output_.GetSize();
 
