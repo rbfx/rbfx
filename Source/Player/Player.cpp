@@ -165,7 +165,7 @@ bool Player::LoadPlugins(const StringVector& plugins)
 
 #if MOBILE
         // On mobile libraries are loaded already so it is ok to not check for existence, TODO: iOS
-        loaded = LoadAssembly(pluginFileName, PLUGIN_NATIVE);
+        loaded = LoadAssembly(pluginFileName);
 #else
         // On desktop we can access file system as usual
         if (GetFileSystem()->Exists(pluginFileName))
