@@ -273,7 +273,10 @@ void Editor::Start()
                     recents.Resize(10);
             }
             else
+            {
                 CloseProject();
+                URHO3D_LOGERROR("Loading project failed.");
+            }
             pendingOpenProject_.clear();
         }
     });
