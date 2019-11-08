@@ -26,6 +26,8 @@
 namespace Urho3D
 {
 
+const ea::string Flavor::DEFAULT{"default"};
+
 Flavor::Flavor(Urho3D::Context* context)
     : Object(context)
 {
@@ -34,7 +36,7 @@ Flavor::Flavor(Urho3D::Context* context)
 void Flavor::SetName(const ea::string& newName)
 {
     name_ = newName;
-    isDefault_ = newName == DEFAULT_PIPELINE_FLAVOR;
+    isDefault_ = newName == Flavor::DEFAULT;
     cachePath_ = GetSubsystem<Project>()->GetCachePath();
     if (!isDefault_)
         cachePath_ += AddTrailingSlash(newName);

@@ -270,7 +270,7 @@ void Editor::RenderSettingsWindow()
 
                 // Add new flavor
                 ea::string& newFlavorName = *ui::GetUIState<ea::string>();
-                bool canAdd = newFlavorName != DEFAULT_PIPELINE_FLAVOR && !newFlavorName.empty() && pipeline->GetFlavor(newFlavorName) == nullptr;
+                bool canAdd = newFlavorName != Flavor::DEFAULT && !newFlavorName.empty() && pipeline->GetFlavor(newFlavorName) == nullptr;
                 if (!canAdd)
                     ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
                 bool addNew = ui::InputText("Flavor Name", &newFlavorName, ImGuiInputTextFlags_EnterReturnsTrue);
@@ -291,7 +291,7 @@ void Editor::RenderSettingsWindow()
                         bool isOpen = true;
                         if (ui::BeginTabItem(flavor->GetName().c_str(), &isOpen, flavor->IsDefault() ? ImGuiTabItemFlags_NoCloseButton | ImGuiTabItemFlags_NoCloseWithMiddleMouseButton : 0))
                         {
-                            bool canRename = editBuffer != DEFAULT_PIPELINE_FLAVOR && !editBuffer.empty() && pipeline->GetFlavor(editBuffer) == nullptr;
+                            bool canRename = editBuffer != Flavor::DEFAULT && !editBuffer.empty() && pipeline->GetFlavor(editBuffer) == nullptr;
                             if (flavor->IsDefault() || !canRename)
                                 ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
 

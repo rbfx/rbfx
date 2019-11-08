@@ -194,7 +194,7 @@ Flavor* Pipeline::AddFlavor(const ea::string& name)
 
 bool Pipeline::RemoveFlavor(const ea::string& name)
 {
-    if (name == DEFAULT_PIPELINE_FLAVOR)
+    if (name == Flavor::DEFAULT)
         return false;
 
     auto it = ea::find(flavors_.begin(), flavors_.end(), name, [](const Flavor* flavor, const ea::string& name) {
@@ -216,7 +216,7 @@ bool Pipeline::RemoveFlavor(const ea::string& name)
 
 bool Pipeline::RenameFlavor(const ea::string& oldName, const ea::string& newName)
 {
-    if (oldName == DEFAULT_PIPELINE_FLAVOR || newName == DEFAULT_PIPELINE_FLAVOR)
+    if (oldName == Flavor::DEFAULT || newName == Flavor::DEFAULT)
         return false;
 
     auto it = ea::find(flavors_.begin(), flavors_.end(), oldName, [](const Flavor* flavor, const ea::string& name) {
@@ -502,8 +502,8 @@ bool Pipeline::Serialize(Archive& archive)
     // Add default flavor if:
     // * This is a new proejct and no flavors were loaded from project file.
     // * User modified project file and renamed default flavor to something else.
-    if (archive.IsInput() && (flavors_.empty() || GetDefaultFlavor()->GetName() != DEFAULT_PIPELINE_FLAVOR))
-        AddFlavor(DEFAULT_PIPELINE_FLAVOR);
+    if (archive.IsInput() && (flavors_.empty() || GetDefaultFlavor()->GetName() != Flavor::DEFAULT))
+        AddFlavor(Flavor::DEFAULT);
 
     return true;
 }
@@ -512,7 +512,7 @@ void Pipeline::SortFlavors()
 {
     if (flavors_.size() < 2)
         return;
-    auto it = ea::find(flavors_.begin(), flavors_.end(), DEFAULT_PIPELINE_FLAVOR, [](const Flavor* flavor, const ea::string& name) {
+    auto it = ea::find(flavors_.begin(), flavors_.end(), Flavor::DEFAULT, [](const Flavor* flavor, const ea::string& name) {
         return flavor->GetName() == name;
     });
     if (it != flavors_.end())
