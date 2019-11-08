@@ -118,20 +118,20 @@ public:
     Logger() = default;
     Logger(const Logger& other) = default;
     ///
-    template<typename... Args> void Trace(const char* format, Args... args)   { Write(LOG_TRACE, format, args...); }
-    template<typename... Args> void Debug(const char* format, Args... args)   { Write(LOG_DEBUG, format, args...); }
-    template<typename... Args> void Info(const char* format, Args... args)    { Write(LOG_INFO, format, args...); }
-    template<typename... Args> void Warning(const char* format, Args... args) { Write(LOG_WARNING, format, args...); }
-    template<typename... Args> void Error(const char* format, Args... args)   { Write(LOG_ERROR, format, args...); }
-    template<typename... Args> void Write(LogLevel level, const char* format, Args... args) { Write(level, Format(format, args...)); }
+    template<typename... Args> void Trace(const char* format, Args... args) const   { Write(LOG_TRACE, format, args...); }
+    template<typename... Args> void Debug(const char* format, Args... args) const   { Write(LOG_DEBUG, format, args...); }
+    template<typename... Args> void Info(const char* format, Args... args) const    { Write(LOG_INFO, format, args...); }
+    template<typename... Args> void Warning(const char* format, Args... args) const { Write(LOG_WARNING, format, args...); }
+    template<typename... Args> void Error(const char* format, Args... args) const   { Write(LOG_ERROR, format, args...); }
+    template<typename... Args> void Write(LogLevel level, const char* format, Args... args) const { Write(level, Format(format, args...)); }
 
-    template<typename... Args> void Trace(const ea::string& message)   { Write(LOG_TRACE, message.c_str()); }
-    template<typename... Args> void Debug(const ea::string& message)   { Write(LOG_DEBUG, message.c_str()); }
-    template<typename... Args> void Info(const ea::string& message)    { Write(LOG_INFO, message.c_str()); }
-    template<typename... Args> void Warning(const ea::string& message) { Write(LOG_WARNING, message.c_str()); }
-    template<typename... Args> void Error(const ea::string& message)   { Write(LOG_ERROR, message.c_str()); }
+    template<typename... Args> void Trace(const ea::string& message) const   { Write(LOG_TRACE, message.c_str()); }
+    template<typename... Args> void Debug(const ea::string& message) const   { Write(LOG_DEBUG, message.c_str()); }
+    template<typename... Args> void Info(const ea::string& message) const    { Write(LOG_INFO, message.c_str()); }
+    template<typename... Args> void Warning(const ea::string& message) const { Write(LOG_WARNING, message.c_str()); }
+    template<typename... Args> void Error(const ea::string& message) const   { Write(LOG_ERROR, message.c_str()); }
 
-    void Write(LogLevel level, const ea::string& message);
+    void Write(LogLevel level, const ea::string& message) const;
 
 protected:
     /// Instance of spdlog logger.
