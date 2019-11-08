@@ -108,10 +108,11 @@ endif ()
 add_library(Urho3D ${SOURCE_FILES} ${HEADER_FILES} $<$<CXX_COMPILER_ID:MSVC>:${rbfx_SOURCE_DIR}/script/rbfx.natvis>)
 target_include_directories(Urho3D PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/..>        # For parent projects to find auto-generated engine headers
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>           # Misc configured headers
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>> # Urho3D.h
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/..>        # For parent projects to find engine headers
     $<INSTALL_INTERFACE:${DEST_BASE_INCLUDE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
-    PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>
 )
 
 # Add any variables starting with URHO3D_ as project defines
@@ -127,7 +128,7 @@ endforeach()
 if (MINI_URHO)
     target_compile_definitions(Urho3D PUBLIC -DMINI_URHO)
 endif ()
-target_compile_definitions(Urho3D PUBLIC -DNOMINMAX)
+target_compile_definitions(Urho3D PUBLIC -DNOMINMAX -DURHO3D_DEBUG=$<OR:$<CONFIG:Debug>,$<CONFIG:RelWithDebInfo>>)
 
 # Set platform definitions
 foreach(def LINUX ANDROID IOS APPLE MACOS MOBILE DESKTOP)
@@ -489,5 +490,10 @@ string (REGEX REPLACE "([^=]+)=([^;]+);" "#ifndef \\1\n#   define \\1 \\2\n#endi
 # This will be commented out line in the header.
 list (INSERT URHO3D_ENGINE_CONFIG 0 "Engine configuration")
 string (REPLACE ";" "\n" URHO3D_ENGINE_CONFIG "${URHO3D_ENGINE_CONFIG}")
-configure_file (${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h @ONLY)
-install (FILES ${CMAKE_CURRENT_BINARY_DIR}/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
+file (READ ${CMAKE_CURRENT_SOURCE_DIR}/Urho3D.h URHO3D_H_DATA)
+string (REPLACE "@URHO3D_ENGINE_CONFIG@" "${URHO3D_ENGINE_CONFIG}" URHO3D_H_DATA "${URHO3D_H_DATA}")
+foreach (config Debug RelWithDebInfo Release MinSizeRel)
+    file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/${config})
+endforeach ()
+file (GENERATE OUTPUT ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h CONTENT ${URHO3D_H_DATA})
+install (FILES ${CMAKE_CURRENT_BINARY_DIR}/$<CONFIG>/Urho3D.h DESTINATION ${DEST_INCLUDE_DIR})
