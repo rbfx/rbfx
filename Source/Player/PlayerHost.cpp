@@ -38,7 +38,7 @@ public:
     /// Extend initialization of player application.
     void Start() override
     {
-#if URHO3D_SAMPLES && URHO3D_STATIC
+#if URHO3D_PLUGINS && URHO3D_SAMPLES && URHO3D_STATIC
         // Static plugins must be initialized manually.
         SubscribeToEvent(E_REGISTERSTATICPLUGINS, [this](StringHash, VariantMap&) {
             RegisterPlugin(new GamePlugin(context_));
