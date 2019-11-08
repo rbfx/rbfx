@@ -33,6 +33,17 @@ namespace Urho3D
 class Asset;
 class Flavor;
 
+enum class AssetImporterFlag : unsigned
+{
+    /// No custom behavior.
+    Default = 0,
+    /// Optional importers are not required to run during editor session as their byproducts are not important for development process.
+    IsOptional = 1u << 1u,
+    /// Remapped importers produce a single byproduct with a different name than source file, but we want to refer to this byproduct using original name.
+    IsRemapped = 1u << 2u,
+};
+URHO3D_FLAGSET(AssetImporterFlag, AssetImporterFlags);
+
 /// A base class for all asset importers. Classes that inherit from this class must be added to Pipeline::importers_ list.
 class AssetImporter : public Serializable, public IInspectorProvider
 {
@@ -48,8 +59,8 @@ public:
     virtual bool Execute(Urho3D::Asset* input, const ea::string& outputPath);
     ///
     bool Serialize(Archive& archive, ArchiveBlock& block);
-    /// Returns true when importer is not required to run during editing session.
-    bool IsOptional() const { return isOptional_; }
+    /// Returns flags of this importer.
+    AssetImporterFlags GetFlags() const { return flags_; }
     /// Returns true when settings of this importer were modified by the user.
     bool IsModified() const;
     /// Source asset file change, importer settings modification or lack of artifacts are some of conditions that prompt return of true value.
@@ -93,7 +104,7 @@ protected:
     AttributeInspector inspector_{context_};
     /// Flag indicating that project may function without running this importer.
     /// For example project may skip texture compression and load uncompressed textures.
-    bool isOptional_ = false;
+    AssetImporterFlags flags_{};
     /// Map attribute name hashes to bool value that signifies whether user has explicitly modified this attribute.
     ea::unordered_map<StringHash, bool> isAttributeSet_{};
     /// A hash of all attribute values as seen during last execution of AssetImporter::Execute().

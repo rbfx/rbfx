@@ -37,7 +37,7 @@ SceneConverter::SceneConverter(Context* context)
     : AssetImporter(context)
 {
     // Binary scenes are used for shipping only.
-    isOptional_ = true;
+    flags_ = AssetImporterFlag::IsOptional | AssetImporterFlag::IsRemapped;
 }
 
 void SceneConverter::RegisterObject(Context* context)
