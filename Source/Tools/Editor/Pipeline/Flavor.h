@@ -30,8 +30,6 @@
 namespace Urho3D
 {
 
-static const ea::string DEFAULT_PIPELINE_FLAVOR{"default"};
-
 class Flavor : public Object
 {
     URHO3D_OBJECT(Flavor, Object);
@@ -60,13 +58,16 @@ public:
     /// Equality operator.
     bool operator ==(const Flavor& rhs) const { return name_ == rhs.name_; }
 
+    /// Name of default pipeline flavor. This flavor always exists and is used by editor.
+    static const ea::string DEFAULT;
+
 protected:
     /// Flavor name.
     ea::string name_{};
     /// Absolute path to cache subdirectory of this flavor.
     ea::string cachePath_{};
     /// Engine parameters specific to this flavor. Player will fill Application::engineParameters_ with these values.
-    EngineParametersMap engineParameters_;
+    EngineParametersMap engineParameters_{};
     /// Flag indicating that this flavor is default.
     bool isDefault_ = false;
 };
