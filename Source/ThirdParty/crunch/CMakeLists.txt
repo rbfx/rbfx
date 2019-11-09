@@ -29,11 +29,6 @@ if (NOT URHO3D_TOOLS)
     return ()
 endif ()
 
-if (APPLE)
-    message(WARNING "TODO: crunch does not build on MacOS")
-    return ()
-endif ()
-
 file (GLOB CRNLIB_SOURCE_FILES crnlib/*.cpp crnlib/*.h include/crunch/*.h include/crunch/*.hpp)
 foreach (path ${CRNLIB_SOURCE_FILES})
     if (WIN32)
