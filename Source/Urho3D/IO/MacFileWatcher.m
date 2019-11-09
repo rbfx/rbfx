@@ -136,19 +136,19 @@ static void CallbackFunction(ConstFSEventStreamRef streamRef, void* clientCallBa
         {
             if (flags & kFSEventStreamEventFlagItemCreated)
             {
-                [watcher addChange:[0 fileName]];
+                [watcher addChange:0 recursive:fileName];
             }
             else if (flags & kFSEventStreamEventFlagItemModified)
             {
-                [watcher addChange:[3 fileName]];
+                [watcher addChange:3 recursive:fileName];
             }
             else if (flags & kFSEventStreamEventFlagItemRenamed)
             {
-                [watcher addChange:[2 fileName]];
+                [watcher addChange:2 recursive:fileName];
             }
             else if (flags & kFSEventStreamEventFlagItemRemoved)
             {
-                [watcher addChange:[1 fileName]];
+                [watcher addChange:1 recursive:fileName];
             }
         }
     }
