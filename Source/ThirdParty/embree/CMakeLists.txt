@@ -81,7 +81,8 @@ MARK_AS_ADVANCED(CLEAR CMAKE_CXX_COMPILER)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/common/cmake ${CMAKE_MODULE_PATH})
 
-INCLUDE(test)
+# Urho3D: Disable redundat things
+# INCLUDE(test)
 
 ##############################################################
 # Embree configuration
@@ -504,3 +505,8 @@ SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
 # Has to be last
 ##############################################################
 INCLUDE(CPack)
+
+# Urho3D: Install headers
+target_include_directories(embree PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+)

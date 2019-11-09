@@ -176,7 +176,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
         // Copy faces
         GeometryLODView& newGeometry = newGeometries[geometryIndex].lods_[lod];
-        newGeometry.faces_.push_back({ { map0.index_, map1.index_, map2.index_ } });
+        newGeometry.faces_.push_back(ModelFace{ { map0.index_, map1.index_, map2.index_ } });
     }
 
     // Build vertex format
