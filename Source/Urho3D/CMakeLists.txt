@@ -65,6 +65,10 @@ if (NOT MINI_URHO)
     endif ()
 endif ()
 
+if (URHO3D_GLOW)
+    define_engine_source_files (GLOW)
+endif ()
+
 if (URHO3D_IK)
     define_engine_source_files (IK)
 endif ()
@@ -174,6 +178,7 @@ set (THIRD_PARTY_DEPENDENCIES
     entt
     ETCPACK
     libthekla_atlas
+    embree
 )
 
 if (URHO3D_MERGE_STATIC_LIBS)
