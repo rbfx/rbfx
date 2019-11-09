@@ -75,6 +75,7 @@ void Player::Setup()
                     engineParameters_[pair.first] = pair.second;
                 engineParameters_[EP_RESOURCE_PATHS] = "Cache;Resources";
                 // Unpacked application is executing. Do not attempt to load paks.
+                URHO3D_LOGINFO("This is a developer build executing unpacked application.");
                 return;
             }
         }
@@ -83,7 +84,7 @@ void Player::Setup()
 
     const ea::string defaultPak("Resources-default.pak");
 
-    // 1. Enumerate pak files
+    // Enumerate pak files
     StringVector pakFiles;
 #if ANDROID
     const ea::string scanDir = ea::string(APK);
@@ -92,10 +93,10 @@ void Player::Setup()
 #endif
     fs->ScanDir(pakFiles, scanDir, "*.pak", SCAN_FILES, false);
 
-    // 2. Sort paks. If something funny happens at least we will have a deterministic behavior.
+    // Sort paks. If something funny happens at least we will have a deterministic behavior.
     ea::quick_sort(pakFiles.begin(), pakFiles.end());
 
-    // 3. Default pak file goes to the front of the list. It is available on all platforms, but we may desire that platform-specific pak
+    // Default pak file goes to the front of the list. It is available on all platforms, but we may desire that platform-specific pak
     // would override settings defined in main pak.
     auto it = pakFiles.find(defaultPak);
     if (it != pakFiles.end())
@@ -104,7 +105,7 @@ void Player::Setup()
         pakFiles.push_front(defaultPak);
     }
 
-    // 3. Find pak file for current platform
+    // Find pak file for current platform
     for (const ea::string& pakFile : pakFiles)
     {
         SharedPtr<PackageFile> package(new PackageFile(context_));
@@ -139,8 +140,12 @@ void Player::Setup()
             continue;
         }
 
+        // Empty platforms list means pak is meant for all platforms.
         if (settings_.platforms_.empty() || settings_.platforms_.contains(GetPlatform()))
         {
+            // Paks are manually added here in order to avoid modifying EP_RESOURCE_PACKAGES value. User may specify this configuration
+            // parameter to load any custom paks if desired. Engine will add them later. Besides we already had to to open and parse package
+            // in order to find Settings.json. By adding paks now we avoid engine doing all the loading same file twice.
             GetCache()->AddPackageFile(package);
             for (const auto& pair : settings_.engineParameters_)
                 engineParameters_[pair.first] = pair.second;
@@ -166,12 +171,15 @@ void Player::Start()
     context_->RegisterSubsystem(new SceneManager(context_));
 
 #if URHO3D_STATIC
+    // Static builds require user to manually register plugins by subclassing Player class.
     SendEvent(E_REGISTERSTATICPLUGINS);
 #else
+    // Shared builds load plugin .so/.dll specified in config file.
     if (!LoadPlugins(settings_.plugins_))
         ErrorExit("Loading of required plugins failed.");
 #endif
 #if URHO3D_CSHARP && URHO3D_PLUGINS
+    // Internal plugin which handles complication of *.cs source code in resource path.
     RegisterPlugin(Script::GetRuntimeApi()->CompileResourceScriptPlugin());
 #endif
 
@@ -214,7 +222,6 @@ void Player::Stop()
     for (LoadedModule& plugin : plugins_)
         Script::GetRuntimeApi()->DereferenceAndDispose(plugin.application_.Detach());
 #endif
-
 }
 
 bool Player::LoadPlugins(const StringVector& plugins)
@@ -227,7 +234,7 @@ bool Player::LoadPlugins(const StringVector& plugins)
         bool loaded = false;
 #if !_WIN32
         // Native plugins on unixes
-#if __linux__
+#if LINUX
         pluginFileName = "lib" + pluginName + ".so";
 #elif APPLE
         pluginFileName = "lib" + pluginName + ".dylib";
