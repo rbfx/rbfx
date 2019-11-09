@@ -32,8 +32,8 @@ SOURCE_GROUP("Source Files\\algorithms" "/algorithms/")
 SOURCE_GROUP("" FILES embree.rc)
 
 SET(EMBREE_LIBRARY_FILES
- 
-  embree.rc
+
+  #embree.rc # Urho3D: Get rid of this thing
 
   common/device.cpp
   common/stat.cpp
@@ -351,3 +351,8 @@ IF (NOT EMBREE_STATIC_LIB)
 ENDIF()
 
 SIGN_TARGET(embree)
+
+# Urho3D: Install targets
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS embree EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
