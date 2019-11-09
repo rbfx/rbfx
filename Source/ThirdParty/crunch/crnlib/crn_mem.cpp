@@ -1,13 +1,13 @@
 // File: crn_mem.cpp
 // See Copyright Notice and license at the end of inc/crnlib.h
-#include "crn_core.h"
-#include "crn_console.h"
-#include "crunch/crnlib.h"
-#if __APPLE__
+#if __APPLE__   // rbfx
 #include <malloc/malloc.h>
 #else
 #include <malloc.h>
 #endif
+#include "crn_core.h"
+#include "crn_console.h"
+#include "crunch/crnlib.h"
 #if CRNLIB_USE_WIN32_API
 #include "crn_winhdr.h"
 #endif
@@ -60,6 +60,15 @@ static mem_stat_t update_total_allocated(int block_delta, mem_stat_t byte_delta)
 }
 #endif  // CRNLIB_MEM_STATS
 
+static size_t crnlib_default_msize(void* p, void*) {
+#ifdef WIN32
+    return p ? _msize(p) : 0;
+#elif __APPLE__ // rbfx
+    return p ? malloc_size(p) : 0;
+#else
+    return p ? malloc_usable_size(p) : 0;
+#endif
+}
 static void* crnlib_default_realloc(void* p, size_t size, size_t* pActual_size, bool movable, void*) {
   void* p_new;
 
@@ -72,7 +81,7 @@ static void* crnlib_default_realloc(void* p, size_t size, size_t* pActual_size, 
     }
 
     if (pActual_size)
-      *pActual_size = p_new ? ::_msize(p_new) : 0;
+      *pActual_size = crnlib_default_msize(p_new, 0);    // rbfx
   } else if (!size) {
     ::free(p);
     p_new = NULL;
@@ -102,14 +111,10 @@ static void* crnlib_default_realloc(void* p, size_t size, size_t* pActual_size, 
     }
 
     if (pActual_size)
-      *pActual_size = ::_msize(p_final_block);
+      *pActual_size = crnlib_default_msize(p_final_block, 0);    // rbfx
   }
 
   return p_new;
-}
-
-static size_t crnlib_default_msize(void* p, void*) {
-  return p ? _msize(p) : 0;
 }
 
 static crn_realloc_func g_pRealloc = crnlib_default_realloc;

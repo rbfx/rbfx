@@ -11,8 +11,20 @@
 #include "crn_winhdr.h"
 #endif
 
-#ifdef __GNUC__
+#ifdef __linux__
 #include <sys/sysinfo.h>
+#elif __APPLE__
+#include <sys/sysctl.h>
+// rbfx
+static int get_nprocs()
+{
+    int num_cpus;
+    size_t len = sizeof(num_cpus);
+    int name[2] = {CTL_HW, HW_NCPU};
+    if (sysctl(name, 2, &num_cpus, &len, NULL, 0) != 0)
+        return 1;
+    return num_cpus;
+}
 #endif
 
 #ifdef WIN32
@@ -36,7 +48,7 @@ void crn_threading_init() {
 
 crn_thread_id_t crn_get_current_thread_id() {
   // FIXME: Not portable
-  return static_cast<crn_thread_id_t>(pthread_self());
+  return (crn_thread_id_t)pthread_self();    // rbfx
 }
 
 void crn_sleep(unsigned int milliseconds) {
@@ -144,7 +156,98 @@ void semaphore::try_release(long releaseCount) {
   }
 #endif
 }
+#ifdef __APPLE__
+// rbfx
+// Author: CubicleSoft
+// License: MIT (as stated by the author)
+// Source: https://stackoverflow.com/a/37324520
+#include <sys/signal.h>
+struct CSGX__sem_timedwait_Info
+{
+    pthread_mutex_t MxMutex;
+    pthread_cond_t MxCondition;
+    pthread_t MxParent;
+    struct timespec MxTimeout;
+    bool MxSignaled;
+};
 
+void *CSGX__sem_timedwait_Child(void *MainPtr)
+{
+    CSGX__sem_timedwait_Info *TempInfo = (CSGX__sem_timedwait_Info *)MainPtr;
+
+    pthread_mutex_lock(&TempInfo->MxMutex);
+
+    // Wait until the timeout or the condition is signaled, whichever comes first.
+    int Result;
+    do
+    {
+        Result = pthread_cond_timedwait(&TempInfo->MxCondition, &TempInfo->MxMutex, &TempInfo->MxTimeout);
+        if (!Result)  break;
+    } while (1);
+    if (errno == ETIMEDOUT && !TempInfo->MxSignaled)
+    {
+        TempInfo->MxSignaled = true;
+        pthread_kill(TempInfo->MxParent, SIGALRM);
+    }
+
+    pthread_mutex_unlock(&TempInfo->MxMutex);
+
+    return NULL;
+}
+
+int sem_timedwait(sem_t *sem, const struct timespec *abs_timeout)
+{
+    // Quick test to see if a lock can be immediately obtained.
+    int Result;
+
+    do
+    {
+        Result = sem_trywait(sem);
+        if (!Result)  return 0;
+    } while (Result < 0 && errno == EINTR);
+
+    // Since it couldn't be obtained immediately, it is time to shuttle the request off to a thread.
+    // Depending on the timeout, this could take longer than the timeout.
+    CSGX__sem_timedwait_Info TempInfo;
+
+    pthread_mutex_init(&TempInfo.MxMutex, NULL);
+    pthread_cond_init(&TempInfo.MxCondition, NULL);
+    TempInfo.MxParent = pthread_self();
+    TempInfo.MxTimeout.tv_sec = abs_timeout->tv_sec;
+    TempInfo.MxTimeout.tv_nsec = abs_timeout->tv_nsec;
+    TempInfo.MxSignaled = false;
+
+    void(*OldSigHandler)(int) = signal(SIGALRM, SIG_DFL);
+
+    pthread_t ChildThread;
+    pthread_create(&ChildThread, NULL, CSGX__sem_timedwait_Child, &TempInfo);
+
+    // Wait for the semaphore, the timeout to expire, or an unexpected error condition.
+    do
+    {
+        Result = sem_wait(sem);
+        if (Result == 0 || TempInfo.MxSignaled || (Result < 0 && errno != EINTR))  break;
+    } while (1);
+
+    // Terminate the thread (if it is still running).
+    TempInfo.MxSignaled = true;
+    int LastError = errno;
+
+    pthread_mutex_lock(&TempInfo.MxMutex);
+    pthread_cond_signal(&TempInfo.MxCondition);
+    pthread_mutex_unlock(&TempInfo.MxMutex);
+    pthread_join(ChildThread, NULL);
+    pthread_cond_destroy(&TempInfo.MxCondition);
+    pthread_mutex_destroy(&TempInfo.MxMutex);
+
+    // Restore previous signal handler.
+    signal(SIGALRM, OldSigHandler);
+
+    errno = LastError;
+
+    return Result;
+}
+#endif
 bool semaphore::wait(uint32 milliseconds) {
   int status;
   if (milliseconds == cUINT32_MAX) {
