@@ -39,6 +39,12 @@ if (NOT MINI_URHO)
     endforeach()
 endif ()
 
+foreach (feature ${URHO3D_FEATURES})
+    set (URHO3D_${feature} ON)
+endforeach()
+
+include(CMakeDependentOption)
+
 # Define an _option or dependent _option if it's value is not defined yet.
 macro(_option VAR DESCRIPTION VALUE)
     if (NOT DEFINED ${VAR})
@@ -80,8 +86,6 @@ if ((WIN32 OR LINUX OR MACOS) AND NOT WEB AND NOT MOBILE)
     set (DESKTOP ON CACHE BOOL "" FORCE)
 endif ()
 
-include(CMakeDependentOption)
-
 # Build properties
 _option(BUILD_SHARED_LIBS                        "Build engine as shared library."       ON)
 _option(URHO3D_ENABLE_ALL                        "Enable (almost) all engine features."  ON)
@@ -120,8 +124,8 @@ _option2(EMSCRIPTEN_MEMORY_GROWTH "Allow memory growth. Disables some optimizati
 set(EMSCRIPTEN_MEMORY_LIMIT 128 CACHE STRING "Memory limit in megabytes. Set to 0 for dynamic growth.")
 
 # Misc
-_option2(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
-_option2(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "NOT WEB AND NOT MOBILE"        OFF)
+_option2(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE"            OFF)
+_option2(URHO3D_TOOLS             "Tools enabled"                                         ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE"            OFF)
 _option(URHO3D_SAMPLES            "Build samples"                                         OFF)
 _option(URHO3D_DOCS               "Build documentation."                                  OFF)
 _option2(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
@@ -169,10 +173,6 @@ if (WEB AND BUILD_SHARED_LIBS)
     set (BUILD_SHARED_LIBS OFF)
     message(WARNING "Shared builds unsupported when compiling with emscripten")     # For now.
 endif ()
-
-foreach (feature ${URHO3D_FEATURES})
-    set (URHO3D_${feature} ON)
-endforeach()
 
 if (ANDROID)
     set (SDL_CPUINFO ON)
