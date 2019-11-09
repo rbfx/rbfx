@@ -1918,6 +1918,18 @@ void crnd_output_debug_string(const char* p) {
 namespace crnd {
 const uint32 MAX_POSSIBLE_BLOCK_SIZE = 0x7FFF0000U;
 
+// rbfx
+static size_t crnd_default_msize(void* p, void* pUser_data) {
+  pUser_data;
+#ifdef WIN32
+  return p ? _msize(p) : 0;
+#elif __APPLE__
+  return p ? malloc_size(p) : 0;
+#else
+  return p ? malloc_usable_size(p) : 0;
+#endif
+}
+
 static void* crnd_default_realloc(void* p, size_t size, size_t* pActual_size, bool movable, void*) {
   void* p_new;
 
@@ -1925,11 +1937,7 @@ static void* crnd_default_realloc(void* p, size_t size, size_t* pActual_size, bo
     p_new = ::malloc(size);
 
     if (pActual_size) {
-#ifdef WIN32
-      *pActual_size = p_new ? ::_msize(p_new) : 0;
-#else
-      *pActual_size = p_new ? malloc_usable_size(p_new) : 0;
-#endif
+      *pActual_size = crnd_default_msize(p_new, 0);    // rbfx
     }
   } else if (!size) {
     ::free(p);
@@ -1955,24 +1963,11 @@ static void* crnd_default_realloc(void* p, size_t size, size_t* pActual_size, bo
     }
 
     if (pActual_size) {
-#ifdef WIN32
-      *pActual_size = ::_msize(p_final_block);
-#else
-      *pActual_size = ::malloc_usable_size(p_final_block);
-#endif
+      *pActual_size = crnd_default_msize(p_final_block, 0);    // rbfx
     }
   }
 
   return p_new;
-}
-
-static size_t crnd_default_msize(void* p, void* pUser_data) {
-  pUser_data;
-#ifdef WIN32
-  return p ? _msize(p) : 0;
-#else
-  return p ? malloc_usable_size(p) : 0;
-#endif
 }
 
 static crnd_realloc_func g_pRealloc = crnd_default_realloc;
