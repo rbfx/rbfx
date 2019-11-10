@@ -811,7 +811,7 @@ void Engine::ApplyFrameLimit()
     if (lastTimeSteps_.size() > timeStepSmoothing_)
     {
         // If the smoothing configuration was changed, ensure correct amount of samples
-        lastTimeSteps_.erase_at(0, lastTimeSteps_.size() - timeStepSmoothing_);
+        lastTimeSteps_.erase_at(0, timeStepSmoothing_);
         for (unsigned i = 0; i < lastTimeSteps_.size(); ++i)
             timeStep_ += lastTimeSteps_[i];
         timeStep_ /= lastTimeSteps_.size();
