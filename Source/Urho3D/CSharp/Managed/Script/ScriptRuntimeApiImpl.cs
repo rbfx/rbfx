@@ -136,9 +136,10 @@ namespace Urho3DNet
                     if (!compileFromText)
                     {
                         string path = Context.Instance.Cache.GetResourceFileName(fileName);
-                        path = Urho3D.GetAbsolutePath(path);
-                        path = Urho3D.GetNativePath(path);
-                        sourceFiles.Add(path);
+                      //  path = Urho3D.GetAbsolutePath(path);
+                      //  path = Urho3D.GetNativePath(path);
+                      //  sourceFiles.Add(path);
+                       sourceFiles.Add(Urho3D.GetNativePath(path));
                     }
                 }
             }
