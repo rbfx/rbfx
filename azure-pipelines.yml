@@ -146,7 +146,7 @@ jobs:
     variables:
         BUILD_SHARED_LIBS: OFF
         URHO3D_CSHARP: OFF
-        CMAKE_GENERATE_ARGS: -G Xcode -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake -DPLATFORM=SIMULATOR64 -DIOS=ON
+        CMAKE_GENERATE_ARGS: -G Xcode -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake -DPLATFORM=SIMULATOR64
 
     steps:
       - template: .ci/build.yml
