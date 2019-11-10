@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_CSHARP)
+if (NOT URHO3D_CSHARP OR NOT URHO3D_PLUGINS)
     return ()
 endif ()
 
