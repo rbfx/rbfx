@@ -71,7 +71,7 @@
 #if _WIN32
 #   include <Urho3D/WindowsSupport.h>
 #endif
-#include <Urho3D/Urho3DAll.h>
+#include <Urho3D/Urho3DAll.h>   // If this include is missing please build with -DURHO3D_MONOLITHIC_HEADER=ON
 #include <SDL/SDL_joystick.h>
 #include <SDL/SDL_gamecontroller.h>
 #include <SDL/SDL_keycode.h>
