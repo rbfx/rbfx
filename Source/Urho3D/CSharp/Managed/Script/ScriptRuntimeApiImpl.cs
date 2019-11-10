@@ -119,66 +119,87 @@ namespace Urho3DNet
 
         public override PluginApplication CompileResourceScriptPlugin()
         {
-            var sourceCode = new List<string>();
-            var scriptFiles = new StringList();
-            Context.Instance.Cache.Scan(scriptFiles, "", "*.cs", Urho3D.ScanFiles, true);
-            foreach (string fileName in scriptFiles)
-                sourceCode.Add(Context.Instance.Cache.GetResourceFileName(fileName));
-
-            Assembly compiledAssembly = null;
-            if (sourceCode.Count > 0)
+            var scriptRsrcs = new StringList();
+            var scriptCodes = new List<string>();
+            var sourceFiles = new List<string>();
+            bool compileFromText = false;
+            Context.Instance.Cache.Scan(scriptRsrcs, "", "*.cs", Urho3D.ScanFiles, true);
+            foreach (string fileName in scriptRsrcs)
             {
-                var csc = new CSharpCodeProvider();
-                var compileParameters = new CompilerParameters(new[] // TODO: User may need to extend this list
+                using (var file = Context.Instance.Cache.GetFile(fileName))
                 {
-                    "mscorlib.dll",
-                    "System.dll",
-                    "System.Core.dll",
-                    "System.Data.dll",
-                    "System.Drawing.dll",
-                    "System.Numerics.dll",
-                    "System.Runtime.Serialization.dll",
-                    "System.Xml.dll",
-                    "System.Xml.Linq.dll",
-                    "Urho3DNet.dll",
-                })
-                {
-                    GenerateExecutable = false,
-                    GenerateInMemory = true,
-                    TreatWarningsAsErrors = false,
-                };
-
-                CompilerResults results = csc.CompileAssemblyFromFile(compileParameters, sourceCode.ToArray());
-                if (results.Errors.HasErrors)
-                {
-                    foreach (CompilerError error in results.Errors)
+                    // Gather both paths and code text here. If scripts are packaged we must compile them from
+                    // text form. However if we are running a development version of application we prefer to
+                    // compile scripts directly from file because then we get proper error locations.
+                    compileFromText |= file.IsPackaged();
+                    scriptCodes.Add(file.ReadString());
+                    if (!compileFromText)
                     {
-                        string resourceName = error.FileName;
-                        foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
-                        {
-                            if (resourceName.StartsWith(resourceDir))
-                            {
-                                resourceName = resourceName.Substring(resourceDir.Length);
-                                break;
-                            }
-                        }
+                        string path = Context.Instance.Cache.GetResourceFileName(fileName);
+                        path = Urho3D.GetAbsolutePath(path);
+                        path = Urho3D.GetNativePath(path);
+                        sourceFiles.Add(path);
+                    }
+                }
+            }
 
-                        string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
-                        if (error.IsWarning)
-                            Log.Warning(message);
-                        else
-                            Log.Error(message);
+            if (sourceFiles.Count == 0)
+                return null;
+
+            var csc = new CSharpCodeProvider();
+            var compileParameters = new CompilerParameters(new[] // TODO: User may need to extend this list
+            {
+                "mscorlib.dll",
+                "System.dll",
+                "System.Core.dll",
+                "System.Data.dll",
+                "System.Drawing.dll",
+                "System.Numerics.dll",
+                "System.Runtime.Serialization.dll",
+                "System.Xml.dll",
+                "System.Xml.Linq.dll",
+                "Urho3DNet.dll",
+            })
+            {
+                GenerateExecutable = false,
+                GenerateInMemory = true,
+                TreatWarningsAsErrors = false,
+            };
+
+            CompilerResults results;
+            if (compileFromText)
+                results = csc.CompileAssemblyFromSource(compileParameters, scriptCodes.ToArray());
+            else
+                results = csc.CompileAssemblyFromFile(compileParameters, sourceFiles.ToArray());
+
+            if (results.Errors.HasErrors)
+            {
+                foreach (CompilerError error in results.Errors)
+                {
+                    string resourceName = error.FileName;
+                    foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
+                    {
+                        if (resourceName.StartsWith(resourceDir))
+                        {
+                            resourceName = resourceName.Substring(resourceDir.Length);
+                            break;
+                        }
                     }
 
-                    return null;
+                    string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
+                    if (error.IsWarning)
+                        Log.Warning(message);
+                    else
+                        Log.Error(message);
                 }
-                compiledAssembly = results.CompiledAssembly;
+
+                return null;
             }
 
             // New projects may have no C# scripts. In this case a dummy plugin instance that does nothing will be
             // returned. Once new scripts appear - plugin will be reloaded properly.
             var plugin = new PluginApplication(Context.Instance);
-            plugin.SetHostAssembly(compiledAssembly);
+            plugin.SetHostAssembly(results.CompiledAssembly);
             return plugin;
         }
     }
