@@ -117,10 +117,13 @@ int Application::Run()
             if (auto* api = Script::GetRuntimeApi())
             {
                 scriptsPlugin_ = api->CompileResourceScriptPlugin();
-                scriptsPlugin_->SendEvent(E_PLUGINLOAD);
-                scriptsPlugin_->Load();
-                scriptsPlugin_->SendEvent(E_PLUGINSTART);
-                scriptsPlugin_->Start();
+                if (scriptsPlugin_.NotNull())
+                {
+                    scriptsPlugin_->SendEvent(E_PLUGINLOAD);
+                    scriptsPlugin_->Load();
+                    scriptsPlugin_->SendEvent(E_PLUGINSTART);
+                    scriptsPlugin_->Start();
+                }
             }
         }
 #endif
