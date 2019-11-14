@@ -474,6 +474,10 @@ bool NativeModelView::ImportModel(Model* model)
         }
     }
 
+    // Read metadata
+    for (const ea::string& key : model->GetMetadataKeys())
+        metadata_.emplace(key, model->GetMetadata(key));
+
     return true;
 }
 
@@ -552,6 +556,10 @@ void NativeModelView::ExportModel(Model* model)
             model->SetGeometry(geometryIndex, lodIndex, geometry);
         }
     }
+
+    // Write metadata
+    for (const auto& var : metadata_)
+        model->AddMetadata(var.first, var.second);
 }
 
 SharedPtr<Model> NativeModelView::ExportModel(ea::string name)

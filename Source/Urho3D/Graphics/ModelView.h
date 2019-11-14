@@ -95,16 +95,22 @@ public:
     void SetVertexFormat(const ModelVertexFormat& vertexFormat) { vertexFormat_ = vertexFormat; }
     /// Set geometries.
     void SetGeometries(ea::vector<GeometryView> geometries) { geometries_ = ea::move(geometries); }
+    /// Add metadata.
+    void AddMetadata(const ea::string& key, const Variant& variant) { metadata_.insert_or_assign(key, variant); }
     /// Return vertex format.
     const ModelVertexFormat& GetVertexFormat() const { return vertexFormat_; }
     /// Return geometries.
     const ea::vector<GeometryView>& GetGeometries() const { return geometries_; }
+    /// Return metadata.
+    const Variant& GetMetadata(const ea::string& key) const;
 
 private:
     /// Vertex format.
     ModelVertexFormat vertexFormat_;
     /// Geometries.
     ea::vector<GeometryView> geometries_;
+    /// Metadata.
+    ea::unordered_map<ea::string, Variant> metadata_;
 };
 
 }

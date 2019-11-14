@@ -125,6 +125,8 @@ public:
     void RemoveMetadata(const ea::string& name);
     /// Remove all metadata variables.
     void RemoveAllMetadata();
+    /// Return all metadata keys.
+    const StringVector& GetMetadataKeys() const { return metadataKeys_; }
     /// Return metadata variable.
     const Variant& GetMetadata(const ea::string& name) const;
     /// Return whether the resource has metadata.
