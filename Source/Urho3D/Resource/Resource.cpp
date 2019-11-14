@@ -123,7 +123,7 @@ unsigned Resource::GetUseTimer()
 
 void ResourceWithMetadata::AddMetadata(const ea::string& name, const Variant& value)
 {
-    bool exists = metadata_.insert(ea::make_pair(StringHash(name), value)).second;
+    const bool exists = !metadata_.insert_or_assign(StringHash(name), value).second;
     if (!exists)
         metadataKeys_.push_back(name);
 }

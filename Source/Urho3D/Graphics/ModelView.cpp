@@ -110,6 +110,7 @@ Vector3 GeometryLODView::CalculateCenter() const
 bool ModelView::ImportModel(const NativeModelView& nativeView)
 {
     vertexFormat_ = ParseVertexElements(nativeView.GetEffectiveVertexElements());
+    metadata_ = nativeView.GetMetadata();
 
     const auto& nativeVertexBuffers = nativeView.GetVertexBuffers();
     const auto& nativeIndexBuffers = nativeView.GetIndexBuffers();
@@ -236,6 +237,7 @@ void ModelView::ExportModel(NativeModelView& nativeView) const
         boundingBox.Merge(static_cast<Vector3>(vertex.position_));
 
     nativeView.Initialize(boundingBox, { nativeVertexBuffer }, { nativeIndexBuffer }, nativeGeometries);
+    nativeView.SetMetadata(metadata_);
 }
 
 SharedPtr<NativeModelView> ModelView::ExportModel() const
@@ -243,6 +245,15 @@ SharedPtr<NativeModelView> ModelView::ExportModel() const
     auto nativeModelView = MakeShared<NativeModelView>(context_);
     ExportModel(*nativeModelView);
     return nativeModelView;
+}
+
+const Variant& ModelView::GetMetadata(const ea::string& key) const
+{
+    auto it = metadata_.find(key);
+    if (it != metadata_.end())
+        return it->second;
+
+    return Variant::EMPTY;
 }
 
 }

@@ -29,6 +29,7 @@
 #include "../Graphics/Model.h"
 
 #include <EASTL/algorithm.h>
+#include <EASTL/unordered_map.h>
 
 namespace Urho3D
 {
@@ -136,6 +137,8 @@ public:
         indexBuffers_ = indexBuffers;
         geometries_ = geometries;
     }
+    /// Set metadata.
+    void SetMetadata(const ea::unordered_map<ea::string, Variant>& metadata) { metadata_ = metadata; }
 
     /// Import from resource.
     bool ImportModel(Model* model);
@@ -152,6 +155,8 @@ public:
     const ea::vector<IndexBufferData>& GetIndexBuffers() const { return indexBuffers_; }
     /// Return geometries.
     const ea::vector<GeometryData>& GetGeometries() const { return geometries_; }
+    /// Return metadata.
+    const ea::unordered_map<ea::string, Variant>& GetMetadata() const { return metadata_; }
 
 private:
     /// Bounding box.
@@ -162,6 +167,8 @@ private:
     ea::vector<IndexBufferData> indexBuffers_;
     /// Geometries.
     ea::vector<GeometryData> geometries_;
+    /// Metadata.
+    ea::unordered_map<ea::string, Variant> metadata_;
 };
 
 }
