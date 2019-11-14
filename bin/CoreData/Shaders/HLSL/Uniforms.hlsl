@@ -27,6 +27,7 @@ uniform float4x3 cViewInv;
 uniform float4x4 cViewProj;
 uniform float4 cUOffset;
 uniform float4 cVOffset;
+uniform float4 cLMOffset;
 uniform float4x3 cZone;
 #ifdef SKINNED
     uniform float4x3 cSkinMatrices[MAXBONES];
@@ -140,6 +141,8 @@ cbuffer ObjectVS : register(b5)
 #endif
 #ifdef SKINNED
     uniform float4x3 cSkinMatrices[MAXBONES];
+#else    
+    uniform float4 cLMOffset;
 #endif
 }
 #endif
