@@ -40,6 +40,7 @@ namespace Urho3D
 
 class File;
 class PackageFile;
+class Texture2D;
 
 static const unsigned FIRST_REPLICATED_ID = 0x1;
 static const unsigned LAST_REPLICATED_ID = 0xffffff;
@@ -132,6 +133,13 @@ public:
     void MarkNetworkUpdate() override;
     /// Add a replication state that is tracking this scene.
     void AddReplicationState(NodeReplicationState* state) override;
+
+    /// Return number of lightmaps.
+    unsigned GetNumLightmaps() const { return lightmaps_.names_.size(); }
+    /// Add lightmap texture.
+    void AddLightmap(const ea::string& lightmapTextureName);
+    /// Return lightmap texture.
+    Texture2D* GetLightmapTexture(unsigned index);
 
     /// Load from an XML file. Return true if successful.
     bool LoadXML(Deserializer& source);
@@ -301,6 +309,8 @@ private:
     void PreloadResourcesJSON(const JSONValue& value);
     /// Return component index storage for given type.
     entt::storage<entt::entity, Component*>* GetComponentIndexStorage(StringHash componentType);
+    /// Mark lightmap textures dirty.
+    void MarkLightmapTexturesDirty() { lightmapTexturesDirty_ = true; }
 
     /// Whether the registry is active.
     bool registryEnabled_{ false };
@@ -367,6 +377,13 @@ private:
     bool asyncLoading_;
     /// Threaded update flag.
     bool threadedUpdate_;
+
+    /// Lightmap textures names.
+    ResourceRefList lightmaps_;
+    /// Whether the lightmap textures are dirty.
+    bool lightmapTexturesDirty_{ false };
+    /// Loaded lightmap textures.
+    ea::vector<SharedPtr<Texture2D>> lightmapTextures_;
 };
 
 /// Register Scene library objects.

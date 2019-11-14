@@ -69,6 +69,9 @@ void StaticModel::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("LOD Bias", GetLodBias, SetLodBias, float, 1.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Lightmap", bool, lightmap_, UpdateBatchesLightmaps, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdateBatchesLightmaps, 0, AM_FILE | AM_NOEDIT);
+    URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdateBatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_FILE | AM_NOEDIT);
 }
 
 void StaticModel::ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results)
@@ -369,6 +372,7 @@ void StaticModel::SetNumGeometries(unsigned num)
     geometries_.resize(num);
     geometryData_.resize(num);
     ResetLodLevels();
+    UpdateBatchesLightmaps();
 }
 
 void StaticModel::SetModelAttr(const ResourceRef& value)
@@ -440,6 +444,27 @@ void StaticModel::CalculateLodLevels()
         {
             geometryData_[i].lodLevel_ = newLodLevel;
             batches_[i].geometry_ = batchGeometries[newLodLevel];
+        }
+    }
+}
+
+void StaticModel::UpdateBatchesLightmaps()
+{
+    if (lightmap_)
+    {
+        for (unsigned i = 0; i < batches_.size(); ++i)
+        {
+            batches_[i].lightmapIndex_ = lightmapIndex_;
+            batches_[i].geometryType_ = GEOM_STATIC_NOINSTANCING;
+            batches_[i].lightmapScaleOffset_ = &lightmapScaleOffset_;
+        }
+    }
+    else
+    {
+        for (unsigned i = 0; i < batches_.size(); ++i)
+        {
+            batches_[i].geometryType_ = GEOM_STATIC;
+            batches_[i].lightmapScaleOffset_ = nullptr;
         }
     }
 }

@@ -101,6 +101,19 @@ public:
     /// Return materials attribute.
     const ResourceRefList& GetMaterialsAttr() const;
 
+    /// Set whether the lightmap is enabled.
+    void SetLightmap(bool lightmap) { lightmap_ = lightmap; UpdateBatchesLightmaps(); }
+    /// Return whether the lightmap is enabled.
+    bool GetLightmap() const { return lightmap_; }
+    /// Set lightmap index.
+    void SetLightmapIndex(unsigned idx) { lightmapIndex_ = idx; UpdateBatchesLightmaps(); }
+    /// Return lightmap index.
+    unsigned GetLightmapIndex() const { return lightmapIndex_; }
+    /// Set lightmap scale and offset.
+    void SetLightmapScaleOffset(const Vector4& scaleOffset) { lightmapScaleOffset_ = scaleOffset; UpdateBatchesLightmaps(); }
+    /// Return lightmap scale and offset.
+    const Vector4& GetLightmapScaleOffset() const { return lightmapScaleOffset_; }
+
 protected:
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
@@ -112,6 +125,8 @@ protected:
     void ResetLodLevels();
     /// Choose LOD levels based on distance.
     void CalculateLodLevels();
+    /// Update lightmaps in batches.
+    void UpdateBatchesLightmaps();
 
     /// Extra per-geometry data.
     ea::vector<StaticModelGeometryData> geometryData_;
@@ -123,6 +138,13 @@ protected:
     unsigned occlusionLodLevel_;
     /// Material list attribute.
     mutable ResourceRefList materialsAttr_;
+
+    /// Whether the lightmap is enabled.
+    bool lightmap_{};
+    /// Lightmap index.
+    unsigned lightmapIndex_{};
+    /// Lightmap scale adn offset.
+    Vector4 lightmapScaleOffset_{ 1.0f, 1.0f, 0.0f, 0.0f };
 
 private:
     /// Handle model reload finished.

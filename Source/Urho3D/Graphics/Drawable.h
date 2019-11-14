@@ -109,6 +109,10 @@ struct URHO3D_API SourceBatch
     void* instancingData_{};
     /// %Geometry type.
     GeometryType geometryType_{GEOM_STATIC};
+    /// Lightmap UV scale and offset.
+    Vector4* lightmapScaleOffset_{};
+    /// Lightmap texture index.
+    unsigned lightmapIndex_{};
 
     /// Equality comparison operator.
     bool operator==(const SourceBatch& other) const
