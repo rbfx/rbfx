@@ -32,10 +32,17 @@ namespace Urho3D
 {
 
 /// Lightmap UV generation settings.
-struct LightmapUVGenerationSettings
+struct URHO3D_API LightmapUVGenerationSettings
 {
+    /// Metadata key to write lightmap size.
+    static const ea::string LightmapSizeKey;
+    /// Metadata key to write lightmap density.
+    static const ea::string LightmapDensityKey;
+
     /// UV channel to write. 2nd channel by default.
     unsigned uvChannel_{ 1 };
+    /// Minimal texel density.
+    unsigned minDensity_{ 8 };
 };
 
 /// Generate lightmap UVs for the model.
