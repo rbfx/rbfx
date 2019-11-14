@@ -27,6 +27,9 @@
 namespace Urho3D
 {
 
+const ea::string LightmapUVGenerationSettings::LightmapSizeKey{ "LightmapSize" };
+const ea::string LightmapUVGenerationSettings::LightmapDensityKey{ "LightmapDensity" };
+
 struct LightmapVertexMapping
 {
     unsigned geometryIndex_{};
@@ -108,7 +111,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
     // having problems packing with it and hanging on import
     atlasOptions.packer_options.witness.packing_quality = 1;
 
-    atlasOptions.packer_options.witness.texels_per_unit = 8;
+    atlasOptions.packer_options.witness.texels_per_unit = settings.minDensity_;
     atlasOptions.packer_options.witness.conservative = true;
 
     Thekla::Atlas_Error error = Thekla::Atlas_Error_Success;
@@ -126,6 +129,8 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
         newGeometries[i].lods_.resize(sourceGeometries[i].lods_.size());
 
     // Copy vertices
+    const IntVector2 atlasSize{ outputMesh->atlas_width, outputMesh->atlas_height };
+
     const float uScale = 1.f / outputMesh->atlas_width;
     const float vScale = 1.f / outputMesh->atlas_height;
 
@@ -185,8 +190,12 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
     // Finalize
     Thekla::atlas_free(outputMesh);
+
     modelView.SetGeometries(newGeometries);
     modelView.SetVertexFormat(vertexFormat);
+
+    modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSizeKey, atlasSize);
+    modelView.AddMetadata(LightmapUVGenerationSettings::LightmapDensityKey, settings.minDensity_);
 
     return true;
 }
