@@ -28,6 +28,7 @@
 #include "../Core/ProcessUtils.h"
 #include "../Core/Profiler.h"
 #include "../Core/StringUtils.h"
+#include "../Core/Thread.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Input/Input.h"
@@ -304,6 +305,11 @@ int EmscriptenInput::HandleSDLEvents(void* userData, SDL_Event* event)
 // On Windows repaint while the window is actively being resized.
 int Win32_ResizingEventWatcher(void* data, SDL_Event* event)
 {
+    // In some cases engine may run in a different thread than one which processes windows messages.
+    // Screen repainging is not possible in such cases.
+    if (!Thread::IsMainThread())
+        return 0;
+
     if (event->type == SDL_WINDOWEVENT && event->window.event == SDL_WINDOWEVENT_RESIZED)
     {
         SDL_Window* win = SDL_GetWindowFromID(event->window.windowID);
