@@ -141,6 +141,9 @@ void MessageBox::HandleMessageAcknowledged(StringHash eventType, VariantMap& eve
     newEventData[P_OK] = eventData[Released::P_ELEMENT] == okButton_;
     SendEvent(E_MESSAGEACK, newEventData);
 
+    // Explicitly remove from UI. Releasing reference will not destroy object immediately if it is used from C#.
+    window_->Remove();
+
     // Self destruct
     ReleaseRef();
 }
