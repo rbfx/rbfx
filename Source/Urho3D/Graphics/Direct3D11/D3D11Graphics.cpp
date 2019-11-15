@@ -547,16 +547,7 @@ bool Graphics::BeginFrame()
     if (!IsInitialized())
         return false;
 
-    // If using an external window, check it for size changes, and reset screen mode if necessary
-    if (externalWindow_)
-    {
-        int width, height;
-
-        SDL_GetWindowSize(window_, &width, &height);
-        if (width != width_ || height != height_)
-            SetMode(width, height);
-    }
-    else
+    if (!externalWindow_)
     {
         // To prevent a loop of endless device loss and flicker, do not attempt to render when in fullscreen
         // and the window is minimized
@@ -592,6 +583,16 @@ void Graphics::EndFrame()
 
     // Clean up too large scratch buffers
     CleanupScratchBuffers();
+
+    // If using an external window, check it for size changes, and reset screen mode if necessary
+    if (externalWindow_)
+    {
+        int width, height;
+
+        SDL_GetWindowSize(window_, &width, &height);
+        if (width != width_ || height != height_)
+            SetMode(width, height);
+    }
 }
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)

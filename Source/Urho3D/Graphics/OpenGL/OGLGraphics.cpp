@@ -626,14 +626,11 @@ bool Graphics::BeginFrame()
     if (!IsInitialized() || IsDeviceLost())
         return false;
 
-    // If using an external window, check it for size changes, and reset screen mode if necessary
-    if (externalWindow_)
+    if (!externalWindow_)
     {
-        int width, height;
-
-        SDL_GL_GetDrawableSize(window_, &width, &height);
-        if (width != width_ || height != height_)
-            SetMode(width, height);
+        // Do not attempt to render when in fullscreen and the window is minimized
+        if (fullscreen_ && (SDL_GetWindowFlags(window_) & SDL_WINDOW_MINIMIZED))
+            return false;
     }
 
     // Re-enable depth test and depth func in case a third party program has modified it
@@ -672,6 +669,16 @@ void Graphics::EndFrame()
 
     // Clean up too large scratch buffers
     CleanupScratchBuffers();
+
+    // If using an external window, check it for size changes, and reset screen mode if necessary
+    if (externalWindow_)
+    {
+        int width, height;
+
+        SDL_GL_GetDrawableSize(window_, &width, &height);
+        if (width != width_ || height != height_)
+            SetMode(width, height);
+    }
 }
 
 void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, unsigned stencil)
