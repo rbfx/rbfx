@@ -1,0 +1,16 @@
+<renderpath>
+    <rendertarget name="position" sizedivisor="1 1" format="rgba32f" />
+    <rendertarget name="smoothposition" sizedivisor="1 1" format="rgba32f" />
+    <rendertarget name="facenormal" sizedivisor="1 1" format="rgba32f" />
+    <rendertarget name="smoothnormal" sizedivisor="1 1" format="rgba32f" />
+    <command type="clear" color="0 0 0 0" output="position" />
+    <command type="clear" color="0 0 0 0" output="smoothposition" />
+    <command type="clear" color="0 0 0 0" output="facenormal" />
+    <command type="clear" color="0 0 0 0" output="smoothnormal" />
+    <command type="scenepass" pass="deferred" marktostencil="false" vertexlights="false" metadata="gbuffer">
+        <output index="0" name="position" />
+        <output index="1" name="smoothposition" />
+        <output index="2" name="facenormal" />
+        <output index="3" name="smoothnormal" />
+    </command>
+</renderpath>
