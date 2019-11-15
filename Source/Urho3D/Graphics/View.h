@@ -148,6 +148,13 @@ public:
     /// Return the rendertarget. 0 if using the backbuffer.
     RenderSurface* GetRenderTarget() const { return renderTarget_; }
 
+    /// Return extra render target declared in render path.
+    Texture* GetExtraRenderTarget(const StringHash& name) const
+    {
+        auto iter = renderTargets_.find(name);
+        return iter != renderTargets_.end() ? iter->second : nullptr;
+    }
+
     /// Return whether should draw debug geometry.
     bool GetDrawDebug() const { return drawDebug_; }
 
