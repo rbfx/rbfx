@@ -62,8 +62,8 @@
 %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") SWIGTYPE {
     lock(this) {
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
+        _instanceCache.Remove(swigCPtr);
         if (swigCMemOwn) {
-          _instanceCache.Remove(swigCPtr);
           swigCMemOwn = false;
           $imcall;
         }
@@ -75,8 +75,8 @@
 %typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") SWIGTYPE {
     lock(this) {
       if (swigCPtr.Handle != global::System.IntPtr.Zero) {
+        _instanceCache.Remove(swigCPtr);
         if (swigCMemOwn) {
-          _instanceCache.Remove(swigCPtr);
           swigCMemOwn = false;
           $imcall;
         }
