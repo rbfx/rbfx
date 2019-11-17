@@ -1,8 +1,11 @@
 
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody) SWIGTYPE %{
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private bool swigCMemOwn;
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
@@ -31,8 +34,11 @@
 
 // Derived proxy classes
 %typemap(csbody_derived, directorsetup="\n    SetupSwigDirector();") SWIGTYPE %{
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private bool swigCMemOwn;
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
   internal new static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
@@ -148,7 +154,9 @@
   }
 
 %typemap(csbody) SWIGTYPE *, SWIGTYPE &, SWIGTYPE &&, SWIGTYPE [] %{
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private static global::Urho3DNet.InstanceCache<$csclassname> _instanceCache = new global::Urho3DNet.InstanceCache<$csclassname>();
   internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn)
   {
