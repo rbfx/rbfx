@@ -705,11 +705,12 @@
 
 #ifndef CHAR8_T_DEFINED // If the user hasn't already defined these...
 	#define CHAR8_T_DEFINED
-	#if defined(EA_PLATFORM_APPLE)
-		#define char8_t char    // The Apple debugger is too stupid to realize char8_t is typedef'd to char, so we #define it.
-	#else
+	// rbfx: This breaks fmt and is wrong in general. Library that implements missing types should put them in internal namespace like fmt does.
+	// #if defined(EA_PLATFORM_APPLE)
+	// 	#define char8_t char    // The Apple debugger is too stupid to realize char8_t is typedef'd to char, so we #define it.
+	// #else
 		typedef char char8_t;
-	#endif
+	// #endif
 	
 	#if EA_CHAR16_NATIVE
 		// In C++, char16_t and char32_t are already defined by the compiler.

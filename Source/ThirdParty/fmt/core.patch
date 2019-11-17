@@ -1,0 +1,50 @@
+diff --git a/Source/ThirdParty/fmt/fmt/core.h b/Source/ThirdParty/fmt/fmt/core.h
+index bcce2f50e..2b7e8c3a8 100644
+--- a/Source/ThirdParty/fmt/fmt/core.h
++++ b/Source/ThirdParty/fmt/fmt/core.h
+@@ -13,6 +13,7 @@
+ #include <cstring>
+ #include <iterator>
+ #include <string>
++#include <EASTL/string.h>
+ #include <type_traits>
+ 
+ // The fmt library version in the form major * 10000 + minor * 100 + patch.
+@@ -190,6 +191,11 @@
+ 
+ FMT_BEGIN_NAMESPACE
+ 
++#if EASTL_URHO3D_EXTENSIONS
++#define FMT_USE_CUSTOM_STRING_VIEW eastl::basic_string_view
++#define FMT_USE_CUSTOM_BASIC_STRING eastl::basic_string
++#endif
++
+ // Implementations of enable_if_t and other types for pre-C++14 systems.
+ template <bool B, class T = void>
+ using enable_if_t = typename std::enable_if<B, T>::type;
+@@ -213,8 +219,10 @@ namespace internal {
+ // A workaround for gcc 4.8 to make void_t work in a SFINAE context.
+ template <typename... Ts> struct void_t_impl { using type = void; };
+ 
+-#if defined(FMT_USE_STRING_VIEW)
+-template <typename Char> using std_string_view = std::basic_string_view<Char>;
++#if defined(FMT_USE_CUSTOM_STRING_VIEW)
++template <typename Char> using std_string_view = FMT_USE_CUSTOM_STRING_VIEW<Char>;
++#elif defined(FMT_USE_STRING_VIEW)
++template <typename Char> using std_string_view = std_basic_string_view<Char>;
+ #elif defined(FMT_USE_EXPERIMENTAL_STRING_VIEW)
+ template <typename Char>
+ using std_string_view = std::experimental::basic_string_view<Char>;
+@@ -222,6 +230,12 @@ using std_string_view = std::experimental::basic_string_view<Char>;
+ template <typename T> struct std_string_view {};
+ #endif
+ 
++#if defined(FMT_USE_CUSTOM_BASIC_STRING)
++template <typename Char> using std_basic_string = FMT_USE_CUSTOM_BASIC_STRING<Char>;
++using std_string = std_basic_string<char>;
++using std_wstring = std_basic_string<wchar_t>;
++#endif
++
+ // Casts nonnegative integer to unsigned.
+ template <typename Int>
+ FMT_CONSTEXPR typename std::make_unsigned<Int>::type to_unsigned(Int value) {
