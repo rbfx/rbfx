@@ -157,7 +157,7 @@
 #endif
 
 #if !defined(FMT_HEADER_ONLY) && defined(_WIN32)
-# if defined FMT_EXPORT || defined Urho3D_EXPORTS
+# if defined FMT_EXPORT || defined URHO3D_EXPORTS
 #  define FMT_API __declspec(dllexport)
 # elif defined(FMT_SHARED)
 #  define FMT_API __declspec(dllimport)

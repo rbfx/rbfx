@@ -11,7 +11,7 @@
 #define _NFD_H
 
 #if _WIN32
-#   if NFD_EXPORTS || Urho3D_EXPORTS
+#   if NFD_EXPORTS || URHO3D_EXPORTS
 #       define NFD_API __declspec(dllexport)
 #   elif _IMPORTS || URHO3D_IMPORTS
 #       define NFD_API __declspec(dllimport)
@@ -45,7 +45,7 @@ typedef enum {
     NFD_OKAY,        /* user pressed okay, or successful return */
     NFD_CANCEL       /* user pressed cancel */
 }nfdresult_t;
-    
+
 
 /* nfd_<targetplatform>.c */
 

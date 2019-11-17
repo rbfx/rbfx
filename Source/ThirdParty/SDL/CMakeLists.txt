@@ -1605,7 +1605,7 @@ target_include_directories (SDL SYSTEM
            ${INCLUDE_DIRS}
 )
 if (BUILD_SHARED_LIBS)
-  target_compile_definitions(SDL PRIVATE -DSDL_EXPORTS -DUrho3D_EXPORTS)
+  target_compile_definitions(SDL PRIVATE -DSDL_EXPORTS)
 endif ()
 if (WIN32)
   target_link_libraries (SDL user32 gdi32 imm32 version winmm setupapi)
