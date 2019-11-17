@@ -2,7 +2,9 @@
 // and increment/decrement refcount manually.
 %define URHO3D_REFCOUNTED(TYPE)
     %typemap(csbody) TYPE %{
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private bool swigCMemOwn;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         if (cPtr == global::System.IntPtr.Zero)
@@ -47,7 +49,9 @@
     %}
 
     %typemap(csbody_derived, directorsetup="\n        SetupSwigDirector();") TYPE %{
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private bool swigCMemOwn;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         if (cPtr == global::System.IntPtr.Zero)

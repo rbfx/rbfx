@@ -893,7 +893,9 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %define SWIG_CSBODY_PROXY(PTRCTOR_VISIBILITY, CPTR_VISIBILITY, TYPE...)
 // Proxy classes (base classes, ie, not derived classes)
 %typemap(csbody, directorsetup="\n    SetupSwigDirector();") TYPE %{
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   protected bool swigCMemOwn;
 
   PTRCTOR_VISIBILITY $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
@@ -908,6 +910,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 
 // Derived proxy classes
 %typemap(csbody_derived, directorsetup="\n    SetupSwigDirector();") TYPE %{
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
 
   PTRCTOR_VISIBILITY $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), cMemoryOwn) {
@@ -923,6 +926,7 @@ SWIGINTERN const char * SWIG_UnpackData(const char *c, void *ptr, size_t sz) {
 %define SWIG_CSBODY_TYPEWRAPPER(PTRCTOR_VISIBILITY, DEFAULTCTOR_VISIBILITY, CPTR_VISIBILITY, TYPE...)
 // Typewrapper classes
 %typemap(csbody, directorsetup="") TYPE *, TYPE &, TYPE &&, TYPE [] %{
+  [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
   private global::System.Runtime.InteropServices.HandleRef swigCPtr;
 
   PTRCTOR_VISIBILITY $csclassname(global::System.IntPtr cPtr, bool futureUse) {
