@@ -1,25 +1,33 @@
-# core.h has following additions:
-#    #include <EASTL/string.h>
 #
-# Conditionally define some macros to make fmt use types from alternate stl implementation
-#    #if EASTL_URHO3D_EXTENSIONS
-#    # define FMT_STRING_VIEW eastl::basic_string_view
-#    # define FMT_BASIC_STRING eastl::basic_string
-#    # define FMT_STRING_T eastl::string
-#    # define FMT_WSTRING_T eastl::wstring
-#    #else
-#    // libc++ supports string_view in pre-c++17.
-#    <...>
-#    #endif
-#    #endif
+# Copyright (c) 2017-2019 the rbfx project.
 #
-# Replace all instances of `std::basic_string` with `FMT_BASIC_STRING`.
-# Replace all instances of `std::string` with `FMT_STRING_T`.
-# Replace all instances of `std::wstring` with `FMT_WSTRING_T`.
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
 #
-# Some std::runtime_error() require extra `.c_str()` because this function consumes `std::string`.
+# The above copyright notice and this permission notice shall be included in
+# all copies or substantial portions of the Software.
 #
-
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+# THE SOFTWARE.
+#
+# fmt is patched to use eastl::string instead of std::string. When upgrading the library do following:
+# 1. Apply core.patch to fmt/core.h
+# 2. Run following commands:
+#   find . -name "*.h" -o -name "*.cc" | xargs sed -i "s/std::string/std_string/"
+#   find . -name "*.h" -o -name "*.cc" | xargs sed -i "s/std::wstring/std_wstring/"
+#   find . -name "*.h" -o -name "*.cc" | xargs sed -i "s/std::basic_string/std_basic_string/"
+# 3. Some std::runtime_error() require extra `.c_str()` because this function consumes `std::string`.
+# 4. to_string_view needs to lose Traits template parameter because EASTL does not support it.
+#
 include(CheckSymbolExists)
 if (WIN32)
   check_symbol_exists(open io.h HAVE_OPEN)

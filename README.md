@@ -105,7 +105,7 @@ rbfx uses the following third-party libraries:
 - ImGuizmo 1.61 (https://github.com/CedricGuillemet/ImGuizmo)
 - crunch (https://github.com/Unity-Technologies/crunch/)
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
-- fmt 4.1.0 (http://fmtlib.net)
+- fmt 6.0.0 (http://fmtlib.net/)
 - spdlog 1.3.1 (https://github.com/gabime/spdlog)
 - EASTL 3.13.04 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
