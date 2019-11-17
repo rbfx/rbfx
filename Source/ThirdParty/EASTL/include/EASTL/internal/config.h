@@ -146,15 +146,15 @@
 
 	#if defined(EA_COMPILER_MSVC_2015)
 		#define EA_CPP14_CONSTEXPR  // not supported
-		#define EA_NO_CPP14_CONSTEXPR 
+		#define EA_NO_CPP14_CONSTEXPR
 	#elif defined(__GNUC__) && (EA_COMPILER_VERSION < 9000)   // Before GCC 9.0
 		#define EA_CPP14_CONSTEXPR  // not supported
-		#define EA_NO_CPP14_CONSTEXPR 
+		#define EA_NO_CPP14_CONSTEXPR
 	#elif defined(EA_COMPILER_CPP14_ENABLED)
 		#define EA_CPP14_CONSTEXPR constexpr
 	#else
 		#define EA_CPP14_CONSTEXPR  // not supported
-		#define EA_NO_CPP14_CONSTEXPR 
+		#define EA_NO_CPP14_CONSTEXPR
 	#endif
 #endif
 
@@ -276,7 +276,7 @@ namespace eastl
 #ifndef EASTL_API // If the build file hasn't already defined this to be dllexport...
 	#if EASTL_DLL
 		#if defined(_WIN32)
-			#if defined(EASTL_EXPORTS) || defined(Urho3D_EXPORTS)
+			#if defined(EASTL_EXPORTS) || defined(URHO3D_EXPORTS)
 				#define EASTL_API      __declspec(dllexport)
 			#else
 				#define EASTL_API      __declspec(dllimport)
@@ -307,7 +307,7 @@ namespace eastl
 #ifndef EASTL_EASTDC_API
 	#if EASTL_DLL
 		#if defined(_WIN32)
-			#if defined(EASTL_EXPORTS) || defined(Urho3D_EXPORTS)
+			#if defined(EASTL_EXPORTS) || defined(URHO3D_EXPORTS)
 				#define EASTL_EASTDC_API      __declspec(dllexport)
 			#else
 				#define EASTL_EASTDC_API      __declspec(dllimport)
@@ -1861,7 +1861,7 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 
 
 /// EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
-/// This feature define allows users to toggle the problematic eastl::pair implicit 
+/// This feature define allows users to toggle the problematic eastl::pair implicit
 /// single element constructor.
 #ifndef EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
 	#define EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR 1

@@ -2,7 +2,7 @@
 #define __TRACYAPI_H__
 
 #ifdef _WIN32
-#  if defined TRACY_EXPORTS || defined Urho3D_EXPORTS
+#  if defined TRACY_EXPORTS || defined URHO3D_EXPORTS
 #    define TRACY_API __declspec(dllexport)
 #  elif defined TRACY_IMPORTS
 #    define TRACY_API __declspec(dllimport)
