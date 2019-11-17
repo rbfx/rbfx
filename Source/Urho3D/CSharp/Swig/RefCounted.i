@@ -128,7 +128,7 @@
         $*1_ltype $1Ref($input);
         $1 = &$1Ref;
     %}
-    %typemap(out) Urho3D::SharedPtr<TYPE> & %{ $result = $1->Detach(); %}          // cpp to c
+    %typemap(out) Urho3D::SharedPtr<TYPE> & %{ $result = $1->Get(); %}             // cpp to c
 
     // WeakPtr
     %apply Urho3D::SharedPtr<TYPE>  { Urho3D::WeakPtr<TYPE>  }
