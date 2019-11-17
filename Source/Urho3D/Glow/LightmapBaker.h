@@ -77,7 +77,7 @@ public:
 
     /// Initialize. Children nodes are ignored. Scene must stay immutable until the end. Must be called from rendering thread.
     bool Initialize(const LightmapBakingSettings& settings, Scene* scene,
-        const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& obstacles, const ea::vector<Node*>& lights);
+        const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights);
     /// Cook raytracing scene. May be called from working thread.
     void CookRaytracingScene();
 
@@ -93,6 +93,10 @@ public:
     void ApplyLightmapsToScene(unsigned baseLightmapIndex);
 
 private:
+    /// Process rows of current image in multiple threads.
+    template <class T>
+    void ParallelForEachRow(T callback);
+
     /// Impl.
     ea::unique_ptr<LightmapBakerImpl> impl_;
 };

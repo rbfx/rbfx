@@ -35,6 +35,8 @@
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/RenderPath.h"
 #include "../Graphics/RenderSurface.h"
+#include "../Graphics/Terrain.h"
+#include "../Graphics/TerrainPatch.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/View.h"
 #include "../Graphics/Viewport.h"
@@ -100,22 +102,42 @@ struct LightmapDesc
     SharedPtr<Scene> bakingScene_;
     /// Baking camera.
     Camera* bakingCamera_{};
-    /// Render texture placeholder.
-    SharedPtr<Texture2D> renderTexturePlaceholder_;
-    /// Render surface placeholder.
-    SharedPtr<RenderSurface> renderSurfacePlaceholder_;
 };
 
+/// Calculate bounding box of all light receivers.
+BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes)
+{
+    BoundingBox boundingBox;
+    for (Node* node : nodes)
+    {
+        if (auto staticModel = node->GetComponent<StaticModel>())
+            boundingBox.Merge(staticModel->GetWorldBoundingBox());
+        else if (auto terrain = node->GetComponent<Terrain>())
+        {
+            const IntVector2 numPatches = terrain->GetNumPatches();
+            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
+            {
+                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
+                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
+            }
+        }
+    }
+    return boundingBox;
+}
+
+/// Implementation of lightmap baker.
 struct LightmapBakerImpl
 {
     /// Construct.
     LightmapBakerImpl(Context* context, const LightmapBakingSettings& settings, Scene* scene,
-        const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& obstacles, const ea::vector<Node*>& lights)
+        const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights)
         : context_(context)
         , settings_(settings)
         , lightReceivers_(lightReceivers.size())
-        , obstacles_(obstacles)
+        , lightObstacles_(lightObstacles)
         , lights_(lights)
+        , lightReceiversBoundingBox_(CalculateBoundingBoxOfNodes(lightReceivers))
+        , lightObstaclesBoundingBox_(CalculateBoundingBoxOfNodes(lightObstacles))
     {
         for (unsigned i = 0; i < lightReceivers.size(); ++i)
             lightReceivers_[i].node_ = lightReceivers[i];
@@ -148,9 +170,13 @@ struct LightmapBakerImpl
     /// Light receivers.
     ea::vector<LightReceiver> lightReceivers_;
     /// Light obstacles.
-    ea::vector<Node*> obstacles_;
+    ea::vector<Node*> lightObstacles_;
     /// Lights.
     ea::vector<Node*> lights_;
+    /// Bounding box of light receivers.
+    BoundingBox lightReceiversBoundingBox_;
+    /// Bounding box of light obstacles.
+    BoundingBox lightObstaclesBoundingBox_;
 
     /// Max length of the ray.
     float maxRayLength_{};
@@ -164,8 +190,6 @@ struct LightmapBakerImpl
     RTCScene embreeScene_{};
     /// Render texture placeholder.
     SharedPtr<Texture2D> renderTexturePlaceholder_;
-    /// Render surface placeholder.
-    SharedPtr<RenderSurface> renderSurfacePlaceholder_;
 
     /// Calculation: current lightmap index.
     unsigned currentLightmapIndex_{ M_MAX_UNSIGNED };
@@ -268,18 +292,6 @@ static void AllocateLightmapRegions(const LightmapBakingSettings& settings,
     }
 }
 
-/// Calculate bounding box of all light receivers.
-BoundingBox CalculateReceiversBoundingBox(const ea::vector<LightReceiver>& lightReceivers)
-{
-    BoundingBox boundingBox;
-    for (const LightReceiver& lightReceiver : lightReceivers)
-    {
-        if (lightReceiver.staticModel_)
-            boundingBox.Merge(lightReceiver.staticModel_->GetWorldBoundingBox());
-    }
-    return boundingBox;
-}
-
 /// Load render path.
 SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
 {
@@ -310,11 +322,9 @@ void InitializeCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
 }
 
 /// Initialize lightmap baking scenes.
-void InitializeLightmapBakingScenes(Context* context, Material* bakingMaterial,
+void InitializeLightmapBakingScenes(Context* context, Material* bakingMaterial, const BoundingBox& sceneBoundingBox,
     ea::vector<LightmapDesc>& lightmaps, ea::vector<LightReceiver>& lightReceivers)
 {
-    const BoundingBox lightReceiversBoundingBox = CalculateReceiversBoundingBox(lightReceivers);
-
     // Allocate lightmap baking scenes
     for (LightmapDesc& lightmapDesc : lightmaps)
     {
@@ -322,7 +332,7 @@ void InitializeLightmapBakingScenes(Context* context, Material* bakingMaterial,
         bakingScene->CreateComponent<Octree>();
 
         auto camera = bakingScene->CreateComponent<Camera>();
-        InitializeCameraBoundingBox(camera, lightReceiversBoundingBox);
+        InitializeCameraBoundingBox(camera, sceneBoundingBox);
 
         lightmapDesc.bakingCamera_ = camera;
         lightmapDesc.bakingScene_ = bakingScene;
@@ -461,43 +471,26 @@ LightmapBaker::~LightmapBaker()
 }
 
 bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* scene,
-    const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& obstacles, const ea::vector<Node*>& lights)
+    const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights)
 {
-    impl_ = ea::make_unique<LightmapBakerImpl>(context_, settings, scene, lightReceivers, obstacles, lights);
+    impl_ = ea::make_unique<LightmapBakerImpl>(context_, settings, scene, lightReceivers, lightObstacles, lights);
     if (!impl_->Validate())
         return false;
 
     // Prepare metadata and baking scenes
     AllocateLightmapRegions(impl_->settings_, impl_->lightReceivers_, impl_->lightmaps_);
 
-    const BoundingBox lightReceiversBoundingBox = CalculateReceiversBoundingBox(impl_->lightReceivers_);
-    impl_->maxRayLength_ = lightReceiversBoundingBox.Size().Length();
+    impl_->maxRayLength_ = impl_->lightObstaclesBoundingBox_.Size().Length();
 
     impl_->bakingRenderPath_ = LoadRenderPath(context_, impl_->settings_.bakingRenderPath_);
 
     Material* bakingMaterial = context_->GetCache()->GetResource<Material>(settings.bakingMaterial_);
-    InitializeLightmapBakingScenes(context_, bakingMaterial, impl_->lightmaps_, impl_->lightReceivers_);
+    InitializeLightmapBakingScenes(context_, bakingMaterial, impl_->lightReceiversBoundingBox_,
+        impl_->lightmaps_, impl_->lightReceivers_);
 
     // Create render surfaces
     const int lightmapSize = impl_->settings_.lightmapSize_;
     impl_->renderTexturePlaceholder_ = CreateRenderTextureForLightmap(context_, lightmapSize, lightmapSize);
-    impl_->renderSurfacePlaceholder_ = impl_->renderTexturePlaceholder_->GetRenderSurface();
-
-    for (LightmapDesc& lightmapDesc : impl_->lightmaps_)
-    {
-        const int width = lightmapDesc.allocator_.GetWidth();
-        const int height = lightmapDesc.allocator_.GetHeight();
-        if (width != lightmapSize || height != lightmapSize)
-        {
-            lightmapDesc.renderTexturePlaceholder_ = CreateRenderTextureForLightmap(context_, width, height);
-            lightmapDesc.renderSurfacePlaceholder_ = lightmapDesc.renderTexturePlaceholder_->GetRenderSurface();
-        }
-        else
-        {
-            lightmapDesc.renderTexturePlaceholder_ = impl_->renderTexturePlaceholder_;
-            lightmapDesc.renderSurfacePlaceholder_ = impl_->renderSurfacePlaceholder_;
-        }
-    }
 
     return true;
 }
@@ -506,7 +499,7 @@ void LightmapBaker::CookRaytracingScene()
 {
     // Load models
     ea::vector<std::future<ParsedModelKeyValue>> asyncParsedModels;
-    for (Node* node : impl_->obstacles_)
+    for (Node* node : impl_->lightObstacles_)
     {
         if (auto staticModel = node->GetComponent<StaticModel>())
             asyncParsedModels.push_back(std::async(ParseModelForEmbree, staticModel->GetModel()));
@@ -525,7 +518,7 @@ void LightmapBaker::CookRaytracingScene()
     impl_->embreeScene_ = rtcNewScene(impl_->embreeDevice_);
 
     ea::vector<std::future<ea::vector<EmbreeGeometry>>> asyncEmbreeGeometries;
-    for (Node* node : impl_->obstacles_)
+    for (Node* node : impl_->lightObstacles_)
     {
         if (auto staticModel = node->GetComponent<StaticModel>())
         {
@@ -562,6 +555,14 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
     ResourceCache* cache = GetCache();
     const LightmapDesc& lightmapDesc = impl_->lightmaps_[index];
 
+    // Prepare render surface
+    const int lightmapWidth = lightmapDesc.allocator_.GetWidth();
+    const int lightmapHeight = lightmapDesc.allocator_.GetHeight();
+    SharedPtr<Texture2D> renderTexture = impl_->renderTexturePlaceholder_;
+    if (impl_->settings_.lightmapSize_ != lightmapWidth || impl_->settings_.lightmapSize_ != lightmapHeight)
+        renderTexture = CreateRenderTextureForLightmap(context_, lightmapWidth, lightmapHeight);
+    RenderSurface* renderSurface = renderTexture->GetRenderSurface();
+
     if (!graphics->BeginFrame())
         return false;
 
@@ -574,7 +575,7 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
 
     // Render bakingScene
     View view(context_);
-    view.Define(lightmapDesc.renderSurfacePlaceholder_, &viewport);
+    view.Define(renderSurface, &viewport);
     view.Update(FrameInfo());
     view.Render();
 
@@ -589,6 +590,31 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothnormal"), impl_->smoothNormalBuffer_);
 
     return true;
+}
+
+template <class T>
+void LightmapBaker::ParallelForEachRow(T callback)
+{
+    const LightmapDesc& lightmapDesc = impl_->lightmaps_[impl_->currentLightmapIndex_];
+    const unsigned lightmapHeight = static_cast<unsigned>(lightmapDesc.allocator_.GetHeight());
+    const unsigned chunkHeight = lightmapHeight / impl_->settings_.numParallelChunks_;
+
+    // Start tasks
+    ea::vector<std::future<void>> tasks;
+    for (unsigned parallelChunkIndex = 0; parallelChunkIndex < impl_->settings_.numParallelChunks_; ++parallelChunkIndex)
+    {
+        tasks.push_back(std::async([=]()
+        {
+            const unsigned fromY = parallelChunkIndex * chunkHeight;
+            const unsigned toY = ea::min((parallelChunkIndex + 1) * chunkHeight, lightmapHeight);
+            for (unsigned y = fromY; y < toY; ++y)
+                callback(y);
+        }));
+    }
+
+    // Wait for async tasks
+    for (auto& task : tasks)
+        task.wait();
 }
 
 bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
@@ -617,90 +643,76 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     const Vector3 rayDirection = -lightDirection.Normalized();
 
     // Process rows in multiple threads
-    ea::vector<std::future<void>> tasks;
     const unsigned numRayPackets = static_cast<unsigned>(lightmapWidth / RayPacketSize);
-    const unsigned chunkHeight = static_cast<unsigned>(lightmapHeight / impl_->settings_.numParallelChunks_);
-    for (unsigned parallelChunkIndex = 0; parallelChunkIndex < impl_->settings_.numParallelChunks_; ++parallelChunkIndex)
+    ParallelForEachRow([=, &data](unsigned y)
     {
-        tasks.push_back(std::async([=, &data]()
+        alignas(64) RTCRayHit16 rayHit16;
+        alignas(64) int rayValid[RayPacketSize];
+        float diffuseLight[RayPacketSize];
+
+        for (unsigned rayPacketIndex = 0; rayPacketIndex < numRayPackets; ++rayPacketIndex)
         {
-            alignas(64) RTCRayHit16 rayHit16;
-            alignas(64) int rayValid[RayPacketSize];
-            float diffuseLight[RayPacketSize];
+            const unsigned fromX = rayPacketIndex * RayPacketSize;
+            const unsigned baseIndex = y * lightmapWidth + fromX;
 
-            const unsigned fromY = parallelChunkIndex * chunkHeight;
-            const unsigned toY = ea::min((parallelChunkIndex + 1) * chunkHeight, static_cast<unsigned>(lightmapHeight));
-            for (unsigned y = fromY; y < toY; ++y)
+            unsigned numValidRays = 0;
+            for (unsigned i = 0; i < RayPacketSize; ++i)
             {
-                for (unsigned rayPacketIndex = 0; rayPacketIndex < numRayPackets; ++rayPacketIndex)
+                const unsigned index = baseIndex + i;
+
+                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                if (!geometryId)
                 {
-                    const unsigned fromX = rayPacketIndex * RayPacketSize;
-                    const unsigned baseIndex = y * lightmapWidth + fromX;
+                    rayValid[i] = 0;
+                    rayHit16.ray.tnear[i] = 0.0f;
+                    rayHit16.ray.tfar[i] = -1.0f;
+                    rayHit16.hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
+                    continue;
+                }
 
-                    unsigned numValidRays = 0;
-                    for (unsigned i = 0; i < RayPacketSize; ++i)
-                    {
-                        const unsigned index = baseIndex + i;
+                const Vector3 position = static_cast<Vector3>(impl_->positionBuffer_[index]);
+                const Vector3 smoothNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
 
-                        const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
-                        if (!geometryId)
-                        {
-                            rayValid[i] = 0;
-                            rayHit16.ray.tnear[i] = 0.0f;
-                            rayHit16.ray.tfar[i] = -1.0f;
-                            rayHit16.hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
-                            continue;
-                        }
+                diffuseLight[i] = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
 
-                        const Vector3 position = static_cast<Vector3>(impl_->positionBuffer_[index]);
-                        const Vector3 smoothNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
+                const Vector3 rayOrigin = position + rayDirection * 0.001f;
 
-                        diffuseLight[i] = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
+                rayValid[i] = -1;
+                rayHit16.ray.org_x[i] = rayOrigin.x_;
+                rayHit16.ray.org_y[i] = rayOrigin.y_;
+                rayHit16.ray.org_z[i] = rayOrigin.z_;
+                rayHit16.ray.dir_x[i] = rayDirection.x_;
+                rayHit16.ray.dir_y[i] = rayDirection.y_;
+                rayHit16.ray.dir_z[i] = rayDirection.z_;
+                rayHit16.ray.tnear[i] = 0.0f;
+                rayHit16.ray.tfar[i] = impl_->maxRayLength_;
+                rayHit16.ray.time[i] = 0.0f;
+                rayHit16.ray.id[i] = 0;
+                rayHit16.ray.mask[i] = 0xffffffff;
+                rayHit16.ray.flags[i] = 0xffffffff;
+                rayHit16.hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
 
-                        const Vector3 rayOrigin = position + rayDirection * 0.001f;
+                ++numValidRays;
+            }
 
-                        rayValid[i] = -1;
-                        rayHit16.ray.org_x[i] = rayOrigin.x_;
-                        rayHit16.ray.org_y[i] = rayOrigin.y_;
-                        rayHit16.ray.org_z[i] = rayOrigin.z_;
-                        rayHit16.ray.dir_x[i] = rayDirection.x_;
-                        rayHit16.ray.dir_y[i] = rayDirection.y_;
-                        rayHit16.ray.dir_z[i] = rayDirection.z_;
-                        rayHit16.ray.tnear[i] = 0.0f;
-                        rayHit16.ray.tfar[i] = impl_->maxRayLength_;
-                        rayHit16.ray.time[i] = 0.0f;
-                        rayHit16.ray.id[i] = 0;
-                        rayHit16.ray.mask[i] = 0xffffffff;
-                        rayHit16.ray.flags[i] = 0xffffffff;
-                        rayHit16.hit.geomID[i] = RTC_INVALID_GEOMETRY_ID;
+            if (numValidRays == 0)
+                continue;
 
-                        ++numValidRays;
-                    }
+            RTCIntersectContext rayContext;
+            rtcInitIntersectContext(&rayContext);
+            rtcIntersect16(rayValid, impl_->embreeScene_, &rayContext, &rayHit16);
 
-                    if (numValidRays == 0)
-                        continue;
-
-                    RTCIntersectContext rayContext;
-                    rtcInitIntersectContext(&rayContext);
-                    rtcIntersect16(rayValid, impl_->embreeScene_, &rayContext, &rayHit16);
-
-                    for (unsigned i = 0; i < RayPacketSize; ++i)
-                    {
-                        if (rayValid[i])
-                        {
-                            const unsigned index = baseIndex + i;
-                            const float shadow = rayHit16.hit.geomID[i] == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
-                            data.backedLighting_[index] = Color::WHITE * diffuseLight[i] * shadow;
-                        }
-                    }
+            for (unsigned i = 0; i < RayPacketSize; ++i)
+            {
+                if (rayValid[i])
+                {
+                    const unsigned index = baseIndex + i;
+                    const float shadow = rayHit16.hit.geomID[i] == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
+                    data.backedLighting_[index] = Color::WHITE * diffuseLight[i] * shadow;
                 }
             }
-        }));
-    }
-
-    // Wait for async tasks
-    for (auto& task : tasks)
-        task.wait();
+        }
+    });
 
     return true;
 }
