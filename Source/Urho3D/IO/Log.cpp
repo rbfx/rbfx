@@ -129,8 +129,8 @@ protected:
         if (logInstance == nullptr)
             return;
         time_t time = std::chrono::system_clock::to_time_t(msg.time);
-        logInstance->SendMessageEvent(ConvertLogLevel(msg.level), time,
-            ea::string(msg.logger_name->c_str()), ea::string(msg.payload.data(), static_cast<unsigned int>(msg.payload.size())));
+        logInstance->SendMessageEvent(ConvertLogLevel(msg.level), time, msg.logger_name.data(), ea::string(msg.payload.data(),
+            static_cast<unsigned int>(msg.payload.size())));
     }
 
     void flush_() override { }
