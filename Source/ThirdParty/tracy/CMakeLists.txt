@@ -42,10 +42,10 @@ if (URHO3D_PROFILING)
         target_compile_definitions (Tracy INTERFACE ${TRACY_OPTIONS_PUBLIC})
     endif ()
 
-    if (LINUX)
-        find_library(TBB tbb)
+    if (LINUX OR MINGW)
+        find_library(TBB NAMES tbb tbb.dll)
         if (TBB)
-            target_link_libraries(Tracy INTERFACE ${TBB})
+            target_link_libraries(Tracy PUBLIC ${TBB})
         endif ()
     endif ()
 

@@ -43,15 +43,26 @@ if (HAVE_OPEN)
   set(FMT_SOURCES ${FMT_SOURCES} fmt/posix.cc)
 endif ()
 
-add_library(fmt STATIC ${FMT_HEADERS} ${FMT_SOURCES})
-target_link_libraries(fmt PUBLIC EASTL)
-target_compile_definitions(fmt INTERFACE FMT_USE_RVALUE_REFERENCES=1 FMT_USE_VARIADIC_TEMPLATES=1)
-target_include_directories(fmt SYSTEM PUBLIC
+if (BUILD_SHARED_LIBS AND MINGW)
+    add_library(fmt INTERFACE)
+    set(FMT_PUBLIC INTERFACE)
+else ()
+    add_library(fmt STATIC ${FMT_HEADERS} ${FMT_SOURCES})
+    set(FMT_PUBLIC PUBLIC)
+endif ()
+
+target_link_libraries(fmt ${FMT_PUBLIC} EASTL)
+target_compile_definitions(fmt ${FMT_PUBLIC} FMT_USE_RVALUE_REFERENCES=1 FMT_USE_VARIADIC_TEMPLATES=1)
+target_include_directories(fmt SYSTEM ${FMT_PUBLIC}
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
 )
 if (BUILD_SHARED_LIBS)
-    target_compile_definitions(fmt PUBLIC -DFMT_SHARED PRIVATE -DFMT_EXPORT)
+    if (MINGW)
+        target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_HEADER_ONLY)
+    else ()
+        target_compile_definitions(fmt ${FMT_PUBLIC} -DFMT_SHARED PRIVATE -DFMT_EXPORT)
+    endif ()
 endif ()
 install (DIRECTORY fmt DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)
 
