@@ -44,6 +44,8 @@
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
+#include <EASTL/fixed_vector.h>
+
 // TODO: Use thread pool?
 #include <future>
 
@@ -125,6 +127,18 @@ BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes)
     return boundingBox;
 }
 
+/// Photon data.
+/// TODO: Optimize and extend
+struct PhotonData
+{
+    /// Photon position.
+    Vector3 position_;
+    /// Surface normal.
+    Vector3 normal_;
+    /// Energy.
+    float energy_;
+};
+
 /// Implementation of lightmap baker.
 struct LightmapBakerImpl
 {
@@ -190,6 +204,9 @@ struct LightmapBakerImpl
     RTCScene embreeScene_{};
     /// Render texture placeholder.
     SharedPtr<Texture2D> renderTexturePlaceholder_;
+
+    /// Photon map.
+    ea::unordered_map<IntVector3, ea::fixed_vector<PhotonData, 4>> photonMap_;
 
     /// Calculation: current lightmap index.
     unsigned currentLightmapIndex_{ M_MAX_UNSIGNED };
@@ -546,6 +563,128 @@ unsigned LightmapBaker::GetNumLightmaps() const
     return impl_->lightmaps_.size();
 }
 
+static void RandomDirection(Vector3& result)
+{
+    float  len;
+
+    do
+    {
+        result.x_ = (Random(1.0f) * 2.0f - 1.0f);
+        result.y_ = (Random(1.0f) * 2.0f - 1.0f);
+        result.z_ = (Random(1.0f) * 2.0f - 1.0f);
+        len = result.Length();
+
+    } while (len > 1.0f);
+
+    result /= len;
+}
+
+static void RandomHemisphereDirection(Vector3& result, const Vector3& normal)
+{
+    RandomDirection(result);
+
+    if (result.DotProduct(normal) < 0)
+        result = -result;
+}
+
+static const float PHOTON_HASH_STEP = 0.4f;
+
+bool LightmapBaker::BuildPhotonMap()
+{
+    Vector3 lightDirection;
+    for (Node* lightNode : impl_->lights_)
+    {
+        if (auto light = lightNode->GetComponent<Light>())
+        {
+            if (light->GetLightType() == LIGHT_DIRECTIONAL)
+            {
+                lightDirection = lightNode->GetWorldDirection();
+                break;
+            }
+        }
+    }
+
+    RTCRayHit rayHit;
+    RTCIntersectContext rayContext;
+    rtcInitIntersectContext(&rayContext);
+    const unsigned numPhotons = 1000000;
+    const float radius = impl_->lightObstaclesBoundingBox_.Size().Length() / 2.0f;
+    const float photonEnergy = radius * radius / numPhotons;
+    const Vector3 basePosition = impl_->lightObstaclesBoundingBox_.Center();
+    const Quaternion rotation{ Vector3::FORWARD, lightDirection };
+    const Vector3 xAxis = rotation * Vector3::LEFT;
+    const Vector3 yAxis = rotation * Vector3::UP;
+
+    auto emitPhoton = [&](const RTCRayHit& rayHit)
+    {
+        const Vector3 photonPosition{ rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
+        const Vector3 photonNormal{ rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z };
+        const IntVector3 intPosition = VectorFloorToInt(photonPosition / PHOTON_HASH_STEP);
+        impl_->photonMap_[intPosition].push_back({ photonPosition, photonNormal.Normalized(), photonEnergy });
+    };
+
+    for (unsigned i = 0; i < numPhotons; ++i)
+    {
+        const Vector3 rayOrigin = basePosition
+            + Random(-1.0f, 1.0f) * xAxis * radius
+            + Random(-1.0f, 1.0f) * yAxis * radius
+            - lightDirection * radius;
+        rayHit.ray.org_x = rayOrigin.x_;
+        rayHit.ray.org_y = rayOrigin.y_;
+        rayHit.ray.org_z = rayOrigin.z_;
+        rayHit.ray.dir_x = lightDirection.x_;
+        rayHit.ray.dir_y = lightDirection.y_;
+        rayHit.ray.dir_z = lightDirection.z_;
+        rayHit.ray.tnear = 0.0f;
+        rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+        rayHit.ray.time = 0.0f;
+        rayHit.ray.id = 0;
+        rayHit.ray.mask = 0xffffffff;
+        rayHit.ray.flags = 0xffffffff;
+        rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+        rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+
+        if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+        {
+            rayHit.ray.org_x += rayHit.ray.dir_x * rayHit.ray.tfar;
+            rayHit.ray.org_y += rayHit.ray.dir_y * rayHit.ray.tfar;
+            rayHit.ray.org_z += rayHit.ray.dir_z * rayHit.ray.tfar;
+
+            if (Random(1.0f) < 0.5f)
+            {
+                //emitPhoton(rayHit);
+            }
+            else
+            {
+                rayHit.ray.tfar = impl_->maxRayLength_;
+                rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+
+                Vector3 newDirection;
+                RandomHemisphereDirection(newDirection, { rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z });
+                rayHit.ray.org_x += newDirection.x_ * 0.001f;
+                rayHit.ray.org_y += newDirection.y_ * 0.001f;
+                rayHit.ray.org_z += newDirection.z_ * 0.001f;
+                rayHit.ray.dir_x = newDirection.x_;
+                rayHit.ray.dir_y = newDirection.y_;
+                rayHit.ray.dir_z = newDirection.z_;
+
+                rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+
+                if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+                {
+                    rayHit.ray.org_x += rayHit.ray.dir_x * rayHit.ray.tfar;
+                    rayHit.ray.org_y += rayHit.ray.dir_y * rayHit.ray.tfar;
+                    rayHit.ray.org_z += rayHit.ray.dir_z * rayHit.ray.tfar;
+
+                    emitPhoton(rayHit);
+                }
+            }
+
+        }
+    }
+    return true;
+}
+
 bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
 {
     if (index >= GetNumLightmaps())
@@ -649,6 +788,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         alignas(64) RTCRayHit16 rayHit16;
         alignas(64) int rayValid[RayPacketSize];
         float diffuseLight[RayPacketSize];
+        float indirectLight[RayPacketSize];
 
         for (unsigned rayPacketIndex = 0; rayPacketIndex < numRayPackets; ++rayPacketIndex)
         {
@@ -673,7 +813,33 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 const Vector3 position = static_cast<Vector3>(impl_->positionBuffer_[index]);
                 const Vector3 smoothNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
 
+                indirectLight[i] = 0.0f;
                 diffuseLight[i] = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
+
+                const IntVector3 intPosition = VectorFloorToInt(position / PHOTON_HASH_STEP);
+                IntVector3 indirectIndex;
+                for (indirectIndex.z_ = intPosition.z_ - 1; indirectIndex.z_ <= intPosition.z_ + 1; ++indirectIndex.z_)
+                    for (indirectIndex.y_ = intPosition.y_ - 1; indirectIndex.y_ <= intPosition.y_ + 1; ++indirectIndex.y_)
+                        for (indirectIndex.x_ = intPosition.x_ - 1; indirectIndex.x_ <= intPosition.x_ + 1; ++indirectIndex.x_)
+                        {
+                            auto iter = impl_->photonMap_.find(indirectIndex);
+                            if (iter != impl_->photonMap_.end())
+                            {
+                                for (const PhotonData& photon : iter->second)
+                                {
+                                    const Vector3 delta = photon.position_ - position;
+                                    const float distance = delta.Length();
+                                    const float hemiFactor = smoothNormal.DotProduct(photon.normal_);
+                                    if (distance < PHOTON_HASH_STEP && hemiFactor > 0.5f)
+                                    {
+                                        const float hackFactor = 5.0f;
+                                        const float area = M_PI * PHOTON_HASH_STEP * PHOTON_HASH_STEP;
+                                        indirectLight[i] += hackFactor * (1.0f - distance / PHOTON_HASH_STEP) * photon.energy_ / area;
+                                    }
+                                }
+                            }
+                        }
+
 
                 const Vector3 rayOrigin = position + rayDirection * 0.001f;
 
@@ -708,7 +874,8 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 {
                     const unsigned index = baseIndex + i;
                     const float shadow = rayHit16.hit.geomID[i] == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
-                    data.backedLighting_[index] = Color::WHITE * diffuseLight[i] * shadow;
+                    data.backedLighting_[index] = Color::WHITE * (diffuseLight[i] * shadow + indirectLight[i]);
+                    //data.backedLighting_[index] = Color::WHITE * indirectLight[i];
                 }
             }
         }
