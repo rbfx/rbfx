@@ -45,12 +45,171 @@
 #include "../Resource/XMLFile.h"
 
 #include <EASTL/fixed_vector.h>
+#include <EASTL/sort.h>
 
 // TODO: Use thread pool?
 #include <future>
 
 namespace Urho3D
 {
+
+struct KDNearestNeighbour
+{
+    unsigned index_{};
+    float distanceSquared_{};
+    bool operator < (const KDNearestNeighbour& rhs) const { return distanceSquared_ < rhs.distanceSquared_; }
+};
+
+/// K-D Tree.
+template <class T>
+class KDTree
+{
+private:
+public:
+    void Initialize(ea::vector<T> elements)
+    {
+        // Initialize points and bounding box.
+        elements_ = ea::move(elements);
+
+        BoundingBox boundingBox = {};
+        for (const T& element : elements_)
+            boundingBox.Merge(static_cast<Vector3>(element));
+
+        CalculateDepthAndCapacity(elements_.size(), maxDepth_, capacity_);
+        tree_.clear();
+        tree_.resize(capacity_, M_MAX_UNSIGNED);
+
+        // Build the tree
+        ea::vector<ea::pair<unsigned, unsigned>> rangeQueue;
+        ea::vector<ea::pair<unsigned, unsigned>> nextRangeQueue;
+
+        rangeQueue.emplace_back(0, elements_.size());
+        unsigned index = 0;
+        for (unsigned depth = 0; depth < maxDepth_; ++depth)
+        {
+            const unsigned axis = depth % 3;
+            for (const auto& range : rangeQueue)
+            {
+                const unsigned firstElement = range.first;
+                const unsigned lastElement = range.second;
+                if (firstElement != lastElement)
+                {
+                    const unsigned medianElement = (firstElement + lastElement) / 2;
+                    tree_[index] = medianElement;
+
+                    auto begin = elements_.begin();
+                    ea::nth_element(begin + firstElement, begin + medianElement, begin + lastElement, GetComparator(axis));
+
+                    nextRangeQueue.emplace_back(firstElement, medianElement);
+                    nextRangeQueue.emplace_back(medianElement + 1, lastElement);
+                }
+
+                ++index;
+            }
+
+            ea::swap(rangeQueue, nextRangeQueue);
+            nextRangeQueue.clear();
+        }
+    }
+
+    template <class U>
+    void CollectNearestElements(U& heap, const Vector3& point, float maxDistanceSquared, unsigned maxElements)
+    {
+        heap.clear();
+        CollectNearestElements(heap, 0, 0, point, maxDistanceSquared, maxElements);
+    }
+
+    const T& operator [](unsigned index) const { return elements_[index]; }
+
+private:
+    static auto GetComparator(unsigned axis)
+    {
+        return [=](const T& lhs, const T& rhs)
+        {
+            const Vector3 lhsPosition = static_cast<Vector3>(lhs);
+            const Vector3 rhsPosition = static_cast<Vector3>(rhs);
+            switch (axis)
+            {
+            case 0: return lhsPosition.x_ < rhsPosition.x_;
+            case 1: return lhsPosition.y_ < rhsPosition.y_;
+            case 2: return lhsPosition.z_ < rhsPosition.z_;
+            default:
+                assert(0);
+                return false;
+            }
+        };
+    }
+
+    static void CalculateDepthAndCapacity(unsigned size, unsigned& depth, unsigned& capacity)
+    {
+        depth = 0;
+        capacity = 0;
+        while (size > capacity)
+        {
+            capacity += 1 << depth;
+            ++depth;
+        }
+    }
+
+    static float CalculateSignedDistance(const Vector3& point, const Vector3& nodePosition, unsigned axis)
+    {
+        return point.Data()[axis] - nodePosition.Data()[axis];
+    }
+
+    template <class U>
+    void CollectNearestElements(U& heap, unsigned depth, unsigned sparseIndex, const Vector3& point, float& maxDistanceSquared, unsigned maxElements)
+    {
+        const unsigned arrayIndex = tree_[sparseIndex];
+        if (arrayIndex == M_MAX_UNSIGNED)
+            return;
+
+        const Vector3 nodePosition = static_cast<Vector3>(elements_[arrayIndex]);
+        const unsigned nodeAxis = depth % 3;
+
+        // Examine children if any
+        if (depth + 1 < maxDepth_)
+        {
+            // Check left or right plane first basing on signed distance
+            const float signedDistance = CalculateSignedDistance(point, nodePosition, nodeAxis);
+            const float signedDistanceSqared = signedDistance * signedDistance;
+            if (signedDistance < 0)
+            {
+                CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2 - 1, point, maxDistanceSquared, maxElements);
+                if (signedDistanceSqared < maxDistanceSquared)
+                    CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2, point, maxDistanceSquared, maxElements);
+            }
+            else
+            {
+                CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2, point, maxDistanceSquared, maxElements);
+                if (signedDistanceSqared < maxDistanceSquared)
+                    CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2 - 1, point, maxDistanceSquared, maxElements);
+            }
+        }
+
+        // Process node
+        const float distanceFromNodeToPointSquared = (point - nodePosition).LengthSquared();
+        if (distanceFromNodeToPointSquared < maxDistanceSquared)
+        {
+            // If saturated, narrow max distance and pop furthest element
+            if (heap.size() == maxElements)
+            {
+                maxDistanceSquared = heap.begin()->distanceSquared_;
+                ea::pop_heap(heap.begin(), heap.end());
+                heap.pop_back();
+            }
+
+            // Add new element
+            heap.push_back(KDNearestNeighbour{ arrayIndex, distanceFromNodeToPointSquared });
+            ea::push_heap(heap.begin(), heap.end());
+        }
+    }
+
+    ea::vector<T> elements_;
+    ea::vector<unsigned> tree_;
+    unsigned maxDepth_{};
+    unsigned capacity_{};
+    BoundingBox boundingBox_;
+};
 
 /// Size of Embree ray packed.
 static const unsigned RayPacketSize = 16;
@@ -137,6 +296,9 @@ struct PhotonData
     Vector3 normal_;
     /// Energy.
     float energy_;
+
+    /// Get position.
+    explicit operator Vector3() const { return position_; }
 };
 
 /// Implementation of lightmap baker.
@@ -206,7 +368,7 @@ struct LightmapBakerImpl
     SharedPtr<Texture2D> renderTexturePlaceholder_;
 
     /// Photon map.
-    ea::unordered_map<IntVector3, ea::fixed_vector<PhotonData, 4>> photonMap_;
+    KDTree<PhotonData> photonMap_;
 
     /// Calculation: current lightmap index.
     unsigned currentLightmapIndex_{ M_MAX_UNSIGNED };
@@ -607,7 +769,7 @@ bool LightmapBaker::BuildPhotonMap()
     RTCRayHit rayHit;
     RTCIntersectContext rayContext;
     rtcInitIntersectContext(&rayContext);
-    const unsigned numPhotons = 1000000;
+    const unsigned numPhotons = 100000;
     const float radius = impl_->lightObstaclesBoundingBox_.Size().Length() / 2.0f;
     const float photonEnergy = radius * radius / numPhotons;
     const Vector3 basePosition = impl_->lightObstaclesBoundingBox_.Center();
@@ -615,12 +777,12 @@ bool LightmapBaker::BuildPhotonMap()
     const Vector3 xAxis = rotation * Vector3::LEFT;
     const Vector3 yAxis = rotation * Vector3::UP;
 
+    ea::vector<PhotonData> photons;
     auto emitPhoton = [&](const RTCRayHit& rayHit)
     {
         const Vector3 photonPosition{ rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
         const Vector3 photonNormal{ rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z };
-        const IntVector3 intPosition = VectorFloorToInt(photonPosition / PHOTON_HASH_STEP);
-        impl_->photonMap_[intPosition].push_back({ photonPosition, photonNormal.Normalized(), photonEnergy });
+        photons.push_back(PhotonData{ photonPosition, photonNormal.Normalized(), photonEnergy });
     };
 
     for (unsigned i = 0; i < numPhotons; ++i)
@@ -682,6 +844,7 @@ bool LightmapBaker::BuildPhotonMap()
 
         }
     }
+    impl_->photonMap_.Initialize(ea::move(photons));
     return true;
 }
 
@@ -789,6 +952,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         alignas(64) int rayValid[RayPacketSize];
         float diffuseLight[RayPacketSize];
         float indirectLight[RayPacketSize];
+        ea::fixed_vector<KDNearestNeighbour, 128> nearestPhotons;
 
         for (unsigned rayPacketIndex = 0; rayPacketIndex < numRayPackets; ++rayPacketIndex)
         {
@@ -816,30 +980,21 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 indirectLight[i] = 0.0f;
                 diffuseLight[i] = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
 
-                const IntVector3 intPosition = VectorFloorToInt(position / PHOTON_HASH_STEP);
-                IntVector3 indirectIndex;
-                for (indirectIndex.z_ = intPosition.z_ - 1; indirectIndex.z_ <= intPosition.z_ + 1; ++indirectIndex.z_)
-                    for (indirectIndex.y_ = intPosition.y_ - 1; indirectIndex.y_ <= intPosition.y_ + 1; ++indirectIndex.y_)
-                        for (indirectIndex.x_ = intPosition.x_ - 1; indirectIndex.x_ <= intPosition.x_ + 1; ++indirectIndex.x_)
-                        {
-                            auto iter = impl_->photonMap_.find(indirectIndex);
-                            if (iter != impl_->photonMap_.end())
-                            {
-                                for (const PhotonData& photon : iter->second)
-                                {
-                                    const Vector3 delta = photon.position_ - position;
-                                    const float distance = delta.Length();
-                                    const float hemiFactor = smoothNormal.DotProduct(photon.normal_);
-                                    if (distance < PHOTON_HASH_STEP && hemiFactor > 0.5f)
-                                    {
-                                        const float hackFactor = 5.0f;
-                                        const float area = M_PI * PHOTON_HASH_STEP * PHOTON_HASH_STEP;
-                                        indirectLight[i] += hackFactor * (1.0f - distance / PHOTON_HASH_STEP) * photon.energy_ / area;
-                                    }
-                                }
-                            }
-                        }
-
+                impl_->photonMap_.CollectNearestElements(nearestPhotons, position, PHOTON_HASH_STEP, nearestPhotons.max_size());
+                for (const KDNearestNeighbour& neighbourPhoton : nearestPhotons)
+                {
+                    const PhotonData& photon = impl_->photonMap_[neighbourPhoton.index_];
+                    const Vector3 delta = photon.position_ - position;
+                    const float distance = Sqrt(neighbourPhoton.distanceSquared_);
+                    const float maxDistance = Sqrt(nearestPhotons.front().distanceSquared_);
+                    const float hemiFactor = smoothNormal.DotProduct(photon.normal_);
+                    if (hemiFactor > 0.5f)
+                    {
+                        const float hackFactor = 5.0f;
+                        const float area = M_PI * maxDistance * maxDistance;
+                        indirectLight[i] += hackFactor * (1.0f - distance / maxDistance) * photon.energy_ / area;
+                    }
+                }
 
                 const Vector3 rayOrigin = position + rayDirection * 0.001f;
 
