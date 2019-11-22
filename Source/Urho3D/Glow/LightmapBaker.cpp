@@ -112,11 +112,11 @@ public:
         }
     }
 
-    template <class U>
-    void CollectNearestElements(U& heap, const Vector3& point, float maxDistanceSquared, unsigned maxElements)
+    template <class Container, class Predicate>
+    void CollectNearestElements(Container& heap, const Vector3& point, float maxDistanceSquared, unsigned maxElements, Predicate predicate)
     {
         heap.clear();
-        CollectNearestElements(heap, 0, 0, point, maxDistanceSquared, maxElements);
+        CollectNearestElements(heap, 0, 0, point, maxDistanceSquared, maxElements, predicate);
     }
 
     const T& operator [](unsigned index) const { return elements_[index]; }
@@ -156,8 +156,8 @@ private:
         return point.Data()[axis] - nodePosition.Data()[axis];
     }
 
-    template <class U>
-    void CollectNearestElements(U& heap, unsigned depth, unsigned sparseIndex, const Vector3& point, float& maxDistanceSquared, unsigned maxElements)
+    template <class Container, class Predicate>
+    void CollectNearestElements(Container& heap, unsigned depth, unsigned sparseIndex, const Vector3& point, float& maxDistanceSquared, unsigned maxElements, Predicate& predicate)
     {
         const unsigned arrayIndex = tree_[sparseIndex];
         if (arrayIndex == M_MAX_UNSIGNED)
@@ -174,21 +174,22 @@ private:
             const float signedDistanceSqared = signedDistance * signedDistance;
             if (signedDistance < 0)
             {
-                CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2 - 1, point, maxDistanceSquared, maxElements);
+                CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2 - 1, point, maxDistanceSquared, maxElements, predicate);
                 if (signedDistanceSqared < maxDistanceSquared)
-                    CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2, point, maxDistanceSquared, maxElements);
+                    CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2, point, maxDistanceSquared, maxElements, predicate);
             }
             else
             {
-                CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2, point, maxDistanceSquared, maxElements);
+                CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2, point, maxDistanceSquared, maxElements, predicate);
                 if (signedDistanceSqared < maxDistanceSquared)
-                    CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2 - 1, point, maxDistanceSquared, maxElements);
+                    CollectNearestElements(heap, depth + 1, (sparseIndex + 1) * 2 - 1, point, maxDistanceSquared, maxElements, predicate);
             }
         }
 
         // Process node
         const float distanceFromNodeToPointSquared = (point - nodePosition).LengthSquared();
-        if (distanceFromNodeToPointSquared < maxDistanceSquared)
+        KDNearestNeighbour nearestNeighbour{ arrayIndex, distanceFromNodeToPointSquared };
+        if (distanceFromNodeToPointSquared < maxDistanceSquared && predicate(nearestNeighbour))
         {
             // If saturated, narrow max distance and pop furthest element
             if (heap.size() == maxElements)
@@ -199,7 +200,7 @@ private:
             }
 
             // Add new element
-            heap.push_back(KDNearestNeighbour{ arrayIndex, distanceFromNodeToPointSquared });
+            heap.push_back(nearestNeighbour);
             ea::push_heap(heap.begin(), heap.end());
         }
     }
@@ -980,20 +981,24 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 indirectLight[i] = 0.0f;
                 diffuseLight[i] = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
 
-                impl_->photonMap_.CollectNearestElements(nearestPhotons, position, PHOTON_HASH_STEP, nearestPhotons.max_size());
+                impl_->photonMap_.CollectNearestElements(nearestPhotons, position, PHOTON_HASH_STEP, nearestPhotons.max_size(),
+                    [&](const KDNearestNeighbour& neighbourPhoton)
+                {
+                    const PhotonData& photon = impl_->photonMap_[neighbourPhoton.index_];
+                    const float hemiFactor = smoothNormal.DotProduct(photon.normal_);
+                    if (hemiFactor > 0.5f)
+                        return true;
+                    return false;
+                });
                 for (const KDNearestNeighbour& neighbourPhoton : nearestPhotons)
                 {
                     const PhotonData& photon = impl_->photonMap_[neighbourPhoton.index_];
                     const Vector3 delta = photon.position_ - position;
                     const float distance = Sqrt(neighbourPhoton.distanceSquared_);
                     const float maxDistance = Sqrt(nearestPhotons.front().distanceSquared_);
-                    const float hemiFactor = smoothNormal.DotProduct(photon.normal_);
-                    if (hemiFactor > 0.5f)
-                    {
-                        const float hackFactor = 5.0f;
-                        const float area = M_PI * maxDistance * maxDistance;
-                        indirectLight[i] += hackFactor * (1.0f - distance / maxDistance) * photon.energy_ / area;
-                    }
+                    const float hackFactor = 5.0f;
+                    const float area = M_PI * maxDistance * maxDistance;
+                    indirectLight[i] += hackFactor * (1.0f - distance / maxDistance) * photon.energy_ / area;
                 }
 
                 const Vector3 rayOrigin = position + rayDirection * 0.001f;
