@@ -113,9 +113,10 @@ public:
     }
 
     template <class Container, class Predicate>
-    void CollectNearestElements(Container& heap, const Vector3& point, float maxDistanceSquared, unsigned maxElements, Predicate predicate)
+    void CollectNearestElements(Container& heap, const Vector3& point, float maxDistance, unsigned maxElements, Predicate predicate)
     {
         heap.clear();
+        float maxDistanceSquared = maxDistance * maxDistance;
         CollectNearestElements(heap, 0, 0, point, maxDistanceSquared, maxElements, predicate);
     }
 
@@ -770,7 +771,7 @@ bool LightmapBaker::BuildPhotonMap()
     RTCRayHit rayHit;
     RTCIntersectContext rayContext;
     rtcInitIntersectContext(&rayContext);
-    const unsigned numPhotons = 100000;
+    const unsigned numPhotons = 0 * 100000;
     const float radius = impl_->lightObstaclesBoundingBox_.Size().Length() / 2.0f;
     const float photonEnergy = radius * radius / numPhotons;
     const Vector3 basePosition = impl_->lightObstaclesBoundingBox_.Center();
@@ -943,23 +944,117 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
             }
         }
     }
-    const Vector3 rayDirection = -lightDirection.Normalized();
+    const Vector3 lightRayDirection = -lightDirection.Normalized();
 
     // Process rows in multiple threads
+    const unsigned numBounces = 1;
     const unsigned numRayPackets = static_cast<unsigned>(lightmapWidth / RayPacketSize);
     ParallelForEachRow([=, &data](unsigned y)
     {
+    #if 0
         alignas(64) RTCRayHit16 rayHit16;
         alignas(64) int rayValid[RayPacketSize];
         float diffuseLight[RayPacketSize];
         float indirectLight[RayPacketSize];
         ea::fixed_vector<KDNearestNeighbour, 128> nearestPhotons;
+    #endif
+        RTCRayHit rayHit;
+        RTCIntersectContext rayContext;
+        rtcInitIntersectContext(&rayContext);
 
         for (unsigned rayPacketIndex = 0; rayPacketIndex < numRayPackets; ++rayPacketIndex)
         {
             const unsigned fromX = rayPacketIndex * RayPacketSize;
             const unsigned baseIndex = y * lightmapWidth + fromX;
 
+            for (unsigned i = 0; i < RayPacketSize; ++i)
+            {
+                const unsigned index = baseIndex + i;
+                const Vector3 position = static_cast<Vector3>(impl_->positionBuffer_[index]);
+                const Vector3 smoothNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
+                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+
+                if (!geometryId)
+                    continue;
+
+                // Cast direct ray
+                rayHit.ray.org_x = position.x_ + lightRayDirection.x_ * 0.001f;
+                rayHit.ray.org_y = position.y_ + lightRayDirection.y_ * 0.001f;
+                rayHit.ray.org_z = position.z_ + lightRayDirection.z_ * 0.001f;
+                rayHit.ray.dir_x = lightRayDirection.x_;
+                rayHit.ray.dir_y = lightRayDirection.y_;
+                rayHit.ray.dir_z = lightRayDirection.z_;
+                rayHit.ray.tnear = 0.0f;
+                rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+                rayHit.ray.time = 0.0f;
+                rayHit.ray.id = 0;
+                rayHit.ray.mask = 0xffffffff;
+                rayHit.ray.flags = 0xffffffff;
+                rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+
+                const float directShadow = rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
+                const float directLighting = directShadow * ea::max(0.0f, smoothNormal.DotProduct(lightRayDirection));
+
+                float indirectLighting = 0.0f;
+                Vector3 currentPosition = position;
+                Vector3 currentNormal = smoothNormal;
+                for (unsigned j = 0; j < numBounces; ++j)
+                {
+                    // Get new ray direction
+                    Vector3 rayDirection;
+                    RandomHemisphereDirection(rayDirection, currentNormal);
+
+                    rayHit.ray.org_x = currentPosition.x_;
+                    rayHit.ray.org_y = currentPosition.y_;
+                    rayHit.ray.org_z = currentPosition.z_;
+                    rayHit.ray.dir_x = rayDirection.x_;
+                    rayHit.ray.dir_y = rayDirection.y_;
+                    rayHit.ray.dir_z = rayDirection.z_;
+                    rayHit.ray.tnear = 0.0f;
+                    rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+                    rayHit.ray.time = 0.0f;
+                    rayHit.ray.id = 0;
+                    rayHit.ray.mask = 0xffffffff;
+                    rayHit.ray.flags = 0xffffffff;
+                    rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                    rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+
+                    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
+                        continue;
+
+                    // Cast direct ray
+                    rayHit.ray.org_x += rayHit.ray.dir_x * rayHit.ray.tfar;
+                    rayHit.ray.org_y += rayHit.ray.dir_y * rayHit.ray.tfar;
+                    rayHit.ray.org_z += rayHit.ray.dir_z * rayHit.ray.tfar;
+                    rayHit.ray.dir_x = lightRayDirection.x_;
+                    rayHit.ray.dir_y = lightRayDirection.y_;
+                    rayHit.ray.dir_z = lightRayDirection.z_;
+                    rayHit.ray.tnear = 0.0f;
+                    rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+                    rayHit.ray.time = 0.0f;
+                    rayHit.ray.id = 0;
+                    rayHit.ray.mask = 0xffffffff;
+                    rayHit.ray.flags = 0xffffffff;
+                    rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                    rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+
+                    if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+                        continue;
+
+                    const float incoming = 1.0f;
+                    const float probability = 1 / (2 * M_PI);
+                    const float cosTheta = rayDirection.DotProduct(currentNormal);
+                    const float reflectance = 1 / M_PI;
+                    const float brdf = reflectance / M_PI;
+
+                    indirectLighting = incoming * brdf * cosTheta / probability;
+                }
+
+                data.backedLighting_[index] = Color::WHITE * (directLighting + indirectLighting);
+            }
+
+#if 0
             unsigned numValidRays = 0;
             for (unsigned i = 0; i < RayPacketSize; ++i)
             {
@@ -1038,6 +1133,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     //data.backedLighting_[index] = Color::WHITE * indirectLight[i];
                 }
             }
+#endif
         }
     });
 
