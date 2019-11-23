@@ -3,8 +3,8 @@
     <rendertarget name="smoothposition" sizedivisor="1 1" format="rgba32f" />
     <rendertarget name="facenormal" sizedivisor="1 1" format="rgba32f" />
     <rendertarget name="smoothnormal" sizedivisor="1 1" format="rgba32f" />
-    <command type="clear" color="0 0 0 0" output="position" />
-    <command type="clear" color="0 0 0 0" output="smoothposition" />
+    <command type="clear" color="-100000000 -100000000 -100000000 0" output="position" />
+    <command type="clear" color="-100000000 -100000000 -100000000 0" output="smoothposition" />
     <command type="clear" color="0 0 0 0" output="facenormal" />
     <command type="clear" color="0 0 0 0" output="smoothnormal" />
     <command type="scenepass" pass="deferred" marktostencil="false" vertexlights="false" metadata="gbuffer">
