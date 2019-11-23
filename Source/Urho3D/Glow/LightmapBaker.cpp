@@ -1137,6 +1137,73 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         }
     });
 
+    IntVector2 offsets[25];
+    for (int i = 0; i < 25; ++i)
+        offsets[i] = IntVector2(i % 5 - 2, i / 5 - 2);
+    float kernel[25];
+    int kernel1D[5] = { 1, 4, 6, 4, 1 };
+    for (int i = 0; i < 25; ++i)
+        kernel[i] = kernel1D[i % 5] * kernel1D[i / 5] / 256.0f;
+
+    const float colorPhi = 1.0f;
+    const float normalPhi = 4.0f;
+    const float positionPhi = 1.0f;
+
+    for (unsigned passIndex = 0; passIndex < 3; ++passIndex)
+    {
+        const int offsetScale = 1 << passIndex;
+        const float colorPhiScaled = colorPhi / offsetScale;
+        auto colorCopy = data.backedLighting_;
+        ParallelForEachRow([=, &data](unsigned y)
+        {
+            for (unsigned x = 0; x < lightmapWidth; ++x)
+            {
+                const IntVector2 sourceTexel{ static_cast<int>(x), static_cast<int>(y) };
+                const IntVector2 minOffset = -sourceTexel;
+                const IntVector2 maxOffset = IntVector2{ lightmapWidth, lightmapHeight } - sourceTexel - IntVector2::ONE;
+
+                const unsigned index = y * lightmapWidth + x;
+
+                const Vector4 baseColor = colorCopy[index].ToVector4();
+                const Vector3 basePosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[index]);
+                const Vector3 baseNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
+                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                if (!geometryId)
+                    continue;
+
+                Vector4 colorSum;
+                float weightSum = 0.0f;
+                for (unsigned i = 0; i < 25; ++i)
+                {
+                    const IntVector2 offset = offsets[i] * offsetScale;
+                    const IntVector2 clampedOffset = VectorMax(minOffset, VectorMin(offset, maxOffset));
+                    const unsigned otherIndex = index + clampedOffset.y_ * lightmapWidth + clampedOffset.x_;
+
+                    const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
+                    const Vector4 colorDelta = baseColor - otherColor;
+                    const float colorDeltaSquared = colorDelta.DotProduct(colorDelta);
+                    const float colorWeight = ea::min(std::exp(-colorDeltaSquared / colorPhiScaled), 1.0f);
+
+                    const Vector3 otherPosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[otherIndex]);
+                    const Vector3 positionDelta = basePosition - otherPosition;
+                    const float positionDeltaSquared = positionDelta.DotProduct(positionDelta);
+                    const float positionWeight = ea::min(std::exp(-positionDeltaSquared / positionPhi), 1.0f);
+
+                    const Vector3 otherNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[otherIndex]);
+                    const float normalDeltaCos = ea::max(0.0f, baseNormal.DotProduct(otherNormal));
+                    const float normalWeight = std::pow(normalDeltaCos, normalPhi);
+
+                    const float weight = colorWeight * positionWeight * normalWeight * kernel[i];
+                    colorSum += otherColor * weight;
+                    weightSum += weight;
+                }
+
+                const Vector4 result = colorSum / weightSum;
+                data.backedLighting_[index] = Color(result.x_, result.y_, result.z_, result.w_);
+            }
+        });
+    }
+
     return true;
 }
 
