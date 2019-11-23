@@ -1137,6 +1137,56 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         }
     });
 
+    // Gauss pre-pass
+    {
+        IntVector2 offsets[9];
+        for (int i = 0; i < 9; ++i)
+            offsets[i] = IntVector2(i % 3 - 1, i / 3 - 1);
+        float kernel[9];
+        int kernel1D[3] = { 1, 2, 1 };
+        for (int i = 0; i < 9; ++i)
+            kernel[i] = kernel1D[i % 3] * kernel1D[i / 3] / 16.0f;
+
+        auto colorCopy = data.backedLighting_;
+        ParallelForEachRow([=, &data](unsigned y)
+        {
+            for (unsigned x = 0; x < lightmapWidth; ++x)
+            {
+                const IntVector2 sourceTexel{ static_cast<int>(x), static_cast<int>(y) };
+                const IntVector2 minOffset = -sourceTexel;
+                const IntVector2 maxOffset = IntVector2{ lightmapWidth, lightmapHeight } - sourceTexel - IntVector2::ONE;
+
+                const unsigned index = y * lightmapWidth + x;
+
+                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                if (!geometryId)
+                    continue;
+
+                float weightSum = 0.0f;
+                Vector4 colorSum;
+                for (unsigned i = 0; i < 9; ++i)
+                {
+                    const IntVector2 offset = offsets[i];
+                    if (offset.x_ < minOffset.x_ || offset.x_ > maxOffset.x_ || offset.y_ < minOffset.y_ || offset.y_ > maxOffset.y_)
+                        continue;
+
+                    const unsigned otherIndex = index + offset.y_ * lightmapWidth + offset.x_;
+                    const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
+                    const Vector3 otherPosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[otherIndex]);
+                    const unsigned otherGeometryId = static_cast<unsigned>(impl_->positionBuffer_[otherIndex].w_);
+                    if (!otherGeometryId)
+                        continue;
+
+                    colorSum += otherColor * kernel[i];
+                    weightSum += kernel[i];
+                }
+
+                const Vector4 result = colorSum / weightSum;
+                data.backedLighting_[index] = Color(result.x_, result.y_, result.z_, result.w_);
+            }
+        });
+    }
+
     IntVector2 offsets[25];
     for (int i = 0; i < 25; ++i)
         offsets[i] = IntVector2(i % 5 - 2, i / 5 - 2);
