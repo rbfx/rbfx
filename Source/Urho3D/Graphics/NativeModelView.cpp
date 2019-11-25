@@ -49,62 +49,6 @@ static int GetModelVertexElementOffset(VertexElementSemantic sem, unsigned index
     }
 }
 
-template <class ToType, class FromType, class Converter>
-void ConvertArray(unsigned char* dest, const unsigned char* src, unsigned destStride, unsigned srcStride, unsigned count, Converter convert)
-{
-    for (unsigned i = 0; i < count; ++i)
-    {
-        FromType sourceValue;
-        memcpy(&sourceValue, src, sizeof(sourceValue));
-        const ToType destValue = convert(sourceValue);
-        memcpy(dest, &destValue, sizeof(destValue));
-
-        dest += destStride;
-        src += srcStride;
-    }
-}
-
-using Ubyte4 = ea::array<unsigned char, 4>;
-
-static Vector4 Ubyte4ToVector4(const Ubyte4& value)
-{
-    return {
-        static_cast<float>(value[0]),
-        static_cast<float>(value[1]),
-        static_cast<float>(value[2]),
-        static_cast<float>(value[3])
-    };
-}
-
-static unsigned char FloatToUByte(float value)
-{
-    return static_cast<unsigned char>(Clamp(RoundToInt(value), 0, 255));
-}
-
-static Ubyte4 Vector4ToUbyte4(const Vector4& value)
-{
-    return {
-        FloatToUByte(value.x_),
-        FloatToUByte(value.y_),
-        FloatToUByte(value.z_),
-        FloatToUByte(value.w_)
-    };
-}
-
-static Vector4 Vector4ToVector4(const Vector4& value) { return { value.x_, value.y_, value.z_, value.w_ }; }
-
-static Vector4 IntToVector4(int value) { return { static_cast<float>(value), 0.0f, 0.0f, 0.0f }; }
-static Vector4 FloatToVector4(float value) { return { value, 0.0f, 0.0f, 0.0f }; }
-static Vector4 Vector2ToVector4(const Vector2& value) { return { value.x_, value.y_, 0.0f, 0.0f }; }
-static Vector4 Vector3ToVector4(const Vector3& value) { return { value.x_, value.y_, value.z_, 0.0f }; }
-static Vector4 Ubyte4NormToVector4(const Ubyte4& value) { return Ubyte4ToVector4(value) / 255.0f; }
-
-static int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
-static float Vector4ToFloat(const Vector4& value) { return value.x_; }
-static Vector2 Vector4ToVector2(const Vector4& value) { return { value.x_, value.y_ }; }
-static Vector3 Vector4ToVector3(const Vector4& value) { return { value.x_, value.y_, value.z_ }; }
-static Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value * 255.0f); }
-
 static bool CheckVertexElements(const ea::vector<VertexElement>& elements)
 {
     for (const VertexElement& element : elements)
@@ -139,7 +83,7 @@ static bool CheckVertexElements(const ea::vector<VertexElement>& elements)
     return true;
 }
 
-static bool UnpackVertexBuffer(ea::vector<ModelVertex>& dest,
+static bool UnpackVertexBuffer(ea::vector<Vector4>& conversionBuffer, ea::vector<ModelVertex>& dest,
     const unsigned char* src, unsigned count, unsigned stride, const ea::vector<VertexElement>& elements)
 {
     if (count == 0)
@@ -153,44 +97,26 @@ static bool UnpackVertexBuffer(ea::vector<ModelVertex>& dest,
     const unsigned start = dest.size();
     dest.resize(start + count);
 
+    conversionBuffer.resize(count);
     for (const VertexElement& element : elements)
     {
-        const int destOffset = GetModelVertexElementOffset(element.semantic_, element.index_);
-        unsigned char* destElementArray = reinterpret_cast<unsigned char*>(&dest[start]) + destOffset;
-        const unsigned char* srcElementArray = src + element.offset_;
+        VertexBuffer::UnpackVertexData(src, stride, element, 0, count, conversionBuffer.data());
 
-        switch (element.type_)
+        const int destOffset = GetModelVertexElementOffset(element.semantic_, element.index_);
+        unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest.data() + start) + destOffset;
+
+        for (unsigned i = 0; i < count; ++i)
         {
-        case TYPE_INT:
-            ConvertArray<Vector4, int>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, IntToVector4);
-            break;
-        case TYPE_FLOAT:
-            ConvertArray<Vector4, float>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, FloatToVector4);
-            break;
-        case TYPE_VECTOR2:
-            ConvertArray<Vector4, Vector2>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, Vector2ToVector4);
-            break;
-        case TYPE_VECTOR3:
-            ConvertArray<Vector4, Vector3>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, Vector3ToVector4);
-            break;
-        case TYPE_VECTOR4:
-            ConvertArray<Vector4, Vector4>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, Vector4ToVector4);
-            break;
-        case TYPE_UBYTE4:
-            ConvertArray<Vector4, Ubyte4>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, Ubyte4ToVector4);
-            break;
-        case TYPE_UBYTE4_NORM:
-            ConvertArray<Vector4, Ubyte4>(destElementArray, srcElementArray, sizeof(ModelVertex), stride, count, Ubyte4NormToVector4);
-            break;
-        default:
-            break;
+            Vector4& destValue = *reinterpret_cast<Vector4*>(destBytes + i * sizeof(ModelVertex));
+            destValue = conversionBuffer[i];
         }
     }
 
     return true;
 }
 
-static void PackVertexBuffer(VariantBuffer& dest, ea::span<const ModelVertex> src, const ea::vector<VertexElement>& elements)
+static void PackVertexBuffer(ea::vector<Vector4>& conversionBuffer,
+    VariantBuffer& dest, ea::span<const ModelVertex> src, const ea::vector<VertexElement>& elements)
 {
     if (src.empty())
         return;
@@ -200,95 +126,20 @@ static void PackVertexBuffer(VariantBuffer& dest, ea::span<const ModelVertex> sr
     const unsigned start = dest.size();
     dest.resize(start + count * stride);
 
+    conversionBuffer.resize(count);
     for (const VertexElement& element : elements)
     {
         const int srcOffset = GetModelVertexElementOffset(element.semantic_, element.index_);
-        const unsigned char* srcElementArray = reinterpret_cast<const unsigned char*>(src.data()) + srcOffset;
-        unsigned char* destElementArray = reinterpret_cast<unsigned char*>(&dest[start] + element.offset_);
+        const unsigned char* srcBytes = reinterpret_cast<const unsigned char*>(src.data()) + srcOffset;
 
-        switch (element.type_)
-        {
-        case TYPE_INT:
-            ConvertArray<int, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToInt);
-            break;
-        case TYPE_FLOAT:
-            ConvertArray<float, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToFloat);
-            break;
-        case TYPE_VECTOR2:
-            ConvertArray<Vector2, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToVector2);
-            break;
-        case TYPE_VECTOR3:
-            ConvertArray<Vector3, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToVector3);
-            break;
-        case TYPE_VECTOR4:
-            ConvertArray<Vector4, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToVector4);
-            break;
-        case TYPE_UBYTE4:
-            ConvertArray<Ubyte4, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToUbyte4);
-            break;
-        case TYPE_UBYTE4_NORM:
-            ConvertArray<Ubyte4, Vector4>(destElementArray, srcElementArray, stride, sizeof(ModelVertex), count, Vector4ToUbyte4Norm);
-            break;
-        default:
-            assert(0);
-            break;
-        }
-    }
-}
-
-static bool UnpackIndexBuffer(ea::vector<unsigned>& dest, const unsigned char* src, unsigned count, unsigned stride)
-{
-    if (count == 0)
-        return true;
-
-    if (stride != 2 && stride != 4)
-    {
-        return false;
-    }
-
-    const unsigned start = dest.size();
-    dest.resize(start + count);
-
-    if (stride == 4)
-    {
-        memcpy(&dest[start], src, count * stride);
-    }
-    else
-    {
-        const unsigned short* srcData = reinterpret_cast<const unsigned short*>(src);
         for (unsigned i = 0; i < count; ++i)
         {
-            // May by unaligned
-            unsigned short index{};
-            memcpy(&index, &src[i * stride], sizeof(index));
-            dest[start + i] = index;
+            const Vector4& srcValue = *reinterpret_cast<const Vector4*>(srcBytes + i * sizeof(ModelVertex));
+            conversionBuffer[i] = srcValue;
         }
-    }
 
-    return true;
-}
-
-static void PackIndexBuffer(VariantBuffer& dest, ea::span<const unsigned> src, bool largeIndices)
-{
-    if (src.empty())
-        return;
-
-    const unsigned count = src.size();
-    const unsigned stride = largeIndices ? 4 : 2;
-    const unsigned start = dest.size();
-    dest.resize(dest.size() + count * stride);
-
-    if (largeIndices)
-    {
-        memcpy(&dest[start], src.data(), count * stride);
-    }
-    else
-    {
-        for (unsigned i = 0; i < count; ++i)
-        {
-            const unsigned short index = static_cast<unsigned short>(src[i]);
-            memcpy(&dest[start + i * stride], &index, sizeof(index));
-        }
+        unsigned char* destBytes = dest.data() + start;
+        VertexBuffer::PackVertexData(conversionBuffer.data(), destBytes, stride, element, 0, count);
     }
 }
 
@@ -392,6 +243,7 @@ bool NativeModelView::ImportModel(Model* model)
     boundingBox_ = model->GetBoundingBox();
 
     // Read vertex buffers
+    ea::vector<Vector4> conversionBuffer;
     vertexBuffers_.clear();
     ea::vector<SharedPtr<VertexBuffer>> sourceVertexBuffers = model->GetVertexBuffers();
     for (VertexBuffer* sourceBuffer : sourceVertexBuffers)
@@ -403,7 +255,7 @@ bool NativeModelView::ImportModel(Model* model)
         const unsigned count = sourceBuffer->GetVertexCount();
         const unsigned stride = sourceBuffer->GetVertexSize();
 
-        if (!UnpackVertexBuffer(dest.vertices_, data, count, stride, dest.elements_))
+        if (!UnpackVertexBuffer(conversionBuffer, dest.vertices_, data, count, stride, dest.elements_))
         {
             return false;
         }
@@ -419,12 +271,11 @@ bool NativeModelView::ImportModel(Model* model)
         const unsigned char* data = sourceBuffer->GetShadowData();
         const unsigned count = sourceBuffer->GetIndexCount();
         const unsigned stride = sourceBuffer->GetIndexSize();
+        const bool largeIndices = stride == 4;
 
         IndexBufferData dest;
-        if (!UnpackIndexBuffer(dest.indices_, data, count, stride))
-        {
-            return false;
-        }
+        dest.indices_.resize(count);
+        IndexBuffer::UnpackIndexData(data, largeIndices, 0, count, dest.indices_.data());
 
         indexBuffers_.push_back(ea::move(dest));
     }
@@ -487,13 +338,14 @@ void NativeModelView::ExportModel(Model* model)
     model->SetBoundingBox(boundingBox_);
 
     // Write vertex buffers
+    ea::vector<Vector4> conversionBuffer;
     ea::vector<SharedPtr<VertexBuffer>> modelVertexBuffers;
     for (VertexBufferData& sourceBuffer : vertexBuffers_)
     {
         VertexBuffer::UpdateOffsets(sourceBuffer.elements_);
 
         ea::vector<unsigned char> verticesData;
-        PackVertexBuffer(verticesData, sourceBuffer.vertices_, sourceBuffer.elements_);
+        PackVertexBuffer(conversionBuffer, verticesData, sourceBuffer.vertices_, sourceBuffer.elements_);
 
         const unsigned count = sourceBuffer.vertices_.size();
 
@@ -511,11 +363,12 @@ void NativeModelView::ExportModel(Model* model)
     for (const IndexBufferData& sourceBuffer : indexBuffers_)
     {
         const bool largeIndices = sourceBuffer.HasLargeIndexes();
+        const unsigned stride = largeIndices ? 4 : 2;
+        const unsigned count = sourceBuffer.indices_.size();
 
         ea::vector<unsigned char> indicesData;
-        PackIndexBuffer(indicesData, sourceBuffer.indices_, largeIndices);
-
-        const unsigned count = sourceBuffer.indices_.size();
+        indicesData.resize(count);
+        IndexBuffer::PackIndexData(sourceBuffer.indices_.data(), indicesData.data(), largeIndices, 0, count);
 
         auto indexBuffer = MakeShared<IndexBuffer>(context_);
         indexBuffer->SetShadowed(true);
