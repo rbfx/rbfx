@@ -85,5 +85,18 @@ namespace Urho3DNet
             GetChildren(children, recursive);
             return children.Where(o => o is T).Cast<T>();
         }
+
+        /// <summary>
+        /// Save to XML File
+        /// </summary>
+        /// <param name="Path"></param>
+        /// <param name="RootNode"></param>
+        /// <returns></returns>
+        public bool SaveXML(string Path, string RootNode = "RootNode")
+        {
+            XMLFile file = new XMLFile(Context);
+            var fileroot = file.CreateRoot("RootNode");
+            return SaveXML(Path);
+        }
     }
 }
