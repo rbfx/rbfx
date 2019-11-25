@@ -91,6 +91,12 @@ public:
     /// Return shared array pointer to the CPU memory shadow data.
     ea::shared_array<unsigned char> GetShadowDataShared() const { return shadowData_; }
 
+    /// Unpack index data from index buffer into unsigned int array.
+    static void UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned* dest);
+
+    /// Pack index data from unsigned int array into index buffer.
+    static void PackIndexData(const unsigned* source, void* dest, bool largeIndices, unsigned start, unsigned count);
+
 private:
     /// Create buffer.
     bool Create();

@@ -27,6 +27,7 @@
 #include "../Core/Object.h"
 #include "../Graphics/GPUObject.h"
 #include "../Graphics/GraphicsDefs.h"
+#include "../Math/Vector4.h"
 
 namespace Urho3D
 {
@@ -137,6 +138,12 @@ public:
 
     /// Update offsets of vertex elements.
     static void UpdateOffsets(ea::vector<VertexElement>& elements);
+
+    /// Unpack given element data from vertex buffer into Vector4.
+    static void UnpackVertexData(const void* source, unsigned stride, const VertexElement& element, unsigned start, unsigned count, Vector4* dest);
+
+    /// Pack given element data from Vector4 into vertex buffer.
+    static void PackVertexData(const Vector4* source, void* dest, unsigned stride, const VertexElement& element, unsigned start, unsigned count);
 
 private:
     /// Update offsets of vertex elements.
