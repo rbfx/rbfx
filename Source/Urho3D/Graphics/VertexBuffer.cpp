@@ -29,10 +29,82 @@
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/MathDefs.h"
 
+#include <EASTL/array.h>
+
 #include "../DebugNew.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+/// Convert array of values with given convertor. Types must be trivially copyable.
+template <class ToType, class FromType, class Converter>
+void ConvertArray(unsigned char* dest, const unsigned char* src, unsigned destStride, unsigned srcStride, unsigned count, Converter convert)
+{
+    for (unsigned i = 0; i < count; ++i)
+    {
+        FromType sourceValue;
+        memcpy(&sourceValue, src, sizeof(sourceValue));
+        const ToType destValue = convert(sourceValue);
+        memcpy(dest, &destValue, sizeof(destValue));
+
+        dest += destStride;
+        src += srcStride;
+    }
+}
+
+/// Helper type for unsigned byte vector.
+using Ubyte4 = ea::array<unsigned char, 4>;
+
+/// Convert unsigned byte vector to float vector.
+static Vector4 Ubyte4ToVector4(const Ubyte4& value)
+{
+    return {
+        static_cast<float>(value[0]),
+        static_cast<float>(value[1]),
+        static_cast<float>(value[2]),
+        static_cast<float>(value[3])
+    };
+}
+
+/// Convert float to unsigned byte (with clamping).
+static unsigned char FloatToUByte(float value)
+{
+    return static_cast<unsigned char>(Clamp(RoundToInt(value), 0, 255));
+}
+
+/// Convert float vector to unsigned byte vector.
+static Ubyte4 Vector4ToUbyte4(const Vector4& value)
+{
+    return {
+        FloatToUByte(value.x_),
+        FloatToUByte(value.y_),
+        FloatToUByte(value.z_),
+        FloatToUByte(value.w_)
+    };
+}
+
+/// No-op converter from float vector to float vector.
+static Vector4 Vector4ToVector4(const Vector4& value) { return { value.x_, value.y_, value.z_, value.w_ }; }
+
+/// Trivial converters from and to Vector4.
+/// @{
+static Vector4 IntToVector4(int value) { return { static_cast<float>(value), 0.0f, 0.0f, 0.0f }; }
+static Vector4 FloatToVector4(float value) { return { value, 0.0f, 0.0f, 0.0f }; }
+static Vector4 Vector2ToVector4(const Vector2& value) { return { value.x_, value.y_, 0.0f, 0.0f }; }
+static Vector4 Vector3ToVector4(const Vector3& value) { return { value.x_, value.y_, value.z_, 0.0f }; }
+static Vector4 Ubyte4NormToVector4(const Ubyte4& value) { return Ubyte4ToVector4(value) / 255.0f; }
+
+static int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
+static float Vector4ToFloat(const Vector4& value) { return value.x_; }
+static Vector2 Vector4ToVector2(const Vector4& value) { return { value.x_, value.y_ }; }
+static Vector3 Vector4ToVector3(const Vector4& value) { return { value.x_, value.y_, value.z_ }; }
+static Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value * 255.0f); }
+/// @}
+
+}
 
 extern const char* GEOMETRY_CATEGORY;
 
@@ -209,6 +281,75 @@ void VertexBuffer::UpdateOffsets(ea::vector<VertexElement>& elements)
     {
         i->offset_ = elementOffset;
         elementOffset += ELEMENT_TYPESIZES[i->type_];
+    }
+}
+
+void VertexBuffer::UnpackVertexData(const void* source, unsigned stride,
+    const VertexElement& element, unsigned start, unsigned count, Vector4* dest)
+{
+    const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source) + element.offset_ + start * stride;
+    unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest);
+
+    switch (element.type_)
+    {
+    case TYPE_INT:
+        ConvertArray<Vector4, int>(destBytes, sourceBytes, sizeof(Vector4), stride, count, IntToVector4);
+        break;
+    case TYPE_FLOAT:
+        ConvertArray<Vector4, float>(destBytes, sourceBytes, sizeof(Vector4), stride, count, FloatToVector4);
+        break;
+    case TYPE_VECTOR2:
+        ConvertArray<Vector4, Vector2>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Vector2ToVector4);
+        break;
+    case TYPE_VECTOR3:
+        ConvertArray<Vector4, Vector3>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Vector3ToVector4);
+        break;
+    case TYPE_VECTOR4:
+        ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Vector4ToVector4);
+        break;
+    case TYPE_UBYTE4:
+        ConvertArray<Vector4, Ubyte4>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Ubyte4ToVector4);
+        break;
+    case TYPE_UBYTE4_NORM:
+        ConvertArray<Vector4, Ubyte4>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Ubyte4NormToVector4);
+        break;
+    default:
+        assert(0);
+        break;
+    }
+}
+
+void VertexBuffer::PackVertexData(const Vector4* source, void* dest, unsigned stride, const VertexElement& element, unsigned start, unsigned count)
+{
+    const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source);
+    unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest) + element.offset_ + start * stride;
+
+    switch (element.type_)
+    {
+    case TYPE_INT:
+        ConvertArray<int, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToInt);
+        break;
+    case TYPE_FLOAT:
+        ConvertArray<float, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToFloat);
+        break;
+    case TYPE_VECTOR2:
+        ConvertArray<Vector2, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToVector2);
+        break;
+    case TYPE_VECTOR3:
+        ConvertArray<Vector3, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToVector3);
+        break;
+    case TYPE_VECTOR4:
+        ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToVector4);
+        break;
+    case TYPE_UBYTE4:
+        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToUbyte4);
+        break;
+    case TYPE_UBYTE4_NORM:
+        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToUbyte4Norm);
+        break;
+    default:
+        assert(0);
+        break;
     }
 }
 
