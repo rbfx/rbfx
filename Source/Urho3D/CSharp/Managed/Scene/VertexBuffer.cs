@@ -10,9 +10,9 @@ namespace Urho3DNet
 {
     public partial class VertexBuffer
     {
-        public bool SetSize(uint vertexCount, VertexMask mask, bool isDynamic)
+        public bool SetSize(int vertexCount, VertexMask mask, bool isDynamic)
         {
-            return SetSize(vertexCount, (uint)mask, isDynamic);
+            return SetSize((uint)vertexCount, (uint)mask, isDynamic);
         }
 
         public bool SetData(float[] vertexData)
@@ -30,7 +30,5 @@ namespace Urho3DNet
             IntPtr indexDatapnt = Marshal.AllocHGlobal(indexDatasize);
             return SetData(indexDatapnt);
         }
-
-       
     }
 }
