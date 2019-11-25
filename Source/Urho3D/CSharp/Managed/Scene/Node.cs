@@ -20,11 +20,14 @@
 // THE SOFTWARE.
 //
 
+using System.Collections.Generic;
+using System.Linq;
+
 namespace Urho3DNet
 {
     public partial class Node
     {
-        public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T: Component
+        public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T : Component
         {
             return (T)CreateComponent(typeof(T).Name, mode, id);
         }
@@ -34,9 +37,53 @@ namespace Urho3DNet
             return (T)GetComponent(typeof(T).Name, recursive);
         }
 
+        /// <summary>
+        /// Get first occurance of a component type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
         public T GetComponent<T>() where T : Component
         {
             return (T)GetComponent(typeof(T).Name);
+        }
+
+        /// <summary>
+        /// get all components of a type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        public ComponentList GetComponents<T>(bool recursive = false) where T : Component
+        {
+            ComponentList components = new ComponentList();
+            GetComponents(components, nameof(T), recursive);
+
+            return components;
+        }
+
+        /// <summary>
+        /// Remove all childern of a specific Type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        public void RemoveAllChildren<T>() where T : Node
+        {
+            var childrenNode = GetChildren<T>();
+            foreach (var childnode in childrenNode)
+            {
+                RemoveChild(childnode);
+            }
+        }
+
+        /// <summary>
+        /// Get all Children of a specific type
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="recursive"></param>
+        /// <returns></returns>
+        public IEnumerable<T> GetChildren<T>(bool recursive = false) where T : Node
+        {
+            NodeList children = new NodeList();
+            GetChildren(children, recursive);
+            return children.Where(o => o is T).Cast<T>();
         }
     }
 }
