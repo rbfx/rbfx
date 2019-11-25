@@ -21,14 +21,6 @@ namespace Urho3DNet
             int vertexDatasize = Marshal.SizeOf(vertexData[0]) * vertexData.Length;
             IntPtr vertexDatapnt = Marshal.AllocHGlobal(vertexDatasize);
             return SetData(vertexDatapnt);
-        }
-
-        public bool SetData(short[] indexData)
-        {
-            //// Initialize unmanaged memory to hold the array.
-            int indexDatasize = Marshal.SizeOf(indexData[0]) * indexData.Length;
-            IntPtr indexDatapnt = Marshal.AllocHGlobal(indexDatasize);
-            return SetData(indexDatapnt);
-        }
+        } 
     }
 }

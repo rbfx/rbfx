@@ -50,6 +50,7 @@
     <Compile Include="Managed\Resource\ResourceCache.cs" />
     <Compile Include="Managed\Scene\Node.cs" />
     <Compile Include="Managed\Scene\Serializable.cs" />
+    <Compile Include="Managed\Scene\IndexBuffer.cs" />
     <Compile Include="Managed\Script\InstanceCache.cs" />
     <Compile Include="Managed\Script\Reflection.cs" />
     <Compile Include="Managed\Script\ScriptRuntimeApiImpl.cs" />
