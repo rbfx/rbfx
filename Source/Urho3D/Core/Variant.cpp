@@ -336,6 +336,15 @@ Variant::Variant(VariantType type)
         *this = Rect::ZERO;
         break;
 
+    case VAR_BUFFER:
+    case VAR_RESOURCEREF:
+    case VAR_RESOURCEREFLIST:
+    case VAR_VARIANTVECTOR:
+    case VAR_VARIANTMAP:
+    case VAR_STRINGVECTOR:
+        SetType(type);
+        break;
+
     default:
         SetType(VAR_NONE);
     }
