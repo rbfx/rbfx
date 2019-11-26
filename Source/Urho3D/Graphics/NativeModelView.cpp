@@ -30,6 +30,24 @@
 namespace Urho3D
 {
 
+static_assert(ModelVertex::MaxColors == 4 && ModelVertex::MaxUVs == 4, "Update ModelVertex::VertexElements!");
+
+const ea::vector<VertexElement> ModelVertex::VertexElements =
+{
+    VertexElement{ TYPE_VECTOR4, SEM_POSITION },
+    VertexElement{ TYPE_VECTOR4, SEM_NORMAL },
+    VertexElement{ TYPE_VECTOR4, SEM_TANGENT },
+    VertexElement{ TYPE_VECTOR4, SEM_BINORMAL },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 0 },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 1 },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 2 },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 3 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 0 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 1 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 2 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 3 },
+};
+
 static int GetModelVertexElementOffset(VertexElementSemantic sem, unsigned index)
 {
     switch (sem)
@@ -83,64 +101,28 @@ static bool CheckVertexElements(const ea::vector<VertexElement>& elements)
     return true;
 }
 
-static bool UnpackVertexBuffer(ea::vector<Vector4>& conversionBuffer, ea::vector<ModelVertex>& dest,
-    const unsigned char* src, unsigned count, unsigned stride, const ea::vector<VertexElement>& elements)
+static ea::vector<ModelVertex> GetVertexBufferData(VertexBuffer* vertexBuffer)
 {
-    if (count == 0)
-        return true;
+    const unsigned vertexCount = vertexBuffer->GetVertexCount();
+    const ea::vector<Vector4> unpackedData = vertexBuffer->GetUnpackedData();
 
-    if (!CheckVertexElements(elements))
-    {
-        return false;
-    }
+    ea::vector<ModelVertex> result(vertexCount);
+    VertexBuffer::ShuffleUnpackedVertexData(vertexCount, unpackedData.data(), vertexBuffer->GetElements(),
+        reinterpret_cast<Vector4*>(result.data()), ModelVertex::VertexElements);
 
-    const unsigned start = dest.size();
-    dest.resize(start + count);
-
-    conversionBuffer.resize(count);
-    for (const VertexElement& element : elements)
-    {
-        VertexBuffer::UnpackVertexData(src, stride, element, 0, count, conversionBuffer.data());
-
-        const int destOffset = GetModelVertexElementOffset(element.semantic_, element.index_);
-        unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest.data() + start) + destOffset;
-
-        for (unsigned i = 0; i < count; ++i)
-        {
-            Vector4& destValue = *reinterpret_cast<Vector4*>(destBytes + i * sizeof(ModelVertex));
-            destValue = conversionBuffer[i];
-        }
-    }
-
-    return true;
+    return result;
 }
 
-static void PackVertexBuffer(ea::vector<Vector4>& conversionBuffer,
-    VariantBuffer& dest, ea::span<const ModelVertex> src, const ea::vector<VertexElement>& elements)
+static void SetVertexBufferData(VertexBuffer* vertexBuffer, const ea::vector<ModelVertex>& data)
 {
-    if (src.empty())
-        return;
+    const unsigned vertexCount = vertexBuffer->GetVertexCount();
+    const ea::vector<VertexElement>& vertexElements = vertexBuffer->GetElements();
 
-    const unsigned count = src.size();
-    const unsigned stride = VertexBuffer::GetVertexSize(elements);
-    const unsigned start = dest.size();
-    dest.resize(start + count * stride);
+    ea::vector<Vector4> buffer(vertexElements.size() * vertexCount);
+    VertexBuffer::ShuffleUnpackedVertexData(vertexCount,
+        reinterpret_cast<const Vector4*>(data.data()), ModelVertex::VertexElements, buffer.data(), vertexElements);
 
-    conversionBuffer.resize(count);
-    for (const VertexElement& element : elements)
-    {
-        const int srcOffset = GetModelVertexElementOffset(element.semantic_, element.index_);
-        const unsigned char* srcBytes = reinterpret_cast<const unsigned char*>(src.data()) + srcOffset;
-
-        for (unsigned i = 0; i < count; ++i)
-        {
-            const Vector4& srcValue = *reinterpret_cast<const Vector4*>(srcBytes + i * sizeof(ModelVertex));
-            conversionBuffer[i] = srcValue;
-        }
-
-        unsigned char* destBytes = dest.data() + start;
-        VertexBuffer::PackVertexData(conversionBuffer.data(), destBytes, stride, element, 0, count);
-    }
+    vertexBuffer->SetUnpackedData(buffer.data());
 }
 
 static bool CompareVertexElementSemantics(const VertexElement& lhs, const VertexElement& rhs)
@@ -251,15 +233,12 @@ bool NativeModelView::ImportModel(Model* model)
         VertexBufferData dest;
         dest.elements_ = sourceBuffer->GetElements();
 
-        const unsigned char* data = sourceBuffer->GetShadowData();
-        const unsigned count = sourceBuffer->GetVertexCount();
-        const unsigned stride = sourceBuffer->GetVertexSize();
-
-        if (!UnpackVertexBuffer(conversionBuffer, dest.vertices_, data, count, stride, dest.elements_))
+        if (!CheckVertexElements(dest.elements_))
         {
             return false;
         }
 
+        dest.vertices_ = GetVertexBufferData(sourceBuffer);
         vertexBuffers_.push_back(ea::move(dest));
     }
 
@@ -268,14 +247,8 @@ bool NativeModelView::ImportModel(Model* model)
     ea::vector<SharedPtr<IndexBuffer>> sourceIndexBuffers = model->GetIndexBuffers();
     for (IndexBuffer* sourceBuffer : sourceIndexBuffers)
     {
-        const unsigned char* data = sourceBuffer->GetShadowData();
-        const unsigned count = sourceBuffer->GetIndexCount();
-        const unsigned stride = sourceBuffer->GetIndexSize();
-        const bool largeIndices = stride == 4;
-
         IndexBufferData dest;
-        dest.indices_.resize(count);
-        IndexBuffer::UnpackIndexData(data, largeIndices, 0, count, dest.indices_.data());
+        dest.indices_ = sourceBuffer->GetUnpackedData();
 
         indexBuffers_.push_back(ea::move(dest));
     }
@@ -344,15 +317,10 @@ void NativeModelView::ExportModel(Model* model)
     {
         VertexBuffer::UpdateOffsets(sourceBuffer.elements_);
 
-        ea::vector<unsigned char> verticesData;
-        PackVertexBuffer(conversionBuffer, verticesData, sourceBuffer.vertices_, sourceBuffer.elements_);
-
-        const unsigned count = sourceBuffer.vertices_.size();
-
         auto vertexBuffer = MakeShared<VertexBuffer>(context_);
         vertexBuffer->SetShadowed(true);
-        vertexBuffer->SetSize(count, sourceBuffer.elements_);
-        vertexBuffer->SetData(verticesData.data());
+        vertexBuffer->SetSize(sourceBuffer.vertices_.size(), sourceBuffer.elements_);
+        SetVertexBufferData(vertexBuffer, sourceBuffer.vertices_);
 
         modelVertexBuffers.push_back(vertexBuffer);
     }
@@ -366,14 +334,10 @@ void NativeModelView::ExportModel(Model* model)
         const unsigned stride = largeIndices ? 4 : 2;
         const unsigned count = sourceBuffer.indices_.size();
 
-        ea::vector<unsigned char> indicesData;
-        indicesData.resize(count);
-        IndexBuffer::PackIndexData(sourceBuffer.indices_.data(), indicesData.data(), largeIndices, 0, count);
-
         auto indexBuffer = MakeShared<IndexBuffer>(context_);
         indexBuffer->SetShadowed(true);
         indexBuffer->SetSize(count, largeIndices);
-        indexBuffer->SetData(indicesData.data());
+        indexBuffer->SetUnpackedData(sourceBuffer.indices_.data());
 
         modelIndexBuffers.push_back(indexBuffer);
     }

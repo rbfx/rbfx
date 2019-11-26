@@ -41,6 +41,8 @@ struct URHO3D_API ModelVertex
     static const unsigned MaxColors = 4;
     /// Max number of UV.
     static const unsigned MaxUVs = 4;
+    /// Vertex elements.
+    static const ea::vector<VertexElement> VertexElements;
 
     /// Position.
     Vector4 position_;
