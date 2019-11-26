@@ -200,7 +200,7 @@ namespace Urho3DNet
             if (type == typeof(ResourceRefList))
                 return VariantType.VarResourceRefList;
             if (type == typeof(VariantList))
-                return VariantType.VarVariantVector;
+                return VariantType.VarVariantList;
             if (type == typeof(VariantMap))
                 return VariantType.VarVariantMap;
             if (type == typeof(IntRect))
@@ -218,7 +218,7 @@ namespace Urho3DNet
             if (type == typeof(double))
                 return VariantType.VarDouble;
             if (type == typeof(StringList))
-                return VariantType.VarStringVector;
+                return VariantType.VarStringList;
             if (type == typeof(Rect))
                 return VariantType.VarRect;
             if (type == typeof(IntVector3))

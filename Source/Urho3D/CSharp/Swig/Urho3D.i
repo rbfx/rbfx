@@ -174,12 +174,12 @@ namespace ea = eastl;
 %rename(VarVoidPtr) VAR_VOIDPTR;
 %rename(VarResourceRef) VAR_RESOURCEREF;
 %rename(VarResourceRefList) VAR_RESOURCEREFLIST;
-%rename(VarVariantVector) VAR_VARIANTVECTOR;
+%rename(VarVariantList) VAR_VARIANTVECTOR;
 %rename(VarVariantMap) VAR_VARIANTMAP;
 %rename(VarIntRect) VAR_INTRECT;
 %rename(VarIntVector2) VAR_INTVECTOR2;
 %rename(VarMatrix3x4) VAR_MATRIX3X4;
-%rename(VarStringVector) VAR_STRINGVECTOR;
+%rename(VarStringList) VAR_STRINGVECTOR;
 %rename(VarIntVector3) VAR_INTVECTOR3;
 
 AddEqualityOperators(Urho3D::ResourceRef);
