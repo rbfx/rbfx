@@ -489,8 +489,14 @@ namespace Urho3DNet
 
                 var accessor = new VariantFieldAccessor(field, variantType);
                 var defaultValue = new Variant();
-                accessor.Get(this, defaultValue);
-
+                try
+                {
+                    accessor.Get(this, defaultValue);
+                }
+                catch (ArgumentNullException)
+                {
+                    defaultValue = new Variant(variantType);
+                }
                 string attributeName = attribute?.Name ?? field.Name;
                 var info = new AttributeInfo(accessor.VariantType, attributeName, accessor, enumNames, defaultValue,
                     attribute?.Mode ?? AttributeMode.AmDefault);
@@ -537,7 +543,14 @@ namespace Urho3DNet
 
                 var accessor = new VariantPropertyAccessor(property, variantType);
                 var defaultValue = new Variant();
-                accessor.Get(this, defaultValue);
+                try
+                {
+                    accessor.Get(this, defaultValue);
+                }
+                catch (ArgumentNullException)
+                {
+                    defaultValue = new Variant(variantType);
+                }
 
                 string attributeName = attribute?.Name ?? property.Name;
                 var info = new AttributeInfo(accessor.VariantType, attributeName, accessor, enumNames, defaultValue,
