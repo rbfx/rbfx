@@ -61,7 +61,7 @@
   public $typemap(cstype, eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>) VariantMap {
     get { return GetVariantMap(); }
   }
-  public $typemap(cstype, eastl::vector<Urho3D::Variant>) VariantVector {
+  public $typemap(cstype, eastl::vector<Urho3D::Variant>) VariantList {
     get { return GetVariantVector(); }
   }
 %}
@@ -274,10 +274,10 @@
   public $typemap(cstype, Urho3D::ResourceRefList) ResourceRefList {
     get { return GetResourceRefList(); }
   }
-  public $typemap(cstype, eastl::vector<Urho3D::Variant>) VariantVector {
+  public $typemap(cstype, eastl::vector<Urho3D::Variant>) VariantList {
     get { return GetVariantVector(); }
   }
-  public $typemap(cstype, eastl::vector<eastl::string>) StringVector {
+  public $typemap(cstype, eastl::vector<eastl::string>) StringList {
     get { return GetStringVector(); }
   }
   public $typemap(cstype, eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant>) VariantMap {
