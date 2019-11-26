@@ -118,6 +118,12 @@ public:
     /// Return buffer hash for building vertex declarations. Used internally.
     unsigned long long GetBufferHash(unsigned streamIndex) { return elementHash_ << (streamIndex * 16); }
 
+    /// Return unpacked buffer data as `count * elements.size()` elements, grouped by vertices.
+    ea::vector<Vector4> GetUnpackedData(unsigned start = 0, unsigned count = M_MAX_UNSIGNED) const;
+
+    /// Set data in the buffer from unpacked data.
+    void SetUnpackedData(const Vector4* data, unsigned start = 0, unsigned count = M_MAX_UNSIGNED);
+
     /// Return element with specified type and semantic from a vertex element list, or null if does not exist.
     static const VertexElement* GetElement(const ea::vector<VertexElement>& elements, VertexElementType type, VertexElementSemantic semantic, unsigned char index = 0);
 
@@ -139,11 +145,14 @@ public:
     /// Update offsets of vertex elements.
     static void UpdateOffsets(ea::vector<VertexElement>& elements);
 
-    /// Unpack given element data from vertex buffer into Vector4.
-    static void UnpackVertexData(const void* source, unsigned stride, const VertexElement& element, unsigned start, unsigned count, Vector4* dest);
+    /// Unpack given element data from vertex buffer into Vector4. Stride is measured in bytes.
+    static void UnpackVertexData(const void* source, unsigned sourceStride, const VertexElement& element, unsigned start, unsigned count, Vector4* dest, unsigned destStride);
 
-    /// Pack given element data from Vector4 into vertex buffer.
-    static void PackVertexData(const Vector4* source, void* dest, unsigned stride, const VertexElement& element, unsigned start, unsigned count);
+    /// Pack given element data from Vector4 into vertex buffer. Stride is measured in bytes.
+    static void PackVertexData(const Vector4* source, unsigned sourceStride, void* dest, unsigned destStride, const VertexElement& element, unsigned start, unsigned count);
+
+    /// Shuffle unpacked vertex data according to another vertex format. Element types are ignored. Source array should have `vertexCount * sourceElements.size()` elements. Destination array should have `vertexCount * destElements.size()` elements.
+    static void ShuffleUnpackedVertexData(unsigned vertexCount, const Vector4* source, const ea::vector<VertexElement>& sourceElements, Vector4* dest, const ea::vector<VertexElement>& destElements, bool setMissingElementsToZero = true);
 
 private:
     /// Update offsets of vertex elements.
