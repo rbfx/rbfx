@@ -97,7 +97,7 @@ namespace Urho3DNet
                 case VariantType.VarResourceRefList:
                     dest.Set((ResourceRefList) _field.GetValue(ptr));
                     break;
-                case VariantType.VarVariantVector:
+                case VariantType.VarVariantList:
                     dest.Set((VariantList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarVariantMap:
@@ -124,7 +124,7 @@ namespace Urho3DNet
                 case VariantType.VarDouble:
                     dest.Set((double) _field.GetValue(ptr));
                     break;
-                case VariantType.VarStringVector:
+                case VariantType.VarStringList:
                     dest.Set((StringList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarRect:
@@ -182,22 +182,22 @@ namespace Urho3DNet
                     _field.SetValue(ptr, src.String);
                     break;
                 case VariantType.VarBuffer:
-                    _field.SetValue(ptr, src.Buffer);
+                    _field.SetValue(ptr, new UCharArray(src.Buffer));
                     break;
                 case VariantType.VarVoidPtr:
                     _field.SetValue(ptr, src.VoidPtr);
                     break;
                 case VariantType.VarResourceRef:
-                    _field.SetValue(ptr, src.ResourceRef);
+                    _field.SetValue(ptr, new ResourceRef(src.ResourceRef));
                     break;
                 case VariantType.VarResourceRefList:
-                    _field.SetValue(ptr, src.ResourceRefList);
+                    _field.SetValue(ptr, new ResourceRefList(src.ResourceRefList.Type, src.ResourceRefList.Names));
                     break;
-                case VariantType.VarVariantVector:
-                    _field.SetValue(ptr, src.VariantVector);
+                case VariantType.VarVariantList:
+                    _field.SetValue(ptr, new VariantList(src.VariantList));
                     break;
                 case VariantType.VarVariantMap:
-                    _field.SetValue(ptr, src.VariantMap);
+                    _field.SetValue(ptr, new VariantMap(src.VariantMap));
                     break;
                 case VariantType.VarIntRect:
                     _field.SetValue(ptr, src.IntRect);
@@ -220,8 +220,8 @@ namespace Urho3DNet
                 case VariantType.VarDouble:
                     _field.SetValue(ptr, src.Double);
                     break;
-                case VariantType.VarStringVector:
-                    _field.SetValue(ptr, src.StringVector);
+                case VariantType.VarStringList:
+                    _field.SetValue(ptr, new StringList(src.StringList));
                     break;
                 case VariantType.VarRect:
                     _field.SetValue(ptr, src.Rect);
@@ -295,7 +295,7 @@ namespace Urho3DNet
                 case VariantType.VarResourceRefList:
                     dest.Set((ResourceRefList) _field.GetValue(ptr));
                     break;
-                case VariantType.VarVariantVector:
+                case VariantType.VarVariantList:
                     dest.Set((VariantList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarVariantMap:
@@ -322,7 +322,7 @@ namespace Urho3DNet
                 case VariantType.VarDouble:
                     dest.Set((double) _field.GetValue(ptr));
                     break;
-                case VariantType.VarStringVector:
+                case VariantType.VarStringList:
                     dest.Set((StringList) _field.GetValue(ptr));
                     break;
                 case VariantType.VarRect:
@@ -380,22 +380,22 @@ namespace Urho3DNet
                     _field.SetValue(ptr, src.String);
                     break;
                 case VariantType.VarBuffer:
-                    _field.SetValue(ptr, src.Buffer);
+                    _field.SetValue(ptr, new UCharArray(src.Buffer));
                     break;
                 case VariantType.VarVoidPtr:
                     _field.SetValue(ptr, src.VoidPtr);
                     break;
                 case VariantType.VarResourceRef:
-                    _field.SetValue(ptr, src.ResourceRef);
+                    _field.SetValue(ptr, new ResourceRef(src.ResourceRef));
                     break;
                 case VariantType.VarResourceRefList:
-                    _field.SetValue(ptr, src.ResourceRefList);
+                    _field.SetValue(ptr, new ResourceRefList(src.ResourceRefList.Type, src.ResourceRefList.Names));
                     break;
-                case VariantType.VarVariantVector:
-                    _field.SetValue(ptr, src.VariantVector);
+                case VariantType.VarVariantList:
+                    _field.SetValue(ptr, new VariantList(src.VariantList));
                     break;
                 case VariantType.VarVariantMap:
-                    _field.SetValue(ptr, src.VariantMap);
+                    _field.SetValue(ptr, new VariantMap(src.VariantMap));
                     break;
                 case VariantType.VarIntRect:
                     _field.SetValue(ptr, src.IntRect);
@@ -418,8 +418,8 @@ namespace Urho3DNet
                 case VariantType.VarDouble:
                     _field.SetValue(ptr, src.Double);
                     break;
-                case VariantType.VarStringVector:
-                    _field.SetValue(ptr, src.StringVector);
+                case VariantType.VarStringList:
+                    _field.SetValue(ptr, new StringList(src.StringList));
                     break;
                 case VariantType.VarRect:
                     _field.SetValue(ptr, src.Rect);
@@ -489,8 +489,14 @@ namespace Urho3DNet
 
                 var accessor = new VariantFieldAccessor(field, variantType);
                 var defaultValue = new Variant();
-                accessor.Get(this, defaultValue);
-
+                try
+                {
+                    accessor.Get(this, defaultValue);
+                }
+                catch (ArgumentNullException)
+                {
+                    defaultValue = new Variant(variantType);
+                }
                 string attributeName = attribute?.Name ?? field.Name;
                 var info = new AttributeInfo(accessor.VariantType, attributeName, accessor, enumNames, defaultValue,
                     attribute?.Mode ?? AttributeMode.AmDefault);
@@ -537,7 +543,14 @@ namespace Urho3DNet
 
                 var accessor = new VariantPropertyAccessor(property, variantType);
                 var defaultValue = new Variant();
-                accessor.Get(this, defaultValue);
+                try
+                {
+                    accessor.Get(this, defaultValue);
+                }
+                catch (ArgumentNullException)
+                {
+                    defaultValue = new Variant(variantType);
+                }
 
                 string attributeName = attribute?.Name ?? property.Name;
                 var info = new AttributeInfo(accessor.VariantType, attributeName, accessor, enumNames, defaultValue,

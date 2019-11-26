@@ -342,10 +342,10 @@
   public $typemap(cstype, const Urho3D::ResourceRefList &) ResourceRefList {
     get { return GetResourceRefList(); }
   }
-  public $typemap(cstype, const eastl::vector<Urho3D::Variant> &) VariantVector {
+  public $typemap(cstype, const eastl::vector<Urho3D::Variant> &) VariantList { // custom name
     get { return GetVariantVector(); }
   }
-  public $typemap(cstype, const eastl::vector<eastl::string> &) StringVector {
+  public $typemap(cstype, const eastl::vector<eastl::string> &) StringList {    // custom name
     get { return GetStringVector(); }
   }
   public $typemap(cstype, const eastl::unordered_map<Urho3D::StringHash, Urho3D::Variant> &) VariantMap {
