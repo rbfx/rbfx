@@ -59,7 +59,7 @@ void ConvertArray(unsigned char* dest, const unsigned char* src, unsigned destSt
 using Ubyte4 = ea::array<unsigned char, 4>;
 
 /// Convert unsigned byte vector to float vector.
-static Vector4 Ubyte4ToVector4(const Ubyte4& value)
+Vector4 Ubyte4ToVector4(const Ubyte4& value)
 {
     return {
         static_cast<float>(value[0]),
@@ -70,13 +70,13 @@ static Vector4 Ubyte4ToVector4(const Ubyte4& value)
 }
 
 /// Convert float to unsigned byte (with clamping).
-static unsigned char FloatToUByte(float value)
+unsigned char FloatToUByte(float value)
 {
     return static_cast<unsigned char>(Clamp(RoundToInt(value), 0, 255));
 }
 
 /// Convert float vector to unsigned byte vector.
-static Ubyte4 Vector4ToUbyte4(const Vector4& value)
+Ubyte4 Vector4ToUbyte4(const Vector4& value)
 {
     return {
         FloatToUByte(value.x_),
@@ -87,21 +87,21 @@ static Ubyte4 Vector4ToUbyte4(const Vector4& value)
 }
 
 /// No-op converter from float vector to float vector.
-static Vector4 Vector4ToVector4(const Vector4& value) { return { value.x_, value.y_, value.z_, value.w_ }; }
+Vector4 Vector4ToVector4(const Vector4& value) { return { value.x_, value.y_, value.z_, value.w_ }; }
 
 /// Trivial converters from and to Vector4.
 /// @{
-static Vector4 IntToVector4(int value) { return { static_cast<float>(value), 0.0f, 0.0f, 0.0f }; }
-static Vector4 FloatToVector4(float value) { return { value, 0.0f, 0.0f, 0.0f }; }
-static Vector4 Vector2ToVector4(const Vector2& value) { return { value.x_, value.y_, 0.0f, 0.0f }; }
-static Vector4 Vector3ToVector4(const Vector3& value) { return { value.x_, value.y_, value.z_, 0.0f }; }
-static Vector4 Ubyte4NormToVector4(const Ubyte4& value) { return Ubyte4ToVector4(value) / 255.0f; }
+Vector4 IntToVector4(int value) { return { static_cast<float>(value), 0.0f, 0.0f, 0.0f }; }
+Vector4 FloatToVector4(float value) { return { value, 0.0f, 0.0f, 0.0f }; }
+Vector4 Vector2ToVector4(const Vector2& value) { return { value.x_, value.y_, 0.0f, 0.0f }; }
+Vector4 Vector3ToVector4(const Vector3& value) { return { value.x_, value.y_, value.z_, 0.0f }; }
+Vector4 Ubyte4NormToVector4(const Ubyte4& value) { return Ubyte4ToVector4(value) / 255.0f; }
 
-static int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
-static float Vector4ToFloat(const Vector4& value) { return value.x_; }
-static Vector2 Vector4ToVector2(const Vector4& value) { return { value.x_, value.y_ }; }
-static Vector3 Vector4ToVector3(const Vector4& value) { return { value.x_, value.y_, value.z_ }; }
-static Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value * 255.0f); }
+int Vector4ToInt(const Vector4& value) { return static_cast<int>(value.x_); }
+float Vector4ToFloat(const Vector4& value) { return value.x_; }
+Vector2 Vector4ToVector2(const Vector4& value) { return { value.x_, value.y_ }; }
+Vector3 Vector4ToVector3(const Vector4& value) { return { value.x_, value.y_, value.z_ }; }
+Ubyte4 Vector4ToUbyte4Norm(const Vector4& value) { return Vector4ToUbyte4(value * 255.0f); }
 /// @}
 
 }
@@ -284,34 +284,71 @@ void VertexBuffer::UpdateOffsets(ea::vector<VertexElement>& elements)
     }
 }
 
-void VertexBuffer::UnpackVertexData(const void* source, unsigned stride,
-    const VertexElement& element, unsigned start, unsigned count, Vector4* dest)
+ea::vector<Vector4> VertexBuffer::GetUnpackedData(unsigned start, unsigned count) const
 {
-    const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source) + element.offset_ + start * stride;
+    if (start >= vertexCount_ || count == 0 || !IsShadowed())
+        return {};
+
+    // Clamp count to index buffer size.
+    if (count == M_MAX_UNSIGNED || start + count > vertexCount_)
+        count = vertexCount_ - start;
+
+    // Unpack data
+    const unsigned elementCount = elements_.size();
+    const unsigned destStride = elementCount * sizeof(Vector4);
+    ea::vector<Vector4> result(count * elementCount);
+    for (unsigned i = 0; i < elementCount; ++i)
+        UnpackVertexData(GetShadowData(), vertexSize_, elements_[i], start, count, result.data() + i, destStride);
+
+    return result;
+}
+
+void VertexBuffer::SetUnpackedData(const Vector4* data, unsigned start, unsigned count)
+{
+    if (start >= vertexCount_ || count == 0)
+        return;
+
+    // Clamp count to index buffer size.
+    if (count == M_MAX_UNSIGNED || start + count > vertexCount_)
+        count = vertexCount_ - start;
+
+    const unsigned elementCount = elements_.size();
+    const unsigned sourceStride = elementCount * sizeof(Vector4);
+    ea::vector<unsigned char> buffer(count * vertexSize_);
+    for (unsigned i = 0; i < elementCount; ++i)
+        PackVertexData(data + i, sourceStride, buffer.data(), vertexSize_, elements_[i], 0, count);
+
+    SetDataRange(buffer.data(), start, count);
+}
+
+void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,
+    const VertexElement& element, unsigned start, unsigned count, Vector4* dest, unsigned destStride)
+{
+    const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source) + element.offset_ + start * sourceStride;
     unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest);
 
     switch (element.type_)
     {
     case TYPE_INT:
-        ConvertArray<Vector4, int>(destBytes, sourceBytes, sizeof(Vector4), stride, count, IntToVector4);
+        ConvertArray<Vector4, int>(destBytes, sourceBytes, destStride, sourceStride, count, IntToVector4);
         break;
     case TYPE_FLOAT:
-        ConvertArray<Vector4, float>(destBytes, sourceBytes, sizeof(Vector4), stride, count, FloatToVector4);
+        ConvertArray<Vector4, float>(destBytes, sourceBytes, destStride, sourceStride, count, FloatToVector4);
         break;
     case TYPE_VECTOR2:
-        ConvertArray<Vector4, Vector2>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Vector2ToVector4);
+        ConvertArray<Vector4, Vector2>(destBytes, sourceBytes, destStride, sourceStride, count, Vector2ToVector4);
         break;
     case TYPE_VECTOR3:
-        ConvertArray<Vector4, Vector3>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Vector3ToVector4);
+        ConvertArray<Vector4, Vector3>(destBytes, sourceBytes, destStride, sourceStride, count, Vector3ToVector4);
         break;
     case TYPE_VECTOR4:
-        ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Vector4ToVector4);
+        ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToVector4);
         break;
     case TYPE_UBYTE4:
-        ConvertArray<Vector4, Ubyte4>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Ubyte4ToVector4);
+        ConvertArray<Vector4, Ubyte4>(destBytes, sourceBytes, destStride, sourceStride, count, Ubyte4ToVector4);
         break;
     case TYPE_UBYTE4_NORM:
-        ConvertArray<Vector4, Ubyte4>(destBytes, sourceBytes, sizeof(Vector4), stride, count, Ubyte4NormToVector4);
+        ConvertArray<Vector4, Ubyte4>(destBytes, sourceBytes, destStride, sourceStride, count, Ubyte4NormToVector4);
         break;
     default:
         assert(0);
@@ -319,37 +356,72 @@ void VertexBuffer::UnpackVertexData(const void* source, unsigned stride,
     }
 }
 
-void VertexBuffer::PackVertexData(const Vector4* source, void* dest, unsigned stride, const VertexElement& element, unsigned start, unsigned count)
+void VertexBuffer::PackVertexData(const Vector4* source, unsigned sourceStride,
+    void* dest, unsigned destStride, const VertexElement& element, unsigned start, unsigned count)
 {
     const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source);
-    unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest) + element.offset_ + start * stride;
+    unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest) + element.offset_ + start * destStride;
 
     switch (element.type_)
     {
     case TYPE_INT:
-        ConvertArray<int, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToInt);
+        ConvertArray<int, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToInt);
         break;
     case TYPE_FLOAT:
-        ConvertArray<float, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToFloat);
+        ConvertArray<float, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToFloat);
         break;
     case TYPE_VECTOR2:
-        ConvertArray<Vector2, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToVector2);
+        ConvertArray<Vector2, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToVector2);
         break;
     case TYPE_VECTOR3:
-        ConvertArray<Vector3, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToVector3);
+        ConvertArray<Vector3, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToVector3);
         break;
     case TYPE_VECTOR4:
-        ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToVector4);
+        ConvertArray<Vector4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToVector4);
         break;
     case TYPE_UBYTE4:
-        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToUbyte4);
+        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToUbyte4);
         break;
     case TYPE_UBYTE4_NORM:
-        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, stride, sizeof(Vector4), count, Vector4ToUbyte4Norm);
+        ConvertArray<Ubyte4, Vector4>(destBytes, sourceBytes, destStride, sourceStride, count, Vector4ToUbyte4Norm);
         break;
     default:
         assert(0);
         break;
+    }
+}
+
+void VertexBuffer::ShuffleUnpackedVertexData(unsigned vertexCount,
+    const Vector4* source, const ea::vector<VertexElement>& sourceElements,
+    Vector4* dest, const ea::vector<VertexElement>& destElements, bool setMissingElementsToZero)
+{
+    const unsigned numSourceElements = sourceElements.size();
+    const unsigned numDestElements = destElements.size();
+
+    if (setMissingElementsToZero)
+    {
+        for (unsigned i = 0; i < vertexCount * numDestElements; ++i)
+            dest[i] = Vector4::ZERO;
+    }
+
+    auto compareSemantics = [](const VertexElement& lhs, const VertexElement& rhs)
+    {
+        return lhs.semantic_ == rhs.semantic_ && lhs.index_ == rhs.index_;
+    };
+
+    for (unsigned sourceElementIndex = 0; sourceElementIndex < numSourceElements; ++sourceElementIndex)
+    {
+        const VertexElement& sourceElement = sourceElements[sourceElementIndex];
+
+        // Find matching element
+        auto iterMatching = ea::find(destElements.begin(), destElements.end(), sourceElement, compareSemantics);
+        if (iterMatching == destElements.end())
+            continue;
+
+        // Copy data
+        const unsigned destElementIndex = iterMatching - destElements.begin();
+        for (unsigned i = 0; i < vertexCount; ++i)
+            dest[i * numDestElements + destElementIndex] = source[i * numSourceElements + sourceElementIndex];
     }
 }
 
