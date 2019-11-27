@@ -143,4 +143,76 @@ bool IndexBuffer::GetUsedVertexRange(unsigned start, unsigned count, unsigned& m
     return true;
 }
 
+ea::vector<unsigned> IndexBuffer::GetUnpackedData(unsigned start, unsigned count) const
+{
+    if (start >= indexCount_ || count == 0 || !IsShadowed())
+        return {};
+
+    // Clamp count to index buffer size.
+    if (count == M_MAX_UNSIGNED || start + count > indexCount_)
+        count = indexCount_ - start;
+
+    // Unpack data
+    const bool largeIndices = indexSize_ == 4;
+    ea::vector<unsigned> result(count);
+    UnpackIndexData(GetShadowData(), largeIndices, start, count, result.data());
+    return result;
+}
+
+void IndexBuffer::SetUnpackedData(const unsigned* data, unsigned start, unsigned count)
+{
+    if (start >= indexCount_ || count == 0)
+        return;
+
+    // Clamp count to index buffer size.
+    if (count == M_MAX_UNSIGNED || start + count > indexCount_)
+        count = indexCount_ - start;
+
+    const bool largeIndices = indexSize_ == 4;
+    ea::vector<unsigned char> buffer(count * indexSize_);
+
+    PackIndexData(data, buffer.data(), largeIndices, 0, count);
+    SetDataRange(buffer.data(), start, count);
+}
+
+void IndexBuffer::UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned* dest)
+{
+    const unsigned stride = largeIndices ? 4 : 2;
+    const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source) + start * stride;
+
+    if (largeIndices)
+    {
+        memcpy(dest, sourceBytes, count * stride);
+    }
+    else
+    {
+        for (unsigned i = 0; i < count; ++i)
+        {
+            // May by unaligned
+            unsigned short index{};
+            memcpy(&index, &sourceBytes[i * stride], sizeof(index));
+            dest[i] = index;
+        }
+    }
+}
+
+void IndexBuffer::PackIndexData(const unsigned* source, void* dest, bool largeIndices, unsigned start, unsigned count)
+{
+    const unsigned stride = largeIndices ? 4 : 2;
+    unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest) + start * stride;
+
+    if (largeIndices)
+    {
+        memcpy(destBytes, source, count * stride);
+    }
+    else
+    {
+        for (unsigned i = 0; i < count; ++i)
+        {
+            const unsigned short index = static_cast<unsigned short>(source[i]);
+            memcpy(&destBytes[i * stride], &index, sizeof(index));
+        }
+    }
+}
+
 }
