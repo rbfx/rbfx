@@ -495,64 +495,53 @@ bool Serializable::LoadJSON(const JSONValue& source)
 
     const JSONObject& attributesObject = attributesValue.GetObject();
 
-    unsigned startIndex = 0;
-
-    for (auto it = attributesObject.begin(); it != attributesObject.end();)
+    for (const AttributeInfo& attr : *attributes)
     {
-        ea::string name = it->first;
-        const JSONValue& value = it->second;
-        unsigned i = startIndex;
-        unsigned attempts = attributes->size();
-
-        while (attempts)
+        if (attr.ShouldLoad())
         {
-            const AttributeInfo& attr = attributes->at(i);
-            if (attr.ShouldLoad() && !attr.name_.compare(name))
+            const JSONValue& value = attributesValue[attr.name_];
+            if (value.GetValueType() == JSON_NULL)
+                continue;
+
+            Variant varValue;
+            // If enums specified, do enum lookup ad int assignment. Otherwise assign variant directly
+            if (attr.enumNames_ && attr.type_ == VAR_INT)
             {
-                Variant varValue;
-
-                // If enums specified, do enum lookup ad int assignment. Otherwise assign variant directly
-                if (attr.enumNames_ && attr.type_ == VAR_INT)
+                const ea::string& valueStr = value.GetString();
+                bool enumFound = false;
+                int enumValue = 0;
+                const char** enumPtr = attr.enumNames_;
+                while (*enumPtr)
                 {
-                    const ea::string& valueStr = value.GetString();
-                    bool enumFound = false;
-                    int enumValue = 0;
-                    const char** enumPtr = attr.enumNames_;
-                    while (*enumPtr)
+                    if (!valueStr.comparei(*enumPtr))
                     {
-                        if (!valueStr.comparei(*enumPtr))
-                        {
-                            enumFound = true;
-                            break;
-                        }
-                        ++enumPtr;
-                        ++enumValue;
+                        enumFound = true;
+                        break;
                     }
-                    if (enumFound)
-                        varValue = enumValue;
-                    else
-                        URHO3D_LOGWARNING("Unknown enum value " + valueStr + " in attribute " + attr.name_);
+                    ++enumPtr;
+                    ++enumValue;
                 }
+                if (enumFound)
+                    varValue = enumValue;
                 else
-                    varValue = value.GetVariantValue(attr.type_, context_);
-
-                if (!varValue.IsEmpty())
-                    OnSetAttribute(attr, varValue);
-
-                startIndex = (i + 1) % attributes->size();
-                break;
+                    URHO3D_LOGWARNING("Unknown enum value " + valueStr + " in attribute " + attr.name_);
             }
             else
-            {
-                i = (i + 1) % attributes->size();
-                --attempts;
-            }
+                varValue = value.GetVariantValue(attr.type_, context_);
+
+            if (!varValue.IsEmpty())
+                OnSetAttribute(attr, varValue);
         }
+    }
 
-        if (!attempts)
-            URHO3D_LOGWARNING("Unknown attribute " + name + " in JSON data");
-
-        it++;
+    // Report missing attributes.
+    for (const auto& pair : attributesObject)
+    {
+        bool found = false;
+        for (int i = 0; i < attributes->size() && !found; i++)
+            found |= attributes->at(i).name_ == pair.first;
+        if (!found)
+            URHO3D_LOGWARNING("Unknown attribute {} in JSON data", pair.first);
     }
 
     return true;
