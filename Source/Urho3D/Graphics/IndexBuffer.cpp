@@ -159,7 +159,7 @@ ea::vector<unsigned> IndexBuffer::GetUnpackedData(unsigned start, unsigned count
     return result;
 }
 
-void IndexBuffer::SetUnpackedData(const unsigned* data, unsigned start, unsigned count)
+void IndexBuffer::SetUnpackedData(const unsigned data[], unsigned start, unsigned count)
 {
     if (start >= indexCount_ || count == 0)
         return;
@@ -175,7 +175,7 @@ void IndexBuffer::SetUnpackedData(const unsigned* data, unsigned start, unsigned
     SetDataRange(buffer.data(), start, count);
 }
 
-void IndexBuffer::UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned* dest)
+void IndexBuffer::UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned dest[])
 {
     const unsigned stride = largeIndices ? 4 : 2;
     const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source) + start * stride;
@@ -196,7 +196,7 @@ void IndexBuffer::UnpackIndexData(const void* source, bool largeIndices, unsigne
     }
 }
 
-void IndexBuffer::PackIndexData(const unsigned* source, void* dest, bool largeIndices, unsigned start, unsigned count)
+void IndexBuffer::PackIndexData(const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count)
 {
     const unsigned stride = largeIndices ? 4 : 2;
     unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest) + start * stride;
