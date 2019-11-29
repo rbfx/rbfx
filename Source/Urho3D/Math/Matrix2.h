@@ -54,7 +54,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Matrix2(const float* data) noexcept :
+    explicit Matrix2(const float data[]) noexcept :
         m00_(data[0]),
         m01_(data[1]),
         m10_(data[2]),
@@ -231,7 +231,7 @@ public:
     float m11_;
 
     /// Bulk transpose matrices.
-    static void BulkTranspose(float* dest, const float* src, unsigned count)
+    static void BulkTranspose(float dest[], const float src[], unsigned count)
     {
         for (unsigned i = 0; i < count; ++i)
         {

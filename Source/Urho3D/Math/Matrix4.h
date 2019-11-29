@@ -142,7 +142,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Matrix4(const float* data) noexcept
+    explicit Matrix4(const float data[]) noexcept
 #ifndef URHO3D_SSE
        :m00_(data[0]),
         m01_(data[1]),
@@ -730,7 +730,7 @@ public:
     float m33_;
 
     /// Bulk transpose matrices.
-    static void BulkTranspose(float* dest, const float* src, unsigned count)
+    static void BulkTranspose(float dest[], const float src[], unsigned count)
     {
         for (unsigned i = 0; i < count; ++i)
         {

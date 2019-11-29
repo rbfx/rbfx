@@ -363,7 +363,7 @@ void SoundSource::Update(float timeStep)
     }
 }
 
-void SoundSource::Mix(int* dest, unsigned samples, int mixRate, bool stereo, bool interpolation)
+void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation)
 {
     if (!position_ || (!sound_ && !soundStream_) || !IsEnabledEffective())
         return;
@@ -602,7 +602,7 @@ void SoundSource::SetPlayPositionLockless(signed char* pos)
     timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
 }
 
-void SoundSource::MixMonoToMono(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -674,7 +674,7 @@ void SoundSource::MixMonoToMono(Sound* sound, int* dest, unsigned samples, int m
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToStereo(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto leftVol = (int)((-panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
@@ -756,7 +756,7 @@ void SoundSource::MixMonoToStereo(Sound* sound, int* dest, unsigned samples, int
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToMonoIP(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -829,7 +829,7 @@ void SoundSource::MixMonoToMonoIP(Sound* sound, int* dest, unsigned samples, int
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixMonoToStereoIP(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto leftVol = (int)((-panning_ + 1.0f) * (256.0f * totalGain + 0.5f));
@@ -915,7 +915,7 @@ void SoundSource::MixMonoToStereoIP(Sound* sound, int* dest, unsigned samples, i
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToMono(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -992,7 +992,7 @@ void SoundSource::MixStereoToMono(Sound* sound, int* dest, unsigned samples, int
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToStereo(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -1073,7 +1073,7 @@ void SoundSource::MixStereoToStereo(Sound* sound, int* dest, unsigned samples, i
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToMonoIP(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);
@@ -1150,7 +1150,7 @@ void SoundSource::MixStereoToMonoIP(Sound* sound, int* dest, unsigned samples, i
     fractPosition_ = fractPos;
 }
 
-void SoundSource::MixStereoToStereoIP(Sound* sound, int* dest, unsigned samples, int mixRate)
+void SoundSource::MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
     float totalGain = masterGain_ * attenuation_ * gain_;
     auto vol = RoundToInt(256.0f * totalGain);

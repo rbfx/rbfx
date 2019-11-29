@@ -49,7 +49,7 @@ public:
     }
 
     /// Construct from an int array.
-    explicit IntVector3(const int* data) noexcept :
+    explicit IntVector3(const int data[]) noexcept :
         x_(data[0]),
         y_(data[1]),
         z_(data[2])
@@ -236,7 +236,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Vector3(const float* data) noexcept :
+    explicit Vector3(const float data[]) noexcept :
         x_(data[0]),
         y_(data[1]),
         z_(data[2])

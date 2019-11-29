@@ -123,7 +123,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Matrix3x4(const float* data) noexcept
+    explicit Matrix3x4(const float data[]) noexcept
 #ifndef URHO3D_SSE
        :m00_(data[0]),
         m01_(data[1]),
