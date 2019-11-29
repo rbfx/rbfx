@@ -1196,7 +1196,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     impl_->vertexBuffersDirty_ = true;
 }
 
-void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
+void Graphics::SetShaderParameter(StringHash param, const float data[], unsigned count)
 {
     if (impl_->shaderProgram_)
     {

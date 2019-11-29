@@ -1093,7 +1093,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         SetShaderParameter(VSP_CLIPPLANE, clipPlane_);
 }
 
-void Graphics::SetShaderParameter(StringHash param, const float* data, unsigned count)
+void Graphics::SetShaderParameter(StringHash param, const float data[], unsigned count)
 {
     ea::unordered_map<StringHash, ShaderParameter>::iterator i;
     if (!impl_->shaderProgram_ || (i = impl_->shaderProgram_->parameters_.find(param)) == impl_->shaderProgram_->parameters_.end())

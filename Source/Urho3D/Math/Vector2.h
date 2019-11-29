@@ -47,14 +47,14 @@ public:
     }
 
     /// Construct from an int array.
-    explicit IntVector2(const int* data) noexcept :
+    explicit IntVector2(const int data[]) noexcept :
         x_(data[0]),
         y_(data[1])
     {
     }
 
     /// Construct from an float array.
-    explicit IntVector2(const float* data) :
+    explicit IntVector2(const float data[]) :
         x_((int)data[0]),
         y_((int)data[1])
     {
@@ -200,7 +200,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Vector2(const float* data) noexcept :
+    explicit Vector2(const float data[]) noexcept :
         x_(data[0]),
         y_(data[1])
     {

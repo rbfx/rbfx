@@ -60,7 +60,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Rect(const float* data) noexcept :
+    explicit Rect(const float data[]) noexcept :
         min_(data[0], data[1]),
         max_(data[2], data[3])
     {
@@ -306,7 +306,7 @@ public:
     }
 
     /// Construct from an int array.
-    explicit IntRect(const int* data) noexcept :
+    explicit IntRect(const int data[]) noexcept :
         left_(data[0]),
         top_(data[1]),
         right_(data[2]),

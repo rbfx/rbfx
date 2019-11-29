@@ -13,6 +13,30 @@
 
 %include "InstanceCache.i"
 
+%apply bool* INOUT                  { bool&, bool* };
+%apply signed char* INOUT           { signed char&/*, signed char**/ };
+%apply unsigned char* INOUT         { unsigned char&/*, unsigned char**/ };
+%apply short* INOUT                 { short&, short* };
+%apply unsigned short* INOUT        { unsigned short&, unsigned short* };
+%apply int* INOUT                   { int&, int* };
+%apply unsigned int* INOUT          { unsigned int&, unsigned int* };
+%apply long long* INOUT             { long long&, long long* };
+%apply unsigned long long* INOUT    { unsigned long long&, unsigned long long* };
+%apply float* INOUT                 { float&, float* };
+%apply double* INOUT                { double&, double* };
+
+%apply bool FIXED[]                 { bool[] };
+%apply signed char FIXED[]          { signed char[] };
+%apply unsigned char FIXED[]        { unsigned char[] };
+%apply short FIXED[]                { short[] };
+%apply unsigned short FIXED[]       { unsigned short[] };
+%apply int FIXED[]                  { int[] };
+%apply unsigned int FIXED[]         { unsigned int[] };
+%apply long long FIXED[]            { long long[] };
+%apply unsigned long long FIXED[]   { unsigned long long[] };
+%apply float FIXED[]                { float[] };
+%apply double FIXED[]               { double[] };
+
 %typemap(csvarout) void* VOID_INT_PTR %{
   get {
     var ret = $imcall;$excode
@@ -34,17 +58,7 @@
 
 %apply void* { std::uintptr_t, uintptr_t };
 %apply unsigned { time_t };
-%apply float *INOUT        { float& sin, float& cos, float& accumulator };
-%apply unsigned int* INOUT { unsigned int* randomRef, unsigned int* nearestRef }
 %typemap(csvarout, excode=SWIGEXCODE2) float INOUT[] "get { var ret = $imcall;$excode return ret; }"
-%apply float *OUTPUT   { float& out_r, float& out_g, float& out_b, float& out_u, float& out_v, float& out_w };
-%apply double *INOUT   { double* v };
-%apply bool *INOUT     { bool*, unsigned int* flags };
-%apply int INOUT[]     { int*, int[ANY] };
-%apply float INOUT[]   { float*, float[ANY] };
-%apply unsigned char OUTPUT[] { unsigned char out_table[256] };
-%apply unsigned char INPUT[]  { unsigned char const table[256], unsigned char *pixels };
-%apply bool INOUT[]    { bool[5] };
 %typemap(ctype)   const char* INPUT[] "char**"
 %typemap(cstype)  const char* INPUT[] "string[]"
 %typemap(imtype, inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]") const char* INPUT[] "string[]"
@@ -105,18 +119,6 @@ namespace ea = eastl;
 %include "StringHash.i"
 %include "eastl_string.i"
 
-%apply bool* INOUT                  { bool& };
-%apply signed char* INOUT           { signed char& };
-%apply unsigned char* INOUT         { unsigned char& };
-%apply short* INOUT                 { short& };
-%apply unsigned short* INOUT        { unsigned short& };
-%apply int* INOUT                   { int& };
-%apply unsigned int* INOUT          { unsigned int& };
-%apply long long* INOUT             { long long& };
-%apply unsigned long long* INOUT    { unsigned long long& };
-%apply float* INOUT                 { float& };
-%apply double* INOUT                { double& };
-
 %rename("%(camelcase)s", %$isenumitem) "";
 %rename("%(camelcase)s", %$isvariable, %$ispublic) "";
 
@@ -152,6 +154,9 @@ namespace ea = eastl;
 %include "Urho3D/Math/MathDefs.h"
 %include "Urho3D/Math/Polyhedron.h"
 %include "Urho3D/Math/Frustum.h"
+
+CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
+%apply Urho3D::Vector4 FIXED[] { Urho3D::Vector4[] };
 
 // ---------------------------------------  ---------------------------------------
 %ignore Urho3D::begin;
@@ -444,11 +449,6 @@ public:
 
 // --------------------------------------- Audio ---------------------------------------
 %include "_properties_audio.i"
-%apply int FIXED[]  { int *dest }
-%apply int* OUTPUT  { int& x, int& y }
-%typemap(cstype) int *dest "ref int[]"
-%typemap(imtype) int *dest "global::System.IntPtr"
-%csmethodmodifiers Urho3D::SoundSource::Mix "public unsafe";
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed char>& data, unsigned numBytes);
 %ignore Urho3D::BufferedSoundStream::AddData(const ea::shared_array<signed short>& data, unsigned numBytes);
 %ignore Urho3D::Sound::GetData;
@@ -521,13 +521,6 @@ public:
 %ignore Urho3D::View::GetLightQueues;
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
-
-CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
-%apply Urho3D::Vector4 FIXED[] { Urho3D::Vector4[] };
-%apply unsigned *OUTPUT        { unsigned& minVertex, unsigned& vertexCount };
-%apply float FIXED[]           { const float* };
-%apply unsigned int FIXED[]    { const unsigned int[] };
-%apply unsigned char FIXED[]   { const unsigned char* blendIndices };
 %apply void* VOID_INT_PTR {
     int *data_,
     int *Urho3D::OcclusionBuffer::GetBuffer
