@@ -48,7 +48,7 @@ struct URHO3D_API DecalVertex
     }
 
     /// Construct with position, normal and skinning information.
-    DecalVertex(const Vector3& position, const Vector3& normal, const float* blendWeights, const unsigned char* blendIndices) :
+    DecalVertex(const Vector3& position, const Vector3& normal, const float blendWeights[], const unsigned char blendIndices[]) :
         position_(position),
         normal_(normal)
     {
