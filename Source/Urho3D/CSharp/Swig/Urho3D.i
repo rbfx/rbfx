@@ -63,9 +63,9 @@
 %typecheck(SWIG_TYPECHECK_CHAR_PTR)           void*& ""
 
 // Speed boost
-%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal class"
-%pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic partial class"
-%typemap(csclassmodifiers) SWIGTYPE "public partial class"
+%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal unsafe class"
+%pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic unsafe partial class"
+%typemap(csclassmodifiers) SWIGTYPE "public unsafe partial class"
 
 %{
 #if _WIN32
