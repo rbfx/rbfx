@@ -301,10 +301,10 @@
       [1] {{ {*mItBegin.mpCurrent} }}
     </DisplayString>
     <DisplayString Condition="(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin) != 0">
-      [{(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)}] 
-      {{ 
-        {*mItBegin.mpCurrent}, 
-        ... 
+      [{(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)}]
+      {{
+        {*mItBegin.mpCurrent},
+        ...
       }}
     </DisplayString>
     <Expand>
@@ -346,24 +346,24 @@
       [1] {{ {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue} }}
     </DisplayString>
     <DisplayString Condition="mNode.mpNext != &amp;mNode &amp;&amp; mNode.mpNext-&gt;mpNext != &amp;mNode &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext == &amp;mNode">
-      [2] 
-      {{ 
-        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}, 
-        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue} 
+      [2]
+      {{
+        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue}
       }}
     </DisplayString>
     <DisplayString Condition="mNode.mpNext != &amp;mNode &amp;&amp; mNode.mpNext-&gt;mpNext != &amp;mNode &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext != &amp;mNode">
-      [?] 
-      {{ 
-        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}, 
-        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue}, 
+      [?]
+      {{
+        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::ListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue},
         ...
       }}
     </DisplayString>
     <Expand>
       <Synthetic Name="NOTE!">
-        <DisplayString>Content of lists will repeat indefinitely. Keep that in mind!</DisplayString> 
-      </Synthetic>  
+        <DisplayString>Content of lists will repeat indefinitely. Keep that in mind!</DisplayString>
+      </Synthetic>
           <LinkedListItems>
               <HeadPointer>mNode.mpNext</HeadPointer>
               <NextPointer>mpNext</NextPointer>
@@ -379,10 +379,10 @@
       <Item Name="Next">*(eastl::ListNode&lt;$T1&gt;*)mpNext</Item>
       <Item Name="Previous">*(eastl::ListNode&lt;$T1&gt;*)mpPrev</Item>
       <Synthetic Name="NOTE!">
-        <DisplayString>Content of lists will repeat indefinitely. Keep that in mind!</DisplayString> 
-      </Synthetic>  
+        <DisplayString>Content of lists will repeat indefinitely. Keep that in mind!</DisplayString>
+      </Synthetic>
       <Synthetic Name="List">
-        <DisplayString>The rest of the list follows:</DisplayString> 
+        <DisplayString>The rest of the list follows:</DisplayString>
       </Synthetic>
           <LinkedListItems>
               <HeadPointer>(eastl::ListNode&lt;$T1&gt;*)mpNext-&gt;mpNext</HeadPointer>
@@ -404,22 +404,22 @@
       [0] {{}}
     </DisplayString>
       <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext == 0">
-      [1] 
-      {{ 
-        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue} 
+      [1]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}
       }}
     </DisplayString>
     <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext == 0">
-      [2] 
-      {{ 
-        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}, 
-        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue} 
+      [2]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue}
       }}
     </DisplayString>
     <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext != 0">
-      [?] 
-      {{ 
-        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}, 
+      [?]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
         {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue},
         ...
       }}
@@ -439,7 +439,7 @@
       <Item Name="Value">mValue</Item>
       <Item Name="Next">*(eastl::SListNode&lt;$T1&gt;*)mpNext</Item>
       <Synthetic Name="List">
-        <DisplayString>The rest of the list follows:</DisplayString> 
+        <DisplayString>The rest of the list follows:</DisplayString>
       </Synthetic>
       <LinkedListItems>
               <HeadPointer>mpNext == nullptr ? nullptr : (eastl::SListNode&lt;$T1&gt;*)mpNext-&gt;mpNext</HeadPointer>
@@ -462,8 +462,8 @@
     <DisplayString Condition="mAnchor.mpNext != &amp;mAnchor &amp;&amp; mAnchor.mpNext-&gt;mpNext != &amp;mAnchor">[?] {{ {mAnchor.mpNext}, ... }}</DisplayString>
     <Expand>
       <Synthetic Name="NOTE!">
-        <DisplayString>Content of intrusive lists will repeat indefinitely. Keep that in mind!</DisplayString> 
-      </Synthetic>  
+        <DisplayString>Content of intrusive lists will repeat indefinitely. Keep that in mind!</DisplayString>
+      </Synthetic>
           <LinkedListItems>
               <HeadPointer>mAnchor.mpNext</HeadPointer>
               <NextPointer>mpNext</NextPointer>
@@ -485,15 +485,15 @@
       [0] {{}}
     </DisplayString>
     <DisplayString Condition="mnSize == 1">
-      [1] 
-      {{ 
-        {((eastl::rbtree_node&lt;$T1&gt;*)mAnchor.mpNodeLeft)-&gt;mValue} 
+      [1]
+      {{
+        {((eastl::rbtree_node&lt;$T1&gt;*)mAnchor.mpNodeLeft)-&gt;mValue}
       }}
     </DisplayString>
     <DisplayString Condition="mnSize &gt; 1">
-      [{mnSize}] 
-      {{ 
-        {((eastl::rbtree_node&lt;$T1&gt;*)mAnchor.mpNodeLeft)-&gt;mValue}, 
+      [{mnSize}]
+      {{
+        {((eastl::rbtree_node&lt;$T1&gt;*)mAnchor.mpNodeLeft)-&gt;mValue},
         ...
       }}
     </DisplayString>
@@ -514,15 +514,15 @@
       [0] {{}}
     </DisplayString>
     <DisplayString Condition="mnSize == 1">
-      [1] 
-      {{ 
-        {((eastl::rbtree_node&lt;$T2&gt;*)mAnchor.mpNodeLeft)-&gt;mValue} 
+      [1]
+      {{
+        {((eastl::rbtree_node&lt;$T2&gt;*)mAnchor.mpNodeLeft)-&gt;mValue}
       }}
     </DisplayString>
     <DisplayString Condition="mnSize &gt; 1">
-      [{mnSize}] 
-      {{ 
-        {((eastl::rbtree_node&lt;$T2&gt;*)mAnchor.mpNodeLeft)-&gt;mValue}, 
+      [{mnSize}]
+      {{
+        {((eastl::rbtree_node&lt;$T2&gt;*)mAnchor.mpNodeLeft)-&gt;mValue},
         ...
       }}
     </DisplayString>
@@ -543,7 +543,7 @@
     <Expand>
       <Item Name="Value">mValue</Item>
       <Synthetic Name="NOTE!">
-        <DisplayString>It is possible to expand parents that do not exist.</DisplayString> 
+        <DisplayString>It is possible to expand parents that do not exist.</DisplayString>
       </Synthetic>
       <Item Name="Parent">*(eastl::rbtree_node&lt;$T2&gt;*)(mpNodeParent.value &amp; (~uintptr_t(1)))</Item>
       <Item Name="Left">*(eastl::rbtree_node&lt;$T2&gt;*)mpNodeLeft</Item>
