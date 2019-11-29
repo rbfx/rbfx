@@ -2,6 +2,11 @@
 
 %import "Urho3D.i"
 
+// Speed boost
+%pragma(csharp) imclassclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\ninternal unsafe class"
+%pragma(csharp) moduleclassmodifiers="[System.Security.SuppressUnmanagedCodeSecurity]\npublic unsafe partial class"
+%typemap(csclassmodifiers) SWIGTYPE "public unsafe partial class"
+
 #define IMGUI_DISABLE_OBSOLETE_FUNCTIONS 1
 %{
 #include <Urho3D/CSharp/Native/SWIGHelpers.h>
