@@ -303,7 +303,7 @@ ea::vector<Vector4> VertexBuffer::GetUnpackedData(unsigned start, unsigned count
     return result;
 }
 
-void VertexBuffer::SetUnpackedData(const Vector4* data, unsigned start, unsigned count)
+void VertexBuffer::SetUnpackedData(const Vector4 data[], unsigned start, unsigned count)
 {
     if (start >= vertexCount_ || count == 0)
         return;
@@ -322,7 +322,7 @@ void VertexBuffer::SetUnpackedData(const Vector4* data, unsigned start, unsigned
 }
 
 void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,
-    const VertexElement& element, unsigned start, unsigned count, Vector4* dest, unsigned destStride)
+    const VertexElement& element, unsigned start, unsigned count, Vector4 dest[], unsigned destStride)
 {
     const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source) + element.offset_ + start * sourceStride;
     unsigned char* destBytes = reinterpret_cast<unsigned char*>(dest);
@@ -356,7 +356,7 @@ void VertexBuffer::UnpackVertexData(const void* source, unsigned sourceStride,
     }
 }
 
-void VertexBuffer::PackVertexData(const Vector4* source, unsigned sourceStride,
+void VertexBuffer::PackVertexData(const Vector4 source[], unsigned sourceStride,
     void* dest, unsigned destStride, const VertexElement& element, unsigned start, unsigned count)
 {
     const unsigned char* sourceBytes = reinterpret_cast<const unsigned char*>(source);
@@ -392,8 +392,8 @@ void VertexBuffer::PackVertexData(const Vector4* source, unsigned sourceStride,
 }
 
 void VertexBuffer::ShuffleUnpackedVertexData(unsigned vertexCount,
-    const Vector4* source, const ea::vector<VertexElement>& sourceElements,
-    Vector4* dest, const ea::vector<VertexElement>& destElements, bool setMissingElementsToZero)
+    const Vector4 source[], const ea::vector<VertexElement>& sourceElements,
+    Vector4 dest[], const ea::vector<VertexElement>& destElements, bool setMissingElementsToZero)
 {
     const unsigned numSourceElements = sourceElements.size();
     const unsigned numDestElements = destElements.size();

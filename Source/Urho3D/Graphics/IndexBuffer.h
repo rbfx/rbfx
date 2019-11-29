@@ -95,13 +95,13 @@ public:
     ea::vector<unsigned> GetUnpackedData(unsigned start = 0, unsigned count = M_MAX_UNSIGNED) const;
 
     /// Set data in the buffer from unpacked data. Data should contain at least `count` elements.
-    void SetUnpackedData(const unsigned* data, unsigned start = 0, unsigned count = M_MAX_UNSIGNED);
+    void SetUnpackedData(const unsigned data[], unsigned start = 0, unsigned count = M_MAX_UNSIGNED);
 
     /// Unpack index data from index buffer into unsigned int array.
-    static void UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned* dest);
+    static void UnpackIndexData(const void* source, bool largeIndices, unsigned start, unsigned count, unsigned dest[]);
 
     /// Pack index data from unsigned int array into index buffer.
-    static void PackIndexData(const unsigned* source, void* dest, bool largeIndices, unsigned start, unsigned count);
+    static void PackIndexData(const unsigned source[], void* dest, bool largeIndices, unsigned start, unsigned count);
 
 private:
     /// Create buffer.
