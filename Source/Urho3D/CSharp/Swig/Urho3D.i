@@ -522,9 +522,12 @@ public:
 %rename(DrawableFlags) Urho3D::DrawableFlag;
 
 
-%apply unsigned *OUTPUT { unsigned& minVertex, unsigned& vertexCount };
-%apply float INPUT[]    { const float* };
-%apply unsigned char INPUT[] { const unsigned char* blendIndices };
+CSHARP_ARRAYS_FIXED(Urho3D::Vector4, global::Urho3DNet.Vector4)
+%apply Urho3D::Vector4 FIXED[] { Urho3D::Vector4* data, const Urho3D::Vector4* source, Urho3D::Vector4* dest };
+%apply unsigned *OUTPUT        { unsigned& minVertex, unsigned& vertexCount };
+%apply float FIXED[]           { const float* };
+%apply unsigned int FIXED[]    { const unsigned int* };
+%apply unsigned char FIXED[]   { const unsigned char* blendIndices };
 %apply void* VOID_INT_PTR {
     int *data_,
     int *Urho3D::OcclusionBuffer::GetBuffer
