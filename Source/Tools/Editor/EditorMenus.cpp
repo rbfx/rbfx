@@ -90,7 +90,7 @@ void Editor::RenderMenuBar()
                 {
                     ea::string projectPath = project_->GetProjectPath();
                     CloseProject();
-                    GetFileSystem()->Delete(projectPath + ".ui.ini");
+                    context_->GetFileSystem()->Delete(projectPath + ".ui.ini");
                     OpenProject(projectPath);
                 }
 
@@ -133,7 +133,7 @@ void Editor::RenderMenuBar()
             {
                 if (ui::MenuItem("Profiler"))
                 {
-                    GetFileSystem()->SystemSpawn(GetFileSystem()->GetProgramDir() + "Profiler"
+                    context_->GetFileSystem()->SystemSpawn(context_->GetFileSystem()->GetProgramDir() + "Profiler"
 #if _WIN32
                         ".exe"
 #endif

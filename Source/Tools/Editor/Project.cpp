@@ -87,16 +87,16 @@ Project::~Project()
     context_->RemoveSubsystem(pipeline_->GetType());
     context_->RemoveSubsystem(plugins_->GetType());
 
-    if (GetSystemUI())
+    if (context_->GetSystemUI())
         ui::GetIO().IniFilename = nullptr;
 
-    if (auto* cache = GetCache())
+    if (auto* cache = context_->GetCache())
     {
         cache->RemoveResourceDir(GetCachePath());
         cache->RemoveResourceDir(GetResourcePath());
 
         for (const auto& path : cachedEngineResourcePaths_)
-            GetCache()->AddResourceDir(path);
+            context_->GetCache()->AddResourceDir(path);
         cache->SetAutoReloadResources(false);
     }
 
@@ -115,15 +115,15 @@ bool Project::LoadProject(const ea::string& projectPath)
 
     projectFileDir_ = AddTrailingSlash(projectPath);
 
-    if (!GetFileSystem()->Exists(GetCachePath()))
-        GetFileSystem()->CreateDirsRecursive(GetCachePath());
+    if (!context_->GetFileSystem()->Exists(GetCachePath()))
+        context_->GetFileSystem()->CreateDirsRecursive(GetCachePath());
 
-    if (!GetFileSystem()->Exists(GetResourcePath()))
+    if (!context_->GetFileSystem()->Exists(GetResourcePath()))
     {
         // Initialize new project
-        GetFileSystem()->CreateDirsRecursive(GetResourcePath());
+        context_->GetFileSystem()->CreateDirsRecursive(GetResourcePath());
 
-        for (const auto& path : GetCache()->GetResourceDirs())
+        for (const auto& path : context_->GetCache()->GetResourceDirs())
         {
             if (path.ends_with("/EditorData/") || path.contains("/Autoload/"))
                 continue;
@@ -133,37 +133,37 @@ bool Project::LoadProject(const ea::string& projectPath)
             URHO3D_LOGINFOF("Importing resources from '%s'", path.c_str());
 
             // Copy default resources to the project.
-            GetFileSystem()->ScanDir(names, path, "*", SCAN_FILES, false);
+            context_->GetFileSystem()->ScanDir(names, path, "*", SCAN_FILES, false);
             for (const auto& name : names)
-                GetFileSystem()->Copy(path + name, GetResourcePath() + name);
+                context_->GetFileSystem()->Copy(path + name, GetResourcePath() + name);
 
-            GetFileSystem()->ScanDir(names, path, "*", SCAN_DIRS, false);
+            context_->GetFileSystem()->ScanDir(names, path, "*", SCAN_DIRS, false);
             for (const auto& name : names)
             {
                 if (name == "." || name == "..")
                     continue;
-                GetFileSystem()->CopyDir(path + name, GetResourcePath() + name);
+                context_->GetFileSystem()->CopyDir(path + name, GetResourcePath() + name);
             }
         }
     }
 
     // Unregister engine dirs
     auto enginePrefixPath = GetSubsystem<Editor>()->GetCoreResourcePrefixPath();
-    auto pathsCopy = GetCache()->GetResourceDirs();
+    auto pathsCopy = context_->GetCache()->GetResourceDirs();
     cachedEngineResourcePaths_.clear();
     for (const auto& path : pathsCopy)
     {
         if (path.starts_with(enginePrefixPath) && !path.ends_with("/EditorData/"))
         {
             cachedEngineResourcePaths_.emplace_back(path);
-            GetCache()->RemoveResourceDir(path);
+            context_->GetCache()->RemoveResourceDir(path);
         }
     }
 
-    if (GetSystemUI())
+    if (context_->GetSystemUI())
     {
         uiConfigPath_ = projectFileDir_ + ".ui.ini";
-        isNewProject_ = !GetFileSystem()->FileExists(uiConfigPath_);
+        isNewProject_ = !context_->GetFileSystem()->FileExists(uiConfigPath_);
         ui::GetIO().IniFilename = uiConfigPath_.c_str();
     }
 
@@ -171,7 +171,7 @@ bool Project::LoadProject(const ea::string& projectPath)
     // StringHashNames.json
     {
         ea::string filePath(projectFileDir_ + "StringHashNames.json");
-        if (GetFileSystem()->Exists(filePath))
+        if (context_->GetFileSystem()->Exists(filePath))
         {
             JSONFile file(context_);
             if (!file.LoadFile(filePath))
@@ -188,20 +188,20 @@ bool Project::LoadProject(const ea::string& projectPath)
 #endif
 
     // Register asset dirs
-    GetCache()->AddResourceDir(GetCachePath(), 0);
-    GetCache()->AddResourceDir(GetResourcePath(), 1);
-    GetCache()->SetAutoReloadResources(true);
+    context_->GetCache()->AddResourceDir(GetCachePath(), 0);
+    context_->GetCache()->AddResourceDir(GetResourcePath(), 1);
+    context_->GetCache()->SetAutoReloadResources(true);
 
 #if URHO3D_PLUGINS
-    if (!GetEngine()->IsHeadless())
+    if (!context_->GetEngine()->IsHeadless())
     {
         // Normal execution cleans up old versions of plugins.
         StringVector files;
-        GetFileSystem()->ScanDir(files, GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+        context_->GetFileSystem()->ScanDir(files, context_->GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
         for (const ea::string& fileName : files)
         {
             if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
-                GetFileSystem()->Delete(GetFileSystem()->GetProgramDir() + fileName);
+                context_->GetFileSystem()->Delete(context_->GetFileSystem()->GetProgramDir() + fileName);
         }
     }
 #endif
@@ -209,7 +209,7 @@ bool Project::LoadProject(const ea::string& projectPath)
     // Project.json
     ea::string filePath(projectFileDir_ + "Project.json");
     JSONFile file(context_);
-    if (GetFileSystem()->Exists(filePath))
+    if (context_->GetFileSystem()->Exists(filePath))
     {
         if (!file.LoadFile(filePath))
             return false;
@@ -221,7 +221,7 @@ bool Project::LoadProject(const ea::string& projectPath)
 
 bool Project::SaveProject()
 {
-    if (GetEngine()->IsHeadless())
+    if (context_->GetEngine()->IsHeadless())
     {
         URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
         return false;
@@ -280,7 +280,7 @@ bool Project::SaveProject()
 bool Project::Serialize(Archive& archive)
 {
     const int version = 1;
-    if (!archive.IsInput() && GetEngine()->IsHeadless())
+    if (!archive.IsInput() && context_->GetEngine()->IsHeadless())
     {
         URHO3D_LOGERROR("Headless instance is supposed to use project as read-only.");
         return false;

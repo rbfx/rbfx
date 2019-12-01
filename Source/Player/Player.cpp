@@ -52,7 +52,7 @@ Player::Player(Context* context)
 
 void Player::Setup()
 {
-    FileSystem* fs = GetFileSystem();
+    FileSystem* fs = context_->GetFileSystem();
 
 #if MOBILE
     engineParameters_[EP_RESOURCE_PATHS] = "";
@@ -63,7 +63,7 @@ void Player::Setup()
 #if DESKTOP && URHO3D_DEBUG
     // Developer builds. Try loading from filesystem first.
     const ea::string settingsFilePath = "Cache/Settings.json";
-    if (GetFileSystem()->Exists(settingsFilePath))
+    if (context_->GetFileSystem()->Exists(settingsFilePath))
     {
         JSONFile jsonFile(context_);
         if (jsonFile.LoadFile(settingsFilePath))
@@ -146,7 +146,7 @@ void Player::Setup()
             // Paks are manually added here in order to avoid modifying EP_RESOURCE_PACKAGES value. User may specify this configuration
             // parameter to load any custom paks if desired. Engine will add them later. Besides we already had to to open and parse package
             // in order to find Settings.json. By adding paks now we avoid engine doing all the loading same file twice.
-            GetCache()->AddPackageFile(package);
+            context_->GetCache()->AddPackageFile(package);
             for (const auto& pair : settings_.engineParameters_)
                 engineParameters_[pair.first] = pair.second;
         }
@@ -161,12 +161,12 @@ void Player::Start()
 
     // Add resource router that maps cooked resources to their original resource names.
     auto* router = new CacheRouter(context_);
-    for (PackageFile* package : GetCache()->GetPackageFiles())
+    for (PackageFile* package : context_->GetCache()->GetPackageFiles())
     {
         if (package->Exists("CacheInfo.json"))
             router->AddPackage(package);
     }
-    GetCache()->AddResourceRouter(router);
+    context_->GetCache()->AddResourceRouter(router);
 
     context_->RegisterSubsystem(new SceneManager(context_));
 
@@ -245,12 +245,12 @@ bool Player::LoadPlugins(const StringVector& plugins)
         loaded = LoadAssembly(pluginFileName);
 #else
         // On desktop we can access file system as usual
-        if (GetFileSystem()->Exists(pluginFileName))
+        if (context_->GetFileSystem()->Exists(pluginFileName))
             loaded = LoadAssembly(pluginFileName);
         else
         {
-            pluginFileName = GetFileSystem()->GetProgramDir() + pluginFileName;
-            if (GetFileSystem()->Exists(pluginFileName))
+            pluginFileName = context_->GetFileSystem()->GetProgramDir() + pluginFileName;
+            if (context_->GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
         }
 #endif  // MOBILE
@@ -264,13 +264,13 @@ bool Player::LoadPlugins(const StringVector& plugins)
 #if ANDROID
             pluginFileName = ea::string(APK) + "assets/.net/" + pluginFileName;
 #endif
-            if (GetFileSystem()->Exists(pluginFileName))
+            if (context_->GetFileSystem()->Exists(pluginFileName))
                 loaded = LoadAssembly(pluginFileName);
 #if DESKTOP
             else
             {
-                pluginFileName = GetFileSystem()->GetProgramDir() + pluginFileName;
-                if (GetFileSystem()->Exists(pluginFileName))
+                pluginFileName = context_->GetFileSystem()->GetProgramDir() + pluginFileName;
+                if (context_->GetFileSystem()->Exists(pluginFileName))
                     loaded = LoadAssembly(pluginFileName);
             }
 #endif  // DESKTOP

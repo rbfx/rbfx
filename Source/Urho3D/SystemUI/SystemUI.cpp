@@ -90,7 +90,7 @@ SystemUI::SystemUI(Urho3D::Context* context)
         ReallocateFontTexture();
     });
     SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
-        float timeStep = GetTime()->GetTimeStep();
+        float timeStep = context_->GetTime()->GetTimeStep();
         ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
         ImGui::NewFrame();
         ImGuizmo::BeginFrame();
@@ -196,7 +196,7 @@ void SystemUI::OnRawEvent(VariantMap& args)
 
 void SystemUI::OnRenderDrawLists(ImDrawData* data)
 {
-    auto graphics = GetGraphics();
+    auto graphics = context_->GetGraphics();
     // Engine does not render when window is closed or device is lost
     assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
 
@@ -420,7 +420,7 @@ void SystemUI::SetScale(Vector3 scale, bool pixelPerfect)
     auto& style = ui::GetStyle();
 
     if (scale == Vector3::ZERO)
-        scale = GetGraphics()->GetDisplayDPI() / 96.f;
+        scale = context_->GetGraphics()->GetDisplayDPI() / 96.f;
 
     if (scale == Vector3::ZERO)
     {
@@ -485,7 +485,7 @@ void SystemUI::Start()
         io.Fonts->AddFontDefault();
         ReallocateFontTexture();
     }
-    auto graphics = GetGraphics();
+    auto graphics = context_->GetGraphics();
     io.DisplaySize = {(float)graphics->GetWidth(), (float)graphics->GetHeight()};
 
     // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization

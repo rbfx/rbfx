@@ -90,8 +90,8 @@ public:
     {
         ui::GetIO().IniFilename = nullptr;    // Disable saving of settings.
 
-        GetInput()->SetMouseVisible(true);
-        GetInput()->SetMouseMode(MM_ABSOLUTE);
+        context_->GetInput()->SetMouseVisible(true);
+        context_->GetInput()->SetMouseMode(MM_ABSOLUTE);
 
         scene_ = new Scene(context_);
         scene_->CreateComponent<Octree>();
@@ -108,7 +108,7 @@ public:
         // Parent node used to rotate model around it's center (not origin).
         parentNode_ = scene_->CreateChild();
 
-        GetSystemUI()->ApplyStyleDefault(true, 1);
+        context_->GetSystemUI()->ApplyStyleDefault(true, 1);
         ui::GetStyle().WindowRounding = 0;
 
         SubscribeToEvent(E_UPDATE, std::bind(&AssetViewer::OnUpdate, this, _2));
@@ -123,7 +123,7 @@ public:
         if (!node_)
             return;
 
-        if (!GetSystemUI()->IsAnyItemActive() && !GetSystemUI()->IsAnyItemHovered())
+        if (!context_->GetSystemUI()->IsAnyItemActive() && !context_->GetSystemUI()->IsAnyItemHovered())
         {
             auto input = GetSubsystem<Input>();
 
@@ -157,7 +157,7 @@ public:
                 input->SetMouseVisible(true);
         }
 
-        if (GetInput()->GetKeyPress(KEY_F1))
+        if (context_->GetInput()->GetKeyPress(KEY_F1))
             showHelp_ = true;
 
 
@@ -186,7 +186,7 @@ public:
             ui::End();
         }
 
-        if (node_ && GetInput()->GetKeyDown(KEY_SHIFT))
+        if (node_ && context_->GetInput()->GetKeyDown(KEY_SHIFT))
             gizmo_.Manipulate(camera_, parentNode_);
     }
 

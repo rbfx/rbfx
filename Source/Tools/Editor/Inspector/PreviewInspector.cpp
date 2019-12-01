@@ -65,7 +65,7 @@ void PreviewInspector::SetModel(Model* model)
 
 void PreviewInspector::SetModel(const ea::string& resourceName)
 {
-    SetModel(GetCache()->GetResource<Model>(resourceName));
+    SetModel(context_->GetCache()->GetResource<Model>(resourceName));
 }
 
 void PreviewInspector::SetGrab(bool enable)
@@ -74,7 +74,7 @@ void PreviewInspector::SetGrab(bool enable)
         return;
 
     mouseGrabbed_ = enable;
-    Input* input = view_.GetCamera()->GetInput();
+    Input* input = view_.GetCamera()->GetContext()->GetInput();
     if (enable && input->IsMouseVisible())
         input->SetMouseVisible(false);
     else if (!enable && !input->IsMouseVisible())
@@ -99,7 +99,7 @@ void PreviewInspector::RenderPreview()
 
 void PreviewInspector::HandleInput()
 {
-    Input* input = view_.GetCamera()->GetInput();
+    Input* input = view_.GetCamera()->GetContext()->GetInput();
     bool rightMouseButtonDown = input->GetMouseButtonDown(MOUSEB_RIGHT);
     if (ui::IsItemHovered())
     {

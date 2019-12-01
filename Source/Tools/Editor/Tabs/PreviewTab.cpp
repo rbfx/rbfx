@@ -112,9 +112,9 @@ PreviewTab::PreviewTab(Context* context)
     });
     SubscribeToEvent(E_ENDRENDERINGSYSTEMUI, [this](StringHash, VariantMap&) {
         if (simulationStatus_ == SCENE_SIMULATION_STOPPED)
-            dim_ = Max(dim_ - GetTime()->GetTimeStep() * 10, 0.f);
+            dim_ = Max(dim_ - context_->GetTime()->GetTimeStep() * 10, 0.f);
         else
-            dim_ = Min(dim_ + GetTime()->GetTimeStep() * 6, 1.f);
+            dim_ = Min(dim_ + context_->GetTime()->GetTimeStep() * 6, 1.f);
 
         if (dim_ > M_EPSILON)
         {
@@ -155,7 +155,7 @@ IntRect PreviewTab::UpdateViewRect()
         view_->SetSize(tabRect.Width(), tabRect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         if (auto* surface = view_->GetRenderSurface())
             surface->SetUpdateMode(SURFACE_UPDATEALWAYS);
-        static_cast<RootUIElement*>(GetUI()->GetRoot())->SetOffset(tabRect.Min());
+        static_cast<RootUIElement*>(context_->GetUI()->GetRoot())->SetOffset(tabRect.Min());
         UpdateViewports();
     }
     return tabRect;
@@ -169,7 +169,7 @@ bool PreviewTab::RenderWindowContent()
     IntRect rect = UpdateViewRect();
     ui::Image(view_.Get(), ImVec2{static_cast<float>(rect.Width()), static_cast<float>(rect.Height())});
     if (!inputGrabbed_ && simulationStatus_ == SCENE_SIMULATION_RUNNING && ui::IsItemHovered() &&
-        ui::IsAnyMouseDown() && GetInput()->IsMouseVisible())
+        ui::IsAnyMouseDown() && context_->GetInput()->IsMouseVisible())
         GrabInput();
 
     return true;
@@ -237,13 +237,13 @@ void PreviewTab::RenderButtons()
     {
     case SCENE_SIMULATION_RUNNING:
     {
-        float timeStep = GetTime()->GetTimeStep();
+        float timeStep = context_->GetTime()->GetTimeStep();
         scene->Update(timeStep);
-        GetUI()->Update(timeStep);
+        context_->GetUI()->Update(timeStep);
     }
     case SCENE_SIMULATION_PAUSED:
     {
-        if (GetInput()->GetKeyPress(KEY_ESCAPE))
+        if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
         {
             if (Time::GetSystemTime() - lastEscPressTime_ > 300)
                 lastEscPressTime_ = Time::GetSystemTime();
@@ -283,8 +283,8 @@ void PreviewTab::Play()
         // Scene was not running. Allow scene to set up input parameters.
         tab->GetUndo().SetTrackingEnabled(false);
         tab->SaveState(sceneState_);
-        GetUI()->SetBlockEvents(false);
-        GetAudio()->Play();
+        context_->GetUI()->SetBlockEvents(false);
+        context_->GetAudio()->Play();
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
         SendEvent(E_SIMULATIONSTART);
         inputGrabbed_ = true;
@@ -295,8 +295,8 @@ void PreviewTab::Play()
     {
         // Scene was paused. When resuming restore saved scene input parameters.
         simulationStatus_ = SCENE_SIMULATION_RUNNING;
-        GetUI()->SetBlockEvents(false);
-        GetAudio()->Play();
+        context_->GetUI()->SetBlockEvents(false);
+        context_->GetAudio()->Play();
         break;
     }
     default:
@@ -308,8 +308,8 @@ void PreviewTab::Pause()
 {
     if (simulationStatus_ == SCENE_SIMULATION_RUNNING)
         simulationStatus_ = SCENE_SIMULATION_PAUSED;
-    GetUI()->SetBlockEvents(true);
-    GetAudio()->Stop();
+    context_->GetUI()->SetBlockEvents(true);
+    context_->GetAudio()->Stop();
 }
 
 void PreviewTab::Toggle()
@@ -337,8 +337,8 @@ void PreviewTab::Step(float timeStep)
         Pause();
 
     scene->Update(timeStep);
-    GetUI()->Update(timeStep);
-    GetAudio()->Update(timeStep);
+    context_->GetUI()->Update(timeStep);
+    context_->GetAudio()->Update(timeStep);
 }
 
 void PreviewTab::Stop()
@@ -351,8 +351,8 @@ void PreviewTab::Stop()
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         tab->RestoreState(sceneState_);
         tab->GetUndo().SetTrackingEnabled(true);
-        GetUI()->SetBlockEvents(true);
-        GetAudio()->Stop();
+        context_->GetUI()->SetBlockEvents(true);
+        context_->GetAudio()->Stop();
     }
 }
 
@@ -370,9 +370,9 @@ void PreviewTab::GrabInput()
         return;
 
     inputGrabbed_ = true;
-    GetInput()->SetMouseVisible(sceneMouseVisible_);
-    GetInput()->SetMouseMode(sceneMouseMode_);
-    GetInput()->SetShouldIgnoreInput(false);
+    context_->GetInput()->SetMouseVisible(sceneMouseVisible_);
+    context_->GetInput()->SetMouseMode(sceneMouseMode_);
+    context_->GetInput()->SetShouldIgnoreInput(false);
 }
 
 void PreviewTab::ReleaseInput()
@@ -381,25 +381,25 @@ void PreviewTab::ReleaseInput()
         return;
 
     inputGrabbed_ = false;
-    sceneMouseVisible_ = GetInput()->IsMouseVisible();
-    sceneMouseMode_ = GetInput()->GetMouseMode();
-    GetInput()->SetMouseVisible(true);
-    GetInput()->SetMouseMode(MM_ABSOLUTE);
-    GetInput()->SetShouldIgnoreInput(true);
+    sceneMouseVisible_ = context_->GetInput()->IsMouseVisible();
+    sceneMouseMode_ = context_->GetInput()->GetMouseMode();
+    context_->GetInput()->SetMouseVisible(true);
+    context_->GetInput()->SetMouseMode(MM_ABSOLUTE);
+    context_->GetInput()->SetShouldIgnoreInput(true);
 }
 
 void PreviewTab::RenderUI()
 {
-    Graphics* graphics = GetGraphics();
+    Graphics* graphics = context_->GetGraphics();
 
     if (RenderSurface* surface = view_->GetRenderSurface())
     {
-        GetUI()->SetCustomSize(surface->GetWidth(), surface->GetHeight());
+        context_->GetUI()->SetCustomSize(surface->GetWidth(), surface->GetHeight());
         graphics->ResetRenderTargets();
         graphics->SetDepthStencil(surface->GetLinkedDepthStencil());
         graphics->SetRenderTarget(0, surface);
         graphics->SetViewport(IntRect(0, 0, surface->GetWidth(), surface->GetHeight()));
-        GetUI()->Render();
+        context_->GetUI()->Render();
     }
 }
 

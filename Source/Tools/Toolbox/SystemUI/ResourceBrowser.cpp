@@ -61,7 +61,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
     auto result = RBR_NOOP;
     auto systemUI = (SystemUI*)ui::GetIO().UserData;
-    auto fs = systemUI->GetFileSystem();
+    auto fs = systemUI->GetContext()->GetFileSystem();
     auto& state = *ui::GetUIState<State>();
 
     if (!selected.empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
@@ -127,7 +127,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
                 if (source != destinationName)
                 {
-                    fs->GetCache()->RenameResource(resourcePath + source, resourcePath + destinationName);
+                    fs->GetContext()->GetCache()->RenameResource(resourcePath + source, resourcePath + destinationName);
                     state.rescanDirs = true;
                 }
             }
@@ -174,7 +174,7 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
                 if (selected != state.editBuffer)
                 {
-                    fs->GetCache()->RenameResource(resourcePath + path + selected, resourcePath + path + state.editBuffer);
+                    fs->GetContext()->GetCache()->RenameResource(resourcePath + path + selected, resourcePath + path + state.editBuffer);
                     selected = state.editBuffer;
                     state.isEditing = false;
                     state.rescanDirs = true;

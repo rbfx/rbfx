@@ -72,7 +72,7 @@ void ConsoleInput::Start()
     UnsubscribeFromEvent(E_KEYUP);
 
     // Enable filesystem interaction in console.
-    GetFileSystem()->SetExecuteConsoleCommands(true);
+    context_->GetFileSystem()->SetExecuteConsoleCommands(true);
 
     // Show the console by default, make it large. Console will show the text edit field when there is at least one
     // subscriber for the console command event

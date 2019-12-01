@@ -171,10 +171,10 @@ void Sample::SetWindowTitleAndIcon()
 void Sample::CreateConsoleAndDebugHud()
 {
     // Create console
-    Console* console = GetEngine()->CreateConsole();
+    Console* console = context_->GetEngine()->CreateConsole();
 
     // Create debug HUD.
-    DebugHud* debugHud = GetEngine()->CreateDebugHud();
+    DebugHud* debugHud = context_->GetEngine()->CreateDebugHud();
 }
 
 
@@ -198,7 +198,7 @@ void Sample::HandleKeyDown(StringHash /*eventType*/, VariantMap& eventData)
     // Toggle debug HUD with F2
     else if (key == KEY_F2)
     {
-        GetEngine()->CreateDebugHud()->ToggleAll();
+        context_->GetEngine()->CreateDebugHud()->ToggleAll();
         return;
     }
 #endif

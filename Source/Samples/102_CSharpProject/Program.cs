@@ -41,7 +41,7 @@ namespace DemoApplication
 
         protected override void Dispose(bool disposing)
         {
-            Renderer.SetViewport(0, null);    // Enable disposal of viewport by making it unreferenced by engine.
+            Context.Renderer.SetViewport(0, null);    // Enable disposal of viewport by making it unreferenced by engine.
             _viewport.Dispose();
             _scene.Dispose();
             _camera.Dispose();
@@ -62,7 +62,7 @@ namespace DemoApplication
 
         public override void Start()
         {
-            Input.SetMouseVisible(true);
+            Context.Input.SetMouseVisible(true);
 
             // Viewport
             _scene = new Scene(Context);
@@ -72,10 +72,10 @@ namespace DemoApplication
             _viewport = new Viewport(Context);
             _viewport.Scene = _scene;
             _viewport.Camera = _camera.CreateComponent<Camera>();
-            Renderer.SetViewport(0, _viewport);
+            Context.Renderer.SetViewport(0, _viewport);
 
             // Background
-            Renderer.DefaultZone.FogColor = new Color(0.5f, 0.5f, 0.7f);
+            Context.Renderer.DefaultZone.FogColor = new Color(0.5f, 0.5f, 0.7f);
 
             // Scene
             _camera.Position = new Vector3(0, 2, -2);
@@ -84,8 +84,8 @@ namespace DemoApplication
             // Cube
             _cube = _scene.CreateChild("Cube");
             var model = _cube.CreateComponent<StaticModel>();
-            model.SetModel(Cache.GetResource<Model>("Models/Box.mdl"));
-            model.SetMaterial(0, Cache.GetResource<Material>("Materials/Stone.xml"));
+            model.SetModel(Context.Cache.GetResource<Model>("Models/Box.mdl"));
+            model.SetMaterial(0, Context.Cache.GetResource<Material>("Materials/Stone.xml"));
 
             // RotateObject component is implemented in Data/Scripts/RotateObject.cs
             _cube.CreateComponent("ScriptRotateObject");
