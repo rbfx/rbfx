@@ -226,6 +226,10 @@ protected:
     SharedPtr<XMLFile> defaultStyle_;
     ///
     bool debugHudVisible_ = false;
+    /// Rectangle encompassing all selected nodes.
+    ImRect selectionRect_{};
+    /// Frame on which range selection will be performed.
+    int performRangeSelectionFrame_ = -1;
 };
 
 };
