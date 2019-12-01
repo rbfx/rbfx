@@ -471,6 +471,7 @@ void SceneTab::ToggleSelection(Component* component)
 
 void SceneTab::UnselectAll()
 {
+    selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
     bool hadComponents = !selectedComponents_.empty();
     selectedComponents_.clear();
     if (gizmo_.UnselectAll() || hadComponents)
@@ -599,12 +600,20 @@ void SceneTab::RenderInspector(const char* filter)
 
 void SceneTab::RenderHierarchy()
 {
+    if (performRangeSelectionFrame_ != ui::GetFrameCount())
+        selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
+
     if (auto* scene = GetScene())
     {
         ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
         RenderNodeTree(scene);
         ui::PopStyleVar();
     }
+
+    // Perform range selection on next frame. Only then we can have a rectangle covering selection ends
+    // which we need to do range selection.
+    if (ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsKeyDown(SCANCODE_SHIFT) && !GetSelection().empty())
+        performRangeSelectionFrame_ = ui::GetFrameCount() + 1;
 }
 
 void SceneTab::RenderNodeTree(Node* node)
@@ -623,15 +632,14 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::SetScrollHereY();
 
     ea::string name = node->GetName().empty() ? ToString("%s %d", node->GetTypeName().c_str(), node->GetID()) : node->GetName();
-    bool isSelected = IsSelected(node);
-
-    if (isSelected)
+    if (IsSelected(node))
         flags |= ImGuiTreeNodeFlags_Selected;
 
     ui::Image("Node");
     ui::SameLine();
     ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.c_str(), flags);
+    ImRect treeNodeRect = {ui::GetItemRectMin(), ui::GetItemRectMax()};
     auto it = openHierarchyNodes_.find(node);
     if (it != openHierarchyNodes_.end())
     {
@@ -682,9 +690,14 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (ui::IsMouseClicked(MOUSEB_LEFT))
         {
-            if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
+            // Select single node.
+            if (!ui::IsKeyDown(SCANCODE_SHIFT) && !ui::IsKeyDown(SCANCODE_CTRL))
                 UnselectAll();
-            ToggleSelection(node);
+
+            if (ui::IsKeyDown(SCANCODE_SHIFT))
+                Select(node);
+            else
+                ToggleSelection(node);
         }
         else if (ui::IsMouseClicked(MOUSEB_RIGHT))
         {
@@ -694,6 +707,19 @@ void SceneTab::RenderNodeTree(Node* node)
                 ToggleSelection(node);
             }
             ui::OpenPopupEx(ui::GetID("Node context menu"));
+        }
+    }
+
+    if (IsSelected(node))
+        selectionRect_.Add(treeNodeRect);
+
+    // Range-select by shift-clicking an item.
+    if (performRangeSelectionFrame_ == ui::GetFrameCount())
+    {
+        if (selectionRect_.Contains(treeNodeRect.Min))
+        {
+            Select(node);
+            selectionRect_.Add(treeNodeRect.Min);
         }
     }
 
@@ -721,7 +747,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 {
                     if (ui::IsMouseClicked(MOUSEB_LEFT))
                     {
-                        if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
+                        if (!ui::IsKeyDown(SCANCODE_CTRL))
                             UnselectAll();
                         Select(component);
                     }
