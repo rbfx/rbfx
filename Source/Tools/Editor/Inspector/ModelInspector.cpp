@@ -53,7 +53,7 @@ void ModelInspector::RegisterObject(Context* context)
 
 void ModelInspector::SetResource(const ea::string& resourceName)
 {
-    if (Model* model = GetCache()->GetResource<Model>(resourceName))
+    if (Model* model = context_->GetCache()->GetResource<Model>(resourceName))
     {
         BaseClassName::SetResource(resourceName);
         SetModel(model);

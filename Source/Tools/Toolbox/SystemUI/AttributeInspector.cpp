@@ -123,7 +123,7 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string
             const Variant& payload = ui::AcceptDragDropVariant("path");
             if (!payload.IsEmpty())
             {
-                resource = eventNamespace->GetCache()->GetResource(type, payload.GetString());
+                resource = eventNamespace->GetContext()->GetCache()->GetResource(type, payload.GetString());
                 dropped = resource != nullptr;
             }
             ui::EndDragDropTarget();
