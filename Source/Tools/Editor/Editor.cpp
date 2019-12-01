@@ -372,24 +372,23 @@ void Editor::OnUpdate(VariantMap& args)
 
         ui::BeginGroup();
 
-        // New project tile
-        {
-            if (ui::Button("Open/Create Project", tileSize))
-                OpenOrCreateProject();
-            ui::SameLine();
-        }
-
         struct State
         {
             explicit State(Editor* editor)
             {
-                const JSONValue& recents = editor->editorSettings_["recent-projects"];
+                FileSystem *fs = editor->GetContext()->GetFileSystem();
+                JSONValue& recents = editor->editorSettings_["recent-projects"];
+                if (!recents.IsArray())
+                {
+                    editor->editorSettings_["recent-projects"].SetType(JSON_ARRAY);
+                    return;
+                }
                 snapshots_.resize(recents.Size());
-                for (int i = 0; i < recents.Size(); i++)
+                for (int i = 0; i < recents.Size();)
                 {
                     const ea::string& projectPath = recents[i].GetString();
                     ea::string snapshotFile = AddTrailingSlash(projectPath) + ".snapshot.png";
-                    if (editor->GetContext()->GetFileSystem()->FileExists(snapshotFile))
+                    if (fs->FileExists(snapshotFile))
                     {
                         Image img(editor->context_);
                         if (img.LoadFile(snapshotFile))
@@ -399,6 +398,7 @@ void Editor::OnUpdate(VariantMap& args)
                             snapshots_[i] = texture;
                         }
                     }
+                    ++i;
                 }
             }
 
@@ -411,13 +411,13 @@ void Editor::OnUpdate(VariantMap& args)
         int index = 0;
         for (int row = 0; row < 3; row++)
         {
-            for (int col = row == 0 ? 1 : 0; col < 3; col++, index++)
+            for (int col = 0; col < 3; col++, index++)
             {
                 SharedPtr<Texture2D> snapshot;
                 if (state->snapshots_.size() > index)
                     snapshot = state->snapshots_[index];
 
-                if (recents.Size() <= index)
+                if (recents.Size() <= index || (row == 2 && col == 2))  // Last tile never shows a project.
                 {
                     if (ui::Button("Open/Create Project", tileSize))
                         OpenOrCreateProject();
