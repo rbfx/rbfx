@@ -168,6 +168,12 @@ protected:
     ///
     void OnTemporaryChanged(VariantMap& args);
     ///
+    void OnInspectorRenderStart(VariantMap& args);
+    ///
+    void OnSceneActivated(VariantMap& args);
+    ///
+    void OnEditorProjectClosing();
+    ///
     void AddComponentIcon(Component* component);
     ///
     void RemoveComponentIcon(Component* component);

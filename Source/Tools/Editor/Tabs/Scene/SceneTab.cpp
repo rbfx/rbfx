@@ -98,79 +98,18 @@ SceneTab::SceneTab(Context* context)
     cameraPreviewtexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
 
     // Events
-    SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
-    SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
+    SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, [this](StringHash, VariantMap&) { OnNodeSelectionChanged(); });
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
     SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
-    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) {
-        Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
-        if (serializable->GetType() == Node::GetTypeStatic())
-        {
-            UI_UPIDSCOPE(1)
-                ui::Columns(2);
-            Node* node = static_cast<Node*>(serializable);
-            ui::TextUnformatted("ID");
-            ui::NextColumn();
-            ui::Text("%u", node->GetID());
-            if (node->IsReplicated())
-            {
-                ui::SameLine();
-                ui::TextUnformatted(ICON_FA_WIFI);
-                ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
-            }
-            ui::NextColumn();
-        }
-    });
+    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) { OnInspectorRenderStart(args); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
-    SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) {
-        using namespace SceneActivated;
-        if (auto* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
-        {
-            SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
-            SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
-            SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
-
-            undo_.Clear();
-            undo_.Connect(scene);
-
-            // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
-            // updates per frame.
-            scene->SetUpdateEnabled(false);
-            cameraPreviewViewport_->SetScene(scene);
-            viewport_->SetScene(scene);
-            selectedComponents_.clear();
-            gizmo_.UnselectAll();
-        }
-    });
-    SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) {
-        if (texture_.Null())
-            return;
-
-        // Also crop image to a square.
-        SharedPtr<Image> snapshot(texture_->GetImage());
-        int w = snapshot->GetWidth();
-        int h = snapshot->GetHeight();
-        int side = Min(w, h);
-        IntRect rect{0, 0, w, h};
-        if (w > h)
-        {
-            rect.left_ = ((w - side) / 2);
-            rect.right_ = rect.left_ + side;
-        }
-        else if (h > w)
-        {
-            rect.top_ = ((w - side) / 2);
-            rect.bottom_ = rect.top_ + side;
-        }
-        SharedPtr<Image> cropped = snapshot->GetSubimage(rect);
-        cropped->SavePNG(GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png");
-    });
+    SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) { OnSceneActivated(args); });
+    SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) { OnEditorProjectClosing(); });
 
     undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
-    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
-        undo_.Clear();
-    });
+    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) { undo_.Clear(); });
 
     undo_.Clear();
 
@@ -1188,6 +1127,74 @@ void SceneTab::OnTemporaryChanged(VariantMap& args)
     }
 }
 
+void SceneTab::OnInspectorRenderStart(VariantMap& args)
+{
+    Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
+    if (serializable->GetType() == Node::GetTypeStatic())
+    {
+        UI_UPIDSCOPE(1)
+            ui::Columns(2);
+        Node* node = static_cast<Node*>(serializable);
+        ui::TextUnformatted("ID");
+        ui::NextColumn();
+        ui::Text("%u", node->GetID());
+        if (node->IsReplicated())
+        {
+            ui::SameLine();
+            ui::TextUnformatted(ICON_FA_WIFI);
+            ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
+        }
+        ui::NextColumn();
+    }
+}
+
+void SceneTab::OnSceneActivated(VariantMap& args)
+{
+    using namespace SceneActivated;
+    if (auto* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
+    {
+        SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
+        SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
+        SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
+
+        undo_.Clear();
+        undo_.Connect(scene);
+
+        // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
+        // updates per frame.
+        scene->SetUpdateEnabled(false);
+        cameraPreviewViewport_->SetScene(scene);
+        viewport_->SetScene(scene);
+        selectedComponents_.clear();
+        gizmo_.UnselectAll();
+    }
+}
+
+void SceneTab::OnEditorProjectClosing()
+{
+    if (texture_.Null())
+        return;
+
+    // Also crop image to a square.
+    SharedPtr<Image> snapshot(texture_->GetImage());
+    int w = snapshot->GetWidth();
+    int h = snapshot->GetHeight();
+    int side = Min(w, h);
+    IntRect rect{0, 0, w, h};
+    if (w > h)
+    {
+        rect.left_ = ((w - side) / 2);
+        rect.right_ = rect.left_ + side;
+    }
+    else if (h > w)
+    {
+        rect.top_ = ((w - side) / 2);
+        rect.bottom_ = rect.top_ + side;
+    }
+    SharedPtr<Image> cropped = snapshot->GetSubimage(rect);
+    cropped->SavePNG(GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png");
+}
+
 void SceneTab::AddComponentIcon(Component* component)
 {
     if (component == nullptr || component->IsTemporary())
@@ -1452,5 +1459,4 @@ void SceneTab::Close()
 
     GetSubsystem<Editor>()->UpdateWindowTitle();
 }
-
 }
