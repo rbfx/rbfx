@@ -188,8 +188,8 @@ bool SceneTab::RenderWindowContent()
     if (GetScene() == nullptr)
         return true;
 
-    if (GetInput()->IsMouseVisible())
-        lastMousePosition_ = GetInput()->GetMousePosition();
+    if (context_->GetInput()->IsMouseVisible())
+        lastMousePosition_ = context_->GetInput()->GetMousePosition();
     bool open = true;
 
     // Focus window when appearing
@@ -207,11 +207,11 @@ bool SceneTab::RenderWindowContent()
     ui::Image(texture_, contentSize);
     gizmo_.ManipulateSelection(GetCamera());
 
-    if (GetInput()->IsMouseVisible())
+    if (context_->GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
 
-    bool isClickedLeft = GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedLeft = context_->GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = context_->GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -234,10 +234,10 @@ bool SceneTab::RenderWindowContent()
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
-    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && GetInput()->IsMouseVisible())
+    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && context_->GetInput()->IsMouseVisible())
     {
         // Handle object selection.
-        IntVector2 pos = GetInput()->GetMousePosition();
+        IntVector2 pos = context_->GetInput()->GetMousePosition();
         pos -= tabRect.Min();
 
         Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
@@ -267,7 +267,7 @@ bool SceneTab::RenderWindowContent()
 
             if (isClickedLeft)
             {
-                if (!GetInput()->GetKeyDown(KEY_CTRL))
+                if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
                     UnselectAll();
 
                 if (clickNode == GetScene())
@@ -375,19 +375,19 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     bool loaded = false;
     if (resourcePath.ends_with(".xml", false))
     {
-        auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
+        auto* file = context_->GetCache()->GetResource<XMLFile>(resourcePath);
         loaded = file && scene->LoadXML(file->GetRoot());
     }
     else if (resourcePath.ends_with(".json", false))
     {
-        auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
+        auto* file = context_->GetCache()->GetResource<JSONFile>(resourcePath);
         loaded = file && scene->LoadJSON(file->GetRoot());
     }
     else
     {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).c_str());
         manager->UnloadScene(scene);
-        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -395,7 +395,7 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     {
         URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).c_str());
         manager->UnloadScene(scene);
-        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -420,9 +420,9 @@ bool SceneTab::SaveResource()
     if (!BaseClassName::SaveResource())
         return false;
 
-    GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
+    context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
 
-    auto fullPath = GetCache()->GetResourceFileName(resourceName_);
+    auto fullPath = context_->GetCache()->GetResourceFileName(resourceName_);
     if (fullPath.empty())
         return false;
 
@@ -743,7 +743,7 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (ui::IsMouseClicked(MOUSEB_LEFT))
         {
-            if (!GetInput()->GetKeyDown(KEY_CTRL))
+            if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
                 UnselectAll();
             ToggleSelection(node);
         }
@@ -782,7 +782,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 {
                     if (ui::IsMouseClicked(MOUSEB_LEFT))
                     {
-                        if (!GetInput()->GetKeyDown(KEY_CTRL))
+                        if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
                             UnselectAll();
                         Select(component);
                     }
@@ -895,21 +895,21 @@ void SceneTab::OnUpdate(VariantMap& args)
             if (!ui::IsAnyItemActive())
             {
                 // Global view hotkeys
-                if (GetInput()->GetKeyPress(KEY_DELETE))
+                if (context_->GetInput()->GetKeyPress(KEY_DELETE))
                     RemoveSelection();
-                else if (GetInput()->GetKeyDown(KEY_CTRL))
+                else if (context_->GetInput()->GetKeyDown(KEY_CTRL))
                 {
-                    if (GetInput()->GetKeyPress(KEY_C))
+                    if (context_->GetInput()->GetKeyPress(KEY_C))
                         CopySelection();
-                    else if (GetInput()->GetKeyPress(KEY_V))
+                    else if (context_->GetInput()->GetKeyPress(KEY_V))
                     {
-                        if (GetInput()->GetKeyDown(KEY_SHIFT))
+                        if (context_->GetInput()->GetKeyDown(KEY_SHIFT))
                             PasteIntoSelection();
                         else
                             PasteIntuitive();
                     }
                 }
-                else if (GetInput()->GetKeyPress(KEY_ESCAPE))
+                else if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
                     UnselectAll();
             }
         }
@@ -1199,7 +1199,7 @@ void SceneTab::AddComponentIcon(Component* component)
         (node->GetName().starts_with("__") && node->GetName().ends_with("__")))
         return;
 
-    auto* material = GetCache()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
+    auto* material = context_->GetCache()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
     if (material != nullptr)
     {
         auto iconTag = "DebugIcon" + component->GetTypeName();
@@ -1233,7 +1233,7 @@ void SceneTab::AddComponentIcon(Component* component)
 
         if (auto* bb = billboard->GetBillboard(0))
         {
-            auto* graphics = GetGraphics();
+            auto* graphics = context_->GetGraphics();
             float scale = graphics->GetDisplayDPI(graphics->GetCurrentMonitor()).z_ / 96.f;
             bb->size_ = Vector2::ONE * 0.2f * scale;
             bb->enabled_ = true;

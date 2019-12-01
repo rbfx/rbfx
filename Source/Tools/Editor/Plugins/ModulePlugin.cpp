@@ -51,7 +51,7 @@ bool ModulePlugin::Load()
         {
             application_->InitializeReloadablePlugin();
             path_ = path;
-            mtime_ = GetFileSystem()->GetLastModifiedTime(pluginPath);
+            mtime_ = context_->GetFileSystem()->GetLastModifiedTime(pluginPath);
             version_++;
             unloading_ = false;
             lastModuleType_ = module_.GetModuleType();
@@ -84,7 +84,7 @@ bool ModulePlugin::PerformUnload()
 
 ea::string ModulePlugin::NameToPath(const ea::string& name) const
 {
-    FileSystem* fs = GetFileSystem();
+    FileSystem* fs = context_->GetFileSystem();
     ea::string result;
 
 #if __linux__ || __APPLE__
@@ -108,14 +108,14 @@ ea::string ModulePlugin::NameToPath(const ea::string& name) const
 
 ea::string ModulePlugin::VersionModule(const ea::string& path)
 {
-    auto* fs = GetFileSystem();
+    auto* fs = context_->GetFileSystem();
     ea::string dir, name, ext;
     SplitPath(path, dir, name, ext);
 
     ea::string versionString, shortenedName;
 
     // Headless utilities do not reuqire reloading. They will load module directly.
-    if (GetEngine()->IsHeadless())
+    if (context_->GetEngine()->IsHeadless())
     {
         versionString = "";
         shortenedName = name;
@@ -135,7 +135,7 @@ ea::string ModulePlugin::VersionModule(const ea::string& path)
     ea::string versionedPath = dir + shortenedName + versionString + ext;
 
     // Non-versioned modules do not need pdb/version patching.
-    if (GetEngine()->IsHeadless())
+    if (context_->GetEngine()->IsHeadless())
         return versionedPath;
 
     if (!fs->Copy(path, versionedPath))
@@ -198,7 +198,7 @@ ea::string ModulePlugin::VersionModule(const ea::string& path)
 
 bool ModulePlugin::IsOutOfDate() const
 {
-    return mtime_ < GetFileSystem()->GetLastModifiedTime(path_);
+    return mtime_ < context_->GetFileSystem()->GetLastModifiedTime(path_);
 }
 
 bool ModulePlugin::WaitForCompleteFile(unsigned timeoutMs) const

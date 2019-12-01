@@ -175,9 +175,9 @@ public:
         engineParameters_[EP_WINDOW_RESIZABLE] = true;
 
         JSONFile config(context_);
-        ea::string preferencesDir = GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler");
-        if (!GetFileSystem()->DirExists(preferencesDir))
-            GetFileSystem()->CreateDir(preferencesDir);
+        ea::string preferencesDir = context_->GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler");
+        if (!context_->GetFileSystem()->DirExists(preferencesDir))
+            context_->GetFileSystem()->CreateDir(preferencesDir);
         if (config.LoadFile(preferencesDir + "Settings.json"))
         {
             const auto& root = config.GetRoot();
@@ -195,10 +195,10 @@ public:
 
     void Start() override
     {
-        GetGraphics()->SetWindowTitle(
+        context_->GetGraphics()->SetWindowTitle(
             Format("Urho3D Profiler {}.{}.{}", tracy::Version::Major, tracy::Version::Minor, tracy::Version::Patch));
-        GetInput()->SetMouseVisible(true);
-        GetInput()->SetMouseMode(MM_FREE);
+        context_->GetInput()->SetMouseVisible(true);
+        context_->GetInput()->SetMouseMode(MM_FREE);
 
         ImGui::StyleColorsDark();
         float dpiScale = GetDPIScale();
@@ -221,11 +221,11 @@ public:
         0
     };
 
-        GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, rangesBasic, 15.0f);
-        GetSystemUI()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, rangesIcons, 14.0f, true);
-        fixedWidth = GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, nullptr, 15.0f);
-        bigFont = GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 20.0f);
-        smallFont = GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 10.0f);
+        context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, rangesBasic, 15.0f);
+        context_->GetSystemUI()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, rangesIcons, 14.0f, true);
+        fixedWidth = context_->GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, nullptr, 15.0f);
+        bigFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 20.0f);
+        smallFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 10.0f);
 
         if (!readCapture.empty())
         {
@@ -240,19 +240,19 @@ public:
     void Stop() override
     {
         JSONValue root{JSON_OBJECT};
-        root["x"] = GetGraphics()->GetWindowPosition().x_;
-        root["y"] = GetGraphics()->GetWindowPosition().y_;
-        root["width"] = GetGraphics()->GetWidth();
-        root["height"] = GetGraphics()->GetHeight();
+        root["x"] = context_->GetGraphics()->GetWindowPosition().x_;
+        root["y"] = context_->GetGraphics()->GetWindowPosition().y_;
+        root["width"] = context_->GetGraphics()->GetWidth();
+        root["height"] = context_->GetGraphics()->GetHeight();
 
         JSONFile config(context_);
         config.GetRoot() = root;
-        config.SaveFile(Format("{}/Settings.json", GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler")));
+        config.SaveFile(Format("{}/Settings.json", context_->GetFileSystem()->GetAppPreferencesDir("rbfx", "Profiler")));
     }
 
     float GetDPIScale()
     {
-        return GetGraphics()->GetDisplayDPI(GetGraphics()->GetCurrentMonitor()).z_ / 96.f;
+        return context_->GetGraphics()->GetDisplayDPI(context_->GetGraphics()->GetCurrentMonitor()).z_ / 96.f;
     }
 
     void Update()
@@ -534,7 +534,7 @@ public:
                 clients.clear();
             }
             if( loadThread.joinable() ) loadThread.join();
-            view->NotifyRootWindowSize(GetGraphics()->GetWidth(), GetGraphics()->GetHeight());
+            view->NotifyRootWindowSize(context_->GetGraphics()->GetWidth(), context_->GetGraphics()->GetHeight());
             if( !view->Draw() )
             {
                 viewShutdown = ViewShutdown::True;
@@ -555,7 +555,7 @@ public:
         {
             tracy::TextCentered( ICON_FA_HOURGLASS_HALF );
 
-            tracy::DrawWaitingDots(GetTime()->GetElapsedTime());
+            tracy::DrawWaitingDots(context_->GetTime()->GetElapsedTime());
 
             auto currProgress = progress.progress.load( std::memory_order_relaxed );
             if( totalProgress == 0 )
@@ -633,7 +633,7 @@ public:
         {
             if( viewShutdown != ViewShutdown::True ) ImGui::CloseCurrentPopup();
             tracy::TextCentered( ICON_FA_BROOM );
-            tracy::DrawWaitingDots( GetTime()->GetElapsedTime() );
+            tracy::DrawWaitingDots( context_->GetTime()->GetElapsedTime() );
             ImGui::Text( "Please wait, cleanup is in progress" );
             ImGui::EndPopup();
         }

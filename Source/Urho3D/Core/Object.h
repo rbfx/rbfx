@@ -208,41 +208,6 @@ public:
     /// Return sending and receiving events blocking status.
     bool GetBlockEvents() const { return blockEvents_; }
 
-    /// Return engine subsystem.
-    Engine* GetEngine() const;
-    /// Return time subsystem.
-    Time* GetTime() const;
-    /// Return work queue subsystem.
-    WorkQueue* GetWorkQueue() const;
-    /// Return file system subsystem.
-    FileSystem* GetFileSystem() const;
-#if URHO3D_LOGGING
-    /// Return logging subsystem.
-    Log* GetLog() const;
-#endif
-    /// Return resource cache subsystem.
-    ResourceCache* GetCache() const;
-    /// Return localization subsystem.
-    Localization* GetLocalization() const;
-#if URHO3D_NETWORK
-    /// Return network subsystem.
-    Network* GetNetwork() const;
-#endif
-    /// Return input subsystem.
-    Input* GetInput() const;
-    /// Return audio subsystem.
-    Audio* GetAudio() const;
-    /// Return UI subsystem.
-    UI* GetUI() const;
-#if URHO3D_SYSTEMUI
-    /// Return system ui subsystem.
-    SystemUI* GetSystemUI() const;
-#endif
-    /// Return graphics subsystem.
-    Graphics* GetGraphics() const;
-    /// Return renderer subsystem.
-    Renderer* GetRenderer() const;
-
 protected:
     /// Execution context.
     WeakPtr<Context> context_;

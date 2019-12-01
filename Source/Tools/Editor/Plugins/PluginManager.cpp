@@ -117,7 +117,7 @@ void PluginManager::OnEndFrame()
         bool pluginOutOfDate = false;
 
         // Plugin reloading is not used in headless executions.
-        if (!GetEngine()->IsHeadless())
+        if (!context_->GetEngine()->IsHeadless())
         {
             // Check for modified plugins once in a while, do not hammer syscalls on every frame.
             if (checkOutOfDatePlugins)
@@ -219,7 +219,7 @@ const StringVector& PluginManager::GetPluginNames()
 
     if (pluginNames->empty())
     {
-        FileSystem* fs = GetFileSystem();
+        FileSystem* fs = context_->GetFileSystem();
 
         StringVector files;
         ea::unordered_map<ea::string, ea::string> nameToPath;

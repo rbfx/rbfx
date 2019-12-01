@@ -24,6 +24,7 @@
 
 #include <EASTL/sort.h>
 
+#include "../Core/Context.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
@@ -182,8 +183,8 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     if (!vertexShader_ || !pixelShader_)
         return;
 
-    Graphics* graphics = view->GetGraphics();
-    Renderer* renderer = view->GetRenderer();
+    Graphics* graphics = view->GetContext()->GetGraphics();
+    Renderer* renderer = view->GetContext()->GetRenderer();
     Node* cameraNode = camera ? camera->GetNode() : nullptr;
     Light* light = lightQueue_ ? lightQueue_->light_ : nullptr;
     Texture2D* shadowMap = lightQueue_ ? lightQueue_->shadowMap_ : nullptr;
@@ -642,7 +643,7 @@ void Batch::Draw(View* view, Camera* camera, bool allowDepthWrite) const
     if (!geometry_->IsEmpty())
     {
         Prepare(view, camera, true, allowDepthWrite);
-        geometry_->Draw(view->GetGraphics());
+        geometry_->Draw(view->GetContext()->GetGraphics());
     }
 }
 
@@ -671,8 +672,8 @@ void BatchGroup::SetInstancingData(void* lockedData, unsigned stride, unsigned& 
 
 void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
 {
-    Graphics* graphics = view->GetGraphics();
-    Renderer* renderer = view->GetRenderer();
+    Graphics* graphics = view->GetContext()->GetGraphics();
+    Renderer* renderer = view->GetContext()->GetRenderer();
 
     if (instances_.size() && !geometry_->IsEmpty())
     {
@@ -853,8 +854,8 @@ void BatchQueue::SetInstancingData(void* lockedData, unsigned stride, unsigned& 
 
 void BatchQueue::Draw(View* view, Camera* camera, bool markToStencil, bool usingLightOptimization, bool allowDepthWrite) const
 {
-    Graphics* graphics = view->GetGraphics();
-    Renderer* renderer = view->GetRenderer();
+    Graphics* graphics = view->GetContext()->GetGraphics();
+    Renderer* renderer = view->GetContext()->GetRenderer();
 
     // If View has set up its own light optimizations, do not disturb the stencil/scissor test settings
     if (!usingLightOptimization)
