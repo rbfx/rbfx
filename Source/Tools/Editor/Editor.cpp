@@ -225,72 +225,17 @@ void Editor::Start()
     context_->GetCache()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);
 
-    SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
 
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
     auto* console = engine_->CreateConsole();
     console->SetAutoVisibleOnError(false);
     context_->GetFileSystem()->SetExecuteConsoleCommands(false);
-    SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
+    SubscribeToEvent(E_CONSOLECOMMAND, [this](StringHash, VariantMap& args) { OnConsoleCommand(args); });
     console->RefreshInterpreters();
 
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
-        // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
-        // candidate. This subsystem will be recreated.
-        if (!pendingOpenProject_.empty())
-        {
-            CloseProject();
-            // Reset SystemUI so that imgui loads it's config proper.
-            context_->RemoveSubsystem<SystemUI>();
-            context_->RegisterSubsystem(new SystemUI(context_));
-            SetupSystemUI();
-
-            project_ = new Project(context_);
-            context_->RegisterSubsystem(project_);
-            bool loaded = project_->LoadProject(pendingOpenProject_);
-            // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
-            // subsystem reads this file and loads settings.
-            context_->GetSystemUI()->Start();
-            if (loaded)
-            {
-                auto* fs = context_->GetFileSystem();
-                loadDefaultLayout_ = project_->IsNewProject();
-                JSONValue& recents = editorSettings_["recent-projects"];
-                if (!recents.IsArray())
-                    recents.SetType(JSON_ARRAY);
-                // Remove latest project if it was already opened or any projects that no longer exists.
-                for (int i = 0; i < recents.Size();)
-                {
-                    if (recents[i].GetString() == pendingOpenProject_ || !fs->DirExists(recents[i].GetString()))
-                        recents.Erase(i);
-                    else
-                        ++i;
-                }
-                // Latest project goes to front
-                recents.Insert(0, pendingOpenProject_);
-                // Limit recents list size
-                if (recents.Size() > 10)
-                    recents.Resize(10);
-            }
-            else
-            {
-                CloseProject();
-                URHO3D_LOGERROR("Loading project failed.");
-            }
-            pendingOpenProject_.clear();
-        }
-    });
-    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
-        if (auto* preview = GetTab<PreviewTab>())
-        {
-            if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
-                exiting_ = true;
-            else
-                preview->Stop();
-        }
-        else
-            exiting_ = true;
-    });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
+    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
     SetupSystemUI();
@@ -601,6 +546,67 @@ void Editor::OnConsoleCommand(VariantMap& args)
     using namespace ConsoleCommand;
     if (args[P_COMMAND].GetString() == "revision")
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+}
+
+void Editor::OnEndFrame()
+{
+    // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
+    // candidate. This subsystem will be recreated.
+    if (!pendingOpenProject_.empty())
+    {
+        CloseProject();
+        // Reset SystemUI so that imgui loads it's config proper.
+        context_->RemoveSubsystem<SystemUI>();
+        context_->RegisterSubsystem(new SystemUI(context_));
+        SetupSystemUI();
+
+        project_ = new Project(context_);
+        context_->RegisterSubsystem(project_);
+        bool loaded = project_->LoadProject(pendingOpenProject_);
+        // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
+        // subsystem reads this file and loads settings.
+        context_->GetSystemUI()->Start();
+        if (loaded)
+        {
+            auto* fs = context_->GetFileSystem();
+            loadDefaultLayout_ = project_->IsNewProject();
+            JSONValue& recents = editorSettings_["recent-projects"];
+            if (!recents.IsArray())
+                recents.SetType(JSON_ARRAY);
+            // Remove latest project if it was already opened or any projects that no longer exists.
+            for (int i = 0; i < recents.Size();)
+            {
+                if (recents[i].GetString() == pendingOpenProject_ || !fs->DirExists(recents[i].GetString()))
+                    recents.Erase(i);
+                else
+                    ++i;
+            }
+            // Latest project goes to front
+            recents.Insert(0, pendingOpenProject_);
+            // Limit recents list size
+            if (recents.Size() > 10)
+                recents.Resize(10);
+        }
+        else
+        {
+            CloseProject();
+            URHO3D_LOGERROR("Loading project failed.");
+        }
+        pendingOpenProject_.clear();
+    }
+}
+
+void Editor::OnExitRequested()
+{
+    if (auto* preview = GetTab<PreviewTab>())
+    {
+        if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+            exiting_ = true;
+        else
+            preview->Stop();
+    }
+    else
+        exiting_ = true;
 }
 
 void Editor::CreateDefaultTabs()
