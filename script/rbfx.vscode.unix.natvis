@@ -316,6 +316,25 @@
       </Expand>
   </Type>
 
+  <Type Name="eastl::VectorBase&lt;*,*&gt;">
+    <DisplayString Condition="mpEnd == mpBegin">[{mpEnd - mpBegin}] {{}}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 1">[{mpEnd - mpBegin}] {{ {*mpBegin} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 2">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 3">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 4">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 5">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)}, {*(mpBegin+4)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 6">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)}, {*(mpBegin+4)}, {*(mpBegin+5)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin &gt; 6">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)}, {*(mpBegin+4)}, {*(mpBegin+5)}, ... }}</DisplayString>
+      <Expand>
+          <Item Name="[size]">mpEnd - mpBegin</Item>
+          <Item Name="[capacity]">mCapacityAllocator.mFirst - mpBegin</Item>
+          <ArrayItems>
+              <Size>mpEnd - mpBegin</Size>
+              <ValuePointer>mpBegin</ValuePointer>
+          </ArrayItems>
+      </Expand>
+  </Type>
+
   <Type Name="eastl::vector&lt;*&gt;">
     <DisplayString Condition="mpEnd == mpBegin">[{mpEnd - mpBegin}] {{}}</DisplayString>
     <DisplayString Condition="mpEnd - mpBegin == 1">[{mpEnd - mpBegin}] {{ {*mpBegin} }}</DisplayString>
@@ -333,6 +352,28 @@
               <ValuePointer>mpBegin</ValuePointer>
           </ArrayItems>
       </Expand>
+  </Type>
+  <Type Name="eastl::DequeBase&lt;*,*,*&gt;">
+    <DisplayString Condition="mItBegin.mpCurrent == mItEnd.mpCurrent">
+      [0] {{}}
+    </DisplayString>
+    <DisplayString Condition="(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin) == 1">
+      [1] {{ {*mItBegin.mpCurrent} }}
+    </DisplayString>
+    <DisplayString Condition="(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin) != 0">
+      [{(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)}]
+      {{
+        {*mItBegin.mpCurrent},
+        ...
+      }}
+    </DisplayString>
+    <Expand>
+      <Item Name="[size]">(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)</Item>
+      <IndexListItems>
+              <Size>(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)</Size>
+              <ValueNode>mItBegin.mpCurrentArrayPtr[(mItBegin.mpCurrent-mItBegin.mpBegin + $i) / $T3][(mItBegin.mpCurrent-mItBegin.mpBegin + $i) % $T3]</ValueNode>
+          </IndexListItems>
+    </Expand>
   </Type>
 
   <Type Name="eastl::deque&lt;*,*,*&gt;">
@@ -439,6 +480,40 @@
     <Expand>
       <ExpandedItem>mpNode</ExpandedItem>
     </Expand>
+  </Type>
+
+  <Type Name="eastl::SListBase&lt;*&gt;">
+    <DisplayString Condition="mNode.mpNext == 0">
+      [0] {{}}
+    </DisplayString>
+      <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext == 0">
+      [1]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}
+      }}
+    </DisplayString>
+    <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext == 0">
+      [2]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue}
+      }}
+    </DisplayString>
+    <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext != 0">
+      [?]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue},
+        ...
+      }}
+    </DisplayString>
+    <Expand>
+          <LinkedListItems>
+              <HeadPointer>mNode.mpNext</HeadPointer>
+              <NextPointer>mpNext</NextPointer>
+              <ValueNode>((eastl::SListNode&lt;$T1&gt;*)this)-&gt;mValue</ValueNode>
+          </LinkedListItems>
+      </Expand>
   </Type>
 
   <Type Name="eastl::slist&lt;*&gt;">
