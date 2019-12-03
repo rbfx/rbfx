@@ -53,6 +53,7 @@ protected:
     float speed_ = 2.f;
     /// Current mouse sensitivity.
     float mouseSensitivity_ = 0.1f;
+    /// The selected nodes in editor, which provides the center of where our debug camera rotate around
     const ea::vector<WeakPtr<Node>>* sceneSelection_ = nullptr;
 };
 
