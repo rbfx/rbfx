@@ -45,7 +45,7 @@ public:
     void Stop() override;
     /// Control camera.
     void Update(float timeStep) override;
-
+    /// Tell this camera which node is/are selected.
     void SetSelection(const ea::vector<WeakPtr<Node>>* selection);
 
 protected:
