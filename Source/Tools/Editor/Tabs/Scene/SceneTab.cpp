@@ -882,17 +882,20 @@ void SceneTab::OnUpdate(VariantMap& args)
         if (tab == this)
         {
             Input* input = context_->GetInput();
-            if (input->GetKeyPress(KEY_W))
+            if (input->IsMouseVisible())
             {
-                gizmo_.SetOperation(GIZMOOP_TRANSLATE);
-            }
-            else if (input->GetKeyPress(KEY_E))
-            {
-                gizmo_.SetOperation(GIZMOOP_ROTATE);
-            }
-            else if (input->GetKeyPress(KEY_R))
-            {
-                gizmo_.SetOperation(GIZMOOP_SCALE);
+                if (input->GetKeyPress(KEY_W))
+                {
+                    gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+                }
+                else if (input->GetKeyPress(KEY_E))
+                {
+                    gizmo_.SetOperation(GIZMOOP_ROTATE);
+                }
+                else if (input->GetKeyPress(KEY_R))
+                {
+                    gizmo_.SetOperation(GIZMOOP_SCALE);
+                }
             }
         }
     }
