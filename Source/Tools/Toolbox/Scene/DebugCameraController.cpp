@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Scene/Scene.h>
 #include "DebugCameraController.h"
 
 
@@ -67,14 +68,46 @@ void DebugCameraController::Update(float timeStep)
     if (input->GetMouseButtonDown(MOUSEB_RIGHT))
     {
         IntVector2 delta = input->GetMouseMove();
-
         if (input->IsMouseVisible() && delta != IntVector2::ZERO)
             input->SetMouseVisible(false);
 
-        auto yaw = GetNode()->GetRotation().EulerAngles().x_;
-        if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
-            GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
-        GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+        if (input->GetKeyDown(KEY_LSHIFT))
+        {
+            if (sceneSelection_ != nullptr && !sceneSelection_->empty())
+            {
+                Vector3 center = Vector3::ZERO;
+                auto count = 0;
+                for (const auto& node: *sceneSelection_)
+                {
+                    if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
+                        continue;
+                    center += node->GetWorldPosition();
+                    count++;
+                }
+                center /= count;
+
+                auto yaw = GetNode()->GetRotation().EulerAngles().x_;
+                GetNode()->RotateAround(center, Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+                auto angle = mouseSensitivity_ * delta.y_;
+                if (yaw + angle > 89.f)
+                {
+                    angle = 89.f - yaw;
+                } 
+                else if (yaw + angle < -89.f)
+                {
+                    angle = -89.f - yaw;
+                }
+                GetNode()->RotateAround(center, Quaternion(angle, GetNode()->GetRight()), TS_WORLD);
+                GetNode()->LookAt(center);
+            }
+        }
+        else
+        {
+            auto yaw = GetNode()->GetRotation().EulerAngles().x_;
+            if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
+                GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
+            GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+        }
     }
     else if (!input->IsMouseVisible())
         input->SetMouseVisible(true);
@@ -95,6 +128,11 @@ void DebugCameraController::Update(float timeStep)
         if (input->GetKeyDown(KEY_Q))
             GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep, TS_WORLD);
     }
+}
+
+void DebugCameraController::SetSelection(const ea::vector<WeakPtr<Node>>* selection)
+{
+    sceneSelection_ = selection;
 }
 
 DebugCameraController2D::DebugCameraController2D(Context* context)
@@ -146,15 +184,18 @@ void DebugCameraController2D::Update(float timeStep)
     else if (!input->IsMouseVisible())
         input->SetMouseVisible(true);
 
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+    if (!input->IsMouseVisible())
+    {
+        // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
+        if (input->GetKeyDown(KEY_W))
+            GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_S))
+            GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_A))
+            GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_D))
+            GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+    }
 }
 
 }

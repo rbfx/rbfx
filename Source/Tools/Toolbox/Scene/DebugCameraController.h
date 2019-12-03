@@ -46,11 +46,14 @@ public:
     /// Control camera.
     void Update(float timeStep) override;
 
+    void SetSelection(const ea::vector<WeakPtr<Node>>* selection);
+
 protected:
     /// Current camera speed.
     float speed_ = 2.f;
     /// Current mouse sensitivity.
     float mouseSensitivity_ = 0.1f;
+    const ea::vector<WeakPtr<Node>>* sceneSelection_ = nullptr;
 };
 
 class URHO3D_TOOLBOX_API DebugCameraController2D : public LogicComponent

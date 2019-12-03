@@ -848,7 +848,13 @@ void SceneTab::OnUpdate(VariantMap& args)
         if (component != nullptr)
         {
             if (mouseHoversViewport_)
+            {
+                if (isMode3D_) {
+                    DebugCameraController* controller3D = static_cast<DebugCameraController*>(component);
+                    controller3D->SetSelection(&GetSelection());
+                }
                 component->Update(timeStep);
+            }
         }
     }
 
