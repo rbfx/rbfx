@@ -878,6 +878,23 @@ void SceneTab::OnUpdate(VariantMap& args)
                     UnselectAll();
             }
         }
+
+        if (tab == this)
+        {
+            Input* input = context_->GetInput();
+            if (input->GetKeyPress(KEY_W))
+            {
+                gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+            }
+            else if (input->GetKeyPress(KEY_E))
+            {
+                gizmo_.SetOperation(GIZMOOP_ROTATE);
+            }
+            else if (input->GetKeyPress(KEY_R))
+            {
+                gizmo_.SetOperation(GIZMOOP_SCALE);
+            }
+        }
     }
 
     // Render editor camera rotation guide

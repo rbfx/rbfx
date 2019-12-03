@@ -79,15 +79,22 @@ void DebugCameraController::Update(float timeStep)
     else if (!input->IsMouseVisible())
         input->SetMouseVisible(true);
 
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        GetNode()->Translate(Vector3::BACK * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+    if (!input->IsMouseVisible())
+    {
+        // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
+        if (input->GetKeyDown(KEY_W))
+            GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_S))
+            GetNode()->Translate(Vector3::BACK * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_A))
+            GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_D))
+            GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_E))
+            GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep, TS_WORLD);
+        if (input->GetKeyDown(KEY_Q))
+            GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep, TS_WORLD);
+    }
 }
 
 DebugCameraController2D::DebugCameraController2D(Context* context)
