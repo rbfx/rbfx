@@ -47,8 +47,8 @@ public:
     void Update(float timeStep) override;
     /// Tell this camera which where is the rotation center.
     void SetRotationCenter(const Vector3& center);
-    /// Set if the rotation center is valid.
-    void SetRotationCenterValid(bool b) { isRotationCenterValid_ = b; }
+    /// Disable the rotation center
+    void ClearRotationCenter() { isRotationCenterValid_ = false; }
 
 protected:
     /// Current camera speed.

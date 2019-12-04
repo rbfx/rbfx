@@ -116,7 +116,9 @@ void DebugCameraController::Update(float timeStep)
 void DebugCameraController::SetRotationCenter(const Vector3& center)
 {
     rotationCenter_ = center;
+    isRotationCenterValid_ = true;
 }
+
 DebugCameraController2D::DebugCameraController2D(Context* context)
     : LogicComponent(context)
 {
