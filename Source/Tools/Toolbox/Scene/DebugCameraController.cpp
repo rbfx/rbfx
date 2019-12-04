@@ -71,7 +71,7 @@ void DebugCameraController::Update(float timeStep)
         if (input->IsMouseVisible() && delta != IntVector2::ZERO)
             input->SetMouseVisible(false);
 
-        if (input->GetKeyDown(KEY_LSHIFT))
+        if (input->GetQualifierDown(QUAL_ALT))
         {
             if (sceneSelection_ != nullptr && !sceneSelection_->empty())
             {
@@ -108,12 +108,7 @@ void DebugCameraController::Update(float timeStep)
                 GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
             GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
         }
-    }
-    else if (!input->IsMouseVisible())
-        input->SetMouseVisible(true);
 
-    if (!input->IsMouseVisible())
-    {
         // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
         if (input->GetKeyDown(KEY_W))
             GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
@@ -128,6 +123,8 @@ void DebugCameraController::Update(float timeStep)
         if (input->GetKeyDown(KEY_Q))
             GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep, TS_WORLD);
     }
+    else if (!input->IsMouseVisible())
+        input->SetMouseVisible(true);
 }
 
 void DebugCameraController::SetSelection(const ea::vector<WeakPtr<Node>>* selection)
