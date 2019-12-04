@@ -77,7 +77,9 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& no
             // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
             // multiselection operations to world space (see above).
             Vector3 center;
-            GetSelectionCenter(center, nodes);
+            auto count = GetSelectionCenter(center, nodes);
+            if (count == 0)
+                return false;
             currentOrigin_.SetTranslation(center);
         }
         else if (!nodes.front().Expired())
