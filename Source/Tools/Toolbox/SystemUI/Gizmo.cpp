@@ -76,21 +76,8 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& no
             // Find center point of all nodes
             // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
             // multiselection operations to world space (see above).
-            Vector3
-            center = Vector3::ZERO;
-            auto count = 0;
-            for (const auto& node: nodes)
-            {
-                if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
-                    continue;
-                center += node->GetWorldPosition();
-                count++;
-            }
-
-            if (count == 0)
-                return false;
-
-            center /= count;
+            Vector3 center;
+            GetSelectionCenter(center, nodes);
             currentOrigin_.SetTranslation(center);
         }
         else if (!nodes.front().Expired())
@@ -301,6 +288,29 @@ bool Gizmo::IsSelected(Node* node) const
 {
     WeakPtr<Node> pNode(node);
     return nodeSelection_.contains(pNode);
+}
+
+const int Gizmo::GetSelectionCenter(Vector3& outCenter, const ea::vector<WeakPtr<Node>>& nodes) const
+{
+    outCenter = Vector3::ZERO;
+    auto count = 0;
+    for (const auto& node: nodes)
+    {
+        if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
+            continue;
+        outCenter += node->GetWorldPosition();
+        count++;
+    }
+
+    if (count != 0)
+        outCenter /= count;
+    return count;
+}
+
+const int Gizmo::GetSelectionCenter(Vector3& outCenter) const
+{
+    int ret = GetSelectionCenter(outCenter, GetSelection());
+    return ret;
 }
 
 void Gizmo::SetScreenRect(const IntVector2& pos, const IntVector2& size)

@@ -90,6 +90,15 @@ public:
     bool IsSelected(Node* node) const;
     /// Return list of selected nodes.
     const ea::vector<WeakPtr<Node>>& GetSelection() const { return nodeSelection_; }
+    /// Get the center of selected nodes.
+    /// \param outCenter If returns true, it gets the center, else it will be set to ZERO vector
+    /// \param nodes The nodes to be calculated.
+    /// \returns Returns the number of selected nodes.
+    const int GetSelectionCenter(Vector3& outCenter, const ea::vector<WeakPtr<Node>>& nodes) const;
+    /// Get the center of selected nodes.
+    /// \param outCenter If returns true, it gets the center, else it will be set to ZERO vector
+    /// \returns Returns the number of selected nodes.
+    const int GetSelectionCenter(Vector3& outCenter) const;
     /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
     void SetScreenRect(const IntVector2& pos, const IntVector2& size);
     /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.

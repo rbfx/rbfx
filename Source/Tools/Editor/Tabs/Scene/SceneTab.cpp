@@ -852,7 +852,14 @@ void SceneTab::OnUpdate(VariantMap& args)
                 if (isMode3D_)
                 {
                     DebugCameraController* controller3D = static_cast<DebugCameraController*>(component);
-                    controller3D->SetSelection(&GetSelection());
+                    Vector3 center;
+                    int selectionCount = gizmo_.GetSelectionCenter(center);
+                    if (selectionCount > 0) {
+                        controller3D->SetRotationCenter(center);
+                        controller3D->SetRotationCenterValid(true);
+                    } else {
+                        controller3D->SetRotationCenterValid(false);
+                    }
                 }
                 component->Update(timeStep);
             }

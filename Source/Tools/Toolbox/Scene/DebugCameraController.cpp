@@ -71,35 +71,21 @@ void DebugCameraController::Update(float timeStep)
         if (input->IsMouseVisible() && delta != IntVector2::ZERO)
             input->SetMouseVisible(false);
 
-        if (input->GetQualifierDown(QUAL_ALT))
+        if (isRotationCenterValid_ && input->GetQualifierDown(QUAL_ALT))
         {
-            if (sceneSelection_ != nullptr && !sceneSelection_->empty())
+            auto yaw = GetNode()->GetRotation().EulerAngles().x_;
+            GetNode()->RotateAround(rotationCenter_, Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+            auto angle = mouseSensitivity_ * delta.y_;
+            if (yaw + angle > 89.f)
             {
-                Vector3 center = Vector3::ZERO;
-                auto count = 0;
-                for (const auto& node: *sceneSelection_)
-                {
-                    if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
-                        continue;
-                    center += node->GetWorldPosition();
-                    count++;
-                }
-                center /= count;
-
-                auto yaw = GetNode()->GetRotation().EulerAngles().x_;
-                GetNode()->RotateAround(center, Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
-                auto angle = mouseSensitivity_ * delta.y_;
-                if (yaw + angle > 89.f)
-                {
-                    angle = 89.f - yaw;
-                } 
-                else if (yaw + angle < -89.f)
-                {
-                    angle = -89.f - yaw;
-                }
-                GetNode()->RotateAround(center, Quaternion(angle, GetNode()->GetRight()), TS_WORLD);
-                GetNode()->LookAt(center);
+                angle = 89.f - yaw;
+            } 
+            else if (yaw + angle < -89.f)
+            {
+                angle = -89.f - yaw;
             }
+            GetNode()->RotateAround(rotationCenter_, Quaternion(angle, GetNode()->GetRight()), TS_WORLD);
+            GetNode()->LookAt(rotationCenter_);
         }
         else
         {
@@ -127,11 +113,10 @@ void DebugCameraController::Update(float timeStep)
         input->SetMouseVisible(true);
 }
 
-void DebugCameraController::SetSelection(const ea::vector<WeakPtr<Node>>* selection)
+void DebugCameraController::SetRotationCenter(const Vector3& center)
 {
-    sceneSelection_ = selection;
+    rotationCenter_ = center;
 }
-
 DebugCameraController2D::DebugCameraController2D(Context* context)
     : LogicComponent(context)
 {
