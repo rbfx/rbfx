@@ -45,12 +45,20 @@ public:
     void Stop() override;
     /// Control camera.
     void Update(float timeStep) override;
+    /// Tell this camera which where is the rotation center.
+    void SetRotationCenter(const Vector3& center);
+    /// Disable the rotation center
+    void ClearRotationCenter() { isRotationCenterValid_ = false; }
 
 protected:
     /// Current camera speed.
     float speed_ = 2.f;
     /// Current mouse sensitivity.
     float mouseSensitivity_ = 0.1f;
+    /// Where the camera should rotate around
+    Vector3 rotationCenter_ = Vector3::ZERO;
+    /// If the rotationCenter_ is valid.
+    bool isRotationCenterValid_ = false;
 };
 
 class URHO3D_TOOLBOX_API DebugCameraController2D : public LogicComponent

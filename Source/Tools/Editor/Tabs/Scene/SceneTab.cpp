@@ -848,7 +848,23 @@ void SceneTab::OnUpdate(VariantMap& args)
         if (component != nullptr)
         {
             if (mouseHoversViewport_)
+            {
+                if (isMode3D_)
+                {
+                    DebugCameraController* controller3D = static_cast<DebugCameraController*>(component);
+                    Vector3 center;
+                    int selectionCount = gizmo_.GetSelectionCenter(center);
+                    if (selectionCount > 0)
+                    {
+                        controller3D->SetRotationCenter(center);
+                    }
+                    else
+                    {
+                        controller3D->ClearRotationCenter();
+                    }
+                }
                 component->Update(timeStep);
+            }
         }
     }
 
@@ -876,6 +892,26 @@ void SceneTab::OnUpdate(VariantMap& args)
                 }
                 else if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
                     UnselectAll();
+            }
+        }
+
+        if (tab == this)
+        {
+            Input* input = context_->GetInput();
+            if (input->IsMouseVisible())
+            {
+                if (input->GetKeyPress(KEY_W))
+                {
+                    gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+                }
+                else if (input->GetKeyPress(KEY_E))
+                {
+                    gizmo_.SetOperation(GIZMOOP_ROTATE);
+                }
+                else if (input->GetKeyPress(KEY_R))
+                {
+                    gizmo_.SetOperation(GIZMOOP_SCALE);
+                }
             }
         }
     }
