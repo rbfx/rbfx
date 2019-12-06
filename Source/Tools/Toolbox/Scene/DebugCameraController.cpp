@@ -73,6 +73,10 @@ void DebugCameraController::Update(float timeStep)
 
         if (isRotationCenterValid_ && input->GetQualifierDown(QUAL_ALT))
         {
+            // The following LOC is use to make SystemUI be not outlined 
+            // refer to: https://github.com/rokups/rbfx/pull/151#issuecomment-562489285
+            ui::GetCurrentContext()->NavWindowingToggleLayer = false;
+
             auto yaw = GetNode()->GetRotation().EulerAngles().x_;
             GetNode()->RotateAround(rotationCenter_, Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
             auto angle = mouseSensitivity_ * delta.y_;
