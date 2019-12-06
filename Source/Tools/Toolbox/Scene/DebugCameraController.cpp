@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#include <Urho3D/Core/Context.h>
 #include "DebugCameraController.h"
 
 
@@ -42,14 +43,14 @@ void DebugCameraController::Stop()
 void DebugCameraController::Update(float timeStep)
 {
     // Do not move if the UI has a focused element
-    if (GetUI()->GetFocusElement())
+    if (context_->GetUI()->GetFocusElement())
         return;
 
     // Do not move if interacting with UI controls
-    if (GetSystemUI()->IsAnyItemActive())
+    if (context_->GetSystemUI()->IsAnyItemActive())
         return;
 
-    Input* input = GetInput();
+    Input* input = context_->GetInput();
 
     // Movement speed as world units per second
     float moveSpeed_ = speed_;
@@ -106,14 +107,14 @@ void DebugCameraController2D::Stop()
 void DebugCameraController2D::Update(float timeStep)
 {
     // Do not move if the UI has a focused element
-    if (GetUI()->GetFocusElement())
+    if (context_->GetUI()->GetFocusElement())
         return;
 
     // Do not move if interacting with UI controls
-    if (GetSystemUI()->IsAnyItemActive())
+    if (context_->GetSystemUI()->IsAnyItemActive())
         return;
 
-    Input* input = GetInput();
+    Input* input = context_->GetInput();
 
     // Movement speed as world units per second
     float moveSpeed_ = speed_;

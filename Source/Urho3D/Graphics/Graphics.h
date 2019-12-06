@@ -156,7 +156,7 @@ public:
     /// Set shaders.
     void SetShaders(ShaderVariation* vs, ShaderVariation* ps);
     /// Set shader float constants.
-    void SetShaderParameter(StringHash param, const float* data, unsigned count);
+    void SetShaderParameter(StringHash param, const float data[], unsigned count);
     /// Set shader float constant.
     void SetShaderParameter(StringHash param, float value);
     /// Set shader integer constant.

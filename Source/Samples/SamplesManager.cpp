@@ -152,21 +152,24 @@ void SamplesManager::Setup()
 
 void SamplesManager::Start()
 {
+    Input* input = context_->GetInput();
+    UI* ui = context_->GetUI();
+
     // Register an object factory for our custom Rotator component so that we can create them to scene nodes
     context_->RegisterFactory<Rotator>();
 
-    GetInput()->SetMouseMode(MM_FREE);
-    GetInput()->SetMouseVisible(true);
+    input->SetMouseMode(MM_FREE);
+    input->SetMouseVisible(true);
 
-    GetEngine()->CreateDebugHud()->ToggleAll();
+    context_->GetEngine()->CreateDebugHud()->ToggleAll();
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });
     SubscribeToEvent(E_BEGINFRAME, [this](StringHash, VariantMap& args) { OnFrameStart(); });
 
-    GetUI()->GetRoot()->SetDefaultStyle(GetCache()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
+    ui->GetRoot()->SetDefaultStyle(context_->GetCache()->GetResource<XMLFile>("UI/DefaultStyle.xml"));
 
-    auto* layout = GetUI()->GetRoot()->CreateChild<UIElement>();
+    auto* layout = ui->GetRoot()->CreateChild<UIElement>();
     listViewHolder_ = layout;
     layout->SetLayoutMode(LM_VERTICAL);
     layout->SetAlignment(HA_CENTER, VA_CENTER);
@@ -186,7 +189,6 @@ void SamplesManager::Start()
     if (!logoTexture)
         return;
 
-    UI* ui = GetSubsystem<UI>();
     logoSprite_ = ui->GetRoot()->CreateChild<Sprite>();
     logoSprite_->SetTexture(logoTexture);
 
@@ -306,13 +308,15 @@ void SamplesManager::OnClickSample(VariantMap& args)
 
 void SamplesManager::StartSample(StringHash sampleType)
 {
-    GetUI()->GetRoot()->RemoveAllChildren();
-    GetUI()->SetFocusElement(nullptr);
+    UI* ui = context_->GetUI();
+    ui->GetRoot()->RemoveAllChildren();
+    ui->SetFocusElement(nullptr);
 
 #if MOBILE
-    GetGraphics()->SetOrientations("LandscapeLeft LandscapeRight");
-    IntVector2 screenSize = GetGraphics()->GetSize();
-    GetGraphics()->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
+    Graphics* graphics = context_->GetGraphics();
+    graphics->SetOrientations("LandscapeLeft LandscapeRight");
+    IntVector2 screenSize = graphics->GetSize();
+    graphics->SetMode(Max(screenSize.x_, screenSize.y_), Min(screenSize.x_, screenSize.y_));
 #endif
     runningSample_.StaticCast<Object>(context_->CreateObject(sampleType));
     if (runningSample_.NotNull())
@@ -339,18 +343,21 @@ void SamplesManager::OnFrameStart()
         isClosing_ = false;
         if (runningSample_.NotNull())
         {
+            Input* input = context_->GetInput();
+            UI* ui = context_->GetUI();
             runningSample_->Stop();
             runningSample_ = nullptr;
-            GetInput()->SetMouseMode(MM_FREE);
-            GetInput()->SetMouseVisible(true);
-            GetUI()->SetCursor(nullptr);
-            GetUI()->GetRoot()->RemoveAllChildren();
-            GetUI()->GetRoot()->AddChild(listViewHolder_);
-            GetUI()->GetRoot()->AddChild(logoSprite_);
+            input->SetMouseMode(MM_FREE);
+            input->SetMouseVisible(true);
+            ui->SetCursor(nullptr);
+            ui->GetRoot()->RemoveAllChildren();
+            ui->GetRoot()->AddChild(listViewHolder_);
+            ui->GetRoot()->AddChild(logoSprite_);
 #if MOBILE
-            GetGraphics()->SetOrientations("Portrait");
-            IntVector2 screenSize = GetGraphics()->GetSize();
-            GetGraphics()->SetMode(Min(screenSize.x_, screenSize.y_), Max(screenSize.x_, screenSize.y_));
+            Graphics* graphics = context_->GetGraphics();
+            graphics->SetOrientations("Portrait");
+            IntVector2 screenSize = graphics->GetSize();
+            graphics->SetMode(Min(screenSize.x_, screenSize.y_), Max(screenSize.x_, screenSize.y_));
 #endif
         }
         else
@@ -365,7 +372,7 @@ void SamplesManager::OnFrameStart()
                 }
             }
 #endif
-            GetEngine()->Exit();
+            context_->GetEngine()->Exit();
         }
     }
 }
@@ -383,10 +390,10 @@ void SamplesManager::RegisterSample()
     auto* title = button->CreateChild<Text>();
     title->SetAlignment(HA_CENTER, VA_CENTER);
     title->SetText(T::GetTypeNameStatic());
-    title->SetFont(GetCache()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
+    title->SetFont(context_->GetCache()->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 30);
     title->SetStyleAuto();
 
-    GetUI()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
+    context_->GetUI()->GetRoot()->GetChildStaticCast<ListView>("SampleList", true)->AddItem(button);
 }
 
 }

@@ -79,7 +79,7 @@ public:
     }
 
     /// Construct from a float array.
-    explicit Quaternion(const float* data) noexcept
+    explicit Quaternion(const float data[]) noexcept
 #ifndef URHO3D_SSE
        :w_(data[0]),
         x_(data[1]),

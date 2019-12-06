@@ -58,7 +58,7 @@ void MaterialInspector::RegisterObject(Context* context)
 
 void MaterialInspector::SetResource(const ea::string& resourceName)
 {
-    auto* material = GetCache()->GetResource<Material>(resourceName);
+    auto* material = context_->GetCache()->GetResource<Material>(resourceName);
     if (!material)
         return;
 
@@ -68,8 +68,8 @@ void MaterialInspector::SetResource(const ea::string& resourceName)
     auto autoSave = [this](StringHash, VariantMap&) {
         // Auto-save material on modification
         auto* material = inspectable_->GetMaterial();
-        GetCache()->IgnoreResourceReload(material);
-        material->SaveFile(GetCache()->GetResourceFileName(material->GetName()));
+        context_->GetCache()->IgnoreResourceReload(material);
+        material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
     };
     SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
     SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
@@ -107,7 +107,7 @@ void MaterialInspector::ToggleModel()
 
 void MaterialInspector::Save()
 {
-    inspectable_->GetMaterial()->SaveFile(GetCache()->GetResourceFileName(inspectable_->GetMaterial()->GetName()));
+    inspectable_->GetMaterial()->SaveFile(context_->GetCache()->GetResourceFileName(inspectable_->GetMaterial()->GetName()));
 }
 
 void MaterialInspector::RenderPreview()
@@ -162,7 +162,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 const Variant& payload = ui::AcceptDragDropVariant("path");
                 if (!payload.IsEmpty())
                 {
-                    auto* technique = GetCache()->GetResource<Technique>(payload.GetString());
+                    auto* technique = context_->GetCache()->GetResource<Technique>(payload.GetString());
                     if (technique)
                     {
                         material->SetTechnique(i, technique, tech.qualityLevel_, tech.lodDistance_);
@@ -252,7 +252,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             const Variant& payload = ui::AcceptDragDropVariant("path");
             if (!payload.IsEmpty())
             {
-                auto* technique = GetCache()->GetResource<Technique>(payload.GetString());
+                auto* technique = context_->GetCache()->GetResource<Technique>(payload.GetString());
                 if (technique)
                 {
                     auto index = material->GetNumTechniques();
@@ -499,7 +499,7 @@ void Inspectable::Material::RegisterObject(Context* context)
         auto setter = [textureUnit](const Inspectable::Material& inspectable, const Variant& value)
         {
             const auto& ref = value.GetResourceRef();
-            if (auto* texture = inspectable.GetCache()->GetResource(ref.type_, ref.name_)->Cast<Texture>())
+            if (auto* texture = inspectable.GetContext()->GetCache()->GetResource(ref.type_, ref.name_)->Cast<Texture>())
                 inspectable.GetMaterial()->SetTexture(textureUnit, texture);
         };
         URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE(finalName.c_str(), getter, setter, ResourceRef, ResourceRef{Texture2D::GetTypeStatic()}, AM_EDIT);

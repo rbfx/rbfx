@@ -90,10 +90,10 @@ void Editor::Setup()
 #endif
 
     // Discover resource prefix path by looking for CoreData and going up.
-    for (coreResourcePrefixPath_ = GetFileSystem()->GetProgramDir();;
+    for (coreResourcePrefixPath_ = context_->GetFileSystem()->GetProgramDir();;
         coreResourcePrefixPath_ = GetParentPath(coreResourcePrefixPath_))
     {
-        if (GetFileSystem()->DirExists(coreResourcePrefixPath_ + "CoreData"))
+        if (context_->GetFileSystem()->DirExists(coreResourcePrefixPath_ + "CoreData"))
             break;
         else
         {
@@ -123,7 +123,7 @@ void Editor::Setup()
 
     // Load editor settings
     {
-        auto* fs = GetFileSystem();
+        auto* fs = context_->GetFileSystem();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
@@ -161,7 +161,7 @@ void Editor::Setup()
         }
     }
 
-    GetLog()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
+    context_->GetLog()->SetLogFormat("[%H:%M:%S] [%l] [%n] : %v");
 
     SetRandomSeed(Time::GetTimeSinceEpoch());
 
@@ -209,7 +209,7 @@ void Editor::Start()
     {
         if (GetCommandLineParser().got_subcommand(cmd->GetTypeName().c_str()))
         {
-            GetLog()->SetLogFormat("%v");
+            context_->GetLog()->SetLogFormat("%v");
             ExecuteSubcommand(cmd);
             engine_->Exit();
             return;
@@ -219,78 +219,23 @@ void Editor::Start()
     // Continue with normal editor initialization
     context_->RegisterSubsystem(new SceneManager(context_));
     context_->RegisterSubsystem(new EditorIconCache(context_));
-    GetInput()->SetMouseMode(MM_ABSOLUTE);
-    GetInput()->SetMouseVisible(true);
+    context_->GetInput()->SetMouseMode(MM_ABSOLUTE);
+    context_->GetInput()->SetMouseVisible(true);
 
-    GetCache()->SetAutoReloadResources(true);
+    context_->GetCache()->SetAutoReloadResources(true);
     engine_->SetAutoExit(false);
 
-    SubscribeToEvent(E_UPDATE, std::bind(&Editor::OnUpdate, this, _2));
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
 
     // Creates console but makes sure it's UI is not rendered. Console rendering is done manually in editor.
     auto* console = engine_->CreateConsole();
     console->SetAutoVisibleOnError(false);
-    GetFileSystem()->SetExecuteConsoleCommands(false);
-    SubscribeToEvent(E_CONSOLECOMMAND, std::bind(&Editor::OnConsoleCommand, this, _2));
+    context_->GetFileSystem()->SetExecuteConsoleCommands(false);
+    SubscribeToEvent(E_CONSOLECOMMAND, [this](StringHash, VariantMap& args) { OnConsoleCommand(args); });
     console->RefreshInterpreters();
 
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
-        // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
-        // candidate. This subsystem will be recreated.
-        if (!pendingOpenProject_.empty())
-        {
-            CloseProject();
-            // Reset SystemUI so that imgui loads it's config proper.
-            context_->RemoveSubsystem<SystemUI>();
-            context_->RegisterSubsystem(new SystemUI(context_));
-            SetupSystemUI();
-
-            project_ = new Project(context_);
-            context_->RegisterSubsystem(project_);
-            bool loaded = project_->LoadProject(pendingOpenProject_);
-            // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
-            // subsystem reads this file and loads settings.
-            GetSystemUI()->Start();
-            if (loaded)
-            {
-                auto* fs = GetFileSystem();
-                loadDefaultLayout_ = project_->IsNewProject();
-                JSONValue& recents = editorSettings_["recent-projects"];
-                if (!recents.IsArray())
-                    recents.SetType(JSON_ARRAY);
-                // Remove latest project if it was already opened or any projects that no longer exists.
-                for (int i = 0; i < recents.Size();)
-                {
-                    if (recents[i].GetString() == pendingOpenProject_ || !fs->DirExists(recents[i].GetString()))
-                        recents.Erase(i);
-                    else
-                        ++i;
-                }
-                // Latest project goes to front
-                recents.Insert(0, pendingOpenProject_);
-                // Limit recents list size
-                if (recents.Size() > 10)
-                    recents.Resize(10);
-            }
-            else
-            {
-                CloseProject();
-                URHO3D_LOGERROR("Loading project failed.");
-            }
-            pendingOpenProject_.clear();
-        }
-    });
-    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) {
-        if (auto* preview = GetTab<PreviewTab>())
-        {
-            if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
-                exiting_ = true;
-            else
-                preview->Stop();
-        }
-        else
-            exiting_ = true;
-    });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { OnEndFrame(); });
+    SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
     SetupSystemUI();
@@ -301,7 +246,7 @@ void Editor::Start()
     }
 
     // Hud will be rendered manually.
-    GetEngine()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
+    context_->GetEngine()->CreateDebugHud()->SetMode(DEBUGHUD_SHOW_NONE);
 }
 
 void Editor::ExecuteSubcommand(SubCommand* cmd)
@@ -332,14 +277,14 @@ void Editor::Stop()
             JSONValue& window = editorSettings_["window"];
             window.SetType(JSON_OBJECT);
             window["size"].SetType(JSON_NULL);
-            window["size"].SetVariantValue(GetGraphics()->GetSize(), context_);
+            window["size"].SetVariantValue(context_->GetGraphics()->GetSize(), context_);
             window["pos"].SetType(JSON_NULL);
-            window["pos"].SetVariantValue(GetGraphics()->GetWindowPosition(), context_);
+            window["pos"].SetVariantValue(context_->GetGraphics()->GetWindowPosition(), context_);
             window["maximized"].SetType(JSON_NULL);
-            window["maximized"].SetVariantValue(GetGraphics()->GetMaximized(), context_);
+            window["maximized"].SetVariantValue(context_->GetGraphics()->GetMaximized(), context_);
         }
 
-        auto* fs = GetFileSystem();
+        auto* fs = context_->GetFileSystem();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
@@ -350,7 +295,7 @@ void Editor::Stop()
             URHO3D_LOGERROR("Saving of editor settings failed.");
     }
 
-    GetWorkQueue()->Complete(0);
+    context_->GetWorkQueue()->Complete(0);
     if (auto* manager = GetSubsystem<SceneManager>())
         manager->UnloadAll();
     CloseProject();
@@ -427,24 +372,23 @@ void Editor::OnUpdate(VariantMap& args)
 
         ui::BeginGroup();
 
-        // New project tile
-        {
-            if (ui::Button("Open/Create Project", tileSize))
-                OpenOrCreateProject();
-            ui::SameLine();
-        }
-
         struct State
         {
             explicit State(Editor* editor)
             {
-                const JSONValue& recents = editor->editorSettings_["recent-projects"];
+                FileSystem *fs = editor->GetContext()->GetFileSystem();
+                JSONValue& recents = editor->editorSettings_["recent-projects"];
+                if (!recents.IsArray())
+                {
+                    editor->editorSettings_["recent-projects"].SetType(JSON_ARRAY);
+                    return;
+                }
                 snapshots_.resize(recents.Size());
-                for (int i = 0; i < recents.Size(); i++)
+                for (int i = 0; i < recents.Size();)
                 {
                     const ea::string& projectPath = recents[i].GetString();
                     ea::string snapshotFile = AddTrailingSlash(projectPath) + ".snapshot.png";
-                    if (editor->GetFileSystem()->FileExists(snapshotFile))
+                    if (fs->FileExists(snapshotFile))
                     {
                         Image img(editor->context_);
                         if (img.LoadFile(snapshotFile))
@@ -454,6 +398,7 @@ void Editor::OnUpdate(VariantMap& args)
                             snapshots_[i] = texture;
                         }
                     }
+                    ++i;
                 }
             }
 
@@ -466,13 +411,13 @@ void Editor::OnUpdate(VariantMap& args)
         int index = 0;
         for (int row = 0; row < 3; row++)
         {
-            for (int col = row == 0 ? 1 : 0; col < 3; col++, index++)
+            for (int col = 0; col < 3; col++, index++)
             {
                 SharedPtr<Texture2D> snapshot;
                 if (state->snapshots_.size() > index)
                     snapshot = state->snapshots_[index];
 
-                if (recents.Size() <= index)
+                if (recents.Size() <= index || (row == 2 && col == 2))  // Last tile never shows a project.
                 {
                     if (ui::Button("Open/Create Project", tileSize))
                         OpenOrCreateProject();
@@ -508,7 +453,7 @@ void Editor::OnUpdate(VariantMap& args)
     // Dialog for a warning when application is being closed with unsaved resources.
     if (exiting_)
     {
-        if (!GetWorkQueue()->IsCompleted(0))
+        if (!context_->GetWorkQueue()->IsCompleted(0))
         {
             ui::OpenPopup("Completing Tasks");
 
@@ -516,8 +461,8 @@ void Editor::OnUpdate(VariantMap& args)
                                                                  ImGuiWindowFlags_NoMove | ImGuiWindowFlags_Popup))
             {
                 ui::TextUnformatted("Some tasks are in progress and are being completed. Please wait.");
-                static float totalIncomplete = GetWorkQueue()->GetNumIncomplete(0);
-                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)GetWorkQueue()->GetNumIncomplete(0), totalIncomplete));
+                static float totalIncomplete = context_->GetWorkQueue()->GetNumIncomplete(0);
+                ui::ProgressBar(100.f / totalIncomplete * Min(totalIncomplete - (float)context_->GetWorkQueue()->GetNumIncomplete(0), totalIncomplete));
                 ui::EndPopup();
             }
         }
@@ -561,7 +506,7 @@ void Editor::OnUpdate(VariantMap& args)
         }
         else
         {
-            GetWorkQueue()->Complete(0);
+            context_->GetWorkQueue()->Complete(0);
             if (project_.NotNull())
             {
                 project_->SaveProject();
@@ -601,6 +546,67 @@ void Editor::OnConsoleCommand(VariantMap& args)
     using namespace ConsoleCommand;
     if (args[P_COMMAND].GetString() == "revision")
         URHO3D_LOGINFOF("Engine revision: %s", GetRevision());
+}
+
+void Editor::OnEndFrame()
+{
+    // Opening a new project must be done at the point when SystemUI is not in use. End of the frame is a good
+    // candidate. This subsystem will be recreated.
+    if (!pendingOpenProject_.empty())
+    {
+        CloseProject();
+        // Reset SystemUI so that imgui loads it's config proper.
+        context_->RemoveSubsystem<SystemUI>();
+        context_->RegisterSubsystem(new SystemUI(context_));
+        SetupSystemUI();
+
+        project_ = new Project(context_);
+        context_->RegisterSubsystem(project_);
+        bool loaded = project_->LoadProject(pendingOpenProject_);
+        // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
+        // subsystem reads this file and loads settings.
+        context_->GetSystemUI()->Start();
+        if (loaded)
+        {
+            auto* fs = context_->GetFileSystem();
+            loadDefaultLayout_ = project_->IsNewProject();
+            JSONValue& recents = editorSettings_["recent-projects"];
+            if (!recents.IsArray())
+                recents.SetType(JSON_ARRAY);
+            // Remove latest project if it was already opened or any projects that no longer exists.
+            for (int i = 0; i < recents.Size();)
+            {
+                if (recents[i].GetString() == pendingOpenProject_ || !fs->DirExists(recents[i].GetString()))
+                    recents.Erase(i);
+                else
+                    ++i;
+            }
+            // Latest project goes to front
+            recents.Insert(0, pendingOpenProject_);
+            // Limit recents list size
+            if (recents.Size() > 10)
+                recents.Resize(10);
+        }
+        else
+        {
+            CloseProject();
+            URHO3D_LOGERROR("Loading project failed.");
+        }
+        pendingOpenProject_.clear();
+    }
+}
+
+void Editor::OnExitRequested()
+{
+    if (auto* preview = GetTab<PreviewTab>())
+    {
+        if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
+            exiting_ = true;
+        else
+            preview->Stop();
+    }
+    else
+        exiting_ = true;
 }
 
 void Editor::CreateDefaultTabs()
@@ -668,7 +674,7 @@ void Editor::HandleHotkeys()
     if (ui::IsAnyItemActive())
         return;
 
-    auto* input = GetInput();
+    auto* input = context_->GetInput();
     if (input->GetKeyDown(KEY_CTRL))
     {
         if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
@@ -728,13 +734,13 @@ void Editor::SetupSystemUI()
     static ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     static ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
     static ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
-    GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
-    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
-    monoFont_ = GetSystemUI()->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
-    GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
-    // Vector3 dpi = GetGraphics()->GetDisplayDPI(GetGraphics()->GetCurrentMonitor());
-    // GetSystemUI()->SetScale({3.0f, 3.0f, 3.0f}, false);
+    context_->GetSystemUI()->ApplyStyleDefault(true, 1.0f);
+    context_->GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
+    context_->GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
+    monoFont_ = context_->GetSystemUI()->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
+    context_->GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
+    // Vector3 dpi = context_->GetGraphics()->GetDisplayDPI(context_->GetGraphics()->GetCurrentMonitor());
+    // context_->GetSystemUI()->SetScale({3.0f, 3.0f, 3.0f}, false);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     auto& io = ui::GetIO();
@@ -839,7 +845,7 @@ void Editor::SetupSystemUI()
 
 void Editor::UpdateWindowTitle(const ea::string& resourcePath)
 {
-    if (GetEngine()->IsHeadless())
+    if (context_->GetEngine()->IsHeadless())
         return;
 
     auto* project = GetSubsystem<Project>();
@@ -854,7 +860,7 @@ void Editor::UpdateWindowTitle(const ea::string& resourcePath)
             title += ToString(" | %s", GetFileName(resourcePath).c_str());
     }
 
-    GetGraphics()->SetWindowTitle(title);
+    context_->GetGraphics()->SetWindowTitle(title);
 }
 
 template<typename T>
@@ -894,7 +900,7 @@ void Editor::OnConsoleUriClick(VariantMap& args)
         const ea::string& protocol = args[P_PROTOCOL].GetString();
         const ea::string& address = args[P_ADDRESS].GetString();
         if (protocol == "res")
-            GetFileSystem()->SystemOpen(GetCache()->GetResourceFileName(address));
+            context_->GetFileSystem()->SystemOpen(context_->GetCache()->GetResourceFileName(address));
     }
 }
 

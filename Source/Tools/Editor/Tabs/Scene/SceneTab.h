@@ -56,7 +56,7 @@ struct SceneState
         sceneState_.Seek(0);
         BinaryInputArchive sceneArchive(scene->GetContext(), sceneState_);
         scene->Serialize(sceneArchive);
-        scene->GetUI()->Clear();
+        scene->GetContext()->GetUI()->Clear();
         root->SetDefaultStyle(defaultStyle_);
         BinaryInputArchive uiArchive(scene->GetContext(), uiState_);
         root->Serialize(uiArchive);
@@ -168,6 +168,12 @@ protected:
     ///
     void OnTemporaryChanged(VariantMap& args);
     ///
+    void OnInspectorRenderStart(VariantMap& args);
+    ///
+    void OnSceneActivated(VariantMap& args);
+    ///
+    void OnEditorProjectClosing();
+    ///
     void AddComponentIcon(Component* component);
     ///
     void RemoveComponentIcon(Component* component);
@@ -220,6 +226,10 @@ protected:
     SharedPtr<XMLFile> defaultStyle_;
     ///
     bool debugHudVisible_ = false;
+    /// Rectangle encompassing all selected nodes.
+    ImRect selectionRect_{};
+    /// Frame on which range selection will be performed.
+    int performRangeSelectionFrame_ = -1;
 };
 
 };

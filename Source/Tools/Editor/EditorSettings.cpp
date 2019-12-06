@@ -178,7 +178,7 @@ void Editor::RenderSettingsWindow()
 
                     explicit DefaultSceneState(Editor* editor)
                     {
-                        editor->GetFileSystem()->ScanDir(scenes_, editor->project_->GetResourcePath(), "*.xml", SCAN_FILES, true);
+                        editor->GetContext()->GetFileSystem()->ScanDir(scenes_, editor->project_->GetResourcePath(), "*.xml", SCAN_FILES, true);
                         for (auto it = scenes_.begin(); it != scenes_.end();)
                         {
                             if (GetContentType(editor->context_, *it) == CTYPE_SCENE)

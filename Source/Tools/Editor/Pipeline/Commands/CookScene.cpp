@@ -59,7 +59,7 @@ void CookScene::Execute()
 {
     auto* project = GetSubsystem<Project>();
     auto* editor = GetSubsystem<Editor>();
-    auto* fs = GetFileSystem();
+    auto* fs = context_->GetFileSystem();
 
     if (project == nullptr)
     {

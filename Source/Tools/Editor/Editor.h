@@ -105,6 +105,10 @@ public:
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
+    /// Housekeeping tasks.
+    void OnEndFrame();
+    /// Handle user closing editor window.
+    void OnExitRequested();
     /// Process any global hotkeys.
     void HandleHotkeys();
     /// Renders a project plugins submenu.

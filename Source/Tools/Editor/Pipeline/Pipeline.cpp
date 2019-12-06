@@ -47,7 +47,7 @@ Pipeline::Pipeline(Context* context)
     : Object(context)
     , watcher_(context)
 {
-    if (GetEngine()->IsHeadless())
+    if (context_->GetEngine()->IsHeadless())
         return;
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, OnEndFrame));
@@ -102,7 +102,7 @@ void Pipeline::RegisterObject(Context* context)
 void Pipeline::EnableWatcher()
 {
     auto* project = GetSubsystem<Project>();
-    GetFileSystem()->CreateDirsRecursive(project->GetCachePath());
+    context_->GetFileSystem()->CreateDirsRecursive(project->GetCachePath());
     watcher_.StartWatching(project->GetResourcePath(), true);
 }
 
@@ -140,7 +140,7 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
         return nullptr;
 
     auto* project = GetSubsystem<Project>();
-    auto* fs = GetFileSystem();
+    auto* fs = context_->GetFileSystem();
 
     ea::string resourcePath = project->GetResourcePath() + resourceName;
     ea::string resourceDirName;
@@ -253,7 +253,7 @@ SharedPtr<WorkItem> Pipeline::ScheduleImport(Asset* asset, Flavor* flavor, Pipel
 
     asset->AddRef();
     asset->importing_ = true;
-    return GetWorkQueue()->AddWorkItem([this, asset, flavor, flags]()
+    return context_->GetWorkQueue()->AddWorkItem([this, asset, flavor, flags]()
     {
         if (ExecuteImport(asset, flavor, flags))
         {
@@ -302,7 +302,7 @@ bool Pipeline::ExecuteImport(Asset* asset, Flavor* flavor, PipelineBuildFlags fl
 void Pipeline::BuildCache(Flavor* flavor, PipelineBuildFlags flags)
 {
     auto* project = GetSubsystem<Project>();
-    auto* fs = GetFileSystem();
+    auto* fs = context_->GetFileSystem();
 
     if (flavor == nullptr)
         flavor = GetDefaultFlavor();
@@ -322,7 +322,7 @@ void Pipeline::BuildCache(Flavor* flavor, PipelineBuildFlags flags)
 
 void Pipeline::WaitForCompletion() const
 {
-    GetWorkQueue()->Complete(0);
+    context_->GetWorkQueue()->Complete(0);
 }
 
 void Pipeline::CreatePaksAsync(Flavor* flavor)
@@ -372,7 +372,7 @@ void Pipeline::OnUpdate()
     }
     else if (!pendingPackageFlavor_.empty())
     {
-        auto* fs = GetFileSystem();
+        auto* fs = context_->GetFileSystem();
         auto* project = GetSubsystem<Project>();
 
         Flavor* flavor = pendingPackageFlavor_.front();
@@ -596,7 +596,7 @@ bool Pipeline::CookSettings() const
         JSONOutputArchive archive(&file);
         if (!settings.Serialize(archive))
             return false;
-        GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
+        context_->GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(flavor->GetCachePath() + "Settings.json");
     }
     return true;
@@ -642,7 +642,7 @@ bool Pipeline::CookCacheInfo() const
         if (!SerializeStringMap(archive, "cacheInfo", "map", mapping))
             return false;
 
-        GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
+        context_->GetFileSystem()->CreateDirsRecursive(flavor->GetCachePath());
         file.SaveFile(Format("{}CacheInfo.json", flavor->GetCachePath(), flavor->GetName()));
     }
     return true;

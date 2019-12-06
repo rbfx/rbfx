@@ -23,6 +23,7 @@
 
 #include <EASTL/sort.h>
 
+#include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Core/Profiler.h"
 #include "../Engine/Engine.h"
@@ -78,7 +79,7 @@ void DebugHud::SetExtents(const IntVector2& position, IntVector2 size)
 {
     if (size == IntVector2::ZERO)
     {
-        size = {GetGraphics()->GetWidth(), GetGraphics()->GetHeight()};
+        size = {context_->GetGraphics()->GetWidth(), context_->GetGraphics()->GetHeight()};
         if (!HasSubscribedToEvent(E_SCREENMODE))
             SubscribeToEvent(E_SCREENMODE, std::bind(&DebugHud::SetExtents, this, IntVector2::ZERO, IntVector2::ZERO));
     }
@@ -169,7 +170,7 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
             // Update stats regardless of them being shown.
             if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
             {
-                fps_ = static_cast<unsigned int>(Round(GetTime()->GetFramesPerSecond()));
+                fps_ = static_cast<unsigned int>(Round(context_->GetTime()->GetFramesPerSecond()));
                 fpsTimer_.Reset();
             }
 
@@ -182,8 +183,8 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
             }
             else
             {
-                primitives = GetRenderer()->GetNumPrimitives();
-                batches = GetRenderer()->GetNumBatches();
+                primitives = context_->GetRenderer()->GetNumPrimitives();
+                batches = context_->GetRenderer()->GetNumBatches();
             }
 
             ui::Text("FPS %d", fps_);

@@ -125,48 +125,6 @@
     get { return GetBlockEvents(); }
     set { SetBlockEvents(value); }
   }
-  public $typemap(cstype, Urho3D::Engine *) Engine {
-    get { return GetEngine(); }
-  }
-  public $typemap(cstype, Urho3D::Time *) Time {
-    get { return GetTime(); }
-  }
-  /*public _typemap(cstype, Urho3D::WorkQueue *) WorkQueue {
-    get { return GetWorkQueue(); }
-  }*/
-  public $typemap(cstype, Urho3D::FileSystem *) FileSystem {
-    get { return GetFileSystem(); }
-  }
-  public $typemap(cstype, Urho3D::Log *) Log {
-    get { return GetLog(); }
-  }
-  public $typemap(cstype, Urho3D::ResourceCache *) Cache {
-    get { return GetCache(); }
-  }
-  public $typemap(cstype, Urho3D::Localization *) Localization {
-    get { return GetLocalization(); }
-  }
-  public $typemap(cstype, Urho3D::Network *) Network {
-    get { return GetNetwork(); }
-  }
-  public $typemap(cstype, Urho3D::Input *) Input {
-    get { return GetInput(); }
-  }
-  public $typemap(cstype, Urho3D::Audio *) Audio {
-    get { return GetAudio(); }
-  }
-  public $typemap(cstype, Urho3D::UI *) UI {
-    get { return GetUI(); }
-  }
-  public $typemap(cstype, Urho3D::SystemUI *) SystemUI {
-    get { return GetSystemUI(); }
-  }
-  public $typemap(cstype, Urho3D::Graphics *) Graphics {
-    get { return GetGraphics(); }
-  }
-  public $typemap(cstype, Urho3D::Renderer *) Renderer {
-    get { return GetRenderer(); }
-  }
 %}
 %csmethodmodifiers Urho3D::Object::GetEventDataMap "private";
 %csmethodmodifiers Urho3D::Object::GetContext "private";
@@ -176,20 +134,6 @@
 %csmethodmodifiers Urho3D::Object::GetCategory "private";
 %csmethodmodifiers Urho3D::Object::GetBlockEvents "private";
 %csmethodmodifiers Urho3D::Object::SetBlockEvents "private";
-%csmethodmodifiers Urho3D::Object::GetEngine "private";
-%csmethodmodifiers Urho3D::Object::GetTime "private";
-%csmethodmodifiers Urho3D::Object::GetWorkQueue "private";
-%csmethodmodifiers Urho3D::Object::GetFileSystem "private";
-%csmethodmodifiers Urho3D::Object::GetLog "private";
-%csmethodmodifiers Urho3D::Object::GetCache "private";
-%csmethodmodifiers Urho3D::Object::GetLocalization "private";
-%csmethodmodifiers Urho3D::Object::GetNetwork "private";
-%csmethodmodifiers Urho3D::Object::GetInput "private";
-%csmethodmodifiers Urho3D::Object::GetAudio "private";
-%csmethodmodifiers Urho3D::Object::GetUI "private";
-%csmethodmodifiers Urho3D::Object::GetSystemUI "private";
-%csmethodmodifiers Urho3D::Object::GetGraphics "private";
-%csmethodmodifiers Urho3D::Object::GetRenderer "private";
 %typemap(cscode) Urho3D::ObjectFactory %{
   public $typemap(cstype, Urho3D::Context *) Context {
     get { return GetContext(); }

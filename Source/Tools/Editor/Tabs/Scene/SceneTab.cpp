@@ -98,79 +98,18 @@ SceneTab::SceneTab(Context* context)
     cameraPreviewtexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
 
     // Events
-    SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, std::bind(&SceneTab::OnNodeSelectionChanged, this));
-    SubscribeToEvent(E_UPDATE, std::bind(&SceneTab::OnUpdate, this, _2));
+    SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, [this](StringHash, VariantMap&) { OnNodeSelectionChanged(); });
+    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
     SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
-    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) {
-        Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
-        if (serializable->GetType() == Node::GetTypeStatic())
-        {
-            UI_UPIDSCOPE(1)
-                ui::Columns(2);
-            Node* node = static_cast<Node*>(serializable);
-            ui::TextUnformatted("ID");
-            ui::NextColumn();
-            ui::Text("%u", node->GetID());
-            if (node->IsReplicated())
-            {
-                ui::SameLine();
-                ui::TextUnformatted(ICON_FA_WIFI);
-                ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
-            }
-            ui::NextColumn();
-        }
-    });
+    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) { OnInspectorRenderStart(args); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
-    SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) {
-        using namespace SceneActivated;
-        if (auto* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
-        {
-            SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
-            SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
-            SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
-
-            undo_.Clear();
-            undo_.Connect(scene);
-
-            // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
-            // updates per frame.
-            scene->SetUpdateEnabled(false);
-            cameraPreviewViewport_->SetScene(scene);
-            viewport_->SetScene(scene);
-            selectedComponents_.clear();
-            gizmo_.UnselectAll();
-        }
-    });
-    SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) {
-        if (texture_.Null())
-            return;
-
-        // Also crop image to a square.
-        SharedPtr<Image> snapshot(texture_->GetImage());
-        int w = snapshot->GetWidth();
-        int h = snapshot->GetHeight();
-        int side = Min(w, h);
-        IntRect rect{0, 0, w, h};
-        if (w > h)
-        {
-            rect.left_ = ((w - side) / 2);
-            rect.right_ = rect.left_ + side;
-        }
-        else if (h > w)
-        {
-            rect.top_ = ((w - side) / 2);
-            rect.bottom_ = rect.top_ + side;
-        }
-        SharedPtr<Image> cropped = snapshot->GetSubimage(rect);
-        cropped->SavePNG(GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png");
-    });
+    SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) { OnSceneActivated(args); });
+    SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) { OnEditorProjectClosing(); });
 
     undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
-    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) {
-        undo_.Clear();
-    });
+    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) { undo_.Clear(); });
 
     undo_.Clear();
 
@@ -188,8 +127,8 @@ bool SceneTab::RenderWindowContent()
     if (GetScene() == nullptr)
         return true;
 
-    if (GetInput()->IsMouseVisible())
-        lastMousePosition_ = GetInput()->GetMousePosition();
+    if (context_->GetInput()->IsMouseVisible())
+        lastMousePosition_ = context_->GetInput()->GetMousePosition();
     bool open = true;
 
     // Focus window when appearing
@@ -207,11 +146,11 @@ bool SceneTab::RenderWindowContent()
     ui::Image(texture_, contentSize);
     gizmo_.ManipulateSelection(GetCamera());
 
-    if (GetInput()->IsMouseVisible())
+    if (context_->GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
 
-    bool isClickedLeft = GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedLeft = context_->GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = context_->GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -234,10 +173,10 @@ bool SceneTab::RenderWindowContent()
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
-    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && GetInput()->IsMouseVisible())
+    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && context_->GetInput()->IsMouseVisible())
     {
         // Handle object selection.
-        IntVector2 pos = GetInput()->GetMousePosition();
+        IntVector2 pos = context_->GetInput()->GetMousePosition();
         pos -= tabRect.Min();
 
         Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
@@ -267,7 +206,7 @@ bool SceneTab::RenderWindowContent()
 
             if (isClickedLeft)
             {
-                if (!GetInput()->GetKeyDown(KEY_CTRL))
+                if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
                     UnselectAll();
 
                 if (clickNode == GetScene())
@@ -375,19 +314,19 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     bool loaded = false;
     if (resourcePath.ends_with(".xml", false))
     {
-        auto* file = GetCache()->GetResource<XMLFile>(resourcePath);
+        auto* file = context_->GetCache()->GetResource<XMLFile>(resourcePath);
         loaded = file && scene->LoadXML(file->GetRoot());
     }
     else if (resourcePath.ends_with(".json", false))
     {
-        auto* file = GetCache()->GetResource<JSONFile>(resourcePath);
+        auto* file = context_->GetCache()->GetResource<JSONFile>(resourcePath);
         loaded = file && scene->LoadJSON(file->GetRoot());
     }
     else
     {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).c_str());
         manager->UnloadScene(scene);
-        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -395,7 +334,7 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     {
         URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).c_str());
         manager->UnloadScene(scene);
-        GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -420,9 +359,9 @@ bool SceneTab::SaveResource()
     if (!BaseClassName::SaveResource())
         return false;
 
-    GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
+    context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourceName_, true);
 
-    auto fullPath = GetCache()->GetResourceFileName(resourceName_);
+    auto fullPath = context_->GetCache()->GetResourceFileName(resourceName_);
     if (fullPath.empty())
         return false;
 
@@ -532,6 +471,7 @@ void SceneTab::ToggleSelection(Component* component)
 
 void SceneTab::UnselectAll()
 {
+    selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
     bool hadComponents = !selectedComponents_.empty();
     selectedComponents_.clear();
     if (gizmo_.UnselectAll() || hadComponents)
@@ -660,12 +600,20 @@ void SceneTab::RenderInspector(const char* filter)
 
 void SceneTab::RenderHierarchy()
 {
+    if (performRangeSelectionFrame_ != ui::GetFrameCount())
+        selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
+
     if (auto* scene = GetScene())
     {
         ui::PushStyleVar(ImGuiStyleVar_IndentSpacing, 10);
         RenderNodeTree(scene);
         ui::PopStyleVar();
     }
+
+    // Perform range selection on next frame. Only then we can have a rectangle covering selection ends
+    // which we need to do range selection.
+    if (ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsKeyDown(SCANCODE_SHIFT) && !GetSelection().empty())
+        performRangeSelectionFrame_ = ui::GetFrameCount() + 1;
 }
 
 void SceneTab::RenderNodeTree(Node* node)
@@ -684,15 +632,14 @@ void SceneTab::RenderNodeTree(Node* node)
         ui::SetScrollHereY();
 
     ea::string name = node->GetName().empty() ? ToString("%s %d", node->GetTypeName().c_str(), node->GetID()) : node->GetName();
-    bool isSelected = IsSelected(node);
-
-    if (isSelected)
+    if (IsSelected(node))
         flags |= ImGuiTreeNodeFlags_Selected;
 
     ui::Image("Node");
     ui::SameLine();
     ui::PushID((void*)node);
     auto opened = ui::TreeNodeEx(name.c_str(), flags);
+    ImRect treeNodeRect = {ui::GetItemRectMin(), ui::GetItemRectMax()};
     auto it = openHierarchyNodes_.find(node);
     if (it != openHierarchyNodes_.end())
     {
@@ -743,9 +690,14 @@ void SceneTab::RenderNodeTree(Node* node)
     {
         if (ui::IsMouseClicked(MOUSEB_LEFT))
         {
-            if (!GetInput()->GetKeyDown(KEY_CTRL))
+            // Select single node.
+            if (!ui::IsKeyDown(SCANCODE_SHIFT) && !ui::IsKeyDown(SCANCODE_CTRL))
                 UnselectAll();
-            ToggleSelection(node);
+
+            if (ui::IsKeyDown(SCANCODE_SHIFT))
+                Select(node);
+            else
+                ToggleSelection(node);
         }
         else if (ui::IsMouseClicked(MOUSEB_RIGHT))
         {
@@ -755,6 +707,19 @@ void SceneTab::RenderNodeTree(Node* node)
                 ToggleSelection(node);
             }
             ui::OpenPopupEx(ui::GetID("Node context menu"));
+        }
+    }
+
+    if (IsSelected(node))
+        selectionRect_.Add(treeNodeRect);
+
+    // Range-select by shift-clicking an item.
+    if (performRangeSelectionFrame_ == ui::GetFrameCount())
+    {
+        if (selectionRect_.Contains(treeNodeRect.Min))
+        {
+            Select(node);
+            selectionRect_.Add(treeNodeRect.Min);
         }
     }
 
@@ -782,7 +747,7 @@ void SceneTab::RenderNodeTree(Node* node)
                 {
                     if (ui::IsMouseClicked(MOUSEB_LEFT))
                     {
-                        if (!GetInput()->GetKeyDown(KEY_CTRL))
+                        if (!ui::IsKeyDown(SCANCODE_CTRL))
                             UnselectAll();
                         Select(component);
                     }
@@ -895,21 +860,21 @@ void SceneTab::OnUpdate(VariantMap& args)
             if (!ui::IsAnyItemActive())
             {
                 // Global view hotkeys
-                if (GetInput()->GetKeyPress(KEY_DELETE))
+                if (context_->GetInput()->GetKeyPress(KEY_DELETE))
                     RemoveSelection();
-                else if (GetInput()->GetKeyDown(KEY_CTRL))
+                else if (context_->GetInput()->GetKeyDown(KEY_CTRL))
                 {
-                    if (GetInput()->GetKeyPress(KEY_C))
+                    if (context_->GetInput()->GetKeyPress(KEY_C))
                         CopySelection();
-                    else if (GetInput()->GetKeyPress(KEY_V))
+                    else if (context_->GetInput()->GetKeyPress(KEY_V))
                     {
-                        if (GetInput()->GetKeyDown(KEY_SHIFT))
+                        if (context_->GetInput()->GetKeyDown(KEY_SHIFT))
                             PasteIntoSelection();
                         else
                             PasteIntuitive();
                     }
                 }
-                else if (GetInput()->GetKeyPress(KEY_ESCAPE))
+                else if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
                     UnselectAll();
             }
         }
@@ -1188,6 +1153,74 @@ void SceneTab::OnTemporaryChanged(VariantMap& args)
     }
 }
 
+void SceneTab::OnInspectorRenderStart(VariantMap& args)
+{
+    Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
+    if (serializable->GetType() == Node::GetTypeStatic())
+    {
+        UI_UPIDSCOPE(1)
+            ui::Columns(2);
+        Node* node = static_cast<Node*>(serializable);
+        ui::TextUnformatted("ID");
+        ui::NextColumn();
+        ui::Text("%u", node->GetID());
+        if (node->IsReplicated())
+        {
+            ui::SameLine();
+            ui::TextUnformatted(ICON_FA_WIFI);
+            ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
+        }
+        ui::NextColumn();
+    }
+}
+
+void SceneTab::OnSceneActivated(VariantMap& args)
+{
+    using namespace SceneActivated;
+    if (auto* scene = static_cast<Scene*>(args[P_NEWSCENE].GetPtr()))
+    {
+        SubscribeToEvent(scene, E_COMPONENTADDED, [this](StringHash, VariantMap& args) { OnComponentAdded(args); });
+        SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
+        SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
+
+        undo_.Clear();
+        undo_.Connect(scene);
+
+        // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
+        // updates per frame.
+        scene->SetUpdateEnabled(false);
+        cameraPreviewViewport_->SetScene(scene);
+        viewport_->SetScene(scene);
+        selectedComponents_.clear();
+        gizmo_.UnselectAll();
+    }
+}
+
+void SceneTab::OnEditorProjectClosing()
+{
+    if (texture_.Null())
+        return;
+
+    // Also crop image to a square.
+    SharedPtr<Image> snapshot(texture_->GetImage());
+    int w = snapshot->GetWidth();
+    int h = snapshot->GetHeight();
+    int side = Min(w, h);
+    IntRect rect{0, 0, w, h};
+    if (w > h)
+    {
+        rect.left_ = ((w - side) / 2);
+        rect.right_ = rect.left_ + side;
+    }
+    else if (h > w)
+    {
+        rect.top_ = ((w - side) / 2);
+        rect.bottom_ = rect.top_ + side;
+    }
+    SharedPtr<Image> cropped = snapshot->GetSubimage(rect);
+    cropped->SavePNG(GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png");
+}
+
 void SceneTab::AddComponentIcon(Component* component)
 {
     if (component == nullptr || component->IsTemporary())
@@ -1199,7 +1232,7 @@ void SceneTab::AddComponentIcon(Component* component)
         (node->GetName().starts_with("__") && node->GetName().ends_with("__")))
         return;
 
-    auto* material = GetCache()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
+    auto* material = context_->GetCache()->GetResource<Material>(Format("Materials/Editor/DebugIcon{}.xml", component->GetTypeName()), false);
     if (material != nullptr)
     {
         auto iconTag = "DebugIcon" + component->GetTypeName();
@@ -1233,7 +1266,7 @@ void SceneTab::AddComponentIcon(Component* component)
 
         if (auto* bb = billboard->GetBillboard(0))
         {
-            auto* graphics = GetGraphics();
+            auto* graphics = context_->GetGraphics();
             float scale = graphics->GetDisplayDPI(graphics->GetCurrentMonitor()).z_ / 96.f;
             bb->size_ = Vector2::ONE * 0.2f * scale;
             bb->enabled_ = true;
@@ -1452,5 +1485,4 @@ void SceneTab::Close()
 
     GetSubsystem<Editor>()->UpdateWindowTitle();
 }
-
 }

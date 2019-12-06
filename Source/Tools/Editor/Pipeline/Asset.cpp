@@ -71,7 +71,7 @@ Asset::Asset(Context* context)
             extraInspectors_.erase(from);
         }
 
-        auto* fs = GetFileSystem();
+        auto* fs = context_->GetFileSystem();
         auto* project = GetSubsystem<Project>();
         ea::string newName = to + (isDir ? name_.substr(from.size()) : "");
 
@@ -147,7 +147,7 @@ void Asset::RenderInspector(const char* filter)
     {
         auto* fs = GetSubsystem<FileSystem>();
 
-        ea::string resourceFileName = GetCache()->GetResourceFileName(currentExtraInspectorProvider_->GetResourceName());
+        ea::string resourceFileName = context_->GetCache()->GetResourceFileName(currentExtraInspectorProvider_->GetResourceName());
         if (resourceFileName.empty() || !fs->FileExists(resourceFileName))
         {
             extraInspectors_.erase(currentExtraInspectorProvider_->GetResourceName());
@@ -270,7 +270,7 @@ bool Asset::Save()
     }
     else
     {
-        GetFileSystem()->Delete(assetPath);
+        context_->GetFileSystem()->Delete(assetPath);
         return true;
     }
 
@@ -283,7 +283,7 @@ bool Asset::Load()
     assert(!name_.empty());
     ea::string assetPath = RemoveTrailingSlash(resourcePath_) + ".asset";
     JSONFile file(context_);
-    if (GetFileSystem()->FileExists(assetPath))
+    if (context_->GetFileSystem()->FileExists(assetPath))
     {
         if (!file.LoadFile(assetPath))
         {
@@ -384,7 +384,7 @@ void Asset::ReimportOutOfDateRecursive() const
     if (!IsMetaAsset())
         return;
 
-    auto* fs = GetFileSystem();
+    auto* fs = context_->GetFileSystem();
     auto* project = GetSubsystem<Project>();
     Pipeline* pipeline = project->GetPipeline();
 

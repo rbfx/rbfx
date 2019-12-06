@@ -1,7 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+  <!--
+    This natvis file is tweaked for running using vscode on gdb/lldb debuggers on unix platforms.
+    Natvis implementation on these platforms is incomplete and thus workarounds for it's limitations
+    were added to this file. Functionality should mostly match rbfx.natvis. New compatible additions
+    to that file will be ported into this one.
+
+    vscode natvis implementation for unix platforms can be found at:
+    https://github.com/microsoft/MIEngine/tree/master/src/MIDebugEngine/Natvis.Impl
+  -->
+
   <!-- Urho3D::StringHash -->
-  <Type Name="Urho3D::StringHash" Priority="Low">
+  <Type Name="Urho3D::StringHash"> <!--  Priority="Low" -->
     <DisplayString>#{value_}</DisplayString>
   </Type>
 
@@ -251,16 +261,48 @@
   </Type>
 
   <Type Name="eastl::basic_string&lt;*&gt;">
-    <DisplayString Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{mPair.mFirst.heap.mpBegin,sb}"</DisplayString>
-    <DisplayString Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{mPair.mFirst.sso.mData,sb}"</DisplayString>
+    <DisplayString Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{($T1*)mPair.mFirst.heap.mpBegin}"</DisplayString>
+    <DisplayString Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{($T1*)mPair.mFirst.sso.mData}"</DisplayString>
     <Expand>
       <Item Name="[length]"   Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">mPair.mFirst.heap.mnSize</Item>
       <Item Name="[capacity]" Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(mPair.mFirst.heap.mnCapacity &amp; ~kHeapMask)</Item>
-      <Item Name="[value]"    Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">mPair.mFirst.heap.mpBegin,sb</Item>
+      <Item Name="[value]"    Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">($T1*)mPair.mFirst.heap.mpBegin</Item>
+
+      <Item Name="[length]"   Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(int)mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize</Item>
+      <Item Name="[capacity]" Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">eastl::string::SSOLayout::SSO_CAPACITY</Item>
+      <Item Name="[value]"    Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">($T1*)mPair.mFirst.sso.mData</Item>
+
+      <Item Name="[uses heap]">!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="eastl::string">
+    <DisplayString Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{(char*)mPair.mFirst.heap.mpBegin}"</DisplayString>
+    <DisplayString Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{(char*)mPair.mFirst.sso.mData}"</DisplayString>
+    <Expand>
+      <Item Name="[length]"   Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">mPair.mFirst.heap.mnSize</Item>
+      <Item Name="[capacity]" Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(mPair.mFirst.heap.mnCapacity &amp; ~kHeapMask)</Item>
+      <Item Name="[value]"    Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(char*)mPair.mFirst.heap.mpBegin</Item>
+
+      <Item Name="[length]"   Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(int)mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize</Item>
+      <Item Name="[capacity]" Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">eastl::string::SSOLayout::SSO_CAPACITY</Item>
+      <Item Name="[value]"    Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(char*)mPair.mFirst.sso.mData</Item>
+
+      <Item Name="[uses heap]">!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)</Item>
+    </Expand>
+  </Type>
+
+  <Type Name="eastl::wstring">
+    <DisplayString Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{(wchar_t*)mPair.mFirst.heap.mpBegin}"</DisplayString>
+    <DisplayString Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">"{(wchar_t*)mPair.mFirst.sso.mData}"</DisplayString>
+    <Expand>
+      <Item Name="[length]"   Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">mPair.mFirst.heap.mnSize</Item>
+      <Item Name="[capacity]" Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(mPair.mFirst.heap.mnCapacity &amp; ~kHeapMask)</Item>
+      <Item Name="[value]"    Condition="!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(wchar_t*)mPair.mFirst.heap.mpBegin</Item>
 
       <Item Name="[length]"   Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize</Item>
-      <Item Name="[capacity]" Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">SSOLayout::SSO_CAPACITY</Item>
-      <Item Name="[value]"    Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">mPair.mFirst.sso.mData,sb</Item>
+      <Item Name="[capacity]" Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">eastl::wstring::SSOLayout::SSO_CAPACITY</Item>
+      <Item Name="[value]"    Condition="!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)">(wchar_t*)mPair.mFirst.sso.mData</Item>
 
       <Item Name="[uses heap]">!!(mPair.mFirst.sso.mRemainingSizeField.mnRemainingSize &amp; kSSOMask)</Item>
     </Expand>
@@ -274,7 +316,7 @@
       </Expand>
   </Type>
 
-  <Type Name="eastl::VectorBase&lt;*&gt;">
+  <Type Name="eastl::VectorBase&lt;*,*&gt;">
     <DisplayString Condition="mpEnd == mpBegin">[{mpEnd - mpBegin}] {{}}</DisplayString>
     <DisplayString Condition="mpEnd - mpBegin == 1">[{mpEnd - mpBegin}] {{ {*mpBegin} }}</DisplayString>
     <DisplayString Condition="mpEnd - mpBegin == 2">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)} }}</DisplayString>
@@ -293,7 +335,48 @@
       </Expand>
   </Type>
 
+  <Type Name="eastl::vector&lt;*&gt;">
+    <DisplayString Condition="mpEnd == mpBegin">[{mpEnd - mpBegin}] {{}}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 1">[{mpEnd - mpBegin}] {{ {*mpBegin} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 2">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 3">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 4">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 5">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)}, {*(mpBegin+4)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin == 6">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)}, {*(mpBegin+4)}, {*(mpBegin+5)} }}</DisplayString>
+    <DisplayString Condition="mpEnd - mpBegin &gt; 6">[{mpEnd - mpBegin}] {{ {*mpBegin}, {*(mpBegin+1)}, {*(mpBegin+2)}, {*(mpBegin+3)}, {*(mpBegin+4)}, {*(mpBegin+5)}, ... }}</DisplayString>
+      <Expand>
+          <Item Name="[size]">mpEnd - mpBegin</Item>
+          <Item Name="[capacity]">mCapacityAllocator.mFirst - mpBegin</Item>
+          <ArrayItems>
+              <Size>mpEnd - mpBegin</Size>
+              <ValuePointer>mpBegin</ValuePointer>
+          </ArrayItems>
+      </Expand>
+  </Type>
   <Type Name="eastl::DequeBase&lt;*,*,*&gt;">
+    <DisplayString Condition="mItBegin.mpCurrent == mItEnd.mpCurrent">
+      [0] {{}}
+    </DisplayString>
+    <DisplayString Condition="(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin) == 1">
+      [1] {{ {*mItBegin.mpCurrent} }}
+    </DisplayString>
+    <DisplayString Condition="(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin) != 0">
+      [{(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)}]
+      {{
+        {*mItBegin.mpCurrent},
+        ...
+      }}
+    </DisplayString>
+    <Expand>
+      <Item Name="[size]">(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)</Item>
+      <IndexListItems>
+              <Size>(mItEnd.mpCurrentArrayPtr - mItBegin.mpCurrentArrayPtr) * $T3 + (mItEnd.mpCurrent-mItEnd.mpBegin) - (mItBegin.mpCurrent-mItBegin.mpBegin)</Size>
+              <ValueNode>mItBegin.mpCurrentArrayPtr[(mItBegin.mpCurrent-mItBegin.mpBegin + $i) / $T3][(mItBegin.mpCurrent-mItBegin.mpBegin + $i) % $T3]</ValueNode>
+          </IndexListItems>
+    </Expand>
+  </Type>
+
+  <Type Name="eastl::deque&lt;*,*,*&gt;">
     <DisplayString Condition="mItBegin.mpCurrent == mItEnd.mpCurrent">
       [0] {{}}
     </DisplayString>
@@ -338,7 +421,7 @@
     </Expand>
   </Type>
 
-  <Type Name="eastl::ListBase&lt;*&gt;">
+  <Type Name="eastl::list&lt;*&gt;">
     <DisplayString Condition="mNode.mpNext == &amp;mNode">
       [0] {{}}
     </DisplayString>
@@ -400,6 +483,40 @@
   </Type>
 
   <Type Name="eastl::SListBase&lt;*&gt;">
+    <DisplayString Condition="mNode.mpNext == 0">
+      [0] {{}}
+    </DisplayString>
+      <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext == 0">
+      [1]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue}
+      }}
+    </DisplayString>
+    <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext == 0">
+      [2]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue}
+      }}
+    </DisplayString>
+    <DisplayString Condition="mNode.mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext != 0 &amp;&amp; mNode.mpNext-&gt;mpNext-&gt;mpNext != 0">
+      [?]
+      {{
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext)-&gt;mValue},
+        {((eastl::SListNode&lt;$T1&gt;*)mNode.mpNext-&gt;mpNext)-&gt;mValue},
+        ...
+      }}
+    </DisplayString>
+    <Expand>
+          <LinkedListItems>
+              <HeadPointer>mNode.mpNext</HeadPointer>
+              <NextPointer>mpNext</NextPointer>
+              <ValueNode>((eastl::SListNode&lt;$T1&gt;*)this)-&gt;mValue</ValueNode>
+          </LinkedListItems>
+      </Expand>
+  </Type>
+
+  <Type Name="eastl::slist&lt;*&gt;">
     <DisplayString Condition="mNode.mpNext == 0">
       [0] {{}}
     </DisplayString>
@@ -608,6 +725,7 @@
 
         <Size>kSize</Size>
 
+        <!--
         <Loop>
           <Exec>bBitValue = ((mWord[iWord] >> iBitInWord) % 2) != 0 ? true : false</Exec>
           <Item>bBitValue</Item>
@@ -617,6 +735,7 @@
             <Exec>iBitInWord = 0</Exec>
           </If>
         </Loop>
+        -->
       </CustomListItems>
     </Expand>
   </Type>
@@ -633,6 +752,16 @@
     <StringView>mpBegin,[mnCount]</StringView>
   </Type>
 
+  <Type Name="eastl::string_view">
+    <DisplayString>{mpBegin,[mnCount]}</DisplayString>
+    <StringView>mpBegin,[mnCount]</StringView>
+  </Type>
+
+  <Type Name="eastl::wstring_view">
+    <DisplayString>{mpBegin,[mnCount]}</DisplayString>
+    <StringView>mpBegin,[mnCount]</StringView>
+  </Type>
+
   <Type Name="eastl::compressed_pair_imp&lt;*&gt;">
     <DisplayString Condition="($T3) == 0" Optional="true">({mFirst}, {mSecond})</DisplayString>
     <DisplayString Condition="($T3) == 1" Optional="true">({mSecond})</DisplayString>
@@ -643,7 +772,7 @@
   </Type>
 
   <Type Name="eastl::optional&lt;*&gt;">
-    <Intrinsic Name="value" Expression="*($T1*)&amp;val"/>
+    <!-- <Intrinsic Name="value" Expression="*($T1*)&amp;val"/> -->
     <DisplayString Condition="!engaged">nullopt</DisplayString>
     <DisplayString Condition="engaged">{value()}</DisplayString>
     <Expand>

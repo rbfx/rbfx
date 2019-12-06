@@ -63,7 +63,7 @@ ResourceTab::ResourceTab(Context* context)
         auto resourceName = args[InspectorLocateResource::P_NAME].GetString();
 
         auto* project = GetSubsystem<Project>();
-        auto* fs = GetFileSystem();
+        auto* fs = context_->GetFileSystem();
 
         resourcePath_ = GetPath(resourceName);
         if (fs->FileExists(project->GetCachePath() + resourceName))
@@ -100,10 +100,10 @@ ResourceTab::ResourceTab(Context* context)
         using namespace ResourceBrowserDelete;
         auto* project = GetSubsystem<Project>();
         auto fileName = project->GetResourcePath() + args[P_NAME].GetString();
-        if (GetFileSystem()->FileExists(fileName))
-            GetFileSystem()->Delete(fileName);
-        else if (GetFileSystem()->DirExists(fileName))
-            GetFileSystem()->RemoveDir(fileName, true);
+        if (context_->GetFileSystem()->FileExists(fileName))
+            context_->GetFileSystem()->Delete(fileName);
+        else if (context_->GetFileSystem()->DirExists(fileName))
+            context_->GetFileSystem()->RemoveDir(fileName, true);
     });
 }
 
@@ -151,11 +151,11 @@ bool ResourceTab::RenderWindowContent()
         {
             // Unknown resources are opened with associated application.
             ea::string resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
-            if (!GetFileSystem()->Exists(resourcePath))
+            if (!context_->GetFileSystem()->Exists(resourcePath))
                 resourcePath = GetSubsystem<Project>()->GetCachePath() + selected;
 
-            if (GetFileSystem()->Exists(resourcePath))
-                GetFileSystem()->SystemOpen(resourcePath);
+            if (context_->GetFileSystem()->Exists(resourcePath))
+                context_->GetFileSystem()->SystemOpen(resourcePath);
         }
     }
     else if (action == RBR_ITEM_CONTEXT_MENU)
@@ -183,7 +183,7 @@ bool ResourceTab::RenderWindowContent()
             {
                 ea::string newFolderName("New Folder");
                 ea::string path = GetNewResourcePath(resourcePath_ + newFolderName);
-                if (GetFileSystem()->CreateDir(path))
+                if (context_->GetFileSystem()->CreateDir(path))
                 {
                     flags_ |= RBF_RENAME_CURRENT | RBF_SCROLL_TO_CURRENT;
                     resourceSelection_ = newFolderName;
@@ -195,7 +195,7 @@ bool ResourceTab::RenderWindowContent()
             if (ui::MenuItem("Scene"))
             {
                 auto path = GetNewResourcePath(resourcePath_ + "New Scene.xml");
-                GetFileSystem()->CreateDirsRecursive(GetPath(path));
+                context_->GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
                 SharedPtr<Scene> scene(new Scene(context_));
                 scene->CreateComponent<Octree>();
@@ -213,7 +213,7 @@ bool ResourceTab::RenderWindowContent()
             if (ui::MenuItem("Material"))
             {
                 auto path = GetNewResourcePath(resourcePath_ + "New Material.xml");
-                GetFileSystem()->CreateDirsRecursive(GetPath(path));
+                context_->GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
                 SharedPtr<Material> material(new Material(context_));
                 File file(context_, path, FILE_WRITE);
@@ -230,7 +230,7 @@ bool ResourceTab::RenderWindowContent()
             if (ui::MenuItem("UI Layout"))
             {
                 auto path = GetNewResourcePath(resourcePath_ + "New UI Layout.xml");
-                GetFileSystem()->CreateDirsRecursive(GetPath(path));
+                context_->GetFileSystem()->CreateDirsRecursive(GetPath(path));
 
                 SharedPtr<UIElement> scene(new UIElement(context_));
                 XMLFile layout(context_);
@@ -276,7 +276,7 @@ bool ResourceTab::RenderWindowContent()
 ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
 {
     auto* project = GetSubsystem<Project>();
-    if (!GetFileSystem()->FileExists(project->GetResourcePath() + name))
+    if (!context_->GetFileSystem()->FileExists(project->GetResourcePath() + name))
         return project->GetResourcePath() + name;
 
     auto basePath = GetPath(name);
@@ -286,7 +286,7 @@ ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
     for (auto i = 1; i < M_MAX_INT; i++)
     {
         auto newName = project->GetResourcePath() + ToString("%s%s %d%s", basePath.c_str(), baseName.c_str(), i, ext.c_str());
-        if (!GetFileSystem()->FileExists(newName))
+        if (!context_->GetFileSystem()->FileExists(newName))
             return newName;
     }
 

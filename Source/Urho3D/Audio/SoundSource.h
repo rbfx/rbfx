@@ -110,7 +110,7 @@ public:
     /// Update the sound source. Perform subclass specific operations. Called by Audio.
     virtual void Update(float timeStep);
     /// Mix sound source output to a 32-bit clipping buffer. Called by Audio.
-    void Mix(int* dest, unsigned samples, int mixRate, bool stereo, bool interpolation);
+    void Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation);
     /// Update the effective master gain. Called internally and by Audio when the master gain changes.
     void UpdateMasterGain();
 
@@ -157,21 +157,21 @@ private:
     /// Set new playback position without locking the audio mutex. Called internally.
     void SetPlayPositionLockless(signed char* pos);
     /// Mix mono sample to mono buffer.
-    void MixMonoToMono(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix mono sample to stereo buffer.
-    void MixMonoToStereo(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixMonoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix mono sample to mono buffer interpolated.
-    void MixMonoToMonoIP(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixMonoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix mono sample to stereo buffer interpolated.
-    void MixMonoToStereoIP(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixMonoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix stereo sample to mono buffer.
-    void MixStereoToMono(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixStereoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix stereo sample to stereo buffer.
-    void MixStereoToStereo(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixStereoToStereo(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix stereo sample to mono buffer interpolated.
-    void MixStereoToMonoIP(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixStereoToMonoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix stereo sample to stereo buffer interpolated.
-    void MixStereoToStereoIP(Sound* sound, int* dest, unsigned samples, int mixRate);
+    void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Advance playback pointer without producing audible output.
     void MixZeroVolume(Sound* sound, unsigned samples, int mixRate);
     /// Advance playback pointer to simulate audio playback in headless mode.
