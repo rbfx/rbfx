@@ -1,4 +1,4 @@
-// dear imgui, v1.74 WIP
+// dear imgui, v1.74
 // (demo code)
 
 // Message to the person tempted to delete this file when integrating Dear ImGui into their code base:
@@ -101,10 +101,15 @@ Index of this file:
 // Play it nice with Windows users. Notepad in 2017 still doesn't display text data with Unix-style \n.
 #ifdef _WIN32
 #define IM_NEWLINE  "\r\n"
-#define snprintf    _snprintf
-#define vsnprintf   _vsnprintf
 #else
 #define IM_NEWLINE  "\n"
+#endif
+
+#if defined(_MSC_VER) && !defined(snprintf)
+#define snprintf    _snprintf
+#endif
+#if defined(_MSC_VER) && !defined(vsnprintf)
+#define vsnprintf   _vsnprintf
 #endif
 
 //-----------------------------------------------------------------------------
@@ -134,7 +139,7 @@ static void ShowExampleAppCustomRendering(bool* p_open);
 static void ShowExampleMenuFile();
 
 // Helper to display a little (?) mark which shows a tooltip when hovered.
-// In your own code you may want to display an actual icon if you are using a merged icon fonts (see misc/fonts/README.txt)
+// In your own code you may want to display an actual icon if you are using a merged icon fonts (see docs/FONTS.txt)
 static void HelpMarker(const char* desc)
 {
     ImGui::TextDisabled("(?)");
@@ -164,24 +169,27 @@ void ImGui::ShowUserGuide()
     ImGuiIO& io = ImGui::GetIO();
     ImGui::BulletText("Double-click on title bar to collapse window.");
     ImGui::BulletText("Click and drag on lower corner to resize window\n(double-click to auto fit window to its contents).");
-    if (io.ConfigWindowsMoveFromTitleBarOnly)
-        ImGui::BulletText("Click and drag on title bar to move window.");
-    else
-        ImGui::BulletText("Click and drag on any empty space to move window.");
-    ImGui::BulletText("TAB/SHIFT+TAB to cycle through keyboard editable fields.");
     ImGui::BulletText("CTRL+Click on a slider or drag box to input value as text.");
+    ImGui::BulletText("TAB/SHIFT+TAB to cycle through keyboard editable fields.");
     if (io.FontAllowUserScaling)
         ImGui::BulletText("CTRL+Mouse Wheel to zoom window contents.");
-    ImGui::BulletText("Mouse Wheel to scroll.");
-    ImGui::BulletText("While editing text:\n");
+    ImGui::BulletText("While inputing text:\n");
     ImGui::Indent();
-    ImGui::BulletText("Hold SHIFT or use mouse to select text.");
     ImGui::BulletText("CTRL+Left/Right to word jump.");
     ImGui::BulletText("CTRL+A or double-click to select all.");
-    ImGui::BulletText("CTRL+X,CTRL+C,CTRL+V to use clipboard.");
+    ImGui::BulletText("CTRL+X/C/V to use clipboard cut/copy/paste.");
     ImGui::BulletText("CTRL+Z,CTRL+Y to undo/redo.");
     ImGui::BulletText("ESCAPE to revert.");
     ImGui::BulletText("You can apply arithmetic operators +,*,/ on numerical values.\nUse +- to subtract.");
+    ImGui::Unindent();
+    ImGui::BulletText("With keyboard navigation enabled:");
+    ImGui::Indent();
+    ImGui::BulletText("Arrow keys to navigate.");
+    ImGui::BulletText("Space to activate a widget.");
+    ImGui::BulletText("Return to input text into a widget.");
+    ImGui::BulletText("Escape to deactivate a widget, close popup, exit child window.");
+    ImGui::BulletText("Alt to jump to the menu layer of a window.");
+    ImGui::BulletText("CTRL+Tab to select a window.");
     ImGui::Unindent();
 }
 
@@ -329,12 +337,20 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
     if (ImGui::CollapsingHeader("Help"))
     {
+        ImGui::Text("ABOUT THIS DEMO:");
+        ImGui::BulletText("Sections below are demonstrating many aspects of the library.");
+        ImGui::BulletText("The \"Examples\" menu above leads to more demo contents.");
+        ImGui::BulletText("The \"Tools\" menu above gives access to: About Box, Style Editor,\n"
+                          "and Metrics (general purpose Dear ImGui debugging tool).");
+        ImGui::Separator();
+
         ImGui::Text("PROGRAMMER GUIDE:");
-        ImGui::BulletText("Please see the ShowDemoWindow() code in imgui_demo.cpp. <- you are here!");
-        ImGui::BulletText("Please see the comments in imgui.cpp.");
-        ImGui::BulletText("Please see the examples/ application.");
-        ImGui::BulletText("Enable 'io.ConfigFlags |= NavEnableKeyboard' for keyboard controls.");
-        ImGui::BulletText("Enable 'io.ConfigFlags |= NavEnableGamepad' for gamepad controls.");
+        ImGui::BulletText("See the ShowDemoWindow() code in imgui_demo.cpp. <- you are here!");
+        ImGui::BulletText("See comments in imgui.cpp.");
+        ImGui::BulletText("See example applications in the examples/ folder.");
+        ImGui::BulletText("Read the FAQ at http://www.dearimgui.org/faq/");
+        ImGui::BulletText("Set 'io.ConfigFlags |= NavEnableKeyboard' for keyboard controls.");
+        ImGui::BulletText("Set 'io.ConfigFlags |= NavEnableGamepad' for gamepad controls.");
         ImGui::Separator();
 
         ImGui::Text("USER GUIDE:");
@@ -411,7 +427,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
         if (ImGui::TreeNode("Backend Flags"))
         {
-            HelpMarker("Those flags are set by the back-ends (imgui_impl_xxx files) to specify their capabilities.");
+            HelpMarker("Those flags are set by the back-ends (imgui_impl_xxx files) to specify their capabilities.\nHere we expose then as read-only fields to avoid breaking interactions with your back-end.");
             ImGuiBackendFlags backend_flags = io.BackendFlags; // Make a local copy to avoid modifying actual back-end flags.
             ImGui::CheckboxFlags("io.BackendFlags: HasGamepad", (unsigned int *)&backend_flags, ImGuiBackendFlags_HasGamepad);
             ImGui::CheckboxFlags("io.BackendFlags: HasMouseCursors", (unsigned int *)&backend_flags, ImGuiBackendFlags_HasMouseCursors);
@@ -426,6 +442,7 @@ void ImGui::ShowDemoWindow(bool* p_open)
 
         if (ImGui::TreeNode("Style"))
         {
+            HelpMarker("The same contents can be accessed in 'Tools->Style Editor' or by calling the ShowStyleEditor() function.");
             ImGui::ShowStyleEditor();
             ImGui::TreePop();
             ImGui::Separator();
@@ -808,14 +825,14 @@ static void ShowDemoWindowWidgets()
         if (ImGui::TreeNode("UTF-8 Text"))
         {
             // UTF-8 test with Japanese characters
-            // (Needs a suitable font, try Noto, or Arial Unicode, or M+ fonts. Read misc/fonts/README.txt for details.)
+            // (Needs a suitable font, try Noto, or Arial Unicode, or M+ fonts. Read docs/FONTS.txt for details.)
             // - From C++11 you can use the u8"my text" syntax to encode literal strings as UTF-8
             // - For earlier compiler, you may be able to encode your sources as UTF-8 (e.g. Visual Studio save your file as 'UTF-8 without signature')
             // - FOR THIS DEMO FILE ONLY, BECAUSE WE WANT TO SUPPORT OLD COMPILERS, WE ARE *NOT* INCLUDING RAW UTF-8 CHARACTERS IN THIS SOURCE FILE.
             //   Instead we are encoding a few strings with hexadecimal constants. Don't do this in your application!
             //   Please use u8"text in any language" in your application!
             // Note that characters values are preserved even by InputText() if the font cannot be displayed, so you can safely copy & paste garbled characters into another application.
-            ImGui::TextWrapped("CJK text will only appears if the font was loaded with the appropriate CJK character ranges. Call io.Font->AddFontFromFileTTF() manually to load extra character ranges. Read misc/fonts/README.txt for details.");
+            ImGui::TextWrapped("CJK text will only appears if the font was loaded with the appropriate CJK character ranges. Call io.Font->AddFontFromFileTTF() manually to load extra character ranges. Read docs/FONTS.txt for details.");
             ImGui::Text("Hiragana: \xe3\x81\x8b\xe3\x81\x8d\xe3\x81\x8f\xe3\x81\x91\xe3\x81\x93 (kakikukeko)"); // Normally we would use u8"blah blah" with the proper characters directly in the string.
             ImGui::Text("Kanjis: \xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e (nihongo)");
             static char buf[32] = "\xe6\x97\xa5\xe6\x9c\xac\xe8\xaa\x9e";
@@ -978,7 +995,7 @@ static void ShowDemoWindowWidgets()
         if (ImGui::TreeNode("In columns"))
         {
             ImGui::Columns(3, NULL, false);
-            static bool selected[16] = { 0 };
+            static bool selected[16] = {};
             for (int i = 0; i < 16; i++)
             {
                 char label[32]; sprintf(label, "Item %d", i);
@@ -1130,7 +1147,7 @@ static void ShowDemoWindowWidgets()
 
         // Create a dummy array of contiguous float values to plot
         // Tip: If your float aren't contiguous but part of a structure, you can pass a pointer to your first float and the sizeof() of your structure in the Stride parameter.
-        static float values[90] = { 0 };
+        static float values[90] = {};
         static int values_offset = 0;
         static double refresh_time = 0.0;
         if (!animate || refresh_time == 0.0)
@@ -1231,7 +1248,7 @@ static void ShowDemoWindowWidgets()
 
         // Generate a dummy default palette. The palette will persist and can be edited.
         static bool saved_palette_init = true;
-        static ImVec4 saved_palette[32] = { };
+        static ImVec4 saved_palette[32] = {};
         if (saved_palette_init)
         {
             for (int n = 0; n < IM_ARRAYSIZE(saved_palette); n++)
@@ -1663,7 +1680,7 @@ static void ShowDemoWindowWidgets()
     {
         // Submit an item (various types available) so we can query their status in the following block.
         static int item_type = 1;
-        ImGui::Combo("Item Type", &item_type, "Text\0Button\0Button (w/ repeat)\0Checkbox\0SliderFloat\0InputText\0InputFloat\0InputFloat3\0ColorEdit4\0MenuItem\0TreeNode (w/ double-click)\0ListBox\0");
+        ImGui::Combo("Item Type", &item_type, "Text\0Button\0Button (w/ repeat)\0Checkbox\0SliderFloat\0InputText\0InputFloat\0InputFloat3\0ColorEdit4\0MenuItem\0TreeNode\0TreeNode (w/ double-click)\0ListBox\0", 20);
         ImGui::SameLine();
         HelpMarker("Testing how various types of items are interacting with the IsItemXXX functions.");
         bool ret = false;
@@ -1680,8 +1697,9 @@ static void ShowDemoWindowWidgets()
         if (item_type == 7) { ret = ImGui::InputFloat3("ITEM: InputFloat3", col4f); }                   // Testing multi-component items (IsItemXXX flags are reported merged)
         if (item_type == 8) { ret = ImGui::ColorEdit4("ITEM: ColorEdit4", col4f); }                     // Testing multi-component items (IsItemXXX flags are reported merged)
         if (item_type == 9) { ret = ImGui::MenuItem("ITEM: MenuItem"); }                                // Testing menu item (they use ImGuiButtonFlags_PressedOnRelease button policy)
-        if (item_type == 10){ ret = ImGui::TreeNodeEx("ITEM: TreeNode w/ ImGuiTreeNodeFlags_OpenOnDoubleClick", ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_NoTreePushOnOpen); } // Testing tree node with ImGuiButtonFlags_PressedOnDoubleClick button policy.
-        if (item_type == 11){ const char* items[] = { "Apple", "Banana", "Cherry", "Kiwi" }; static int current = 1; ret = ImGui::ListBox("ITEM: ListBox", &current, items, IM_ARRAYSIZE(items), IM_ARRAYSIZE(items)); }
+        if (item_type == 10){ ret = ImGui::TreeNode("ITEM: TreeNode"); if (ret) ImGui::TreePop(); }     // Testing tree node
+        if (item_type == 11){ ret = ImGui::TreeNodeEx("ITEM: TreeNode w/ ImGuiTreeNodeFlags_OpenOnDoubleClick", ImGuiTreeNodeFlags_OpenOnDoubleClick | ImGuiTreeNodeFlags_NoTreePushOnOpen); } // Testing tree node with ImGuiButtonFlags_PressedOnDoubleClick button policy.
+        if (item_type == 12){ const char* items[] = { "Apple", "Banana", "Cherry", "Kiwi" }; static int current = 1; ret = ImGui::ListBox("ITEM: ListBox", &current, items, IM_ARRAYSIZE(items), IM_ARRAYSIZE(items)); }
 
         // Display the value of IsItemHovered() and other common item state functions.
         // Note that the ImGuiHoveredFlags_XXX flags can be combined.
@@ -1702,6 +1720,7 @@ static void ShowDemoWindowWidgets()
             "IsItemDeactivatedAfterEdit() = %d\n"
             "IsItemVisible() = %d\n"
             "IsItemClicked() = %d\n"
+            "IsItemToggledOpen() = %d\n"
             "GetItemRectMin() = (%.1f, %.1f)\n"
             "GetItemRectMax() = (%.1f, %.1f)\n"
             "GetItemRectSize() = (%.1f, %.1f)",
@@ -1719,6 +1738,7 @@ static void ShowDemoWindowWidgets()
             ImGui::IsItemDeactivatedAfterEdit(),
             ImGui::IsItemVisible(),
             ImGui::IsItemClicked(),
+            ImGui::IsItemToggledOpen(),
             ImGui::GetItemRectMin().x, ImGui::GetItemRectMin().y,
             ImGui::GetItemRectMax().x, ImGui::GetItemRectMax().y,
             ImGui::GetItemRectSize().x, ImGui::GetItemRectSize().y
@@ -2265,7 +2285,7 @@ static void ShowDemoWindowLayout()
             ImGui::TextUnformatted(names[i]);
 
             ImGuiWindowFlags child_flags = enable_extra_decorations ? ImGuiWindowFlags_MenuBar : 0;
-            ImGui::BeginChild(ImGui::GetID((void*)(intptr_t)i), ImVec2(child_w, 200.0f), true, child_flags);
+            bool window_visible = ImGui::BeginChild(ImGui::GetID((void*)(intptr_t)i), ImVec2(child_w, 200.0f), true, child_flags);
             if (ImGui::BeginMenuBar())
             {
                 ImGui::TextUnformatted("abc");
@@ -2275,16 +2295,19 @@ static void ShowDemoWindowLayout()
                 ImGui::SetScrollY(scroll_to_off_px);
             if (scroll_to_pos)
                 ImGui::SetScrollFromPosY(ImGui::GetCursorStartPos().y + scroll_to_pos_px, i * 0.25f);
-            for (int item = 0; item < 100; item++)
+            if (window_visible) // Avoid calling SetScrollHereY when running with culled items
             {
-                if (enable_track && item == track_item)
+                for (int item = 0; item < 100; item++)
                 {
-                    ImGui::TextColored(ImVec4(1,1,0,1), "Item %d", item);
-                    ImGui::SetScrollHereY(i * 0.25f); // 0.0f:top, 0.5f:center, 1.0f:bottom
-                }
-                else
-                {
-                    ImGui::Text("Item %d", item);
+                    if (enable_track && item == track_item)
+                    {
+                        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Item %d", item);
+                        ImGui::SetScrollHereY(i * 0.25f); // 0.0f:top, 0.5f:center, 1.0f:bottom
+                    }
+                    else
+                    {
+                        ImGui::Text("Item %d", item);
+                    }
                 }
             }
             float scroll_y = ImGui::GetScrollY();
@@ -2303,23 +2326,26 @@ static void ShowDemoWindowLayout()
         {
             float child_height = ImGui::GetTextLineHeight() + style.ScrollbarSize + style.WindowPadding.y * 2.0f;
             ImGuiWindowFlags child_flags = ImGuiWindowFlags_HorizontalScrollbar | (enable_extra_decorations ? ImGuiWindowFlags_AlwaysVerticalScrollbar : 0);
-            ImGui::BeginChild(ImGui::GetID((void*)(intptr_t)i), ImVec2(-100, child_height), true, child_flags);
+            bool window_visible = ImGui::BeginChild(ImGui::GetID((void*)(intptr_t)i), ImVec2(-100, child_height), true, child_flags);
             if (scroll_to_off)
                 ImGui::SetScrollX(scroll_to_off_px);
             if (scroll_to_pos)
                 ImGui::SetScrollFromPosX(ImGui::GetCursorStartPos().x + scroll_to_pos_px, i * 0.25f);
-            for (int item = 0; item < 100; item++)
+            if (window_visible) // Avoid calling SetScrollHereY when running with culled items
             {
-                if (enable_track && item == track_item)
+                for (int item = 0; item < 100; item++)
                 {
-                    ImGui::TextColored(ImVec4(1, 1, 0, 1), "Item %d", item);
-                    ImGui::SetScrollHereX(i * 0.25f); // 0.0f:left, 0.5f:center, 1.0f:right
+                    if (enable_track && item == track_item)
+                    {
+                        ImGui::TextColored(ImVec4(1, 1, 0, 1), "Item %d", item);
+                        ImGui::SetScrollHereX(i * 0.25f); // 0.0f:left, 0.5f:center, 1.0f:right
+                    }
+                    else
+                    {
+                        ImGui::Text("Item %d", item);
+                    }
+                    ImGui::SameLine();
                 }
-                else
-                {
-                    ImGui::Text("Item %d", item);
-                }
-                ImGui::SameLine();
             }
             float scroll_x = ImGui::GetScrollX();
             float scroll_max_x = ImGui::GetScrollMaxX();
@@ -3150,11 +3176,17 @@ void ImGui::ShowAboutWindow(bool* p_open)
 #ifdef IMGUI_DISABLE_WIN32_FUNCTIONS
         ImGui::Text("define: IMGUI_DISABLE_WIN32_FUNCTIONS");
 #endif
-#ifdef IMGUI_DISABLE_FORMAT_STRING_FUNCTIONS
-        ImGui::Text("define: IMGUI_DISABLE_FORMAT_STRING_FUNCTIONS");
+#ifdef IMGUI_DISABLE_DEFAULT_FORMAT_FUNCTIONS
+        ImGui::Text("define: IMGUI_DISABLE_DEFAULT_FORMAT_FUNCTIONS");
 #endif
-#ifdef IMGUI_DISABLE_MATH_FUNCTIONS
-        ImGui::Text("define: IMGUI_DISABLE_MATH_FUNCTIONS");
+#ifdef IMGUI_DISABLE_DEFAULT_MATH_FUNCTIONS
+        ImGui::Text("define: IMGUI_DISABLE_DEFAULT_MATH_FUNCTIONS");
+#endif
+#ifdef IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS
+        ImGui::Text("define: IMGUI_DISABLE_DEFAULT_FILE_FUNCTIONS");
+#endif
+#ifdef IMGUI_DISABLE_FILE_FUNCTIONS
+        ImGui::Text("define: IMGUI_DISABLE_FILE_FUNCTIONS");
 #endif
 #ifdef IMGUI_DISABLE_DEFAULT_ALLOCATORS
         ImGui::Text("define: IMGUI_DISABLE_DEFAULT_ALLOCATORS");
@@ -3208,7 +3240,6 @@ void ImGui::ShowAboutWindow(bool* p_open)
         if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)            ImGui::Text(" DockingEnable");
         if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)          ImGui::Text(" ViewportsEnable");
         if (io.ConfigFlags & ImGuiConfigFlags_DpiEnableScaleViewports)  ImGui::Text(" DpiEnableScaleViewports");
-        if (io.ConfigFlags & ImGuiConfigFlags_DpiEnableScaleFonts)      ImGui::Text(" DpiEnableScaleFonts");
         if (io.MouseDrawCursor)                                         ImGui::Text("io.MouseDrawCursor");
         if (io.ConfigViewportsNoAutoMerge)                              ImGui::Text("io.ConfigViewportsNoAutoMerge");
         if (io.ConfigViewportsNoTaskBarIcon)                            ImGui::Text("io.ConfigViewportsNoTaskBarIcon");
@@ -3302,7 +3333,7 @@ void ImGui::ShowFontSelector(const char* label)
     HelpMarker(
         "- Load additional fonts with io.Fonts->AddFontFromFileTTF().\n"
         "- The font atlas is built when calling io.Fonts->GetTexDataAsXXXX() or io.Fonts->Build().\n"
-        "- Read FAQ and documentation in misc/fonts/ for more details.\n"
+        "- Read FAQ and docs/FONTS.txt for more details.\n"
         "- If you need to add/remove fonts at runtime (e.g. for DPI change), do it before calling NewFrame().");
 }
 
@@ -3342,7 +3373,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
     if (ImGui::Button("Revert Ref"))
         style = *ref;
     ImGui::SameLine();
-    HelpMarker("Save/Revert in local non-persistent storage. Default Colors definition are not affected. Use \"Export Colors\" below to save them somewhere.");
+    HelpMarker("Save/Revert in local non-persistent storage. Default Colors definition are not affected. Use \"Export\" below to save them somewhere.");
 
     ImGui::Separator();
 
@@ -3390,7 +3421,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
         {
             static int output_dest = 0;
             static bool output_only_modified = true;
-            if (ImGui::Button("Export Unsaved"))
+            if (ImGui::Button("Export"))
             {
                 if (output_dest == 0)
                     ImGui::LogToClipboard();
@@ -3430,7 +3461,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
                 if (memcmp(&style.Colors[i], &ref->Colors[i], sizeof(ImVec4)) != 0)
                 {
                     // Tips: in a real user application, you may want to merge and use an icon font into the main font, so instead of "Save"/"Revert" you'd use icons.
-                    // Read the FAQ and misc/fonts/README.txt about using icon fonts. It's really easy and super convenient!
+                    // Read the FAQ and docs/FONTS.txt about using icon fonts. It's really easy and super convenient!
                     ImGui::SameLine(0.0f, style.ItemInnerSpacing.x); if (ImGui::Button("Save")) ref->Colors[i] = style.Colors[i];
                     ImGui::SameLine(0.0f, style.ItemInnerSpacing.x); if (ImGui::Button("Revert")) style.Colors[i] = ref->Colors[i];
                 }
@@ -3448,7 +3479,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
         {
             ImGuiIO& io = ImGui::GetIO();
             ImFontAtlas* atlas = io.Fonts;
-            HelpMarker("Read FAQ and misc/fonts/README.txt for details on font loading.");
+            HelpMarker("Read FAQ and docs/FONTS.txt for details on font loading.");
             ImGui::PushItemWidth(120);
             for (int i = 0; i < atlas->Fonts.Size; i++)
             {
@@ -3468,17 +3499,17 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
                     ImGui::Text("Fallback character: '%c' (U+%04X)", font->FallbackChar, font->FallbackChar);
                     ImGui::Text("Ellipsis character: '%c' (U+%04X)", font->EllipsisChar, font->EllipsisChar);
                     const float surface_sqrt = sqrtf((float)font->MetricsTotalSurface);
-                    ImGui::Text("Texture surface: %d pixels (approx) ~ %dx%d", font->MetricsTotalSurface, (int)surface_sqrt, (int)surface_sqrt);
+                    ImGui::Text("Texture Area: about %d px ~%dx%d px", font->MetricsTotalSurface, (int)surface_sqrt, (int)surface_sqrt);
                     for (int config_i = 0; config_i < font->ConfigDataCount; config_i++)
                         if (const ImFontConfig* cfg = &font->ConfigData[config_i])
                             ImGui::BulletText("Input %d: \'%s\', Oversample: (%d,%d), PixelSnapH: %d", config_i, cfg->Name, cfg->OversampleH, cfg->OversampleV, cfg->PixelSnapH);
                     if (ImGui::TreeNode("Glyphs", "Glyphs (%d)", font->Glyphs.Size))
                     {
                         // Display all glyphs of the fonts in separate pages of 256 characters
-                        for (int base = 0; base < 0x10000; base += 256)
+                        for (unsigned int base = 0; base <= IM_UNICODE_CODEPOINT_MAX; base += 256)
                         {
                             int count = 0;
-                            for (int n = 0; n < 256; n++)
+                            for (unsigned int n = 0; n < 256; n++)
                                 count += font->FindGlyphNoFallback((ImWchar)(base + n)) ? 1 : 0;
                             if (count > 0 && ImGui::TreeNode((void*)(intptr_t)base, "U+%04X..U+%04X (%d %s)", base, base + 255, count, count > 1 ? "glyphs" : "glyph"))
                             {
@@ -3486,7 +3517,7 @@ void ImGui::ShowStyleEditor(ImGuiStyle* ref)
                                 float cell_spacing = style.ItemSpacing.y;
                                 ImVec2 base_pos = ImGui::GetCursorScreenPos();
                                 ImDrawList* draw_list = ImGui::GetWindowDrawList();
-                                for (int n = 0; n < 256; n++)
+                                for (unsigned int n = 0; n < 256; n++)
                                 {
                                     ImVec2 cell_p1(base_pos.x + (n % 16) * (cell_size + cell_spacing), base_pos.y + (n / 16) * (cell_size + cell_spacing));
                                     ImVec2 cell_p2(cell_p1.x + cell_size, cell_p1.y + cell_size);
@@ -4644,7 +4675,8 @@ void ShowExampleAppDockSpace(bool* p_open)
         window_flags |= ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoNavFocus;
     }
 
-    // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background and handle the pass-thru hole, so we ask Begin() to not render a background.
+    // When using ImGuiDockNodeFlags_PassthruCentralNode, DockSpace() will render our background 
+    // and handle the pass-thru hole, so we ask Begin() to not render a background.
     if (dockspace_flags & ImGuiDockNodeFlags_PassthruCentralNode)
         window_flags |= ImGuiWindowFlags_NoBackground;
 
