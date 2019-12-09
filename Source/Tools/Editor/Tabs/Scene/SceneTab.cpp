@@ -1234,8 +1234,13 @@ void SceneTab::OnSceneActivated(VariantMap& args)
 
 void SceneTab::OnEditorProjectClosing()
 {
-    if (texture_.Null())
+    ea::string snapshotPath = GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png";
+
+    if (texture_.Null() || GetScene() == nullptr)
+    {
+        GetSubsystem<FileSystem>()->Delete(snapshotPath);
         return;
+    }
 
     // Also crop image to a square.
     SharedPtr<Image> snapshot(texture_->GetImage());
@@ -1254,7 +1259,7 @@ void SceneTab::OnEditorProjectClosing()
         rect.bottom_ = rect.top_ + side;
     }
     SharedPtr<Image> cropped = snapshot->GetSubimage(rect);
-    cropped->SavePNG(GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png");
+    cropped->SavePNG(snapshotPath);
 }
 
 void SceneTab::AddComponentIcon(Component* component)
