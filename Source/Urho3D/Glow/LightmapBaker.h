@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "../Glow/LightmapSettings.h"
 #include "../Scene/Scene.h"
 
 #include <EASTL/vector.h>
@@ -48,20 +49,12 @@ struct LightmapBakedData
 /// Lightmap baking settings.
 struct LightmapBakingSettings
 {
-    /// Lightmap size.
-    unsigned lightmapSize_{ 1024 };
-    /// Lightmap padding.
-    unsigned lightmapPadding_{ 2 };
-    /// Texel density.
-    unsigned texelDensity_{ 10 };
-    /// Min scale factor for node lightmaps.
-    float minLightmapScale_{ 1.0f };
+    /// Charting settings.
+    LightmapChartingSettings charting_;
+    /// Geometry baking settings.
+    LightmapGeometryBakingSettings geometryBaking_;
     /// Number of parallel chunks.
     unsigned numParallelChunks_{ 32 };
-    /// Baking render path.
-    ea::string bakingRenderPath_{ "RenderPaths/LightmapGBuffer.xml" };
-    /// Baking materials.
-    ea::string bakingMaterial_{ "Materials/LightmapBaker.xml" };
 };
 
 /// Lightmap baker API.
