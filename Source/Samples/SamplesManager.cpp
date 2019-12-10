@@ -161,7 +161,9 @@ void SamplesManager::Start()
     input->SetMouseMode(MM_FREE);
     input->SetMouseVisible(true);
 
+#if URHO3D_SYSTEMUI
     context_->GetEngine()->CreateDebugHud()->ToggleAll();
+#endif
 
     SubscribeToEvent(E_RELEASED, [this](StringHash, VariantMap& args) { OnClickSample(args); });
     SubscribeToEvent(E_KEYUP, [this](StringHash, VariantMap& args) { OnKeyPress(args); });

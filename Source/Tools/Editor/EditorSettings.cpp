@@ -359,18 +359,18 @@ void Editor::RenderSettingsWindow()
                                 float startPos = ui::GetCursorPosX();
                                 ui::TextUnformatted(settingName.c_str());
                                 ui::SameLine();
-                                ui::SetCursorPosX(startPos + 180_dp + ui::GetStyle().ItemSpacing.x);
-                                UI_ITEMWIDTH(100_dp)
+                                ui::SetCursorPosX(startPos + 180 + ui::GetStyle().ItemSpacing.x);
+                                UI_ITEMWIDTH(100)
                                     RenderSingleAttribute(value);
                                 ui::SameLine();
-                                ui::SetCursorPosX(startPos + 280_dp + ui::GetStyle().ItemSpacing.x);
+                                ui::SetCursorPosX(startPos + 280 + ui::GetStyle().ItemSpacing.x);
                                 if (ui::Button(ICON_FA_TRASH))
                                     it = settings.erase(it);
                                 else
                                     ++it;
                             }
 
-                            UI_ITEMWIDTH(280_dp)
+                            UI_ITEMWIDTH(280)
                                 ui::Combo("###Selector", &state->predefinedItem_, predefinedNames, URHO3D_ARRAYSIZE(predefinedNames));
 
                             ui::SameLine();
@@ -405,12 +405,12 @@ void Editor::RenderSettingsWindow()
 
                             if (state->predefinedItem_ == 1)
                             {
-                                UI_ITEMWIDTH(180_dp)
+                                UI_ITEMWIDTH(180)
                                     ui::InputText("###Key", &state->customName_);
 
                                 // Custom entry type selector
                                 ui::SameLine();
-                                UI_ITEMWIDTH(100_dp - style.ItemSpacing.x)
+                                UI_ITEMWIDTH(100 - style.ItemSpacing.x)
                                     ui::Combo("###Type", &state->customType_, variantNames, SDL_arraysize(variantTypes));
                             }
                             ui::PopID();    // Engine Settings

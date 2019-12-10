@@ -144,13 +144,14 @@ bool SceneTab::RenderWindowContent()
         return open;
     }
     ui::Image(texture_, contentSize);
+    ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     gizmo_.ManipulateSelection(GetCamera());
 
     if (context_->GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
 
-    bool isClickedLeft = context_->GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = context_->GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -176,10 +177,10 @@ bool SceneTab::RenderWindowContent()
     if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && context_->GetInput()->IsMouseVisible())
     {
         // Handle object selection.
-        IntVector2 pos = context_->GetInput()->GetMousePosition();
-        pos -= tabRect.Min();
-
-        Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
+        ImGuiIO& io = ui::GetIO();
+        Ray cameraRay = GetCamera()->GetScreenRay(
+            (io.MousePos.x - viewportRect.Min.x) / viewportRect.GetWidth(),
+            (io.MousePos.y - viewportRect.Min.y) / viewportRect.GetHeight());
         // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
         ea::vector<RayQueryResult> results;
 
@@ -488,7 +489,7 @@ const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    ui::SetCursorPos({4_dp, 4_dp});
+    ui::SetCursorPos({4, 4});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();

@@ -166,7 +166,7 @@ void UITab::RenderNodeTree(UIElement* element)
 
     ImRect bb{ui::GetItemRectMin(), ui::GetItemRectMax()};
     bb.Min.y = bb.Max.y;
-    bb.Max.y += 2_dp;
+    bb.Max.y += 2;
     if (ui::BeginDragDropTargetCustom(bb, ui::GetID("reorder")))
     {
         // Reparent by drag&drop between elements, insert after current item
@@ -255,7 +255,7 @@ bool UITab::RenderWindowContent()
 
 void UITab::RenderToolbarButtons()
 {
-    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4_dp, 4_dp});
+    ui::SetCursorPos(ui::GetCursorPos() + ImVec2{4, 4});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
@@ -267,7 +267,7 @@ void UITab::RenderToolbarButtons()
     ui::Checkbox("Hide Resize Handles", &hideResizeHandles_);
 
     ui::SameLine(0, 3.f);
-    ui::SetCursorPosY(ui::GetCursorPosY() + 4_dp);
+    ui::SetCursorPosY(ui::GetCursorPosY() + 4);
 }
 
 void UITab::OnActiveUpdate()
