@@ -42,7 +42,7 @@ struct URHO3D_API LightmapUVGenerationSettings
     /// UV channel to write. 2nd channel by default.
     unsigned uvChannel_{ 1 };
     /// Minimal texel density.
-    unsigned minDensity_{ 8 };
+    unsigned minDensity_{ 10 };
 };
 
 /// Generate lightmap UVs for the model.
