@@ -210,7 +210,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             // ---------------------------------------------------------------------------------------------------------
 
             ui::NewLine();
-            ui::SameLine(20_dp);
+            ui::SameLine(20);
             ui::TextUnformatted("LOD Distance");
             ui::NextColumn();
             UI_ITEMWIDTH(secondColWidth)
@@ -224,7 +224,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             };
 
             ui::NewLine();
-            ui::SameLine(20_dp);
+            ui::SameLine(20);
             ui::TextUnformatted("Quality");
             ui::NextColumn();
             UI_ITEMWIDTH(secondColWidth)
@@ -301,12 +301,12 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             auto* modification = ui::GetUIState<ModifiedStateTracker<Variant, bool>>();
 
             ui::NewLine();
-            ui::SameLine(20_dp);
+            ui::SameLine(20);
             ui::TextUnformatted(parameterName.c_str());
             ui::NextColumn();
             Variant value = pair.second.value_;
 
-            UI_ITEMWIDTH(-22_dp)
+            UI_ITEMWIDTH(-22)
             {
                 bool modifiedNow = RenderSingleAttribute(value);
                 if (modification->TrackModification(modifiedNow, [material, &parameterName]() { return material->GetShaderParameter(parameterName); }))
@@ -357,11 +357,11 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SetHelpTooltip("Shader parameter name.");
 
             ui::NextColumn();
-            UI_ITEMWIDTH(-22_dp) // Space for OK button
+            UI_ITEMWIDTH(-22) // Space for OK button
                 ui::Combo("###Type", &paramState->variantTypeIndex_, shaderParameterVariantNames, SDL_arraysize(shaderParameterVariantTypes));
             ui::SetHelpTooltip("Shader parameter type.");
 
-            ui::SameLine(0, 4_dp);
+            ui::SameLine(0, 4);
             if (ui::Button(ICON_FA_CHECK))
             {
                 if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name

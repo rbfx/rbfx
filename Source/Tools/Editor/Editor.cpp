@@ -365,10 +365,10 @@ void Editor::OnUpdate(VariantMap& args)
         auto* lists = ui::GetWindowDrawList();
         ImRect rect{ui::GetWindowContentRegionMin(), ui::GetWindowContentRegionMax()};
 
-        ImVec2 tileSize{200_dp, 200_dp};
-        ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{10_dp, 10_dp});
+        ImVec2 tileSize{200, 200};
+        ui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{10, 10});
 
-        ui::SetCursorScreenPos(rect.GetCenter() - ImVec2{tileSize.x * 1.5f + 10_dp, tileSize.y * 1.5f + 10_dp});
+        ui::SetCursorPos(rect.GetCenter() - ImVec2{tileSize.x * 1.5f + 10, tileSize.y * 1.5f + 10});
 
         ui::BeginGroup();
 
@@ -557,7 +557,7 @@ void Editor::OnEndFrame()
         CloseProject();
         // Reset SystemUI so that imgui loads it's config proper.
         context_->RemoveSubsystem<SystemUI>();
-        context_->RegisterSubsystem(new SystemUI(context_));
+        context_->RegisterSubsystem(new SystemUI(context_, ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DpiEnableScaleViewports));
         SetupSystemUI();
 
         project_ = new Project(context_);
@@ -565,7 +565,6 @@ void Editor::OnEndFrame()
         bool loaded = project_->LoadProject(pendingOpenProject_);
         // SystemUI has to be started after loading project, because project sets custom settings file path. Starting
         // subsystem reads this file and loads settings.
-        context_->GetSystemUI()->Start();
         if (loaded)
         {
             auto* fs = context_->GetFileSystem();
@@ -734,16 +733,17 @@ void Editor::SetupSystemUI()
     static ImWchar fontAwesomeIconRanges[] = {ICON_MIN_FA, ICON_MAX_FA, 0};
     static ImWchar notoSansRanges[] = {0x20, 0x52f, 0x1ab0, 0x2189, 0x2c60, 0x2e44, 0xa640, 0xab65, 0};
     static ImWchar notoMonoRanges[] = {0x20, 0x513, 0x1e00, 0x1f4d, 0};
-    context_->GetSystemUI()->ApplyStyleDefault(true, 1.0f);
-    context_->GetSystemUI()->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
-    context_->GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
-    monoFont_ = context_->GetSystemUI()->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
-    context_->GetSystemUI()->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
-    // Vector3 dpi = context_->GetGraphics()->GetDisplayDPI(context_->GetGraphics()->GetCurrentMonitor());
-    // context_->GetSystemUI()->SetScale({3.0f, 3.0f, 3.0f}, false);
+    SystemUI* systemUI = GetSubsystem<SystemUI>();
+
+    systemUI->ApplyStyleDefault(true, 1.0f);
+    systemUI->AddFont("Fonts/NotoSans-Regular.ttf", notoSansRanges, 16.f);
+    systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 14.f, true);
+    monoFont_ = systemUI->AddFont("Fonts/NotoMono-Regular.ttf", notoMonoRanges, 14.f);
+    systemUI->AddFont("Fonts/" FONT_ICON_FILE_NAME_FAS, fontAwesomeIconRanges, 12.f, true);
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     auto& io = ui::GetIO();
+    io.ConfigViewportsNoAutoMerge = true;
     io.IniFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;

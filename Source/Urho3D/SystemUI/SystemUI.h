@@ -48,19 +48,10 @@ class URHO3D_API SystemUI : public Object
 URHO3D_OBJECT(SystemUI, Object);
 public:
     /// Construct.
-    explicit SystemUI(Context* context);
+    explicit SystemUI(Context* context, ImGuiConfigFlags flags=0);
     /// Destruct.
     ~SystemUI() override;
 
-    /// Get ui scale.
-    /// \return scale of ui.
-    float GetZoom() const { return uiZoom_; };
-    /// Set ui scale.
-    /// \param zoom of ui.
-    void SetZoom(float zoom);
-    /// Update DPI scale.
-    /// \param scale is a vector of {hscale, vscale, dscale}. If `pixelPerfect` is `true` then scale will be rounded to nearest power of two.
-    void SetScale(Vector3 scale, bool pixelPerfect=true);
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
@@ -86,7 +77,6 @@ public:
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
 
 protected:
-    float uiZoom_ = 1.f;
     float fontScale_ = 1.f;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
@@ -96,8 +86,10 @@ protected:
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
 
     void ReallocateFontTexture();
-    void OnRenderDrawLists(ImDrawData* data);
     void OnRawEvent(VariantMap& args);
+    void OnScreenMode(VariantMap& args);
+    void OnInputEnd(VariantMap& args);
+    void OnRenderEnd();
 };
 
 /// Convert Color to ImVec4.
@@ -130,12 +122,5 @@ URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, co
 URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4 & bg_col = ImVec4(0, 0, 0, 0), const ImVec4 & tint_col = ImVec4(1, 1, 1, 1));
 
 }
-
-/// Scale a value according to io.FontGlobalScale.
-inline float dp(float value) { return value / ImGui::GetIO().FontGlobalScale; }
-/// Scale a literal value according to io.FontGlobalScale.
-inline float operator "" _dp(long double value) { return dp((float)value); }
-/// Scale a literal value according to io.FontGlobalScale.
-inline float operator "" _dp(unsigned long long value) { return dp((float)value); }
 
 namespace ui = ImGui;
