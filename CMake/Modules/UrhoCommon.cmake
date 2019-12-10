@@ -429,7 +429,7 @@ function (csharp_bind_target)
         if (EQUALITY_INDEX EQUAL -1)
             set (item "${item}=1")
         endif ()
-        list(APPEND GENERATOR_OPTIONS -D${item})
+        list(APPEND GENERATOR_OPTIONS "-D\"${item}\"")
     endforeach()
 
     if (NOT BIND_NATIVE)

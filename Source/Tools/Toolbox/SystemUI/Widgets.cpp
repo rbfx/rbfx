@@ -201,7 +201,7 @@ bool MaskSelector(unsigned int* mask)
             }
 
             ui::PushID(bitMask);
-            if (ui::Button("", {8_dp, 9_dp}))
+            if (ui::Button("", {8, 9}))
             {
                 modified = true;
                 *mask ^= bitMask;
@@ -214,7 +214,7 @@ bool MaskSelector(unsigned int* mask)
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + 9_dp});
+            ui::SetCursorPos({pos.x, pos.y + 9});
     }
 
     return modified;
