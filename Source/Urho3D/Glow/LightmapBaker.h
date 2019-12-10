@@ -53,7 +53,7 @@ struct LightmapBakingSettings
     /// Lightmap padding.
     unsigned lightmapPadding_{ 2 };
     /// Texel density.
-    unsigned texelDensity_{ 8 };
+    unsigned texelDensity_{ 10 };
     /// Min scale factor for node lightmaps.
     float minLightmapScale_{ 1.0f };
     /// Number of parallel chunks.

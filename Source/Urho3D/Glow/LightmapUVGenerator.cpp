@@ -105,6 +105,8 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
     Thekla::Atlas_Options atlasOptions;
     Thekla::atlas_set_default_options(&atlasOptions);
+    atlasOptions.mapper_options.preserve_boundary = true;
+    atlasOptions.mapper_options.preserve_uvs = false;
 
     // disable brute force packing quality, as it has a number of notes about performance
     // and it is turned off in Thekla example in repo as well. I am also seeing some meshes
