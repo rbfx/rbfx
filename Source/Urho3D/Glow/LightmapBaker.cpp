@@ -26,6 +26,8 @@
 #define _SSIZE_T_DEFINED
 
 #include "../Glow/LightmapBaker.h"
+#include "../Glow/LightmapCharter.h"
+#include "../Glow/LightmapGeometryBaker.h"
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
@@ -216,57 +218,6 @@ private:
 /// Size of Embree ray packed.
 static const unsigned RayPacketSize = 16;
 
-/// Description of lightmap region.
-struct LightmapRegion
-{
-    /// Construct default.
-    LightmapRegion() = default;
-    /// Construct actual region.
-    LightmapRegion(unsigned index, const IntVector2& position, const IntVector2& size, unsigned maxSize)
-        : lightmapIndex_(index)
-        , lightmapTexelRect_(position, position + size)
-    {
-        lightmapUVRect_.min_ = static_cast<Vector2>(lightmapTexelRect_.Min()) / static_cast<float>(maxSize);
-        lightmapUVRect_.max_ = static_cast<Vector2>(lightmapTexelRect_.Max()) / static_cast<float>(maxSize);
-    }
-    /// Get lightmap offset vector.
-    Vector4 GetScaleOffset() const
-    {
-        const Vector2 offset = lightmapUVRect_.Min();
-        const Vector2 size = lightmapUVRect_.Size();
-        return { size.x_, size.y_, offset.x_, offset.y_ };
-    }
-
-    /// Lightmap index.
-    unsigned lightmapIndex_;
-    /// Lightmap rectangle (in texels).
-    IntRect lightmapTexelRect_;
-    /// Lightmap rectangle (UV).
-    Rect lightmapUVRect_;
-};
-
-/// Description of lightmap receiver.
-struct LightReceiver
-{
-    /// Node.
-    Node* node_;
-    /// Static model.
-    StaticModel* staticModel_{};
-    /// Lightmap region.
-    LightmapRegion region_;
-};
-
-/// Lightmap description.
-struct LightmapDesc
-{
-    /// Area allocator for lightmap texture.
-    AreaAllocator allocator_;
-    /// Baking bakingScene.
-    SharedPtr<Scene> bakingScene_;
-    /// Baking camera.
-    Camera* bakingCamera_{};
-};
-
 /// Calculate bounding box of all light receivers.
 BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes)
 {
@@ -311,14 +262,13 @@ struct LightmapBakerImpl
         const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights)
         : context_(context)
         , settings_(settings)
-        , lightReceivers_(lightReceivers.size())
+        , scene_(scene)
+        , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
+        , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
         , lightObstacles_(lightObstacles)
         , lights_(lights)
-        , lightReceiversBoundingBox_(CalculateBoundingBoxOfNodes(lightReceivers))
         , lightObstaclesBoundingBox_(CalculateBoundingBoxOfNodes(lightObstacles))
     {
-        for (unsigned i = 0; i < lightReceivers.size(); ++i)
-            lightReceivers_[i].node_ = lightReceivers[i];
     }
     /// Destruct.
     ~LightmapBakerImpl()
@@ -331,9 +281,9 @@ struct LightmapBakerImpl
     /// Validate settings and whatever.
     bool Validate() const
     {
-        if (settings_.lightmapSize_ % settings_.numParallelChunks_ != 0)
+        if (settings_.charting_.chartSize_ % settings_.numParallelChunks_ != 0)
             return false;
-        if (settings_.lightmapSize_ % RayPacketSize != 0)
+        if (settings_.charting_.chartSize_ % RayPacketSize != 0)
             return false;
         return true;
     }
@@ -345,21 +295,20 @@ struct LightmapBakerImpl
     const LightmapBakingSettings settings_;
     /// Scene.
     Scene* scene_{};
-    /// Light receivers.
-    ea::vector<LightReceiver> lightReceivers_;
+    /// Lightmap charts.
+    LightmapChartVector charts_;
+    /// Baking scenes.
+    LightmapGeometryBakingSceneVector bakingScenes_;
+
     /// Light obstacles.
     ea::vector<Node*> lightObstacles_;
     /// Lights.
     ea::vector<Node*> lights_;
-    /// Bounding box of light receivers.
-    BoundingBox lightReceiversBoundingBox_;
     /// Bounding box of light obstacles.
     BoundingBox lightObstaclesBoundingBox_;
 
     /// Max length of the ray.
     float maxRayLength_{};
-    /// Lightmaps.
-    ea::vector<LightmapDesc> lightmaps_;
     /// Baking render path.
     SharedPtr<RenderPath> bakingRenderPath_;
     /// Embree device.
@@ -384,95 +333,6 @@ struct LightmapBakerImpl
     ea::vector<Vector4> smoothNormalBuffer_;
 };
 
-/// Calculate model lightmap size.
-static IntVector2 CalculateModelLightmapSize(const LightmapBakingSettings& settings,
-    Model* model, const Vector3& scale)
-{
-    const Variant& lightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
-    const Variant& lightmapDensityVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapDensityKey);
-
-    const auto modelLightmapSize = static_cast<Vector2>(lightmapSizeVar.GetIntVector2());
-    const unsigned modelLightmapDensity = lightmapDensityVar.GetUInt();
-
-    const float nodeScale = scale.DotProduct(DOT_SCALE);
-    const float rescaleFactor = nodeScale * static_cast<float>(settings.texelDensity_) / modelLightmapDensity;
-    const float clampedRescaleFactor = ea::max(settings.minLightmapScale_, rescaleFactor);
-
-    return VectorCeilToInt(modelLightmapSize * clampedRescaleFactor);
-}
-
-/// Allocate lightmap region.
-static LightmapRegion AllocateLightmapRegion(const LightmapBakingSettings& settings,
-    ea::vector<LightmapDesc>& lightmaps, const IntVector2& size)
-{
-    const int padding = static_cast<int>(settings.lightmapPadding_);
-    const IntVector2 paddedSize = size + 2 * padding * IntVector2::ONE;
-
-    // Try existing maps
-    unsigned lightmapIndex = 0;
-    for (LightmapDesc& lightmapDesc : lightmaps)
-    {
-        IntVector2 paddedPosition;
-        if (lightmapDesc.allocator_.Allocate(paddedSize.x_, paddedSize.y_, paddedPosition.x_, paddedPosition.y_))
-        {
-            const IntVector2 position = paddedPosition + padding * IntVector2::ONE;
-            return { lightmapIndex, position, size, settings.lightmapSize_ };
-        }
-        ++lightmapIndex;
-    }
-
-    // Create new map
-    const int lightmapSize = static_cast<int>(settings.lightmapSize_);
-    LightmapDesc& lightmapDesc = lightmaps.push_back();
-
-    // Allocate dedicated map for this specific region
-    if (size.x_ > lightmapSize || size.y_ > lightmapSize)
-    {
-        const int sizeX = (size.x_ + RayPacketSize - 1) / RayPacketSize * RayPacketSize;
-
-        lightmapDesc.allocator_.Reset(sizeX, size.y_, 0, 0, false);
-
-        IntVector2 position;
-        const bool success = lightmapDesc.allocator_.Allocate(sizeX, size.y_, position.x_, position.y_);
-
-        assert(success);
-        assert(position == IntVector2::ZERO);
-
-        return { lightmapIndex, IntVector2::ZERO, size, settings.lightmapSize_ };
-    }
-
-    // Allocate chunk from new map
-    lightmapDesc.allocator_.Reset(lightmapSize, lightmapSize, 0, 0, false);
-
-    IntVector2 paddedPosition;
-    const bool success = lightmapDesc.allocator_.Allocate(paddedSize.x_, paddedSize.y_, paddedPosition.x_, paddedPosition.y_);
-
-    assert(success);
-    assert(paddedPosition == IntVector2::ZERO);
-
-    const IntVector2 position = paddedPosition + padding * IntVector2::ONE;
-    return { lightmapIndex, position, size, settings.lightmapSize_ };
-}
-
-/// Allocate lightmap regions for light receivers.
-static void AllocateLightmapRegions(const LightmapBakingSettings& settings,
-    ea::vector<LightReceiver>& lightReceivers, ea::vector<LightmapDesc>& lightmaps)
-{
-    for (LightReceiver& lightReceiver : lightReceivers)
-    {
-        Node* node = lightReceiver.node_;
-
-        if (auto staticModel = node->GetComponent<StaticModel>())
-        {
-            Model* model = staticModel->GetModel();
-            const IntVector2 nodeLightmapSize = CalculateModelLightmapSize(settings, model, node->GetWorldScale());
-
-            lightReceiver.staticModel_ = staticModel;
-            lightReceiver.region_ = AllocateLightmapRegion(settings, lightmaps, nodeLightmapSize);
-        }
-    }
-}
-
 /// Load render path.
 SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
 {
@@ -483,64 +343,6 @@ SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderP
     return renderPath;
 }
 
-/// Initialize camera from bounding box.
-void InitializeCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
-{
-    Node* node = camera->GetNode();
-
-    const float zNear = 1.0f;
-    const float zFar = boundingBox.Size().z_ + zNear;
-    Vector3 position = boundingBox.Center();
-    position.z_ = boundingBox.min_.z_ - zNear;
-
-    node->SetPosition(position);
-    node->SetDirection(Vector3::FORWARD);
-
-    camera->SetOrthographic(true);
-    camera->SetOrthoSize(Vector2(boundingBox.Size().x_, boundingBox.Size().y_));
-    camera->SetNearClip(zNear);
-    camera->SetFarClip(zFar);
-}
-
-/// Initialize lightmap baking scenes.
-void InitializeLightmapBakingScenes(Context* context, Material* bakingMaterial, const BoundingBox& sceneBoundingBox,
-    ea::vector<LightmapDesc>& lightmaps, ea::vector<LightReceiver>& lightReceivers)
-{
-    // Allocate lightmap baking scenes
-    for (LightmapDesc& lightmapDesc : lightmaps)
-    {
-        auto bakingScene = MakeShared<Scene>(context);
-        bakingScene->CreateComponent<Octree>();
-
-        auto camera = bakingScene->CreateComponent<Camera>();
-        InitializeCameraBoundingBox(camera, sceneBoundingBox);
-
-        lightmapDesc.bakingCamera_ = camera;
-        lightmapDesc.bakingScene_ = bakingScene;
-    }
-
-    // Prepare baking scenes
-    for (const LightReceiver& receiver : lightReceivers)
-    {
-        LightmapDesc& lightmapDesc = lightmaps[receiver.region_.lightmapIndex_];
-        Scene* bakingScene = lightmapDesc.bakingScene_;
-
-        if (receiver.staticModel_)
-        {
-            auto material = bakingMaterial->Clone();
-            material->SetShaderParameter("LMOffset", receiver.region_.GetScaleOffset());
-
-            Node* node = bakingScene->CreateChild();
-            node->SetPosition(receiver.node_->GetWorldPosition());
-            node->SetRotation(receiver.node_->GetWorldRotation());
-            node->SetScale(receiver.node_->GetWorldScale());
-
-            StaticModel* staticModel = node->CreateComponent<StaticModel>();
-            staticModel->SetModel(receiver.staticModel_->GetModel());
-            staticModel->SetMaterial(material);
-        }
-    }
-}
 /// Parsed model key and value.
 struct ParsedModelKeyValue
 {
@@ -659,18 +461,12 @@ bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* sc
         return false;
 
     // Prepare metadata and baking scenes
-    AllocateLightmapRegions(impl_->settings_, impl_->lightReceivers_, impl_->lightmaps_);
-
     impl_->maxRayLength_ = impl_->lightObstaclesBoundingBox_.Size().Length();
 
-    impl_->bakingRenderPath_ = LoadRenderPath(context_, impl_->settings_.bakingRenderPath_);
-
-    Material* bakingMaterial = context_->GetCache()->GetResource<Material>(settings.bakingMaterial_);
-    InitializeLightmapBakingScenes(context_, bakingMaterial, impl_->lightReceiversBoundingBox_,
-        impl_->lightmaps_, impl_->lightReceivers_);
+    impl_->bakingRenderPath_ = LoadRenderPath(context_, impl_->settings_.geometryBaking_.renderPath_);
 
     // Create render surfaces
-    const int lightmapSize = impl_->settings_.lightmapSize_;
+    const int lightmapSize = impl_->settings_.charting_.chartSize_;
     impl_->renderTexturePlaceholder_ = CreateRenderTextureForLightmap(context_, lightmapSize, lightmapSize);
 
     return true;
@@ -724,7 +520,7 @@ void LightmapBaker::CookRaytracingScene()
 
 unsigned LightmapBaker::GetNumLightmaps() const
 {
-    return impl_->lightmaps_.size();
+    return impl_->charts_.size();
 }
 
 static void RandomDirection(Vector3& result)
@@ -857,13 +653,15 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
 
     Graphics* graphics = GetGraphics();
     ResourceCache* cache = GetCache();
-    const LightmapDesc& lightmapDesc = impl_->lightmaps_[index];
+
+    const LightmapChart& chart = impl_->charts_[index];
+    const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[index];
 
     // Prepare render surface
-    const int lightmapWidth = lightmapDesc.allocator_.GetWidth();
-    const int lightmapHeight = lightmapDesc.allocator_.GetHeight();
+    const int lightmapWidth = chart.allocator_.GetWidth();
+    const int lightmapHeight = chart.allocator_.GetHeight();
     SharedPtr<Texture2D> renderTexture = impl_->renderTexturePlaceholder_;
-    if (impl_->settings_.lightmapSize_ != lightmapWidth || impl_->settings_.lightmapSize_ != lightmapHeight)
+    if (impl_->settings_.charting_.chartSize_ != lightmapWidth || impl_->settings_.charting_.chartSize_ != lightmapHeight)
         renderTexture = CreateRenderTextureForLightmap(context_, lightmapWidth, lightmapHeight);
     RenderSurface* renderSurface = renderTexture->GetRenderSurface();
 
@@ -872,12 +670,12 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
 
     // Setup viewport
     Viewport viewport(context_);
-    viewport.SetCamera(lightmapDesc.bakingCamera_);
+    viewport.SetCamera(bakingScene.camera_);
     viewport.SetRect(IntRect::ZERO);
     viewport.SetRenderPath(impl_->bakingRenderPath_);
-    viewport.SetScene(lightmapDesc.bakingScene_);
+    viewport.SetScene(bakingScene.scene_);
 
-    // Render bakingScene
+    // Render scene
     View view(context_);
     view.Define(renderSurface, &viewport);
     view.Update(FrameInfo());
@@ -899,8 +697,8 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
 template <class T>
 void LightmapBaker::ParallelForEachRow(T callback)
 {
-    const LightmapDesc& lightmapDesc = impl_->lightmaps_[impl_->currentLightmapIndex_];
-    const unsigned lightmapHeight = static_cast<unsigned>(lightmapDesc.allocator_.GetHeight());
+    const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
+    const unsigned lightmapHeight = static_cast<unsigned>(chart.allocator_.GetHeight());
     const unsigned chunkHeight = lightmapHeight / impl_->settings_.numParallelChunks_;
 
     // Start tasks
@@ -923,9 +721,10 @@ void LightmapBaker::ParallelForEachRow(T callback)
 
 bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 {
-    const LightmapDesc& lightmapDesc = impl_->lightmaps_[impl_->currentLightmapIndex_];
-    const int lightmapWidth = lightmapDesc.allocator_.GetWidth();
-    const int lightmapHeight = lightmapDesc.allocator_.GetHeight();
+    const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
+    const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[impl_->currentLightmapIndex_];
+    const int lightmapWidth = chart.allocator_.GetWidth();
+    const int lightmapHeight = chart.allocator_.GetHeight();
 
     // Prepare output buffers
     data.lightmapSize_ = { lightmapWidth, lightmapHeight };
@@ -1310,15 +1109,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
 void LightmapBaker::ApplyLightmapsToScene(unsigned baseLightmapIndex)
 {
-    for (const LightReceiver& receiver : impl_->lightReceivers_)
-    {
-        if (receiver.staticModel_)
-        {
-            receiver.staticModel_->SetLightmap(true);
-            receiver.staticModel_->SetLightmapIndex(baseLightmapIndex + receiver.region_.lightmapIndex_);
-            receiver.staticModel_->SetLightmapScaleOffset(receiver.region_.GetScaleOffset());
-        }
-    }
+    ApplyLightmapCharts(impl_->charts_, baseLightmapIndex);
 }
 
 }
