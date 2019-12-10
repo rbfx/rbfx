@@ -60,6 +60,9 @@ public:
     /// Return swapchain.
     IDXGISwapChain* GetSwapChain() const { return swapChain_; }
 
+    /// Return default render target view.
+    ID3D11RenderTargetView* GetDefaultRenderTargetView() const { return defaultRenderTargetView_; }
+
     /// Return whether multisampling is supported for a given texture format and sample count.
     bool CheckMultiSampleSupport(DXGI_FORMAT format, unsigned sampleCount) const;
 
