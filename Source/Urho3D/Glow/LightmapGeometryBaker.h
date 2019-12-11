@@ -42,11 +42,8 @@ struct LightmapGeometryBakingScene
     Camera* camera_{};
 };
 
-/// Vector of lightmap baking scenes.
-using LightmapGeometryBakingSceneVector = ea::vector<LightmapGeometryBakingScene>;
-
-/// Generate scenes for lightmap geometry baking.
-URHO3D_API LightmapGeometryBakingSceneVector GenerateLightmapGeometryBakingScenes(
-    Context* context, const LightmapChartVector& charts, const LightmapGeometryBakingSettings& settings);
+/// Generate lightmap geometry baking scene for lightmap chart.
+URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(
+    Context* context, const LightmapChart& chart, const LightmapGeometryBakingSettings& settings);
 
 }
