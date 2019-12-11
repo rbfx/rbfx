@@ -67,14 +67,11 @@ static LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSet
         ++chartIndex;
     }
 
-    // Create new chart
+    // Create dedicated chart for this specific region if it's bigger than max chart size
     const int chartSize = static_cast<int>(settings.chartSize_);
-    LightmapChart& chart = charts.push_back();
-
-    // Allocate dedicated map for this specific region if it's bigger than max chart size
     if (size.x_ > chartSize || size.y_ > chartSize)
     {
-        chart.allocator_.Reset(size.x_, size.y_, 0, 0, false);
+        LightmapChart& chart = charts.emplace_back(size.x_, size.y_);
 
         IntVector2 position;
         const bool success = chart.allocator_.Allocate(size.x_, size.y_, position.x_, position.y_);
@@ -85,9 +82,10 @@ static LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSet
         return { chartIndex, IntVector2::ZERO, size, settings.chartSize_ };
     }
 
-    // Allocate region from the new chart
-    chart.allocator_.Reset(chartSize, chartSize, 0, 0, false);
+    // Create general-purpose chart
+    LightmapChart& chart = charts.emplace_back(chartSize, chartSize);
 
+    // Allocate region from the new chart
     IntVector2 paddedPosition;
     const bool success = chart.allocator_.Allocate(paddedSize.x_, paddedSize.y_, paddedPosition.x_, paddedPosition.y_);
 
