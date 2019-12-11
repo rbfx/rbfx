@@ -25,11 +25,16 @@
 #include "../Core/Context.h"
 #include "../Math/BoundingBox.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/Renderer.h"
 #include "../Graphics/StaticModel.h"
-#include "../Scene/Node.h"
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/View.h"
 #include "../Resource/ResourceCache.h"
+#include "../Resource/XMLFile.h"
+#include "../Scene/Node.h"
 
 namespace Urho3D
 {
@@ -53,10 +58,35 @@ void SetCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
     camera->SetFarClip(zFar);
 }
 
-URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(
-    Context* context, const LightmapChart& chart, const LightmapGeometryBakingSettings& settings)
+/// Load render path.
+SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
 {
-    Material* bakingMaterial = context->GetCache()->GetResource<Material>(settings.material_);
+    auto renderPath = MakeShared<RenderPath>();
+    auto renderPathXml = context->GetCache()->GetResource<XMLFile>(renderPathName);
+    if (!renderPath->Load(renderPathXml))
+        return nullptr;
+    return renderPath;
+}
+
+/// Read RGBA32 float texture to vector.
+void ReadTextureRGBA32Float(Texture* texture, ea::vector<Vector4>& dest)
+{
+    auto texture2D = dynamic_cast<Texture2D*>(texture);
+    const unsigned numElements = texture->GetDataSize(texture->GetWidth(), texture->GetHeight()) / sizeof(Vector4);
+    dest.resize(numElements);
+    texture2D->GetData(0, dest.data());
+}
+
+/// Extract Vector3 from Vector4.
+Vector3 ExtractVector3FromVector4(const Vector4& data) { return { data.x_, data.y_, data.z_ }; }
+
+/// Extract w-component as unsigned integer from Vector4.
+unsigned ExtractUintFromVector4(const Vector4& data) { return static_cast<unsigned>(data.w_); }
+
+LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,
+    const LightmapChart& chart, const LightmapGeometryBakingSettings& settings, SharedPtr<RenderPath> renderPath)
+{
+    Material* bakingMaterial = context->GetCache()->GetResource<Material>(settings.materialName_);
 
     // Calculate bounding box
     BoundingBox boundingBox;
@@ -92,7 +122,76 @@ URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(
         }
     }
 
-    return { scene, camera };
+    return { context, chart.width_, chart.height_, chart.size_, scene, camera, renderPath };
+}
+
+ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
+    Context* context, const ea::vector<LightmapChart>& charts, const LightmapGeometryBakingSettings& settings)
+{
+    SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
+
+    ea::vector<LightmapGeometryBakingScene> result;
+    for (const LightmapChart& chart : charts)
+        result.push_back(GenerateLightmapGeometryBakingScene(context, chart, settings, renderPath));
+
+    return result;
+}
+
+LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScene& bakingScene)
+{
+    Context* context = bakingScene.context_;
+    Graphics* graphics = context->GetGraphics();
+    Renderer* renderer = context->GetRenderer();
+
+    static thread_local ea::vector<Vector4> buffer;
+
+    if (!graphics->BeginFrame())
+        return {};
+
+    LightmapChartBakedGeometry bakedGeometry{ bakingScene.width_, bakingScene.height_ };
+
+    // Get render surface
+    Texture* renderTexture = renderer->GetScreenBuffer(
+        bakingScene.size_.x_, bakingScene.size_.y_,Graphics::GetRGBAFormat(), 1, true, false, false, false);
+    RenderSurface* renderSurface = static_cast<Texture2D*>(renderTexture)->GetRenderSurface();
+
+    // Setup viewport
+    Viewport viewport(context);
+    viewport.SetCamera(bakingScene.camera_);
+    viewport.SetRect(IntRect::ZERO);
+    viewport.SetRenderPath(bakingScene.renderPath_);
+    viewport.SetScene(bakingScene.scene_);
+
+    // Render scene
+    View view(context);
+    view.Define(renderSurface, &viewport);
+    view.Update(FrameInfo());
+    view.Render();
+
+    // Store results
+    ReadTextureRGBA32Float(view.GetExtraRenderTarget("position"), buffer);
+    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.geometryPositions_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.geometryIds_.begin(), ExtractUintFromVector4);
+
+    ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothposition"), buffer);
+    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.smoothPositions_.begin(), ExtractVector3FromVector4);
+
+    ReadTextureRGBA32Float(view.GetExtraRenderTarget("facenormal"), buffer);
+    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.faceNormals_.begin(), ExtractVector3FromVector4);
+
+    ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothnormal"), buffer);
+    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.smoothNormals_.begin(), ExtractVector3FromVector4);
+
+    graphics->EndFrame();
+    return bakedGeometry;
+}
+
+ea::vector<LightmapChartBakedGeometry> BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes)
+{
+    ea::vector<LightmapChartBakedGeometry> bakedGeometries;
+    for (const LightmapGeometryBakingScene& bakingScene : bakingScenes)
+        bakedGeometries.push_back(BakeLightmapGeometry(bakingScene));
+    return bakedGeometries;
 }
 
 }

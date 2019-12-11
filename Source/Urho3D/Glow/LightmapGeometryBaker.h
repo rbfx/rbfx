@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Glow/LightmapCharter.h"
+#include "../Graphics/RenderPath.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
@@ -36,14 +37,63 @@ class Context;
 /// Baking scene for single lightmap chart.
 struct LightmapGeometryBakingScene
 {
+    /// Context.
+    Context* context_{};
+    /// Width of the chart.
+    unsigned width_{};
+    /// Height of the chart.
+    unsigned height_{};
+    /// Size of the chart.
+    IntVector2 size_;
     /// Baking scene.
     SharedPtr<Scene> scene_;
     /// Baking camera.
     Camera* camera_{};
+    /// Baking render path.
+    SharedPtr<RenderPath> renderPath_;
 };
 
 /// Generate lightmap geometry baking scene for lightmap chart.
-URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(
-    Context* context, const LightmapChart& chart, const LightmapGeometryBakingSettings& settings);
+URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,
+    const LightmapChart& chart, const LightmapGeometryBakingSettings& settings, SharedPtr<RenderPath> bakeRenderPath);
+
+/// Generate baking scenes for lightmap charts.
+URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(Context* context,
+    const ea::vector<LightmapChart>& charts, const LightmapGeometryBakingSettings& settings);
+
+/// Baked lightmap geometry of lightmap chart.
+struct LightmapChartBakedGeometry
+{
+    /// Positions as is.
+    ea::vector<Vector3> geometryPositions_;
+    /// Smooth positions after Phong tesselation.
+    // TODO: Implement
+    ea::vector<Vector3> smoothPositions_;
+    /// Smooth normals used in rendering.
+    ea::vector<Vector3> smoothNormals_;
+    /// Raw face normals.
+    // TODO: Implement
+    ea::vector<Vector3> faceNormals_;
+    /// Geometry IDs.
+    ea::vector<unsigned> geometryIds_;
+
+    /// Construct default.
+    LightmapChartBakedGeometry() = default;
+    /// Construct valid.
+    LightmapChartBakedGeometry(unsigned width, unsigned height)
+        : geometryPositions_(width * height)
+        , smoothPositions_(width * height)
+        , smoothNormals_(width * height)
+        , faceNormals_(width * height)
+        , geometryIds_(width * height)
+    {
+    }
+};
+
+/// Bake lightmap geometry for lightmap chart.
+URHO3D_API LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScene& bakingScene);
+
+/// Bake lightmap geometry for lightmap charts.
+URHO3D_API ea::vector<LightmapChartBakedGeometry> BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
 
 }

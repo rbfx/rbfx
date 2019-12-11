@@ -55,15 +55,6 @@
 namespace Urho3D
 {
 
-static ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
-    Context* context, const LightmapChartVector& charts, const LightmapGeometryBakingSettings& settings)
-{
-    ea::vector<LightmapGeometryBakingScene> result;
-    for (const LightmapChart& chart : charts)
-        result.push_back(GenerateLightmapGeometryBakingScene(context, chart, settings));
-    return result;
-}
-
 struct KDNearestNeighbour
 {
     unsigned index_{};
@@ -274,6 +265,7 @@ struct LightmapBakerImpl
         , scene_(scene)
         , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
+        , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
         , lightObstacles_(lightObstacles)
         , lights_(lights)
         , lightObstaclesBoundingBox_(CalculateBoundingBoxOfNodes(lightObstacles))
@@ -308,6 +300,8 @@ struct LightmapBakerImpl
     LightmapChartVector charts_;
     /// Baking scenes.
     ea::vector<LightmapGeometryBakingScene> bakingScenes_;
+    /// Baked geometries.
+    ea::vector<LightmapChartBakedGeometry> bakedGeometries_;
 
     /// Light obstacles.
     ea::vector<Node*> lightObstacles_;
@@ -318,39 +312,17 @@ struct LightmapBakerImpl
 
     /// Max length of the ray.
     float maxRayLength_{};
-    /// Baking render path.
-    SharedPtr<RenderPath> bakingRenderPath_;
     /// Embree device.
     RTCDevice embreeDevice_{};
     /// Embree scene.
     RTCScene embreeScene_{};
-    /// Render texture placeholder.
-    SharedPtr<Texture2D> renderTexturePlaceholder_;
 
     /// Photon map.
     KDTree<PhotonData> photonMap_;
 
     /// Calculation: current lightmap index.
     unsigned currentLightmapIndex_{ M_MAX_UNSIGNED };
-    /// Calculation: texel positions
-    ea::vector<Vector4> positionBuffer_;
-    /// Calculation: texel smooth positions
-    ea::vector<Vector4> smoothPositionBuffer_;
-    /// Calculation: texel face normals
-    ea::vector<Vector4> faceNormalBuffer_;
-    /// Calculation: texel smooth normals
-    ea::vector<Vector4> smoothNormalBuffer_;
 };
-
-/// Load render path.
-SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
-{
-    auto renderPath = MakeShared<RenderPath>();
-    auto renderPathXml = context->GetCache()->GetResource<XMLFile>(renderPathName);
-    if (!renderPath->Load(renderPathXml))
-        return nullptr;
-    return renderPath;
-}
 
 /// Parsed model key and value.
 struct ParsedModelKeyValue
@@ -436,22 +408,6 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, Mod
     return result;
 }
 
-/// Create render surface texture for lightmap.
-SharedPtr<Texture2D> CreateRenderTextureForLightmap(Context* context, int width, int height)
-{
-    auto texture = MakeShared<Texture2D>(context);
-    texture->SetSize(width, height, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
-    return texture;
-}
-
-/// Read RGBA32 float texture to vector.
-void ReadTextureRGBA32Float(Texture* texture, ea::vector<Vector4>& dest)
-{
-    auto texture2D = dynamic_cast<Texture2D*>(texture);
-    const unsigned numElements = texture->GetDataSize(texture->GetWidth(), texture->GetHeight()) / sizeof(Vector4);
-    dest.resize(numElements);
-    texture2D->GetData(0, dest.data());
-}
 
 LightmapBaker::LightmapBaker(Context* context)
     : Object(context)
@@ -471,12 +427,6 @@ bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* sc
 
     // Prepare metadata and baking scenes
     impl_->maxRayLength_ = impl_->lightObstaclesBoundingBox_.Size().Length();
-
-    impl_->bakingRenderPath_ = LoadRenderPath(context_, impl_->settings_.geometryBaking_.renderPath_);
-
-    // Create render surfaces
-    const int lightmapSize = impl_->settings_.charting_.chartSize_;
-    impl_->renderTexturePlaceholder_ = CreateRenderTextureForLightmap(context_, lightmapSize, lightmapSize);
 
     return true;
 }
@@ -660,45 +610,7 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
     if (index >= GetNumLightmaps())
         return false;
 
-    Graphics* graphics = context_->GetGraphics();
-    ResourceCache* cache = context_->GetCache();
-
-    const LightmapChart& chart = impl_->charts_[index];
-    const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[index];
-
-    // Prepare render surface
-    const int lightmapWidth = chart.allocator_.GetWidth();
-    const int lightmapHeight = chart.allocator_.GetHeight();
-    SharedPtr<Texture2D> renderTexture = impl_->renderTexturePlaceholder_;
-    if (impl_->settings_.charting_.chartSize_ != lightmapWidth || impl_->settings_.charting_.chartSize_ != lightmapHeight)
-        renderTexture = CreateRenderTextureForLightmap(context_, lightmapWidth, lightmapHeight);
-    RenderSurface* renderSurface = renderTexture->GetRenderSurface();
-
-    if (!graphics->BeginFrame())
-        return false;
-
-    // Setup viewport
-    Viewport viewport(context_);
-    viewport.SetCamera(bakingScene.camera_);
-    viewport.SetRect(IntRect::ZERO);
-    viewport.SetRenderPath(impl_->bakingRenderPath_);
-    viewport.SetScene(bakingScene.scene_);
-
-    // Render scene
-    View view(context_);
-    view.Define(renderSurface, &viewport);
-    view.Update(FrameInfo());
-    view.Render();
-
-    graphics->EndFrame();
-
-    // Fill temporary buffers
     impl_->currentLightmapIndex_ = index;
-
-    ReadTextureRGBA32Float(view.GetExtraRenderTarget("position"), impl_->positionBuffer_);
-    ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothposition"), impl_->smoothPositionBuffer_);
-    ReadTextureRGBA32Float(view.GetExtraRenderTarget("facenormal"), impl_->faceNormalBuffer_);
-    ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothnormal"), impl_->smoothNormalBuffer_);
 
     return true;
 }
@@ -732,6 +644,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 {
     const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
     const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[impl_->currentLightmapIndex_];
+    const LightmapChartBakedGeometry& bakedGeometry = impl_->bakedGeometries_[impl_->currentLightmapIndex_];
     const int lightmapWidth = chart.allocator_.GetWidth();
     const int lightmapHeight = chart.allocator_.GetHeight();
 
@@ -757,7 +670,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     // Process rows in multiple threads
     const unsigned numBounces = 1;
     const unsigned numRayPackets = static_cast<unsigned>(lightmapWidth / RayPacketSize);
-    ParallelForEachRow([=, &data](unsigned y)
+    ParallelForEachRow([&](unsigned y)
     {
     #if 0
         alignas(64) RTCRayHit16 rayHit16;
@@ -778,9 +691,9 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
             for (unsigned i = 0; i < RayPacketSize; ++i)
             {
                 const unsigned index = baseIndex + i;
-                const Vector3 position = static_cast<Vector3>(impl_->positionBuffer_[index]);
-                const Vector3 smoothNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
-                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                const Vector3 position = bakedGeometry.geometryPositions_[index];
+                const Vector3 smoothNormal = bakedGeometry.smoothNormals_[index];
+                const unsigned geometryId = bakedGeometry.geometryIds_[index];
 
                 if (!geometryId)
                     continue;
@@ -956,7 +869,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
             kernel[i] = kernel1D[i % 3] * kernel1D[i / 3] / 16.0f;
 
         auto colorCopy = data.backedLighting_;
-        ParallelForEachRow([=, &data](unsigned y)
+        ParallelForEachRow([&](unsigned y)
         {
             for (unsigned x = 0; x < lightmapWidth; ++x)
             {
@@ -966,7 +879,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
                 const unsigned index = y * lightmapWidth + x;
 
-                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                const unsigned geometryId = bakedGeometry.geometryIds_[index];
                 if (!geometryId)
                     continue;
 
@@ -980,8 +893,8 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
                     const unsigned otherIndex = index + offset.y_ * lightmapWidth + offset.x_;
                     const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
-                    const Vector3 otherPosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[otherIndex]);
-                    const unsigned otherGeometryId = static_cast<unsigned>(impl_->positionBuffer_[otherIndex].w_);
+                    const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
+                    const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
                     if (!otherGeometryId)
                         continue;
 
@@ -1012,7 +925,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         const int offsetScale = 1 << passIndex;
         const float colorPhiScaled = colorPhi / offsetScale;
         auto colorCopy = data.backedLighting_;
-        ParallelForEachRow([=, &data](unsigned y)
+        ParallelForEachRow([&](unsigned y)
         {
             for (unsigned x = 0; x < lightmapWidth; ++x)
             {
@@ -1023,9 +936,9 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 const unsigned index = y * lightmapWidth + x;
 
                 const Vector4 baseColor = colorCopy[index].ToVector4();
-                const Vector3 basePosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[index]);
-                const Vector3 baseNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[index]);
-                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                const Vector3 basePosition = bakedGeometry.geometryPositions_[index];
+                const Vector3 baseNormal = bakedGeometry.smoothNormals_[index];
+                const unsigned geometryId = bakedGeometry.geometryIds_[index];
                 if (!geometryId)
                     continue;
 
@@ -1042,12 +955,12 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     const float colorDeltaSquared = colorDelta.DotProduct(colorDelta);
                     const float colorWeight = ea::min(std::exp(-colorDeltaSquared / colorPhiScaled), 1.0f);
 
-                    const Vector3 otherPosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[otherIndex]);
+                    const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
                     const Vector3 positionDelta = basePosition - otherPosition;
                     const float positionDeltaSquared = positionDelta.DotProduct(positionDelta);
                     const float positionWeight = ea::min(std::exp(-positionDeltaSquared / positionPhi), 1.0f);
 
-                    const Vector3 otherNormal = static_cast<Vector3>(impl_->smoothNormalBuffer_[otherIndex]);
+                    const Vector3 otherNormal = bakedGeometry.smoothNormals_[otherIndex];
                     const float normalDeltaCos = ea::max(0.0f, baseNormal.DotProduct(otherNormal));
                     const float normalWeight = std::pow(normalDeltaCos, normalPhi);
 
@@ -1074,7 +987,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
             kernel[i] = kernel1D[i % 3] * kernel1D[i / 3] / 16.0f;
 
         auto colorCopy = data.backedLighting_;
-        ParallelForEachRow([=, &data](unsigned y)
+        ParallelForEachRow([&](unsigned y)
         {
             for (unsigned x = 0; x < lightmapWidth; ++x)
             {
@@ -1084,7 +997,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
                 const unsigned index = y * lightmapWidth + x;
 
-                const unsigned geometryId = static_cast<unsigned>(impl_->positionBuffer_[index].w_);
+                const unsigned geometryId = bakedGeometry.geometryIds_[index];
                 if (!geometryId)
                     continue;
 
@@ -1098,8 +1011,8 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
                     const unsigned otherIndex = index + offset.y_ * lightmapWidth + offset.x_;
                     const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
-                    const Vector3 otherPosition = static_cast<Vector3>(impl_->smoothPositionBuffer_[otherIndex]);
-                    const unsigned otherGeometryId = static_cast<unsigned>(impl_->positionBuffer_[otherIndex].w_);
+                    const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
+                    const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
                     if (!otherGeometryId)
                         continue;
 
