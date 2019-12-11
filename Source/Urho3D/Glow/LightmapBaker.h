@@ -77,8 +77,6 @@ public:
     /// Return number of lightmaps.
     unsigned GetNumLightmaps() const;
 
-    /// Build photon map.
-    bool BuildPhotonMap();
     /// Render lightmap G-Buffer. Must be called from rendering thread.
     bool RenderLightmapGBuffer(unsigned index);
     /// Bake lightmap.
