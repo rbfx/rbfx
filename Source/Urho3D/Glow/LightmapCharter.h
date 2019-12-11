@@ -98,7 +98,7 @@ struct LightmapChart
     LightmapChart(int width, int height)
         : width_{ static_cast<unsigned>(width) }
         , height_{ static_cast<unsigned>(height) }
-        , size_{ width_, height_ }
+        , size_{ width, height }
         , allocator_{ width, height, 0, 0, false }
     {
     }
