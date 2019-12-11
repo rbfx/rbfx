@@ -48,9 +48,9 @@ struct LightmapChartingSettings
 struct LightmapGeometryBakingSettings
 {
     /// Baking render path.
-    ea::string renderPath_{ "RenderPaths/LightmapGBuffer.xml" };
+    ea::string renderPathName_{ "RenderPaths/LightmapGBuffer.xml" };
     /// Baking materials.
-    ea::string material_{ "Materials/LightmapBaker.xml" };
+    ea::string materialName_{ "Materials/LightmapBaker.xml" };
 };
 
 }
