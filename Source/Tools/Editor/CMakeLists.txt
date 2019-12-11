@@ -40,6 +40,7 @@ else ()
             DEPENDS Urho3DNet)
         add_library (libEditor SHARED ${SOURCE_FILES} EditorHost.cpp)
         set (EDITOR_TARGET libEditor)
+        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Editor.exe" DESTINATION ${DEST_BIN_DIR_CONFIG})
     else ()
         # No C# or pugins support, editor can be a true native executable.
         if (NOT URHO3D_WIN32_CONSOLE)

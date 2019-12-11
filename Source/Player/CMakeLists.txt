@@ -38,6 +38,7 @@ elseif (ANDROID OR URHO3D_CSHARP)
             PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Player.csproj
             OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe
             DEPENDS Urho3DNet)
+        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe" DESTINATION ${DEST_BIN_DIR_CONFIG})
     endif ()
 else ()
     if (NOT URHO3D_WIN32_CONSOLE)
