@@ -557,7 +557,12 @@ void Editor::OnEndFrame()
         CloseProject();
         // Reset SystemUI so that imgui loads it's config proper.
         context_->RemoveSubsystem<SystemUI>();
-        context_->RegisterSubsystem(new SystemUI(context_, ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DpiEnableScaleViewports));
+#if URHO3D_SYSTEMUI_VIEWPORTS
+        unsigned flags = ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DpiEnableScaleViewports;
+#else
+        unsigned flags = 0;
+#endif
+        context_->RegisterSubsystem(new SystemUI(context_, flags));
         SetupSystemUI();
 
         project_ = new Project(context_);
@@ -743,7 +748,9 @@ void Editor::SetupSystemUI()
     ui::GetStyle().WindowRounding = 3;
     // Disable imgui saving ui settings on it's own. These should be serialized to project file.
     auto& io = ui::GetIO();
+#if URHO3D_SYSTEMUI_VIEWPORTS
     io.ConfigViewportsNoAutoMerge = true;
+#endif
     io.IniFilename = nullptr;
     io.ConfigFlags |= ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_NavEnableKeyboard;
     io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
