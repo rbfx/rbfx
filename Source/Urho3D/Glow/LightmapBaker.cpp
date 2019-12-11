@@ -25,6 +25,7 @@
 #include <embree3/rtcore_ray.h>
 #define _SSIZE_T_DEFINED
 
+#include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapBaker.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
@@ -91,18 +92,10 @@ struct LightmapBakerImpl
         , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
         , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
-        , lightObstacles_(lightObstacles)
+        , embreeScene_(CreateEmbreeScene(context_, lightObstacles))
         , lights_(lights)
         , lightObstaclesBoundingBox_(CalculateBoundingBoxOfNodes(lightObstacles))
     {
-    }
-    /// Destruct.
-    ~LightmapBakerImpl()
-    {
-        if (embreeScene_)
-            rtcReleaseScene(embreeScene_);
-        if (embreeDevice_)
-            rtcReleaseDevice(embreeDevice_);
     }
     /// Validate settings and whatever.
     bool Validate() const
@@ -127,9 +120,9 @@ struct LightmapBakerImpl
     ea::vector<LightmapGeometryBakingScene> bakingScenes_;
     /// Baked geometries.
     ea::vector<LightmapChartBakedGeometry> bakedGeometries_;
+    /// Embree scene.
+    SharedPtr<EmbreeScene> embreeScene_;
 
-    /// Light obstacles.
-    ea::vector<Node*> lightObstacles_;
     /// Lights.
     ea::vector<Node*> lights_;
     /// Bounding box of light obstacles.
@@ -137,99 +130,10 @@ struct LightmapBakerImpl
 
     /// Max length of the ray.
     float maxRayLength_{};
-    /// Embree device.
-    RTCDevice embreeDevice_{};
-    /// Embree scene.
-    RTCScene embreeScene_{};
 
     /// Calculation: current lightmap index.
     unsigned currentLightmapIndex_{ M_MAX_UNSIGNED };
 };
-
-/// Parsed model key and value.
-struct ParsedModelKeyValue
-{
-    Model* model_{};
-    SharedPtr<ModelView> parsedModel_;
-};
-
-/// Parse model data.
-ParsedModelKeyValue ParseModelForEmbree(Model* model)
-{
-    NativeModelView nativeModelView(model->GetContext());
-    nativeModelView.ImportModel(model);
-
-    auto modelView = MakeShared<ModelView>(model->GetContext());
-    modelView->ImportModel(nativeModelView);
-
-    return { model, modelView };
-}
-
-/// Embree geometry desc.
-struct EmbreeGeometry
-{
-    /// Node.
-    Node* node_{};
-    /// Geometry index.
-    unsigned geometryIndex_{};
-    /// Geometry LOD.
-    unsigned geometryLOD_{};
-    /// Embree geometry.
-    RTCGeometry embreeGeometry_;
-};
-
-/// Create Embree geometry from geometry view.
-RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& geometryLODView, Node* node)
-{
-    const Matrix3x4 worldTransform = node->GetWorldTransform();
-    RTCGeometry embreeGeometry = rtcNewGeometry(embreeDevice, RTC_GEOMETRY_TYPE_TRIANGLE);
-
-    float* vertices = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX,
-        0, RTC_FORMAT_FLOAT3, sizeof(Vector3), geometryLODView.vertices_.size()));
-
-    for (unsigned i = 0; i < geometryLODView.vertices_.size(); ++i)
-    {
-        const Vector3 localPosition = static_cast<Vector3>(geometryLODView.vertices_[i].position_);
-        const Vector3 worldPosition = worldTransform * localPosition;
-        vertices[i * 3 + 0] = worldPosition.x_;
-        vertices[i * 3 + 1] = worldPosition.y_;
-        vertices[i * 3 + 2] = worldPosition.z_;
-    }
-
-    unsigned* indices = reinterpret_cast<unsigned*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_INDEX,
-        0, RTC_FORMAT_UINT3, sizeof(unsigned) * 3, geometryLODView.faces_.size()));
-
-    for (unsigned i = 0; i < geometryLODView.faces_.size(); ++i)
-    {
-        indices[i * 3 + 0] = geometryLODView.faces_[i].indices_[0];
-        indices[i * 3 + 1] = geometryLODView.faces_[i].indices_[1];
-        indices[i * 3 + 2] = geometryLODView.faces_[i].indices_[2];
-    }
-
-    rtcCommitGeometry(embreeGeometry);
-    return embreeGeometry;
-}
-
-/// Create Embree geometry from parsed model.
-ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, ModelView* modelView, Node* node)
-{
-    ea::vector<EmbreeGeometry> result;
-
-    unsigned geometryIndex = 0;
-    for (const GeometryView& geometryView : modelView->GetGeometries())
-    {
-        unsigned geometryLod = 0;
-        for (const GeometryLODView& geometryLODView : geometryView.lods_)
-        {
-            const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView, node);
-            result.push_back(EmbreeGeometry{ node, geometryIndex, geometryLod, embreeGeometry });
-            ++geometryLod;
-        }
-        ++geometryIndex;
-    }
-    return result;
-}
-
 
 LightmapBaker::LightmapBaker(Context* context)
     : Object(context)
@@ -251,52 +155,6 @@ bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* sc
     impl_->maxRayLength_ = impl_->lightObstaclesBoundingBox_.Size().Length();
 
     return true;
-}
-
-void LightmapBaker::CookRaytracingScene()
-{
-    // Load models
-    ea::vector<std::future<ParsedModelKeyValue>> asyncParsedModels;
-    for (Node* node : impl_->lightObstacles_)
-    {
-        if (auto staticModel = node->GetComponent<StaticModel>())
-            asyncParsedModels.push_back(std::async(ParseModelForEmbree, staticModel->GetModel()));
-    }
-
-    // Prepare model cache
-    ea::unordered_map<Model*, SharedPtr<ModelView>> parsedModelCache;
-    for (auto& asyncModel : asyncParsedModels)
-    {
-        const ParsedModelKeyValue& parsedModel = asyncModel.get();
-        parsedModelCache.emplace(parsedModel.model_, parsedModel.parsedModel_);
-    }
-
-    // Prepare Embree scene
-    impl_->embreeDevice_ = rtcNewDevice("");
-    impl_->embreeScene_ = rtcNewScene(impl_->embreeDevice_);
-
-    ea::vector<std::future<ea::vector<EmbreeGeometry>>> asyncEmbreeGeometries;
-    for (Node* node : impl_->lightObstacles_)
-    {
-        if (auto staticModel = node->GetComponent<StaticModel>())
-        {
-            ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-            asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometryArray, impl_->embreeDevice_, parsedModel, node));
-        }
-    }
-
-    // Collect and attach Embree geometries
-    for (auto& asyncGeometry : asyncEmbreeGeometries)
-    {
-        const ea::vector<EmbreeGeometry> embreeGeometriesArray = asyncGeometry.get();
-        for (const EmbreeGeometry& embreeGeometry : embreeGeometriesArray)
-        {
-            rtcAttachGeometry(impl_->embreeScene_, embreeGeometry.embreeGeometry_);
-            rtcReleaseGeometry(embreeGeometry.embreeGeometry_);
-        }
-    }
-
-    rtcCommitScene(impl_->embreeScene_);
 }
 
 unsigned LightmapBaker::GetNumLightmaps() const
@@ -395,6 +253,8 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     const unsigned numRayPackets = static_cast<unsigned>(lightmapWidth / RayPacketSize);
     ParallelForEachRow([&](unsigned y)
     {
+        RTCScene scene = impl_->embreeScene_->GetEmbreeScene();
+
     #if 0
         alignas(64) RTCRayHit16 rayHit16;
         alignas(64) int rayValid[RayPacketSize];
@@ -435,7 +295,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 rayHit.ray.mask = 0xffffffff;
                 rayHit.ray.flags = 0xffffffff;
                 rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+                rtcIntersect1(scene, &rayContext, &rayHit);
 
                 const float directShadow = rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
                 const float directLighting = directShadow * ea::max(0.0f, smoothNormal.DotProduct(lightRayDirection));
@@ -462,7 +322,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     rayHit.ray.mask = 0xffffffff;
                     rayHit.ray.flags = 0xffffffff;
                     rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                    rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+                    rtcIntersect1(scene, &rayContext, &rayHit);
 
                     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
                         continue;
@@ -481,7 +341,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     rayHit.ray.mask = 0xffffffff;
                     rayHit.ray.flags = 0xffffffff;
                     rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                    rtcIntersect1(impl_->embreeScene_, &rayContext, &rayHit);
+                    rtcIntersect1(scene, &rayContext, &rayHit);
 
                     if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
                         continue;
