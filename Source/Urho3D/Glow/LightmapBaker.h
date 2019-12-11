@@ -71,8 +71,6 @@ public:
     /// Initialize. Children nodes are ignored. Scene must stay immutable until the end. Must be called from rendering thread.
     bool Initialize(const LightmapBakingSettings& settings, Scene* scene,
         const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights);
-    /// Cook raytracing scene. May be called from working thread.
-    void CookRaytracingScene();
 
     /// Return number of lightmaps.
     unsigned GetNumLightmaps() const;
