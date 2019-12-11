@@ -31,5 +31,5 @@ target_include_directories(MojoShader
 )
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install (TARGETS MojoShader EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+    install (TARGETS MojoShader EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
 endif ()

@@ -25,4 +25,4 @@ add_executable (PackageTool ${SOURCE_FILES})
 # Minimal engine builds which this target uses do not merge third party dependencies to monolithic lib. Link to
 # dependencies explicitly.
 target_link_libraries (PackageTool Urho3D LZ4)
-install(TARGETS PackageTool RUNTIME DESTINATION ${DEST_TOOLS_DIR})
+install(TARGETS PackageTool RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
