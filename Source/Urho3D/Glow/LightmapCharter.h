@@ -81,10 +81,27 @@ struct LightmapChartElement
 /// Lightmap chart description.
 struct LightmapChart
 {
+    /// Width of the chart.
+    unsigned width_{};
+    /// Height of the chart.
+    unsigned height_{};
+    /// Size of the chart.
+    IntVector2 size_;
     /// Used region allocator.
     AreaAllocator allocator_;
     /// Allocated elements.
     ea::vector<LightmapChartElement> elements_;
+
+    /// Construct default.
+    LightmapChart() = default;
+    /// Construct valid.
+    LightmapChart(int width, int height)
+        : width_{ static_cast<unsigned>(width) }
+        , height_{ static_cast<unsigned>(height) }
+        , size_{ width_, height_ }
+        , allocator_{ width, height, 0, 0, false }
+    {
+    }
 };
 
 /// Vector of lightmap charts.
