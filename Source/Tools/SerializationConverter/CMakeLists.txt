@@ -25,4 +25,4 @@ add_executable (SerializationConverter ${SOURCE_FILES})
 # Minimal engine builds which this target uses do not merge third party dependencies to monolithic lib. Link to
 # dependencies explicitly.
 target_link_libraries (SerializationConverter Urho3D)
-install(TARGETS SerializationConverter RUNTIME DESTINATION ${DEST_TOOLS_DIR})
+install(TARGETS SerializationConverter RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG})
