@@ -32,17 +32,10 @@ namespace Urho3DNet
 {
     public partial class VertexBuffer
     {
+        // TODO: This should be removed when C++ API starts using enums instead of uints for flags.
         public bool SetSize(int vertexCount, VertexMask mask, bool isDynamic)
         {
             return SetSize((uint)vertexCount, (uint)mask, isDynamic);
-        }
-
-        unsafe public bool SetData(float[] vertexData)
-        {
-            fixed (float* vertexDataPtr = vertexData)
-            {
-                return SetData((IntPtr)vertexDataPtr);
-            }
         }
     }
 }
