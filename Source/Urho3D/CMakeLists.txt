@@ -414,6 +414,11 @@ if (URHO3D_CSHARP)
     if (MSVC)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
+
+    # TODO: Can this be automatized?
+    foreach (dll "Mono.Cecil.dll" "Mono.Cecil.Mdb.dll" "Mono.Cecil.Pdb.dll" "Mono.Cecil.Rocks.dll" "System.Numerics.Vectors.dll")
+        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/${dll}" DESTINATION ${DEST_BIN_DIR_CONFIG})
+    endforeach ()
 endif ()
 
 ################################################### SDK preparation ####################################################

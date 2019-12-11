@@ -29,3 +29,4 @@ add_target_csharp(
     PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ScriptPlayer.csproj
     OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer.exe
     DEPENDS Urho3DNet)
+install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer.exe" DESTINATION ${DEST_BIN_DIR_CONFIG})
