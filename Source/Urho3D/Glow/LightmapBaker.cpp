@@ -55,6 +55,15 @@
 namespace Urho3D
 {
 
+static ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
+    Context* context, const LightmapChartVector& charts, const LightmapGeometryBakingSettings& settings)
+{
+    ea::vector<LightmapGeometryBakingScene> result;
+    for (const LightmapChart& chart : charts)
+        result.push_back(GenerateLightmapGeometryBakingScene(context, chart, settings));
+    return result;
+}
+
 struct KDNearestNeighbour
 {
     unsigned index_{};
@@ -298,7 +307,7 @@ struct LightmapBakerImpl
     /// Lightmap charts.
     LightmapChartVector charts_;
     /// Baking scenes.
-    LightmapGeometryBakingSceneVector bakingScenes_;
+    ea::vector<LightmapGeometryBakingScene> bakingScenes_;
 
     /// Light obstacles.
     ea::vector<Node*> lightObstacles_;
@@ -651,8 +660,8 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
     if (index >= GetNumLightmaps())
         return false;
 
-    Graphics* graphics = GetGraphics();
-    ResourceCache* cache = GetCache();
+    Graphics* graphics = context_->GetGraphics();
+    ResourceCache* cache = context_->GetCache();
 
     const LightmapChart& chart = impl_->charts_[index];
     const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[index];

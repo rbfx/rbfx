@@ -53,52 +53,46 @@ void SetCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
     camera->SetFarClip(zFar);
 }
 
-URHO3D_API LightmapGeometryBakingSceneVector GenerateLightmapGeometryBakingScenes(
-    Context* context, const LightmapChartVector& charts, const LightmapGeometryBakingSettings& settings)
+URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(
+    Context* context, const LightmapChart& chart, const LightmapGeometryBakingSettings& settings)
 {
     Material* bakingMaterial = context->GetCache()->GetResource<Material>(settings.material_);
 
-    LightmapGeometryBakingSceneVector bakingScenes;
-    for (const LightmapChart& chart : charts)
+    // Calculate bounding box
+    BoundingBox boundingBox;
+    for (const LightmapChartElement& element : chart.elements_)
     {
-        // Calculate bounding box
-        BoundingBox boundingBox;
-        for (const LightmapChartElement& element : chart.elements_)
-        {
-            if (element.staticModel_)
-                boundingBox.Merge(element.staticModel_->GetWorldBoundingBox());
-        }
-
-        // Create scene and camera
-        auto scene = MakeShared<Scene>(context);
-        scene->CreateComponent<Octree>();
-
-        auto camera = scene->CreateComponent<Camera>();
-        SetCameraBoundingBox(camera, boundingBox);
-
-        // Replicate all elements in the scene
-        for (const LightmapChartElement& element : chart.elements_)
-        {
-            if (element.staticModel_)
-            {
-                auto material = bakingMaterial->Clone();
-                material->SetShaderParameter("LMOffset", element.region_.GetScaleOffset());
-
-                Node* node = scene->CreateChild();
-                node->SetPosition(element.node_->GetWorldPosition());
-                node->SetRotation(element.node_->GetWorldRotation());
-                node->SetScale(element.node_->GetWorldScale());
-
-                StaticModel* staticModel = node->CreateComponent<StaticModel>();
-                staticModel->SetModel(element.staticModel_->GetModel());
-                staticModel->SetMaterial(material);
-            }
-        }
-
-        LightmapGeometryBakingScene bakingScene{ scene, camera };
-        bakingScenes.push_back(bakingScene);
+        if (element.staticModel_)
+            boundingBox.Merge(element.staticModel_->GetWorldBoundingBox());
     }
-    return bakingScenes;
+
+    // Create scene and camera
+    auto scene = MakeShared<Scene>(context);
+    scene->CreateComponent<Octree>();
+
+    auto camera = scene->CreateComponent<Camera>();
+    SetCameraBoundingBox(camera, boundingBox);
+
+    // Replicate all elements in the scene
+    for (const LightmapChartElement& element : chart.elements_)
+    {
+        if (element.staticModel_)
+        {
+            auto material = bakingMaterial->Clone();
+            material->SetShaderParameter("LMOffset", element.region_.GetScaleOffset());
+
+            Node* node = scene->CreateChild();
+            node->SetPosition(element.node_->GetWorldPosition());
+            node->SetRotation(element.node_->GetWorldRotation());
+            node->SetScale(element.node_->GetWorldScale());
+
+            StaticModel* staticModel = node->CreateComponent<StaticModel>();
+            staticModel->SetModel(element.staticModel_->GetModel());
+            staticModel->SetMaterial(material);
+        }
+    }
+
+    return { scene, camera };
 }
 
 }
