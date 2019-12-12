@@ -27,6 +27,8 @@
 
 #include "../Graphics/ModelView.h"
 #include "../Graphics/StaticModel.h"
+#include "../Graphics/Terrain.h"
+#include "../Graphics/TerrainPatch.h"
 #include "../Glow/EmbreeScene.h"
 
 #include <future>
@@ -34,12 +36,25 @@
 namespace Urho3D
 {
 
-EmbreeScene::~EmbreeScene()
+/// Calculate bounding box of nodes.
+BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes)
 {
-    if (scene_)
-        rtcReleaseScene(scene_);
-    if (device_)
-        rtcReleaseDevice(device_);
+    BoundingBox boundingBox;
+    for (Node* node : nodes)
+    {
+        if (auto staticModel = node->GetComponent<StaticModel>())
+            boundingBox.Merge(staticModel->GetWorldBoundingBox());
+        else if (auto terrain = node->GetComponent<Terrain>())
+        {
+            const IntVector2 numPatches = terrain->GetNumPatches();
+            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
+            {
+                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
+                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
+            }
+        }
+    }
+    return boundingBox;
 }
 
 /// Parsed model key and value.
@@ -126,6 +141,14 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, Mod
     return result;
 }
 
+EmbreeScene::~EmbreeScene()
+{
+    if (scene_)
+        rtcReleaseScene(scene_);
+    if (device_)
+        rtcReleaseDevice(device_);
+}
+
 SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes)
 {
     // Load models
@@ -169,9 +192,14 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node
         }
     }
 
+    // Finalize scene
     rtcCommitScene(scene);
 
-    return MakeShared<EmbreeScene>(context, device, scene);
+    // Calculate max distance between objects
+    const Vector3 sceneSize = CalculateBoundingBoxOfNodes(nodes).Size();
+    const float maxDistance = ea::max({ sceneSize.x_, sceneSize.y_, sceneSize.z_ });
+
+    return MakeShared<EmbreeScene>(context, device, scene, maxDistance);
 }
 
 }
