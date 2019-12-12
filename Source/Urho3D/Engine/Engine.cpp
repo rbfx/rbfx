@@ -310,7 +310,10 @@ bool Engine::Initialize(const VariantMap& parameters)
     if (!headless_)
     {
 #ifdef URHO3D_SYSTEMUI
-        context_->RegisterSubsystem(new SystemUI(context_));
+        unsigned flags = 0;
+        if (GetParameter(parameters, EP_HIGH_DPI, true).GetBool())
+            flags = ImGuiConfigFlags_ViewportsEnable | ImGuiConfigFlags_DpiEnableScaleViewports;
+        context_->RegisterSubsystem(new SystemUI(context_, flags));
 #endif
     }
     frameTimer_.Reset();
