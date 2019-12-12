@@ -59,27 +59,6 @@ namespace Urho3D
 /// Size of Embree ray packed.
 static const unsigned RayPacketSize = 16;
 
-/// Calculate bounding box of all light receivers.
-BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes)
-{
-    BoundingBox boundingBox;
-    for (Node* node : nodes)
-    {
-        if (auto staticModel = node->GetComponent<StaticModel>())
-            boundingBox.Merge(staticModel->GetWorldBoundingBox());
-        else if (auto terrain = node->GetComponent<Terrain>())
-        {
-            const IntVector2 numPatches = terrain->GetNumPatches();
-            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
-            {
-                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
-                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
-            }
-        }
-    }
-    return boundingBox;
-}
-
 /// Implementation of lightmap baker.
 struct LightmapBakerImpl
 {
@@ -94,7 +73,6 @@ struct LightmapBakerImpl
         , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
         , embreeScene_(CreateEmbreeScene(context_, lightObstacles))
         , lights_(lights)
-        , lightObstaclesBoundingBox_(CalculateBoundingBoxOfNodes(lightObstacles))
     {
     }
     /// Validate settings and whatever.
@@ -125,11 +103,6 @@ struct LightmapBakerImpl
 
     /// Lights.
     ea::vector<Node*> lights_;
-    /// Bounding box of light obstacles.
-    BoundingBox lightObstaclesBoundingBox_;
-
-    /// Max length of the ray.
-    float maxRayLength_{};
 
     /// Calculation: current lightmap index.
     unsigned currentLightmapIndex_{ M_MAX_UNSIGNED };
@@ -150,9 +123,6 @@ bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* sc
     impl_ = ea::make_unique<LightmapBakerImpl>(context_, settings, scene, lightReceivers, lightObstacles, lights);
     if (!impl_->Validate())
         return false;
-
-    // Prepare metadata and baking scenes
-    impl_->maxRayLength_ = impl_->lightObstaclesBoundingBox_.Size().Length();
 
     return true;
 }
@@ -289,7 +259,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 rayHit.ray.dir_y = lightRayDirection.y_;
                 rayHit.ray.dir_z = lightRayDirection.z_;
                 rayHit.ray.tnear = 0.0f;
-                rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+                rayHit.ray.tfar = impl_->embreeScene_->GetMaxDistance() * 2;
                 rayHit.ray.time = 0.0f;
                 rayHit.ray.id = 0;
                 rayHit.ray.mask = 0xffffffff;
@@ -316,7 +286,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     rayHit.ray.dir_y = rayDirection.y_;
                     rayHit.ray.dir_z = rayDirection.z_;
                     rayHit.ray.tnear = 0.0f;
-                    rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+                    rayHit.ray.tfar = impl_->embreeScene_->GetMaxDistance() * 2;
                     rayHit.ray.time = 0.0f;
                     rayHit.ray.id = 0;
                     rayHit.ray.mask = 0xffffffff;
@@ -335,7 +305,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     rayHit.ray.dir_y = lightRayDirection.y_;
                     rayHit.ray.dir_z = lightRayDirection.z_;
                     rayHit.ray.tnear = 0.0f;
-                    rayHit.ray.tfar = impl_->maxRayLength_ * 2;
+                    rayHit.ray.tfar = impl_->embreeScene_->GetMaxDistance() * 2;
                     rayHit.ray.time = 0.0f;
                     rayHit.ray.id = 0;
                     rayHit.ray.mask = 0xffffffff;

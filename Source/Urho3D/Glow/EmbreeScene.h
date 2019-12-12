@@ -41,10 +41,11 @@ class EmbreeScene : public RefCounted
 {
 public:
     /// Construct.
-    EmbreeScene(Context* context, RTCDevice embreeDevice, RTCScene embreeScene)
+    EmbreeScene(Context* context, RTCDevice embreeDevice, RTCScene embreeScene, float maxDistance)
         : context_(context)
         , device_(embreeDevice)
         , scene_(embreeScene)
+        , maxDistance_(maxDistance)
     {
     }
     /// Destruct.
@@ -56,6 +57,8 @@ public:
     RTCDevice GetEmbreeDevice() const { return device_; }
     /// Get Embree scene.
     RTCScene GetEmbreeScene() const { return scene_; }
+    /// Get max distance between two points.
+    float GetMaxDistance() const { return maxDistance_; }
 
 private:
     /// Context.
@@ -64,6 +67,8 @@ private:
     RTCDevice device_{};
     /// Embree scene.
     RTCScene scene_{};
+    /// Max distance between two points.
+    float maxDistance_{};
 };
 
 // Create Embree scene.

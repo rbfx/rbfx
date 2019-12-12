@@ -64,6 +64,11 @@ URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakin
 /// Baked lightmap geometry of lightmap chart.
 struct LightmapChartBakedGeometry
 {
+    /// Width of the chart.
+    unsigned width_{};
+    /// Height of the chart.
+    unsigned height_{};
+
     /// Positions as is.
     ea::vector<Vector3> geometryPositions_;
     /// Smooth positions after Phong tesselation.
@@ -81,7 +86,9 @@ struct LightmapChartBakedGeometry
     LightmapChartBakedGeometry() = default;
     /// Construct valid.
     LightmapChartBakedGeometry(unsigned width, unsigned height)
-        : geometryPositions_(width * height)
+        : width_(width)
+        , height_(height)
+        , geometryPositions_(width * height)
         , smoothPositions_(width * height)
         , smoothNormals_(width * height)
         , faceNormals_(width * height)
