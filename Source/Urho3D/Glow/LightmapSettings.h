@@ -53,4 +53,13 @@ struct LightmapGeometryBakingSettings
     ea::string materialName_{ "Materials/LightmapBaker.xml" };
 };
 
+/// Lightmap tracing settings.
+struct LightmapTracingSettings
+{
+    /// Number of threads to use.
+    unsigned numThreads_{ 8 };
+    /// Ray position offset.
+    float rayPositionOffset_{ 0.001f };
+};
+
 }
