@@ -29,6 +29,7 @@
 #include "../Glow/LightmapBaker.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapTracer.h"
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
@@ -71,6 +72,7 @@ struct LightmapBakerImpl
         , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
         , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
+        , bakedLighting_(InitializeLightmapChartsBakedLighting(charts_))
         , embreeScene_(CreateEmbreeScene(context_, lightObstacles))
         , lights_(lights)
     {
@@ -98,6 +100,8 @@ struct LightmapBakerImpl
     ea::vector<LightmapGeometryBakingScene> bakingScenes_;
     /// Baked geometries.
     ea::vector<LightmapChartBakedGeometry> bakedGeometries_;
+    /// Baked lighting.
+    ea::vector<LightmapChartBakedLighting> bakedLighting_;
     /// Embree scene.
     SharedPtr<EmbreeScene> embreeScene_;
 
@@ -196,6 +200,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
     const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[impl_->currentLightmapIndex_];
     const LightmapChartBakedGeometry& bakedGeometry = impl_->bakedGeometries_[impl_->currentLightmapIndex_];
+    LightmapChartBakedLighting& bakedLighting = impl_->bakedLighting_[impl_->currentLightmapIndex_];
     const int lightmapWidth = chart.allocator_.GetWidth();
     const int lightmapHeight = chart.allocator_.GetHeight();
 
@@ -217,6 +222,17 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         }
     }
     const Vector3 lightRayDirection = -lightDirection.Normalized();
+
+    // Calculate directional lighting
+    BakeDirectionalLight(bakedLighting, bakedGeometry, *impl_->embreeScene_,
+        { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
+
+    // Copy directional lighting into output
+    for (unsigned i = 0; i < data.backedLighting_.size(); ++i)
+    {
+        const Vector3& directLighting = bakedLighting.directLighting_[i];
+        data.backedLighting_[i] = Color{ directLighting.x_, directLighting.y_, directLighting.z_ };
+    }
 
     // Process rows in multiple threads
     const unsigned numBounces = 1;
@@ -250,25 +266,6 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
                 if (!geometryId)
                     continue;
-
-                // Cast direct ray
-                rayHit.ray.org_x = position.x_ + lightRayDirection.x_ * 0.001f;
-                rayHit.ray.org_y = position.y_ + lightRayDirection.y_ * 0.001f;
-                rayHit.ray.org_z = position.z_ + lightRayDirection.z_ * 0.001f;
-                rayHit.ray.dir_x = lightRayDirection.x_;
-                rayHit.ray.dir_y = lightRayDirection.y_;
-                rayHit.ray.dir_z = lightRayDirection.z_;
-                rayHit.ray.tnear = 0.0f;
-                rayHit.ray.tfar = impl_->embreeScene_->GetMaxDistance() * 2;
-                rayHit.ray.time = 0.0f;
-                rayHit.ray.id = 0;
-                rayHit.ray.mask = 0xffffffff;
-                rayHit.ray.flags = 0xffffffff;
-                rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                rtcIntersect1(scene, &rayContext, &rayHit);
-
-                const float directShadow = rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
-                const float directLighting = directShadow * ea::max(0.0f, smoothNormal.DotProduct(lightRayDirection));
 
                 float indirectLighting = 0.0f;
                 Vector3 currentPosition = position;
@@ -325,7 +322,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     indirectLighting = incoming * brdf * cosTheta / probability;
                 }
 
-                data.backedLighting_[index] = Color::WHITE * (directLighting + indirectLighting);
+                data.backedLighting_[index] += Color::WHITE * indirectLighting;
             }
         }
     });

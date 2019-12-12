@@ -53,6 +53,8 @@ struct LightmapBakingSettings
     LightmapChartingSettings charting_;
     /// Geometry baking settings.
     LightmapGeometryBakingSettings geometryBaking_;
+    /// Tracing settings.
+    LightmapTracingSettings tracing_;
     /// Number of parallel chunks.
     unsigned numParallelChunks_{ 32 };
 };
