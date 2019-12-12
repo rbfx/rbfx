@@ -217,7 +217,7 @@ ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, flo
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
-    size = (size == 0 ? previousSize : size) * fontScale_;
+    size = (size == 0 ? previousSize : size);
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
@@ -233,7 +233,7 @@ ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* range
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
-    size = (size == 0 ? previousSize : size) * fontScale_;
+    size = (size == 0 ? previousSize : size);
 
     ImFontConfig cfg;
     cfg.MergeMode = merge;
@@ -251,7 +251,7 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWc
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
-    size = (size == 0 ? previousSize : size) * fontScale_;
+    size = (size == 0 ? previousSize : size);
 
     ImFontConfig cfg;
     cfg.MergeMode = merge;
@@ -306,7 +306,6 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
         ui::StyleColorsLight(&style);
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
-    style.ScaleAllSizes(GetFontScale());
 }
 
 bool SystemUI::IsAnyItemActive() const

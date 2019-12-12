@@ -69,15 +69,12 @@ public:
     bool IsAnyItemActive() const;
     /// Return whether mouse is hovering any system ui component.
     bool IsAnyItemHovered() const;
-    /// Return font scale.
-    float GetFontScale() const { return fontScale_; }
     /// Prepares font textures, updates projection matrix and does other things that are required to start this subsystem.
     void Start();
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
 
 protected:
-    float fontScale_ = 1.f;
     VertexBuffer vertexBuffer_;
     IndexBuffer indexBuffer_;
     SharedPtr<Texture2D> fontTexture_;

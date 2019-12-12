@@ -1450,10 +1450,15 @@ void SceneTab::ResizeMainViewport(const IntRect& rect)
         return;
 
     rect_ = rect;
-    viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
-    if (rect.Width() > 0 && rect.Height() > 0 && (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight()))
+    ImGuiViewport* viewport = ui::GetCurrentWindow()->Viewport;
+    IntVector2 textureSize{
+        static_cast<int>(static_cast<float>(rect.Width()) * viewport->DpiScale),
+        static_cast<int>(static_cast<float>(rect.Height()) * viewport->DpiScale)
+    };
+    viewport_->SetRect(IntRect(IntVector2::ZERO, textureSize));
+    if (textureSize.x_ > 0 && textureSize.y_ > 0 && (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight()))
     {
-        texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+        texture_->SetSize(textureSize.x_, textureSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         texture_->GetRenderSurface()->SetViewport(0, viewport_);
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }

@@ -120,7 +120,11 @@ void Editor::Setup()
     engineParameters_[EP_RESOURCE_PREFIX_PATHS] = coreResourcePrefixPath_;
     engineParameters_[EP_WINDOW_MAXIMIZE] = true;
     engineParameters_[EP_ENGINE_AUTO_LOAD_SCRIPTS] = false;
-
+#if URHO3D_SYSTEMUI_VIEWPORTS
+    engineParameters_[EP_HIGH_DPI] = true;
+#else
+    engineParameters_[EP_HIGH_DPI] = false;
+#endif
     // Load editor settings
     {
         auto* fs = context_->GetFileSystem();

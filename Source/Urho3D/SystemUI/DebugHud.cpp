@@ -159,7 +159,7 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
     Graphics* graphics = GetSubsystem<Graphics>();
 
     ui::SetNextWindowViewport(ui::GetMainViewport()->ID);
-    ui::SetNextWindowPos(ui::GetMainViewport()->Pos + ToImGui(Vector2(extents_.Min())));
+    ui::SetNextWindowPos(ToImGui(Vector2(extents_.Min())));
     ui::SetNextWindowSize(ToImGui(Vector2(extents_.Size())));
     ui::PushStyleColor(ImGuiCol_WindowBg, 0);
     ui::PushStyleColor(ImGuiCol_Border, 0);
