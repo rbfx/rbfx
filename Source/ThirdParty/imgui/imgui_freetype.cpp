@@ -36,6 +36,7 @@
 #endif
 
 #if defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wpragmas"                  // warning: unknown option after '#pragma GCC diagnostic' kind
 #pragma GCC diagnostic ignored "-Wunused-function"          // warning: 'xxxx' defined but not used
 #endif
 
@@ -126,7 +127,7 @@ namespace
             return false;
 
         memset(&Info, 0, sizeof(Info));
-        SetPixelHeight((uint32_t)cfg.SizePixels);
+        SetPixelHeight((uint32_t)(cfg.SizePixels * cfg.DpiScale));
 
         // Convert to FreeType flags (NB: Bold and Oblique are processed separately)
         UserFlags = cfg.RasterizerFlags | extra_user_flags;
@@ -316,6 +317,7 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
 {
     IM_ASSERT(atlas->ConfigData.Size > 0);
 
+    atlas->CreatePerDpiFonts();
     ImFontAtlasBuildRegisterDefaultCustomRects(atlas);
 
     // Clear atlas
@@ -544,7 +546,7 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
         const float descent = src_tmp.Font.Info.Descender;
         ImFontAtlasBuildSetupFont(atlas, dst_font, &cfg, ascent, descent);
         const float font_off_x = cfg.GlyphOffset.x;
-        const float font_off_y = cfg.GlyphOffset.y + (float)(int)(dst_font->Ascent + 0.5f);
+        const float font_off_y = cfg.GlyphOffset.y + ImRound(dst_font->Ascent);
 
         const int padding = atlas->TexGlyphPadding;
         for (int glyph_i = 0; glyph_i < src_tmp.GlyphsCount; glyph_i++)
@@ -571,7 +573,7 @@ bool ImFontAtlasBuildWithFreeType(FT_Library ft_library, ImFontAtlas* atlas, uns
             float char_advance_x_mod = ImClamp(char_advance_x_org, cfg.GlyphMinAdvanceX, cfg.GlyphMaxAdvanceX);
             float char_off_x = font_off_x;
             if (char_advance_x_org != char_advance_x_mod)
-                char_off_x += cfg.PixelSnapH ? (float)(int)((char_advance_x_mod - char_advance_x_org) * 0.5f) : (char_advance_x_mod - char_advance_x_org) * 0.5f;
+                char_off_x += cfg.PixelSnapH ? ImFloor((char_advance_x_mod - char_advance_x_org) * 0.5f) : (char_advance_x_mod - char_advance_x_org) * 0.5f;
 
             // Register glyph
             float x0 = info.OffsetX + char_off_x;
@@ -645,7 +647,8 @@ static void* FreeType_Realloc(FT_Memory /*memory*/, long cur_size, long new_size
 bool ImGuiFreeType::BuildFontAtlas(ImFontAtlas* atlas, unsigned int extra_flags)
 {
     // FreeType memory management: https://www.freetype.org/freetype2/docs/design/design-4.html
-    FT_MemoryRec_ memory_rec = { 0 };
+    FT_MemoryRec_ memory_rec = {};
+    memory_rec.user = NULL;
     memory_rec.alloc = &FreeType_Alloc;
     memory_rec.free = &FreeType_Free;
     memory_rec.realloc = &FreeType_Realloc;

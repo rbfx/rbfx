@@ -44,9 +44,3 @@
 %csmethodmodifiers Urho3D::SystemMessageBox::SetTitle "private";
 %csmethodmodifiers Urho3D::SystemMessageBox::GetMessage "private";
 %csmethodmodifiers Urho3D::SystemMessageBox::SetMessage "private";
-%typemap(cscode) Urho3D::SystemUI %{
-  public $typemap(cstype, float) FontScale {
-    get { return GetFontScale(); }
-  }
-%}
-%csmethodmodifiers Urho3D::SystemUI::GetFontScale "private";
