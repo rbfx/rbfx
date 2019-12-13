@@ -72,7 +72,8 @@ struct LightmapBakerImpl
         , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
         , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
-        , bakedLighting_(InitializeLightmapChartsBakedLighting(charts_))
+        , bakedDirect_(InitializeLightmapChartsBakedDirect(charts_))
+        , bakedIndirect_(InitializeLightmapChartsBakedIndirect(charts_))
         , lights_(lights)
     {
         ApplyLightmapCharts(charts_, 0);
@@ -101,8 +102,10 @@ struct LightmapBakerImpl
     ea::vector<LightmapGeometryBakingScene> bakingScenes_;
     /// Baked geometries.
     ea::vector<LightmapChartBakedGeometry> bakedGeometries_;
-    /// Baked lighting.
-    ea::vector<LightmapChartBakedLighting> bakedLighting_;
+    /// Baked direct lighting.
+    ea::vector<LightmapChartBakedDirect> bakedDirect_;
+    /// Baked indirect lighting.
+    ea::vector<LightmapChartBakedIndirect> bakedIndirect_;
     /// Embree scene.
     SharedPtr<EmbreeScene> embreeScene_;
 
@@ -201,7 +204,8 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
     const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[impl_->currentLightmapIndex_];
     const LightmapChartBakedGeometry& bakedGeometry = impl_->bakedGeometries_[impl_->currentLightmapIndex_];
-    LightmapChartBakedLighting& bakedLighting = impl_->bakedLighting_[impl_->currentLightmapIndex_];
+    LightmapChartBakedDirect& bakedDirect = impl_->bakedDirect_[impl_->currentLightmapIndex_];
+    LightmapChartBakedIndirect& bakedIndirect = impl_->bakedIndirect_[impl_->currentLightmapIndex_];
     const int lightmapWidth = chart.allocator_.GetWidth();
     const int lightmapHeight = chart.allocator_.GetHeight();
 
@@ -224,15 +228,15 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     }
     const Vector3 lightRayDirection = -lightDirection.Normalized();
 
-    // Calculate directional lighting
-    BakeDirectionalLight(bakedLighting, bakedGeometry, *impl_->embreeScene_,
+    // Calculate directional light
+    BakeDirectionalLight(bakedDirect, bakedGeometry, *impl_->embreeScene_,
         { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
 
-    // Copy directional lighting into output
+    // Copy directional light into output
     for (unsigned i = 0; i < data.backedLighting_.size(); ++i)
     {
-        const Vector3& directLighting = bakedLighting.directLighting_[i];
-        data.backedLighting_[i] = Color{ directLighting.x_, directLighting.y_, directLighting.z_ };
+        const Vector3& directLight = bakedDirect.light_[i];
+        data.backedLighting_[i] = Color{ directLight.x_, directLight.y_, directLight.z_ };
     }
 
     // Process rows in multiple threads
@@ -269,7 +273,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                 if (!geometryId)
                     continue;
 
-                float indirectLighting = 0.0f;
+                float indirectLight = 0.0f;
                 Vector3 currentPosition = position;
                 Vector3 currentNormal = smoothNormal;
                 for (unsigned j = 0; j < numBounces; ++j)
@@ -301,22 +305,22 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     Vector2 lightmapUV;
                     rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
                         RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
-                    const IntVector2 chartSize(bakedLighting.width_, bakedLighting.height_);
+                    const IntVector2 chartSize(bakedDirect.width_, bakedDirect.height_);
                     const IntVector2 lightmapTexel = VectorMin(chartSize - IntVector2::ONE * 1,
                         VectorFloorToInt(lightmapUV * Vector2(chartSize)));
-                    unsigned sampleIndex = lightmapTexel.x_ + lightmapTexel.y_ * bakedLighting.width_;
-                    const Vector3 bakedDirectLighting = bakedLighting.directLighting_[sampleIndex];
+                    unsigned sampleIndex = lightmapTexel.x_ + lightmapTexel.y_ * bakedDirect.width_;
+                    const Vector3 bakedDirectLight = bakedDirect.light_[sampleIndex];
 
-                    const float incoming = bakedDirectLighting.x_ * 1.0f;
+                    const float incoming = bakedDirectLight.x_ * 1.0f;
                     const float probability = 1 / (2 * M_PI);
                     const float cosTheta = rayDirection.DotProduct(currentNormal);
                     const float reflectance = 1 / M_PI;
                     const float brdf = reflectance / M_PI;
 
-                    indirectLighting = incoming * brdf * cosTheta / probability;
+                    indirectLight = incoming * brdf * cosTheta / probability;
                 }
 
-                data.backedLighting_[index] += Color::WHITE * indirectLighting;
+                data.backedLighting_[index] += Color::WHITE * indirectLight;
             }
         }
     });
