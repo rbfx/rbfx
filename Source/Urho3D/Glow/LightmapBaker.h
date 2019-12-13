@@ -55,8 +55,8 @@ struct LightmapBakingSettings
     LightmapGeometryBakingSettings geometryBaking_;
     /// Tracing settings.
     LightmapTracingSettings tracing_;
-    /// Number of parallel chunks.
-    unsigned numParallelChunks_{ 32 };
+    /// Number of indirect samples.
+    unsigned numIndirectSamples_{ 1 };
 };
 
 /// Lightmap baker API.
@@ -82,14 +82,7 @@ public:
     /// Bake lightmap.
     bool BakeLightmap(LightmapBakedData& data);
 
-    /// Append lightmaps to scene and apply parameters to nodes.
-    void ApplyLightmapsToScene(unsigned baseLightmapIndex);
-
 private:
-    /// Process rows of current image in multiple threads.
-    template <class T>
-    void ParallelForEachRow(T callback);
-
     /// Impl.
     ea::unique_ptr<LightmapBakerImpl> impl_;
 };
