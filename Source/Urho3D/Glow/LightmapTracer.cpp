@@ -55,15 +55,23 @@ void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
         task.wait();
 }
 
-ea::vector<LightmapChartBakedLighting> InitializeLightmapChartsBakedLighting(const LightmapChartVector& charts)
+ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts)
 {
-    ea::vector<LightmapChartBakedLighting> chartsBakedLighting;
+    ea::vector<LightmapChartBakedDirect> chartsBakedDirect;
     for (const LightmapChart& chart : charts)
-        chartsBakedLighting.emplace_back(chart.width_, chart.height_);
-    return chartsBakedLighting;
+        chartsBakedDirect.emplace_back(chart.width_, chart.height_);
+    return chartsBakedDirect;
 }
 
-void BakeDirectionalLight(LightmapChartBakedLighting& bakedLighting, const LightmapChartBakedGeometry& bakedGeometry,
+ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(const LightmapChartVector& charts)
+{
+    ea::vector<LightmapChartBakedIndirect> chartsBakedIndirect;
+    for (const LightmapChart& chart : charts)
+        chartsBakedIndirect.emplace_back(chart.width_, chart.height_);
+    return chartsBakedIndirect;
+}
+
+void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
     const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
     const Vector3 rayDirection = -light.direction_.Normalized();
@@ -71,7 +79,7 @@ void BakeDirectionalLight(LightmapChartBakedLighting& bakedLighting, const Light
     const Vector3 lightColor = light.color_.ToVector3();
     RTCScene scene = embreeScene.GetEmbreeScene();
 
-    ParallelFor(bakedLighting.directLighting_.size(), settings.numThreads_,
+    ParallelFor(bakedDirect.light_.size(), settings.numThreads_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCRayHit rayHit;
@@ -105,9 +113,9 @@ void BakeDirectionalLight(LightmapChartBakedLighting& bakedLighting, const Light
             rtcIntersect1(scene, &rayContext, &rayHit);
 
             const float shadowFactor = rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
-            const float directLighting = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
+            const float directLight = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
 
-            bakedLighting.directLighting_[i] += lightColor * shadowFactor * directLighting;
+            bakedDirect.light_[i] += lightColor * shadowFactor * directLight;
         }
     });
 }
