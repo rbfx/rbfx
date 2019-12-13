@@ -57,9 +57,6 @@
 namespace Urho3D
 {
 
-/// Size of Embree ray packed.
-static const unsigned RayPacketSize = 16;
-
 /// Implementation of lightmap baker.
 struct LightmapBakerImpl
 {
@@ -78,15 +75,6 @@ struct LightmapBakerImpl
     {
         ApplyLightmapCharts(charts_, 0);
         embreeScene_ = CreateEmbreeScene(context_, lightObstacles);
-    }
-    /// Validate settings and whatever.
-    bool Validate() const
-    {
-        if (settings_.charting_.chartSize_ % settings_.numParallelChunks_ != 0)
-            return false;
-        if (settings_.charting_.chartSize_ % RayPacketSize != 0)
-            return false;
-        return true;
     }
 
     /// Context.
@@ -129,9 +117,6 @@ bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* sc
     const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights)
 {
     impl_ = ea::make_unique<LightmapBakerImpl>(context_, settings, scene, lightReceivers, lightObstacles, lights);
-    if (!impl_->Validate())
-        return false;
-
     return true;
 }
 
@@ -174,31 +159,6 @@ bool LightmapBaker::RenderLightmapGBuffer(unsigned index)
     return true;
 }
 
-template <class T>
-void LightmapBaker::ParallelForEachRow(T callback)
-{
-    const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
-    const unsigned lightmapHeight = static_cast<unsigned>(chart.allocator_.GetHeight());
-    const unsigned chunkHeight = lightmapHeight / impl_->settings_.numParallelChunks_;
-
-    // Start tasks
-    ea::vector<std::future<void>> tasks;
-    for (unsigned parallelChunkIndex = 0; parallelChunkIndex < impl_->settings_.numParallelChunks_; ++parallelChunkIndex)
-    {
-        tasks.push_back(std::async([=]()
-        {
-            const unsigned fromY = parallelChunkIndex * chunkHeight;
-            const unsigned toY = ea::min((parallelChunkIndex + 1) * chunkHeight, lightmapHeight);
-            for (unsigned y = fromY; y < toY; ++y)
-                callback(y);
-        }));
-    }
-
-    // Wait for async tasks
-    for (auto& task : tasks)
-        task.wait();
-}
-
 bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 {
     const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
@@ -233,7 +193,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
 
     // Calculate indirect light.
-    for (int i = 0; i < 4; ++i)
+    for (int i = 0; i < impl_->settings_.numIndirectSamples_; ++i)
         BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, bakedGeometry, *impl_->embreeScene_, impl_->settings_.tracing_);
 
     // Post-process lighting.
@@ -252,11 +212,6 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     }
 
     return true;
-}
-
-void LightmapBaker::ApplyLightmapsToScene(unsigned baseLightmapIndex)
-{
-    //ApplyLightmapCharts(impl_->charts_, baseLightmapIndex);
 }
 
 }
