@@ -233,7 +233,14 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
 
     // Calculate indirect light.
-    BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, bakedGeometry, *impl_->embreeScene_, impl_->settings_.tracing_);
+    for (int i = 0; i < 4; ++i)
+        BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, bakedGeometry, *impl_->embreeScene_, impl_->settings_.tracing_);
+
+    // Post-process lighting.
+    const unsigned numThreads = impl_->settings_.tracing_.numThreads_;
+    bakedIndirect.NormalizeLight();
+    FilterIndirectLight5x5(bakedIndirect, bakedGeometry, { 2, 1.0f, 4.0f, 1.0f }, numThreads);
+    FilterIndirectLight5x5(bakedIndirect, bakedGeometry, { 1, 10.0f, 4.0f, 1.0f }, numThreads);
 
     // Copy directional light into output
     for (unsigned i = 0; i < data.backedLighting_.size(); ++i)
@@ -241,176 +248,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         const Vector3& directLight = bakedDirect.light_[i];
         const Vector4& indirectLight = bakedIndirect.light_[i];
         data.backedLighting_[i] = Color{ directLight.x_, directLight.y_, directLight.z_ };
-        if (indirectLight.w_ > 0)
-            data.backedLighting_[i] += Color{ indirectLight.x_ / indirectLight.w_, indirectLight.y_ / indirectLight.w_, indirectLight.z_ / indirectLight.w_ };
-    }
-
-    // Gauss pre-pass
-    {
-        IntVector2 offsets[9];
-        for (int i = 0; i < 9; ++i)
-            offsets[i] = IntVector2(i % 3 - 1, i / 3 - 1);
-        float kernel[9];
-        int kernel1D[3] = { 1, 2, 1 };
-        for (int i = 0; i < 9; ++i)
-            kernel[i] = kernel1D[i % 3] * kernel1D[i / 3] / 16.0f;
-
-        auto colorCopy = data.backedLighting_;
-        ParallelForEachRow([&](unsigned y)
-        {
-            for (unsigned x = 0; x < lightmapWidth; ++x)
-            {
-                const IntVector2 sourceTexel{ static_cast<int>(x), static_cast<int>(y) };
-                const IntVector2 minOffset = -sourceTexel;
-                const IntVector2 maxOffset = IntVector2{ lightmapWidth, lightmapHeight } - sourceTexel - IntVector2::ONE;
-
-                const unsigned index = y * lightmapWidth + x;
-
-                const unsigned geometryId = bakedGeometry.geometryIds_[index];
-                if (!geometryId)
-                    continue;
-
-                float weightSum = 0.0f;
-                Vector4 colorSum;
-                for (unsigned i = 0; i < 9; ++i)
-                {
-                    const IntVector2 offset = offsets[i];
-                    if (offset.x_ < minOffset.x_ || offset.x_ > maxOffset.x_ || offset.y_ < minOffset.y_ || offset.y_ > maxOffset.y_)
-                        continue;
-
-                    const unsigned otherIndex = index + offset.y_ * lightmapWidth + offset.x_;
-                    const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
-                    const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
-                    const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
-                    if (!otherGeometryId)
-                        continue;
-
-                    colorSum += otherColor * kernel[i];
-                    weightSum += kernel[i];
-                }
-
-                const Vector4 result = colorSum / weightSum;
-                data.backedLighting_[index] = Color(result.x_, result.y_, result.z_, result.w_);
-            }
-        });
-    }
-
-    IntVector2 offsets[25];
-    for (int i = 0; i < 25; ++i)
-        offsets[i] = IntVector2(i % 5 - 2, i / 5 - 2);
-    float kernel[25];
-    int kernel1D[5] = { 1, 4, 6, 4, 1 };
-    for (int i = 0; i < 25; ++i)
-        kernel[i] = kernel1D[i % 5] * kernel1D[i / 5] / 256.0f;
-
-    const float colorPhi = 1.0f;
-    const float normalPhi = 4.0f;
-    const float positionPhi = 1.0f;
-
-    for (unsigned passIndex = 0; passIndex < 3; ++passIndex)
-    {
-        const int offsetScale = 1 << passIndex;
-        const float colorPhiScaled = colorPhi / offsetScale;
-        auto colorCopy = data.backedLighting_;
-        ParallelForEachRow([&](unsigned y)
-        {
-            for (unsigned x = 0; x < lightmapWidth; ++x)
-            {
-                const IntVector2 sourceTexel{ static_cast<int>(x), static_cast<int>(y) };
-                const IntVector2 minOffset = -sourceTexel;
-                const IntVector2 maxOffset = IntVector2{ lightmapWidth, lightmapHeight } - sourceTexel - IntVector2::ONE;
-
-                const unsigned index = y * lightmapWidth + x;
-
-                const Vector4 baseColor = colorCopy[index].ToVector4();
-                const Vector3 basePosition = bakedGeometry.geometryPositions_[index];
-                const Vector3 baseNormal = bakedGeometry.smoothNormals_[index];
-                const unsigned geometryId = bakedGeometry.geometryIds_[index];
-                if (!geometryId)
-                    continue;
-
-                Vector4 colorSum;
-                float weightSum = 0.0f;
-                for (unsigned i = 0; i < 25; ++i)
-                {
-                    const IntVector2 offset = offsets[i] * offsetScale;
-                    const IntVector2 clampedOffset = VectorMax(minOffset, VectorMin(offset, maxOffset));
-                    const unsigned otherIndex = index + clampedOffset.y_ * lightmapWidth + clampedOffset.x_;
-
-                    const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
-                    const Vector4 colorDelta = baseColor - otherColor;
-                    const float colorDeltaSquared = colorDelta.DotProduct(colorDelta);
-                    const float colorWeight = ea::min(std::exp(-colorDeltaSquared / colorPhiScaled), 1.0f);
-
-                    const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
-                    const Vector3 positionDelta = basePosition - otherPosition;
-                    const float positionDeltaSquared = positionDelta.DotProduct(positionDelta);
-                    const float positionWeight = ea::min(std::exp(-positionDeltaSquared / positionPhi), 1.0f);
-
-                    const Vector3 otherNormal = bakedGeometry.smoothNormals_[otherIndex];
-                    const float normalDeltaCos = ea::max(0.0f, baseNormal.DotProduct(otherNormal));
-                    const float normalWeight = std::pow(normalDeltaCos, normalPhi);
-
-                    const float weight = colorWeight * positionWeight * normalWeight * kernel[i];
-                    colorSum += otherColor * weight;
-                    weightSum += weight;
-                }
-
-                const Vector4 result = colorSum / weightSum;
-                data.backedLighting_[index] = Color(result.x_, result.y_, result.z_, result.w_);
-            }
-        });
-    }
-
-    // Gauss post-pass
-    //if (0)
-    {
-        IntVector2 offsets[9];
-        for (int i = 0; i < 9; ++i)
-            offsets[i] = IntVector2(i % 3 - 1, i / 3 - 1);
-        float kernel[9];
-        int kernel1D[3] = { 1, 2, 1 };
-        for (int i = 0; i < 9; ++i)
-            kernel[i] = kernel1D[i % 3] * kernel1D[i / 3] / 16.0f;
-
-        auto colorCopy = data.backedLighting_;
-        ParallelForEachRow([&](unsigned y)
-        {
-            for (unsigned x = 0; x < lightmapWidth; ++x)
-            {
-                const IntVector2 sourceTexel{ static_cast<int>(x), static_cast<int>(y) };
-                const IntVector2 minOffset = -sourceTexel;
-                const IntVector2 maxOffset = IntVector2{ lightmapWidth, lightmapHeight } - sourceTexel - IntVector2::ONE;
-
-                const unsigned index = y * lightmapWidth + x;
-
-                const unsigned geometryId = bakedGeometry.geometryIds_[index];
-                if (!geometryId)
-                    continue;
-
-                float weightSum = 0.0f;
-                Vector4 colorSum;
-                for (unsigned i = 0; i < 9; ++i)
-                {
-                    const IntVector2 offset = offsets[i];
-                    if (offset.x_ < minOffset.x_ || offset.x_ > maxOffset.x_ || offset.y_ < minOffset.y_ || offset.y_ > maxOffset.y_)
-                        continue;
-
-                    const unsigned otherIndex = index + offset.y_ * lightmapWidth + offset.x_;
-                    const Vector4 otherColor = colorCopy[otherIndex].ToVector4();
-                    const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
-                    const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
-                    if (!otherGeometryId)
-                        continue;
-
-                    colorSum += otherColor * kernel[i];
-                    weightSum += kernel[i];
-                }
-
-                const Vector4 result = colorSum / weightSum;
-                data.backedLighting_[index] = Color(result.x_, result.y_, result.z_, result.w_);
-            }
-        });
+        data.backedLighting_[i] += Color{ indirectLight.x_, indirectLight.y_, indirectLight.z_ };
     }
 
     return true;
