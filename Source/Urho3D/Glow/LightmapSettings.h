@@ -56,12 +56,14 @@ struct LightmapGeometryBakingSettings
 /// Lightmap tracing settings.
 struct LightmapTracingSettings
 {
+    /// Max number of bounces.
+    static const unsigned MaxBounces = 8;
     /// Number of threads to use.
     unsigned numThreads_{ 8 };
     /// Ray position offset.
     float rayPositionOffset_{ 0.001f };
     /// Number of bounces.
-    unsigned numBounces_{ 1 };
+    unsigned numBounces_{ 2 };
 };
 
 }

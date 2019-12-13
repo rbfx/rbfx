@@ -73,12 +73,15 @@ static void RandomDirection(Vector3& result)
 }
 
 /// Generate random hemisphere direction.
-static void RandomHemisphereDirection(Vector3& result, const Vector3& normal)
+static Vector3 RandomHemisphereDirection(const Vector3& normal)
 {
+    Vector3 result;
     RandomDirection(result);
 
     if (result.DotProduct(normal) < 0)
         result = -result;
+
+    return result;
 }
 
 /// Fill 2D Gauss kernel.
@@ -182,12 +185,17 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
+    assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
+
     ParallelFor(bakedIndirect.light_.size(), settings.numThreads_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCScene scene = embreeScene.GetEmbreeScene();
         const float maxDistance = embreeScene.GetMaxDistance();
         const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
+
+        Vector3 incomingSamples[LightmapTracingSettings::MaxBounces];
+        float incomingFactors[LightmapTracingSettings::MaxBounces];
 
         RTCRayHit rayHit;
         RTCIntersectContext rayContext;
@@ -208,18 +216,18 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
             if (!geometryId)
                 continue;
 
-            float indirectLight = 0.0f;
+            int numSamples = 0;
             Vector3 currentPosition = position;
             Vector3 currentNormal = smoothNormal;
+
             for (unsigned j = 0; j < settings.numBounces_; ++j)
             {
                 // Get new ray direction
-                Vector3 rayDirection;
-                RandomHemisphereDirection(rayDirection, currentNormal);
+                const Vector3 rayDirection = RandomHemisphereDirection(currentNormal);
 
-                rayHit.ray.org_x = currentPosition.x_;
-                rayHit.ray.org_y = currentPosition.y_;
-                rayHit.ray.org_z = currentPosition.z_;
+                rayHit.ray.org_x = currentPosition.x_ + currentNormal.x_ * settings.rayPositionOffset_;
+                rayHit.ray.org_y = currentPosition.y_ + currentNormal.y_ * settings.rayPositionOffset_;
+                rayHit.ray.org_z = currentPosition.z_ + currentNormal.z_ * settings.rayPositionOffset_;
                 rayHit.ray.dir_x = rayDirection.x_;
                 rayHit.ray.dir_y = rayDirection.y_;
                 rayHit.ray.dir_z = rayDirection.z_;
@@ -235,18 +243,37 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                 Vector2 lightmapUV;
                 rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
                     RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
-                const Vector3 bakedDirectLight = bakedDirect[0].SampleNearest(lightmapUV);
 
-                const float incoming = bakedDirectLight.x_ * 1.0f;
+                // Modify incoming flux
                 const float probability = 1 / (2 * M_PI);
                 const float cosTheta = rayDirection.DotProduct(currentNormal);
                 const float reflectance = 1 / M_PI;
                 const float brdf = reflectance / M_PI;
 
-                indirectLight = incoming * brdf * cosTheta / probability;
+                // TODO: Use real index here
+                incomingSamples[j] = bakedDirect[0].SampleNearest(lightmapUV);
+                incomingFactors[j] = brdf * cosTheta / probability;
+                ++numSamples;
+
+                // Go to next hemisphere
+                if (numSamples < settings.numBounces_)
+                {
+                    currentPosition.x_ = rayHit.ray.org_x + rayHit.ray.dir_x * rayHit.ray.tfar;
+                    currentPosition.y_ = rayHit.ray.org_y + rayHit.ray.dir_y * rayHit.ray.tfar;
+                    currentPosition.z_ = rayHit.ray.org_z + rayHit.ray.dir_z * rayHit.ray.tfar;
+                    currentNormal = Vector3(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z).Normalized();
+                }
             }
 
-            bakedIndirect.light_[i] += Vector4(indirectLight, indirectLight, indirectLight, 1);
+            // Accumulate samples back-to-front
+            Vector3 indirectLighting;
+            for (int j = numSamples - 1; j >= 0; --j)
+            {
+                indirectLighting += incomingSamples[j];
+                indirectLighting *= incomingFactors[j];
+            }
+
+            bakedIndirect.light_[i] += Vector4(indirectLighting, 1);
         }
     });
 }
