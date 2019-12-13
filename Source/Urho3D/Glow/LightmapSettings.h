@@ -60,6 +60,8 @@ struct LightmapTracingSettings
     unsigned numThreads_{ 8 };
     /// Ray position offset.
     float rayPositionOffset_{ 0.001f };
+    /// Number of bounces.
+    unsigned numBounces_{ 1 };
 };
 
 }

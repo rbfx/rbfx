@@ -232,94 +232,18 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     BakeDirectionalLight(bakedDirect, bakedGeometry, *impl_->embreeScene_,
         { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
 
+    // Calculate indirect light.
+    BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, bakedGeometry, *impl_->embreeScene_, impl_->settings_.tracing_);
+
     // Copy directional light into output
     for (unsigned i = 0; i < data.backedLighting_.size(); ++i)
     {
         const Vector3& directLight = bakedDirect.light_[i];
+        const Vector4& indirectLight = bakedIndirect.light_[i];
         data.backedLighting_[i] = Color{ directLight.x_, directLight.y_, directLight.z_ };
+        if (indirectLight.w_ > 0)
+            data.backedLighting_[i] += Color{ indirectLight.x_ / indirectLight.w_, indirectLight.y_ / indirectLight.w_, indirectLight.z_ / indirectLight.w_ };
     }
-
-    // Process rows in multiple threads
-    const unsigned numBounces = 1;
-    const unsigned numRayPackets = static_cast<unsigned>(lightmapWidth / RayPacketSize);
-    ParallelForEachRow([&](unsigned y)
-    {
-        RTCScene scene = impl_->embreeScene_->GetEmbreeScene();
-        const auto& geometryIndex = impl_->embreeScene_->GetEmbreeGeometryIndex();
-
-    #if 0
-        alignas(64) RTCRayHit16 rayHit16;
-        alignas(64) int rayValid[RayPacketSize];
-        float diffuseLight[RayPacketSize];
-        float indirectLight[RayPacketSize];
-        ea::fixed_vector<KDNearestNeighbour, 128> nearestPhotons;
-    #endif
-        RTCRayHit rayHit;
-        RTCIntersectContext rayContext;
-        rtcInitIntersectContext(&rayContext);
-
-        for (unsigned rayPacketIndex = 0; rayPacketIndex < numRayPackets; ++rayPacketIndex)
-        {
-            const unsigned fromX = rayPacketIndex * RayPacketSize;
-            const unsigned baseIndex = y * lightmapWidth + fromX;
-
-            for (unsigned i = 0; i < RayPacketSize; ++i)
-            {
-                const unsigned index = baseIndex + i;
-                const Vector3 position = bakedGeometry.geometryPositions_[index];
-                const Vector3 smoothNormal = bakedGeometry.smoothNormals_[index];
-                const unsigned geometryId = bakedGeometry.geometryIds_[index];
-
-                if (!geometryId)
-                    continue;
-
-                float indirectLight = 0.0f;
-                Vector3 currentPosition = position;
-                Vector3 currentNormal = smoothNormal;
-                for (unsigned j = 0; j < numBounces; ++j)
-                {
-                    // Get new ray direction
-                    Vector3 rayDirection;
-                    RandomHemisphereDirection(rayDirection, currentNormal);
-
-                    rayHit.ray.org_x = currentPosition.x_;
-                    rayHit.ray.org_y = currentPosition.y_;
-                    rayHit.ray.org_z = currentPosition.z_;
-                    rayHit.ray.dir_x = rayDirection.x_;
-                    rayHit.ray.dir_y = rayDirection.y_;
-                    rayHit.ray.dir_z = rayDirection.z_;
-                    rayHit.ray.tnear = 0.0f;
-                    rayHit.ray.tfar = impl_->embreeScene_->GetMaxDistance() * 2;
-                    rayHit.ray.time = 0.0f;
-                    rayHit.ray.id = 0;
-                    rayHit.ray.mask = 0xffffffff;
-                    rayHit.ray.flags = 0xffffffff;
-                    rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                    rtcIntersect1(scene, &rayContext, &rayHit);
-
-                    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
-                        continue;
-
-                    // Sample lightmap UV
-                    RTCGeometry geometry = geometryIndex[rayHit.hit.geomID].embreeGeometry_;
-                    Vector2 lightmapUV;
-                    rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
-                        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
-                    const Vector3 bakedDirectLight = bakedDirect.SampleNearest(lightmapUV);
-
-                    const float incoming = bakedDirectLight.x_ * 1.0f;
-                    const float probability = 1 / (2 * M_PI);
-                    const float cosTheta = rayDirection.DotProduct(currentNormal);
-                    const float reflectance = 1 / M_PI;
-                    const float brdf = reflectance / M_PI;
-
-                    indirectLight = incoming * brdf * cosTheta / probability;
-                }
-
-                data.backedLighting_[index] += Color::WHITE * indirectLight;
-            }
-        }
-    });
 
     // Gauss pre-pass
     {
