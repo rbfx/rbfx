@@ -73,9 +73,10 @@ struct LightmapBakerImpl
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
         , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
         , bakedLighting_(InitializeLightmapChartsBakedLighting(charts_))
-        , embreeScene_(CreateEmbreeScene(context_, lightObstacles))
         , lights_(lights)
     {
+        ApplyLightmapCharts(charts_, 0);
+        embreeScene_ = CreateEmbreeScene(context_, lightObstacles);
     }
     /// Validate settings and whatever.
     bool Validate() const
@@ -240,6 +241,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     ParallelForEachRow([&](unsigned y)
     {
         RTCScene scene = impl_->embreeScene_->GetEmbreeScene();
+        const auto& geometryIndex = impl_->embreeScene_->GetEmbreeGeometryIndex();
 
     #if 0
         alignas(64) RTCRayHit16 rayHit16;
@@ -294,26 +296,18 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
                         continue;
 
-                    // Cast direct ray
-                    rayHit.ray.org_x += rayHit.ray.dir_x * rayHit.ray.tfar;
-                    rayHit.ray.org_y += rayHit.ray.dir_y * rayHit.ray.tfar;
-                    rayHit.ray.org_z += rayHit.ray.dir_z * rayHit.ray.tfar;
-                    rayHit.ray.dir_x = lightRayDirection.x_;
-                    rayHit.ray.dir_y = lightRayDirection.y_;
-                    rayHit.ray.dir_z = lightRayDirection.z_;
-                    rayHit.ray.tnear = 0.0f;
-                    rayHit.ray.tfar = impl_->embreeScene_->GetMaxDistance() * 2;
-                    rayHit.ray.time = 0.0f;
-                    rayHit.ray.id = 0;
-                    rayHit.ray.mask = 0xffffffff;
-                    rayHit.ray.flags = 0xffffffff;
-                    rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                    rtcIntersect1(scene, &rayContext, &rayHit);
+                    // Sample lightmap UV
+                    RTCGeometry geometry = geometryIndex[rayHit.hit.geomID].embreeGeometry_;
+                    Vector2 lightmapUV;
+                    rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
+                    const IntVector2 chartSize(bakedLighting.width_, bakedLighting.height_);
+                    const IntVector2 lightmapTexel = VectorMin(chartSize - IntVector2::ONE * 1,
+                        VectorFloorToInt(lightmapUV * Vector2(chartSize)));
+                    unsigned sampleIndex = lightmapTexel.x_ + lightmapTexel.y_ * bakedLighting.width_;
+                    const Vector3 bakedDirectLighting = bakedLighting.directLighting_[sampleIndex];
 
-                    if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-                        continue;
-
-                    const float incoming = 1.0f;
+                    const float incoming = bakedDirectLighting.x_ * 1.0f;
                     const float probability = 1 / (2 * M_PI);
                     const float cosTheta = rayDirection.DotProduct(currentNormal);
                     const float reflectance = 1 / M_PI;
@@ -500,7 +494,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 
 void LightmapBaker::ApplyLightmapsToScene(unsigned baseLightmapIndex)
 {
-    ApplyLightmapCharts(impl_->charts_, baseLightmapIndex);
+    //ApplyLightmapCharts(impl_->charts_, baseLightmapIndex);
 }
 
 }
