@@ -55,6 +55,32 @@ void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
         task.wait();
 }
 
+/// Generate random direction.
+static void RandomDirection(Vector3& result)
+{
+    float len;
+
+    do
+    {
+        result.x_ = Random(-1.0f, 1.0f);
+        result.y_ = Random(-1.0f, 1.0f);
+        result.z_ = Random(-1.0f, 1.0f);
+        len = result.Length();
+
+    } while (len > 1.0f);
+
+    result /= len;
+}
+
+/// Generate random hemisphere direction.
+static void RandomHemisphereDirection(Vector3& result, const Vector3& normal)
+{
+    RandomDirection(result);
+
+    if (result.DotProduct(normal) < 0)
+        result = -result;
+}
+
 ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts)
 {
     ea::vector<LightmapChartBakedDirect> chartsBakedDirect;
@@ -116,6 +142,79 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             const float directLight = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
 
             bakedDirect.light_[i] += lightColor * shadowFactor * directLight;
+        }
+    });
+}
+
+void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
+    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
+{
+    ParallelFor(bakedIndirect.light_.size(), settings.numThreads_,
+        [&](unsigned fromIndex, unsigned toIndex)
+    {
+        RTCScene scene = embreeScene.GetEmbreeScene();
+        const float maxDistance = embreeScene.GetMaxDistance();
+        const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
+
+        RTCRayHit rayHit;
+        RTCIntersectContext rayContext;
+        rtcInitIntersectContext(&rayContext);
+
+        rayHit.ray.tnear = 0.0f;
+        rayHit.ray.time = 0.0f;
+        rayHit.ray.id = 0;
+        rayHit.ray.mask = 0xffffffff;
+        rayHit.ray.flags = 0xffffffff;
+
+        for (unsigned i = fromIndex; i < toIndex; ++i)
+        {
+            const Vector3 position = bakedGeometry.geometryPositions_[i];
+            const Vector3 smoothNormal = bakedGeometry.smoothNormals_[i];
+            const unsigned geometryId = bakedGeometry.geometryIds_[i];
+
+            if (!geometryId)
+                continue;
+
+            float indirectLight = 0.0f;
+            Vector3 currentPosition = position;
+            Vector3 currentNormal = smoothNormal;
+            for (unsigned j = 0; j < settings.numBounces_; ++j)
+            {
+                // Get new ray direction
+                Vector3 rayDirection;
+                RandomHemisphereDirection(rayDirection, currentNormal);
+
+                rayHit.ray.org_x = currentPosition.x_;
+                rayHit.ray.org_y = currentPosition.y_;
+                rayHit.ray.org_z = currentPosition.z_;
+                rayHit.ray.dir_x = rayDirection.x_;
+                rayHit.ray.dir_y = rayDirection.y_;
+                rayHit.ray.dir_z = rayDirection.z_;
+                rayHit.ray.tfar = maxDistance;
+                rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                rtcIntersect1(scene, &rayContext, &rayHit);
+
+                if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
+                    continue;
+
+                // Sample lightmap UV
+                RTCGeometry geometry = geometryIndex[rayHit.hit.geomID].embreeGeometry_;
+                Vector2 lightmapUV;
+                rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                    RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
+                const Vector3 bakedDirectLight = bakedDirect[0].SampleNearest(lightmapUV);
+
+                const float incoming = bakedDirectLight.x_ * 1.0f;
+                const float probability = 1 / (2 * M_PI);
+                const float cosTheta = rayDirection.DotProduct(currentNormal);
+                const float reflectance = 1 / M_PI;
+                const float brdf = reflectance / M_PI;
+
+                indirectLight = incoming * brdf * cosTheta / probability;
+            }
+
+            bakedIndirect.light_[i] += Vector4(1, 1, 1, 1) * indirectLight;
         }
     });
 }
