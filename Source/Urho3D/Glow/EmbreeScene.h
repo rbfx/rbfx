@@ -36,15 +36,30 @@ namespace Urho3D
 class Context;
 class Node;
 
+/// Embree geometry.
+struct EmbreeGeometry
+{
+    /// Node.
+    Node* node_{};
+    /// Geometry index.
+    unsigned geometryIndex_{};
+    /// Geometry LOD.
+    unsigned geometryLOD_{};
+    /// Internal geometry pointer.
+    RTCGeometry embreeGeometry_{};
+};
+
 /// Embree scene.
 class EmbreeScene : public RefCounted
 {
 public:
     /// Construct.
-    EmbreeScene(Context* context, RTCDevice embreeDevice, RTCScene embreeScene, float maxDistance)
+    EmbreeScene(Context* context, RTCDevice embreeDevice, RTCScene embreeScene,
+        ea::vector<EmbreeGeometry> geometries, float maxDistance)
         : context_(context)
         , device_(embreeDevice)
         , scene_(embreeScene)
+        , geometries_(ea::move(geometries))
         , maxDistance_(maxDistance)
     {
     }
@@ -57,6 +72,8 @@ public:
     RTCDevice GetEmbreeDevice() const { return device_; }
     /// Get Embree scene.
     RTCScene GetEmbreeScene() const { return scene_; }
+    /// Get Embree geometries.
+    const ea::vector<EmbreeGeometry>& GetEmbreeGeometryIndex() const { return geometries_; }
     /// Get max distance between two points.
     float GetMaxDistance() const { return maxDistance_; }
 
@@ -67,6 +84,8 @@ private:
     RTCDevice device_{};
     /// Embree scene.
     RTCScene scene_{};
+    /// Embree geometries.
+    ea::vector<EmbreeGeometry> geometries_;
     /// Max distance between two points.
     float maxDistance_{};
 };
