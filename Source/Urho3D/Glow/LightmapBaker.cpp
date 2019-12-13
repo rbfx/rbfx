@@ -305,11 +305,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
                     Vector2 lightmapUV;
                     rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
                         RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
-                    const IntVector2 chartSize(bakedDirect.width_, bakedDirect.height_);
-                    const IntVector2 lightmapTexel = VectorMin(chartSize - IntVector2::ONE * 1,
-                        VectorFloorToInt(lightmapUV * Vector2(chartSize)));
-                    unsigned sampleIndex = lightmapTexel.x_ + lightmapTexel.y_ * bakedDirect.width_;
-                    const Vector3 bakedDirectLight = bakedDirect.light_[sampleIndex];
+                    const Vector3 bakedDirectLight = bakedDirect.SampleNearest(lightmapUV);
 
                     const float incoming = bakedDirectLight.x_ * 1.0f;
                     const float probability = 1 / (2 * M_PI);

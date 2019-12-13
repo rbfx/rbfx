@@ -41,14 +41,28 @@ struct LightmapChartBakedDirect
     LightmapChartBakedDirect(unsigned width, unsigned height)
         : width_(width)
         , height_(height)
+        , realWidth_(static_cast<float>(width_))
+        , realHeight_(static_cast<float>(height_))
         , light_(width_ * height_)
     {
+    }
+    /// Sample nearest point.
+    const Vector3& SampleNearest(const Vector2& uv) const
+    {
+        const int x = FloorToInt(ea::min(uv.x_ * realWidth_, realWidth_ - 1.0f));
+        const int y = FloorToInt(ea::min(uv.y_ * realHeight_, realHeight_ - 1.0f));
+        const unsigned index = x + y * width_;
+        return light_[index];
     }
 
     /// Width of the chart.
     unsigned width_{};
     /// Height of the chart.
     unsigned height_{};
+    /// Width of the chart as float.
+    float realWidth_{};
+    /// Height of the chart as float.
+    float realHeight_{};
     /// Accumulated light.
     ea::vector<Vector3> light_;
 };
