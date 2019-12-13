@@ -81,6 +81,38 @@ static void RandomHemisphereDirection(Vector3& result, const Vector3& normal)
         result = -result;
 }
 
+/// Fill 2D Gauss kernel.
+template <int N>
+void FillGaussKernel2D(IntVector2 (&offsets)[N*N], float (&weights)[N*N], const int (&kernel1D)[N], float denominator)
+{
+    for (int x = 0; x < N; ++x)
+    {
+        for (int y = 0; y < N; ++y)
+        {
+            const int i = x + y * N;
+            offsets[i] = { x - N / 2, y - N / 2 };
+            weights[i] = kernel1D[x] * kernel1D[y] / denominator;
+        }
+    }
+}
+
+/// Filter indirect light with NxN kernel.
+template <int N>
+void FilterIndirectLightNxN(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads, const int (&kernel1D)[N], float denominator)
+{
+    IntVector2 offsets[N * N];
+    float weights[N * N];
+    FillGaussKernel2D(offsets, weights, kernel1D, denominator);
+
+    IndirectFilterParameters paramsCopy = params;
+    paramsCopy.kernelSize_ = N * N;
+    paramsCopy.offsets_ = offsets;
+    paramsCopy.weights_ = weights;
+
+    FilterIndirectLight(bakedIndirect, bakedGeometry, paramsCopy, numThreads);
+}
+
 ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts)
 {
     ea::vector<LightmapChartBakedDirect> chartsBakedDirect;
@@ -214,9 +246,89 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                 indirectLight = incoming * brdf * cosTheta / probability;
             }
 
-            bakedIndirect.light_[i] += Vector4(1, 1, 1, 1) * indirectLight;
+            bakedIndirect.light_[i] += Vector4(indirectLight, indirectLight, indirectLight, 1);
         }
     });
+}
+
+void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads)
+{
+    assert(params.offsets_.size() == params.kernelSize_);
+    assert(params.weights_.size() == params.kernelSize_);
+
+    ParallelFor(bakedIndirect.light_.size(), numThreads,
+        [&](unsigned fromIndex, unsigned toIndex)
+    {
+        const IntVector2 sizeMinusOne{ static_cast<int>(bakedIndirect.width_ - 1), static_cast<int>(bakedIndirect.height_ - 1) };
+        for (unsigned i = fromIndex; i < toIndex; ++i)
+        {
+            const unsigned geometryId = bakedGeometry.geometryIds_[i];
+            if (!geometryId)
+                continue;
+
+            const IntVector2 baseIndex{ static_cast<int>(i % bakedIndirect.width_), static_cast<int>(i / bakedIndirect.width_) };
+            const IntVector2 minOffset = -baseIndex;
+            const IntVector2 maxOffset = sizeMinusOne - baseIndex;
+
+            const Vector4 baseColor = bakedIndirect.light_[i];
+            const Vector3 basePosition = bakedGeometry.geometryPositions_[i];
+            const Vector3 baseNormal = bakedGeometry.smoothNormals_[i];
+
+            Vector4 colorSum;
+            float weightSum = 0.0f;
+            for (unsigned k = 0; k < params.kernelSize_; ++k)
+            {
+                const IntVector2 offset = params.offsets_[k] * params.upscale_;
+                const IntVector2 clampedOffset = VectorMax(minOffset, VectorMin(offset, maxOffset));
+                const unsigned j = i + clampedOffset.y_ * bakedIndirect.width_ + clampedOffset.x_;
+
+                const unsigned otherGeometryId = bakedGeometry.geometryIds_[j];
+                if (!otherGeometryId)
+                    continue;
+
+                const Vector4 otherColor = bakedIndirect.light_[j];
+                const Vector4 colorDelta = baseColor - otherColor;
+                const float colorDeltaSquared = colorDelta.DotProduct(colorDelta);
+                const float colorWeight = ea::min(std::exp(-colorDeltaSquared / params.colorWeight_), 1.0f);
+
+                const Vector3 otherPosition = bakedGeometry.geometryPositions_[j];
+                const Vector3 positionDelta = basePosition - otherPosition;
+                const float positionDeltaSquared = positionDelta.DotProduct(positionDelta);
+                const float positionWeight = ea::min(std::exp(-positionDeltaSquared / params.positionWeight_), 1.0f);
+
+                const Vector3 otherNormal = bakedGeometry.smoothNormals_[j];
+                const float normalDeltaCos = ea::max(0.0f, baseNormal.DotProduct(otherNormal));
+                const float normalWeight = std::pow(normalDeltaCos, params.normalWeight_);
+
+                const float weight = colorWeight * positionWeight * normalWeight * params.weights_[k];
+                colorSum += otherColor * weight;
+                weightSum += weight;
+            }
+
+            if (weightSum > 0.0f)
+                bakedIndirect.lightSwap_[i] = colorSum / weightSum;
+            else
+                bakedIndirect.lightSwap_[i] = Vector4::ZERO;
+        }
+    });
+
+    // Swap buffers
+    ea::swap(bakedIndirect.light_, bakedIndirect.lightSwap_);
+}
+
+void FilterIndirectLight3x3(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads)
+{
+    const int kernel1D[] = { 1, 2, 1 };
+    FilterIndirectLightNxN(bakedIndirect, bakedGeometry, params, numThreads, kernel1D, 16.0f);
+}
+
+void FilterIndirectLight5x5(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads)
+{
+    const int kernel1D[] = { 1, 4, 6, 4, 1 };
+    FilterIndirectLightNxN(bakedIndirect, bakedGeometry, params, numThreads, kernel1D, 256.0f);
 }
 
 }

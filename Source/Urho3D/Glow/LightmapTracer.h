@@ -77,7 +77,17 @@ struct LightmapChartBakedIndirect
         : width_(width)
         , height_(height)
         , light_(width_ * height_)
+        , lightSwap_(width_ * height_)
     {
+    }
+    /// Normalize indirect light.
+    void NormalizeLight()
+    {
+        for (Vector4& value : light_)
+        {
+            if (value.w_ > 0)
+                value /= value.w_;
+        }
     }
 
     /// Width of the chart.
@@ -86,6 +96,8 @@ struct LightmapChartBakedIndirect
     unsigned height_{};
     /// Indirect light. W component represents normalization weight.
     ea::vector<Vector4> light_;
+    /// Swap buffer for indirect light. Used by filters.
+    ea::vector<Vector4> lightSwap_;
 };
 
 /// Initialize baked direct light for lightmap charts.
@@ -111,5 +123,37 @@ URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, cons
 URHO3D_API void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
+
+/// Parameters for indirect light filtering.
+struct IndirectFilterParameters
+{
+    /// Upscale factor for offsets.
+    int upscale_{ 1 };
+    /// Color weight. The lesser value is, the more color details are preserved on flat surface.
+    float colorWeight_{ 10.0f };
+    /// Normal weight. The higher value is, the more color details are preserved on normal edges.
+    float normalWeight_{ 4.0f };
+    /// Position weight. The lesser value is, the more color details are preserved on position edges.
+    float positionWeight_{ 1.0f };
+
+    /// Size of the kernel.
+    int kernelSize_{ 0 };
+    /// Weights.
+    ea::span<float> weights_;
+    /// Offsets.
+    ea::span<IntVector2> offsets_;
+};
+
+/// Filter indirect light.
+URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads);
+
+/// Filter indirect light with 3x3 kernel.
+URHO3D_API void FilterIndirectLight3x3(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads);
+
+/// Filter indirect light with 5x5 kernel.
+URHO3D_API void FilterIndirectLight5x5(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const IndirectFilterParameters& params, unsigned numThreads);
 
 }
