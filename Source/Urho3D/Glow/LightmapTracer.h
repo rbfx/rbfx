@@ -32,17 +32,16 @@ namespace Urho3D
 
 class EmbreeScene;
 
-/// Lighting accumulated for given lightmap chart.
-struct LightmapChartBakedLighting
+/// Direct light accumulated for given lightmap chart.
+struct LightmapChartBakedDirect
 {
     /// Construct default.
-    LightmapChartBakedLighting() = default;
+    LightmapChartBakedDirect() = default;
     /// Construct valid.
-    LightmapChartBakedLighting(unsigned width, unsigned height)
+    LightmapChartBakedDirect(unsigned width, unsigned height)
         : width_(width)
         , height_(height)
-        , directLighting_(width_ * height_)
-        , indirectLighting_(width_ * height_)
+        , light_(width_ * height_)
     {
     }
 
@@ -50,14 +49,36 @@ struct LightmapChartBakedLighting
     unsigned width_{};
     /// Height of the chart.
     unsigned height_{};
-    /// Direct lighting.
-    ea::vector<Vector3> directLighting_;
-    /// Indirect lighting. W component represents normalization weight.
-    ea::vector<Vector4> indirectLighting_;
+    /// Accumulated light.
+    ea::vector<Vector3> light_;
 };
 
-/// Initialize baked lighting for lightmap charts.
-URHO3D_API ea::vector<LightmapChartBakedLighting> InitializeLightmapChartsBakedLighting(const LightmapChartVector& charts);
+/// Indirect light accumulated for given lightmap chart.
+struct LightmapChartBakedIndirect
+{
+    /// Construct default.
+    LightmapChartBakedIndirect() = default;
+    /// Construct valid.
+    LightmapChartBakedIndirect(unsigned width, unsigned height)
+        : width_(width)
+        , height_(height)
+        , light_(width_ * height_)
+    {
+    }
+
+    /// Width of the chart.
+    unsigned width_{};
+    /// Height of the chart.
+    unsigned height_{};
+    /// Indirect light. W component represents normalization weight.
+    ea::vector<Vector4> light_;
+};
+
+/// Initialize baked direct light for lightmap charts.
+URHO3D_API ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts);
+
+/// Initialize baked direct light for lightmap charts.
+URHO3D_API ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(const LightmapChartVector& charts);
 
 /// Directional light parameters.
 struct DirectionalLightParameters
@@ -68,8 +89,8 @@ struct DirectionalLightParameters
     Color color_;
 };
 
-/// Accumulate direct lighting from directional light.
-URHO3D_API void BakeDirectionalLight(LightmapChartBakedLighting& bakedLighting, const LightmapChartBakedGeometry& bakedGeometry,
+/// Accumulate direct light from directional light.
+URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
     const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
 }
