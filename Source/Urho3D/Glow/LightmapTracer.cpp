@@ -302,18 +302,22 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
             const Vector3 centerPosition = bakedGeometry.geometryPositions_[index];
             const Vector3 centerNormal = bakedGeometry.smoothNormals_[index];
 
-            Vector4 colorSum;
-            float colorWeight = 0.0f;
+            float colorWeight = kernelWeights[0] * kernelWeights[0];
+            Vector4 colorSum = centerColor * colorWeight;
             for (int dy = -params.kernelRadius_; dy <= params.kernelRadius_; ++dy)
             {
                 for (int dx = -params.kernelRadius_; dx <= params.kernelRadius_; ++dx)
                 {
-                    const float kernel = kernelWeights[Abs(dx)] * kernelWeights[Abs(dy)];
+                    if (dx == 0 && dy == 0)
+                        continue;
 
                     const IntVector2 offset = IntVector2{ dx, dy } * params.upscale_;
                     const IntVector2 otherLocation = centerLocation + offset;
                     if (!bakedGeometry.IsValidLocation(otherLocation))
                         continue;
+
+                    const float dxdy = Vector2{ static_cast<float>(dx), static_cast<float>(dy) }.Length();
+                    const float kernel = kernelWeights[Abs(dx)] * kernelWeights[Abs(dy)];
 
                     const unsigned otherIndex = bakedGeometry.LocationToIndex(otherLocation);
                     const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
@@ -322,7 +326,7 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
                     const Vector4 otherColor = bakedIndirect.light_[otherIndex];
                     const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
-                        centerPosition, bakedGeometry.geometryPositions_[otherIndex], params.positionSigma_,
+                        centerPosition, bakedGeometry.geometryPositions_[otherIndex], dxdy * params.positionSigma_,
                         centerNormal, bakedGeometry.smoothNormals_[otherIndex], params.normalPower_);
 
                     colorSum += otherColor * weight * kernel;
