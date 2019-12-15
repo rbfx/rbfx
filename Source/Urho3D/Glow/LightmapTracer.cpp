@@ -84,36 +84,21 @@ static Vector3 RandomHemisphereDirection(const Vector3& normal)
     return result;
 }
 
-/// Fill 2D Gauss kernel.
-template <int N>
-void FillGaussKernel2D(IntVector2 (&offsets)[N*N], float (&weights)[N*N], const int (&kernel1D)[N], float denominator)
+/// Get Gauss kernel of given radius.
+ea::span<const float> GetKernel(int radius)
 {
-    for (int x = 0; x < N; ++x)
+    static const float k0[] = { 1 };
+    static const float k1[] = { 2 / 4.0f, 1 / 4.0f };
+    static const float k2[] = { 6 / 16.0f, 4 / 16.0, 1.0 / 16.0 };
+    switch (radius)
     {
-        for (int y = 0; y < N; ++y)
-        {
-            const int i = x + y * N;
-            offsets[i] = { x - N / 2, y - N / 2 };
-            weights[i] = kernel1D[x] * kernel1D[y] / denominator;
-        }
+    case 0: return k0;
+    case 1: return k1;
+    case 2: return k2;
+    default:
+        assert(0);
+        return {};
     }
-}
-
-/// Filter indirect light with NxN kernel.
-template <int N>
-void FilterIndirectLightNxN(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
-    const IndirectFilterParameters& params, unsigned numThreads, const int (&kernel1D)[N], float denominator)
-{
-    IntVector2 offsets[N * N];
-    float weights[N * N];
-    FillGaussKernel2D(offsets, weights, kernel1D, denominator);
-
-    IndirectFilterParameters paramsCopy = params;
-    paramsCopy.kernelSize_ = N * N;
-    paramsCopy.offsets_ = offsets;
-    paramsCopy.weights_ = weights;
-
-    FilterIndirectLight(bakedIndirect, bakedGeometry, paramsCopy, numThreads);
 }
 
 /// Get luminance of given color value.
@@ -300,9 +285,7 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
 void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
     const IndirectFilterParameters& params, unsigned numThreads)
 {
-    assert(params.offsets_.size() == params.kernelSize_);
-    assert(params.weights_.size() == params.kernelSize_);
-
+    const ea::span<const float> kernelWeights = GetKernel(params.kernelRadius_);
     ParallelFor(bakedIndirect.light_.size(), numThreads,
         [&](unsigned fromIndex, unsigned toIndex)
     {
@@ -321,25 +304,30 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
             Vector4 colorSum;
             float colorWeight = 0.0f;
-            for (unsigned k = 0; k < params.kernelSize_; ++k)
+            for (int dy = -params.kernelRadius_; dy <= params.kernelRadius_; ++dy)
             {
-                const IntVector2 offset = params.offsets_[k] * params.upscale_;
-                const IntVector2 otherLocation = centerLocation + offset;
-                if (!bakedGeometry.IsValidLocation(otherLocation))
-                    continue;
+                for (int dx = -params.kernelRadius_; dx <= params.kernelRadius_; ++dx)
+                {
+                    const float kernel = kernelWeights[Abs(dx)] * kernelWeights[Abs(dy)];
 
-                const unsigned otherIndex = bakedGeometry.LocationToIndex(otherLocation);
-                const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
-                if (!otherGeometryId)
-                    continue;
+                    const IntVector2 offset = IntVector2{ dx, dy } * params.upscale_;
+                    const IntVector2 otherLocation = centerLocation + offset;
+                    if (!bakedGeometry.IsValidLocation(otherLocation))
+                        continue;
 
-                const Vector4 otherColor = bakedIndirect.light_[otherIndex];
-                const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
-                    centerPosition, bakedGeometry.geometryPositions_[otherIndex], params.positionSigma_,
-                    centerNormal, bakedGeometry.smoothNormals_[otherIndex], params.normalPower_);
+                    const unsigned otherIndex = bakedGeometry.LocationToIndex(otherLocation);
+                    const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
+                    if (!otherGeometryId)
+                        continue;
 
-                colorSum += otherColor * weight * params.weights_[k];
-                colorWeight += weight * params.weights_[k];
+                    const Vector4 otherColor = bakedIndirect.light_[otherIndex];
+                    const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
+                        centerPosition, bakedGeometry.geometryPositions_[otherIndex], params.positionSigma_,
+                        centerNormal, bakedGeometry.smoothNormals_[otherIndex], params.normalPower_);
+
+                    colorSum += otherColor * weight * kernel;
+                    colorWeight += weight * kernel;
+                }
             }
 
             bakedIndirect.lightSwap_[index] = colorSum / ea::max(M_EPSILON, colorWeight);
@@ -348,20 +336,6 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
     // Swap buffers
     ea::swap(bakedIndirect.light_, bakedIndirect.lightSwap_);
-}
-
-void FilterIndirectLight3x3(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
-    const IndirectFilterParameters& params, unsigned numThreads)
-{
-    const int kernel1D[] = { 1, 2, 1 };
-    FilterIndirectLightNxN(bakedIndirect, bakedGeometry, params, numThreads, kernel1D, 16.0f);
-}
-
-void FilterIndirectLight5x5(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
-    const IndirectFilterParameters& params, unsigned numThreads)
-{
-    const int kernel1D[] = { 1, 4, 6, 4, 1 };
-    FilterIndirectLightNxN(bakedIndirect, bakedGeometry, params, numThreads, kernel1D, 256.0f);
 }
 
 }
