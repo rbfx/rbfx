@@ -116,6 +116,25 @@ void FilterIndirectLightNxN(LightmapChartBakedIndirect& bakedIndirect, const Lig
     FilterIndirectLight(bakedIndirect, bakedGeometry, paramsCopy, numThreads);
 }
 
+/// Get luminance of given color value.
+static float GetLuminance(const Vector4& color)
+{
+    return Color{ color.x_, color.y_, color.z_ }.Luma();
+}
+
+/// Calculate edge-stopping weight.
+static float CalculateEdgeWeight(
+    float luminance1, float luminance2, float luminanceSigma,
+    const Vector3& position1, const Vector3& position2, float positionSigma,
+    const Vector3& normal1, const Vector3& normal2, float normalPower)
+{
+    const float colorWeight = Abs(luminance1 - luminance2) / luminanceSigma;
+    const float positionWeight = (position1 - position2).LengthSquared() / positionSigma;
+    const float normalWeight = Pow(ea::max(0.0f, normal1.DotProduct(normal2)), normalPower);
+
+    return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
+}
+
 ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts)
 {
     ea::vector<LightmapChartBakedDirect> chartsBakedDirect;
@@ -287,7 +306,6 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
     ParallelFor(bakedIndirect.light_.size(), numThreads,
         [&](unsigned fromIndex, unsigned toIndex)
     {
-        const IntVector2 sizeMinusOne{ static_cast<int>(bakedIndirect.width_ - 1), static_cast<int>(bakedIndirect.height_ - 1) };
         for (unsigned index = fromIndex; index < toIndex; ++index)
         {
             const unsigned geometryId = bakedGeometry.geometryIds_[index];
@@ -297,11 +315,12 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
             const IntVector2 centerLocation = bakedGeometry.IndexToLocation(index);
 
             const Vector4 centerColor = bakedIndirect.light_[index];
+            const float centerLuminance = GetLuminance(centerColor);
             const Vector3 centerPosition = bakedGeometry.geometryPositions_[index];
             const Vector3 centerNormal = bakedGeometry.smoothNormals_[index];
 
             Vector4 colorSum;
-            float weightSum = 0.0f;
+            float colorWeight = 0.0f;
             for (unsigned k = 0; k < params.kernelSize_; ++k)
             {
                 const IntVector2 offset = params.offsets_[k] * params.upscale_;
@@ -315,28 +334,15 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
                     continue;
 
                 const Vector4 otherColor = bakedIndirect.light_[otherIndex];
-                const Vector4 colorDelta = centerColor - otherColor;
-                const float colorDeltaSquared = colorDelta.DotProduct(colorDelta);
-                const float colorWeight = ea::min(std::exp(-colorDeltaSquared / params.colorSigma_), 1.0f);
+                const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
+                    centerPosition, bakedGeometry.geometryPositions_[otherIndex], params.positionSigma_,
+                    centerNormal, bakedGeometry.smoothNormals_[otherIndex], params.normalPower_);
 
-                const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
-                const Vector3 positionDelta = centerPosition - otherPosition;
-                const float positionDeltaSquared = positionDelta.DotProduct(positionDelta);
-                const float positionWeight = ea::min(std::exp(-positionDeltaSquared / params.positionSigma_), 1.0f);
-
-                const Vector3 otherNormal = bakedGeometry.smoothNormals_[otherIndex];
-                const float normalDeltaCos = ea::max(0.0f, centerNormal.DotProduct(otherNormal));
-                const float normalWeight = std::pow(normalDeltaCos, params.normalSigma_);
-
-                const float weight = colorWeight * positionWeight * normalWeight * params.weights_[k];
-                colorSum += otherColor * weight;
-                weightSum += weight;
+                colorSum += otherColor * weight * params.weights_[k];
+                colorWeight += weight * params.weights_[k];
             }
 
-            if (weightSum > 0.0f)
-                bakedIndirect.lightSwap_[index] = colorSum / weightSum;
-            else
-                bakedIndirect.lightSwap_[index] = Vector4::ZERO;
+            bakedIndirect.lightSwap_[index] = colorSum / ea::max(M_EPSILON, colorWeight);
         }
     });
 
