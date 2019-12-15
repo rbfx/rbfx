@@ -130,11 +130,11 @@ struct IndirectFilterParameters
     /// Upscale factor for offsets.
     int upscale_{ 1 };
     /// Color weight. The lesser value is, the more color details are preserved on flat surface.
-    float colorWeight_{ 10.0f };
+    float colorSigma_{ 10.0f };
     /// Normal weight. The higher value is, the more color details are preserved on normal edges.
-    float normalWeight_{ 4.0f };
+    float normalSigma_{ 4.0f };
     /// Position weight. The lesser value is, the more color details are preserved on position edges.
-    float positionWeight_{ 1.0f };
+    float positionSigma_{ 1.0f };
 
     /// Size of the kernel.
     int kernelSize_{ 0 };

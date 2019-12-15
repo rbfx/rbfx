@@ -288,45 +288,45 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
         [&](unsigned fromIndex, unsigned toIndex)
     {
         const IntVector2 sizeMinusOne{ static_cast<int>(bakedIndirect.width_ - 1), static_cast<int>(bakedIndirect.height_ - 1) };
-        for (unsigned i = fromIndex; i < toIndex; ++i)
+        for (unsigned index = fromIndex; index < toIndex; ++index)
         {
-            const unsigned geometryId = bakedGeometry.geometryIds_[i];
+            const unsigned geometryId = bakedGeometry.geometryIds_[index];
             if (!geometryId)
                 continue;
 
-            const IntVector2 baseIndex{ static_cast<int>(i % bakedIndirect.width_), static_cast<int>(i / bakedIndirect.width_) };
-            const IntVector2 minOffset = -baseIndex;
-            const IntVector2 maxOffset = sizeMinusOne - baseIndex;
+            const IntVector2 centerLocation = bakedGeometry.IndexToLocation(index);
 
-            const Vector4 baseColor = bakedIndirect.light_[i];
-            const Vector3 basePosition = bakedGeometry.geometryPositions_[i];
-            const Vector3 baseNormal = bakedGeometry.smoothNormals_[i];
+            const Vector4 centerColor = bakedIndirect.light_[index];
+            const Vector3 centerPosition = bakedGeometry.geometryPositions_[index];
+            const Vector3 centerNormal = bakedGeometry.smoothNormals_[index];
 
             Vector4 colorSum;
             float weightSum = 0.0f;
             for (unsigned k = 0; k < params.kernelSize_; ++k)
             {
                 const IntVector2 offset = params.offsets_[k] * params.upscale_;
-                const IntVector2 clampedOffset = VectorMax(minOffset, VectorMin(offset, maxOffset));
-                const unsigned j = i + clampedOffset.y_ * bakedIndirect.width_ + clampedOffset.x_;
+                const IntVector2 otherLocation = centerLocation + offset;
+                if (!bakedGeometry.IsValidLocation(otherLocation))
+                    continue;
 
-                const unsigned otherGeometryId = bakedGeometry.geometryIds_[j];
+                const unsigned otherIndex = bakedGeometry.LocationToIndex(otherLocation);
+                const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
                 if (!otherGeometryId)
                     continue;
 
-                const Vector4 otherColor = bakedIndirect.light_[j];
-                const Vector4 colorDelta = baseColor - otherColor;
+                const Vector4 otherColor = bakedIndirect.light_[otherIndex];
+                const Vector4 colorDelta = centerColor - otherColor;
                 const float colorDeltaSquared = colorDelta.DotProduct(colorDelta);
-                const float colorWeight = ea::min(std::exp(-colorDeltaSquared / params.colorWeight_), 1.0f);
+                const float colorWeight = ea::min(std::exp(-colorDeltaSquared / params.colorSigma_), 1.0f);
 
-                const Vector3 otherPosition = bakedGeometry.geometryPositions_[j];
-                const Vector3 positionDelta = basePosition - otherPosition;
+                const Vector3 otherPosition = bakedGeometry.geometryPositions_[otherIndex];
+                const Vector3 positionDelta = centerPosition - otherPosition;
                 const float positionDeltaSquared = positionDelta.DotProduct(positionDelta);
-                const float positionWeight = ea::min(std::exp(-positionDeltaSquared / params.positionWeight_), 1.0f);
+                const float positionWeight = ea::min(std::exp(-positionDeltaSquared / params.positionSigma_), 1.0f);
 
-                const Vector3 otherNormal = bakedGeometry.smoothNormals_[j];
-                const float normalDeltaCos = ea::max(0.0f, baseNormal.DotProduct(otherNormal));
-                const float normalWeight = std::pow(normalDeltaCos, params.normalWeight_);
+                const Vector3 otherNormal = bakedGeometry.smoothNormals_[otherIndex];
+                const float normalDeltaCos = ea::max(0.0f, centerNormal.DotProduct(otherNormal));
+                const float normalWeight = std::pow(normalDeltaCos, params.normalSigma_);
 
                 const float weight = colorWeight * positionWeight * normalWeight * params.weights_[k];
                 colorSum += otherColor * weight;
@@ -334,9 +334,9 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
             }
 
             if (weightSum > 0.0f)
-                bakedIndirect.lightSwap_[i] = colorSum / weightSum;
+                bakedIndirect.lightSwap_[index] = colorSum / weightSum;
             else
-                bakedIndirect.lightSwap_[i] = Vector4::ZERO;
+                bakedIndirect.lightSwap_[index] = Vector4::ZERO;
         }
     });
 
