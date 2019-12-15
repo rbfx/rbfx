@@ -95,6 +95,22 @@ struct LightmapChartBakedGeometry
         , geometryIds_(width * height)
     {
     }
+    /// Convert index to location.
+    IntVector2 IndexToLocation(unsigned index) const
+    {
+        return { static_cast<int>(index % width_), static_cast<int>(index / width_) };
+    }
+    /// Returns whether the location is valid.
+    bool IsValidLocation(const IntVector2& location) const
+    {
+        return 0 <= location.x_ && location.x_ < static_cast<int>(width_)
+            && 0 <= location.y_ && location.y_ < static_cast<int>(height_);
+    }
+    /// Convert location to index.
+    unsigned LocationToIndex(const IntVector2& location) const
+    {
+        return location.x_ + width_ * location.y_;
+    }
 };
 
 /// Bake lightmap geometry for lightmap chart.
