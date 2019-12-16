@@ -199,8 +199,11 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     // Post-process lighting.
     const unsigned numThreads = impl_->settings_.tracing_.numThreads_;
     bakedIndirect.NormalizeLight();
-    FilterIndirectLight5x5(bakedIndirect, bakedGeometry, { 2, 1.0f, 4.0f, 1.0f }, numThreads);
-    FilterIndirectLight5x5(bakedIndirect, bakedGeometry, { 1, 10.0f, 4.0f, 1.0f }, numThreads);
+    //CalculateIndirectVariance(bakedIndirect, bakedGeometry, { 3, 1 }, numThreads);
+    FilterIndirectLight(bakedIndirect, bakedGeometry, { 3, 1, 10.0f, 4.0f, 1.0f }, numThreads);
+    FilterIndirectLight(bakedIndirect, bakedGeometry, { 3, 2, 0.25f, 4.0f, 1.0f }, numThreads);
+    //FilterIndirectLight(bakedIndirect, bakedGeometry, { 2, 4, 0.25f, 4.0f, 1.0f }, numThreads);
+    //FilterIndirectLight(bakedIndirect, bakedGeometry, { 2, 1, 10.0f, 0.0f, 10.0f }, numThreads);
 
     // Copy directional light into output
     for (unsigned i = 0; i < data.backedLighting_.size(); ++i)

@@ -88,13 +88,15 @@ static Vector3 RandomHemisphereDirection(const Vector3& normal)
 ea::span<const float> GetKernel(int radius)
 {
     static const float k0[] = { 1 };
-    static const float k1[] = { 2 / 4.0f, 1 / 4.0f };
-    static const float k2[] = { 6 / 16.0f, 4 / 16.0, 1.0 / 16.0 };
+    static const float k1[] = { 0.44198f, 0.27901f };
+    static const float k2[] = { 0.38774f, 0.24477f, 0.06136f };
+    static const float k3[] = { 0.383103f, 0.241843f, 0.060626f, 0.00598f };
     switch (radius)
     {
     case 0: return k0;
     case 1: return k1;
     case 2: return k2;
+    case 3: return k3;
     default:
         assert(0);
         return {};
@@ -114,7 +116,7 @@ static float CalculateEdgeWeight(
     const Vector3& normal1, const Vector3& normal2, float normalPower)
 {
     const float colorWeight = Abs(luminance1 - luminance2) / luminanceSigma;
-    const float positionWeight = (position1 - position2).LengthSquared() / positionSigma;
+    const float positionWeight = positionSigma > M_EPSILON ? (position1 - position2).LengthSquared() / positionSigma : 0.0f;
     const float normalWeight = Pow(ea::max(0.0f, normal1.DotProduct(normal2)), normalPower);
 
     return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
@@ -240,7 +242,11 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                 rtcIntersect1(scene, &rayContext, &rayHit);
 
                 if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
-                    continue;
+                    break;
+
+                // Check normal orientation
+                if (rayDirection.DotProduct({ rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z }) > 0.0f)
+                    break;
 
                 // Sample lightmap UV
                 RTCGeometry geometry = geometryIndex[rayHit.hit.geomID].embreeGeometry_;
@@ -255,7 +261,8 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                 const float brdf = reflectance / M_PI;
 
                 // TODO: Use real index here
-                incomingSamples[j] = bakedDirect[0].SampleNearest(lightmapUV);
+                const IntVector2 sampleLocation = bakedDirect[0].GetNearestLocation(lightmapUV);
+                incomingSamples[j] = bakedDirect[0].GetLight(sampleLocation);
                 incomingFactors[j] = brdf * cosTheta / probability;
                 ++numSamples;
 
