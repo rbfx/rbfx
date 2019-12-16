@@ -56,7 +56,7 @@ struct LightmapBakingSettings
     /// Tracing settings.
     LightmapTracingSettings tracing_;
     /// Number of indirect samples.
-    unsigned numIndirectSamples_{ 4 };
+    unsigned numIndirectSamples_{ 10 };
 };
 
 /// Lightmap baker API.
