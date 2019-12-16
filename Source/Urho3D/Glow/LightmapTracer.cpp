@@ -55,6 +55,51 @@ void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
         task.wait();
 }
 
+/// Array of pre-generated random directions.
+static const Vector3 randomDirections[16] =
+{
+    { 0.1261011249359089f, -0.3243335571443361f, 0.9375f },
+    { -0.522789582031234f, 0.2579434103046781f, 0.8125f },
+    { 0.6972420064972874f, 0.20297126490130715f, 0.6875f },
+    { -0.4292555116564302f, -0.7066353060190074f, 0.5625f },
+    { -0.17489098099486633f, 0.8820469912463017f, 0.4374999999999999f },
+    { 0.7656372099622851f, -0.5622663183235928f, 0.31249999999999994f },
+    { -0.9765201651685348f, -0.10607599643282929f, 0.18749999999999997f },
+    { 0.6588190400569273f, 0.7497007552740418f, 0.06249999999999993f },
+    { 0.020622927364748606f, -0.9978318720440374f, -0.06250000000000003f },
+    { -0.6783348074811467f, 0.7104263782824479f, -0.18750000000000006f },
+    { 0.9477945559022632f, -0.0634762144588949f, -0.3125f },
+    { -0.702162735202489f, -0.5617483807657655f, -0.4375f },
+    { 0.1271591951810903f, 0.8169603962744446f, -0.5624999999999999f },
+    { 0.4023411805801347f, -0.6045372812402751f, -0.6875f },
+    { -0.5659813812606815f, 0.13967399924914875f, -0.8124999999999999f },
+    { 0.30543888085776905f, 0.16673583915989262f, -0.9375f },
+};
+
+/// Generate random quaternion.
+static Quaternion RandomQuaternion()
+{
+    const float u1 = Random(1.0f);
+    const float u2 = Random(360.0f);
+    const float u3 = Random(360.0f);
+
+    const float su2 = Sin(u2);
+    const float cu2 = Cos(u2);
+    const float su3 = Sin(u3);
+    const float cu3 = Cos(u3);
+    return { Sqrt(1 - u1) * su2, Sqrt(1 - u1) * cu2, Sqrt(u1) * su3, Sqrt(u1) * cu3 };
+}
+
+/// Generate pseudo-random vector in hemisphere.
+static Vector3 PseudoRandomDirectionInHemisphere(const IntVector2& seed, const Quaternion& baseRotation, const Vector3& normal)
+{
+    const auto sx = static_cast<unsigned>(seed.x_) % 4;
+    const auto sy = static_cast<unsigned>(seed.y_) % 4;
+    const Vector3 direction = randomDirections[sx + sy * 4];
+    const Vector3 rotatedDirection = baseRotation * direction;
+    return rotatedDirection.DotProduct(normal) >= 0.0f ? rotatedDirection : -rotatedDirection;
+}
+
 /// Generate random direction.
 static void RandomDirection(Vector3& result)
 {
@@ -193,6 +238,7 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
 
+    const Quaternion baseRotation = RandomQuaternion();
     ParallelFor(bakedIndirect.light_.size(), settings.numThreads_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
@@ -215,6 +261,7 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
 
         for (unsigned i = fromIndex; i < toIndex; ++i)
         {
+            const IntVector2 location = bakedGeometry.IndexToLocation(i);
             const Vector3 position = bakedGeometry.geometryPositions_[i];
             const Vector3 smoothNormal = bakedGeometry.smoothNormals_[i];
             const unsigned geometryId = bakedGeometry.geometryIds_[i];
@@ -225,11 +272,14 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
             int numSamples = 0;
             Vector3 currentPosition = position;
             Vector3 currentNormal = smoothNormal;
+            IntVector2 currentSeed = location;
 
             for (unsigned j = 0; j < settings.numBounces_; ++j)
             {
                 // Get new ray direction
-                const Vector3 rayDirection = RandomHemisphereDirection(currentNormal);
+                const Vector3 rayDirection = settings.pseudoRandomSampling_
+                    ? PseudoRandomDirectionInHemisphere(currentSeed, baseRotation, currentNormal)
+                    : RandomHemisphereDirection(currentNormal);
 
                 rayHit.ray.org_x = currentPosition.x_ + currentNormal.x_ * settings.rayPositionOffset_;
                 rayHit.ray.org_y = currentPosition.y_ + currentNormal.y_ * settings.rayPositionOffset_;
@@ -273,6 +323,7 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                     currentPosition.y_ = rayHit.ray.org_y + rayHit.ray.dir_y * rayHit.ray.tfar;
                     currentPosition.z_ = rayHit.ray.org_z + rayHit.ray.dir_z * rayHit.ray.tfar;
                     currentNormal = Vector3(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z).Normalized();
+                    currentSeed = sampleLocation;
                 }
             }
 
