@@ -64,6 +64,8 @@ struct LightmapTracingSettings
     float rayPositionOffset_{ 0.001f };
     /// Number of bounces.
     unsigned numBounces_{ 2 };
+    /// Whether to use pseudorandom sampling.
+    bool pseudoRandomSampling_{ false };
 };
 
 }
