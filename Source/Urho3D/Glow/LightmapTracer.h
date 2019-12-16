@@ -46,12 +46,17 @@ struct LightmapChartBakedDirect
         , light_(width_ * height_)
     {
     }
-    /// Sample nearest point.
-    const Vector3& SampleNearest(const Vector2& uv) const
+    /// Return nearest point location by UV.
+    IntVector2 GetNearestLocation(const Vector2& uv) const
     {
         const int x = FloorToInt(ea::min(uv.x_ * realWidth_, realWidth_ - 1.0f));
         const int y = FloorToInt(ea::min(uv.y_ * realHeight_, realHeight_ - 1.0f));
-        const unsigned index = x + y * width_;
+        return { x, y };
+    }
+    /// Return light by location.
+    const Vector3& GetLight(const IntVector2& location) const
+    {
+        const unsigned index = location.x_ + location.y_ * width_;
         return light_[index];
     }
 
