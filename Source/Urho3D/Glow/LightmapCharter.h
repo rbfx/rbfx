@@ -102,6 +102,8 @@ struct LightmapChart
         , allocator_{ width, height, 0, 0, false }
     {
     }
+    /// Return size of the lightmap texel, in UV.
+    Vector2 GetTexelSize() const { return { 1.0f / width_, 1.0f / height_ }; }
 };
 
 /// Vector of lightmap charts.
