@@ -34,21 +34,11 @@ namespace Urho3DNet
             return (T)GetComponent(typeof(T).Name, recursive);
         }
 
-        /// <summary>
-        /// Get first occurrence of a component type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
         public T GetComponent<T>() where T: Component
         {
             return (T)GetComponent(typeof(T).Name);
         }
 
-        /// <summary>
-        /// get all components of a type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
         public ComponentList GetComponents<T>(bool recursive = false) where T: Component
         {
             ComponentList componentList = new ComponentList();
