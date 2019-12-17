@@ -21,8 +21,6 @@
 //
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Urho3DNet
@@ -33,5 +31,45 @@ namespace Urho3DNet
         [DllImport("Urho3D", EntryPoint="Urho3D_ParseArguments")]
         public static extern void ParseArguments(int argc,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
+
+        unsafe public static void GenerateTangents(float[] vertexData, int vertexBufferSize, short[] indexData, int sizeofIndex, int startIndex, int indexCount, int tangentOffset)
+        {
+            fixed (float* vertexIntPtr = vertexData)
+            {
+                fixed (short* indexIntPtr = indexData)
+                {
+                    Urho3D.GenerateTangents((IntPtr)vertexIntPtr,
+                                            (uint)vertexBufferSize,
+                                            (IntPtr)indexIntPtr,
+                                            (uint)sizeofIndex,
+                                            (uint)startIndex,
+                                            (uint)indexCount,
+                                            3 * sizeof(float),
+                                            6 * sizeof(float),
+                                            (uint)(tangentOffset * sizeof(float))
+                                            );
+                }
+            }
+        }
+
+        unsafe public static void GenerateTangents(float[] vertexData, int vertexBufferSize, int[] indexData, int sizeofIndex, int startIndex, int indexCount, int tangentOffset)
+        {
+            fixed (float* vertexIntPtr = vertexData)
+            {
+                fixed (int* indexIntPtr = indexData)
+                {
+                    Urho3D.GenerateTangents((IntPtr)vertexIntPtr,
+                                            (uint)vertexBufferSize,
+                                            (IntPtr)indexIntPtr,
+                                            (uint)sizeofIndex,
+                                            (uint)startIndex,
+                                            (uint)indexCount,
+                                            3 * sizeof(float),
+                                            6 * sizeof(float),
+                                            (uint)(tangentOffset * sizeof(float))
+                                            );
+                }
+            }
+        }
     }
 }
