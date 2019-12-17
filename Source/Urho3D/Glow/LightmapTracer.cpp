@@ -222,9 +222,9 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
                 continue;
 
             // Cast direct ray
-            rayHit.ray.org_x = position.x_ + rayDirection.x_ * 0.001f;
-            rayHit.ray.org_y = position.y_ + rayDirection.y_ * 0.001f;
-            rayHit.ray.org_z = position.z_ + rayDirection.z_ * 0.001f;
+            rayHit.ray.org_x = position.x_ + rayDirection.x_ * settings.rayPositionOffset_;
+            rayHit.ray.org_y = position.y_ + rayDirection.y_ * settings.rayPositionOffset_;
+            rayHit.ray.org_z = position.z_ + rayDirection.z_ * settings.rayPositionOffset_;
             rayHit.ray.tfar = maxDistance;
             rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
             rtcIntersect1(scene, &rayContext, &rayHit);
