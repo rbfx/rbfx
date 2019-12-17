@@ -32,7 +32,7 @@ namespace Urho3DNet
         public static extern void ParseArguments(int argc,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
 
-        unsafe public static void GenerateTangents(float[] vertexData, int vertexBufferSize, short[] indexData, int sizeofIndex, int startIndex, int indexCount, int textureOffset, int tangentOffset)
+        unsafe public static void GenerateTangents(float[] vertexData, int vertexBufferSize, short[] indexData, int sizeofIndex, int startIndex, int indexCount, int normalOffset, int textureOffset, int tangentOffset)
         {
             fixed (float* vertexIntPtr = vertexData)
             {
@@ -44,7 +44,7 @@ namespace Urho3DNet
                                             (uint)sizeofIndex,
                                             (uint)startIndex,
                                             (uint)indexCount,
-                                            3 * sizeof(float),
+                                            (uint)normalOffset * sizeof(float),
                                             (uint)textureOffset * sizeof(float),
                                             (uint)(tangentOffset * sizeof(float))
                                             );
@@ -52,7 +52,7 @@ namespace Urho3DNet
             }
         }
 
-        unsafe public static void GenerateTangents(float[] vertexData, int vertexBufferSize, int[] indexData, int sizeofIndex, int startIndex, int indexCount, int textureOffset, int tangentOffset)
+        unsafe public static void GenerateTangents(float[] vertexData, int vertexBufferSize, int[] indexData, int sizeofIndex, int startIndex, int indexCount, int normalOffset, int textureOffset, int tangentOffset)
         {
             fixed (float* vertexIntPtr = vertexData)
             {
@@ -64,7 +64,7 @@ namespace Urho3DNet
                                             (uint)sizeofIndex,
                                             (uint)startIndex,
                                             (uint)indexCount,
-                                            3 * sizeof(float),
+                                            (uint)normalOffset * sizeof(float),
                                             (uint)textureOffset * sizeof(float),
                                             (uint)(tangentOffset * sizeof(float))
                                             );
