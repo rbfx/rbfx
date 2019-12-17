@@ -28,7 +28,7 @@ namespace Urho3DNet
     [System.Security.SuppressUnmanagedCodeSecurity]
     public partial class Urho3D
     {
-        [DllImport("Urho3D", EntryPoint="Urho3D_ParseArguments")]
+        [DllImport("Urho3D", EntryPoint = "Urho3D_ParseArguments")]
         public static extern void ParseArguments(int argc,
             [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)]string[] argv);
 
