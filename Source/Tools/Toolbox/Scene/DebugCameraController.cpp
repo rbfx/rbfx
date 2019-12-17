@@ -20,6 +20,7 @@
 // THE SOFTWARE.
 //
 #include <Urho3D/Core/Context.h>
+#include <Urho3D/Scene/Scene.h>
 #include "DebugCameraController.h"
 
 
@@ -67,27 +68,59 @@ void DebugCameraController::Update(float timeStep)
     if (input->GetMouseButtonDown(MOUSEB_RIGHT))
     {
         IntVector2 delta = input->GetMouseMove();
-
         if (input->IsMouseVisible() && delta != IntVector2::ZERO)
             input->SetMouseVisible(false);
 
-        auto yaw = GetNode()->GetRotation().EulerAngles().x_;
-        if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
-            GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
-        GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+        if (isRotationCenterValid_ && input->GetQualifierDown(QUAL_ALT))
+        {
+            // The following LOC is use to make SystemUI be not outlined 
+            // refer to: https://github.com/rokups/rbfx/pull/151#issuecomment-562489285
+            ui::GetCurrentContext()->NavWindowingToggleLayer = false;
+
+            auto yaw = GetNode()->GetRotation().EulerAngles().x_;
+            GetNode()->RotateAround(rotationCenter_, Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+            auto angle = mouseSensitivity_ * delta.y_;
+            if (yaw + angle > 89.f)
+            {
+                angle = 89.f - yaw;
+            } 
+            else if (yaw + angle < -89.f)
+            {
+                angle = -89.f - yaw;
+            }
+            GetNode()->RotateAround(rotationCenter_, Quaternion(angle, GetNode()->GetRight()), TS_WORLD);
+            GetNode()->LookAt(rotationCenter_);
+        }
+        else
+        {
+            auto yaw = GetNode()->GetRotation().EulerAngles().x_;
+            if ((yaw > -90.f && yaw < 90.f) || (yaw <= -90.f && delta.y_ > 0) || (yaw >= 90.f && delta.y_ < 0))
+                GetNode()->RotateAround(Vector3::ZERO, Quaternion(mouseSensitivity_ * delta.y_, Vector3::RIGHT), TS_LOCAL);
+            GetNode()->RotateAround(GetNode()->GetPosition(), Quaternion(mouseSensitivity_ * delta.x_, Vector3::UP), TS_WORLD);
+        }
+
+        // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
+        if (input->GetKeyDown(KEY_W))
+            GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_S))
+            GetNode()->Translate(Vector3::BACK * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_A))
+            GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_D))
+            GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_E))
+            GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep, TS_WORLD);
+        if (input->GetKeyDown(KEY_Q))
+            GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep, TS_WORLD);
     }
     else if (!input->IsMouseVisible())
         input->SetMouseVisible(true);
+}
 
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        GetNode()->Translate(Vector3::FORWARD * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        GetNode()->Translate(Vector3::BACK * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+void DebugCameraController::SetRotationCenter(const Vector3& center)
+{
+    rotationCenter_ = center;
+    isRotationCenterValid_ = true;
 }
 
 DebugCameraController2D::DebugCameraController2D(Context* context)
@@ -139,15 +172,18 @@ void DebugCameraController2D::Update(float timeStep)
     else if (!input->IsMouseVisible())
         input->SetMouseVisible(true);
 
-    // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
-    if (input->GetKeyDown(KEY_W))
-        GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_S))
-        GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_A))
-        GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
-    if (input->GetKeyDown(KEY_D))
-        GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+    if (!input->IsMouseVisible())
+    {
+        // Read WASD keys and move the camera scene node to the corresponding direction if they are pressed
+        if (input->GetKeyDown(KEY_W))
+            GetNode()->Translate(Vector3::UP * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_S))
+            GetNode()->Translate(Vector3::DOWN * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_A))
+            GetNode()->Translate(Vector3::LEFT * moveSpeed_ * timeStep);
+        if (input->GetKeyDown(KEY_D))
+            GetNode()->Translate(Vector3::RIGHT * moveSpeed_ * timeStep);
+    }
 }
 
 }

@@ -169,7 +169,7 @@ void Tab::UpdateUniqueTitle()
 
 IntRect Tab::UpdateViewRect()
 {
-    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->ContentsRegionRect);
+    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->ContentRegionRect);
     return tabRect;
 }
 

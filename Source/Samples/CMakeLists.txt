@@ -68,18 +68,18 @@ if (WEB)
                      "${CMAKE_BINARY_DIR}/bin/Autoload/LargeData.pak"
         RELATIVE_DIR "${CMAKE_BINARY_DIR}/bin"
         OUTPUT       "Resources.js"
-        INSTALL_TO   ${DEST_SAMPLES_DIR}
+        INSTALL_TO   ${DEST_BIN_DIR_CONFIG}
     )
     web_link_resources(Samples Resources.js)
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
     install(FILES
         "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.js"
-        DESTINATION ${DEST_SAMPLES_DIR}
+        DESTINATION ${DEST_BIN_DIR_CONFIG}
     )
     if (EXISTS "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm")
         install(FILES
             "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm"
-            DESTINATION ${DEST_SAMPLES_DIR}
+            DESTINATION ${DEST_BIN_DIR_CONFIG}
         )
     endif ()
 endif ()
@@ -118,8 +118,8 @@ endif ()
 
 if (NOT ANDROID)
     install(TARGETS Samples
-        RUNTIME DESTINATION ${DEST_SAMPLES_DIR}
-        LIBRARY DESTINATION ${DEST_SAMPLES_DIR}
-        BUNDLE DESTINATION  ${DEST_SAMPLES_DIR}
+        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+        LIBRARY DESTINATION ${DEST_BIN_DIR_CONFIG}
+        BUNDLE DESTINATION  ${DEST_BIN_DIR_CONFIG}
     )
 endif ()

@@ -26,6 +26,7 @@
 #include "../Core/Macros.h"
 #include "../Engine/EngineEvents.h"
 #include "../Graphics/Graphics.h"
+#include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
@@ -38,142 +39,89 @@
 #include <ImGui/imgui_internal.h>
 #include <ImGui/imgui_freetype.h>
 
+#define IMGUI_IMPL_API IMGUI_API
+#include <imgui_impl_sdl.h>
+#if defined(URHO3D_OPENGL)
+#include <imgui_impl_opengl3.h>
+#elif defined(URHO3D_D3D11)
+#include <imgui_impl_dx11.h>
+#else
+#include <imgui_impl_dx9.h>
+#endif
 
-using namespace std::placeholders;
 namespace Urho3D
 {
 
-SystemUI::SystemUI(Urho3D::Context* context)
+SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     : Object(context)
     , vertexBuffer_(context)
     , indexBuffer_(context)
 {
-    imContext_ = ImGui::CreateContext();
+    imContext_ = ui::CreateContext();
 
-    ImGuiIO& io = ImGui::GetIO();
-    io.KeyMap[ImGuiKey_Tab] = SCANCODE_TAB;
-    io.KeyMap[ImGuiKey_LeftArrow] = SCANCODE_LEFT;
-    io.KeyMap[ImGuiKey_RightArrow] = SCANCODE_RIGHT;
-    io.KeyMap[ImGuiKey_UpArrow] = SCANCODE_UP;
-    io.KeyMap[ImGuiKey_DownArrow] = SCANCODE_DOWN;
-    io.KeyMap[ImGuiKey_Home] = SCANCODE_HOME;
-    io.KeyMap[ImGuiKey_End] = SCANCODE_END;
-    io.KeyMap[ImGuiKey_Delete] = SCANCODE_DELETE;
-    io.KeyMap[ImGuiKey_Backspace] = SCANCODE_BACKSPACE;
-    io.KeyMap[ImGuiKey_Enter] = SCANCODE_RETURN;
-    io.KeyMap[ImGuiKey_Escape] = SCANCODE_ESCAPE;
-    io.KeyMap[ImGuiKey_A] = SCANCODE_A;
-    io.KeyMap[ImGuiKey_C] = SCANCODE_C;
-    io.KeyMap[ImGuiKey_V] = SCANCODE_V;
-    io.KeyMap[ImGuiKey_X] = SCANCODE_X;
-    io.KeyMap[ImGuiKey_Y] = SCANCODE_Y;
-    io.KeyMap[ImGuiKey_Z] = SCANCODE_Z;
-    io.KeyMap[ImGuiKey_PageUp] = SCANCODE_PAGEUP;
-    io.KeyMap[ImGuiKey_PageDown] = SCANCODE_DOWN;
-    io.KeyMap[ImGuiKey_Space] = SCANCODE_SPACE;
-
-    io.SetClipboardTextFn = [](void* userData, const char* text) { SDL_SetClipboardText(text); };
-    io.GetClipboardTextFn = [](void* userData) -> const char* { return SDL_GetClipboardText(); };
-
+    ImGuiIO& io = ui::GetIO();
     io.UserData = this;
-
-    SetScale(Vector3::ZERO, false);
-
-    SubscribeToEvent(E_APPLICATIONSTARTED, [this](StringHash, VariantMap&) {
-        Start();
-        UnsubscribeFromEvent(E_APPLICATIONSTARTED);
-    });
-
+    // UI subsystem is responsible for managing cursors and that interferes with ImGui.
+    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange | flags;
+    void* glContext = nullptr;
+    Graphics* graphics = GetSubsystem<Graphics>();
+    io.DisplaySize = {static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight())};
+#if URHO3D_OPENGL
+    ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(graphics->GetSDLWindow()), graphics->GetImpl()->GetGLContext());
+#else
+    ImGui_ImplSDL2_InitForD3D(static_cast<SDL_Window*>(graphics->GetSDLWindow()));
+#endif
+#if URHO3D_OPENGL
+#if __APPLE__
+    const char* glslVersion = "#version 150";
+#else
+    const char* glslVersion = nullptr;
+#endif
+    ImGui_ImplOpenGL3_Init(glslVersion);
+#elif URHO3D_D3D11
+    ImGui_ImplDX11_Init(graphics->GetImpl()->GetDevice(), graphics->GetImpl()->GetDeviceContext());
+#else
+    ImGui_ImplDX9_Init(graphics->GetImpl()->GetDevice());
+#endif
     // Subscribe to events
-    SubscribeToEvent(E_SDLRAWINPUT, std::bind(&SystemUI::OnRawEvent, this, _2));
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap&) {
-        ReallocateFontTexture();
-    });
-    SubscribeToEvent(E_INPUTEND, [&](StringHash, VariantMap&) {
-        float timeStep = context_->GetTime()->GetTimeStep();
-        ImGui::GetIO().DeltaTime = timeStep > 0.0f ? timeStep : 1.0f / 60.0f;
-        ImGui::NewFrame();
-        ImGuizmo::BeginFrame();
-    });
-    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&)
-    {
-        if (!imContext_->FrameScopeActive)
-            return;
-
-        URHO3D_PROFILE("SystemUiRender");
-        SendEvent(E_ENDRENDERINGSYSTEMUI);
-        ImGui::Render();
-        OnRenderDrawLists(ImGui::GetDrawData());
-        referencedTextures_.clear();
-    });
+    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
+    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
+    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
 }
 
 SystemUI::~SystemUI()
 {
-    if (imContext_->FrameScopeActive)
-        ImGui::EndFrame();
-    ImGui::Shutdown(imContext_);
-    ImGui::DestroyContext(imContext_);
+#if URHO3D_OPENGL
+    ImGui_ImplOpenGL3_Shutdown();
+#elif URHO3D_D3D11
+    ImGui_ImplDX11_Shutdown();
+#else
+    ImGui_ImplDX9_Shutdown();
+#endif
+    ImGui_ImplSDL2_Shutdown();
+    ui::DestroyContext(imContext_);
+    imContext_ = nullptr;
 }
 
 void SystemUI::OnRawEvent(VariantMap& args)
 {
-    auto evt = static_cast<SDL_Event*>(args[SDLRawInput::P_SDLEVENT].Get<void*>());
-    auto& io = ImGui::GetIO();
+    if (!imContext_)
+        return;
+
+    auto* evt = static_cast<SDL_Event*>(args[SDLRawInput::P_SDLEVENT].Get<void*>());
+    auto& io = ui::GetIO();
     switch (evt->type)
     {
-    case SDL_KEYUP:
-    case SDL_KEYDOWN:
-    {
-        SDL_Scancode code = evt->key.keysym.scancode;
-        bool down = evt->type == SDL_KEYDOWN;
-        if (code < 512U)
-            io.KeysDown[code] = down;
-        if (evt->key.keysym.sym == SDLK_LCTRL || evt->key.keysym.sym == SDLK_RCTRL)
-            io.KeyCtrl = down;
-        else if (evt->key.keysym.sym == SDLK_LSHIFT || evt->key.keysym.sym == SDLK_RSHIFT)
-            io.KeyShift = down;
-        else if (evt->key.keysym.sym == SDLK_LALT || evt->key.keysym.sym == SDLK_RALT)
-            io.KeyAlt = down;
-        else if (evt->key.keysym.sym == SDLK_LGUI || evt->key.keysym.sym == SDLK_RGUI)
-            io.KeySuper = down;
-        break;
-    }
-    case SDL_MOUSEWHEEL:
-        io.MouseWheel = evt->wheel.y;
-        break;
-    case SDL_MOUSEBUTTONUP:
-        URHO3D_FALLTHROUGH;
-    case SDL_MOUSEBUTTONDOWN:
-    {
-        int imguiButton;
-        switch (evt->button.button)
-        {
-        case SDL_BUTTON_LEFT:
-            imguiButton = 0;
-            break;
-        case SDL_BUTTON_MIDDLE:
-            imguiButton = 2;
-            break;
-        case SDL_BUTTON_RIGHT:
-            imguiButton = 1;
-            break;
-        case SDL_BUTTON_X1:
-            imguiButton = 3;
-            break;
-        case SDL_BUTTON_X2:
-            imguiButton = 4;
-            break;
-        default:
-            imguiButton = -1;
-        }
-        if (imguiButton >= 0)
-            io.MouseDown[imguiButton] = evt->type == SDL_MOUSEBUTTONDOWN;
-    }
-    URHO3D_FALLTHROUGH;
     case SDL_MOUSEMOTION:
-        io.MousePos.x = evt->motion.x / uiZoom_ / io.DisplayFramebufferScale.x;
-        io.MousePos.y = evt->motion.y / uiZoom_ / io.DisplayFramebufferScale.y;
+        if (!(io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable))
+        {
+            // No viewports - mouse is relative to the window. When viewports are enabled we get global mouse position
+            // on every frame.
+            io.MousePos.x = evt->motion.x;
+            io.MousePos.y = evt->motion.y;
+        }
         break;
     case SDL_FINGERUP:
         io.MouseDown[0] = false;
@@ -183,156 +131,93 @@ void SystemUI::OnRawEvent(VariantMap& args)
     case SDL_FINGERDOWN:
         io.MouseDown[0] = true;
     case SDL_FINGERMOTION:
-        io.MousePos.x = evt->tfinger.x / uiZoom_ / io.DisplayFramebufferScale.x;
-        io.MousePos.y = evt->tfinger.y / uiZoom_ / io.DisplayFramebufferScale.y;
-        break;
-    case SDL_TEXTINPUT:
-        ImGui::GetIO().AddInputCharactersUTF8(evt->text.text);
+        io.MousePos.x = evt->tfinger.x;
+        io.MousePos.y = evt->tfinger.y;
         break;
     default:
+        ImGui_ImplSDL2_ProcessEvent(evt);
         break;
     }
 }
 
-void SystemUI::OnRenderDrawLists(ImDrawData* data)
+void SystemUI::OnScreenMode(VariantMap& args)
 {
-    auto graphics = context_->GetGraphics();
-    // Engine does not render when window is closed or device is lost
-    assert(graphics && graphics->IsInitialized() && !graphics->IsDeviceLost());
+    if (!imContext_)
+        return;
 
-    ImGuiIO& io = ImGui::GetIO();
+    using namespace ScreenMode;
+    ImGuiIO& io = ui::GetIO();
+    io.DisplaySize = {args[P_WIDTH].GetFloat(), args[P_HEIGHT].GetFloat()};
+}
 
-    // Assemble UI buffers as if it was 96 DPI.
-    io.DisplaySize = {(float)graphics->GetWidth() / data->FramebufferScale.x, (float)graphics->GetHeight() / data->FramebufferScale.y};
+void SystemUI::OnInputEnd(VariantMap& args)
+{
+    if (!imContext_)
+        return;
 
-    // But render them at full resolution
-    graphics->SetViewport({0, 0,
-        (int)(data->DisplaySize.x * data->FramebufferScale.x),
-        (int)(data->DisplaySize.y * data->FramebufferScale.y)});
-
-    // Our visible imgui space lies from data->DisplayPos (top left) to data->DisplayPos+data_data->DisplaySize (bottom right). DisplayPos is (0,0) for single viewport apps.
-    float L = data->DisplayPos.x * data->FramebufferScale.x;
-    float R = (data->DisplayPos.x + data->DisplaySize.x) * data->FramebufferScale.x;
-    float T = data->DisplayPos.y * data->FramebufferScale.y;
-    float B = (data->DisplayPos.y + data->DisplaySize.y) * data->FramebufferScale.y;
-
-    Matrix4 projection(Matrix4::IDENTITY);
-    projection.SetScale({2.0f / (R - L), 2.0f / (T - B), -1.0f});
-    projection.SetTranslation({(R + L) / (L - R), (T + B) / (B - T)});
-
-    bool scaledDisplay = data->FramebufferScale.x != 1.f || data->FramebufferScale.y != 1.f;
-    if (scaledDisplay)
-        data->ScaleClipRects(data->FramebufferScale);
-
-    for (int n = 0; n < data->CmdListsCount; n++)
+    ImGuiIO& io = ui::GetIO();
+    Graphics* graphics = GetSubsystem<Graphics>();
+    referencedTextures_.push_back(fontTexture_);
+    if (graphics && graphics->IsInitialized())
     {
-        const ImDrawList* cmdList = data->CmdLists[n];
-        unsigned int idxBufferOffset = 0;
-
-        // Resize vertex and index buffers on the fly. Once buffer becomes too small for data that is to be rendered
-        // we reallocate buffer to be twice as big as we need now. This is done in order to minimize memory reallocation
-        // in rendering loop.
-        if (cmdList->VtxBuffer.Size > vertexBuffer_.GetVertexCount())
-        {
-            ea::vector<VertexElement> elems = {
-                VertexElement(TYPE_VECTOR2, SEM_POSITION),
-                VertexElement(TYPE_VECTOR2, SEM_TEXCOORD),
-                VertexElement(TYPE_UBYTE4_NORM, SEM_COLOR)
-            };
-            vertexBuffer_.SetSize((unsigned int)(cmdList->VtxBuffer.Size * 2), elems, true);
-        }
-        if (cmdList->IdxBuffer.Size > indexBuffer_.GetIndexCount())
-            indexBuffer_.SetSize((unsigned int)(cmdList->IdxBuffer.Size * 2), false, true);
-
-#if (defined(_WIN32) && !defined(URHO3D_D3D11) && !defined(URHO3D_OPENGL)) || defined(URHO3D_D3D9)
-        for (int i = 0; i < cmdList->VtxBuffer.Size; i++)
-        {
-            ImDrawVert& v = cmdList->VtxBuffer.Data[i];
-            v.pos.x += 0.5f;
-            v.pos.y += 0.5f;
-        }
+#if URHO3D_OPENGL
+        ImGui_ImplOpenGL3_NewFrame();
+#elif URHO3D_D3D11
+        ImGui_ImplDX11_NewFrame();
+#else
+        ImGui_ImplDX9_NewFrame();
 #endif
-        if (scaledDisplay)
-        {
-            // Scale buffers up (experimental)
-            for (int i = 0; i < cmdList->VtxBuffer.Size; i++)
-            {
-                ImDrawVert& v = cmdList->VtxBuffer.Data[i];
-                v.pos.x *= data->FramebufferScale.x;
-                v.pos.y *= data->FramebufferScale.y;
-            }
-        }
-
-        vertexBuffer_.SetDataRange(cmdList->VtxBuffer.Data, 0, (unsigned int)cmdList->VtxBuffer.Size, true);
-        indexBuffer_.SetDataRange(cmdList->IdxBuffer.Data, 0, (unsigned int)cmdList->IdxBuffer.Size, true);
-
-        graphics->ClearParameterSources();
-        graphics->SetColorWrite(true);
-        graphics->SetCullMode(CULL_NONE);
-        graphics->SetDepthTest(CMP_ALWAYS);
-        graphics->SetDepthWrite(false);
-        graphics->SetFillMode(FILL_SOLID);
-        graphics->SetStencilTest(false);
-        graphics->SetVertexBuffer(&vertexBuffer_);
-        graphics->SetIndexBuffer(&indexBuffer_);
-
-        for (const ImDrawCmd* cmd = cmdList->CmdBuffer.begin(); cmd != cmdList->CmdBuffer.end(); cmd++)
-        {
-            if (cmd->UserCallback)
-                cmd->UserCallback(cmdList, cmd);
-            else
-            {
-                ShaderVariation* ps;
-                ShaderVariation* vs;
-
-                auto* texture = static_cast<Texture2D*>(cmd->TextureId);
-                if (!texture)
-                {
-                    ps = graphics->GetShader(PS, "Basic", "VERTEXCOLOR");
-                    vs = graphics->GetShader(VS, "Basic", "VERTEXCOLOR");
-                }
-                else
-                {
-                    // If texture contains only an alpha channel, use alpha shader (for fonts)
-                    vs = graphics->GetShader(VS, "Basic", "DIFFMAP VERTEXCOLOR");
-                    if (texture->GetFormat() == Graphics::GetAlphaFormat())
-                        ps = graphics->GetShader(PS, "Basic", "ALPHAMAP VERTEXCOLOR");
-                    else
-                        ps = graphics->GetShader(PS, "Basic", "DIFFMAP VERTEXCOLOR");
-                }
-
-                graphics->SetShaders(vs, ps);
-                if (graphics->NeedParameterUpdate(SP_OBJECT, this))
-                    graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
-                if (graphics->NeedParameterUpdate(SP_CAMERA, this))
-                    graphics->SetShaderParameter(VSP_VIEWPROJ, projection);
-                if (graphics->NeedParameterUpdate(SP_MATERIAL, this))
-                    graphics->SetShaderParameter(PSP_MATDIFFCOLOR, Color(1.0f, 1.0f, 1.0f, 1.0f));
-
-                float elapsedTime = GetSubsystem<Time>()->GetElapsedTime();
-                graphics->SetShaderParameter(VSP_ELAPSEDTIME, elapsedTime);
-                graphics->SetShaderParameter(PSP_ELAPSEDTIME, elapsedTime);
-
-                IntRect scissor = IntRect(int(cmd->ClipRect.x * uiZoom_), int(cmd->ClipRect.y * uiZoom_),
-                                          int(cmd->ClipRect.z * uiZoom_), int(cmd->ClipRect.w * uiZoom_));
-
-                graphics->SetBlendMode(BLEND_ALPHA);
-                graphics->SetScissorTest(true, scissor);
-                graphics->SetTexture(0, texture);
-                graphics->Draw(TRIANGLE_LIST, idxBufferOffset, cmd->ElemCount, 0, 0,
-                                vertexBuffer_.GetVertexCount());
-                idxBufferOffset += cmd->ElemCount;
-            }
-        }
+        ImGui_ImplSDL2_NewFrame(graphics->GetWindow());
     }
-    graphics->SetScissorTest(false);
+    ui::NewFrame();
+    ImGuizmo::BeginFrame();
+}
+
+void SystemUI::OnRenderEnd()
+{
+    // When SystemUI subsystem is recreated during runtime this method may be called without UI being rendered.
+    if (!imContext_ || !imContext_->WithinFrameScope)
+        return;
+
+    URHO3D_PROFILE("SystemUiRender");
+    SendEvent(E_ENDRENDERINGSYSTEMUI);
+
+    Graphics* graphics = GetSubsystem<Graphics>();
+
+    ImGuiIO& io = ui::GetIO();
+    ui::Render();
+
+#if URHO3D_OPENGL
+    ImGui_ImplOpenGL3_RenderDrawData(ui::GetDrawData());
+#elif URHO3D_D3D11
+    // Resetting render target view required because if last view we rendered into was a texture
+    // ImGui would try to render into that texture and we would see no UI on screen.
+    auto* graphicsImpl = graphics->GetImpl();
+    ID3D11RenderTargetView* defaultRenderTargetView = graphicsImpl->GetDefaultRenderTargetView();
+    graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
+    ImGui_ImplDX11_RenderDrawData(ui::GetDrawData());
+#else
+    ImGui_ImplDX9_RenderDrawData(ui::GetDrawData());
+#endif
+    if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+    {
+#if URHO3D_OPENGL
+        SDL_Window* backup_current_window = SDL_GL_GetCurrentWindow();
+        SDL_GLContext backup_current_context = SDL_GL_GetCurrentContext();
+#endif
+        ui::UpdatePlatformWindows();
+        ui::RenderPlatformWindowsDefault();
+#if URHO3D_OPENGL
+        SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+#endif
+    }
 }
 
 ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
-    size = (size == 0 ? previousSize : size) * fontScale_;
+    size = (size == 0 ? previousSize : size);
 
     if (auto fontFile = GetSubsystem<ResourceCache>()->GetFile(fontPath))
     {
@@ -348,13 +233,13 @@ ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* range
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
-    size = (size == 0 ? previousSize : size) * fontScale_;
+    size = (size == 0 ? previousSize : size);
 
     ImFontConfig cfg;
     cfg.MergeMode = merge;
     cfg.FontDataOwnedByAtlas = false;
     cfg.PixelSnapH = true;
-    if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryTTF((void*)data, dsize, size, &cfg, ranges))
+    if (auto* newFont = ui::GetIO().Fonts->AddFontFromMemoryTTF((void*)data, dsize, size, &cfg, ranges))
     {
         ReallocateFontTexture();
         return newFont;
@@ -366,13 +251,13 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWc
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
-    size = (size == 0 ? previousSize : size) * fontScale_;
+    size = (size == 0 ? previousSize : size);
 
     ImFontConfig cfg;
     cfg.MergeMode = merge;
     cfg.FontDataOwnedByAtlas = false;
     cfg.PixelSnapH = true;
-    if (auto* newFont = ImGui::GetIO().Fonts->AddFontFromMemoryCompressedTTF((void*)data, dsize, size, &cfg, ranges))
+    if (auto* newFont = ui::GetIO().Fonts->AddFontFromMemoryCompressedTTF((void*)data, dsize, size, &cfg, ranges))
     {
         ReallocateFontTexture();
         return newFont;
@@ -382,10 +267,11 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWc
 
 void SystemUI::ReallocateFontTexture()
 {
-    auto io = ImGui::GetIO();
+    ImGuiIO& io = ui::GetIO();
     // Create font texture.
     unsigned char* pixels;
     int width, height;
+    io.Fonts->ClearTexData();
 
     ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
     io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
@@ -403,60 +289,16 @@ void SystemUI::ReallocateFontTexture()
     fontTexture_->SetData(0, 0, 0, width, height, pixels);
 
     // Store our identifier
-    io.Fonts->TexID = (void*)fontTexture_;
-    io.Fonts->ClearTexData();
-}
-
-void SystemUI::SetZoom(float zoom)
-{
-    if (uiZoom_ == zoom)
-        return;
-    uiZoom_ = zoom;
-}
-
-void SystemUI::SetScale(Vector3 scale, bool pixelPerfect)
-{
-    auto& io = ui::GetIO();
-    auto& style = ui::GetStyle();
-
-    if (scale == Vector3::ZERO)
-        scale = context_->GetGraphics()->GetDisplayDPI() / 96.f;
-
-    if (scale == Vector3::ZERO)
-    {
-        URHO3D_LOGWARNING("SystemUI failed to set font scaling, DPI unknown.");
-        return;
-    }
-
-    if (pixelPerfect)
-    {
-        scale = {
-            static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.x_))),
-            static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.y_))),
-            static_cast<float>(ClosestPowerOfTwo(static_cast<unsigned>(scale.z_)))
-        };
-    }
-
-    // io.DisplayFramebufferScale = {scale.x_, scale.y_};
-    fontScale_ = scale.z_;
-    // io.FontGlobalScale = 1.f / scale.z_;
-
-    float prevSize = SYSTEMUI_DEFAULT_FONT_SIZE;
-    for (auto i = 0; i < io.Fonts->Fonts.size(); i++)
-    {
-        float sizePixels = fontSizes_[i];
-        if (sizePixels == 0)
-            sizePixels = prevSize;
-        io.Fonts->ConfigData[i].SizePixels = sizePixels * fontScale_;
-    }
-
-    if (!io.Fonts->Fonts.empty())
-        ReallocateFontTexture();
+#if URHO3D_D3D11
+    io.Fonts->TexID = fontTexture_->GetShaderResourceView();
+#else
+    io.Fonts->TexID = fontTexture_->GetGPUObject();
+#endif
 }
 
 void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
 {
-    ImGuiStyle& style = ImGui::GetStyle();
+    ImGuiStyle& style = ui::GetStyle();
     style.ScrollbarSize = 10.f;
     if (darkStyle)
         ui::StyleColorsDark(&style);
@@ -464,7 +306,6 @@ void SystemUI::ApplyStyleDefault(bool darkStyle, float alpha)
         ui::StyleColorsLight(&style);
     style.Alpha = 1.0f;
     style.FrameRounding = 3.0f;
-    style.ScaleAllSizes(GetFontScale());
 }
 
 bool SystemUI::IsAnyItemActive() const
@@ -479,19 +320,14 @@ bool SystemUI::IsAnyItemHovered() const
 
 void SystemUI::Start()
 {
-    ImGuiIO& io = ImGui::GetIO();
+    ImGuiIO& io = ui::GetIO();
     if (io.Fonts->Fonts.empty())
     {
         io.Fonts->AddFontDefault();
         ReallocateFontTexture();
     }
-    auto graphics = context_->GetGraphics();
-    io.DisplaySize = {(float)graphics->GetWidth(), (float)graphics->GetHeight()};
-
-    // Initializes ImGui. ImGui::Render() can not be called unless imgui is initialized. This call avoids initialization
-    // check on every frame in E_ENDRENDERING.
-    ImGui::NewFrame();
-    ImGui::EndFrame();
+    Graphics* graphics = context_->GetGraphics();
+    io.DisplaySize = {static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight())};
 }
 
 int ToImGui(MouseButton button)
@@ -515,37 +351,37 @@ int ToImGui(MouseButton button)
 
 }
 
-bool ImGui::IsMouseDown(Urho3D::MouseButton button)
+bool ui::IsMouseDown(Urho3D::MouseButton button)
 {
-    return ImGui::IsMouseDown(Urho3D::ToImGui(button));
+    return ui::IsMouseDown(Urho3D::ToImGui(button));
 }
 
-bool ImGui::IsMouseDoubleClicked(Urho3D::MouseButton button)
+bool ui::IsMouseDoubleClicked(Urho3D::MouseButton button)
 {
-    return ImGui::IsMouseDoubleClicked(Urho3D::ToImGui(button));
+    return ui::IsMouseDoubleClicked(Urho3D::ToImGui(button));
 }
 
-bool ImGui::IsMouseDragging(Urho3D::MouseButton button, float lock_threshold)
+bool ui::IsMouseDragging(Urho3D::MouseButton button, float lock_threshold)
 {
-    return ImGui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold);
+    return ui::IsMouseDragging(Urho3D::ToImGui(button), lock_threshold);
 }
 
-bool ImGui::IsMouseReleased(Urho3D::MouseButton button)
+bool ui::IsMouseReleased(Urho3D::MouseButton button)
 {
-    return ImGui::IsMouseReleased(Urho3D::ToImGui(button));
+    return ui::IsMouseReleased(Urho3D::ToImGui(button));
 }
 
-bool ImGui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
+bool ui::IsMouseClicked(Urho3D::MouseButton button, bool repeat)
 {
-    return ImGui::IsMouseClicked(Urho3D::ToImGui(button), repeat);
+    return ui::IsMouseClicked(Urho3D::ToImGui(button), repeat);
 }
 
-bool ImGui::IsItemClicked(Urho3D::MouseButton button)
+bool ui::IsItemClicked(Urho3D::MouseButton button)
 {
-    return ImGui::IsItemClicked(Urho3D::ToImGui(button));
+    return ui::IsItemClicked(Urho3D::ToImGui(button));
 }
 
-bool ImGui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond)
+bool ui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond)
 {
     if (SetDragDropPayload(type, nullptr, 0, cond))
     {
@@ -556,7 +392,7 @@ bool ImGui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant,
     return false;
 }
 
-const Urho3D::Variant& ImGui::AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags)
+const Urho3D::Variant& ui::AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags)
 {
     if (AcceptDragDropPayload(type, flags))
     {
@@ -566,16 +402,26 @@ const Urho3D::Variant& ImGui::AcceptDragDropVariant(const char* type, ImGuiDragD
     return Urho3D::Variant::EMPTY;
 }
 
-void ImGui::Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+void ui::Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
 {
     auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
     systemUI->ReferenceTexture(user_texture_id);
-    Image((ImTextureID)user_texture_id, size, uv0, uv1, tint_col, border_col);
+#if URHO3D_D3D11
+    void* texture_id = user_texture_id->GetShaderResourceView();
+#else
+    void* texture_id = user_texture_id->GetGPUObject();
+#endif
+    Image(texture_id, size, uv0, uv1, tint_col, border_col);
 }
 
-bool ImGui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
+bool ui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
 {
     auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
     systemUI->ReferenceTexture(user_texture_id);
-    return ImageButton((ImTextureID)user_texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
+#if URHO3D_D3D11
+    void* texture_id = user_texture_id->GetShaderResourceView();
+#else
+    void* texture_id = user_texture_id->GetGPUObject();
+#endif
+    return ImageButton(texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
 }

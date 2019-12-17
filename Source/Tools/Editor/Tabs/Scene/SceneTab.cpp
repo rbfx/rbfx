@@ -144,13 +144,14 @@ bool SceneTab::RenderWindowContent()
         return open;
     }
     ui::Image(texture_, contentSize);
+    ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     gizmo_.ManipulateSelection(GetCamera());
 
     if (context_->GetInput()->IsMouseVisible())
         mouseHoversViewport_ = ui::IsItemHovered();
 
-    bool isClickedLeft = context_->GetInput()->GetMouseButtonClick(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = context_->GetInput()->GetMouseButtonClick(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -176,10 +177,10 @@ bool SceneTab::RenderWindowContent()
     if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && context_->GetInput()->IsMouseVisible())
     {
         // Handle object selection.
-        IntVector2 pos = context_->GetInput()->GetMousePosition();
-        pos -= tabRect.Min();
-
-        Ray cameraRay = GetCamera()->GetScreenRay((float)pos.x_ / tabRect.Width(), (float)pos.y_ / tabRect.Height());
+        ImGuiIO& io = ui::GetIO();
+        Ray cameraRay = GetCamera()->GetScreenRay(
+            (io.MousePos.x - viewportRect.Min.x) / viewportRect.GetWidth(),
+            (io.MousePos.y - viewportRect.Min.y) / viewportRect.GetHeight());
         // Pick only geometry objects, not eg. zones or lights, only get the first (closest) hit
         ea::vector<RayQueryResult> results;
 
@@ -488,7 +489,7 @@ const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
 
 void SceneTab::RenderToolbarButtons()
 {
-    ui::SetCursorPos({4_dp, 4_dp});
+    ui::SetCursorPos({4, 4});
 
     if (ui::EditorToolbarButton(ICON_FA_SAVE, "Save"))
         SaveResource();
@@ -848,7 +849,23 @@ void SceneTab::OnUpdate(VariantMap& args)
         if (component != nullptr)
         {
             if (mouseHoversViewport_)
+            {
+                if (isMode3D_)
+                {
+                    DebugCameraController* controller3D = static_cast<DebugCameraController*>(component);
+                    Vector3 center;
+                    int selectionCount = gizmo_.GetSelectionCenter(center);
+                    if (selectionCount > 0)
+                    {
+                        controller3D->SetRotationCenter(center);
+                    }
+                    else
+                    {
+                        controller3D->ClearRotationCenter();
+                    }
+                }
                 component->Update(timeStep);
+            }
         }
     }
 
@@ -876,6 +893,26 @@ void SceneTab::OnUpdate(VariantMap& args)
                 }
                 else if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
                     UnselectAll();
+            }
+        }
+
+        if (tab == this)
+        {
+            Input* input = context_->GetInput();
+            if (input->IsMouseVisible())
+            {
+                if (input->GetKeyPress(KEY_W))
+                {
+                    gizmo_.SetOperation(GIZMOOP_TRANSLATE);
+                }
+                else if (input->GetKeyPress(KEY_E))
+                {
+                    gizmo_.SetOperation(GIZMOOP_ROTATE);
+                }
+                else if (input->GetKeyPress(KEY_R))
+                {
+                    gizmo_.SetOperation(GIZMOOP_SCALE);
+                }
             }
         }
     }
@@ -1198,8 +1235,13 @@ void SceneTab::OnSceneActivated(VariantMap& args)
 
 void SceneTab::OnEditorProjectClosing()
 {
-    if (texture_.Null())
+    ea::string snapshotPath = GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png";
+
+    if (texture_.Null() || GetScene() == nullptr)
+    {
+        GetSubsystem<FileSystem>()->Delete(snapshotPath);
         return;
+    }
 
     // Also crop image to a square.
     SharedPtr<Image> snapshot(texture_->GetImage());
@@ -1218,7 +1260,7 @@ void SceneTab::OnEditorProjectClosing()
         rect.bottom_ = rect.top_ + side;
     }
     SharedPtr<Image> cropped = snapshot->GetSubimage(rect);
-    cropped->SavePNG(GetSubsystem<Project>()->GetProjectPath() + ".snapshot.png");
+    cropped->SavePNG(snapshotPath);
 }
 
 void SceneTab::AddComponentIcon(Component* component)
@@ -1408,10 +1450,15 @@ void SceneTab::ResizeMainViewport(const IntRect& rect)
         return;
 
     rect_ = rect;
-    viewport_->SetRect(IntRect(IntVector2::ZERO, rect.Size()));
-    if (rect.Width() > 0 && rect.Height() > 0 && (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight()))
+    ImGuiViewport* viewport = ui::GetCurrentWindow()->Viewport;
+    IntVector2 textureSize{
+        static_cast<int>(static_cast<float>(rect.Width()) * viewport->DpiScale),
+        static_cast<int>(static_cast<float>(rect.Height()) * viewport->DpiScale)
+    };
+    viewport_->SetRect(IntRect(IntVector2::ZERO, textureSize));
+    if (textureSize.x_ > 0 && textureSize.y_ > 0 && (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight()))
     {
-        texture_->SetSize(rect.Width(), rect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+        texture_->SetSize(textureSize.x_, textureSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
         texture_->GetRenderSurface()->SetViewport(0, viewport_);
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }

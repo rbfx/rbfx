@@ -51,7 +51,7 @@ bool ProfilerTab::RenderWindowContent()
     }
     else
     {
-        const ImRect& rect = ui::GetCurrentWindow()->ContentsRegionRect;
+        const ImRect& rect = ui::GetCurrentWindow()->ContentRegionRect;
         ui::SetCursorPosY(rect.GetHeight() / 2 + ui::CalcTextSize("C").y / 2);
 
         ui::TextUnformatted("Connect to: ");

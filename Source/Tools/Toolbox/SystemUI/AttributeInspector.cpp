@@ -329,7 +329,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             }
             if (refList.names_.empty())
             {
-                ui::SetCursorPosY(ui::GetCursorPosY() + 5_dp);
+                ui::SetCursorPosY(ui::GetCursorPosY() + 5);
                 ui::TextUnformatted("...");
             }
             break;
@@ -368,7 +368,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
                 // Column-friendly indent
                 ui::NewLine();
-                ui::SameLine(20_dp);
+                ui::SameLine(20);
                 ui::TextUnformatted((name.empty() ? it->first.ToString() : name).c_str());
 #else
                 // Column-friendly indent
@@ -379,7 +379,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
                 ui::NextColumn();
                 ui::IdScope entryIdScope(index++);
-                UI_ITEMWIDTH(-26_dp) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                UI_ITEMWIDTH(-26) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
                     modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second);
                 ui::SameLine(it->second.GetType());
                 if (ui::Button(ICON_FA_TRASH))
@@ -399,7 +399,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 UI_ITEMWIDTH(-1)
                     ui::InputText("###Key", &mapState->fieldName);
                 ui::NextColumn();
-                UI_ITEMWIDTH(-26_dp) // Space for OK button
+                UI_ITEMWIDTH(-26) // Space for OK button
                     ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
                 ui::SameLine(0, 4);
                 if (ui::Button(ICON_FA_CHECK))

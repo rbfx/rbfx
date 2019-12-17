@@ -152,7 +152,7 @@ void Editor::RenderMenuBar()
             // Copied from ToolbarButton()
             auto& g = *ui::GetCurrentContext();
             float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
-            ui::SetCursorScreenPos({ui::GetIO().DisplaySize.x / 2 - dimension * 4 / 2, ui::GetCursorScreenPos().y});
+            ui::SetCursorScreenPos(ImVec2{ui::GetMainViewport()->Pos.x + g.IO.DisplaySize.x / 2 - dimension * 4 / 2, ui::GetCursorScreenPos().y});
             if (auto* previewTab = GetTab<PreviewTab>())
                 previewTab->RenderButtons();
         }

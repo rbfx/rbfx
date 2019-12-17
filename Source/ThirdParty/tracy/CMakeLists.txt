@@ -71,9 +71,9 @@ if (URHO3D_PROFILING)
         set_target_properties(TracyProfiler PROPERTIES OUTPUT_NAME Profiler)
         setup_tracy_profiler_target(TracyProfiler)
         install (TARGETS TracyProfiler
-            LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
-            RUNTIME DESTINATION ${DEST_BIN_DIR}
-            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+            LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+            RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+            ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
         )
 
         # Lib for editor to easily consume profiler
@@ -84,9 +84,9 @@ if (URHO3D_PROFILING)
     endif ()
 
     install (TARGETS Tracy EXPORT Urho3D
-        LIBRARY DESTINATION ${DEST_LIBRARY_DIR}
-        RUNTIME DESTINATION ${DEST_BIN_DIR}
-        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR}
+        LIBRARY DESTINATION ${DEST_LIBRARY_DIR_CONFIG}
+        RUNTIME DESTINATION ${DEST_BIN_DIR_CONFIG}
+        ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG}
     )
 endif ()
 

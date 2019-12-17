@@ -29,5 +29,5 @@ target_include_directories(DetourTileCache
 )
 
 if (NOT URHO3D_MERGE_STATIC_LIBS)
-    install(TARGETS DetourTileCache EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+    install(TARGETS DetourTileCache EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
 endif ()

@@ -100,6 +100,7 @@ _option2(URHO3D_NETWORK           "Networking subsystem enabled"                
 _option(URHO3D_PHYSICS            "Physics subsystem enabled"                             ${URHO3D_ENABLE_ALL})
 _option2(URHO3D_PROFILING         "Profiler support enabled"                              ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 _option(URHO3D_SYSTEMUI           "Build SystemUI subsystem"                              ${URHO3D_ENABLE_ALL})
+_option2(URHO3D_SYSTEMUI_VIEWPORTS "Use native viewports in supported applications"       ON                   "URHO3D_SYSTEMUI"               OFF)
 _option(URHO3D_URHO2D             "2D subsystem enabled"                                  ${URHO3D_ENABLE_ALL})
 
 # Features
@@ -155,6 +156,9 @@ endif ()
 # Implicit configuration
 if (ANDROID OR WEB OR IOS)
     set (URHO3D_SSE OFF)
+    if (NOT URHO3D_GLES3)
+        set (URHO3D_SYSTEMUI OFF)
+    endif ()
 elseif (URHO3D_TOOLS)
     set (URHO3D_SYSTEMUI ON)
     set (URHO3D_FILEWATCHER ON)

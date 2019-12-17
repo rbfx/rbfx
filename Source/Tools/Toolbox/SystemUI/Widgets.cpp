@@ -159,8 +159,8 @@ bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeFlags flags)
 bool ToolbarButton(const char* label)
 {
     auto& g = *ui::GetCurrentContext();
-    float dimension = g.FontBaseSize + g.Style.FramePadding.y * 2.0f;
-    return ui::ButtonEx(label, {0, dimension}, ImGuiButtonFlags_PressedOnClick);
+    float dimension = g.FontSize + g.Style.FramePadding.y * 2.0f;
+    return ui::ButtonEx(label, {dimension, dimension}, ImGuiButtonFlags_PressedOnClick);
 }
 
 void SetHelpTooltip(const char* text, Key requireKey)
@@ -201,7 +201,7 @@ bool MaskSelector(unsigned int* mask)
             }
 
             ui::PushID(bitMask);
-            if (ui::Button("", {8_dp, 9_dp}))
+            if (ui::Button("", {8, 9}))
             {
                 modified = true;
                 *mask ^= bitMask;
@@ -214,7 +214,7 @@ bool MaskSelector(unsigned int* mask)
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + 9_dp});
+            ui::SetCursorPos({pos.x, pos.y + 9});
     }
 
     return modified;
