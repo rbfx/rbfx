@@ -39,6 +39,45 @@
 namespace Urho3D
 {
 
+/// Number of multi-tap samples.
+static const unsigned numMultiTapSamples = 25;
+
+/// Multi-tap offsets.
+static const Vector2 multiTapOffsets[numMultiTapSamples] =
+{
+    {  1.0f,  1.0f },
+    {  1.0f, -1.0f },
+    { -1.0f,  1.0f },
+    { -1.0f, -1.0f },
+
+    {  1.0f,  0.5f },
+    {  1.0f, -0.5f },
+    { -1.0f,  0.5f },
+    { -1.0f, -0.5f },
+    {  0.5f,  1.0f },
+    {  0.5f, -1.0f },
+    { -0.5f,  1.0f },
+    { -0.5f, -1.0f },
+
+    {  1.0f,  0.0f },
+    { -1.0f,  0.0f },
+    {  0.0f,  1.0f },
+    {  0.0f, -1.0f },
+
+    {  0.5f,  0.5f },
+    {  0.5f, -0.5f },
+    { -0.5f,  0.5f },
+    { -0.5f, -0.5f },
+
+    {  0.5f,  0.0f },
+    { -0.5f,  0.0f },
+    {  0.0f,  0.5f },
+    {  0.0f, -0.5f },
+
+    {  0.0f,  0.0f },
+};
+
+
 /// Set camera bounding box.
 void SetCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
 {
@@ -104,21 +143,33 @@ LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context
     SetCameraBoundingBox(camera, boundingBox);
 
     // Replicate all elements in the scene
+    unsigned geometryId = 1;
     for (const LightmapChartElement& element : chart.elements_)
     {
         if (element.staticModel_)
         {
-            auto material = bakingMaterial->Clone();
-            material->SetShaderParameter("LMOffset", element.region_.GetScaleOffset());
+            for (unsigned tap = 0; tap < numMultiTapSamples; ++tap)
+            {
+                const Vector2 tapOffset = multiTapOffsets[tap] * chart.GetTexelSize();
+                const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
+                const float tapDepth = 1.0f - static_cast<float>(tap) / (numMultiTapSamples - 1);
 
-            Node* node = scene->CreateChild();
-            node->SetPosition(element.node_->GetWorldPosition());
-            node->SetRotation(element.node_->GetWorldRotation());
-            node->SetScale(element.node_->GetWorldScale());
+                auto material = bakingMaterial->Clone();
+                material->SetShaderParameter("LMOffset", element.region_.GetScaleOffset() + tapOffset4);
+                material->SetShaderParameter("LightmapLayer", tapDepth);
+                material->SetShaderParameter("LightmapGeometry", static_cast<float>(geometryId));
 
-            StaticModel* staticModel = node->CreateComponent<StaticModel>();
-            staticModel->SetModel(element.staticModel_->GetModel());
-            staticModel->SetMaterial(material);
+                Node* node = scene->CreateChild();
+                node->SetPosition(element.node_->GetWorldPosition());
+                node->SetRotation(element.node_->GetWorldRotation());
+                node->SetScale(element.node_->GetWorldScale());
+
+                StaticModel* staticModel = node->CreateComponent<StaticModel>();
+                staticModel->SetModel(element.staticModel_->GetModel());
+                staticModel->SetMaterial(material);
+            }
+
+            ++geometryId;
         }
     }
 
