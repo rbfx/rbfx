@@ -20,40 +20,18 @@
 // THE SOFTWARE.
 //
 
+using System;
+
 namespace Urho3DNet
 {
-    public partial class Node
+    public partial class IndexBuffer
     {
-        public T CreateComponent<T>(CreateMode mode = CreateMode.Replicated, uint id = 0) where T: Component
+        unsafe public bool SetData(short[] indexData)
         {
-            return (T)CreateComponent(typeof(T).Name, mode, id);
-        }
-
-        public T GetComponent<T>(bool recursive) where T: Component
-        {
-            return (T)GetComponent(typeof(T).Name, recursive);
-        }
-
-        /// <summary>
-        /// Get first occurrence of a component type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public T GetComponent<T>() where T: Component
-        {
-            return (T)GetComponent(typeof(T).Name);
-        }
-
-        /// <summary>
-        /// get all components of a type
-        /// </summary>
-        /// <typeparam name="T"></typeparam>
-        /// <returns></returns>
-        public ComponentList GetComponents<T>(bool recursive = false) where T: Component
-        {
-            ComponentList componentList = new ComponentList();
-            GetComponents(componentList, typeof(T).Name, recursive);
-            return componentList;
+            fixed (short* indexDataPtr = indexData)
+            {
+                return SetData((IntPtr)indexDataPtr);
+            }
         }
     }
 }
