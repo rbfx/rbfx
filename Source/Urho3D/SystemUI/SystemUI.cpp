@@ -31,6 +31,7 @@
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
 #include "../IO/Log.h"
+#include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
@@ -224,12 +225,12 @@ ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, flo
         ea::vector<uint8_t> data;
         data.resize(fontFile->GetSize());
         auto bytesLen = fontFile->Read(&data.front(), data.size());
-        return AddFont(data.data(), bytesLen, ranges, size, merge);
+        return AddFont(data.data(), bytesLen, GetFileName(fontPath).c_str(), ranges, size, merge);
     }
     return nullptr;
 }
 
-ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const char* name, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
@@ -239,6 +240,7 @@ ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* range
     cfg.MergeMode = merge;
     cfg.FontDataOwnedByAtlas = false;
     cfg.PixelSnapH = true;
+    ImFormatString(cfg.Name, sizeof(cfg.Name), "%s (%.02f)", name, size);
     if (auto* newFont = ui::GetIO().Fonts->AddFontFromMemoryTTF((void*)data, dsize, size, &cfg, ranges))
     {
         ReallocateFontTexture();
@@ -247,7 +249,7 @@ ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* range
     return nullptr;
 }
 
-ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const char* name, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
@@ -257,6 +259,7 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWc
     cfg.MergeMode = merge;
     cfg.FontDataOwnedByAtlas = false;
     cfg.PixelSnapH = true;
+    ImFormatString(cfg.Name, sizeof(cfg.Name), "%s (%.02f)", name, size);
     if (auto* newFont = ui::GetIO().Fonts->AddFontFromMemoryCompressedTTF((void*)data, dsize, size, &cfg, ranges))
     {
         ReallocateFontTexture();

@@ -221,11 +221,11 @@ public:
         0
     };
 
-        context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, rangesBasic, 15.0f);
-        context_->GetSystemUI()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, rangesIcons, 14.0f, true);
-        fixedWidth = context_->GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, nullptr, 15.0f);
-        bigFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 20.0f);
-        smallFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, nullptr, 10.0f);
+        context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Arimo_compressed_size, "Arimo", rangesBasic, 15.0f);
+        context_->GetSystemUI()->AddFontCompressed(tracy::FontAwesomeSolid_compressed_data, tracy::FontAwesomeSolid_compressed_size, "FontAwesome", rangesIcons, 14.0f, true);
+        fixedWidth = context_->GetSystemUI()->AddFontCompressed(tracy::Cousine_compressed_data, tracy::Cousine_compressed_size, "Cousine", nullptr, 15.0f);
+        bigFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 20.0f);
+        smallFont = context_->GetSystemUI()->AddFontCompressed(tracy::Arimo_compressed_data, tracy::Cousine_compressed_size, "Arimo", nullptr, 10.0f);
 
         if (!readCapture.empty())
         {
