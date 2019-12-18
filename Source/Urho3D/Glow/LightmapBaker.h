@@ -46,19 +46,6 @@ struct LightmapBakedData
     ea::vector<Color> backedLighting_;
 };
 
-/// Lightmap baking settings.
-struct LightmapBakingSettings
-{
-    /// Charting settings.
-    LightmapChartingSettings charting_;
-    /// Geometry baking settings.
-    LightmapGeometryBakingSettings geometryBaking_;
-    /// Tracing settings.
-    LightmapTracingSettings tracing_;
-    /// Number of indirect samples.
-    unsigned numIndirectSamples_{ 10 };
-};
-
 /// Lightmap baker API.
 class URHO3D_API LightmapBaker : public Object
 {
@@ -71,7 +58,7 @@ public:
     ~LightmapBaker() override;
 
     /// Initialize. Children nodes are ignored. Scene must stay immutable until the end. Must be called from rendering thread.
-    bool Initialize(const LightmapBakingSettings& settings, Scene* scene,
+    bool Initialize(const LightmapSettings& settings, Scene* scene,
         const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights);
 
     /// Return number of lightmaps.

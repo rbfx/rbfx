@@ -27,14 +27,16 @@
 namespace Urho3D
 {
 
-void IncrementalLightmapper::PrepareForBaking(Scene* scene, LightmapSceneCollector* collector, float chunkSize)
+void IncrementalLightmapper::PrepareForBaking(const LightmapSettings& lightmapSettings,
+    const IncrementalLightmapperSettings& incrementalSettings, Scene* scene, LightmapSceneCollector* collector)
 {
     // Initialize lightmapper
+    lightmapSettings_ = lightmapSettings;
+    incrementalSettings_ = incrementalSettings;
     scene_ = scene;
     collector_ = collector;
-    chunkSize_ = chunkSize;
 
-    collector_->LockScene(scene_, chunkSize_);
+    collector_->LockScene(scene_, incrementalSettings_.chunkSize_);
     chunks_ = collector_->GetChunks();
 
     // Perform charting for each chunk
