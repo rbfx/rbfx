@@ -131,6 +131,8 @@ private:
     ShaderProgramMap shaderPrograms_;
     /// Shader program in use.
     ShaderProgram* shaderProgram_;
+    /// Last device lost message timestamp. Used to avoid log spam.
+    unsigned deviceLostTimestamp_;
 
 };
 
