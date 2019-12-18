@@ -2138,6 +2138,7 @@ struct ImFontConfig
     float           RasterizerMultiply;     // 1.0f     // Brighten (>1.0f) or darken (<1.0f) font output. Brightening small fonts may be a good workaround to make them more readable.
     ImWchar         EllipsisChar;           // -1       // Explicitly specify unicode codepoint of ellipsis character. When fonts are being merged first specified ellipsis will be used.
     float           DpiScale;               // 1.0f     //
+    bool            IsDuplicated;           // false    // Flag indicating that this is a copy of original font duplicated for specific monitor DPI.
 
     // [Internal]
     char            Name[40];               // Name (strictly to ease debugging)
