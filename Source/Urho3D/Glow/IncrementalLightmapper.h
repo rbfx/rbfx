@@ -25,9 +25,17 @@
 #pragma once
 
 #include "../Glow/LightmapSceneCollector.h"
+#include "../Glow/LightmapSettings.h"
 
 namespace Urho3D
 {
+
+/// Incremental lightmapper settings.
+struct IncrementalLightmapperSettings
+{
+    /// Size of the chunk.
+    float chunkSize_{ 64.0f };
+};
 
 /// Incremental lightmapper.
 class IncrementalLightmapper
@@ -37,15 +45,18 @@ public:
     IncrementalLightmapper() {}
 
     /// Prepare for scene baking.
-    void PrepareForBaking(Scene* scene, LightmapSceneCollector* collector, float chunkSize);
+    void PrepareForBaking(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
+        Scene* scene, LightmapSceneCollector* collector);
 
 private:
+    /// Settings for lightmap generation.
+    LightmapSettings lightmapSettings_;
+    /// Settings for incremental lightmapper itself.
+    IncrementalLightmapperSettings incrementalSettings_;
     /// Scene.
     Scene* scene_{};
     /// Scene collector.
     LightmapSceneCollector* collector_{};
-    /// Chunk size.
-    float chunkSize_{};
     /// List of all chunks.
     ea::vector<IntVector3> chunks_;
 };

@@ -61,7 +61,7 @@ namespace Urho3D
 struct LightmapBakerImpl
 {
     /// Construct.
-    LightmapBakerImpl(Context* context, const LightmapBakingSettings& settings, Scene* scene,
+    LightmapBakerImpl(Context* context, const LightmapSettings& settings, Scene* scene,
         const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights)
         : context_(context)
         , settings_(settings)
@@ -81,7 +81,7 @@ struct LightmapBakerImpl
     Context* context_{};
 
     /// Settings.
-    const LightmapBakingSettings settings_;
+    const LightmapSettings settings_;
     /// Scene.
     Scene* scene_{};
     /// Lightmap charts.
@@ -113,7 +113,7 @@ LightmapBaker::~LightmapBaker()
 {
 }
 
-bool LightmapBaker::Initialize(const LightmapBakingSettings& settings, Scene* scene,
+bool LightmapBaker::Initialize(const LightmapSettings& settings, Scene* scene,
     const ea::vector<Node*>& lightReceivers, const ea::vector<Node*>& lightObstacles, const ea::vector<Node*>& lights)
 {
     impl_ = ea::make_unique<LightmapBakerImpl>(context_, settings, scene, lightReceivers, lightObstacles, lights);
@@ -193,7 +193,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
         { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
 
     // Calculate indirect light.
-    for (int i = 0; i < impl_->settings_.numIndirectSamples_; ++i)
+    for (int i = 0; i < impl_->settings_.tracing_.numIndirectSamples_; ++i)
         BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, bakedGeometry, *impl_->embreeScene_, impl_->settings_.tracing_);
 
     // Post-process lighting.

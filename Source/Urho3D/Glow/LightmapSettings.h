@@ -58,14 +58,29 @@ struct LightmapTracingSettings
 {
     /// Max number of bounces.
     static const unsigned MaxBounces = 8;
-    /// Number of threads to use.
-    unsigned numThreads_{ 8 };
-    /// Ray position offset.
-    float rayPositionOffset_{ 0.001f };
+
     /// Number of bounces.
     unsigned numBounces_{ 2 };
+    /// Number of indirect samples.
+    unsigned numIndirectSamples_{ 10 };
+
+    /// Ray position offset.
+    float rayPositionOffset_{ 0.001f };
+    /// Number of threads to use.
+    unsigned numThreads_{ 8 };
     /// Whether to use pseudorandom sampling.
     bool pseudoRandomSampling_{ false };
+};
+
+/// Lightmap settings.
+struct LightmapSettings
+{
+    /// Charting settings.
+    LightmapChartingSettings charting_;
+    /// Geometry baking settings.
+    LightmapGeometryBakingSettings geometryBaking_;
+    /// Tracing settings.
+    LightmapTracingSettings tracing_;
 };
 
 }
