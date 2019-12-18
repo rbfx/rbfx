@@ -31,6 +31,7 @@
 #include "../Input/Input.h"
 #include "../Input/InputEvents.h"
 #include "../IO/Log.h"
+#include "../IO/FileSystem.h"
 #include "../Resource/ResourceCache.h"
 #include "../SystemUI/SystemUI.h"
 #include "../SystemUI/Console.h"
@@ -63,9 +64,23 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     io.UserData = this;
     // UI subsystem is responsible for managing cursors and that interferes with ImGui.
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange | flags;
-    void* glContext = nullptr;
+    PlatformInitialize();
+
+    // Subscribe to events
+    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
+    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
+    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
+    SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
+    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
+}
+
+void SystemUI::PlatformInitialize()
+{
+    ImGuiIO& io = ui::GetIO();
     Graphics* graphics = GetSubsystem<Graphics>();
-    io.DisplaySize = {static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight())};
+    io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
 #if URHO3D_OPENGL
     ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(graphics->GetSDLWindow()), graphics->GetImpl()->GetGLContext());
 #else
@@ -83,15 +98,9 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
 #else
     ImGui_ImplDX9_Init(graphics->GetImpl()->GetDevice());
 #endif
-    // Subscribe to events
-    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
-    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
 }
 
-SystemUI::~SystemUI()
+void SystemUI::PlatformShutdown()
 {
 #if URHO3D_OPENGL
     ImGui_ImplOpenGL3_Shutdown();
@@ -101,6 +110,11 @@ SystemUI::~SystemUI()
     ImGui_ImplDX9_Shutdown();
 #endif
     ImGui_ImplSDL2_Shutdown();
+}
+
+SystemUI::~SystemUI()
+{
+    PlatformShutdown();
     ui::DestroyContext(imContext_);
     imContext_ = nullptr;
 }
@@ -154,6 +168,12 @@ void SystemUI::OnInputEnd(VariantMap& args)
 {
     if (!imContext_)
         return;
+
+    if (imContext_->WithinFrameScope)
+    {
+        ui::EndFrame();
+        ui::UpdatePlatformWindows();
+    }
 
     ImGuiIO& io = ui::GetIO();
     Graphics* graphics = GetSubsystem<Graphics>();
@@ -224,12 +244,12 @@ ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, flo
         ea::vector<uint8_t> data;
         data.resize(fontFile->GetSize());
         auto bytesLen = fontFile->Read(&data.front(), data.size());
-        return AddFont(data.data(), bytesLen, ranges, size, merge);
+        return AddFont(data.data(), bytesLen, GetFileName(fontPath).c_str(), ranges, size, merge);
     }
     return nullptr;
 }
 
-ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const char* name, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
@@ -239,6 +259,7 @@ ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* range
     cfg.MergeMode = merge;
     cfg.FontDataOwnedByAtlas = false;
     cfg.PixelSnapH = true;
+    ImFormatString(cfg.Name, sizeof(cfg.Name), "%s (%.02f)", name, size);
     if (auto* newFont = ui::GetIO().Fonts->AddFontFromMemoryTTF((void*)data, dsize, size, &cfg, ranges))
     {
         ReallocateFontTexture();
@@ -247,7 +268,7 @@ ImFont* SystemUI::AddFont(const void* data, unsigned dsize, const ImWchar* range
     return nullptr;
 }
 
-ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWchar* ranges, float size, bool merge)
+ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const char* name, const ImWchar* ranges, float size, bool merge)
 {
     float previousSize = fontSizes_.empty() ? SYSTEMUI_DEFAULT_FONT_SIZE : fontSizes_.back();
     fontSizes_.push_back(size);
@@ -257,6 +278,7 @@ ImFont* SystemUI::AddFontCompressed(const void* data, unsigned dsize, const ImWc
     cfg.MergeMode = merge;
     cfg.FontDataOwnedByAtlas = false;
     cfg.PixelSnapH = true;
+    ImFormatString(cfg.Name, sizeof(cfg.Name), "%s (%.02f)", name, size);
     if (auto* newFont = ui::GetIO().Fonts->AddFontFromMemoryCompressedTTF((void*)data, dsize, size, &cfg, ranges))
     {
         ReallocateFontTexture();

@@ -5,13 +5,6 @@
   <Import Project="$(CMAKE_BINARY_DIR)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(CMAKE_BINARY_DIR)' != '' And Exists('$(CMAKE_BINARY_DIR)/CMake.props') " />
   <!-- Azure pipelines for some reason have SolutionDir undefined however -->
   <Import Project="$(MSBuildStartupDirectory)/CMake.props" Condition=" '$(CMakePropsIncluded)' == '' And '$(SolutionDir)' == '' And Exists('$(MSBuildStartupDirectory)/CMake.props') " />
-  <PropertyGroup Condition="'$(TargetFramework)' == ''">
-    <TargetFramework Condition=" '$(URHO3D_NETFX)' == '' ">net471</TargetFramework>
-    <TargetFramework Condition=" '$(URHO3D_NETFX)' != '' ">$(URHO3D_NETFX)</TargetFramework>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-$(PlatformTarget)</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win7-$(PlatformTarget)</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-$(PlatformTarget)</RuntimeIdentifiers>
-  </PropertyGroup>
   <PropertyGroup>
     <LangVersion>7.2</LangVersion>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
@@ -25,6 +18,13 @@
     <PlatformTarget Condition=" '$(Platform)' == 'x64' ">x64</PlatformTarget>
     <PlatformTarget Condition=" '$(Platform)' == 'Win32' Or '$(Platform)' == 'x86' ">x86</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(TargetFramework)' == ''">
+    <TargetFramework Condition=" '$(URHO3D_NETFX)' == '' ">net471</TargetFramework>
+    <TargetFramework Condition=" '$(URHO3D_NETFX)' != '' ">$(URHO3D_NETFX)</TargetFramework>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-$(PlatformTarget)</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win7-$(PlatformTarget)</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-$(PlatformTarget)</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(CMAKE_BINARY_DIR)' == '' ">
     <CMAKE_BINARY_DIR Condition=" '$(OS)' == 'Windows_NT' ">$(SolutionDir)</CMAKE_BINARY_DIR>                           <!-- Solution is in cmake binary dir -->

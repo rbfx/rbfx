@@ -55,12 +55,13 @@ public:
     /// Add font to imgui subsystem.
     /// \param fontPath a string pointing to TTF font resource.
     /// \param size a font size. If 0 then size of last font is used.
+    /// \param name is any string, stored internally as font name.
     /// \param ranges optional ranges of font that should be used. Parameter is ImWchar[] of {start1, stop1, ..., startN, stopN, 0}.
     /// \param merge set to true if new font should be merged to last active font.
     /// \return ImFont instance that may be used for setting current font when drawing GUI.
     ImFont* AddFont(const ea::string& fontPath, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
-    ImFont* AddFont(const void* data, unsigned dsize, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
-    ImFont* AddFontCompressed(const void* data, unsigned dsize, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
+    ImFont* AddFont(const void* data, unsigned dsize, const char* name, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
+    ImFont* AddFontCompressed(const void* data, unsigned dsize, const char* name, const ImWchar* ranges = nullptr, float size = 0, bool merge = false);
     /// Apply built-in system ui style.
     /// \param darkStyle enables dark style, otherwise it is a light style.
     /// \param alpha value between 0.0f - 1.0f
@@ -82,6 +83,8 @@ protected:
     ImGuiContext* imContext_;
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
 
+    void PlatformInitialize();
+    void PlatformShutdown();
     void ReallocateFontTexture();
     void OnRawEvent(VariantMap& args);
     void OnScreenMode(VariantMap& args);
