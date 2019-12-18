@@ -40,7 +40,8 @@ GraphicsImpl::GraphicsImpl() :
     deviceType_(D3DDEVTYPE_HAL),
     shaderProgram_(nullptr),
     deviceLost_(false),
-    queryIssued_(false)
+    queryIssued_(false),
+	deviceLostTimestamp_(0)
 {
     memset(&presentParams_, 0, sizeof presentParams_);
 }

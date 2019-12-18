@@ -2561,7 +2561,10 @@ void Graphics::ResetDevice()
 
 void Graphics::OnDeviceLost()
 {
-    URHO3D_LOGINFO("Device lost");
+    unsigned timestamp = Time::GetTimeSinceEpoch();
+    if ((timestamp - impl_->deviceLostTimestamp_) > 5)
+        URHO3D_LOGINFO("Device lost");
+    impl_->deviceLostTimestamp_ = timestamp;
 
     if (impl_->defaultColorSurface_)
     {
