@@ -156,6 +156,12 @@ void SystemUI::OnInputEnd(VariantMap& args)
     if (!imContext_)
         return;
 
+    if (imContext_->WithinFrameScope)
+    {
+        ui::EndFrame();
+        ui::UpdatePlatformWindows();
+    }
+
     ImGuiIO& io = ui::GetIO();
     Graphics* graphics = GetSubsystem<Graphics>();
     referencedTextures_.push_back(fontTexture_);
