@@ -1,4 +1,4 @@
-// dear imgui, v1.74
+// dear imgui, v1.75 WIP
 // (drawing and font code)
 
 /*
@@ -523,10 +523,13 @@ void ImDrawList::PopTextureID()
     UpdateTextureID();
 }
 
-// NB: this can be called with negative count for removing primitives (as long as the result does not underflow)
+// Reserve space for a number of vertices and indices.
+// You must finish filling your reserved data before calling PrimReserve() again, as it may reallocate or 
+// submit the intermediate results. PrimUnreserve() can be used to release unused allocations.
 void ImDrawList::PrimReserve(int idx_count, int vtx_count)
 {
     // Large mesh support (when enabled)
+    IM_ASSERT_PARANOID(idx_count >= 0 && vtx_count >= 0);
     if (sizeof(ImDrawIdx) == 2 && (_VtxCurrentIdx + vtx_count >= (1 << 16)) && (Flags & ImDrawListFlags_AllowVtxOffset))
     {
         _VtxCurrentOffset = VtxBuffer.Size;
@@ -534,7 +537,7 @@ void ImDrawList::PrimReserve(int idx_count, int vtx_count)
         AddDrawCmd();
     }
 
-    ImDrawCmd& draw_cmd = CmdBuffer.Data[CmdBuffer.Size-1];
+    ImDrawCmd& draw_cmd = CmdBuffer.Data[CmdBuffer.Size - 1];
     draw_cmd.ElemCount += idx_count;
 
     int vtx_buffer_old_size = VtxBuffer.Size;
@@ -544,6 +547,17 @@ void ImDrawList::PrimReserve(int idx_count, int vtx_count)
     int idx_buffer_old_size = IdxBuffer.Size;
     IdxBuffer.resize(idx_buffer_old_size + idx_count);
     _IdxWritePtr = IdxBuffer.Data + idx_buffer_old_size;
+}
+
+// Release the a number of reserved vertices/indices from the end of the last reservation made with PrimReserve().
+void ImDrawList::PrimUnreserve(int idx_count, int vtx_count)
+{
+    IM_ASSERT_PARANOID(idx_count >= 0 && vtx_count >= 0);
+
+    ImDrawCmd& draw_cmd = CmdBuffer.Data[CmdBuffer.Size - 1];
+    draw_cmd.ElemCount -= idx_count;
+    VtxBuffer.shrink(VtxBuffer.Size - vtx_count);
+    IdxBuffer.shrink(IdxBuffer.Size - idx_count);
 }
 
 // Fully unrolled with inline call to keep our debug builds decently fast.
@@ -1087,6 +1101,30 @@ void ImDrawList::AddCircle(const ImVec2& center, float radius, ImU32 col, int nu
 }
 
 void ImDrawList::AddCircleFilled(const ImVec2& center, float radius, ImU32 col, int num_segments)
+{
+    if ((col & IM_COL32_A_MASK) == 0 || num_segments <= 2)
+        return;
+
+    // Because we are filling a closed shape we remove 1 from the count of segments/points
+    const float a_max = (IM_PI * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
+    PathArcTo(center, radius, 0.0f, a_max, num_segments - 1);
+    PathFillConvex(col);
+}
+
+// Guaranteed to honor 'num_segments'
+void ImDrawList::AddNgon(const ImVec2& center, float radius, ImU32 col, int num_segments, float thickness)
+{
+    if ((col & IM_COL32_A_MASK) == 0 || num_segments <= 2)
+        return;
+
+    // Because we are filling a closed shape we remove 1 from the count of segments/points
+    const float a_max = (IM_PI * 2.0f) * ((float)num_segments - 1.0f) / (float)num_segments;
+    PathArcTo(center, radius - 0.5f, 0.0f, a_max, num_segments - 1);
+    PathStroke(col, true, thickness);
+}
+
+// Guaranteed to honor 'num_segments'
+void ImDrawList::AddNgonFilled(const ImVec2& center, float radius, ImU32 col, int num_segments)
 {
     if ((col & IM_COL32_A_MASK) == 0 || num_segments <= 2)
         return;
@@ -1684,7 +1722,7 @@ ImFont* ImFontAtlas::AddFontFromFileTTF(const char* filename, float size_pixels,
     void* data = ImFileLoadToMemory(filename, "rb", &data_size, 0);
     if (!data)
     {
-        IM_ASSERT(0); // Could not load file.
+        IM_ASSERT_USER_ERROR(0, "Could not load font file!");
         return NULL;
     }
     ImFontConfig font_cfg = font_cfg_template ? *font_cfg_template : ImFontConfig();
@@ -1842,26 +1880,20 @@ void ImFontAtlas::CreatePerDpiFonts()
     const int total_fonts = Fonts.Size;           // following loop and we only need to iterate initial list of
                                                   // fonts/configs.
     // Duplicate fonts for each dpi
-    for (int dpi_index = 0; dpi_index < dpi_set.Size; dpi_index++)
+    for (int conf_i = 0; conf_i < total_configs; conf_i++)
     {
-        const float dpi = dpi_set[dpi_index];
-        for (int config_index = 0; config_index < total_configs; config_index++)
+        ImFontConfig& source_config = ConfigData[conf_i];
+        ImFont* src_font = source_config.DstFont;
+
+        for (int dpi_i = 0; dpi_i < dpi_set.Size; dpi_i++)
         {
-            if (dpi_index == 0)
-            {
-                // Upscale first font in-pace.
-                ConfigData[config_index].DpiScale = dpi;
-                continue;
-            }
-            // Other fonts have to be duplicated.
-            ImFontConfig config = ConfigData[config_index];
-            ImFont* src_font = config.DstFont;
             ImFont* dpi_font = NULL;
 
-            for (int i = 0; i < Fonts.Size; i++)
+            // Find if font was already upscaled.
+            for (int font_i = 0; font_i < Fonts.Size; font_i++)
             {
-                ImFont* font = Fonts[i];
-                if (font->FontID == src_font->FontID && font->ConfigData->DpiScale == src_font->ConfigData->DpiScale)
+                ImFont* font = Fonts[font_i];
+                if (font->FontID == src_font->FontID && font->ConfigData && src_font->ConfigData && font->ConfigData->DpiScale == src_font->ConfigData->DpiScale)
                 {
                     dpi_font = font;
                     break;
@@ -1872,15 +1904,18 @@ void ImFontAtlas::CreatePerDpiFonts()
             if (dpi_font != NULL)
                 continue;
 
+            const float dpi = dpi_set[dpi_i];
+            if (dpi_i == 0)
+            {
+                // Upscale first font in-pace.
+                source_config.DpiScale = dpi;
+                continue;
+            }
+
+            // Other fonts have to be duplicated.
+            ImFontConfig config = source_config;
             config.DpiScale = dpi;
             config.FontDataOwnedByAtlas = false;
-
-            if (dpi != 1.f)
-            {
-                int end = strlen(config.Name);
-                if (end > 0)
-                    ImFormatString(config.Name + end, sizeof(config.Name) - end, "(x%.02f)", dpi);
-            }
 
             if (config.MergeMode)
             {
@@ -1908,7 +1943,7 @@ ImFont* ImFontAtlas::MapFontToDpi(ImFont* base_font, float dpi)
     for (int i = 0; i < Fonts.Size; i++)
     {
         ImFont* font = Fonts[i];
-        if (font->FontID == base_font->FontID && font->DpiScale == dpi)
+        if (font->FontID == base_font->FontID && font->ConfigData->DpiScale == dpi)
             return font;
     }
     return base_font;
@@ -2248,7 +2283,6 @@ void ImFontAtlasBuildSetupFont(ImFontAtlas* atlas, ImFont* font, ImFontConfig* f
     {
         font->ClearOutputData();
         font->FontSize = font_config->SizePixels;
-        font->DpiScale = font_config->DpiScale;
         font->ConfigData = font_config;
         font->ContainerAtlas = atlas;
         font->Ascent = ascent;
@@ -2634,7 +2668,6 @@ ImFont::ImFont()
     Ascent = Descent = 0.0f;
     MetricsTotalSurface = 0;
     FontID = 0;
-    DpiScale = 0.0f;
 }
 
 ImFont::~ImFont()
@@ -2875,7 +2908,7 @@ ImVec2 ImFont::CalcTextSizeA(float size, float max_width, float wrap_width, cons
         text_end = text_begin + strlen(text_begin); // FIXME-OPT: Need to avoid this.
 
     const float line_height = size;
-    const float scale = size / FontSize / DpiScale;
+    const float scale = size / FontSize / ConfigData->DpiScale;
 
     ImVec2 text_size = ImVec2(0,0);
     float line_width = 0.0f;
@@ -2969,7 +3002,7 @@ void ImFont::RenderChar(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
         return;
     if (const ImFontGlyph* glyph = FindGlyph(c))
     {
-        float scale = (size >= 0.0f) ? (size / FontSize / DpiScale) : 1.0f;
+        float scale = (size >= 0.0f) ? (size / FontSize / ConfigData->DpiScale) : 1.0f;
         pos.x = ImRound(pos.x + DisplayOffset.x);
         pos.y = ImRound(pos.y + DisplayOffset.y);
         draw_list->PrimReserve(6, 4);
@@ -2990,7 +3023,7 @@ void ImFont::RenderText(ImDrawList* draw_list, float size, ImVec2 pos, ImU32 col
     if (y > clip_rect.w)
         return;
 
-    const float scale = size / FontSize / DpiScale;
+    const float scale = size / FontSize / ConfigData->DpiScale;
     const float line_height = size;
     const bool word_wrap_enabled = (wrap_width > 0.0f);
     const char* word_wrap_eol = NULL;

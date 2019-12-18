@@ -172,6 +172,7 @@
 %imgui_enum(ImGuiDataType);
 %imgui_enum(ImGuiDir);
 %imgui_enum(ImGuiNavInput);
+%imgui_enum(ImGuiMouseButton);
 
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Vector2, ImVec2, pod::float2);
 URHO3D_BINARY_COMPATIBLE_TYPE_EX(Urho3DNet.Color, ImVec4, pod::float4);
