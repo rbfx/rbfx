@@ -83,6 +83,8 @@ protected:
     ImGuiContext* imContext_;
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
 
+    void PlatformInitialize();
+    void PlatformShutdown();
     void ReallocateFontTexture();
     void OnRawEvent(VariantMap& args);
     void OnScreenMode(VariantMap& args);
