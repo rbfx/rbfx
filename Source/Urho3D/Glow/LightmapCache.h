@@ -24,41 +24,32 @@
 
 #pragma once
 
-#include "../Glow/LightmapCache.h"
 #include "../Glow/LightmapCharter.h"
-#include "../Glow/LightmapSceneCollector.h"
-#include "../Glow/LightmapSettings.h"
 
 namespace Urho3D
 {
 
-struct IncrementalLightmapperImpl;
+/// Lightmap chart group ID.
+using LightmapChartGroupID = unsigned long long;
 
-/// Incremental lightmapper settings.
-struct IncrementalLightmapperSettings
-{
-    /// Size of the chunk.
-    float chunkSize_{ 64.0f };
-};
-
-/// Incremental lightmapper.
-class URHO3D_API IncrementalLightmapper
+/// Lightmap cache interface.
+class URHO3D_API LightmapCache
 {
 public:
-    /// Construct.
-    IncrementalLightmapper() {}
-    /// Destruct.
-    ~IncrementalLightmapper();
+    /// Store lightmap charts in the cache.
+    virtual void StoreCharts(LightmapChartGroupID id, LightmapChartVector charts) = 0;
+};
 
-    /// Initialize lightmapper.
-    void Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
-        Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache);
-    /// Process the scene.
-    void ProcessScene();
+/// Memory lightmap cache.
+class LightmapMemoryCache : public LightmapCache
+{
+public:
+    /// Store lightmap charts in the cache.
+    void StoreCharts(LightmapChartGroupID id, LightmapChartVector charts) override;
 
 private:
-    /// Implementation details.
-    ea::unique_ptr<IncrementalLightmapperImpl> impl_;
+    /// Charts.
+    ea::unordered_map<LightmapChartGroupID, LightmapChartVector> chartsCache_;
 };
 
 }

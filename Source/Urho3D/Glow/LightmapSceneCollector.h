@@ -37,12 +37,15 @@ class Scene;
 class Octree;
 
 /// Lightmap scene collector interface.
-class LightmapSceneCollector
+/// Chunk with index (0, 0, 0) starts at (0, 0, 0) and ends at (size, size, size).
+/// Chunks may be loaded and unloaded even if scene is locked, with one exception:
+/// If 3x3x3 adjacent chunks are fetched in any order, it is *not* allowed to unload any of said chunks.
+class URHO3D_API LightmapSceneCollector
 {
 public:
     /// Called before everything else. Scene objects must stay unchanged after this call.
     virtual void LockScene(Scene* scene, float chunkSize) = 0;
-    /// Return all scene chunks. Chunk with index (0, 0, 0) starts at (0, 0, 0) and ends at (size, size, size).
+    /// Return all scene chunks.
     virtual ea::vector<IntVector3> GetChunks() = 0;
     /// Return nodes within chunk. Every node should be returned exactly once.
     virtual ea::vector<Node*> GetUniqueNodes(const IntVector3& chunkIndex) = 0;
@@ -63,7 +66,7 @@ public:
 
     /// Called before everything else. Scene objects must stay unchanged after this call.
     void LockScene(Scene* scene, float chunkSize) override;
-    /// Return all scene chunks. Chunk with index (0, 0, 0) starts at (0, 0, 0) and ends at (size, size, size).
+    /// Return all scene chunks.
     ea::vector<IntVector3> GetChunks() override;
     /// Return nodes within chunk. Every node should be returned exactly once.
     ea::vector<Node*> GetUniqueNodes(const IntVector3& chunkIndex) override;
