@@ -22,43 +22,14 @@
 
 /// \file
 
-#pragma once
-
 #include "../Glow/LightmapCache.h"
-#include "../Glow/LightmapCharter.h"
-#include "../Glow/LightmapSceneCollector.h"
-#include "../Glow/LightmapSettings.h"
 
 namespace Urho3D
 {
 
-struct IncrementalLightmapperImpl;
-
-/// Incremental lightmapper settings.
-struct IncrementalLightmapperSettings
+void LightmapMemoryCache::StoreCharts(LightmapChartGroupID id, LightmapChartVector charts)
 {
-    /// Size of the chunk.
-    float chunkSize_{ 64.0f };
-};
-
-/// Incremental lightmapper.
-class URHO3D_API IncrementalLightmapper
-{
-public:
-    /// Construct.
-    IncrementalLightmapper() {}
-    /// Destruct.
-    ~IncrementalLightmapper();
-
-    /// Initialize lightmapper.
-    void Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
-        Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache);
-    /// Process the scene.
-    void ProcessScene();
-
-private:
-    /// Implementation details.
-    ea::unique_ptr<IncrementalLightmapperImpl> impl_;
-};
+    chartsCache_[id] = ea::move(charts);
+}
 
 }
