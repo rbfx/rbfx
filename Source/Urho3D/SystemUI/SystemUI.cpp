@@ -296,7 +296,7 @@ void SystemUI::ReallocateFontTexture()
     io.Fonts->ClearTexData();
 
     ImGuiFreeType::BuildFontAtlas(io.Fonts, ImGuiFreeType::ForceAutoHint);
-    io.Fonts->GetTexDataAsAlpha8(&pixels, &width, &height);
+    io.Fonts->GetTexDataAsRGBA32(&pixels, &width, &height);
 
     if (!fontTexture_)
     {
@@ -306,7 +306,7 @@ void SystemUI::ReallocateFontTexture()
     }
 
     if (fontTexture_->GetWidth() != width || fontTexture_->GetHeight() != height)
-        fontTexture_->SetSize(width, height, Graphics::GetAlphaFormat());
+        fontTexture_->SetSize(width, height, Graphics::GetRGBAFormat());
 
     fontTexture_->SetData(0, 0, 0, width, height, pixels);
 
