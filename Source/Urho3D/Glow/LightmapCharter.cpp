@@ -31,7 +31,7 @@ namespace Urho3D
 {
 
 /// Calculate lightmap size for given model with given scale.
-static IntVector2 CalculateModelLightmapSize(const LightmapChartingSettings& settings,
+static IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObjectScale,
     Model* model, const Vector3& scale)
 {
     const Variant& modelLightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
@@ -41,8 +41,8 @@ static IntVector2 CalculateModelLightmapSize(const LightmapChartingSettings& set
     const unsigned modelLightmapDensity = modelLightmapDensityVar.GetUInt();
 
     const float nodeScale = ea::max({ scale.x_, scale.y_, scale.z_ });
-    const float rescaleFactor = nodeScale * static_cast<float>(settings.texelDensity_) / modelLightmapDensity;
-    const float clampedRescaleFactor = ea::max(settings.minObjectScale_, rescaleFactor);
+    const float rescaleFactor = nodeScale * static_cast<float>(texelDensity) / modelLightmapDensity;
+    const float clampedRescaleFactor = ea::max(minObjectScale, rescaleFactor);
 
     return VectorCeilToInt(modelLightmapSize * clampedRescaleFactor);
 }
@@ -96,6 +96,13 @@ static LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSet
     return { chartIndex, position, size, settings.chartSize_ };
 }
 
+static IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const LightmapChartingSettings& settings)
+{
+    Node* node = staticModel->GetNode();
+    Model* model = staticModel->GetModel();
+    return CalculateModelLightmapSize(settings.texelDensity_, settings.minObjectScale_, model, node->GetWorldScale());
+}
+
 ea::vector<LightmapChart> GenerateLightmapCharts(
     const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings)
 {
@@ -104,8 +111,7 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
     {
         if (auto staticModel = node->GetComponent<StaticModel>())
         {
-            Model* model = staticModel->GetModel();
-            const IntVector2 regionSize = CalculateModelLightmapSize(settings, model, node->GetWorldScale());
+            const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
             const LightmapChartRegion region = AllocateLightmapChartRegion(settings, charts, regionSize);
 
             const LightmapChartElement chartElement{ node, staticModel, region };
