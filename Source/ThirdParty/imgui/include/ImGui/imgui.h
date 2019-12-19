@@ -2137,8 +2137,9 @@ struct ImFontConfig
     unsigned int    RasterizerFlags;        // 0x00     // Settings for custom font rasterizer (e.g. ImGuiFreeType). Leave as zero if you aren't using one.
     float           RasterizerMultiply;     // 1.0f     // Brighten (>1.0f) or darken (<1.0f) font output. Brightening small fonts may be a good workaround to make them more readable.
     ImWchar         EllipsisChar;           // -1       // Explicitly specify unicode codepoint of ellipsis character. When fonts are being merged first specified ellipsis will be used.
-    float           DpiScale;               // 1.0f     //
-    bool            IsDuplicated;           // false    // Flag indicating that this is a copy of original font duplicated for specific monitor DPI.
+    float           DpiScale;               // 1.0f     // Set to scale of specific monitor font config is used for.
+    bool            IsDuplicated;           // false    // Indicates that this font config is a copy created for one of monitors using it's DPI.
+    bool            IsUpsacled;             // false    // Indicates that this font config has DPI scaling applied already.
 
     // [Internal]
     char            Name[40];               // Name (strictly to ease debugging)
@@ -2324,6 +2325,7 @@ struct ImFont
     int                         MetricsTotalSurface;// 4     // out //            // Total surface in pixels to get an idea of the font rasterization/texture cost (not exact, we approximate the cost of padding between glyphs)
     bool                        DirtyLookupTables;  // 1     // out //
     int                         FontID;             // 4     // out //            // Identifier different for distinct fonts.
+    float                       DpiScale;           // 1.0f  // out //            // Set to scale of specific monitor font config is used for.
 
     // Methods
     IMGUI_API ImFont();
