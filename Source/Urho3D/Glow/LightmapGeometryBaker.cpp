@@ -241,9 +241,9 @@ LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScen
     return bakedGeometry;
 }
 
-ea::vector<LightmapChartBakedGeometry> BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes)
+LightmapChartBakedGeometryVector BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes)
 {
-    ea::vector<LightmapChartBakedGeometry> bakedGeometries;
+    LightmapChartBakedGeometryVector bakedGeometries;
     for (const LightmapGeometryBakingScene& bakingScene : bakingScenes)
         bakedGeometries.push_back(BakeLightmapGeometry(bakingScene));
     return bakedGeometries;

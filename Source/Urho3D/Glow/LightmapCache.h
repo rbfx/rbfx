@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Glow/LightmapCharter.h"
+#include "../Glow/LightmapGeometryBaker.h"
 #include "../Math/Vector3.h"
 
 namespace Urho3D
@@ -34,20 +34,20 @@ namespace Urho3D
 class URHO3D_API LightmapCache
 {
 public:
-    /// Store lightmap charts in the cache.
-    virtual void StoreCharts(const IntVector3& chunk, LightmapChartVector charts) = 0;
+    /// Store lightmap charts geometry buffers in the cache.
+    virtual void StoreBakedGeometry(const IntVector3& chunk, LightmapChartBakedGeometryVector bakedGeometry) = 0;
 };
 
 /// Memory lightmap cache.
 class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
-    /// Store lightmap charts in the cache.
-    void StoreCharts(const IntVector3& chunk, LightmapChartVector charts) override;
+    /// Store lightmap charts geometry buffers in the cache.
+    void StoreBakedGeometry(const IntVector3& chunk, LightmapChartBakedGeometryVector bakedGeometry) override;
 
 private:
     /// Charts.
-    ea::unordered_map<IntVector3, LightmapChartVector> chartsCache_;
+    ea::unordered_map<IntVector3, LightmapChartBakedGeometryVector> bakedGeometryCache_;
 };
 
 }

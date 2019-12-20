@@ -24,6 +24,9 @@
 
 #include "../Glow/IncrementalLightmapper.h"
 
+#include "../Glow/LightmapCharter.h"
+#include "../Glow/LightmapGeometryBaker.h"
+
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
 #include <EASTL/sort.h>
@@ -63,6 +66,22 @@ unsigned long long Swizzle(const IntVector3& vec, const IntVector3& base = IntVe
     return result;
 }
 
+/// Context used for incremental lightmap charting.
+struct LocalChunkProcessingContext
+{
+    /// Current chunk.
+    unsigned currentChunkIndex_{};
+    /// Current lightmap chart base index.
+    unsigned lightmapChartBaseIndex_{};
+};
+
+/// Context used for incremental lightmap geometry baking.
+struct AdjacentChartProcessingContext
+{
+    /// Current chunk.
+    unsigned currentChunkIndex_{};
+};
+
 }
 
 /// Incremental lightmapper implementation.
@@ -71,7 +90,8 @@ struct IncrementalLightmapperImpl
     /// Construct.
     IncrementalLightmapperImpl(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
         Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache)
-        : lightmapSettings_(lightmapSettings)
+        : context_(scene->GetContext())
+        , lightmapSettings_(lightmapSettings)
         , incrementalSettings_(incrementalSettings)
         , scene_(scene)
         , collector_(collector)
@@ -91,32 +111,48 @@ struct IncrementalLightmapperImpl
             };
             ea::sort(chunks_.begin(), chunks_.end(), compareSwizzled);
         }
-
-        // Initialize iterators.
-        currentChunk_ = chunks_.begin();
     }
-    /// Step lightmap charting. Return true when there is no more to process.
-    bool StepCharting()
+
+    /// Step chunk processing. Chunks are processed individually. Return true when completed.
+    bool StepLocalChunkProcessing(LocalChunkProcessingContext& ctx)
     {
-        if (currentChunk_ == chunks_.end())
+        if (ctx.currentChunkIndex_ >= chunks_.size())
             return true;
 
         // Collect nodes for current chunks
-        ea::vector<Node*> nodes = collector_->GetUniqueNodes(*currentChunk_);
+        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
+        ea::vector<Node*> nodes = collector_->GetUniqueNodes(chunk);
 
         // Generate charts
-        LightmapChartVector charts = GenerateLightmapCharts(nodes, lightmapSettings_.charting_);
+        const LightmapChartVector charts = GenerateLightmapCharts(nodes, lightmapSettings_.charting_);
 
         // Apply charts to scene
-        ApplyLightmapCharts(charts, lightmapChartBaseIndex_);
+        ApplyLightmapCharts(charts, ctx.lightmapChartBaseIndex_);
 
-        // Cache charts
-        cache_->StoreCharts(*currentChunk_, ea::move(charts));
+        // Generate scenes for geometry baking
+        const ea::vector<LightmapGeometryBakingScene> geometryBakingScene =
+            GenerateLightmapGeometryBakingScenes(context_, charts, lightmapSettings_.geometryBaking_);
+
+        // Bake geometries
+        LightmapChartBakedGeometryVector bakedGeometry = BakeLightmapGeometries(geometryBakingScene);
+
+        // Store charts in the cache
+        cache_->StoreBakedGeometry(chunk, ea::move(bakedGeometry));
 
         // Advance
-        lightmapChartBaseIndex_ += charts.size();
-        ++currentChunk_;
+        ctx.lightmapChartBaseIndex_ += charts.size();
+        ++ctx.currentChunkIndex_;
+        return false;
+    }
 
+    /// Step chunk processing. Chunks are processed with adjacent context. Return true when completed.
+    bool StepAdjacentChunkProcessing(AdjacentChartProcessingContext& ctx)
+    {
+        if (ctx.currentChunkIndex_ >= chunks_.size())
+            return true;
+
+        // Advance
+        ++ctx.currentChunkIndex_;
         return false;
     }
 
@@ -126,6 +162,8 @@ private:
     /// Settings for incremental lightmapper itself.
     IncrementalLightmapperSettings incrementalSettings_;
 
+    /// Context.
+    Context* context_{};
     /// Scene.
     Scene* scene_{};
     /// Scene collector.
@@ -137,10 +175,7 @@ private:
     /// Base chunk index.
     IntVector3 baseChunkIndex_;
 
-    /// Start chunk.
-    ea::vector<IntVector3>::iterator currentChunk_;
-    /// Current lightmap chart base index.
-    unsigned lightmapChartBaseIndex_{};
+
 };
 
 IncrementalLightmapper::~IncrementalLightmapper()
@@ -157,7 +192,13 @@ void IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings
 void IncrementalLightmapper::ProcessScene()
 {
     // Generate charts
-    while (!impl_->StepCharting())
+    LocalChunkProcessingContext chartingContext;
+    while (!impl_->StepLocalChunkProcessing(chartingContext))
+        ;
+
+    // Generate baking geometry
+    AdjacentChartProcessingContext geometryBakingContext;
+    while (!impl_->StepAdjacentChunkProcessing(geometryBakingContext))
         ;
 }
 
