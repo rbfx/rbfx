@@ -113,10 +113,13 @@ struct LightmapChartBakedGeometry
     }
 };
 
+/// Vector of baked lightmap geometry.
+using LightmapChartBakedGeometryVector = ea::vector<LightmapChartBakedGeometry>;
+
 /// Bake lightmap geometry for lightmap chart.
 URHO3D_API LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScene& bakingScene);
 
 /// Bake lightmap geometry for lightmap charts.
-URHO3D_API ea::vector<LightmapChartBakedGeometry> BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
+URHO3D_API LightmapChartBakedGeometryVector BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
 
 }
