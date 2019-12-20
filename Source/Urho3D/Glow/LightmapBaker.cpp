@@ -69,8 +69,8 @@ struct LightmapBakerImpl
         , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
         , geometryBuffers_(BakeLightmapGeometryBuffers(bakingScenes_))
-        , bakedDirect_(InitializeLightmapChartsBakedDirect(charts_))
-        , bakedIndirect_(InitializeLightmapChartsBakedIndirect(charts_))
+        , bakedDirect_(InitializeLightmapChartsBakedDirect(geometryBuffers_))
+        , bakedIndirect_(InitializeLightmapChartsBakedIndirect(geometryBuffers_))
         , lights_(lights)
     {
         ApplyLightmapCharts(charts_, 0);
