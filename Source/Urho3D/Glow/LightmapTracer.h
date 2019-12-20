@@ -106,10 +106,12 @@ struct LightmapChartBakedIndirect
 };
 
 /// Initialize baked direct light for lightmap charts.
-URHO3D_API ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts);
+URHO3D_API ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(
+    const LightmapChartGeometryBufferVector& geometryBuffers);
 
 /// Initialize baked direct light for lightmap charts.
-URHO3D_API ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(const LightmapChartVector& charts);
+URHO3D_API ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(
+    const LightmapChartGeometryBufferVector& geometryBuffers);
 
 /// Directional light parameters.
 struct DirectionalLightParameters
