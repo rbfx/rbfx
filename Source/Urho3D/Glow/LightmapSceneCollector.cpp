@@ -39,11 +39,13 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
     chunkSize_ = chunkSize;
     octree_ = scene_->GetComponent<Octree>();
 
+    // Estimate dimensions
     const ea::vector<Node*> children = scene_->GetChildren(true);
     boundingBox_ = CalculateBoundingBoxOfNodes(children, true);
     chunkGridDimension_ = VectorMax(IntVector3::ONE, VectorRoundToInt(boundingBox_.Size() / chunkSize_));
     const IntVector3 maxChunk = chunkGridDimension_ - IntVector3::ONE;
 
+    // Collect nodes
     for (Node* node : children)
     {
         auto staticModel = node->GetComponent<StaticModel>();
@@ -52,27 +54,51 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
             const Vector3 position = node->GetWorldPosition();
             const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * Vector3(chunkGridDimension_);
             const IntVector3 chunk = VectorMin(VectorMax(IntVector3::ZERO, VectorFloorToInt(index)), maxChunk);
-            indexedNodes_[chunk].push_back(node);
+            chunks_[chunk].nodes_.push_back(node);
         }
     }
+
+    // Calculate chunks bounding boxes
+    for (auto& elem : chunks_)
+        elem.second.boundingBox_ = CalculateBoundingBoxOfNodes(elem.second.nodes_);
 }
 
 ea::vector<IntVector3> DefaultLightmapSceneCollector::GetChunks()
 {
-    return indexedNodes_.keys();
+    return chunks_.keys();
 }
 
 ea::vector<Node*> DefaultLightmapSceneCollector::GetUniqueNodes(const IntVector3& chunkIndex)
 {
-    auto iter = indexedNodes_.find(chunkIndex);
-    if (iter != indexedNodes_.end())
-        return iter->second;
+    auto iter = chunks_.find(chunkIndex);
+    if (iter != chunks_.end())
+        return iter->second.nodes_;
     return {};
 }
 
-ea::vector<Node*> DefaultLightmapSceneCollector::GetOverlappingNodes(const IntVector3& chunkIndex, const Vector3& padding)
+BoundingBox DefaultLightmapSceneCollector::GetChunkBoundingBox(const IntVector3& chunkIndex)
 {
+    auto iter = chunks_.find(chunkIndex);
+    if (iter != chunks_.end())
+        return iter->second.boundingBox_;
     return {};
+}
+
+ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInBoundingBox(const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
+{
+    // Query drawables
+    ea::vector<Drawable*> drawables;
+    BoxOctreeQuery query(drawables, boundingBox);
+    octree_->GetDrawables(query);
+
+    // Filter nodes
+    ea::vector<Node*> nodes;
+    for (Drawable* drawable : drawables)
+    {
+        if (Node* node = drawable->GetNode())
+            nodes.push_back(node);
+    }
+    return nodes;
 }
 
 ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInFrustum(const IntVector3& chunkIndex, const Frustum& frustum)
@@ -87,7 +113,7 @@ void DefaultLightmapSceneCollector::UnlockScene()
     boundingBox_ = BoundingBox{};
     chunkGridDimension_ = IntVector3::ZERO;
     octree_ = nullptr;
-    indexedNodes_.clear();
+    chunks_.clear();
 }
 
 }

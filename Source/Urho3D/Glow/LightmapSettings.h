@@ -44,7 +44,7 @@ struct LightmapChartingSettings
     float minObjectScale_{ 1.0f };
 };
 
-/// Lightmap geometry baking scene settings.
+/// Lightmap geometry buffer baking settings.
 struct LightmapGeometryBakingSettings
 {
     /// Baking render path.
