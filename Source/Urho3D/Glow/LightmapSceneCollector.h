@@ -44,7 +44,7 @@ class URHO3D_API LightmapSceneCollector
 {
 public:
     /// Called before everything else. Scene objects must stay unchanged after this call.
-    virtual void LockScene(Scene* scene, float chunkSize) = 0;
+    virtual void LockScene(Scene* scene, const Vector3& chunkSize) = 0;
     /// Return all scene chunks.
     virtual ea::vector<IntVector3> GetChunks() = 0;
     /// Return nodes within chunk. Every node should be returned exactly once.
@@ -58,14 +58,14 @@ public:
 };
 
 /// Standard scene collector.
-class DefaultLightmapSceneCollector : public LightmapSceneCollector
+class URHO3D_API DefaultLightmapSceneCollector : public LightmapSceneCollector
 {
 public:
     /// Construct.
     DefaultLightmapSceneCollector() {}
 
     /// Called before everything else. Scene objects must stay unchanged after this call.
-    void LockScene(Scene* scene, float chunkSize) override;
+    void LockScene(Scene* scene, const Vector3& chunkSize) override;
     /// Return all scene chunks.
     ea::vector<IntVector3> GetChunks() override;
     /// Return nodes within chunk. Every node should be returned exactly once.
@@ -81,7 +81,11 @@ private:
     /// Scene.
     Scene* scene_{};
     /// Chunk size.
-    float chunkSize_{};
+    Vector3 chunkSize_;
+    /// Bounding box of the scene.
+    BoundingBox boundingBox_;
+    /// Dimensions of chunk grid.
+    IntVector3 chunkGridDimension_;
     /// Scene Octree.
     Octree* octree_{};
     /// Indexed nodes.

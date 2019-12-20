@@ -27,6 +27,7 @@
 #include "../Container/Ptr.h"
 #include "../Glow/LightmapSettings.h"
 #include "../Glow/EmbreeForward.h"
+#include "../Math/BoundingBox.h"
 
 #include <EASTL/vector.h>
 
@@ -49,8 +50,11 @@ struct EmbreeGeometry
     RTCGeometry embreeGeometry_{};
 };
 
+/// Calculate bounding box of nodes. Only StaticModel and TerrainPatch are processed.
+URHO3D_API BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes, bool padIfZero = false);
+
 /// Embree scene.
-class EmbreeScene : public RefCounted
+class URHO3D_API EmbreeScene : public RefCounted
 {
 public:
     /// Construct.
