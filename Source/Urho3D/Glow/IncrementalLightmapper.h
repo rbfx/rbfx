@@ -25,7 +25,6 @@
 #pragma once
 
 #include "../Glow/LightmapCache.h"
-#include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapSceneCollector.h"
 #include "../Glow/LightmapSettings.h"
 

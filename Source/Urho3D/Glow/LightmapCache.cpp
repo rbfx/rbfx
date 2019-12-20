@@ -27,9 +27,9 @@
 namespace Urho3D
 {
 
-void LightmapMemoryCache::StoreCharts(const IntVector3& chunk, LightmapChartVector charts)
+void LightmapMemoryCache::StoreBakedGeometry(const IntVector3& chunk, LightmapChartBakedGeometryVector bakedGeometry)
 {
-    chartsCache_[chunk] = ea::move(charts);
+    bakedGeometryCache_[chunk] = ea::move(bakedGeometry);
 }
 
 }
