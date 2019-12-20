@@ -46,6 +46,8 @@ struct EmbreeGeometry
     unsigned geometryIndex_{};
     /// Geometry LOD.
     unsigned geometryLOD_{};
+    /// Lightmap chart index.
+    unsigned lightmapIndex_{};
     /// Internal geometry pointer.
     RTCGeometry embreeGeometry_{};
 };

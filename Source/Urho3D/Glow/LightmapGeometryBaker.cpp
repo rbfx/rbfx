@@ -192,7 +192,7 @@ ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
     return result;
 }
 
-LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScene& bakingScene)
+LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBakingScene& bakingScene)
 {
     Context* context = bakingScene.context_;
     Graphics* graphics = context->GetGraphics();
@@ -203,7 +203,7 @@ LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScen
     if (!graphics->BeginFrame())
         return {};
 
-    LightmapChartBakedGeometry bakedGeometry{ bakingScene.width_, bakingScene.height_ };
+    LightmapChartGeometryBuffer geometryBuffer{ bakingScene.width_, bakingScene.height_ };
 
     // Get render surface
     Texture* renderTexture = renderer->GetScreenBuffer(
@@ -225,28 +225,28 @@ LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScen
 
     // Store results
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("position"), buffer);
-    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.geometryPositions_.begin(), ExtractVector3FromVector4);
-    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.geometryIds_.begin(), ExtractUintFromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.geometryPositions_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.geometryIds_.begin(), ExtractUintFromVector4);
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothposition"), buffer);
-    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.smoothPositions_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.smoothPositions_.begin(), ExtractVector3FromVector4);
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("facenormal"), buffer);
-    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.faceNormals_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.faceNormals_.begin(), ExtractVector3FromVector4);
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothnormal"), buffer);
-    ea::transform(buffer.begin(), buffer.end(), bakedGeometry.smoothNormals_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.smoothNormals_.begin(), ExtractVector3FromVector4);
 
     graphics->EndFrame();
-    return bakedGeometry;
+    return geometryBuffer;
 }
 
-LightmapChartBakedGeometryVector BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes)
+LightmapChartGeometryBufferVector BakeLightmapGeometryBuffers(const ea::vector<LightmapGeometryBakingScene>& bakingScenes)
 {
-    LightmapChartBakedGeometryVector bakedGeometries;
+    LightmapChartGeometryBufferVector geometryBuffers;
     for (const LightmapGeometryBakingScene& bakingScene : bakingScenes)
-        bakedGeometries.push_back(BakeLightmapGeometry(bakingScene));
-    return bakedGeometries;
+        geometryBuffers.push_back(BakeLightmapGeometryBuffer(bakingScene));
+    return geometryBuffers;
 }
 
 }
