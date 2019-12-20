@@ -38,6 +38,8 @@ struct IncrementalLightmapperSettings
 {
     /// Size of the chunk.
     Vector3 chunkSize_ = Vector3::ONE * 64.0f;
+    /// Padding for raytracing scene.
+    float raytracingScenePadding_ = 32.0f;
 };
 
 /// Incremental lightmapper.

@@ -24,6 +24,7 @@
 
 #include "../Glow/IncrementalLightmapper.h"
 
+#include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
 
@@ -66,7 +67,7 @@ unsigned long long Swizzle(const IntVector3& vec, const IntVector3& base = IntVe
     return result;
 }
 
-/// Context used for incremental lightmap charting.
+/// Context used for incremental lightmap chunk processing (first pass).
 struct LocalChunkProcessingContext
 {
     /// Current chunk.
@@ -75,7 +76,7 @@ struct LocalChunkProcessingContext
     unsigned lightmapChartBaseIndex_{};
 };
 
-/// Context used for incremental lightmap geometry baking.
+/// Context used for incremental lightmap chunk processing (second pass).
 struct AdjacentChartProcessingContext
 {
     /// Current chunk.
@@ -134,10 +135,10 @@ struct IncrementalLightmapperImpl
             GenerateLightmapGeometryBakingScenes(context_, charts, lightmapSettings_.geometryBaking_);
 
         // Bake geometries
-        LightmapChartBakedGeometryVector bakedGeometry = BakeLightmapGeometries(geometryBakingScene);
+        LightmapChartGeometryBufferVector geometryBuffer = BakeLightmapGeometryBuffers(geometryBakingScene);
 
-        // Store charts in the cache
-        cache_->StoreBakedGeometry(chunk, ea::move(bakedGeometry));
+        // Store result in the cache
+        cache_->StoreGeometryBuffer(chunk, ea::move(geometryBuffer));
 
         // Advance
         ctx.lightmapChartBaseIndex_ += charts.size();
@@ -150,6 +151,18 @@ struct IncrementalLightmapperImpl
     {
         if (ctx.currentChunkIndex_ >= chunks_.size())
             return true;
+
+        // Collect nodes around current chunk
+        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
+        BoundingBox boundingBox = collector_->GetChunkBoundingBox(chunk);
+        boundingBox.min_ -= Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
+        boundingBox.min_ += Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
+
+        const ea::vector<Node*> raytracingNodes = collector_->GetNodesInBoundingBox(chunk, boundingBox);
+        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, raytracingNodes);
+
+        // Store result in the cache
+        cache_->StoreVicinity(chunk, { embreeScene });
 
         // Advance
         ++ctx.currentChunkIndex_;

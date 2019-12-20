@@ -193,7 +193,7 @@ ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(con
     return chartsBakedIndirect;
 }
 
-void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
+void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
     const Vector3 rayDirection = -light.direction_.Normalized();
@@ -219,9 +219,9 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 
         for (unsigned i = fromIndex; i < toIndex; ++i)
         {
-            const Vector3 position = bakedGeometry.geometryPositions_[i];
-            const Vector3 smoothNormal = bakedGeometry.smoothNormals_[i];
-            const unsigned geometryId = bakedGeometry.geometryIds_[i];
+            const Vector3 position = geometryBuffer.geometryPositions_[i];
+            const Vector3 smoothNormal = geometryBuffer.smoothNormals_[i];
+            const unsigned geometryId = geometryBuffer.geometryIds_[i];
 
             if (!geometryId)
                 continue;
@@ -243,7 +243,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 }
 
 void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
-    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
@@ -271,10 +271,10 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
 
         for (unsigned i = fromIndex; i < toIndex; ++i)
         {
-            const IntVector2 location = bakedGeometry.IndexToLocation(i);
-            const Vector3 position = bakedGeometry.geometryPositions_[i];
-            const Vector3 smoothNormal = bakedGeometry.smoothNormals_[i];
-            const unsigned geometryId = bakedGeometry.geometryIds_[i];
+            const IntVector2 location = geometryBuffer.IndexToLocation(i);
+            const Vector3 position = geometryBuffer.geometryPositions_[i];
+            const Vector3 smoothNormal = geometryBuffer.smoothNormals_[i];
+            const unsigned geometryId = geometryBuffer.geometryIds_[i];
 
             if (!geometryId)
                 continue;
@@ -309,9 +309,9 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                     break;
 
                 // Sample lightmap UV
-                RTCGeometry geometry = geometryIndex[rayHit.hit.geomID].embreeGeometry_;
+                const EmbreeGeometry& geometry = geometryIndex[rayHit.hit.geomID];
                 Vector2 lightmapUV;
-                rtcInterpolate0(geometry, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
                     RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
 
                 // Modify incoming flux
@@ -321,8 +321,9 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                 const float brdf = reflectance / M_PI;
 
                 // TODO: Use real index here
-                const IntVector2 sampleLocation = bakedDirect[0].GetNearestLocation(lightmapUV);
-                incomingSamples[j] = bakedDirect[0].GetLight(sampleLocation);
+                const unsigned lightmapIndex = geometry.lightmapIndex_;
+                const IntVector2 sampleLocation = bakedDirect[lightmapIndex].GetNearestLocation(lightmapUV);
+                incomingSamples[j] = bakedDirect[lightmapIndex].GetLight(sampleLocation);
                 incomingFactors[j] = brdf * cosTheta / probability;
                 ++numSamples;
 
@@ -350,7 +351,7 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
     });
 }
 
-void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const IndirectFilterParameters& params, unsigned numThreads)
 {
     const ea::span<const float> kernelWeights = GetKernel(params.kernelRadius_);
@@ -359,16 +360,16 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
     {
         for (unsigned index = fromIndex; index < toIndex; ++index)
         {
-            const unsigned geometryId = bakedGeometry.geometryIds_[index];
+            const unsigned geometryId = geometryBuffer.geometryIds_[index];
             if (!geometryId)
                 continue;
 
-            const IntVector2 centerLocation = bakedGeometry.IndexToLocation(index);
+            const IntVector2 centerLocation = geometryBuffer.IndexToLocation(index);
 
             const Vector4 centerColor = bakedIndirect.light_[index];
             const float centerLuminance = GetLuminance(centerColor);
-            const Vector3 centerPosition = bakedGeometry.geometryPositions_[index];
-            const Vector3 centerNormal = bakedGeometry.smoothNormals_[index];
+            const Vector3 centerPosition = geometryBuffer.geometryPositions_[index];
+            const Vector3 centerNormal = geometryBuffer.smoothNormals_[index];
 
             float colorWeight = kernelWeights[0] * kernelWeights[0];
             Vector4 colorSum = centerColor * colorWeight;
@@ -381,21 +382,21 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
                     const IntVector2 offset = IntVector2{ dx, dy } * params.upscale_;
                     const IntVector2 otherLocation = centerLocation + offset;
-                    if (!bakedGeometry.IsValidLocation(otherLocation))
+                    if (!geometryBuffer.IsValidLocation(otherLocation))
                         continue;
 
                     const float dxdy = Vector2{ static_cast<float>(dx), static_cast<float>(dy) }.Length();
                     const float kernel = kernelWeights[Abs(dx)] * kernelWeights[Abs(dy)];
 
-                    const unsigned otherIndex = bakedGeometry.LocationToIndex(otherLocation);
-                    const unsigned otherGeometryId = bakedGeometry.geometryIds_[otherIndex];
+                    const unsigned otherIndex = geometryBuffer.LocationToIndex(otherLocation);
+                    const unsigned otherGeometryId = geometryBuffer.geometryIds_[otherIndex];
                     if (!otherGeometryId)
                         continue;
 
                     const Vector4 otherColor = bakedIndirect.light_[otherIndex];
                     const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
-                        centerPosition, bakedGeometry.geometryPositions_[otherIndex], dxdy * params.positionSigma_,
-                        centerNormal, bakedGeometry.smoothNormals_[otherIndex], params.normalPower_);
+                        centerPosition, geometryBuffer.geometryPositions_[otherIndex], dxdy * params.positionSigma_,
+                        centerNormal, geometryBuffer.smoothNormals_[otherIndex], params.normalPower_);
 
                     colorSum += otherColor * weight * kernel;
                     colorWeight += weight * kernel;

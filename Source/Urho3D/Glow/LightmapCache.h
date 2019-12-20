@@ -24,18 +24,28 @@
 
 #pragma once
 
+#include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapGeometryBaker.h"
 #include "../Math/Vector3.h"
 
 namespace Urho3D
 {
 
+/// Lightmap chunk vicinity. Contains all required baking context from the chunk itself and adjacent chunks.
+struct LightmapChunkVicinity
+{
+    /// Embree scene.
+    SharedPtr<EmbreeScene> embreeScene_;
+};
+
 /// Lightmap cache interface.
 class URHO3D_API LightmapCache
 {
 public:
-    /// Store lightmap charts geometry buffers in the cache.
-    virtual void StoreBakedGeometry(const IntVector3& chunk, LightmapChartBakedGeometryVector bakedGeometry) = 0;
+    /// Store geometry buffers in the cache.
+    virtual void StoreGeometryBuffer(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) = 0;
+    /// Store baking context in the cache.
+    virtual void StoreVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
 };
 
 /// Memory lightmap cache.
@@ -43,11 +53,15 @@ class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
     /// Store lightmap charts geometry buffers in the cache.
-    void StoreBakedGeometry(const IntVector3& chunk, LightmapChartBakedGeometryVector bakedGeometry) override;
+    void StoreGeometryBuffer(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) override;
+    /// Store baking context in the cache.
+    void StoreVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
 
 private:
-    /// Charts.
-    ea::unordered_map<IntVector3, LightmapChartBakedGeometryVector> bakedGeometryCache_;
+    /// Geometry buffers cache.
+    ea::unordered_map<IntVector3, LightmapChartGeometryBufferVector> geometryBufferCache_;
+    /// Baking contexts cache.
+    ea::unordered_map<IntVector3, LightmapChunkVicinity> vicinityCache_;
 };
 
 }

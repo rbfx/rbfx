@@ -121,12 +121,12 @@ struct DirectionalLightParameters
 };
 
 /// Accumulate direct light from directional light.
-URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
+URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light.
 URHO3D_API void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
-    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartBakedGeometry& bakedGeometry,
+    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
 
 /// Parameters for indirect light filtering.
@@ -145,7 +145,7 @@ struct IndirectFilterParameters
 };
 
 /// Filter indirect light.
-URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartBakedGeometry& bakedGeometry,
+URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const IndirectFilterParameters& params, unsigned numThreads);
 
 
