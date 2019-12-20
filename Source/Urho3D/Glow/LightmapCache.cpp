@@ -27,14 +27,36 @@
 namespace Urho3D
 {
 
-void LightmapMemoryCache::StoreGeometryBuffer(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer)
+void LightmapMemoryCache::StoreGeometryBuffers(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer)
 {
     geometryBufferCache_[chunk] = ea::move(geometryBuffer);
 }
 
-void LightmapMemoryCache::StoreVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
+void LightmapMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
 {
-    vicinityCache_[chunk] = ea::move(vicinity);
+    chunkVicinityCache_[chunk] = ea::move(vicinity);
+}
+
+const LightmapChartGeometryBufferVector* LightmapMemoryCache::LoadGeometryBuffers(const IntVector3& chunk)
+{
+    auto iter = geometryBufferCache_.find(chunk);
+    return iter != geometryBufferCache_.end() ? &iter->second : nullptr;
+}
+
+const LightmapChunkVicinity* LightmapMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
+{
+    auto iter = chunkVicinityCache_.find(chunk);
+    return iter != chunkVicinityCache_.end() ? &iter->second : nullptr;
+}
+
+void LightmapMemoryCache::ReleaseGeometryBuffer(const IntVector3& /*chunk*/)
+{
+    // Nothing to do
+}
+
+void LightmapMemoryCache::ReleaseChunkVicinity(const IntVector3& /*chunk*/)
+{
+    // Nothing to do
 }
 
 }

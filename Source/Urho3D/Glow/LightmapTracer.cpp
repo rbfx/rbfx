@@ -177,19 +177,21 @@ float CalculateEdgeWeight(
 
 }
 
-ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts)
+ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(
+    const LightmapChartGeometryBufferVector& geometryBuffers)
 {
     ea::vector<LightmapChartBakedDirect> chartsBakedDirect;
-    for (const LightmapChart& chart : charts)
-        chartsBakedDirect.emplace_back(chart.width_, chart.height_);
+    for (const LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+        chartsBakedDirect.emplace_back(geometryBuffer.width_, geometryBuffer.height_);
     return chartsBakedDirect;
 }
 
-ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(const LightmapChartVector& charts)
+ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(
+    const LightmapChartGeometryBufferVector& geometryBuffers)
 {
     ea::vector<LightmapChartBakedIndirect> chartsBakedIndirect;
-    for (const LightmapChart& chart : charts)
-        chartsBakedIndirect.emplace_back(chart.width_, chart.height_);
+    for (const LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+        chartsBakedIndirect.emplace_back(geometryBuffer.width_, geometryBuffer.height_);
     return chartsBakedIndirect;
 }
 
@@ -234,10 +236,12 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
             rtcIntersect1(scene, &rayContext, &rayHit);
 
-            const float shadowFactor = rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID ? 1.0f : 0.0f;
+            if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+                continue;
+
             const float directLight = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
 
-            bakedDirect.light_[i] += lightColor * shadowFactor * directLight;
+            bakedDirect.light_[i] += lightColor * directLight;
         }
     });
 }
