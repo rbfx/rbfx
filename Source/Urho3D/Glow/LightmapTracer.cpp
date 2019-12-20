@@ -33,6 +33,9 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 /// Parallel for loop.
 template <class T>
 void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
@@ -56,7 +59,7 @@ void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
 }
 
 /// Array of pre-generated random directions.
-static const Vector3 randomDirections[16] =
+const Vector3 randomDirections[16] =
 {
     { 0.30543888085776905f, 0.16673583915989262f, -0.9375f },
     { -0.17489098099486633f, 0.8820469912463017f, 0.4374999999999999f },
@@ -77,7 +80,7 @@ static const Vector3 randomDirections[16] =
 };
 
 /// Generate random quaternion.
-static Quaternion RandomQuaternion()
+Quaternion RandomQuaternion()
 {
     const float u1 = Random(1.0f);
     const float u2 = Random(360.0f);
@@ -91,7 +94,7 @@ static Quaternion RandomQuaternion()
 }
 
 /// Generate pseudo-random vector in hemisphere.
-static Vector3 PseudoRandomDirectionInHemisphere(const IntVector2& seed, const Quaternion& baseRotation, const Vector3& normal)
+Vector3 PseudoRandomDirectionInHemisphere(const IntVector2& seed, const Quaternion& baseRotation, const Vector3& normal)
 {
     const auto sx = static_cast<unsigned>(seed.x_) % 4;
     const auto sy = static_cast<unsigned>(seed.y_) % 4;
@@ -101,7 +104,7 @@ static Vector3 PseudoRandomDirectionInHemisphere(const IntVector2& seed, const Q
 }
 
 /// Generate random direction.
-static void RandomDirection(Vector3& result)
+void RandomDirection(Vector3& result)
 {
     float len;
 
@@ -118,7 +121,7 @@ static void RandomDirection(Vector3& result)
 }
 
 /// Generate random hemisphere direction.
-static Vector3 RandomHemisphereDirection(const Vector3& normal)
+Vector3 RandomHemisphereDirection(const Vector3& normal)
 {
     Vector3 result;
     RandomDirection(result);
@@ -154,13 +157,13 @@ ea::span<const float> GetKernel(int radius)
 }
 
 /// Get luminance of given color value.
-static float GetLuminance(const Vector4& color)
+float GetLuminance(const Vector4& color)
 {
     return Color{ color.x_, color.y_, color.z_ }.Luma();
 }
 
 /// Calculate edge-stopping weight.
-static float CalculateEdgeWeight(
+float CalculateEdgeWeight(
     float luminance1, float luminance2, float luminanceSigma,
     const Vector3& position1, const Vector3& position2, float positionSigma,
     const Vector3& normal1, const Vector3& normal2, float normalPower)
@@ -170,6 +173,8 @@ static float CalculateEdgeWeight(
     const float normalWeight = Pow(ea::max(0.0f, normal1.DotProduct(normal2)), normalPower);
 
     return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
+}
+
 }
 
 ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(const LightmapChartVector& charts)
