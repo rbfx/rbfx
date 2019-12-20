@@ -39,11 +39,14 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 /// Number of multi-tap samples.
-static const unsigned numMultiTapSamples = 25;
+const unsigned numMultiTapSamples = 25;
 
 /// Multi-tap offsets.
-static const Vector2 multiTapOffsets[numMultiTapSamples] =
+const Vector2 multiTapOffsets[numMultiTapSamples] =
 {
     {  1.0f,  1.0f },
     {  1.0f, -1.0f },
@@ -76,7 +79,6 @@ static const Vector2 multiTapOffsets[numMultiTapSamples] =
 
     {  0.0f,  0.0f },
 };
-
 
 /// Set camera bounding box.
 void SetCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
@@ -121,6 +123,8 @@ Vector3 ExtractVector3FromVector4(const Vector4& data) { return { data.x_, data.
 
 /// Extract w-component as unsigned integer from Vector4.
 unsigned ExtractUintFromVector4(const Vector4& data) { return static_cast<unsigned>(data.w_); }
+
+}
 
 LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,
     const LightmapChart& chart, const LightmapGeometryBakingSettings& settings, SharedPtr<RenderPath> renderPath)

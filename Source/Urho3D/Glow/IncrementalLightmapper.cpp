@@ -31,11 +31,14 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 /// Per-component min for 3D integer vector.
-static IntVector3 MinIntVector3(const IntVector3& lhs, const IntVector3& rhs) { return VectorMin(lhs, rhs); }
+IntVector3 MinIntVector3(const IntVector3& lhs, const IntVector3& rhs) { return VectorMin(lhs, rhs); }
 
 /// Swizzle components of 3D integer vector.
-static unsigned long long Swizzle(const IntVector3& vec, const IntVector3& base = IntVector3::ZERO)
+unsigned long long Swizzle(const IntVector3& vec, const IntVector3& base = IntVector3::ZERO)
 {
     static const unsigned numComponents = 3;
     static const unsigned resultBits = 8 * sizeof(unsigned long long);
@@ -58,6 +61,8 @@ static unsigned long long Swizzle(const IntVector3& vec, const IntVector3& base 
     }
 
     return result;
+}
+
 }
 
 /// Incremental lightmapper implementation.
@@ -96,22 +101,8 @@ struct IncrementalLightmapperImpl
         if (currentChunk_ == chunks_.end())
             return true;
 
-        // Find 2x2x2 block of chunks. Due to sorting above, said block is always contiguous.
-        static const unsigned blockSize = 2;
-        const LightmapChartGroupID chunkGroupId = GetChunkGroupID(*currentChunk_);
-        const auto chunkInSameGroup = [&](const IntVector3& chunk)
-        {
-            return chunkGroupId == GetChunkGroupID(chunk);
-        };
-        const auto lastChunk = ea::find_if_not(currentChunk_, chunks_.end(), chunkInSameGroup);
-
-        // Collect nodes for all chunks
-        ea::vector<Node*> nodes;
-        ea::for_each(currentChunk_, lastChunk,
-            [&](const IntVector3& chunk)
-        {
-            nodes.push_back(collector_->GetUniqueNodes(chunk));
-        });
+        // Collect nodes for current chunks
+        ea::vector<Node*> nodes = collector_->GetUniqueNodes(*currentChunk_);
 
         // Generate charts
         LightmapChartVector charts = GenerateLightmapCharts(nodes, lightmapSettings_.charting_);
@@ -120,22 +111,16 @@ struct IncrementalLightmapperImpl
         ApplyLightmapCharts(charts, lightmapChartBaseIndex_);
 
         // Cache charts
-        cache_->StoreCharts(chunkGroupId, ea::move(charts));
+        cache_->StoreCharts(*currentChunk_, ea::move(charts));
 
         // Advance
         lightmapChartBaseIndex_ += charts.size();
-        currentChunk_ = lastChunk;
+        ++currentChunk_;
 
         return false;
     }
 
 private:
-    /// Return chunk group ID for given chunk.
-    LightmapChartGroupID GetChunkGroupID(const IntVector3& chunk)
-    {
-        return Swizzle(chunk, baseChunkIndex_) & 0xffff'ffff'ffff'fff8;
-    }
-
     /// Settings for lightmap generation.
     LightmapSettings lightmapSettings_;
     /// Settings for incremental lightmapper itself.

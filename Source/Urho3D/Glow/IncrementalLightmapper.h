@@ -38,7 +38,7 @@ struct IncrementalLightmapperImpl;
 struct IncrementalLightmapperSettings
 {
     /// Size of the chunk.
-    float chunkSize_{ 64.0f };
+    Vector3 chunkSize_ = Vector3::ONE * 64.0f;
 };
 
 /// Incremental lightmapper.

@@ -27,9 +27,9 @@
 namespace Urho3D
 {
 
-void LightmapMemoryCache::StoreCharts(LightmapChartGroupID id, LightmapChartVector charts)
+void LightmapMemoryCache::StoreCharts(const IntVector3& chunk, LightmapChartVector charts)
 {
-    chartsCache_[id] = ea::move(charts);
+    chartsCache_[chunk] = ea::move(charts);
 }
 
 }

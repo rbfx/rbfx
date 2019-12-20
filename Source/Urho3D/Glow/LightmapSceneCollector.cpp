@@ -24,6 +24,7 @@
 
 #include "../Glow/LightmapSceneCollector.h"
 
+#include "../Glow/EmbreeScene.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
@@ -32,19 +33,25 @@
 namespace Urho3D
 {
 
-void DefaultLightmapSceneCollector::LockScene(Scene* scene, float chunkSize)
+void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunkSize)
 {
     scene_ = scene;
+    chunkSize_ = chunkSize;
     octree_ = scene_->GetComponent<Octree>();
 
     const ea::vector<Node*> children = scene_->GetChildren(true);
+    boundingBox_ = CalculateBoundingBoxOfNodes(children, true);
+    chunkGridDimension_ = VectorMax(IntVector3::ONE, VectorRoundToInt(boundingBox_.Size() / chunkSize_));
+    const IntVector3 maxChunk = chunkGridDimension_ - IntVector3::ONE;
+
     for (Node* node : children)
     {
         auto staticModel = node->GetComponent<StaticModel>();
         if (staticModel)
         {
             const Vector3 position = node->GetWorldPosition();
-            const IntVector3 chunk = VectorFloorToInt(position / chunkSize);
+            const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * Vector3(chunkGridDimension_);
+            const IntVector3 chunk = VectorMin(VectorMax(IntVector3::ZERO, VectorFloorToInt(index)), maxChunk);
             indexedNodes_[chunk].push_back(node);
         }
     }
@@ -76,7 +83,9 @@ ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInFrustum(const IntVect
 void DefaultLightmapSceneCollector::UnlockScene()
 {
     scene_ = nullptr;
-    chunkSize_ = 0.0f;
+    chunkSize_ = Vector3::ZERO;
+    boundingBox_ = BoundingBox{};
+    chunkGridDimension_ = IntVector3::ZERO;
     octree_ = nullptr;
     indexedNodes_.clear();
 }

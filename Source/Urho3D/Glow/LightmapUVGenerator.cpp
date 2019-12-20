@@ -27,8 +27,8 @@
 namespace Urho3D
 {
 
-const ea::string LightmapUVGenerationSettings::LightmapSizeKey{ "LightmapSize" };
-const ea::string LightmapUVGenerationSettings::LightmapDensityKey{ "LightmapDensity" };
+namespace
+{
 
 struct LightmapVertexMapping
 {
@@ -36,6 +36,11 @@ struct LightmapVertexMapping
     unsigned lod_{};
     unsigned index_{};
 };
+
+}
+
+const ea::string LightmapUVGenerationSettings::LightmapSizeKey{ "LightmapSize" };
+const ea::string LightmapUVGenerationSettings::LightmapDensityKey{ "LightmapDensity" };
 
 bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings& settings)
 {
