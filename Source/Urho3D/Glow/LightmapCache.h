@@ -25,31 +25,29 @@
 #pragma once
 
 #include "../Glow/LightmapCharter.h"
+#include "../Math/Vector3.h"
 
 namespace Urho3D
 {
-
-/// Lightmap chart group ID.
-using LightmapChartGroupID = unsigned long long;
 
 /// Lightmap cache interface.
 class URHO3D_API LightmapCache
 {
 public:
     /// Store lightmap charts in the cache.
-    virtual void StoreCharts(LightmapChartGroupID id, LightmapChartVector charts) = 0;
+    virtual void StoreCharts(const IntVector3& chunk, LightmapChartVector charts) = 0;
 };
 
 /// Memory lightmap cache.
-class LightmapMemoryCache : public LightmapCache
+class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
     /// Store lightmap charts in the cache.
-    void StoreCharts(LightmapChartGroupID id, LightmapChartVector charts) override;
+    void StoreCharts(const IntVector3& chunk, LightmapChartVector charts) override;
 
 private:
     /// Charts.
-    ea::unordered_map<LightmapChartGroupID, LightmapChartVector> chartsCache_;
+    ea::unordered_map<IntVector3, LightmapChartVector> chartsCache_;
 };
 
 }

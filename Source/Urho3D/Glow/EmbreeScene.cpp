@@ -36,26 +36,8 @@
 namespace Urho3D
 {
 
-/// Calculate bounding box of nodes.
-BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes)
+namespace
 {
-    BoundingBox boundingBox;
-    for (Node* node : nodes)
-    {
-        if (auto staticModel = node->GetComponent<StaticModel>())
-            boundingBox.Merge(staticModel->GetWorldBoundingBox());
-        else if (auto terrain = node->GetComponent<Terrain>())
-        {
-            const IntVector2 numPatches = terrain->GetNumPatches();
-            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
-            {
-                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
-                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
-            }
-        }
-    }
-    return boundingBox;
-}
 
 /// Parsed model key and value.
 struct ParsedModelKeyValue
@@ -137,6 +119,41 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, Mod
         ++geometryIndex;
     }
     return result;
+}
+
+}
+
+BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes, bool padIfZero)
+{
+    BoundingBox boundingBox;
+    for (Node* node : nodes)
+    {
+        if (auto staticModel = node->GetComponent<StaticModel>())
+            boundingBox.Merge(staticModel->GetWorldBoundingBox());
+        else if (auto terrain = node->GetComponent<Terrain>())
+        {
+            const IntVector2 numPatches = terrain->GetNumPatches();
+            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
+            {
+                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
+                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
+            }
+        }
+    }
+
+    // Pad bounding box
+    if (padIfZero)
+    {
+        const Vector3 size = boundingBox.Size();
+        if (size.x_ < M_EPSILON)
+            boundingBox.max_.x_ += M_LARGE_EPSILON;
+        if (size.y_ < M_EPSILON)
+            boundingBox.max_.y_ += M_LARGE_EPSILON;
+        if (size.z_ < M_EPSILON)
+            boundingBox.max_.z_ += M_LARGE_EPSILON;
+    }
+
+    return boundingBox;
 }
 
 EmbreeScene::~EmbreeScene()

@@ -30,8 +30,11 @@
 namespace Urho3D
 {
 
+namespace
+{
+
 /// Calculate lightmap size for given model with given scale.
-static IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObjectScale,
+IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObjectScale,
     Model* model, const Vector3& scale)
 {
     const Variant& modelLightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
@@ -48,7 +51,7 @@ static IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObj
 }
 
 /// Allocate region in the set of lightmap charts.
-static LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& settings,
+LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& settings,
     ea::vector<LightmapChart>& charts, const IntVector2& size)
 {
     const int padding = static_cast<int>(settings.padding_);
@@ -96,11 +99,13 @@ static LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSet
     return { chartIndex, position, size, settings.chartSize_ };
 }
 
-static IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const LightmapChartingSettings& settings)
+IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const LightmapChartingSettings& settings)
 {
     Node* node = staticModel->GetNode();
     Model* model = staticModel->GetModel();
     return CalculateModelLightmapSize(settings.texelDensity_, settings.minObjectScale_, model, node->GetWorldScale());
+}
+
 }
 
 ea::vector<LightmapChart> GenerateLightmapCharts(
