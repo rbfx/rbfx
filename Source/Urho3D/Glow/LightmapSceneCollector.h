@@ -49,8 +49,10 @@ public:
     virtual ea::vector<IntVector3> GetChunks() = 0;
     /// Return nodes within chunk. Every node should be returned exactly once.
     virtual ea::vector<Node*> GetUniqueNodes(const IntVector3& chunkIndex) = 0;
-    /// Return nodes overlapping given chunk with given padding.
-    virtual ea::vector<Node*> GetOverlappingNodes(const IntVector3& chunkIndex, const Vector3& padding) = 0;
+    /// Return bounding box of unique nodes of the chunk.
+    virtual BoundingBox GetChunkBoundingBox(const IntVector3& chunkIndex) = 0;
+    /// Return nodes within given volume. The volume is guaranteed to contain specified chunk.
+    virtual ea::vector<Node*> GetNodesInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) = 0;
     /// Return nodes within given frustum. The frustum is guaranteed to contain specified chunk.
     virtual ea::vector<Node*> GetNodesInFrustum(const IntVector3& chunkIndex, const Frustum& frustum) = 0;
     /// Called after everything else. Scene objects must stay unchanged before this call.
@@ -70,14 +72,24 @@ public:
     ea::vector<IntVector3> GetChunks() override;
     /// Return nodes within chunk. Every node should be returned exactly once.
     ea::vector<Node*> GetUniqueNodes(const IntVector3& chunkIndex) override;
-    /// Return nodes overlapping given chunk with given padding.
-    ea::vector<Node*> GetOverlappingNodes(const IntVector3& chunkIndex, const Vector3& padding) override;
+    /// Return bounding box of unique nodes of the chunk.
+    BoundingBox GetChunkBoundingBox(const IntVector3& chunkIndex) override;
+    /// Return nodes within given volume. The volume is guaranteed to contain specified chunk.
+    ea::vector<Node*> GetNodesInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) override;
     /// Return nodes within given frustum. The frustum is guaranteed to contain specified chunk.
     ea::vector<Node*> GetNodesInFrustum(const IntVector3& chunkIndex, const Frustum& frustum) override;
     /// Called after everything else. Scene objects must stay unchanged before this call.
     void UnlockScene() override;
 
 private:
+    /// Chunk data.
+    struct ChunkData
+    {
+        /// Unique nodes.
+        ea::vector<Node*> nodes_;
+        /// Bounding box.
+        BoundingBox boundingBox_;
+    };
     /// Scene.
     Scene* scene_{};
     /// Chunk size.
@@ -89,7 +101,7 @@ private:
     /// Scene Octree.
     Octree* octree_{};
     /// Indexed nodes.
-    ea::unordered_map<IntVector3, ea::vector<Node*>> indexedNodes_;
+    ea::unordered_map<IntVector3, ChunkData> chunks_;
 };
 
 }

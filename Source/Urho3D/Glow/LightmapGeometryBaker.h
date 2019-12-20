@@ -61,8 +61,8 @@ URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Conte
 URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(Context* context,
     const ea::vector<LightmapChart>& charts, const LightmapGeometryBakingSettings& settings);
 
-/// Baked lightmap geometry of lightmap chart.
-struct LightmapChartBakedGeometry
+/// Lightmap geometry buffer of lightmap chart.
+struct LightmapChartGeometryBuffer
 {
     /// Width of the chart.
     unsigned width_{};
@@ -83,9 +83,9 @@ struct LightmapChartBakedGeometry
     ea::vector<unsigned> geometryIds_;
 
     /// Construct default.
-    LightmapChartBakedGeometry() = default;
+    LightmapChartGeometryBuffer() = default;
     /// Construct valid.
-    LightmapChartBakedGeometry(unsigned width, unsigned height)
+    LightmapChartGeometryBuffer(unsigned width, unsigned height)
         : width_(width)
         , height_(height)
         , geometryPositions_(width * height)
@@ -113,13 +113,13 @@ struct LightmapChartBakedGeometry
     }
 };
 
-/// Vector of baked lightmap geometry.
-using LightmapChartBakedGeometryVector = ea::vector<LightmapChartBakedGeometry>;
+/// Vector of lightmap geometry buffers.
+using LightmapChartGeometryBufferVector = ea::vector<LightmapChartGeometryBuffer>;
 
-/// Bake lightmap geometry for lightmap chart.
-URHO3D_API LightmapChartBakedGeometry BakeLightmapGeometry(const LightmapGeometryBakingScene& bakingScene);
+/// Bake lightmap geometry buffer for lightmap chart.
+URHO3D_API LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBakingScene& bakingScene);
 
-/// Bake lightmap geometry for lightmap charts.
-URHO3D_API LightmapChartBakedGeometryVector BakeLightmapGeometries(const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
+/// Bake lightmap geometry buffer for lightmap charts.
+URHO3D_API LightmapChartGeometryBufferVector BakeLightmapGeometryBuffers(const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
 
 }

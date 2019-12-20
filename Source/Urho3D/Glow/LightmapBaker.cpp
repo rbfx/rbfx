@@ -68,7 +68,7 @@ struct LightmapBakerImpl
         , scene_(scene)
         , charts_(GenerateLightmapCharts(lightReceivers, settings_.charting_))
         , bakingScenes_(GenerateLightmapGeometryBakingScenes(context_, charts_, settings_.geometryBaking_))
-        , bakedGeometries_(BakeLightmapGeometries(bakingScenes_))
+        , geometryBuffers_(BakeLightmapGeometryBuffers(bakingScenes_))
         , bakedDirect_(InitializeLightmapChartsBakedDirect(charts_))
         , bakedIndirect_(InitializeLightmapChartsBakedIndirect(charts_))
         , lights_(lights)
@@ -88,8 +88,8 @@ struct LightmapBakerImpl
     LightmapChartVector charts_;
     /// Baking scenes.
     ea::vector<LightmapGeometryBakingScene> bakingScenes_;
-    /// Baked geometries.
-    ea::vector<LightmapChartBakedGeometry> bakedGeometries_;
+    /// Geometry buffers.
+    ea::vector<LightmapChartGeometryBuffer> geometryBuffers_;
     /// Baked direct lighting.
     ea::vector<LightmapChartBakedDirect> bakedDirect_;
     /// Baked indirect lighting.
@@ -163,7 +163,7 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
 {
     const LightmapChart& chart = impl_->charts_[impl_->currentLightmapIndex_];
     const LightmapGeometryBakingScene& bakingScene = impl_->bakingScenes_[impl_->currentLightmapIndex_];
-    const LightmapChartBakedGeometry& bakedGeometry = impl_->bakedGeometries_[impl_->currentLightmapIndex_];
+    const LightmapChartGeometryBuffer& geometryBuffer = impl_->geometryBuffers_[impl_->currentLightmapIndex_];
     LightmapChartBakedDirect& bakedDirect = impl_->bakedDirect_[impl_->currentLightmapIndex_];
     LightmapChartBakedIndirect& bakedIndirect = impl_->bakedIndirect_[impl_->currentLightmapIndex_];
     const int lightmapWidth = chart.allocator_.GetWidth();
@@ -189,17 +189,17 @@ bool LightmapBaker::BakeLightmap(LightmapBakedData& data)
     const Vector3 lightRayDirection = -lightDirection.Normalized();
 
     // Calculate directional light
-    BakeDirectionalLight(bakedDirect, bakedGeometry, *impl_->embreeScene_,
+    BakeDirectionalLight(bakedDirect, geometryBuffer, *impl_->embreeScene_,
         { lightDirection, Color::WHITE }, impl_->settings_.tracing_);
 
     // Calculate indirect light.
     for (int i = 0; i < impl_->settings_.tracing_.numIndirectSamples_; ++i)
-        BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, bakedGeometry, *impl_->embreeScene_, impl_->settings_.tracing_);
+        BakeIndirectLight(bakedIndirect, impl_->bakedDirect_, geometryBuffer, *impl_->embreeScene_, impl_->settings_.tracing_);
 
     // Post-process lighting.
     const unsigned numThreads = impl_->settings_.tracing_.numThreads_;
     bakedIndirect.NormalizeLight();
-    FilterIndirectLight(bakedIndirect, bakedGeometry, { 5, 1, 10.0f, 4.0f, 1.0f }, numThreads);
+    FilterIndirectLight(bakedIndirect, geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, numThreads);
 
     // Copy directional light into output
     for (unsigned i = 0; i < data.backedLighting_.size(); ++i)
