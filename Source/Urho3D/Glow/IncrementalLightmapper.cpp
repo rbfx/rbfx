@@ -27,6 +27,7 @@
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapTracer.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
@@ -78,6 +79,13 @@ struct LocalChunkProcessingContext
 
 /// Context used for incremental lightmap chunk processing (second pass).
 struct AdjacentChartProcessingContext
+{
+    /// Current chunk.
+    unsigned currentChunkIndex_{};
+};
+
+/// Context used for direct light baking.
+struct DirectLightBakingContext
 {
     /// Current chunk.
     unsigned currentChunkIndex_{};
@@ -138,7 +146,7 @@ struct IncrementalLightmapperImpl
         LightmapChartGeometryBufferVector geometryBuffer = BakeLightmapGeometryBuffers(geometryBakingScene);
 
         // Store result in the cache
-        cache_->StoreGeometryBuffer(chunk, ea::move(geometryBuffer));
+        cache_->StoreGeometryBuffers(chunk, ea::move(geometryBuffer));
 
         // Advance
         ctx.lightmapChartBaseIndex_ += charts.size();
@@ -162,7 +170,37 @@ struct IncrementalLightmapperImpl
         const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, raytracingNodes);
 
         // Store result in the cache
-        cache_->StoreVicinity(chunk, { embreeScene });
+        cache_->StoreChunkVicinity(chunk, { embreeScene });
+
+        // Advance
+        ++ctx.currentChunkIndex_;
+        return false;
+    }
+
+    /// Bake direct lighting.
+    bool StepBakeDirect(DirectLightBakingContext& ctx)
+    {
+        if (ctx.currentChunkIndex_ >= chunks_.size())
+            return true;
+
+        // Load chunk
+        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
+        const LightmapChartGeometryBufferVector* geometryBuffers = cache_->LoadGeometryBuffers(chunk);
+        const LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
+
+        // Bake direct lighting
+        ea::vector<LightmapChartBakedDirect> bakedDirect = InitializeLightmapChartsBakedDirect(*geometryBuffers);
+        for (unsigned i = 0; i < bakedDirect.size(); ++i)
+        {
+            // TODO: Use real lights
+            DirectionalLightParameters light{ Vector3::DOWN, Color::WHITE };
+            BakeDirectionalLight(bakedDirect[i], (*geometryBuffers)[i], *chunkVicinity->embreeScene_,
+                light, lightmapSettings_.tracing_);
+        }
+
+        // Release cache
+        cache_->ReleaseGeometryBuffer(chunk);
+        cache_->ReleaseChunkVicinity(chunk);
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -187,8 +225,6 @@ private:
     ea::vector<IntVector3> chunks_;
     /// Base chunk index.
     IntVector3 baseChunkIndex_;
-
-
 };
 
 IncrementalLightmapper::~IncrementalLightmapper()
@@ -212,6 +248,14 @@ void IncrementalLightmapper::ProcessScene()
     // Generate baking geometry
     AdjacentChartProcessingContext geometryBakingContext;
     while (!impl_->StepAdjacentChunkProcessing(geometryBakingContext))
+        ;
+}
+
+void IncrementalLightmapper::Bake()
+{
+    // Bake direct lighting
+    DirectLightBakingContext directContext;
+    while (!impl_->StepBakeDirect(directContext))
         ;
 }
 

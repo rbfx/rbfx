@@ -43,9 +43,17 @@ class URHO3D_API LightmapCache
 {
 public:
     /// Store geometry buffers in the cache.
-    virtual void StoreGeometryBuffer(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) = 0;
-    /// Store baking context in the cache.
-    virtual void StoreVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
+    virtual void StoreGeometryBuffers(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) = 0;
+    /// Store chunk vicinity in the cache.
+    virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
+    /// Load geometry buffer.
+    virtual const LightmapChartGeometryBufferVector* LoadGeometryBuffers(const IntVector3& chunk) = 0;
+    /// Load chunk vicinity.
+    virtual const LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) = 0;
+    /// Release geometry buffer.
+    virtual void ReleaseGeometryBuffer(const IntVector3& chunk) = 0;
+    /// Release chunk vicinity.
+    virtual void ReleaseChunkVicinity(const IntVector3& chunk) = 0;
 };
 
 /// Memory lightmap cache.
@@ -53,15 +61,23 @@ class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
     /// Store lightmap charts geometry buffers in the cache.
-    void StoreGeometryBuffer(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) override;
+    void StoreGeometryBuffers(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) override;
     /// Store baking context in the cache.
-    void StoreVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
+    void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
+    /// Load geometry buffer.
+    const LightmapChartGeometryBufferVector* LoadGeometryBuffers(const IntVector3& chunk) override;
+    /// Load chunk vicinity.
+    const LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) override;
+    /// Release geometry buffer.
+    void ReleaseGeometryBuffer(const IntVector3& chunk) override;
+    /// Release chunk vicinity.
+    void ReleaseChunkVicinity(const IntVector3& chunk) override;
 
 private:
     /// Geometry buffers cache.
     ea::unordered_map<IntVector3, LightmapChartGeometryBufferVector> geometryBufferCache_;
     /// Baking contexts cache.
-    ea::unordered_map<IntVector3, LightmapChunkVicinity> vicinityCache_;
+    ea::unordered_map<IntVector3, LightmapChunkVicinity> chunkVicinityCache_;
 };
 
 }

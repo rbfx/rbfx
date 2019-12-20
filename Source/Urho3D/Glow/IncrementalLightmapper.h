@@ -56,6 +56,8 @@ public:
         Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache);
     /// Process the scene.
     void ProcessScene();
+    /// Bake lighting.
+    void Bake();
 
 private:
     /// Implementation details.
