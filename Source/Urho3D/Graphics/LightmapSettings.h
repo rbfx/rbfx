@@ -24,6 +24,8 @@
 
 #pragma once
 
+#include "../Math/Vector3.h"
+
 #include <EASTL/string.h>
 
 namespace Urho3D
@@ -81,6 +83,21 @@ struct LightmapSettings
     LightmapGeometryBakingSettings geometryBaking_;
     /// Tracing settings.
     LightmapTracingSettings tracing_;
+};
+
+/// Incremental lightmapper settings.
+struct IncrementalLightmapperSettings
+{
+    /// Size of the chunk.
+    Vector3 chunkSize_ = Vector3::ONE * 64.0f;
+    /// Padding for raytracing scene.
+    float raytracingScenePadding_ = 32.0f;
+    /// Output directory name.
+    ea::string outputDirectory_;
+    /// Lightmap name prefix.
+    ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
+    /// Lightmap name suffix.
+    ea::string lightmapNameSuffix_{ ".png" };
 };
 
 }
