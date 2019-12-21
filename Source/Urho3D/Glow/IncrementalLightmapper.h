@@ -59,15 +59,14 @@ public:
     /// Destruct.
     ~IncrementalLightmapper();
 
-    /// Initialize lightmapper.
+    /// Initialize lightmapper. Relatively lightweigh.
     void Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
         Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache);
-    /// Process the scene.
+    /// Process the scene. All work with scene collector is performed here.
     void ProcessScene();
-    /// Bake lighting.
+    /// Bake lighting and save results.
+    /// It is safe to call Bake from another thread as long as lightmap cache is safe to use from said thread.
     void Bake();
-    /// Filter and save images.
-    void FilterAndSave();
 
 private:
     /// Implementation details.

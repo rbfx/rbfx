@@ -27,16 +27,34 @@
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapGeometryBaker.h"
 #include "../Glow/LightmapTracer.h"
+#include "../Graphics/Light.h"
 #include "../Math/Vector3.h"
 
 namespace Urho3D
 {
+
+/// Baked direct light description.
+struct BakedDirectLight
+{
+    /// Light type.
+    LightType lightType_{};
+    /// Light color.
+    Color lightColor_{};
+    /// Position.
+    Vector3 position_;
+    /// Direction.
+    Vector3 direction_;
+    /// Rotation.
+    Quaternion rotation_;
+};
 
 /// Lightmap chunk vicinity. Contains all required baking context from the chunk itself and adjacent chunks.
 struct LightmapChunkVicinity
 {
     /// Embree scene.
     SharedPtr<EmbreeScene> embreeScene_;
+    /// Lights to bake.
+    ea::vector<BakedDirectLight> bakedLights_;
 };
 
 /// Lightmap cache interface.

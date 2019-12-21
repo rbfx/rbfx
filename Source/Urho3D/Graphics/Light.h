@@ -35,6 +35,13 @@ namespace Urho3D
 class Camera;
 struct LightBatchQueue;
 
+/// %Light baking mode.
+enum LightMode
+{
+    LM_DYNAMIC,
+    LM_BAKED
+};
+
 /// %Light types.
 enum LightType
 {
@@ -187,6 +194,8 @@ public:
 
     /// Set light type.
     void SetLightType(LightType type);
+    /// Set light mode.
+    void SetLightMode(LightMode mode);
     /// Set vertex lighting mode.
     void SetPerVertex(bool enable);
     /// Set color.
@@ -234,6 +243,12 @@ public:
 
     /// Return light type.
     LightType GetLightType() const { return lightType_; }
+
+    /// Return light mode.
+    LightMode GetLightMode() const { return lightMode_; }
+
+    /// Return effective light mask. Baked lights have zero light mask.
+    unsigned GetLightMaskEffective() const { return lightMode_ == LM_BAKED ? 0 : GetLightMask(); }
 
     /// Return vertex lighting mode.
     bool GetPerVertex() const { return perVertex_; }
@@ -364,6 +379,8 @@ private:
     void ValidateShadowBias() { shadowBias_.Validate(); }
     /// Light type.
     LightType lightType_;
+    /// Light baking mode.
+    LightMode lightMode_{};
     /// Color.
     Color color_;
     /// Light temperature.

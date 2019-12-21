@@ -134,7 +134,6 @@ void ApplyLightmapCharts(const LightmapChartVector& charts)
         {
             if (element.staticModel_)
             {
-                element.staticModel_->SetLightmap(true);
                 element.staticModel_->SetLightmapIndex(chart.index_);
                 element.staticModel_->SetLightmapScaleOffset(element.region_.GetScaleOffset());
             }
