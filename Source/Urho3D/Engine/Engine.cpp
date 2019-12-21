@@ -155,6 +155,7 @@ Engine::Engine(Context* context) :
 #endif
 
     SubscribeToEvent(E_EXITREQUESTED, URHO3D_HANDLER(Engine, HandleExitRequested));
+    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Engine, HandleEndFrame));
 }
 
 Engine::~Engine() = default;
@@ -991,7 +992,12 @@ const Variant& Engine::GetParameter(const VariantMap& parameters, const ea::stri
 
 void Engine::HandleExitRequested(StringHash eventType, VariantMap& eventData)
 {
-    if (autoExit_)
+    exiting_ = true;
+}
+
+void Engine::HandleEndFrame(StringHash eventType, VariantMap& eventData)
+{
+    if (exiting_ && autoExit_)
     {
         // Do not call Exit() here, as it contains mobile platform -specific tests to not exit.
         // If we do receive an exit request from the system on those platforms, we must comply
@@ -1005,7 +1011,6 @@ void Engine::DoExit()
     if (graphics)
         graphics->Close();
 
-    exiting_ = true;
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
     emscripten_force_exit(EXIT_SUCCESS);    // Some how this is required to signal emrun to stop
 #endif
