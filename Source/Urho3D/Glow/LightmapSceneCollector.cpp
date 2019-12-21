@@ -25,9 +25,11 @@
 #include "../Glow/LightmapSceneCollector.h"
 
 #include "../Glow/EmbreeScene.h"
+#include "../Graphics/Light.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
+#include "../Graphics/Zone.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
@@ -49,7 +51,7 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
     for (Node* node : children)
     {
         auto staticModel = node->GetComponent<StaticModel>();
-        if (staticModel)
+        if (staticModel && staticModel->GetBakeLightmap())
         {
             const Vector3 position = node->GetWorldPosition();
             const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * Vector3(chunkGridDimension_);
@@ -96,7 +98,18 @@ ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInBoundingBox(const Int
     for (Drawable* drawable : drawables)
     {
         if (Node* node = drawable->GetNode())
-            nodes.push_back(node);
+        {
+            auto staticModel = dynamic_cast<StaticModel*>(drawable);
+            if (staticModel && staticModel->GetBakeLightmap())
+                nodes.push_back(node);
+
+            auto light = dynamic_cast<Light*>(drawable);
+            if (light && light->GetLightMode() != LM_DYNAMIC)
+                nodes.push_back(node);
+
+            if (auto zone = dynamic_cast<Zone*>(drawable))
+                nodes.push_back(node);
+        }
     }
     return nodes;
 }

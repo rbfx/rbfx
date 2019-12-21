@@ -191,16 +191,33 @@ struct IncrementalLightmapperImpl
             return true;
 
         // Collect nodes around current chunk
+        // TODO: Use separate volumes for direct and indirect light
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         BoundingBox boundingBox = collector_->GetChunkBoundingBox(chunk);
         boundingBox.min_ -= Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
         boundingBox.min_ += Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
 
-        const ea::vector<Node*> raytracingNodes = collector_->GetNodesInBoundingBox(chunk, boundingBox);
-        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, raytracingNodes);
+        const ea::vector<Node*> nodesInVolume = collector_->GetNodesInBoundingBox(chunk, boundingBox);
+        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, nodesInVolume);
+
+        // Collect lights
+        ea::vector<BakedDirectLight> bakedLights;
+        for (Node* node : nodesInVolume)
+        {
+            if (auto light = node->GetComponent<Light>())
+            {
+                BakedDirectLight bakedLight;
+                bakedLight.lightType_ = light->GetLightType();
+                bakedLight.lightColor_ = light->GetColor();
+                bakedLight.position_ = node->GetWorldPosition();
+                bakedLight.rotation_ = node->GetWorldRotation();
+                bakedLight.direction_ = node->GetWorldDirection();
+                bakedLights.push_back(bakedLight);
+            }
+        }
 
         // Store result in the cache
-        cache_->StoreChunkVicinity(chunk, { embreeScene });
+        cache_->StoreChunkVicinity(chunk, { embreeScene, bakedLights });
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -224,10 +241,16 @@ struct IncrementalLightmapperImpl
             const LightmapChartGeometryBuffer* geometryBuffer = cache_->LoadGeometryBuffer(lightmapIndex);
             LightmapChartBakedDirect bakedDirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
-            // TODO: Use real lights
-            DirectionalLightParameters light{ Vector3::DOWN, Color::WHITE };
-            BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->embreeScene_,
-                light, lightmapSettings_.tracing_);
+            // Bake direct lights
+            for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
+            {
+                if (bakedLight.lightType_ == LIGHT_DIRECTIONAL)
+                {
+                    DirectionalLightParameters light{ bakedLight.direction_, bakedLight.lightColor_ };
+                    BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->embreeScene_,
+                        light, lightmapSettings_.tracing_);
+                }
+            }
 
             // Store direct light
             cache_->StoreDirectLight(lightmapIndex, ea::move(bakedDirect));
@@ -343,10 +366,7 @@ void IncrementalLightmapper::Bake()
     DirectLightBakingContext directContext;
     while (!impl_->StepBakeDirect(directContext))
         ;
-}
 
-void IncrementalLightmapper::FilterAndSave()
-{
     // Filter and save images
     FilterAndSaveContext filterAndSaveContext;
     while (!impl_->StepFilterAndSave(filterAndSaveContext))

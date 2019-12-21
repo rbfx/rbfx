@@ -50,6 +50,13 @@ static const char* typeNames[] =
     nullptr
 };
 
+static const char* modeNames[] =
+{
+    "Dynamic",
+    "Baked",
+    nullptr
+};
+
 void BiasParameters::Validate()
 {
     constantBias_ = Clamp(constantBias_, -1.0f, 1.0f);
@@ -104,6 +111,7 @@ void Light::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Type", GetLightType, SetLightType, LightType, typeNames, DEFAULT_LIGHTTYPE, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Mode", GetLightMode, SetLightMode, LightMode, modeNames, LM_DYNAMIC, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Specular Intensity", GetSpecularIntensity, SetSpecularIntensity, float, DEFAULT_SPECULARINTENSITY,
         AM_DEFAULT);
@@ -253,6 +261,12 @@ void Light::SetLightType(LightType type)
 {
     lightType_ = type;
     OnMarkedDirty(node_);
+    MarkNetworkUpdate();
+}
+
+void Light::SetLightMode(LightMode mode)
+{
+    lightMode_ = mode;
     MarkNetworkUpdate();
 }
 

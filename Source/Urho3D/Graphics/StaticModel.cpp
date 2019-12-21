@@ -69,7 +69,7 @@ void StaticModel::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("LOD Bias", GetLodBias, SetLodBias, float, 1.0f, AM_DEFAULT);
     URHO3D_COPY_BASE_ATTRIBUTES(Drawable);
     URHO3D_ATTRIBUTE("Occlusion LOD Level", int, occlusionLodLevel_, M_MAX_UNSIGNED, AM_DEFAULT);
-    URHO3D_ATTRIBUTE_EX("Lightmap", bool, lightmap_, UpdateBatchesLightmaps, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE_EX("Bake Lightmap", bool, bakeLightmap_, UpdateBatchesLightmaps, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE_EX("Lightmap Index", unsigned, lightmapIndex_, UpdateBatchesLightmaps, 0, AM_FILE | AM_NOEDIT);
     URHO3D_ATTRIBUTE_EX("Lightmap Scale & Offset", Vector4, lightmapScaleOffset_, UpdateBatchesLightmaps, Vector4(1.0f, 1.0f, 0.0f, 0.0f), AM_FILE | AM_NOEDIT);
 }
@@ -450,7 +450,7 @@ void StaticModel::CalculateLodLevels()
 
 void StaticModel::UpdateBatchesLightmaps()
 {
-    if (lightmap_)
+    if (bakeLightmap_)
     {
         for (unsigned i = 0; i < batches_.size(); ++i)
         {

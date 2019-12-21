@@ -297,7 +297,7 @@ Texture2D* Scene::GetLightmapTexture(unsigned index)
 
         lightmapTexturesDirty_ = false;
     }
-    return lightmapTextures_[index];
+    return index < lightmapTextures_.size() ? lightmapTextures_[index] : nullptr;
 }
 
 bool Scene::LoadXML(Deserializer& source)
