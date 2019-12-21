@@ -25,8 +25,8 @@
 #pragma once
 
 #include "../Container/Ptr.h"
-#include "../Glow/LightmapSettings.h"
 #include "../Glow/EmbreeForward.h"
+#include "../Graphics/LightmapSettings.h"
 #include "../Math/BoundingBox.h"
 
 #include <EASTL/vector.h>

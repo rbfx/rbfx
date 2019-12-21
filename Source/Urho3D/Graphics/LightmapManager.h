@@ -24,38 +24,35 @@
 
 #pragma once
 
-#include "../Glow/LightmapCache.h"
-#include "../Glow/LightmapSceneCollector.h"
 #include "../Graphics/LightmapSettings.h"
-
-#include <EASTL/string.h>
+#include "../Scene/LogicComponent.h"
 
 namespace Urho3D
 {
 
-/// Incremental lightmapper.
-class URHO3D_API IncrementalLightmapper
+/// Lightmap manager component.
+class URHO3D_API LightmapManager : public LogicComponent
 {
+    URHO3D_OBJECT(LightmapManager, LogicComponent);
+
 public:
     /// Construct.
-    IncrementalLightmapper() {}
+    explicit LightmapManager(Context* context);
     /// Destruct.
-    ~IncrementalLightmapper();
+    ~LightmapManager() override;
+    /// Register object factory. Drawable must be registered first.
+    static void RegisterObject(Context* context);
 
-    /// Initialize lightmapper. Relatively lightweigh.
-    void Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
-        Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache);
-    /// Process the scene. All work with scene collector is performed here.
-    void ProcessScene();
-    /// Bake lighting and save results.
-    /// It is safe to call Bake from another thread as long as lightmap cache is safe to use from said thread.
+    /// Bake lightmaps in main thread.
     void Bake();
 
 private:
-    struct Impl;
-
-    /// Implementation details.
-    ea::unique_ptr<Impl> impl_;
+    /// Lightmap baking settings.
+    LightmapSettings lightmapSettings_;
+    /// Incremental baking settings.
+    IncrementalLightmapperSettings incrementalBakingSettings_;
+    /// Whether the baking is scheduled.
+    bool bakingScheduled_{};
 };
 
 }
