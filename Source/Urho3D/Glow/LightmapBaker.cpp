@@ -73,7 +73,7 @@ struct LightmapBakerImpl
         , bakedIndirect_(InitializeLightmapChartsBakedIndirect(geometryBuffers_))
         , lights_(lights)
     {
-        ApplyLightmapCharts(charts_, 0);
+        ApplyLightmapCharts(charts_);
         embreeScene_ = CreateEmbreeScene(context_, lightObstacles);
     }
 

@@ -39,6 +39,8 @@ struct LightmapGeometryBakingScene
 {
     /// Context.
     Context* context_{};
+    /// Lightmap chart index.
+    unsigned index_{};
     /// Width of the chart.
     unsigned width_{};
     /// Height of the chart.
@@ -64,6 +66,8 @@ URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakin
 /// Lightmap geometry buffer of lightmap chart.
 struct LightmapChartGeometryBuffer
 {
+    /// Lightmap chart index.
+    unsigned index_{};
     /// Width of the chart.
     unsigned width_{};
     /// Height of the chart.
@@ -85,8 +89,9 @@ struct LightmapChartGeometryBuffer
     /// Construct default.
     LightmapChartGeometryBuffer() = default;
     /// Construct valid.
-    LightmapChartGeometryBuffer(unsigned width, unsigned height)
-        : width_(width)
+    LightmapChartGeometryBuffer(unsigned index, unsigned width, unsigned height)
+        : index_(index)
+        , width_(width)
         , height_(height)
         , geometryPositions_(width * height)
         , smoothPositions_(width * height)
