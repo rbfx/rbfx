@@ -30,6 +30,8 @@
 #include "../Graphics/Light.h"
 #include "../Math/Vector3.h"
 
+#include <EASTL/shared_ptr.h>
+
 namespace Urho3D
 {
 
@@ -86,6 +88,13 @@ public:
     virtual const LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) = 0;
     /// Release direct light for the lightmap chart.
     virtual void ReleaseDirectLight(unsigned lightmapIndex) = 0;
+
+    /// Store indirect light for the lightmap chart.
+    virtual void StoreIndirectLight(unsigned lightmapIndex, LightmapChartBakedIndirect bakedIndirect) = 0;
+    /// Load indirect light for the lightmap chart.
+    virtual const LightmapChartBakedIndirect* LoadIndirectLight(unsigned lightmapIndex) = 0;
+    /// Release indirect light for the lightmap chart.
+    virtual void ReleaseIndirectLight(unsigned lightmapIndex) = 0;
 };
 
 /// Memory lightmap cache.
@@ -118,6 +127,13 @@ public:
     /// Release direct light for the lightmap chart.
     void ReleaseDirectLight(unsigned lightmapIndex) override;
 
+    /// Store indirect light for the lightmap chart.
+    void StoreIndirectLight(unsigned lightmapIndex, LightmapChartBakedIndirect bakedIndirect) override;
+    /// Load indirect light for the lightmap chart.
+    const LightmapChartBakedIndirect* LoadIndirectLight(unsigned lightmapIndex) override;
+    /// Release indirect light for the lightmap chart.
+    void ReleaseIndirectLight(unsigned lightmapIndex) override;
+
 private:
     /// Lightmap indices per chunk.
     ea::unordered_map<IntVector3, ea::vector<unsigned>> lightmapIndicesPerChunk_;
@@ -127,6 +143,8 @@ private:
     ea::unordered_map<unsigned, LightmapChartGeometryBuffer> geometryBufferCache_;
     /// Direct light cache.
     ea::unordered_map<unsigned, LightmapChartBakedDirect> directLightCache_;
+    /// Indirect light cache.
+    ea::unordered_map<unsigned, LightmapChartBakedIndirect> indirectLightCache_;
 };
 
 }
