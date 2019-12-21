@@ -64,21 +64,7 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     io.UserData = this;
     // UI subsystem is responsible for managing cursors and that interferes with ImGui.
     io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange | flags;
-    PlatformInitialize();
 
-    // Subscribe to events
-    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
-    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
-    SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
-    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
-}
-
-void SystemUI::PlatformInitialize()
-{
-    ImGuiIO& io = ui::GetIO();
     Graphics* graphics = GetSubsystem<Graphics>();
     io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
 #if URHO3D_OPENGL
@@ -98,9 +84,18 @@ void SystemUI::PlatformInitialize()
 #else
     ImGui_ImplDX9_Init(graphics->GetImpl()->GetDevice());
 #endif
+
+    // Subscribe to events
+    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
+    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
+    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
+    SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
+    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
 }
 
-void SystemUI::PlatformShutdown()
+SystemUI::~SystemUI()
 {
 #if URHO3D_OPENGL
     ImGui_ImplOpenGL3_Shutdown();
@@ -110,19 +105,35 @@ void SystemUI::PlatformShutdown()
     ImGui_ImplDX9_Shutdown();
 #endif
     ImGui_ImplSDL2_Shutdown();
-}
-
-SystemUI::~SystemUI()
-{
-    PlatformShutdown();
     ui::DestroyContext(imContext_);
     imContext_ = nullptr;
 }
 
+void SystemUI::PlatformInitialize()
+{
+#if URHO3D_OPENGL
+    ImGui_ImplOpenGL3_CreateDeviceObjects();
+#elif URHO3D_D3D11
+    ImGui_ImplDX11_CreateDeviceObjects();
+#else
+    ImGui_ImplDX9_CreateDeviceObjects();
+#endif
+}
+
+void SystemUI::PlatformShutdown()
+{
+#if URHO3D_OPENGL
+    ImGui_ImplOpenGL3_DestroyDeviceObjects();
+#elif URHO3D_D3D11
+    ImGui_ImplDX11_InvalidateDeviceObjects();
+#else
+    ImGui_ImplDX9_InvalidateDeviceObjects();
+#endif
+}
+
 void SystemUI::OnRawEvent(VariantMap& args)
 {
-    if (!imContext_)
-        return;
+    assert(imContext_ != nullptr);
 
     auto* evt = static_cast<SDL_Event*>(args[SDLRawInput::P_SDLEVENT].Get<void*>());
     auto& io = ui::GetIO();
@@ -156,8 +167,7 @@ void SystemUI::OnRawEvent(VariantMap& args)
 
 void SystemUI::OnScreenMode(VariantMap& args)
 {
-    if (!imContext_)
-        return;
+    assert(imContext_ != nullptr);
 
     using namespace ScreenMode;
     ImGuiIO& io = ui::GetIO();
@@ -166,8 +176,7 @@ void SystemUI::OnScreenMode(VariantMap& args)
 
 void SystemUI::OnInputEnd(VariantMap& args)
 {
-    if (!imContext_)
-        return;
+    assert(imContext_ != nullptr);
 
     if (imContext_->WithinFrameScope)
     {
@@ -196,7 +205,8 @@ void SystemUI::OnInputEnd(VariantMap& args)
 void SystemUI::OnRenderEnd()
 {
     // When SystemUI subsystem is recreated during runtime this method may be called without UI being rendered.
-    if (!imContext_ || !imContext_->WithinFrameScope)
+    assert(imContext_ != nullptr);
+    if (!imContext_->WithinFrameScope)
         return;
 
     URHO3D_PROFILE("SystemUiRender");
@@ -229,6 +239,8 @@ void SystemUI::OnRenderEnd()
         ui::RenderPlatformWindowsDefault();
 #if URHO3D_OPENGL
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
+#elif URHO3D_D3D11
+        graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
 #endif
     }
 }
