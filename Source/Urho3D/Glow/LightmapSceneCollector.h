@@ -43,6 +43,9 @@ class Octree;
 class URHO3D_API LightmapSceneCollector
 {
 public:
+    /// Destruct.
+    virtual ~LightmapSceneCollector();
+
     /// Called before everything else. Scene objects must stay unchanged after this call.
     virtual void LockScene(Scene* scene, const Vector3& chunkSize) = 0;
     /// Return all scene chunks.

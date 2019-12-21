@@ -26,6 +26,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
+
 #if URHO3D_GLOW
 #include "../Glow/IncrementalLightmapper.h"
 #endif
@@ -36,7 +37,7 @@ namespace Urho3D
 extern const char* SUBSYSTEM_CATEGORY;
 
 LightmapManager::LightmapManager(Context* context) :
-    LogicComponent(context)
+    Component(context)
 {
     SubscribeToEvent(E_UPDATE, [this](StringHash eventType, VariantMap& eventData)
     {
