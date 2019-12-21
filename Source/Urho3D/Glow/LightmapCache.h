@@ -63,6 +63,9 @@ struct LightmapChunkVicinity
 class URHO3D_API LightmapCache
 {
 public:
+    /// Destruct.
+    virtual ~LightmapCache();
+
     /// Store lightmap indices for chunk.
     virtual void StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) = 0;
     /// Load lightmap indices for chunk.

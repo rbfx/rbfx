@@ -27,6 +27,8 @@
 namespace Urho3D
 {
 
+LightmapCache::~LightmapCache() = default;
+
 void LightmapMemoryCache::StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices)
 {
     lightmapIndicesPerChunk_[chunk] = ea::move(lightmapIndices);

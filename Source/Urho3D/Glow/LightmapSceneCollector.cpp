@@ -35,6 +35,8 @@
 namespace Urho3D
 {
 
+LightmapSceneCollector::~LightmapSceneCollector() = default;
+
 void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunkSize)
 {
     scene_ = scene;
