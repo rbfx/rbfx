@@ -66,7 +66,7 @@ if (NOT MINI_URHO)
 endif ()
 
 if (URHO3D_GLOW)
-    define_engine_source_files (GLOW)
+    define_engine_source_files (Glow)
 endif ()
 
 if (URHO3D_IK)

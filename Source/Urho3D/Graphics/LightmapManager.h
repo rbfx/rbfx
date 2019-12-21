@@ -25,15 +25,15 @@
 #pragma once
 
 #include "../Graphics/LightmapSettings.h"
-#include "../Scene/LogicComponent.h"
+#include "../Scene/Component.h"
 
 namespace Urho3D
 {
 
 /// Lightmap manager component.
-class URHO3D_API LightmapManager : public LogicComponent
+class URHO3D_API LightmapManager : public Component
 {
-    URHO3D_OBJECT(LightmapManager, LogicComponent);
+    URHO3D_OBJECT(LightmapManager, Component);
 
 public:
     /// Construct.
