@@ -128,7 +128,7 @@ URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, cons
 
 /// Accumulate indirect light.
 URHO3D_API void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
-    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+    const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
 
 /// Parameters for indirect light filtering.
