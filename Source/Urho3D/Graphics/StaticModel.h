@@ -101,10 +101,10 @@ public:
     /// Return materials attribute.
     const ResourceRefList& GetMaterialsAttr() const;
 
-    /// Set whether the lightmap is enabled.
-    void SetLightmap(bool lightmap) { lightmap_ = lightmap; UpdateBatchesLightmaps(); }
-    /// Return whether the lightmap is enabled.
-    bool GetLightmap() const { return lightmap_; }
+    /// Set whether the lightmap is baked for this object.
+    void SetBakeLightmap(bool bakeLightmap) { bakeLightmap_ = bakeLightmap; UpdateBatchesLightmaps(); }
+    /// Return whether the lightmap is baked for this object.
+    bool GetBakeLightmap() const { return bakeLightmap_; }
     /// Set lightmap index.
     void SetLightmapIndex(unsigned idx) { lightmapIndex_ = idx; UpdateBatchesLightmaps(); }
     /// Return lightmap index.
@@ -140,7 +140,7 @@ protected:
     mutable ResourceRefList materialsAttr_;
 
     /// Whether the lightmap is enabled.
-    bool lightmap_{};
+    bool bakeLightmap_{};
     /// Lightmap index.
     unsigned lightmapIndex_{};
     /// Lightmap scale adn offset.

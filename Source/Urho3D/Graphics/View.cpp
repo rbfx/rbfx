@@ -1136,7 +1136,7 @@ void View::GetLightBatches()
 
                 // In deferred modes, store the light volume batch now. Since light mask 8 lowest bits are output to the stencil,
                 // lights that have all zeroes in the low 8 bits can be skipped; they would not affect geometry anyway
-                if (deferred_ && (light->GetLightMask() & 0xffu) != 0)
+                if (deferred_ && (light->GetLightMaskEffective() & 0xffu) != 0)
                 {
                     Batch volumeBatch;
                     volumeBatch.geometry_ = renderer_->GetLightGeometry(light);
@@ -2285,7 +2285,7 @@ void View::ProcessLight(LightQueryResult& query, unsigned threadIndex)
 {
     Light* light = query.light_;
     LightType type = light->GetLightType();
-    unsigned lightMask = light->GetLightMask();
+    unsigned lightMask = light->GetLightMaskEffective();
     const Frustum& frustum = cullCamera_->GetFrustum();
 
     // Check if light should be shadowed
@@ -2387,7 +2387,7 @@ void View::ProcessLight(LightQueryResult& query, unsigned threadIndex)
 void View::ProcessShadowCasters(LightQueryResult& query, const ea::vector<Drawable*>& drawables, unsigned splitIndex)
 {
     Light* light = query.light_;
-    unsigned lightMask = light->GetLightMask();
+    unsigned lightMask = light->GetLightMaskEffective();
 
     Camera* shadowCamera = query.shadowCameras_[splitIndex];
     const Frustum& shadowCameraFrustum = shadowCamera->GetFrustum();
@@ -2644,7 +2644,7 @@ void View::SetupDirLightShadowCamera(Camera* shadowCamera, Light* light, float n
     if (parameters.focus_)
     {
         BoundingBox litGeometriesBox;
-        unsigned lightMask = light->GetLightMask();
+        unsigned lightMask = light->GetLightMaskEffective();
 
         for (unsigned i = 0; i < geometries_.size(); ++i)
         {
@@ -3053,7 +3053,7 @@ void View::SetupLightVolumeBatch(Batch& batch)
 
     graphics_->SetScissorTest(false);
     if (!noStencil_)
-        graphics_->SetStencilTest(true, CMP_NOTEQUAL, OP_KEEP, OP_KEEP, OP_KEEP, 0, light->GetLightMask());
+        graphics_->SetStencilTest(true, CMP_NOTEQUAL, OP_KEEP, OP_KEEP, OP_KEEP, 0, light->GetLightMaskEffective());
     else
         graphics_->SetStencilTest(false);
 }
