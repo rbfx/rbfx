@@ -247,7 +247,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 }
 
 void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
-    const ea::vector<LightmapChartBakedDirect>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+    const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
@@ -326,8 +326,8 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
 
                 // TODO: Use real index here
                 const unsigned lightmapIndex = geometry.lightmapIndex_;
-                const IntVector2 sampleLocation = bakedDirect[lightmapIndex].GetNearestLocation(lightmapUV);
-                incomingSamples[j] = bakedDirect[lightmapIndex].GetLight(sampleLocation);
+                const IntVector2 sampleLocation = bakedDirect[lightmapIndex]->GetNearestLocation(lightmapUV);
+                incomingSamples[j] = bakedDirect[lightmapIndex]->GetLight(sampleLocation);
                 incomingFactors[j] = brdf * cosTheta / probability;
                 ++numSamples;
 
