@@ -95,7 +95,7 @@ public:
         /// Check whether the index is large. 0xffff is reserved for triangle strip reset.
         static bool IsLargeIndex(unsigned index) { return index >= 0xfffe; }
         /// Check whether the index buffer has large indices.
-        bool HasLargeIndexes() const { return ea::any_of(indices_.begin(), indices_.end(), IsLargeIndex); }
+        bool HasLargeIndices() const { return ea::any_of(indices_.begin(), indices_.end(), IsLargeIndex); }
     };
 
     /// Geometry LOD data.

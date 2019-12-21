@@ -26,6 +26,7 @@
 
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapTracer.h"
 #include "../Math/Vector3.h"
 
 namespace Urho3D
@@ -42,42 +43,72 @@ struct LightmapChunkVicinity
 class URHO3D_API LightmapCache
 {
 public:
-    /// Store geometry buffers in the cache.
-    virtual void StoreGeometryBuffers(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) = 0;
+    /// Store lightmap indices for chunk.
+    virtual void StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) = 0;
+    /// Load lightmap indices for chunk.
+    virtual ea::vector<unsigned> LoadLightmapsForChunk(const IntVector3& chunk) = 0;
+
     /// Store chunk vicinity in the cache.
     virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
-    /// Load geometry buffer.
-    virtual const LightmapChartGeometryBufferVector* LoadGeometryBuffers(const IntVector3& chunk) = 0;
     /// Load chunk vicinity.
     virtual const LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) = 0;
-    /// Release geometry buffer.
-    virtual void ReleaseGeometryBuffer(const IntVector3& chunk) = 0;
     /// Release chunk vicinity.
     virtual void ReleaseChunkVicinity(const IntVector3& chunk) = 0;
+
+    /// Store lightmap chart geometry buffer in the cache.
+    virtual void StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer) = 0;
+    /// Load geometry buffer.
+    virtual const LightmapChartGeometryBuffer* LoadGeometryBuffer(unsigned lightmapIndex) = 0;
+    /// Release geometry buffer.
+    virtual void ReleaseGeometryBuffer(unsigned lightmapIndex) = 0;
+
+    /// Store direct light for the lightmap chart.
+    virtual void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) = 0;
+    /// Load direct light for the lightmap chart.
+    virtual const LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) = 0;
+    /// Release direct light for the lightmap chart.
+    virtual void ReleaseDirectLight(unsigned lightmapIndex) = 0;
 };
 
 /// Memory lightmap cache.
 class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
-    /// Store lightmap charts geometry buffers in the cache.
-    void StoreGeometryBuffers(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer) override;
+    /// Store lightmap indices for chunk.
+    void StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) override;
+    /// Load lightmap indices for chunk.
+    ea::vector<unsigned> LoadLightmapsForChunk(const IntVector3& chunk) override;
+
     /// Store baking context in the cache.
     void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
-    /// Load geometry buffer.
-    const LightmapChartGeometryBufferVector* LoadGeometryBuffers(const IntVector3& chunk) override;
     /// Load chunk vicinity.
     const LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) override;
-    /// Release geometry buffer.
-    void ReleaseGeometryBuffer(const IntVector3& chunk) override;
     /// Release chunk vicinity.
     void ReleaseChunkVicinity(const IntVector3& chunk) override;
 
+    /// Store lightmap chart geometry buffer in the cache.
+    void StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer) override;
+    /// Load geometry buffer.
+    const LightmapChartGeometryBuffer* LoadGeometryBuffer(unsigned lightmapIndex) override;
+    /// Release geometry buffer.
+    void ReleaseGeometryBuffer(unsigned lightmapIndex) override;
+
+    /// Store direct light for the lightmap chart.
+    void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) override;
+    /// Load direct light for the lightmap chart.
+    const LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) override;
+    /// Release direct light for the lightmap chart.
+    void ReleaseDirectLight(unsigned lightmapIndex) override;
+
 private:
-    /// Geometry buffers cache.
-    ea::unordered_map<IntVector3, LightmapChartGeometryBufferVector> geometryBufferCache_;
+    /// Lightmap indices per chunk.
+    ea::unordered_map<IntVector3, ea::vector<unsigned>> lightmapIndicesPerChunk_;
     /// Baking contexts cache.
     ea::unordered_map<IntVector3, LightmapChunkVicinity> chunkVicinityCache_;
+    /// Geometry buffers cache.
+    ea::unordered_map<unsigned, LightmapChartGeometryBuffer> geometryBufferCache_;
+    /// Direct light cache.
+    ea::unordered_map<unsigned, LightmapChartBakedDirect> directLightCache_;
 };
 
 }
