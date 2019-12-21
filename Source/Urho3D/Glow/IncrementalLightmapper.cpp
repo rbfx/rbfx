@@ -108,10 +108,10 @@ struct FilterAndSaveContext
 }
 
 /// Incremental lightmapper implementation.
-struct IncrementalLightmapperImpl
+struct IncrementalLightmapper::Impl
 {
     /// Construct.
-    IncrementalLightmapperImpl(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
+    Impl(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
         Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache)
         : context_(scene->GetContext())
         , lightmapSettings_(lightmapSettings)
@@ -403,7 +403,7 @@ void IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings
     const IncrementalLightmapperSettings& incrementalSettings,
     Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache)
 {
-    impl_ = ea::make_unique<IncrementalLightmapperImpl>(lightmapSettings, incrementalSettings, scene, collector, cache);
+    impl_ = ea::make_unique<Impl>(lightmapSettings, incrementalSettings, scene, collector, cache);
 }
 
 void IncrementalLightmapper::ProcessScene()
