@@ -28,6 +28,8 @@
 #include "../Glow/LightmapSceneCollector.h"
 #include "../Glow/LightmapSettings.h"
 
+#include <EASTL/string.h>
+
 namespace Urho3D
 {
 
@@ -40,6 +42,12 @@ struct IncrementalLightmapperSettings
     Vector3 chunkSize_ = Vector3::ONE * 64.0f;
     /// Padding for raytracing scene.
     float raytracingScenePadding_ = 32.0f;
+    /// Output directory name.
+    ea::string outputDirectory_;
+    /// Lightmap name prefix.
+    ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
+    /// Lightmap name suffix.
+    ea::string lightmapNameSuffix_{ ".png" };
 };
 
 /// Incremental lightmapper.
@@ -58,6 +66,8 @@ public:
     void ProcessScene();
     /// Bake lighting.
     void Bake();
+    /// Filter and save images.
+    void FilterAndSave();
 
 private:
     /// Implementation details.

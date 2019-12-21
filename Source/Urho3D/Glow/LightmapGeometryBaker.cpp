@@ -177,7 +177,7 @@ LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context
         }
     }
 
-    return { context, chart.width_, chart.height_, chart.size_, scene, camera, renderPath };
+    return { context, chart.index_, chart.width_, chart.height_, chart.size_, scene, camera, renderPath };
 }
 
 ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
@@ -203,7 +203,7 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
     if (!graphics->BeginFrame())
         return {};
 
-    LightmapChartGeometryBuffer geometryBuffer{ bakingScene.width_, bakingScene.height_ };
+    LightmapChartGeometryBuffer geometryBuffer{ bakingScene.index_, bakingScene.width_, bakingScene.height_ };
 
     // Get render surface
     Texture* renderTexture = renderer->GetScreenBuffer(

@@ -81,6 +81,8 @@ struct LightmapChartElement
 /// Lightmap chart description.
 struct LightmapChart
 {
+    /// Lightmap chart index.
+    unsigned index_{};
     /// Width of the chart.
     unsigned width_{};
     /// Height of the chart.
@@ -95,8 +97,9 @@ struct LightmapChart
     /// Construct default.
     LightmapChart() = default;
     /// Construct valid.
-    LightmapChart(int width, int height)
-        : width_{ static_cast<unsigned>(width) }
+    LightmapChart(unsigned index, int width, int height)
+        : index_(index)
+        , width_{ static_cast<unsigned>(width) }
         , height_{ static_cast<unsigned>(height) }
         , size_{ width, height }
         , allocator_{ width, height, 0, 0, false }
@@ -111,9 +114,9 @@ using LightmapChartVector = ea::vector<LightmapChart>;
 
 /// Generate lightmap charts for given nodes.
 URHO3D_API LightmapChartVector GenerateLightmapCharts(
-    const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings);
+    const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings, unsigned baseChartIndex = 0);
 
 /// Apply lightmap charts to scene components.
-URHO3D_API void ApplyLightmapCharts(const LightmapChartVector& charts, unsigned baseChartIndex = 0);
+URHO3D_API void ApplyLightmapCharts(const LightmapChartVector& charts);
 
 }
