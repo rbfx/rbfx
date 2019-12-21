@@ -27,20 +27,22 @@
 namespace Urho3D
 {
 
-void LightmapMemoryCache::StoreGeometryBuffers(const IntVector3& chunk, LightmapChartGeometryBufferVector geometryBuffer)
+void LightmapMemoryCache::StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices)
 {
-    geometryBufferCache_[chunk] = ea::move(geometryBuffer);
+    lightmapIndicesPerChunk_[chunk] = ea::move(lightmapIndices);
+}
+
+ea::vector<unsigned> LightmapMemoryCache::LoadLightmapsForChunk(const IntVector3& chunk)
+{
+    auto iter = lightmapIndicesPerChunk_.find(chunk);
+    if (iter != lightmapIndicesPerChunk_.end())
+        return iter->second;
+    return {};
 }
 
 void LightmapMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
 {
     chunkVicinityCache_[chunk] = ea::move(vicinity);
-}
-
-const LightmapChartGeometryBufferVector* LightmapMemoryCache::LoadGeometryBuffers(const IntVector3& chunk)
-{
-    auto iter = geometryBufferCache_.find(chunk);
-    return iter != geometryBufferCache_.end() ? &iter->second : nullptr;
 }
 
 const LightmapChunkVicinity* LightmapMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
@@ -49,12 +51,40 @@ const LightmapChunkVicinity* LightmapMemoryCache::LoadChunkVicinity(const IntVec
     return iter != chunkVicinityCache_.end() ? &iter->second : nullptr;
 }
 
-void LightmapMemoryCache::ReleaseGeometryBuffer(const IntVector3& /*chunk*/)
+void LightmapMemoryCache::ReleaseChunkVicinity(const IntVector3& /*chunk*/)
 {
     // Nothing to do
 }
 
-void LightmapMemoryCache::ReleaseChunkVicinity(const IntVector3& /*chunk*/)
+void LightmapMemoryCache::StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer)
+{
+    geometryBufferCache_[lightmapIndex] = ea::move(geometryBuffer);
+}
+
+const LightmapChartGeometryBuffer* LightmapMemoryCache::LoadGeometryBuffer(unsigned lightmapIndex)
+{
+    auto iter = geometryBufferCache_.find(lightmapIndex);
+    return iter != geometryBufferCache_.end() ? &iter->second : nullptr;
+}
+
+void LightmapMemoryCache::ReleaseGeometryBuffer(unsigned /*lightmapIndex*/)
+{
+    // Nothing to do
+}
+
+
+void LightmapMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect)
+{
+    directLightCache_[lightmapIndex] = ea::move(bakedDirect);
+}
+
+const LightmapChartBakedDirect* LightmapMemoryCache::LoadDirectLight(unsigned lightmapIndex)
+{
+    auto iter = directLightCache_.find(lightmapIndex);
+    return iter != directLightCache_.end() ? &iter->second : nullptr;
+}
+
+void LightmapMemoryCache::ReleaseDirectLight(unsigned /*lightmapIndex*/)
 {
     // Nothing to do
 }

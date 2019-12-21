@@ -52,7 +52,7 @@ IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObjectScal
 
 /// Allocate region in the set of lightmap charts.
 LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& settings,
-    ea::vector<LightmapChart>& charts, const IntVector2& size)
+    ea::vector<LightmapChart>& charts, const IntVector2& size, unsigned baseChartIndex)
 {
     const int padding = static_cast<int>(settings.padding_);
     const IntVector2 paddedSize = size + 2 * padding * IntVector2::ONE;
@@ -74,7 +74,7 @@ LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& 
     const int chartSize = static_cast<int>(settings.chartSize_);
     if (size.x_ > chartSize || size.y_ > chartSize)
     {
-        LightmapChart& chart = charts.emplace_back(size.x_, size.y_);
+        LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, size.x_, size.y_);
 
         IntVector2 position;
         const bool success = chart.allocator_.Allocate(size.x_, size.y_, position.x_, position.y_);
@@ -86,7 +86,7 @@ LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& 
     }
 
     // Create general-purpose chart
-    LightmapChart& chart = charts.emplace_back(chartSize, chartSize);
+    LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, chartSize, chartSize);
 
     // Allocate region from the new chart
     IntVector2 paddedPosition;
@@ -109,7 +109,7 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
 }
 
 ea::vector<LightmapChart> GenerateLightmapCharts(
-    const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings)
+    const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings, unsigned baseChartIndex)
 {
     ea::vector<LightmapChart> charts;
     for (Node* node : nodes)
@@ -117,7 +117,7 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
         if (auto staticModel = node->GetComponent<StaticModel>())
         {
             const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
-            const LightmapChartRegion region = AllocateLightmapChartRegion(settings, charts, regionSize);
+            const LightmapChartRegion region = AllocateLightmapChartRegion(settings, charts, regionSize, baseChartIndex);
 
             const LightmapChartElement chartElement{ node, staticModel, region };
             charts[region.chartIndex_].elements_.push_back(chartElement);
@@ -126,7 +126,7 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
     return charts;
 }
 
-void ApplyLightmapCharts(const LightmapChartVector& charts, unsigned baseChartIndex)
+void ApplyLightmapCharts(const LightmapChartVector& charts)
 {
     for (const LightmapChart& chart : charts)
     {
@@ -135,7 +135,7 @@ void ApplyLightmapCharts(const LightmapChartVector& charts, unsigned baseChartIn
             if (element.staticModel_)
             {
                 element.staticModel_->SetLightmap(true);
-                element.staticModel_->SetLightmapIndex(baseChartIndex + element.region_.chartIndex_);
+                element.staticModel_->SetLightmapIndex(chart.index_);
                 element.staticModel_->SetLightmapScaleOffset(element.region_.GetScaleOffset());
             }
         }

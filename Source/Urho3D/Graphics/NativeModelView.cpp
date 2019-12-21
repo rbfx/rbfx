@@ -330,7 +330,7 @@ void NativeModelView::ExportModel(Model* model)
     ea::vector<SharedPtr<IndexBuffer>> modelIndexBuffers;
     for (const IndexBufferData& sourceBuffer : indexBuffers_)
     {
-        const bool largeIndices = sourceBuffer.HasLargeIndexes();
+        const bool largeIndices = sourceBuffer.HasLargeIndices();
         const unsigned stride = largeIndices ? 4 : 2;
         const unsigned count = sourceBuffer.indices_.size();
 
