@@ -131,15 +131,16 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const ea::string& defines
 
 ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
 {
-    StringHash definesHash(defines);
-    ea::unordered_map<StringHash, SharedPtr<ShaderVariation> >& variations(type == VS ? vsVariations_ : psVariations_);
+    const unsigned definesHash = GetShaderDefinesHash(defines);
+
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >& variations(type == VS ? vsVariations_ : psVariations_);
     auto i = variations.find(definesHash);
     if (i == variations.end())
     {
         // If shader not found, normalize the defines (to prevent duplicates) and check again. In that case make an alias
         // so that further queries are faster
-        ea::string normalizedDefines = NormalizeDefines(defines);
-        StringHash normalizedHash(normalizedDefines);
+        const ea::string normalizedDefines = NormalizeDefines(defines);
+        const unsigned normalizedHash = GetShaderDefinesHash(normalizedDefines.c_str());
 
         i = variations.find(normalizedHash);
         if (i != variations.end())
@@ -151,14 +152,23 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
             if (definesHash != normalizedHash)
                 variations.insert(ea::make_pair(definesHash, i->second));
 
+            Graphics* graphics = context_->GetGraphics();
             i->second->SetName(GetFileName(GetName()));
-            i->second->SetDefines(normalizedDefines);
+            i->second->SetDefines(graphics->GetGlobalShaderDefines() + " " + normalizedDefines);
             ++numVariations_;
             RefreshMemoryUse();
         }
     }
 
     return i->second;
+}
+
+unsigned Shader::GetShaderDefinesHash(const char* defines) const
+{
+    Graphics* graphics = context_->GetGraphics();
+    unsigned definesHash = StringHash(defines).Value();
+    CombineHash(definesHash, graphics->GetGlobalShaderDefinesHash().Value());
+    return definesHash;
 }
 
 bool Shader::ProcessSource(ea::string& code, Deserializer& source)

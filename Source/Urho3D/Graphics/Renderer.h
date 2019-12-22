@@ -24,13 +24,14 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-
 #include "../Core/Mutex.h"
 #include "../Graphics/Batch.h"
 #include "../Graphics/Drawable.h"
 #include "../Graphics/Viewport.h"
 #include "../Math/Color.h"
+
+#include <EASTL/set.h>
+#include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
@@ -185,6 +186,8 @@ public:
     /// Destruct.
     ~Renderer() override;
 
+    /// Set global shader define on or off.
+    void SetGlobalShaderDefine(ea::string_view define, bool enabled);
     /// Set number of backbuffer viewports to render.
     void SetNumViewports(unsigned num);
     /// Set a backbuffer viewport.
@@ -533,6 +536,10 @@ private:
     Mutex rendererMutex_;
     /// Current variation names for deferred light volume shaders.
     ea::vector<ea::string> deferredLightPSVariations_;
+    /// Global shader defines, sorted to reduce amount of variations.
+    ea::set<ea::string> globalShaderDefines_;
+    /// Global shader defines as string.
+    ea::string globalShaderDefinesString_;
     /// Frame info for rendering.
     FrameInfo frame_;
     /// Texture anisotropy level.
