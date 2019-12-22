@@ -60,6 +60,8 @@ public:
     unsigned GetTimeStamp() const { return timeStamp_; }
 
 private:
+    /// Return hash for given shader defines and current global shader defines.
+    unsigned GetShaderDefinesHash(const char* defines) const;
     /// Process source code and include files. Return true if successful.
     bool ProcessSource(ea::string& code, Deserializer& source);
     /// Sort the defines and strip extra spaces to prevent creation of unnecessary duplicate shader variations.
@@ -72,9 +74,9 @@ private:
     /// Source code adapted for pixel shader.
     ea::string psSourceCode_;
     /// Vertex shader variations.
-    ea::unordered_map<StringHash, SharedPtr<ShaderVariation> > vsVariations_;
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > vsVariations_;
     /// Pixel shader variations.
-    ea::unordered_map<StringHash, SharedPtr<ShaderVariation> > psVariations_;
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > psVariations_;
     /// Source code timestamp.
     unsigned timeStamp_;
     /// Number of unique variations so far.
