@@ -25,6 +25,7 @@
 #include "../Container/Ptr.h"
 #include "../Graphics/RenderSurface.h"
 #include "../Graphics/Texture.h"
+#include "../Math/SphericalHarmonics.h"
 
 namespace Urho3D
 {
@@ -69,6 +70,11 @@ public:
     bool GetData(CubeMapFace face, unsigned level, void* dest) const;
     /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
     SharedPtr<Image> GetImage(CubeMapFace face) const;
+
+    /// Return offset from the center of the unit cube for given texel (assuming zero mip level).
+    Vector3 GetTexelOffsetVector(CubeMapFace face, int x, int y) const;
+    /// Calculate spherical harmonics for the cube map.
+    SphericalHarmonicsColor9 CalculateSphericalHarmonics() const;
 
     /// Return render surface for one face.
     RenderSurface* GetRenderSurface(CubeMapFace face) const { return renderSurfaces_[face]; }
