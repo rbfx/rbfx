@@ -293,6 +293,12 @@ void Graphics::PrecacheShaders(Deserializer& source)
     ShaderPrecache::LoadShaders(this, source);
 }
 
+void Graphics::SetGlobalShaderDefines(const ea::string& globalShaderDefines)
+{
+    globalShaderDefines_ = globalShaderDefines;
+    globalShaderDefinesHash_ = globalShaderDefines_;
+}
+
 void Graphics::SetShaderCacheDir(const ea::string& path)
 {
     ea::string trimmedPath = path.trimmed();
