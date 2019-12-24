@@ -58,15 +58,9 @@ static const char* shadowQualityTexts[] =
 
 static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
 
-DebugHud::DebugHud(Context* context) :
-    Object(context),
-    profilerMaxDepth_(M_MAX_UNSIGNED),
-    profilerInterval_(1000),
-    useRendererStats_(true),
-    mode_(DEBUGHUD_SHOW_NONE),
-    fps_(0)
+DebugHud::DebugHud(Context* context)
+    : Object(context)
 {
-    SetExtents();
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { RenderUI(mode_); });
 }
 
@@ -75,19 +69,11 @@ DebugHud::~DebugHud()
     UnsubscribeFromAllEvents();
 }
 
-void DebugHud::SetExtents(const IntVector2& position, IntVector2 size)
+void DebugHud::SetExtents(const IntVector2& position, const IntVector2& size)
 {
-    if (size == IntVector2::ZERO)
-    {
-        size = {context_->GetGraphics()->GetWidth(), context_->GetGraphics()->GetHeight()};
-        if (!HasSubscribedToEvent(E_SCREENMODE))
-            SubscribeToEvent(E_SCREENMODE, std::bind(&DebugHud::SetExtents, this, IntVector2::ZERO, IntVector2::ZERO));
-    }
-    else
-        UnsubscribeFromEvent(E_SCREENMODE);
-
-    auto bottomRight = position + size;
-    extents_ = IntRect(position.x_, position.y_, bottomRight.x_, bottomRight.y_);
+    pos_ = ToImGui(position);
+    size_ = ToImGui(size);
+    explicitPosition_ = true;
 }
 
 void DebugHud::SetMode(DebugHudModeFlags mode)
@@ -157,14 +143,23 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
 
     Renderer* renderer = GetSubsystem<Renderer>();
     Graphics* graphics = GetSubsystem<Graphics>();
+    ImGuiViewport* viewport = ui::GetMainViewport();
 
-    ui::SetNextWindowViewport(ui::GetMainViewport()->ID);
-    ui::SetNextWindowPos(ToImGui(Vector2(extents_.Min())));
-    ui::SetNextWindowSize(ToImGui(Vector2(extents_.Size())));
+    if (explicitPosition_)
+    {
+        ui::SetNextWindowPos(pos_);
+        ui::SetNextWindowSize(size_);
+    }
+    else
+    {
+        ui::SetNextWindowPos(viewport->Pos);
+        ui::SetNextWindowSize(viewport->Size);
+    }
+    ui::SetNextWindowViewport(viewport->ID);
     ui::PushStyleColor(ImGuiCol_WindowBg, 0);
     ui::PushStyleColor(ImGuiCol_Border, 0);
-    if (ui::Begin("DebugHud", nullptr, ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|
-                                       ImGuiWindowFlags_NoInputs|ImGuiWindowFlags_NoScrollbar))
+    if (ui::Begin("DebugHud", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
+        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar))
     {
         if (mode & DEBUGHUD_SHOW_STATS)
         {
