@@ -931,8 +931,11 @@ struct ImGuiViewportP : public ImGuiViewport
     ImGuiViewportP()            { Idx = -1; LastFrameActive = LastFrameDrawLists[0] = LastFrameDrawLists[1] = LastFrontMostStampCount = -1; LastNameHash = 0; Alpha = LastAlpha = 1.0f; PlatformMonitor = -1; PlatformWindowCreated = false; Window = NULL; DrawLists[0] = DrawLists[1] = NULL; LastPlatformPos = LastPlatformSize = LastRendererSize = ImVec2(FLT_MAX, FLT_MAX); }
     ~ImGuiViewportP()           { if (DrawLists[0]) IM_DELETE(DrawLists[0]); if (DrawLists[1]) IM_DELETE(DrawLists[1]); }
     ImRect  GetRect() const     { return ImRect(Pos.x, Pos.y, Pos.x + Size.x, Pos.y + Size.y); }
+    ImRect  GetPlatformRect() const{ return ImRect(PlatformPos.x, PlatformPos.y, PlatformPos.x + PlatformSize.x, PlatformPos.y + PlatformSize.y); }
     ImVec2  GetCenter() const   { return ImVec2(Pos.x + Size.x * 0.5f, Pos.y + Size.y * 0.5f); }
     void    ClearRequestFlags() { PlatformRequestClose = PlatformRequestMove = PlatformRequestResize = false; }
+    void    SetPos(ImVec2 pos)  { Pos = pos; PlatformPos.x = pos.x * CoordinateScale; PlatformPos.y = pos.y * CoordinateScale; }
+    void    SetSize(ImVec2 size){ Size = size; PlatformSize.x = size.x * CoordinateScale; PlatformSize.y = size.y * CoordinateScale; }
 };
 
 struct ImGuiNavMoveResult
