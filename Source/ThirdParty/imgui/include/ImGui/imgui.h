@@ -2449,8 +2449,10 @@ struct ImGuiViewport
 {
     ImGuiID             ID;                     // Unique identifier for the viewport
     ImGuiViewportFlags  Flags;                  // See ImGuiViewportFlags_
-    ImVec2              Pos;                    // Position of viewport both in imgui space and in OS desktop/native space
-    ImVec2              Size;                   // Size of viewport in pixel
+    ImVec2              Pos;                    // Position of viewport in imgui space
+    ImVec2              Size;                   // Size of viewport in imgui space
+    ImVec2              PlatformPos;            // Position of viewport in OS desktop/native space
+    ImVec2              PlatformSize;           // Size of viewport in OS desktop/native space
     float               DpiScale;               // 1.0f = 96 DPI = No extra scale
     float               CoordinateScale;        // Native viewport coordinate scale compared to virtual 96 DPI Dear ImGui. Equals to DpiScale on most platforms and 1.0f on MacOS.
     ImDrawData*         DrawData;               // The ImDrawData corresponding to this viewport. Valid after Render() and until the next call to NewFrame().
