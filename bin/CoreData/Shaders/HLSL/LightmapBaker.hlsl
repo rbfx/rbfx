@@ -2,13 +2,13 @@
 #include "Samplers.hlsl"
 #include "Transform.hlsl"
 #include "ScreenPos.hlsl"
-#include "Lighting.hlsl"
-#include "Fog.hlsl"
 
 #ifndef D3D11
-#   error Lightmap baking is not supported for DX9
+
+uniform float cLightmapLayer;
+uniform float cLightmapGeometry;
+
 #else
-#   ifdef COMPILEVS
 
 cbuffer LightmapVS : register(b6)
 {
@@ -16,7 +16,6 @@ cbuffer LightmapVS : register(b6)
     float cLightmapGeometry;
 }
 
-#   endif
 #endif
 
 void VS(float4 iPos : POSITION,
