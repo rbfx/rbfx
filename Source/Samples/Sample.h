@@ -26,7 +26,9 @@
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/SystemUI/Console.h>
 #include <Urho3D/UI/Cursor.h>
+#if URHO3D_SYSTEMUI
 #include <Urho3D/SystemUI/DebugHud.h>
+#endif
 #include <Urho3D/Engine/Engine.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
