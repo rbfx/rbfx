@@ -59,6 +59,10 @@ void HelloSystemUi::Start()
 
     // Set the mouse mode to use in the sample
     Sample::InitMouseMode(MM_FREE);
+
+    // Pass console commands to file system.
+    GetSubsystem<FileSystem>()->SetExecuteConsoleCommands(true);
+    GetSubsystem<Console>()->RefreshInterpreters();
 }
 
 void HelloSystemUi::SubscribeToEvents()
