@@ -267,8 +267,7 @@ void PS(
             finalColor += iVertexLight * diffColor.rgb;
             #ifdef LIGHTMAP
                 finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb;
-            #endif
-            #ifdef EMISSIVEMAP
+            #elif EMISSIVEMAP
                 finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
             #else
                 finalColor += cMatEmissiveColor;
@@ -298,8 +297,7 @@ void PS(
         #endif
         #ifdef LIGHTMAP
             finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb;
-        #endif
-        #ifdef EMISSIVEMAP
+        #elif EMISSIVEMAP
             finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
         #else
             finalColor += cMatEmissiveColor;
@@ -331,8 +329,7 @@ void PS(
         #endif
         #ifdef LIGHTMAP
             finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb;
-        #endif
-        #ifdef EMISSIVEMAP
+        #elif EMISSIVEMAP
             finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
         #else
             finalColor += cMatEmissiveColor;
