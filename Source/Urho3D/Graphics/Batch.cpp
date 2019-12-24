@@ -675,10 +675,21 @@ void BatchGroup::SetInstancingData(void* lockedData, unsigned stride, unsigned& 
         const InstanceData& instance = instances_[i];
 
         memcpy(buffer, instance.worldTransform_, sizeof(Matrix3x4));
-        if (instance.instancingData_)
-            memcpy(buffer + sizeof(Matrix3x4), instance.instancingData_, stride - sizeof(Matrix3x4));
+        buffer += sizeof(Matrix3x4);
 
-        buffer += stride;
+        // TODO(glow): Use spherical harmonics
+        //memcpy(buffer, &instance.sphericalHarmonics_, sizeof(SphericalHarmonicsDot9));
+        //buffer += sizeof(SphericalHarmonicsDot9);
+        memcpy(buffer, &instance.ambient_, sizeof(Vector4));
+        buffer += sizeof(Vector4);
+
+        if (instance.instancingData_)
+        {
+            // TODO(glow): Use spherical harmonics
+            unsigned extraSize = stride - sizeof(Matrix3x4) - sizeof(Vector4); // - sizeof(SphericalHarmonicsDot9)
+            memcpy(buffer, instance.instancingData_, extraSize);
+            buffer += extraSize;
+        }
     }
 
     freeIndex += instances_.size();
@@ -703,7 +714,21 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
             for (unsigned i = 0; i < instances_.size(); ++i)
             {
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
+                {
                     graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
+                    graphics->SetShaderParameter(VSP_AMBIENT, instances_[i].ambient_);
+                    // TODO(glow): Use spherical harmonics
+                    /*if (renderer->GetSphericalHarmonics())
+                    {
+                        graphics->SetShaderParameter(VSP_SHAR, instances_[i].sphericalHarmonics_.Ar_);
+                        graphics->SetShaderParameter(VSP_SHAG, instances_[i].sphericalHarmonics_.Ag_);
+                        graphics->SetShaderParameter(VSP_SHAB, instances_[i].sphericalHarmonics_.Ab_);
+                        graphics->SetShaderParameter(VSP_SHBR, instances_[i].sphericalHarmonics_.Br_);
+                        graphics->SetShaderParameter(VSP_SHBG, instances_[i].sphericalHarmonics_.Bg_);
+                        graphics->SetShaderParameter(VSP_SHBB, instances_[i].sphericalHarmonics_.Bb_);
+                        graphics->SetShaderParameter(VSP_SHC, instances_[i].sphericalHarmonics_.C_);
+                    }*/
+                }
 
                 graphics->Draw(geometry_->GetPrimitiveType(), geometry_->GetIndexStart(), geometry_->GetIndexCount(),
                     geometry_->GetVertexStart(), geometry_->GetVertexCount());
