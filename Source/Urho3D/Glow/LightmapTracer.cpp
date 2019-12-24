@@ -203,7 +203,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
     const Vector3 lightColor = light.color_.ToVector3();
     RTCScene scene = embreeScene.GetEmbreeScene();
 
-    ParallelFor(bakedDirect.light_.size(), settings.numThreads_,
+    ParallelFor(bakedDirect.directLight_.size(), settings.numThreads_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCRayHit rayHit;
@@ -239,9 +239,14 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
                 continue;
 
-            const float directLight = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
+            const float intensity = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
+            const Vector3 lightValue = lightColor * intensity;
 
-            bakedDirect.light_[i] += lightColor * directLight;
+            if (light.bakeDirect_)
+                bakedDirect.directLight_[i] += lightValue;
+
+            if (light.bakeIndirect_)
+                bakedDirect.surfaceLight_[i] += lightValue;
         }
     });
 }
@@ -327,7 +332,7 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
                 // TODO: Use real index here
                 const unsigned lightmapIndex = geometry.lightmapIndex_;
                 const IntVector2 sampleLocation = bakedDirect[lightmapIndex]->GetNearestLocation(lightmapUV);
-                incomingSamples[j] = bakedDirect[lightmapIndex]->GetLight(sampleLocation);
+                incomingSamples[j] = bakedDirect[lightmapIndex]->GetSurfaceLight(sampleLocation);
                 incomingFactors[j] = brdf * cosTheta / probability;
                 ++numSamples;
 
