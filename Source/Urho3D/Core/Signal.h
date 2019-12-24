@@ -34,10 +34,10 @@ namespace Urho3D
 {
 
 template<typename T, typename Sender=RefCounted>
-class URHO3D_API Event
+class URHO3D_API Signal
 {
 public:
-    /// Event handler type.
+    /// Signal handler type.
     using Handler = Function<bool(RefCounted*, Sender*, T&)>;
 
     /// Subscribe to event.
