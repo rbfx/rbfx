@@ -38,7 +38,8 @@ struct LightBatchQueue;
 /// %Light baking mode.
 enum LightMode
 {
-    LM_DYNAMIC,
+    LM_REALTIME,
+    LM_MIXED,
     LM_BAKED
 };
 

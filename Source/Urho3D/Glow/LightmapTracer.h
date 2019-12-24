@@ -43,7 +43,8 @@ struct LightmapChartBakedDirect
         , height_(height)
         , realWidth_(static_cast<float>(width_))
         , realHeight_(static_cast<float>(height_))
-        , light_(width_ * height_)
+        , directLight_(width_ * height_)
+        , surfaceLight_(width_ * height_)
     {
     }
     /// Return nearest point location by UV.
@@ -53,11 +54,11 @@ struct LightmapChartBakedDirect
         const int y = FloorToInt(ea::min(uv.y_ * realHeight_, realHeight_ - 1.0f));
         return { x, y };
     }
-    /// Return light by location.
-    const Vector3& GetLight(const IntVector2& location) const
+    /// Return surface light by location.
+    const Vector3& GetSurfaceLight(const IntVector2& location) const
     {
         const unsigned index = location.x_ + location.y_ * width_;
-        return light_[index];
+        return surfaceLight_[index];
     }
 
     /// Width of the chart.
@@ -68,8 +69,10 @@ struct LightmapChartBakedDirect
     float realWidth_{};
     /// Height of the chart as float.
     float realHeight_{};
-    /// Accumulated light.
-    ea::vector<Vector3> light_;
+    /// Incoming direct light from completely backed lights, to be baked in lightmap.
+    ea::vector<Vector3> directLight_;
+    /// Incoming direct light from all static lights multiplied with albedo, used to calculate indirect lighting.
+    ea::vector<Vector3> surfaceLight_;
 };
 
 /// Indirect light accumulated for given lightmap chart.
@@ -85,7 +88,7 @@ struct LightmapChartBakedIndirect
         , lightSwap_(width_ * height_)
     {
     }
-    /// Normalize indirect light.
+    /// Normalize collected light.
     void NormalizeLight()
     {
         for (Vector4& value : light_)
@@ -120,6 +123,10 @@ struct DirectionalLightParameters
     Vector3 direction_;
     /// Color of the light.
     Color color_;
+    /// Whether to bake direct light.
+    bool bakeDirect_{};
+    /// Whether to collect indirect light.
+    bool bakeIndirect_{};
 };
 
 /// Accumulate direct light from directional light.
