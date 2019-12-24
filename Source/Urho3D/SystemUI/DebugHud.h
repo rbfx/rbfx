@@ -23,11 +23,12 @@
 
 #pragma once
 
-#include <EASTL/map.h>
-
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
+
+#include <EASTL/map.h>
+#include <ImGui/imgui.h>
 
 namespace Urho3D
 {
@@ -84,29 +85,30 @@ public:
     void ClearAppStats();
     /// Limit rendering area of debug hud.
     /// \param position of debug hud from top-left corner of the screen.
-    /// \param size specifies size of debug hud rect. Pass zero vector to occupy entire screen and automatically resize
-    /// debug hud to the size of the screen later. Calling this method with non-zero size parameter requires user to manually resize debug hud on screen size changes later.
-    void SetExtents(const IntVector2& position = IntVector2::ZERO, IntVector2 size = IntVector2::ZERO);
+    /// \param size specifies size of debug hud rect.
+    void SetExtents(const IntVector2& position, const IntVector2& size);
+    ///
+    void ClearExtents() { explicitPosition_ = false; }
     /// Render system ui.
     void RenderUI(DebugHudModeFlags mode);
 
 private:
     /// Hashmap containing application specific stats.
-    ea::map<ea::string, ea::string> appStats_;
-    /// Profiler max block depth.
-    unsigned profilerMaxDepth_;
-    /// Profiler accumulation interval.
-    unsigned profilerInterval_;
+    ea::map<ea::string, ea::string> appStats_{};
     /// Show 3D geometry primitive/batch count flag.
-    bool useRendererStats_;
+    bool useRendererStats_ = true;
     /// Current shown-element mode.
-    DebugHudModeFlags mode_;
+    DebugHudModeFlags mode_{DEBUGHUD_SHOW_NONE};
     /// FPS timer.
-    Timer fpsTimer_;
+    Timer fpsTimer_{};
     /// Calculated fps
-    unsigned fps_;
-    /// DebugHud extents that data will be rendered in.
-    IntRect extents_;
+    unsigned fps_ = 0;
+    /// Debug stats are explicitly positioned on the screen. When set to false debug hud takes entire screen of main viewport.
+    bool explicitPosition_ = false;
+    /// DebugHud position in main viewport.
+    ImVec2 pos_{0, 0};
+    /// DebugHud size in main viewport.
+    ImVec2 size_{0, 0};
 };
 
 }
