@@ -213,7 +213,8 @@ struct IncrementalLightmapper::Impl
             {
                 BakedDirectLight bakedLight;
                 bakedLight.lightType_ = light->GetLightType();
-                bakedLight.lightColor_ = light->GetColor();
+                bakedLight.lightMode_ = light->GetLightMode();
+                bakedLight.lightColor_ = light->GetEffectiveColor();
                 bakedLight.position_ = node->GetWorldPosition();
                 bakedLight.rotation_ = node->GetWorldRotation();
                 bakedLight.direction_ = node->GetWorldDirection();
@@ -249,9 +250,16 @@ struct IncrementalLightmapper::Impl
             // Bake direct lights
             for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
             {
+                const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
+                const bool bakeIndirect = true;
                 if (bakedLight.lightType_ == LIGHT_DIRECTIONAL)
                 {
-                    DirectionalLightParameters light{ bakedLight.direction_, bakedLight.lightColor_ };
+                    DirectionalLightParameters light;
+                    light.direction_ = bakedLight.direction_;
+                    light.color_ = bakedLight.lightColor_;
+                    light.bakeDirect_ = bakeDirect;
+                    light.bakeIndirect_ = bakeIndirect;
+
                     BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->embreeScene_,
                         light, lightmapSettings_.tracing_);
                 }
@@ -344,7 +352,7 @@ struct IncrementalLightmapper::Impl
             for (int x = 0; x < geometryBuffer->width_; ++x)
             {
                 const unsigned i = y * geometryBuffer->width_ + x;
-                const Vector3 directLight = bakedDirect->light_[i];
+                const Vector3 directLight = bakedDirect->directLight_[i];
                 const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect->light_[i]);
                 const Vector3 totalLight = directLight + indirectLight;
 

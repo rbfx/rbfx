@@ -40,6 +40,8 @@ struct BakedDirectLight
 {
     /// Light type.
     LightType lightType_{};
+    /// Light mode.
+    LightMode lightMode_{};
     /// Light color.
     Color lightColor_{};
     /// Position.
