@@ -106,7 +106,7 @@ ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInBoundingBox(const Int
                 nodes.push_back(node);
 
             auto light = dynamic_cast<Light*>(drawable);
-            if (light && light->GetLightMode() != LM_DYNAMIC)
+            if (light && light->GetLightMode() != LM_REALTIME)
                 nodes.push_back(node);
 
             if (auto zone = dynamic_cast<Zone*>(drawable))

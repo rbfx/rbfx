@@ -52,7 +52,8 @@ static const char* typeNames[] =
 
 static const char* modeNames[] =
 {
-    "Dynamic",
+    "Realtime",
+    "Mixed",
     "Baked",
     nullptr
 };
@@ -111,7 +112,7 @@ void Light::RegisterObject(Context* context)
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Type", GetLightType, SetLightType, LightType, typeNames, DEFAULT_LIGHTTYPE, AM_DEFAULT);
-    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Mode", GetLightMode, SetLightMode, LightMode, modeNames, LM_DYNAMIC, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Light Mode", GetLightMode, SetLightMode, LightMode, modeNames, LM_REALTIME, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Color", GetColor, SetColor, Color, Color::WHITE, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Specular Intensity", GetSpecularIntensity, SetSpecularIntensity, float, DEFAULT_SPECULARINTENSITY,
         AM_DEFAULT);
