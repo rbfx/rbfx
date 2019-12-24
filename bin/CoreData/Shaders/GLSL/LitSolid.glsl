@@ -16,6 +16,10 @@ varying vec4 vWorldPos;
 #ifdef VERTEXCOLOR
     varying vec4 vColor;
 #endif
+#if defined(LIGHTMAP) || defined(AO)
+    varying vec2 vTexCoord2;
+#endif
+varying vec3 vVertexLight;
 #ifdef PERPIXEL
     #ifdef SHADOW
         #ifndef GL_ES
@@ -31,13 +35,9 @@ varying vec4 vWorldPos;
         varying vec3 vCubeMaskVec;
     #endif
 #else
-    varying vec3 vVertexLight;
     varying vec4 vScreenPos;
     #ifdef ENVCUBEMAP
         varying vec3 vReflectionVec;
-    #endif
-    #if defined(LIGHTMAP) || defined(AO)
-        varying vec2 vTexCoord2;
     #endif
 #endif
 
@@ -62,6 +62,17 @@ void VS()
         vTexCoord = GetTexCoord(iTexCoord);
     #endif
 
+    // Ambient & per-vertex lighting
+    #if defined(LIGHTMAP) || defined(AO)
+        // If using lightmap, disregard zone ambient light
+        // If using AO, calculate ambient in the PS
+        vVertexLight = vec3(0.0, 0.0, 0.0);
+        vTexCoord2 = GetLightMapTexCoord(iTexCoord1);
+    #else
+        // TODO(glow): Use spherical harmonics
+        vVertexLight = iAmbient.rgb;
+    #endif
+
     #ifdef PERPIXEL
         // Per-pixel forward lighting
         vec4 projWorldPos = vec4(worldPos, 1.0);
@@ -81,16 +92,6 @@ void VS()
             vCubeMaskVec = (worldPos - cLightPos.xyz) * mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz);
         #endif
     #else
-        // Ambient & per-vertex lighting
-        #if defined(LIGHTMAP) || defined(AO)
-            // If using lightmap, disregard zone ambient light
-            // If using AO, calculate ambient in the PS
-            vVertexLight = vec3(0.0, 0.0, 0.0);
-            vTexCoord2 = GetLightMapTexCoord(iTexCoord1);
-        #else
-            vVertexLight = GetAmbient(GetZonePos(worldPos));
-        #endif
-        
         #ifdef NUMVERTEXLIGHTS
             for (int i = 0; i < NUMVERTEXLIGHTS; ++i)
                 vVertexLight += GetVertexLight(i, worldPos, vNormal) * cVertexLights[i * 3].rgb;
@@ -172,8 +173,14 @@ void PS()
         #endif
 
         #ifdef AMBIENT
-            finalColor += cAmbientColor.rgb * diffColor.rgb;
-            finalColor += cMatEmissiveColor;
+            finalColor += vVertexLight * diffColor.rgb;
+            #ifdef LIGHTMAP
+                finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
+            #elif EMISSIVEMAP
+                finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
+            #else
+                finalColor += cMatEmissiveColor;
+            #endif
             gl_FragColor = vec4(GetFog(finalColor, fogFactor), diffColor.a);
         #else
             gl_FragColor = vec4(GetLitFog(finalColor, fogFactor), diffColor.a);
@@ -200,8 +207,7 @@ void PS()
         #endif
         #ifdef LIGHTMAP
             finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
-        #endif
-        #ifdef EMISSIVEMAP
+        #elif EMISSIVEMAP
             finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
         #else
             finalColor += cMatEmissiveColor;
@@ -233,8 +239,7 @@ void PS()
         #endif
         #ifdef LIGHTMAP
             finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
-        #endif
-        #ifdef EMISSIVEMAP
+        #elif EMISSIVEMAP
             finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
         #else
             finalColor += cMatEmissiveColor;

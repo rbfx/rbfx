@@ -114,7 +114,7 @@ void VS(float4 iPos : POSITION,
         oTexCoord2 = GetLightMapTexCoord(iTexCoord2);
     #else
         // TODO(glow): Use spherical harmonics
-        oVertexLight = iAmbient;
+        oVertexLight = iAmbient.rgb;
         //#ifdef SPHERICALHARMONICS
         //    oVertexLight = EvaluateSH01(float4(oNormal, 1), iSHAr, iSHAg, iSHAb);
         //    oVertexLight += EvaluateSH2(float4(oNormal, 1), iSHBr, iSHBg, iSHBb, iSHC);

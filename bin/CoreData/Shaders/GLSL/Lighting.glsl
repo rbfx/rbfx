@@ -4,6 +4,13 @@ vec3 GetAmbient(float zonePos)
     return cAmbientStartColor + zonePos * cAmbientEndColor;
 }
 
+// TODO(glow): Use spherical harmonics
+#ifdef INSTANCED
+    #define iAmbient iTexCoord7
+#else
+    #define iAmbient cAmbient
+#endif
+
 #ifdef NUMVERTEXLIGHTS
 float GetVertexLight(int index, vec3 worldPos, vec3 normal)
 {

@@ -20,6 +20,7 @@ attribute vec4 iCubeTexCoord1;
     attribute vec4 iTexCoord4;
     attribute vec4 iTexCoord5;
     attribute vec4 iTexCoord6;
+    attribute vec4 iTexCoord7;
 #endif
 attribute float iObjectIndex;
 
