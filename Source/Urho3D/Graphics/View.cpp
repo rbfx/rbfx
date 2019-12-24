@@ -1235,6 +1235,7 @@ void View::GetBaseBatches()
                 Batch destBatch(srcBatch);
                 destBatch.pass_ = pass;
                 destBatch.zone_ = GetZone(drawable);
+                destBatch.ambient_ = destBatch.zone_->GetAmbientColor().ToVector4();
                 destBatch.isBase_ = true;
                 destBatch.lightMask_ = (unsigned char)GetLightMask(drawable);
 
@@ -1435,6 +1436,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
         destBatch.lightQueue_ = &lightQueue;
         destBatch.zone_ = zone;
+        destBatch.ambient_ = destBatch.zone_->GetAmbientColor().ToVector4();
 
         if (!isLitAlpha)
         {

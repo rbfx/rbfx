@@ -408,6 +408,17 @@ extern URHO3D_API const StringHash VSP_LIGHTMATRICES;
 extern URHO3D_API const StringHash VSP_SKINMATRICES;
 extern URHO3D_API const StringHash VSP_VERTEXLIGHTS;
 extern URHO3D_API const StringHash VSP_LMOFFSET;
+extern URHO3D_API const StringHash VSP_AMBIENT;
+// TODO(glow): Use spherical harmonics
+/*
+extern URHO3D_API const StringHash VSP_SHAR;
+extern URHO3D_API const StringHash VSP_SHAG;
+extern URHO3D_API const StringHash VSP_SHAB;
+extern URHO3D_API const StringHash VSP_SHBR;
+extern URHO3D_API const StringHash VSP_SHBG;
+extern URHO3D_API const StringHash VSP_SHBB;
+extern URHO3D_API const StringHash VSP_SHC;
+*/
 extern URHO3D_API const StringHash PSP_AMBIENTCOLOR;
 extern URHO3D_API const StringHash PSP_CAMERAPOS;
 extern URHO3D_API const StringHash PSP_DELTATIME;

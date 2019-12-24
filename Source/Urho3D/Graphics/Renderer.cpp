@@ -260,10 +260,11 @@ static const int MAX_EXTRA_INSTANCING_BUFFER_ELEMENTS = 4;
 inline ea::vector<VertexElement> CreateInstancingBufferElements(unsigned numExtraElements)
 {
     static const unsigned NUM_INSTANCEMATRIX_ELEMENTS = 3;
+    static const unsigned NUM_SH_ELEMENTS = 1; // TODO(glow): Use spherical harmonics // = 7
     static const unsigned FIRST_UNUSED_TEXCOORD = 4;
 
     ea::vector<VertexElement> elements;
-    for (unsigned i = 0; i < NUM_INSTANCEMATRIX_ELEMENTS + numExtraElements; ++i)
+    for (unsigned i = 0; i < NUM_INSTANCEMATRIX_ELEMENTS + NUM_SH_ELEMENTS + numExtraElements; ++i)
         elements.push_back(VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, FIRST_UNUSED_TEXCOORD + i, true));
     return elements;
 }
@@ -540,6 +541,12 @@ void Renderer::SetMobileShadowBiasAdd(float add)
 void Renderer::SetMobileNormalOffsetMul(float mul)
 {
     mobileNormalOffsetMul_ = mul;
+}
+
+void Renderer::SetSphericalHarmonics(bool enable)
+{
+    sphericalHarmonics_ = enable;
+    SetGlobalShaderDefine("SPHERICALHARMONICS", sphericalHarmonics_);
 }
 
 void Renderer::SetOccluderSizeThreshold(float screenSize)
