@@ -6,6 +6,56 @@ float3 GetAmbient(float zonePos)
     return cAmbientStartColor + zonePos * cAmbientEndColor;
 }
 
+// TODO(glow): Use spherical harmonics
+#ifdef INSTANCED
+    #define iAmbient iAmbientInstance
+#else
+    #define iAmbient cAmbient
+#endif
+/*
+float3 EvaluateSH01(float4 normal, float4 SHAr, float4 SHAg, float4 SHAb)
+{
+    float3 value;
+    value.r = dot(normal, SHAr);
+    value.g = dot(normal, SHAg);
+    value.b = dot(normal, SHAb);
+    return value;
+}
+
+float3 EvaluateSH2(float4 normal, float4 SHBr, float4 SHBg, float4 SHBb, float4 SHC)
+{
+    float4 b = normal.xyzz * normal.yzzx;
+    float c = normal.x * normal.x - normal.y * normal.y;
+
+    float3 value;
+    value.r = dot(b, SHBr);
+    value.g = dot(b, SHBg);
+    value.b = dot(b, SHBb);
+    value += c * SHC.rgb;
+    return value;
+}
+
+#ifdef SPHERICALHARMONICS
+#ifdef INSTANCED
+    #define iSHAr iSHArInstance
+    #define iSHAg iSHAgInstance
+    #define iSHAb iSHAbInstance
+    #define iSHBr iSHBrInstance
+    #define iSHBg iSHBgInstance
+    #define iSHBb iSHBbInstance
+    #define iSHC iSHCInstance
+#else
+    #define iSHAr cSHAr
+    #define iSHAg cSHAg
+    #define iSHAb cSHAb
+    #define iSHBr cSHBr
+    #define iSHBg cSHBg
+    #define iSHBb cSHBb
+    #define iSHC cSHC
+#endif
+#endif
+*/
+
 #ifdef NUMVERTEXLIGHTS
 float GetVertexLight(int index, float3 worldPos, float3 normal)
 {

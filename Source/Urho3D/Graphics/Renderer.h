@@ -250,6 +250,8 @@ public:
     void SetMobileShadowBiasAdd(float add);
     /// Set shadow normal offset multiplier for mobile platforms to counteract possible worse shadow map precision. Default 1.0 (no effect.)
     void SetMobileNormalOffsetMul(float mul);
+    /// Set whether to enable spherical harmonics.
+    void SetSphericalHarmonics(bool enable);
     /// Force reload of shaders.
     void ReloadShaders();
 
@@ -342,6 +344,9 @@ public:
 
     /// Return shadow normal offset multiplier for mobile platforms.
     float GetMobileNormalOffsetMul() const { return mobileNormalOffsetMul_; }
+
+    /// Return whether to enable spherical harmonics.
+    float GetSphericalHarmonics() const { return sphericalHarmonics_; }
 
     /// Return number of views rendered.
     unsigned GetNumViews() const { return views_.size(); }
@@ -578,6 +583,8 @@ private:
     float mobileShadowBiasAdd_{};
     /// Mobile platform shadow normal offset multiplier.
     float mobileNormalOffsetMul_{1.0f};
+    /// Whether to enable spherical harmonics.
+    bool sphericalHarmonics_{};
     /// Number of occlusion buffers in use.
     unsigned numOcclusionBuffers_{};
     /// Number of temporary shadow cameras in use.

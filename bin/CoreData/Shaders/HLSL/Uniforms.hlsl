@@ -22,6 +22,19 @@ uniform float4 cLightPos;
 uniform float3 cLightDir;
 uniform float4 cNormalOffsetScale;
 uniform float4x3 cModel;
+// TODO(glow): Use spherical harmonics
+uniform float4 cAmbient;
+/*
+#ifdef SPHERICALHARMONICS
+uniform float4 cSHAr;
+uniform float4 cSHAg;
+uniform float4 cSHAb;
+uniform float4 cSHBr;
+uniform float4 cSHBg;
+uniform float4 cSHBb;
+uniform float4 cSHC;
+#endif
+*/
 uniform float4x3 cView;
 uniform float4x3 cViewInv;
 uniform float4x4 cViewProj;
@@ -136,6 +149,19 @@ cbuffer MaterialVS : register(b4)
 cbuffer ObjectVS : register(b5)
 {
     float4x3 cModel;
+// TODO(glow): Use spherical harmonics
+    float4 cAmbient;
+/*
+#ifdef SPHERICALHARMONICS
+    float4 cSHAr;
+    float4 cSHAg;
+    float4 cSHAb;
+    float4 cSHBr;
+    float4 cSHBg;
+    float4 cSHBb;
+    float4 cSHC;
+#endif
+*/
 #ifdef BILLBOARD
     float3x3 cBillboardRot;
 #endif
