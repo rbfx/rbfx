@@ -51,11 +51,15 @@ struct LightmapChartRegion
         rectUV_.min_ = static_cast<Vector2>(rectTexels_.Min()) / static_cast<float>(maxSize);
         rectUV_.max_ = static_cast<Vector2>(rectTexels_.Max()) / static_cast<float>(maxSize);
     }
-    /// Get lightmap offset vector.
+    /// Return lightmap scale of the region.
+    Vector2 GetScale() const { return rectUV_.Min(); }
+    /// Return lightmap offset of the region.
+    Vector2 GetOffset() const { return rectUV_.Size(); }
+    /// Return lightmap scale & offset vector.
     Vector4 GetScaleOffset() const
     {
-        const Vector2 offset = rectUV_.Min();
-        const Vector2 size = rectUV_.Size();
+        const Vector2 offset = GetScale();
+        const Vector2 size = GetOffset();
         return { size.x_, size.y_, offset.x_, offset.y_ };
     }
 

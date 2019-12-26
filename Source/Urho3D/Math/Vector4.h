@@ -194,6 +194,9 @@ public:
     /// Return whether is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_) || Urho3D::IsNaN(w_); }
 
+    /// Convert to Vector2.
+    explicit operator Vector2() const { return { x_, y_ };}
+
     /// Convert to Vector3.
     explicit operator Vector3() const { return { x_, y_, z_ };}
 
