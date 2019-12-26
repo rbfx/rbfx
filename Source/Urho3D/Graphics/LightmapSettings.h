@@ -53,6 +53,8 @@ struct LightmapGeometryBakingSettings
     ea::string renderPathName_{ "RenderPaths/LightmapGBuffer.xml" };
     /// Baking materials.
     ea::string materialName_{ "Materials/LightmapBaker.xml" };
+    /// Lightmap UV channel. 2nd channel by default.
+    unsigned uvChannel_{ 1 };
 };
 
 /// Lightmap tracing settings.

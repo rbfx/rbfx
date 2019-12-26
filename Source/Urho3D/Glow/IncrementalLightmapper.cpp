@@ -203,7 +203,8 @@ struct IncrementalLightmapper::Impl
         boundingBox.min_ += Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
 
         const ea::vector<Node*> nodesInVolume = collector_->GetNodesInBoundingBox(chunk, boundingBox);
-        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, nodesInVolume);
+        const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
+        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, nodesInVolume, uvChannel);
 
         // Collect lights
         ea::vector<BakedDirectLight> bakedLights;

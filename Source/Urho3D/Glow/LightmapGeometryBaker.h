@@ -34,6 +34,28 @@ namespace Urho3D
 class Camera;
 class Context;
 
+/// Lightmap seam description.
+struct LightmapSeam
+{
+    /// Edge on lightmap UV.
+    Vector2 positions_[2];
+    /// Other side of the edge on lightmap UV.
+    Vector2 otherPositions_[2];
+    /// Transform by scale and offset.
+    LightmapSeam Transformed(const Vector2& scale, const Vector2& offset) const
+    {
+        LightmapSeam result;
+        result.positions_[0] = positions_[0] * scale + offset;
+        result.positions_[1] = positions_[1] * scale + offset;
+        result.otherPositions_[0] = otherPositions_[0] * scale + offset;
+        result.otherPositions_[1] = otherPositions_[1] * scale + offset;
+        return result;
+    }
+};
+
+/// Vector of lightmap seams.
+using LightmapSeamVector = ea::vector<LightmapSeam>;
+
 /// Baking scene for single lightmap chart.
 struct LightmapGeometryBakingScene
 {
@@ -53,6 +75,8 @@ struct LightmapGeometryBakingScene
     Camera* camera_{};
     /// Baking render path.
     SharedPtr<RenderPath> renderPath_;
+    /// Lightmap seams.
+    LightmapSeamVector seams_;
 };
 
 /// Generate lightmap geometry baking scene for lightmap chart.
