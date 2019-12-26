@@ -22,12 +22,66 @@
 
 #include "../Graphics/ModelView.h"
 
+#include "../Graphics/Geometry.h"
+#include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Model.h"
 #include "../Graphics/VertexBuffer.h"
 
 namespace Urho3D
 {
 
-static ModelVertexFormat ParseVertexElements(const ea::vector<VertexElement>& elements)
+namespace
+{
+
+/// Compare two vertex elements by semantic and index.
+static bool CompareVertexElementSemantics(const VertexElement& lhs, const VertexElement& rhs)
+{
+    return lhs.semantic_ == rhs.semantic_ && lhs.index_ == rhs.index_;
+}
+
+/// Get vertex elements of all vertex buffers.
+const ea::vector<VertexElement> GetEffectiveVertexElements(const Model* model)
+{
+    ea::vector<VertexElement> elements;
+    for (const VertexBuffer* vertexBuffer : model->GetVertexBuffers())
+    {
+        for (const VertexElement& element : vertexBuffer->GetElements())
+        {
+            if (ea::find(elements.begin(), elements.end(), element, CompareVertexElementSemantics) == elements.end())
+                elements.push_back(element);
+        }
+    }
+    return elements;
+}
+
+/// Read vertex buffer data.
+ea::vector<ModelVertex> GetVertexBufferData(const VertexBuffer* vertexBuffer, unsigned start, unsigned count)
+{
+    const unsigned vertexCount = vertexBuffer->GetVertexCount();
+    const ea::vector<Vector4> unpackedData = vertexBuffer->GetUnpackedData(start, count);
+
+    ea::vector<ModelVertex> result(vertexCount);
+    VertexBuffer::ShuffleUnpackedVertexData(vertexCount, unpackedData.data(), vertexBuffer->GetElements(),
+        reinterpret_cast<Vector4*>(result.data()), ModelVertex::VertexElements);
+
+    return result;
+}
+
+/// Write vertex buffer data.
+void SetVertexBufferData(VertexBuffer* vertexBuffer, const ea::vector<ModelVertex>& data)
+{
+    const unsigned vertexCount = vertexBuffer->GetVertexCount();
+    const ea::vector<VertexElement>& vertexElements = vertexBuffer->GetElements();
+
+    ea::vector<Vector4> buffer(vertexElements.size() * vertexCount);
+    VertexBuffer::ShuffleUnpackedVertexData(vertexCount,
+        reinterpret_cast<const Vector4*>(data.data()), ModelVertex::VertexElements, buffer.data(), vertexElements);
+
+    vertexBuffer->SetUnpackedData(buffer.data());
+}
+
+/// Parse vertex elements into simpler format.
+ModelVertexFormat ParseVertexElements(const ea::vector<VertexElement>& elements)
 {
     ModelVertexFormat result;
     for (const VertexElement& element : elements)
@@ -66,7 +120,8 @@ static ModelVertexFormat ParseVertexElements(const ea::vector<VertexElement>& el
     return result;
 }
 
-static ea::vector<VertexElement> CollectVertexElements(const ModelVertexFormat& vertexFormat)
+/// Convert model vertex format to array of vertex elements.
+ea::vector<VertexElement> CollectVertexElements(const ModelVertexFormat& vertexFormat)
 {
     ea::vector<VertexElement> elements;
 
@@ -99,6 +154,159 @@ static ea::vector<VertexElement> CollectVertexElements(const ModelVertexFormat& 
     return elements;
 }
 
+/// Check whether the index is large. 0xffff is reserved for triangle strip reset.
+bool IsLargeIndex(unsigned index)
+{
+    return index >= 0xfffe;
+}
+
+/// Check whether the index buffer has large indices.
+bool HasLargeIndices(const ea::vector<unsigned>& indices)
+{
+    return ea::any_of(indices.begin(), indices.end(), IsLargeIndex);
+}
+
+/// Check if vertex elements can be imported into ModelVertex.
+bool CheckVertexElements(const ea::vector<VertexElement>& elements)
+{
+    for (const VertexElement& element : elements)
+    {
+        if (element.semantic_ == SEM_BLENDWEIGHTS || element.semantic_ == SEM_BLENDINDICES
+            || element.semantic_ == SEM_OBJECTINDEX)
+        {
+            return false;
+        }
+
+        if (element.semantic_ == SEM_COLOR)
+        {
+            if (element.index_ >= ModelVertex::MaxColors)
+            {
+                return false;
+            }
+        }
+        else if (element.semantic_ == SEM_TEXCOORD)
+        {
+            if (element.index_ >= ModelVertex::MaxUVs)
+            {
+                return false;
+            }
+        }
+        else
+        {
+            if (element.index_ > 0)
+            {
+                return false;
+            }
+        }
+    }
+    return true;
+}
+
+}
+
+static_assert(ModelVertex::MaxColors == 4 && ModelVertex::MaxUVs == 4, "Update ModelVertex::VertexElements!");
+
+const ea::vector<VertexElement> ModelVertex::VertexElements =
+{
+    VertexElement{ TYPE_VECTOR4, SEM_POSITION },
+    VertexElement{ TYPE_VECTOR4, SEM_NORMAL },
+    VertexElement{ TYPE_VECTOR4, SEM_TANGENT },
+    VertexElement{ TYPE_VECTOR4, SEM_BINORMAL },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 0 },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 1 },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 2 },
+    VertexElement{ TYPE_VECTOR4, SEM_COLOR, 3 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 0 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 1 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 2 },
+    VertexElement{ TYPE_VECTOR4, SEM_TEXCOORD, 3 },
+};
+
+bool ModelVertex::ReplaceElement(const ModelVertex& source, const VertexElement& element)
+{
+    switch (element.semantic_)
+    {
+    case SEM_POSITION:
+        position_ = source.position_;
+        return true;
+
+    case SEM_NORMAL:
+        normal_ = source.normal_;
+        return true;
+
+    case SEM_BINORMAL:
+        binormal_ = source.binormal_;
+        return true;
+
+    case SEM_TANGENT:
+        tangent_ = source.tangent_;
+        return true;
+
+    case SEM_TEXCOORD:
+        if (element.index_ >= MaxUVs)
+            return false;
+        uv_[element.index_] = source.uv_[element.index_];
+        return true;
+
+    case SEM_COLOR:
+        if (element.index_ >= MaxColors)
+            return false;
+        color_[element.index_] = source.color_[element.index_];
+        return true;
+
+    case SEM_BLENDWEIGHTS:
+    case SEM_BLENDINDICES:
+    case SEM_OBJECTINDEX:
+    default:
+        assert(0);
+        return false;
+    }
+}
+
+void ModelVertex::Repair()
+{
+    normal_.w_ = 0;
+    binormal_.w_ = 0;
+
+    if (HasNormal())
+    {
+        if (HasTangent())
+        {
+            const bool hasBinormal = HasBinormal();
+            const bool hasTangentBinormalCombined = HasTangentBinormalCombined();
+
+            if (hasTangentBinormalCombined && !hasBinormal)
+            {
+                // Repair binormal from tangent and normal
+                const Vector3 normal3 = static_cast<Vector3>(tangent_);
+                const Vector3 tangent3 = static_cast<Vector3>(normal_);
+                const Vector3 binormal3 = tangent_.w_ * normal3.CrossProduct(tangent3);
+                binormal_ = { binormal3.Normalized(), 0};
+            }
+            else if (hasBinormal && !hasTangentBinormalCombined)
+            {
+                // Repair tangent W component from binormal, tangent and normal
+                const Vector3 normal3 = static_cast<Vector3>(tangent_);
+                const Vector3 tangent3 = static_cast<Vector3>(normal_);
+                const Vector3 binormal3 = static_cast<Vector3>(binormal_);
+                const Vector3 crossBinormal = normal3.CrossProduct(tangent3);
+                tangent_.w_ = crossBinormal.DotProduct(binormal3) >= 0 ? 1.0f : -1.0f;
+            }
+        }
+        else
+        {
+            // Reset binormal if tangent is missing
+            binormal_ = Vector4::ZERO;
+        }
+    }
+    else
+    {
+        // Reset tangent and binormal if normal is missing
+        tangent_ = Vector4::ZERO;
+        binormal_ = Vector4::ZERO;
+    }
+}
+
 Vector3 GeometryLODView::CalculateCenter() const
 {
     Vector3 center;
@@ -107,76 +315,61 @@ Vector3 GeometryLODView::CalculateCenter() const
     return vertices_.empty() ? Vector3::ZERO : center / static_cast<float>(vertices_.size());
 }
 
-bool ModelView::ImportModel(const NativeModelView& nativeView)
+bool ModelView::ImportModel(const Model* model)
 {
-    vertexFormat_ = ParseVertexElements(nativeView.GetEffectiveVertexElements());
-    metadata_ = nativeView.GetMetadata();
+    // Read vertex format
+    vertexFormat_ = ParseVertexElements(GetEffectiveVertexElements(model));
 
-    const auto& nativeVertexBuffers = nativeView.GetVertexBuffers();
-    const auto& nativeIndexBuffers = nativeView.GetIndexBuffers();
-    const auto& nativeGeometries = nativeView.GetGeometries();
+    // Read metadata
+    for (const ea::string& key : model->GetMetadataKeys())
+        metadata_.emplace(key, model->GetMetadata(key));
 
-    const unsigned numGeometries = nativeGeometries.size();
+    const auto& modelVertexBuffers = model->GetVertexBuffers();
+    const auto& modelIndexBuffers = model->GetIndexBuffers();
+    const auto& modelGeometries = model->GetGeometries();
+
+    const unsigned numGeometries = modelGeometries.size();
     geometries_.resize(numGeometries);
     for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
     {
-        const unsigned numLods = nativeGeometries[geometryIndex].lods_.size();
+        const unsigned numLods = modelGeometries[geometryIndex].size();
         geometries_[geometryIndex].lods_.resize(numLods);
         for (unsigned lodIndex = 0; lodIndex < numLods; ++lodIndex)
         {
-            const NativeModelView::GeometryLODData& nativeGeometry = nativeGeometries[geometryIndex].lods_[lodIndex];
+            const Geometry* modelGeometry = modelGeometries[geometryIndex][lodIndex];
 
             GeometryLODView geometry;
-            geometry.lodDistance_ = nativeGeometry.lodDistance_;
+            geometry.lodDistance_ = modelGeometry->GetLodDistance();
 
             // Copy indices
-            if (nativeGeometry.indexCount_ % 3 != 0 || nativeGeometry.indexBuffer_ >= nativeIndexBuffers.size())
+            if (modelGeometry->GetIndexCount() % 3 != 0)
             {
                 return false;
             }
 
-            const auto& nativeIndexBuffer = nativeIndexBuffers[nativeGeometry.indexBuffer_];
-            const unsigned numFaces = nativeGeometry.indexCount_ / 3;
-            geometry.faces_.reserve(numFaces);
-            for (unsigned faceIndex = 0; faceIndex < numFaces; ++faceIndex)
-            {
-                ModelFace face;
-                for (unsigned i = 0; i < 3; ++i)
-                    face.indices_[i] = nativeIndexBuffer.indices_[faceIndex * 3 + i] - nativeGeometry.vertexStart_;
-                geometry.faces_.push_back(face);
-            }
+            const IndexBuffer* modelIndexBuffer = modelGeometry->GetIndexBuffer();
+            const unsigned numIndices = modelGeometry->GetIndexCount();
+            geometry.indices_ = modelIndexBuffer->GetUnpackedData(
+                modelGeometry->GetIndexStart(), modelGeometry->GetIndexCount());
 
             // Copy vertices
-            ea::vector<const NativeModelView::VertexBufferData*> vertexBuffers;
-            for (const unsigned vertexBufferIndex : nativeGeometry.vertexBuffers_)
+            const unsigned vertexCount = modelGeometry->GetVertexCount();
+            geometry.vertices_.resize(vertexCount);
+            for (const VertexBuffer* modelVertexBuffer : modelGeometry->GetVertexBuffers())
             {
-                if (vertexBufferIndex >= nativeVertexBuffers.size())
+                if (!CheckVertexElements(modelVertexBuffer->GetElements()))
                 {
                     return false;
                 }
 
-                const NativeModelView::VertexBufferData& vertexBuffer = nativeVertexBuffers[vertexBufferIndex];
-                if (nativeGeometry.vertexStart_ + nativeGeometry.vertexCount_ > vertexBuffer.vertices_.size())
+                const auto vertexBufferData = GetVertexBufferData(modelVertexBuffer,
+                    modelGeometry->GetVertexStart(), vertexCount);
+                const auto vertexElements = modelVertexBuffer->GetElements();
+                for (unsigned i = 0; i < vertexCount; ++i)
                 {
-                    return false;
+                    for (const VertexElement& element : vertexElements)
+                        geometry.vertices_[i].ReplaceElement(vertexBufferData[i], element);
                 }
-
-                vertexBuffers.push_back(&vertexBuffer);
-            }
-
-            const unsigned firstVertex = nativeGeometry.vertexStart_;
-            const unsigned lastVertex = nativeGeometry.vertexStart_ + nativeGeometry.vertexCount_;
-            geometry.vertices_.reserve(nativeGeometry.vertexCount_);
-            for (unsigned vertexIndex = firstVertex; vertexIndex < lastVertex; ++vertexIndex)
-            {
-                ModelVertex vertex;
-                for (const auto vertexBuffer : vertexBuffers)
-                {
-                    for (const VertexElement& element : vertexBuffer->elements_)
-                        vertex.ReplaceElement(vertexBuffer->vertices_[vertexIndex], element);
-                }
-                vertex.Repair();
-                geometry.vertices_.push_back(vertex);
             }
 
             geometries_[geometryIndex].lods_[lodIndex] = ea::move(geometry);
@@ -185,66 +378,95 @@ bool ModelView::ImportModel(const NativeModelView& nativeView)
     return true;
 }
 
-void ModelView::ExportModel(NativeModelView& nativeView) const
+void ModelView::ExportModel(Model* model) const
 {
-    NativeModelView::VertexBufferData nativeVertexBuffer;
-    NativeModelView::IndexBufferData nativeIndexBuffer;
-    ea::vector<NativeModelView::GeometryData> nativeGeometries;
+    // Collect vertices and indices
+    ea::vector<ModelVertex> vertexBufferData;
+    ea::vector<unsigned> indexBufferData;
 
-    nativeVertexBuffer.elements_ = CollectVertexElements(vertexFormat_);
     for (const GeometryView& sourceGeometry : geometries_)
     {
-        NativeModelView::GeometryData nativeGeometry;
         for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
         {
-            NativeModelView::GeometryLODData geometryLod;
+            const unsigned startVertex = vertexBufferData.size();
+            const unsigned startIndex = indexBufferData.size();
 
-            // Initialize geometry metadata
-            geometryLod.indexBuffer_ = 0;
-            geometryLod.vertexBuffers_ = { 0 };
-            geometryLod.indexStart_ = nativeIndexBuffer.indices_.size();
-            geometryLod.indexCount_ = sourceGeometryLod.faces_.size() * 3;
-            geometryLod.vertexStart_ = nativeVertexBuffer.vertices_.size();
-            geometryLod.vertexCount_ = sourceGeometryLod.vertices_.size();
+            vertexBufferData.push_back(sourceGeometryLod.vertices_);
+            indexBufferData.push_back(sourceGeometryLod.indices_);
 
-            // Copy vertices
-            nativeVertexBuffer.vertices_.insert(nativeVertexBuffer.vertices_.end(),
-                sourceGeometryLod.vertices_.begin(), sourceGeometryLod.vertices_.end());
-
-            // Copy indices
-            for (const ModelFace& face : sourceGeometryLod.faces_)
-            {
-                for (unsigned i = 0; i < 3; ++i)
-                    nativeIndexBuffer.indices_.push_back(face.indices_[i] + geometryLod.vertexStart_);
-            }
-
-            nativeGeometry.lods_.push_back(geometryLod);
-        }
-
-        if (!nativeGeometry.lods_.empty())
-        {
-            // Calculate geometry center
-            nativeGeometry.center_ = sourceGeometry.lods_.front().CalculateCenter();;
-
-            // Append geometry
-            nativeGeometries.push_back(ea::move(nativeGeometry));
+            for (unsigned i = startIndex; i < indexBufferData.size(); ++i)
+                indexBufferData[i] += startVertex;
         }
     }
 
+    // Create vertex and index buffers
+    auto modelVertexBuffer = MakeShared<VertexBuffer>(context_);
+    modelVertexBuffer->SetShadowed(true);
+    modelVertexBuffer->SetSize(vertexBufferData.size(), CollectVertexElements(vertexFormat_));
+    SetVertexBufferData(modelVertexBuffer, vertexBufferData);
+
+    const bool largeIndices = HasLargeIndices(indexBufferData);
+    auto modelIndexBuffer = MakeShared<IndexBuffer>(context_);
+    modelIndexBuffer->SetShadowed(true);
+    modelIndexBuffer->SetSize(indexBufferData.size(), largeIndices);
+    modelIndexBuffer->SetUnpackedData(indexBufferData.data());
+
     // Calculate bounding box
     BoundingBox boundingBox;
-    for (const ModelVertex& vertex : nativeVertexBuffer.vertices_)
+    for (const ModelVertex& vertex : vertexBufferData)
         boundingBox.Merge(static_cast<Vector3>(vertex.position_));
 
-    nativeView.Initialize(boundingBox, { nativeVertexBuffer }, { nativeIndexBuffer }, nativeGeometries);
-    nativeView.SetMetadata(metadata_);
+    // Create model
+    for (const auto& var : metadata_)
+        model->AddMetadata(var.first, var.second);
+
+    model->SetBoundingBox(boundingBox);
+    model->SetVertexBuffers({ modelVertexBuffer }, {}, {});
+    model->SetIndexBuffers({ modelIndexBuffer });
+
+    // Write geometries
+    unsigned indexStart = 0;
+    unsigned vertexStart = 0;
+
+    const unsigned numGeometries = geometries_.size();
+    model->SetNumGeometries(numGeometries);
+    for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
+    {
+        const GeometryView& sourceGeometry = geometries_[geometryIndex];
+        const unsigned numLods = sourceGeometry.lods_.size();
+        if (numLods == 0)
+            continue;
+
+        const Vector3 geometryCenter = sourceGeometry.lods_[0].CalculateCenter();
+        model->SetGeometryCenter(geometryIndex, geometryCenter);
+        model->SetNumGeometryLodLevels(geometryIndex, numLods);
+        for (unsigned lodIndex = 0; lodIndex < numLods; ++lodIndex)
+        {
+            const GeometryLODView& sourceGeometryLod = sourceGeometry.lods_[lodIndex];
+            const unsigned indexCount = sourceGeometryLod.indices_.size();
+            const unsigned vertexCount = sourceGeometryLod.vertices_.size();
+
+            SharedPtr<Geometry> geometry = MakeShared<Geometry>(context_);
+
+            geometry->SetNumVertexBuffers(1);
+            geometry->SetVertexBuffer(0, modelVertexBuffer);
+            geometry->SetIndexBuffer(modelIndexBuffer);
+            geometry->SetLodDistance(sourceGeometryLod.lodDistance_);
+            geometry->SetDrawRange(TRIANGLE_LIST, indexStart, indexCount, vertexStart, vertexCount);
+
+            model->SetGeometry(geometryIndex, lodIndex, geometry);
+
+            indexStart += indexCount;
+            vertexStart += vertexCount;
+        }
+    }
 }
 
-SharedPtr<NativeModelView> ModelView::ExportModel() const
+SharedPtr<Model> ModelView::ExportModel() const
 {
-    auto nativeModelView = MakeShared<NativeModelView>(context_);
-    ExportModel(*nativeModelView);
-    return nativeModelView;
+    auto model = MakeShared<Model>(context_);
+    ExportModel(model);
+    return model;
 }
 
 const Variant& ModelView::GetMetadata(const ea::string& key) const
