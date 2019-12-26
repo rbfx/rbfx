@@ -84,13 +84,16 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
                 ++vertexIndex;
             }
 
-            for (const ModelFace& face : geometryLodView.faces_)
+            for (unsigned faceIndex = 0; faceIndex < geometryLodView.indices_.size() / 3; ++faceIndex)
             {
                 Thekla::Atlas_Input_Face atlasFace;
 
                 atlasFace.material_index = geometryIndex;
                 for (int i = 0; i < 3; ++i)
-                    atlasFace.vertex_index[i] = static_cast<int>(vertexStart + face.indices_[i]);
+                {
+                    const unsigned index = geometryLodView.indices_[faceIndex * 3 + i];
+                    atlasFace.vertex_index[i] = static_cast<int>(vertexStart + index);
+                }
 
                 atlasFaces.push_back(atlasFace);
             }
@@ -188,7 +191,8 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
         // Copy faces
         GeometryLODView& newGeometry = newGeometries[geometryIndex].lods_[lod];
-        newGeometry.faces_.push_back(ModelFace{ { map0.index_, map1.index_, map2.index_ } });
+        for (unsigned index : { map0.index_, map1.index_, map2.index_ })
+            newGeometry.indices_.push_back(index);
     }
 
     // Build vertex format

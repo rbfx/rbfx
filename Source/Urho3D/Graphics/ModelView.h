@@ -24,16 +24,49 @@
 
 #pragma once
 
-#include "../Graphics/NativeModelView.h"
+#include "../Graphics/VertexBuffer.h"
 
 namespace Urho3D
 {
 
-/// Model face.
-struct ModelFace
+class Model;
+
+/// Model vertex.
+struct URHO3D_API ModelVertex
 {
-    /// Vertex indices.
-    unsigned indices_[3]{};
+    /// Max number of colors.
+    static const unsigned MaxColors = 4;
+    /// Max number of UV.
+    static const unsigned MaxUVs = 4;
+    /// Vertex elements.
+    static const ea::vector<VertexElement> VertexElements;
+
+    /// Position.
+    Vector4 position_;
+    /// Normal. W-component must be zero.
+    Vector4 normal_;
+    /// Tangent. W-component is the sign of binormal direction.
+    Vector4 tangent_;
+    /// Binormal. W-component must be zero.
+    Vector4 binormal_;
+    /// Colors.
+    Vector4 color_[MaxColors];
+    /// UV coordinates.
+    Vector4 uv_[MaxUVs];
+
+    /// Return whether the vertex has normal.
+    bool HasNormal() const { return normal_ != Vector4::ZERO; }
+    /// Return whether the vertex has tangent.
+    bool HasTangent() const { return tangent_ != Vector4::ZERO; }
+    /// Return whether the vertex has binormal.
+    bool HasBinormal() const { return binormal_ != Vector4::ZERO; }
+    /// Return whether the vertex has tangent and binormal combined.
+    bool HasTangentBinormalCombined() const { return tangent_ != Vector4::ZERO && tangent_.w_ != 0; }
+
+    /// Replace given semantics from another vector.
+    bool ReplaceElement(const ModelVertex& source, const VertexElement& element);
+    /// Repair missing vertex elements if possible.
+    void Repair();
 };
 
 /// Model vertex format.
@@ -61,7 +94,7 @@ struct URHO3D_API GeometryLODView
     /// Vertices.
     ea::vector<ModelVertex> vertices_;
     /// Faces.
-    ea::vector<ModelFace> faces_;
+    ea::vector<unsigned> indices_;
     /// LOD distance.
     float lodDistance_{};
     /// Calculate center.
@@ -85,11 +118,11 @@ public:
     ModelView(Context* context) : Object(context) {}
 
     /// Import from native view.
-    bool ImportModel(const NativeModelView& nativeView);
+    bool ImportModel(const Model* model);
     /// Export to existing native view.
-    void ExportModel(NativeModelView& nativeView) const;
+    void ExportModel(Model* model) const;
     /// Export to new native view.
-    SharedPtr<NativeModelView> ExportModel() const;
+    SharedPtr<Model> ExportModel() const;
 
     /// Set vertex format.
     void SetVertexFormat(const ModelVertexFormat& vertexFormat) { vertexFormat_ = vertexFormat; }
