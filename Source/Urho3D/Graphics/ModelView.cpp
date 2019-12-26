@@ -411,16 +411,11 @@ void ModelView::ExportModel(Model* model) const
     modelIndexBuffer->SetSize(indexBufferData.size(), largeIndices);
     modelIndexBuffer->SetUnpackedData(indexBufferData.data());
 
-    // Calculate bounding box
-    BoundingBox boundingBox;
-    for (const ModelVertex& vertex : vertexBufferData)
-        boundingBox.Merge(static_cast<Vector3>(vertex.position_));
-
     // Create model
     for (const auto& var : metadata_)
         model->AddMetadata(var.first, var.second);
 
-    model->SetBoundingBox(boundingBox);
+    model->SetBoundingBox(CalculateBoundingBox());
     model->SetVertexBuffers({ modelVertexBuffer }, {}, {});
     model->SetIndexBuffers({ modelIndexBuffer });
 
@@ -433,10 +428,10 @@ void ModelView::ExportModel(Model* model) const
     for (unsigned geometryIndex = 0; geometryIndex < numGeometries; ++geometryIndex)
     {
         const GeometryView& sourceGeometry = geometries_[geometryIndex];
-        const unsigned numLods = sourceGeometry.lods_.size();
-        if (numLods == 0)
+        if (sourceGeometry.lods_.empty())
             continue;
 
+        const unsigned numLods = sourceGeometry.lods_.size();
         const Vector3 geometryCenter = sourceGeometry.lods_[0].CalculateCenter();
         model->SetGeometryCenter(geometryIndex, geometryCenter);
         model->SetNumGeometryLodLevels(geometryIndex, numLods);
@@ -476,6 +471,20 @@ const Variant& ModelView::GetMetadata(const ea::string& key) const
         return it->second;
 
     return Variant::EMPTY;
+}
+
+BoundingBox ModelView::CalculateBoundingBox() const
+{
+    BoundingBox boundingBox;
+    for (const GeometryView& sourceGeometry : geometries_)
+    {
+        for (const GeometryLODView& sourceGeometryLod : sourceGeometry.lods_)
+        {
+            for (const ModelVertex& vertex : sourceGeometryLod.vertices_)
+                boundingBox.Merge(static_cast<Vector3>(vertex.position_));
+        }
+    }
+    return boundingBox;
 }
 
 }

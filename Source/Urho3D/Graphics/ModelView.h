@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Graphics/VertexBuffer.h"
+#include "../Math/BoundingBox.h"
 
 namespace Urho3D
 {
@@ -123,6 +124,9 @@ public:
     void ExportModel(Model* model) const;
     /// Export to new native view.
     SharedPtr<Model> ExportModel() const;
+
+    /// Calculate bounding box.
+    BoundingBox CalculateBoundingBox() const;
 
     /// Set vertex format.
     void SetVertexFormat(const ModelVertexFormat& vertexFormat) { vertexFormat_ = vertexFormat; }
