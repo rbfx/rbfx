@@ -25,6 +25,7 @@
 #include <embree3/rtcore_ray.h>
 #define _SSIZE_T_DEFINED
 
+#include "../Graphics/Model.h"
 #include "../Graphics/ModelView.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
@@ -49,11 +50,8 @@ struct ParsedModelKeyValue
 /// Parse model data.
 ParsedModelKeyValue ParseModelForEmbree(Model* model)
 {
-    NativeModelView nativeModelView(model->GetContext());
-    nativeModelView.ImportModel(model);
-
     auto modelView = MakeShared<ModelView>(model->GetContext());
-    modelView->ImportModel(nativeModelView);
+    modelView->ImportModel(model);
 
     return { model, modelView };
 }
@@ -86,14 +84,10 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
     }
 
     unsigned* indices = reinterpret_cast<unsigned*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_INDEX,
-        0, RTC_FORMAT_UINT3, sizeof(unsigned) * 3, geometryLODView.faces_.size()));
+        0, RTC_FORMAT_UINT3, sizeof(unsigned) * 3, geometryLODView.indices_.size() / 3));
 
-    for (unsigned i = 0; i < geometryLODView.faces_.size(); ++i)
-    {
-        indices[i * 3 + 0] = geometryLODView.faces_[i].indices_[0];
-        indices[i * 3 + 1] = geometryLODView.faces_[i].indices_[1];
-        indices[i * 3 + 2] = geometryLODView.faces_[i].indices_[2];
-    }
+    for (unsigned i = 0; i < geometryLODView.indices_.size(); ++i)
+        indices[i] = geometryLODView.indices_[i];
 
     rtcCommitGeometry(embreeGeometry);
     return embreeGeometry;
