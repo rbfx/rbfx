@@ -97,6 +97,6 @@ private:
 };
 
 // Create Embree scene.
-URHO3D_API SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes);
+URHO3D_API SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes, unsigned uvChannel);
 
 }

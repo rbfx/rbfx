@@ -58,7 +58,7 @@ ParsedModelKeyValue ParseModelForEmbree(Model* model)
 
 /// Create Embree geometry from geometry view.
 RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& geometryLODView, Node* node,
-    const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset)
+    const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel)
 {
     const Matrix3x4 worldTransform = node->GetWorldTransform();
     RTCGeometry embreeGeometry = rtcNewGeometry(embreeDevice, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -73,7 +73,7 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
     for (unsigned i = 0; i < geometryLODView.vertices_.size(); ++i)
     {
         const Vector3 localPosition = static_cast<Vector3>(geometryLODView.vertices_[i].position_);
-        const Vector4 lightmapUV = geometryLODView.vertices_[i].uv_[1];
+        const Vector4 lightmapUV = geometryLODView.vertices_[i].uv_[uvChannel];
         const Vector2 lightmapUVScaled = Vector2{ lightmapUV.x_, lightmapUV.y_ } * lightmapUVScale + lightmapUVOffset;
         const Vector3 worldPosition = worldTransform * localPosition;
         vertices[i * 3 + 0] = worldPosition.x_;
@@ -95,7 +95,7 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
 
 /// Create Embree geometry from parsed model.
 ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, ModelView* modelView, Node* node,
-    unsigned lightmapIndex, const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset)
+    unsigned lightmapIndex, const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel)
 {
     ea::vector<EmbreeGeometry> result;
 
@@ -106,7 +106,7 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, Mod
         for (const GeometryLODView& geometryLODView : geometryView.lods_)
         {
             const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView,
-                node, lightmapUVScale, lightmapUVOffset);
+                node, lightmapUVScale, lightmapUVOffset, uvChannel);
             result.push_back(EmbreeGeometry{ node, geometryIndex, geometryLod, lightmapIndex, embreeGeometry });
             ++geometryLod;
         }
@@ -158,7 +158,7 @@ EmbreeScene::~EmbreeScene()
         rtcReleaseDevice(device_);
 }
 
-SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes)
+SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes, unsigned uvChannel)
 {
     // Load models
     ea::vector<std::future<ParsedModelKeyValue>> asyncParsedModels;
@@ -192,7 +192,7 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node
 
             ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
             asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometryArray,
-                device, parsedModel, node, lightmapIndex, lightmapUVScale, lightmapUVOffset));
+                device, parsedModel, node, lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
         }
     }
 
