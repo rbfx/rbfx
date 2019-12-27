@@ -34,7 +34,7 @@ namespace Urho3D
 {
 
 template<typename T, typename Sender=RefCounted>
-class URHO3D_API Signal
+class Signal
 {
 public:
     /// Signal handler type.
@@ -130,7 +130,7 @@ protected:
 };
 
 template<typename Sender>
-class URHO3D_API Signal<void, Sender>
+class Signal<void, Sender>
 {
 public:
     /// Signal handler type.
