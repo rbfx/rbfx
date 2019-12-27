@@ -151,7 +151,7 @@ bool SceneTab::RenderWindowContent()
         mouseHoversViewport_ = ui::IsItemHovered();
 
     bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = ui::IsMouseClicked(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
+    bool isClickedRight = ui::IsMouseReleased(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -218,7 +218,7 @@ bool SceneTab::RenderWindowContent()
                 else
                     ToggleSelection(clickNode);
             }
-            else if (isClickedRight)
+            else if (isClickedRight && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
             {
                 if (clickNode == GetScene())
                 {
@@ -700,7 +700,7 @@ void SceneTab::RenderNodeTree(Node* node)
             else
                 ToggleSelection(node);
         }
-        else if (ui::IsMouseClicked(MOUSEB_RIGHT))
+        else if (ui::IsMouseReleased(MOUSEB_RIGHT) && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
         {
             if (!IsSelected(node))
             {
@@ -752,7 +752,7 @@ void SceneTab::RenderNodeTree(Node* node)
                             UnselectAll();
                         Select(component);
                     }
-                    else if (ui::IsMouseClicked(MOUSEB_RIGHT))
+                    else if (ui::IsMouseReleased(MOUSEB_RIGHT) && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
                     {
                         if (!IsSelected(component))
                         {
