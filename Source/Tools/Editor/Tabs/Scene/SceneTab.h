@@ -147,14 +147,6 @@ protected:
     void OnNodeSelectionChanged();
     /// Render content of the tab window.
     bool RenderWindowContent() override;
-    /// Called right before ui::Begin() of tab.
-    void OnBeforeBegin() override;
-    /// Called right after ui::Begin() of tab.
-    void OnAfterBegin() override;
-    /// Called right before ui::End() of tab
-    void OnBeforeEnd() override;
-    /// Called right after ui::End() of tab
-    void OnAfterEnd() override;
     /// Update objects with current tab view rect size.
     IntRect UpdateViewRect() override;
     /// Manually updates scene.

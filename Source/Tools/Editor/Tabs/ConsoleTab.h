@@ -38,7 +38,7 @@ public:
     bool RenderWindowContent() override;
 
 protected:
-    void OnAfterBegin() override;
+    void OnTabContextMenu();
 };
 
 }
