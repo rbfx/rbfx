@@ -415,6 +415,11 @@ bool ui::IsItemClicked(Urho3D::MouseButton button)
     return ui::IsItemClicked(Urho3D::ToImGui(button));
 }
 
+ImVec2 ui::GetMouseDragDelta(Urho3D::MouseButton button, float lock_threshold)
+{
+    return ui::GetMouseDragDelta(Urho3D::ToImGui(button), lock_threshold);
+}
+
 bool ui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, ImGuiCond cond)
 {
     if (SetDragDropPayload(type, nullptr, 0, cond))
