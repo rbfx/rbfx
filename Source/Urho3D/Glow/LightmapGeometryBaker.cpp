@@ -106,16 +106,6 @@ void SetCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
     camera->SetFarClip(zFar);
 }
 
-/// Load render path.
-SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
-{
-    auto renderPath = MakeShared<RenderPath>();
-    auto renderPathXml = context->GetCache()->GetResource<XMLFile>(renderPathName);
-    if (!renderPath->Load(renderPathXml))
-        return nullptr;
-    return renderPath;
-}
-
 /// Pair of two ordered indices.
 using OrderedIndexPair = ea::pair<unsigned, unsigned>;
 
@@ -308,6 +298,15 @@ Vector3 ExtractVector3FromVector4(const Vector4& data) { return { data.x_, data.
 /// Extract w-component as unsigned integer from Vector4.
 unsigned ExtractUintFromVector4(const Vector4& data) { return static_cast<unsigned>(data.w_); }
 
+}
+
+SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
+{
+    auto renderPath = MakeShared<RenderPath>();
+    auto renderPathXml = context->GetCache()->GetResource<XMLFile>(renderPathName);
+    if (!renderPath->Load(renderPathXml))
+        return nullptr;
+    return renderPath;
 }
 
 LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,

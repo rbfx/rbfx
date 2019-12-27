@@ -243,7 +243,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             const Vector3 lightValue = lightColor * intensity;
 
             if (light.bakeDirect_)
-                bakedDirect.directLight_[i] += lightValue;
+                bakedDirect.directLight_[i] += Vector4(lightValue, 0.0f);
 
             if (light.bakeIndirect_)
                 bakedDirect.surfaceLight_[i] += lightValue;
