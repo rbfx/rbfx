@@ -90,16 +90,9 @@ public:
     /// Store direct light for the lightmap chart.
     virtual void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) = 0;
     /// Load direct light for the lightmap chart.
-    virtual const LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) = 0;
+    virtual LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) = 0;
     /// Release direct light for the lightmap chart.
     virtual void ReleaseDirectLight(unsigned lightmapIndex) = 0;
-
-    /// Store indirect light for the lightmap chart.
-    virtual void StoreIndirectLight(unsigned lightmapIndex, LightmapChartBakedIndirect bakedIndirect) = 0;
-    /// Load indirect light for the lightmap chart.
-    virtual const LightmapChartBakedIndirect* LoadIndirectLight(unsigned lightmapIndex) = 0;
-    /// Release indirect light for the lightmap chart.
-    virtual void ReleaseIndirectLight(unsigned lightmapIndex) = 0;
 };
 
 /// Memory lightmap cache.
@@ -128,16 +121,9 @@ public:
     /// Store direct light for the lightmap chart.
     void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) override;
     /// Load direct light for the lightmap chart.
-    const LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) override;
+    LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) override;
     /// Release direct light for the lightmap chart.
     void ReleaseDirectLight(unsigned lightmapIndex) override;
-
-    /// Store indirect light for the lightmap chart.
-    void StoreIndirectLight(unsigned lightmapIndex, LightmapChartBakedIndirect bakedIndirect) override;
-    /// Load indirect light for the lightmap chart.
-    const LightmapChartBakedIndirect* LoadIndirectLight(unsigned lightmapIndex) override;
-    /// Release indirect light for the lightmap chart.
-    void ReleaseIndirectLight(unsigned lightmapIndex) override;
 
 private:
     /// Lightmap indices per chunk.
@@ -148,8 +134,6 @@ private:
     ea::unordered_map<unsigned, LightmapChartGeometryBuffer> geometryBufferCache_;
     /// Direct light cache.
     ea::unordered_map<unsigned, LightmapChartBakedDirect> directLightCache_;
-    /// Indirect light cache.
-    ea::unordered_map<unsigned, LightmapChartBakedIndirect> indirectLightCache_;
 };
 
 }

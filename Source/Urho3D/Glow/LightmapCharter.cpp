@@ -23,6 +23,7 @@
 #include "../Glow/LightmapCharter.h"
 
 #include "../Core/Variant.h"
+#include "../IO/Log.h"
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/StaticModel.h"
@@ -50,6 +51,18 @@ IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObjectScal
     return VectorCeilToInt(modelLightmapSize * clampedRescaleFactor);
 }
 
+/// Adjust size to lightmap chart size.
+IntVector2 AdjustRegionSize(const IntVector2& desiredSize, int maxSize)
+{
+    const int desiredDimensions = ea::max(desiredSize.x_, desiredSize.y_);
+    if (desiredDimensions <= maxSize)
+        return desiredSize;
+
+    const float scale = static_cast<float>(maxSize) / desiredDimensions;
+    const Vector2 newSize = static_cast<Vector2>(desiredSize) * scale;
+    return VectorMax(IntVector2::ONE, VectorMin(VectorCeilToInt(newSize), IntVector2::ONE * maxSize));
+};
+
 /// Allocate region in the set of lightmap charts.
 LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& settings,
     ea::vector<LightmapChart>& charts, const IntVector2& size, unsigned baseChartIndex)
@@ -70,23 +83,8 @@ LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& 
         ++chartIndex;
     }
 
-    // Create dedicated chart for this specific region if it's bigger than max chart size
-    const int chartSize = static_cast<int>(settings.chartSize_);
-    if (size.x_ > chartSize || size.y_ > chartSize)
-    {
-        LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, size.x_, size.y_);
-
-        IntVector2 position;
-        const bool success = chart.allocator_.Allocate(size.x_, size.y_, position.x_, position.y_);
-
-        assert(success);
-        assert(position == IntVector2::ZERO);
-
-        return { chartIndex, IntVector2::ZERO, size, settings.chartSize_ };
-    }
-
     // Create general-purpose chart
-    LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, chartSize, chartSize);
+    LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, settings.chartSize_);
 
     // Allocate region from the new chart
     IntVector2 paddedPosition;
@@ -111,13 +109,22 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
 ea::vector<LightmapChart> GenerateLightmapCharts(
     const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings, unsigned baseChartIndex)
 {
+    const int maxRegionSize = static_cast<int>(settings.chartSize_ - settings.padding_ * 2);
     ea::vector<LightmapChart> charts;
     for (Node* node : nodes)
     {
         if (auto staticModel = node->GetComponent<StaticModel>())
         {
             const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
-            const LightmapChartRegion region = AllocateLightmapChartRegion(settings, charts, regionSize, baseChartIndex);
+            const IntVector2 adjustedRegionSize = AdjustRegionSize(regionSize, maxRegionSize);
+            const LightmapChartRegion region = AllocateLightmapChartRegion(
+                settings, charts, adjustedRegionSize, baseChartIndex);
+
+            if (regionSize != adjustedRegionSize)
+            {
+                URHO3D_LOGWARNING("Object \"{}\" doesn't fit the lightmap chart, texel density is lowered.",
+                    node->GetName());
+            }
 
             const LightmapChartElement chartElement{ node, staticModel, region };
             charts[region.chartIndex_].elements_.push_back(chartElement);

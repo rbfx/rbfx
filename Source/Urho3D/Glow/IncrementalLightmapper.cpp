@@ -27,6 +27,7 @@
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapStitcher.h"
 #include "../Glow/LightmapTracer.h"
 #include "../Resource/Image.h"
 
@@ -94,15 +95,10 @@ struct DirectLightBakingContext : public BaseIncrementalContext
 };
 
 /// Context used for indirect light baking.
-struct IndirectLightBakingContext : public BaseIncrementalContext
+struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
 {
-};
-
-/// Context used for filtering and saving.
-struct FilterAndSaveContext
-{
-    /// Current lightmap index.
-    unsigned currentLightmapIndex_{};
+    /// Stitching context for 4-component textures.
+    LightmapStitchingContext stitchingContext4_;
 };
 
 }
@@ -279,11 +275,17 @@ struct IncrementalLightmapper::Impl
         return false;
     }
 
-    /// Step baking indirect lighting.
-    bool StepBakeIndirect(IndirectLightBakingContext& ctx)
+    /// Step baking indirect lighting, filter and save images.
+    bool StepBakeIndirectFilterAndSave(IndirectLightBakingFilterAndSaveContext& ctx)
     {
         if (ctx.currentChunkIndex_ >= chunks_.size())
             return true;
+
+        // Initialize context
+        if (ctx.currentChunkIndex_ == 0)
+        {
+            ctx.stitchingContext4_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.chartSize_, 4);
+        }
 
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
@@ -302,10 +304,11 @@ struct IncrementalLightmapper::Impl
         for (unsigned lightmapIndex : requiredDirectLightmaps)
             bakedDirectLightmaps[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
 
-        // Bake direct lighting
+        // Bake indirect lighting
         for (unsigned lightmapIndex : lightmapsInChunks)
         {
             const LightmapChartGeometryBuffer* geometryBuffer = cache_->LoadGeometryBuffer(lightmapIndex);
+            LightmapChartBakedDirect* bakedDirect = cache_->LoadDirectLight(lightmapIndex);
             LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
             // Bake indirect lights
@@ -319,9 +322,36 @@ struct IncrementalLightmapper::Impl
             bakedIndirect.NormalizeLight();
             FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numThreads_);
 
+            // Stitch seams
+            StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_, lightmapSettings_.stitching_);
+
+            // Generate image
+            auto lightmapImage = MakeShared<Image>(context_);
+            lightmapImage->SetSize(geometryBuffer->width_, geometryBuffer->height_, 4);
+            for (int y = 0; y < geometryBuffer->height_; ++y)
+            {
+                for (int x = 0; x < geometryBuffer->width_; ++x)
+                {
+                    const unsigned i = y * geometryBuffer->width_ + x;
+                    const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
+                    const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
+                    const Vector3 totalLight = directLight + indirectLight;
+
+                    Color color;
+                    color.r_ = Pow(totalLight.x_, 1 / 2.2f);
+                    color.g_ = Pow(totalLight.y_, 1 / 2.2f);
+                    color.b_ = Pow(totalLight.z_, 1 / 2.2f);
+                    color.a_ = 1.0f;
+                    lightmapImage->SetPixel(x, y, color);
+                }
+            }
+
+            // Save image to destination folder
+            lightmapImage->SaveFile(incrementalSettings_.outputDirectory_ + GetLightmapFileName(lightmapIndex));
+
             // Store direct light
-            cache_->StoreIndirectLight(lightmapIndex, ea::move(bakedIndirect));
             cache_->ReleaseGeometryBuffer(lightmapIndex);
+            cache_->ReleaseDirectLight(lightmapIndex);
         }
 
         // Release cache
@@ -331,46 +361,6 @@ struct IncrementalLightmapper::Impl
 
         // Advance
         ++ctx.currentChunkIndex_;
-        return false;
-    }
-
-    /// Step filtering and saving.
-    bool StepFilterAndSave(FilterAndSaveContext& ctx)
-    {
-        if (ctx.currentLightmapIndex_ >= numLightmapCharts_)
-            return true;
-
-        // Load buffers
-        const LightmapChartGeometryBuffer* geometryBuffer = cache_->LoadGeometryBuffer(ctx.currentLightmapIndex_);
-        const LightmapChartBakedDirect* bakedDirect = cache_->LoadDirectLight(ctx.currentLightmapIndex_);
-        const LightmapChartBakedIndirect* bakedIndirect = cache_->LoadIndirectLight(ctx.currentLightmapIndex_);
-
-        // Generate image
-        auto lightmapImage = MakeShared<Image>(context_);
-        lightmapImage->SetSize(geometryBuffer->width_, geometryBuffer->height_, 4);
-        for (int y = 0; y < geometryBuffer->height_; ++y)
-        {
-            for (int x = 0; x < geometryBuffer->width_; ++x)
-            {
-                const unsigned i = y * geometryBuffer->width_ + x;
-                const Vector3 directLight = bakedDirect->directLight_[i];
-                const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect->light_[i]);
-                const Vector3 totalLight = directLight + indirectLight;
-
-                Color color;
-                color.r_ = Pow(totalLight.x_, 1 / 2.2f);
-                color.g_ = Pow(totalLight.y_, 1 / 2.2f);
-                color.b_ = Pow(totalLight.z_, 1 / 2.2f);
-                color.a_ = 1.0f;
-                lightmapImage->SetPixel(x, y, color);
-            }
-        }
-
-        // Save image to destination folder
-        lightmapImage->SaveFile(incrementalSettings_.outputDirectory_ + GetLightmapFileName(ctx.currentLightmapIndex_));
-
-        // Advance
-        ++ctx.currentLightmapIndex_;
         return false;
     }
 
@@ -438,14 +428,9 @@ void IncrementalLightmapper::Bake()
     while (!impl_->StepBakeDirect(directContext))
         ;
 
-    // Bake indirect lighting
-    IndirectLightBakingContext indirectContext;
-    while (!impl_->StepBakeIndirect(indirectContext))
-        ;
-
-    // Filter and save images
-    FilterAndSaveContext filterAndSaveContext;
-    while (!impl_->StepFilterAndSave(filterAndSaveContext))
+    // Bake indirect lighting, filter and save images
+    IndirectLightBakingFilterAndSaveContext indirectContext;
+    while (!impl_->StepBakeIndirectFilterAndSave(indirectContext))
         ;
 }
 
