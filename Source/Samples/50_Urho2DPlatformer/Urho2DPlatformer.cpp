@@ -54,13 +54,12 @@
 #include <Urho3D/Graphics/Zone.h>
 #include <Urho3D/Core/Profiler.h>
 
-#include <Urho3D/DebugNew.h>
-
 #include "Character2D.h"
 #include "Utilities2D/Sample2D.h"
 #include "Utilities2D/Mover.h"
 #include "Urho2DPlatformer.h"
 
+#include <Urho3D/DebugNew.h>
 
 
 Urho2DPlatformer::Urho2DPlatformer(Context* context) :

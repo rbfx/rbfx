@@ -50,12 +50,12 @@
 #include <Urho3D/Urho2D/PhysicsEvents2D.h>
 #include <Urho3D/Core/Profiler.h>
 
-#include <Urho3D/DebugNew.h>
-
 #include "Character2D.h"
 #include "Utilities2D/Sample2D.h"
 #include "Utilities2D/Mover.h"
 #include "Urho2DIsometricDemo.h"
+
+#include <Urho3D/DebugNew.h>
 
 Urho2DIsometricDemo::Urho2DIsometricDemo(Context* context) :
     Sample(context),
