@@ -29,10 +29,10 @@ namespace Urho3D
 {
 
 template <int StorageSize, typename T>
-class URHO3D_API FunctionImpl;
+class FunctionImpl;
 
 template <int StorageSize, typename Return, typename... Args>
-class URHO3D_API FunctionImpl<StorageSize, Return(Args...)>
+class FunctionImpl<StorageSize, Return(Args...)>
 {
     /// Internal operation enum.
     enum class Operation
