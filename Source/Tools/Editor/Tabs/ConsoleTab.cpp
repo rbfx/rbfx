@@ -34,6 +34,8 @@ ConsoleTab::ConsoleTab(Context* context)
     SetID("2c1b8e59-3e21-4a14-bc20-d35af0ba5031");
     SetTitle("Console");
     isUtility_ = true;
+
+    onTabContextMenu_.Subscribe(this, &ConsoleTab::OnTabContextMenu);
 }
 
 bool ConsoleTab::RenderWindowContent()
@@ -47,7 +49,7 @@ bool ConsoleTab::RenderWindowContent()
     return true;
 }
 
-void ConsoleTab::OnAfterBegin()
+void ConsoleTab::OnTabContextMenu()
 {
     // Inner part of window should have a proper padding, context menu and other controls might depend on it.
     if (ui::BeginPopupContextItem("ConsoleTab context menu"))
