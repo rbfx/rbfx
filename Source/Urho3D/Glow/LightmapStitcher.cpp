@@ -42,6 +42,24 @@ namespace Urho3D
 namespace
 {
 
+const unsigned numMultiTapSamples = 9;
+
+/// Multitap info for seams.
+const Vector3 seamsMultitap[numMultiTapSamples] =
+{
+    { -1.0f, -1.0f, 0.024879068361000005f },
+    { -1.0f,  1.0f, 0.024879068361000005f },
+    {  1.0f, -1.0f, 0.024879068361000005f },
+    {  1.0f,  1.0f, 0.024879068361000005f },
+
+    { -1.0f,  0.0f, 0.107972863278f },
+    {  0.0f,  1.0f, 0.107972863278f },
+    {  1.0f,  0.0f, 0.107972863278f },
+    {  0.0f, -1.0f, 0.107972863278f },
+
+    {  0.0f,  0.0f, 0.46859227344399995f },
+};
+
 /// Return texture format for given amount of channels.
 unsigned GetStitchTextureFormat(unsigned numChannels)
 {
@@ -58,7 +76,7 @@ unsigned GetStitchTextureFormat(unsigned numChannels)
 
 /// Create scene for ping-pong stitching.
 SharedPtr<Scene> CreateStitchingScene(Context* context,
-    const LightmapStitchingSettings& settings, Texture2D* inputTexture, Model* seamsModel)
+    const LightmapStitchingSettings& settings, Texture2D* inputTexture, Model* seamsModel, float texelSize)
 {
     auto cache = context->GetCache();
 
@@ -90,20 +108,29 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
         staticModel->SetMaterial(material);
     }
 
-    if (Node* seamsNode = scene->CreateChild("Seams"))
+    for (unsigned i = 0; i < numMultiTapSamples; ++i)
     {
-        seamsNode->SetPosition({ -0.5f, 0.1f, -0.5f });
+        const Vector3 offsetAndWeight = seamsMultitap[i];
+        const Vector3 offset = Vector3{ offsetAndWeight.x_, 0.0f, offsetAndWeight.y_ } * texelSize;
+        const float alpha = settings.blendFactor_;// * offsetAndWeight.z_;
 
-        auto material = MakeShared<Material>(context);
-        auto technique = cache->GetResource<Technique>(settings.stitchSeamsTechniqueName_);
-        material->SetTechnique(0, technique);
-        material->SetTexture(TU_DIFFUSE, inputTexture);
-        material->SetShaderParameter("MatDiffColor", Color(1.0f, 1.0f, 1.0f, settings.blendFactor_));
-        material->SetRenderOrder(1);
+        if (Node* seamsNode = scene->CreateChild("Seams"))
+        {
+            seamsNode->SetPosition(Vector3{ -0.5f, 0.1f, -0.5f } + offset);
 
-        auto staticModel = seamsNode->CreateComponent<StaticModel>();
-        staticModel->SetModel(seamsModel);
-        staticModel->SetMaterial(material);
+            auto material = MakeShared<Material>(context);
+            auto technique = cache->GetResource<Technique>(settings.stitchSeamsTechniqueName_);
+            //auto technique = cache->GetResource<Technique>("Techniques/NoTextureUnlitAlpha.xml");
+            material->SetTechnique(0, technique);
+            material->SetTexture(TU_DIFFUSE, inputTexture);
+            material->SetShaderParameter("MatDiffColor", Color(1.0f, 1.0f, 1.0f, alpha));
+            //material->SetShaderParameter("MatDiffColor", Color(1.0f, 0.0f, 0.0f, alpha));
+            material->SetRenderOrder(1);
+
+            auto staticModel = seamsNode->CreateComponent<StaticModel>();
+            staticModel->SetModel(seamsModel);
+            staticModel->SetMaterial(material);
+        }
     }
 
     octree->Update({});
@@ -207,11 +234,12 @@ void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<
 {
     Context* context = stitchingContext.context_;
     auto graphics = context->GetGraphics();
+    const float texelSize = 1.0f / stitchingContext.lightmapSize_;
 
     // Initialize scenes and render path
     SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
-    auto pingScene = CreateStitchingScene(context, settings, stitchingContext.pongTexture_, seamsModel);
-    auto pongScene = CreateStitchingScene(context, settings, stitchingContext.pingTexture_, seamsModel);
+    auto pingScene = CreateStitchingScene(context, settings, stitchingContext.pongTexture_, seamsModel, texelSize);
+    auto pongScene = CreateStitchingScene(context, settings, stitchingContext.pingTexture_, seamsModel, texelSize);
     auto pingViewViewport = CreateStitchingViewAndViewport(pingScene, renderPath, stitchingContext.pingTexture_);
     auto pongViewViewport = CreateStitchingViewAndViewport(pongScene, renderPath, stitchingContext.pongTexture_);
 
