@@ -121,6 +121,105 @@ public:
         }
     }
 
+    /// Returns true when event has at least one subscriber.
+    bool HasSubscribers() const { return !handlers_.empty(); }
+
+protected:
+    /// A collection of event handlers.
+    ea::vector<ea::pair<WeakPtr<RefCounted>, Handler>> handlers_;
+};
+
+template<typename Sender>
+class URHO3D_API Signal<void, Sender>
+{
+public:
+    /// Signal handler type.
+    using Handler = Function<bool(RefCounted*, Sender*)>;
+
+    /// Subscribe to event.
+    template<typename Receiver>
+    void Subscribe(Receiver* receiver, void(Receiver::*handler)(Sender*))
+    {
+        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
+            [handler](RefCounted* receiver, Sender* sender)
+            {
+                (static_cast<Receiver*>(receiver)->*handler)(sender);
+                return true;
+            }
+        );
+    }
+
+    /// Subscribe to event.
+    template<typename Receiver>
+    void Subscribe(Receiver* receiver, bool(Receiver::*handler)(RefCounted*))
+    {
+        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
+            [handler](RefCounted* receiver, Sender* sender)
+            {
+                return (static_cast<Receiver*>(receiver)->*handler)(sender);
+            }
+        );
+    }
+
+    /// Subscribe to event.
+    template<typename Receiver>
+    void Subscribe(Receiver* receiver, void(Receiver::*handler)())
+    {
+        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
+            [handler](RefCounted* receiver, Sender* sender)
+            {
+                (static_cast<Receiver*>(receiver)->*handler)();
+                return true;
+            }
+        );
+    }
+
+    /// Subscribe to event.
+    template<typename Receiver>
+    void Subscribe(Receiver* receiver, bool(Receiver::*handler)())
+    {
+        handlers_.emplace_back(WeakPtr<RefCounted>(static_cast<RefCounted*>(receiver)),
+            [handler](RefCounted* receiver, Sender* sender)
+            {
+                return (static_cast<Receiver*>(receiver)->*handler)();
+            }
+        );
+    }
+
+    /// Unsubscribe all handlers of specified receiver from this events.
+    void Unsubscribe(RefCounted* receiver)
+    {
+        for (auto it = handlers_.begin(); it != handlers_.end();)
+        {
+            ea::pair<WeakPtr<RefCounted>, Handler>& pair = *it;
+            if (pair.first.Expired() || pair.first == receiver)
+                it = handlers_.erase(it);
+            else
+                ++it;
+        }
+    }
+
+    /// Invoke event.
+    void operator()(Sender* sender)
+    {
+        for (auto it = handlers_.begin(); it != handlers_.end();)
+        {
+            ea::pair<WeakPtr<RefCounted>, Handler>& pair = *it;
+            if (RefCounted* receiver = pair.first.Get())
+            {
+                if (pair.second(receiver, sender))
+                    ++it;
+                else
+                    it = handlers_.erase(it);
+            }
+            else
+                it = handlers_.erase(it);
+        }
+    }
+
+    /// Returns true when event has at least one subscriber.
+    bool HasSubscribers() const { return !handlers_.empty(); }
+
 protected:
     /// A collection of event handlers.
     ea::vector<ea::pair<WeakPtr<RefCounted>, Handler>> handlers_;
