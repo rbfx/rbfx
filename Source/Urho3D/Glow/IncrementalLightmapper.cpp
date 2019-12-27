@@ -324,8 +324,12 @@ struct IncrementalLightmapper::Impl
             FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numThreads_);
 
             // Stitch seams
-            SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer->seams_);
-            StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_, lightmapSettings_.stitching_, seamsModel);
+            if (lightmapSettings_.stitching_.numIterations_ > 0)
+            {
+                SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer->seams_);
+                StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_,
+                    lightmapSettings_.stitching_, seamsModel);
+            }
 
             // Generate image
             auto lightmapImage = MakeShared<Image>(context_);
