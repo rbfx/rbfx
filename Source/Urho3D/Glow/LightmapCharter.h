@@ -101,12 +101,12 @@ struct LightmapChart
     /// Construct default.
     LightmapChart() = default;
     /// Construct valid.
-    LightmapChart(unsigned index, int width, int height)
+    LightmapChart(unsigned index, unsigned size)
         : index_(index)
-        , width_{ static_cast<unsigned>(width) }
-        , height_{ static_cast<unsigned>(height) }
-        , size_{ width, height }
-        , allocator_{ width, height, 0, 0, false }
+        , width_{ size }
+        , height_{ size }
+        , size_{ static_cast<int>(width_), static_cast<int>(height_) }
+        , allocator_{ size_.x_, size_.y_, 0, 0, false }
     {
     }
     /// Return size of the lightmap texel, in UV.

@@ -70,7 +70,8 @@ struct LightmapChartBakedDirect
     /// Height of the chart as float.
     float realHeight_{};
     /// Incoming direct light from completely backed lights, to be baked in lightmap.
-    ea::vector<Vector3> directLight_;
+    /// W-component is unused and is needed for alignment since this array is copied to GPU.
+    ea::vector<Vector4> directLight_;
     /// Incoming direct light from all static lights multiplied with albedo, used to calculate indirect lighting.
     ea::vector<Vector3> surfaceLight_;
 };
