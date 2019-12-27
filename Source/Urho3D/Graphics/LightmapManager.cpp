@@ -60,6 +60,7 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake", getBake, setBake, bool, false, AM_EDIT);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, incrementalBakingSettings_.outputDirectory_, "", AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Stitch Iterations", unsigned, lightmapSettings_.stitching_.numIterations_, 2, AM_DEFAULT);
 }
 
 void LightmapManager::Bake()
