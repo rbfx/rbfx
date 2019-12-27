@@ -86,12 +86,16 @@ struct LightmapStitchingSettings
 {
     /// Number of iterations.
     unsigned numIterations_{ 2 };
+    /// Blend factor.
+    float blendFactor_{ 0.5f };
     /// Render path used for stitching.
     ea::string renderPathName_{ "RenderPaths/Forward.xml" };
-    /// Model used for stitching background.
+    /// Model used for background during stitching.
     ea::string stitchBackgroundModelName_{ "Models/Plane.mdl" };
-    /// Technique used for stitching background.
+    /// Technique used for background during stitching.
     ea::string stitchBackgroundTechniqueName_{ "Techniques/DiffUnlit.xml" };
+    /// Technique used for seams rendering during stitching.
+    ea::string stitchSeamsTechniqueName_{ "Techniques/DiffUnlitAlpha.xml" };
 };
 
 /// Lightmap settings.

@@ -29,6 +29,7 @@
 #include "../Glow/LightmapGeometryBaker.h"
 #include "../Glow/LightmapStitcher.h"
 #include "../Glow/LightmapTracer.h"
+#include "../Graphics/Model.h"
 #include "../Resource/Image.h"
 
 #include <EASTL/algorithm.h>
@@ -323,7 +324,8 @@ struct IncrementalLightmapper::Impl
             FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numThreads_);
 
             // Stitch seams
-            StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_, lightmapSettings_.stitching_);
+            SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer->seams_);
+            StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_, lightmapSettings_.stitching_, seamsModel);
 
             // Generate image
             auto lightmapImage = MakeShared<Image>(context_);
