@@ -197,7 +197,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
     // Build vertex format
     ModelVertexFormat vertexFormat = modelView.GetVertexFormat();
-    vertexFormat.uv_[1] = TYPE_VECTOR2;
+    vertexFormat.uv_[settings.uvChannel_] = TYPE_VECTOR2;
 
     // Finalize
     Thekla::atlas_free(outputMesh);
