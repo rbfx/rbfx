@@ -717,12 +717,13 @@ bool Material::Save(XMLElement& dest) const
     {
         XMLElement parameterElem = dest.CreateChild("parameter");
         parameterElem.SetString("name", j->second.name_);
-        if (j->second.value_.GetType() != VAR_BUFFER && j->second.value_.GetType() != VAR_INT && j->second.value_.GetType() != VAR_BOOL)
-            parameterElem.SetVectorVariant("value", j->second.value_);
-        else
+        if (!parameterElem.SetVectorVariant("value", j->second.value_))
         {
-            parameterElem.SetAttribute("type", j->second.value_.GetTypeName());
-            parameterElem.SetAttribute("value", j->second.value_.ToString());
+            if (j->second.value_.GetType() != VAR_BUFFER && j->second.value_.GetType() != VAR_VOIDPTR)
+            {
+                parameterElem.SetAttribute("type", j->second.value_.GetTypeName());
+                parameterElem.SetAttribute("value", j->second.value_.ToString());
+            }
         }
     }
 
