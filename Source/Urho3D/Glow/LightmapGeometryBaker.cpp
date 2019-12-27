@@ -465,6 +465,8 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.smoothNormals_.begin(), ExtractVector3FromVector4);
 
     graphics->EndFrame();
+
+    geometryBuffer.seams_ = bakingScene.seams_;
     return geometryBuffer;
 }
 

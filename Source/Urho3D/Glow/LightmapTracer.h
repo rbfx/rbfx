@@ -43,7 +43,7 @@ struct LightmapChartBakedDirect
         , height_(height)
         , realWidth_(static_cast<float>(width_))
         , realHeight_(static_cast<float>(height_))
-        , directLight_(width_ * height_)
+        , directLight_(width_ * height_, Vector4(0.0f, 0.0f, 0.0f, 1.0f))
         , surfaceLight_(width_ * height_)
     {
     }
