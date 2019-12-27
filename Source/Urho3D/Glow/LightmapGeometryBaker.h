@@ -112,6 +112,8 @@ struct LightmapChartGeometryBuffer
     ea::vector<Vector3> faceNormals_;
     /// Geometry IDs.
     ea::vector<unsigned> geometryIds_;
+    /// Lightmap seams.
+    LightmapSeamVector seams_;
 
     /// Construct default.
     LightmapChartGeometryBuffer() = default;

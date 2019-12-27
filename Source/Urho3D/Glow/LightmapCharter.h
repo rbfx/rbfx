@@ -52,14 +52,14 @@ struct LightmapChartRegion
         rectUV_.max_ = static_cast<Vector2>(rectTexels_.Max()) / static_cast<float>(maxSize);
     }
     /// Return lightmap scale of the region.
-    Vector2 GetScale() const { return rectUV_.Min(); }
+    Vector2 GetScale() const { return rectUV_.Size(); }
     /// Return lightmap offset of the region.
-    Vector2 GetOffset() const { return rectUV_.Size(); }
+    Vector2 GetOffset() const { return rectUV_.Min(); }
     /// Return lightmap scale & offset vector.
     Vector4 GetScaleOffset() const
     {
-        const Vector2 offset = GetScale();
-        const Vector2 size = GetOffset();
+        const Vector2 offset = GetOffset();
+        const Vector2 size = GetScale();
         return { size.x_, size.y_, offset.x_, offset.y_ };
     }
 

@@ -26,10 +26,11 @@
 
 #include "../Glow/LightmapGeometryBaker.h"
 #include "../Graphics/Texture2D.h"
-//#include "../Scene/Scene.h"
 
 namespace Urho3D
 {
+
+class Model;
 
 /// Stiching context.
 struct LightmapStitchingContext
@@ -50,8 +51,11 @@ struct LightmapStitchingContext
 URHO3D_API LightmapStitchingContext InitializeStitchingContext(
     Context* context, unsigned lightmapSize, unsigned numChannels);
 
+/// Create model for lightmap seams.
+URHO3D_API SharedPtr<Model> CreateSeamsModel(Context* context, const LightmapSeamVector& seams);
+
 /// Stitch seams in the image.
 URHO3D_API void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector4>& imageData,
-    const LightmapStitchingSettings& settings);
+    const LightmapStitchingSettings& settings, Model* seamsModel);
 
 }
