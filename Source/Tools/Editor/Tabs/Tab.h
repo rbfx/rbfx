@@ -25,12 +25,14 @@
 
 
 #include <Urho3D/Precompiled.h>
-#include <Urho3D/Math/StringHash.h>
+#include <Urho3D/Core/Signal.h>
 #include <Urho3D/Core/StringUtils.h>
+#include <Urho3D/Math/StringHash.h>
+#include <Urho3D/Scene/Node.h>
+#include <Urho3D/SystemUI/SystemUI.h>
+
 #include <ImGui/imgui.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/Scene/Node.h>
 
 
 namespace Urho3D
@@ -68,14 +70,6 @@ public:
     virtual void OnActiveUpdate() { }
     /// Render tab content.
     virtual bool RenderWindow();
-    /// Called right before ui::Begin() of tab.
-    virtual void OnBeforeBegin() { }
-    /// Called right after ui::Begin() of tab.
-    virtual void OnAfterBegin() { }
-    /// Called right before ui::End() of tab
-    virtual void OnBeforeEnd() { }
-    /// Called right after ui::End() of tab
-    virtual void OnAfterEnd() { }
     /// Save ui settings.
     virtual void OnSaveUISettings(ImGuiTextBuffer* buf);
     /// Load ui settings.
@@ -117,6 +111,9 @@ public:
     /// Closes current tab and unloads it's contents from memory.
     virtual void Close() { open_ = false; }
 
+    /// Sent during rendering of tab context menu.
+    Signal<void> onTabContextMenu_;
+
 protected:
     ///
     virtual IntRect UpdateViewRect();
@@ -137,20 +134,22 @@ protected:
     bool isRendered_ = false;
     /// Returns true if tab is utility (non-content) window.
     bool isUtility_ = false;
-    /// Current window flags.
-    ImGuiWindowFlags windowFlags_ = 0;
-    /// Attribute inspector.
-    AttributeInspector inspector_;
-    /// Last known mouse position when it was visible.
-    IntVector2 lastMousePosition_;
     /// Flag indicating that tab is open and renders it's contents.
     bool open_ = true;
     /// Flag indicating tab should reactivate itself next time it is rendered.
     bool activateTab_ = false;
     /// Flag indicating that tab should auto-dock itself into most appropriate place.
     bool autoPlace_ = false;
-    ///
+    /// Flag indicating that tab was open at the start of this frame.
     bool wasOpen_ = false;
+    /// Flag indicating that window should not render any padding for window content.
+    bool noContentPadding_ = false;
+    /// Current window flags.
+    ImGuiWindowFlags windowFlags_ = 0;
+    /// Attribute inspector.
+    AttributeInspector inspector_{context_};
+    /// Last known mouse position when it was visible.
+    IntVector2 lastMousePosition_{};
 };
 
 }

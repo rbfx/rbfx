@@ -69,6 +69,7 @@ SceneTab::SceneTab(Context* context)
     SetTitle("Scene");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
     isUtility_ = true;
+    noContentPadding_ = true;
 
     // Main viewport
     viewport_ = new Viewport(context_);
@@ -259,42 +260,9 @@ bool SceneTab::RenderWindowContent()
 
     ui::EndChild(); // Scene view
 
+    BaseClassName::RenderWindowContent();
+
     return open;
-}
-
-void SceneTab::OnBeforeBegin()
-{
-    // Allow viewport texture to cover entire window
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-}
-
-void SceneTab::OnAfterBegin()
-{
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
-    // Inner part of window should have a proper padding, context menu and other controls might depend on it.
-    if (ui::BeginPopupContextItem("SceneTab context menu"))
-    {
-        if (ui::MenuItem("Save"))
-            SaveResource();
-
-        ui::Separator();
-
-        if (ui::MenuItem("Close"))
-            open_ = false;
-
-        ui::EndPopup();
-    }
-}
-
-void SceneTab::OnBeforeEnd()
-{
-    BaseClassName::OnBeforeEnd();
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-}
-
-void SceneTab::OnAfterEnd()
-{
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 bool SceneTab::LoadResource(const ea::string& resourcePath)

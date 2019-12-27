@@ -50,6 +50,7 @@ UITab::UITab(Context* context)
     SetID(GenerateUUID());
     SetTitle("New UI Layout");
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
+    noContentPadding_ = true;
 
     texture_ = new Texture2D(context_);
     texture_->SetFilterMode(FILTER_BILINEAR);
@@ -249,6 +250,8 @@ bool UITab::RenderWindowContent()
 
     RenderRectSelector();
     ui::EndChild();
+
+    BaseClassName::RenderWindowContent();
 
     return true;
 }
@@ -820,28 +823,6 @@ void UITab::OnFocused()
 {
     auto* editor = GetSubsystem<Editor>();
     editor->GetTab<HierarchyTab>()->SetProvider(this);
-}
-
-void UITab::OnBeforeBegin()
-{
-    // Allow viewport texture to cover entire window
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-}
-
-void UITab::OnAfterBegin()
-{
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
-}
-
-void UITab::OnBeforeEnd()
-{
-    BaseClassName::OnBeforeEnd();
-    ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
-}
-
-void UITab::OnAfterEnd()
-{
-    ui::PopStyleVar();  // ImGuiStyleVar_WindowPadding
 }
 
 }
