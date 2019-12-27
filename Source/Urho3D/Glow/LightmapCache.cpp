@@ -79,29 +79,13 @@ void LightmapMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChart
     directLightCache_[lightmapIndex] = ea::move(bakedDirect);
 }
 
-const LightmapChartBakedDirect* LightmapMemoryCache::LoadDirectLight(unsigned lightmapIndex)
+LightmapChartBakedDirect* LightmapMemoryCache::LoadDirectLight(unsigned lightmapIndex)
 {
     auto iter = directLightCache_.find(lightmapIndex);
     return iter != directLightCache_.end() ? &iter->second : nullptr;
 }
 
 void LightmapMemoryCache::ReleaseDirectLight(unsigned /*lightmapIndex*/)
-{
-    // Nothing to do
-}
-
-void LightmapMemoryCache::StoreIndirectLight(unsigned lightmapIndex, LightmapChartBakedIndirect bakedIndirect)
-{
-    indirectLightCache_[lightmapIndex] = ea::move(bakedIndirect);
-}
-
-const LightmapChartBakedIndirect* LightmapMemoryCache::LoadIndirectLight(unsigned lightmapIndex)
-{
-    auto iter = indirectLightCache_.find(lightmapIndex);
-    return iter != indirectLightCache_.end() ? &iter->second : nullptr;
-}
-
-void LightmapMemoryCache::ReleaseIndirectLight(unsigned lightmapIndex)
 {
     // Nothing to do
 }

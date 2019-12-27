@@ -76,6 +76,24 @@ struct LightmapTracingSettings
     bool pseudoRandomSampling_{ false };
 };
 
+/// Lightmap filter settings.
+struct LightmapFilterSettings
+{
+};
+
+/// Lightmap stitching settings.
+struct LightmapStitchingSettings
+{
+    /// Number of iterations.
+    unsigned numIterations_{ 2 };
+    /// Render path used for stitching.
+    ea::string renderPathName_{ "RenderPaths/Forward.xml" };
+    /// Model used for stitching background.
+    ea::string stitchBackgroundModelName_{ "Models/Plane.mdl" };
+    /// Technique used for stitching background.
+    ea::string stitchBackgroundTechniqueName_{ "Techniques/DiffUnlit.xml" };
+};
+
 /// Lightmap settings.
 struct LightmapSettings
 {
@@ -85,6 +103,10 @@ struct LightmapSettings
     LightmapGeometryBakingSettings geometryBaking_;
     /// Tracing settings.
     LightmapTracingSettings tracing_;
+    /// Filtering settings.
+    LightmapFilterSettings filter_;
+    /// Stitching settings.
+    LightmapStitchingSettings stitching_;
 };
 
 /// Incremental lightmapper settings.

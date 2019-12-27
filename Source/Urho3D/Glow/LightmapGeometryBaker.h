@@ -79,6 +79,9 @@ struct LightmapGeometryBakingScene
     LightmapSeamVector seams_;
 };
 
+/// Load render path.
+URHO3D_API SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName);
+
 /// Generate lightmap geometry baking scene for lightmap chart.
 URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,
     const LightmapChart& chart, const LightmapGeometryBakingSettings& settings, SharedPtr<RenderPath> bakeRenderPath);
