@@ -27,6 +27,7 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Graphics/GlobalIllumination.h"
+#include "../Scene/Scene.h"
 
 #if URHO3D_GLOW
 #include "../Glow/IncrementalLightmapper.h"
