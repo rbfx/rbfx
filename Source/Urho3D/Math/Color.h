@@ -101,6 +101,12 @@ public:
     /// Construct from 32-bit integer. Default format is 0xAABBGGRR.
     explicit Color(unsigned color, ChannelMask mask = ABGR) { FromUIntMask(color, mask); }
 
+    /// Construct from 3-vector.
+    explicit Color(const Vector3& color) : Color(color.x_, color.y_, color.z_) {}
+
+    /// Construct from 4-vector.
+    explicit Color(const Vector4& color) : Color(color.x_, color.y_, color.z_, color.w_) {}
+
     /// Assign from another color.
     Color& operator =(const Color& rhs) noexcept = default;
 
