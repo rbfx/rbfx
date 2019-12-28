@@ -81,13 +81,20 @@ public:
     /// Return serialized light probes data.
     VariantBuffer GetLightProbesData() const;
 
-private:
+protected:
+    /// Handle scene node being assigned at creation.
+    void OnNodeSet(Node* node) override;
+    /// Handle scene node transform dirtied.
+    void OnMarkedDirty(Node* node) override;
+
     /// Light probes.
     ea::vector<LightProbe> lightProbes_;
     /// Whether the auto placement is enabled.
     bool autoPlacementEnabled_{ true };
     /// Automatic placement step.
     float autoPlacementStep_{ 1.0f };
+    /// Last node scale used during auto placement.
+    Vector3 lastNodeScale_;
 };
 
 }

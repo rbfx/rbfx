@@ -128,4 +128,19 @@ VariantBuffer LightProbeGroup::GetLightProbesData() const
     return buffer.GetBuffer();
 }
 
+void LightProbeGroup::OnNodeSet(Node* node)
+{
+    if (node)
+        node->AddListener(this);
+}
+
+void LightProbeGroup::OnMarkedDirty(Node* node)
+{
+    if (autoPlacementEnabled_ && lastNodeScale_ != node->GetScale())
+    {
+        lastNodeScale_ = node->GetScale();
+        ArrangeLightProbes();
+    }
+}
+
 }
