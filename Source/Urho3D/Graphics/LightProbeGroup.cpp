@@ -60,7 +60,8 @@ void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     for (const LightProbe& probe : lightProbes_)
     {
         const Vector3 worldPosition = node_->LocalToWorld(probe.position_);
-        debug->AddSphere(Sphere(worldPosition, 0.1f), Color::GRAY);
+        const Color color = static_cast<Color>(probe.bakedLight_.EvaluateAverage());
+        debug->AddSphere(Sphere(worldPosition, 0.1f), color);
     }
 }
 
@@ -93,7 +94,10 @@ void LightProbeGroup::ArrangeLightProbes()
             for (index.x_ = 0; index.x_ < gridSize.x_; ++index.x_)
             {
                 const Vector3 localPosition = -Vector3::ONE / 2 + static_cast<Vector3>(index) * gridStep;
-                lightProbes_.push_back(LightProbe{ localPosition });
+                // TODO(glow): Initialize with zeros
+                const Color color{ Random(1.0f), Random(1.0f), Random(1.0f) };
+                const SphericalHarmonicsDot9 sh{ SphericalHarmonicsColor9{ color } };
+                lightProbes_.push_back(LightProbe{ localPosition, sh });
             }
         }
     }

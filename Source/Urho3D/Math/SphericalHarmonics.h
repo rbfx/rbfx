@@ -32,23 +32,51 @@ namespace Urho3D
 /// Spherical harmonics scalar coefficients, 3 bands.
 struct SphericalHarmonics9
 {
+    /// Array of factors.
+    static constexpr float factors[9] =
+    {
+        0.282095f,
+        0.488603f,
+        0.488603f,
+        0.488603f,
+        1.092548f,
+        1.092548f,
+        0.315392f,
+        1.092548f,
+        0.546274f
+    };
+
+    /// Array of cosines.
+    static constexpr float cosines[9] =
+    {
+        1.0f,
+        2.0f / 3.0f,
+        2.0f / 3.0f,
+        2.0f / 3.0f,
+        0.25f,
+        0.25f,
+        0.25f,
+        0.25f,
+        0.25f
+    };
+
     /// Construct default.
     SphericalHarmonics9() = default;
 
     /// Construct SH9 coefficients from given *normalized* direction.
     explicit SphericalHarmonics9(const Vector3& dir)
     {
-        values_[0] = 0.282095f;
+        values_[0] = factors[0];
 
-        values_[1] = 0.488603f * dir.y_;
-        values_[2] = 0.488603f * dir.z_;
-        values_[3] = 0.488603f * dir.x_;
+        values_[1] = factors[1] * dir.y_;
+        values_[2] = factors[2] * dir.z_;
+        values_[3] = factors[3] * dir.x_;
 
-        values_[4] = 1.092548f * dir.x_ * dir.y_;
-        values_[5] = 1.092548f * dir.y_ * dir.z_;
-        values_[6] = 0.315392f * (3.0f * dir.z_ * dir.z_ - 1.0f);
-        values_[7] = 1.092548f * dir.x_ * dir.z_;
-        values_[8] = 0.546274f * (dir.x_ * dir.x_ - dir.y_ * dir.y_);
+        values_[4] = factors[4] * dir.x_ * dir.y_;
+        values_[5] = factors[5] * dir.y_ * dir.z_;
+        values_[6] = factors[6] * (3.0f * dir.z_ * dir.z_ - 1.0f);
+        values_[7] = factors[7] * dir.x_ * dir.z_;
+        values_[8] = factors[8] * (dir.x_ * dir.x_ - dir.y_ * dir.y_);
     }
 
     /// Coefficients.
@@ -64,6 +92,16 @@ struct SphericalHarmonicsColor9
     /// Construct default.
     SphericalHarmonicsColor9() = default;
 
+    /// Construct SH9 coefficients from given color.
+    explicit SphericalHarmonicsColor9(const Vector3& color)
+    {
+        static const float factor = 1.0f / (SphericalHarmonics9::cosines[0] * SphericalHarmonics9::factors[0]);
+        values_[0] = color * factor;
+    }
+
+    /// Construct SH9 coefficients from given color.
+    explicit SphericalHarmonicsColor9(const Color& color) : SphericalHarmonicsColor9(color.ToVector3()) {}
+
     /// Construct SH9 coefficients from given *normalized* direction and color.
     SphericalHarmonicsColor9(const Vector3& dir, const Vector3& color)
     {
@@ -78,25 +116,21 @@ struct SphericalHarmonicsColor9
     /// Evaluate at given direction.
     Vector3 Evaluate(const Vector3& dir) const
     {
-        static const float c0 = 1.0f;
-        static const float c1 = 2.0f / 3.0f;
-        static const float c2 = 0.25f;
-
-        SphericalHarmonics9 sh{ dir.Normalized() };
-        sh.values_[0] *= c0;
-        sh.values_[1] *= c1;
-        sh.values_[2] *= c1;
-        sh.values_[3] *= c1;
-        sh.values_[4] *= c2;
-        sh.values_[5] *= c2;
-        sh.values_[6] *= c2;
-        sh.values_[7] *= c2;
-        sh.values_[8] *= c2;
+        const SphericalHarmonics9 sh{ dir.Normalized() };
 
         Vector3 result;
         for (unsigned i = 0; i < 9; ++i)
-            result += sh.values_[i] * values_[i];
+            result += SphericalHarmonics9::cosines[i] * sh.values_[i] * values_[i];
 
+        return result;
+    }
+
+    /// Evaluate average.
+    Vector3 EvaluateAverage() const
+    {
+        Vector3 result;
+        result += SphericalHarmonics9::cosines[0] * SphericalHarmonics9::factors[0] * values_[0];
+        result -= SphericalHarmonics9::cosines[6] * SphericalHarmonics9::factors[6] * values_[6];
         return result;
     }
 
@@ -140,22 +174,12 @@ struct SphericalHarmonicsDot9
     /// Construct from spherical harmonics.
     explicit SphericalHarmonicsDot9(SphericalHarmonicsColor9 sh)
     {
-        // Apply weights
-        static const float c0 = 1.0f;
-        static const float c1 = 2.0f / 3.0f;
-        static const float c2 = 0.25f;
+        // Precompute everything
+        for (unsigned i = 0; i < 9; ++i)
+            sh.values_[i] *= SphericalHarmonics9::cosines[i] * SphericalHarmonics9::factors[i];
 
-        sh.values_[0] *= c0 * 0.282095f;
-        sh.values_[1] *= c1 * 0.488603f; // y
-        sh.values_[2] *= c1 * 0.488603f; // z
-        sh.values_[3] *= c1 * 0.488603f; // x
-        sh.values_[4] *= c2 * 1.092548f; // x * y
-        sh.values_[5] *= c2 * 1.092548f; // y * z
-        sh.values_[6] *= c2 * 0.315392f; // 3 * z * z - 1
-        sh.values_[7] *= c2 * 1.092548f; // x * z
-        sh.values_[8] *= c2 * 0.546274f; // x * x - y * y
-
-        sh.values_[0] = sh.values_[0] - sh.values_[6];
+        // Repack 6-th component (3 * z * z - 1)
+        sh.values_[0] -= sh.values_[6];
         sh.values_[6] *= 3.0f;
 
         // (Nx, Ny, Nz, 1)
@@ -172,22 +196,27 @@ struct SphericalHarmonicsDot9
         C_ = sh.values_[8];
     }
 
-    /// Evaluate.
+    /// Evaluate at given direction.
     Vector3 Evaluate(const Vector3& dir) const
     {
-        const Vector4 l01{ dir, 1.0f };
-        const Vector4 l2{ dir.x_ * dir.y_, dir.y_ * dir.z_, dir.z_ * dir.z_, dir.z_ * dir.x_ };
-        const float l2xxyy = dir.x_ * dir.x_ - dir.y_ * dir.y_;
+        const Vector4 a{ dir, 1.0f };
+        const Vector4 b{ dir.x_ * dir.y_, dir.y_ * dir.z_, dir.z_ * dir.z_, dir.z_ * dir.x_ };
+        const float c = dir.x_ * dir.x_ - dir.y_ * dir.y_;
 
         Vector3 result;
-        result.x_ = Ar_.DotProduct(l01);
-        result.y_ = Ag_.DotProduct(l01);
-        result.z_ = Ab_.DotProduct(l01);
-        result.x_ += Br_.DotProduct(l2);
-        result.y_ += Bg_.DotProduct(l2);
-        result.z_ += Bb_.DotProduct(l2);
-        result += C_ * l2xxyy;
+        result.x_ = Ar_.DotProduct(a);
+        result.y_ = Ag_.DotProduct(a);
+        result.z_ = Ab_.DotProduct(a);
+        result.x_ += Br_.DotProduct(b);
+        result.y_ += Bg_.DotProduct(b);
+        result.z_ += Bb_.DotProduct(b);
+        result += C_ * c;
         return result;
+    }
+    /// Evaluate average.
+    Vector3 EvaluateAverage() const
+    {
+        return { Ar_.w_, Ag_.w_, Ab_.w_ };
     }
 
     /// Dot product with (Nx, Ny, Nz, 1), red channel.
