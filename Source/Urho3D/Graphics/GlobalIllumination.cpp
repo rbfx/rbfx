@@ -37,6 +37,31 @@ namespace Urho3D
 namespace
 {
 
+/// Calculate circumsphere of the tetrahedron.
+Sphere CalculateTetrahedronCircumsphere(const TetrahedralMesh& mesh, unsigned cellIndex)
+{
+    const AdjacentTetrahedron& cell = mesh.cells_[cellIndex];
+    const Vector3 p0 = mesh.vertices_[cell.indices_[0]];
+    const Vector3 p1 = mesh.vertices_[cell.indices_[1]];
+    const Vector3 p2 = mesh.vertices_[cell.indices_[2]];
+    const Vector3 p3 = mesh.vertices_[cell.indices_[3]];
+    const Vector3 u1 = p1 - p0;
+    const Vector3 u2 = p2 - p0;
+    const Vector3 u3 = p3 - p0;
+    const float d01 = u1.LengthSquared();
+    const float d02 = u2.LengthSquared();
+    const float d03 = u3.LengthSquared();
+    const Vector3 r0 = (d01 * u2.CrossProduct(u3) + d02 * u3.CrossProduct(u1) + d03 * u1.CrossProduct(u2))
+        / (2 * u1.DotProduct(u2.CrossProduct(u3)));
+    const Vector3 center = p0 + r0;
+
+    assert(Equals((p1 - center).Length(), r0.Length(), M_LARGE_EPSILON));
+    assert(Equals((p2 - center).Length(), r0.Length(), M_LARGE_EPSILON));
+    assert(Equals((p3 - center).Length(), r0.Length(), M_LARGE_EPSILON));
+
+    return { center, r0.Length() };
+}
+
 /// Initialize tetrahedral mesh for given volume.
 void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
 {
@@ -73,20 +98,23 @@ void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
     };
 
     // Initialize vertices
-    mesh.vertices_.clear();
+    mesh.vertices_.resize(numVertices);
     for (unsigned i = 0; i < numVertices; ++i)
-        mesh.vertices_.push_back(volume.min_ + volume.Size() * offsets[i]);
+        mesh.vertices_[i] = volume.min_ + volume.Size() * offsets[i];
 
     // Initialize cells
     mesh.cells_.resize(numTetrahedrons);
+    mesh.circumspheres_.resize(numTetrahedrons);
     for (unsigned i = 0; i < numTetrahedrons; ++i)
     {
-        AdjacentTetrahedron& cell = mesh.cells_[i];
+        AdjacentTetrahedron cell;
         for (unsigned j = 0; j < 4; ++j)
         {
             cell.indices_[j] = indices[i][j];
             cell.neighbors_[j] = neighbors[i][j];
         }
+        mesh.cells_[i] = cell;
+        mesh.circumspheres_[i] = CalculateTetrahedronCircumsphere(mesh, i);
     }
 };
 
