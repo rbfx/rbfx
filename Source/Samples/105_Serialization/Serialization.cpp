@@ -223,8 +223,8 @@ bool SerializeValue(Archive& archive, const char* name, ContainerStruct& value)
     if (auto block = archive.OpenUnorderedBlock(name))
     {
         SerializeValue(archive, "justString_", value.string_);
-        SerializeVector(archive, "vectorOfFloats_", "elem", value.vectorOfFloats_);
-        SerializeVectorBytes(archive, "byteFloatVector_", "elem", value.byteFloatVector_);
+        SerializeVectorAsObjects(archive, "vectorOfFloats_", "elem", value.vectorOfFloats_);
+        SerializeVectorAsBytes(archive, "byteFloatVector_", "elem", value.byteFloatVector_);
         SerializeStringMap(archive, "mapOfFloats_", "elem", value.mapOfFloats_);
         SerializeValue(archive, "variantMap_", value.variantMap_);
         SerializeValue(archive, "variantVector_", value.variantVector_);
@@ -526,7 +526,7 @@ bool CompareNodes(Node* lhs, Node* rhs)
 
         if (lhsStaticModel->GetNumGeometries() != rhsStaticModel->GetNumGeometries())
             return false;
-        
+
         Material* lhsMaterial = lhsStaticModel->GetMaterial();
         Material* rhsMaterial = rhsStaticModel->GetMaterial();
         if (!!lhsMaterial != !!rhsMaterial)
@@ -739,7 +739,7 @@ void Serialization::TestSerializationPerformance()
         firstBuffer.WriteUByte(buffer[i]);
     const long long firstDuration = timer.GetUSec(true);
 
-    SerializeVector(secondArchive, "buffer", "element", buffer);
+    SerializeVectorAsObjects(secondArchive, "buffer", "element", buffer);
     const long long secondDuration = timer.GetUSec(true);
 
     // Log result

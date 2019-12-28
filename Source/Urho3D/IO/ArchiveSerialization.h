@@ -392,9 +392,9 @@ inline bool SerializeStringHashKey(Archive& archive, StringHash& value, const ea
     return true;
 }
 
-/// Serialize vector with standard interface.
+/// Serialize vector with standard interface. Content is serialized as separate objects.
 template <class T>
-inline bool SerializeVector(Archive& archive, const char* name, const char* element, T& vector)
+inline bool SerializeVectorAsObjects(Archive& archive, const char* name, const char* element, T& vector)
 {
     using ValueType = typename T::value_type;
     if (auto block = archive.OpenArrayBlock(name, vector.size()))
@@ -423,48 +423,61 @@ inline bool SerializeVector(Archive& archive, const char* name, const char* elem
     return false;
 }
 
-/// Serialize vector as byte array, if possible.
+/// Serialize vector with standard interface. Content is serialized as bytes.
 template <class T>
-inline bool SerializeVectorBytes(Archive& archive, const char* name, const char* element, T& vector)
+inline bool SerializeVectorAsBytes(Archive& archive, const char* name, const char* element, T& vector)
 {
     using ValueType = typename T::value_type;
     static_assert(std::is_standard_layout<ValueType>::value, "Type should have standard layout to safely use byte serialization");
     static_assert(std::is_trivially_copyable<ValueType>::value, "Type should be trivially copyable to safely use byte serialization");
 
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        if (archive.IsInput())
+        {
+            unsigned sizeInBytes{};
+            if (!archive.SerializeVLE("size", sizeInBytes))
+                return false;
+
+            if (sizeInBytes % sizeof(ValueType) != 0)
+            {
+                archive.SetError(Format("Unexpected size of byte array '{0}'", name));
+                return false;
+            }
+
+            vector.resize(sizeInBytes / sizeof(ValueType));
+            if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
+                return false;
+        }
+        else
+        {
+            unsigned sizeInBytes = vector.size() * sizeof(ValueType);
+            if (!archive.SerializeVLE("size", sizeInBytes))
+                return false;
+
+            if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
+                return false;
+        }
+        return true;
+    }
+    return false;
+}
+
+/// Serialize vector in the best possible format.
+template <class T>
+inline bool SerializeVector(Archive& archive, const char* name, const char* element, T& vector)
+{
+    static constexpr bool standardLayout = std::is_standard_layout<ValueType>::value;
+    static constexpr bool triviallyCopyable = std::is_trivially_copyable<ValueType>::value;
+
     if (archive.IsHumanReadable())
-        return SerializeVector(archive, name, element, vector);
+        return SerializeVectorAsObjects(archive, name, element, vector);
     else
     {
-        if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
-        {
-            if (archive.IsInput())
-            {
-                unsigned sizeInBytes{};
-                if (!archive.SerializeVLE("size", sizeInBytes))
-                    return false;
-
-                if (sizeInBytes % sizeof(ValueType) != 0)
-                {
-                    archive.SetError(Format("Unexpected size of byte array '{0}'", name));
-                    return false;
-                }
-
-                vector.resize(sizeInBytes / sizeof(ValueType));
-                if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
-                    return false;
-            }
-            else
-            {
-                unsigned sizeInBytes = vector.size() * sizeof(ValueType);
-                if (!archive.SerializeVLE("size", sizeInBytes))
-                    return false;
-
-                if (!archive.SerializeBytes("data", vector.data(), sizeInBytes))
-                    return false;
-            }
-            return true;
-        }
-        return false;
+        if constexpr (standardLayout && triviallyCopyable)
+            return SerializeVectorAsBytes(archive, name, element, vector);
+        else
+            return SerializeVectorAsObjects(archive, name, element, vector);
     }
 }
 
@@ -625,13 +638,13 @@ inline bool SerializeStringHashMap(Archive& archive, const char* name, const cha
 /// Serialize StringVector.
 inline bool SerializeValue(Archive& archive, const char* name, StringVector& value)
 {
-    return SerializeVector(archive, name, nullptr, value);
+    return SerializeVectorAsObjects(archive, name, nullptr, value);
 }
 
 /// Serialize VariantVector.
 inline bool SerializeValue(Archive& archive, const char* name, VariantVector& value)
 {
-    return SerializeVector(archive, name, nullptr, value);
+    return SerializeVectorAsObjects(archive, name, nullptr, value);
 }
 
 /// Serialize VariantMap.
@@ -695,7 +708,7 @@ inline bool SerializeValue(Archive& archive, const char* name, ResourceRefList& 
         {
             bool success = true;
             success &= SerializeValue(archive, "type", value.type_);
-            success &= SerializeVector(archive, "name", "element", value.names_);
+            success &= SerializeVectorAsObjects(archive, "name", "element", value.names_);
             return success;
         }
         return false;
