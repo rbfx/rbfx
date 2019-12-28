@@ -448,7 +448,7 @@ IpAddress::~IpAddress()
 
 void IpAddress::Set( const struct sockaddr& addr )
 {
-#if __MINGW32__
+#if defined(__MINGW32__) || defined(_WIN32) // rbfx
     auto ai = (struct sockaddr_in*)&addr;
 #else
     auto ai = (const struct sockaddr_in*)&addr;
