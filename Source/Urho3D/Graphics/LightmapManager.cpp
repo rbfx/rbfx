@@ -26,6 +26,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
+#include "../Graphics/GlobalIllumination.h"
 
 #if URHO3D_GLOW
 #include "../Glow/IncrementalLightmapper.h"
@@ -65,6 +66,7 @@ void LightmapManager::RegisterObject(Context* context)
 
 void LightmapManager::Bake()
 {
+    // Bake lightmaps if possible
 #if URHO3D_GLOW
     DefaultLightmapSceneCollector sceneCollector;
     LightmapMemoryCache lightmapCache;
@@ -74,6 +76,12 @@ void LightmapManager::Bake()
     lightmapper.ProcessScene();
     lightmapper.Bake();
 #endif
+
+    // Compile light probes
+    if (auto gi = GetScene()->GetComponent<GlobalIllumination>())
+    {
+        gi->CompileLightProbes();
+    }
 }
 
 }
