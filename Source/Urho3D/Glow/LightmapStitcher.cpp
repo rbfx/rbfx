@@ -44,7 +44,7 @@ namespace
 
 const unsigned numMultiTapSamples = 9;
 
-/// Multitap info for seams.
+/// Multitap info for seams. Gaussian weights for 3x3 kernel and sigma equal 0.5 are used.
 const Vector3 seamsMultitap[numMultiTapSamples] =
 {
     { -1.0f, -1.0f, 0.024879068361000005f },

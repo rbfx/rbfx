@@ -54,7 +54,7 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         if (archive.IsInput() && !value.GetBufferPtr())
             value = VariantBuffer{};
         if (auto ptr = value.GetBufferPtr())
-            return SerializeVectorBytes(archive, name, "elem", *ptr);
+            return SerializeVectorAsBytes(archive, name, "elem", *ptr);
         return false;
     case VAR_RESOURCEREF:
         return Detail::SerializeVariantValueType<ResourceRef>(archive, name, value);
@@ -64,7 +64,7 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         if (archive.IsInput() && !value.GetVariantVectorPtr())
             value = VariantVector{};
         if (auto ptr = value.GetVariantVectorPtr())
-            return SerializeVector(archive, name, nullptr, *ptr);
+            return SerializeVectorAsObjects(archive, name, nullptr, *ptr);
         return false;
     case VAR_VARIANTMAP:
         if (archive.IsInput() && !value.GetVariantMapPtr())
@@ -88,7 +88,7 @@ bool SerializeVariantValue(Archive& archive, VariantType variantType, const char
         if (archive.IsInput() && !value.GetStringVectorPtr())
             value = StringVector{};
         if (auto ptr = value.GetStringVectorPtr())
-            return SerializeVector(archive, name, nullptr, *ptr);
+            return SerializeVectorAsObjects(archive, name, nullptr, *ptr);
         return false;
     case VAR_RECT:
         return Detail::SerializeVariantValueType<Rect>(archive, name, value);
