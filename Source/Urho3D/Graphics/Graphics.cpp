@@ -36,6 +36,7 @@
 #include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/LightmapManager.h"
+#include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/OcclusionBuffer.h"
 #include "../Graphics/Octree.h"
@@ -427,6 +428,7 @@ void RegisterGraphicsLibrary(Context* context)
     Drawable::RegisterObject(context);
     Light::RegisterObject(context);
     LightmapManager::RegisterObject(context);
+    LightProbeGroup::RegisterObject(context);
     StaticModel::RegisterObject(context);
     StaticModelGroup::RegisterObject(context);
     Skybox::RegisterObject(context);

@@ -420,6 +420,9 @@ inline Vector2 VectorRound(const Vector2& vec) { return Vector2(Round(vec.x_), R
 /// Per-component ceil of 2-vector.
 inline Vector2 VectorCeil(const Vector2& vec) { return Vector2(Ceil(vec.x_), Ceil(vec.y_)); }
 
+/// Per-component absolute value of 2-vector.
+inline Vector2 VectorAbs(const Vector2& vec) { return Vector2(Abs(vec.x_), Abs(vec.y_)); }
+
 /// Per-component floor of 2-vector. Returns IntVector2.
 inline IntVector2 VectorFloorToInt(const Vector2& vec) { return IntVector2(FloorToInt(vec.x_), FloorToInt(vec.y_)); }
 
@@ -434,6 +437,9 @@ inline IntVector2 VectorMin(const IntVector2& lhs, const IntVector2& rhs) { retu
 
 /// Per-component max of two 2-vectors.
 inline IntVector2 VectorMax(const IntVector2& lhs, const IntVector2& rhs) { return IntVector2(Max(lhs.x_, rhs.x_), Max(lhs.y_, rhs.y_)); }
+
+/// Per-component absolute value of integer 2-vector.
+inline IntVector2 VectorAbs(const IntVector2& vec) { return IntVector2(Abs(vec.x_), Abs(vec.y_)); }
 
 /// Return a random value from [0, 1) from 2-vector seed.
 /// http://stackoverflow.com/questions/12964279/whats-the-origin-of-this-glsl-rand-one-liner
