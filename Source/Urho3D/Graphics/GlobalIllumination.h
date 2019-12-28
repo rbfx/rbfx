@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
 #include "../Scene/Component.h"
 
@@ -46,6 +47,8 @@ struct TetrahedralMesh
     ea::vector<Vector3> vertices_;
     /// Cells.
     ea::vector<AdjacentTetrahedron> cells_;
+    /// Cells circumspheres.
+    ea::vector<Sphere> circumspheres_;
 };
 
 /// Global illumination manager.
