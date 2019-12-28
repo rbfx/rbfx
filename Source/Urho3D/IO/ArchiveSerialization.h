@@ -467,6 +467,7 @@ inline bool SerializeVectorAsBytes(Archive& archive, const char* name, const cha
 template <class T>
 inline bool SerializeVector(Archive& archive, const char* name, const char* element, T& vector)
 {
+    using ValueType = typename T::value_type;
     static constexpr bool standardLayout = std::is_standard_layout<ValueType>::value;
     static constexpr bool triviallyCopyable = std::is_trivially_copyable<ValueType>::value;
 
