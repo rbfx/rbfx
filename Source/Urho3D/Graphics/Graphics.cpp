@@ -32,6 +32,7 @@
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/DecalSet.h"
+#include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/IndexBuffer.h"
@@ -429,6 +430,7 @@ void RegisterGraphicsLibrary(Context* context)
     Light::RegisterObject(context);
     LightmapManager::RegisterObject(context);
     LightProbeGroup::RegisterObject(context);
+    GlobalIllumination::RegisterObject(context);
     StaticModel::RegisterObject(context);
     StaticModelGroup::RegisterObject(context);
     Skybox::RegisterObject(context);
