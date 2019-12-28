@@ -46,6 +46,7 @@ if (NOT MINI_URHO)
 
     if (URHO3D_GLOW)
         add_subdirectory(thekla)
+        add_subdirectory(xatlas)
 
         set (EMBREE_ISPC_SUPPORT OFF CACHE BOOL "")
         set (EMBREE_TUTORIALS OFF CACHE BOOL "")

@@ -140,6 +140,8 @@ public:
     const ea::vector<GeometryView>& GetGeometries() const { return geometries_; }
     /// Return metadata.
     const Variant& GetMetadata(const ea::string& key) const;
+    /// Return mutable geometries.
+    ea::vector<GeometryView>& GetGeometries() { return geometries_; }
 
 private:
     /// Vertex format.

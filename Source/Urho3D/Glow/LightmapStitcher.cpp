@@ -112,7 +112,7 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
     {
         const Vector3 offsetAndWeight = seamsMultitap[i];
         const Vector3 offset = Vector3{ offsetAndWeight.x_, 0.0f, offsetAndWeight.y_ } * texelSize;
-        const float alpha = settings.blendFactor_;// * offsetAndWeight.z_;
+        const float alpha = settings.blendFactor_ * offsetAndWeight.z_;
 
         if (Node* seamsNode = scene->CreateChild("Seams"))
         {
@@ -120,12 +120,10 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
 
             auto material = MakeShared<Material>(context);
             auto technique = cache->GetResource<Technique>(settings.stitchSeamsTechniqueName_);
-            //auto technique = cache->GetResource<Technique>("Techniques/NoTextureUnlitAlpha.xml");
             material->SetTechnique(0, technique);
             material->SetTexture(TU_DIFFUSE, inputTexture);
             material->SetShaderParameter("MatDiffColor", Color(1.0f, 1.0f, 1.0f, alpha));
-            //material->SetShaderParameter("MatDiffColor", Color(1.0f, 0.0f, 0.0f, alpha));
-            material->SetRenderOrder(1);
+            material->SetRenderOrder(1 + i);
 
             auto staticModel = seamsNode->CreateComponent<StaticModel>();
             staticModel->SetModel(seamsModel);

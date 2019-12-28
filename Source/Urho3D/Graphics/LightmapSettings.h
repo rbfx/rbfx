@@ -85,7 +85,7 @@ struct LightmapFilterSettings
 struct LightmapStitchingSettings
 {
     /// Number of iterations.
-    unsigned numIterations_{ 2 };
+    unsigned numIterations_{ 8 };
     /// Blend factor.
     float blendFactor_{ 0.5f };
     /// Render path used for stitching.
