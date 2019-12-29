@@ -61,19 +61,12 @@ static const unsigned FPS_UPDATE_INTERVAL_MS = 500;
 DebugHud::DebugHud(Context* context)
     : Object(context)
 {
-    SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { RenderUI(mode_); });
+    SubscribeToEvent(E_UPDATE, URHO3D_HANDLER(DebugHud, OnRenderDebugUI));
 }
 
 DebugHud::~DebugHud()
 {
     UnsubscribeFromAllEvents();
-}
-
-void DebugHud::SetExtents(const IntVector2& position, const IntVector2& size)
-{
-    pos_ = ToImGui(position);
-    size_ = ToImGui(size);
-    explicitPosition_ = true;
 }
 
 void DebugHud::SetMode(DebugHudModeFlags mode)
@@ -143,75 +136,82 @@ void DebugHud::RenderUI(DebugHudModeFlags mode)
 
     Renderer* renderer = GetSubsystem<Renderer>();
     Graphics* graphics = GetSubsystem<Graphics>();
-    ImGuiViewport* viewport = ui::GetMainViewport();
+    if (mode & DEBUGHUD_SHOW_STATS)
+    {
+        // Update stats regardless of them being shown.
+        if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
+        {
+            fps_ = static_cast<unsigned int>(Round(context_->GetTime()->GetFramesPerSecond()));
+            fpsTimer_.Reset();
+        }
 
-    if (explicitPosition_)
-    {
-        ui::SetNextWindowPos(pos_);
-        ui::SetNextWindowSize(size_);
+        ea::string stats;
+        unsigned primitives, batches;
+        if (!useRendererStats_)
+        {
+            primitives = graphics->GetNumPrimitives();
+            batches = graphics->GetNumBatches();
+        }
+        else
+        {
+            primitives = context_->GetRenderer()->GetNumPrimitives();
+            batches = context_->GetRenderer()->GetNumBatches();
+        }
+
+        float left_offset = ui::GetCursorPos().x;
+
+        ui::Text("FPS %d", fps_);
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Triangles %u", primitives);
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Batches %u", batches);
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Views %u", renderer->GetNumViews());
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Lights %u", renderer->GetNumLights(true));
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps(true));
+        ui::SetCursorPosX(left_offset);
+        ui::Text("Occluders %u", renderer->GetNumOccluders(true));
+        ui::SetCursorPosX(left_offset);
+
+        for (auto i = appStats_.begin(); i != appStats_.end(); ++i)
+        {
+            ui::Text("%s %s", i->first.c_str(), i->second.c_str());
+            ui::SetCursorPosX(left_offset);
+        }
     }
-    else
+
+    if (mode & DEBUGHUD_SHOW_MODE)
     {
-        ui::SetNextWindowPos(viewport->Pos);
-        ui::SetNextWindowSize(viewport->Size);
+        const ImGuiStyle& style = ui::GetStyle();
+        const ImGuiContext& g = *ui::GetCurrentContext();
+        ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - g.Font->FontSize});
+        ui::Text("Tex:%s | Mat:%s | Spec:%s | Shadows:%s | Size:%i | Quality:%s | Occlusion:%s | Instancing:%s | API:%s",
+            qualityTexts[renderer->GetTextureQuality()],
+            qualityTexts[renderer->GetMaterialQuality()],
+            renderer->GetSpecularLighting() ? "On" : "Off",
+            renderer->GetDrawShadows() ? "On" : "Off",
+            renderer->GetShadowMapSize(),
+            shadowQualityTexts[renderer->GetShadowQuality()],
+            renderer->GetMaxOccluderTriangles() > 0 ? "On" : "Off",
+            renderer->GetDynamicInstancing() ? "On" : "Off",
+            graphics->GetApiName().c_str());
     }
+}
+
+void DebugHud::OnRenderDebugUI(StringHash, VariantMap&)
+{
+    ImGuiViewport* viewport = ui::GetMainViewport();
+    ui::SetNextWindowPos(viewport->Pos);
+    ui::SetNextWindowSize(viewport->Size);
     ui::SetNextWindowViewport(viewport->ID);
     ui::PushStyleColor(ImGuiCol_WindowBg, 0);
     ui::PushStyleColor(ImGuiCol_Border, 0);
-    if (ui::Begin("DebugHud", nullptr, ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar |
-        ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar))
-    {
-        if (mode & DEBUGHUD_SHOW_STATS)
-        {
-            // Update stats regardless of them being shown.
-            if (fpsTimer_.GetMSec(false) > FPS_UPDATE_INTERVAL_MS)
-            {
-                fps_ = static_cast<unsigned int>(Round(context_->GetTime()->GetFramesPerSecond()));
-                fpsTimer_.Reset();
-            }
-
-            ea::string stats;
-            unsigned primitives, batches;
-            if (!useRendererStats_)
-            {
-                primitives = graphics->GetNumPrimitives();
-                batches = graphics->GetNumBatches();
-            }
-            else
-            {
-                primitives = context_->GetRenderer()->GetNumPrimitives();
-                batches = context_->GetRenderer()->GetNumBatches();
-            }
-
-            ui::Text("FPS %d", fps_);
-            ui::Text("Triangles %u", primitives);
-            ui::Text("Batches %u", batches);
-            ui::Text("Views %u", renderer->GetNumViews());
-            ui::Text("Lights %u", renderer->GetNumLights(true));
-            ui::Text("Shadowmaps %u", renderer->GetNumShadowMaps(true));
-            ui::Text("Occluders %u", renderer->GetNumOccluders(true));
-
-            for (auto i = appStats_.begin(); i !=
-                appStats_.end(); ++i)
-                ui::Text("%s %s", i->first.c_str(), i->second.c_str());
-        }
-
-        if (mode & DEBUGHUD_SHOW_MODE)
-        {
-            auto& style = ui::GetStyle();
-            ui::SetCursorPos({style.WindowPadding.x, ui::GetWindowSize().y - ui::GetStyle().WindowPadding.y - 10});
-            ui::Text("Tex:%s | Mat:%s | Spec:%s | Shadows:%s | Size:%i | Quality:%s | Occlusion:%s | Instancing:%s | API:%s",
-                qualityTexts[renderer->GetTextureQuality()],
-                qualityTexts[renderer->GetMaterialQuality()],
-                renderer->GetSpecularLighting() ? "On" : "Off",
-                renderer->GetDrawShadows() ? "On" : "Off",
-                renderer->GetShadowMapSize(),
-                shadowQualityTexts[renderer->GetShadowQuality()],
-                renderer->GetMaxOccluderTriangles() > 0 ? "On" : "Off",
-                renderer->GetDynamicInstancing() ? "On" : "Off",
-                graphics->GetApiName().c_str());
-        }
-    }
+    unsigned flags = ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoMove |
+                     ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoScrollbar;
+    if (ui::Begin("DebugHud", nullptr, flags))
+        RenderUI(mode_);
     ui::End();
     ui::PopStyleColor(2);
 }
