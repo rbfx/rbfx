@@ -99,10 +99,6 @@ public:
     /// \param outCenter If returns true, it gets the center, else it will be set to ZERO vector
     /// \returns Returns the number of selected nodes.
     const int GetSelectionCenter(Vector3& outCenter) const;
-    /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
-    void SetScreenRect(const IntVector2& pos, const IntVector2& size);
-    /// Set screen rect to which gizmo rendering will be limited. Use when putting gizmo in a window.
-    void SetScreenRect(const IntRect& rect);
 
 protected:
 
@@ -118,10 +114,6 @@ protected:
     ea::vector<WeakPtr<Node> > nodeSelection_;
     /// Camera which is used for automatic node selection in the scene camera belongs to.
     WeakPtr<Camera> autoModeCamera_;
-    /// Position of display area gizmo is rendered in.
-    ImVec2 displayPos_{};
-    /// Size of display area gizmo is rendered in.
-    ImVec2 displaySize_{};
     /// Flag indicating that gizmo was active on the last frame.
     bool wasActive_ = false;
     /// A map of initial transforms.
