@@ -107,13 +107,8 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& no
     Matrix4 tran = currentOrigin_.Transpose();
     Matrix4 delta;
 
-    ImGuiIO& io = ImGui::GetIO();
-
-    auto pos = displayPos_;
-    auto size = displaySize_;
-    if (size.x == 0 && size.y == 0)
-        size = io.DisplaySize;
-    ImGuizmo::SetRect(pos.x, pos.y, size.x, size.y);
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ImGuizmo::SetRect(window->Pos.x, window->Pos.y, window->Size.x, window->Size.y);
     ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
 
     if (IsActive())
@@ -313,19 +308,6 @@ const int Gizmo::GetSelectionCenter(Vector3& outCenter) const
 {
     int ret = GetSelectionCenter(outCenter, GetSelection());
     return ret;
-}
-
-void Gizmo::SetScreenRect(const IntVector2& pos, const IntVector2& size)
-{
-    displayPos_ = ToImGui(pos);
-    displaySize_ = ToImGui(size);
-}
-
-void Gizmo::SetScreenRect(const IntRect& rect)
-{
-    displayPos_ = ToImGui(rect.Min());
-    displaySize_.x = rect.Width();
-    displaySize_.y = rect.Height();
 }
 
 }
