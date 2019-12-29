@@ -40,6 +40,12 @@ struct LightProbe
     Vector3 position_;
     /// Incoming light baked into spherical harmonics.
     SphericalHarmonicsDot9 bakedLight_;
+    /// Return debug color.
+    Color GetDebugColor() const
+    {
+        const Vector3 average = bakedLight_.EvaluateAverage();
+        return { Pow(average.x_, 1 / 2.2f), Pow(average.y_, 1 / 2.2f), Pow(average.z_, 1 / 2.2f) };
+    }
 };
 
 /// Vector of light probes.
@@ -72,8 +78,14 @@ struct LightProbeCollection
         boundingBox.max_ += padding;
         return boundingBox;
     }
-    /// Reset collection.
-    void Reset()
+    /// Reset baked data in all probes.
+    void ResetBakedData()
+    {
+        for (LightProbe& probe : lightProbes_)
+            probe.bakedLight_ = SphericalHarmonicsDot9{};
+    }
+    /// Clear collection.
+    void Clear()
     {
         lightProbes_.clear();
         worldPositions_.clear();
@@ -107,6 +119,8 @@ public:
     static void CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection);
     /// Collect all light probes from all enabled groups in the scene.
     static void CollectLightProbes(Scene* scene, LightProbeCollection& collection);
+    /// Commit all light probes to corresponding groups.
+    static void CommitLightProbes(const LightProbeCollection& collection);
 
     /// Arrange light probes in scale.x*scale.y*scale.z volume around the node.
     void ArrangeLightProbes();
