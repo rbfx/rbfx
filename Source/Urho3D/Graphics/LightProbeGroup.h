@@ -24,11 +24,14 @@
 
 #pragma once
 
+#include "../Math/BoundingBox.h"
 #include "../Math/SphericalHarmonics.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D
 {
+
+class LightProbeGroup;
 
 /// Light probe description.
 struct LightProbe
@@ -37,6 +40,47 @@ struct LightProbe
     Vector3 position_;
     /// Incoming light baked into spherical harmonics.
     SphericalHarmonicsDot9 bakedLight_;
+};
+
+/// Vector of light probes.
+using LightProbeVector = ea::vector<LightProbe>;
+
+/// Light probes from multiple light probe groups.
+struct LightProbeCollection
+{
+    /// Light probes.
+    LightProbeVector lightProbes_;
+    /// World-space positions of light probes.
+    ea::vector<Vector3> worldPositions_;
+
+    /// Owner group.
+    ea::vector<WeakPtr<LightProbeGroup>> owners_;
+    /// First light probe owned by corresponding group.
+    ea::vector<unsigned> offsets_;
+    /// Number of light probes owned by corresponding group.
+    ea::vector<unsigned> counts_;
+
+    /// Return whether the collection is empty.
+    bool Empty() const { return lightProbes_.empty(); }
+    /// Return total size.
+    unsigned Size() const { return lightProbes_.size(); }
+    /// Calculate padded bounding box.
+    BoundingBox CalculateBoundingBox(const Vector3& padding = Vector3::ZERO)
+    {
+        BoundingBox boundingBox(worldPositions_.data(), worldPositions_.size());
+        boundingBox.min_ -= padding;
+        boundingBox.max_ += padding;
+        return boundingBox;
+    }
+    /// Reset collection.
+    void Reset()
+    {
+        lightProbes_.clear();
+        worldPositions_.clear();
+        owners_.clear();
+        offsets_.clear();
+        counts_.clear();
+    }
 };
 
 /// Light probe group.
@@ -59,6 +103,11 @@ public:
     /// Visualize the component as debug geometry.
     void DrawDebugGeometry(DebugRenderer* debug, bool depthTest) override;
 
+    /// Collect all light probes from specified groups.
+    static void CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection);
+    /// Collect all light probes from all enabled groups in the scene.
+    static void CollectLightProbes(Scene* scene, LightProbeCollection& collection);
+
     /// Arrange light probes in scale.x*scale.y*scale.z volume around the node.
     void ArrangeLightProbes();
 
@@ -72,9 +121,9 @@ public:
     float GetAutoPlacementStep() const { return autoPlacementStep_; }
 
     /// Set light probes.
-    void SetLightProbes(const ea::vector<LightProbe>& lightProbes) { lightProbes_ = lightProbes; }
+    void SetLightProbes(const LightProbeVector& lightProbes) { lightProbes_ = lightProbes; }
     /// Return light probes.
-    const ea::vector<LightProbe>& GetLightProbes() const { return lightProbes_; }
+    const LightProbeVector& GetLightProbes() const { return lightProbes_; }
 
     /// Set serialized light probes data.
     void SetLightProbesData(const VariantBuffer& data);
@@ -88,7 +137,7 @@ protected:
     void OnMarkedDirty(Node* node) override;
 
     /// Light probes.
-    ea::vector<LightProbe> lightProbes_;
+    LightProbeVector lightProbes_;
     /// Whether the auto placement is enabled.
     bool autoPlacementEnabled_{ true };
     /// Automatic placement step.

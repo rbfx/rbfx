@@ -30,6 +30,7 @@
 #include "../IO/BinaryArchive.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Scene/Node.h"
+#include "../Scene/Scene.h"
 
 namespace Urho3D
 {
@@ -64,6 +65,41 @@ void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         const Color color = static_cast<Color>(probe.bakedLight_.EvaluateAverage());
         debug->AddSphere(Sphere(worldPosition, 0.1f), color);
     }
+}
+
+void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection)
+{
+    // Initialize offset according to current state of collection
+    unsigned offset = collection.lightProbes_.size();
+
+    for (LightProbeGroup* group : lightProbeGroups)
+    {
+        Node* node = group->GetNode();
+        const LightProbeVector& probes = group->GetLightProbes();
+
+        collection.owners_.push_back(WeakPtr<LightProbeGroup>(group));
+        collection.offsets_.push_back(offset);
+        collection.counts_.push_back(probes.size());
+        offset += probes.size();
+
+        for (const LightProbe& probe : probes)
+        {
+            const Vector3 worldPosition = node->LocalToWorld(probe.position_);
+            collection.lightProbes_.push_back(probe);
+            collection.worldPositions_.push_back(worldPosition);
+        }
+    }
+}
+
+void LightProbeGroup::CollectLightProbes(Scene* scene, LightProbeCollection& collection)
+{
+    ea::vector<LightProbeGroup*> lightProbeGroups;
+    scene->GetComponents(lightProbeGroups, true);
+
+    const auto isNotEnabled = [](const LightProbeGroup* lightProbeGroup) { return !lightProbeGroup->IsEnabledEffective(); };
+    lightProbeGroups.erase(ea::remove_if(lightProbeGroups.begin(), lightProbeGroups.end(), isNotEnabled), lightProbeGroups.end());
+
+    CollectLightProbes(lightProbeGroups, collection);
 }
 
 void LightProbeGroup::ArrangeLightProbes()
@@ -129,7 +165,7 @@ VariantBuffer LightProbeGroup::GetLightProbesData() const
 {
     VectorBuffer buffer;
     BinaryOutputArchive archive(context_, buffer);
-    SerializeVectorAsBytes(archive, "LightProbes", "LightProbe", const_cast<ea::vector<LightProbe>&>(lightProbes_));
+    SerializeVectorAsBytes(archive, "LightProbes", "LightProbe", const_cast<LightProbeVector&>(lightProbes_));
     return buffer.GetBuffer();
 }
 

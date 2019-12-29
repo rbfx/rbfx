@@ -81,8 +81,8 @@ public:
 private:
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;
-    /// Light probes data.
-    ea::vector<LightProbe> lightProbes_;
+    /// Light probes collection.
+    LightProbeCollection lightProbesCollection_;
 };
 
 }
