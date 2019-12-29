@@ -311,6 +311,9 @@ public:
     /// Return the maximum view-space depth.
     float GetMaxZ() const { return maxZ_; }
 
+    /// Return mutable light probe tetrahedron hint.
+    unsigned& GetMutableLightProbeTetrahedronHint() { return lightProbeTetrahedronHint_; }
+
     /// Add a per-pixel light affecting the object this frame.
     void AddLight(Light* light)
     {
@@ -400,6 +403,8 @@ protected:
     float maxZ_;
     /// LOD bias.
     float lodBias_;
+    /// Light probe tetrahedron hint.
+    unsigned lightProbeTetrahedronHint_{ M_MAX_UNSIGNED };
     /// Base pass flags, bit per batch.
     unsigned basePassFlags_;
     /// Maximum per-pixel lights.
