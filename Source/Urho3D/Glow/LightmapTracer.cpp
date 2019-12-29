@@ -185,6 +185,8 @@ struct ChartIndirectTracingKernel
 
     /// Return number of elements to trace.
     unsigned GetNumElements() const { return bakedIndirect_->light_.size(); }
+    /// Return number of samples.
+    unsigned GetNumSamples() const { return settings_->numIndirectChartSamples_; }
     /// Begin tracing element.
     ChartIndirectTracingElement BeginElement(unsigned elementIndex) const
     {
@@ -197,6 +199,70 @@ struct ChartIndirectTracingKernel
     void EndElement(unsigned elementIndex, const ChartIndirectTracingElement& element)
     {
         bakedIndirect_->light_[elementIndex] += element.indirectLight_;
+    }
+};
+
+/// Light probe indirect tracing: tracing element.
+struct LightProbeIndirectTracingElement
+{
+    /// Position.
+    Vector3 position_;
+
+    /// Current direction.
+    Vector3 currentDirection_;
+    /// Indirect light SH.
+    SphericalHarmonicsColor9 sh_;
+    /// Indirect light average value.
+    Vector3 average_;
+    /// Weight.
+    float weight_{};
+
+    /// Returns whether element is valid.
+    explicit operator bool() const { return true; }
+    /// Begin sample. Return position, normal and initial ray direction.
+    void BeginSample(unsigned /*sampleIndex*/, Vector3& position, Vector3& normal, Vector3& rayDirection)
+    {
+        position = position_;
+        RandomDirection(currentDirection_);
+        normal = currentDirection_;
+        rayDirection = currentDirection_;
+    }
+    /// End sample.
+    void EndSample(const Vector3& light)
+    {
+        sh_ += SphericalHarmonicsColor9(currentDirection_, light);
+        average_ += light;
+        weight_ += 1.0f;
+    }
+};
+
+/// Light probe indirect tracing: tracing kernel.
+struct LightProbeIndirectTracingKernel
+{
+    /// Light probes collection.
+    LightProbeCollection* collection_{};
+    /// Settings.
+    const LightmapTracingSettings* settings_{};
+
+    /// Return number of elements to trace.
+    unsigned GetNumElements() const { return collection_->Size(); }
+    /// Return number of samples.
+    unsigned GetNumSamples() const { return settings_->numIndirectProbeSamples_; }
+    /// Begin tracing element.
+    LightProbeIndirectTracingElement BeginElement(unsigned elementIndex) const
+    {
+        const Vector3& position = collection_->worldPositions_[elementIndex];
+        return { position };
+    };
+    /// Begin tracing value.
+    void EndElement(unsigned elementIndex, const LightProbeIndirectTracingElement& element)
+    {
+        const SphericalHarmonicsDot9 sh{ element.sh_ * (M_PI / element.weight_) };
+        collection_->lightProbes_[elementIndex].bakedLight_ += sh;
+
+        Vector3 av1 = element.average_ / element.weight_;
+        Vector3 av2 = element.sh_.EvaluateAverage();
+        av2 = av1;
     }
 };
 
@@ -233,7 +299,7 @@ void TraceIndirectLight(T& kernel, const ea::vector<const LightmapChartBakedDire
             if (!element)
                 continue;
 
-            for (unsigned sampleIndex = 0; sampleIndex < settings.numIndirectSamples_; ++sampleIndex)
+            for (unsigned sampleIndex = 0; sampleIndex < settings.numIndirectChartSamples_; ++sampleIndex)
             {
                 Vector3 currentPosition;
                 Vector3 currentNormal;
@@ -389,11 +455,19 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
     });
 }
 
-void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
+void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
     ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &settings };
+    TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
+}
+
+void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
+    const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
+    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
+{
+    LightProbeIndirectTracingKernel kernel{ &collection };
     TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
 }
 

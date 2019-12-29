@@ -62,8 +62,7 @@ void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     for (const LightProbe& probe : lightProbes_)
     {
         const Vector3 worldPosition = node_->LocalToWorld(probe.position_);
-        const Color color = static_cast<Color>(probe.bakedLight_.EvaluateAverage());
-        debug->AddSphere(Sphere(worldPosition, 0.1f), color);
+        debug->AddSphere(Sphere(worldPosition, 0.1f), probe.GetDebugColor());
     }
 }
 
@@ -100,6 +99,19 @@ void LightProbeGroup::CollectLightProbes(Scene* scene, LightProbeCollection& col
     lightProbeGroups.erase(ea::remove_if(lightProbeGroups.begin(), lightProbeGroups.end(), isNotEnabled), lightProbeGroups.end());
 
     CollectLightProbes(lightProbeGroups, collection);
+}
+
+void LightProbeGroup::CommitLightProbes(const LightProbeCollection& collection)
+{
+    for (unsigned i = 0; i < collection.owners_.size(); ++i)
+    {
+        if (LightProbeGroup* owner = collection.owners_[i])
+        {
+            const auto begin = collection.lightProbes_.begin() + collection.offsets_[i];
+            const auto end = begin + collection.counts_[i];
+            owner->SetLightProbes({ begin, end });
+        }
+    }
 }
 
 void LightProbeGroup::ArrangeLightProbes()

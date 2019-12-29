@@ -213,10 +213,24 @@ struct SphericalHarmonicsDot9
         result += C_ * c;
         return result;
     }
+
     /// Evaluate average.
     Vector3 EvaluateAverage() const
     {
         return { Ar_.w_, Ag_.w_, Ab_.w_ };
+    }
+
+    /// Accumulate spherical harmonics (inplace).
+    SphericalHarmonicsDot9& operator +=(const SphericalHarmonicsDot9& rhs)
+    {
+        Ar_ += rhs.Ar_;
+        Ag_ += rhs.Ag_;
+        Ab_ += rhs.Ab_;
+        Br_ += rhs.Br_;
+        Bg_ += rhs.Bg_;
+        Bb_ += rhs.Bb_;
+        C_ += rhs.C_;
+        return *this;
     }
 
     /// Dot product with (Nx, Ny, Nz, 1), red channel.
