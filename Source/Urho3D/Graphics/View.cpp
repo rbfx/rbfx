@@ -30,6 +30,7 @@
 #include "../Graphics/Camera.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Geometry.h"
+#include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsEvents.h"
 #include "../Graphics/GraphicsImpl.h"
@@ -61,8 +62,14 @@ namespace Urho3D
 {
 
 /// Return ambient for Drawable.
-static Vector4 GetZoneAmbient(Drawable* /*drawable*/, Zone* zone)
+static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
 {
+    if (gi)
+    {
+        unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
+        const Vector3& position = drawable->GetNode()->GetWorldPosition();
+        return { gi->SampleAverageAmbient(position, hint), 1.0f };
+    }
     // TODO(glow): Add zone gradient or remove Zones at all
     return zone->GetAmbientColor().ToVector4();
 }
@@ -371,6 +378,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
             lightVolumeCommand_ = sourceView_->lightVolumeCommand_;
             forwardLightsCommand_ = sourceView_->forwardLightsCommand_;
             octree_ = sourceView_->octree_;
+            globalIllumination_ = sourceView_->globalIllumination_;
             return true;
         }
         else
@@ -469,6 +477,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
     }
 
     octree_ = nullptr;
+    globalIllumination_ = nullptr;
     // Get default zone first in case we do not have zones defined
     cameraZone_ = farClipZone_ = renderer_->GetDefaultZone();
 
@@ -482,6 +491,7 @@ bool View::Define(RenderSurface* renderTarget, Viewport* viewport)
             return false;
 
         octree_ = scene_->GetComponent<Octree>();
+        globalIllumination_ = scene_->GetComponent<GlobalIllumination>();
         if (!octree_)
             return false;
 
@@ -1242,7 +1252,7 @@ void View::GetBaseBatches()
                 Batch destBatch(srcBatch);
                 destBatch.pass_ = pass;
                 destBatch.zone_ = GetZone(drawable);
-                destBatch.ambient_ = GetZoneAmbient(drawable, destBatch.zone_);
+                destBatch.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_),
                 destBatch.isBase_ = true;
                 destBatch.lightMask_ = (unsigned char)GetLightMask(drawable);
 
@@ -1443,7 +1453,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
         destBatch.lightQueue_ = &lightQueue;
         destBatch.zone_ = zone;
-        destBatch.ambient_ = GetZoneAmbient(drawable, destBatch.zone_);
+        destBatch.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_);
 
         if (!isLitAlpha)
         {

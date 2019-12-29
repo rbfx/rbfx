@@ -101,6 +101,8 @@ void Drawable::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Light Mask", int, lightMask_, DEFAULT_LIGHTMASK, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Shadow Mask", int, shadowMask_, DEFAULT_SHADOWMASK, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Zone Mask", GetZoneMask, SetZoneMask, unsigned, DEFAULT_ZONEMASK, AM_DEFAULT);
+    // TODO(glow): Not sure if we want to keep it anywhere
+    // URHO3D_ATTRIBUTE("Light Probe Tetrahedron Hint", unsigned, lightProbeTetrahedronHint_, M_MAX_UNSIGNED, AM_FILE | AM_NOEDIT);
 }
 
 void Drawable::OnSetEnabled()

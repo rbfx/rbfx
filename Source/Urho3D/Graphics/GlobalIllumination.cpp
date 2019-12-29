@@ -115,6 +115,15 @@ void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
     }
 };
 
+/// Return barycentric coordinates withing tetrahedron.
+Vector4 GetBarycentricCoords(const TetrahedralMesh& mesh, unsigned cellIndex, const Vector3& position)
+{
+    const AdjacentTetrahedron& cell = mesh.cells_[cellIndex];
+    const Vector3& basePosition = mesh.vertices_[cell.indices_[0]];
+    const Vector3 coords = cell.barycentricInverse_ * (position - basePosition);
+    return { 1.0f - coords.x_ - coords.y_ - coords.z_, coords.x_, coords.y_, coords.z_ };
+};
+
 /// Tetrahedron for Delaunay triangulation.
 struct DelaunayTetrahedron
 {
@@ -411,6 +420,23 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             mesh.cells_[i].indices_[j] -= 8;
     }
 
+    for (unsigned i = 0; i < mesh.cells_.size(); ++i)
+    {
+        AdjacentTetrahedron& cell = mesh.cells_[i];
+        const Vector3 p0 = mesh.vertices_[cell.indices_[0]];
+        const Vector3 p1 = mesh.vertices_[cell.indices_[1]];
+        const Vector3 p2 = mesh.vertices_[cell.indices_[2]];
+        const Vector3 p3 = mesh.vertices_[cell.indices_[3]];
+        const Vector3 u1 = p1 - p0;
+        const Vector3 u2 = p2 - p0;
+        const Vector3 u3 = p3 - p0;
+        cell.barycentricInverse_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
+        assert(GetBarycentricCoords(mesh, i, p0).Equals(Vector4(1, 0, 0, 0)));
+        assert(GetBarycentricCoords(mesh, i, p1).Equals(Vector4(0, 1, 0, 0)));
+        assert(GetBarycentricCoords(mesh, i, p2).Equals(Vector4(0, 0, 1, 0)));
+        assert(GetBarycentricCoords(mesh, i, p3).Equals(Vector4(0, 0, 0, 1)));
+    }
+
     assert(IsTetrahedralMeshAdjacencyValid(mesh));
 }
 
@@ -490,5 +516,48 @@ void GlobalIllumination::CompileLightProbes()
     AddTetrahedralMeshVertices(lightProbesMesh_, positions);
 }
 
+Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsigned& hint) const
+{
+    const unsigned maxIters = lightProbes_.size();
+    if (hint >= maxIters)
+        hint = 0;
+
+    Vector4 weights;
+    for (unsigned i = 0; i < maxIters; ++i)
+    {
+        weights = GetBarycentricCoords(lightProbesMesh_, hint, position);
+        if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
+            return weights;
+
+        if (weights.x_ < weights.y_ && weights.x_ < weights.z_ && weights.x_ < weights.w_)
+            hint = lightProbesMesh_.cells_[hint].neighbors_[0];
+        else if (weights.y_ < weights.z_ && weights.y_ < weights.w_)
+            hint = lightProbesMesh_.cells_[hint].neighbors_[1];
+        else if (weights.z_ < weights.w_)
+            hint = lightProbesMesh_.cells_[hint].neighbors_[2];
+        else
+            hint = lightProbesMesh_.cells_[hint].neighbors_[3];
+
+        // TODO(glow): Need to handle it more gracefully
+        if (hint == M_MAX_UNSIGNED)
+            break;
+    }
+    return weights;
+}
+
+Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsigned& hint) const
+{
+    // TODO(glow): Use real ambient here
+    const Vector4& weights = SampleLightProbeMesh(position, hint);
+    if (hint >= lightProbesMesh_.cells_.size())
+        return Vector3::ZERO;
+
+    const AdjacentTetrahedron& tetrahedron = lightProbesMesh_.cells_[hint];
+
+    Vector3 ambient;
+    for (unsigned i = 0; i < 4; ++i)
+        ambient += weights[i] * lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage();
+    return ambient;
+}
 
 }
