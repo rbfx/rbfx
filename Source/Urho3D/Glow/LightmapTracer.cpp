@@ -144,6 +144,175 @@ float CalculateEdgeWeight(
     return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
 }
 
+/// Indirect light tracing for charts: tracing element.
+struct ChartIndirectTracingElement
+{
+    /// Position.
+    Vector3 position_;
+    /// Normal.
+    Vector3 normal_;
+    /// Geometry ID.
+    unsigned geometryId_;
+
+    /// Indirect light value.
+    Vector4 indirectLight_;
+
+    /// Returns whether element is valid.
+    explicit operator bool() const { return geometryId_ != 0; }
+    /// Begin sample. Return position, normal and initial ray direction.
+    void BeginSample(unsigned /*sampleIndex*/, Vector3& position, Vector3& normal, Vector3& rayDirection) const
+    {
+        position = position_;
+        normal = normal_;
+        rayDirection = RandomHemisphereDirection(normal_);
+    }
+    /// End sample.
+    void EndSample(const Vector3& light)
+    {
+        indirectLight_ += Vector4(light, 1.0f);
+    }
+};
+
+/// Indirect light tracing for charts: tracing kernel.
+struct ChartIndirectTracingKernel
+{
+    /// Indirect light chart.
+    LightmapChartBakedIndirect* bakedIndirect_{};
+    /// Geometry buffer.
+    const LightmapChartGeometryBuffer* geometryBuffer_{};
+    /// Settings.
+    const LightmapTracingSettings* settings_{};
+
+    /// Return number of elements to trace.
+    unsigned GetNumElements() const { return bakedIndirect_->light_.size(); }
+    /// Begin tracing element.
+    ChartIndirectTracingElement BeginElement(unsigned elementIndex) const
+    {
+        const Vector3& position = geometryBuffer_->geometryPositions_[elementIndex];
+        const unsigned& geometryId = geometryBuffer_->geometryIds_[elementIndex];
+        const Vector3& normal = geometryBuffer_->smoothNormals_[elementIndex];
+        return { position + normal * settings_->rayPositionOffset_, normal, geometryId };
+    };
+    /// Begin tracing value.
+    void EndElement(unsigned elementIndex, const ChartIndirectTracingElement& element)
+    {
+        bakedIndirect_->light_[elementIndex] += element.indirectLight_;
+    }
+};
+
+/// Trace indirect lighting.
+template <class T>
+void TraceIndirectLight(T& kernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
+    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
+{
+    assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
+
+    ParallelFor(kernel.GetNumElements(), settings.numThreads_,
+        [&](unsigned fromIndex, unsigned toIndex)
+    {
+        RTCScene scene = embreeScene.GetEmbreeScene();
+        const float maxDistance = embreeScene.GetMaxDistance();
+        const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
+
+        Vector3 incomingSamples[LightmapTracingSettings::MaxBounces];
+        float incomingFactors[LightmapTracingSettings::MaxBounces];
+
+        RTCRayHit rayHit;
+        RTCIntersectContext rayContext;
+        rtcInitIntersectContext(&rayContext);
+
+        rayHit.ray.tnear = 0.0f;
+        rayHit.ray.time = 0.0f;
+        rayHit.ray.id = 0;
+        rayHit.ray.mask = 0xffffffff;
+        rayHit.ray.flags = 0xffffffff;
+
+        for (unsigned elementIndex = fromIndex; elementIndex < toIndex; ++elementIndex)
+        {
+            auto element = kernel.BeginElement(elementIndex);
+            if (!element)
+                continue;
+
+            for (unsigned sampleIndex = 0; sampleIndex < settings.numIndirectSamples_; ++sampleIndex)
+            {
+                Vector3 currentPosition;
+                Vector3 currentNormal;
+                Vector3 currentRayDirection;
+                element.BeginSample(sampleIndex, currentPosition, currentNormal, currentRayDirection);
+
+                int numBounces = 0;
+                for (unsigned bounceIndex = 0; bounceIndex < settings.numBounces_; ++bounceIndex)
+                {
+                    rayHit.ray.org_x = currentPosition.x_;
+                    rayHit.ray.org_y = currentPosition.y_;
+                    rayHit.ray.org_z = currentPosition.z_;
+                    rayHit.ray.dir_x = currentRayDirection.x_;
+                    rayHit.ray.dir_y = currentRayDirection.y_;
+                    rayHit.ray.dir_z = currentRayDirection.z_;
+                    rayHit.ray.tfar = maxDistance;
+                    rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                    rtcIntersect1(scene, &rayContext, &rayHit);
+
+                    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
+                        break;
+
+                    // Check normal orientation
+                    if (currentRayDirection.DotProduct({ rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z }) > 0.0f)
+                        break;
+
+                    // Sample lightmap UV
+                    const EmbreeGeometry& geometry = geometryIndex[rayHit.hit.geomID];
+                    Vector2 lightmapUV;
+                    rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
+
+                    // Modify incoming flux
+                    const float probability = 1 / (2 * M_PI);
+                    const float cosTheta = currentRayDirection.DotProduct(currentNormal);
+                    const float reflectance = 1 / M_PI;
+                    const float brdf = reflectance / M_PI;
+
+                    // TODO: Use real index here
+                    const unsigned lightmapIndex = geometry.lightmapIndex_;
+                    const IntVector2 sampleLocation = bakedDirect[lightmapIndex]->GetNearestLocation(lightmapUV);
+                    incomingSamples[bounceIndex] = bakedDirect[lightmapIndex]->GetSurfaceLight(sampleLocation);
+                    incomingFactors[bounceIndex] = brdf * cosTheta / probability;
+                    ++numBounces;
+
+                    // Go to next hemisphere
+                    if (numBounces < settings.numBounces_)
+                    {
+                        // Move to hit position
+                        currentPosition.x_ = rayHit.ray.org_x + rayHit.ray.dir_x * rayHit.ray.tfar;
+                        currentPosition.y_ = rayHit.ray.org_y + rayHit.ray.dir_y * rayHit.ray.tfar;
+                        currentPosition.z_ = rayHit.ray.org_z + rayHit.ray.dir_z * rayHit.ray.tfar;
+
+                        // Offset position a bit
+                        const Vector3 hitNormal = Vector3(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z).Normalized();
+                        currentPosition.x_ += hitNormal.x_ * settings.rayPositionOffset_;
+                        currentPosition.y_ += hitNormal.y_ * settings.rayPositionOffset_;
+                        currentPosition.z_ += hitNormal.z_ * settings.rayPositionOffset_;
+
+                        currentNormal = hitNormal;
+                        currentRayDirection = RandomHemisphereDirection(currentNormal);
+                    }
+                }
+
+                // Accumulate samples back-to-front
+                Vector3 sampleIndirectLight;
+                for (int bounceIndex = numBounces - 1; bounceIndex >= 0; --bounceIndex)
+                {
+                    sampleIndirectLight += incomingSamples[bounceIndex];
+                    sampleIndirectLight *= incomingFactors[bounceIndex];
+                }
+
+                element.EndSample(sampleIndirectLight);
+            }
+            kernel.EndElement(elementIndex, element);
+        }
+    });
+}
+
 }
 
 ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(
@@ -224,108 +393,8 @@ void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
-    assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
-
-    ParallelFor(bakedIndirect.light_.size(), settings.numThreads_,
-        [&](unsigned fromIndex, unsigned toIndex)
-    {
-        RTCScene scene = embreeScene.GetEmbreeScene();
-        const float maxDistance = embreeScene.GetMaxDistance();
-        const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
-
-        Vector3 incomingSamples[LightmapTracingSettings::MaxBounces];
-        float incomingFactors[LightmapTracingSettings::MaxBounces];
-
-        RTCRayHit rayHit;
-        RTCIntersectContext rayContext;
-        rtcInitIntersectContext(&rayContext);
-
-        rayHit.ray.tnear = 0.0f;
-        rayHit.ray.time = 0.0f;
-        rayHit.ray.id = 0;
-        rayHit.ray.mask = 0xffffffff;
-        rayHit.ray.flags = 0xffffffff;
-
-        for (unsigned texelIndex = fromIndex; texelIndex < toIndex; ++texelIndex)
-        {
-            const Vector3 position = geometryBuffer.geometryPositions_[texelIndex];
-            const Vector3 smoothNormal = geometryBuffer.smoothNormals_[texelIndex];
-            const unsigned geometryId = geometryBuffer.geometryIds_[texelIndex];
-
-            if (!geometryId)
-                continue;
-
-            Vector4 indirectLight;
-            for (unsigned sampleIndex = 0; sampleIndex < settings.numIndirectSamples_; ++sampleIndex)
-            {
-                int numBounces = 0;
-                Vector3 currentPosition = position;
-                Vector3 currentNormal = smoothNormal;
-
-                for (unsigned bounceIndex = 0; bounceIndex < settings.numBounces_; ++bounceIndex)
-                {
-                    // Get new ray direction
-                    const Vector3 rayDirection = RandomHemisphereDirection(currentNormal);
-
-                    rayHit.ray.org_x = currentPosition.x_ + currentNormal.x_ * settings.rayPositionOffset_;
-                    rayHit.ray.org_y = currentPosition.y_ + currentNormal.y_ * settings.rayPositionOffset_;
-                    rayHit.ray.org_z = currentPosition.z_ + currentNormal.z_ * settings.rayPositionOffset_;
-                    rayHit.ray.dir_x = rayDirection.x_;
-                    rayHit.ray.dir_y = rayDirection.y_;
-                    rayHit.ray.dir_z = rayDirection.z_;
-                    rayHit.ray.tfar = maxDistance;
-                    rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-                    rtcIntersect1(scene, &rayContext, &rayHit);
-
-                    if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
-                        break;
-
-                    // Check normal orientation
-                    if (rayDirection.DotProduct({ rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z }) > 0.0f)
-                        break;
-
-                    // Sample lightmap UV
-                    const EmbreeGeometry& geometry = geometryIndex[rayHit.hit.geomID];
-                    Vector2 lightmapUV;
-                    rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
-                        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
-
-                    // Modify incoming flux
-                    const float probability = 1 / (2 * M_PI);
-                    const float cosTheta = rayDirection.DotProduct(currentNormal);
-                    const float reflectance = 1 / M_PI;
-                    const float brdf = reflectance / M_PI;
-
-                    // TODO: Use real index here
-                    const unsigned lightmapIndex = geometry.lightmapIndex_;
-                    const IntVector2 sampleLocation = bakedDirect[lightmapIndex]->GetNearestLocation(lightmapUV);
-                    incomingSamples[bounceIndex] = bakedDirect[lightmapIndex]->GetSurfaceLight(sampleLocation);
-                    incomingFactors[bounceIndex] = brdf * cosTheta / probability;
-                    ++numBounces;
-
-                    // Go to next hemisphere
-                    if (numBounces < settings.numBounces_)
-                    {
-                        currentPosition.x_ = rayHit.ray.org_x + rayHit.ray.dir_x * rayHit.ray.tfar;
-                        currentPosition.y_ = rayHit.ray.org_y + rayHit.ray.dir_y * rayHit.ray.tfar;
-                        currentPosition.z_ = rayHit.ray.org_z + rayHit.ray.dir_z * rayHit.ray.tfar;
-                        currentNormal = Vector3(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z).Normalized();
-                    }
-                }
-
-                // Accumulate samples back-to-front
-                Vector3 sampleIndirectLight;
-                for (int bounceIndex = numBounces - 1; bounceIndex >= 0; --bounceIndex)
-                {
-                    sampleIndirectLight += incomingSamples[bounceIndex];
-                    sampleIndirectLight *= incomingFactors[bounceIndex];
-                }
-
-                indirectLight += Vector4(sampleIndirectLight, 1);
-            }
-            bakedIndirect.light_[texelIndex] += indirectLight;
-        }
-    });
+    ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &settings };
+    TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
 }
 
 void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
