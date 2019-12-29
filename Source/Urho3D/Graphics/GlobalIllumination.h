@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Graphics/LightProbeGroup.h"
+#include "../Math/Matrix3.h"
 #include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
 #include "../Scene/Component.h"
@@ -39,6 +40,8 @@ struct AdjacentTetrahedron
     unsigned indices_[4]{};
     /// Indices of neighbor tetrahedrons. M_MAX_UNSIGNED if missing.
     unsigned neighbors_[4]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED };
+    /// Pre-computed matrix for calculating barycentric coordinates.
+    Matrix3 barycentricInverse_;
 };
 
 /// Tetrahedral mesh.
@@ -69,6 +72,11 @@ public:
     void ResetLightProbes();
     /// Compile all enabled light probe groups in the scene.
     void CompileLightProbes();
+
+    /// Sample light probe mesh. Return barycentric coordinates and tetrahedron.
+    Vector4 SampleLightProbeMesh(const Vector3& position, unsigned& hint) const;
+    /// Sample average ambient lighting.
+    Vector3 SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
 private:
     /// Light probes mesh.

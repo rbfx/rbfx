@@ -35,6 +35,7 @@ namespace Urho3D
 
 class Camera;
 class DebugRenderer;
+class GlobalIllumination;
 class Light;
 class Drawable;
 class Graphics;
@@ -135,6 +136,9 @@ public:
 
     /// Return octree.
     Octree* GetOctree() const { return octree_; }
+
+    /// Return global illumination manager.
+    GlobalIllumination* GetGlobalIllumination() const { return globalIllumination_; }
 
     /// Return viewport camera.
     Camera* GetCamera() const { return camera_; }
@@ -321,6 +325,8 @@ private:
     Scene* scene_{};
     /// Octree to use.
     Octree* octree_{};
+    /// Global illumination manager.
+    GlobalIllumination* globalIllumination_{};
     /// Viewport (rendering) camera.
     Camera* camera_{};
     /// Culling camera. Usually same as the viewport camera.
