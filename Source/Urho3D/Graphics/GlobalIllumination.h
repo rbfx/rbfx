@@ -36,8 +36,8 @@ struct AdjacentTetrahedron
 {
     /// Indices of tetrahedron vertices.
     unsigned indices_[4]{};
-    /// Indices of neighbor tetrahedrons. -1 if missing.
-    int neighbors_[4]{};
+    /// Indices of neighbor tetrahedrons. M_MAX_UNSIGNED if missing.
+    unsigned neighbors_[4]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED };
 };
 
 /// Tetrahedral mesh.
@@ -47,8 +47,6 @@ struct TetrahedralMesh
     ea::vector<Vector3> vertices_;
     /// Cells.
     ea::vector<AdjacentTetrahedron> cells_;
-    /// Cells circumspheres.
-    ea::vector<Sphere> circumspheres_;
 };
 
 /// Global illumination manager.
