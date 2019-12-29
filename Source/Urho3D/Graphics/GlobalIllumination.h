@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "../Graphics/LightProbeGroup.h"
 #include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
 #include "../Scene/Component.h"
@@ -72,6 +73,8 @@ public:
 private:
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;
+    /// Light probes data.
+    ea::vector<LightProbe> lightProbes_;
 };
 
 }

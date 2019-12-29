@@ -26,7 +26,6 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/DebugRenderer.h"
-#include "../Graphics/LightProbeGroup.h"
 #include "../Scene/Scene.h"
 
 #include <EASTL/numeric.h>
@@ -404,6 +403,14 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             cell.neighbors_[i] = newIndex;
         }
     }
+
+    mesh.vertices_.erase(mesh.vertices_.begin(), mesh.vertices_.begin() + 8);
+    for (unsigned i = 0; i < mesh.cells_.size(); ++i)
+    {
+        for (unsigned j = 0; j < 4; ++j)
+            mesh.cells_[i].indices_[j] -= 8;
+    }
+
     assert(IsTetrahedralMeshAdjacencyValid(mesh));
 }
 
@@ -431,9 +438,15 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         {
             for (unsigned j = 0; j < 4; ++j)
             {
-                const Vector3& start = lightProbesMesh_.vertices_[cell.indices_[i]];
-                const Vector3& end = lightProbesMesh_.vertices_[cell.indices_[j]];
-                debug->AddLine(start, end, Color::YELLOW);
+                const unsigned startIndex = cell.indices_[i];
+                const unsigned endIndex = cell.indices_[j];
+                const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
+                const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
+                const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
+                const Color startColor{ lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
+                const Color endColor{ lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
+                debug->AddLine(startPos, midPos, startColor);
+                debug->AddLine(midPos, midPos, endColor);
             }
         }
     }
@@ -441,6 +454,7 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void GlobalIllumination::ResetLightProbes()
 {
+    lightProbes_.clear();
     lightProbesMesh_ = {};
 }
 
@@ -453,8 +467,6 @@ void GlobalIllumination::CompileLightProbes()
     GetScene()->GetComponents<LightProbeGroup>(groups, true);
 
     ea::vector<Vector3> positions;
-    ea::vector<LightProbe> probes;
-
     for (LightProbeGroup* group : groups)
     {
         Node* node = group->GetNode();
@@ -462,12 +474,12 @@ void GlobalIllumination::CompileLightProbes()
         {
             const Vector3 worldPosition = node->LocalToWorld(probe.position_);
             positions.push_back(worldPosition);
-            probes.push_back(LightProbe{ worldPosition, probe.bakedLight_ });
+            lightProbes_.push_back(LightProbe{ worldPosition, probe.bakedLight_ });
         }
     }
 
     // Build mesh
-    if (probes.empty())
+    if (lightProbes_.empty())
         return;
 
     // Add padding to avoid vertex collision
