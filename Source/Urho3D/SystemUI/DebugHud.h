@@ -83,16 +83,13 @@ public:
     bool ResetAppStats(const ea::string& label);
     /// Clear all application-specific stats.
     void ClearAppStats();
-    /// Limit rendering area of debug hud.
-    /// \param position of debug hud from top-left corner of the screen.
-    /// \param size specifies size of debug hud rect.
-    void SetExtents(const IntVector2& position, const IntVector2& size);
-    ///
-    void ClearExtents() { explicitPosition_ = false; }
     /// Render system ui.
     void RenderUI(DebugHudModeFlags mode);
 
 private:
+    /// Render debug hud on to entire viewport.
+    void OnRenderDebugUI(StringHash, VariantMap&);
+
     /// Hashmap containing application specific stats.
     ea::map<ea::string, ea::string> appStats_{};
     /// Show 3D geometry primitive/batch count flag.
@@ -103,12 +100,6 @@ private:
     Timer fpsTimer_{};
     /// Calculated fps
     unsigned fps_ = 0;
-    /// Debug stats are explicitly positioned on the screen. When set to false debug hud takes entire screen of main viewport.
-    bool explicitPosition_ = false;
-    /// DebugHud position in main viewport.
-    ImVec2 pos_{0, 0};
-    /// DebugHud size in main viewport.
-    ImVec2 size_{0, 0};
 };
 
 }

@@ -252,9 +252,14 @@ bool SceneTab::RenderWindowContent()
     {
         if (auto* hud = GetSubsystem<DebugHud>())
         {
-            tabRect.top_ += (int) (ui::GetCursorPosY() + ui::GetIO().Fonts->Fonts[0]->FontSize);
-            hud->SetExtents(tabRect.Min(), tabRect.Size());
+            ImFont* monospaceFont = GetSubsystem<Editor>()->GetMonoSpaceFont();
+            ui::PushFont(monospaceFont);
+            ImGuiWindow* window = ui::GetCurrentWindow();
+            // FIXME: Without this FPS has extra space below.
+            window->DC.CurrLineSize.y = monospaceFont->FontSize;
+            ui::SetCursorScreenPos(window->ContentRegionRect.Min + ImVec2{10, 10 + ui::GetIO().Fonts->Fonts[0]->FontSize});
             hud->RenderUI(DEBUGHUD_SHOW_ALL);
+            ui::PopFont();
         }
     }
 
