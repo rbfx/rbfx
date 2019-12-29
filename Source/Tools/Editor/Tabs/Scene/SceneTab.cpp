@@ -136,9 +136,24 @@ bool SceneTab::RenderWindowContent()
     if (!isRendered_)
         ui::SetWindowFocus();
 
-    IntRect tabRect = UpdateViewRect();
-    ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
-    ImVec2 contentSize = ToImGui(tabRect.Size());
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ImGuiViewport* viewport = window->Viewport;
+
+    ImRect rect = ImRound(window->ContentRegionRect);
+    IntVector2 textureSize{
+        static_cast<int>(IM_ROUND(rect.GetWidth() * viewport->DpiScale)),
+        static_cast<int>(IM_ROUND(rect.GetHeight() * viewport->DpiScale))
+    };
+    if (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight())
+    {
+        viewport_->SetRect(IntRect(IntVector2::ZERO, textureSize));
+        texture_->SetSize(textureSize.x_, textureSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+        texture_->GetRenderSurface()->SetViewport(0, viewport_);
+        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    }
+
+    ui::SetCursorScreenPos(rect.Min);
+    ImVec2 contentSize = rect.GetSize();
     if (!ui::BeginChild("Scene view", contentSize, false, windowFlags_))
     {
         ui::EndChild();
@@ -160,7 +175,7 @@ bool SceneTab::RenderWindowContent()
         float border = 1;
         ui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, border);
         ui::PushStyleColor(ImGuiCol_Border, ui::GetColorU32(ImGuiCol_Border, 255.f));                                   // Make a border opaque, otherwise it is barely visible.
-        ui::SetCursorScreenPos(ToImGui(tabRect.Max() - cameraPreviewSize - IntVector2{10, 10}));
+        ui::SetCursorScreenPos(rect.Max - ToImGui(cameraPreviewSize) - ImVec2{10, 10});
 
         ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
         ui::RenderFrameBorder(ui::GetItemRectMin() - ImVec2{border, border}, ui::GetItemRectMax() + ImVec2{border, border});
@@ -256,8 +271,8 @@ bool SceneTab::RenderWindowContent()
             ui::PushFont(monospaceFont);
             ImGuiWindow* window = ui::GetCurrentWindow();
             // FIXME: Without this FPS has extra space below.
-            window->DC.CurrLineSize.y = monospaceFont->FontSize;
-            ui::SetCursorScreenPos(window->ContentRegionRect.Min + ImVec2{10, 10 + ui::GetIO().Fonts->Fonts[0]->FontSize});
+            ui::GetCurrentWindow()->DC.CurrLineSize.y = monospaceFont->FontSize;
+            ui::SetCursorScreenPos(rect.Min + ImVec2{10, 10 + ui::GetIO().Fonts->Fonts[0]->FontSize});
             hud->RenderUI(DEBUGHUD_SHOW_ALL);
             ui::PopFont();
         }
@@ -795,15 +810,6 @@ void SceneTab::RemoveSelection()
 Scene* SceneTab::GetScene()
 {
     return GetSubsystem<SceneManager>()->GetActiveScene();
-}
-
-IntRect SceneTab::UpdateViewRect()
-{
-    IntRect tabRect = BaseClassName::UpdateViewRect();
-    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
-    // unused space at the bottom of PreviewTab.
-    ResizeMainViewport(tabRect);
-    return tabRect;
 }
 
 void SceneTab::OnUpdate(VariantMap& args)
@@ -1414,26 +1420,6 @@ void SceneTab::PasteIntuitive()
         PasteNextToSelection();
     else if (clipboard_.HasComponents())
         PasteIntoSelection();
-}
-
-void SceneTab::ResizeMainViewport(const IntRect& rect)
-{
-    if (rect_ == rect)
-        return;
-
-    rect_ = rect;
-    ImGuiViewport* viewport = ui::GetCurrentWindow()->Viewport;
-    IntVector2 textureSize{
-        static_cast<int>(static_cast<float>(rect.Width()) * viewport->DpiScale),
-        static_cast<int>(static_cast<float>(rect.Height()) * viewport->DpiScale)
-    };
-    viewport_->SetRect(IntRect(IntVector2::ZERO, textureSize));
-    if (textureSize.x_ > 0 && textureSize.y_ > 0 && (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight()))
-    {
-        texture_->SetSize(textureSize.x_, textureSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
-        texture_->GetRenderSurface()->SetViewport(0, viewport_);
-        texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
-    }
 }
 
 Camera* SceneTab::GetCamera()

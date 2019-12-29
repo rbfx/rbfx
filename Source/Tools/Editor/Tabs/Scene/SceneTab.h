@@ -147,8 +147,6 @@ protected:
     void OnNodeSelectionChanged();
     /// Render content of the tab window.
     bool RenderWindowContent() override;
-    /// Update objects with current tab view rect size.
-    IntRect UpdateViewRect() override;
     /// Manually updates scene.
     void OnUpdate(VariantMap& args);
     /// Render context menu of a scene node.
@@ -179,8 +177,6 @@ protected:
     void PasteIntoSelection();
     /// Paste components into selection or nodes into parent if first selected node.
     void PasteIntuitive();
-    ///
-    void ResizeMainViewport(const IntRect& rect);
     ///
     void RenderDebugInfo();
 
