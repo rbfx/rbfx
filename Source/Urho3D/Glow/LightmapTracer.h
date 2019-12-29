@@ -26,6 +26,7 @@
 
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
+#include "../Graphics/LightProbeGroup.h"
 
 namespace Urho3D
 {
@@ -135,8 +136,13 @@ URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, cons
     const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light.
-URHO3D_API void BakeIndirectLight(LightmapChartBakedIndirect& bakedIndirect,
+URHO3D_API void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
+
+/// Accumulate indirect light for light probes.
+URHO3D_API void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
+    const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
 
 /// Parameters for indirect light filtering.
