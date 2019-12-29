@@ -798,7 +798,6 @@ IntRect SceneTab::UpdateViewRect()
     // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
     // unused space at the bottom of PreviewTab.
     ResizeMainViewport(tabRect);
-    gizmo_.SetScreenRect(tabRect);
     return tabRect;
 }
 
