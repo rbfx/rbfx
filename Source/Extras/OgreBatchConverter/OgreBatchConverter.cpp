@@ -35,7 +35,7 @@ int main(int argc, char** argv)
         ea::vector<ea::string> cmdArgs;
         cmdArgs.push_back(files[i]);
         cmdArgs.push_back(ReplaceExtension(files[i], ".mdl"));
-        cmdArgs.push_back(args);
+        cmdArgs.append(args);
 
         ea::string cmdPreview = ogreImporterName;
         for (unsigned j = 0; j < cmdArgs.size(); j++)

@@ -376,7 +376,7 @@ namespace eastl
 			return eastl::distance(cbegin(), find(value));
 		}
 
-		iterator push_back(const this_type& value)
+		iterator append(const this_type& value)
 		{
 			return insert(end(), value.begin(), value.end());
 		}
@@ -408,7 +408,7 @@ namespace eastl
 		template <class ... Args>
 		reference EmplaceBack(Args&&... args) { return emplace_back(std::forward<Args>(args)...); }
 		void Push(const value_type& value) { push_back(value); }
-		void Push(const this_type& value) { push_back(value); }
+		void Push(const this_type& value) { append(value); }
 		void Pop() { pop_back(); }
 
 		void Insert(size_type position, const value_type& value) { insert_at(position, value); }
