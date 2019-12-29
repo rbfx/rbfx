@@ -65,8 +65,10 @@ struct LightmapTracingSettings
 
     /// Number of bounces.
     unsigned numBounces_{ 2 };
-    /// Number of indirect samples.
-    unsigned numIndirectSamples_{ 10 };
+    /// Number of indirect samples for charts.
+    unsigned numIndirectChartSamples_{ 10 };
+    /// Number of indirect samples for light probes.
+    unsigned numIndirectProbeSamples_{ 64 };
 
     /// Ray position offset.
     float rayPositionOffset_{ 0.001f };

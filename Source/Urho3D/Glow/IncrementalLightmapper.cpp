@@ -29,6 +29,7 @@
 #include "../Glow/LightmapGeometryBaker.h"
 #include "../Glow/LightmapStitcher.h"
 #include "../Glow/LightmapTracer.h"
+#include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Model.h"
 #include "../Resource/Image.h"
 
@@ -305,7 +306,15 @@ struct IncrementalLightmapper::Impl
         for (unsigned lightmapIndex : requiredDirectLightmaps)
             bakedDirectLightmaps[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
 
-        // Bake indirect lighting
+        // Bake direct & indirect light probes
+        // TODO(glow): Use chunks here
+        LightProbeCollection lightProbes;
+        LightProbeGroup::CollectLightProbes(scene_, lightProbes);
+        lightProbes.ResetBakedData();
+        BakeIndirectLightForLightProbes(lightProbes, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
+        LightProbeGroup::CommitLightProbes(lightProbes);
+
+        // Bake indirect lighting for charts
         for (unsigned lightmapIndex : lightmapsInChunks)
         {
             const LightmapChartGeometryBuffer* geometryBuffer = cache_->LoadGeometryBuffer(lightmapIndex);
@@ -313,7 +322,7 @@ struct IncrementalLightmapper::Impl
             LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
             // Bake indirect lights
-            BakeIndirectLight(bakedIndirect, bakedDirectLightmaps,
+            BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
                 *geometryBuffer, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
 
             // Filter indirect
@@ -321,7 +330,7 @@ struct IncrementalLightmapper::Impl
             FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numThreads_);
 
             // Stitch seams
-            if (lightmapSettings_.stitching_.numIterations_ > 0)
+            if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer->seams_.empty())
             {
                 SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer->seams_);
                 StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_,

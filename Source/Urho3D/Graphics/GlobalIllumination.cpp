@@ -469,8 +469,8 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
                 const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
                 const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
                 const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
-                const Color startColor{ lightProbesCollection_.lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
-                const Color endColor{ lightProbesCollection_.lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
+                const Color startColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
+                const Color endColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
                 debug->AddLine(startPos, midPos, startColor);
                 debug->AddLine(midPos, midPos, endColor);
             }
@@ -480,7 +480,7 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void GlobalIllumination::ResetLightProbes()
 {
-    lightProbesCollection_.Reset();
+    lightProbesCollection_.Clear();
     lightProbesMesh_ = {};
 }
 
@@ -540,6 +540,9 @@ Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsign
     Vector3 ambient;
     for (unsigned i = 0; i < 4; ++i)
         ambient += weights[i] * lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage();
+    ambient.x_ = Pow(ambient.x_, 1 / 2.2f);
+    ambient.y_ = Pow(ambient.y_, 1 / 2.2f);
+    ambient.z_ = Pow(ambient.z_, 1 / 2.2f);
     return ambient;
 }
 
