@@ -469,8 +469,8 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
                 const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
                 const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
                 const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
-                const Color startColor{ lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
-                const Color endColor{ lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
+                const Color startColor{ lightProbesCollection_.lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
+                const Color endColor{ lightProbesCollection_.lightProbes_[startIndex].bakedLight_.EvaluateAverage() };
                 debug->AddLine(startPos, midPos, startColor);
                 debug->AddLine(midPos, midPos, endColor);
             }
@@ -480,7 +480,7 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void GlobalIllumination::ResetLightProbes()
 {
-    lightProbes_.clear();
+    lightProbesCollection_.Reset();
     lightProbesMesh_ = {};
 }
 
@@ -489,36 +489,19 @@ void GlobalIllumination::CompileLightProbes()
     ResetLightProbes();
 
     // Collect light probes
-    ea::vector<LightProbeGroup*> groups;
-    GetScene()->GetComponents<LightProbeGroup>(groups, true);
-
-    ea::vector<Vector3> positions;
-    for (LightProbeGroup* group : groups)
-    {
-        Node* node = group->GetNode();
-        for (const LightProbe& probe : group->GetLightProbes())
-        {
-            const Vector3 worldPosition = node->LocalToWorld(probe.position_);
-            positions.push_back(worldPosition);
-            lightProbes_.push_back(LightProbe{ worldPosition, probe.bakedLight_ });
-        }
-    }
-
-    // Build mesh
-    if (lightProbes_.empty())
+    LightProbeGroup::CollectLightProbes(GetScene(), lightProbesCollection_);
+    if (lightProbesCollection_.Empty())
         return;
 
     // Add padding to avoid vertex collision
-    BoundingBox boundingBox(positions.data(), positions.size());
-    boundingBox.min_ -= Vector3::ONE;
-    boundingBox.max_ += Vector3::ONE;
+    const BoundingBox boundingBox = lightProbesCollection_.CalculateBoundingBox(Vector3::ONE);
     InitializeTetrahedralMesh(lightProbesMesh_, boundingBox);
-    AddTetrahedralMeshVertices(lightProbesMesh_, positions);
+    AddTetrahedralMeshVertices(lightProbesMesh_, lightProbesCollection_.worldPositions_);
 }
 
 Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsigned& hint) const
 {
-    const unsigned maxIters = lightProbes_.size();
+    const unsigned maxIters = lightProbesCollection_.Size();
     if (hint >= maxIters)
         hint = 0;
 
@@ -556,7 +539,7 @@ Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsign
 
     Vector3 ambient;
     for (unsigned i = 0; i < 4; ++i)
-        ambient += weights[i] * lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage();
+        ambient += weights[i] * lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage();
     return ambient;
 }
 
