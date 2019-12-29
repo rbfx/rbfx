@@ -262,7 +262,7 @@ bool ReadIES(File* data, ea::vector<float>& vertical, ea::vector<float>& horizon
         lines.push_back(data->ReadLine());
     ea::vector<ea::string> words;
     for (unsigned i = 0; i < lines.size(); ++i)
-        words.push_back(lines[i].split(' '));
+        words.append(lines[i].split(' '));
 
     // Prune any 'junk' collected
     for (unsigned i = 0; i < words.size(); ++i)

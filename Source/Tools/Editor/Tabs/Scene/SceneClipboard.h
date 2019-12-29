@@ -39,8 +39,8 @@ struct PasteResult
     ///
     void Merge(const PasteResult& other)
     {
-        nodes_.push_back(other.nodes_);
-        components_.push_back(other.components_);
+        nodes_.append(other.nodes_);
+        components_.append(other.components_);
     }
 
     ///
