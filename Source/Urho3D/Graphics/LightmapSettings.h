@@ -72,8 +72,6 @@ struct LightmapTracingSettings
     float rayPositionOffset_{ 0.001f };
     /// Number of threads to use.
     unsigned numThreads_{ 8 };
-    /// Whether to use pseudorandom sampling.
-    bool pseudoRandomSampling_{ false };
 };
 
 /// Lightmap filter settings.
