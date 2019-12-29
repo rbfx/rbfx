@@ -313,11 +313,8 @@ struct IncrementalLightmapper::Impl
             LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
             // Bake indirect lights
-            for (int i = 0; i < lightmapSettings_.tracing_.numIndirectSamples_; ++i)
-            {
-                BakeIndirectLight(bakedIndirect, bakedDirectLightmaps,
-                    *geometryBuffer, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
-            }
+            BakeIndirectLight(bakedIndirect, bakedDirectLightmaps,
+                *geometryBuffer, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
 
             // Filter indirect
             bakedIndirect.NormalizeLight();
