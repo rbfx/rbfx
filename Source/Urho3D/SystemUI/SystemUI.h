@@ -23,16 +23,26 @@
 #pragma once
 
 
-#include <EASTL/unordered_map.h>
+#include "../Core/Object.h"
+#include "../Graphics/IndexBuffer.h"
+#include "../Graphics/Texture2D.h"
+#include "../Graphics/VertexBuffer.h"
+#include "../Input/InputEvents.h"
+#include "../Math/StringHash.h"
+#include "../Math/Matrix4.h"
+#include "../Math/Vector2.h"
+#include "../Math/Vector4.h"
+#include "../SystemUI/SystemUIEvents.h"
 
-#include "Urho3D/Core/Object.h"
-#include "Urho3D/Math/StringHash.h"
-#include "Urho3D/Graphics/VertexBuffer.h"
-#include "Urho3D/Graphics/IndexBuffer.h"
-#include "Urho3D/Math/Matrix4.h"
-#include "Urho3D/Graphics/Texture2D.h"
-#include "Urho3D/Input/InputEvents.h"
-#include "SystemUIEvents.h"
+#define IM_VEC2_CLASS_EXTRA                                                                                            \
+    operator Urho3D::Vector2() { return {x, y}; }                                                                      \
+    ImVec2(const Urho3D::Vector2& vec) { x = vec.x_; y = vec.y_; }
+
+#define IM_VEC4_CLASS_EXTRA                                                                                            \
+    operator Urho3D::Vector4() { return {x, y, z, w}; }                                                                \
+    ImVec4(const Urho3D::Vector4& vec) { x = vec.x_; y = vec.y_; z = vec.z_; w = vec.w_; }
+
+#include <EASTL/unordered_map.h>
 
 #include <ImGui/imgui.h>
 #include <ImGui/imgui_internal.h>
@@ -123,5 +133,11 @@ URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, co
 URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4 & bg_col = ImVec4(0, 0, 0, 0), const ImVec4 & tint_col = ImVec4(1, 1, 1, 1));
 
 }
+
+static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs.x == rhs.x && lhs.y == rhs.y; }
+static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return !(lhs == rhs); }
+static inline bool operator==(const ImRect& lhs, const ImRect& rhs) { return lhs.Min == rhs.Min && lhs.Max == rhs.Max; }
+static inline bool operator!=(const ImRect& lhs, const ImRect& rhs) { return !(lhs == rhs); }
+static inline ImRect ImRound(const ImRect& r) { return ImRect(ImRound(r.Min), ImRound(r.Max)); };
 
 namespace ui = ImGui;
