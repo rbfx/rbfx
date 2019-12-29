@@ -30,6 +30,7 @@
 #include "../Scene/Scene.h"
 
 #include <EASTL/numeric.h>
+#include <EASTL/sort.h>
 
 namespace Urho3D
 {
@@ -38,13 +39,12 @@ namespace
 {
 
 /// Calculate circumsphere of the tetrahedron.
-Sphere CalculateTetrahedronCircumsphere(const TetrahedralMesh& mesh, unsigned cellIndex)
+Sphere CalculateTetrahedronCircumsphere(const AdjacentTetrahedron& cell, const ea::vector<Vector3>& vertices)
 {
-    const AdjacentTetrahedron& cell = mesh.cells_[cellIndex];
-    const Vector3 p0 = mesh.vertices_[cell.indices_[0]];
-    const Vector3 p1 = mesh.vertices_[cell.indices_[1]];
-    const Vector3 p2 = mesh.vertices_[cell.indices_[2]];
-    const Vector3 p3 = mesh.vertices_[cell.indices_[3]];
+    const Vector3 p0 = vertices[cell.indices_[0]];
+    const Vector3 p1 = vertices[cell.indices_[1]];
+    const Vector3 p2 = vertices[cell.indices_[2]];
+    const Vector3 p3 = vertices[cell.indices_[3]];
     const Vector3 u1 = p1 - p0;
     const Vector3 u2 = p2 - p0;
     const Vector3 u3 = p3 - p0;
@@ -59,7 +59,7 @@ Sphere CalculateTetrahedronCircumsphere(const TetrahedralMesh& mesh, unsigned ce
     assert(Equals((p2 - center).Length(), r0.Length(), M_LARGE_EPSILON));
     assert(Equals((p3 - center).Length(), r0.Length(), M_LARGE_EPSILON));
 
-    return { center, r0.Length() };
+    return { center, r0.Length() + M_LARGE_EPSILON };
 }
 
 /// Initialize tetrahedral mesh for given volume.
@@ -88,12 +88,12 @@ void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
         { 1, 2, 4, 7 }  // Central tetrahedron
     };
 
-    static const int neighbors[numTetrahedrons][4] =
+    static const unsigned neighbors[numTetrahedrons][4] =
     {
-        { 4, -1, -1, -1 },
-        { 4, -1, -1, -1 },
-        { 4, -1, -1, -1 },
-        { 4, -1, -1, -1 },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
         { 3, 2, 1, 0 }, // Tetrahedrons with corners at (6, 5, 3, 0)
     };
 
@@ -104,7 +104,6 @@ void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
 
     // Initialize cells
     mesh.cells_.resize(numTetrahedrons);
-    mesh.circumspheres_.resize(numTetrahedrons);
     for (unsigned i = 0; i < numTetrahedrons; ++i)
     {
         AdjacentTetrahedron cell;
@@ -114,13 +113,298 @@ void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
             cell.neighbors_[j] = neighbors[i][j];
         }
         mesh.cells_[i] = cell;
-        mesh.circumspheres_[i] = CalculateTetrahedronCircumsphere(mesh, i);
     }
 };
+
+/// Tetrahedron for Delaunay triangulation.
+struct DelaunayTetrahedron
+{
+    /// Tetrahedron with adjacency information.
+    AdjacentTetrahedron tet_;
+    /// Cell circumsphere.
+    Sphere circumsphere_;
+    /// Whether the cell is cosidered bad during breadth search.
+    bool bad_{};
+};
+
+/// Face of the hole in tetrahedral mesh.
+struct TetrahedralMeshHoleFace
+{
+    /// Indices.
+    unsigned indices_[3]{};
+    /// Underlying cell.
+    unsigned cell_{};
+    /// Underlying cell face.
+    unsigned face_{};
+    /// Neighbor faces.
+    unsigned neighbors_[3]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED};
+    /// Return edge, indexes are sorted.
+    ea::pair<unsigned, unsigned> GetEdge(unsigned i) const
+    {
+        unsigned begin = indices_[i];
+        unsigned end = indices_[(i + 1) % 3];
+        if (begin > end)
+            ea::swap(begin, end);
+        return { begin, end };
+    }
+};
+
+/// Return face of the tetrahedron.
+TetrahedralMeshHoleFace GetTetrahedronHoleFace(const AdjacentTetrahedron& tet, unsigned faceIndex, unsigned cellIndex)
+{
+    TetrahedralMeshHoleFace face;
+    face.cell_ = cellIndex;
+    face.face_ = faceIndex;
+
+    unsigned j = 0;
+    for (unsigned i = 0; i < 4; ++i)
+    {
+        if (i != faceIndex)
+            face.indices_[j++] = tet.indices_[i];
+    }
+    return face;
+}
+
+/// Add triangle to hole mesh.
+void AddTriangleToHole(ea::vector<TetrahedralMeshHoleFace>& mesh, TetrahedralMeshHoleFace newFace)
+{
+    // Find adjacent triangles
+    const unsigned newIndex = mesh.size();
+    for (unsigned oldIndex = 0; oldIndex < newIndex; ++oldIndex)
+    {
+        TetrahedralMeshHoleFace& oldFace = mesh[oldIndex];
+        for (unsigned i = 0; i < 3; ++i)
+        {
+            const auto oldEdge = oldFace.GetEdge(i);
+            for (unsigned j = 0; j < 3; ++j)
+            {
+                const auto newEdge = newFace.GetEdge(j);
+                if (oldEdge == newEdge)
+                {
+                    oldFace.neighbors_[(i + 2) % 3] = newIndex;
+                    newFace.neighbors_[(j + 2) % 3] = oldIndex;
+                }
+            }
+        }
+    }
+
+    mesh.push_back(newFace);
+}
+
+/// Return whether the hole mesh is fully connected.
+bool IsHoleMeshConnected(ea::vector<TetrahedralMeshHoleFace>& mesh)
+{
+    for (unsigned faceIndex = 0; faceIndex < mesh.size(); ++faceIndex)
+    {
+        for (unsigned i = 0; i < 3; ++i)
+        {
+            const unsigned neighborIndex = mesh[faceIndex].neighbors_[i];
+            if (neighborIndex == M_MAX_UNSIGNED)
+                return false;
+
+            const TetrahedralMeshHoleFace& neighborFace = mesh[neighborIndex];
+            if (ea::count(ea::begin(neighborFace.neighbors_), ea::end(neighborFace.neighbors_), faceIndex) == 0)
+                return false;
+        }
+    }
+    return true;
+}
+
+/// Return whether the adjacency information of tetrahedral mesh is valid.
+bool IsTetrahedralMeshAdjacencyValid(const TetrahedralMesh& mesh)
+{
+    for (unsigned cellIndex = 0; cellIndex < mesh.cells_.size(); ++cellIndex)
+    {
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            const unsigned neighborIndex = mesh.cells_[cellIndex].neighbors_[i];
+            if (neighborIndex != M_MAX_UNSIGNED)
+            {
+                const AdjacentTetrahedron& neighborCell = mesh.cells_[neighborIndex];
+                if (ea::count(ea::begin(neighborCell.neighbors_), ea::end(neighborCell.neighbors_), cellIndex) == 0)
+                    return false;
+            }
+        }
+    }
+    return true;
+}
 
 /// Add vertices to tetrahedral mesh.
 void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> positions)
 {
+    // Copy cells and initialize all required data
+    ea::vector<DelaunayTetrahedron> cells(mesh.cells_.size());
+    for (unsigned i = 0; i < mesh.cells_.size(); ++i)
+    {
+        cells[i].tet_ = mesh.cells_[i];
+        cells[i].circumsphere_ = CalculateTetrahedronCircumsphere(cells[i].tet_, mesh.vertices_);
+    }
+
+    unsigned tempCount = 0;
+
+    // Triangulate
+    ea::vector<unsigned> badCells;
+    ea::vector<TetrahedralMeshHoleFace> holeMesh;
+    ea::vector<unsigned> searchQueue;
+    for (const Vector3& position : positions)
+    {
+        const unsigned newIndex = mesh.vertices_.size();
+        mesh.vertices_.push_back(position);
+
+        badCells.clear();
+        searchQueue.clear();
+        holeMesh.clear();
+
+        // Find first bad cell
+        for (unsigned cellIndex = 0; cellIndex < cells.size(); ++cellIndex)
+        {
+            DelaunayTetrahedron& cell = cells[cellIndex];
+            if (!cell.bad_ && cell.circumsphere_.IsInside(position) != OUTSIDE)
+            {
+                badCells.push_back(cellIndex);
+                searchQueue.push_back(cellIndex);
+                cell.bad_ = true;
+                break;
+            }
+        }
+
+        if (badCells.empty())
+        {
+            assert(0);
+            return;
+        }
+
+        // Do breadth search to collect all bad cells and build hole mesh
+        unsigned firstCell = 0;
+        while (firstCell < searchQueue.size())
+        {
+            const unsigned lastCell = searchQueue.size();
+            for (unsigned i = firstCell; i < lastCell; ++i)
+            {
+                const DelaunayTetrahedron& cell = cells[searchQueue[i]];
+
+                // Process neighbors
+                for (unsigned j = 0; j < 4; ++j)
+                {
+                    const unsigned nextIndex = cell.tet_.neighbors_[j];
+                    if (nextIndex == M_MAX_UNSIGNED)
+                    {
+                        // Missing neighbor closes hole
+                        const TetrahedralMeshHoleFace newFace = GetTetrahedronHoleFace(cell.tet_, j, M_MAX_UNSIGNED);
+                        AddTriangleToHole(holeMesh, newFace);
+                        continue;
+                    }
+
+                    // Ignore bad cells, they are already processed
+                    DelaunayTetrahedron& nextCell = cells[nextIndex];
+                    if (nextCell.bad_)
+                        continue;
+
+                    if (cells[nextIndex].circumsphere_.IsInside(position) != OUTSIDE)
+                    {
+                        // If cell is bad too, add it to queue
+                        badCells.push_back(nextIndex);
+                        searchQueue.push_back(nextIndex);
+                        nextCell.bad_ = true;
+                    }
+                    else
+                    {
+                        // Add new face to hole mesh
+                        const unsigned nextFaceIndex = ea::find(
+                            ea::begin(nextCell.tet_.neighbors_), ea::end(nextCell.tet_.neighbors_), searchQueue[i])
+                            - ea::begin(nextCell.tet_.neighbors_);
+                        const TetrahedralMeshHoleFace newFace = GetTetrahedronHoleFace(nextCell.tet_, nextFaceIndex, nextIndex);
+                        AddTriangleToHole(holeMesh, newFace);
+                    }
+                }
+            }
+            firstCell = lastCell;
+        }
+
+        // Create new cells on top of bad cells
+        if (!IsHoleMeshConnected(holeMesh))
+        {
+            assert(0);
+            return;
+        }
+        while (holeMesh.size() > badCells.size())
+        {
+            DelaunayTetrahedron placeholder;
+            placeholder.bad_ = true;
+            badCells.push_back(cells.size());
+            cells.push_back(placeholder);
+        }
+
+        for (unsigned i = 0; i < holeMesh.size(); ++i)
+        {
+            const unsigned newCellIndex = badCells[i];
+            DelaunayTetrahedron& cell = cells[newCellIndex];
+            const TetrahedralMeshHoleFace& face = holeMesh[i];
+
+            for (unsigned j = 0; j < 3; ++j)
+            {
+                cell.tet_.indices_[j] = face.indices_[j];
+                cell.tet_.neighbors_[j] = badCells[face.neighbors_[j]];
+            }
+            cell.tet_.indices_[3] = newIndex;
+            cell.tet_.neighbors_[3] = face.cell_;
+            if (face.cell_ != M_MAX_UNSIGNED)
+                cells[face.cell_].tet_.neighbors_[face.face_] = newCellIndex;
+            cell.bad_ = false;
+            cell.circumsphere_ = CalculateTetrahedronCircumsphere(cell.tet_, mesh.vertices_);
+        }
+    }
+
+    for (unsigned i = 0; i < cells.size(); ++i)
+    {
+        for (unsigned j = 0; j < 4; ++j)
+        {
+            if (cells[i].tet_.indices_[j] < 8)
+            {
+                cells[i].bad_ = true;
+                break;
+            }
+        }
+        if (cells[i].bad_)
+        {
+            for (unsigned j = 0; j < 4; ++j)
+            {
+                const unsigned neighborIndex = cells[i].tet_.neighbors_[j];
+                if (neighborIndex != M_MAX_UNSIGNED)
+                {
+                    ea::replace(ea::begin(cells[neighborIndex].tet_.neighbors_),
+                        ea::end(cells[neighborIndex].tet_.neighbors_), i, M_MAX_UNSIGNED);
+                }
+            }
+        }
+    }
+
+    // Copy output
+    ea::vector<unsigned> newIndices(cells.size());
+    mesh.cells_.clear();
+    for (unsigned i = 0; i < cells.size(); ++i)
+    {
+        if (cells[i].bad_)
+        {
+            newIndices[i] = M_MAX_UNSIGNED;
+            continue;
+        }
+
+        newIndices[i] = mesh.cells_.size();
+        mesh.cells_.push_back(cells[i].tet_);
+    }
+    for (AdjacentTetrahedron& cell : mesh.cells_)
+    {
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            if (cell.neighbors_[i] == M_MAX_UNSIGNED)
+                continue;
+            const unsigned newIndex = newIndices[cell.neighbors_[i]];
+            assert(newIndex != M_MAX_UNSIGNED);
+            cell.neighbors_[i] = newIndex;
+        }
+    }
+    assert(IsTetrahedralMeshAdjacencyValid(mesh));
 }
 
 }
@@ -189,7 +473,7 @@ void GlobalIllumination::CompileLightProbes()
     // Add padding to avoid vertex collision
     BoundingBox boundingBox(positions.data(), positions.size());
     boundingBox.min_ -= Vector3::ONE;
-    boundingBox.min_ += Vector3::ONE;
+    boundingBox.max_ += Vector3::ONE;
     InitializeTetrahedralMesh(lightProbesMesh_, boundingBox);
     AddTetrahedralMeshVertices(lightProbesMesh_, positions);
 }
