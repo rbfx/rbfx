@@ -38,7 +38,6 @@ float3 EvaluateSH2(float4 normal, float4 SHBr, float4 SHBg, float4 SHBb, float4 
     return value;
 }
 
-// TODO(glow): Use spherical harmonics
 #ifdef SPHERICALHARMONICS
     #ifdef INSTANCED
         #define iSHAr iSHArInstance

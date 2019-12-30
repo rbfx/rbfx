@@ -73,8 +73,7 @@ void VS()
         vVertexLight = vec3(0.0, 0.0, 0.0);
         vTexCoord2 = GetLightMapTexCoord(iTexCoord1);
     #else
-        // TODO(glow): Use spherical harmonics
-        vVertexLight = iAmbient.rgb;
+        vVertexLight = GetAmbientLight(vec4(vNormal, 1));
     #endif
 
     #ifdef PERPIXEL

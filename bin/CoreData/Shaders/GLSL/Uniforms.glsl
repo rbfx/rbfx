@@ -23,8 +23,17 @@ uniform vec4 cLightPos;
 uniform vec3 cLightDir;
 uniform vec4 cNormalOffsetScale;
 uniform mat4 cModel;
-// TODO(glow): Use spherical harmonics
+#ifdef SPHERICALHARMONICS
+uniform vec4 cSHAr;
+uniform vec4 cSHAg;
+uniform vec4 cSHAb;
+uniform vec4 cSHBr;
+uniform vec4 cSHBg;
+uniform vec4 cSHBb;
+uniform vec4 cSHC;
+#else
 uniform vec4 cAmbient;
+#endif
 uniform mat4 cView;
 uniform mat4 cViewInv;
 uniform mat4 cViewProj;
@@ -148,8 +157,17 @@ uniform MaterialVS
 uniform ObjectVS
 {
     mat4 cModel;
-    // TODO(glow): Use spherical harmonics
+#ifdef SPHERICALHARMONICS
+    vec4 cSHAr;
+    vec4 cSHAg;
+    vec4 cSHAb;
+    vec4 cSHBr;
+    vec4 cSHBg;
+    vec4 cSHBb;
+    vec4 cSHC;
+#else
     vec4 cAmbient;
+#endif
 #ifdef BILLBOARD
     mat3 cBillboardRot;
 #endif
