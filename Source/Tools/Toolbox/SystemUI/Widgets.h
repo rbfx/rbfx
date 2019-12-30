@@ -22,12 +22,13 @@
 
 #pragma once
 
-#include "ToolboxAPI.h"
-#include <typeinfo>
-#include <ImGui/imgui.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Math/Rect.h>
 #include <Urho3D/Core/Macros.h>
-#include "Urho3D/SystemUI/SystemUI.h"
+
+#include <typeinfo>
+
+#include "ToolboxAPI.h"
 
 
 namespace ImGui

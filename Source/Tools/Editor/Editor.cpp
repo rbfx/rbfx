@@ -37,8 +37,6 @@
 #include <Urho3D/LibraryInfo.h>
 #include <Urho3D/Core/CommandLine.h>
 
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_stdlib.h>
 #include <Toolbox/ToolboxAPI.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
