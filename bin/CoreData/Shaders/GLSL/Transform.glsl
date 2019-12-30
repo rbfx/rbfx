@@ -20,7 +20,17 @@ attribute vec4 iCubeTexCoord1;
     attribute vec4 iTexCoord4;
     attribute vec4 iTexCoord5;
     attribute vec4 iTexCoord6;
-    attribute vec4 iTexCoord7;
+    #ifdef SPHERICALHARMONICS
+        attribute vec4 iTexCoord7;
+        attribute vec4 iTexCoord8;
+        attribute vec4 iTexCoord9;
+        attribute vec4 iTexCoord10;
+        attribute vec4 iTexCoord11;
+        attribute vec4 iTexCoord12;
+        attribute vec4 iTexCoord13;
+    #else
+        attribute vec4 iTexCoord7;
+    #endif
 #endif
 attribute float iObjectIndex;
 
