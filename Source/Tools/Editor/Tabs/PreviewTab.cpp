@@ -51,7 +51,7 @@ PreviewTab::PreviewTab(Context* context)
     SetTitle("Game");
     isUtility_ = true;
     windowFlags_ = ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse;
-    view_ = context_->CreateObject<Texture2D>();
+    texture_ = context_->CreateObject<Texture2D>();
     noContentPadding_ = true;
 
     // Ensure parts of texture are not left dirty when viewport does not cover entire texture.
@@ -147,28 +147,33 @@ PreviewTab::PreviewTab(Context* context)
     });
 }
 
-IntRect PreviewTab::UpdateViewRect()
-{
-    IntRect tabRect = BaseClassName::UpdateViewRect();
-    if (viewRect_ != tabRect)
-    {
-        viewRect_ = tabRect;
-        view_->SetSize(tabRect.Width(), tabRect.Height(), Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
-        if (auto* surface = view_->GetRenderSurface())
-            surface->SetUpdateMode(SURFACE_UPDATEALWAYS);
-        static_cast<RootUIElement*>(context_->GetUI()->GetRoot())->SetOffset(tabRect.Min());
-        UpdateViewports();
-    }
-    return tabRect;
-}
-
 bool PreviewTab::RenderWindowContent()
 {
-    if (GetSubsystem<SceneManager>()->GetActiveScene() == nullptr)
+    if (GetSubsystem<SceneManager>()->GetActiveScene() == nullptr || texture_.Null())
         return true;
 
-    IntRect rect = UpdateViewRect();
-    ui::Image(view_.Get(), ImVec2{static_cast<float>(rect.Width()), static_cast<float>(rect.Height())});
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ImGuiViewport* viewport = window->Viewport;
+
+    ImRect rect = ImRound(window->ContentRegionRect);
+    IntVector2 textureSize{
+        static_cast<int>(IM_ROUND(rect.GetWidth() * viewport->DpiScale)),
+        static_cast<int>(IM_ROUND(rect.GetHeight() * viewport->DpiScale))
+    };
+    if (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight())
+    {
+        texture_->SetSize(textureSize.x_, textureSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+        if (auto* surface = texture_->GetRenderSurface())
+            surface->SetUpdateMode(SURFACE_UPDATEALWAYS);
+        UpdateViewports();
+    }
+
+    ui::Image(texture_.Get(), rect.GetSize());
+
+    ImVec2 offset = (ui::GetItemRectMin() - viewport->Pos) * viewport->DpiScale;
+    auto* root = static_cast<RootUIElement*>(context_->GetUI()->GetRoot());
+    root->SetOffset({static_cast<int>(IM_ROUND(offset.x)), static_cast<int>(IM_ROUND(offset.y))});
+
     if (!inputGrabbed_ && simulationStatus_ == SCENE_SIMULATION_RUNNING && ui::IsItemHovered() &&
         ui::IsAnyMouseDown() && context_->GetInput()->IsMouseVisible())
         GrabInput();
@@ -178,12 +183,12 @@ bool PreviewTab::RenderWindowContent()
 
 void PreviewTab::Clear()
 {
-    if (view_->GetWidth() > 0 && view_->GetHeight() > 0)
+    if (texture_->GetWidth() > 0 && texture_->GetHeight() > 0)
     {
         Image black(context_);
-        black.SetSize(view_->GetWidth(), view_->GetHeight(), 3);
+        black.SetSize(texture_->GetWidth(), texture_->GetHeight(), 3);
         black.Clear(Color::BLACK);
-        view_->SetData(&black);
+        texture_->SetData(&black);
     }
 }
 
@@ -194,7 +199,7 @@ void PreviewTab::UpdateViewports()
     if (GetSubsystem<SceneManager>()->GetActiveScene() == nullptr)
         return;
 
-    if (RenderSurface* surface = view_->GetRenderSurface())
+    if (RenderSurface* surface = texture_->GetRenderSurface())
         GetSubsystem<SceneManager>()->SetRenderSurface(surface);
 }
 
@@ -382,7 +387,7 @@ void PreviewTab::RenderUI()
 {
     Graphics* graphics = context_->GetGraphics();
 
-    if (RenderSurface* surface = view_->GetRenderSurface())
+    if (RenderSurface* surface = texture_->GetRenderSurface())
     {
         context_->GetUI()->SetCustomSize(surface->GetWidth(), surface->GetHeight());
         graphics->ResetRenderTargets();
