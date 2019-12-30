@@ -75,6 +75,8 @@ public:
 
     /// Sample light probe mesh. Return barycentric coordinates and tetrahedron.
     Vector4 SampleLightProbeMesh(const Vector3& position, unsigned& hint) const;
+    /// Sample ambient spherical harmonics.
+    SphericalHarmonicsDot9 SampleAmbientSH(const Vector3& position, unsigned& hint) const;
     /// Sample average ambient lighting.
     Vector3 SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
