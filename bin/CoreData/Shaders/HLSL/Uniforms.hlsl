@@ -22,9 +22,6 @@ uniform float4 cLightPos;
 uniform float3 cLightDir;
 uniform float4 cNormalOffsetScale;
 uniform float4x3 cModel;
-// TODO(glow): Use spherical harmonics
-uniform float4 cAmbient;
-/*
 #ifdef SPHERICALHARMONICS
 uniform float4 cSHAr;
 uniform float4 cSHAg;
@@ -33,8 +30,9 @@ uniform float4 cSHBr;
 uniform float4 cSHBg;
 uniform float4 cSHBb;
 uniform float4 cSHC;
+#else
+uniform float4 cAmbient;
 #endif
-*/
 uniform float4x3 cView;
 uniform float4x3 cViewInv;
 uniform float4x4 cViewProj;
@@ -149,9 +147,6 @@ cbuffer MaterialVS : register(b4)
 cbuffer ObjectVS : register(b5)
 {
     float4x3 cModel;
-// TODO(glow): Use spherical harmonics
-    float4 cAmbient;
-/*
 #ifdef SPHERICALHARMONICS
     float4 cSHAr;
     float4 cSHAg;
@@ -160,16 +155,16 @@ cbuffer ObjectVS : register(b5)
     float4 cSHBg;
     float4 cSHBb;
     float4 cSHC;
+#else
+    float4 cAmbient;
 #endif
-*/
 #ifdef BILLBOARD
     float3x3 cBillboardRot;
 #endif
 #ifdef SKINNED
     uniform float4x3 cSkinMatrices[MAXBONES];
-#else    
-    uniform float4 cLMOffset;
 #endif
+    uniform float4 cLMOffset;
 }
 #endif
 
