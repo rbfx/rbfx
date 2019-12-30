@@ -223,15 +223,12 @@ bool UITab::RenderWindowContent()
 
     if (auto selected = GetSelected())
     {
-        IntRect pixelRect{
-            static_cast<int>(IM_ROUND(rect.Min.x * viewport->DpiScale)),
-            static_cast<int>(IM_ROUND(rect.Min.y * viewport->DpiScale)),
-            static_cast<int>(IM_ROUND(rect.Max.x * viewport->DpiScale)),
-            static_cast<int>(IM_ROUND(rect.Max.y * viewport->DpiScale)),
-        };
         // Render element selection rect, resize handles, and handle element transformations.
-        IntRect delta;
-        IntRect screenRect(selected->GetScreenPosition() + pixelRect.Min(), selected->GetScreenPosition() + selected->GetSize() + pixelRect.Min());
+        ImVec2 elementPos(Vector2(selected->GetScreenPosition()) / viewport->DpiScale);
+        ImVec2 elementSize(Vector2(selected->GetSize()) / viewport->DpiScale);
+        ImRect screenRect{elementPos + rect.Min, elementPos + rect.Min + elementSize};
+        ImRect delta;
+
         ui::TransformSelectorFlags flags = ui::TSF_NONE;
         if (hideResizeHandles_)
             flags |= ui::TSF_HIDEHANDLES;
@@ -256,8 +253,14 @@ bool UITab::RenderWindowContent()
                 s->resizeStartPos_ = selected->GetPosition();
                 s->resizeStartSize_ = selected->GetSize();
             }
-            selected->SetPosition(selected->GetPosition() + delta.Min());
-            selected->SetSize(selected->GetSize() + delta.Size());
+            IntRect pixelDelta{
+                static_cast<int>(IM_ROUND(delta.Min.x * viewport->DpiScale)),
+                static_cast<int>(IM_ROUND(delta.Min.y * viewport->DpiScale)),
+                static_cast<int>(IM_ROUND(delta.GetWidth() * viewport->DpiScale)),
+                static_cast<int>(IM_ROUND(delta.GetHeight() * viewport->DpiScale)),
+            };
+            selected->SetPosition(selected->GetPosition() + pixelDelta.Min());
+            selected->SetSize(selected->GetSize() + pixelDelta.Max());
         }
 
         if (s->resizeActive_ && !ui::IsItemActive())
@@ -600,6 +603,7 @@ ea::string UITab::GetAppliedStyle(UIElement* element)
 
 void UITab::RenderRectSelector()
 {
+    const ImGuiStyle& style = ui::GetStyle();
     auto* selected = GetSelected() ? GetSelected()->Cast<BorderImage>() : nullptr;
 
     if (textureSelectorAttribute_.empty() || selected == nullptr)
@@ -609,25 +613,27 @@ void UITab::RenderRectSelector()
     {
         bool isResizing_ = false;
         IntRect startRect_;
+        ImRect rect_;
         int textureScale_ = 1;
         int windowFlags_ = ImGuiWindowFlags_NoScrollWithMouse | ImGuiWindowFlags_NoScrollbar;
-        IntRect rectWindowDeltaAccumulator_;
     };
     auto* s = ui::GetUIState<State>();
 
     bool open = true;
-    auto texture = selected->GetTexture();
+    auto* texture = static_cast<Texture2D*>(selected->GetTexture());
     texture->SetFilterMode(FILTER_NEAREST);    // Texture is better visible this way when zoomed in.
-    auto padding = ImGui::GetStyle().WindowPadding;
-    ui::SetNextWindowPos(ImVec2(texture->GetWidth() + padding.x * 2, texture->GetHeight() + padding.y * 2),
-        ImGuiCond_FirstUseEver);
     if (ui::Begin("Select Rect", &open, s->windowFlags_))
     {
+        ImGuiWindow* window = ui::GetCurrentWindow();
+        ImGuiViewport* viewport = window->Viewport;
+
         ui::SliderInt("Zoom", &s->textureScale_, 1, 5);
-        auto windowPos = ui::GetWindowPos();
-        auto imagePos = ui::GetCursorPos();
-        ui::Image(texture, ImVec2(texture->GetWidth() * s->textureScale_,
-            texture->GetHeight() * s->textureScale_));
+        ImVec2 imageSize{
+            (float)texture->GetWidth() * (float)s->textureScale_ / viewport->DpiScale,
+            (float)texture->GetHeight() * (float)s->textureScale_ / viewport->DpiScale,
+        };
+        ui::Image(texture, imageSize);
+        ImVec2 imagePos = ui::GetItemRectMin();
 
         // Disable dragging of window if mouse is hovering texture.
         if (ui::IsItemHovered())
@@ -636,54 +642,44 @@ void UITab::RenderRectSelector()
             s->windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
         IntRect rect = selectedElement_->GetAttribute(textureSelectorAttribute_).GetIntRect();
-        IntRect originalRect = rect;
-        // Upscale selection rect if texture is upscaled.
-        rect *= s->textureScale_;
+        ImRect selectorRect;
+        if (s->isResizing_)
+            selectorRect = s->rect_;
+        else
+        {
+            selectorRect = {
+                imagePos + ImVec2(Vector2(rect.Min()) * (float)s->textureScale_ / viewport->DpiScale),
+                imagePos + ImVec2(Vector2(rect.Max()) * (float)s->textureScale_ / viewport->DpiScale)
+            };
+        }
 
         ui::TransformSelectorFlags flags = ui::TSF_NONE;
         if (hideResizeHandles_)
             flags |= ui::TSF_HIDEHANDLES;
 
-        IntRect screenRect(
-            rect.Min() + ToIntVector2(imagePos) + ToIntVector2(windowPos),
-            IntVector2(rect.right_ - rect.left_, rect.bottom_ - rect.top_)
-        );
-        // Essentially screenRect().Max() += screenRect().Min()
-        screenRect.bottom_ += screenRect.top_;
-        screenRect.right_ += screenRect.left_;
-
-        IntRect delta;
-        if (ui::TransformRect(screenRect, delta, flags))
+        ImRect delta;
+        if (ui::TransformRect(selectorRect, delta, flags))
         {
             if (!s->isResizing_)
             {
                 s->isResizing_ = true;
-                s->startRect_ = originalRect;
+                s->startRect_ = rect;
+                s->rect_ = selectorRect;
             }
-            // Accumulate delta value. This is required because resizing upscaled rect does not work
-            // with small increments when rect values are integers.
-            s->rectWindowDeltaAccumulator_ += delta;
-        }
 
-        if (ui::IsItemActive())
-        {
-            // Downscale and add accumulated delta to the original rect value
-            rect = originalRect + s->rectWindowDeltaAccumulator_ / s->textureScale_;
-
-            // If downscaled rect size changed compared to original value - set attribute and
-            // reset delta accumulator.
-            if (rect != originalRect)
+            if (ui::IsItemActive())
             {
-                selectedElement_->SetAttribute(textureSelectorAttribute_, rect);
-                // Keep remainder in accumulator, otherwise resizing will cause cursor to drift from
-                // the handle over time.
-                s->rectWindowDeltaAccumulator_.left_ %= s->textureScale_;
-                s->rectWindowDeltaAccumulator_.top_ %= s->textureScale_;
-                s->rectWindowDeltaAccumulator_.right_ %= s->textureScale_;
-                s->rectWindowDeltaAccumulator_.bottom_ %= s->textureScale_;
+                ImVec2 min = (selectorRect.Min - imagePos) / (float)s->textureScale_ * viewport->DpiScale;
+                ImVec2 max = (selectorRect.Max - imagePos) / (float)s->textureScale_ * viewport->DpiScale;
+                IntRect currentRect{
+                    IntVector2(Round(min.x), Round(min.y)),
+                    IntVector2(Round(max.x), Round(max.y))
+                };
+                selectedElement_->SetAttribute(textureSelectorAttribute_, currentRect);
+                s->rect_ = selectorRect;
             }
         }
-        else if (s->isResizing_)
+        else if (!ui::IsItemActive() && s->isResizing_)
         {
             s->isResizing_ = false;
             undo_.Track<Undo::EditAttributeAction>(selected, textureSelectorAttribute_, s->startRect_,

@@ -63,7 +63,7 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     ImGuiIO& io = ui::GetIO();
     io.UserData = this;
     // UI subsystem is responsible for managing cursors and that interferes with ImGui.
-    io.ConfigFlags |= ImGuiConfigFlags_NoMouseCursorChange | flags;
+    io.ConfigFlags |= flags;
 
     Graphics* graphics = GetSubsystem<Graphics>();
     io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
