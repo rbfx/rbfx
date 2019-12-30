@@ -55,7 +55,7 @@ StringHash StringHashRegister::RegisterString(const StringHash& hash, const char
     {
         map_.populate(hash, string);
     }
-    else if (iter->second.comparei(string) != 0)
+    else if (iter->second != string)
     {
         URHO3D_LOGWARNINGF("StringHash collision detected! Both \"%s\" and \"%s\" have hash #%s",
             string, iter->second.c_str(), hash.ToString().c_str());
