@@ -27,17 +27,17 @@ void VS(float4 iPos : POSITION,
     #endif
     #ifdef INSTANCED
         float4x3 iModelInstance : TEXCOORD4,
-        // TODO(glow): Use spherical harmonics
-        float4 iAmbientInstance : TEXCOORD7,
-        //#if !defined(LIGHTMAP) && defined(SPHERICALHARMONICS)
-        //    float4 iSHArInstance : TEXCOORD7,
-        //    float4 iSHAgInstance : TEXCOORD8,
-        //    float4 iSHAbInstance : TEXCOORD9,
-        //    float4 iSHBrInstance : TEXCOORD10,
-        //    float4 iSHBgInstance : TEXCOORD11,
-        //    float4 iSHBbInstance : TEXCOORD12,
-        //    float4 iSHCInstance  : TEXCOORD13,
-        //#endif
+        #ifdef SPHERICALHARMONICS
+            float4 iSHArInstance : TEXCOORD7,
+            float4 iSHAgInstance : TEXCOORD8,
+            float4 iSHAbInstance : TEXCOORD9,
+            float4 iSHBrInstance : TEXCOORD10,
+            float4 iSHBgInstance : TEXCOORD11,
+            float4 iSHBbInstance : TEXCOORD12,
+            float4 iSHCInstance  : TEXCOORD13,
+        #else
+            float4 iAmbientInstance : TEXCOORD7,
+        #endif
     #endif
     #if defined(BILLBOARD) || defined(DIRBILLBOARD)
         float2 iSize : TEXCOORD1,
@@ -113,13 +113,7 @@ void VS(float4 iPos : POSITION,
         oVertexLight = float3(0.0, 0.0, 0.0);
         oTexCoord2 = GetLightMapTexCoord(iTexCoord2);
     #else
-        // TODO(glow): Use spherical harmonics
-        oVertexLight = iAmbient.rgb;
-        //#ifdef SPHERICALHARMONICS
-        //    oVertexLight = EvaluateSH01(float4(oNormal, 1), iSHAr, iSHAg, iSHAb);
-        //    oVertexLight += EvaluateSH2(float4(oNormal, 1), iSHBr, iSHBg, iSHBb, iSHC);
-        //#else
-        //#endif
+        oVertexLight = GetAmbientLight(float4(oNormal, 1));
     #endif
 
     #ifdef PERPIXEL

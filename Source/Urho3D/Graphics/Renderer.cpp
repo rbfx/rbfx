@@ -260,11 +260,15 @@ static const int MAX_EXTRA_INSTANCING_BUFFER_ELEMENTS = 4;
 inline ea::vector<VertexElement> CreateInstancingBufferElements(unsigned numExtraElements)
 {
     static const unsigned NUM_INSTANCEMATRIX_ELEMENTS = 3;
-    static const unsigned NUM_SH_ELEMENTS = 1; // TODO(glow): Use spherical harmonics // = 7
+#if URHO3D_SPHERICAL_HARMONICS
+    static const unsigned NUM_SHADERPARAMETER_ELEMENTS = 7;
+#else
+    static const unsigned NUM_SHADERPARAMETER_ELEMENTS = 1;
+#endif
     static const unsigned FIRST_UNUSED_TEXCOORD = 4;
 
     ea::vector<VertexElement> elements;
-    for (unsigned i = 0; i < NUM_INSTANCEMATRIX_ELEMENTS + NUM_SH_ELEMENTS + numExtraElements; ++i)
+    for (unsigned i = 0; i < NUM_INSTANCEMATRIX_ELEMENTS + NUM_SHADERPARAMETER_ELEMENTS + numExtraElements; ++i)
         elements.push_back(VertexElement(TYPE_VECTOR4, SEM_TEXCOORD, FIRST_UNUSED_TEXCOORD + i, true));
     return elements;
 }
@@ -274,6 +278,10 @@ Renderer::Renderer(Context* context) :
     defaultZone_(context->CreateObject<Zone>())
 {
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Renderer, HandleScreenMode));
+
+#if URHO3D_SPHERICAL_HARMONICS
+    SetSphericalHarmonics(true);
+#endif
 
     // Try to initialize right now, but skip if screen mode is not yet set
     Initialize();
@@ -545,6 +553,20 @@ void Renderer::SetMobileNormalOffsetMul(float mul)
 
 void Renderer::SetSphericalHarmonics(bool enable)
 {
+#if URHO3D_SPHERICAL_HARMONICS
+    if (!enable)
+    {
+        URHO3D_LOGERROR("Spherical Harmonics cannot be disabled in runtime");
+        return;
+    }
+#else
+    if (enable)
+    {
+        URHO3D_LOGERROR("Spherical Harmonics cannot be enabled in runtime");
+        return;
+    }
+#endif
+
     sphericalHarmonics_ = enable;
     SetGlobalShaderDefine("SPHERICALHARMONICS", sphericalHarmonics_);
 }

@@ -62,6 +62,18 @@ namespace Urho3D
 {
 
 /// Return ambient for Drawable.
+#if URHO3D_SPHERICAL_HARMONICS
+static SphericalHarmonicsDot9 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
+{
+    if (gi)
+    {
+        unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
+        const Vector3& position = drawable->GetNode()->GetWorldPosition();
+        return gi->SampleAmbientSH(position, hint);
+    }
+    return SphericalHarmonicsDot9{};
+}
+#else
 static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
 {
     if (gi)
@@ -73,6 +85,7 @@ static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone*
     // TODO(glow): Add zone gradient or remove Zones at all
     return zone->GetAmbientColor().ToVector4();
 }
+#endif
 
 /// %Frustum octree query for shadowcasters.
 class ShadowCasterOctreeQuery : public FrustumOctreeQuery
@@ -1252,7 +1265,7 @@ void View::GetBaseBatches()
                 Batch destBatch(srcBatch);
                 destBatch.pass_ = pass;
                 destBatch.zone_ = GetZone(drawable);
-                destBatch.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_),
+                destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_),
                 destBatch.isBase_ = true;
                 destBatch.lightMask_ = (unsigned char)GetLightMask(drawable);
 
@@ -1453,7 +1466,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
         destBatch.lightQueue_ = &lightQueue;
         destBatch.zone_ = zone;
-        destBatch.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_);
+        destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_);
 
         if (!isLitAlpha)
         {

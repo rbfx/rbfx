@@ -233,6 +233,27 @@ struct SphericalHarmonicsDot9
         return *this;
     }
 
+    /// Scale spherical harmonics (inplace).
+    SphericalHarmonicsDot9& operator *=(float rhs)
+    {
+        Ar_ *= rhs;
+        Ag_ *= rhs;
+        Ab_ *= rhs;
+        Br_ *= rhs;
+        Bg_ *= rhs;
+        Bb_ *= rhs;
+        C_ *= rhs;
+        return *this;
+    }
+
+    /// Scale spherical harmonics.
+    SphericalHarmonicsDot9 operator *(float rhs) const
+    {
+        SphericalHarmonicsDot9 result = *this;
+        result *= rhs;
+        return result;
+    }
+
     /// Dot product with (Nx, Ny, Nz, 1), red channel.
     Vector4 Ar_;
     /// Dot product with (Nx, Ny, Nz, 1), green channel.

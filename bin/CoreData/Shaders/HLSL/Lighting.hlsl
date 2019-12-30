@@ -6,13 +6,16 @@ float3 GetAmbient(float zonePos)
     return cAmbientStartColor + zonePos * cAmbientEndColor;
 }
 
-// TODO(glow): Use spherical harmonics
-#ifdef INSTANCED
-    #define iAmbient iAmbientInstance
-#else
-    #define iAmbient cAmbient
-#endif
-/*
+float3 GammaToLinearSpace(float3 color)
+{
+    return pow(max(color, float3(0, 0, 0)), 2.2);
+}
+
+float3 LinearToGammaSpace(float3 color)
+{
+    return pow(max(color, float3(0, 0, 0)), 1 / 2.2);
+}
+
 float3 EvaluateSH01(float4 normal, float4 SHAr, float4 SHAg, float4 SHAb)
 {
     float3 value;
@@ -35,26 +38,37 @@ float3 EvaluateSH2(float4 normal, float4 SHBr, float4 SHBg, float4 SHBb, float4 
     return value;
 }
 
+// TODO(glow): Use spherical harmonics
 #ifdef SPHERICALHARMONICS
-#ifdef INSTANCED
-    #define iSHAr iSHArInstance
-    #define iSHAg iSHAgInstance
-    #define iSHAb iSHAbInstance
-    #define iSHBr iSHBrInstance
-    #define iSHBg iSHBgInstance
-    #define iSHBb iSHBbInstance
-    #define iSHC iSHCInstance
+    #ifdef INSTANCED
+        #define iSHAr iSHArInstance
+        #define iSHAg iSHAgInstance
+        #define iSHAb iSHAbInstance
+        #define iSHBr iSHBrInstance
+        #define iSHBg iSHBgInstance
+        #define iSHBb iSHBbInstance
+        #define iSHC iSHCInstance
+    #else
+        #define iSHAr cSHAr
+        #define iSHAg cSHAg
+        #define iSHAb cSHAb
+        #define iSHBr cSHBr
+        #define iSHBg cSHBg
+        #define iSHBb cSHBb
+        #define iSHC cSHC
+    #endif
+
+    #define GetAmbientLight(normal) \
+        LinearToGammaSpace(EvaluateSH01(normal, iSHAr, iSHAg, iSHAb) + EvaluateSH2(normal, iSHBr, iSHBg, iSHBb, iSHC))
 #else
-    #define iSHAr cSHAr
-    #define iSHAg cSHAg
-    #define iSHAb cSHAb
-    #define iSHBr cSHBr
-    #define iSHBg cSHBg
-    #define iSHBb cSHBb
-    #define iSHC cSHC
+    #ifdef INSTANCED
+        #define iAmbient iAmbientInstance
+    #else
+        #define iAmbient cAmbient
+    #endif
+
+    #define GetAmbientLight(normal) iAmbient.rgb
 #endif
-#endif
-*/
 
 #ifdef NUMVERTEXLIGHTS
 float GetVertexLight(int index, float3 worldPos, float3 normal)

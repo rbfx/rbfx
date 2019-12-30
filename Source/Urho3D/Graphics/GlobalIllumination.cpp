@@ -50,15 +50,19 @@ Sphere CalculateTetrahedronCircumsphere(const AdjacentTetrahedron& cell, const e
     const float d01 = u1.LengthSquared();
     const float d02 = u2.LengthSquared();
     const float d03 = u3.LengthSquared();
-    const Vector3 r0 = (d01 * u2.CrossProduct(u3) + d02 * u3.CrossProduct(u1) + d03 * u1.CrossProduct(u2))
-        / (2 * u1.DotProduct(u2.CrossProduct(u3)));
+    const Vector3 num = d01 * u2.CrossProduct(u3) + d02 * u3.CrossProduct(u1) + d03 * u1.CrossProduct(u2);
+    const float den = 2 * u1.DotProduct(u2.CrossProduct(u3));
+    assert(Abs(den) > M_EPSILON);
+    const Vector3 r0 = num / den;
     const Vector3 center = p0 + r0;
 
-    assert(Equals((p1 - center).Length(), r0.Length(), M_LARGE_EPSILON));
-    assert(Equals((p2 - center).Length(), r0.Length(), M_LARGE_EPSILON));
-    assert(Equals((p3 - center).Length(), r0.Length(), M_LARGE_EPSILON));
+    const float eps = M_LARGE_EPSILON;
+    const float radius = ea::max({ (p1 - center).Length(), (p2 - center).Length(), (p3 - center).Length()});
+    //assert(Equals((p1 - center).Length(), r0.Length(), eps / 2));
+    //assert(Equals((p2 - center).Length(), r0.Length(), eps / 2));
+    //assert(Equals((p3 - center).Length(), r0.Length(), eps / 2));
 
-    return { center, r0.Length() + M_LARGE_EPSILON };
+    return { center, radius + eps };
 }
 
 /// Initialize tetrahedral mesh for given volume.
@@ -528,6 +532,21 @@ Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsign
     return weights;
 }
 
+SphericalHarmonicsDot9 GlobalIllumination::SampleAmbientSH(const Vector3& position, unsigned& hint) const
+{
+    // TODO(glow): Use real ambient here
+    const Vector4& weights = SampleLightProbeMesh(position, hint);
+    if (hint >= lightProbesMesh_.cells_.size())
+        return SphericalHarmonicsDot9{};
+
+    const AdjacentTetrahedron& tetrahedron = lightProbesMesh_.cells_[hint];
+
+    SphericalHarmonicsDot9 sh;
+    for (unsigned i = 0; i < 4; ++i)
+        sh += lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_ * weights[i];
+    return sh;
+}
+
 Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsigned& hint) const
 {
     // TODO(glow): Use real ambient here
@@ -539,7 +558,7 @@ Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsign
 
     Vector3 ambient;
     for (unsigned i = 0; i < 4; ++i)
-        ambient += weights[i] * lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage();
+        ambient += lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage() * weights[i];
     ambient.x_ = Pow(ambient.x_, 1 / 2.2f);
     ambient.y_ = Pow(ambient.y_, 1 / 2.2f);
     ambient.z_ = Pow(ambient.z_, 1 / 2.2f);
