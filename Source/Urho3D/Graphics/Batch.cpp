@@ -162,6 +162,21 @@ void CalculateSpotMatrix(Matrix4& dest, Light* light)
     dest = texAdjust * spotProj * spotView;
 }
 
+void SetInstanceShaderParameters(Graphics* graphics, const InstanceShaderParameters& params)
+{
+#if URHO3D_SPHERICAL_HARMONICS
+    graphics->SetShaderParameter(VSP_SHAR, params.ambient_.Ar_);
+    graphics->SetShaderParameter(VSP_SHAG, params.ambient_.Ag_);
+    graphics->SetShaderParameter(VSP_SHAB, params.ambient_.Ab_);
+    graphics->SetShaderParameter(VSP_SHBR, params.ambient_.Br_);
+    graphics->SetShaderParameter(VSP_SHBG, params.ambient_.Bg_);
+    graphics->SetShaderParameter(VSP_SHBB, params.ambient_.Bb_);
+    graphics->SetShaderParameter(VSP_SHC, params.ambient_.C_);
+#else
+    graphics->SetShaderParameter(VSP_AMBIENT, params.ambient_);
+#endif
+}
+
 void Batch::CalculateSortKey()
 {
     auto shaderID = (unsigned)(
@@ -245,7 +260,7 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     // Set model or skinning transforms
     if (setModelTransform && graphics->NeedParameterUpdate(SP_OBJECT, worldTransform_))
     {
-        graphics->SetShaderParameter(VSP_AMBIENT, ambient_);
+        SetInstanceShaderParameters(graphics, shaderParameters_);
         if (geometryType_ == GEOM_SKINNED)
         {
             graphics->SetShaderParameter(VSP_SKINMATRICES, reinterpret_cast<const float*>(worldTransform_),
@@ -678,16 +693,12 @@ void BatchGroup::SetInstancingData(void* lockedData, unsigned stride, unsigned& 
         memcpy(buffer, instance.worldTransform_, sizeof(Matrix3x4));
         buffer += sizeof(Matrix3x4);
 
-        // TODO(glow): Use spherical harmonics
-        //memcpy(buffer, &instance.sphericalHarmonics_, sizeof(SphericalHarmonicsDot9));
-        //buffer += sizeof(SphericalHarmonicsDot9);
-        memcpy(buffer, &instance.ambient_, sizeof(Vector4));
-        buffer += sizeof(Vector4);
+        memcpy(buffer, &instance.shaderParameters_, sizeof(InstanceShaderParameters));
+        buffer += sizeof(InstanceShaderParameters);
 
         if (instance.instancingData_)
         {
-            // TODO(glow): Use spherical harmonics
-            unsigned extraSize = stride - sizeof(Matrix3x4) - sizeof(Vector4); // - sizeof(SphericalHarmonicsDot9)
+            unsigned extraSize = stride - sizeof(Matrix3x4) - sizeof(InstanceShaderParameters);
             memcpy(buffer, instance.instancingData_, extraSize);
             buffer += extraSize;
         }
@@ -717,18 +728,7 @@ void BatchGroup::Draw(View* view, Camera* camera, bool allowDepthWrite) const
                 if (graphics->NeedParameterUpdate(SP_OBJECT, instances_[i].worldTransform_))
                 {
                     graphics->SetShaderParameter(VSP_MODEL, *instances_[i].worldTransform_);
-                    graphics->SetShaderParameter(VSP_AMBIENT, instances_[i].ambient_);
-                    // TODO(glow): Use spherical harmonics
-                    /*if (renderer->GetSphericalHarmonics())
-                    {
-                        graphics->SetShaderParameter(VSP_SHAR, instances_[i].sphericalHarmonics_.Ar_);
-                        graphics->SetShaderParameter(VSP_SHAG, instances_[i].sphericalHarmonics_.Ag_);
-                        graphics->SetShaderParameter(VSP_SHAB, instances_[i].sphericalHarmonics_.Ab_);
-                        graphics->SetShaderParameter(VSP_SHBR, instances_[i].sphericalHarmonics_.Br_);
-                        graphics->SetShaderParameter(VSP_SHBG, instances_[i].sphericalHarmonics_.Bg_);
-                        graphics->SetShaderParameter(VSP_SHBB, instances_[i].sphericalHarmonics_.Bb_);
-                        graphics->SetShaderParameter(VSP_SHC, instances_[i].sphericalHarmonics_.C_);
-                    }*/
+                    SetInstanceShaderParameters(graphics, instances_[i].shaderParameters_);
                 }
 
                 graphics->Draw(geometry_->GetPrimitiveType(), geometry_->GetIndexStart(), geometry_->GetIndexCount(),
