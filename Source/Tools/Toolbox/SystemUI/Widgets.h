@@ -201,9 +201,9 @@ URHO3D_TOOLBOX_API bool IconButton(const char* label);
 /// Draw a mask selector widget.
 URHO3D_TOOLBOX_API bool MaskSelector(unsigned int* mask);
 /// Draw a transform rect and allow it's modification by dragging handles with mouse.
-URHO3D_TOOLBOX_API bool TransformRect(Urho3D::IntRect& inOut, TransformSelectorFlags flags = TSF_NONE);
+URHO3D_TOOLBOX_API bool TransformRect(ImRect& inOut, TransformSelectorFlags flags = TSF_NONE);
 /// Draw a transform rect and allow it's modification by dragging handles with mouse.
-URHO3D_TOOLBOX_API bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSelectorFlags flags = TSF_NONE);
+URHO3D_TOOLBOX_API bool TransformRect(ImRect& inOut, ImRect& delta, TransformSelectorFlags flags = TSF_NONE);
 /// Return current SystemUI instance.
 URHO3D_TOOLBOX_API Urho3D::SystemUI* GetSystemUI();
 /// Create a optionally toggleable toolbar button with a tooltip.

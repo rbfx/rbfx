@@ -23,8 +23,6 @@
 #include "Widgets.h"
 #include <ImGui/imgui_internal.h>
 #include <Urho3D/Core/Context.h>
-#include <Urho3D/Input/Input.h>
-#include <SDL/SDL_scancode.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
 using namespace Urho3D;
@@ -237,78 +235,51 @@ URHO3D_FLAGSET(TransformResizeType, TransformResizeTypeFlags);
 namespace ImGui
 {
 
-bool TransformRect(IntRect& inOut, TransformSelectorFlags flags)
+bool TransformRect(ImRect& inOut, TransformSelectorFlags flags)
 {
-    IntRect delta;
+    ImRect delta;
     return TransformRect(inOut, delta, flags);
 }
 
-bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSelectorFlags flags)
+bool TransformRect(ImRect& inOut, ImRect& delta, TransformSelectorFlags flags)
 {
     struct State
     {
         /// A flag indicating type of resize action currently in progress
         TransformResizeTypeFlags resizing_ = RESIZE_NONE;
-        /// A cache of system cursors
-        ea::unordered_map<TransformResizeTypeFlags, SDL_Cursor*> cursors_;
-        /// Default cursor shape
-        SDL_Cursor* cursorArrow_;
-        /// Flag indicating that this selector set cursor handle
-        bool ownsCursor_ = false;
-
-        State()
-        {
-            cursors_[RESIZE_MOVE] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEALL);
-            cursors_[RESIZE_LEFT] = cursors_[RESIZE_RIGHT] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZEWE);
-            cursors_[RESIZE_BOTTOM] = cursors_[RESIZE_TOP] = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_SIZENS);
-            cursors_[RESIZE_TOP | RESIZE_LEFT] = cursors_[RESIZE_BOTTOM | RESIZE_RIGHT] = SDL_CreateSystemCursor(
-                SDL_SYSTEM_CURSOR_SIZENWSE);
-            cursors_[RESIZE_TOP | RESIZE_RIGHT] = cursors_[RESIZE_BOTTOM | RESIZE_LEFT] = SDL_CreateSystemCursor(
-                SDL_SYSTEM_CURSOR_SIZENESW);
-            cursorArrow_ = SDL_CreateSystemCursor(SDL_SYSTEM_CURSOR_ARROW);
-        }
-
-        ~State()
-        {
-            SDL_FreeCursor(cursorArrow_);
-            for (const auto& it : cursors_)
-                SDL_FreeCursor(it.second);
-        }
     };
 
-    Input* input = ui::GetSystemUI()->GetSubsystem<Input>();
-
-    auto renderHandle = [&](IntVector2 screenPos, int wh) -> bool {
-        IntRect rect(
-            screenPos.x_ - wh / 2,
-            screenPos.y_ - wh / 2,
-            screenPos.x_ + wh / 2,
-            screenPos.y_ + wh / 2
+    auto renderHandle = [&](ImVec2 screenPos, float wh) -> bool {
+        ImRect rect(
+            screenPos.x - wh / 2.0f,
+            screenPos.y - wh / 2.0f,
+            screenPos.x + wh / 2.0f,
+            screenPos.y + wh / 2.0f
         );
 
         if (!(flags & TSF_HIDEHANDLES))
         {
-            ui::GetWindowDrawList()->AddRectFilled(ToImGui(rect.Min()), ToImGui(rect.Max()),
-                ui::GetColorU32(ToImGui(Color::RED)));
+            ui::GetWindowDrawList()->AddRectFilled(rect.Min, rect.Max, ui::GetColorU32(ToImGui(Color::RED)));
         }
 
-        return rect.IsInside(input->GetMousePosition()) == INSIDE;
+        const ImGuiIO& io = ui::GetIO();
+        return rect.Contains(io.MousePos);
     };
 
-    auto size = inOut.Size();
-    auto handleSize = Max(Min(Min(size.x_ / 4, size.y_ / 4), 8), 2);
+    auto size = inOut.GetSize();
+    auto handleSize = Max(Min(Min(size.x / 4, size.y / 4), 8), 2);
     bool modified = false;
 
     auto* s = ui::GetUIState<State>();
     auto id = ui::GetID(s);
 
     // Extend rect to cover resize handles that are sticking out of ui element boundaries.
-    auto extendedRect = inOut + IntRect(-handleSize / 2, -handleSize / 2, handleSize / 2, handleSize / 2);
-    ui::ItemSize(ToImGui(inOut));
-    if (ui::ItemAdd(ToImGui(extendedRect), id))
+    auto extendedRect = inOut + ImRect(-handleSize / 2, -handleSize / 2, handleSize / 2, handleSize / 2);
+    ui::ItemSize(inOut);
+    if (ui::ItemAdd(extendedRect, id))
     {
         TransformResizeTypeFlags resizing = RESIZE_NONE;
-        if (renderHandle(inOut.Min() + size / 2, handleSize))
+        if (renderHandle(inOut.Min + size / 2, handleSize))
             resizing = RESIZE_MOVE;
 
         bool canResizeHorizontal = !(flags & TSF_NOHORIZONTAL);
@@ -316,97 +287,96 @@ bool TransformRect(Urho3D::IntRect& inOut, Urho3D::IntRect& delta, TransformSele
 
         if (canResizeHorizontal && canResizeVertical)
         {
-            if (renderHandle(inOut.Min(), handleSize))
+            if (renderHandle(inOut.Min, handleSize))
                 resizing = RESIZE_LEFT | RESIZE_TOP;
-            if (renderHandle(inOut.Min() + IntVector2(0, size.y_), handleSize))
+            if (renderHandle(inOut.Min + ImVec2(0, size.y), handleSize))
                 resizing = RESIZE_LEFT | RESIZE_BOTTOM;
-            if (renderHandle(inOut.Min() + IntVector2(size.x_, 0), handleSize))
+            if (renderHandle(inOut.Min + ImVec2(size.x, 0), handleSize))
                 resizing = RESIZE_TOP | RESIZE_RIGHT;
-            if (renderHandle(inOut.Max(), handleSize))
+            if (renderHandle(inOut.Max, handleSize))
                 resizing = RESIZE_BOTTOM | RESIZE_RIGHT;
         }
 
         if (canResizeHorizontal)
         {
-            if (renderHandle(inOut.Min() + IntVector2(0, size.y_ / 2), handleSize))
+            if (renderHandle(inOut.Min + ImVec2(0, size.y / 2), handleSize))
                 resizing = RESIZE_LEFT;
-            if (renderHandle(inOut.Min() + IntVector2(size.x_, size.y_ / 2), handleSize))
+            if (renderHandle(inOut.Min + ImVec2(size.x, size.y / 2), handleSize))
                 resizing = RESIZE_RIGHT;
         }
 
         if (canResizeVertical)
         {
-            if (renderHandle(inOut.Min() + IntVector2(size.x_ / 2, 0), handleSize))
+            if (renderHandle(inOut.Min + ImVec2(size.x / 2, 0), handleSize))
                 resizing = RESIZE_TOP;
-            if (renderHandle(inOut.Min() + IntVector2(size.x_ / 2, size.y_), handleSize))
+            if (renderHandle(inOut.Min + ImVec2(size.x / 2, size.y), handleSize))
                 resizing = RESIZE_BOTTOM;
         }
 
         // Draw rect around selected element
-        ui::GetWindowDrawList()->AddRect(ToImGui(inOut.Min()), ToImGui(inOut.Max()),
-            ui::GetColorU32(ToImGui(Color::RED)));
+        ui::GetWindowDrawList()->AddRect(inOut.Min, inOut.Max, ui::GetColorU32(ToImGui(Color::RED)));
 
-        // Reset mouse cursor if we are not hovering any handle and are not resizing
-        if (resizing == RESIZE_NONE && s->resizing_ == RESIZE_NONE && s->ownsCursor_)
-        {
-            SDL_SetCursor(s->cursorArrow_);
-            s->ownsCursor_ = false;
-        }
+        // Set mouse cursor if handle is hovered or if we are resizing
+        if (resizing & RESIZE_TOP && resizing & RESIZE_LEFT && resizing & RESIZE_BOTTOM && resizing & RESIZE_RIGHT)
+            ui::SetMouseCursor(ImGuiMouseCursor_ResizeAll);
+        else if ((resizing & RESIZE_TOP && resizing & RESIZE_RIGHT) || (resizing & RESIZE_BOTTOM && resizing & RESIZE_LEFT))
+            ui::SetMouseCursor(ImGuiMouseCursor_ResizeNESW);
+        else if ((resizing & RESIZE_TOP && resizing & RESIZE_LEFT) || (resizing & RESIZE_BOTTOM && resizing & RESIZE_RIGHT))
+            ui::SetMouseCursor(ImGuiMouseCursor_ResizeNWSE);
+        else if (resizing & RESIZE_LEFT || resizing & RESIZE_RIGHT)
+            ui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
+        else if (resizing & RESIZE_TOP || resizing & RESIZE_BOTTOM)
+            ui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
+        else
+            ui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 
         // Prevent interaction when something else blocks inactive transform.
         if (s->resizing_ != RESIZE_NONE || (ui::IsItemHovered(ImGuiHoveredFlags_RectOnly) &&
             (!ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow) || ui::IsWindowHovered())))
         {
-            // Set mouse cursor if handle is hovered or if we are resizing
-            if (resizing != RESIZE_NONE && !s->ownsCursor_)
-            {
-                SDL_SetCursor(s->cursors_[resizing]);
-                s->ownsCursor_ = true;
-            }
-
             // Begin resizing
             if (ui::IsMouseClicked(0))
                 s->resizing_ = resizing;
 
-            IntVector2 d = ToIntVector2(ui::GetIO().MouseDelta);
+            ImVec2 d = ui::GetIO().MouseDelta;
             if (s->resizing_ != RESIZE_NONE)
             {
                 ui::SetActiveID(id, ui::GetCurrentWindow());
                 if (!ui::IsMouseDown(0))
                     s->resizing_ = RESIZE_NONE;
-                else if (d != IntVector2::ZERO)
+                else if (d != ImVec2(0, 0))
                 {
-                    delta = IntRect::ZERO;
+                    delta = ImRect(0, 0, 0, 0);
 
                     if (s->resizing_ == RESIZE_MOVE)
                     {
-                        delta.left_ += d.x_;
-                        delta.right_ += d.x_;
-                        delta.top_ += d.y_;
-                        delta.bottom_ += d.y_;
+                        delta.Min.x += d.x;
+                        delta.Max.x += d.x;
+                        delta.Min.y += d.y;
+                        delta.Max.y += d.y;
                         modified = true;
                     }
                     else
                     {
                         if (s->resizing_ & RESIZE_LEFT)
                         {
-                            delta.left_ += d.x_;
+                            delta.Min.x += d.x;
                             modified = true;
                         }
                         else if (s->resizing_ & RESIZE_RIGHT)
                         {
-                            delta.right_ += d.x_;
+                            delta.Max.x += d.x;
                             modified = true;
                         }
 
                         if (s->resizing_ & RESIZE_TOP)
                         {
-                            delta.top_ += d.y_;
+                            delta.Min.y += d.y;
                             modified = true;
                         }
                         else if (s->resizing_ & RESIZE_BOTTOM)
                         {
-                            delta.bottom_ += d.y_;
+                            delta.Max.y += d.y;
                             modified = true;
                         }
                     }
