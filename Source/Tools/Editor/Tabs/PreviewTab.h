@@ -44,14 +44,12 @@ class PreviewTab : public Tab
     URHO3D_OBJECT(PreviewTab, Tab)
 public:
     explicit PreviewTab(Context* context);
-
+    /// Renders tab UI elements.
     bool RenderWindowContent() override;
     /// Set color of view texture to black.
     void Clear();
-
     /// Render play/pause/restore/step/store buttons.
     void RenderButtons();
-
     /// Start playing a scene. If scene is already playing this does nothing.
     void Play();
     /// Pause playing a scene. If scene is stopped or paused this does nothing.
@@ -70,8 +68,6 @@ public:
     SceneSimulationStatus GetSceneSimulationStatus() const { return simulationStatus_; }
 
 protected:
-    ///
-    IntRect UpdateViewRect() override;
     /// Goes through scene, finds CameraViewport components and creates required viewports in the editor.
     void UpdateViewports();
     /// Handle addition or removal of CameraViewport component.
@@ -83,11 +79,8 @@ protected:
     ///
     void RenderUI();
 
-    /// Last view rectangle.
-    IntRect viewRect_{};
     /// Texture used to display preview.
-    SharedPtr<Texture2D> view_{};
-
+    SharedPtr<Texture2D> texture_{};
     /// Flag controlling scene updates in the viewport.
     SceneSimulationStatus simulationStatus_ = SCENE_SIMULATION_STOPPED;
     /// Temporary storage of scene data used in play/pause functionality.

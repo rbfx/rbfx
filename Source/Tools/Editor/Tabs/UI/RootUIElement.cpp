@@ -22,7 +22,7 @@
 
 
 #include <Urho3D/IO/Log.h>
-#include "RootUIElement.h"
+#include "Tabs/UI/RootUIElement.h"
 
 
 namespace Urho3D
@@ -31,7 +31,6 @@ namespace Urho3D
 RootUIElement::RootUIElement(Context* context)
     : UIElement(context)
 {
-
 }
 
 IntVector2 RootUIElement::ScreenToElement(const IntVector2& screenPosition)
