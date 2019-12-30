@@ -24,7 +24,7 @@
 
 #include "ToolboxAPI.h"
 #include <Urho3D/Scene/Node.h>
-#include <ImGui/imgui.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 
 
 namespace Urho3D

@@ -26,9 +26,9 @@
 #include "../Container/FlagSet.h"
 #include "../Core/Object.h"
 #include "../Core/Timer.h"
+#include "../SystemUI/SystemUI.h"
 
 #include <EASTL/map.h>
-#include <ImGui/imgui.h>
 
 namespace Urho3D
 {

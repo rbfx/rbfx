@@ -21,8 +21,7 @@
 //
 
 #include <Urho3D/IO/Log.h>
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_stdlib.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 #include "EditorEvents.h"
 #include "InspectorTab.h"
 #include "Editor.h"
