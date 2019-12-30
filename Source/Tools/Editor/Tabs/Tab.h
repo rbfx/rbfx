@@ -31,7 +31,6 @@
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
-#include <ImGui/imgui.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 
 

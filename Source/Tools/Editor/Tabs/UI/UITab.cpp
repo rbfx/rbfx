@@ -27,13 +27,12 @@
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/UI/Window.h>
 #include <Urho3D/UI/UI.h>
 #include <Toolbox/IO/ContentUtilities.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_internal.h>
 #include "EditorEvents.h"
 #include "Editor.h"
 #include "Widgets.h"

@@ -20,14 +20,12 @@
 // THE SOFTWARE.
 //
 
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
-#include <ImGui/imgui.h>
-#include <ImGui/imgui_stdlib.h>
-#include <nativefiledialog/nfd.h>
-#include <Toolbox/SystemUI/Widgets.h>
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include <nativefiledialog/nfd.h>
+#include <Toolbox/SystemUI/Widgets.h>
 #include "Plugins/ModulePlugin.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/PreviewTab.h"
