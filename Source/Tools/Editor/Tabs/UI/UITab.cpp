@@ -200,18 +200,39 @@ void UITab::RenderInspector(const char* filter)
 bool UITab::RenderWindowContent()
 {
     RenderToolbarButtons();
-    IntRect tabRect = UpdateViewRect();
 
-    ui::SetCursorScreenPos(ToImGui(tabRect.Min()));
-    ImVec2 contentSize = ToImGui(tabRect.Size());
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ImGuiViewport* viewport = window->Viewport;
+    ImRect rect = ImRound(window->ContentRegionRect);
+    // Correct content rect to not overlap buttons.
+    rect.Min.y += ui::GetCursorPosY();
+    IntVector2 textureSize{
+        static_cast<int>(IM_ROUND(rect.GetWidth() * viewport->DpiScale)),
+        static_cast<int>(IM_ROUND(rect.GetHeight() * viewport->DpiScale))
+    };
+    if (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight())
+    {
+        ImVec2 offset = (rect.Min - viewport->Pos) * viewport->DpiScale;
+        rootElement_->SetOffset({static_cast<int>(IM_ROUND(offset.x)), static_cast<int>(IM_ROUND(offset.y))});
+        offScreenUI_->SetCustomSize(textureSize);
+    }
+
+    ui::SetCursorScreenPos(rect.Min);
+    ImVec2 contentSize = rect.GetSize();
     ui::BeginChild("UI view", contentSize, false, windowFlags_);
     ui::Image(texture_, contentSize);
 
     if (auto selected = GetSelected())
     {
+        IntRect pixelRect{
+            static_cast<int>(IM_ROUND(rect.Min.x * viewport->DpiScale)),
+            static_cast<int>(IM_ROUND(rect.Min.y * viewport->DpiScale)),
+            static_cast<int>(IM_ROUND(rect.Max.x * viewport->DpiScale)),
+            static_cast<int>(IM_ROUND(rect.Max.y * viewport->DpiScale)),
+        };
         // Render element selection rect, resize handles, and handle element transformations.
         IntRect delta;
-        IntRect screenRect(selected->GetScreenPosition() + tabRect.Min(), selected->GetScreenPosition() + selected->GetSize() + tabRect.Min());
+        IntRect screenRect(selected->GetScreenPosition() + pixelRect.Min(), selected->GetScreenPosition() + selected->GetSize() + pixelRect.Min());
         ui::TransformSelectorFlags flags = ui::TSF_NONE;
         if (hideResizeHandles_)
             flags |= ui::TSF_HIDEHANDLES;
@@ -309,22 +330,6 @@ void UITab::OnActiveUpdate()
     }
 
     RenderElementContextMenu();
-}
-
-IntRect UITab::UpdateViewRect()
-{
-    IntRect rect = BaseClassName::UpdateViewRect();
-    // Correct content rect to not overlap buttons. Ideally this should be in Tab.cpp but for some reason it creates
-    // unused space at the bottom of PreviewTab.
-    rect.top_ += static_cast<int>(ui::GetCursorPosY());
-
-    if (rect.Width() != texture_->GetWidth() || rect.Height() != texture_->GetHeight())
-    {
-        rootElement_->SetOffset(rect.Min());
-        offScreenUI_->SetCustomSize(rect.Width(), rect.Height());
-    }
-
-    return rect;
 }
 
 bool UITab::LoadResource(const ea::string& resourcePath)
