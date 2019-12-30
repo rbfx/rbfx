@@ -61,8 +61,6 @@ public:
     UIElement* GetSelected() const;
 
 protected:
-    ///
-    IntRect UpdateViewRect() override;
     /// Render scene hierarchy window.
     void RenderNodeTree(UIElement* element);
     /// Select element. Pass null to unselect current element.

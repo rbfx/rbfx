@@ -115,8 +115,6 @@ public:
     Signal<void> onTabContextMenu_;
 
 protected:
-    ///
-    virtual IntRect UpdateViewRect();
     /// Updates cached unique title when id or title changed.
     void UpdateUniqueTitle();
 

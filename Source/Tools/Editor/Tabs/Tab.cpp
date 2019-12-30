@@ -182,12 +182,6 @@ void Tab::UpdateUniqueTitle()
     uniqueTitle_ = ToString("%s###%s", title_.c_str(), id_.c_str());
 }
 
-IntRect Tab::UpdateViewRect()
-{
-    IntRect tabRect = ToIntRect(ui::GetCurrentWindow()->ContentRegionRect);
-    return tabRect;
-}
-
 void Tab::OnSaveUISettings(ImGuiTextBuffer* buf)
 {
     buf->appendf("\n[Project][%s###%s]\n", GetTypeName().c_str(), GetID().c_str());
