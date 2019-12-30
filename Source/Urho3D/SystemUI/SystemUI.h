@@ -138,6 +138,11 @@ static inline bool operator==(const ImVec2& lhs, const ImVec2& rhs) { return lhs
 static inline bool operator!=(const ImVec2& lhs, const ImVec2& rhs) { return !(lhs == rhs); }
 static inline bool operator==(const ImRect& lhs, const ImRect& rhs) { return lhs.Min == rhs.Min && lhs.Max == rhs.Max; }
 static inline bool operator!=(const ImRect& lhs, const ImRect& rhs) { return !(lhs == rhs); }
+static inline ImRect operator+(const ImRect& lhs, const ImRect& rhs) { return ImRect(lhs.Min + rhs.Min, lhs.Max + rhs.Max); }
+static inline ImRect& operator+=(ImRect& lhs, const ImRect& rhs) { lhs.Min += rhs.Min; lhs.Max += rhs.Max; return lhs; }
+static inline ImRect operator/(const ImRect& lhs, float rhs) { return ImRect(lhs.Min / rhs, lhs.Max / rhs); }
+static inline ImRect& operator/=(ImRect& lhs, float rhs) { lhs.Min /= rhs; lhs.Max /= rhs; return lhs; }
+static inline ImRect& operator*=(ImRect& lhs, float rhs) { lhs.Min *= rhs; lhs.Max *= rhs; return lhs; }
 static inline ImRect ImRound(const ImRect& r) { return ImRect(ImRound(r.Min), ImRound(r.Max)); };
 
 namespace ui = ImGui;
