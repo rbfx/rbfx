@@ -150,10 +150,16 @@ struct Tetrahedron
         return face;
     }
 
-    /// Return whether the tetrahedron has given neighbour.
-    bool HasNeighbor(unsigned neighborIndex) const
+    /// Return face index corresponding to given neighbor. Return 4 if not found.
+    unsigned GetNeighborFaceIndex(unsigned neighborTetIndex) const
     {
-        return ea::count(ea::begin(neighbors_), ea::end(neighbors_), neighborIndex) != 0;
+        return ea::find(ea::begin(neighbors_), ea::end(neighbors_), neighborTetIndex) - ea::begin(neighbors_);
+    }
+
+    /// Return whether the tetrahedron has given neighbour.
+    bool HasNeighbor(unsigned neighborTetIndex) const
+    {
+        return GetNeighborFaceIndex(neighborTetIndex) < 4;
     }
 };
 
@@ -192,13 +198,13 @@ private:
         /// Whether the tetrahedron is removed.
         ea::vector<bool> removed_;
 
-        /// List of tetrahedrons removed on current iteration.
-        ea::vector<unsigned> badTetrahedrons_;
-        /// Hole surface for current iteration.
-        TetrahedralMeshSurface holeSurface_;
-        /// Queue for breadth search of bad tetrahedrons.
+        /// Queue for breadth search of bad tetrahedrons. Used by FindAndRemoveIntersected only.
         ea::vector<unsigned> searchQueue_;
     };
+
+    /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point. Returns hole surface.
+    void FindAndRemoveIntersected(DelaunayContext& ctx, const Vector3& position,
+        TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const;
 
 public:
     /// Vertices.

@@ -138,105 +138,40 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     }
 
     // Triangulate
+    TetrahedralMeshSurface holeSurface;
+    ea::vector<unsigned> removedTetrahedrons;
     for (const Vector3& position : positions)
     {
         const unsigned newIndex = vertices_.size();
         vertices_.push_back(position);
 
-        ctx.badTetrahedrons_.clear();
-        ctx.searchQueue_.clear();
-        ctx.holeSurface_.Clear();
-
-        // Find first bad cell
-        for (unsigned cellIndex = 0; cellIndex < tetrahedrons_.size(); ++cellIndex)
-        {
-            if (!ctx.removed_[cellIndex] && ctx.circumspheres_[cellIndex].IsInside(position) != OUTSIDE)
-            {
-                ctx.badTetrahedrons_.push_back(cellIndex);
-                ctx.searchQueue_.push_back(cellIndex);
-                ctx.removed_[cellIndex] = true;
-                break;
-            }
-        }
-
-        if (ctx.badTetrahedrons_.empty())
-        {
-            assert(0);
-            return;
-        }
-
-        // Do breadth search to collect all bad cells and build hole mesh
-        unsigned firstCell = 0;
-        while (firstCell < ctx.searchQueue_.size())
-        {
-            const unsigned lastCell = ctx.searchQueue_.size();
-            for (unsigned i = firstCell; i < lastCell; ++i)
-            {
-                const Tetrahedron& tetrahedron = tetrahedrons_[ctx.searchQueue_[i]];
-
-                // Process neighbors
-                for (unsigned j = 0; j < 4; ++j)
-                {
-                    const unsigned nextIndex = tetrahedron.neighbors_[j];
-                    if (nextIndex == M_MAX_UNSIGNED)
-                    {
-                        // Missing neighbor closes hole
-                        const TetrahedralMeshSurfaceTriangle newFace = tetrahedron.GetTriangleFace(j, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
-                        ctx.holeSurface_.AddFace(newFace);
-                        continue;
-                    }
-
-                    // Ignore bad cells, they are already processed
-                    Tetrahedron& nextTetrahedron = tetrahedrons_[nextIndex];
-                    if (ctx.removed_[nextIndex])
-                        continue;
-
-                    if (ctx.circumspheres_[nextIndex].IsInside(position) != OUTSIDE)
-                    {
-                        // If cell is bad too, add it to queue
-                        ctx.badTetrahedrons_.push_back(nextIndex);
-                        ctx.searchQueue_.push_back(nextIndex);
-                        ctx.removed_[nextIndex] = true;
-                    }
-                    else
-                    {
-                        // Add new face to hole mesh
-                        const unsigned nextFaceIndex = ea::find(
-                            ea::begin(nextTetrahedron.neighbors_), ea::end(nextTetrahedron.neighbors_), ctx.searchQueue_[i])
-                            - ea::begin(nextTetrahedron.neighbors_);
-                        const TetrahedralMeshSurfaceTriangle newFace = nextTetrahedron.GetTriangleFace(nextFaceIndex, nextIndex, nextFaceIndex);
-                        ctx.holeSurface_.AddFace(newFace);
-                    }
-                }
-            }
-            firstCell = lastCell;
-        }
+        FindAndRemoveIntersected(ctx, position, holeSurface, removedTetrahedrons);
 
         // Create new cells on top of bad cells
-        if (!ctx.holeSurface_.IsClosedSurface())
+        if (!holeSurface.IsClosedSurface())
         {
             assert(0);
             return;
         }
 
-        while (ctx.holeSurface_.Size() > ctx.badTetrahedrons_.size())
+        while (holeSurface.Size() > removedTetrahedrons.size())
         {
-            ctx.badTetrahedrons_.push_back(tetrahedrons_.size());
+            removedTetrahedrons.push_back(tetrahedrons_.size());
             tetrahedrons_.push_back();
             ctx.circumspheres_.push_back();
             ctx.removed_.push_back(true);
         }
 
-        for (unsigned i = 0; i < ctx.holeSurface_.Size(); ++i)
+        for (unsigned i = 0; i < holeSurface.Size(); ++i)
         {
-            const unsigned newCellIndex = ctx.badTetrahedrons_[i];
+            const unsigned newCellIndex = removedTetrahedrons[i];
             Tetrahedron& tetrahedron = tetrahedrons_[newCellIndex];
-            const TetrahedralMeshSurfaceTriangle& face = ctx.holeSurface_.faces_[i];
+            const TetrahedralMeshSurfaceTriangle& face = holeSurface.faces_[i];
 
             for (unsigned j = 0; j < 3; ++j)
             {
                 tetrahedron.indices_[j] = face.indices_[j];
-                tetrahedron.neighbors_[j] = ctx.badTetrahedrons_[face.neighbors_[j]];
+                tetrahedron.neighbors_[j] = removedTetrahedrons[face.neighbors_[j]];
             }
             tetrahedron.indices_[3] = newIndex;
             tetrahedron.neighbors_[3] = face.tetIndex_;
@@ -341,6 +276,79 @@ bool TetrahedralMesh::IsAdjacencyValid() const
         }
     }
     return true;
+}
+
+void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext& ctx, const Vector3& position,
+    TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const
+{
+    ctx.searchQueue_.clear();
+
+    // Reset output
+    holeSurface.Clear();
+    removedTetrahedrons.clear();
+
+    // Find first tetrahedron to remove
+    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        if (!ctx.removed_[tetIndex] && ctx.circumspheres_[tetIndex].IsInside(position) != OUTSIDE)
+        {
+            removedTetrahedrons.push_back(tetIndex);
+            ctx.searchQueue_.push_back(tetIndex);
+            ctx.removed_[tetIndex] = true;
+            break;
+        }
+    }
+
+    if (removedTetrahedrons.empty())
+    {
+        URHO3D_LOGERROR("Cannot update tetrahedral mesh for vertex position");
+        assert(0);
+        return;
+    }
+
+    // Do breadth search to collect all bad cells and build hole mesh
+    // Note: size may change during the loop
+    for (unsigned i = 0; i < ctx.searchQueue_.size(); ++i)
+    {
+        const unsigned tetIndex = ctx.searchQueue_[i];
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+
+        // Process neighbors
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            const unsigned neighborTetIndex = tetrahedron.neighbors_[faceIndex];
+
+            // Outer surface is reached
+            if (neighborTetIndex == M_MAX_UNSIGNED)
+            {
+                // Face of outer surface doesn't have underlying tetrahedron
+                const TetrahedralMeshSurfaceTriangle holeFace = tetrahedron.GetTriangleFace(
+                    faceIndex, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
+                holeSurface.AddFace(holeFace);
+                continue;
+            }
+
+            // Ignore removed cells
+            if (ctx.removed_[neighborTetIndex])
+                continue;
+
+            // If circumsphere of neighbor tetrahedron contains the point, remove this neighbor and queue it.
+            if (ctx.circumspheres_[neighborTetIndex].IsInside(position) != OUTSIDE)
+            {
+                removedTetrahedrons.push_back(neighborTetIndex);
+                ctx.searchQueue_.push_back(neighborTetIndex);
+                ctx.removed_[neighborTetIndex] = true;
+                continue;
+            }
+
+            // Boundary of the hole is found
+            const Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborTetIndex];
+            const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
+            const TetrahedralMeshSurfaceTriangle newFace = neighborTetrahedron.GetTriangleFace(
+                neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
+            holeSurface.AddFace(newFace);
+        }
+    }
 }
 
 }
