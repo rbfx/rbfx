@@ -34,23 +34,35 @@ namespace Urho3D
 {
 
 /// Tetrahedron with adjacency information.
-struct AdjacentTetrahedron
+struct Tetrahedron
 {
     /// Indices of tetrahedron vertices.
     unsigned indices_[4]{};
-    /// Indices of neighbor tetrahedrons. M_MAX_UNSIGNED if missing.
+    /// Indices of neighbor tetrahedrons. M_MAX_UNSIGNED if empty.
     unsigned neighbors_[4]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED };
     /// Pre-computed matrix for calculating barycentric coordinates.
-    Matrix3 barycentricInverse_;
+    Matrix3 matrix_;
 };
 
 /// Tetrahedral mesh.
-struct TetrahedralMesh
+class URHO3D_API TetrahedralMesh
 {
+public:
+    /// Define mesh from vertices.
+    //void Define(ea::span<const Vector3> positions, float padding = 1.0f);
+
+    /// Calculate circumsphere of given tetrahedron.
+    //Sphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
+
+private:
+    /// Create super-mesh for Delaunay triangulation.
+    //void InitializeSuperMesh(const BoundingBox& boundingBox);
+
+public:
     /// Vertices.
     ea::vector<Vector3> vertices_;
     /// Cells.
-    ea::vector<AdjacentTetrahedron> cells_;
+    ea::vector<Tetrahedron> tetrahedrons_;
     /// Hull normals.
     ea::vector<Vector3> hullNormals_;
     /// Number of inner cells.
