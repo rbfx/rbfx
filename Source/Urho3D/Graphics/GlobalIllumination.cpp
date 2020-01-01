@@ -189,12 +189,11 @@ bool IsTetrahedralMeshAdjacencyValid(const TetrahedralMesh& mesh)
 void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> positions)
 {
     // Copy cells and initialize all required data
-    ea::vector<Tetrahedron> cells(mesh.tetrahedrons_.size());
     ea::vector<DelaunayTetrahedron> auxilary(mesh.tetrahedrons_.size());
     for (unsigned i = 0; i < mesh.tetrahedrons_.size(); ++i)
     {
-        cells[i] = mesh.tetrahedrons_[i];
-        auxilary[i].circumsphere_ = CalculateTetrahedronCircumsphere(cells[i], mesh.vertices_);
+        mesh.tetrahedrons_[i] = mesh.tetrahedrons_[i];
+        auxilary[i].circumsphere_ = CalculateTetrahedronCircumsphere(mesh.tetrahedrons_[i], mesh.vertices_);
     }
 
     unsigned tempCount = 0;
@@ -213,7 +212,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         holeMesh.clear();
 
         // Find first bad cell
-        for (unsigned cellIndex = 0; cellIndex < cells.size(); ++cellIndex)
+        for (unsigned cellIndex = 0; cellIndex < mesh.tetrahedrons_.size(); ++cellIndex)
         {
             DelaunayTetrahedron& cell = auxilary[cellIndex];
             if (!cell.bad_ && cell.circumsphere_.IsInside(position) != OUTSIDE)
@@ -238,7 +237,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             const unsigned lastCell = searchQueue.size();
             for (unsigned i = firstCell; i < lastCell; ++i)
             {
-                const Tetrahedron& tetrahedron = cells[searchQueue[i]];
+                const Tetrahedron& tetrahedron = mesh.tetrahedrons_[searchQueue[i]];
                 const DelaunayTetrahedron& cell = auxilary[searchQueue[i]];
 
                 // Process neighbors
@@ -254,7 +253,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                     }
 
                     // Ignore bad cells, they are already processed
-                    Tetrahedron& nextTetrahedron = cells[nextIndex];
+                    Tetrahedron& nextTetrahedron = mesh.tetrahedrons_[nextIndex];
                     DelaunayTetrahedron& nextCell = auxilary[nextIndex];
                     if (nextCell.bad_)
                         continue;
@@ -290,8 +289,8 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         {
             DelaunayTetrahedron placeholder;
             placeholder.bad_ = true;
-            badCells.push_back(cells.size());
-            cells.push_back();
+            badCells.push_back(mesh.tetrahedrons_.size());
+            mesh.tetrahedrons_.push_back();
             auxilary.push_back(placeholder);
         }
 
@@ -299,7 +298,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         {
             const unsigned newCellIndex = badCells[i];
             DelaunayTetrahedron& cell = auxilary[newCellIndex];
-            Tetrahedron& tetrahedron = cells[newCellIndex];
+            Tetrahedron& tetrahedron = mesh.tetrahedrons_[newCellIndex];
             const TetrahedralMeshHoleFace& face = holeMesh[i];
 
             for (unsigned j = 0; j < 3; ++j)
@@ -310,17 +309,17 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             tetrahedron.indices_[3] = newIndex;
             tetrahedron.neighbors_[3] = face.cell_;
             if (face.cell_ != M_MAX_UNSIGNED)
-                cells[face.cell_].neighbors_[face.face_] = newCellIndex;
+                mesh.tetrahedrons_[face.cell_].neighbors_[face.face_] = newCellIndex;
             cell.bad_ = false;
             cell.circumsphere_ = CalculateTetrahedronCircumsphere(tetrahedron, mesh.vertices_);
         }
     }
 
-    for (unsigned i = 0; i < cells.size(); ++i)
+    for (unsigned i = 0; i < mesh.tetrahedrons_.size(); ++i)
     {
         for (unsigned j = 0; j < 4; ++j)
         {
-            if (cells[i].indices_[j] < 8)
+            if (mesh.tetrahedrons_[i].indices_[j] < 8)
             {
                 auxilary[i].bad_ = true;
                 break;
@@ -330,17 +329,18 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         {
             for (unsigned j = 0; j < 4; ++j)
             {
-                const unsigned neighborIndex = cells[i].neighbors_[j];
+                const unsigned neighborIndex = mesh.tetrahedrons_[i].neighbors_[j];
                 if (neighborIndex != M_MAX_UNSIGNED)
                 {
-                    ea::replace(ea::begin(cells[neighborIndex].neighbors_),
-                        ea::end(cells[neighborIndex].neighbors_), i, M_MAX_UNSIGNED);
+                    ea::replace(ea::begin(mesh.tetrahedrons_[neighborIndex].neighbors_),
+                        ea::end(mesh.tetrahedrons_[neighborIndex].neighbors_), i, M_MAX_UNSIGNED);
                 }
             }
         }
     }
 
     // Copy output
+    ea::vector<Tetrahedron> cells = ea::move(mesh.tetrahedrons_);
     ea::vector<unsigned> newIndices(cells.size());
     mesh.tetrahedrons_.clear();
     for (unsigned i = 0; i < cells.size(); ++i)
