@@ -30,6 +30,8 @@
 #include "../Math/Vector3.h"
 #include "../Scene/Component.h"
 
+#include <EASTL/span.h>
+
 namespace Urho3D
 {
 
@@ -49,14 +51,14 @@ class URHO3D_API TetrahedralMesh
 {
 public:
     /// Define mesh from vertices.
-    //void Define(ea::span<const Vector3> positions, float padding = 1.0f);
+    void Define(ea::span<const Vector3> positions, float padding = 1.0f);
 
     /// Calculate circumsphere of given tetrahedron.
     //Sphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
 
 private:
     /// Create super-mesh for Delaunay triangulation.
-    //void InitializeSuperMesh(const BoundingBox& boundingBox);
+    void InitializeSuperMesh(const BoundingBox& boundingBox);
 
 public:
     /// Vertices.
