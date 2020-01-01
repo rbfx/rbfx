@@ -35,6 +35,29 @@
 namespace Urho3D
 {
 
+/// Surface triangle of tetrahedral mesh with adjacency information.
+struct TetrahedralMeshSurfaceTriangle
+{
+    /// Indices of triangle vertices.
+    unsigned indices_[3]{};
+    /// Indices of neighbor triangles.
+    unsigned neighbors_[3]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED};
+    /// Index of underlying tetrahedron. M_MAX_UNSIGNED if empty.
+    unsigned tetIndex_{};
+    /// Face of underlying tetrahedron, from 0 to 3.
+    unsigned tetFace_{};
+
+    /// Return edge, from 0 to 2. Returned indices are sorted.
+    ea::pair<unsigned, unsigned> GetEdge(unsigned i) const
+    {
+        unsigned begin = indices_[i];
+        unsigned end = indices_[(i + 1) % 3];
+        if (begin > end)
+            ea::swap(begin, end);
+        return { begin, end };
+    }
+};
+
 /// Tetrahedron with adjacency information.
 struct Tetrahedron
 {
