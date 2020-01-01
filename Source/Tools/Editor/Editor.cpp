@@ -29,6 +29,7 @@
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Graphics/Graphics.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
@@ -137,29 +138,14 @@ void Editor::Setup()
             JSONFile file(context_);
             if (file.LoadFile(editorSettingsFile))
             {
-                editorSettings_ = file.GetRoot();
+                JSONInputArchive archive(&file);
+                if (!editorSettings_.Serialize(archive))
+                    URHO3D_LOGERROR("Loading of editor settings failed.");
 
-                // Load window geometry
-                {
-                    JSONValue& window = editorSettings_["window"];
-                    if (window.IsObject())
-                    {
-                        if (window.Contains("size"))
-                        {
-                            IntVector2 size = window["size"].GetVariantValue(VAR_INTVECTOR2).GetIntVector2();
-                            engineParameters_[EP_WINDOW_WIDTH] = size.x_;
-                            engineParameters_[EP_WINDOW_HEIGHT] = size.y_;
-                        }
-                        if (window.Contains("pos"))
-                        {
-                            IntVector2 pos = window["pos"].GetVariantValue(VAR_INTVECTOR2).GetIntVector2();
-                            engineParameters_[EP_WINDOW_POSITION_X] = pos.x_;
-                            engineParameters_[EP_WINDOW_POSITION_Y] = pos.y_;
-                        }
-                        if (window.Contains("maximized"))
-                            engineParameters_[EP_WINDOW_MAXIMIZE] = window["maximized"].GetVariantValue(VAR_BOOL).GetBool();
-                    }
-                }
+                engineParameters_[EP_WINDOW_WIDTH] = editorSettings_.WindowSize.x_;
+                engineParameters_[EP_WINDOW_HEIGHT] = editorSettings_.WindowSize.y_;
+                engineParameters_[EP_WINDOW_POSITION_X] = editorSettings_.WindowPos.x_;
+                engineParameters_[EP_WINDOW_POSITION_Y] = editorSettings_.WindowPos.y_;
             }
         }
     }
@@ -276,26 +262,24 @@ void Editor::Stop()
     if (!engine_->IsHeadless())
     {
         // Save window geometry
-        {
-            JSONValue& window = editorSettings_["window"];
-            window.SetType(JSON_OBJECT);
-            window["size"].SetType(JSON_NULL);
-            window["size"].SetVariantValue(context_->GetGraphics()->GetSize(), context_);
-            window["pos"].SetType(JSON_NULL);
-            window["pos"].SetVariantValue(context_->GetGraphics()->GetWindowPosition(), context_);
-            window["maximized"].SetType(JSON_NULL);
-            window["maximized"].SetVariantValue(context_->GetGraphics()->GetMaximized(), context_);
-        }
+        auto* graphics = GetSubsystem<Graphics>();
+        editorSettings_.WindowPos = graphics->GetWindowPosition();
+        editorSettings_.WindowSize = graphics->GetSize();
 
         auto* fs = context_->GetFileSystem();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
         if (!fs->DirExists(editorSettingsDir))
             fs->CreateDir(editorSettingsDir);
 
-        JSONFile file(context_);
-        file.GetRoot() = editorSettings_;
-        if (!file.SaveFile(editorSettingsDir + "Editor.json"))
-            URHO3D_LOGERROR("Saving of editor settings failed.");
+        JSONFile json(context_);
+        JSONOutputArchive archive(&json);
+        if (editorSettings_.Serialize(archive))
+        {
+            if (!json.SaveFile(editorSettingsDir + "Editor.json"))
+                URHO3D_LOGERROR("Saving of editor settings failed.");
+        }
+        else
+            URHO3D_LOGERROR("Serializing of editor settings failed.");
     }
 
     context_->GetWorkQueue()->Complete(0);
@@ -380,16 +364,11 @@ void Editor::OnUpdate(VariantMap& args)
             explicit State(Editor* editor)
             {
                 FileSystem *fs = editor->GetContext()->GetFileSystem();
-                JSONValue& recents = editor->editorSettings_["recent-projects"];
-                if (!recents.IsArray())
+                StringVector& recents = editor->editorSettings_.RecentProjects;
+                snapshots_.resize(recents.size());
+                for (int i = 0; i < recents.size();)
                 {
-                    editor->editorSettings_["recent-projects"].SetType(JSON_ARRAY);
-                    return;
-                }
-                snapshots_.resize(recents.Size());
-                for (int i = 0; i < recents.Size();)
-                {
-                    const ea::string& projectPath = recents[i].GetString();
+                    const ea::string& projectPath = recents[i];
                     ea::string snapshotFile = AddTrailingSlash(projectPath) + ".snapshot.png";
                     if (fs->FileExists(snapshotFile))
                     {
@@ -409,7 +388,7 @@ void Editor::OnUpdate(VariantMap& args)
         };
 
         auto* state = ui::GetUIState<State>(this);
-        const JSONValue& recents = editorSettings_["recent-projects"];
+        const StringVector& recents = editorSettings_.RecentProjects;
 
         int index = 0;
         for (int row = 0; row < 3; row++)
@@ -420,14 +399,14 @@ void Editor::OnUpdate(VariantMap& args)
                 if (state->snapshots_.size() > index)
                     snapshot = state->snapshots_[index];
 
-                if (recents.Size() <= index || (row == 2 && col == 2))  // Last tile never shows a project.
+                if (recents.size() <= index || (row == 2 && col == 2))  // Last tile never shows a project.
                 {
                     if (ui::Button("Open/Create Project", tileSize))
                         OpenOrCreateProject();
                 }
                 else
                 {
-                    const ea::string& projectPath = recents[index].GetString();
+                    const ea::string& projectPath = recents[index];
                     if (snapshot.NotNull())
                     {
                         if (ui::ImageButton(snapshot.Get(), tileSize - style.ItemInnerSpacing * 2))
@@ -435,7 +414,7 @@ void Editor::OnUpdate(VariantMap& args)
                     }
                     else
                     {
-                        if (ui::Button(recents[index].GetString().c_str(), tileSize))
+                        if (ui::Button(recents[index].c_str(), tileSize))
                             OpenProject(projectPath);
                     }
                     if (ui::IsItemHovered())
@@ -577,22 +556,20 @@ void Editor::OnEndFrame()
         {
             auto* fs = context_->GetFileSystem();
             loadDefaultLayout_ = project_->IsNewProject();
-            JSONValue& recents = editorSettings_["recent-projects"];
-            if (!recents.IsArray())
-                recents.SetType(JSON_ARRAY);
+            StringVector& recents = editorSettings_.RecentProjects;
             // Remove latest project if it was already opened or any projects that no longer exists.
-            for (int i = 0; i < recents.Size();)
+            for (auto it = recents.begin(); it != recents.end();)
             {
-                if (recents[i].GetString() == pendingOpenProject_ || !fs->DirExists(recents[i].GetString()))
-                    recents.Erase(i);
+                if (*it == pendingOpenProject_ || !fs->DirExists(*it))
+                    it = recents.erase(it);
                 else
-                    ++i;
+                    ++it;
             }
             // Latest project goes to front
-            recents.Insert(0, pendingOpenProject_);
+            recents.insert(recents.begin(), pendingOpenProject_);
             // Limit recents list size
-            if (recents.Size() > 10)
-                recents.Resize(10);
+            if (recents.size() > 10)
+                recents.resize(10);
         }
         else
         {
