@@ -54,7 +54,15 @@ public:
     void Define(ea::span<const Vector3> positions, float padding = 1.0f);
 
     /// Calculate circumsphere of given tetrahedron.
-    //Sphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
+    Sphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
+    /// Calculate barycentric coordinates for inner tetrahedron.
+    Vector4 GetInnerBarycentricCoords(unsigned tetIndex, const Vector3& position) const
+    {
+        const Tetrahedron& cell = tetrahedrons_[tetIndex];
+        const Vector3& basePosition = vertices_[cell.indices_[0]];
+        const Vector3 coords = cell.matrix_ * (position - basePosition);
+        return { 1.0f - coords.x_ - coords.y_ - coords.z_, coords.x_, coords.y_, coords.z_ };
+    }
 
 private:
     /// Create super-mesh for Delaunay triangulation.
