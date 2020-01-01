@@ -37,49 +37,12 @@ namespace Urho3D
 namespace
 {
 
-/// Calculate circumsphere of the tetrahedron.
-Sphere CalculateTetrahedronCircumsphere(const Tetrahedron& cell, const ea::vector<Vector3>& vertices)
+/// Auxiliary data for Delaunay triangulation.
+struct DelaunayAuxiliaryData
 {
-    const Vector3 p0 = vertices[cell.indices_[0]];
-    const Vector3 p1 = vertices[cell.indices_[1]];
-    const Vector3 p2 = vertices[cell.indices_[2]];
-    const Vector3 p3 = vertices[cell.indices_[3]];
-    const Vector3 u1 = p1 - p0;
-    const Vector3 u2 = p2 - p0;
-    const Vector3 u3 = p3 - p0;
-    const float d01 = u1.LengthSquared();
-    const float d02 = u2.LengthSquared();
-    const float d03 = u3.LengthSquared();
-    const Vector3 num = d01 * u2.CrossProduct(u3) + d02 * u3.CrossProduct(u1) + d03 * u1.CrossProduct(u2);
-    const float den = 2 * u1.DotProduct(u2.CrossProduct(u3));
-    assert(Abs(den) > M_EPSILON);
-    const Vector3 r0 = num / den;
-    const Vector3 center = p0 + r0;
-
-    const float eps = M_LARGE_EPSILON;
-    const float radius = ea::max({ (p1 - center).Length(), (p2 - center).Length(), (p3 - center).Length()});
-    //assert(Equals((p1 - center).Length(), r0.Length(), eps / 2));
-    //assert(Equals((p2 - center).Length(), r0.Length(), eps / 2));
-    //assert(Equals((p3 - center).Length(), r0.Length(), eps / 2));
-
-    return { center, radius + eps };
-}
-
-/// Return barycentric coordinates withing tetrahedron.
-Vector4 GetBarycentricCoords(const TetrahedralMesh& mesh, unsigned cellIndex, const Vector3& position)
-{
-    const Tetrahedron& cell = mesh.tetrahedrons_[cellIndex];
-    const Vector3& basePosition = mesh.vertices_[cell.indices_[0]];
-    const Vector3 coords = cell.matrix_ * (position - basePosition);
-    return { 1.0f - coords.x_ - coords.y_ - coords.z_, coords.x_, coords.y_, coords.z_ };
-};
-
-/// Tetrahedron for Delaunay triangulation.
-struct DelaunayTetrahedron
-{
-    /// Cell circumsphere.
+    /// Tetrahedron circumsphere.
     Sphere circumsphere_;
-    /// Whether the cell is cosidered bad during breadth search.
+    /// Whether the tetrahedron should be removed.
     bool bad_{};
 };
 
@@ -189,11 +152,11 @@ bool IsTetrahedralMeshAdjacencyValid(const TetrahedralMesh& mesh)
 void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> positions)
 {
     // Copy cells and initialize all required data
-    ea::vector<DelaunayTetrahedron> auxilary(mesh.tetrahedrons_.size());
+    ea::vector<DelaunayAuxiliaryData> auxilary(mesh.tetrahedrons_.size());
     for (unsigned i = 0; i < mesh.tetrahedrons_.size(); ++i)
     {
         mesh.tetrahedrons_[i] = mesh.tetrahedrons_[i];
-        auxilary[i].circumsphere_ = CalculateTetrahedronCircumsphere(mesh.tetrahedrons_[i], mesh.vertices_);
+        auxilary[i].circumsphere_ = mesh.GetTetrahedronCircumsphere(i);
     }
 
     unsigned tempCount = 0;
@@ -214,7 +177,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         // Find first bad cell
         for (unsigned cellIndex = 0; cellIndex < mesh.tetrahedrons_.size(); ++cellIndex)
         {
-            DelaunayTetrahedron& cell = auxilary[cellIndex];
+            DelaunayAuxiliaryData& cell = auxilary[cellIndex];
             if (!cell.bad_ && cell.circumsphere_.IsInside(position) != OUTSIDE)
             {
                 badCells.push_back(cellIndex);
@@ -238,7 +201,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             for (unsigned i = firstCell; i < lastCell; ++i)
             {
                 const Tetrahedron& tetrahedron = mesh.tetrahedrons_[searchQueue[i]];
-                const DelaunayTetrahedron& cell = auxilary[searchQueue[i]];
+                const DelaunayAuxiliaryData& cell = auxilary[searchQueue[i]];
 
                 // Process neighbors
                 for (unsigned j = 0; j < 4; ++j)
@@ -254,7 +217,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
 
                     // Ignore bad cells, they are already processed
                     Tetrahedron& nextTetrahedron = mesh.tetrahedrons_[nextIndex];
-                    DelaunayTetrahedron& nextCell = auxilary[nextIndex];
+                    DelaunayAuxiliaryData& nextCell = auxilary[nextIndex];
                     if (nextCell.bad_)
                         continue;
 
@@ -287,7 +250,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         }
         while (holeMesh.size() > badCells.size())
         {
-            DelaunayTetrahedron placeholder;
+            DelaunayAuxiliaryData placeholder;
             placeholder.bad_ = true;
             badCells.push_back(mesh.tetrahedrons_.size());
             mesh.tetrahedrons_.push_back();
@@ -297,7 +260,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         for (unsigned i = 0; i < holeMesh.size(); ++i)
         {
             const unsigned newCellIndex = badCells[i];
-            DelaunayTetrahedron& cell = auxilary[newCellIndex];
+            DelaunayAuxiliaryData& cell = auxilary[newCellIndex];
             Tetrahedron& tetrahedron = mesh.tetrahedrons_[newCellIndex];
             const TetrahedralMeshHoleFace& face = holeMesh[i];
 
@@ -311,7 +274,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             if (face.cell_ != M_MAX_UNSIGNED)
                 mesh.tetrahedrons_[face.cell_].neighbors_[face.face_] = newCellIndex;
             cell.bad_ = false;
-            cell.circumsphere_ = CalculateTetrahedronCircumsphere(tetrahedron, mesh.vertices_);
+            cell.circumsphere_ = mesh.GetTetrahedronCircumsphere(newCellIndex);
         }
     }
 
@@ -384,10 +347,10 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         const Vector3 u2 = p2 - p0;
         const Vector3 u3 = p3 - p0;
         cell.matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
-        assert(GetBarycentricCoords(mesh, i, p0).Equals(Vector4(1, 0, 0, 0)));
-        assert(GetBarycentricCoords(mesh, i, p1).Equals(Vector4(0, 1, 0, 0)));
-        assert(GetBarycentricCoords(mesh, i, p2).Equals(Vector4(0, 0, 1, 0)));
-        assert(GetBarycentricCoords(mesh, i, p3).Equals(Vector4(0, 0, 0, 1)));
+        assert(mesh.GetInnerBarycentricCoords(i, p0).Equals(Vector4(1, 0, 0, 0)));
+        assert(mesh.GetInnerBarycentricCoords(i, p1).Equals(Vector4(0, 1, 0, 0)));
+        assert(mesh.GetInnerBarycentricCoords(i, p2).Equals(Vector4(0, 0, 1, 0)));
+        assert(mesh.GetInnerBarycentricCoords(i, p3).Equals(Vector4(0, 0, 0, 1)));
     }
 
     assert(IsTetrahedralMeshAdjacencyValid(mesh));
@@ -444,6 +407,32 @@ void TetrahedralMesh::Define(ea::span<const Vector3> positions, float padding)
     InitializeSuperMesh(boundingBox);
 
     AddTetrahedralMeshVertices(*this, positions);
+}
+
+Sphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetIndex) const
+{
+    const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+    const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
+    const Vector3 p1 = vertices_[tetrahedron.indices_[1]];
+    const Vector3 p2 = vertices_[tetrahedron.indices_[2]];
+    const Vector3 p3 = vertices_[tetrahedron.indices_[3]];
+    const Vector3 u1 = p1 - p0;
+    const Vector3 u2 = p2 - p0;
+    const Vector3 u3 = p3 - p0;
+    const float d01 = u1.LengthSquared();
+    const float d02 = u2.LengthSquared();
+    const float d03 = u3.LengthSquared();
+    const Vector3 num = d01 * u2.CrossProduct(u3) + d02 * u3.CrossProduct(u1) + d03 * u1.CrossProduct(u2);
+    const float den = 2 * u1.DotProduct(u2.CrossProduct(u3));
+    assert(Abs(den) > M_EPSILON);
+
+    const Vector3 r0 = num / den;
+    const Vector3 center = p0 + r0;
+
+    const float eps = M_LARGE_EPSILON;
+    const float radius = ea::max({ r0.Length(), (p1 - center).Length(), (p2 - center).Length(), (p3 - center).Length()});
+
+    return { center, radius + eps };
 }
 
 void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
@@ -571,7 +560,7 @@ Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsign
     Vector4 weights;
     for (unsigned i = 0; i < maxIters; ++i)
     {
-        weights = GetBarycentricCoords(lightProbesMesh_, hint, position);
+        weights = lightProbesMesh_.GetInnerBarycentricCoords(hint, position);
         if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
             return weights;
 
