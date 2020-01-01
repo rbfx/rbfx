@@ -21,11 +21,14 @@
 //
 #include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/IO/FileSystem.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
-#include <ImGui/imgui_stdlib.h>
+
 #include "Editor.h"
 #include "Plugins/ModulePlugin.h"
+#include "EditorSettings.h"
+
 
 namespace Urho3D
 {
@@ -438,6 +441,22 @@ void Editor::RenderSettingsWindow()
         if (!project_->GetPipeline()->CookSettings())
             URHO3D_LOGERROR("Cooking settings failed");
     }
+}
+
+EditorUserSettings::EditorUserSettings(Context* context)
+    : Object(context)
+{
+}
+
+bool EditorUserSettings::Serialize(Archive& archive)
+{
+    if (auto windowBlock = archive.OpenUnorderedBlock("window"))
+    {
+        SerializeValue(archive, "pos", WindowPos);
+        SerializeValue(archive, "size", WindowSize);
+    }
+    SerializeValue(archive, "recentProjects", RecentProjects);
+    return true;
 }
 
 }

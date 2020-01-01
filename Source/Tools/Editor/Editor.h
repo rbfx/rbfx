@@ -19,12 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
 
 #include <Urho3D/Engine/Application.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
+
+#include "EditorSettings.h"
 #include "Project.h"
 #include "Pipeline/Commands/SubCommand.h"
 
@@ -149,7 +150,7 @@ protected:
     ///
     ea::vector<SharedPtr<SubCommand>> subCommands_;
     /// Global editor settings.
-    JSONValue editorSettings_;
+    EditorUserSettings editorSettings_{context_};
     ///
     WeakPtr<Flavor> flavorPendingRemoval_;
 };
