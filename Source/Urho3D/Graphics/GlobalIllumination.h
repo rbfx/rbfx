@@ -51,6 +51,10 @@ struct TetrahedralMesh
     ea::vector<Vector3> vertices_;
     /// Cells.
     ea::vector<AdjacentTetrahedron> cells_;
+    /// Hull normals.
+    ea::vector<Vector3> hullNormals_;
+    /// Number of inner cells.
+    unsigned numInnerCells_{};
 };
 
 /// Global illumination manager.
