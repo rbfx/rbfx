@@ -46,22 +46,6 @@ struct DelaunayAuxiliaryData
     bool bad_{};
 };
 
-/// Return face of the tetrahedron.
-TetrahedralMeshSurfaceTriangle GetTetrahedronHoleFace(const Tetrahedron& tet, unsigned faceIndex, unsigned cellIndex)
-{
-    TetrahedralMeshSurfaceTriangle face;
-    face.tetIndex_ = cellIndex;
-    face.tetFace_ = faceIndex;
-
-    unsigned j = 0;
-    for (unsigned i = 0; i < 4; ++i)
-    {
-        if (i != faceIndex)
-            face.indices_[j++] = tet.indices_[i];
-    }
-    return face;
-}
-
 /// Add triangle to hole mesh.
 void AddTriangleToHole(ea::vector<TetrahedralMeshSurfaceTriangle>& mesh, TetrahedralMeshSurfaceTriangle newFace)
 {
@@ -183,7 +167,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                     if (nextIndex == M_MAX_UNSIGNED)
                     {
                         // Missing neighbor closes hole
-                        const TetrahedralMeshSurfaceTriangle newFace = GetTetrahedronHoleFace(tetrahedron, j, M_MAX_UNSIGNED);
+                        const TetrahedralMeshSurfaceTriangle newFace = tetrahedron.GetTriangleFace(j, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
                         AddTriangleToHole(holeMesh, newFace);
                         continue;
                     }
@@ -207,7 +191,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                         const unsigned nextFaceIndex = ea::find(
                             ea::begin(nextTetrahedron.neighbors_), ea::end(nextTetrahedron.neighbors_), searchQueue[i])
                             - ea::begin(nextTetrahedron.neighbors_);
-                        const TetrahedralMeshSurfaceTriangle newFace = GetTetrahedronHoleFace(nextTetrahedron, nextFaceIndex, nextIndex);
+                        const TetrahedralMeshSurfaceTriangle newFace = nextTetrahedron.GetTriangleFace(nextFaceIndex, nextIndex, nextFaceIndex);
                         AddTriangleToHole(holeMesh, newFace);
                     }
                 }
