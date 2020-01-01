@@ -30,6 +30,7 @@
 #include "../Math/Vector3.h"
 #include "../Scene/Component.h"
 
+#include <EASTL/algorithm.h>
 #include <EASTL/span.h>
 
 namespace Urho3D
@@ -55,6 +56,11 @@ struct TetrahedralMeshSurfaceTriangle
         if (begin > end)
             ea::swap(begin, end);
         return { begin, end };
+    }
+    /// Return whether the triangle has given neighbour.
+    bool HasNeighbor(unsigned neighborIndex) const
+    {
+        return ea::count(ea::begin(neighbors_), ea::end(neighbors_), neighborIndex) != 0;
     }
 };
 
@@ -95,6 +101,23 @@ struct TetrahedralMeshSurface
         }
 
         faces_.push_back(newFace);
+    }
+
+    /// Return whether the mesh is a closed surface.
+    bool IsClosedSurface() const
+    {
+        for (unsigned faceIndex = 0; faceIndex < faces_.size(); ++faceIndex)
+        {
+            for (unsigned i = 0; i < 3; ++i)
+            {
+                const unsigned neighborFaceIndex = faces_[faceIndex].neighbors_[i];
+                if (neighborFaceIndex == M_MAX_UNSIGNED)
+                    return false;
+
+                assert(faces_[neighborFaceIndex].HasNeighbor(faceIndex));
+            }
+        }
+        return true;
     }
 };
 
