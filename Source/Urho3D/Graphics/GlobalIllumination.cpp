@@ -46,25 +46,6 @@ struct DelaunayAuxiliaryData
     bool bad_{};
 };
 
-/// Return whether the hole mesh is fully connected.
-bool IsHoleMeshConnected(ea::vector<TetrahedralMeshSurfaceTriangle>& mesh)
-{
-    for (unsigned faceIndex = 0; faceIndex < mesh.size(); ++faceIndex)
-    {
-        for (unsigned i = 0; i < 3; ++i)
-        {
-            const unsigned neighborIndex = mesh[faceIndex].neighbors_[i];
-            if (neighborIndex == M_MAX_UNSIGNED)
-                return false;
-
-            const TetrahedralMeshSurfaceTriangle& neighborFace = mesh[neighborIndex];
-            if (ea::count(ea::begin(neighborFace.neighbors_), ea::end(neighborFace.neighbors_), faceIndex) == 0)
-                return false;
-        }
-    }
-    return true;
-}
-
 /// Return whether the adjacency information of tetrahedral mesh is valid.
 bool IsTetrahedralMeshAdjacencyValid(const TetrahedralMesh& mesh)
 {
@@ -174,11 +155,12 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         }
 
         // Create new cells on top of bad cells
-        if (!IsHoleMeshConnected(holeSurface.faces_))
+        if (!holeSurface.IsClosedSurface())
         {
             assert(0);
             return;
         }
+
         while (holeSurface.Size() > badCells.size())
         {
             DelaunayAuxiliaryData placeholder;
