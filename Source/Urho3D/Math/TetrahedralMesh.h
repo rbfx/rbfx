@@ -184,10 +184,26 @@ private:
     /// Return whether the adjacency is valid.
     bool IsAdjacencyValid() const;
 
+    /// Data used for Delaunay triangulation.
+    struct DelaunayContext
+    {
+        /// Circumspheres of mesh tetrahedrons.
+        ea::vector<Sphere> circumspheres_;
+        /// Whether the tetrahedron is removed.
+        ea::vector<bool> removed_;
+
+        /// List of tetrahedrons removed on current iteration.
+        ea::vector<unsigned> badTetrahedrons_;
+        /// Hole surface for current iteration.
+        TetrahedralMeshSurface holeSurface_;
+        /// Queue for breadth search of bad tetrahedrons.
+        ea::vector<unsigned> searchQueue_;
+    };
+
 public:
     /// Vertices.
     ea::vector<Vector3> vertices_;
-    /// Cells.
+    /// Tetrahedrons.
     ea::vector<Tetrahedron> tetrahedrons_;
     /// Hull normals.
     ea::vector<Vector3> hullNormals_;

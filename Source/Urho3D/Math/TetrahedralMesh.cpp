@@ -126,41 +126,40 @@ void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
 
 void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
 {
+    DelaunayContext ctx;
+
     // Copy cells and initialize all required data
-    ea::vector<Sphere> circumspheres(tetrahedrons_.size());
-    ea::vector<bool> badFlags(tetrahedrons_.size());
+    ctx.circumspheres_.resize(tetrahedrons_.size());
+    ctx.removed_.resize(tetrahedrons_.size());
     for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
     {
-        circumspheres[i] = GetTetrahedronCircumsphere(i);
-        badFlags[i] = false;
+        ctx.circumspheres_[i] = GetTetrahedronCircumsphere(i);
+        ctx.removed_[i] = false;
     }
 
     // Triangulate
-    ea::vector<unsigned> badCells;
-    TetrahedralMeshSurface holeSurface;
-    ea::vector<unsigned> searchQueue;
     for (const Vector3& position : positions)
     {
         const unsigned newIndex = vertices_.size();
         vertices_.push_back(position);
 
-        badCells.clear();
-        searchQueue.clear();
-        holeSurface.Clear();
+        ctx.badTetrahedrons_.clear();
+        ctx.searchQueue_.clear();
+        ctx.holeSurface_.Clear();
 
         // Find first bad cell
         for (unsigned cellIndex = 0; cellIndex < tetrahedrons_.size(); ++cellIndex)
         {
-            if (!badFlags[cellIndex] && circumspheres[cellIndex].IsInside(position) != OUTSIDE)
+            if (!ctx.removed_[cellIndex] && ctx.circumspheres_[cellIndex].IsInside(position) != OUTSIDE)
             {
-                badCells.push_back(cellIndex);
-                searchQueue.push_back(cellIndex);
-                badFlags[cellIndex] = true;
+                ctx.badTetrahedrons_.push_back(cellIndex);
+                ctx.searchQueue_.push_back(cellIndex);
+                ctx.removed_[cellIndex] = true;
                 break;
             }
         }
 
-        if (badCells.empty())
+        if (ctx.badTetrahedrons_.empty())
         {
             assert(0);
             return;
@@ -168,12 +167,12 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
 
         // Do breadth search to collect all bad cells and build hole mesh
         unsigned firstCell = 0;
-        while (firstCell < searchQueue.size())
+        while (firstCell < ctx.searchQueue_.size())
         {
-            const unsigned lastCell = searchQueue.size();
+            const unsigned lastCell = ctx.searchQueue_.size();
             for (unsigned i = firstCell; i < lastCell; ++i)
             {
-                const Tetrahedron& tetrahedron = tetrahedrons_[searchQueue[i]];
+                const Tetrahedron& tetrahedron = tetrahedrons_[ctx.searchQueue_[i]];
 
                 // Process neighbors
                 for (unsigned j = 0; j < 4; ++j)
@@ -183,30 +182,30 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
                     {
                         // Missing neighbor closes hole
                         const TetrahedralMeshSurfaceTriangle newFace = tetrahedron.GetTriangleFace(j, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
-                        holeSurface.AddFace(newFace);
+                        ctx.holeSurface_.AddFace(newFace);
                         continue;
                     }
 
                     // Ignore bad cells, they are already processed
                     Tetrahedron& nextTetrahedron = tetrahedrons_[nextIndex];
-                    if (badFlags[nextIndex])
+                    if (ctx.removed_[nextIndex])
                         continue;
 
-                    if (circumspheres[nextIndex].IsInside(position) != OUTSIDE)
+                    if (ctx.circumspheres_[nextIndex].IsInside(position) != OUTSIDE)
                     {
                         // If cell is bad too, add it to queue
-                        badCells.push_back(nextIndex);
-                        searchQueue.push_back(nextIndex);
-                        badFlags[nextIndex] = true;
+                        ctx.badTetrahedrons_.push_back(nextIndex);
+                        ctx.searchQueue_.push_back(nextIndex);
+                        ctx.removed_[nextIndex] = true;
                     }
                     else
                     {
                         // Add new face to hole mesh
                         const unsigned nextFaceIndex = ea::find(
-                            ea::begin(nextTetrahedron.neighbors_), ea::end(nextTetrahedron.neighbors_), searchQueue[i])
+                            ea::begin(nextTetrahedron.neighbors_), ea::end(nextTetrahedron.neighbors_), ctx.searchQueue_[i])
                             - ea::begin(nextTetrahedron.neighbors_);
                         const TetrahedralMeshSurfaceTriangle newFace = nextTetrahedron.GetTriangleFace(nextFaceIndex, nextIndex, nextFaceIndex);
-                        holeSurface.AddFace(newFace);
+                        ctx.holeSurface_.AddFace(newFace);
                     }
                 }
             }
@@ -214,37 +213,37 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
         }
 
         // Create new cells on top of bad cells
-        if (!holeSurface.IsClosedSurface())
+        if (!ctx.holeSurface_.IsClosedSurface())
         {
             assert(0);
             return;
         }
 
-        while (holeSurface.Size() > badCells.size())
+        while (ctx.holeSurface_.Size() > ctx.badTetrahedrons_.size())
         {
-            badCells.push_back(tetrahedrons_.size());
+            ctx.badTetrahedrons_.push_back(tetrahedrons_.size());
             tetrahedrons_.push_back();
-            circumspheres.push_back();
-            badFlags.push_back(true);
+            ctx.circumspheres_.push_back();
+            ctx.removed_.push_back(true);
         }
 
-        for (unsigned i = 0; i < holeSurface.Size(); ++i)
+        for (unsigned i = 0; i < ctx.holeSurface_.Size(); ++i)
         {
-            const unsigned newCellIndex = badCells[i];
+            const unsigned newCellIndex = ctx.badTetrahedrons_[i];
             Tetrahedron& tetrahedron = tetrahedrons_[newCellIndex];
-            const TetrahedralMeshSurfaceTriangle& face = holeSurface.faces_[i];
+            const TetrahedralMeshSurfaceTriangle& face = ctx.holeSurface_.faces_[i];
 
             for (unsigned j = 0; j < 3; ++j)
             {
                 tetrahedron.indices_[j] = face.indices_[j];
-                tetrahedron.neighbors_[j] = badCells[face.neighbors_[j]];
+                tetrahedron.neighbors_[j] = ctx.badTetrahedrons_[face.neighbors_[j]];
             }
             tetrahedron.indices_[3] = newIndex;
             tetrahedron.neighbors_[3] = face.tetIndex_;
             if (face.tetIndex_ != M_MAX_UNSIGNED)
                 tetrahedrons_[face.tetIndex_].neighbors_[face.tetFace_] = newCellIndex;
-            badFlags[newCellIndex] = false;
-            circumspheres[newCellIndex] = GetTetrahedronCircumsphere(newCellIndex);
+            ctx.removed_[newCellIndex] = false;
+            ctx.circumspheres_[newCellIndex] = GetTetrahedronCircumsphere(newCellIndex);
         }
     }
 
@@ -254,11 +253,11 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
         {
             if (tetrahedrons_[i].indices_[j] < 8)
             {
-                badFlags[i] = true;
+                ctx.removed_[i] = true;
                 break;
             }
         }
-        if (badFlags[i])
+        if (ctx.removed_[i])
         {
             for (unsigned j = 0; j < 4; ++j)
             {
@@ -278,7 +277,7 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     tetrahedrons_.clear();
     for (unsigned i = 0; i < cells.size(); ++i)
     {
-        if (badFlags[i])
+        if (ctx.removed_[i])
         {
             newIndices[i] = M_MAX_UNSIGNED;
             continue;
