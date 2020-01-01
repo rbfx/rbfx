@@ -78,6 +78,24 @@ protected:
     void ReleaseInput();
     ///
     void RenderUI();
+    ///
+    void OnCameraViewportResized(StringHash type, VariantMap& args);
+    ///
+    void OnComponentAdded(StringHash type, VariantMap& args);
+    ///
+    void OnComponentRemoved(StringHash type, VariantMap& args);
+    ///
+    void OnReloadFinished(StringHash type, VariantMap& args);
+    ///
+    void OnEditorUserCodeReloadStart(StringHash type, VariantMap& args);
+    ///
+    void OnEditorUserCodeReloadEnd(StringHash type, VariantMap& args);
+    ///
+    void OnEndAllViewsRender(StringHash type, VariantMap& args);
+    ///
+    void OnSceneActivated(StringHash type, VariantMap& args);
+    ///
+    void OnEndRenderingSystemUI(StringHash type, VariantMap& args);
 
     /// Texture used to display preview.
     SharedPtr<Texture2D> texture_{};
