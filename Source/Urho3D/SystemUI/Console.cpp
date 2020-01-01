@@ -181,11 +181,11 @@ void Console::RenderContent()
             const char* rowStart = row.message_.c_str();
             const char* rowEnd = row.message_.c_str() + row.message_.length();
 
+            ImVec2 rowSize = ui::CalcTextSize(rowStart, rowEnd);
             ImVec2 rowStartPos = ui::GetCursorScreenPos();
             ImRect rowRect{};
-            rowRect.Min = rowRect.Max = rowStartPos;
-            rowRect.Max.x = region.x;
-            rowRect.Max.y += ui::CalcTextSize(rowStart, rowEnd).y;
+            rowRect.Min = rowStartPos;
+            rowRect.Max = rowStartPos + rowSize;
             rowRect.Max.y += ui::GetStyle().ItemSpacing.y;   // So clicking between rows still does a selection
             bool isRowHovered = rowRect.Contains(ui::GetMousePos()) && ui::IsWindowHovered();
 
@@ -195,21 +195,23 @@ void Console::RenderContent()
                 if (isRowHovered)
                 {
                     ImVec2 pos = rowStartPos;
-                    int hoverChar;
-                    for (hoverChar = 0; hoverChar < (int)row.message_.length(); hoverChar++)
+                    const char* c = rowStart;
+                    while (c < rowEnd)
                     {
-                        ImVec2 charSize = ui::CalcTextSize(rowStart + hoverChar, rowStart + hoverChar + 1);
+                        int numBytes = ImTextCountUtf8BytesFromChar(c, rowEnd);
+                        ImVec2 charSize = ui::CalcTextSize(c, c + numBytes);
                         if (ImRect(pos, pos + charSize).Contains(ui::GetMousePos()))
                             break;
                         pos.x += charSize.x;
+                        c += numBytes;
                     }
-                    selection_.y_ = textStart + hoverChar;
+                    selection_.y_ = textStart + static_cast<int>(c - rowStart);
                     if (ui::IsMouseClicked(MOUSEB_LEFT))
                         selection_.x_ = selection_.y_;
                 }
             }
 
-            // Render selection. This is not exactly optimal as each line renders it's own selection rectangle.
+            // Render selection.
             const char* selectedStart = Clamp(rowStart + (Min(selection_.x_, selection_.y_) - textStart), rowStart, rowEnd);
             const char* selectedEnd = Clamp(rowEnd + (Max(selection_.x_, selection_.y_) - textEnd), rowStart, rowEnd);
             if (selectedStart < selectedEnd)
@@ -270,6 +272,7 @@ void Console::RenderContent()
                     if (uriRect.Contains(ui::GetMousePos()))
                     {
                         ui::GetWindowDrawList()->AddLine({uriRect.Min.x, uriRect.Max.y}, uriRect.Max, ui::GetColorU32(ImGuiCol_Text));
+                        ui::SetMouseCursor(ImGuiMouseCursor_Hand);
                         if (ui::IsMouseClicked(MOUSEB_LEFT) || ui::IsMouseClicked(MOUSEB_RIGHT))
                         {
                             using namespace ConsoleUriClick;
