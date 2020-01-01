@@ -151,6 +151,12 @@ struct Tetrahedron
         face.tetFace_ = tetFace;
         return face;
     }
+
+    /// Return whether the tetrahedron has given neighbour.
+    bool HasNeighbor(unsigned neighborIndex) const
+    {
+        return ea::count(ea::begin(neighbors_), ea::end(neighbors_), neighborIndex) != 0;
+    }
 };
 
 /// Tetrahedral mesh.
@@ -162,6 +168,7 @@ public:
 
     /// Calculate circumsphere of given tetrahedron.
     Sphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
+
     /// Calculate barycentric coordinates for inner tetrahedron.
     Vector4 GetInnerBarycentricCoords(unsigned tetIndex, const Vector3& position) const
     {
@@ -174,6 +181,10 @@ public:
 private:
     /// Create super-mesh for Delaunay triangulation.
     void InitializeSuperMesh(const BoundingBox& boundingBox);
+    /// Build tetrahedrons for given positions.
+    void BuildTetrahedrons(ea::span<const Vector3> positions);
+    /// Return whether the adjacency is valid.
+    bool IsAdjacencyValid() const;
 
 public:
     /// Vertices.
