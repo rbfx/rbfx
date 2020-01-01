@@ -48,10 +48,10 @@ struct TetrahedralMeshSurfaceTriangle
     unsigned tetFace_{};
 
     /// Return edge, from 0 to 2. Returned indices are sorted.
-    ea::pair<unsigned, unsigned> GetEdge(unsigned i) const
+    ea::pair<unsigned, unsigned> GetEdge(unsigned edgeIndex) const
     {
-        unsigned begin = indices_[i];
-        unsigned end = indices_[(i + 1) % 3];
+        unsigned begin = indices_[edgeIndex];
+        unsigned end = indices_[(edgeIndex + 1) % 3];
         if (begin > end)
             ea::swap(begin, end);
         return { begin, end };
@@ -67,6 +67,27 @@ struct Tetrahedron
     unsigned neighbors_[4]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED };
     /// Pre-computed matrix for calculating barycentric coordinates.
     Matrix3 matrix_;
+
+    /// Return indices of specified triangle face of the tetrahedron.
+    void GetTriangleFaceIndices(unsigned faceIndex, unsigned (&indices)[3]) const
+    {
+        unsigned j = 0;
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            if (i != faceIndex)
+                indices[j++] = indices_[i];
+        }
+    }
+
+    /// Return triangle face of the tetrahedron. Adjacency information is left uninitialized.
+    TetrahedralMeshSurfaceTriangle GetTriangleFace(unsigned faceIndex, unsigned tetIndex, unsigned tetFace) const
+    {
+        TetrahedralMeshSurfaceTriangle face;
+        GetTriangleFaceIndices(faceIndex, face.indices_);
+        face.tetIndex_ = tetIndex;
+        face.tetFace_ = tetFace;
+        return face;
+    }
 };
 
 /// Tetrahedral mesh.
