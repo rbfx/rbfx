@@ -327,8 +327,6 @@ bool TransformRect(ImRect& inOut, ImRect& delta, TransformSelectorFlags flags)
             ui::SetMouseCursor(ImGuiMouseCursor_ResizeEW);
         else if (resizing & RESIZE_TOP || resizing & RESIZE_BOTTOM)
             ui::SetMouseCursor(ImGuiMouseCursor_ResizeNS);
-        else
-            ui::SetMouseCursor(ImGuiMouseCursor_Arrow);
 
         // Prevent interaction when something else blocks inactive transform.
         if (s->resizing_ != RESIZE_NONE || (ui::IsItemHovered(ImGuiHoveredFlags_RectOnly) &&
