@@ -58,6 +58,46 @@ struct TetrahedralMeshSurfaceTriangle
     }
 };
 
+/// Surface of tetrahedral mesh. Vertices are shared with tetrahedral mesh and are not stored.
+struct TetrahedralMeshSurface
+{
+    /// Faces.
+    ea::vector<TetrahedralMeshSurfaceTriangle> faces_;
+
+    /// Clear.
+    void Clear() { faces_.clear(); }
+
+    /// Return size.
+    unsigned Size() const { return faces_.size(); }
+
+    /// Add face and update adjacency information.
+    void AddFace(TetrahedralMeshSurfaceTriangle newFace)
+    {
+        // Find adjacent triangles
+        const unsigned newFaceIndex = faces_.size();
+        for (unsigned oldFaceIndex = 0; oldFaceIndex < newFaceIndex; ++oldFaceIndex)
+        {
+            TetrahedralMeshSurfaceTriangle& oldFace = faces_[oldFaceIndex];
+            for (unsigned oldEdgeIndex = 0; oldEdgeIndex < 3; ++oldEdgeIndex)
+            {
+                const auto oldEdge = oldFace.GetEdge(oldEdgeIndex);
+                for (unsigned newEdgeIndex = 0; newEdgeIndex < 3; ++newEdgeIndex)
+                {
+                    const auto newEdge = newFace.GetEdge(newEdgeIndex);
+                    if (oldEdge == newEdge)
+                    {
+                        // +0 and +1 vertices belong to the edge, therefore the neighbor is stored at +2
+                        oldFace.neighbors_[(oldEdgeIndex + 2) % 3] = newFaceIndex;
+                        newFace.neighbors_[(newEdgeIndex + 2) % 3] = oldFaceIndex;
+                    }
+                }
+            }
+        }
+
+        faces_.push_back(newFace);
+    }
+};
+
 /// Tetrahedron with adjacency information.
 struct Tetrahedron
 {

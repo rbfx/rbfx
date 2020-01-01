@@ -46,32 +46,6 @@ struct DelaunayAuxiliaryData
     bool bad_{};
 };
 
-/// Add triangle to hole mesh.
-void AddTriangleToHole(ea::vector<TetrahedralMeshSurfaceTriangle>& mesh, TetrahedralMeshSurfaceTriangle newFace)
-{
-    // Find adjacent triangles
-    const unsigned newIndex = mesh.size();
-    for (unsigned oldIndex = 0; oldIndex < newIndex; ++oldIndex)
-    {
-        TetrahedralMeshSurfaceTriangle& oldFace = mesh[oldIndex];
-        for (unsigned i = 0; i < 3; ++i)
-        {
-            const auto oldEdge = oldFace.GetEdge(i);
-            for (unsigned j = 0; j < 3; ++j)
-            {
-                const auto newEdge = newFace.GetEdge(j);
-                if (oldEdge == newEdge)
-                {
-                    oldFace.neighbors_[(i + 2) % 3] = newIndex;
-                    newFace.neighbors_[(j + 2) % 3] = oldIndex;
-                }
-            }
-        }
-    }
-
-    mesh.push_back(newFace);
-}
-
 /// Return whether the hole mesh is fully connected.
 bool IsHoleMeshConnected(ea::vector<TetrahedralMeshSurfaceTriangle>& mesh)
 {
@@ -120,7 +94,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
 
     // Triangulate
     ea::vector<unsigned> badCells;
-    ea::vector<TetrahedralMeshSurfaceTriangle> holeMesh;
+    TetrahedralMeshSurface holeSurface;
     ea::vector<unsigned> searchQueue;
     for (const Vector3& position : positions)
     {
@@ -129,7 +103,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
 
         badCells.clear();
         searchQueue.clear();
-        holeMesh.clear();
+        holeSurface.Clear();
 
         // Find first bad cell
         for (unsigned cellIndex = 0; cellIndex < mesh.tetrahedrons_.size(); ++cellIndex)
@@ -168,7 +142,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                     {
                         // Missing neighbor closes hole
                         const TetrahedralMeshSurfaceTriangle newFace = tetrahedron.GetTriangleFace(j, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
-                        AddTriangleToHole(holeMesh, newFace);
+                        holeSurface.AddFace(newFace);
                         continue;
                     }
 
@@ -192,7 +166,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                             ea::begin(nextTetrahedron.neighbors_), ea::end(nextTetrahedron.neighbors_), searchQueue[i])
                             - ea::begin(nextTetrahedron.neighbors_);
                         const TetrahedralMeshSurfaceTriangle newFace = nextTetrahedron.GetTriangleFace(nextFaceIndex, nextIndex, nextFaceIndex);
-                        AddTriangleToHole(holeMesh, newFace);
+                        holeSurface.AddFace(newFace);
                     }
                 }
             }
@@ -200,12 +174,12 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         }
 
         // Create new cells on top of bad cells
-        if (!IsHoleMeshConnected(holeMesh))
+        if (!IsHoleMeshConnected(holeSurface.faces_))
         {
             assert(0);
             return;
         }
-        while (holeMesh.size() > badCells.size())
+        while (holeSurface.Size() > badCells.size())
         {
             DelaunayAuxiliaryData placeholder;
             placeholder.bad_ = true;
@@ -214,12 +188,12 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             auxilary.push_back(placeholder);
         }
 
-        for (unsigned i = 0; i < holeMesh.size(); ++i)
+        for (unsigned i = 0; i < holeSurface.Size(); ++i)
         {
             const unsigned newCellIndex = badCells[i];
             DelaunayAuxiliaryData& cell = auxilary[newCellIndex];
             Tetrahedron& tetrahedron = mesh.tetrahedrons_[newCellIndex];
-            const TetrahedralMeshSurfaceTriangle& face = holeMesh[i];
+            const TetrahedralMeshSurfaceTriangle& face = holeSurface.faces_[i];
 
             for (unsigned j = 0; j < 3; ++j)
             {
