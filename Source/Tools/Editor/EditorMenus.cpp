@@ -54,9 +54,9 @@ void Editor::RenderMenuBar()
             if (ui::MenuItem("Open/Create Project"))
                 OpenOrCreateProject();
 
-            JSONValue& recents = editorSettings_["recent-projects"];
+            StringVector & recents = editorSettings_.RecentProjects;
             // Does not show very first item, which is current project
-            if (recents.Size() == (project_.NotNull() ? 1 : 0))
+            if (recents.size() == (project_.NotNull() ? 1 : 0))
             {
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
                 ui::MenuItem("Recent Projects");
@@ -64,9 +64,9 @@ void Editor::RenderMenuBar()
             }
             else if (ui::BeginMenu("Recent Projects"))
             {
-                for (int i = project_.NotNull() ? 1 : 0; i < recents.Size(); i++)
+                for (int i = project_.NotNull() ? 1 : 0; i < recents.size(); i++)
                 {
-                    const ea::string& projectPath = recents[i].GetString();
+                    const ea::string& projectPath = recents[i];
 
                     if (ui::MenuItem(GetFileNameAndExtension(RemoveTrailingSlash(projectPath)).c_str()))
                         OpenProject(projectPath);
@@ -76,7 +76,7 @@ void Editor::RenderMenuBar()
                 }
                 ui::Separator();
                 if (ui::MenuItem("Clear All"))
-                    recents.Clear();
+                    recents.clear();
                 ui::EndMenu();
             }
 
