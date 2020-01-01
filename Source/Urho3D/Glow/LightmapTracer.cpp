@@ -259,10 +259,6 @@ struct LightProbeIndirectTracingKernel
     {
         const SphericalHarmonicsDot9 sh{ element.sh_ * (M_PI / element.weight_) };
         collection_->lightProbes_[elementIndex].bakedLight_ += sh;
-
-        Vector3 av1 = element.average_ / element.weight_;
-        Vector3 av2 = element.sh_.EvaluateAverage();
-        av2 = av1;
     }
 };
 
@@ -299,7 +295,7 @@ void TraceIndirectLight(T& kernel, const ea::vector<const LightmapChartBakedDire
             if (!element)
                 continue;
 
-            for (unsigned sampleIndex = 0; sampleIndex < settings.numIndirectChartSamples_; ++sampleIndex)
+            for (unsigned sampleIndex = 0; sampleIndex < kernel.GetNumSamples(); ++sampleIndex)
             {
                 Vector3 currentPosition;
                 Vector3 currentNormal;
@@ -467,7 +463,7 @@ void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
-    LightProbeIndirectTracingKernel kernel{ &collection };
+    LightProbeIndirectTracingKernel kernel{ &collection, &settings };
     TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
 }
 

@@ -444,6 +444,47 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
     assert(IsTetrahedralMeshAdjacencyValid(mesh));
 }
 
+void GenerateHullNormals(TetrahedralMesh& mesh)
+{
+    mesh.hullNormals_.resize(mesh.vertices_.size());
+    for (const AdjacentTetrahedron& cell : mesh.cells_)
+    {
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            if (cell.neighbors_[i] != M_MAX_UNSIGNED)
+                continue;
+
+            unsigned triangle[3];
+            unsigned baseIndex;
+            unsigned k = 0;
+            for (unsigned j = 0; j < 4; ++j)
+            {
+                if (i != j)
+                    triangle[k++] = cell.indices_[j];
+                else
+                    baseIndex = cell.indices_[j];
+            }
+
+            const Vector3 p0 = mesh.vertices_[baseIndex];
+            const Vector3 p1 = mesh.vertices_[triangle[0]];
+            const Vector3 p2 = mesh.vertices_[triangle[1]];
+            const Vector3 p3 = mesh.vertices_[triangle[2]];
+            const Vector3 orientation = p1 - p0;
+            const Vector3 cross = (p2 - p1).CrossProduct(p3 - p1);
+            const Vector3 normal = cross.DotProduct(orientation) >= 0.0f ? cross : -cross;
+
+            for (unsigned j = 0; j < 3; ++j)
+                mesh.hullNormals_[triangle[j]] += normal;
+        }
+    }
+
+    for (Vector3& normal : mesh.hullNormals_)
+    {
+        if (normal != Vector3::ZERO)
+            normal.Normalize();
+    }
+}
+
 }
 
 extern const char* SUBSYSTEM_CATEGORY;
@@ -480,6 +521,14 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
             }
         }
     }
+
+    for (unsigned i = 0; i < lightProbesMesh_.vertices_.size(); ++i)
+    {
+        const Vector3& pos = lightProbesMesh_.vertices_[i];
+        const Vector3& normal = lightProbesMesh_.hullNormals_[i];
+        if (normal != Vector3::ZERO)
+            debug->AddLine(pos, pos + normal, Color::YELLOW);
+    }
 }
 
 void GlobalIllumination::ResetLightProbes()
@@ -501,6 +550,7 @@ void GlobalIllumination::CompileLightProbes()
     const BoundingBox boundingBox = lightProbesCollection_.CalculateBoundingBox(Vector3::ONE);
     InitializeTetrahedralMesh(lightProbesMesh_, boundingBox);
     AddTetrahedralMeshVertices(lightProbesMesh_, lightProbesCollection_.worldPositions_);
+    GenerateHullNormals(lightProbesMesh_);
 }
 
 Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsigned& hint) const
