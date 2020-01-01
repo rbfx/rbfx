@@ -65,60 +65,6 @@ Sphere CalculateTetrahedronCircumsphere(const Tetrahedron& cell, const ea::vecto
     return { center, radius + eps };
 }
 
-/// Initialize tetrahedral mesh for given volume.
-void InitializeTetrahedralMesh(TetrahedralMesh& mesh, const BoundingBox& volume)
-{
-    static const unsigned numVertices = 8;
-    static const Vector3 offsets[numVertices] =
-    {
-        { 0.0f, 0.0f, 0.0f }, // 0: 1st corner tetrahedron
-        { 1.0f, 0.0f, 0.0f }, // 1:
-        { 0.0f, 1.0f, 0.0f }, // 2:
-        { 1.0f, 1.0f, 0.0f }, // 3: 2nd corner tetrahedron
-        { 0.0f, 0.0f, 1.0f }, // 4:
-        { 1.0f, 0.0f, 1.0f }, // 5: 3rh corner tetrahedron
-        { 0.0f, 1.0f, 1.0f }, // 6: 4th corner tetrahedron
-        { 1.0f, 1.0f, 1.0f }  // 7:
-    };
-
-    static const unsigned numTetrahedrons = 5;
-    static const unsigned indices[numTetrahedrons][4] =
-    {
-        { 0, 1, 2, 4 }, // 1st corner tetrahedron
-        { 3, 1, 2, 7 }, // 2nd corner tetrahedron
-        { 5, 1, 4, 7 }, // 3rd corner tetrahedron
-        { 6, 2, 4, 7 }, // 4th corner tetrahedron
-        { 1, 2, 4, 7 }  // Central tetrahedron
-    };
-
-    static const unsigned neighbors[numTetrahedrons][4] =
-    {
-        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
-        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
-        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
-        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
-        { 3, 2, 1, 0 }, // Tetrahedrons with corners at (6, 5, 3, 0)
-    };
-
-    // Initialize vertices
-    mesh.vertices_.resize(numVertices);
-    for (unsigned i = 0; i < numVertices; ++i)
-        mesh.vertices_[i] = volume.min_ + volume.Size() * offsets[i];
-
-    // Initialize cells
-    mesh.tetrahedrons_.resize(numTetrahedrons);
-    for (unsigned i = 0; i < numTetrahedrons; ++i)
-    {
-        Tetrahedron cell;
-        for (unsigned j = 0; j < 4; ++j)
-        {
-            cell.indices_[j] = indices[i][j];
-            cell.neighbors_[j] = neighbors[i][j];
-        }
-        mesh.tetrahedrons_[i] = cell;
-    }
-};
-
 /// Return barycentric coordinates withing tetrahedron.
 Vector4 GetBarycentricCoords(const TetrahedralMesh& mesh, unsigned cellIndex, const Vector3& position)
 {
@@ -490,6 +436,68 @@ void GenerateHullNormals(TetrahedralMesh& mesh)
 
 }
 
+void TetrahedralMesh::Define(ea::span<const Vector3> positions, float padding)
+{
+    BoundingBox boundingBox(positions.data(), positions.size());
+    boundingBox.min_ -= Vector3::ONE * padding;
+    boundingBox.max_ += Vector3::ONE * padding;
+    InitializeSuperMesh(boundingBox);
+
+    AddTetrahedralMeshVertices(*this, positions);
+}
+
+void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
+{
+    static const unsigned numVertices = 8;
+    static const Vector3 offsets[numVertices] =
+    {
+        { 0.0f, 0.0f, 0.0f }, // 0: 1st corner tetrahedron
+        { 1.0f, 0.0f, 0.0f }, // 1:
+        { 0.0f, 1.0f, 0.0f }, // 2:
+        { 1.0f, 1.0f, 0.0f }, // 3: 2nd corner tetrahedron
+        { 0.0f, 0.0f, 1.0f }, // 4:
+        { 1.0f, 0.0f, 1.0f }, // 5: 3rh corner tetrahedron
+        { 0.0f, 1.0f, 1.0f }, // 6: 4th corner tetrahedron
+        { 1.0f, 1.0f, 1.0f }  // 7:
+    };
+
+    // TODO(glow): Use Tetrahedron here
+    static const unsigned numTetrahedrons = 5;
+    static const unsigned indices[numTetrahedrons][4] =
+    {
+        { 0, 1, 2, 4 }, // 1st corner tetrahedron
+        { 3, 1, 2, 7 }, // 2nd corner tetrahedron
+        { 5, 1, 4, 7 }, // 3rd corner tetrahedron
+        { 6, 2, 4, 7 }, // 4th corner tetrahedron
+        { 1, 2, 4, 7 }  // Central tetrahedron
+    };
+
+    static const unsigned neighbors[numTetrahedrons][4] =
+    {
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 4, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED },
+        { 3, 2, 1, 0 }, // Tetrahedrons with corners at (6, 5, 3, 0)
+    };
+
+    vertices_.resize(numVertices);
+    for (unsigned i = 0; i < numVertices; ++i)
+        vertices_[i] = boundingBox.min_ + boundingBox.Size() * offsets[i];
+
+    tetrahedrons_.resize(numTetrahedrons);
+    for (unsigned i = 0; i < numTetrahedrons; ++i)
+    {
+        Tetrahedron cell;
+        for (unsigned j = 0; j < 4; ++j)
+        {
+            cell.indices_[j] = indices[i][j];
+            cell.neighbors_[j] = neighbors[i][j];
+        }
+        tetrahedrons_[i] = cell;
+    }
+}
+
 extern const char* SUBSYSTEM_CATEGORY;
 
 GlobalIllumination::GlobalIllumination(Context* context) :
@@ -550,9 +558,7 @@ void GlobalIllumination::CompileLightProbes()
         return;
 
     // Add padding to avoid vertex collision
-    const BoundingBox boundingBox = lightProbesCollection_.CalculateBoundingBox(Vector3::ONE);
-    InitializeTetrahedralMesh(lightProbesMesh_, boundingBox);
-    AddTetrahedralMeshVertices(lightProbesMesh_, lightProbesCollection_.worldPositions_);
+    lightProbesMesh_.Define(lightProbesCollection_.worldPositions_);
     GenerateHullNormals(lightProbesMesh_);
 }
 
