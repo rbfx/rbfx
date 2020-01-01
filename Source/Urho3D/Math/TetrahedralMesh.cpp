@@ -126,35 +126,34 @@ void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
 
 void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
 {
+    // Initialize context
     DelaunayContext ctx;
-
-    // Copy cells and initialize all required data
     ctx.circumspheres_.resize(tetrahedrons_.size());
     ctx.removed_.resize(tetrahedrons_.size());
     for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
-    {
         ctx.circumspheres_[i] = GetTetrahedronCircumsphere(i);
-        ctx.removed_[i] = false;
-    }
+
+    // Append vertices
+    const unsigned startVertex = vertices_.size();
+    vertices_.insert(vertices_.end(), positions.begin(), positions.end());
 
     // Triangulate
     TetrahedralMeshSurface holeSurface;
     ea::vector<unsigned> removedTetrahedrons;
-    for (const Vector3& position : positions)
+
+    for (unsigned newVertexIndex = startVertex; newVertexIndex < vertices_.size(); ++newVertexIndex)
     {
-        const unsigned newIndex = vertices_.size();
-        vertices_.push_back(position);
-
-        FindAndRemoveIntersected(ctx, position, holeSurface, removedTetrahedrons);
-
-        // Create new cells on top of bad cells
+        // Carve hole in the mesh
+        FindAndRemoveIntersected(ctx, vertices_[newVertexIndex], holeSurface, removedTetrahedrons);
         if (!holeSurface.IsClosedSurface())
         {
+            URHO3D_LOGERROR("Hole surface is invalid");
             assert(0);
             return;
         }
 
-        while (holeSurface.Size() > removedTetrahedrons.size())
+        // Allocate space for new tetrahedrons
+        while (removedTetrahedrons.size() < holeSurface.Size())
         {
             removedTetrahedrons.push_back(tetrahedrons_.size());
             tetrahedrons_.push_back();
@@ -173,7 +172,7 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
                 tetrahedron.indices_[j] = face.indices_[j];
                 tetrahedron.neighbors_[j] = removedTetrahedrons[face.neighbors_[j]];
             }
-            tetrahedron.indices_[3] = newIndex;
+            tetrahedron.indices_[3] = newVertexIndex;
             tetrahedron.neighbors_[3] = face.tetIndex_;
             if (face.tetIndex_ != M_MAX_UNSIGNED)
                 tetrahedrons_[face.tetIndex_].neighbors_[face.tetFace_] = newCellIndex;
