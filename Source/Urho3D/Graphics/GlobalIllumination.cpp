@@ -46,34 +46,12 @@ struct DelaunayAuxiliaryData
     bool bad_{};
 };
 
-/// Face of the hole in tetrahedral mesh.
-struct TetrahedralMeshHoleFace
-{
-    /// Indices.
-    unsigned indices_[3]{};
-    /// Underlying cell.
-    unsigned cell_{};
-    /// Underlying cell face.
-    unsigned face_{};
-    /// Neighbor faces.
-    unsigned neighbors_[3]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED};
-    /// Return edge, indexes are sorted.
-    ea::pair<unsigned, unsigned> GetEdge(unsigned i) const
-    {
-        unsigned begin = indices_[i];
-        unsigned end = indices_[(i + 1) % 3];
-        if (begin > end)
-            ea::swap(begin, end);
-        return { begin, end };
-    }
-};
-
 /// Return face of the tetrahedron.
-TetrahedralMeshHoleFace GetTetrahedronHoleFace(const Tetrahedron& tet, unsigned faceIndex, unsigned cellIndex)
+TetrahedralMeshSurfaceTriangle GetTetrahedronHoleFace(const Tetrahedron& tet, unsigned faceIndex, unsigned cellIndex)
 {
-    TetrahedralMeshHoleFace face;
-    face.cell_ = cellIndex;
-    face.face_ = faceIndex;
+    TetrahedralMeshSurfaceTriangle face;
+    face.tetIndex_ = cellIndex;
+    face.tetFace_ = faceIndex;
 
     unsigned j = 0;
     for (unsigned i = 0; i < 4; ++i)
@@ -85,13 +63,13 @@ TetrahedralMeshHoleFace GetTetrahedronHoleFace(const Tetrahedron& tet, unsigned 
 }
 
 /// Add triangle to hole mesh.
-void AddTriangleToHole(ea::vector<TetrahedralMeshHoleFace>& mesh, TetrahedralMeshHoleFace newFace)
+void AddTriangleToHole(ea::vector<TetrahedralMeshSurfaceTriangle>& mesh, TetrahedralMeshSurfaceTriangle newFace)
 {
     // Find adjacent triangles
     const unsigned newIndex = mesh.size();
     for (unsigned oldIndex = 0; oldIndex < newIndex; ++oldIndex)
     {
-        TetrahedralMeshHoleFace& oldFace = mesh[oldIndex];
+        TetrahedralMeshSurfaceTriangle& oldFace = mesh[oldIndex];
         for (unsigned i = 0; i < 3; ++i)
         {
             const auto oldEdge = oldFace.GetEdge(i);
@@ -111,7 +89,7 @@ void AddTriangleToHole(ea::vector<TetrahedralMeshHoleFace>& mesh, TetrahedralMes
 }
 
 /// Return whether the hole mesh is fully connected.
-bool IsHoleMeshConnected(ea::vector<TetrahedralMeshHoleFace>& mesh)
+bool IsHoleMeshConnected(ea::vector<TetrahedralMeshSurfaceTriangle>& mesh)
 {
     for (unsigned faceIndex = 0; faceIndex < mesh.size(); ++faceIndex)
     {
@@ -121,7 +99,7 @@ bool IsHoleMeshConnected(ea::vector<TetrahedralMeshHoleFace>& mesh)
             if (neighborIndex == M_MAX_UNSIGNED)
                 return false;
 
-            const TetrahedralMeshHoleFace& neighborFace = mesh[neighborIndex];
+            const TetrahedralMeshSurfaceTriangle& neighborFace = mesh[neighborIndex];
             if (ea::count(ea::begin(neighborFace.neighbors_), ea::end(neighborFace.neighbors_), faceIndex) == 0)
                 return false;
         }
@@ -154,16 +132,11 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
     // Copy cells and initialize all required data
     ea::vector<DelaunayAuxiliaryData> auxilary(mesh.tetrahedrons_.size());
     for (unsigned i = 0; i < mesh.tetrahedrons_.size(); ++i)
-    {
-        mesh.tetrahedrons_[i] = mesh.tetrahedrons_[i];
         auxilary[i].circumsphere_ = mesh.GetTetrahedronCircumsphere(i);
-    }
-
-    unsigned tempCount = 0;
 
     // Triangulate
     ea::vector<unsigned> badCells;
-    ea::vector<TetrahedralMeshHoleFace> holeMesh;
+    ea::vector<TetrahedralMeshSurfaceTriangle> holeMesh;
     ea::vector<unsigned> searchQueue;
     for (const Vector3& position : positions)
     {
@@ -210,7 +183,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                     if (nextIndex == M_MAX_UNSIGNED)
                     {
                         // Missing neighbor closes hole
-                        const TetrahedralMeshHoleFace newFace = GetTetrahedronHoleFace(tetrahedron, j, M_MAX_UNSIGNED);
+                        const TetrahedralMeshSurfaceTriangle newFace = GetTetrahedronHoleFace(tetrahedron, j, M_MAX_UNSIGNED);
                         AddTriangleToHole(holeMesh, newFace);
                         continue;
                     }
@@ -234,7 +207,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                         const unsigned nextFaceIndex = ea::find(
                             ea::begin(nextTetrahedron.neighbors_), ea::end(nextTetrahedron.neighbors_), searchQueue[i])
                             - ea::begin(nextTetrahedron.neighbors_);
-                        const TetrahedralMeshHoleFace newFace = GetTetrahedronHoleFace(nextTetrahedron, nextFaceIndex, nextIndex);
+                        const TetrahedralMeshSurfaceTriangle newFace = GetTetrahedronHoleFace(nextTetrahedron, nextFaceIndex, nextIndex);
                         AddTriangleToHole(holeMesh, newFace);
                     }
                 }
@@ -262,7 +235,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             const unsigned newCellIndex = badCells[i];
             DelaunayAuxiliaryData& cell = auxilary[newCellIndex];
             Tetrahedron& tetrahedron = mesh.tetrahedrons_[newCellIndex];
-            const TetrahedralMeshHoleFace& face = holeMesh[i];
+            const TetrahedralMeshSurfaceTriangle& face = holeMesh[i];
 
             for (unsigned j = 0; j < 3; ++j)
             {
@@ -270,9 +243,9 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
                 tetrahedron.neighbors_[j] = badCells[face.neighbors_[j]];
             }
             tetrahedron.indices_[3] = newIndex;
-            tetrahedron.neighbors_[3] = face.cell_;
-            if (face.cell_ != M_MAX_UNSIGNED)
-                mesh.tetrahedrons_[face.cell_].neighbors_[face.face_] = newCellIndex;
+            tetrahedron.neighbors_[3] = face.tetIndex_;
+            if (face.tetIndex_ != M_MAX_UNSIGNED)
+                mesh.tetrahedrons_[face.tetIndex_].neighbors_[face.tetFace_] = newCellIndex;
             cell.bad_ = false;
             cell.circumsphere_ = mesh.GetTetrahedronCircumsphere(newCellIndex);
         }
