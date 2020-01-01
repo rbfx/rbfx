@@ -69,9 +69,13 @@ bool IsTetrahedralMeshAdjacencyValid(const TetrahedralMesh& mesh)
 void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> positions)
 {
     // Copy cells and initialize all required data
-    ea::vector<DelaunayAuxiliaryData> auxilary(mesh.tetrahedrons_.size());
+    ea::vector<Sphere> circumspheres(mesh.tetrahedrons_.size());
+    ea::vector<bool> badFlags(mesh.tetrahedrons_.size());
     for (unsigned i = 0; i < mesh.tetrahedrons_.size(); ++i)
-        auxilary[i].circumsphere_ = mesh.GetTetrahedronCircumsphere(i);
+    {
+        circumspheres[i] = mesh.GetTetrahedronCircumsphere(i);
+        badFlags[i] = false;
+    }
 
     // Triangulate
     ea::vector<unsigned> badCells;
@@ -89,12 +93,11 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         // Find first bad cell
         for (unsigned cellIndex = 0; cellIndex < mesh.tetrahedrons_.size(); ++cellIndex)
         {
-            DelaunayAuxiliaryData& cell = auxilary[cellIndex];
-            if (!cell.bad_ && cell.circumsphere_.IsInside(position) != OUTSIDE)
+            if (!badFlags[cellIndex] && circumspheres[cellIndex].IsInside(position) != OUTSIDE)
             {
                 badCells.push_back(cellIndex);
                 searchQueue.push_back(cellIndex);
-                cell.bad_ = true;
+                badFlags[cellIndex] = true;
                 break;
             }
         }
@@ -113,7 +116,6 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             for (unsigned i = firstCell; i < lastCell; ++i)
             {
                 const Tetrahedron& tetrahedron = mesh.tetrahedrons_[searchQueue[i]];
-                const DelaunayAuxiliaryData& cell = auxilary[searchQueue[i]];
 
                 // Process neighbors
                 for (unsigned j = 0; j < 4; ++j)
@@ -129,16 +131,15 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
 
                     // Ignore bad cells, they are already processed
                     Tetrahedron& nextTetrahedron = mesh.tetrahedrons_[nextIndex];
-                    DelaunayAuxiliaryData& nextCell = auxilary[nextIndex];
-                    if (nextCell.bad_)
+                    if (badFlags[nextIndex])
                         continue;
 
-                    if (auxilary[nextIndex].circumsphere_.IsInside(position) != OUTSIDE)
+                    if (circumspheres[nextIndex].IsInside(position) != OUTSIDE)
                     {
                         // If cell is bad too, add it to queue
                         badCells.push_back(nextIndex);
                         searchQueue.push_back(nextIndex);
-                        nextCell.bad_ = true;
+                        badFlags[nextIndex] = true;
                     }
                     else
                     {
@@ -163,17 +164,15 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
 
         while (holeSurface.Size() > badCells.size())
         {
-            DelaunayAuxiliaryData placeholder;
-            placeholder.bad_ = true;
             badCells.push_back(mesh.tetrahedrons_.size());
             mesh.tetrahedrons_.push_back();
-            auxilary.push_back(placeholder);
+            circumspheres.push_back();
+            badFlags.push_back(true);
         }
 
         for (unsigned i = 0; i < holeSurface.Size(); ++i)
         {
             const unsigned newCellIndex = badCells[i];
-            DelaunayAuxiliaryData& cell = auxilary[newCellIndex];
             Tetrahedron& tetrahedron = mesh.tetrahedrons_[newCellIndex];
             const TetrahedralMeshSurfaceTriangle& face = holeSurface.faces_[i];
 
@@ -186,8 +185,8 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
             tetrahedron.neighbors_[3] = face.tetIndex_;
             if (face.tetIndex_ != M_MAX_UNSIGNED)
                 mesh.tetrahedrons_[face.tetIndex_].neighbors_[face.tetFace_] = newCellIndex;
-            cell.bad_ = false;
-            cell.circumsphere_ = mesh.GetTetrahedronCircumsphere(newCellIndex);
+            badFlags[newCellIndex] = false;
+            circumspheres[newCellIndex] = mesh.GetTetrahedronCircumsphere(newCellIndex);
         }
     }
 
@@ -197,11 +196,11 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
         {
             if (mesh.tetrahedrons_[i].indices_[j] < 8)
             {
-                auxilary[i].bad_ = true;
+                badFlags[i] = true;
                 break;
             }
         }
-        if (auxilary[i].bad_)
+        if (badFlags[i])
         {
             for (unsigned j = 0; j < 4; ++j)
             {
@@ -221,7 +220,7 @@ void AddTetrahedralMeshVertices(TetrahedralMesh& mesh, ea::span<const Vector3> p
     mesh.tetrahedrons_.clear();
     for (unsigned i = 0; i < cells.size(); ++i)
     {
-        if (auxilary[i].bad_)
+        if (badFlags[i])
         {
             newIndices[i] = M_MAX_UNSIGNED;
             continue;
