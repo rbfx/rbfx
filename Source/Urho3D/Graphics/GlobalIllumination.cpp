@@ -103,14 +103,16 @@ void GlobalIllumination::CompileLightProbes()
 
 Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsigned& hint) const
 {
-    const unsigned maxIters = lightProbesCollection_.Size();
+    if (lightProbesMesh_.tetrahedrons_.empty())
+        return {};
+
+    const unsigned maxIters = lightProbesMesh_.tetrahedrons_.size();
     if (hint >= maxIters)
         hint = 0;
 
-    Vector4 weights;
     for (unsigned i = 0; i < maxIters; ++i)
     {
-        weights = lightProbesMesh_.GetInnerBarycentricCoords(hint, position);
+        const Vector4 weights = lightProbesMesh_.GetBarycentricCoords(hint, position);
         if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
             return weights;
 
@@ -127,21 +129,23 @@ Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsign
         if (hint == M_MAX_UNSIGNED)
             break;
     }
-    return weights;
+    return lightProbesMesh_.GetBarycentricCoords(hint, position);
 }
 
 SphericalHarmonicsDot9 GlobalIllumination::SampleAmbientSH(const Vector3& position, unsigned& hint) const
 {
     // TODO(glow): Use real ambient here
     const Vector4& weights = SampleLightProbeMesh(position, hint);
-    if (hint >= lightProbesMesh_.numInnerTetrahedrons_)
+    if (hint >= lightProbesMesh_.tetrahedrons_.size())
         return SphericalHarmonicsDot9{};
 
     const Tetrahedron& tetrahedron = lightProbesMesh_.tetrahedrons_[hint];
 
     SphericalHarmonicsDot9 sh;
-    for (unsigned i = 0; i < 4; ++i)
+    for (unsigned i = 0; i < 3; ++i)
         sh += lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_ * weights[i];
+    if (hint < lightProbesMesh_.numInnerTetrahedrons_)
+        sh += lightProbesCollection_.lightProbes_[tetrahedron.indices_[3]].bakedLight_ * weights[3];
     return sh;
 }
 
@@ -149,14 +153,16 @@ Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsign
 {
     // TODO(glow): Use real ambient here
     const Vector4& weights = SampleLightProbeMesh(position, hint);
-    if (hint >= lightProbesMesh_.numInnerTetrahedrons_)
+    if (hint >= lightProbesMesh_.tetrahedrons_.size())
         return Vector3::ZERO;
 
     const Tetrahedron& tetrahedron = lightProbesMesh_.tetrahedrons_[hint];
 
     Vector3 ambient;
-    for (unsigned i = 0; i < 4; ++i)
+    for (unsigned i = 0; i < 3; ++i)
         ambient += lightProbesCollection_.lightProbes_[tetrahedron.indices_[i]].bakedLight_.EvaluateAverage() * weights[i];
+    if (hint < lightProbesMesh_.numInnerTetrahedrons_)
+        ambient += lightProbesCollection_.lightProbes_[tetrahedron.indices_[3]].bakedLight_.EvaluateAverage() * weights[3];
     ambient.x_ = Pow(ambient.x_, 1 / 2.2f);
     ambient.y_ = Pow(ambient.y_, 1 / 2.2f);
     ambient.z_ = Pow(ambient.z_, 1 / 2.2f);
