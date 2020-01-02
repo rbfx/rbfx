@@ -31,52 +31,6 @@
 namespace Urho3D
 {
 
-namespace
-{
-
-void GenerateHullNormals(TetrahedralMesh& mesh)
-{
-    mesh.hullNormals_.resize(mesh.vertices_.size());
-    for (const Tetrahedron& cell : mesh.tetrahedrons_)
-    {
-        for (unsigned i = 0; i < 4; ++i)
-        {
-            if (cell.neighbors_[i] != M_MAX_UNSIGNED)
-                continue;
-
-            unsigned triangle[3];
-            unsigned baseIndex;
-            unsigned k = 0;
-            for (unsigned j = 0; j < 4; ++j)
-            {
-                if (i != j)
-                    triangle[k++] = cell.indices_[j];
-                else
-                    baseIndex = cell.indices_[j];
-            }
-
-            const Vector3 p0 = mesh.vertices_[baseIndex];
-            const Vector3 p1 = mesh.vertices_[triangle[0]];
-            const Vector3 p2 = mesh.vertices_[triangle[1]];
-            const Vector3 p3 = mesh.vertices_[triangle[2]];
-            const Vector3 orientation = p1 - p0;
-            const Vector3 cross = (p2 - p1).CrossProduct(p3 - p1);
-            const Vector3 normal = cross.DotProduct(orientation) >= 0.0f ? cross : -cross;
-
-            for (unsigned j = 0; j < 3; ++j)
-                mesh.hullNormals_[triangle[j]] += normal;
-        }
-    }
-
-    for (Vector3& normal : mesh.hullNormals_)
-    {
-        if (normal != Vector3::ZERO)
-            normal.Normalize();
-    }
-}
-
-}
-
 extern const char* SUBSYSTEM_CATEGORY;
 
 GlobalIllumination::GlobalIllumination(Context* context) :
@@ -93,21 +47,21 @@ void GlobalIllumination::RegisterObject(Context* context)
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    for (const Tetrahedron& cell : lightProbesMesh_.tetrahedrons_)
+    for (const Tetrahedron& tetrahedrons : lightProbesMesh_.tetrahedrons_)
     {
         for (unsigned i = 0; i < 4; ++i)
         {
             for (unsigned j = 0; j < 4; ++j)
             {
-                const unsigned startIndex = cell.indices_[i];
-                const unsigned endIndex = cell.indices_[j];
+                const unsigned startIndex = tetrahedrons.indices_[i];
+                const unsigned endIndex = tetrahedrons.indices_[j];
                 const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
                 const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
                 const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
                 const Color startColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
                 const Color endColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
                 debug->AddLine(startPos, midPos, startColor);
-                debug->AddLine(midPos, midPos, endColor);
+                debug->AddLine(midPos, endPos, endColor);
             }
         }
     }
@@ -138,7 +92,6 @@ void GlobalIllumination::CompileLightProbes()
 
     // Add padding to avoid vertex collision
     lightProbesMesh_.Define(lightProbesCollection_.worldPositions_);
-    GenerateHullNormals(lightProbesMesh_);
 }
 
 Vector4 GlobalIllumination::SampleLightProbeMesh(const Vector3& position, unsigned& hint) const
