@@ -124,6 +124,11 @@ struct TetrahedralMeshSurface
 /// Tetrahedron with adjacency information.
 struct Tetrahedron
 {
+    /// Special index for infinite vertex of outer cell, cubic equation.
+    static const unsigned Infinity3 = M_MAX_UNSIGNED;
+    /// Special index for infinite vertex of outer cell, square equation.
+    static const unsigned Infinity2 = M_MAX_UNSIGNED - 1;
+
     /// Indices of tetrahedron vertices.
     unsigned indices_[4]{};
     /// Indices of neighbor tetrahedrons. M_MAX_UNSIGNED if empty.
@@ -193,7 +198,7 @@ private:
     /// Build tetrahedrons for given positions.
     void BuildTetrahedrons(ea::span<const Vector3> positions);
     /// Return whether the adjacency is valid.
-    bool IsAdjacencyValid() const;
+    bool IsAdjacencyValid(bool fullyConnected) const;
 
     /// Data used for Delaunay triangulation.
     struct DelaunayContext
@@ -224,6 +229,8 @@ private:
     void BuildHullSurface();
     /// Calculate hull normals.
     void CalculateHullNormals();
+    /// Build outer tetrahedrons.
+    void BuildOuterTetrahedrons();
 
 public:
     /// Vertices.
@@ -235,8 +242,8 @@ public:
 
     /// Hull normals.
     ea::vector<Vector3> hullNormals_;
-    /// Number of inner cells.
-    unsigned numInnerCells_{};
+    /// Number of inner tetrahedrons.
+    unsigned numInnerTetrahedrons_{};
 };
 
 }
