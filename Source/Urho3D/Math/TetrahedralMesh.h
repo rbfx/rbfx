@@ -183,6 +183,8 @@ public:
     }
 
 private:
+    /// Number of initial super-mesh vertices.
+    static const unsigned NumSuperMeshVertices = 8;
     /// Create super-mesh for Delaunay triangulation.
     void InitializeSuperMesh(const BoundingBox& boundingBox);
     /// Build tetrahedrons for given positions.
@@ -209,6 +211,8 @@ private:
     /// Output tetrahedrons should be allocated beforehand.
     void FillStarShapedHole(DelaunayContext& ctx, const ea::vector<unsigned>& outputTetrahedrons,
         const TetrahedralMeshSurface& holeSurface, unsigned centerIndex);
+    /// Mark super-mesh tetrahedrons in the to-be-removed array and disconnect all related adjacency.
+    void DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed);
 
 public:
     /// Vertices.
