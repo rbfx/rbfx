@@ -213,6 +213,10 @@ private:
         const TetrahedralMeshSurface& holeSurface, unsigned centerIndex);
     /// Mark super-mesh tetrahedrons in the to-be-removed array and disconnect all related adjacency.
     void DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed);
+    /// Remove marked tetrahedrons from array.
+    void RemoveMarkedTetrahedrons(const ea::vector<bool>& removed);
+    /// Remove super-mesh vertices.
+    void RemoveSuperMeshVertices();
 
 public:
     /// Vertices.
