@@ -167,10 +167,13 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     DisconnectSuperMeshTetrahedrons(ctx.removed_);
     RemoveMarkedTetrahedrons(ctx.removed_);
     RemoveSuperMeshVertices();
+    assert(IsAdjacencyValid(false));
+
     BuildHullSurface();
     CalculateHullNormals();
+    BuildOuterTetrahedrons();
 
-    for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
+    for (unsigned i = 0; i < numInnerTetrahedrons_; ++i)
     {
         Tetrahedron& tetrahedron = tetrahedrons_[i];
         const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
@@ -186,11 +189,9 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
         assert(GetInnerBarycentricCoords(i, p2).Equals(Vector4(0, 0, 1, 0)));
         assert(GetInnerBarycentricCoords(i, p3).Equals(Vector4(0, 0, 0, 1)));
     }
-
-    assert(IsAdjacencyValid());
 }
 
-bool TetrahedralMesh::IsAdjacencyValid() const
+bool TetrahedralMesh::IsAdjacencyValid(bool fullyConnected) const
 {
     for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
     {
@@ -203,6 +204,8 @@ bool TetrahedralMesh::IsAdjacencyValid() const
                 if (!neighborTetrahedron.HasNeighbor(tetIndex))
                     return false;
             }
+            else if (fullyConnected)
+                return false;
         }
     }
     return true;
@@ -435,6 +438,30 @@ void TetrahedralMesh::CalculateHullNormals()
         if (normal != Vector3::ZERO)
             normal.Normalize();
     }
+}
+
+void TetrahedralMesh::BuildOuterTetrahedrons()
+{
+    numInnerTetrahedrons_ = tetrahedrons_.size();
+    tetrahedrons_.resize(numInnerTetrahedrons_ + hullSurface_.Size());
+
+    for (unsigned tetIndex = numInnerTetrahedrons_; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        const TetrahedralMeshSurfaceTriangle& hullTrinagle = hullSurface_.faces_[tetIndex - numInnerTetrahedrons_];
+
+        for (unsigned faceIndex = 0; faceIndex < 3; ++faceIndex)
+        {
+            tetrahedron.indices_[faceIndex] = hullTrinagle.indices_[faceIndex];
+            tetrahedron.neighbors_[faceIndex] = numInnerTetrahedrons_ + hullTrinagle.neighbors_[faceIndex];
+        }
+
+        tetrahedron.indices_[3] = Tetrahedron::Infinity3;
+        tetrahedron.neighbors_[3] = hullTrinagle.tetIndex_;
+        tetrahedrons_[hullTrinagle.tetIndex_].neighbors_[hullTrinagle.tetFace_] = tetIndex;
+    }
+
+    assert(IsAdjacencyValid(true));
 }
 
 }

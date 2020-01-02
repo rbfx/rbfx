@@ -47,31 +47,38 @@ void GlobalIllumination::RegisterObject(Context* context)
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    for (const Tetrahedron& tetrahedrons : lightProbesMesh_.tetrahedrons_)
+    for (unsigned tetIndex = 0; tetIndex < lightProbesMesh_.tetrahedrons_.size(); ++tetIndex)
     {
-        for (unsigned i = 0; i < 4; ++i)
+        const Tetrahedron& tetrahedron = lightProbesMesh_.tetrahedrons_[tetIndex];
+        if (tetIndex < lightProbesMesh_.numInnerTetrahedrons_)
         {
-            for (unsigned j = 0; j < 4; ++j)
+            for (unsigned i = 0; i < 4; ++i)
             {
-                const unsigned startIndex = tetrahedrons.indices_[i];
-                const unsigned endIndex = tetrahedrons.indices_[j];
-                const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
-                const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
-                const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
-                const Color startColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
-                const Color endColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
-                debug->AddLine(startPos, midPos, startColor);
-                debug->AddLine(midPos, endPos, endColor);
+                for (unsigned j = 0; j < 4; ++j)
+                {
+                    const unsigned startIndex = tetrahedron.indices_[i];
+                    const unsigned endIndex = tetrahedron.indices_[j];
+                    const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
+                    const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
+                    const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
+                    const Color startColor = lightProbesCollection_.lightProbes_[startIndex].GetDebugColor();
+                    const Color endColor = lightProbesCollection_.lightProbes_[endIndex].GetDebugColor();
+                    debug->AddLine(startPos, midPos, startColor);
+                    debug->AddLine(midPos, endPos, endColor);
+                }
             }
         }
-    }
-
-    for (unsigned i = 0; i < lightProbesMesh_.vertices_.size(); ++i)
-    {
-        const Vector3& pos = lightProbesMesh_.vertices_[i];
-        const Vector3& normal = lightProbesMesh_.hullNormals_[i];
-        if (normal != Vector3::ZERO)
-            debug->AddLine(pos, pos + normal, Color::YELLOW);
+        else
+        {
+            for (unsigned i = 0; i < 3; ++i)
+            {
+                const unsigned index = tetrahedron.indices_[i];
+                const Vector3& pos = lightProbesMesh_.vertices_[index];
+                const Vector3& normal = lightProbesMesh_.hullNormals_[index];
+                const Color color = lightProbesCollection_.lightProbes_[index].GetDebugColor();
+                debug->AddLine(pos, pos + normal, color);
+            }
+        }
     }
 }
 
@@ -127,7 +134,7 @@ SphericalHarmonicsDot9 GlobalIllumination::SampleAmbientSH(const Vector3& positi
 {
     // TODO(glow): Use real ambient here
     const Vector4& weights = SampleLightProbeMesh(position, hint);
-    if (hint >= lightProbesMesh_.tetrahedrons_.size())
+    if (hint >= lightProbesMesh_.numInnerTetrahedrons_)
         return SphericalHarmonicsDot9{};
 
     const Tetrahedron& tetrahedron = lightProbesMesh_.tetrahedrons_[hint];
@@ -142,7 +149,7 @@ Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsign
 {
     // TODO(glow): Use real ambient here
     const Vector4& weights = SampleLightProbeMesh(position, hint);
-    if (hint >= lightProbesMesh_.tetrahedrons_.size())
+    if (hint >= lightProbesMesh_.numInnerTetrahedrons_)
         return Vector3::ZERO;
 
     const Tetrahedron& tetrahedron = lightProbesMesh_.tetrahedrons_[hint];
