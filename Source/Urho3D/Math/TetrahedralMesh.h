@@ -242,63 +242,56 @@ public:
 
 private:
     /// Solve cubic equation x^3 + a*x^2 + b*x + c = 0.
-    static int SolveCubicEquation(double *x, double a, double b, double c, double eps)
+    static int SolveCubicEquation(double result[], double a, double b, double c, double eps)
     {
-        const double TwoPi = M_PI * 2;
         double a2 = a * a;
         double q = (a2 - 3 * b) / 9;
         double r = (a * (2 * a2 - 9 * b) + 27 * c) / 54;
         double r2 = r * r;
         double q3 = q * q * q;
-        double A, B;
         if (r2 <= (q3 + eps))
         {
-            double t = r / sqrt(q3);
+            double t = r / std::sqrt(q3);
             if (t < -1)
                 t = -1;
             if (t > 1)
                 t = 1;
-            t = acos(t);
+            t = std::acos(t);
             a /= 3;
-            q = -2 * sqrt(q);
-            x[0] = q * cos(t / 3) - a;
-            x[1] = q * cos((t + TwoPi) / 3) - a;
-            x[2] = q * cos((t - TwoPi) / 3) - a;
-            return (3);
+            q = -2 * std::sqrt(q);
+            result[0] = q * std::cos(t / 3) - a;
+            result[1] = q * std::cos((t + M_PI * 2) / 3) - a;
+            result[2] = q * std::cos((t - M_PI * 2) / 3) - a;
+            return 3;
         }
         else
         {
-            A = -std::cbrt(fabs(r) + sqrt(r2 - q3));
+            double A = -std::cbrt(std::abs(r) + std::sqrt(r2 - q3));
             if (r < 0)
                 A = -A;
-            B = (A == 0 ? 0 : B = q / A);
+            const double B = A == 0 ? 0 : q / A;
 
             a /= 3;
-            x[0] = (A + B) - a;
-            x[1] = -0.5 * (A + B) - a;
-            x[2] = 0.5 * sqrt(3.) * (A - B);
-            if (fabs(x[2]) < eps)
+            result[0] = (A + B) - a;
+            result[1] = -0.5 * (A + B) - a;
+            result[2] = 0.5 * std::sqrt(3.0) * (A - B);
+            if (std::abs(result[2]) < eps)
             {
-                x[2] = x[1];
-                return (2);
+                result[2] = result[1];
+                return 2;
             }
-            return (1);
+            return 1;
         }
     }
 
     /// Calculate most positive root of cubic equation x^3 + a*x^2 + b*x + c = 0.
     static float SolveCubic(const Vector3& abc)
     {
-        const double a = abc.x_;
-        const double b = abc.y_;
-        const double c = abc.z_;
-
-        double ret[3];
-        const int num = SolveCubicEquation(ret, a, b, c, M_EPSILON);
-        if (num == 3)
-            ret[0] = ret[0];
-        return float(*ea::max_element(ret, ret + num));
+        double result[3];
+        const int numRoots = SolveCubicEquation(result, abc.x_, abc.y_, abc.z_, M_EPSILON);
+        return static_cast<float>(*ea::max_element(result, result + numRoots));
     }
+
     /// Calculate most positive root of quadratic equation a*x^2 + b*x + c = 0.
     static float SolveQuadratic(const Vector3& abc)
     {
@@ -315,6 +308,7 @@ private:
             ? (-b + std::sqrt(D)) / (2 * a)
             : (-b - std::sqrt(D)) / (2 * a);
     }
+
     /// Calculate barycentric coordinates on triangle.
     static Vector3 GetTriangleBarycentricCoords(const Vector3& position,
         const Vector3& p1, const Vector3& p2, const Vector3& p3)
