@@ -205,6 +205,10 @@ private:
     /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point. Returns hole surface.
     void FindAndRemoveIntersected(DelaunayContext& ctx, const Vector3& position,
         TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const;
+    /// Fill star-shaped hole with tetrahedrons connected to specified vertex.
+    /// Output tetrahedrons should be allocated beforehand.
+    void FillStarShapedHole(DelaunayContext& ctx, const ea::vector<unsigned>& outputTetrahedrons,
+        const TetrahedralMeshSurface& holeSurface, unsigned centerIndex);
 
 public:
     /// Vertices.
