@@ -564,26 +564,6 @@ void TetrahedralMesh::CalculateOuterMatrices()
             // It's actually a quadratic or even linear equation
             tetrahedron.indices_[3] = Tetrahedron::Infinity2;
         }
-
-        static const Vector4 ref[3] = { Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0) };
-        for (int i = 0; i < 3; ++i)
-        {
-            const Vector3 poly1 = tetrahedron.matrix_ * positions[i];
-            const float t1 = tetrahedron.indices_[3] == Tetrahedron::Infinity3 ? SolveCubic(poly1) : SolveQuadratic(poly1);
-            if (!Equals(t1, 0.0f))
-                assert(0);
-            const Vector3 poly2 = tetrahedron.matrix_ * (positions[i] + normals[i]);
-            const float t2 = tetrahedron.indices_[3] == Tetrahedron::Infinity3 ? SolveCubic(poly2) : SolveQuadratic(poly2);
-            if (!Equals(t2, 1.0f))
-                assert(0);
-
-            const Vector4 bary = GetOuterBarycentricCoords(tetIndex, positions[i] + normals[i]);
-            if (!bary.Equals(ref[i]))
-            {
-                const Vector4 bary2 = GetOuterBarycentricCoords(tetIndex, positions[i] + normals[i]);
-                assert(0);
-            }
-        }
     }
 }
 
