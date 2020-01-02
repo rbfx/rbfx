@@ -25,11 +25,13 @@
 #pragma once
 
 #include "../Math/BoundingBox.h"
-#include "../Math/Matrix3.h"
+#include "../Math/Matrix3x4.h"
 #include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
 
 #include <EASTL/span.h>
+
+#include <cmath>
 
 namespace Urho3D
 {
@@ -57,10 +59,27 @@ struct TetrahedralMeshSurfaceTriangle
             ea::swap(begin, end);
         return { begin, end };
     }
+
     /// Return whether the triangle has given neighbour.
     bool HasNeighbor(unsigned neighborIndex) const
     {
         return ea::count(ea::begin(neighbors_), ea::end(neighbors_), neighborIndex) != 0;
+    }
+
+    /// Normalize triangle indices so (p2 - p1) x (p3 - p1) is the normal.
+    void Normalize(const ea::vector<Vector3>& vertices)
+    {
+        const Vector3 p0 = vertices[unusedIndex_];
+        const Vector3 p1 = vertices[indices_[0]];
+        const Vector3 p2 = vertices[indices_[1]];
+        const Vector3 p3 = vertices[indices_[2]];
+        const Vector3 outsideDirection = p1 - p0;
+        const Vector3 actualNormal = (p2 - p1).CrossProduct(p3 - p1);
+        if (outsideDirection.DotProduct(actualNormal) < 0.0f)
+        {
+            ea::swap(indices_[0], indices_[1]);
+            ea::swap(neighbors_[0], neighbors_[1]);
+        }
     }
 };
 
@@ -124,9 +143,9 @@ struct TetrahedralMeshSurface
 /// Tetrahedron with adjacency information.
 struct Tetrahedron
 {
-    /// Special index for infinite vertex of outer cell, cubic equation.
+    /// Special index for infinite vertex of outer tetrahedron, cubic equation.
     static const unsigned Infinity3 = M_MAX_UNSIGNED;
-    /// Special index for infinite vertex of outer cell, square equation.
+    /// Special index for infinite vertex of outer tetrahedron, square equation.
     static const unsigned Infinity2 = M_MAX_UNSIGNED - 1;
 
     /// Indices of tetrahedron vertices.
@@ -134,7 +153,7 @@ struct Tetrahedron
     /// Indices of neighbor tetrahedrons. M_MAX_UNSIGNED if empty.
     unsigned neighbors_[4]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED };
     /// Pre-computed matrix for calculating barycentric coordinates.
-    Matrix3 matrix_;
+    Matrix3x4 matrix_;
 
     /// Return indices of specified triangle face of the tetrahedron.
     void GetTriangleFaceIndices(unsigned faceIndex, unsigned (&indices)[3]) const
@@ -184,13 +203,137 @@ public:
     /// Calculate barycentric coordinates for inner tetrahedron.
     Vector4 GetInnerBarycentricCoords(unsigned tetIndex, const Vector3& position) const
     {
-        const Tetrahedron& cell = tetrahedrons_[tetIndex];
-        const Vector3& basePosition = vertices_[cell.indices_[0]];
-        const Vector3 coords = cell.matrix_ * (position - basePosition);
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        const Vector3& basePosition = vertices_[tetrahedron.indices_[0]];
+        const Vector3 coords = tetrahedron.matrix_ * (position - basePosition);
         return { 1.0f - coords.x_ - coords.y_ - coords.z_, coords.x_, coords.y_, coords.z_ };
     }
 
+    /// Calculate barycentric coordinates for outer tetrahedron.
+    Vector4 GetOuterBarycentricCoords(unsigned tetIndex, const Vector3& position) const
+    {
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        const Vector3 p1 = vertices_[tetrahedron.indices_[0]];
+        const Vector3 p2 = vertices_[tetrahedron.indices_[1]];
+        const Vector3 p3 = vertices_[tetrahedron.indices_[2]];
+        const Vector3 normal = (p2 - p1).CrossProduct(p3 - p1);
+
+        // Position is in the inner cell, return fake barycentric
+        if (normal.DotProduct(position - p1) < 0.0f)
+            return { 0.0f, 0.0f, 0.0f, -1.0f };
+
+        const Vector3 poly = tetrahedron.matrix_ * position;
+        const float t = tetrahedron.indices_[3] == Tetrahedron::Infinity3 ? SolveCubic(poly) : SolveQuadratic(poly);
+
+        const Vector3 t1 = p1 + t * hullNormals_[tetrahedron.indices_[0]];
+        const Vector3 t2 = p2 + t * hullNormals_[tetrahedron.indices_[1]];
+        const Vector3 t3 = p3 + t * hullNormals_[tetrahedron.indices_[2]];
+        const Vector3 coords = GetTriangleBarycentricCoords(position, t1, t2, t3);
+        return { coords, 0.0f };
+    }
+
+    /// Calculate barycentric coordinates for tetrahedron.
+    Vector4 GetBarycentricCoords(unsigned tetIndex, const Vector3& position) const
+    {
+        return tetIndex < numInnerTetrahedrons_
+            ? GetInnerBarycentricCoords(tetIndex, position)
+            : GetOuterBarycentricCoords(tetIndex, position);
+    }
+
 private:
+    /// Solve cubic equation x^3 + a*x^2 + b*x + c = 0.
+    static int SolveCubicEquation(double *x, double a, double b, double c, double eps)
+    {
+        const double TwoPi = M_PI * 2;
+        double a2 = a * a;
+        double q = (a2 - 3 * b) / 9;
+        double r = (a * (2 * a2 - 9 * b) + 27 * c) / 54;
+        double r2 = r * r;
+        double q3 = q * q * q;
+        double A, B;
+        if (r2 <= (q3 + eps))
+        {
+            double t = r / sqrt(q3);
+            if (t < -1)
+                t = -1;
+            if (t > 1)
+                t = 1;
+            t = acos(t);
+            a /= 3;
+            q = -2 * sqrt(q);
+            x[0] = q * cos(t / 3) - a;
+            x[1] = q * cos((t + TwoPi) / 3) - a;
+            x[2] = q * cos((t - TwoPi) / 3) - a;
+            return (3);
+        }
+        else
+        {
+            A = -std::cbrt(fabs(r) + sqrt(r2 - q3));
+            if (r < 0)
+                A = -A;
+            B = (A == 0 ? 0 : B = q / A);
+
+            a /= 3;
+            x[0] = (A + B) - a;
+            x[1] = -0.5 * (A + B) - a;
+            x[2] = 0.5 * sqrt(3.) * (A - B);
+            if (fabs(x[2]) < eps)
+            {
+                x[2] = x[1];
+                return (2);
+            }
+            return (1);
+        }
+    }
+
+    /// Calculate most positive root of cubic equation x^3 + a*x^2 + b*x + c = 0.
+    static float SolveCubic(const Vector3& abc)
+    {
+        const double a = abc.x_;
+        const double b = abc.y_;
+        const double c = abc.z_;
+
+        double ret[3];
+        const int num = SolveCubicEquation(ret, a, b, c, M_EPSILON);
+        if (num == 3)
+            ret[0] = ret[0];
+        return float(*ea::max_element(ret, ret + num));
+    }
+    /// Calculate most positive root of quadratic equation a*x^2 + b*x + c = 0.
+    static float SolveQuadratic(const Vector3& abc)
+    {
+        const float a = abc.x_;
+        const float b = abc.y_;
+        const float c = abc.z_;
+        if (std::abs(a) < M_EPSILON)
+            return -c / b;
+
+        assert(b * b - 4 * a * c > -M_EPSILON);
+        const float D = ea::max(0.0f, b * b - 4 * a * c);
+
+        return a > 0
+            ? (-b + std::sqrt(D)) / (2 * a)
+            : (-b - std::sqrt(D)) / (2 * a);
+    }
+    /// Calculate barycentric coordinates on triangle.
+    static Vector3 GetTriangleBarycentricCoords(const Vector3& position,
+        const Vector3& p1, const Vector3& p2, const Vector3& p3)
+    {
+        const Vector3 v12 = p2 - p1;
+        const Vector3 v13 = p3 - p1;
+        const Vector3 v0 = position - p1;
+        const float d00 = v12.DotProduct(v12);
+        const float d01 = v12.DotProduct(v13);
+        const float d11 = v13.DotProduct(v13);
+        const float d20 = v0.DotProduct(v12);
+        const float d21 = v0.DotProduct(v13);
+        const float denom = d00 * d11 - d01 * d01;
+        const float v = (d11 * d20 - d01 * d21) / denom;
+        const float w = (d00 * d21 - d01 * d20) / denom;
+        const float u = 1.0f - v - w;
+        return { u, v, w };
+    }
+
     /// Number of initial super-mesh vertices.
     static const unsigned NumSuperMeshVertices = 8;
     /// Create super-mesh for Delaunay triangulation.
@@ -231,6 +374,10 @@ private:
     void CalculateHullNormals();
     /// Build outer tetrahedrons.
     void BuildOuterTetrahedrons();
+    /// Calculate matrices for inner tetrahedrons.
+    void CalculateInnerMatrices();
+    /// Calculate matrices for outer tetrahedrons.
+    void CalculateOuterMatrices();
 
 public:
     /// Vertices.
