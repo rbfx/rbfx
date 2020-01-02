@@ -161,24 +161,8 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
             ctx.removed_.push_back(true);
         }
 
-        for (unsigned i = 0; i < holeSurface.Size(); ++i)
-        {
-            const unsigned newCellIndex = removedTetrahedrons[i];
-            Tetrahedron& tetrahedron = tetrahedrons_[newCellIndex];
-            const TetrahedralMeshSurfaceTriangle& face = holeSurface.faces_[i];
-
-            for (unsigned j = 0; j < 3; ++j)
-            {
-                tetrahedron.indices_[j] = face.indices_[j];
-                tetrahedron.neighbors_[j] = removedTetrahedrons[face.neighbors_[j]];
-            }
-            tetrahedron.indices_[3] = newVertexIndex;
-            tetrahedron.neighbors_[3] = face.tetIndex_;
-            if (face.tetIndex_ != M_MAX_UNSIGNED)
-                tetrahedrons_[face.tetIndex_].neighbors_[face.tetFace_] = newCellIndex;
-            ctx.removed_[newCellIndex] = false;
-            ctx.circumspheres_[newCellIndex] = GetTetrahedronCircumsphere(newCellIndex);
-        }
+        // Fill hole with tetrahedrons
+        FillStarShapedHole(ctx, removedTetrahedrons, holeSurface, newVertexIndex);
     }
 
     for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
@@ -347,6 +331,33 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
                 neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
             holeSurface.AddFace(newFace);
         }
+    }
+}
+
+void TetrahedralMesh::FillStarShapedHole(TetrahedralMesh::DelaunayContext& ctx,
+    const ea::vector<unsigned>& outputTetrahedrons, const TetrahedralMeshSurface& holeSurface, unsigned centerIndex)
+{
+    for (unsigned i = 0; i < holeSurface.Size(); ++i)
+    {
+        const unsigned newTetIndex = outputTetrahedrons[i];
+        Tetrahedron& tetrahedron = tetrahedrons_[newTetIndex];
+        const TetrahedralMeshSurfaceTriangle& holeTriangle = holeSurface.faces_[i];
+
+        // Connect to newly added (or to be added) adjacent tetrahedrons filling the hole
+        for (unsigned j = 0; j < 3; ++j)
+        {
+            tetrahedron.indices_[j] = holeTriangle.indices_[j];
+            tetrahedron.neighbors_[j] = outputTetrahedrons[holeTriangle.neighbors_[j]];
+        }
+
+        // Connect to tetrahedron outside the hole
+        tetrahedron.indices_[3] = centerIndex;
+        tetrahedron.neighbors_[3] = holeTriangle.tetIndex_;
+        if (holeTriangle.tetIndex_ != M_MAX_UNSIGNED)
+            tetrahedrons_[holeTriangle.tetIndex_].neighbors_[holeTriangle.tetFace_] = newTetIndex;
+
+        ctx.removed_[newTetIndex] = false;
+        ctx.circumspheres_[newTetIndex] = GetTetrahedronCircumsphere(newTetIndex);
     }
 }
 
