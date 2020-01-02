@@ -165,40 +165,8 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     }
 
     DisconnectSuperMeshTetrahedrons(ctx.removed_);
-
-    // Copy output
-    ea::vector<Tetrahedron> cells = ea::move(tetrahedrons_);
-    ea::vector<unsigned> newIndices(cells.size());
-    tetrahedrons_.clear();
-    for (unsigned i = 0; i < cells.size(); ++i)
-    {
-        if (ctx.removed_[i])
-        {
-            newIndices[i] = M_MAX_UNSIGNED;
-            continue;
-        }
-
-        newIndices[i] = tetrahedrons_.size();
-        tetrahedrons_.push_back(cells[i]);
-    }
-    for (Tetrahedron& cell : tetrahedrons_)
-    {
-        for (unsigned i = 0; i < 4; ++i)
-        {
-            if (cell.neighbors_[i] == M_MAX_UNSIGNED)
-                continue;
-            const unsigned newIndex = newIndices[cell.neighbors_[i]];
-            assert(newIndex != M_MAX_UNSIGNED);
-            cell.neighbors_[i] = newIndex;
-        }
-    }
-
-    vertices_.erase(vertices_.begin(), vertices_.begin() + 8);
-    for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
-    {
-        for (unsigned j = 0; j < 4; ++j)
-            tetrahedrons_[i].indices_[j] -= 8;
-    }
+    RemoveMarkedTetrahedrons(ctx.removed_);
+    RemoveSuperMeshVertices();
 
     for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
     {
@@ -368,6 +336,52 @@ void TetrahedralMesh::DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed)
                 neighborTetrahedron.neighbors_[neighborFaceIndex] = M_MAX_UNSIGNED;
             }
         }
+    }
+}
+
+void TetrahedralMesh::RemoveMarkedTetrahedrons(const ea::vector<bool>& removed)
+{
+    // Prepare for reconstruction
+    ea::vector<Tetrahedron> tetrahedronsCopy = ea::move(tetrahedrons_);
+    ea::vector<unsigned> oldToNewIndexMap(tetrahedronsCopy.size());
+    tetrahedrons_.clear();
+
+    // Rebuild array and create index
+    for (unsigned oldTetIndex = 0; oldTetIndex < tetrahedronsCopy.size(); ++oldTetIndex)
+    {
+        if (removed[oldTetIndex])
+        {
+            oldToNewIndexMap[oldTetIndex] = M_MAX_UNSIGNED;
+            continue;
+        }
+
+        oldToNewIndexMap[oldTetIndex] = tetrahedrons_.size();
+        tetrahedrons_.push_back(tetrahedronsCopy[oldTetIndex]);
+    }
+
+    // Adjust neighbor indices
+    for (Tetrahedron& tetrahedron : tetrahedrons_)
+    {
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            const unsigned oldIndex = tetrahedron.neighbors_[faceIndex];
+            if (oldIndex != M_MAX_UNSIGNED)
+            {
+                const unsigned newIndex = oldToNewIndexMap[oldIndex];
+                assert(newIndex != M_MAX_UNSIGNED);
+                tetrahedron.neighbors_[faceIndex] = newIndex;
+            }
+        }
+    }
+}
+
+void TetrahedralMesh::RemoveSuperMeshVertices()
+{
+    vertices_.erase(vertices_.begin(), vertices_.begin() + NumSuperMeshVertices);
+    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+            tetrahedrons_[tetIndex].indices_[faceIndex] -= NumSuperMeshVertices;
     }
 }
 
