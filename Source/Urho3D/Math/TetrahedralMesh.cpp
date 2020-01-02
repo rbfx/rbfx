@@ -172,23 +172,8 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     BuildHullSurface();
     CalculateHullNormals();
     BuildOuterTetrahedrons();
-
-    for (unsigned i = 0; i < numInnerTetrahedrons_; ++i)
-    {
-        Tetrahedron& tetrahedron = tetrahedrons_[i];
-        const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
-        const Vector3 p1 = vertices_[tetrahedron.indices_[1]];
-        const Vector3 p2 = vertices_[tetrahedron.indices_[2]];
-        const Vector3 p3 = vertices_[tetrahedron.indices_[3]];
-        const Vector3 u1 = p1 - p0;
-        const Vector3 u2 = p2 - p0;
-        const Vector3 u3 = p3 - p0;
-        tetrahedron.matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
-        assert(GetInnerBarycentricCoords(i, p0).Equals(Vector4(1, 0, 0, 0)));
-        assert(GetInnerBarycentricCoords(i, p1).Equals(Vector4(0, 1, 0, 0)));
-        assert(GetInnerBarycentricCoords(i, p2).Equals(Vector4(0, 0, 1, 0)));
-        assert(GetInnerBarycentricCoords(i, p3).Equals(Vector4(0, 0, 0, 1)));
-    }
+    CalculateInnerMatrices();
+    CalculateOuterMatrices();
 }
 
 bool TetrahedralMesh::IsAdjacencyValid(bool fullyConnected) const
@@ -407,6 +392,9 @@ void TetrahedralMesh::BuildHullSurface()
         }
     }
 
+    for (TetrahedralMeshSurfaceTriangle& hullTriangle : hullSurface_.faces_)
+        hullTriangle.Normalize(vertices_);
+
     assert(hullSurface_.IsClosedSurface());
 }
 
@@ -416,16 +404,10 @@ void TetrahedralMesh::CalculateHullNormals()
 
     for (const TetrahedralMeshSurfaceTriangle& triangle : hullSurface_.faces_)
     {
-        const Vector3 p0 = vertices_[triangle.unusedIndex_];
         const Vector3 p1 = vertices_[triangle.indices_[0]];
         const Vector3 p2 = vertices_[triangle.indices_[1]];
         const Vector3 p3 = vertices_[triangle.indices_[2]];
-
-        // Use 4th vertex of underlying tetrahedron to find triangle normal direction
-        const Vector3 outsideDirection = p1 - p0;
-        Vector3 normal = (p2 - p1).CrossProduct(p3 - p1);
-        if (normal.DotProduct(outsideDirection) < 0.0f)
-            normal = -normal;
+        const Vector3 normal = (p2 - p1).CrossProduct(p3 - p1);
 
         // Accumulate vertex normals
         for (unsigned j = 0; j < 3; ++j)
@@ -462,6 +444,147 @@ void TetrahedralMesh::BuildOuterTetrahedrons()
     }
 
     assert(IsAdjacencyValid(true));
+}
+
+void TetrahedralMesh::CalculateInnerMatrices()
+{
+    for (unsigned tetIndex = 0; tetIndex < numInnerTetrahedrons_; ++tetIndex)
+    {
+        Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
+        const Vector3 p1 = vertices_[tetrahedron.indices_[1]];
+        const Vector3 p2 = vertices_[tetrahedron.indices_[2]];
+        const Vector3 p3 = vertices_[tetrahedron.indices_[3]];
+        const Vector3 u1 = p1 - p0;
+        const Vector3 u2 = p2 - p0;
+        const Vector3 u3 = p3 - p0;
+        tetrahedron.matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
+    }
+}
+
+void TetrahedralMesh::CalculateOuterMatrices()
+{
+    for (unsigned tetIndex = numInnerTetrahedrons_; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+
+        Vector3 positions[3];
+        Vector3 normals[3];
+        for (unsigned i = 0; i < 3; ++i)
+        {
+            positions[i] = vertices_[tetrahedron.indices_[i]];
+            normals[i] = hullNormals_[tetrahedron.indices_[i]];
+        }
+
+        const Vector3 A = positions[0] - positions[2];
+        const Vector3 Ap = normals[0] - normals[2];
+        const Vector3 B = positions[1] - positions[2];
+        const Vector3 Bp = normals[1] - normals[2];
+        const Vector3 P2 = positions[2];
+        const Vector3 Cp = -normals[2];
+
+        Matrix3x4& m = tetrahedron.matrix_;
+
+        m.m00_ = // input.x *
+            + Ap.y_ * Bp.z_
+            - Ap.z_ * Bp.y_;
+        m.m01_ = // input.y *
+            - Ap.x_ * Bp.z_
+            + Ap.z_ * Bp.x_;
+        m.m02_ = // input.z *
+            + Ap.x_ * Bp.y_
+            - Ap.y_ * Bp.x_;
+        m.m03_ = // 1 *
+            + A.x_ * Bp.y_* Cp.z_
+            - A.y_ * Bp.x_ * Cp.z_
+            + Ap.x_ * B.y_ * Cp.z_
+            - Ap.y_ * B.x_ * Cp.z_
+            + A.z_ * Bp.x_ * Cp.y_
+            - A.z_ * Bp.y_ * Cp.x_
+            + Ap.z_ * B.x_ * Cp.y_
+            - Ap.z_ * B.y_ * Cp.x_
+            - A.x_ * Bp.z_ * Cp.y_
+            + A.y_ * Bp.z_ * Cp.x_
+            - Ap.x_ * B.z_ * Cp.y_
+            + Ap.y_ * B.z_ * Cp.x_;
+        m.m03_ -= P2.x_ * m.m00_ + P2.y_ * m.m01_ + P2.z_ * m.m02_;
+
+        m.m10_ = // input.x *
+            + Ap.y_ * B.z_
+            + A.y_ * Bp.z_
+            - Ap.z_ * B.y_
+            - A.z_ * Bp.y_;
+        m.m11_ = // input.y *
+            - A.x_ * Bp.z_
+            - Ap.x_ * B.z_
+            + A.z_ * Bp.x_
+            + Ap.z_ * B.x_;
+        m.m12_ = // input.z *
+            + A.x_ * Bp.y_
+            - A.y_ * Bp.x_
+            + Ap.x_ * B.y_
+            - Ap.y_ * B.x_;
+        m.m13_ = // 1 *
+            + A.x_ * B.y_ * Cp.z_
+            - A.y_ * B.x_ * Cp.z_
+            - A.x_ * B.z_ * Cp.y_
+            + A.y_ * B.z_ * Cp.x_
+            + A.z_ * B.x_ * Cp.y_
+            - A.z_ * B.y_ * Cp.x_;
+        m.m13_ -= P2.x_ * m.m10_ + P2.y_ * m.m11_ + P2.z_ * m.m12_;
+
+        m.m20_ = // input.x *
+            - A.z_ * B.y_
+            + A.y_ * B.z_;
+        m.m21_ = // input.y *
+            - A.x_ * B.z_
+            + A.z_ * B.x_;
+        m.m22_ = // input.z *
+            + A.x_ * B.y_
+            - A.y_ * B.x_;
+        m.m23_ = 0.0f; // 1 *
+        m.m23_ -= P2.x_ * m.m20_ + P2.y_ * m.m21_ + P2.z_ * m.m22_;
+
+        const float a =
+            + Ap.x_ * Bp.y_ * Cp.z_
+            - Ap.y_ * Bp.x_ * Cp.z_
+            + Ap.z_ * Bp.x_ * Cp.y_
+            - Ap.z_ * Bp.y_ * Cp.x_
+            + Ap.y_ * Bp.z_ * Cp.x_
+            - Ap.x_ * Bp.z_ * Cp.y_;
+
+        if (Abs(a) > M_EPSILON)
+        {
+            // d is not zero, so the polynomial at^3 + bt^2 + ct + d = 0 is actually cubic
+            // and we can simplify to the monic form t^3 + pt^2 + qt + r = 0
+            m = m * (1.0f / a);
+        }
+        else
+        {
+            // It's actually a quadratic or even linear equation
+            tetrahedron.indices_[3] = Tetrahedron::Infinity2;
+        }
+
+        static const Vector4 ref[3] = { Vector4(1, 0, 0, 0), Vector4(0, 1, 0, 0), Vector4(0, 0, 1, 0) };
+        for (int i = 0; i < 3; ++i)
+        {
+            const Vector3 poly1 = tetrahedron.matrix_ * positions[i];
+            const float t1 = tetrahedron.indices_[3] == Tetrahedron::Infinity3 ? SolveCubic(poly1) : SolveQuadratic(poly1);
+            if (!Equals(t1, 0.0f))
+                assert(0);
+            const Vector3 poly2 = tetrahedron.matrix_ * (positions[i] + normals[i]);
+            const float t2 = tetrahedron.indices_[3] == Tetrahedron::Infinity3 ? SolveCubic(poly2) : SolveQuadratic(poly2);
+            if (!Equals(t2, 1.0f))
+                assert(0);
+
+            const Vector4 bary = GetOuterBarycentricCoords(tetIndex, positions[i] + normals[i]);
+            if (!bary.Equals(ref[i]))
+            {
+                const Vector4 bary2 = GetOuterBarycentricCoords(tetIndex, positions[i] + normals[i]);
+                assert(0);
+            }
+        }
+    }
 }
 
 }
