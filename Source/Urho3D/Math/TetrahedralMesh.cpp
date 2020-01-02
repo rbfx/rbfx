@@ -74,8 +74,7 @@ Sphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetIndex) const
 
 void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
 {
-    static const unsigned numVertices = 8;
-    static const Vector3 offsets[numVertices] =
+    static const Vector3 offsets[NumSuperMeshVertices] =
     {
         { 0.0f, 0.0f, 0.0f }, // 0: 1st corner tetrahedron
         { 1.0f, 0.0f, 0.0f }, // 1:
@@ -107,8 +106,8 @@ void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
         { 3, 2, 1, 0 }, // Tetrahedrons with corners at (6, 5, 3, 0)
     };
 
-    vertices_.resize(numVertices);
-    for (unsigned i = 0; i < numVertices; ++i)
+    vertices_.resize(NumSuperMeshVertices);
+    for (unsigned i = 0; i < NumSuperMeshVertices; ++i)
         vertices_[i] = boundingBox.min_ + boundingBox.Size() * offsets[i];
 
     tetrahedrons_.resize(numTetrahedrons);
@@ -165,29 +164,7 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
         FillStarShapedHole(ctx, removedTetrahedrons, holeSurface, newVertexIndex);
     }
 
-    for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
-    {
-        for (unsigned j = 0; j < 4; ++j)
-        {
-            if (tetrahedrons_[i].indices_[j] < 8)
-            {
-                ctx.removed_[i] = true;
-                break;
-            }
-        }
-        if (ctx.removed_[i])
-        {
-            for (unsigned j = 0; j < 4; ++j)
-            {
-                const unsigned neighborIndex = tetrahedrons_[i].neighbors_[j];
-                if (neighborIndex != M_MAX_UNSIGNED)
-                {
-                    ea::replace(ea::begin(tetrahedrons_[neighborIndex].neighbors_),
-                        ea::end(tetrahedrons_[neighborIndex].neighbors_), i, M_MAX_UNSIGNED);
-                }
-            }
-        }
-    }
+    DisconnectSuperMeshTetrahedrons(ctx.removed_);
 
     // Copy output
     ea::vector<Tetrahedron> cells = ea::move(tetrahedrons_);
@@ -358,6 +335,39 @@ void TetrahedralMesh::FillStarShapedHole(TetrahedralMesh::DelaunayContext& ctx,
 
         ctx.removed_[newTetIndex] = false;
         ctx.circumspheres_[newTetIndex] = GetTetrahedronCircumsphere(newTetIndex);
+    }
+}
+
+void TetrahedralMesh::DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed)
+{
+    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        // Any tetrahedron containing super-vertex is to be removed
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        for (unsigned j = 0; j < 4; ++j)
+        {
+            if (tetrahedron.indices_[j] < NumSuperMeshVertices)
+            {
+                removed[tetIndex] = true;
+                break;
+            }
+        }
+
+        if (!removed[tetIndex])
+            continue;
+
+        // Disconnect adjacency
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            const unsigned neighborIndex = tetrahedron.neighbors_[faceIndex];
+            if (neighborIndex != M_MAX_UNSIGNED)
+            {
+                Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborIndex];
+                const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
+                assert(neighborFaceIndex < 4);
+                neighborTetrahedron.neighbors_[neighborFaceIndex] = M_MAX_UNSIGNED;
+            }
+        }
     }
 }
 
