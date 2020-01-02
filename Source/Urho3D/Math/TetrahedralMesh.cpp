@@ -113,13 +113,13 @@ void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
     tetrahedrons_.resize(numTetrahedrons);
     for (unsigned i = 0; i < numTetrahedrons; ++i)
     {
-        Tetrahedron cell;
+        Tetrahedron tetrahedron;
         for (unsigned j = 0; j < 4; ++j)
         {
-            cell.indices_[j] = indices[i][j];
-            cell.neighbors_[j] = neighbors[i][j];
+            tetrahedron.indices_[j] = indices[i][j];
+            tetrahedron.neighbors_[j] = neighbors[i][j];
         }
-        tetrahedrons_[i] = cell;
+        tetrahedrons_[i] = tetrahedron;
     }
 }
 
@@ -167,18 +167,20 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     DisconnectSuperMeshTetrahedrons(ctx.removed_);
     RemoveMarkedTetrahedrons(ctx.removed_);
     RemoveSuperMeshVertices();
+    BuildHullSurface();
+    CalculateHullNormals();
 
     for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
     {
-        Tetrahedron& cell = tetrahedrons_[i];
-        const Vector3 p0 = vertices_[cell.indices_[0]];
-        const Vector3 p1 = vertices_[cell.indices_[1]];
-        const Vector3 p2 = vertices_[cell.indices_[2]];
-        const Vector3 p3 = vertices_[cell.indices_[3]];
+        Tetrahedron& tetrahedron = tetrahedrons_[i];
+        const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
+        const Vector3 p1 = vertices_[tetrahedron.indices_[1]];
+        const Vector3 p2 = vertices_[tetrahedron.indices_[2]];
+        const Vector3 p3 = vertices_[tetrahedron.indices_[3]];
         const Vector3 u1 = p1 - p0;
         const Vector3 u2 = p2 - p0;
         const Vector3 u3 = p3 - p0;
-        cell.matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
+        tetrahedron.matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
         assert(GetInnerBarycentricCoords(i, p0).Equals(Vector4(1, 0, 0, 0)));
         assert(GetInnerBarycentricCoords(i, p1).Equals(Vector4(0, 1, 0, 0)));
         assert(GetInnerBarycentricCoords(i, p2).Equals(Vector4(0, 0, 1, 0)));
@@ -197,8 +199,8 @@ bool TetrahedralMesh::IsAdjacencyValid() const
             const unsigned neighborIndex = tetrahedrons_[tetIndex].neighbors_[faceIndex];
             if (neighborIndex != M_MAX_UNSIGNED)
             {
-                const Tetrahedron& neighborCell = tetrahedrons_[neighborIndex];
-                if (!neighborCell.HasNeighbor(tetIndex))
+                const Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborIndex];
+                if (!neighborTetrahedron.HasNeighbor(tetIndex))
                     return false;
             }
         }
@@ -234,7 +236,7 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         return;
     }
 
-    // Do breadth search to collect all bad cells and build hole mesh
+    // Do breadth search to collect all bad tetrahedrons and build hole mesh
     // Note: size may change during the loop
     for (unsigned i = 0; i < ctx.searchQueue_.size(); ++i)
     {
@@ -250,13 +252,13 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
             if (neighborTetIndex == M_MAX_UNSIGNED)
             {
                 // Face of outer surface doesn't have underlying tetrahedron
-                const TetrahedralMeshSurfaceTriangle holeFace = tetrahedron.GetTriangleFace(
+                const TetrahedralMeshSurfaceTriangle holeTriangle = tetrahedron.GetTriangleFace(
                     faceIndex, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
-                holeSurface.AddFace(holeFace);
+                holeSurface.AddFace(holeTriangle);
                 continue;
             }
 
-            // Ignore removed cells
+            // Ignore removed tetrahedrons
             if (ctx.removed_[neighborTetIndex])
                 continue;
 
@@ -272,9 +274,9 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
             // Boundary of the hole is found
             const Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborTetIndex];
             const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
-            const TetrahedralMeshSurfaceTriangle newFace = neighborTetrahedron.GetTriangleFace(
+            const TetrahedralMeshSurfaceTriangle holeTriangle = neighborTetrahedron.GetTriangleFace(
                 neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
-            holeSurface.AddFace(newFace);
+            holeSurface.AddFace(holeTriangle);
         }
     }
 }
@@ -382,6 +384,56 @@ void TetrahedralMesh::RemoveSuperMeshVertices()
     {
         for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
             tetrahedrons_[tetIndex].indices_[faceIndex] -= NumSuperMeshVertices;
+    }
+}
+
+void TetrahedralMesh::BuildHullSurface()
+{
+    hullSurface_.Clear();
+    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            if (tetrahedron.neighbors_[faceIndex] != M_MAX_UNSIGNED)
+                continue;
+
+            const TetrahedralMeshSurfaceTriangle& hullTriangle = tetrahedron.GetTriangleFace(
+                faceIndex, tetIndex, faceIndex);
+            hullSurface_.AddFace(hullTriangle);
+        }
+    }
+
+    assert(hullSurface_.IsClosedSurface());
+}
+
+void TetrahedralMesh::CalculateHullNormals()
+{
+    hullNormals_.resize(vertices_.size());
+
+    for (const TetrahedralMeshSurfaceTriangle& triangle : hullSurface_.faces_)
+    {
+        const Vector3 p0 = vertices_[triangle.unusedIndex_];
+        const Vector3 p1 = vertices_[triangle.indices_[0]];
+        const Vector3 p2 = vertices_[triangle.indices_[1]];
+        const Vector3 p3 = vertices_[triangle.indices_[2]];
+
+        // Use 4th vertex of underlying tetrahedron to find triangle normal direction
+        const Vector3 outsideDirection = p1 - p0;
+        Vector3 normal = (p2 - p1).CrossProduct(p3 - p1);
+        if (normal.DotProduct(outsideDirection) < 0.0f)
+            normal = -normal;
+
+        // Accumulate vertex normals
+        for (unsigned j = 0; j < 3; ++j)
+            hullNormals_[triangle.indices_[j]] += normal;
+    }
+
+    // Normalize outputs
+    for (Vector3& normal : hullNormals_)
+    {
+        if (normal != Vector3::ZERO)
+            normal.Normalize();
     }
 }
 
