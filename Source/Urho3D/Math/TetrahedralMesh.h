@@ -39,10 +39,12 @@ struct TetrahedralMeshSurfaceTriangle
 {
     /// Indices of triangle vertices.
     unsigned indices_[3]{};
+    /// Index of the 4th vertex of underlying tetrahedron. Unspecified if there's no underlying tetrahedron.
+    unsigned unusedIndex_{ M_MAX_UNSIGNED };
     /// Indices of neighbor triangles.
     unsigned neighbors_[3]{ M_MAX_UNSIGNED, M_MAX_UNSIGNED, M_MAX_UNSIGNED};
     /// Index of underlying tetrahedron. M_MAX_UNSIGNED if empty.
-    unsigned tetIndex_{};
+    unsigned tetIndex_{ M_MAX_UNSIGNED };
     /// Face of underlying tetrahedron, from 0 to 3.
     unsigned tetFace_{};
 
@@ -145,6 +147,7 @@ struct Tetrahedron
     {
         TetrahedralMeshSurfaceTriangle face;
         GetTriangleFaceIndices(faceIndex, face.indices_);
+        face.unusedIndex_ = indices_[faceIndex];
         face.tetIndex_ = tetIndex;
         face.tetFace_ = tetFace;
         return face;
@@ -217,12 +220,19 @@ private:
     void RemoveMarkedTetrahedrons(const ea::vector<bool>& removed);
     /// Remove super-mesh vertices.
     void RemoveSuperMeshVertices();
+    /// Build hull surface.
+    void BuildHullSurface();
+    /// Calculate hull normals.
+    void CalculateHullNormals();
 
 public:
     /// Vertices.
     ea::vector<Vector3> vertices_;
     /// Tetrahedrons.
     ea::vector<Tetrahedron> tetrahedrons_;
+    /// Hull surface.
+    TetrahedralMeshSurface hullSurface_;
+
     /// Hull normals.
     ea::vector<Vector3> hullNormals_;
     /// Number of inner cells.
