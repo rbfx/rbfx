@@ -240,6 +240,52 @@ public:
             : GetOuterBarycentricCoords(tetIndex, position);
     }
 
+    /// Find tetrahedron containing given position and calculate barycentric coordinates within this tetrahedron.
+    Vector4 GetInterpolationFactors(const Vector3& position, unsigned& tetIndexHint) const
+    {
+        if (tetrahedrons_.empty())
+            return Vector4::ZERO;
+
+        const unsigned maxIters = tetrahedrons_.size();
+        if (tetIndexHint >= maxIters)
+            tetIndexHint = 0;
+
+        for (unsigned i = 0; i < maxIters; ++i)
+        {
+            const Vector4 weights = GetBarycentricCoords(tetIndexHint, position);
+            if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
+                return weights;
+
+            if (weights.x_ < weights.y_ && weights.x_ < weights.z_ && weights.x_ < weights.w_)
+                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[0];
+            else if (weights.y_ < weights.z_ && weights.y_ < weights.w_)
+                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[1];
+            else if (weights.z_ < weights.w_)
+                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[2];
+            else
+                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[3];
+        }
+        return GetBarycentricCoords(tetIndexHint, position);
+    }
+
+    /// Sample value at given position from the arbitrary container of per-vertex data.
+    template <class Container>
+    auto Sample(const Container& container, const Vector3& position, unsigned& tetIndexHint) const
+    {
+        typename Container::value_type result{};
+
+        const Vector4& weights = GetInterpolationFactors(position, tetIndexHint);
+        if (tetIndexHint < tetrahedrons_.size())
+        {
+            const Tetrahedron& tetrahedron = tetrahedrons_[tetIndexHint];
+            for (unsigned i = 0; i < 3; ++i)
+                result += container[tetrahedron.indices_[i]] * weights[i];
+            if (tetIndexHint < numInnerTetrahedrons_)
+                result += container[tetrahedron.indices_[3]] * weights[3];
+        }
+        return result;
+    }
+
 private:
     /// Solve cubic equation x^3 + a*x^2 + b*x + c = 0.
     static int SolveCubicEquation(double result[], double a, double b, double c, double eps)
@@ -292,7 +338,7 @@ private:
         return static_cast<float>(*ea::max_element(result, result + numRoots));
     }
 
-    /// Calculate most positive root of quadratic equation a*x^2 + b*x + c = 0.
+    /// Calculate most positive root of quadratic or linear equation a*x^2 + b*x + c = 0.
     static float SolveQuadratic(const Vector3& abc)
     {
         const float a = abc.x_;
