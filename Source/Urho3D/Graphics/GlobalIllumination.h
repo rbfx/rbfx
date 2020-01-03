@@ -54,12 +54,10 @@ public:
     /// Compile all enabled light probe groups in the scene.
     void CompileLightProbes();
 
-    /// Sample light probe mesh. Return barycentric coordinates and tetrahedron.
-    Vector4 SampleLightProbeMesh(const Vector3& position, unsigned& hint) const;
     /// Sample ambient spherical harmonics.
     SphericalHarmonicsDot9 SampleAmbientSH(const Vector3& position, unsigned& hint) const;
     /// Sample average ambient lighting.
-    Vector3 SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
+    Color SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
 private:
     /// Light probes mesh.

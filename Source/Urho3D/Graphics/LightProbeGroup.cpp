@@ -62,14 +62,14 @@ void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
     for (const LightProbe& probe : lightProbes_)
     {
         const Vector3 worldPosition = node_->LocalToWorld(probe.position_);
-        debug->AddSphere(Sphere(worldPosition, 0.1f), probe.GetDebugColor());
+        debug->AddSphere(Sphere(worldPosition, 0.1f), probe.sphericalHarmonics_.GetDebugColor());
     }
 }
 
 void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection)
 {
     // Initialize offset according to current state of collection
-    unsigned offset = collection.lightProbes_.size();
+    unsigned offset = collection.Size();
 
     for (LightProbeGroup* group : lightProbeGroups)
     {
@@ -84,7 +84,8 @@ void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lig
         for (const LightProbe& probe : probes)
         {
             const Vector3 worldPosition = node->LocalToWorld(probe.position_);
-            collection.lightProbes_.push_back(probe);
+            collection.bakedSphericalHarmonics_.push_back(probe.sphericalHarmonics_);
+            collection.bakedAmbient_.push_back(probe.sphericalHarmonics_.GetDebugColor());
             collection.worldPositions_.push_back(worldPosition);
         }
     }
@@ -103,13 +104,22 @@ void LightProbeGroup::CollectLightProbes(Scene* scene, LightProbeCollection& col
 
 void LightProbeGroup::CommitLightProbes(const LightProbeCollection& collection)
 {
-    for (unsigned i = 0; i < collection.owners_.size(); ++i)
+    for (unsigned ownerIndex = 0; ownerIndex < collection.owners_.size(); ++ownerIndex)
     {
-        if (LightProbeGroup* owner = collection.owners_[i])
+        if (LightProbeGroup* owner = collection.owners_[ownerIndex])
         {
-            const auto begin = collection.lightProbes_.begin() + collection.offsets_[i];
-            const auto end = begin + collection.counts_[i];
-            owner->SetLightProbes({ begin, end });
+            if (collection.counts_[ownerIndex] != owner->lightProbes_.size())
+            {
+                URHO3D_LOGERROR("Light probe count mismatch between LightProbeGroup and baked data");
+            }
+
+            const unsigned offset = collection.offsets_[ownerIndex];
+            const unsigned count = ea::min(owner->lightProbes_.size(), collection.counts_[ownerIndex]);
+            for (unsigned probeIndex = 0; probeIndex < count; ++probeIndex)
+            {
+                owner->lightProbes_[probeIndex].sphericalHarmonics_ =
+                    collection.bakedSphericalHarmonics_[offset + probeIndex];
+            }
         }
     }
 }
@@ -175,9 +185,10 @@ void LightProbeGroup::SetLightProbesData(const VariantBuffer& data)
 
 VariantBuffer LightProbeGroup::GetLightProbesData() const
 {
+    LightProbeGroup* mutableThis = const_cast<LightProbeGroup*>(this);
     VectorBuffer buffer;
     BinaryOutputArchive archive(context_, buffer);
-    SerializeVectorAsBytes(archive, "LightProbes", "LightProbe", const_cast<LightProbeVector&>(lightProbes_));
+    SerializeVectorAsBytes(archive, "LightProbes", "LightProbe", mutableThis->lightProbes_);
     return buffer.GetBuffer();
 }
 
