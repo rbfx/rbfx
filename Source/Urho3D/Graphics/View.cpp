@@ -80,7 +80,7 @@ static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone*
     {
         unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
         const Vector3& position = drawable->GetNode()->GetWorldPosition();
-        return { gi->SampleAverageAmbient(position, hint), 1.0f };
+        return gi->SampleAverageAmbient(position, hint).ToVector4();
     }
     // TODO(glow): Add zone gradient or remove Zones at all
     return zone->GetAmbientColor().ToVector4();

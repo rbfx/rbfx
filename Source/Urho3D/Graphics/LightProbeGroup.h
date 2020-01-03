@@ -39,13 +39,7 @@ struct LightProbe
     /// Position in local space of light probe group.
     Vector3 position_;
     /// Incoming light baked into spherical harmonics.
-    SphericalHarmonicsDot9 bakedLight_;
-    /// Return debug color.
-    Color GetDebugColor() const
-    {
-        const Vector3 average = bakedLight_.EvaluateAverage();
-        return { Pow(average.x_, 1 / 2.2f), Pow(average.y_, 1 / 2.2f), Pow(average.z_, 1 / 2.2f) };
-    }
+    SphericalHarmonicsDot9 sphericalHarmonics_;
 };
 
 /// Vector of light probes.
@@ -54,8 +48,10 @@ using LightProbeVector = ea::vector<LightProbe>;
 /// Light probes from multiple light probe groups.
 struct LightProbeCollection
 {
-    /// Light probes.
-    LightProbeVector lightProbes_;
+    /// Baked light as spherical harmonics.
+    ea::vector<SphericalHarmonicsDot9> bakedSphericalHarmonics_;
+    /// Baked light as ambient color.
+    ea::vector<Color> bakedAmbient_;
     /// World-space positions of light probes.
     ea::vector<Vector3> worldPositions_;
 
@@ -67,9 +63,9 @@ struct LightProbeCollection
     ea::vector<unsigned> counts_;
 
     /// Return whether the collection is empty.
-    bool Empty() const { return lightProbes_.empty(); }
+    bool Empty() const { return bakedSphericalHarmonics_.empty(); }
     /// Return total size.
-    unsigned Size() const { return lightProbes_.size(); }
+    unsigned Size() const { return bakedSphericalHarmonics_.size(); }
     /// Calculate padded bounding box.
     BoundingBox CalculateBoundingBox(const Vector3& padding = Vector3::ZERO)
     {
@@ -81,13 +77,17 @@ struct LightProbeCollection
     /// Reset baked data in all probes.
     void ResetBakedData()
     {
-        for (LightProbe& probe : lightProbes_)
-            probe.bakedLight_ = SphericalHarmonicsDot9{};
+        for (unsigned i = 0; i < Size(); ++i)
+        {
+            bakedSphericalHarmonics_[i] = SphericalHarmonicsDot9{};
+            bakedAmbient_[i] = Color::BLACK;
+        }
     }
     /// Clear collection.
     void Clear()
     {
-        lightProbes_.clear();
+        bakedSphericalHarmonics_.clear();
+        bakedAmbient_.clear();
         worldPositions_.clear();
         owners_.clear();
         offsets_.clear();
