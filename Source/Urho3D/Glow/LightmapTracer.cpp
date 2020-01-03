@@ -195,7 +195,7 @@ struct ChartIndirectTracingKernel
         const Vector3& normal = geometryBuffer_->smoothNormals_[elementIndex];
         return { position + normal * settings_->rayPositionOffset_, normal, geometryId };
     };
-    /// Begin tracing value.
+    /// End tracing element.
     void EndElement(unsigned elementIndex, const ChartIndirectTracingElement& element)
     {
         bakedIndirect_->light_[elementIndex] += element.indirectLight_;
@@ -254,11 +254,11 @@ struct LightProbeIndirectTracingKernel
         const Vector3& position = collection_->worldPositions_[elementIndex];
         return { position };
     };
-    /// Begin tracing value.
+    /// End tracing element.
     void EndElement(unsigned elementIndex, const LightProbeIndirectTracingElement& element)
     {
         const SphericalHarmonicsDot9 sh{ element.sh_ * (M_PI / element.weight_) };
-        collection_->lightProbes_[elementIndex].bakedLight_ += sh;
+        collection_->bakedSphericalHarmonics_[elementIndex] += sh;
     }
 };
 

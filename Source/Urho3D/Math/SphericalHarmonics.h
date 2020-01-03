@@ -254,6 +254,13 @@ struct SphericalHarmonicsDot9
         return result;
     }
 
+    /// Return color for SH debug rendering.
+    Color GetDebugColor() const
+    {
+        const Vector3 average = EvaluateAverage();
+        return { Pow(average.x_, 1 / 2.2f), Pow(average.y_, 1 / 2.2f), Pow(average.z_, 1 / 2.2f) };
+    }
+
     /// Dot product with (Nx, Ny, Nz, 1), red channel.
     Vector4 Ar_;
     /// Dot product with (Nx, Ny, Nz, 1), green channel.
