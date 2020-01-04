@@ -151,6 +151,9 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
             return;
         }
 
+        // Disconnect carved out tetrahedrons
+        DisconnectRemovedTetrahedrons(removedTetrahedrons);
+
         // Allocate space for new tetrahedrons
         while (removedTetrahedrons.size() < holeSurface.Size())
         {
@@ -269,6 +272,27 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
     }
 }
 
+void TetrahedralMesh::DisconnectRemovedTetrahedrons(const ea::vector<unsigned>& removedTetrahedrons)
+{
+    // Disconnect removed tetrahedrons
+    for (unsigned tetIndex : removedTetrahedrons)
+    {
+        Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            const unsigned neighborTetIndex = tetrahedron.neighbors_[faceIndex];
+            if (neighborTetIndex != M_MAX_UNSIGNED)
+            {
+                Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborTetIndex];
+                const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
+
+                tetrahedron.neighbors_[faceIndex] = M_MAX_UNSIGNED;
+                neighborTetrahedron.neighbors_[neighborFaceIndex] = M_MAX_UNSIGNED;
+            }
+        }
+    }
+}
+
 void TetrahedralMesh::FillStarShapedHole(TetrahedralMesh::DelaunayContext& ctx,
     const ea::vector<unsigned>& outputTetrahedrons, const TetrahedralMeshSurface& holeSurface, unsigned centerIndex)
 {
@@ -289,7 +313,11 @@ void TetrahedralMesh::FillStarShapedHole(TetrahedralMesh::DelaunayContext& ctx,
         tetrahedron.indices_[3] = centerIndex;
         tetrahedron.neighbors_[3] = holeTriangle.tetIndex_;
         if (holeTriangle.tetIndex_ != M_MAX_UNSIGNED)
-            tetrahedrons_[holeTriangle.tetIndex_].neighbors_[holeTriangle.tetFace_] = newTetIndex;
+        {
+            Tetrahedron& neighborTetrahedron = tetrahedrons_[holeTriangle.tetIndex_];
+            assert(neighborTetrahedron.neighbors_[holeTriangle.tetFace_] == M_MAX_UNSIGNED);
+            neighborTetrahedron.neighbors_[holeTriangle.tetFace_] = newTetIndex;
+        }
 
         ctx.removed_[newTetIndex] = false;
         ctx.circumspheres_[newTetIndex] = GetTetrahedronCircumsphere(newTetIndex);
@@ -301,7 +329,7 @@ void TetrahedralMesh::DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed)
     for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
     {
         // Any tetrahedron containing super-vertex is to be removed
-        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
         for (unsigned j = 0; j < 4; ++j)
         {
             if (tetrahedron.indices_[j] < NumSuperMeshVertices)
