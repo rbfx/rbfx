@@ -111,6 +111,9 @@ struct TetrahedralMeshSurface
                     const auto newEdge = newFace.GetEdge(newEdgeIndex);
                     if (oldEdge == newEdge)
                     {
+                        assert(oldFace.neighbors_[(oldEdgeIndex + 2) % 3] == M_MAX_UNSIGNED);
+                        assert(newFace.neighbors_[(newEdgeIndex + 2) % 3] == M_MAX_UNSIGNED);
+
                         // +0 and +1 vertices belong to the edge, therefore the neighbor is stored at +2
                         oldFace.neighbors_[(oldEdgeIndex + 2) % 3] = newFaceIndex;
                         newFace.neighbors_[(newEdgeIndex + 2) % 3] = oldFaceIndex;
@@ -347,7 +350,6 @@ private:
         if (std::abs(a) < M_EPSILON)
             return -c / b;
 
-        assert(b * b - 4 * a * c > -M_EPSILON);
         const float D = ea::max(0.0f, b * b - 4 * a * c);
 
         return a > 0
@@ -398,6 +400,8 @@ private:
     /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point. Returns hole surface.
     void FindAndRemoveIntersected(DelaunayContext& ctx, const Vector3& position,
         TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const;
+    /// Disconnect removed tetrahedrons from the rest.
+    void DisconnectRemovedTetrahedrons(const ea::vector<unsigned>& removedTetrahedrons);
     /// Fill star-shaped hole with tetrahedrons connected to specified vertex.
     /// Output tetrahedrons should be allocated beforehand.
     void FillStarShapedHole(DelaunayContext& ctx, const ea::vector<unsigned>& outputTetrahedrons,
