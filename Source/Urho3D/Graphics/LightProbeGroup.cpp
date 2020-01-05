@@ -25,9 +25,9 @@
 #include "../Graphics/LightProbeGroup.h"
 
 #include "../Core/Context.h"
-#include "../IO/Log.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/BinaryArchive.h"
+#include "../IO/Log.h"
 #include "../Graphics/DebugRenderer.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
@@ -36,6 +36,31 @@ namespace Urho3D
 {
 
 extern const char* SUBSYSTEM_CATEGORY;
+
+bool SerializeValue(Archive& archive, const char* name, LightProbe& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeValue(archive, "Position", value.position_);
+        SerializeValue(archive, "SH9", value.sphericalHarmonics_);
+        return true;
+    }
+    return false;
+}
+
+bool SerializeValue(Archive& archive, const char* name, LightProbeCollection& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeVector(archive, "BakedSH", "SH9", value.bakedSphericalHarmonics_);
+        SerializeVector(archive, "BakedAmbient", "Color", value.bakedAmbient_);
+        SerializeVector(archive, "WorldPositions", "Position", value.worldPositions_);
+        SerializeVector(archive, "SubsetOffsets", "Offset", value.offsets_);
+        SerializeVector(archive, "SubsetCounts", "Count", value.counts_);
+        return true;
+    }
+    return false;
+}
 
 LightProbeGroup::LightProbeGroup(Context* context) :
     Component(context)
@@ -51,7 +76,7 @@ void LightProbeGroup::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement", GetAutoPlacementEnabled, SetAutoPlacementEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement Step", GetAutoPlacementStep, SetAutoPlacementStep, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Data", GetLightProbesData, SetLightProbesData, VariantBuffer, Variant::emptyBuffer, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, VariantBuffer, Variant::emptyBuffer, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Local Bounding Box Min", Vector3, localBoundingBox_.min_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Local Bounding Box Max", Vector3, localBoundingBox_.max_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
 }
@@ -83,7 +108,6 @@ void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lig
         Node* node = group->GetNode();
         const LightProbeVector& probes = group->GetLightProbes();
 
-        collection.owners_.push_back(WeakPtr<LightProbeGroup>(group));
         collection.offsets_.push_back(offset);
         collection.counts_.push_back(probes.size());
         offset += probes.size();
@@ -165,6 +189,8 @@ bool LightProbeGroup::CommitLightProbes(const LightProbeCollection& collection, 
     {
         lightProbes_[probeIndex].sphericalHarmonics_ = collection.bakedSphericalHarmonics_[offset + probeIndex];
     }
+
+    return true;
 }
 
 void LightProbeGroup::SetAutoPlacementEnabled(bool enabled)
@@ -187,19 +213,23 @@ void LightProbeGroup::SetLightProbes(const LightProbeVector& lightProbes)
     UpdateLocalBoundingBox();
 }
 
+void LightProbeGroup::SerializeLightProbesData(Archive& archive)
+{
+    SerializeVector(archive, "LightProbes", "LightProbe", lightProbes_);
+}
+
 void LightProbeGroup::SetLightProbesData(const VariantBuffer& data)
 {
     VectorBuffer buffer(data);
     BinaryInputArchive archive(context_, buffer);
-    SerializeVectorAsBytes(archive, "LightProbes", "LightProbe", lightProbes_);
+    SerializeLightProbesData(archive);
 }
 
 VariantBuffer LightProbeGroup::GetLightProbesData() const
 {
-    LightProbeGroup* mutableThis = const_cast<LightProbeGroup*>(this);
     VectorBuffer buffer;
     BinaryOutputArchive archive(context_, buffer);
-    SerializeVectorAsBytes(archive, "LightProbes", "LightProbe", mutableThis->lightProbes_);
+    const_cast<LightProbeGroup*>(this)->SerializeLightProbesData(archive);
     return buffer.GetBuffer();
 }
 

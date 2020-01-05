@@ -42,6 +42,9 @@ struct LightProbe
     SphericalHarmonicsDot9 sphericalHarmonics_;
 };
 
+/// Serialize light probe.
+bool SerializeValue(Archive& archive, const char* name, LightProbe& value);
+
 /// Vector of light probes.
 using LightProbeVector = ea::vector<LightProbe>;
 
@@ -50,13 +53,11 @@ struct LightProbeCollection
 {
     /// Baked light as spherical harmonics.
     ea::vector<SphericalHarmonicsDot9> bakedSphericalHarmonics_;
-    /// Baked light as ambient color.
+    /// Baked light as color in gamma space.
     ea::vector<Color> bakedAmbient_;
     /// World-space positions of light probes.
     ea::vector<Vector3> worldPositions_;
 
-    /// Owner group.
-    ea::vector<WeakPtr<LightProbeGroup>> owners_;
     /// First light probe owned by corresponding group.
     ea::vector<unsigned> offsets_;
     /// Number of light probes owned by corresponding group.
@@ -64,8 +65,10 @@ struct LightProbeCollection
 
     /// Return whether the collection is empty.
     bool Empty() const { return bakedSphericalHarmonics_.empty(); }
+
     /// Return total size.
     unsigned Size() const { return bakedSphericalHarmonics_.size(); }
+
     /// Calculate padded bounding box.
     BoundingBox CalculateBoundingBox(const Vector3& padding = Vector3::ZERO)
     {
@@ -74,6 +77,7 @@ struct LightProbeCollection
         boundingBox.max_ += padding;
         return boundingBox;
     }
+
     /// Reset baked data in all probes.
     void ResetBakedData()
     {
@@ -83,17 +87,20 @@ struct LightProbeCollection
             bakedAmbient_[i] = Color::BLACK;
         }
     }
+
     /// Clear collection.
     void Clear()
     {
         bakedSphericalHarmonics_.clear();
         bakedAmbient_.clear();
         worldPositions_.clear();
-        owners_.clear();
         offsets_.clear();
         counts_.clear();
     }
 };
+
+/// Serialize light probe collection.
+bool SerializeValue(Archive& archive, const char* name, LightProbeCollection& value);
 
 /// Light probe group.
 class URHO3D_API LightProbeGroup : public Component
@@ -144,6 +151,8 @@ public:
     /// Return light probes.
     const LightProbeVector& GetLightProbes() const { return lightProbes_; }
 
+    /// Serialize light probes data.
+    void SerializeLightProbesData(Archive& archive);
     /// Set serialized light probes data.
     void SetLightProbesData(const VariantBuffer& data);
     /// Return serialized light probes data.
