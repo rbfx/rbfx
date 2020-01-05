@@ -55,14 +55,19 @@ LightmapManager::~LightmapManager() = default;
 
 void LightmapManager::RegisterObject(Context* context)
 {
+    static const IncrementalLightmapperSettings defaultIncrementalSettings;
+    static const LightmapSettings defaultLightmapSettings;
     context->RegisterFactory<LightmapManager>(SUBSYSTEM_CATEGORY);
 
     auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = false; };
     auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.bakingScheduled_ = true; };
-    URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake", getBake, setBake, bool, false, AM_EDIT);
+    URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake!", getBake, setBake, bool, false, AM_EDIT);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, incrementalBakingSettings_.outputDirectory_, "", AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Stitch Iterations", unsigned, lightmapSettings_.stitching_.numIterations_, 8, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Chunk Size", Vector3, incrementalBakingSettings_.chunkSize_, defaultIncrementalSettings.chunkSize_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, incrementalBakingSettings_.indirectPadding_, defaultIncrementalSettings.indirectPadding_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, incrementalBakingSettings_.directionalLightShadowDistance_, defaultIncrementalSettings.directionalLightShadowDistance_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Stitch Iterations", unsigned, lightmapSettings_.stitching_.numIterations_, defaultLightmapSettings.stitching_.numIterations_, AM_DEFAULT);
 }
 
 void LightmapManager::Bake()
@@ -76,6 +81,7 @@ void LightmapManager::Bake()
     lightmapper.Initialize(lightmapSettings_, incrementalBakingSettings_, GetScene(), &sceneCollector, &lightmapCache);
     lightmapper.ProcessScene();
     lightmapper.Bake();
+    lightmapper.CommitScene();
 #endif
 
     // Compile light probes

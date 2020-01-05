@@ -136,6 +136,8 @@ public:
 
     /// Return number of lightmaps.
     unsigned GetNumLightmaps() const { return lightmaps_.names_.size(); }
+    /// Reset lightmaps.
+    void ResetLightmaps();
     /// Add lightmap texture.
     void AddLightmap(const ea::string& lightmapTextureName);
     /// Return lightmap texture.

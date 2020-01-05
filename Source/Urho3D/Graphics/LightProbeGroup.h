@@ -119,11 +119,16 @@ public:
     static void CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection);
     /// Collect all light probes from all enabled groups in the scene.
     static void CollectLightProbes(Scene* scene, LightProbeCollection& collection);
-    /// Commit all light probes to corresponding groups.
-    static void CommitLightProbes(const LightProbeCollection& collection);
+
+    /// Return bounding box in local space.
+    BoundingBox GetLocalBoundingBox() const { return localBoundingBox_; }
+    /// Return bounding box in world space.
+    BoundingBox GetWorldBoundingBox() const;
 
     /// Arrange light probes in scale.x*scale.y*scale.z volume around the node.
     void ArrangeLightProbes();
+    /// Update light probes data from specified part of collection.
+    bool CommitLightProbes(const LightProbeCollection& collection, unsigned index);
 
     /// Set whether the auto placement enabled.
     void SetAutoPlacementEnabled(bool enabled);
@@ -135,7 +140,7 @@ public:
     float GetAutoPlacementStep() const { return autoPlacementStep_; }
 
     /// Set light probes.
-    void SetLightProbes(const LightProbeVector& lightProbes) { lightProbes_ = lightProbes; }
+    void SetLightProbes(const LightProbeVector& lightProbes);
     /// Return light probes.
     const LightProbeVector& GetLightProbes() const { return lightProbes_; }
 
@@ -149,9 +154,14 @@ protected:
     void OnNodeSet(Node* node) override;
     /// Handle scene node transform dirtied.
     void OnMarkedDirty(Node* node) override;
+    /// Update local bounding box.
+    void UpdateLocalBoundingBox();
 
     /// Light probes.
     LightProbeVector lightProbes_;
+    /// Bounding box in local space.
+    BoundingBox localBoundingBox_;
+
     /// Whether the auto placement is enabled.
     bool autoPlacementEnabled_{ true };
     /// Automatic placement step.

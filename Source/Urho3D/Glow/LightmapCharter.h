@@ -118,7 +118,7 @@ using LightmapChartVector = ea::vector<LightmapChart>;
 
 /// Generate lightmap charts for given nodes.
 URHO3D_API LightmapChartVector GenerateLightmapCharts(
-    const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings, unsigned baseChartIndex = 0);
+    const ea::vector<StaticModel*>& staticModels, const LightmapChartingSettings& settings, unsigned baseChartIndex = 0);
 
 /// Apply lightmap charts to scene components.
 URHO3D_API void ApplyLightmapCharts(const LightmapChartVector& charts);

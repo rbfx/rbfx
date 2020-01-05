@@ -43,6 +43,24 @@ namespace Urho3D
 namespace
 {
 
+/// Calculate frustum containing all shadow casters for given volume and light direction.
+Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
+    const Vector3& lightDirection, float distance, float angle)
+{
+    const Quaternion rotation{ Vector3::DOWN, lightDirection };
+    const float widthPadding = distance * Sin(angle);
+    BoundingBox lightSpaceBoundingBox = boundingBox.Transformed(rotation.Inverse().RotationMatrix());
+    lightSpaceBoundingBox.min_.x_ -= widthPadding;
+    lightSpaceBoundingBox.min_.z_ -= widthPadding;
+    lightSpaceBoundingBox.max_.x_ += widthPadding;
+    lightSpaceBoundingBox.max_.z_ += widthPadding;
+    lightSpaceBoundingBox.max_.y_ += distance;
+
+    Frustum frustum;
+    frustum.Define(lightSpaceBoundingBox, static_cast<Matrix3x4>(rotation.RotationMatrix()));
+    return frustum;
+}
+
 /// Per-component min for 3D integer vector.
 IntVector3 MinIntVector3(const IntVector3& lhs, const IntVector3& rhs) { return VectorMin(lhs, rhs); }
 
@@ -103,6 +121,11 @@ struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
     LightmapStitchingContext stitchingContext4_;
 };
 
+/// Context used for committing chunks.
+struct CommitContext : public BaseIncrementalContext
+{
+};
+
 }
 
 /// Incremental lightmapper implementation.
@@ -149,13 +172,14 @@ struct IncrementalLightmapper::Impl
 
         // Collect nodes for current chunks
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        ea::vector<Node*> nodes = collector_->GetUniqueNodes(chunk);
+        const ea::vector<StaticModel*> staticModels = collector_->GetUniqueStaticModels(chunk);
 
         // Generate charts
-        const LightmapChartVector charts = GenerateLightmapCharts(nodes, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
+        const LightmapChartVector charts = GenerateLightmapCharts(staticModels, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
 
         // Apply charts to scene
         ApplyLightmapCharts(charts);
+        collector_->CommitStaticModels(chunk);
 
         // Generate scenes for geometry baking
         const ea::vector<LightmapGeometryBakingScene> geometryBakingScene =
@@ -183,6 +207,7 @@ struct IncrementalLightmapper::Impl
     /// Reference lightmaps by the scene.
     void ReferenceLightmapsByScene()
     {
+        scene_->ResetLightmaps();
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
             scene_->AddLightmap(GetLightmapFileName(i));
     }
@@ -193,36 +218,78 @@ struct IncrementalLightmapper::Impl
         if (ctx.currentChunkIndex_ >= chunks_.size())
             return true;
 
-        // Collect nodes around current chunk
-        // TODO: Use separate volumes for direct and indirect light
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        BoundingBox boundingBox = collector_->GetChunkBoundingBox(chunk);
-        boundingBox.min_ -= Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
-        boundingBox.min_ += Vector3::ONE * incrementalSettings_.raytracingScenePadding_;
+        const BoundingBox lightReceiversBoundingBox = collector_->GetChunkBoundingBox(chunk);
+        const ea::vector<LightProbeGroup*> lightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
+        const ea::vector<Light*> relevantLights = collector_->GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
 
-        const ea::vector<Node*> nodesInVolume = collector_->GetNodesInBoundingBox(chunk, boundingBox);
-        const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
-        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, nodesInVolume, uvChannel);
-
-        // Collect lights
-        ea::vector<BakedDirectLight> bakedLights;
-        for (Node* node : nodesInVolume)
+        // Collect shadow casters for direct lighting
+        ea::hash_set<StaticModel*> relevantStaticModels;
+        for (Light* light : relevantLights)
         {
-            if (auto light = node->GetComponent<Light>())
+            if (light->GetLightType() == LIGHT_DIRECTIONAL)
             {
-                BakedDirectLight bakedLight;
-                bakedLight.lightType_ = light->GetLightType();
-                bakedLight.lightMode_ = light->GetLightMode();
-                bakedLight.lightColor_ = light->GetEffectiveColor();
-                bakedLight.position_ = node->GetWorldPosition();
-                bakedLight.rotation_ = node->GetWorldRotation();
-                bakedLight.direction_ = node->GetWorldDirection();
-                bakedLights.push_back(bakedLight);
+                const Vector3 direction = light->GetNode()->GetWorldDirection();
+                const Frustum frustum = CalculateDirectionalLightFrustum(lightReceiversBoundingBox, direction,
+                    incrementalSettings_.directionalLightShadowDistance_, 0.0f);
+                const ea::vector<StaticModel*> shadowCasters = collector_->GetStaticModelsInFrustum(chunk, frustum);
+                relevantStaticModels.insert(shadowCasters.begin(), shadowCasters.end());
+            }
+            else
+            {
+                BoundingBox extendedBoundingBox = lightReceiversBoundingBox;
+                extendedBoundingBox.Merge(light->GetNode()->GetWorldPosition());
+                BoundingBox shadowCastersBoundingBox = light->GetWorldBoundingBox();
+                shadowCastersBoundingBox.Clip(extendedBoundingBox);
+                const ea::vector<StaticModel*> shadowCasters = collector_->GetStaticModelsInBoundingBox(
+                    chunk, shadowCastersBoundingBox);
+                relevantStaticModels.insert(shadowCasters.begin(), shadowCasters.end());
             }
         }
 
+        // Collect light receivers for indirect lighting propagation
+        BoundingBox indirectBoundingBox = lightReceiversBoundingBox;
+        indirectBoundingBox.min_ -= Vector3::ONE * incrementalSettings_.indirectPadding_;
+        indirectBoundingBox.max_ += Vector3::ONE * incrementalSettings_.indirectPadding_;
+
+        const ea::vector<StaticModel*> indirectStaticModels = collector_->GetStaticModelsInBoundingBox(chunk, indirectBoundingBox);
+        relevantStaticModels.insert(indirectStaticModels.begin(), indirectStaticModels.end());
+
+        // Collect light probes
+        LightProbeCollection lightProbesCollection;
+        LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
+
+        ea::vector<LightProbeGroup*> relevantLightProbes = collector_->GetLightProbeGroupsInBoundingBox(chunk, indirectBoundingBox);
+        for (LightProbeGroup* group : lightProbeGroups)
+        {
+            auto iter = relevantLightProbes.find(group);
+            if (iter != relevantLightProbes.end())
+                relevantLightProbes.erase(iter);
+        }
+        LightProbeGroup::CollectLightProbes(relevantLightProbes, lightProbesCollection);
+
+        // Create scene for raytracing
+        ea::vector<StaticModel*> staticModels(relevantStaticModels.begin(), relevantStaticModels.end());
+        const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
+        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, staticModels, uvChannel);
+
+        // Collect lights
+        ea::vector<BakedDirectLight> bakedLights;
+        for (Light* light : relevantLights)
+        {
+            Node* node = light->GetNode();
+            BakedDirectLight bakedLight;
+            bakedLight.lightType_ = light->GetLightType();
+            bakedLight.lightMode_ = light->GetLightMode();
+            bakedLight.lightColor_ = light->GetEffectiveColor();
+            bakedLight.position_ = node->GetWorldPosition();
+            bakedLight.rotation_ = node->GetWorldRotation();
+            bakedLight.direction_ = node->GetWorldDirection();
+            bakedLights.push_back(bakedLight);
+        }
+
         // Store result in the cache
-        cache_->StoreChunkVicinity(chunk, { embreeScene, bakedLights });
+        cache_->StoreChunkVicinity(chunk, { embreeScene, bakedLights, lightProbesCollection });
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -291,7 +358,7 @@ struct IncrementalLightmapper::Impl
 
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
         const ea::vector<unsigned> lightmapsInChunks = cache_->LoadLightmapsForChunk(chunk);
 
         // Collect required direct lightmaps
@@ -306,13 +373,9 @@ struct IncrementalLightmapper::Impl
         for (unsigned lightmapIndex : requiredDirectLightmaps)
             bakedDirectLightmaps[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
 
-        // Bake direct & indirect light probes
-        // TODO(glow): Use chunks here
-        LightProbeCollection lightProbes;
-        LightProbeGroup::CollectLightProbes(scene_, lightProbes);
-        lightProbes.ResetBakedData();
-        BakeIndirectLightForLightProbes(lightProbes, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
-        LightProbeGroup::CommitLightProbes(lightProbes);
+        // Bake indirect light for light probes
+        chunkVicinity->lightProbesCollection_.ResetBakedData();
+        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
 
         // Bake indirect lighting for charts
         for (unsigned lightmapIndex : lightmapsInChunks)
@@ -363,13 +426,32 @@ struct IncrementalLightmapper::Impl
 
             // Store direct light
             cache_->ReleaseGeometryBuffer(lightmapIndex);
-            cache_->ReleaseDirectLight(lightmapIndex);
         }
 
         // Release cache
+        cache_->CommitLightProbeGroups(chunk);
         cache_->ReleaseChunkVicinity(chunk);
         for (unsigned lightmapIndex : requiredDirectLightmaps)
             cache_->ReleaseDirectLight(lightmapIndex);
+
+        // Advance
+        ++ctx.currentChunkIndex_;
+        return false;
+    }
+
+    // Step committing to scene.
+    bool StepCommit(CommitContext& ctx)
+    {
+        if (ctx.currentChunkIndex_ >= chunks_.size())
+            return true;
+
+        // Load chunk
+        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
+        const ea::vector<LightProbeGroup*> lightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
+        const LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
+
+        for (unsigned i = 0; i < lightProbeGroups.size(); ++i)
+            lightProbeGroups[i]->CommitLightProbes(chunkVicinity->lightProbesCollection_, i);
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -443,6 +525,13 @@ void IncrementalLightmapper::Bake()
     // Bake indirect lighting, filter and save images
     IndirectLightBakingFilterAndSaveContext indirectContext;
     while (!impl_->StepBakeIndirectFilterAndSave(indirectContext))
+        ;
+}
+
+void IncrementalLightmapper::CommitScene()
+{
+    CommitContext commitContext;
+    while (!impl_->StepCommit(commitContext))
         ;
 }
 

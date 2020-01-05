@@ -119,12 +119,19 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, Mod
 
 BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes, bool padIfZero)
 {
+    ea::vector<StaticModel*> staticModels;
+    ea::vector<Terrain*> terrains;
+
     BoundingBox boundingBox;
     for (Node* node : nodes)
     {
-        if (auto staticModel = node->GetComponent<StaticModel>())
+        node->GetComponents(staticModels);
+        node->GetComponents(terrains);
+
+        for (StaticModel* staticModel : staticModels)
             boundingBox.Merge(staticModel->GetWorldBoundingBox());
-        else if (auto terrain = node->GetComponent<Terrain>())
+
+        for (Terrain* terrain : terrains)
         {
             const IntVector2 numPatches = terrain->GetNumPatches();
             for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
@@ -158,14 +165,13 @@ EmbreeScene::~EmbreeScene()
         rtcReleaseDevice(device_);
 }
 
-SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes, unsigned uvChannel)
+SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned uvChannel)
 {
     // Load models
     ea::vector<std::future<ParsedModelKeyValue>> asyncParsedModels;
-    for (Node* node : nodes)
+    for (StaticModel* staticModel : staticModels)
     {
-        if (auto staticModel = node->GetComponent<StaticModel>())
-            asyncParsedModels.push_back(std::async(ParseModelForEmbree, staticModel->GetModel()));
+        asyncParsedModels.push_back(std::async(ParseModelForEmbree, staticModel->GetModel()));
     }
 
     // Prepare model cache
@@ -181,19 +187,16 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node
     const RTCScene scene = rtcNewScene(device);
 
     ea::vector<std::future<ea::vector<EmbreeGeometry>>> asyncEmbreeGeometries;
-    for (Node* node : nodes)
+    for (StaticModel* staticModel : staticModels)
     {
-        if (auto staticModel = node->GetComponent<StaticModel>())
-        {
-            const unsigned lightmapIndex = staticModel->GetLightmapIndex();
-            const Vector4 lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
-            const Vector2 lightmapUVScale{ lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
-            const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
+        const unsigned lightmapIndex = staticModel->GetLightmapIndex();
+        const Vector4 lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
+        const Vector2 lightmapUVScale{ lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
+        const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
 
-            ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-            asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometryArray,
-                device, parsedModel, node, lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
-        }
+        ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
+        asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometryArray,
+            device, parsedModel, staticModel->GetNode(), lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
     }
 
     // Collect and attach Embree geometries
@@ -215,7 +218,10 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node
     rtcCommitScene(scene);
 
     // Calculate max distance between objects
-    const Vector3 sceneSize = CalculateBoundingBoxOfNodes(nodes).Size();
+    BoundingBox boundingBox;
+    for (StaticModel* staticModel : staticModels)
+        boundingBox.Merge(staticModel->GetWorldBoundingBox());
+    const Vector3 sceneSize = boundingBox.Size();
     const float maxDistance = ea::max({ sceneSize.x_, sceneSize.y_, sceneSize.z_ });
 
     return MakeShared<EmbreeScene>(context, device, scene, ea::move(geometryIndex), maxDistance);
