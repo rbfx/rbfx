@@ -52,6 +52,8 @@ void LightProbeGroup::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement", GetAutoPlacementEnabled, SetAutoPlacementEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement Step", GetAutoPlacementStep, SetAutoPlacementStep, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Data", GetLightProbesData, SetLightProbesData, VariantBuffer, Variant::emptyBuffer, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Local Bounding Box Min", Vector3, localBoundingBox_.min_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ATTRIBUTE("Local Bounding Box Max", Vector3, localBoundingBox_.max_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
 }
 
 void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -64,6 +66,11 @@ void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         const Vector3 worldPosition = node_->LocalToWorld(probe.position_);
         debug->AddSphere(Sphere(worldPosition, 0.1f), probe.sphericalHarmonics_.GetDebugColor());
     }
+}
+
+BoundingBox LightProbeGroup::GetWorldBoundingBox() const
+{
+    return localBoundingBox_.Transformed(node_->GetWorldTransform());
 }
 
 void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection)
@@ -102,28 +109,6 @@ void LightProbeGroup::CollectLightProbes(Scene* scene, LightProbeCollection& col
     CollectLightProbes(lightProbeGroups, collection);
 }
 
-void LightProbeGroup::CommitLightProbes(const LightProbeCollection& collection)
-{
-    for (unsigned ownerIndex = 0; ownerIndex < collection.owners_.size(); ++ownerIndex)
-    {
-        if (LightProbeGroup* owner = collection.owners_[ownerIndex])
-        {
-            if (collection.counts_[ownerIndex] != owner->lightProbes_.size())
-            {
-                URHO3D_LOGERROR("Light probe count mismatch between LightProbeGroup and baked data");
-            }
-
-            const unsigned offset = collection.offsets_[ownerIndex];
-            const unsigned count = ea::min(owner->lightProbes_.size(), collection.counts_[ownerIndex]);
-            for (unsigned probeIndex = 0; probeIndex < count; ++probeIndex)
-            {
-                owner->lightProbes_[probeIndex].sphericalHarmonics_ =
-                    collection.bakedSphericalHarmonics_[offset + probeIndex];
-            }
-        }
-    }
-}
-
 void LightProbeGroup::ArrangeLightProbes()
 {
     lightProbes_.clear();
@@ -153,12 +138,32 @@ void LightProbeGroup::ArrangeLightProbes()
             for (index.x_ = 0; index.x_ < gridSize.x_; ++index.x_)
             {
                 const Vector3 localPosition = -Vector3::ONE / 2 + static_cast<Vector3>(index) * gridStep;
-                // TODO(glow): Initialize with zeros
-                const Color color{ Random(1.0f), Random(1.0f), Random(1.0f) };
-                const SphericalHarmonicsDot9 sh{ SphericalHarmonicsColor9{ color } };
-                lightProbes_.push_back(LightProbe{ localPosition, sh });
+                lightProbes_.push_back(LightProbe{ localPosition, SphericalHarmonicsDot9{} });
             }
         }
+    }
+
+    localBoundingBox_ = { -Vector3::ONE / 2, Vector3::ONE / 2 };
+}
+
+bool LightProbeGroup::CommitLightProbes(const LightProbeCollection& collection, unsigned index)
+{
+    if (index >= collection.Size())
+    {
+        URHO3D_LOGERROR("Cannot commit light probes: index is out of range");
+        return false;
+    }
+
+    if (collection.counts_[index] != lightProbes_.size())
+    {
+        URHO3D_LOGERROR("Cannot commit light probes: number of light probes doesn't match");
+        return false;
+    }
+
+    const unsigned offset = collection.offsets_[index];
+    for (unsigned probeIndex = 0; probeIndex < lightProbes_.size(); ++probeIndex)
+    {
+        lightProbes_[probeIndex].sphericalHarmonics_ = collection.bakedSphericalHarmonics_[offset + probeIndex];
     }
 }
 
@@ -174,6 +179,12 @@ void LightProbeGroup::SetAutoPlacementStep(float step)
     autoPlacementStep_ = step;
     if (autoPlacementEnabled_)
         ArrangeLightProbes();
+}
+
+void LightProbeGroup::SetLightProbes(const LightProbeVector& lightProbes)
+{
+    lightProbes_ = lightProbes;
+    UpdateLocalBoundingBox();
 }
 
 void LightProbeGroup::SetLightProbesData(const VariantBuffer& data)
@@ -205,6 +216,13 @@ void LightProbeGroup::OnMarkedDirty(Node* node)
         lastNodeScale_ = node->GetScale();
         ArrangeLightProbes();
     }
+}
+
+void LightProbeGroup::UpdateLocalBoundingBox()
+{
+    localBoundingBox_.Clear();
+    for (const LightProbe& probe : lightProbes_)
+        localBoundingBox_.Merge(probe.position_);
 }
 
 }

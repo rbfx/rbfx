@@ -107,28 +107,26 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
 }
 
 ea::vector<LightmapChart> GenerateLightmapCharts(
-    const ea::vector<Node*>& nodes, const LightmapChartingSettings& settings, unsigned baseChartIndex)
+    const ea::vector<StaticModel*>& staticModels, const LightmapChartingSettings& settings, unsigned baseChartIndex)
 {
     const int maxRegionSize = static_cast<int>(settings.chartSize_ - settings.padding_ * 2);
     ea::vector<LightmapChart> charts;
-    for (Node* node : nodes)
+    for (StaticModel* staticModel : staticModels)
     {
-        if (auto staticModel = node->GetComponent<StaticModel>())
+        Node* node = staticModel->GetNode();
+        const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
+        const IntVector2 adjustedRegionSize = AdjustRegionSize(regionSize, maxRegionSize);
+        const LightmapChartRegion region = AllocateLightmapChartRegion(
+            settings, charts, adjustedRegionSize, baseChartIndex);
+
+        if (regionSize != adjustedRegionSize)
         {
-            const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
-            const IntVector2 adjustedRegionSize = AdjustRegionSize(regionSize, maxRegionSize);
-            const LightmapChartRegion region = AllocateLightmapChartRegion(
-                settings, charts, adjustedRegionSize, baseChartIndex);
-
-            if (regionSize != adjustedRegionSize)
-            {
-                URHO3D_LOGWARNING("Object \"{}\" doesn't fit the lightmap chart, texel density is lowered.",
-                    node->GetName());
-            }
-
-            const LightmapChartElement chartElement{ node, staticModel, region };
-            charts[region.chartIndex_].elements_.push_back(chartElement);
+            URHO3D_LOGWARNING("Object \"{}\" doesn't fit the lightmap chart, texel density is lowered.",
+                node->GetName());
         }
+
+        const LightmapChartElement chartElement{ node, staticModel, region };
+        charts[region.chartIndex_].elements_.push_back(chartElement);
     }
     return charts;
 }

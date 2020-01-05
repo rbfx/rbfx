@@ -26,11 +26,15 @@
 
 #include "../Glow/EmbreeScene.h"
 #include "../Graphics/Light.h"
+#include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
 #include "../Graphics/Zone.h"
+#include "../IO/Log.h"
 #include "../Scene/Scene.h"
+
+#include <EASTL/algorithm.h>
 
 namespace Urho3D
 {
@@ -49,22 +53,40 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
     chunkGridDimension_ = VectorMax(IntVector3::ONE, VectorRoundToInt(boundingBox_.Size() / chunkSize_));
     const IntVector3 maxChunk = chunkGridDimension_ - IntVector3::ONE;
 
+    // Collect light probe groups
+    scene_->GetComponents(lightProbeGroups_, true);
+
     // Collect nodes
+    ea::vector<StaticModel*> staticModels;
+    ea::vector<Terrain*> terrains;
+    ea::vector<LightProbeGroup*> lightProbeGroups;
+
     for (Node* node : children)
     {
-        auto staticModel = node->GetComponent<StaticModel>();
-        if (staticModel && staticModel->GetBakeLightmap())
+        const Vector3 position = node->GetWorldPosition();
+        const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * Vector3(chunkGridDimension_);
+        const IntVector3 chunk = VectorMin(VectorMax(IntVector3::ZERO, VectorFloorToInt(index)), maxChunk);
+        ChunkData& chunkData = chunks_[chunk];
+
+        node->GetComponents(staticModels);
+        node->GetComponents(terrains);
+        node->GetComponents(lightProbeGroups);
+
+        for (StaticModel* staticModel : staticModels)
         {
-            const Vector3 position = node->GetWorldPosition();
-            const Vector3 index = (position - boundingBox_.min_) / boundingBox_.Size() * Vector3(chunkGridDimension_);
-            const IntVector3 chunk = VectorMin(VectorMax(IntVector3::ZERO, VectorFloorToInt(index)), maxChunk);
-            chunks_[chunk].nodes_.push_back(node);
+            if (staticModel->GetBakeLightmap())
+            {
+                chunkData.staticModels_.push_back(staticModel);
+                chunkData.boundingBox_.Merge(staticModel->GetWorldBoundingBox());
+            }
+        }
+
+        for (LightProbeGroup* lightProbeGroup : lightProbeGroups)
+        {
+            chunkData.lightProbeGroups_.push_back(lightProbeGroup);
+            chunkData.boundingBox_.Merge(lightProbeGroup->GetWorldBoundingBox());
         }
     }
-
-    // Calculate chunks bounding boxes
-    for (auto& elem : chunks_)
-        elem.second.boundingBox_ = CalculateBoundingBoxOfNodes(elem.second.nodes_);
 }
 
 ea::vector<IntVector3> DefaultLightmapSceneCollector::GetChunks()
@@ -72,12 +94,28 @@ ea::vector<IntVector3> DefaultLightmapSceneCollector::GetChunks()
     return chunks_.keys();
 }
 
-ea::vector<Node*> DefaultLightmapSceneCollector::GetUniqueNodes(const IntVector3& chunkIndex)
+ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetUniqueStaticModels(const IntVector3& chunkIndex)
 {
     auto iter = chunks_.find(chunkIndex);
     if (iter != chunks_.end())
-        return iter->second.nodes_;
+        return iter->second.staticModels_;
     return {};
+}
+
+void DefaultLightmapSceneCollector::CommitStaticModels(const IntVector3& /*chunkIndex*/)
+{
+}
+
+ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetUniqueLightProbeGroups(const IntVector3& chunkIndex)
+{
+    auto iter = chunks_.find(chunkIndex);
+    if (iter != chunks_.end())
+        return iter->second.lightProbeGroups_;
+    return {};
+}
+
+void DefaultLightmapSceneCollector::CommitLightProbeGroups(const IntVector3& /*chunkIndex*/)
+{
 }
 
 BoundingBox DefaultLightmapSceneCollector::GetChunkBoundingBox(const IntVector3& chunkIndex)
@@ -88,37 +126,79 @@ BoundingBox DefaultLightmapSceneCollector::GetChunkBoundingBox(const IntVector3&
     return {};
 }
 
-ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInBoundingBox(const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
+ea::vector<Light*> DefaultLightmapSceneCollector::GetLightsInBoundingBox(
+    const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
     // Query drawables
     ea::vector<Drawable*> drawables;
-    BoxOctreeQuery query(drawables, boundingBox);
+    BoxOctreeQuery query(drawables, boundingBox, DRAWABLE_LIGHT);
     octree_->GetDrawables(query);
 
-    // Filter nodes
-    ea::vector<Node*> nodes;
+    // Collect lights
+    ea::vector<Light*> lights;
     for (Drawable* drawable : drawables)
     {
-        if (Node* node = drawable->GetNode())
+        if (auto light = dynamic_cast<Light*>(drawable))
         {
-            auto staticModel = dynamic_cast<StaticModel*>(drawable);
-            if (staticModel && staticModel->GetBakeLightmap())
-                nodes.push_back(node);
-
-            auto light = dynamic_cast<Light*>(drawable);
-            if (light && light->GetLightMode() != LM_REALTIME)
-                nodes.push_back(node);
-
-            if (auto zone = dynamic_cast<Zone*>(drawable))
-                nodes.push_back(node);
+            if (light->GetLightMode() != LM_REALTIME)
+                lights.push_back(light);
         }
     }
-    return nodes;
+    return lights;
 }
 
-ea::vector<Node*> DefaultLightmapSceneCollector::GetNodesInFrustum(const IntVector3& chunkIndex, const Frustum& frustum)
+ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInBoundingBox(
+    const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
-    return {};
+    // Query drawables
+    ea::vector<Drawable*> drawables;
+    BoxOctreeQuery query(drawables, boundingBox, DRAWABLE_GEOMETRY);
+    octree_->GetDrawables(query);
+
+    // Collect static models
+    ea::vector<StaticModel*> staticModels;
+    for (Drawable* drawable : drawables)
+    {
+        if (auto staticModel = dynamic_cast<StaticModel*>(drawable))
+        {
+            if (staticModel->GetBakeLightmap())
+                staticModels.push_back(staticModel);
+        }
+    }
+    return staticModels;
+}
+
+ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetLightProbeGroupsInBoundingBox(
+    const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
+{
+    auto intersects = [&](const LightProbeGroup* group)
+    {
+        return group->GetWorldBoundingBox().IsInside(boundingBox) != OUTSIDE;
+    };
+    ea::vector<LightProbeGroup*> groups;
+    ea::copy_if(lightProbeGroups_.begin(), lightProbeGroups_.end(), ea::back_inserter(groups), intersects);
+    return groups;
+}
+
+ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInFrustum(
+    const IntVector3& /*chunkIndex*/, const Frustum& frustum)
+{
+    // Query drawables
+    ea::vector<Drawable*> drawables;
+    FrustumOctreeQuery query(drawables, frustum, DRAWABLE_GEOMETRY);
+    octree_->GetDrawables(query);
+
+    // Collect static models
+    ea::vector<StaticModel*> staticModels;
+    for (Drawable* drawable : drawables)
+    {
+        if (auto staticModel = dynamic_cast<StaticModel*>(drawable))
+        {
+            if (staticModel->GetBakeLightmap())
+                staticModels.push_back(staticModel);
+        }
+    }
+    return staticModels;
 }
 
 void DefaultLightmapSceneCollector::UnlockScene()

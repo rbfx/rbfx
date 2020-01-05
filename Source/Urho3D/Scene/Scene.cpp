@@ -277,6 +277,12 @@ void Scene::AddReplicationState(NodeReplicationState* state)
         state->sceneState_->dirtyNodes_.insert(i->first);
 }
 
+void Scene::ResetLightmaps()
+{
+    lightmaps_.names_.clear();
+    MarkLightmapTexturesDirty();
+}
+
 void Scene::AddLightmap(const ea::string& lightmapTextureName)
 {
     lightmaps_.names_.push_back(lightmapTextureName);

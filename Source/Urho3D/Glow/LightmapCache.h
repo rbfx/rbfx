@@ -28,6 +28,7 @@
 #include "../Glow/LightmapGeometryBaker.h"
 #include "../Glow/LightmapTracer.h"
 #include "../Graphics/Light.h"
+#include "../Graphics/LightProbeGroup.h"
 #include "../Math/Vector3.h"
 
 #include <EASTL/shared_ptr.h>
@@ -59,6 +60,8 @@ struct LightmapChunkVicinity
     SharedPtr<EmbreeScene> embreeScene_;
     /// Lights to bake.
     ea::vector<BakedDirectLight> bakedLights_;
+    /// Light probes collection.
+    LightProbeCollection lightProbesCollection_;
 };
 
 /// Lightmap cache interface.
@@ -76,7 +79,9 @@ public:
     /// Store chunk vicinity in the cache.
     virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
     /// Load chunk vicinity.
-    virtual const LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) = 0;
+    virtual LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) = 0;
+    /// Called after light probes are updated.
+    virtual void CommitLightProbeGroups(const IntVector3& chunk) = 0;
     /// Release chunk vicinity.
     virtual void ReleaseChunkVicinity(const IntVector3& chunk) = 0;
 
@@ -107,7 +112,9 @@ public:
     /// Store baking context in the cache.
     void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
     /// Load chunk vicinity.
-    const LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) override;
+    LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) override;
+    /// Called after light probes are updated.
+    void CommitLightProbeGroups(const IntVector3& chunk) override;
     /// Release chunk vicinity.
     void ReleaseChunkVicinity(const IntVector3& chunk) override;
 

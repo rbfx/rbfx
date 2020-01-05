@@ -47,10 +47,14 @@ void LightmapMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapCh
     chunkVicinityCache_[chunk] = ea::move(vicinity);
 }
 
-const LightmapChunkVicinity* LightmapMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
+LightmapChunkVicinity* LightmapMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
 {
     auto iter = chunkVicinityCache_.find(chunk);
     return iter != chunkVicinityCache_.end() ? &iter->second : nullptr;
+}
+
+void LightmapMemoryCache::CommitLightProbeGroups(const IntVector3& /*chunk*/)
+{
 }
 
 void LightmapMemoryCache::ReleaseChunkVicinity(const IntVector3& /*chunk*/)
