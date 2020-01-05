@@ -71,8 +71,6 @@ private:
     TetrahedralMesh lightProbesMesh_;
     /// Light probes collection.
     LightProbeCollection lightProbesCollection_;
-    /// Debug sample positions.
-    mutable ea::vector<Vector3> debugSamplePositions_;
 };
 
 }

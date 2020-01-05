@@ -197,6 +197,9 @@ public:
     /// Clear all registered node user variable hash reverse mappings.
     void UnregisterAllVars();
 
+    /// Set source file name.
+    void SetFileName(const ea::string_view fileName) { fileName_ = fileName; }
+
     /// Return node from the whole scene by ID, or null if not found.
     Node* GetNode(unsigned id) const;
     /// Return component from the whole scene by ID, or null if not found.

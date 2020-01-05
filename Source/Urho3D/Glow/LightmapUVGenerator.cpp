@@ -29,6 +29,7 @@ namespace Urho3D
 
 const ea::string LightmapUVGenerationSettings::LightmapSizeKey{ "LightmapSize" };
 const ea::string LightmapUVGenerationSettings::LightmapDensityKey{ "LightmapDensity" };
+const ea::string LightmapUVGenerationSettings::LightmapSharedUV{ "LightmapSharedUV" };
 
 bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings& settings)
 {
@@ -119,6 +120,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSizeKey, atlasSize);
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapDensityKey, settings.minDensity_);
+    modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSharedUV, false);
 
     return true;
 }

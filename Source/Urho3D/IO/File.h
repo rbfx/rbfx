@@ -85,6 +85,9 @@ public:
     /// Return the file name.
     const ea::string& GetName() const override { return fileName_; }
 
+    /// Return native file name in file system.
+    const ea::string& GetNativeName() const { return nativeFileName_; }
+
     /// Return a checksum of the file contents using the SDBM hash algorithm.
     unsigned GetChecksum() override;
 
@@ -137,6 +140,8 @@ private:
 
     /// File name.
     ea::string fileName_;
+    /// Native file name.
+    ea::string nativeFileName_;
     /// Open mode.
     FileMode mode_;
     /// File handle.

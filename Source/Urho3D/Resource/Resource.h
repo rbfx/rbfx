@@ -81,6 +81,8 @@ public:
     void ResetUseTimer();
     /// Set the asynchronous loading state. Called by ResourceCache. Resources in the middle of asynchronous loading are not normally returned to user.
     void SetAsyncLoadState(AsyncLoadState newState);
+    /// Set native file name.
+    void SetNativeFileName(const ea::string& fileName) { nativeFileName_ = fileName; }
 
     /// Return name.
     const ea::string& GetName() const { return name_; }
@@ -97,11 +99,16 @@ public:
     /// Return the asynchronous loading state.
     AsyncLoadState GetAsyncLoadState() const { return asyncLoadState_; }
 
+    /// Return native file name.
+    const ea::string& GetNativeFileName() const { return nativeFileName_; }
+
 private:
     /// Name.
     ea::string name_;
     /// Name hash.
     StringHash nameHash_;
+    /// Native file name.
+    ea::string nativeFileName_;
     /// Last used timer.
     Timer useTimer_;
     /// Memory use in bytes.
