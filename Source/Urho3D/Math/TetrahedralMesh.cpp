@@ -22,6 +22,7 @@
 
 #include "../Precompiled.h"
 
+#include "../IO/ArchiveSerialization.h"
 #include "../IO/Log.h"
 #include "../Math/TetrahedralMesh.h"
 
@@ -172,9 +173,11 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     RemoveSuperMeshVertices();
     assert(IsAdjacencyValid(false));
 
-    BuildHullSurface();
-    CalculateHullNormals();
-    BuildOuterTetrahedrons();
+    TetrahedralMeshSurface hullSurface;
+    BuildHullSurface(hullSurface);
+
+    CalculateHullNormals(hullSurface);
+    BuildOuterTetrahedrons(hullSurface);
     CalculateInnerMatrices();
     CalculateOuterMatrices();
 }
@@ -403,9 +406,9 @@ void TetrahedralMesh::RemoveSuperMeshVertices()
     }
 }
 
-void TetrahedralMesh::BuildHullSurface()
+void TetrahedralMesh::BuildHullSurface(TetrahedralMeshSurface& hullSurface)
 {
-    hullSurface_.Clear();
+    hullSurface.Clear();
     for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
     {
         const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
@@ -416,21 +419,21 @@ void TetrahedralMesh::BuildHullSurface()
 
             const TetrahedralMeshSurfaceTriangle& hullTriangle = tetrahedron.GetTriangleFace(
                 faceIndex, tetIndex, faceIndex);
-            hullSurface_.AddFace(hullTriangle);
+            hullSurface.AddFace(hullTriangle);
         }
     }
 
-    for (TetrahedralMeshSurfaceTriangle& hullTriangle : hullSurface_.faces_)
+    for (TetrahedralMeshSurfaceTriangle& hullTriangle : hullSurface.faces_)
         hullTriangle.Normalize(vertices_);
 
-    assert(hullSurface_.IsClosedSurface());
+    assert(hullSurface.IsClosedSurface());
 }
 
-void TetrahedralMesh::CalculateHullNormals()
+void TetrahedralMesh::CalculateHullNormals(const TetrahedralMeshSurface& hullSurface)
 {
     hullNormals_.resize(vertices_.size());
 
-    for (const TetrahedralMeshSurfaceTriangle& triangle : hullSurface_.faces_)
+    for (const TetrahedralMeshSurfaceTriangle& triangle : hullSurface.faces_)
     {
         const Vector3 p1 = vertices_[triangle.indices_[0]];
         const Vector3 p2 = vertices_[triangle.indices_[1]];
@@ -450,15 +453,15 @@ void TetrahedralMesh::CalculateHullNormals()
     }
 }
 
-void TetrahedralMesh::BuildOuterTetrahedrons()
+void TetrahedralMesh::BuildOuterTetrahedrons(const TetrahedralMeshSurface& hullSurface)
 {
     numInnerTetrahedrons_ = tetrahedrons_.size();
-    tetrahedrons_.resize(numInnerTetrahedrons_ + hullSurface_.Size());
+    tetrahedrons_.resize(numInnerTetrahedrons_ + hullSurface.Size());
 
     for (unsigned tetIndex = numInnerTetrahedrons_; tetIndex < tetrahedrons_.size(); ++tetIndex)
     {
         Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
-        const TetrahedralMeshSurfaceTriangle& hullTrinagle = hullSurface_.faces_[tetIndex - numInnerTetrahedrons_];
+        const TetrahedralMeshSurfaceTriangle& hullTrinagle = hullSurface.faces_[tetIndex - numInnerTetrahedrons_];
 
         for (unsigned faceIndex = 0; faceIndex < 3; ++faceIndex)
         {
@@ -593,6 +596,37 @@ void TetrahedralMesh::CalculateOuterMatrices()
             tetrahedron.indices_[3] = Tetrahedron::Infinity2;
         }
     }
+}
+
+bool SerializeValue(Archive& archive, const char* name, Tetrahedron& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeValue(archive, "Index0", value.indices_[0]);
+        SerializeValue(archive, "Index1", value.indices_[1]);
+        SerializeValue(archive, "Index2", value.indices_[2]);
+        SerializeValue(archive, "Index3", value.indices_[3]);
+        SerializeValue(archive, "Neighbor0", value.neighbors_[0]);
+        SerializeValue(archive, "Neighbor1", value.neighbors_[1]);
+        SerializeValue(archive, "Neighbor2", value.neighbors_[2]);
+        SerializeValue(archive, "Neighbor3", value.neighbors_[3]);
+        SerializeValue(archive, "Matrix", value.matrix_);
+        return true;
+    }
+    return false;
+}
+
+bool SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
+    {
+        SerializeVector(archive, "Vertices", "Position", value.vertices_);
+        SerializeVector(archive, "Tetrahedrons", "Tetrahedron", value.tetrahedrons_);
+        SerializeVector(archive, "HullNormals", "Hulls", value.hullNormals_);
+        SerializeValue(archive, "NumInnerTetrahedrons", value.numInnerTetrahedrons_);
+        return true;
+    }
+    return false;
 }
 
 }

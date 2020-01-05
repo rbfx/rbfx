@@ -29,6 +29,8 @@
 namespace Urho3D
 {
 
+class Archive;
+
 /// Spherical harmonics scalar coefficients, 3 bands.
 struct SphericalHarmonics9
 {
@@ -277,6 +279,12 @@ struct SphericalHarmonicsDot9
     Vector3 C_;
     /// Padding. Always 1.0f;
     float padding_{ 1.0f };
+
+    /// Zero harmonics.
+    static const SphericalHarmonicsDot9 ZERO;
 };
+
+/// Serialize SH to archive.
+URHO3D_API bool SerializeValue(Archive& archive, const char* name, SphericalHarmonicsDot9& value);
 
 }
