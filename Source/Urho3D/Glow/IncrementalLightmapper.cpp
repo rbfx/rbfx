@@ -24,6 +24,7 @@
 
 #include "../Glow/IncrementalLightmapper.h"
 
+#include "../Core/Context.h"
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBaker.h"
@@ -31,7 +32,10 @@
 #include "../Glow/LightmapTracer.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Model.h"
+#include "../IO/FileSystem.h"
+#include "../IO/Log.h"
 #include "../Resource/Image.h"
+#include "../Resource/ResourceCache.h"
 
 #include <EASTL/algorithm.h>
 #include <EASTL/numeric.h>
@@ -42,6 +46,18 @@ namespace Urho3D
 
 namespace
 {
+
+/// Get resource name from file name.
+ea::string GetResourceName(ResourceCache* cache, const ea::string& fileName)
+{
+    for (unsigned i = 0; i < cache->GetNumResourceDirs(); ++i)
+    {
+        const ea::string& resourceDir = cache->GetResourceDir(i);
+        if (fileName.starts_with(resourceDir))
+            return fileName.substr(resourceDir.length());
+    }
+    return {};
+}
 
 /// Calculate frustum containing all shadow casters for given volume and light direction.
 Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
@@ -141,9 +157,37 @@ struct IncrementalLightmapper::Impl
         , collector_(collector)
         , cache_(cache)
     {
-        // Fix settings
-        if (!incrementalSettings_.outputDirectory_.ends_with("/"))
-            incrementalSettings_.outputDirectory_ += "/";
+    }
+
+    /// Initialize.
+    bool Initialize()
+    {
+        // Find or fix output directory
+        if (incrementalSettings_.outputDirectory_.empty())
+        {
+            const ea::string& sceneFileName = scene_->GetFileName();
+            if (sceneFileName.empty())
+            {
+                URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name is undefined");
+                return false;
+            }
+
+            incrementalSettings_.outputDirectory_ = ReplaceExtension(sceneFileName, "");
+            if (incrementalSettings_.outputDirectory_ == sceneFileName)
+            {
+                URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name has no extension");
+                return false;
+            }
+        }
+
+        incrementalSettings_.outputDirectory_ = AddTrailingSlash(incrementalSettings_.outputDirectory_);
+
+        FileSystem* fs = context_->GetFileSystem();
+        if (!fs->CreateDir(incrementalSettings_.outputDirectory_))
+        {
+            URHO3D_LOGERROR("Cannot create output directory for lightmaps");
+            return false;
+        }
 
         // Collect chunks
         collector_->LockScene(scene_, incrementalSettings_.chunkSize_);
@@ -159,6 +203,8 @@ struct IncrementalLightmapper::Impl
             };
             ea::sort(chunks_.begin(), chunks_.end(), compareSwizzled);
         }
+
+        return true;
     }
 
     /// Step chunk processing. Chunks are processed individually. Return true when completed.
@@ -209,7 +255,17 @@ struct IncrementalLightmapper::Impl
     {
         scene_->ResetLightmaps();
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
-            scene_->AddLightmap(GetLightmapFileName(i));
+        {
+            const ea::string fileName = GetLightmapFileName(i);
+            const ea::string resourceName = GetResourceName(context_->GetCache(), fileName);
+            if (resourceName.empty())
+            {
+                URHO3D_LOGWARNING("Cannot find resource name for lightmap \"{}\", absolute path is used", fileName);
+                scene_->AddLightmap(fileName);
+            }
+            else
+                scene_->AddLightmap(resourceName);
+        }
     }
 
     /// Step chunk processing. Chunks are processed with adjacent context. Return true when completed.
@@ -422,7 +478,9 @@ struct IncrementalLightmapper::Impl
             }
 
             // Save image to destination folder
-            lightmapImage->SaveFile(incrementalSettings_.outputDirectory_ + GetLightmapFileName(lightmapIndex));
+            const ea::string fileName = GetLightmapFileName(lightmapIndex);
+            context_->GetFileSystem()->CreateDirsRecursive(GetPath(fileName));
+            lightmapImage->SaveFile(fileName);
 
             // Store direct light
             cache_->ReleaseGeometryBuffer(lightmapIndex);
@@ -463,6 +521,7 @@ private:
     ea::string GetLightmapFileName(unsigned lightmapIndex)
     {
         ea::string lightmapName;
+        lightmapName += incrementalSettings_.outputDirectory_;
         lightmapName += incrementalSettings_.lightmapNamePrefix_;
         lightmapName += ea::to_string(lightmapIndex);
         lightmapName += incrementalSettings_.lightmapNameSuffix_;
@@ -492,11 +551,12 @@ IncrementalLightmapper::~IncrementalLightmapper()
 {
 }
 
-void IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings,
+bool IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings,
     const IncrementalLightmapperSettings& incrementalSettings,
     Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache)
 {
     impl_ = ea::make_unique<Impl>(lightmapSettings, incrementalSettings, scene, collector, cache);
+    return impl_->Initialize();
 }
 
 void IncrementalLightmapper::ProcessScene()
