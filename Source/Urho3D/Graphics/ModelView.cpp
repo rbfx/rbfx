@@ -61,7 +61,7 @@ ea::vector<ModelVertex> GetVertexBufferData(const VertexBuffer* vertexBuffer, un
     const ea::vector<Vector4> unpackedData = vertexBuffer->GetUnpackedData(start, count);
 
     ea::vector<ModelVertex> result(vertexCount);
-    VertexBuffer::ShuffleUnpackedVertexData(vertexCount, unpackedData.data(), vertexBuffer->GetElements(),
+    VertexBuffer::ShuffleUnpackedVertexData(count, unpackedData.data(), vertexBuffer->GetElements(),
         reinterpret_cast<Vector4*>(result.data()), ModelVertex::VertexElements);
 
     return result;
@@ -351,6 +351,10 @@ bool ModelView::ImportModel(const Model* model)
             const unsigned numIndices = modelGeometry->GetIndexCount();
             geometry.indices_ = modelIndexBuffer->GetUnpackedData(
                 modelGeometry->GetIndexStart(), modelGeometry->GetIndexCount());
+
+            // Adjust indices
+            for (unsigned& index : geometry.indices_)
+                index -= modelGeometry->GetVertexStart();
 
             // Copy vertices
             const unsigned vertexCount = modelGeometry->GetVertexCount();

@@ -463,6 +463,7 @@ bool File::OpenInternal(const ea::string& fileName, FileMode mode, bool fromPack
         else
         {
             fileName_ = fileName;
+            nativeFileName_ = fileName;
             mode_ = mode;
             position_ = 0;
             if (!fromPackage)
@@ -515,6 +516,7 @@ bool File::OpenInternal(const ea::string& fileName, FileMode mode, bool fromPack
     }
 
     fileName_ = fileName;
+    nativeFileName_ = fileName;
     mode_ = mode;
     position_ = 0;
     checksum_ = 0;

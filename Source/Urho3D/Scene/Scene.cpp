@@ -1403,6 +1403,7 @@ void Scene::FinishLoading(Deserializer* source)
 {
     if (source)
     {
+        // TODO: This name is not full file name, it's resource name. Consider changing it.
         fileName_ = source->GetName();
         checksum_ = source->GetChecksum();
     }
@@ -1413,6 +1414,7 @@ void Scene::FinishSaving(Serializer* dest) const
     auto* ptr = dynamic_cast<Deserializer*>(dest);
     if (ptr)
     {
+        // TODO: This name is not full file name, it's resource name. Consider changing it.
         fileName_ = ptr->GetName();
         checksum_ = ptr->GetChecksum();
     }
