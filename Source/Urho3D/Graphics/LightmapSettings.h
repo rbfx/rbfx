@@ -98,7 +98,7 @@ struct LightmapStitchingSettings
     ea::string stitchSeamsTechniqueName_{ "Techniques/DiffUnlitAlpha.xml" };
 };
 
-/// Lightmap settings.
+/// Lightmap baking settings.
 struct LightmapSettings
 {
     /// Charting settings.
@@ -117,9 +117,11 @@ struct LightmapSettings
 struct IncrementalLightmapperSettings
 {
     /// Size of the chunk.
-    Vector3 chunkSize_ = Vector3::ONE * 64.0f;
-    /// Padding for raytracing scene.
-    float raytracingScenePadding_ = 32.0f;
+    Vector3 chunkSize_ = Vector3::ONE * 128.0f;
+    /// Additional space around chunk to collect indirect lighting.
+    float indirectPadding_ = 32.0f;
+    /// Shadow casting distance for directional light.
+    float directionalLightShadowDistance_ = 128.0f;
     /// Output directory name.
     ea::string outputDirectory_;
     /// Lightmap name prefix.

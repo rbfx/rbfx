@@ -36,6 +36,7 @@ namespace Urho3D
 
 class Context;
 class Node;
+class StaticModel;
 
 /// Embree geometry.
 struct EmbreeGeometry
@@ -97,6 +98,6 @@ private:
 };
 
 // Create Embree scene.
-URHO3D_API SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Node*>& nodes, unsigned uvChannel);
+URHO3D_API SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned uvChannel);
 
 }
