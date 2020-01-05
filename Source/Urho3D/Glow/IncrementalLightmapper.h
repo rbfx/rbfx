@@ -43,7 +43,7 @@ public:
     ~IncrementalLightmapper();
 
     /// Initialize lightmapper. Relatively lightweigh.
-    void Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
+    bool Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
         Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache);
     /// Process and update the scene. Scene collector is used here.
     void ProcessScene();

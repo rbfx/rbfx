@@ -78,10 +78,12 @@ void LightmapManager::Bake()
     LightmapMemoryCache lightmapCache;
     IncrementalLightmapper lightmapper;
 
-    lightmapper.Initialize(lightmapSettings_, incrementalBakingSettings_, GetScene(), &sceneCollector, &lightmapCache);
-    lightmapper.ProcessScene();
-    lightmapper.Bake();
-    lightmapper.CommitScene();
+    if (lightmapper.Initialize(lightmapSettings_, incrementalBakingSettings_, GetScene(), &sceneCollector, &lightmapCache))
+    {
+        lightmapper.ProcessScene();
+        lightmapper.Bake();
+        lightmapper.CommitScene();
+    }
 #endif
 
     // Compile light probes
