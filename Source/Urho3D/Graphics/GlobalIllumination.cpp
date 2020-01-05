@@ -26,6 +26,8 @@
 
 #include "../Core/Context.h"
 #include "../Graphics/DebugRenderer.h"
+#include "../IO/ArchiveSerialization.h"
+#include "../IO/BinaryArchive.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
@@ -43,6 +45,8 @@ GlobalIllumination::~GlobalIllumination() = default;
 void GlobalIllumination::RegisterObject(Context* context)
 {
     context->RegisterFactory<GlobalIllumination>(SUBSYSTEM_CATEGORY);
+
+    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, VariantBuffer, Variant::emptyBuffer, AM_DEFAULT | AM_NOEDIT);
 }
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -111,6 +115,30 @@ Color GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsigned
 {
     // TODO(glow): Use real ambient here
     return lightProbesMesh_.Sample(lightProbesCollection_.bakedAmbient_, position, hint);
+}
+
+void GlobalIllumination::SerializeLightProbesData(Archive& archive)
+{
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes"))
+    {
+        SerializeValue(archive, "Data", lightProbesCollection_);
+        SerializeValue(archive, "Mesh", lightProbesMesh_);
+    }
+}
+
+void GlobalIllumination::SetLightProbesData(const VariantBuffer& data)
+{
+    VectorBuffer buffer(data);
+    BinaryInputArchive archive(context_, buffer);
+    SerializeLightProbesData(archive);
+}
+
+VariantBuffer GlobalIllumination::GetLightProbesData() const
+{
+    VectorBuffer buffer;
+    BinaryOutputArchive archive(context_, buffer);
+    const_cast<GlobalIllumination*>(this)->SerializeLightProbesData(archive);
+    return buffer.GetBuffer();
 }
 
 }

@@ -59,11 +59,20 @@ public:
     /// Sample average ambient lighting.
     Color SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
+    /// Serialize light probes data.
+    void SerializeLightProbesData(Archive& archive);
+    /// Set serialized light probes data.
+    void SetLightProbesData(const VariantBuffer& data);
+    /// Return serialized light probes data.
+    VariantBuffer GetLightProbesData() const;
+
 private:
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;
     /// Light probes collection.
     LightProbeCollection lightProbesCollection_;
+    /// Debug sample positions.
+    mutable ea::vector<Vector3> debugSamplePositions_;
 };
 
 }

@@ -36,6 +36,8 @@
 namespace Urho3D
 {
 
+class Archive;
+
 /// Surface triangle of tetrahedral mesh with adjacency information.
 struct TetrahedralMeshSurfaceTriangle
 {
@@ -413,11 +415,11 @@ private:
     /// Remove super-mesh vertices.
     void RemoveSuperMeshVertices();
     /// Build hull surface.
-    void BuildHullSurface();
+    void BuildHullSurface(TetrahedralMeshSurface& hullSurface);
     /// Calculate hull normals.
-    void CalculateHullNormals();
+    void CalculateHullNormals(const TetrahedralMeshSurface& hullSurface);
     /// Build outer tetrahedrons.
-    void BuildOuterTetrahedrons();
+    void BuildOuterTetrahedrons(const TetrahedralMeshSurface& hullSurface);
     /// Calculate matrices for inner tetrahedrons.
     void CalculateInnerMatrices();
     /// Calculate matrices for outer tetrahedrons.
@@ -428,13 +430,16 @@ public:
     ea::vector<Vector3> vertices_;
     /// Tetrahedrons.
     ea::vector<Tetrahedron> tetrahedrons_;
-    /// Hull surface.
-    TetrahedralMeshSurface hullSurface_;
-
     /// Hull normals.
     ea::vector<Vector3> hullNormals_;
     /// Number of inner tetrahedrons.
     unsigned numInnerTetrahedrons_{};
 };
+
+/// Serialize tetrahedron to archive.
+URHO3D_API bool SerializeValue(Archive& archive, const char* name, Tetrahedron& value);
+
+/// Serialize tetrahedral mesh to archive.
+URHO3D_API bool SerializeValue(Archive& archive, const char* name, TetrahedralMesh& value);
 
 }
