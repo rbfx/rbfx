@@ -112,7 +112,7 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
             const unsigned mask = lodIndex == 0 ? EmbreeScene::PrimaryLODGeometry : EmbreeScene::SecondaryLODGeometry;
             const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView,
                 node, lightmapUVScale, lightmapUVOffset, uvChannel, mask);
-            result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex,
+            result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex, geometryView.lods_.size(),
                 lightmapIndex, M_MAX_UNSIGNED, embreeGeometry });
         }
     }

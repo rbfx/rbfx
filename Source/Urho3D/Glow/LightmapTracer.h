@@ -32,6 +32,8 @@ namespace Urho3D
 {
 
 class EmbreeScene;
+class TetrahedralMesh;
+struct LightProbeCollection;
 
 /// Direct light accumulated for given lightmap chart.
 struct LightmapChartBakedDirect
@@ -136,10 +138,12 @@ URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, cons
     const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
-/// Accumulate indirect light.
+/// Accumulate indirect light for charts.
 URHO3D_API void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
+    const TetrahedralMesh& lightProbesMesh, const LightProbeCollection& lightProbesData,
+    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light for light probes.
 URHO3D_API void BakeIndirectLightForLightProbes(LightProbeCollection& collection,

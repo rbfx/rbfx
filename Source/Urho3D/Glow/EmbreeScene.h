@@ -47,6 +47,8 @@ struct EmbreeGeometry
     unsigned geometryIndex_{};
     /// LOD index.
     unsigned lodIndex_{};
+    /// Number of LODs.
+    unsigned numLods_{};
     /// Lightmap chart index.
     unsigned lightmapIndex_{};
     /// Embree geometry ID.
