@@ -218,10 +218,10 @@ struct IncrementalLightmapper::Impl
 
         // Collect nodes for current chunks
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::vector<StaticModel*> staticModels = collector_->GetUniqueStaticModels(chunk);
+        const ea::vector<StaticModel*> uniqueStaticModels = collector_->GetUniqueStaticModels(chunk);
 
         // Generate charts
-        const LightmapChartVector charts = GenerateLightmapCharts(staticModels, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
+        const LightmapChartVector charts = GenerateLightmapCharts(uniqueStaticModels, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
 
         // Apply charts to scene
         ApplyLightmapCharts(charts);
@@ -276,8 +276,9 @@ struct IncrementalLightmapper::Impl
 
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const BoundingBox lightReceiversBoundingBox = collector_->GetChunkBoundingBox(chunk);
-        const ea::vector<LightProbeGroup*> lightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
+        const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
         const ea::vector<Light*> relevantLights = collector_->GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
+        const ea::vector<StaticModel*> uniqueStaticModels = collector_->GetUniqueStaticModels(chunk);
 
         // Collect shadow casters for direct lighting
         ea::hash_set<StaticModel*> relevantStaticModels;
@@ -308,24 +309,32 @@ struct IncrementalLightmapper::Impl
         indirectBoundingBox.min_ -= Vector3::ONE * incrementalSettings_.indirectPadding_;
         indirectBoundingBox.max_ += Vector3::ONE * incrementalSettings_.indirectPadding_;
 
-        const ea::vector<StaticModel*> indirectStaticModels = collector_->GetStaticModelsInBoundingBox(chunk, indirectBoundingBox);
+        const ea::vector<StaticModel*> indirectStaticModels = collector_->GetStaticModelsInBoundingBox(
+            chunk, indirectBoundingBox);
         relevantStaticModels.insert(indirectStaticModels.begin(), indirectStaticModels.end());
 
-        // Collect light probes
+        // Collect light receivers, unique are first
+        for (StaticModel* staticModel : uniqueStaticModels)
+            relevantStaticModels.erase(staticModel);
+
+        ea::vector<StaticModel*> staticModels = uniqueStaticModels;
+        staticModels.insert(staticModels.end(), relevantStaticModels.begin(), relevantStaticModels.end());
+
+        // Collect light probes, unique are first
+        const ea::vector<LightProbeGroup*> lightProbesInVolume = collector_->GetLightProbeGroupsInBoundingBox(
+            chunk, indirectBoundingBox);
+        ea::hash_set<LightProbeGroup*> relevantLightProbes(lightProbesInVolume.begin(), lightProbesInVolume.end());
+
+        for (LightProbeGroup* group : uniqueLightProbeGroups)
+            relevantLightProbes.erase(group);
+
+        ea::vector<LightProbeGroup*> lightProbeGroups = uniqueLightProbeGroups;
+        lightProbeGroups.insert(lightProbeGroups.end(), relevantLightProbes.begin(), relevantLightProbes.end());
+
         LightProbeCollection lightProbesCollection;
         LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
 
-        ea::vector<LightProbeGroup*> relevantLightProbes = collector_->GetLightProbeGroupsInBoundingBox(chunk, indirectBoundingBox);
-        for (LightProbeGroup* group : lightProbeGroups)
-        {
-            auto iter = relevantLightProbes.find(group);
-            if (iter != relevantLightProbes.end())
-                relevantLightProbes.erase(iter);
-        }
-        LightProbeGroup::CollectLightProbes(relevantLightProbes, lightProbesCollection);
-
         // Create scene for raytracing
-        ea::vector<StaticModel*> staticModels(relevantStaticModels.begin(), relevantStaticModels.end());
         const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
         const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, staticModels, uvChannel);
 
