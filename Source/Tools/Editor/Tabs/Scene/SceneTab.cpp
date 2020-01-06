@@ -316,11 +316,13 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     {
         auto* file = context_->GetCache()->GetResource<XMLFile>(resourcePath);
         loaded = file && scene->LoadXML(file->GetRoot());
+        scene->SetFileName(file->GetNativeFileName());
     }
     else if (resourcePath.ends_with(".json", false))
     {
         auto* file = context_->GetCache()->GetResource<JSONFile>(resourcePath);
         loaded = file && scene->LoadJSON(file->GetRoot());
+        scene->SetFileName(file->GetNativeFileName());
     }
     else
     {
