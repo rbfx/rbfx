@@ -56,8 +56,12 @@ struct BakedDirectLight
 /// Lightmap chunk vicinity. Contains all required baking context from the chunk itself and adjacent chunks.
 struct LightmapChunkVicinity
 {
+    /// Lightmaps ownder by this chunk.
+    ea::vector<unsigned> lightmaps_;
     /// Embree scene.
     SharedPtr<EmbreeScene> embreeScene_;
+    /// Geometry buffer ID to embree geometry ID mapping.
+    ea::vector<unsigned> geometryBufferToEmbree_;
     /// Lights to bake.
     ea::vector<BakedDirectLight> bakedLights_;
     /// Light probes collection.
@@ -70,11 +74,6 @@ class URHO3D_API LightmapCache
 public:
     /// Destruct.
     virtual ~LightmapCache();
-
-    /// Store lightmap indices for chunk.
-    virtual void SetLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) = 0;
-    /// Return lightmap indices for chunk.
-    virtual ea::vector<unsigned> GetLightmapsForChunk(const IntVector3& chunk) = 0;
 
     /// Store chunk vicinity in the cache.
     virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
@@ -98,11 +97,6 @@ public:
 class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
-    /// Store lightmap indices for chunk.
-    void SetLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) override;
-    /// Load lightmap indices for chunk.
-    ea::vector<unsigned> GetLightmapsForChunk(const IntVector3& chunk) override;
-
     /// Store baking context in the cache.
     void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
     /// Load chunk vicinity.
@@ -121,8 +115,6 @@ public:
     ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) override;
 
 private:
-    /// Lightmap indices per chunk.
-    ea::unordered_map<IntVector3, ea::vector<unsigned>> lightmapIndicesPerChunk_;
     /// Baking contexts cache.
     ea::unordered_map<IntVector3, ea::shared_ptr<LightmapChunkVicinity>> chunkVicinityCache_;
     /// Geometry buffers cache.

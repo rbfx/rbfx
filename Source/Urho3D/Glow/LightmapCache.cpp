@@ -29,19 +29,6 @@ namespace Urho3D
 
 LightmapCache::~LightmapCache() = default;
 
-void LightmapMemoryCache::SetLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices)
-{
-    lightmapIndicesPerChunk_[chunk] = ea::move(lightmapIndices);
-}
-
-ea::vector<unsigned> LightmapMemoryCache::GetLightmapsForChunk(const IntVector3& chunk)
-{
-    auto iter = lightmapIndicesPerChunk_.find(chunk);
-    if (iter != lightmapIndicesPerChunk_.end())
-        return iter->second;
-    return {};
-}
-
 void LightmapMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
 {
     chunkVicinityCache_[chunk] = ea::make_shared<LightmapChunkVicinity>(ea::move(vicinity));
