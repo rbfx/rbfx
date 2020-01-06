@@ -298,7 +298,7 @@ SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderP
     return renderPath;
 }
 
-ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
+LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     Context* context, const ea::vector<StaticModel*>& staticModels,
     unsigned chartSize, const LightmapGeometryBakingSettings& settings)
 {
@@ -397,7 +397,7 @@ ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
     ea::vector<LightmapGeometryBakingScene> result;
     for (auto& elem : bakingScenes)
         result.push_back(ea::move(elem.second));
-    return result;
+    return { result, mapping };
 }
 
 LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBakingScene& bakingScene)
@@ -450,7 +450,6 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
 
     graphics->EndFrame();
 
-    geometryBuffer.geometryMapping_ = bakingScene.geometryMapping_;
     geometryBuffer.seams_ = bakingScene.seams_;
     return geometryBuffer;
 }
