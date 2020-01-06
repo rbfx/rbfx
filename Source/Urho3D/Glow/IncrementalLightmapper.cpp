@@ -242,7 +242,7 @@ struct IncrementalLightmapper::Impl
             cache_->StoreGeometryBuffer(geometryBuffer.index_, ea::move(geometryBuffer));
         }
 
-        cache_->StoreLightmapsForChunk(chunk, ea::move(lightmapsInChunk));
+        cache_->SetLightmapsForChunk(chunk, ea::move(lightmapsInChunk));
 
         // Advance
         ctx.lightmapChartBaseIndex_ += charts.size();
@@ -369,13 +369,14 @@ struct IncrementalLightmapper::Impl
 
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
-        const ea::vector<unsigned> lightmapsInChunks = cache_->LoadLightmapsForChunk(chunk);
+        const ea::shared_ptr<const LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        const ea::vector<unsigned> lightmapsInChunks = cache_->GetLightmapsForChunk(chunk);
 
         // Bake direct lighting
         for (unsigned lightmapIndex : lightmapsInChunks)
         {
-            const LightmapChartGeometryBuffer* geometryBuffer = cache_->LoadGeometryBuffer(lightmapIndex);
+            const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
+                cache_->LoadGeometryBuffer(lightmapIndex);
             LightmapChartBakedDirect bakedDirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
             // Bake direct lights
@@ -398,11 +399,7 @@ struct IncrementalLightmapper::Impl
 
             // Store direct light
             cache_->StoreDirectLight(lightmapIndex, ea::move(bakedDirect));
-            cache_->ReleaseGeometryBuffer(lightmapIndex);
         }
-
-        // Release cache
-        cache_->ReleaseChunkVicinity(chunk);
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -423,20 +420,23 @@ struct IncrementalLightmapper::Impl
 
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
-        const ea::vector<unsigned> lightmapsInChunks = cache_->LoadLightmapsForChunk(chunk);
+        const ea::shared_ptr<LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        const ea::vector<unsigned> lightmapsInChunks = cache_->GetLightmapsForChunk(chunk);
 
         // Collect required direct lightmaps
         ea::hash_set<unsigned> requiredDirectLightmaps;
         for (const EmbreeGeometry& embreeGeometry : chunkVicinity->embreeScene_->GetEmbreeGeometryIndex())
         {
-            if (embreeGeometry.node_)
-                requiredDirectLightmaps.insert(embreeGeometry.lightmapIndex_);
+            requiredDirectLightmaps.insert(embreeGeometry.lightmapIndex_);
         }
 
+        ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
         ea::vector<const LightmapChartBakedDirect*> bakedDirectLightmaps(numLightmapCharts_);
         for (unsigned lightmapIndex : requiredDirectLightmaps)
-            bakedDirectLightmaps[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
+        {
+            bakedDirectLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
+            bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
+        }
 
         // Bake indirect light for light probes
         chunkVicinity->lightProbesCollection_.ResetBakedData();
@@ -445,8 +445,9 @@ struct IncrementalLightmapper::Impl
         // Bake indirect lighting for charts
         for (unsigned lightmapIndex : lightmapsInChunks)
         {
-            const LightmapChartGeometryBuffer* geometryBuffer = cache_->LoadGeometryBuffer(lightmapIndex);
-            LightmapChartBakedDirect* bakedDirect = cache_->LoadDirectLight(lightmapIndex);
+            const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
+                cache_->LoadGeometryBuffer(lightmapIndex);
+            const ea::shared_ptr<const LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
             LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
             // Bake indirect lights
@@ -490,16 +491,10 @@ struct IncrementalLightmapper::Impl
             const ea::string fileName = GetLightmapFileName(lightmapIndex);
             context_->GetFileSystem()->CreateDirsRecursive(GetPath(fileName));
             lightmapImage->SaveFile(fileName);
-
-            // Store direct light
-            cache_->ReleaseGeometryBuffer(lightmapIndex);
         }
 
         // Release cache
         cache_->CommitLightProbeGroups(chunk);
-        cache_->ReleaseChunkVicinity(chunk);
-        for (unsigned lightmapIndex : requiredDirectLightmaps)
-            cache_->ReleaseDirectLight(lightmapIndex);
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -515,7 +510,7 @@ struct IncrementalLightmapper::Impl
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::vector<LightProbeGroup*> lightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
-        const LightmapChunkVicinity* chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        const ea::shared_ptr<const LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
 
         for (unsigned i = 0; i < lightProbeGroups.size(); ++i)
             lightProbeGroups[i]->CommitLightProbes(chunkVicinity->lightProbesCollection_, i);
