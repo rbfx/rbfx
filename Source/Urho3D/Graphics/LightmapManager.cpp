@@ -65,6 +65,10 @@ void LightmapManager::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, incrementalBakingSettings_.outputDirectory_, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, lightmapSettings_.charting_.chartSize_, defaultLightmapSettings.charting_.chartSize_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Texel Density", unsigned, lightmapSettings_.charting_.texelDensity_, defaultLightmapSettings.charting_.texelDensity_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, lightmapSettings_.tracing_.numBounces_, defaultLightmapSettings.tracing_.numBounces_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Samples (Texture)", unsigned, lightmapSettings_.tracing_.numIndirectChartSamples_, defaultLightmapSettings.tracing_.numIndirectChartSamples_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Samples (Light Probes)", unsigned, lightmapSettings_.tracing_.numIndirectProbeSamples_, defaultLightmapSettings.tracing_.numIndirectProbeSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Size", Vector3, incrementalBakingSettings_.chunkSize_, defaultIncrementalSettings.chunkSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, incrementalBakingSettings_.indirectPadding_, defaultIncrementalSettings.indirectPadding_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, incrementalBakingSettings_.directionalLightShadowDistance_, defaultIncrementalSettings.directionalLightShadowDistance_, AM_DEFAULT);
