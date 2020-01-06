@@ -41,12 +41,12 @@ class StaticModel;
 /// Embree geometry.
 struct EmbreeGeometry
 {
-    /// Node.
-    Node* node_{};
+    /// Object index.
+    unsigned objectIndex_{};
     /// Geometry index.
     unsigned geometryIndex_{};
-    /// Geometry LOD.
-    unsigned geometryLOD_{};
+    /// LOD index.
+    unsigned lodIndex_{};
     /// Lightmap chart index.
     unsigned lightmapIndex_{};
     /// Internal geometry pointer.

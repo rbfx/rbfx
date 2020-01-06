@@ -221,15 +221,16 @@ struct IncrementalLightmapper::Impl
         const ea::vector<StaticModel*> uniqueStaticModels = collector_->GetUniqueStaticModels(chunk);
 
         // Generate charts
-        const LightmapChartVector charts = GenerateLightmapCharts(uniqueStaticModels, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
+        const LightmapChartVector charts = GenerateLightmapCharts(
+            uniqueStaticModels, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
 
         // Apply charts to scene
         ApplyLightmapCharts(charts);
         collector_->CommitStaticModels(chunk);
 
         // Generate scenes for geometry baking
-        const ea::vector<LightmapGeometryBakingScene> geometryBakingScene =
-            GenerateLightmapGeometryBakingScenes(context_, charts, lightmapSettings_.geometryBaking_);
+        const ea::vector<LightmapGeometryBakingScene> geometryBakingScene = GenerateLightmapGeometryBakingScenes(
+            context_, uniqueStaticModels, lightmapSettings_.charting_.chartSize_, lightmapSettings_.geometryBaking_);
 
         // Bake geometries
         LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScene);
@@ -370,10 +371,10 @@ struct IncrementalLightmapper::Impl
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::shared_ptr<const LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-        const ea::vector<unsigned> lightmapsInChunks = cache_->GetLightmapsForChunk(chunk);
+        const ea::vector<unsigned> lightmapsInChunk = cache_->GetLightmapsForChunk(chunk);
 
         // Bake direct lighting
-        for (unsigned lightmapIndex : lightmapsInChunks)
+        for (unsigned lightmapIndex : lightmapsInChunk)
         {
             const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
                 cache_->LoadGeometryBuffer(lightmapIndex);
@@ -421,7 +422,7 @@ struct IncrementalLightmapper::Impl
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::shared_ptr<LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-        const ea::vector<unsigned> lightmapsInChunks = cache_->GetLightmapsForChunk(chunk);
+        const ea::vector<unsigned> lightmapsInChunk = cache_->GetLightmapsForChunk(chunk);
 
         // Collect required direct lightmaps
         ea::hash_set<unsigned> requiredDirectLightmaps;
@@ -443,7 +444,7 @@ struct IncrementalLightmapper::Impl
         BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
 
         // Bake indirect lighting for charts
-        for (unsigned lightmapIndex : lightmapsInChunks)
+        for (unsigned lightmapIndex : lightmapsInChunk)
         {
             const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
                 cache_->LoadGeometryBuffer(lightmapIndex);
