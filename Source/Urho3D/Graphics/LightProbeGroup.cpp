@@ -35,7 +35,7 @@
 namespace Urho3D
 {
 
-extern const char* SUBSYSTEM_CATEGORY;
+extern const char* SCENE_CATEGORY;
 
 bool SerializeValue(Archive& archive, const char* name, LightProbe& value)
 {
@@ -71,7 +71,7 @@ LightProbeGroup::~LightProbeGroup() = default;
 
 void LightProbeGroup::RegisterObject(Context* context)
 {
-    context->RegisterFactory<LightProbeGroup>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<LightProbeGroup>(SCENE_CATEGORY);
 
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement", GetAutoPlacementEnabled, SetAutoPlacementEnabled, bool, true, AM_DEFAULT);

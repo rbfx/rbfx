@@ -27,7 +27,9 @@
 
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapTracer.h"
+#include "../Graphics/LightProbeGroup.h"
 #include "../IO/Log.h"
+#include "../Math/TetrahedralMesh.h"
 
 #include <future>
 
@@ -199,19 +201,44 @@ struct ChartIndirectTracingKernel
     LightmapChartBakedIndirect* bakedIndirect_{};
     /// Geometry buffer.
     const LightmapChartGeometryBuffer* geometryBuffer_{};
+    /// Light probes mesh for fallback.
+    const TetrahedralMesh* lightProbesMesh_{};
+    /// Light probes data for fallback.
+    const LightProbeCollection* lightProbesData_{};
+    /// Mapping from geometry buffer ID to embree geometry ID.
+    const ea::vector<unsigned>* geometryBufferToEmbree_{};
+    /// Embree geometry index.
+    const ea::vector<EmbreeGeometry>* embreeGeometryIndex_{};
     /// Settings.
     const LightmapTracingSettings* settings_{};
+
+    /// Last sampled tetrahedron.
+    unsigned lightProbesMeshHint_{};
 
     /// Return number of elements to trace.
     unsigned GetNumElements() const { return bakedIndirect_->light_.size(); }
     /// Return number of samples.
     unsigned GetNumSamples() const { return settings_->numIndirectChartSamples_; }
     /// Begin tracing element.
-    ChartIndirectTracingElement BeginElement(unsigned elementIndex) const
+    ChartIndirectTracingElement BeginElement(unsigned elementIndex)
     {
+        const unsigned geometryId = geometryBuffer_->geometryIds_[elementIndex];
+        if (!geometryId)
+            return {};
+
         const Vector3& position = geometryBuffer_->geometryPositions_[elementIndex];
-        const unsigned& geometryId = geometryBuffer_->geometryIds_[elementIndex];
         const Vector3& normal = geometryBuffer_->smoothNormals_[elementIndex];
+        const unsigned embreeGeometryId = (*geometryBufferToEmbree_)[geometryId];
+        const EmbreeGeometry& embreeGeometry = (*embreeGeometryIndex_)[embreeGeometryId];
+
+        if (embreeGeometry.numLods_ > 1)
+        {
+            const SphericalHarmonicsDot9 sh = lightProbesMesh_->Sample(
+                lightProbesData_->bakedSphericalHarmonics_, position, lightProbesMeshHint_);
+            bakedIndirect_->light_[elementIndex] += { sh.Evaluate(normal), 1.0f };
+            return {};
+        }
+
         return { position + normal * settings_->rayPositionOffset_, normal, geometryId };
     };
     /// End tracing element.
@@ -283,14 +310,16 @@ struct LightProbeIndirectTracingKernel
 
 /// Trace indirect lighting.
 template <class T>
-void TraceIndirectLight(T& kernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
+void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
 
-    ParallelFor(kernel.GetNumElements(), settings.numThreads_,
+    ParallelFor(sharedKernel.GetNumElements(), settings.numThreads_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
+        T kernel = sharedKernel;
+
         RTCScene scene = embreeScene.GetEmbreeScene();
         const float maxDistance = embreeScene.GetMaxDistance();
         const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
@@ -305,8 +334,8 @@ void TraceIndirectLight(T& kernel, const ea::vector<const LightmapChartBakedDire
         rayHit.ray.tnear = 0.0f;
         rayHit.ray.time = 0.0f;
         rayHit.ray.id = 0;
-        rayHit.ray.mask = 0xffffffff;
-        rayHit.ray.flags = 0xffffffff;
+        rayHit.ray.mask = EmbreeScene::PrimaryLODGeometry;
+        rayHit.ray.flags = 0;
 
         for (unsigned elementIndex = fromIndex; elementIndex < toIndex; ++elementIndex)
         {
@@ -479,9 +508,12 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 
 void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
+    const TetrahedralMesh& lightProbesMesh, const LightProbeCollection& lightProbesData,
+    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const LightmapTracingSettings& settings)
 {
-    ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &settings };
+    ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &lightProbesMesh, &lightProbesData,
+        &geometryBufferToEmbree, &embreeScene.GetEmbreeGeometryIndex(), &settings };
     TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
 }
 
