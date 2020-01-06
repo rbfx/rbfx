@@ -72,32 +72,26 @@ public:
     virtual ~LightmapCache();
 
     /// Store lightmap indices for chunk.
-    virtual void StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) = 0;
-    /// Load lightmap indices for chunk.
-    virtual ea::vector<unsigned> LoadLightmapsForChunk(const IntVector3& chunk) = 0;
+    virtual void SetLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) = 0;
+    /// Return lightmap indices for chunk.
+    virtual ea::vector<unsigned> GetLightmapsForChunk(const IntVector3& chunk) = 0;
 
     /// Store chunk vicinity in the cache.
     virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
     /// Load chunk vicinity.
-    virtual LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) = 0;
+    virtual ea::shared_ptr<LightmapChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) = 0;
     /// Called after light probes are updated.
     virtual void CommitLightProbeGroups(const IntVector3& chunk) = 0;
-    /// Release chunk vicinity.
-    virtual void ReleaseChunkVicinity(const IntVector3& chunk) = 0;
 
     /// Store lightmap chart geometry buffer in the cache.
     virtual void StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer) = 0;
     /// Load geometry buffer.
-    virtual const LightmapChartGeometryBuffer* LoadGeometryBuffer(unsigned lightmapIndex) = 0;
-    /// Release geometry buffer.
-    virtual void ReleaseGeometryBuffer(unsigned lightmapIndex) = 0;
+    virtual ea::shared_ptr<const LightmapChartGeometryBuffer> LoadGeometryBuffer(unsigned lightmapIndex) = 0;
 
     /// Store direct light for the lightmap chart.
     virtual void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) = 0;
     /// Load direct light for the lightmap chart.
-    virtual LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) = 0;
-    /// Release direct light for the lightmap chart.
-    virtual void ReleaseDirectLight(unsigned lightmapIndex) = 0;
+    virtual ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) = 0;
 };
 
 /// Memory lightmap cache.
@@ -105,42 +99,36 @@ class URHO3D_API LightmapMemoryCache : public LightmapCache
 {
 public:
     /// Store lightmap indices for chunk.
-    void StoreLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) override;
+    void SetLightmapsForChunk(const IntVector3& chunk, ea::vector<unsigned> lightmapIndices) override;
     /// Load lightmap indices for chunk.
-    ea::vector<unsigned> LoadLightmapsForChunk(const IntVector3& chunk) override;
+    ea::vector<unsigned> GetLightmapsForChunk(const IntVector3& chunk) override;
 
     /// Store baking context in the cache.
     void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
     /// Load chunk vicinity.
-    LightmapChunkVicinity* LoadChunkVicinity(const IntVector3& chunk) override;
+    ea::shared_ptr<LightmapChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) override;
     /// Called after light probes are updated.
     void CommitLightProbeGroups(const IntVector3& chunk) override;
-    /// Release chunk vicinity.
-    void ReleaseChunkVicinity(const IntVector3& chunk) override;
 
     /// Store lightmap chart geometry buffer in the cache.
     void StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer) override;
     /// Load geometry buffer.
-    const LightmapChartGeometryBuffer* LoadGeometryBuffer(unsigned lightmapIndex) override;
-    /// Release geometry buffer.
-    void ReleaseGeometryBuffer(unsigned lightmapIndex) override;
+    ea::shared_ptr<const LightmapChartGeometryBuffer> LoadGeometryBuffer(unsigned lightmapIndex) override;
 
     /// Store direct light for the lightmap chart.
     void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) override;
     /// Load direct light for the lightmap chart.
-    LightmapChartBakedDirect* LoadDirectLight(unsigned lightmapIndex) override;
-    /// Release direct light for the lightmap chart.
-    void ReleaseDirectLight(unsigned lightmapIndex) override;
+    ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) override;
 
 private:
     /// Lightmap indices per chunk.
     ea::unordered_map<IntVector3, ea::vector<unsigned>> lightmapIndicesPerChunk_;
     /// Baking contexts cache.
-    ea::unordered_map<IntVector3, LightmapChunkVicinity> chunkVicinityCache_;
+    ea::unordered_map<IntVector3, ea::shared_ptr<LightmapChunkVicinity>> chunkVicinityCache_;
     /// Geometry buffers cache.
-    ea::unordered_map<unsigned, LightmapChartGeometryBuffer> geometryBufferCache_;
+    ea::unordered_map<unsigned, ea::shared_ptr<const LightmapChartGeometryBuffer>> geometryBufferCache_;
     /// Direct light cache.
-    ea::unordered_map<unsigned, LightmapChartBakedDirect> directLightCache_;
+    ea::unordered_map<unsigned, ea::shared_ptr<LightmapChartBakedDirect>> directLightCache_;
 };
 
 }
