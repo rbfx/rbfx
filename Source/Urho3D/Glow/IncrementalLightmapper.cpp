@@ -430,7 +430,7 @@ struct IncrementalLightmapper::Impl
                     light.bakeIndirect_ = bakeIndirect;
 
                     BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->embreeScene_,
-                        light, lightmapSettings_.tracing_);
+                        chunkVicinity->geometryBufferToEmbree_, light, lightmapSettings_.tracing_);
                 }
             }
 
