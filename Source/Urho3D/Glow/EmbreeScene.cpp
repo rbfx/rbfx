@@ -110,7 +110,8 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
             const GeometryLODView& geometryLODView = geometryView.lods_[lodIndex];
             const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView,
                 node, lightmapUVScale, lightmapUVOffset, uvChannel);
-            result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex, lightmapIndex, embreeGeometry });
+            result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex,
+                lightmapIndex, M_MAX_UNSIGNED, embreeGeometry });
         }
     }
     return result;
@@ -180,9 +181,9 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
 
     // Finish model parsing
     ea::unordered_map<Model*, SharedPtr<ModelView>> parsedModelCache;
-    for (auto& asyncModel : modelParseTasks)
+    for (auto& task : modelParseTasks)
     {
-        const ParsedModelKeyValue& parsedModel = asyncModel.get();
+        const ParsedModelKeyValue& parsedModel = task.get();
         parsedModelCache.emplace(parsedModel.model_, parsedModel.parsedModel_);
     }
 
@@ -190,7 +191,7 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
     const RTCDevice device = rtcNewDevice("");
     const RTCScene scene = rtcNewScene(device);
 
-    ea::vector<std::future<ea::vector<EmbreeGeometry>>> asyncEmbreeGeometries;
+    ea::vector<std::future<ea::vector<EmbreeGeometry>>> createEmbreeGeometriesTasks;
     for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
     {
         StaticModel* staticModel = staticModels[objectIndex];
@@ -201,16 +202,16 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
         const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
 
         ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-        asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometriesForModel,
+        createEmbreeGeometriesTasks.push_back(std::async(CreateEmbreeGeometriesForModel,
             device, parsedModel, staticModel->GetNode(),
             objectIndex, lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
     }
 
     // Collect and attach Embree geometries
     ea::vector<EmbreeGeometry> geometryIndex;
-    for (auto& asyncGeometry : asyncEmbreeGeometries)
+    for (auto& task : createEmbreeGeometriesTasks)
     {
-        const ea::vector<EmbreeGeometry> embreeGeometriesArray = asyncGeometry.get();
+        const ea::vector<EmbreeGeometry> embreeGeometriesArray = task.get();
         for (const EmbreeGeometry& embreeGeometry : embreeGeometriesArray)
         {
             const unsigned geomID = rtcAttachGeometry(scene, embreeGeometry.embreeGeometry_);
@@ -218,6 +219,7 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
 
             geometryIndex.resize(geomID + 1);
             geometryIndex[geomID] = embreeGeometry;
+            geometryIndex[geomID].embreeGeometryId_ = geomID;
         }
     }
 

@@ -114,7 +114,7 @@ struct BaseIncrementalContext
 };
 
 /// Context used for incremental lightmap chunk processing (first pass).
-struct LocalChunkProcessingContext : public BaseIncrementalContext
+struct ChartingContext : public BaseIncrementalContext
 {
     /// Current lightmap chart base index.
     unsigned lightmapChartBaseIndex_{};
@@ -207,8 +207,8 @@ struct IncrementalLightmapper::Impl
         return true;
     }
 
-    /// Step chunk processing. Chunks are processed individually. Return true when completed.
-    bool StepLocalChunkProcessing(LocalChunkProcessingContext& ctx)
+    /// Step charting. Chunks are processed individually. Return true when completed.
+    bool StepCharting(ChartingContext& ctx)
     {
         if (ctx.currentChunkIndex_ >= chunks_.size())
         {
@@ -227,23 +227,6 @@ struct IncrementalLightmapper::Impl
         // Apply charts to scene
         ApplyLightmapCharts(charts);
         collector_->CommitStaticModels(chunk);
-
-        // Generate scenes for geometry baking
-        const ea::vector<LightmapGeometryBakingScene> geometryBakingScene = GenerateLightmapGeometryBakingScenes(
-            context_, uniqueStaticModels, lightmapSettings_.charting_.chartSize_, lightmapSettings_.geometryBaking_);
-
-        // Bake geometries
-        LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScene);
-
-        // Store result in the cache
-        ea::vector<unsigned> lightmapsInChunk;
-        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-        {
-            lightmapsInChunk.push_back(geometryBuffer.index_);
-            cache_->StoreGeometryBuffer(geometryBuffer.index_, ea::move(geometryBuffer));
-        }
-
-        cache_->SetLightmapsForChunk(chunk, ea::move(lightmapsInChunk));
 
         // Advance
         ctx.lightmapChartBaseIndex_ += charts.size();
@@ -280,6 +263,15 @@ struct IncrementalLightmapper::Impl
         const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
         const ea::vector<Light*> relevantLights = collector_->GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
         const ea::vector<StaticModel*> uniqueStaticModels = collector_->GetUniqueStaticModels(chunk);
+
+        // Bake geometry buffers
+        const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
+            context_, uniqueStaticModels, lightmapSettings_.charting_.chartSize_, lightmapSettings_.geometryBaking_);
+        LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScenes.bakingScenes_);
+
+        ea::vector<unsigned> lightmapsInChunk;
+        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+            lightmapsInChunk.push_back(geometryBuffer.index_);
 
         // Collect shadow casters for direct lighting
         ea::hash_set<StaticModel*> relevantStaticModels;
@@ -339,6 +331,42 @@ struct IncrementalLightmapper::Impl
         const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
         const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, staticModels, uvChannel);
 
+        // Match embree geometries and geometry buffer
+        ea::vector<EmbreeGeometry> embreeGeometriesSorted = embreeScene->GetEmbreeGeometryIndex();
+        bool matching = geometryBakingScenes.idToObject_.size() <= embreeGeometriesSorted.size() + 1;
+        if (matching)
+        {
+            ea::sort(embreeGeometriesSorted.begin(), embreeGeometriesSorted.end(), CompareEmbreeGeometryByObject);
+            for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
+            {
+                const EmbreeGeometry& embreeGeometry = embreeGeometriesSorted[i - 1];
+                const GeometryIDToObjectMapping& mapping = geometryBakingScenes.idToObject_[i];
+                if (embreeGeometry.objectIndex_ != mapping.objectIndex_
+                    || embreeGeometry.geometryIndex_ != mapping.geometryIndex_
+                    || embreeGeometry.lodIndex_ != mapping.lodIndex_)
+                {
+                    matching = false;
+                    break;
+                }
+            }
+        }
+
+        if (!matching)
+        {
+            for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+                ea::fill(geometryBuffer.geometryIds_.begin(), geometryBuffer.geometryIds_.end(), 0u);
+
+            URHO3D_LOGERROR("Cannot match Embree geometries with lightmap G-Buffer");
+        }
+
+        ea::vector<unsigned> geometryBufferToEmbreeGeometry;
+        geometryBufferToEmbreeGeometry.resize(geometryBakingScenes.idToObject_.size(), M_MAX_UNSIGNED);
+        if (matching)
+        {
+            for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
+                geometryBufferToEmbreeGeometry[i] = embreeGeometriesSorted[i - 1].embreeGeometryId_;
+        }
+
         // Collect lights
         ea::vector<BakedDirectLight> bakedLights;
         for (Light* light : relevantLights)
@@ -355,7 +383,16 @@ struct IncrementalLightmapper::Impl
         }
 
         // Store result in the cache
-        cache_->StoreChunkVicinity(chunk, { embreeScene, bakedLights, lightProbesCollection });
+        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+            cache_->StoreGeometryBuffer(geometryBuffer.index_, ea::move(geometryBuffer));
+
+        LightmapChunkVicinity chunkVicinity;
+        chunkVicinity.lightmaps_ = lightmapsInChunk;
+        chunkVicinity.embreeScene_ = embreeScene;
+        chunkVicinity.geometryBufferToEmbree_ = geometryBufferToEmbreeGeometry;
+        chunkVicinity.bakedLights_ = bakedLights;
+        chunkVicinity.lightProbesCollection_ = lightProbesCollection;
+        cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -371,10 +408,9 @@ struct IncrementalLightmapper::Impl
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::shared_ptr<const LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-        const ea::vector<unsigned> lightmapsInChunk = cache_->GetLightmapsForChunk(chunk);
 
         // Bake direct lighting
-        for (unsigned lightmapIndex : lightmapsInChunk)
+        for (unsigned lightmapIndex : chunkVicinity->lightmaps_)
         {
             const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
                 cache_->LoadGeometryBuffer(lightmapIndex);
@@ -422,7 +458,6 @@ struct IncrementalLightmapper::Impl
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::shared_ptr<LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-        const ea::vector<unsigned> lightmapsInChunk = cache_->GetLightmapsForChunk(chunk);
 
         // Collect required direct lightmaps
         ea::hash_set<unsigned> requiredDirectLightmaps;
@@ -444,7 +479,7 @@ struct IncrementalLightmapper::Impl
         BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
 
         // Bake indirect lighting for charts
-        for (unsigned lightmapIndex : lightmapsInChunk)
+        for (unsigned lightmapIndex : chunkVicinity->lightmaps_)
         {
             const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
                 cache_->LoadGeometryBuffer(lightmapIndex);
@@ -567,8 +602,8 @@ bool IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings
 void IncrementalLightmapper::ProcessScene()
 {
     // Generate charts
-    LocalChunkProcessingContext chartingContext;
-    while (!impl_->StepLocalChunkProcessing(chartingContext))
+    ChartingContext chartingContext;
+    while (!impl_->StepCharting(chartingContext))
         ;
 
     // Reference generated charts by the scene

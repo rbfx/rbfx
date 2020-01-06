@@ -90,17 +90,24 @@ struct LightmapGeometryBakingScene
     Camera* camera_{};
     /// Baking render path.
     SharedPtr<RenderPath> renderPath_;
-    /// Mapping between ID in geometry buffer and object.
-    GeometryIDToObjectMappingVector geometryMapping_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
+};
+
+/// Baking scenes for the set of lightmap charts.
+struct LightmapGeometryBakingScenesArray
+{
+    /// Baking scenes.
+    ea::vector<LightmapGeometryBakingScene> bakingScenes_;
+    /// Geometry buffer ID to object mapping.
+    GeometryIDToObjectMappingVector idToObject_;
 };
 
 /// Load render path.
 URHO3D_API SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName);
 
 /// Generate baking scenes for lightmap charts.
-URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
+URHO3D_API LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     Context* context, const ea::vector<StaticModel*>& staticModels,
     unsigned chartSize, const LightmapGeometryBakingSettings& settings);
 
@@ -126,8 +133,6 @@ struct LightmapChartGeometryBuffer
     ea::vector<Vector3> faceNormals_;
     /// Geometry IDs.
     ea::vector<unsigned> geometryIds_;
-    /// Mapping between ID in geometry buffer and object.
-    GeometryIDToObjectMappingVector geometryMapping_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
 

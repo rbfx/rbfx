@@ -49,9 +49,23 @@ struct EmbreeGeometry
     unsigned lodIndex_{};
     /// Lightmap chart index.
     unsigned lightmapIndex_{};
+    /// Embree geometry ID.
+    unsigned embreeGeometryId_{};
     /// Internal geometry pointer.
     RTCGeometry embreeGeometry_{};
 };
+
+/// Compare Embree geometries by objects (less).
+inline bool CompareEmbreeGeometryByObject(const EmbreeGeometry& lhs, const EmbreeGeometry& rhs)
+{
+    if (lhs.objectIndex_ != rhs.objectIndex_)
+        return lhs.objectIndex_ < rhs.objectIndex_;
+
+    if (lhs.geometryIndex_ != rhs.geometryIndex_)
+        return lhs.geometryIndex_ < rhs.geometryIndex_;
+
+    return lhs.lodIndex_ < rhs.lodIndex_;
+}
 
 /// Calculate bounding box of nodes. Only StaticModel and TerrainPatch are processed.
 URHO3D_API BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes, bool padIfZero = false);
@@ -73,15 +87,15 @@ public:
     /// Destruct.
     ~EmbreeScene() override;
 
-    /// Get context.
+    /// Return context.
     Context* GetContext() const { return context_; }
-    /// Get Embree device.
+    /// Return Embree device.
     RTCDevice GetEmbreeDevice() const { return device_; }
-    /// Get Embree scene.
+    /// Return Embree scene.
     RTCScene GetEmbreeScene() const { return scene_; }
-    /// Get Embree geometries.
+    /// Return Embree geometries.
     const ea::vector<EmbreeGeometry>& GetEmbreeGeometryIndex() const { return geometries_; }
-    /// Get max distance between two points.
+    /// Return max distance between two points.
     float GetMaxDistance() const { return maxDistance_; }
 
 private:
