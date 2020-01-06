@@ -34,6 +34,20 @@ namespace Urho3D
 class Camera;
 class Context;
 
+/// Used for mapping between geometry ID in geometry buffer and actual geometry.
+struct GeometryIDToObjectMapping
+{
+    /// Index of the object in the array.
+    unsigned objectIndex_{ M_MAX_UNSIGNED };
+    /// Index of object geometry within the object.
+    unsigned geometryIndex_{ M_MAX_UNSIGNED };
+    /// Index of geometry LOD.
+    unsigned lodIndex_{ M_MAX_UNSIGNED };
+};
+
+/// Vector of geometry mapping.
+using GeometryIDToObjectMappingVector = ea::vector<GeometryIDToObjectMapping>;
+
 /// Lightmap seam description.
 struct LightmapSeam
 {
@@ -75,6 +89,8 @@ struct LightmapGeometryBakingScene
     Camera* camera_{};
     /// Baking render path.
     SharedPtr<RenderPath> renderPath_;
+    /// Mapping between ID in geometry buffer and object.
+    GeometryIDToObjectMappingVector geometryMapping_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
 };
@@ -112,6 +128,8 @@ struct LightmapChartGeometryBuffer
     ea::vector<Vector3> faceNormals_;
     /// Geometry IDs.
     ea::vector<unsigned> geometryIds_;
+    /// Mapping between ID in geometry buffer and object.
+    GeometryIDToObjectMappingVector geometryMapping_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
 

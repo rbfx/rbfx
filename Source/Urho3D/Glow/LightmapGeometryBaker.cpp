@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Math/BoundingBox.h"
+#include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
@@ -127,6 +128,8 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
         URHO3D_LOGERROR("Failed to import model \"{}\"", model->GetName());
         return {};
     }
+
+    const bool sharedLightmapUV = modelView.GetMetadata(LightmapUVGenerationSettings::LightmapSharedUV).GetBool();
 
     // Calculate bounding box and step for spatial hashing
     const float positionEpsilon = M_LARGE_EPSILON;
@@ -278,6 +281,10 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                     seams.push_back(seam);
                 }
             }
+
+            // Skip the rest of lods if UVs are shared
+            if (sharedLightmapUV)
+                break;
         }
     }
     return seams;
@@ -353,50 +360,55 @@ LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context
     auto camera = scene->CreateComponent<Camera>();
     SetCameraBoundingBox(camera, boundingBox);
 
+    // Zero ID is reserved for invalid texels
+    GeometryIDToObjectMappingVector mapping;
+    mapping.push_back();
+
     // Replicate all elements in the scene
-    unsigned geometryId = 1;
     LightmapSeamVector seams;
-    for (const LightmapChartElement& element : chart.elements_)
+    for (unsigned objectIndex = 0; objectIndex < chart.elements_.size(); ++objectIndex)
     {
-        if (element.staticModel_)
+        const LightmapChartElement& element = chart.elements_[objectIndex];
+        if (!element.staticModel_)
+            continue;
+
+        Model* model = element.staticModel_->GetModel();
+        const Vector2 scale = element.region_.GetScale();
+        const Vector2 offset = element.region_.GetOffset();
+        const Vector4 scaleOffset = element.region_.GetScaleOffset();
+        const LightmapSeamVector& modelSeams = modelSeamsCache[model];
+        const unsigned geometryId = mapping.size();
+
+        // Add seams
+        for (const LightmapSeam& seam : modelSeams)
+            seams.push_back(seam.Transformed(scale, offset));
+
+        // Add model for each tap
+        for (unsigned tap = 0; tap < numMultiTapSamples; ++tap)
         {
-            Model* model = element.staticModel_->GetModel();
-            const Vector2 scale = element.region_.GetScale();
-            const Vector2 offset = element.region_.GetOffset();
-            const Vector4 scaleOffset = element.region_.GetScaleOffset();
-            const LightmapSeamVector& modelSeams = modelSeamsCache[model];
+            const Vector2 tapOffset = multiTapOffsets[tap] * chart.GetTexelSize();
+            const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
+            const float tapDepth = 1.0f - static_cast<float>(tap) / (numMultiTapSamples - 1);
 
-            // Add seams
-            for (const LightmapSeam& seam : modelSeams)
-                seams.push_back(seam.Transformed(scale, offset));
+            auto material = bakingMaterial->Clone();
+            material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
+            material->SetShaderParameter("LightmapLayer", tapDepth);
+            material->SetShaderParameter("LightmapGeometry", static_cast<float>(geometryId));
 
-            // Add model for each tap
-            for (unsigned tap = 0; tap < numMultiTapSamples; ++tap)
-            {
-                const Vector2 tapOffset = multiTapOffsets[tap] * chart.GetTexelSize();
-                const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
-                const float tapDepth = 1.0f - static_cast<float>(tap) / (numMultiTapSamples - 1);
+            Node* node = scene->CreateChild();
+            node->SetPosition(element.node_->GetWorldPosition());
+            node->SetRotation(element.node_->GetWorldRotation());
+            node->SetScale(element.node_->GetWorldScale());
 
-                auto material = bakingMaterial->Clone();
-                material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
-                material->SetShaderParameter("LightmapLayer", tapDepth);
-                material->SetShaderParameter("LightmapGeometry", static_cast<float>(geometryId));
-
-                Node* node = scene->CreateChild();
-                node->SetPosition(element.node_->GetWorldPosition());
-                node->SetRotation(element.node_->GetWorldRotation());
-                node->SetScale(element.node_->GetWorldScale());
-
-                StaticModel* staticModel = node->CreateComponent<StaticModel>();
-                staticModel->SetModel(model);
-                staticModel->SetMaterial(material);
-            }
-
-            ++geometryId;
+            StaticModel* staticModel = node->CreateComponent<StaticModel>();
+            staticModel->SetModel(model);
+            staticModel->SetMaterial(material);
         }
+
+        mapping.push_back(GeometryIDToObjectMapping{ objectIndex, 0, 0 });
     }
 
-    return { context, chart.index_, chart.width_, chart.height_, chart.size_, scene, camera, renderPath, seams };
+    return { context, chart.index_, chart.width_, chart.height_, chart.size_, scene, camera, renderPath, mapping, seams };
 }
 
 ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
