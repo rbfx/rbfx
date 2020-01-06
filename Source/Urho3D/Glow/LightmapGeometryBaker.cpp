@@ -89,25 +89,6 @@ const Vector2 multiTapOffsets[numMultiTapSamples] =
     {  0.0f,  0.0f },
 };
 
-/// Set camera bounding box.
-void SetCameraBoundingBox(Camera* camera, const BoundingBox& boundingBox)
-{
-    Node* node = camera->GetNode();
-
-    const float zNear = 1.0f;
-    const float zFar = boundingBox.Size().z_ + zNear;
-    Vector3 position = boundingBox.Center();
-    position.z_ = boundingBox.min_.z_ - zNear;
-
-    node->SetPosition(position);
-    node->SetDirection(Vector3::FORWARD);
-
-    camera->SetOrthographic(true);
-    camera->SetOrthoSize(Vector2(boundingBox.Size().x_, boundingBox.Size().y_));
-    camera->SetNearClip(zNear);
-    camera->SetFarClip(zFar);
-}
-
 /// Pair of two ordered indices.
 using OrderedIndexPair = ea::pair<unsigned, unsigned>;
 
@@ -317,24 +298,33 @@ SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderP
     return renderPath;
 }
 
-LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,
-    const LightmapChart& chart, const LightmapGeometryBakingSettings& settings, SharedPtr<RenderPath> renderPath)
+ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
+    Context* context, const ea::vector<StaticModel*>& staticModels,
+    unsigned chartSize, const LightmapGeometryBakingSettings& settings)
 {
-    Material* bakingMaterial = context->GetCache()->GetResource<Material>(settings.materialName_);
+    const Vector2 texelSize{ 1.0f / chartSize, 1.0f / chartSize };
 
-    // Calculate bounding box and enumerate used models
-    BoundingBox boundingBox;
-    ea::hash_set<Model*> usedModels;
-    for (const LightmapChartElement& element : chart.elements_)
+    // Load resources
+    SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
+    if (!renderPath)
     {
-        if (element.staticModel_)
-        {
-            boundingBox.Merge(element.staticModel_->GetWorldBoundingBox());
-            usedModels.insert(element.staticModel_->GetModel());
-        }
+        URHO3D_LOGERROR("Cannot load render path \"{}\"", settings.renderPathName_);
+        return {};
     }
 
-    // Schedule model seams collecting.
+    Material* bakingMaterial = context->GetCache()->GetResource<Material>(settings.materialName_);
+    if (!bakingMaterial)
+    {
+        URHO3D_LOGERROR("Cannot load material \"{}\"", settings.materialName_);
+        return {};
+    }
+
+    // Collect used models
+    ea::hash_set<Model*> usedModels;
+    for (StaticModel* staticModel : staticModels)
+        usedModels.insert(staticModel->GetModel());
+
+    // Schedule model seams collecting
     ea::vector<std::future<ea::pair<Model*, LightmapSeamVector>>> collectSeamsTasks;
     for (Model* model : usedModels)
     {
@@ -354,66 +344,59 @@ LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context
         modelSeamsCache.emplace(result.first, ea::move(result.second));
     }
 
-    // Create scene and camera
-    auto scene = MakeShared<Scene>(context);
-    scene->CreateComponent<Octree>();
-
-    auto camera = scene->CreateComponent<Camera>();
-    SetCameraBoundingBox(camera, boundingBox);
-
     // Zero ID is reserved for invalid texels
     GeometryIDToObjectMappingVector mapping;
     mapping.push_back();
 
-    // Replicate all elements in the scene
-    LightmapSeamVector seams;
-    for (unsigned objectIndex = 0; objectIndex < chart.elements_.size(); ++objectIndex)
+    ea::unordered_map<unsigned, LightmapGeometryBakingScene> bakingScenes;
+    for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
     {
-        const LightmapChartElement& element = chart.elements_[objectIndex];
-        if (!element.staticModel_)
-            continue;
+        StaticModel* staticModel = staticModels[objectIndex];
+        Node* node = staticModel->GetNode();
+        const unsigned lightmapIndex = staticModel->GetLightmapIndex();
+        const Vector4 scaleOffset = staticModel->GetLightmapScaleOffset();
+        const Vector2 scale{ scaleOffset.x_, scaleOffset.y_ };
+        const Vector2 offset{ scaleOffset.z_, scaleOffset.w_ };
 
-        Model* model = element.staticModel_->GetModel();
-        const Vector2 scale = element.region_.GetScale();
-        const Vector2 offset = element.region_.GetOffset();
-        const Vector4 scaleOffset = element.region_.GetScaleOffset();
-        const LightmapSeamVector& modelSeams = modelSeamsCache[model];
-        const unsigned geometryId = mapping.size();
+        // Initialize baking scene if first hit
+        LightmapGeometryBakingScene& bakingScene = bakingScenes[lightmapIndex];
+        if (!bakingScene.context_)
+        {
+            bakingScene.context_ = context;
+            bakingScene.index_ = lightmapIndex;
+            bakingScene.width_ = chartSize;
+            bakingScene.height_ = chartSize;
+            bakingScene.size_ = IntVector2::ONE * static_cast<int>(chartSize);
+
+            bakingScene.scene_ = MakeShared<Scene>(context);
+            bakingScene.scene_->CreateComponent<Octree>();
+
+            bakingScene.camera_ = bakingScene.scene_->CreateComponent<Camera>();
+
+            bakingScene.renderPath_ = renderPath;
+        }
 
         // Add seams
+        const LightmapSeamVector& modelSeams = modelSeamsCache[staticModel->GetModel()];
         for (const LightmapSeam& seam : modelSeams)
-            seams.push_back(seam.Transformed(scale, offset));
+            bakingScene.seams_.push_back(seam.Transformed(scale, offset));
 
         // Add node
-        Node* node = scene->CreateChild();
-        node->SetPosition(element.node_->GetWorldPosition());
-        node->SetRotation(element.node_->GetWorldRotation());
-        node->SetScale(element.node_->GetWorldScale());
+        Node* bakingNode = bakingScene.scene_->CreateChild();
+        bakingNode->SetPosition(node->GetWorldPosition());
+        bakingNode->SetRotation(node->GetWorldRotation());
+        bakingNode->SetScale(node->GetWorldScale());
 
-        auto staticModelForLightmap = node->CreateComponent<StaticModelForLightmap>();
+        auto staticModelForLightmap = bakingNode->CreateComponent<StaticModelForLightmap>();
         const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
-            element.staticModel_, bakingMaterial, mapping.size(), multiTapOffsets, chart.GetTexelSize(), scaleOffset);
+            staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset);
 
         mapping.push_back(objectMapping);
     }
 
-    return { context, chart.index_, chart.width_, chart.height_, chart.size_, scene, camera, renderPath, mapping, seams };
-}
-
-ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
-    Context* context, const ea::vector<LightmapChart>& charts, const LightmapGeometryBakingSettings& settings)
-{
-    SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
-    if (!renderPath)
-    {
-        URHO3D_LOGERROR("Failed to load render path \"{}\"", settings.renderPathName_);
-        return {};
-    }
-
     ea::vector<LightmapGeometryBakingScene> result;
-    for (const LightmapChart& chart : charts)
-        result.push_back(GenerateLightmapGeometryBakingScene(context, chart, settings, renderPath));
-
+    for (auto& elem : bakingScenes)
+        result.push_back(ea::move(elem.second));
     return result;
 }
 

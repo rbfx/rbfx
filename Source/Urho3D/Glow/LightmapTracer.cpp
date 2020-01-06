@@ -27,6 +27,7 @@
 
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapTracer.h"
+#include "../IO/Log.h"
 
 #include <future>
 

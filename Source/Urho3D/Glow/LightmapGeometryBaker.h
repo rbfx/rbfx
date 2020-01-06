@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Glow/LightmapCharter.h"
+#include "../Graphics/LightmapSettings.h"
 #include "../Graphics/RenderPath.h"
 #include "../Scene/Scene.h"
 
@@ -33,6 +33,7 @@ namespace Urho3D
 
 class Camera;
 class Context;
+class StaticModel;
 
 /// Used for mapping between geometry ID in geometry buffer and actual geometry.
 struct GeometryIDToObjectMapping
@@ -98,13 +99,10 @@ struct LightmapGeometryBakingScene
 /// Load render path.
 URHO3D_API SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName);
 
-/// Generate lightmap geometry baking scene for lightmap chart.
-URHO3D_API LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context,
-    const LightmapChart& chart, const LightmapGeometryBakingSettings& settings, SharedPtr<RenderPath> bakeRenderPath);
-
 /// Generate baking scenes for lightmap charts.
-URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(Context* context,
-    const ea::vector<LightmapChart>& charts, const LightmapGeometryBakingSettings& settings);
+URHO3D_API ea::vector<LightmapGeometryBakingScene> GenerateLightmapGeometryBakingScenes(
+    Context* context, const ea::vector<StaticModel*>& staticModels,
+    unsigned chartSize, const LightmapGeometryBakingSettings& settings);
 
 /// Lightmap geometry buffer of lightmap chart.
 struct LightmapChartGeometryBuffer
@@ -172,6 +170,7 @@ using LightmapChartGeometryBufferVector = ea::vector<LightmapChartGeometryBuffer
 URHO3D_API LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBakingScene& bakingScene);
 
 /// Bake lightmap geometry buffer for lightmap charts.
-URHO3D_API LightmapChartGeometryBufferVector BakeLightmapGeometryBuffers(const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
+URHO3D_API LightmapChartGeometryBufferVector BakeLightmapGeometryBuffers(
+    const ea::vector<LightmapGeometryBakingScene>& bakingScenes);
 
 }

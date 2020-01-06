@@ -64,6 +64,7 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake!", getBake, setBake, bool, false, AM_EDIT);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, incrementalBakingSettings_.outputDirectory_, "", AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Lightmap Size", unsigned, lightmapSettings_.charting_.chartSize_, defaultLightmapSettings.charting_.chartSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Size", Vector3, incrementalBakingSettings_.chunkSize_, defaultIncrementalSettings.chunkSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, incrementalBakingSettings_.indirectPadding_, defaultIncrementalSettings.indirectPadding_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, incrementalBakingSettings_.directionalLightShadowDistance_, defaultIncrementalSettings.directionalLightShadowDistance_, AM_DEFAULT);

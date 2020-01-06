@@ -111,8 +111,9 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
 {
     const int maxRegionSize = static_cast<int>(settings.chartSize_ - settings.padding_ * 2);
     ea::vector<LightmapChart> charts;
-    for (StaticModel* staticModel : staticModels)
+    for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
     {
+        StaticModel* staticModel = staticModels[objectIndex];
         Node* node = staticModel->GetNode();
         const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
         const IntVector2 adjustedRegionSize = AdjustRegionSize(regionSize, maxRegionSize);
@@ -125,7 +126,7 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
                 node->GetName());
         }
 
-        const LightmapChartElement chartElement{ node, staticModel, region };
+        const LightmapChartElement chartElement{ node, staticModel, objectIndex, region };
         charts[region.chartIndex_].elements_.push_back(chartElement);
     }
     return charts;
