@@ -26,6 +26,7 @@
 #include "../IO/Log.h"
 #include "../Math/BoundingBox.h"
 #include "../Glow/LightmapUVGenerator.h"
+#include "../Glow/StaticModelForLightmap.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Material.h"
@@ -383,29 +384,17 @@ LightmapGeometryBakingScene GenerateLightmapGeometryBakingScene(Context* context
         for (const LightmapSeam& seam : modelSeams)
             seams.push_back(seam.Transformed(scale, offset));
 
-        // Add model for each tap
-        for (unsigned tap = 0; tap < numMultiTapSamples; ++tap)
-        {
-            const Vector2 tapOffset = multiTapOffsets[tap] * chart.GetTexelSize();
-            const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
-            const float tapDepth = 1.0f - static_cast<float>(tap) / (numMultiTapSamples - 1);
+        // Add node
+        Node* node = scene->CreateChild();
+        node->SetPosition(element.node_->GetWorldPosition());
+        node->SetRotation(element.node_->GetWorldRotation());
+        node->SetScale(element.node_->GetWorldScale());
 
-            auto material = bakingMaterial->Clone();
-            material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
-            material->SetShaderParameter("LightmapLayer", tapDepth);
-            material->SetShaderParameter("LightmapGeometry", static_cast<float>(geometryId));
+        auto staticModelForLightmap = node->CreateComponent<StaticModelForLightmap>();
+        const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
+            element.staticModel_, bakingMaterial, mapping.size(), multiTapOffsets, chart.GetTexelSize(), scaleOffset);
 
-            Node* node = scene->CreateChild();
-            node->SetPosition(element.node_->GetWorldPosition());
-            node->SetRotation(element.node_->GetWorldRotation());
-            node->SetScale(element.node_->GetWorldScale());
-
-            StaticModel* staticModel = node->CreateComponent<StaticModel>();
-            staticModel->SetModel(model);
-            staticModel->SetMaterial(material);
-        }
-
-        mapping.push_back(GeometryIDToObjectMapping{ objectIndex, 0, 0 });
+        mapping.push_back(objectMapping);
     }
 
     return { context, chart.index_, chart.width_, chart.height_, chart.size_, scene, camera, renderPath, mapping, seams };
@@ -478,6 +467,7 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
 
     graphics->EndFrame();
 
+    geometryBuffer.geometryMapping_ = bakingScene.geometryMapping_;
     geometryBuffer.seams_ = bakingScene.seams_;
     return geometryBuffer;
 }
