@@ -88,7 +88,7 @@ public:
     /// Return all scene chunks.
     ea::vector<IntVector3> GetChunks() override;
 
-    /// Return unique static models within chunk. Order of models must stay the same for each call.
+    /// Return unique static models within chunk.
     ea::vector<StaticModel*> GetUniqueStaticModels(const IntVector3& chunkIndex) override;
     /// Called after static models are changed externally.
     void CommitStaticModels(const IntVector3& chunkIndex) override;
