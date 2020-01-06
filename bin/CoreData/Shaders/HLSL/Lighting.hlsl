@@ -8,12 +8,14 @@ float3 GetAmbient(float zonePos)
 
 float3 GammaToLinearSpace(float3 color)
 {
-    return pow(max(color, float3(0, 0, 0)), 2.2);
+    return color * (color * (color * 0.305306011 + 0.682171111) + 0.012522878);
 }
 
 float3 LinearToGammaSpace(float3 color)
 {
-    return pow(max(color, float3(0, 0, 0)), 1 / 2.2);
+    const float p = 0.416666667;
+    color = max(color, float3(0.0, 0.0, 0.0));
+    return max(1.055 * pow(color, float3(p, p, p)) - 0.055, 0.0);
 }
 
 float3 EvaluateSH01(float4 normal, float4 SHAr, float4 SHAg, float4 SHAb)

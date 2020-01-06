@@ -260,7 +260,7 @@ struct SphericalHarmonicsDot9
     Color GetDebugColor() const
     {
         const Vector3 average = EvaluateAverage();
-        return { Pow(average.x_, 1 / 2.2f), Pow(average.y_, 1 / 2.2f), Pow(average.z_, 1 / 2.2f) };
+        return static_cast<Color>(average).LinearToGamma();
     }
 
     /// Dot product with (Nx, Ny, Nz, 1), red channel.
