@@ -34,6 +34,7 @@
 #include "../Graphics/Model.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
+#include "../Math/TetrahedralMesh.h"
 #include "../Resource/Image.h"
 #include "../Resource/ResourceCache.h"
 
@@ -478,6 +479,10 @@ struct IncrementalLightmapper::Impl
         chunkVicinity->lightProbesCollection_.ResetBakedData();
         BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
 
+        // Build light probes mesh for fallback indirect
+        TetrahedralMesh lightProbesMesh;
+        lightProbesMesh.Define(chunkVicinity->lightProbesCollection_.worldPositions_);
+
         // Bake indirect lighting for charts
         for (unsigned lightmapIndex : chunkVicinity->lightmaps_)
         {
@@ -488,7 +493,8 @@ struct IncrementalLightmapper::Impl
 
             // Bake indirect lights
             BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
-                *geometryBuffer, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
+                *geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
+                *chunkVicinity->embreeScene_, chunkVicinity->geometryBufferToEmbree_, lightmapSettings_.tracing_);
 
             // Filter indirect
             bakedIndirect.NormalizeLight();
