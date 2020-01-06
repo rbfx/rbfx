@@ -78,6 +78,8 @@ struct LightmapChartElement
     Node* node_{};
     /// Static model component.
     StaticModel* staticModel_{};
+    /// Object index, unique within array of charts.
+    unsigned objectIndex_{};
     /// Allocated region.
     LightmapChartRegion region_;
 };
@@ -109,8 +111,6 @@ struct LightmapChart
         , allocator_{ size_.x_, size_.y_, 0, 0, false }
     {
     }
-    /// Return size of the lightmap texel, in UV.
-    Vector2 GetTexelSize() const { return { 1.0f / width_, 1.0f / height_ }; }
 };
 
 /// Vector of lightmap charts.

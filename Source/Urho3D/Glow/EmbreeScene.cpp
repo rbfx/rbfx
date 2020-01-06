@@ -31,6 +31,7 @@
 #include "../Graphics/Terrain.h"
 #include "../Graphics/TerrainPatch.h"
 #include "../Glow/EmbreeScene.h"
+#include "../IO/Log.h"
 
 #include <future>
 
@@ -94,23 +95,23 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
 }
 
 /// Create Embree geometry from parsed model.
-ea::vector<EmbreeGeometry> CreateEmbreeGeometryArray(RTCDevice embreeDevice, ModelView* modelView, Node* node,
+ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
+    RTCDevice embreeDevice, ModelView* modelView, Node* node, unsigned objectIndex,
     unsigned lightmapIndex, const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel)
 {
     ea::vector<EmbreeGeometry> result;
 
-    unsigned geometryIndex = 0;
-    for (const GeometryView& geometryView : modelView->GetGeometries())
+    const ea::vector<GeometryView> geometries = modelView->GetGeometries();
+    for (unsigned geometryIndex = 0; geometryIndex < geometries.size(); ++geometryIndex)
     {
-        unsigned geometryLod = 0;
-        for (const GeometryLODView& geometryLODView : geometryView.lods_)
+        const GeometryView& geometryView = geometries[geometryIndex];
+        for (unsigned lodIndex = 0; lodIndex < geometryView.lods_.size(); ++lodIndex)
         {
+            const GeometryLODView& geometryLODView = geometryView.lods_[lodIndex];
             const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView,
                 node, lightmapUVScale, lightmapUVOffset, uvChannel);
-            result.push_back(EmbreeGeometry{ node, geometryIndex, geometryLod, lightmapIndex, embreeGeometry });
-            ++geometryLod;
+            result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex, lightmapIndex, embreeGeometry });
         }
-        ++geometryIndex;
     }
     return result;
 }
@@ -167,16 +168,19 @@ EmbreeScene::~EmbreeScene()
 
 SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned uvChannel)
 {
-    // Load models
-    ea::vector<std::future<ParsedModelKeyValue>> asyncParsedModels;
+    // Queue models for parsing
+    ea::hash_set<Model*> modelsToParse;
     for (StaticModel* staticModel : staticModels)
-    {
-        asyncParsedModels.push_back(std::async(ParseModelForEmbree, staticModel->GetModel()));
-    }
+        modelsToParse.insert(staticModel->GetModel());
 
-    // Prepare model cache
+    // Start model parsing
+    ea::vector<std::future<ParsedModelKeyValue>> modelParseTasks;
+    for (Model* model : modelsToParse)
+        modelParseTasks.push_back(std::async(ParseModelForEmbree, model));
+
+    // Finish model parsing
     ea::unordered_map<Model*, SharedPtr<ModelView>> parsedModelCache;
-    for (auto& asyncModel : asyncParsedModels)
+    for (auto& asyncModel : modelParseTasks)
     {
         const ParsedModelKeyValue& parsedModel = asyncModel.get();
         parsedModelCache.emplace(parsedModel.model_, parsedModel.parsedModel_);
@@ -187,16 +191,19 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
     const RTCScene scene = rtcNewScene(device);
 
     ea::vector<std::future<ea::vector<EmbreeGeometry>>> asyncEmbreeGeometries;
-    for (StaticModel* staticModel : staticModels)
+    for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
     {
+        StaticModel* staticModel = staticModels[objectIndex];
+
         const unsigned lightmapIndex = staticModel->GetLightmapIndex();
         const Vector4 lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
         const Vector2 lightmapUVScale{ lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
         const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
 
         ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-        asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometryArray,
-            device, parsedModel, staticModel->GetNode(), lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
+        asyncEmbreeGeometries.push_back(std::async(CreateEmbreeGeometriesForModel,
+            device, parsedModel, staticModel->GetNode(),
+            objectIndex, lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
     }
 
     // Collect and attach Embree geometries

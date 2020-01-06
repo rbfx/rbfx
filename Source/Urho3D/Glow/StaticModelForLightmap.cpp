@@ -77,7 +77,7 @@ GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(
             {
                 const Vector2 tapOffset = multiTapOffsets[tap] * texelSize;
                 const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
-                const float tapDepth = 1.0f - static_cast<float>(tap) / (multiTapOffsets.size() - 1);
+                const float tapDepth = 1.0f - static_cast<float>(tap + 1) / (multiTapOffsets.size() + 1);
 
                 auto material = bakingMaterial->Clone();
                 material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
