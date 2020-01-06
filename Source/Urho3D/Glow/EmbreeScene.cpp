@@ -59,7 +59,7 @@ ParsedModelKeyValue ParseModelForEmbree(Model* model)
 
 /// Create Embree geometry from geometry view.
 RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& geometryLODView, Node* node,
-    const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel)
+    const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel, unsigned mask)
 {
     const Matrix3x4 worldTransform = node->GetWorldTransform();
     RTCGeometry embreeGeometry = rtcNewGeometry(embreeDevice, RTC_GEOMETRY_TYPE_TRIANGLE);
@@ -90,6 +90,7 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
     for (unsigned i = 0; i < geometryLODView.indices_.size(); ++i)
         indices[i] = geometryLODView.indices_[i];
 
+    rtcSetGeometryMask(embreeGeometry, mask);
     rtcCommitGeometry(embreeGeometry);
     return embreeGeometry;
 }
@@ -108,8 +109,9 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
         for (unsigned lodIndex = 0; lodIndex < geometryView.lods_.size(); ++lodIndex)
         {
             const GeometryLODView& geometryLODView = geometryView.lods_[lodIndex];
+            const unsigned mask = lodIndex == 0 ? EmbreeScene::PrimaryLODGeometry : EmbreeScene::SecondaryLODGeometry;
             const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView,
-                node, lightmapUVScale, lightmapUVOffset, uvChannel);
+                node, lightmapUVScale, lightmapUVOffset, uvChannel, mask);
             result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex,
                 lightmapIndex, M_MAX_UNSIGNED, embreeGeometry });
         }
@@ -190,6 +192,7 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
     // Prepare Embree scene
     const RTCDevice device = rtcNewDevice("");
     const RTCScene scene = rtcNewScene(device);
+    rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
 
     ea::vector<std::future<ea::vector<EmbreeGeometry>>> createEmbreeGeometriesTasks;
     for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
