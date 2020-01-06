@@ -59,20 +59,6 @@ void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
         task.wait();
 }
 
-/// Generate random quaternion.
-Quaternion RandomQuaternion()
-{
-    const float u1 = Random(1.0f);
-    const float u2 = Random(360.0f);
-    const float u3 = Random(360.0f);
-
-    const float su2 = Sin(u2);
-    const float cu2 = Cos(u2);
-    const float su3 = Sin(u3);
-    const float cu3 = Cos(u3);
-    return { Sqrt(1 - u1) * su2, Sqrt(1 - u1) * cu2, Sqrt(u1) * su3, Sqrt(u1) * cu3 };
-}
-
 /// Generate random direction.
 void RandomDirection(Vector3& result)
 {
@@ -143,6 +129,38 @@ float CalculateEdgeWeight(
     const float normalWeight = Pow(ea::max(0.0f, normal1.DotProduct(normal2)), normalPower);
 
     return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
+}
+
+/// Ray tracing context for direct light baking for charts.
+struct ChartsDirectContext : public RTCIntersectContext
+{
+    /// Current geometry.
+    const EmbreeGeometry* currentGeometry_{};
+    /// Geometry index.
+    const ea::vector<EmbreeGeometry>* geometryIndex_{};
+};
+
+/// Filter function for direct light baking for charts.
+void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
+{
+    const auto& ctx = static_cast<const ChartsDirectContext*>(args->context);
+    auto& hit = *reinterpret_cast<RTCHit*>(args->hit);
+    assert(args->N == 1);
+
+    // Ignore invalid
+    if (args->valid[0] == 0)
+        return;
+
+    const EmbreeGeometry& hitGeometry = (*ctx->geometryIndex_)[hit.geomID];
+
+    const bool hitLod = hitGeometry.lodIndex_ != 0;
+    const bool sameGeometry = ctx->currentGeometry_->objectIndex_ == hitGeometry.objectIndex_
+        && ctx->currentGeometry_->geometryIndex_ == hitGeometry.geometryIndex_;
+
+    const bool hitLodOfAnotherGeometry = !sameGeometry && hitLod;
+    const bool hitAnotherLodOfSameGeometry = sameGeometry && hitGeometry.lodIndex_ != ctx->currentGeometry_->lodIndex_;
+    if (hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry)
+        args->valid[0] = 0;
 }
 
 /// Indirect light tracing for charts: tracing element.
@@ -397,28 +415,32 @@ ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(
 }
 
 void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
+    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
     const Vector3 rayDirection = -light.direction_.Normalized();
     const float maxDistance = embreeScene.GetMaxDistance();
     const Vector3 lightColor = light.color_.ToVector3();
     RTCScene scene = embreeScene.GetEmbreeScene();
+    const ea::vector<EmbreeGeometry>& embreeGeometryIndex = embreeScene.GetEmbreeGeometryIndex();
 
     ParallelFor(bakedDirect.directLight_.size(), settings.numThreads_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCRayHit rayHit;
-        RTCIntersectContext rayContext;
+        ChartsDirectContext rayContext;
         rtcInitIntersectContext(&rayContext);
+        rayContext.geometryIndex_ = &embreeGeometryIndex;
+        rayContext.filter = TracingFilterForChartsDirect;
 
+        rayHit.ray.mask = EmbreeScene::AllGeometry;
         rayHit.ray.dir_x = rayDirection.x_;
         rayHit.ray.dir_y = rayDirection.y_;
         rayHit.ray.dir_z = rayDirection.z_;
         rayHit.ray.tnear = 0.0f;
         rayHit.ray.time = 0.0f;
         rayHit.ray.id = 0;
-        rayHit.ray.mask = 0xffffffff;
-        rayHit.ray.flags = 0xffffffff;
+        rayHit.ray.flags = 0;
 
         for (unsigned i = fromIndex; i < toIndex; ++i)
         {
@@ -428,6 +450,9 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 
             if (!geometryId)
                 continue;
+
+            const unsigned embreeGeometryId = geometryBufferToEmbree[geometryId];
+            rayContext.currentGeometry_ = &embreeGeometryIndex[embreeGeometryId];
 
             // Cast direct ray
             rayHit.ray.org_x = position.x_ + rayDirection.x_ * settings.rayPositionOffset_;
