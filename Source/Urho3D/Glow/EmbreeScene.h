@@ -74,6 +74,13 @@ URHO3D_API BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& node
 class URHO3D_API EmbreeScene : public RefCounted
 {
 public:
+    /// Mask for LOD 0.
+    static const unsigned PrimaryLODGeometry = 0x00000001;
+    /// Mask for LODs 1..N.
+    static const unsigned SecondaryLODGeometry = 0x00000002;
+    /// Mask for all geometry.
+    static const unsigned AllGeometry = 0xffffffff;
+
     /// Construct.
     EmbreeScene(Context* context, RTCDevice embreeDevice, RTCScene embreeScene,
         ea::vector<EmbreeGeometry> geometries, float maxDistance)

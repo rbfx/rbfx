@@ -133,7 +133,8 @@ struct DirectionalLightParameters
 
 /// Accumulate direct light from directional light.
 URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
+    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light.
 URHO3D_API void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
