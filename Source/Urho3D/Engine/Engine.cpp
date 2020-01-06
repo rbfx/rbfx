@@ -42,6 +42,9 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
+#ifdef URHO3D_GLOW
+#include "../Glow/StaticModelForLightmap.h"
+#endif
 #ifdef URHO3D_IK
 #include "../IK/IK.h"
 #endif
@@ -141,6 +144,11 @@ Engine::Engine(Context* context) :
 
     // Register object factories for libraries which are not automatically registered along with subsystem creation
     RegisterSceneLibrary(context_);
+
+#ifdef URHO3D_GLOW
+    // TODO(glow): Do we want to move this code into function like the others?
+    StaticModelForLightmap::RegisterObject(context_);
+#endif
 
 #ifdef URHO3D_IK
     RegisterIKLibrary(context_);
