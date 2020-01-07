@@ -189,6 +189,9 @@ void Editor::Setup()
     // Subcommands
     RegisterSubcommand<CookScene>();
     RegisterSubcommand<BuildAssets>();
+
+    keyBindings_.Bind(ActionType::OpenProject, this, &Editor::OpenOrCreateProject);
+    keyBindings_.Bind(ActionType::Exit, this, &Editor::OnExitHotkeyPressed);
 }
 
 void Editor::Start()
@@ -588,6 +591,12 @@ void Editor::OnExitRequested()
             preview->Stop();
     }
     exiting_ = true;
+}
+
+void Editor::OnExitHotkeyPressed()
+{
+    if (!exiting_)
+        OnExitRequested();
 }
 
 void Editor::CreateDefaultTabs()

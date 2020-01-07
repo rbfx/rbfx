@@ -429,6 +429,11 @@ void Editor::RenderSettingsWindow()
 
                 ui::EndTabItem();
             }
+            if (ui::BeginTabItem("Key Bindings"))
+            {
+                keyBindings_.RenderUI();
+                ui::EndTabItem();
+            }
             ImGui::EndTabBar();
         }
     }
@@ -444,12 +449,17 @@ void Editor::RenderSettingsWindow()
 
 bool Editor::Serialize(Archive& archive)
 {
-    if (auto windowBlock = archive.OpenUnorderedBlock("window"))
+    if (auto editorBlock = archive.OpenUnorderedBlock("editor"))
     {
-        SerializeValue(archive, "pos", windowPos_);
-        SerializeValue(archive, "size", windowSize_);
+        if (auto windowBlock = archive.OpenUnorderedBlock("window"))
+        {
+            SerializeValue(archive, "pos", windowPos_);
+            SerializeValue(archive, "size", windowSize_);
+        }
+        SerializeValue(archive, "recentProjects", recentProjects_);
+        if (!keyBindings_.Serialize(archive))
+            return false;
     }
-    SerializeValue(archive, "recentProjects", recentProjects_);
     return true;
 }
 
