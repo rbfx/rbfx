@@ -72,8 +72,8 @@ struct LightmapTracingSettings
 
     /// Ray position offset.
     float rayPositionOffset_{ 0.001f };
-    /// Number of threads to use.
-    unsigned numThreads_{ 8 };
+    /// Number of asynchronous tasks to use.
+    unsigned numTasks_{ M_MAX_UNSIGNED };
 };
 
 /// Lightmap filter settings.
