@@ -28,7 +28,9 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/IO/Log.h>
+#ifdef URHO3D_GLOW
 #include <Urho3D/Glow/LightmapUVGenerator.h>
+#endif
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/ModelView.h>
 
@@ -261,6 +263,7 @@ bool ResourceTab::RenderWindowContent()
             flags_ |= RBF_DELETE_CURRENT;
 
         // TODO(glow): Move it into separate addon
+#ifdef URHO3D_GLOW
         const bool modelSelected = resourceSelection_.ends_with(".mdl");
         if (modelSelected)
         {
@@ -286,6 +289,7 @@ bool ResourceTab::RenderWindowContent()
                 }
             }
         }
+#endif
 
         if (!hasSelection)
             ui::PopStyleColor();
