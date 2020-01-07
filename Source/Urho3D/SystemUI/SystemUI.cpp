@@ -464,3 +464,24 @@ bool ui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, con
 #endif
     return ImageButton(texture_id, size, uv0, uv1, frame_padding, bg_col, tint_col);
 }
+
+bool ui::IsKeyDown(Urho3D::Key key)
+{
+    return IsKeyDown(SDL_GetScancodeFromKey(key));
+}
+
+bool ui::IsKeyPressed(Urho3D::Key key, bool repeat)
+{
+    return IsKeyPressed(SDL_GetScancodeFromKey(key), repeat);
+}
+
+bool ui::IsKeyReleased(Urho3D::Key key)
+{
+    return IsKeyReleased(SDL_GetScancodeFromKey(key));
+}
+
+int ui::GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate)
+{
+    return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeat_delay, rate);
+}
+

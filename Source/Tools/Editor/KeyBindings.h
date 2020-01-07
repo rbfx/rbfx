@@ -100,6 +100,8 @@ protected:
     void OnInputEnd(StringHash, VariantMap&);
     /// Returns a name of specified action.
     ea::string KeysToString(QualifierFlags qualifiers, Key key);
+    /// Returns mask of currently pressed qualifiers.
+    QualifierFlags GetCurrentQualifiers() const;
 
     ///
     KeyBoundAction actions_[ActionType::MaxCount]{};
