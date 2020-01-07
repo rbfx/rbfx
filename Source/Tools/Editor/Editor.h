@@ -25,6 +25,7 @@
 #include <Urho3D/Engine/Application.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 
+#include "KeyBindings.h"
 #include "Project.h"
 #include "Pipeline/Commands/SubCommand.h"
 
@@ -104,6 +105,9 @@ public:
     ///
     bool Serialize(Archive& archive) override;
 
+    /// Key bindings manager.
+    KeyBindings keyBindings_{context_};
+
 protected:
     /// Process console commands.
     void OnConsoleCommand(VariantMap& args);
@@ -111,6 +115,8 @@ protected:
     void OnEndFrame();
     /// Handle user closing editor window.
     void OnExitRequested();
+    /// Handle user closing editor with a hotkey.
+    void OnExitHotkeyPressed();
     /// Process any global hotkeys.
     void HandleHotkeys();
     /// Renders a project plugins submenu.
