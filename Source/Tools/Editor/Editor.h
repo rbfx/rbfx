@@ -25,7 +25,6 @@
 #include <Urho3D/Engine/Application.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 
-#include "EditorSettings.h"
 #include "Project.h"
 #include "Pipeline/Commands/SubCommand.h"
 
@@ -102,6 +101,8 @@ public:
     /// Register static plugin.
     bool RegisterPlugin(PluginApplication* plugin);
 #endif
+    ///
+    bool Serialize(Archive& archive) override;
 
 protected:
     /// Process console commands.
@@ -149,10 +150,14 @@ protected:
     ea::string defaultProjectPath_;
     ///
     ea::vector<SharedPtr<SubCommand>> subCommands_;
-    /// Global editor settings.
-    EditorUserSettings editorSettings_{context_};
     ///
     WeakPtr<Flavor> flavorPendingRemoval_;
+    ///
+    StringVector recentProjects_{};
+    ///
+    IntVector2 windowPos_{0, 0};
+    ///
+    IntVector2 windowSize_{1920, 1080};
 };
 
 }
