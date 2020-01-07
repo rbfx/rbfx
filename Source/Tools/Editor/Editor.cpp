@@ -139,13 +139,13 @@ void Editor::Setup()
             if (file.LoadFile(editorSettingsFile))
             {
                 JSONInputArchive archive(&file);
-                if (!editorSettings_.Serialize(archive))
+                if (!Serialize(archive))
                     URHO3D_LOGERROR("Loading of editor settings failed.");
 
-                engineParameters_[EP_WINDOW_WIDTH] = editorSettings_.WindowSize.x_;
-                engineParameters_[EP_WINDOW_HEIGHT] = editorSettings_.WindowSize.y_;
-                engineParameters_[EP_WINDOW_POSITION_X] = editorSettings_.WindowPos.x_;
-                engineParameters_[EP_WINDOW_POSITION_Y] = editorSettings_.WindowPos.y_;
+                engineParameters_[EP_WINDOW_WIDTH] = windowSize_.x_;
+                engineParameters_[EP_WINDOW_HEIGHT] = windowSize_.y_;
+                engineParameters_[EP_WINDOW_POSITION_X] = windowPos_.x_;
+                engineParameters_[EP_WINDOW_POSITION_Y] = windowPos_.y_;
             }
         }
     }
@@ -263,8 +263,8 @@ void Editor::Stop()
     {
         // Save window geometry
         auto* graphics = GetSubsystem<Graphics>();
-        editorSettings_.WindowPos = graphics->GetWindowPosition();
-        editorSettings_.WindowSize = graphics->GetSize();
+        windowPos_ = graphics->GetWindowPosition();
+        windowSize_ = graphics->GetSize();
 
         auto* fs = context_->GetFileSystem();
         ea::string editorSettingsDir = fs->GetAppPreferencesDir("rbfx", "Editor");
@@ -273,7 +273,7 @@ void Editor::Stop()
 
         JSONFile json(context_);
         JSONOutputArchive archive(&json);
-        if (editorSettings_.Serialize(archive))
+        if (Serialize(archive))
         {
             if (!json.SaveFile(editorSettingsDir + "Editor.json"))
                 URHO3D_LOGERROR("Saving of editor settings failed.");
@@ -364,7 +364,7 @@ void Editor::OnUpdate(VariantMap& args)
             explicit State(Editor* editor)
             {
                 FileSystem *fs = editor->GetContext()->GetFileSystem();
-                StringVector& recents = editor->editorSettings_.RecentProjects;
+                StringVector& recents = editor->recentProjects_;
                 snapshots_.resize(recents.size());
                 for (int i = 0; i < recents.size();)
                 {
@@ -388,7 +388,7 @@ void Editor::OnUpdate(VariantMap& args)
         };
 
         auto* state = ui::GetUIState<State>(this);
-        const StringVector& recents = editorSettings_.RecentProjects;
+        const StringVector& recents = recentProjects_;
 
         int index = 0;
         for (int row = 0; row < 3; row++)
@@ -556,7 +556,7 @@ void Editor::OnEndFrame()
         {
             auto* fs = context_->GetFileSystem();
             loadDefaultLayout_ = project_->IsNewProject();
-            StringVector& recents = editorSettings_.RecentProjects;
+            StringVector& recents = recentProjects_;
             // Remove latest project if it was already opened or any projects that no longer exists.
             for (auto it = recents.begin(); it != recents.end();)
             {

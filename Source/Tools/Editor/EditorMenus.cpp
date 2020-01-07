@@ -54,7 +54,7 @@ void Editor::RenderMenuBar()
             if (ui::MenuItem("Open/Create Project"))
                 OpenOrCreateProject();
 
-            StringVector & recents = editorSettings_.RecentProjects;
+            StringVector & recents = recentProjects_;
             // Does not show very first item, which is current project
             if (recents.size() == (project_.NotNull() ? 1 : 0))
             {
