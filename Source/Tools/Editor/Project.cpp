@@ -80,6 +80,10 @@ Project::Project(Context* context)
     });
     context_->RegisterSubsystem(pipeline_);
     context_->RegisterSubsystem(plugins_);
+
+    // Key bindings
+    auto* editor = GetSubsystem<Editor>();
+    editor->keyBindings_.Bind(ActionType::SaveProject, this, &Project::SaveProject);
 }
 
 Project::~Project()
