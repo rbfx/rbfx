@@ -27,7 +27,6 @@
 
 #include "Editor.h"
 #include "Plugins/ModulePlugin.h"
-#include "EditorSettings.h"
 
 
 namespace Urho3D
@@ -443,19 +442,14 @@ void Editor::RenderSettingsWindow()
     }
 }
 
-EditorUserSettings::EditorUserSettings(Context* context)
-    : Object(context)
-{
-}
-
-bool EditorUserSettings::Serialize(Archive& archive)
+bool Editor::Serialize(Archive& archive)
 {
     if (auto windowBlock = archive.OpenUnorderedBlock("window"))
     {
-        SerializeValue(archive, "pos", WindowPos);
-        SerializeValue(archive, "size", WindowSize);
+        SerializeValue(archive, "pos", windowPos_);
+        SerializeValue(archive, "size", windowSize_);
     }
-    SerializeValue(archive, "recentProjects", RecentProjects);
+    SerializeValue(archive, "recentProjects", recentProjects_);
     return true;
 }
 
