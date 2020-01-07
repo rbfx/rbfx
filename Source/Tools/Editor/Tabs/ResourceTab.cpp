@@ -28,7 +28,9 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Glow/LightmapUVGenerator.h>
 #include <Urho3D/Graphics/Octree.h>
+#include <Urho3D/Graphics/ModelView.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/IO/ContentUtilities.h>
@@ -257,6 +259,33 @@ bool ResourceTab::RenderWindowContent()
 
         if (ui::MenuItem("Delete", "Del") && hasSelection)
             flags_ |= RBF_DELETE_CURRENT;
+
+        // TODO(glow): Move it into separate addon
+        const bool modelSelected = resourceSelection_.ends_with(".mdl");
+        if (modelSelected)
+        {
+            ui::Separator();
+
+            if (ui::MenuItem("Generate Lightmap UV", nullptr, nullptr) && hasSelection)
+            {
+                auto model = context_->GetCache()->GetResource<Model>(resourcePath_ + resourceSelection_);
+                if (model && !model->GetNativeFileName().empty())
+                {
+                    ModelView modelView(context_);
+                    if (modelView.ImportModel(model))
+                    {
+                        if (GenerateLightmapUV(modelView, {}))
+                        {
+                            model->SendEvent(E_RELOADSTARTED);
+                            modelView.ExportModel(model);
+                            model->SendEvent(E_RELOADFINISHED);
+
+                            model->SaveFile(model->GetNativeFileName());
+                        }
+                    }
+                }
+            }
+        }
 
         if (!hasSelection)
             ui::PopStyleColor();
