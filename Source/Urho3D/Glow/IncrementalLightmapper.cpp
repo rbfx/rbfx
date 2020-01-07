@@ -163,6 +163,10 @@ struct IncrementalLightmapper::Impl
     /// Initialize.
     bool Initialize()
     {
+        // Find number of tasks
+        if (lightmapSettings_.tracing_.numTasks_ == M_MAX_UNSIGNED)
+            lightmapSettings_.tracing_.numTasks_ = lightmapSettings_.charting_.chartSize_;
+
         // Find or fix output directory
         if (incrementalSettings_.outputDirectory_.empty())
         {
@@ -498,7 +502,7 @@ struct IncrementalLightmapper::Impl
 
             // Filter indirect
             bakedIndirect.NormalizeLight();
-            FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numThreads_);
+            FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numTasks_);
 
             // Stitch seams
             if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer->seams_.empty())
