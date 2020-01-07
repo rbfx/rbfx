@@ -39,7 +39,7 @@ struct LightmapChartingSettings
     /// Padding between individual objects on the chart.
     unsigned padding_{ 1 };
     /// Texel density in texels per Scene unit.
-    unsigned texelDensity_{ 10 };
+    float texelDensity_{ 10 };
     /// Minimal scale of object lightmaps.
     /// Values below 1 may cause lightmap bleeding due to insufficient padding.
     /// Values above 0 may cause inconsistent lightmap density if object scale is too small.
