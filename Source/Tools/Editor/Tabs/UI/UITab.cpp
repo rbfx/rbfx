@@ -298,24 +298,24 @@ void UITab::RenderToolbarButtons()
 
 void UITab::OnActiveUpdate()
 {
-    Input* input = GetSubsystem<Input>();
     if (!ui::IsAnyItemActive())
     {
         if (auto selected = GetSelected())
         {
-            if (input->GetKeyPress(KEY_DELETE))
+            if (ui::IsKeyPressed(KEY_DELETE))
             {
                 selected->Remove();
-                SelectItem(nullptr);    // Undo system still holds a reference to removed element therefore we must
-                                        // manually clear selectedElement_
+                SelectItem(nullptr);    // Undo system still holds a reference to removed element therefore we
+                                                // must manually clear selectedElement_.
             }
         }
     }
 
     if (!ui::IsAnyItemActive() && !ui::IsAnyItemHovered())
     {
-        if (input->GetMouseButtonPress(MOUSEB_LEFT) || input->GetMouseButtonPress(MOUSEB_RIGHT))
+        if (ui::IsMouseReleased(MOUSEB_LEFT) || ui::IsMouseReleased(MOUSEB_RIGHT))
         {
+            Input* input = GetSubsystem<Input>();
             IntVector2 pos = rootElement_->ScreenToElement(input->GetMousePosition());
             UIElement* clicked = offScreenUI_->GetElementAt(pos, false);
             if (!clicked && rootElement_->GetCombinedScreenRect().IsInside(pos) == INSIDE && !ui::IsWindowHovered(ImGuiHoveredFlags_AnyWindow))
@@ -325,7 +325,7 @@ void UITab::OnActiveUpdate()
             {
                 SelectItem(clicked);
 
-                if (input->GetMouseButtonPress(MOUSEB_RIGHT))
+                if (ui::IsMouseReleased(MOUSEB_RIGHT))
                     ui::OpenPopup("Element Context Menu");
             }
         }
@@ -541,7 +541,7 @@ void UITab::RenderElementContextMenu()
             for (const ea::string& component : components)
             {
                 // TODO: element creation with custom styles more usable.
-                if (GetSubsystem<Input>()->GetKeyDown(KEY_SHIFT))
+                if (ui::IsKeyDown(KEY_SHIFT))
                 {
                     ui::Image(component);
                     ui::SameLine();

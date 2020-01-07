@@ -132,6 +132,10 @@ URHO3D_API bool SetDragDropVariant(const char* type, const Urho3D::Variant& vari
 URHO3D_API const Urho3D::Variant& AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags = 0);
 URHO3D_API void Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), const ImVec4& tint_col = ImVec4(1, 1, 1, 1), const ImVec4& border_col = ImVec4(0, 0, 0, 0));
 URHO3D_API bool ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0 = ImVec2(0, 0), const ImVec2& uv1 = ImVec2(1, 1), int frame_padding = -1, const ImVec4 & bg_col = ImVec4(0, 0, 0, 0), const ImVec4 & tint_col = ImVec4(1, 1, 1, 1));
+URHO3D_API bool IsKeyDown(Urho3D::Key key);
+URHO3D_API bool IsKeyPressed(Urho3D::Key key, bool repeat = true);
+URHO3D_API bool IsKeyReleased(Urho3D::Key key);
+URHO3D_API int GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate);
 
 }
 

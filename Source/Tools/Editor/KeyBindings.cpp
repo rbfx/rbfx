@@ -110,13 +110,7 @@ void KeyBindings::RenderUI()
                 if (ui::IsKeyPressed(scancode))
                 {
                     Key pressedKey = static_cast<Key>(SDL_GetKeyFromScancode(scancode));
-                    QualifierFlags  pressedQualifiers = QUAL_NONE;
-                    if (io.KeyShift)
-                        pressedQualifiers |= QUAL_SHIFT;
-                    if (io.KeyCtrl)
-                        pressedQualifiers |= QUAL_CTRL;
-                    if (io.KeyAlt)
-                        pressedQualifiers |= QUAL_ALT;
+                    QualifierFlags pressedQualifiers = GetCurrentQualifiers();
 
                     // Clear existing key binding
                     for (int j = 0; j < ActionType::MaxCount; j++)
@@ -181,15 +175,14 @@ void KeyBindings::OnInputEnd(StringHash, VariantMap&)
         return;
     }
 
-    Input* input = GetSubsystem<Input>();
     for (KeyBoundAction& action : actions_)
     {
-        QualifierFlags qualifiersDown = input->GetQualifiers() & action.qualifiers_;
+        QualifierFlags qualifiersDown = GetCurrentQualifiers() & action.qualifiers_;
         bool keyDown = false;
         if (qualifiersDown == action.qualifiers_)
         {
-            bool keyPressed = input->GetKeyPress(action.key_);
-            keyDown = keyPressed || input->GetKeyDown(action.key_);
+            bool keyPressed = ui::IsKeyPressed(action.key_);
+            keyDown = keyPressed || ui::IsKeyDown(action.key_);
             if (keyPressed)
                 action.onPressed_(this);
         }
@@ -214,6 +207,19 @@ ea::string KeyBindings::KeysToString(QualifierFlags qualifiers, Key key)
 const char* KeyBindings::GetKeyCombination(ActionType actionType)
 {
     return actions_[actionType].binding_.c_str();
+}
+
+QualifierFlags KeyBindings::GetCurrentQualifiers() const
+{
+    const ImGuiIO& io = ui::GetIO();
+    QualifierFlags  pressedQualifiers = QUAL_NONE;
+    if (io.KeyShift)
+        pressedQualifiers |= QUAL_SHIFT;
+    if (io.KeyCtrl)
+        pressedQualifiers |= QUAL_CTRL;
+    if (io.KeyAlt)
+        pressedQualifiers |= QUAL_ALT;
+    return pressedQualifiers;
 }
 
 }
