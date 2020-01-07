@@ -41,10 +41,10 @@ struct URHO3D_API LightmapUVGenerationSettings
     /// Metadata key for shared lightmap UV flag.
     static const ea::string LightmapSharedUV;
 
+    /// Texels per unit.
+    float texelPerUnit_{ 10 };
     /// UV channel to write. 2nd channel by default.
     unsigned uvChannel_{ 1 };
-    /// Minimal texel density.
-    unsigned minDensity_{ 10 };
 };
 
 /// Generate lightmap UVs for the model.
