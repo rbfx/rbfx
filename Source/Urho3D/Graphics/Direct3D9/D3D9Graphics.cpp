@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -522,6 +522,8 @@ bool Graphics::SetMode(int width, int height, bool fullscreen, bool borderless, 
         msg.append(" borderless");
     if (resizable_)
         msg.append(" resizable");
+    if (highDPI_)
+        msg.append(" highDPI");
     if (multiSample > 1)
         msg.append_sprintf(" multisample %d", multiSample);
     URHO3D_LOGINFO(msg);
