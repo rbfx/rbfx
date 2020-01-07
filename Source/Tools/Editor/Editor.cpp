@@ -584,13 +584,10 @@ void Editor::OnExitRequested()
 {
     if (auto* preview = GetTab<PreviewTab>())
     {
-        if (preview->GetSceneSimulationStatus() == SCENE_SIMULATION_STOPPED)
-            exiting_ = true;
-        else
+        if (preview->GetSceneSimulationStatus() != SCENE_SIMULATION_STOPPED)
             preview->Stop();
     }
-    else
-        exiting_ = true;
+    exiting_ = true;
 }
 
 void Editor::CreateDefaultTabs()
