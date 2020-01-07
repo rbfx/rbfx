@@ -77,7 +77,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
     // Generate things
     xatlas::PackOptions packOptions;
-    packOptions.texelsPerUnit = settings.minDensity_;
+    packOptions.texelsPerUnit = settings.texelPerUnit_;
 
     xatlas::AddMeshJoin(atlas.get());
     xatlas::Generate(atlas.get(), {}, nullptr, packOptions);
@@ -119,7 +119,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
     modelView.SetVertexFormat(vertexFormat);
 
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSizeKey, atlasSize);
-    modelView.AddMetadata(LightmapUVGenerationSettings::LightmapDensityKey, settings.minDensity_);
+    modelView.AddMetadata(LightmapUVGenerationSettings::LightmapDensityKey, settings.texelPerUnit_);
     modelView.AddMetadata(LightmapUVGenerationSettings::LightmapSharedUV, false);
 
     return true;
