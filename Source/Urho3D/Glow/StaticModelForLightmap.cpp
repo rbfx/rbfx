@@ -35,8 +35,6 @@
 namespace Urho3D
 {
 
-extern const char* GEOMETRY_CATEGORY;
-
 StaticModelForLightmap::StaticModelForLightmap(Context* context) :
     Drawable(context, DRAWABLE_GEOMETRY)
 {
@@ -46,7 +44,7 @@ StaticModelForLightmap::~StaticModelForLightmap() = default;
 
 void StaticModelForLightmap::RegisterObject(Context* context)
 {
-    context->RegisterFactory<StaticModelForLightmap>(GEOMETRY_CATEGORY);
+    context->RegisterFactory<StaticModelForLightmap>();
 }
 
 GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(
