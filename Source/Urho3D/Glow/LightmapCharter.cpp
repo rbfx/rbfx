@@ -35,14 +35,14 @@ namespace
 {
 
 /// Calculate lightmap size for given model with given scale.
-IntVector2 CalculateModelLightmapSize(unsigned texelDensity, float minObjectScale,
+IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
     Model* model, const Vector3& scale)
 {
     const Variant& modelLightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
     const Variant& modelLightmapDensityVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapDensityKey);
 
     const auto modelLightmapSize = static_cast<Vector2>(modelLightmapSizeVar.GetIntVector2());
-    const unsigned modelLightmapDensity = modelLightmapDensityVar.GetUInt();
+    const float modelLightmapDensity = modelLightmapDensityVar.GetFloat();
 
     const float nodeScale = ea::max({ scale.x_, scale.y_, scale.z_ });
     const float rescaleFactor = nodeScale * static_cast<float>(texelDensity) / modelLightmapDensity;
