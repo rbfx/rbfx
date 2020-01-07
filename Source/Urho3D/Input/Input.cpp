@@ -1883,6 +1883,19 @@ void Input::HandleSDLEvent(void* sdlEvent)
 {
     SDL_Event& evt = *static_cast<SDL_Event*>(sdlEvent);
 
+    // Possibility for custom handling or suppression of default handling for the SDL event
+    {
+        using namespace SDLRawInput;
+
+        VariantMap eventData = GetEventDataMap();
+        eventData[P_SDLEVENT] = &evt;
+        eventData[P_CONSUMED] = false;
+        SendEvent(E_SDLRAWINPUT, eventData);
+
+        if (eventData[P_CONSUMED].GetBool())
+            return;
+    }
+
     // While not having input focus, skip key/mouse/touch/joystick events, except for the "click to focus" mechanism
     if (!inputFocus_ && evt.type >= SDL_KEYDOWN && evt.type <= SDL_MULTIGESTURE)
     {
@@ -1903,19 +1916,6 @@ void Input::HandleSDLEvent(void* sdlEvent)
         }
         else
 #endif
-            return;
-    }
-
-    // Possibility for custom handling or suppression of default handling for the SDL event
-    {
-        using namespace SDLRawInput;
-
-        VariantMap eventData = GetEventDataMap();
-        eventData[P_SDLEVENT] = &evt;
-        eventData[P_CONSUMED] = false;
-        SendEvent(E_SDLRAWINPUT, eventData);
-
-        if (eventData[P_CONSUMED].GetBool())
             return;
     }
 
