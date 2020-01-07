@@ -976,7 +976,7 @@ void SceneTab::RenderNodeContextMenu()
     if ((!GetSelection().empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
-        if (input->GetKeyPress(KEY_ESCAPE) || !input->IsMouseVisible())
+        if (ui::IsKeyPressed(KEY_ESCAPE) || !input->IsMouseVisible())
         {
             // Close when interacting with scene camera.
             ui::CloseCurrentPopup();
@@ -986,7 +986,7 @@ void SceneTab::RenderNodeContextMenu()
 
         if (!GetSelection().empty())
         {
-            bool alternative = input->GetKeyDown(KEY_SHIFT);
+            bool alternative = ui::IsKeyDown(KEY_SHIFT);
 
             if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
             {
