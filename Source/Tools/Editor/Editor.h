@@ -140,23 +140,23 @@ protected:
     ea::string pendingOpenProject_;
     /// Flag indicating that editor should create and load default layout.
     bool loadDefaultLayout_ = false;
-    ///
+    /// Monospace font.
     ImFont* monoFont_ = nullptr;
-    ///
+    /// Flag indicating editor is exiting.
     bool exiting_ = false;
-    ///
+    /// Flag indicating that settings window is open.
     bool settingsOpen_ = false;
-    ///
+    /// Project path passed on command line.
     ea::string defaultProjectPath_;
-    ///
+    /// Registered subcommands.
     ea::vector<SharedPtr<SubCommand>> subCommands_;
-    ///
+    /// Flavor that is to be removed (settings window).
     WeakPtr<Flavor> flavorPendingRemoval_;
-    ///
+    /// A list of of recently opened projects. First one is alaways last project that was opened.
     StringVector recentProjects_{};
-    ///
+    /// Window position which is saved between sessions.
     IntVector2 windowPos_{0, 0};
-    ///
+    /// Window size which is saved between sessions.
     IntVector2 windowSize_{1920, 1080};
 };
 
