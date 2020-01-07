@@ -41,12 +41,12 @@ namespace
 
 /// Parallel for loop.
 template <class T>
-void ParallelFor(unsigned count, unsigned numThreads, const T& callback)
+void ParallelFor(unsigned count, unsigned numTasks, const T& callback)
 {
     // Post async tasks
     ea::vector<std::future<void>> tasks;
-    const unsigned chunkSize = (count + numThreads - 1) / numThreads;
-    for (unsigned i = 0; i < numThreads; ++i)
+    const unsigned chunkSize = (count + numTasks - 1) / numTasks;
+    for (unsigned i = 0; i < numTasks; ++i)
     {
         tasks.push_back(std::async([&, i]()
         {
@@ -315,7 +315,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
 
-    ParallelFor(sharedKernel.GetNumElements(), settings.numThreads_,
+    ParallelFor(sharedKernel.GetNumElements(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         T kernel = sharedKernel;
@@ -453,7 +453,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
     RTCScene scene = embreeScene.GetEmbreeScene();
     const ea::vector<EmbreeGeometry>& embreeGeometryIndex = embreeScene.GetEmbreeGeometryIndex();
 
-    ParallelFor(bakedDirect.directLight_.size(), settings.numThreads_,
+    ParallelFor(bakedDirect.directLight_.size(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCRayHit rayHit;
