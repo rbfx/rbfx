@@ -374,7 +374,7 @@ float Sample2D::Zoom(Camera* camera)
     return zoom_;
 }
 
-ea::vector<Vector2> Sample2D::CreatePathFromPoints(TileMapObject2D* object, Vector2 offset)
+ea::vector<Vector2> Sample2D::CreatePathFromPoints(TileMapObject2D* object, const Vector2& offset)
 {
     ea::vector<Vector2> path;
     for (unsigned i=0; i < object->GetNumPoints(); ++i)
