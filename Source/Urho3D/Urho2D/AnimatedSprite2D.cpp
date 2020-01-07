@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2008-2019 the Urho3D project.
+// Copyright (c) 2008-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -496,7 +496,11 @@ void AnimatedSprite2D::UpdateSourceBatchesSpriter()
         vertex2.uv_ = textureRect.max_;
         vertex3.uv_ = Vector2(textureRect.max_.x_, textureRect.min_.y_);
 
-        vertex0.color_ = vertex1.color_ = vertex2.color_ = vertex3.color_ = color;
+        Color finalColor;
+        finalColor.FromUInt(color);
+        finalColor.a_ = info.alpha_;
+
+        vertex0.color_ = vertex1.color_ = vertex2.color_ = vertex3.color_ = finalColor.ToUInt();
 
         vertices.push_back(vertex0);
         vertices.push_back(vertex1);
