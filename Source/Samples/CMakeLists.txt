@@ -72,15 +72,9 @@ if (WEB)
     )
     web_link_resources(Samples Resources.js)
     target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
-    install(FILES
-        "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.js"
-        DESTINATION ${DEST_BIN_DIR_CONFIG}
-    )
-    if (EXISTS "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm")
-        install(FILES
-            "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm"
-            DESTINATION ${DEST_BIN_DIR_CONFIG}
-        )
+    install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.js" DESTINATION ${DEST_BIN_DIR_CONFIG})
+    if (URHO3D_WEB_ASSEMBLY)
+        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm" DESTINATION ${DEST_BIN_DIR_CONFIG})
     endif ()
 endif ()
 
