@@ -65,25 +65,30 @@ namespace Urho3D
 #if URHO3D_SPHERICAL_HARMONICS
 static SphericalHarmonicsDot9 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
 {
+    SphericalHarmonicsDot9 ambient;
     if (gi)
     {
         unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
         const Vector3& position = drawable->GetNode()->GetWorldPosition();
-        return gi->SampleAmbientSH(position, hint);
+        ambient += gi->SampleAmbientSH(position, hint);
     }
-    return SphericalHarmonicsDot9{};
+    ambient += SphericalHarmonicsDot9(zone->GetAmbientColor());
+    return ambient;
 }
 #else
 static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
 {
+    // TODO(glow): Add zone gradient or remove Zones at all
+    // TODO(glow): Ambient is in gamma space, it's not really correct to add it like this
+    Vector3 ambient;
     if (gi)
     {
         unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
         const Vector3& position = drawable->GetNode()->GetWorldPosition();
-        return gi->SampleAverageAmbient(position, hint).ToVector4();
+        ambient += gi->SampleAverageAmbient(position, hint).ToVector3();
     }
-    // TODO(glow): Add zone gradient or remove Zones at all
-    return zone->GetAmbientColor().ToVector4();
+    ambient += zone->GetAmbientColor().ToVector3();
+    return { ambient, 1.0f };
 }
 #endif
 
