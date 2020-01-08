@@ -157,32 +157,6 @@ void Editor::RenderMenuBar()
 
         ui::EndMainMenuBar();
     }
-
-    if (!flavorPendingRemoval_.Expired())
-        ui::OpenPopup("Remove Flavor?");
-
-    if (ui::BeginPopupModal("Remove Flavor?"))
-    {
-        ui::Text("You are about to remove '%s' flavor.", flavorPendingRemoval_->GetName().c_str());
-        ui::TextUnformatted("All asset settings of this flavor will be removed permanently.");
-        ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone! " ICON_FA_EXCLAMATION_TRIANGLE);
-        ui::NewLine();
-
-        if (ui::Button(ICON_FA_TRASH " Remove"))
-        {
-            project_->GetPipeline()->RemoveFlavor(flavorPendingRemoval_->GetName());
-            flavorPendingRemoval_ = nullptr;
-            ui::CloseCurrentPopup();
-        }
-        ui::SameLine();
-        if (ui::Button(ICON_FA_TIMES " Cancel"))
-        {
-            flavorPendingRemoval_ = nullptr;
-            ui::CloseCurrentPopup();
-        }
-
-        ui::EndPopup();
-    }
 }
 
 void Editor::RenderProjectMenu()

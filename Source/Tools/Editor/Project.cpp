@@ -84,6 +84,7 @@ Project::Project(Context* context)
     // Key bindings
     auto* editor = GetSubsystem<Editor>();
     editor->keyBindings_.Bind(ActionType::SaveProject, this, &Project::SaveProject);
+    editor->settingsTabs_.Subscribe(this, &Project::RenderSettingsUI);
 }
 
 Project::~Project()
@@ -326,6 +327,106 @@ ea::string Project::GetResourcePath() const
     if (projectFileDir_.empty())
         return EMPTY_STRING;
     return projectFileDir_ + "Resources/";
+}
+
+void Project::RenderSettingsUI()
+{
+    if (ui::BeginTabItem("General"))
+    {
+        // Default scene
+        ui::PushID("Default Scene");
+        struct DefaultSceneState
+        {
+            /// A list of scenes present in resource directories.
+            StringVector scenes_;
+
+            explicit DefaultSceneState(Project* project)
+            {
+                project->context_->GetFileSystem()->ScanDir(scenes_, project->GetResourcePath(), "*.xml", SCAN_FILES, true);
+                for (auto it = scenes_.begin(); it != scenes_.end();)
+                {
+                    if (GetContentType(project->context_, *it) == CTYPE_SCENE)
+                        ++it;
+                    else
+                        it = scenes_.erase(it);
+                }
+            }
+        };
+        auto* state = ui::GetUIState<DefaultSceneState>(this);
+        if (ui::BeginCombo("Default Scene", GetDefaultSceneName().c_str()))
+        {
+            for (const ea::string& resourceName : state->scenes_)
+            {
+                if (ui::Selectable(resourceName.c_str(), GetDefaultSceneName() == resourceName))
+                    SetDefaultSceneName(resourceName);
+            }
+            ui::EndCombo();
+        }
+        if (state->scenes_.empty())
+            ui::SetHelpTooltip("Create a new scene first.", KEY_UNKNOWN);
+        ui::SetHelpTooltip("Select a default scene that will be started on application startup.");
+
+        ui::PopID();    // Default Scene
+
+        // Plugins
+#if URHO3D_PLUGINS
+        ui::PushID("Plugins");
+        ui::Separator();
+        ui::Text("Active plugins:");
+#if URHO3D_STATIC
+        static const char* pluginStates[] = {"Loaded"};
+#else
+        static const char* pluginStates[] = {"Inactive", "Editor", "Editor and Application"};
+#endif
+        const StringVector& pluginNames = GetPlugins()->GetPluginNames();
+        bool hasPlugins = false;
+        PluginManager* plugins = GetPlugins();
+#if URHO3D_STATIC
+        for (Plugin* plugin : plugins->GetPlugins())
+        {
+            const ea::string& baseName = plugin->GetName();
+            int currentState = 0;
+#else
+        for (const ea::string& baseName : pluginNames)
+        {
+            Plugin* plugin = plugins->GetPlugin(baseName);
+            bool loaded = plugin != nullptr && plugin->IsLoaded();
+            bool editorOnly = plugin && plugin->IsPrivate();
+            int currentState = loaded ? (editorOnly ? 1 : 2) : 0;
+#endif
+            hasPlugins = true;
+            if (ui::Combo(baseName.c_str(), &currentState, pluginStates, URHO3D_ARRAYSIZE(pluginStates)))
+            {
+#if !URHO3D_STATIC
+                if (currentState == 0)
+                {
+                    if (loaded)
+                        plugin->Unload();
+                }
+                else
+                {
+                    if (!loaded)
+                        plugin = plugins->Load(ModulePlugin::GetTypeStatic(), baseName);
+
+                    if (plugin != nullptr)
+                        plugin->SetPrivate(currentState == 1);
+                }
+#endif
+            }
+#if URHO3D_STATIC
+            ui::SetHelpTooltip("Plugin state is read-only in static builds.");
+#endif
+        }
+        if (!hasPlugins)
+        {
+            ui::TextUnformatted("No available files.");
+            ui::SetHelpTooltip("Plugins are shared libraries that have a class inheriting from PluginApplication and "
+                               "define a plugin entry point. Look at Samples/103_GamePlugin for more information.");
+        }
+        ui::PopID();        // Plugins
+#endif
+        ui::EndTabItem();   // General
+    }
 }
 
 }

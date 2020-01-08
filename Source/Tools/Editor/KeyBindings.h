@@ -84,8 +84,8 @@ public:
     explicit KeyBindings(Context* context);
     /// Serialize key bindings state.
     bool Serialize(Archive& archive) override;
-    /// Renders key bindings editor UI.
-    void RenderUI();
+    /// Renders key bindings tab in settings window.
+    void RenderSettingsUI();
     /// Bind handler to action.
     template<typename Receiver>
     void Bind(ActionType actionType, Receiver* receiver, void(Receiver::*handler)()) { actions_[actionType].onPressed_.Subscribe(receiver, handler); }
@@ -96,6 +96,8 @@ public:
     const char* GetKeyCombination(ActionType actionType);
 
 protected:
+    /// Handle object initialization.
+    void OnApplicationStarted(StringHash, VariantMap&);
     /// Handle input.
     void OnInputEnd(StringHash, VariantMap&);
     /// Returns a name of specified action.

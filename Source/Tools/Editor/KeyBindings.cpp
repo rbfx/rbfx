@@ -20,13 +20,15 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/SystemUI/SystemUI.h>
+#include <Urho3D/Engine/EngineEvents.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 
 #include <SDL/SDL_keyboard.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 
+#include "Editor.h"
 #include "KeyBindings.h"
 
 namespace Urho3D
@@ -46,6 +48,16 @@ KeyBindings::KeyBindings(Context* context)
         actions_[i].binding_ = KeysToString(actions_[i].qualifiers_, actions_[i].key_);
         defaults_[i] = actions_[i];
     }
+
+    // We have to delay any access to Editor object because constructor of this object runs as part of Editor
+    // constructor and at that point Editor is not registered as a subsystem yet.
+    SubscribeToEvent(E_APPLICATIONSTARTED, URHO3D_HANDLER(KeyBindings, OnApplicationStarted));
+}
+
+void KeyBindings::OnApplicationStarted(StringHash, VariantMap&)
+{
+    auto* editor = GetSubsystem<Editor>();
+    editor->settingsTabs_.Subscribe(this, &KeyBindings::RenderSettingsUI);
 }
 
 bool KeyBindings::Serialize(Archive& archive)
@@ -82,8 +94,11 @@ bool KeyBindings::Serialize(Archive& archive)
     return true;
 }
 
-void KeyBindings::RenderUI()
+void KeyBindings::RenderSettingsUI()
 {
+    if (!ui::BeginTabItem("Key Bindings"))
+        return;
+
     const ImGuiIO& io = ui::GetIO();
     // TODO: Use tables when they come out.
     ui::Columns(2);
@@ -165,6 +180,7 @@ void KeyBindings::RenderUI()
             action.binding_ = KeysToString(action.qualifiers_, action.key_);
         }
     }
+    ui::EndTabItem();
 }
 
 void KeyBindings::OnInputEnd(StringHash, VariantMap&)

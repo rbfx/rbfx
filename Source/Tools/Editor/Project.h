@@ -67,6 +67,9 @@ public:
     Pipeline* GetPipeline() { return pipeline_; }
 
 protected:
+    /// Render a project tab in settings window.
+    void RenderSettingsUI();
+
     /// Directory containing project.
     ea::string projectFileDir_;
     ///

@@ -111,6 +111,8 @@ protected:
     void SortFlavors();
     ///
     void OnImporterModified(VariantMap& args);
+    /// Render a pipeline tab in settings window.
+    void RenderSettingsUI();
 
     /// List of file watchers responsible for watching game data folders for asset changes.
     FileWatcher watcher_;
@@ -138,7 +140,8 @@ protected:
     ea::string packagerModalTitle_{};
     ///
     Logger logger_ = Log::GetLogger("pipeline");
-
+    /// Flavor that is to be removed (settings window).
+    WeakPtr<Flavor> flavorPendingRemoval_;
 
     friend class Project;
     friend class Asset;
