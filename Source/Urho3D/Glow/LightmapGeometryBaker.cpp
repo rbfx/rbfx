@@ -193,7 +193,7 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
                             {
                                 const auto iter = geometryEdgesHash.find(hashPosition + hashOffset);
                                 if (iter != geometryEdgesHash.end())
-                                    candidatesBuffer.push_back(iter->second);
+                                    candidatesBuffer.append(iter->second);
                             }
                         }
                     }
@@ -391,7 +391,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
         const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
             staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset);
 
-        mapping.push_back(objectMapping);
+        mapping.append(objectMapping);
     }
 
     ea::vector<LightmapGeometryBakingScene> result;
