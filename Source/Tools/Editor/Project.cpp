@@ -57,27 +57,10 @@ Project::Project(Context* context)
     , plugins_(new PluginManager(context))
 #endif
 {
-    SubscribeToEvent(E_EDITORRESOURCESAVED, [this](StringHash, VariantMap&) { SaveProject(); });
-    SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
-        using namespace ResourceRenamed;
-        if (args[P_FROM].GetString() == defaultScene_)
-            defaultScene_ = args[P_TO].GetString();
-    });
-    SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
-        using namespace ResourceBrowserDelete;
-        if (args[P_NAME].GetString() == defaultScene_)
-            defaultScene_ = EMPTY_STRING;
-    });
-
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
-        // Save project every minute.
-        // TODO: Make save time configurable.
-        if (saveProjectTimer_.GetMSec(false) >= 60000)
-        {
-            SaveProject();
-            saveProjectTimer_.Reset();
-        }
-    });
+    SubscribeToEvent(E_EDITORRESOURCESAVED, URHO3D_HANDLER(Project, OnEditorResourceSaved));
+    SubscribeToEvent(E_RESOURCERENAMED, URHO3D_HANDLER(Project, OnResourceRenamed));
+    SubscribeToEvent(E_RESOURCEBROWSERDELETE, URHO3D_HANDLER(Project, OnResourceBrowserDelete));
+    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Project, OnEndFrame));
     context_->RegisterSubsystem(pipeline_);
     context_->RegisterSubsystem(plugins_);
 
@@ -426,6 +409,36 @@ void Project::RenderSettingsUI()
         ui::PopID();        // Plugins
 #endif
         ui::EndTabItem();   // General
+    }
+}
+
+void Project::OnEditorResourceSaved(StringHash, VariantMap&)
+{
+    SaveProject();
+}
+
+void Project::OnResourceRenamed(StringHash, VariantMap& args)
+{
+    using namespace ResourceRenamed;
+    if (args[P_FROM].GetString() == defaultScene_)
+        defaultScene_ = args[P_TO].GetString();
+}
+
+void Project::OnResourceBrowserDelete(StringHash, VariantMap& args)
+{
+    using namespace ResourceBrowserDelete;
+    if (args[P_NAME].GetString() == defaultScene_)
+        defaultScene_ = EMPTY_STRING;
+}
+
+void Project::OnEndFrame(StringHash, VariantMap&)
+{
+    // Save project every minute.
+    // TODO: Make save time configurable.
+    if (saveProjectTimer_.GetMSec(false) >= 60000)
+    {
+        SaveProject();
+        saveProjectTimer_.Reset();
     }
 }
 
