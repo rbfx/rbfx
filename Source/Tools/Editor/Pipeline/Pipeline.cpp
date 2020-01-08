@@ -20,12 +20,11 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/sort.h>
-
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Engine/Engine.h>
+#include <Urho3D/Engine/EngineDefs.h>
 #include <Urho3D/Engine/ApplicationSettings.h>
 #include <Urho3D/Resource/JSONValue.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -36,9 +35,17 @@
 #include <Urho3D/IO/PackageFile.h>
 #include <Urho3D/Resource/JSONFile.h>
 #include <Urho3D/Resource/JSONArchive.h>
+
+#include <Toolbox/SystemUI/Widgets.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+
+#include <EASTL/sort.h>
+
+#include "Editor.h"
 #include "EditorEvents.h"
 #include "Project.h"
 #include "Pipeline/Pipeline.h"
+#include "Plugins/ModulePlugin.h"
 
 namespace Urho3D
 {
@@ -92,6 +99,9 @@ Pipeline::Pipeline(Context* context)
     });
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { OnUpdate(); });
     SubscribeToEvent(E_EDITORIMPORTERATTRIBUTEMODIFIED, [this](StringHash, VariantMap& args) { OnImporterModified(args); });
+
+    auto* editor = GetSubsystem<Editor>();
+    editor->settingsTabs_.Subscribe(this, &Pipeline::RenderSettingsUI);
 }
 
 void Pipeline::RegisterObject(Context* context)
@@ -646,6 +656,330 @@ bool Pipeline::CookCacheInfo() const
         file.SaveFile(Format("{}CacheInfo.json", flavor->GetCachePath(), flavor->GetName()));
     }
     return true;
+}
+
+static const VariantType variantTypes[] = {
+    VAR_BOOL,
+    VAR_INT,
+    VAR_INT64,
+    VAR_FLOAT,
+    VAR_DOUBLE,
+    VAR_COLOR,
+    VAR_STRING,
+};
+
+static const char* variantNames[] = {
+    "Bool",
+    "Int",
+    "Int64",
+    "Float",
+    "Double",
+    "Color",
+    "String",
+};
+
+static const char* predefinedNames[] = {
+    "Select Option Name",
+    "Enter Custom",
+    EP_AUTOLOAD_PATHS.c_str(),
+    EP_BORDERLESS.c_str(),
+    EP_DUMP_SHADERS.c_str(),
+    EP_FLUSH_GPU.c_str(),
+    EP_FORCE_GL2.c_str(),
+    EP_FRAME_LIMITER.c_str(),
+    EP_FULL_SCREEN.c_str(),
+    EP_HEADLESS.c_str(),
+    EP_HIGH_DPI.c_str(),
+    EP_LOG_LEVEL.c_str(),
+    EP_LOG_NAME.c_str(),
+    EP_LOG_QUIET.c_str(),
+    EP_LOW_QUALITY_SHADOWS.c_str(),
+    EP_MATERIAL_QUALITY.c_str(),
+    EP_MONITOR.c_str(),
+    EP_MULTI_SAMPLE.c_str(),
+    EP_ORGANIZATION_NAME.c_str(),
+    EP_APPLICATION_NAME.c_str(),
+    EP_ORIENTATIONS.c_str(),
+    EP_PACKAGE_CACHE_DIR.c_str(),
+    EP_RENDER_PATH.c_str(),
+    EP_REFRESH_RATE.c_str(),
+    EP_RESOURCE_PACKAGES.c_str(),
+    EP_RESOURCE_PATHS.c_str(),
+    EP_RESOURCE_PREFIX_PATHS.c_str(),
+    EP_SHADER_CACHE_DIR.c_str(),
+    EP_SHADOWS.c_str(),
+    EP_SOUND.c_str(),
+    EP_SOUND_BUFFER.c_str(),
+    EP_SOUND_INTERPOLATION.c_str(),
+    EP_SOUND_MIX_RATE.c_str(),
+    EP_SOUND_STEREO.c_str(),
+    EP_TEXTURE_ANISOTROPY.c_str(),
+    EP_TEXTURE_FILTER_MODE.c_str(),
+    EP_TEXTURE_QUALITY.c_str(),
+    EP_TOUCH_EMULATION.c_str(),
+    EP_TRIPLE_BUFFER.c_str(),
+    EP_VSYNC.c_str(),
+    EP_WINDOW_HEIGHT.c_str(),
+    EP_WINDOW_ICON.c_str(),
+    EP_WINDOW_POSITION_X.c_str(),
+    EP_WINDOW_POSITION_Y.c_str(),
+    EP_WINDOW_RESIZABLE.c_str(),
+    EP_WINDOW_MAXIMIZE.c_str(),
+    EP_WINDOW_TITLE.c_str(),
+    EP_WINDOW_WIDTH.c_str(),
+    EP_WORKER_THREADS.c_str(),
+    EP_ENGINE_CLI_PARAMETERS.c_str(),
+    EP_ENGINE_AUTO_LOAD_SCRIPTS.c_str(),
+};
+
+static VariantType predefinedTypes[] = {
+    VAR_NONE,   // Select Option Name
+    VAR_NONE,   // Enter Custom
+    VAR_STRING, // EP_AUTOLOAD_PATHS
+    VAR_BOOL,   // EP_BORDERLESS
+    VAR_BOOL,   // EP_DUMP_SHADERS
+    VAR_BOOL,   // EP_FLUSH_GPU
+    VAR_BOOL,   // EP_FORCE_GL2
+    VAR_BOOL,   // EP_FRAME_LIMITER
+    VAR_BOOL,   // EP_FULL_SCREEN
+    VAR_BOOL,   // EP_HEADLESS
+    VAR_BOOL,   // EP_HIGH_DPI
+    VAR_INT,    // EP_LOG_LEVEL
+    VAR_STRING, // EP_LOG_NAME
+    VAR_BOOL,   // EP_LOG_QUIET
+    VAR_BOOL,   // EP_LOW_QUALITY_SHADOWS
+    VAR_INT,    // EP_MATERIAL_QUALITY
+    VAR_INT,    // EP_MONITOR
+    VAR_INT,    // EP_MULTI_SAMPLE
+    VAR_STRING, // EP_ORGANIZATION_NAME
+    VAR_STRING, // EP_APPLICATION_NAME
+    VAR_STRING, // EP_ORIENTATIONS
+    VAR_STRING, // EP_PACKAGE_CACHE_DIR
+    VAR_STRING, // EP_RENDER_PATH
+    VAR_INT,    // EP_REFRESH_RATE
+    VAR_STRING, // EP_RESOURCE_PACKAGES
+    VAR_STRING, // EP_RESOURCE_PATHS
+    VAR_STRING, // EP_RESOURCE_PREFIX_PATHS
+    VAR_STRING, // EP_SHADER_CACHE_DIR
+    VAR_BOOL,   // EP_SHADOWS
+    VAR_BOOL,   // EP_SOUND
+    VAR_INT,    // EP_SOUND_BUFFER
+    VAR_BOOL,   // EP_SOUND_INTERPOLATION
+    VAR_INT,    // EP_SOUND_MIX_RATE
+    VAR_BOOL,   // EP_SOUND_STEREO
+    VAR_INT,    // EP_TEXTURE_ANISOTROPY
+    VAR_INT,    // EP_TEXTURE_FILTER_MODE
+    VAR_INT,    // EP_TEXTURE_QUALITY
+    VAR_BOOL,   // EP_TOUCH_EMULATION
+    VAR_BOOL,   // EP_TRIPLE_BUFFER
+    VAR_BOOL,   // EP_VSYNC
+    VAR_INT,    // EP_WINDOW_HEIGHT
+    VAR_STRING, // EP_WINDOW_ICON
+    VAR_INT,    // EP_WINDOW_POSITION_X
+    VAR_INT,    // EP_WINDOW_POSITION_Y
+    VAR_BOOL,   // EP_WINDOW_RESIZABLE
+    VAR_BOOL,   // EP_WINDOW_MAXIMIZE
+    VAR_STRING, // EP_WINDOW_TITLE
+    VAR_INT,    // EP_WINDOW_WIDTH
+    VAR_INT,    // EP_WORKER_THREADS
+    VAR_BOOL,   // EP_ENGINE_CLI_PARAMETERS
+    VAR_BOOL,   // EP_ENGINE_AUTO_LOAD_SCRIPTS
+};
+
+static_assert(URHO3D_ARRAYSIZE(predefinedNames) == URHO3D_ARRAYSIZE(predefinedNames), "Sizes must match.");
+
+void Pipeline::RenderSettingsUI()
+{
+    if (!ui::BeginTabItem("Pipeline"))
+        return;
+
+    const auto& style = ui::GetStyle();
+
+    // Add new flavor
+    ea::string& newFlavorName = *ui::GetUIState<ea::string>();
+    bool canAdd = newFlavorName != Flavor::DEFAULT && !newFlavorName.empty() && GetFlavor(newFlavorName) == nullptr;
+    if (!canAdd)
+        ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+    bool addNew = ui::InputText("Flavor Name", &newFlavorName, ImGuiInputTextFlags_EnterReturnsTrue);
+    ui::SameLine();
+    addNew |= ui::ToolbarButton(ICON_FA_PLUS " Add New");
+    if (addNew && canAdd)
+        AddFlavor(newFlavorName);
+    if (!canAdd)
+        ui::PopStyleColor();
+
+    // Flavor tabs
+    if (ui::BeginTabBar("Flavors", ImGuiTabBarFlags_AutoSelectNewTabs))
+    {
+        for (Flavor* flavor : GetFlavors())
+        {
+            ui::PushID(flavor);
+            ea::string& editBuffer = *ui::GetUIState<ea::string>(flavor->GetName());
+            bool isOpen = true;
+            if (ui::BeginTabItem(flavor->GetName().c_str(), &isOpen, flavor->IsDefault() ? ImGuiTabItemFlags_NoCloseButton | ImGuiTabItemFlags_NoCloseWithMiddleMouseButton : 0))
+            {
+                bool canRename = editBuffer != Flavor::DEFAULT && !editBuffer.empty() && GetFlavor(editBuffer) == nullptr;
+                if (flavor->IsDefault() || !canRename)
+                    ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+
+                bool save = ui::InputText("Flavor Name", &editBuffer, ImGuiInputTextFlags_EnterReturnsTrue);
+                ui::SameLine();
+                save |= ui::ToolbarButton(ICON_FA_CHECK);
+                ui::SetHelpTooltip("Rename flavor", KEY_UNKNOWN);
+                if (save && canRename && !flavor->IsDefault())
+                    RenameFlavor(flavor->GetName(), editBuffer);
+
+                if (flavor->IsDefault() || !canRename)
+                    ui::PopStyleColor();
+
+                ui::Separator();
+
+                static const ea::string platforms[] = {"Windows", "Linux", "Android", "iOS", "tvOS", "macOS", "Web"};
+                ea::string platformPreview;
+                for (const ea::string& platform : flavor->GetPlatforms())
+                {
+                    platformPreview += platform;
+                    platformPreview += ", ";
+                }
+                if (platformPreview.empty())
+                    platformPreview = "Any";
+                else
+                    platformPreview = platformPreview.substr(0, platformPreview.length() - 2);
+
+                if (ui::BeginCombo("Available on platforms", platformPreview.c_str()))
+                {
+                    for (const ea::string& platform : platforms)
+                    {
+                        bool enabled = flavor->GetPlatforms().contains(platform);
+                        if (ui::Checkbox(platform.c_str(), &enabled))
+                        {
+                            if (enabled)
+                                flavor->GetPlatforms().push_back(platform);
+                            else
+                                flavor->GetPlatforms().erase_first(platform);
+                        }
+                    }
+                    ImGui::EndCombo();
+                }
+
+                ui::Separator();
+                ////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+                ui::TextUnformatted("Engine Settings:");
+                ui::PushID("Engine Settings");
+                struct NewEntryState
+                {
+                    /// Custom name of the new parameter.
+                    ea::string customName_;
+                    /// Custom type of the new parameter.
+                    int customType_ = 0;
+                    /// Index of predefined engine parameter.
+                    int predefinedItem_ = 0;
+                };
+
+                auto* state = ui::GetUIState<NewEntryState>();
+                ea::map<ea::string, Variant>& settings = flavor->GetEngineParameters();
+                for (auto it = settings.begin(); it != settings.end();)
+                {
+                    const ea::string& settingName = it->first;
+                    ui::IdScope idScope(settingName.c_str());
+                    Variant& value = it->second;
+                    float startPos = ui::GetCursorPosX();
+                    ui::TextUnformatted(settingName.c_str());
+                    ui::SameLine();
+                    ui::SetCursorPosX(startPos + 180 + ui::GetStyle().ItemSpacing.x);
+                    UI_ITEMWIDTH(100)
+                        RenderSingleAttribute(value);
+                    ui::SameLine();
+                    ui::SetCursorPosX(startPos + 280 + ui::GetStyle().ItemSpacing.x);
+                    if (ui::Button(ICON_FA_TRASH))
+                        it = settings.erase(it);
+                    else
+                        ++it;
+                }
+
+                UI_ITEMWIDTH(280)
+                    ui::Combo("###Selector", &state->predefinedItem_, predefinedNames, URHO3D_ARRAYSIZE(predefinedNames));
+
+                ui::SameLine();
+
+                const char* cantSubmitHelpText = nullptr;
+                if (state->predefinedItem_ == 0)
+                    cantSubmitHelpText = "Parameter is not selected.";
+                else if (state->predefinedItem_ == 1)
+                {
+                    if (state->customName_.empty())
+                        cantSubmitHelpText = "Custom name can not be empty.";
+                    else if (settings.find(state->customName_.c_str()) != settings.end())
+                        cantSubmitHelpText = "Parameter with same name is already added.";
+                }
+                else if (state->predefinedItem_ > 1 && settings.find(predefinedNames[state->predefinedItem_]) !=
+                                                      settings.end())
+                    cantSubmitHelpText = "Parameter with same name is already added.";
+
+                ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[cantSubmitHelpText == nullptr ? ImGuiCol_Text : ImGuiCol_TextDisabled]);
+                if (ui::Button(ICON_FA_CHECK) && cantSubmitHelpText == nullptr)
+                {
+                    if (state->predefinedItem_ == 1)
+                        settings.insert({state->customName_.c_str(), Variant{variantTypes[state->customType_]}});
+                    else
+                        settings.insert({predefinedNames[state->predefinedItem_], Variant{predefinedTypes[state->predefinedItem_]}});
+                    state->customName_.clear();
+                    state->customType_ = 0;
+                }
+                ui::PopStyleColor();
+                if (cantSubmitHelpText)
+                    ui::SetHelpTooltip(cantSubmitHelpText, KEY_UNKNOWN);
+
+                if (state->predefinedItem_ == 1)
+                {
+                    UI_ITEMWIDTH(180)
+                        ui::InputText("###Key", &state->customName_);
+
+                    // Custom entry type selector
+                    ui::SameLine();
+                    UI_ITEMWIDTH(100 - style.ItemSpacing.x)
+                        ui::Combo("###Type", &state->customType_, variantNames, SDL_arraysize(variantTypes));
+                }
+                ui::PopID();    // Engine Settings
+
+                ui::EndTabItem();
+            }
+            if (!isOpen && !flavor->IsDefault())
+                flavorPendingRemoval_ = flavor;
+
+            if (!flavorPendingRemoval_.Expired())
+                ui::OpenPopup("Remove Flavor?");
+
+            if (ui::BeginPopupModal("Remove Flavor?"))
+            {
+                ui::Text("You are about to remove '%s' flavor.", flavorPendingRemoval_->GetName().c_str());
+                ui::TextUnformatted("All asset settings of this flavor will be removed permanently.");
+                ui::TextUnformatted(ICON_FA_EXCLAMATION_TRIANGLE " This action can not be undone! " ICON_FA_EXCLAMATION_TRIANGLE);
+                ui::NewLine();
+
+                if (ui::Button(ICON_FA_TRASH " Remove"))
+                {
+                    RemoveFlavor(flavorPendingRemoval_->GetName());
+                    flavorPendingRemoval_ = nullptr;
+                    ui::CloseCurrentPopup();
+                }
+                ui::SameLine();
+                if (ui::Button(ICON_FA_TIMES " Cancel"))
+                {
+                    flavorPendingRemoval_ = nullptr;
+                    ui::CloseCurrentPopup();
+                }
+
+                ui::EndPopup();
+            }
+
+            ui::PopID();    // flavor.c_str()
+        }
+
+        ui::EndTabBar();
+    }
+
+    ui::EndTabItem();
 }
 
 }

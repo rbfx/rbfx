@@ -102,11 +102,13 @@ public:
     /// Register static plugin.
     bool RegisterPlugin(PluginApplication* plugin);
 #endif
-    ///
+    /// Serialize editor user-specific settings.
     bool Serialize(Archive& archive) override;
 
     /// Key bindings manager.
     KeyBindings keyBindings_{context_};
+    /// Signal is fired when settings tabs are rendered. Various subsystems can register their tabs.
+    Signal<void> settingsTabs_{};
 
 protected:
     /// Process console commands.
@@ -156,8 +158,6 @@ protected:
     ea::string defaultProjectPath_;
     /// Registered subcommands.
     ea::vector<SharedPtr<SubCommand>> subCommands_;
-    /// Flavor that is to be removed (settings window).
-    WeakPtr<Flavor> flavorPendingRemoval_;
     /// A list of of recently opened projects. First one is alaways last project that was opened.
     StringVector recentProjects_{};
     /// Window position which is saved between sessions.
