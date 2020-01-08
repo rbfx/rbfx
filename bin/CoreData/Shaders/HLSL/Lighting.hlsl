@@ -59,8 +59,7 @@ float3 EvaluateSH2(float4 normal, float4 SHBr, float4 SHBg, float4 SHBb, float4 
         #define iSHC cSHC
     #endif
 
-    #define GetAmbientLight(normal) \
-        LinearToGammaSpace(EvaluateSH01(normal, iSHAr, iSHAg, iSHAb) + EvaluateSH2(normal, iSHBr, iSHBg, iSHBb, iSHC))
+    #define GetAmbientLight(normal) LinearToGammaSpace(EvaluateSH01(normal, iSHAr, iSHAg, iSHAb) + EvaluateSH2(normal, iSHBr, iSHBg, iSHBb, iSHC))
 #else
     #ifdef INSTANCED
         #define iAmbient iAmbientInstance

@@ -57,8 +57,7 @@ vec3 EvaluateSH2(vec4 normal, vec4 SHBr, vec4 SHBg, vec4 SHBb, vec4 SHC)
         #define iSHC cSHC
     #endif
 
-    #define GetAmbientLight(normal) \
-        LinearToGammaSpace(EvaluateSH01(normal, iSHAr, iSHAg, iSHAb) + EvaluateSH2(normal, iSHBr, iSHBg, iSHBb, iSHC))
+    #define GetAmbientLight(normal) LinearToGammaSpace(EvaluateSH01(normal, iSHAr, iSHAg, iSHAb) + EvaluateSH2(normal, iSHBr, iSHBg, iSHBb, iSHC))
 #else
     #ifdef INSTANCED
         #define iAmbient iTexCoord7
