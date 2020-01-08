@@ -395,8 +395,8 @@ void ModelView::ExportModel(Model* model) const
             const unsigned startVertex = vertexBufferData.size();
             const unsigned startIndex = indexBufferData.size();
 
-            vertexBufferData.push_back(sourceGeometryLod.vertices_);
-            indexBufferData.push_back(sourceGeometryLod.indices_);
+            vertexBufferData.append(sourceGeometryLod.vertices_);
+            indexBufferData.append(sourceGeometryLod.indices_);
 
             for (unsigned i = startIndex; i < indexBufferData.size(); ++i)
                 indexBufferData[i] += startVertex;
