@@ -1619,6 +1619,8 @@ elseif (APPLE)
   else ()
     target_link_libraries (SDL "-framework Carbon" "-framework Cocoa" "-framework CoreFoundation" "-framework SystemConfiguration" "-framework CoreServices" "-framework CoreVideo" "-framework ForceFeedback" "-framework IOKit" "-framework OpenGL")
   endif ()
+elseif (EMSCRIPTEN)
+  target_link_libraries(SDL PUBLIC "-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
 endif ()
 
 # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
