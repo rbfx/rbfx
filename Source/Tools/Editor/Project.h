@@ -67,6 +67,14 @@ public:
     Pipeline* GetPipeline() { return pipeline_; }
 
 protected:
+    /// Save project when resource is saved.
+    void OnEditorResourceSaved(StringHash, VariantMap&);
+    /// Update default scene if it gets renamed.
+    void OnResourceRenamed(StringHash, VariantMap& args);
+    /// Update default scene if it gets removed.
+    void OnResourceBrowserDelete(StringHash, VariantMap& args);
+    /// Auto-save project.
+    void OnEndFrame(StringHash, VariantMap&);
     /// Render a project tab in settings window.
     void RenderSettingsUI();
 
