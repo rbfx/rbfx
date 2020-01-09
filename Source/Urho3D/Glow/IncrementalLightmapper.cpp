@@ -372,6 +372,10 @@ struct IncrementalLightmapper::Impl
                 geometryBufferToEmbreeGeometry[i] = embreeGeometriesSorted[i - 1].embreeGeometryId_;
         }
 
+        // Preprocess geometry buffers
+        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+            PreprocessGeometryBuffer(geometryBuffer, *embreeScene, geometryBufferToEmbreeGeometry, lightmapSettings_.tracing_);
+
         // Collect lights
         ea::vector<BakedDirectLight> bakedLights;
         for (Light* light : relevantLights)
