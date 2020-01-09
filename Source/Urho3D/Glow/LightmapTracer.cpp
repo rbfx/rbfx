@@ -170,8 +170,10 @@ struct ChartIndirectTracingElement
 {
     /// Position.
     Vector3 position_;
-    /// Normal.
-    Vector3 normal_;
+    /// Normal of actual geometry face.
+    Vector3 faceNormal_;
+    /// Smooth interpolated normal.
+    Vector3 smoothNormal_;
     /// Geometry ID.
     unsigned geometryId_;
 
@@ -181,11 +183,13 @@ struct ChartIndirectTracingElement
     /// Returns whether element is valid.
     explicit operator bool() const { return geometryId_ != 0; }
     /// Begin sample. Return position, normal and initial ray direction.
-    void BeginSample(unsigned /*sampleIndex*/, Vector3& position, Vector3& normal, Vector3& rayDirection) const
+    void BeginSample(unsigned /*sampleIndex*/,
+        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection) const
     {
         position = position_;
-        normal = normal_;
-        rayDirection = RandomHemisphereDirection(normal_);
+        faceNormal = faceNormal_;
+        smoothNormal = smoothNormal_;
+        rayDirection = RandomHemisphereDirection(faceNormal_);
     }
     /// End sample.
     void EndSample(const Vector3& light)
@@ -227,7 +231,8 @@ struct ChartIndirectTracingKernel
             return {};
 
         const Vector3& position = geometryBuffer_->geometryPositions_[elementIndex];
-        const Vector3& normal = geometryBuffer_->smoothNormals_[elementIndex];
+        const Vector3& smoothNormal = geometryBuffer_->smoothNormals_[elementIndex];
+        const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
         const unsigned embreeGeometryId = (*geometryBufferToEmbree_)[geometryId];
         const EmbreeGeometry& embreeGeometry = (*embreeGeometryIndex_)[embreeGeometryId];
 
@@ -235,11 +240,11 @@ struct ChartIndirectTracingKernel
         {
             const SphericalHarmonicsDot9 sh = lightProbesMesh_->Sample(
                 lightProbesData_->bakedSphericalHarmonics_, position, lightProbesMeshHint_);
-            bakedIndirect_->light_[elementIndex] += { sh.Evaluate(normal), 1.0f };
+            bakedIndirect_->light_[elementIndex] += { sh.Evaluate(smoothNormal), 1.0f };
             return {};
         }
 
-        return { position + normal * settings_->rayPositionOffset_, normal, geometryId };
+        return { position + faceNormal * settings_->rayPositionOffset_, faceNormal, smoothNormal, geometryId };
     };
     /// End tracing element.
     void EndElement(unsigned elementIndex, const ChartIndirectTracingElement& element)
@@ -266,11 +271,13 @@ struct LightProbeIndirectTracingElement
     /// Returns whether element is valid.
     explicit operator bool() const { return true; }
     /// Begin sample. Return position, normal and initial ray direction.
-    void BeginSample(unsigned /*sampleIndex*/, Vector3& position, Vector3& normal, Vector3& rayDirection)
+    void BeginSample(unsigned /*sampleIndex*/,
+        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection)
     {
         position = position_;
         RandomDirection(currentDirection_);
-        normal = currentDirection_;
+        faceNormal = currentDirection_;
+        smoothNormal = currentDirection_;
         rayDirection = currentDirection_;
     }
     /// End sample.
@@ -346,9 +353,10 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
             for (unsigned sampleIndex = 0; sampleIndex < kernel.GetNumSamples(); ++sampleIndex)
             {
                 Vector3 currentPosition;
-                Vector3 currentNormal;
+                Vector3 currentFaceNormal;
+                Vector3 currentSmoothNormal;
                 Vector3 currentRayDirection;
-                element.BeginSample(sampleIndex, currentPosition, currentNormal, currentRayDirection);
+                element.BeginSample(sampleIndex, currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection);
 
                 int numBounces = 0;
                 for (unsigned bounceIndex = 0; bounceIndex < settings.numBounces_; ++bounceIndex)
@@ -378,7 +386,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
 
                     // Modify incoming flux
                     const float probability = 1 / (2 * M_PI);
-                    const float cosTheta = currentRayDirection.DotProduct(currentNormal);
+                    const float cosTheta = ea::max(0.0f, currentRayDirection.DotProduct(currentSmoothNormal));
                     const float reflectance = 1 / M_PI;
                     const float brdf = reflectance / M_PI;
 
@@ -403,8 +411,14 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                         currentPosition.y_ += hitNormal.y_ * settings.rayPositionOffset_;
                         currentPosition.z_ += hitNormal.z_ * settings.rayPositionOffset_;
 
-                        currentNormal = hitNormal;
-                        currentRayDirection = RandomHemisphereDirection(currentNormal);
+                        // Update smooth normal
+                        rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
+                            RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, &currentSmoothNormal.x_, 3);
+                        currentSmoothNormal = currentSmoothNormal.Normalized();
+
+                        // Update face normal and find new direction to sample
+                        currentFaceNormal = hitNormal;
+                        currentRayDirection = RandomHemisphereDirection(currentFaceNormal);
                     }
                 }
 
