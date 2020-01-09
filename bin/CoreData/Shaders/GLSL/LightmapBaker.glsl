@@ -38,8 +38,17 @@ void PS()
 {
     vec3 normal = normalize(vNormal);
 
+    vec3 dPdx = dFdx(vWorldPos.xyz);
+    vec3 dPdy = dFdy(vWorldPos.xyz);
+    vec3 faceNormal = normalize(cross(dPdx, dPdy));
+    if (dot(faceNormal, normal) < 0)
+        faceNormal *= -1.0;
+
+    vec3 dPmax = max(abs(dPdx), abs(dPdy));
+    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z));
+
     gl_FragData[0] = vec4(vWorldPos.xyz, vMetadata.x);
-    gl_FragData[1] = vWorldPos;
-    gl_FragData[2] = vec4(normal, 1.0);
+    gl_FragData[1] = vec4(vWorldPos.xyz, texelRadius);
+    gl_FragData[2] = vec4(faceNormal, 1.0);
     gl_FragData[3] = vec4(normal, 1.0);
 }

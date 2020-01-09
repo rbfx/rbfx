@@ -62,26 +62,35 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
     const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel, unsigned mask)
 {
     const Matrix3x4 worldTransform = node->GetWorldTransform();
+    const Quaternion worldRotation = node->GetWorldRotation();
     RTCGeometry embreeGeometry = rtcNewGeometry(embreeDevice, RTC_GEOMETRY_TYPE_TRIANGLE);
 
     float* vertices = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX,
         0, RTC_FORMAT_FLOAT3, sizeof(Vector3), geometryLODView.vertices_.size()));
 
-    rtcSetGeometryVertexAttributeCount(embreeGeometry, 1);
+    rtcSetGeometryVertexAttributeCount(embreeGeometry, 2);
     float* lightmapUVs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
         0, RTC_FORMAT_FLOAT2, sizeof(Vector2), geometryLODView.vertices_.size()));
+
+    float* smoothNormals = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
+        1, RTC_FORMAT_FLOAT3, sizeof(Vector3), geometryLODView.vertices_.size()));
 
     for (unsigned i = 0; i < geometryLODView.vertices_.size(); ++i)
     {
         const Vector3 localPosition = static_cast<Vector3>(geometryLODView.vertices_[i].position_);
+        const Vector3 localNormal = static_cast<Vector3>(geometryLODView.vertices_[i].normal_);
         const Vector4 lightmapUV = geometryLODView.vertices_[i].uv_[uvChannel];
         const Vector2 lightmapUVScaled = Vector2{ lightmapUV.x_, lightmapUV.y_ } * lightmapUVScale + lightmapUVOffset;
         const Vector3 worldPosition = worldTransform * localPosition;
+        const Vector3 worldNormal = worldRotation * localNormal;
         vertices[i * 3 + 0] = worldPosition.x_;
         vertices[i * 3 + 1] = worldPosition.y_;
         vertices[i * 3 + 2] = worldPosition.z_;
         lightmapUVs[i * 2 + 0] = lightmapUVScaled.x_;
         lightmapUVs[i * 2 + 1] = lightmapUVScaled.y_;
+        smoothNormals[i * 3 + 0] = worldNormal.x_;
+        smoothNormals[i * 3 + 1] = worldNormal.y_;
+        smoothNormals[i * 3 + 2] = worldNormal.z_;
     }
 
     unsigned* indices = reinterpret_cast<unsigned*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_INDEX,
