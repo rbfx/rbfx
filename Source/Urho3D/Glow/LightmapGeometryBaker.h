@@ -128,11 +128,12 @@ struct LightmapChartGeometryBuffer
     ea::vector<Vector3> smoothPositions_;
     /// Smooth normals used in rendering.
     ea::vector<Vector3> smoothNormals_;
-    /// Raw face normals.
-    // TODO: Implement
+    /// Face normals, calculated from positions.
     ea::vector<Vector3> faceNormals_;
     /// Geometry IDs.
     ea::vector<unsigned> geometryIds_;
+    /// Radiuses of texels.
+    ea::vector<float> texelSizes_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
 
@@ -148,6 +149,7 @@ struct LightmapChartGeometryBuffer
         , smoothNormals_(width * height)
         , faceNormals_(width * height)
         , geometryIds_(width * height)
+        , texelSizes_(width * height)
     {
     }
     /// Convert index to location.
