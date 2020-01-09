@@ -61,8 +61,17 @@ void PS(
 {
     float3 normal = normalize(iNormal);
 
+    float3 dPdx = ddx(iWorldPos.xyz);
+    float3 dPdy = ddy(iWorldPos.xyz);
+    float3 faceNormal = normalize(cross(dPdx, dPdy));
+    if (dot(faceNormal, normal) < 0)
+        faceNormal *= -1.0;
+
+    float3 dPmax = max(abs(dPdx), abs(dPdy));
+    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z));
+
     oPosition = float4(iWorldPos.xyz, iMetadata.x);
-    oSmoothPosition = iWorldPos;
-    oFaceNormal = float4(normal, 1.0);
+    oSmoothPosition = float4(iWorldPos.xyz, texelRadius);
+    oFaceNormal = float4(faceNormal, 1.0);
     oSmoothNormal = float4(normal, 1.0);
 }

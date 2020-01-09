@@ -287,6 +287,9 @@ Vector3 ExtractVector3FromVector4(const Vector4& data) { return { data.x_, data.
 /// Extract w-component as unsigned integer from Vector4.
 unsigned ExtractUintFromVector4(const Vector4& data) { return static_cast<unsigned>(data.w_); }
 
+/// Extract w-component as float from Vector4.
+float ExtractFloatFromVector4(const Vector4& data) { return data.w_; }
+
 }
 
 SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
@@ -441,6 +444,7 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothposition"), buffer);
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.smoothPositions_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.texelSizes_.begin(), ExtractFloatFromVector4);
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("facenormal"), buffer);
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.faceNormals_.begin(), ExtractVector3FromVector4);
