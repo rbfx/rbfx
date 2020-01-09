@@ -122,7 +122,7 @@ struct LightmapChartGeometryBuffer
     unsigned height_{};
 
     /// Positions as is.
-    ea::vector<Vector3> geometryPositions_;
+    ea::vector<Vector3> positions_;
     /// Smooth positions after Phong tesselation.
     // TODO: Implement
     ea::vector<Vector3> smoothPositions_;
@@ -133,7 +133,7 @@ struct LightmapChartGeometryBuffer
     /// Geometry IDs.
     ea::vector<unsigned> geometryIds_;
     /// Radiuses of texels.
-    ea::vector<float> texelSizes_;
+    ea::vector<float> texelRadiuses_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
 
@@ -144,12 +144,12 @@ struct LightmapChartGeometryBuffer
         : index_(index)
         , width_(width)
         , height_(height)
-        , geometryPositions_(width * height)
+        , positions_(width * height)
         , smoothPositions_(width * height)
         , smoothNormals_(width * height)
         , faceNormals_(width * height)
         , geometryIds_(width * height)
-        , texelSizes_(width * height)
+        , texelRadiuses_(width * height)
     {
     }
     /// Convert index to location.
