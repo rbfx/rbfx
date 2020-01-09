@@ -68,7 +68,7 @@ void PS(
         faceNormal *= -1.0;
 
     float3 dPmax = max(abs(dPdx), abs(dPdy));
-    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z));
+    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
 
     oPosition = float4(iWorldPos.xyz, iMetadata.x);
     oSmoothPosition = float4(iWorldPos.xyz, texelRadius);

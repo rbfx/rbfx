@@ -70,8 +70,12 @@ struct LightmapTracingSettings
     /// Number of indirect samples for light probes.
     unsigned numIndirectProbeSamples_{ 64 };
 
-    /// Ray position offset.
-    float rayPositionOffset_{ 0.001f };
+    /// Ray offset from position in geometry buffer or hit position.
+    float rayPositionOffset_{ 0.0005f };
+    /// Position offset for pushing out leaking shadows beyond backface hit by sample ray.
+    float shadowLeakOffset_{ 0.001f };
+    /// Normal bias for position adjusted to prevent leaking shadows.
+    float shadowLeakBias_{ 0.001f };
     /// Number of asynchronous tasks to use.
     unsigned numTasks_{ M_MAX_UNSIGNED };
 };

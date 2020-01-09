@@ -133,6 +133,44 @@ float CalculateEdgeWeight(
     return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
 }
 
+/// Return true if first geometry is non-primary LOD of another geometry or different LOD of itself.
+bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& hitGeometry)
+{
+    const bool hitLod = hitGeometry.lodIndex_ != 0;
+    const bool sameGeometry = currentGeometry.objectIndex_ == hitGeometry.objectIndex_
+        && currentGeometry.geometryIndex_ == hitGeometry.geometryIndex_;
+
+    const bool hitLodOfAnotherGeometry = !sameGeometry && hitLod;
+    const bool hitAnotherLodOfSameGeometry = sameGeometry && hitGeometry.lodIndex_ != currentGeometry.lodIndex_;
+    return hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry;
+}
+
+/// Ray tracing context for geometry buffer preprocessing.
+struct GeometryBufferPreprocessContext : public RTCIntersectContext
+{
+    /// Current geometry.
+    const EmbreeGeometry* currentGeometry_{};
+    /// Geometry index.
+    const ea::vector<EmbreeGeometry>* geometryIndex_{};
+};
+
+/// Filter function for geometry buffer preprocessing.
+void GeometryBufferPreprocessFilter(const RTCFilterFunctionNArguments* args)
+{
+    const auto& ctx = *static_cast<const GeometryBufferPreprocessContext*>(args->context);
+    const auto& hit = *reinterpret_cast<RTCHit*>(args->hit);
+    assert(args->N == 1);
+
+    // Ignore invalid
+    if (args->valid[0] == 0)
+        return;
+
+    // Ignore all LODs
+    const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    if (IsUnwantedLod(*ctx.currentGeometry_, hitGeometry))
+        args->valid[0] = 0;
+}
+
 /// Ray tracing context for direct light baking for charts.
 struct ChartsDirectContext : public RTCIntersectContext
 {
@@ -145,7 +183,7 @@ struct ChartsDirectContext : public RTCIntersectContext
 /// Filter function for direct light baking for charts.
 void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
 {
-    const auto& ctx = static_cast<const ChartsDirectContext*>(args->context);
+    const auto& ctx = *static_cast<const ChartsDirectContext*>(args->context);
     auto& hit = *reinterpret_cast<RTCHit*>(args->hit);
     assert(args->N == 1);
 
@@ -153,14 +191,14 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
     if (args->valid[0] == 0)
         return;
 
-    const EmbreeGeometry& hitGeometry = (*ctx->geometryIndex_)[hit.geomID];
+    const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
 
     const bool hitLod = hitGeometry.lodIndex_ != 0;
-    const bool sameGeometry = ctx->currentGeometry_->objectIndex_ == hitGeometry.objectIndex_
-        && ctx->currentGeometry_->geometryIndex_ == hitGeometry.geometryIndex_;
+    const bool sameGeometry = ctx.currentGeometry_->objectIndex_ == hitGeometry.objectIndex_
+        && ctx.currentGeometry_->geometryIndex_ == hitGeometry.geometryIndex_;
 
     const bool hitLodOfAnotherGeometry = !sameGeometry && hitLod;
-    const bool hitAnotherLodOfSameGeometry = sameGeometry && hitGeometry.lodIndex_ != ctx->currentGeometry_->lodIndex_;
+    const bool hitAnotherLodOfSameGeometry = sameGeometry && hitGeometry.lodIndex_ != ctx.currentGeometry_->lodIndex_;
     if (hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry)
         args->valid[0] = 0;
 }
@@ -230,7 +268,7 @@ struct ChartIndirectTracingKernel
         if (!geometryId)
             return {};
 
-        const Vector3& position = geometryBuffer_->geometryPositions_[elementIndex];
+        const Vector3& position = geometryBuffer_->positions_[elementIndex];
         const Vector3& smoothNormal = geometryBuffer_->smoothNormals_[elementIndex];
         const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
         const unsigned embreeGeometryId = (*geometryBufferToEmbree_)[geometryId];
@@ -439,22 +477,87 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
 
 }
 
-ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(
-    const LightmapChartGeometryBufferVector& geometryBuffers)
+void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
+    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const LightmapTracingSettings& settings)
 {
-    ea::vector<LightmapChartBakedDirect> chartsBakedDirect;
-    for (const LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-        chartsBakedDirect.emplace_back(geometryBuffer.width_, geometryBuffer.height_);
-    return chartsBakedDirect;
-}
+    RTCScene scene = embreeScene.GetEmbreeScene();
+    const ea::vector<EmbreeGeometry>& embreeGeometryIndex = embreeScene.GetEmbreeGeometryIndex();
+    ParallelFor(geometryBuffer.positions_.size(), settings.numTasks_,
+        [&](unsigned fromIndex, unsigned toIndex)
+    {
+        RTCRayHit rayHit;
+        GeometryBufferPreprocessContext rayContext;
+        rayContext.geometryIndex_ = &embreeGeometryIndex;
+        rtcInitIntersectContext(&rayContext);
+        rayContext.filter = GeometryBufferPreprocessFilter;
 
-ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(
-    const LightmapChartGeometryBufferVector& geometryBuffers)
-{
-    ea::vector<LightmapChartBakedIndirect> chartsBakedIndirect;
-    for (const LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-        chartsBakedIndirect.emplace_back(geometryBuffer.width_, geometryBuffer.height_);
-    return chartsBakedIndirect;
+        rayHit.ray.mask = EmbreeScene::AllGeometry;
+        rayHit.ray.tnear = 0.0f;
+        rayHit.ray.time = 0.0f;
+        rayHit.ray.id = 0;
+        rayHit.ray.flags = 0;
+
+        for (unsigned i = fromIndex; i < toIndex; ++i)
+        {
+            const unsigned geometryId = geometryBuffer.geometryIds_[i];
+            if (!geometryId)
+                continue;
+
+            rayContext.currentGeometry_ = &embreeGeometryIndex[geometryBufferToEmbree[geometryId]];
+
+            Vector3& mutablePosition = geometryBuffer.positions_[i];
+            const Vector3 faceNormal = geometryBuffer.faceNormals_[i];
+            const float texelRadius = geometryBuffer.texelRadiuses_[i];
+            const Quaternion basis{ Vector3::FORWARD, faceNormal };
+
+            rayHit.ray.org_x = mutablePosition.x_ + faceNormal.x_ * settings.shadowLeakBias_;
+            rayHit.ray.org_y = mutablePosition.y_ + faceNormal.y_ * settings.shadowLeakBias_;
+            rayHit.ray.org_z = mutablePosition.z_ + faceNormal.z_ * settings.shadowLeakBias_;
+
+            static const unsigned NumSamples = 4;
+            static const Vector3 sampleRays[NumSamples] = { Vector3::LEFT, Vector3::RIGHT, Vector3::UP, Vector3::DOWN };
+
+            // Find closest backface hit
+            float closestHitDistance = M_LARGE_VALUE;
+            Vector3 closestHitDirection;
+
+            for (unsigned i = 0; i < NumSamples; ++i)
+            {
+                const Vector3 rayDirection = basis * sampleRays[i];
+
+                rayHit.ray.dir_x = rayDirection.x_;
+                rayHit.ray.dir_y = rayDirection.y_;
+                rayHit.ray.dir_z = rayDirection.z_;
+                rayHit.ray.tfar = texelRadius;
+                rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                rtcIntersect1(scene, &rayContext, &rayHit);
+
+                if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
+                    continue;
+
+                // Frontface if dot product is negative, i.e face and ray face each other
+                const float dp = rayHit.hit.Ng_x * rayHit.ray.dir_x
+                    + rayHit.hit.Ng_y * rayHit.ray.dir_y
+                    + rayHit.hit.Ng_z * rayHit.ray.dir_z;
+
+                // Normal is not normalized, so epsilon won't really help
+                if (dp < 0.0f)
+                    continue;
+
+                // Find closest hit
+                if (rayHit.ray.tfar < closestHitDistance)
+                {
+                    closestHitDistance = rayHit.ray.tfar;
+                    closestHitDirection = rayDirection;
+                }
+            }
+
+            // Push the position behind closest hit
+            mutablePosition = { rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
+            mutablePosition += closestHitDirection * (closestHitDistance + settings.shadowLeakOffset_);
+        }
+    });
 }
 
 void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
@@ -487,20 +590,21 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 
         for (unsigned i = fromIndex; i < toIndex; ++i)
         {
-            const Vector3 position = geometryBuffer.geometryPositions_[i];
-            const Vector3 smoothNormal = geometryBuffer.smoothNormals_[i];
             const unsigned geometryId = geometryBuffer.geometryIds_[i];
-
             if (!geometryId)
                 continue;
+
+            const Vector3 position = geometryBuffer.positions_[i];
+            const Vector3 faceNormal = geometryBuffer.faceNormals_[i];
+            const Vector3 smoothNormal = geometryBuffer.smoothNormals_[i];
 
             const unsigned embreeGeometryId = geometryBufferToEmbree[geometryId];
             rayContext.currentGeometry_ = &embreeGeometryIndex[embreeGeometryId];
 
             // Cast direct ray
-            rayHit.ray.org_x = position.x_ + rayDirection.x_ * settings.rayPositionOffset_;
-            rayHit.ray.org_y = position.y_ + rayDirection.y_ * settings.rayPositionOffset_;
-            rayHit.ray.org_z = position.z_ + rayDirection.z_ * settings.rayPositionOffset_;
+            rayHit.ray.org_x = position.x_ + faceNormal.x_ * settings.rayPositionOffset_;
+            rayHit.ray.org_y = position.y_ + faceNormal.y_ * settings.rayPositionOffset_;
+            rayHit.ray.org_z = position.z_ + faceNormal.z_ * settings.rayPositionOffset_;
             rayHit.ray.tfar = maxDistance;
             rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
             rtcIntersect1(scene, &rayContext, &rayHit);
@@ -540,10 +644,10 @@ void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
 }
 
 void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const IndirectFilterParameters& params, unsigned numThreads)
+    const IndirectFilterParameters& params, unsigned numTasks)
 {
     const ea::span<const float> kernelWeights = GetKernel(params.kernelRadius_);
-    ParallelFor(bakedIndirect.light_.size(), numThreads,
+    ParallelFor(bakedIndirect.light_.size(), numTasks,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         for (unsigned index = fromIndex; index < toIndex; ++index)
@@ -556,7 +660,7 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
             const Vector4 centerColor = bakedIndirect.light_[index];
             const float centerLuminance = GetLuminance(centerColor);
-            const Vector3 centerPosition = geometryBuffer.geometryPositions_[index];
+            const Vector3 centerPosition = geometryBuffer.positions_[index];
             const Vector3 centerNormal = geometryBuffer.smoothNormals_[index];
 
             float colorWeight = kernelWeights[0] * kernelWeights[0];
@@ -583,7 +687,7 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
                     const Vector4 otherColor = bakedIndirect.light_[otherIndex];
                     const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
-                        centerPosition, geometryBuffer.geometryPositions_[otherIndex], dxdy * params.positionSigma_,
+                        centerPosition, geometryBuffer.positions_[otherIndex], dxdy * params.positionSigma_,
                         centerNormal, geometryBuffer.smoothNormals_[otherIndex], params.normalPower_);
 
                     colorSum += otherColor * weight * kernel;

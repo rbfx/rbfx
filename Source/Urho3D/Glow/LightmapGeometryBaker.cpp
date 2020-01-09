@@ -439,12 +439,12 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
 
     // Store results
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("position"), buffer);
-    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.geometryPositions_.begin(), ExtractVector3FromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.positions_.begin(), ExtractVector3FromVector4);
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.geometryIds_.begin(), ExtractUintFromVector4);
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothposition"), buffer);
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.smoothPositions_.begin(), ExtractVector3FromVector4);
-    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.texelSizes_.begin(), ExtractFloatFromVector4);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.texelRadiuses_.begin(), ExtractFloatFromVector4);
 
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("facenormal"), buffer);
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.faceNormals_.begin(), ExtractVector3FromVector4);

@@ -35,6 +35,11 @@ class EmbreeScene;
 class TetrahedralMesh;
 struct LightProbeCollection;
 
+/// Preprocess geometry buffer. Fix shadow bleeding.
+URHO3D_API void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
+    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const LightmapTracingSettings& settings);
+
 /// Direct light accumulated for given lightmap chart.
 struct LightmapChartBakedDirect
 {
@@ -112,14 +117,6 @@ struct LightmapChartBakedIndirect
     ea::vector<Vector4> lightSwap_;
 };
 
-/// Initialize baked direct light for lightmap charts.
-URHO3D_API ea::vector<LightmapChartBakedDirect> InitializeLightmapChartsBakedDirect(
-    const LightmapChartGeometryBufferVector& geometryBuffers);
-
-/// Initialize baked direct light for lightmap charts.
-URHO3D_API ea::vector<LightmapChartBakedIndirect> InitializeLightmapChartsBakedIndirect(
-    const LightmapChartGeometryBufferVector& geometryBuffers);
-
 /// Directional light parameters.
 struct DirectionalLightParameters
 {
@@ -167,7 +164,7 @@ struct IndirectFilterParameters
 
 /// Filter indirect light.
 URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const IndirectFilterParameters& params, unsigned numThreads);
+    const IndirectFilterParameters& params, unsigned numTasks);
 
 
 }

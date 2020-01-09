@@ -45,7 +45,7 @@ void PS()
         faceNormal *= -1.0;
 
     vec3 dPmax = max(abs(dPdx), abs(dPdy));
-    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z));
+    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
 
     gl_FragData[0] = vec4(vWorldPos.xyz, vMetadata.x);
     gl_FragData[1] = vec4(vWorldPos.xyz, texelRadius);
