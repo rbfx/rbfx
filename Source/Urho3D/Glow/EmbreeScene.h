@@ -28,6 +28,7 @@
 #include "../Glow/EmbreeForward.h"
 #include "../Graphics/LightmapSettings.h"
 #include "../Math/BoundingBox.h"
+#include "../Math/Color.h"
 
 #include <EASTL/vector.h>
 
@@ -55,6 +56,12 @@ struct EmbreeGeometry
     unsigned embreeGeometryId_{};
     /// Internal geometry pointer.
     RTCGeometry embreeGeometry_{};
+    /// Whether the geometry is opaque.
+    bool opaque_{};
+    /// Diffuse color of geometry.
+    Vector3 diffuseColor_{};
+    /// Alpha value.
+    float alpha_{};
 };
 
 /// Compare Embree geometries by objects (less).

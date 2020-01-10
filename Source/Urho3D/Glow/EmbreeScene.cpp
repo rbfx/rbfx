@@ -31,6 +31,7 @@
 #include "../Graphics/Terrain.h"
 #include "../Graphics/TerrainPatch.h"
 #include "../Glow/EmbreeScene.h"
+#include "../Glow/Helpers.h"
 #include "../IO/Log.h"
 
 #include <future>
@@ -106,23 +107,43 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const GeometryLODView& 
 
 /// Create Embree geometry from parsed model.
 ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
-    RTCDevice embreeDevice, ModelView* modelView, Node* node, unsigned objectIndex,
+    RTCDevice embreeDevice, ModelView* modelView, StaticModel* staticModel, unsigned objectIndex,
     unsigned lightmapIndex, const Vector2& lightmapUVScale, const Vector2& lightmapUVOffset, unsigned uvChannel)
 {
+    Node* node = staticModel->GetNode();
     ea::vector<EmbreeGeometry> result;
 
     const ea::vector<GeometryView> geometries = modelView->GetGeometries();
     for (unsigned geometryIndex = 0; geometryIndex < geometries.size(); ++geometryIndex)
     {
+        Material* material = staticModel->GetMaterial(geometryIndex);
+
         const GeometryView& geometryView = geometries[geometryIndex];
         for (unsigned lodIndex = 0; lodIndex < geometryView.lods_.size(); ++lodIndex)
         {
             const GeometryLODView& geometryLODView = geometryView.lods_[lodIndex];
             const unsigned mask = lodIndex == 0 ? EmbreeScene::PrimaryLODGeometry : EmbreeScene::SecondaryLODGeometry;
-            const RTCGeometry embreeGeometry = CreateEmbreeGeometry(embreeDevice, geometryLODView,
+
+            EmbreeGeometry embreeGeometry;
+            embreeGeometry.objectIndex_ = objectIndex;
+            embreeGeometry.geometryIndex_ = geometryIndex;
+            embreeGeometry.lodIndex_ = lodIndex;
+            embreeGeometry.numLods_ = geometryView.lods_.size();
+            embreeGeometry.lightmapIndex_ = lightmapIndex;
+            embreeGeometry.embreeGeometryId_ = M_MAX_UNSIGNED;
+
+            embreeGeometry.embreeGeometry_ = CreateEmbreeGeometry(embreeDevice, geometryLODView,
                 node, lightmapUVScale, lightmapUVOffset, uvChannel, mask);
-            result.push_back(EmbreeGeometry{ objectIndex, geometryIndex, lodIndex, geometryView.lods_.size(),
-                lightmapIndex, M_MAX_UNSIGNED, embreeGeometry });
+
+            embreeGeometry.opaque_ = !material || IsMaterialOpaque(material);
+            if (!embreeGeometry.opaque_)
+            {
+                const Color diffuseColor = GetMaterialDiffuse(material);
+                embreeGeometry.diffuseColor_ = diffuseColor.ToVector3();
+                embreeGeometry.alpha_ = diffuseColor.a_;
+            }
+
+            result.push_back(embreeGeometry);
         }
     }
     return result;
@@ -215,7 +236,7 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
 
         ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
         createEmbreeGeometriesTasks.push_back(std::async(CreateEmbreeGeometriesForModel,
-            device, parsedModel, staticModel->GetNode(),
+            device, parsedModel, staticModel,
             objectIndex, lightmapIndex, lightmapUVScale, lightmapUVOffset, uvChannel));
     }
 
