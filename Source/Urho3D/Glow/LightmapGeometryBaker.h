@@ -131,6 +131,10 @@ struct LightmapChartGeometryBuffer
     ea::vector<unsigned> geometryIds_;
     /// Radiuses of texels.
     ea::vector<float> texelRadiuses_;
+    /// Albedo values.
+    ea::vector<Vector3> albedo_;
+    /// Emission values.
+    ea::vector<Vector3> emission_;
     /// Lightmap seams.
     LightmapSeamVector seams_;
 
@@ -147,6 +151,8 @@ struct LightmapChartGeometryBuffer
         , faceNormals_(width * height)
         , geometryIds_(width * height)
         , texelRadiuses_(width * height)
+        , albedo_(width * height)
+        , emission_(width * height)
     {
     }
     /// Convert index to location.

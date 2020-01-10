@@ -299,7 +299,7 @@ void PS(
         #ifdef AMBIENT
             finalColor += iVertexLight * diffColor.rgb;
             #ifdef LIGHTMAP
-                finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb;
+                finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb * 2.0f;
             #elif defined(EMISSIVEMAP)
                 finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
             #else
@@ -351,7 +351,7 @@ void PS(
             finalColor += cMatEnvMapColor * SampleCube(EnvCubeMap, reflect(iReflectionVec, normal)).rgb;
         #endif
         #ifdef LIGHTMAP
-            finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb;
+            finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb * 2.0f;
         #elif defined(EMISSIVEMAP)
             finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
         #else
