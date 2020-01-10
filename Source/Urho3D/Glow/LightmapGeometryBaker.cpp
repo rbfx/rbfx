@@ -444,6 +444,12 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
     ReadTextureRGBA32Float(view.GetExtraRenderTarget("smoothnormal"), buffer);
     ea::transform(buffer.begin(), buffer.end(), geometryBuffer.smoothNormals_.begin(), ExtractVector3FromVector4);
 
+    ReadTextureRGBA32Float(view.GetExtraRenderTarget("albedo"), buffer);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.albedo_.begin(), ExtractVector3FromVector4);
+
+    ReadTextureRGBA32Float(view.GetExtraRenderTarget("emission"), buffer);
+    ea::transform(buffer.begin(), buffer.end(), geometryBuffer.emission_.begin(), ExtractVector3FromVector4);
+
     graphics->EndFrame();
 
     geometryBuffer.seams_ = bakingScene.seams_;

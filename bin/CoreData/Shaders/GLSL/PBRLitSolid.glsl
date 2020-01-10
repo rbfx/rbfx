@@ -205,7 +205,7 @@ void PS()
         #ifdef AMBIENT
             finalColor += vVertexLight * diffColor.rgb;
             #ifdef LIGHTMAP
-                finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
+                finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb * 2.0f;
             #elif defined(EMISSIVEMAP)
                 finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
             #else
@@ -254,7 +254,7 @@ void PS()
             finalColor += cMatEnvMapColor * textureCube(sEnvCubeMap, reflect(vReflectionVec, normal)).rgb;
         #endif
         #ifdef LIGHTMAP
-            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb;
+            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb * 2.0f;
         #elif defined(EMISSIVEMAP)
             finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
         #else

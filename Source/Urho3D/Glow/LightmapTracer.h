@@ -53,6 +53,7 @@ struct LightmapChartBakedDirect
         , realHeight_(static_cast<float>(height_))
         , directLight_(width_ * height_, Vector4(0.0f, 0.0f, 0.0f, 1.0f))
         , surfaceLight_(width_ * height_)
+        , albedo_(width_ * height_)
     {
     }
     /// Return nearest point location by UV.
@@ -62,11 +63,17 @@ struct LightmapChartBakedDirect
         const int y = FloorToInt(ea::min(uv.y_ * realHeight_, realHeight_ - 1.0f));
         return { x, y };
     }
-    /// Return surface light by location.
+    /// Return surface light for location.
     const Vector3& GetSurfaceLight(const IntVector2& location) const
     {
         const unsigned index = location.x_ + location.y_ * width_;
         return surfaceLight_[index];
+    }
+    /// Return albedo for location.
+    const Vector3& GetAlbedo(const IntVector2& location) const
+    {
+        const unsigned index = location.x_ + location.y_ * width_;
+        return albedo_[index];
     }
 
     /// Width of the chart.
@@ -82,6 +89,8 @@ struct LightmapChartBakedDirect
     ea::vector<Vector4> directLight_;
     /// Incoming direct light from all static lights multiplied with albedo, used to calculate indirect lighting.
     ea::vector<Vector3> surfaceLight_;
+    /// Albedo of the surface.
+    ea::vector<Vector3> albedo_;
 };
 
 /// Indirect light accumulated for given lightmap chart.
@@ -129,6 +138,10 @@ struct DirectionalLightParameters
     /// Whether to collect indirect light.
     bool bakeIndirect_{};
 };
+
+/// Accumulate emission light.
+URHO3D_API void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+    const LightmapTracingSettings& settings);
 
 /// Accumulate direct light from directional light.
 URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
