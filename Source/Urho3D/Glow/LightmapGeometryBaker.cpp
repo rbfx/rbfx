@@ -25,6 +25,7 @@
 #include "../Core/Context.h"
 #include "../IO/Log.h"
 #include "../Math/BoundingBox.h"
+#include "../Glow/Helpers.h"
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Glow/StaticModelForLightmap.h"
 #include "../Graphics/Camera.h"
@@ -290,15 +291,6 @@ unsigned ExtractUintFromVector4(const Vector4& data) { return static_cast<unsign
 /// Extract w-component as float from Vector4.
 float ExtractFloatFromVector4(const Vector4& data) { return data.w_; }
 
-}
-
-SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName)
-{
-    auto renderPath = MakeShared<RenderPath>();
-    auto renderPathXml = context->GetCache()->GetResource<XMLFile>(renderPathName);
-    if (!renderPath->Load(renderPathXml))
-        return nullptr;
-    return renderPath;
 }
 
 LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(

@@ -24,6 +24,7 @@
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"
+#include "../Glow/Helpers.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/Graphics.h"
