@@ -103,9 +103,6 @@ struct LightmapGeometryBakingScenesArray
     GeometryIDToObjectMappingVector idToObject_;
 };
 
-/// Load render path.
-URHO3D_API SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& renderPathName);
-
 /// Generate baking scenes for lightmap charts.
 URHO3D_API LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     Context* context, const ea::vector<StaticModel*>& staticModels,
