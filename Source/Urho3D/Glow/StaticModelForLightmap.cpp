@@ -81,6 +81,26 @@ GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(
                 material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
                 material->SetShaderParameter("LightmapLayer", tapDepth);
                 material->SetShaderParameter("LightmapGeometry", static_cast<float>(baseGeometryId + mapping.size()));
+                material->SetShaderParameter("MatDiffColor", sourceMaterial->GetShaderParameter("MatDiffColor").GetVector4());
+                material->SetShaderParameter("MatEmissiveColor", sourceMaterial->GetShaderParameter("MatEmissiveColor").GetVector3());
+                material->SetShaderParameter("UOffset", sourceMaterial->GetShaderParameter("UOffset").GetVector4());
+                material->SetShaderParameter("VOffset", sourceMaterial->GetShaderParameter("VOffset").GetVector4());
+
+                ea::string shaderDefines;
+
+                if (Texture* diffuseMap = sourceMaterial->GetTexture(TU_DIFFUSE))
+                {
+                    material->SetTexture(TU_DIFFUSE, diffuseMap);
+                    shaderDefines += "DIFFMAP ";
+                }
+                if (Texture* emissiveMap = sourceMaterial->GetTexture(TU_EMISSIVE))
+                {
+                    material->SetTexture(TU_EMISSIVE, emissiveMap);
+                    shaderDefines += "EMISSIVEMAP ";
+                }
+
+                material->SetVertexShaderDefines(shaderDefines);
+                material->SetPixelShaderDefines(shaderDefines);
 
                 SourceBatch& batch = batches_.push_back();
                 batch.distance_ = 0.0f;

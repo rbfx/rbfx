@@ -74,7 +74,7 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
 
         for (StaticModel* staticModel : staticModels)
         {
-            if (staticModel->GetBakeLightmap())
+            if (staticModel->IsEnabledEffective() && staticModel->GetBakeLightmap())
             {
                 chunkData.staticModels_.push_back(staticModel);
                 chunkData.boundingBox_.Merge(staticModel->GetWorldBoundingBox());
@@ -83,8 +83,11 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
 
         for (LightProbeGroup* lightProbeGroup : lightProbeGroups)
         {
-            chunkData.lightProbeGroups_.push_back(lightProbeGroup);
-            chunkData.boundingBox_.Merge(lightProbeGroup->GetWorldBoundingBox());
+            if (lightProbeGroup->IsEnabledEffective())
+            {
+                chunkData.lightProbeGroups_.push_back(lightProbeGroup);
+                chunkData.boundingBox_.Merge(lightProbeGroup->GetWorldBoundingBox());
+            }
         }
     }
 }
@@ -171,12 +174,12 @@ ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInBoundin
 ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetLightProbeGroupsInBoundingBox(
     const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
-    auto intersects = [&](const LightProbeGroup* group)
+    auto isAppropriate = [&](const LightProbeGroup* group)
     {
-        return group->GetWorldBoundingBox().IsInside(boundingBox) != OUTSIDE;
+        return group->IsEnabledEffective() && group->GetWorldBoundingBox().IsInside(boundingBox) != OUTSIDE;
     };
     ea::vector<LightProbeGroup*> groups;
-    ea::copy_if(lightProbeGroups_.begin(), lightProbeGroups_.end(), ea::back_inserter(groups), intersects);
+    ea::copy_if(lightProbeGroups_.begin(), lightProbeGroups_.end(), ea::back_inserter(groups), isAppropriate);
     return groups;
 }
 

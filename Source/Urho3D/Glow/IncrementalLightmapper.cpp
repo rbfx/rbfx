@@ -425,6 +425,9 @@ struct IncrementalLightmapper::Impl
                 cache_->LoadGeometryBuffer(lightmapIndex);
             LightmapChartBakedDirect bakedDirect{ geometryBuffer->width_, geometryBuffer->height_ };
 
+            // Bake emission
+            BakeEmissionLight(bakedDirect, *geometryBuffer, lightmapSettings_.tracing_);
+
             // Bake direct lights
             for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
             {
@@ -528,11 +531,11 @@ struct IncrementalLightmapper::Impl
                     const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
                     const Vector3 totalLight = directLight + indirectLight;
 
-                    Color color;
-                    color.r_ = Pow(totalLight.x_, 1 / 2.2f);
-                    color.g_ = Pow(totalLight.y_, 1 / 2.2f);
-                    color.b_ = Pow(totalLight.z_, 1 / 2.2f);
-                    color.a_ = 1.0f;
+                    static const float multiplier = 1.0f / 2.0f;
+                    Color color = static_cast<Color>(totalLight).LinearToGamma();
+                    color.r_ *= multiplier;
+                    color.g_ *= multiplier;
+                    color.b_ *= multiplier;
                     lightmapImage->SetPixel(x, y, color);
                 }
             }
