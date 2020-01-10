@@ -25,6 +25,7 @@
 #include <embree3/rtcore_ray.h>
 #define _SSIZE_T_DEFINED
 
+#include "../Glow/Helpers.h"
 #include "../Glow/EmbreeScene.h"
 #include "../Glow/LightmapTracer.h"
 #include "../Graphics/LightProbeGroup.h"
@@ -38,28 +39,6 @@ namespace Urho3D
 
 namespace
 {
-
-/// Parallel for loop.
-template <class T>
-void ParallelFor(unsigned count, unsigned numTasks, const T& callback)
-{
-    // Post async tasks
-    ea::vector<std::future<void>> tasks;
-    const unsigned chunkSize = (count + numTasks - 1) / numTasks;
-    for (unsigned i = 0; i < numTasks; ++i)
-    {
-        tasks.push_back(std::async([&, i]()
-        {
-            const unsigned fromIndex = i * chunkSize;
-            const unsigned toIndex = ea::min(fromIndex + chunkSize, count);
-            callback(fromIndex, toIndex);
-        }));
-    }
-
-    // Wait for async tasks
-    for (auto& task : tasks)
-        task.wait();
-}
 
 /// Generate random direction.
 void RandomDirection(Vector3& result)
@@ -145,6 +124,16 @@ bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& 
     return hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry;
 }
 
+/// Return true if transparent, update incoming light.
+bool IsTransparent(const EmbreeGeometry& hitGeometry, Vector3& incomingLight)
+{
+    if (hitGeometry.opaque_)
+        return false;
+
+    incomingLight = Lerp(incomingLight, incomingLight * hitGeometry.diffuseColor_, hitGeometry.alpha_);
+    return true;
+}
+
 /// Ray tracing context for geometry buffer preprocessing.
 struct GeometryBufferPreprocessContext : public RTCIntersectContext
 {
@@ -178,6 +167,8 @@ struct ChartsDirectContext : public RTCIntersectContext
     const EmbreeGeometry* currentGeometry_{};
     /// Geometry index.
     const ea::vector<EmbreeGeometry>* geometryIndex_{};
+    /// Incoming light.
+    Vector3* incomingLight_{};
 };
 
 /// Filter function for direct light baking for charts.
@@ -191,15 +182,13 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
     if (args->valid[0] == 0)
         return;
 
+    // Ignore if unwanted LOD
     const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    if (IsUnwantedLod(*ctx.currentGeometry_, hitGeometry))
+        args->valid[0] = 0;
 
-    const bool hitLod = hitGeometry.lodIndex_ != 0;
-    const bool sameGeometry = ctx.currentGeometry_->objectIndex_ == hitGeometry.objectIndex_
-        && ctx.currentGeometry_->geometryIndex_ == hitGeometry.geometryIndex_;
-
-    const bool hitLodOfAnotherGeometry = !sameGeometry && hitLod;
-    const bool hitAnotherLodOfSameGeometry = sameGeometry && hitGeometry.lodIndex_ != ctx.currentGeometry_->lodIndex_;
-    if (hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry)
+    // Accumulate and ignore if transparent
+    if (IsTransparent(hitGeometry, *ctx.incomingLight_))
         args->valid[0] = 0;
 }
 
@@ -564,7 +553,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
     const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
-    const Vector3 rayDirection = -light.direction_.Normalized();
+    const Vector3 rayDirection = light.direction_.Normalized();
     const float maxDistance = embreeScene.GetMaxDistance();
     const Vector3 lightColor = light.color_.ToVector3();
     RTCScene scene = embreeScene.GetEmbreeScene();
@@ -601,10 +590,13 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             const unsigned embreeGeometryId = geometryBufferToEmbree[geometryId];
             rayContext.currentGeometry_ = &embreeGeometryIndex[embreeGeometryId];
 
+            Vector3 incomingLight = lightColor;
+            rayContext.incomingLight_ = &incomingLight;
+
             // Cast direct ray
-            rayHit.ray.org_x = position.x_ + faceNormal.x_ * settings.rayPositionOffset_;
-            rayHit.ray.org_y = position.y_ + faceNormal.y_ * settings.rayPositionOffset_;
-            rayHit.ray.org_z = position.z_ + faceNormal.z_ * settings.rayPositionOffset_;
+            rayHit.ray.org_x = position.x_ + faceNormal.x_ * settings.rayPositionOffset_ - rayDirection.x_ * maxDistance;
+            rayHit.ray.org_y = position.y_ + faceNormal.y_ * settings.rayPositionOffset_ - rayDirection.y_ * maxDistance;
+            rayHit.ray.org_z = position.z_ + faceNormal.z_ * settings.rayPositionOffset_ - rayDirection.z_ * maxDistance;
             rayHit.ray.tfar = maxDistance;
             rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
             rtcIntersect1(scene, &rayContext, &rayHit);
@@ -612,8 +604,8 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
                 continue;
 
-            const float intensity = ea::max(0.0f, smoothNormal.DotProduct(rayDirection));
-            const Vector3 lightValue = lightColor * intensity;
+            const float intensity = ea::max(0.0f, smoothNormal.DotProduct(-rayDirection));
+            const Vector3 lightValue = incomingLight * intensity;
 
             if (light.bakeDirect_)
                 bakedDirect.directLight_[i] += Vector4(lightValue, 0.0f);
