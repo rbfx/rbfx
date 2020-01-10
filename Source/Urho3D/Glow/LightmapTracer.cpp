@@ -124,14 +124,26 @@ bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& 
     return hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry;
 }
 
-/// Return true if transparent, update incoming light.
-bool IsTransparent(const EmbreeGeometry& hitGeometry, Vector3& incomingLight)
+/// Return true if transparent, update incoming light. Used for direct light calculations.
+bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, Vector3& incomingLight)
 {
     if (hitGeometry.opaque_)
         return false;
 
     incomingLight = Lerp(incomingLight, incomingLight * hitGeometry.diffuseColor_, hitGeometry.alpha_);
     return true;
+}
+
+/// Return true if transparent. Used for indirect light calculations.
+bool IsTransparentForIndirect(const EmbreeGeometry& hitGeometry)
+{
+    if (hitGeometry.opaque_)
+        return false;
+
+    if (hitGeometry.alpha_ < 0.5f)
+        return true;
+
+    return false;
 }
 
 /// Ray tracing context for geometry buffer preprocessing.
@@ -161,7 +173,7 @@ void GeometryBufferPreprocessFilter(const RTCFilterFunctionNArguments* args)
 }
 
 /// Ray tracing context for direct light baking for charts.
-struct ChartsDirectContext : public RTCIntersectContext
+struct DirectTracingContextForCharts : public RTCIntersectContext
 {
     /// Current geometry.
     const EmbreeGeometry* currentGeometry_{};
@@ -174,7 +186,7 @@ struct ChartsDirectContext : public RTCIntersectContext
 /// Filter function for direct light baking for charts.
 void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
 {
-    const auto& ctx = *static_cast<const ChartsDirectContext*>(args->context);
+    const auto& ctx = *static_cast<const DirectTracingContextForCharts*>(args->context);
     auto& hit = *reinterpret_cast<RTCHit*>(args->hit);
     assert(args->N == 1);
 
@@ -188,7 +200,31 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
         args->valid[0] = 0;
 
     // Accumulate and ignore if transparent
-    if (IsTransparent(hitGeometry, *ctx.incomingLight_))
+    if (IsTransparedForDirect(hitGeometry, *ctx.incomingLight_))
+        args->valid[0] = 0;
+}
+
+/// Ray tracing context for indirect light baking.
+struct IndirectTracingContext : public RTCIntersectContext
+{
+    /// Geometry index.
+    const ea::vector<EmbreeGeometry>* geometryIndex_{};
+};
+
+/// Filter function for indirect light baking.
+void TracingFilterIndirect(const RTCFilterFunctionNArguments* args)
+{
+    const auto& ctx = *static_cast<const IndirectTracingContext*>(args->context);
+    auto& hit = *reinterpret_cast<RTCHit*>(args->hit);
+    assert(args->N == 1);
+
+    // Ignore invalid
+    if (args->valid[0] == 0)
+        return;
+
+    // Ignore if transparent
+    const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    if (IsTransparentForIndirect(hitGeometry))
         args->valid[0] = 0;
 }
 
@@ -211,11 +247,12 @@ struct ChartIndirectTracingElement
     explicit operator bool() const { return geometryId_ != 0; }
     /// Begin sample. Return position, normal and initial ray direction.
     void BeginSample(unsigned /*sampleIndex*/,
-        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection) const
+        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo) const
     {
         position = position_;
         faceNormal = faceNormal_;
         smoothNormal = smoothNormal_;
+        albedo = Vector3::ONE;
         rayDirection = RandomHemisphereDirection(faceNormal_);
     }
     /// End sample.
@@ -259,7 +296,6 @@ struct ChartIndirectTracingKernel
 
         const Vector3& position = geometryBuffer_->positions_[elementIndex];
         const Vector3& smoothNormal = geometryBuffer_->smoothNormals_[elementIndex];
-        const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
         const unsigned embreeGeometryId = (*geometryBufferToEmbree_)[geometryId];
         const EmbreeGeometry& embreeGeometry = (*embreeGeometryIndex_)[embreeGeometryId];
 
@@ -271,6 +307,7 @@ struct ChartIndirectTracingKernel
             return {};
         }
 
+        const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
         return { position + faceNormal * settings_->rayPositionOffset_, faceNormal, smoothNormal, geometryId };
     };
     /// End tracing element.
@@ -299,13 +336,14 @@ struct LightProbeIndirectTracingElement
     explicit operator bool() const { return true; }
     /// Begin sample. Return position, normal and initial ray direction.
     void BeginSample(unsigned /*sampleIndex*/,
-        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection)
+        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo)
     {
         position = position_;
         RandomDirection(currentDirection_);
         faceNormal = currentDirection_;
         smoothNormal = currentDirection_;
         rayDirection = currentDirection_;
+        albedo = Vector3::ONE;
     }
     /// End sample.
     void EndSample(const Vector3& light)
@@ -358,12 +396,15 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
         const float maxDistance = embreeScene.GetMaxDistance();
         const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
 
+        Vector3 albedo[LightmapTracingSettings::MaxBounces];
         Vector3 incomingSamples[LightmapTracingSettings::MaxBounces];
         float incomingFactors[LightmapTracingSettings::MaxBounces];
 
         RTCRayHit rayHit;
-        RTCIntersectContext rayContext;
+        IndirectTracingContext rayContext;
         rtcInitIntersectContext(&rayContext);
+        rayContext.geometryIndex_ = &geometryIndex;
+        rayContext.filter = TracingFilterIndirect;
 
         rayHit.ray.tnear = 0.0f;
         rayHit.ray.time = 0.0f;
@@ -383,7 +424,8 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                 Vector3 currentFaceNormal;
                 Vector3 currentSmoothNormal;
                 Vector3 currentRayDirection;
-                element.BeginSample(sampleIndex, currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection);
+                element.BeginSample(sampleIndex,
+                    currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection, albedo[0]);
 
                 int numBounces = 0;
                 for (unsigned bounceIndex = 0; bounceIndex < settings.numBounces_; ++bounceIndex)
@@ -427,6 +469,9 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                     // Go to next hemisphere
                     if (numBounces < settings.numBounces_)
                     {
+                        // Update albedo for hit surface
+                        albedo[bounceIndex + 1] = bakedDirect[lightmapIndex]->GetAlbedo(sampleLocation);
+
                         // Move to hit position
                         currentPosition.x_ = rayHit.ray.org_x + rayHit.ray.dir_x * rayHit.ray.tfar;
                         currentPosition.y_ = rayHit.ray.org_y + rayHit.ray.dir_y * rayHit.ray.tfar;
@@ -453,8 +498,11 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                 Vector3 sampleIndirectLight;
                 for (int bounceIndex = numBounces - 1; bounceIndex >= 0; --bounceIndex)
                 {
+                    if (albedo[bounceIndex] == Color::RED.ToVector3())
+                        albedo[bounceIndex] = albedo[bounceIndex];
                     sampleIndirectLight += incomingSamples[bounceIndex];
                     sampleIndirectLight *= incomingFactors[bounceIndex];
+                    sampleIndirectLight *= albedo[bounceIndex];
                 }
 
                 element.EndSample(sampleIndirectLight);
@@ -549,6 +597,31 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
     });
 }
 
+void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+    const LightmapTracingSettings& settings)
+{
+    ParallelFor(bakedDirect.directLight_.size(), settings.numTasks_,
+        [&](unsigned fromIndex, unsigned toIndex)
+    {
+        for (unsigned i = fromIndex; i < toIndex; ++i)
+        {
+            const unsigned geometryId = geometryBuffer.geometryIds_[i];
+            if (!geometryId)
+                continue;
+
+            const Vector3& albedo = geometryBuffer.albedo_[i];
+            const Vector3& emission = geometryBuffer.emission_[i];
+
+            if (emission != Vector3::ZERO)
+                i = i;
+
+            bakedDirect.directLight_[i] += Vector4(emission, 0.0f);
+            bakedDirect.surfaceLight_[i] += emission;
+            bakedDirect.albedo_[i] = albedo;
+        }
+    });
+}
+
 void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
@@ -563,7 +636,7 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCRayHit rayHit;
-        ChartsDirectContext rayContext;
+        DirectTracingContextForCharts rayContext;
         rtcInitIntersectContext(&rayContext);
         rayContext.geometryIndex_ = &embreeGeometryIndex;
         rayContext.filter = TracingFilterForChartsDirect;
@@ -583,9 +656,9 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             if (!geometryId)
                 continue;
 
-            const Vector3 position = geometryBuffer.positions_[i];
-            const Vector3 faceNormal = geometryBuffer.faceNormals_[i];
-            const Vector3 smoothNormal = geometryBuffer.smoothNormals_[i];
+            const Vector3& position = geometryBuffer.positions_[i];
+            const Vector3& faceNormal = geometryBuffer.faceNormals_[i];
+            const Vector3& smoothNormal = geometryBuffer.smoothNormals_[i];
 
             const unsigned embreeGeometryId = geometryBufferToEmbree[geometryId];
             rayContext.currentGeometry_ = &embreeGeometryIndex[embreeGeometryId];
@@ -605,13 +678,17 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
                 continue;
 
             const float intensity = ea::max(0.0f, smoothNormal.DotProduct(-rayDirection));
-            const Vector3 lightValue = incomingLight * intensity;
+            const Vector3 lightIntensity = incomingLight * intensity;
+
 
             if (light.bakeDirect_)
-                bakedDirect.directLight_[i] += Vector4(lightValue, 0.0f);
+                bakedDirect.directLight_[i] += Vector4(lightIntensity, 0.0f);
 
             if (light.bakeIndirect_)
-                bakedDirect.surfaceLight_[i] += lightValue;
+            {
+                const Vector3& albedo = geometryBuffer.albedo_[i];
+                bakedDirect.surfaceLight_[i] += albedo * lightIntensity;
+            }
         }
     });
 }

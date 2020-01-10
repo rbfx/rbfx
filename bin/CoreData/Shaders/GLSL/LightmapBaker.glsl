@@ -1,3 +1,4 @@
+#define MRT_COUNT 6
 #include "Uniforms.glsl"
 #include "Samplers.glsl"
 #include "Transform.glsl"
@@ -18,6 +19,7 @@ uniform LightmapVS
 
 #endif
 
+varying vec2 vTexCoord;
 varying vec3 vNormal;
 varying vec4 vWorldPos;
 varying vec4 vMetadata;
@@ -32,10 +34,21 @@ void VS()
     vNormal = GetWorldNormal(modelMatrix);
     vWorldPos = vec4(worldPos, 1.0);
     vMetadata = vec4(cLightmapGeometry, 0.0, 0.0, 0.0);
+    vTexCoord = GetTexCoord(iTexCoord);
 }
 
 void PS()
 {
+    vec4 diffColor = cMatDiffColor;
+    #ifdef DIFFMAP
+        diffColor *= texture2D(sDiffMap, vTexCoord.xy);
+    #endif
+
+    vec3 emissiveColor = cMatEmissiveColor;
+    #ifdef EMISSIVEMAP
+        emissiveColor *= texture2D(sEmissiveMap, vTexCoord.xy).rgb;
+    #endif
+
     vec3 normal = normalize(vNormal);
 
     vec3 dPdx = dFdx(vWorldPos.xyz);
@@ -51,4 +64,6 @@ void PS()
     gl_FragData[1] = vec4(vWorldPos.xyz, texelRadius);
     gl_FragData[2] = vec4(faceNormal, 1.0);
     gl_FragData[3] = vec4(normal, 1.0);
+    gl_FragData[4] = vec4(diffColor.rgb * diffColor.a, 1.0);
+    gl_FragData[5] = vec4(emissiveColor.rgb, 1.0);
 }

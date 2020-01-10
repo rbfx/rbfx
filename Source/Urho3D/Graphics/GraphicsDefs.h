@@ -491,7 +491,7 @@ enum VertexMask : unsigned
 };
 URHO3D_FLAGSET(VertexMask, VertexMaskFlags);
 
-static const int MAX_RENDERTARGETS = 4;
+static const int MAX_RENDERTARGETS = 8;
 static const int MAX_VERTEX_STREAMS = 4;
 static const int MAX_CONSTANT_REGISTERS = 256;
 
