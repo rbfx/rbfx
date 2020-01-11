@@ -64,7 +64,7 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake!", getBake, setBake, bool, false, AM_EDIT);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, incrementalBakingSettings_.outputDirectory_, "", AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Lightmap Size", unsigned, lightmapSettings_.charting_.chartSize_, defaultLightmapSettings.charting_.chartSize_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Lightmap Size", unsigned, lightmapSettings_.charting_.lightmapSize_, defaultLightmapSettings.charting_.lightmapSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Texel Density", float, lightmapSettings_.charting_.texelDensity_, defaultLightmapSettings.charting_.texelDensity_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, lightmapSettings_.tracing_.numBounces_, defaultLightmapSettings.tracing_.numBounces_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Samples (Texture)", unsigned, lightmapSettings_.tracing_.numIndirectChartSamples_, defaultLightmapSettings.tracing_.numIndirectChartSamples_, AM_DEFAULT);
