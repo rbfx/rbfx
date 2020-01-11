@@ -124,6 +124,20 @@ bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& 
     return hitLodOfAnotherGeometry || hitAnotherLodOfSameGeometry;
 }
 
+/// Return texture color at hit position. Texture must be present.
+Color GetHitDiffuseTextureColor(const EmbreeGeometry& hitGeometry, const RTCHit& hit)
+{
+    assert(hitGeometry.diffuseImage_);
+
+    Vector2 uv;
+    rtcInterpolate0(hitGeometry.embreeGeometry_, hit.primID, hit.u, hit.v,
+        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &uv.x_, 2);
+
+    const int x = Clamp(RoundToInt(uv.x_ * hitGeometry.diffuseImageWidth_), 0, hitGeometry.diffuseImageWidth_ - 1);
+    const int y = Clamp(RoundToInt(uv.y_ * hitGeometry.diffuseImageHeight_), 0, hitGeometry.diffuseImageHeight_ - 1);
+    return hitGeometry.diffuseImage_->GetPixel(x, y);
+}
+
 /// Return true if transparent, update incoming light. Used for direct light calculations.
 bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit, Vector3& incomingLight)
 {
@@ -137,31 +151,38 @@ bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit,
     // Consider texture
     if (hitGeometry.diffuseImage_)
     {
-        Vector2 uv;
-        rtcInterpolate0(hitGeometry.embreeGeometry_, hit.primID, hit.u, hit.v,
-            RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &uv.x_, 2);
-
-        const int x = Clamp(RoundToInt(uv.x_ * hitGeometry.diffuseImageWidth_), 0, hitGeometry.diffuseImageWidth_ - 1);
-        const int y = Clamp(RoundToInt(uv.y_ * hitGeometry.diffuseImageHeight_), 0, hitGeometry.diffuseImageHeight_ - 1);
-        const Color diffuseColor = hitGeometry.diffuseImage_->GetPixel(x, y);
+        const Color diffuseColor = GetHitDiffuseTextureColor(hitGeometry, hit);
 
         hitSurfaceColor *= diffuseColor.ToVector3();
         hitSurfaceAlpha *= diffuseColor.a_;
     }
 
-    // TODO(glow): Update this formula
-    incomingLight = Lerp(incomingLight, incomingLight * hitSurfaceColor, hitSurfaceAlpha);
+    const float transparency = Clamp(1.0f - hitSurfaceAlpha, 0.0f, 1.0f);
+    const float filterIntensity = 1.0f - transparency;
+    incomingLight *= transparency * Lerp(Vector3::ONE, hitSurfaceColor, filterIntensity);
     return true;
 }
 
 /// Return true if transparent. Used for indirect light calculations.
-bool IsTransparentForIndirect(const EmbreeGeometry& hitGeometry)
+bool IsTransparentForIndirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit)
 {
     if (hitGeometry.opaque_)
         return false;
 
-    if (hitGeometry.alpha_ < 0.5f)
+    const float sample = Random(1.0f);
+
+    // Consider material
+    float hitSurfaceAlpha = hitGeometry.alpha_;
+    if (hitSurfaceAlpha < sample)
         return true;
+
+    // Consider texture
+    if (hitGeometry.diffuseImage_)
+    {
+        hitSurfaceAlpha *= GetHitDiffuseTextureColor(hitGeometry, hit).a_;
+        if (hitSurfaceAlpha < sample)
+            return true;
+    }
 
     return false;
 }
@@ -244,7 +265,7 @@ void TracingFilterIndirect(const RTCFilterFunctionNArguments* args)
 
     // Ignore if transparent
     const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
-    if (IsTransparentForIndirect(hitGeometry))
+    if (IsTransparentForIndirect(hitGeometry, hit))
         args->valid[0] = 0;
 }
 
