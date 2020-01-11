@@ -25,19 +25,19 @@
 #pragma once
 
 #include "../Glow/LightmapCharter.h"
-#include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapGeometryBuffer.h"
 #include "../Graphics/LightProbeGroup.h"
 
 namespace Urho3D
 {
 
-class EmbreeScene;
+class RaytracerScene;
 class TetrahedralMesh;
 struct LightProbeCollection;
 
 /// Preprocess geometry buffer. Fix shadow bleeding.
 URHO3D_API void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const LightmapTracingSettings& settings);
 
 /// Direct light accumulated for given lightmap chart.
@@ -145,39 +145,19 @@ URHO3D_API void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const L
 
 /// Accumulate direct light from directional light.
 URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light for charts.
 URHO3D_API void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const TetrahedralMesh& lightProbesMesh, const LightProbeCollection& lightProbesData,
-    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light for light probes.
 URHO3D_API void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
-    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings);
-
-/// Parameters for indirect light filtering.
-struct IndirectFilterParameters
-{
-    /// Kernel radius.
-    int kernelRadius_{ 2 };
-    /// Upscale factor for offsets.
-    int upscale_{ 1 };
-    /// Color weight. The lesser value is, the more color details are preserved on flat surface.
-    float luminanceSigma_{ 10.0f };
-    /// Normal weight. The higher value is, the more color details are preserved on normal edges.
-    float normalPower_{ 4.0f };
-    /// Position weight. The lesser value is, the more color details are preserved on position edges.
-    float positionSigma_{ 1.0f };
-};
-
-/// Filter indirect light.
-URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const IndirectFilterParameters& params, unsigned numTasks);
-
+    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings);
 
 }

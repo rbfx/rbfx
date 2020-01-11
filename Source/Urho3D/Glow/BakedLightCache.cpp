@@ -22,45 +22,45 @@
 
 /// \file
 
-#include "../Glow/LightmapCache.h"
+#include "../Glow/BakedLightCache.h"
 
 namespace Urho3D
 {
 
-LightmapCache::~LightmapCache() = default;
+BakedLightCache::~BakedLightCache() = default;
 
-void LightmapMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
+void BakedLightMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
 {
     chunkVicinityCache_[chunk] = ea::make_shared<LightmapChunkVicinity>(ea::move(vicinity));
 }
 
-ea::shared_ptr<LightmapChunkVicinity> LightmapMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
+ea::shared_ptr<LightmapChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
 {
     auto iter = chunkVicinityCache_.find(chunk);
     return iter != chunkVicinityCache_.end() ? iter->second : nullptr;
 }
 
-void LightmapMemoryCache::CommitLightProbeGroups(const IntVector3& /*chunk*/)
+void BakedLightMemoryCache::CommitLightProbeGroups(const IntVector3& /*chunk*/)
 {
 }
 
-void LightmapMemoryCache::StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer)
+void BakedLightMemoryCache::StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer)
 {
     geometryBufferCache_[lightmapIndex] = ea::make_shared<const LightmapChartGeometryBuffer>(ea::move(geometryBuffer));
 }
 
-ea::shared_ptr<const LightmapChartGeometryBuffer> LightmapMemoryCache::LoadGeometryBuffer(unsigned lightmapIndex)
+ea::shared_ptr<const LightmapChartGeometryBuffer> BakedLightMemoryCache::LoadGeometryBuffer(unsigned lightmapIndex)
 {
     auto iter = geometryBufferCache_.find(lightmapIndex);
     return iter != geometryBufferCache_.end() ? iter->second : nullptr;
 }
 
-void LightmapMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect)
+void BakedLightMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect)
 {
     directLightCache_[lightmapIndex] = ea::make_shared<LightmapChartBakedDirect>(ea::move(bakedDirect));
 }
 
-ea::shared_ptr<LightmapChartBakedDirect> LightmapMemoryCache::LoadDirectLight(unsigned lightmapIndex)
+ea::shared_ptr<LightmapChartBakedDirect> BakedLightMemoryCache::LoadDirectLight(unsigned lightmapIndex)
 {
     auto iter = directLightCache_.find(lightmapIndex);
     return iter != directLightCache_.end() ? iter->second : nullptr;
