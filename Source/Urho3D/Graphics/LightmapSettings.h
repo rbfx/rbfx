@@ -35,7 +35,7 @@ namespace Urho3D
 struct LightmapChartingSettings
 {
     /// Size of lightmap chart.
-    unsigned chartSize_{ 512 };
+    unsigned lightmapSize_{ 512 };
     /// Padding between individual objects on the chart.
     unsigned padding_{ 1 };
     /// Texel density in texels per Scene unit.

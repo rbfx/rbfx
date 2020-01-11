@@ -78,12 +78,8 @@ struct LightmapGeometryBakingScene
     Context* context_{};
     /// Lightmap chart index.
     unsigned index_{};
-    /// Width of the chart.
-    unsigned width_{};
-    /// Height of the chart.
-    unsigned height_{};
-    /// Size of the chart.
-    IntVector2 size_;
+    /// Size of lightmap chart.
+    unsigned lightmapSize_{};
     /// Baking scene.
     SharedPtr<Scene> scene_;
     /// Baking camera.
@@ -106,17 +102,15 @@ struct LightmapGeometryBakingScenesArray
 /// Generate baking scenes for lightmap charts.
 URHO3D_API LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     Context* context, const ea::vector<StaticModel*>& staticModels,
-    unsigned chartSize, const LightmapGeometryBakingSettings& settings);
+    unsigned lightmapSize, const LightmapGeometryBakingSettings& settings);
 
 /// Lightmap geometry buffer of lightmap chart.
 struct LightmapChartGeometryBuffer
 {
     /// Lightmap chart index.
     unsigned index_{};
-    /// Width of the chart.
-    unsigned width_{};
-    /// Height of the chart.
-    unsigned height_{};
+    /// Size of lightmap chart.
+    unsigned lightmapSize_{};
 
     /// Positions as is.
     ea::vector<Vector3> positions_;
@@ -141,35 +135,34 @@ struct LightmapChartGeometryBuffer
     /// Construct default.
     LightmapChartGeometryBuffer() = default;
     /// Construct valid.
-    LightmapChartGeometryBuffer(unsigned index, unsigned width, unsigned height)
+    LightmapChartGeometryBuffer(unsigned index, unsigned size)
         : index_(index)
-        , width_(width)
-        , height_(height)
-        , positions_(width * height)
-        , smoothPositions_(width * height)
-        , smoothNormals_(width * height)
-        , faceNormals_(width * height)
-        , geometryIds_(width * height)
-        , texelRadiuses_(width * height)
-        , albedo_(width * height)
-        , emission_(width * height)
+        , lightmapSize_(size)
+        , positions_(lightmapSize_ * lightmapSize_)
+        , smoothPositions_(lightmapSize_ * lightmapSize_)
+        , smoothNormals_(lightmapSize_ * lightmapSize_)
+        , faceNormals_(lightmapSize_ * lightmapSize_)
+        , geometryIds_(lightmapSize_ * lightmapSize_)
+        , texelRadiuses_(lightmapSize_ * lightmapSize_)
+        , albedo_(lightmapSize_ * lightmapSize_)
+        , emission_(lightmapSize_ * lightmapSize_)
     {
     }
     /// Convert index to location.
     IntVector2 IndexToLocation(unsigned index) const
     {
-        return { static_cast<int>(index % width_), static_cast<int>(index / width_) };
+        return { static_cast<int>(index % lightmapSize_), static_cast<int>(index / lightmapSize_) };
     }
     /// Returns whether the location is valid.
     bool IsValidLocation(const IntVector2& location) const
     {
-        return 0 <= location.x_ && location.x_ < static_cast<int>(width_)
-            && 0 <= location.y_ && location.y_ < static_cast<int>(height_);
+        return 0 <= location.x_ && location.x_ < static_cast<int>(lightmapSize_)
+            && 0 <= location.y_ && location.y_ < static_cast<int>(lightmapSize_);
     }
     /// Convert location to index.
     unsigned LocationToIndex(const IntVector2& location) const
     {
-        return location.x_ + width_ * location.y_;
+        return location.x_ + lightmapSize_ * location.y_;
     }
 };
 
