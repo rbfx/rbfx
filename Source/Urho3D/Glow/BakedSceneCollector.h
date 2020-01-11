@@ -39,13 +39,13 @@ class StaticModel;
 class Scene;
 class Octree;
 
-/// Lightmap scene collector interface.
+/// Interface of scene collector for light baking.
 /// Objects may be loaded and unloaded even if scene is locked.
-class URHO3D_API LightmapSceneCollector
+class URHO3D_API BakedSceneCollector
 {
 public:
     /// Destruct.
-    virtual ~LightmapSceneCollector();
+    virtual ~BakedSceneCollector();
 
     /// Called before everything else. Scene objects must stay unchanged after this call.
     virtual void LockScene(Scene* scene, const Vector3& chunkSize) = 0;
@@ -76,12 +76,12 @@ public:
     virtual void UnlockScene() = 0;
 };
 
-/// Standard scene collector.
-class URHO3D_API DefaultLightmapSceneCollector : public LightmapSceneCollector
+/// Standard scene collector for light baking.
+class URHO3D_API DefaultBakedSceneCollector : public BakedSceneCollector
 {
 public:
     /// Construct.
-    DefaultLightmapSceneCollector() {}
+    DefaultBakedSceneCollector() {}
 
     /// Called before everything else. Scene objects must stay unchanged after this call.
     void LockScene(Scene* scene, const Vector3& chunkSize) override;

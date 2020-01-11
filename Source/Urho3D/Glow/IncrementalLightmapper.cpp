@@ -25,11 +25,12 @@
 #include "../Glow/IncrementalLightmapper.h"
 
 #include "../Core/Context.h"
-#include "../Glow/EmbreeScene.h"
+#include "../Glow/RaytracerScene.h"
 #include "../Glow/LightmapCharter.h"
-#include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapGeometryBuffer.h"
+#include "../Glow/LightmapFilter.h"
 #include "../Glow/LightmapStitcher.h"
-#include "../Glow/LightmapTracer.h"
+#include "../Glow/LightTracer.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Model.h"
 #include "../IO/FileSystem.h"
@@ -150,7 +151,7 @@ struct IncrementalLightmapper::Impl
 {
     /// Construct.
     Impl(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
-        Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache)
+        Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
         : context_(scene->GetContext())
         , lightmapSettings_(lightmapSettings)
         , incrementalSettings_(incrementalSettings)
@@ -334,21 +335,21 @@ struct IncrementalLightmapper::Impl
 
         // Create scene for raytracing
         const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
-        const SharedPtr<EmbreeScene> embreeScene = CreateEmbreeScene(context_, staticModels, uvChannel);
+        const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(context_, staticModels, uvChannel);
 
-        // Match embree geometries and geometry buffer
-        ea::vector<EmbreeGeometry> embreeGeometriesSorted = embreeScene->GetEmbreeGeometryIndex();
-        bool matching = geometryBakingScenes.idToObject_.size() <= embreeGeometriesSorted.size() + 1;
+        // Match raytracer geometries and geometry buffer
+        ea::vector<RaytracerGeometry> raytracerGeometriesSorted = raytracerScene->GetGeometries();
+        bool matching = geometryBakingScenes.idToObject_.size() <= raytracerGeometriesSorted.size() + 1;
         if (matching)
         {
-            ea::sort(embreeGeometriesSorted.begin(), embreeGeometriesSorted.end(), CompareEmbreeGeometryByObject);
+            ea::sort(raytracerGeometriesSorted.begin(), raytracerGeometriesSorted.end(), CompareRaytracerGeometryByObject);
             for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
             {
-                const EmbreeGeometry& embreeGeometry = embreeGeometriesSorted[i - 1];
+                const RaytracerGeometry& raytracerGeometry = raytracerGeometriesSorted[i - 1];
                 const GeometryIDToObjectMapping& mapping = geometryBakingScenes.idToObject_[i];
-                if (embreeGeometry.objectIndex_ != mapping.objectIndex_
-                    || embreeGeometry.geometryIndex_ != mapping.geometryIndex_
-                    || embreeGeometry.lodIndex_ != mapping.lodIndex_)
+                if (raytracerGeometry.objectIndex_ != mapping.objectIndex_
+                    || raytracerGeometry.geometryIndex_ != mapping.geometryIndex_
+                    || raytracerGeometry.lodIndex_ != mapping.lodIndex_)
                 {
                     matching = false;
                     break;
@@ -361,20 +362,20 @@ struct IncrementalLightmapper::Impl
             for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
                 ea::fill(geometryBuffer.geometryIds_.begin(), geometryBuffer.geometryIds_.end(), 0u);
 
-            URHO3D_LOGERROR("Cannot match Embree geometries with lightmap G-Buffer");
+            URHO3D_LOGERROR("Cannot match raytracer geometries with lightmap G-Buffer");
         }
 
-        ea::vector<unsigned> geometryBufferToEmbreeGeometry;
-        geometryBufferToEmbreeGeometry.resize(geometryBakingScenes.idToObject_.size(), M_MAX_UNSIGNED);
+        ea::vector<unsigned> geometryBufferToRaytracerGeometry;
+        geometryBufferToRaytracerGeometry.resize(geometryBakingScenes.idToObject_.size(), M_MAX_UNSIGNED);
         if (matching)
         {
             for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
-                geometryBufferToEmbreeGeometry[i] = embreeGeometriesSorted[i - 1].embreeGeometryId_;
+                geometryBufferToRaytracerGeometry[i] = raytracerGeometriesSorted[i - 1].raytracerGeometryId_;
         }
 
         // Preprocess geometry buffers
         for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-            PreprocessGeometryBuffer(geometryBuffer, *embreeScene, geometryBufferToEmbreeGeometry, lightmapSettings_.tracing_);
+            PreprocessGeometryBuffer(geometryBuffer, *raytracerScene, geometryBufferToRaytracerGeometry, lightmapSettings_.tracing_);
 
         // Collect lights
         ea::vector<BakedDirectLight> bakedLights;
@@ -397,8 +398,8 @@ struct IncrementalLightmapper::Impl
 
         LightmapChunkVicinity chunkVicinity;
         chunkVicinity.lightmaps_ = lightmapsInChunk;
-        chunkVicinity.embreeScene_ = embreeScene;
-        chunkVicinity.geometryBufferToEmbree_ = geometryBufferToEmbreeGeometry;
+        chunkVicinity.raytracerScene_ = raytracerScene;
+        chunkVicinity.geometryBufferToRaytracer_ = geometryBufferToRaytracerGeometry;
         chunkVicinity.bakedLights_ = bakedLights;
         chunkVicinity.lightProbesCollection_ = lightProbesCollection;
         cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
@@ -441,8 +442,8 @@ struct IncrementalLightmapper::Impl
                     light.bakeDirect_ = bakeDirect;
                     light.bakeIndirect_ = bakeIndirect;
 
-                    BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->embreeScene_,
-                        chunkVicinity->geometryBufferToEmbree_, light, lightmapSettings_.tracing_);
+                    BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->raytracerScene_,
+                        chunkVicinity->geometryBufferToRaytracer_, light, lightmapSettings_.tracing_);
                 }
             }
 
@@ -473,9 +474,9 @@ struct IncrementalLightmapper::Impl
 
         // Collect required direct lightmaps
         ea::hash_set<unsigned> requiredDirectLightmaps;
-        for (const EmbreeGeometry& embreeGeometry : chunkVicinity->embreeScene_->GetEmbreeGeometryIndex())
+        for (const RaytracerGeometry& raytracerGeometry : chunkVicinity->raytracerScene_->GetGeometries())
         {
-            requiredDirectLightmaps.insert(embreeGeometry.lightmapIndex_);
+            requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
         }
 
         ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
@@ -488,7 +489,7 @@ struct IncrementalLightmapper::Impl
 
         // Bake indirect light for light probes
         chunkVicinity->lightProbesCollection_.ResetBakedData();
-        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->embreeScene_, lightmapSettings_.tracing_);
+        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->raytracerScene_, lightmapSettings_.tracing_);
 
         // Build light probes mesh for fallback indirect
         TetrahedralMesh lightProbesMesh;
@@ -505,7 +506,7 @@ struct IncrementalLightmapper::Impl
             // Bake indirect lights
             BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
                 *geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
-                *chunkVicinity->embreeScene_, chunkVicinity->geometryBufferToEmbree_, lightmapSettings_.tracing_);
+                *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_, lightmapSettings_.tracing_);
 
             // Filter indirect
             bakedIndirect.NormalizeLight();
@@ -595,9 +596,9 @@ private:
     /// Scene.
     Scene* scene_{};
     /// Scene collector.
-    LightmapSceneCollector* collector_{};
+    BakedSceneCollector* collector_{};
     /// Lightmap cache.
-    LightmapCache* cache_{};
+    BakedLightCache* cache_{};
     /// List of all chunks.
     ea::vector<IntVector3> chunks_;
     /// Number of lightmap charts.
@@ -610,7 +611,7 @@ IncrementalLightmapper::~IncrementalLightmapper()
 
 bool IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings,
     const IncrementalLightmapperSettings& incrementalSettings,
-    Scene* scene, LightmapSceneCollector* collector, LightmapCache* cache)
+    Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
 {
     impl_ = ea::make_unique<Impl>(lightmapSettings, incrementalSettings, scene, collector, cache);
     return impl_->Initialize();

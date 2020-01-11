@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapGeometryBuffer.h"
 #include "../Graphics/Drawable.h"
 
 #include <EASTL/span.h>

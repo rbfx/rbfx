@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapGeometryBuffer.h"
 #include "../Graphics/Texture2D.h"
 
 namespace Urho3D

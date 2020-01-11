@@ -20,7 +20,7 @@
 // THE SOFTWARE.
 //
 
-#include "../Glow/LightmapGeometryBaker.h"
+#include "../Glow/LightmapGeometryBuffer.h"
 
 #include "../Core/Context.h"
 #include "../IO/Log.h"

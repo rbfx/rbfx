@@ -79,8 +79,8 @@ void LightmapManager::Bake()
 {
     // Bake lightmaps if possible
 #if URHO3D_GLOW
-    DefaultLightmapSceneCollector sceneCollector;
-    LightmapMemoryCache lightmapCache;
+    DefaultBakedSceneCollector sceneCollector;
+    BakedLightMemoryCache lightmapCache;
     IncrementalLightmapper lightmapper;
 
     if (lightmapper.Initialize(lightmapSettings_, incrementalBakingSettings_, GetScene(), &sceneCollector, &lightmapCache))
