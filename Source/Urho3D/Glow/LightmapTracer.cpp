@@ -125,12 +125,32 @@ bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& 
 }
 
 /// Return true if transparent, update incoming light. Used for direct light calculations.
-bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, Vector3& incomingLight)
+bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit, Vector3& incomingLight)
 {
     if (hitGeometry.opaque_)
         return false;
 
-    incomingLight = Lerp(incomingLight, incomingLight * hitGeometry.diffuseColor_, hitGeometry.alpha_);
+    // Consider material
+    Vector3 hitSurfaceColor = hitGeometry.diffuseColor_;
+    float hitSurfaceAlpha = hitGeometry.alpha_;
+
+    // Consider texture
+    if (hitGeometry.diffuseImage_)
+    {
+        Vector2 uv;
+        rtcInterpolate0(hitGeometry.embreeGeometry_, hit.primID, hit.u, hit.v,
+            RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &uv.x_, 2);
+
+        const int x = Clamp(RoundToInt(uv.x_ * hitGeometry.diffuseImageWidth_), 0, hitGeometry.diffuseImageWidth_ - 1);
+        const int y = Clamp(RoundToInt(uv.y_ * hitGeometry.diffuseImageHeight_), 0, hitGeometry.diffuseImageHeight_ - 1);
+        const Color diffuseColor = hitGeometry.diffuseImage_->GetPixel(x, y);
+
+        hitSurfaceColor *= diffuseColor.ToVector3();
+        hitSurfaceAlpha *= diffuseColor.a_;
+    }
+
+    // TODO(glow): Update this formula
+    incomingLight = Lerp(incomingLight, incomingLight * hitSurfaceColor, hitSurfaceAlpha);
     return true;
 }
 
@@ -200,7 +220,7 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
         args->valid[0] = 0;
 
     // Accumulate and ignore if transparent
-    if (IsTransparedForDirect(hitGeometry, *ctx.incomingLight_))
+    if (IsTransparedForDirect(hitGeometry, hit, *ctx.incomingLight_))
         args->valid[0] = 0;
 }
 
