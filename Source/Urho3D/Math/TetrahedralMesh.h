@@ -26,7 +26,6 @@
 
 #include "../Math/BoundingBox.h"
 #include "../Math/Matrix3x4.h"
-#include "../Math/Sphere.h"
 #include "../Math/Vector3.h"
 
 #include <EASTL/span.h>
@@ -37,6 +36,95 @@ namespace Urho3D
 {
 
 class Archive;
+
+/// 3-vector with double precision.
+struct HighPrecisionVector3
+{
+    /// Construct default.
+    HighPrecisionVector3() = default;
+
+    /// Construct from Vector3.
+    explicit HighPrecisionVector3(const Vector3& vec) : data_{ vec.x_, vec.y_, vec.z_ } {}
+
+    /// Convert to Vector3.
+    explicit operator Vector3() const
+    {
+        return {
+            static_cast<float>(data_[0]),
+            static_cast<float>(data_[1]),
+            static_cast<float>(data_[2])
+        };
+    }
+
+    /// Dot product with another vector.
+    double DotProduct(const HighPrecisionVector3& rhs) const
+    {
+        double result{};
+        for (unsigned i = 0; i < 3; ++i)
+            result += data_[i] * rhs.data_[i];
+        return result;
+    }
+
+    /// Cross product with another vector.
+    HighPrecisionVector3 CrossProduct(const HighPrecisionVector3& rhs) const
+    {
+        HighPrecisionVector3 result;
+        result.data_[0] = data_[1] * rhs.data_[2] - data_[2] * rhs.data_[1];
+        result.data_[1] = data_[2] * rhs.data_[0] - data_[0] * rhs.data_[2];
+        result.data_[2] = data_[0] * rhs.data_[1] - data_[1] * rhs.data_[0];
+        return result;
+    }
+
+    /// Return squared length of the vector.
+    double LengthSquared() const { return DotProduct(*this); }
+
+    /// Add another vector.
+    HighPrecisionVector3 operator +(const HighPrecisionVector3& rhs) const
+    {
+        HighPrecisionVector3 result;
+        for (unsigned i = 0; i < 3; ++i)
+            result.data_[i] = data_[i] + rhs.data_[i];
+        return result;
+    }
+
+    /// Subtract another vector.
+    HighPrecisionVector3 operator -(const HighPrecisionVector3& rhs) const
+    {
+        HighPrecisionVector3 result;
+        for (unsigned i = 0; i < 3; ++i)
+            result.data_[i] = data_[i] - rhs.data_[i];
+        return result;
+    }
+
+    /// Multiply with scalar.
+    HighPrecisionVector3 operator *(double rhs) const
+    {
+        HighPrecisionVector3 result;
+        for (unsigned i = 0; i < 3; ++i)
+            result.data_[i] = data_[i] * rhs;
+        return result;
+    }
+
+    /// Components.
+    double data_[3]{};
+};
+
+/// Sphere with double precision components.
+struct HighPrecisionSphere
+{
+    /// Center.
+    HighPrecisionVector3 center_;
+    /// Radius (squared).
+    double radiusSquared_{};
+
+    /// Return whether the given position is inside the sphere or intersects it.
+    bool Intersects(const Vector3& position) const
+    {
+        const auto doublePosition = static_cast<HighPrecisionVector3>(position);
+        const double distSquared = (doublePosition - center_).LengthSquared();
+        return distSquared < radiusSquared_;
+    }
+};
 
 /// Surface triangle of tetrahedral mesh with adjacency information.
 struct TetrahedralMeshSurfaceTriangle
@@ -200,10 +288,10 @@ class URHO3D_API TetrahedralMesh
 {
 public:
     /// Define mesh from vertices.
-    void Define(ea::span<const Vector3> positions, float padding = 1.0f);
+    void Define(ea::span<const Vector3> positions);
 
     /// Calculate circumsphere of given tetrahedron.
-    Sphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
+    HighPrecisionSphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
 
     /// Calculate barycentric coordinates for inner tetrahedron.
     Vector4 GetInnerBarycentricCoords(unsigned tetIndex, const Vector3& position) const
@@ -391,9 +479,15 @@ private:
     struct DelaunayContext
     {
         /// Circumspheres of mesh tetrahedrons.
-        ea::vector<Sphere> circumspheres_;
+        ea::vector<HighPrecisionSphere> circumspheres_;
         /// Whether the tetrahedron is removed.
         ea::vector<bool> removed_;
+        /// Tests if point is inside circumsphere of tetrahedron.
+        bool IsInsideCircumsphere(unsigned tetIndex, const Vector3& position)
+        {
+            const HighPrecisionSphere& sphere = circumspheres_[tetIndex];
+            return sphere.Intersects(position);
+        }
 
         /// Queue for breadth search of bad tetrahedrons. Used by FindAndRemoveIntersected only.
         ea::vector<unsigned> searchQueue_;

@@ -32,45 +32,68 @@
 namespace Urho3D
 {
 
-void TetrahedralMesh::Define(ea::span<const Vector3> positions, float padding)
+void TetrahedralMesh::Define(ea::span<const Vector3> positions)
 {
     BoundingBox boundingBox(positions.data(), positions.size());
-    boundingBox.min_ -= Vector3::ONE * padding;
-    boundingBox.max_ += Vector3::ONE * padding;
+    const Vector3 size = boundingBox.Size();
+    const float maxSize = ea::max({ 1.0f, size.x_, size.y_, size.z_ });
+    // TODO(glow): Revise this place
+    boundingBox.min_ -= Vector3::ONE;// * maxSize / 2;
+    boundingBox.max_ += Vector3::ONE;// * maxSize / 2;
     InitializeSuperMesh(boundingBox);
     BuildTetrahedrons(positions);
 }
 
-Sphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetIndex) const
+HighPrecisionSphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetIndex) const
 {
     const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
-    const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
-    const Vector3 p1 = vertices_[tetrahedron.indices_[1]];
-    const Vector3 p2 = vertices_[tetrahedron.indices_[2]];
-    const Vector3 p3 = vertices_[tetrahedron.indices_[3]];
-    const Vector3 u1 = p1 - p0;
-    const Vector3 u2 = p2 - p0;
-    const Vector3 u3 = p3 - p0;
-    const float d01 = u1.LengthSquared();
-    const float d02 = u2.LengthSquared();
-    const float d03 = u3.LengthSquared();
-    const Vector3 num = d01 * u2.CrossProduct(u3) + d02 * u3.CrossProduct(u1) + d03 * u1.CrossProduct(u2);
-    const float den = 2 * u1.DotProduct(u2.CrossProduct(u3));
+    const HighPrecisionVector3 p0{ vertices_[tetrahedron.indices_[0]] };
+    const HighPrecisionVector3 p1{ vertices_[tetrahedron.indices_[1]] };
+    const HighPrecisionVector3 p2{ vertices_[tetrahedron.indices_[2]] };
+    const HighPrecisionVector3 p3{ vertices_[tetrahedron.indices_[3]] };
+    const HighPrecisionVector3 u1 = p1 - p0;
+    const HighPrecisionVector3 u2 = p2 - p0;
+    const HighPrecisionVector3 u3 = p3 - p0;
 
-    if (Abs(den) < M_EPSILON)
+    const double d01 = u1.LengthSquared();
+    const double d02 = u2.LengthSquared();
+    const double d03 = u3.LengthSquared();
+
+    const HighPrecisionVector3 u2u3 = u2.CrossProduct(u3);
+    const HighPrecisionVector3 u3u1 = u3.CrossProduct(u1);
+    const HighPrecisionVector3 u1u2 = u1.CrossProduct(u2);
+
+    const HighPrecisionVector3 radiusNum = u2u3 * d01 + u3u1 * d02 + u1u2 * d03;
+    const double radiusDen = 2 * u1.DotProduct(u2u3);
+
+    if (Abs(radiusDen) < M_EPSILON * M_EPSILON)
     {
-        URHO3D_LOGERROR("Degenerate tetrahedron in tetrahedral mesh due to error in tetrahedral mesh generation");
-        assert(0);
-        return Sphere(Vector3::ZERO, M_LARGE_VALUE);
+        URHO3D_LOGWARNING("Degenerate tetrahedron in tetrahedral mesh due to error in tetrahedral mesh generation");
+        return HighPrecisionSphere{ {}, M_LARGE_VALUE * M_LARGE_VALUE };
     }
 
-    const Vector3 r0 = num / den;
-    const Vector3 center = p0 + r0;
+    const HighPrecisionVector3 center = p0 + radiusNum * (1.0 / radiusDen);
 
-    const float eps = M_LARGE_EPSILON;
-    const float radius = ea::max({ r0.Length(), (p1 - center).Length(), (p2 - center).Length(), (p3 - center).Length()});
+    // Radius is the minimum distance
+    const double squaredDistances[4] = {
+        (p0 - center).LengthSquared(),
+        (p1 - center).LengthSquared(),
+        (p2 - center).LengthSquared(),
+        (p3 - center).LengthSquared()
+    };
 
-    return { center, radius + eps };
+    const double radiusSquared = *ea::min_element(ea::begin(squaredDistances), ea::end(squaredDistances));
+
+    // TODO(glow): Revise this place
+    double maxError = 0.0;
+    for (unsigned i = 0; i < 4; ++i)
+        maxError = ea::max(maxError, Abs(squaredDistances[i] - radiusSquared));
+
+    const double eps = M_LARGE_EPSILON;//0.001;
+    const double radius = Sqrt(radiusSquared) + eps;
+
+    return { center, radius * radius };
+    //return { center, radiusSquared - maxError * 1000 };
 }
 
 void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
@@ -214,7 +237,7 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
     // Find first tetrahedron to remove
     for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
     {
-        if (!ctx.removed_[tetIndex] && ctx.circumspheres_[tetIndex].IsInside(position) != OUTSIDE)
+        if (!ctx.removed_[tetIndex] && ctx.IsInsideCircumsphere(tetIndex, position))
         {
             removedTetrahedrons.push_back(tetIndex);
             ctx.searchQueue_.push_back(tetIndex);
@@ -230,7 +253,7 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         return;
     }
 
-    // Do breadth search to collect all bad tetrahedrons and build hole mesh
+    // Do breadth search to collect all bad tetrahedrons
     // Note: size may change during the loop
     for (unsigned i = 0; i < ctx.searchQueue_.size(); ++i)
     {
@@ -238,6 +261,32 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
 
         // Process neighbors
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            const unsigned neighborTetIndex = tetrahedron.neighbors_[faceIndex];
+
+            // Outer surface is reached
+            if (neighborTetIndex == M_MAX_UNSIGNED)
+                continue;
+
+            // Ignore removed tetrahedrons
+            if (ctx.removed_[neighborTetIndex])
+                continue;
+
+            // If circumsphere of neighbor tetrahedron contains the point, remove this neighbor and queue it.
+            if (ctx.IsInsideCircumsphere(neighborTetIndex, position))
+            {
+                removedTetrahedrons.push_back(neighborTetIndex);
+                ctx.searchQueue_.push_back(neighborTetIndex);
+                ctx.removed_[neighborTetIndex] = true;
+            }
+        }
+    }
+
+    // Build hole surface
+    for (unsigned tetIndex : removedTetrahedrons)
+    {
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
         for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
         {
             const unsigned neighborTetIndex = tetrahedron.neighbors_[faceIndex];
@@ -252,25 +301,15 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
                 continue;
             }
 
-            // Ignore removed tetrahedrons
-            if (ctx.removed_[neighborTetIndex])
-                continue;
-
-            // If circumsphere of neighbor tetrahedron contains the point, remove this neighbor and queue it.
-            if (ctx.circumspheres_[neighborTetIndex].IsInside(position) != OUTSIDE)
+            // If neighbor is not removed, add face
+            if (!ctx.removed_[neighborTetIndex])
             {
-                removedTetrahedrons.push_back(neighborTetIndex);
-                ctx.searchQueue_.push_back(neighborTetIndex);
-                ctx.removed_[neighborTetIndex] = true;
-                continue;
+                const Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborTetIndex];
+                const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
+                const TetrahedralMeshSurfaceTriangle holeTriangle = neighborTetrahedron.GetTriangleFace(
+                    neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
+                holeSurface.AddFace(holeTriangle);
             }
-
-            // Boundary of the hole is found
-            const Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborTetIndex];
-            const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
-            const TetrahedralMeshSurfaceTriangle holeTriangle = neighborTetrahedron.GetTriangleFace(
-                neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
-            holeSurface.AddFace(holeTriangle);
         }
     }
 }
