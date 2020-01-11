@@ -30,7 +30,7 @@
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
 #include "../Graphics/TerrainPatch.h"
-#include "../Glow/EmbreeScene.h"
+#include "../Glow/RaytracerScene.h"
 #include "../Glow/Helpers.h"
 #include "../IO/Log.h"
 
@@ -65,15 +65,15 @@ struct RaytracingGeometryCreateParams
     Vector4 vOffset_;
 };
 
-/// Parsed model key and value.
-struct ParsedModelKeyValue
+/// Pair of model and corresponding model view.
+struct ModelModelViewPair
 {
     Model* model_{};
     SharedPtr<ModelView> parsedModel_;
 };
 
 /// Parse model data.
-ParsedModelKeyValue ParseModelForEmbree(Model* model)
+ModelModelViewPair ParseModelForRaytracer(Model* model)
 {
     auto modelView = MakeShared<ModelView>(model->GetContext());
     modelView->ImportModel(model);
@@ -96,16 +96,16 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const RaytracingGeometr
         0, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
 
     float* lightmapUVs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        EmbreeScene::LightmapUVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+        RaytracerScene::LightmapUVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
 
     float* smoothNormals = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        EmbreeScene::NormalAttribute, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
+        RaytracerScene::NormalAttribute, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
 
     float* uvs = nullptr;
     if (params.storeUV_)
     {
         uvs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-            EmbreeScene::UVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+            RaytracerScene::UVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
     }
 
     for (unsigned i = 0; i < numVertices; ++i)
@@ -145,8 +145,8 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const RaytracingGeometr
     return embreeGeometry;
 }
 
-/// Create Embree geometry from parsed model.
-ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
+/// Create raytracer geometries for static model.
+ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(
     RTCDevice embreeDevice, ModelView* modelView, StaticModel* staticModel, unsigned objectIndex, unsigned lightmapUVChannel)
 {
     Node* node = staticModel->GetNode();
@@ -155,7 +155,7 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
     const Vector2 lightmapUVScale{ lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
     const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
 
-    ea::vector<EmbreeGeometry> result;
+    ea::vector<RaytracerGeometry> result;
 
     const ea::vector<GeometryView> geometries = modelView->GetGeometries();
     for (unsigned geometryIndex = 0; geometryIndex < geometries.size(); ++geometryIndex)
@@ -166,28 +166,28 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
         for (unsigned lodIndex = 0; lodIndex < geometryView.lods_.size(); ++lodIndex)
         {
             const GeometryLODView& geometryLODView = geometryView.lods_[lodIndex];
-            const unsigned mask = lodIndex == 0 ? EmbreeScene::PrimaryLODGeometry : EmbreeScene::SecondaryLODGeometry;
+            const unsigned mask = lodIndex == 0 ? RaytracerScene::PrimaryLODGeometry : RaytracerScene::SecondaryLODGeometry;
 
-            EmbreeGeometry embreeGeometry;
-            embreeGeometry.objectIndex_ = objectIndex;
-            embreeGeometry.geometryIndex_ = geometryIndex;
-            embreeGeometry.lodIndex_ = lodIndex;
-            embreeGeometry.numLods_ = geometryView.lods_.size();
-            embreeGeometry.lightmapIndex_ = lightmapIndex;
-            embreeGeometry.embreeGeometryId_ = M_MAX_UNSIGNED;
+            RaytracerGeometry raytracerGeometry;
+            raytracerGeometry.objectIndex_ = objectIndex;
+            raytracerGeometry.geometryIndex_ = geometryIndex;
+            raytracerGeometry.lodIndex_ = lodIndex;
+            raytracerGeometry.numLods_ = geometryView.lods_.size();
+            raytracerGeometry.lightmapIndex_ = lightmapIndex;
+            raytracerGeometry.raytracerGeometryId_ = M_MAX_UNSIGNED;
 
             Vector4 uOffset;
             Vector4 vOffset;
-            embreeGeometry.opaque_ = !material || IsMaterialOpaque(material);
-            if (!embreeGeometry.opaque_)
+            raytracerGeometry.opaque_ = !material || IsMaterialOpaque(material);
+            if (!raytracerGeometry.opaque_)
             {
                 const Color diffuseColor = GetMaterialDiffuseColor(material);
-                embreeGeometry.diffuseColor_ = diffuseColor.ToVector3();
-                embreeGeometry.alpha_ = diffuseColor.a_;
+                raytracerGeometry.diffuseColor_ = diffuseColor.ToVector3();
+                raytracerGeometry.alpha_ = diffuseColor.a_;
 
                 Texture* diffuseTexture = GetMaterialDiffuseTexture(material, uOffset, vOffset);
                 if (diffuseTexture)
-                    embreeGeometry.diffuseImageName_ = diffuseTexture->GetName();
+                    raytracerGeometry.diffuseImageName_ = diffuseTexture->GetName();
             }
 
             RaytracingGeometryCreateParams params;
@@ -197,15 +197,15 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
             params.lightmapUVScale_ = lightmapUVScale;
             params.lightmapUVOffset_ = lightmapUVOffset;
             params.lightmapUVChannel_ = lightmapUVChannel;
-            if (!embreeGeometry.diffuseImageName_.empty())
+            if (!raytracerGeometry.diffuseImageName_.empty())
             {
                 params.storeUV_ = true;
                 params.uOffset_ = uOffset;
                 params.vOffset_ = vOffset;
             }
 
-            embreeGeometry.embreeGeometry_ = CreateEmbreeGeometry(embreeDevice, params, mask);
-            result.push_back(embreeGeometry);
+            raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometry(embreeDevice, params, mask);
+            result.push_back(raytracerGeometry);
         }
     }
     return result;
@@ -213,7 +213,7 @@ ea::vector<EmbreeGeometry> CreateEmbreeGeometriesForModel(
 
 }
 
-EmbreeScene::~EmbreeScene()
+RaytracerScene::~RaytracerScene()
 {
     if (scene_)
         rtcReleaseScene(scene_);
@@ -221,7 +221,7 @@ EmbreeScene::~EmbreeScene()
         rtcReleaseDevice(device_);
 }
 
-SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned lightmapUVChannel)
+SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned lightmapUVChannel)
 {
     // Queue models for parsing
     ea::hash_set<Model*> modelsToParse;
@@ -229,15 +229,15 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
         modelsToParse.insert(staticModel->GetModel());
 
     // Start model parsing
-    ea::vector<std::future<ParsedModelKeyValue>> modelParseTasks;
+    ea::vector<std::future<ModelModelViewPair>> modelParseTasks;
     for (Model* model : modelsToParse)
-        modelParseTasks.push_back(std::async(ParseModelForEmbree, model));
+        modelParseTasks.push_back(std::async(ParseModelForRaytracer, model));
 
     // Finish model parsing
     ea::unordered_map<Model*, SharedPtr<ModelView>> parsedModelCache;
     for (auto& task : modelParseTasks)
     {
-        const ParsedModelKeyValue& parsedModel = task.get();
+        const ModelModelViewPair& parsedModel = task.get();
         parsedModelCache.emplace(parsedModel.model_, parsedModel.parsedModel_);
     }
 
@@ -246,31 +246,31 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
     const RTCScene scene = rtcNewScene(device);
     rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
 
-    ea::vector<std::future<ea::vector<EmbreeGeometry>>> createEmbreeGeometriesTasks;
+    ea::vector<std::future<ea::vector<RaytracerGeometry>>> createRaytracerGeometriesTasks;
     for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
     {
         StaticModel* staticModel = staticModels[objectIndex];
 
         ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-        createEmbreeGeometriesTasks.push_back(std::async(CreateEmbreeGeometriesForModel,
+        createRaytracerGeometriesTasks.push_back(std::async(CreateRaytracerGeometriesForStaticModel,
             device, parsedModel, staticModel, objectIndex, lightmapUVChannel));
     }
 
     // Collect and attach Embree geometries
     ea::hash_map<ea::string, SharedPtr<Image>> diffuseImages;
-    ea::vector<EmbreeGeometry> geometryIndex;
-    for (auto& task : createEmbreeGeometriesTasks)
+    ea::vector<RaytracerGeometry> geometryIndex;
+    for (auto& task : createRaytracerGeometriesTasks)
     {
-        const ea::vector<EmbreeGeometry> embreeGeometriesArray = task.get();
-        for (const EmbreeGeometry& embreeGeometry : embreeGeometriesArray)
+        const ea::vector<RaytracerGeometry> raytracerGeometryArray = task.get();
+        for (const RaytracerGeometry& raytracerGeometry : raytracerGeometryArray)
         {
-            const unsigned geomID = rtcAttachGeometry(scene, embreeGeometry.embreeGeometry_);
-            rtcReleaseGeometry(embreeGeometry.embreeGeometry_);
+            const unsigned geomID = rtcAttachGeometry(scene, raytracerGeometry.embreeGeometry_);
+            rtcReleaseGeometry(raytracerGeometry.embreeGeometry_);
 
             geometryIndex.resize(geomID + 1);
-            geometryIndex[geomID] = embreeGeometry;
-            geometryIndex[geomID].embreeGeometryId_ = geomID;
-            diffuseImages[embreeGeometry.diffuseImageName_] = nullptr;
+            geometryIndex[geomID] = raytracerGeometry;
+            geometryIndex[geomID].raytracerGeometryId_ = geomID;
+            diffuseImages[raytracerGeometry.diffuseImageName_] = nullptr;
         }
     }
 
@@ -288,13 +288,13 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
         }
     }
 
-    for (EmbreeGeometry& embreeGeometry : geometryIndex)
+    for (RaytracerGeometry& raytracerGeometry : geometryIndex)
     {
-        embreeGeometry.diffuseImage_ = diffuseImages[embreeGeometry.diffuseImageName_];
-        if (embreeGeometry.diffuseImage_)
+        raytracerGeometry.diffuseImage_ = diffuseImages[raytracerGeometry.diffuseImageName_];
+        if (raytracerGeometry.diffuseImage_)
         {
-            embreeGeometry.diffuseImageWidth_ = embreeGeometry.diffuseImage_->GetWidth();
-            embreeGeometry.diffuseImageHeight_ = embreeGeometry.diffuseImage_->GetHeight();
+            raytracerGeometry.diffuseImageWidth_ = raytracerGeometry.diffuseImage_->GetWidth();
+            raytracerGeometry.diffuseImageHeight_ = raytracerGeometry.diffuseImage_->GetHeight();
         }
     }
 
@@ -306,7 +306,7 @@ SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<Stat
     const Vector3 sceneSize = boundingBox.Size();
     const float maxDistance = ea::max({ sceneSize.x_, sceneSize.y_, sceneSize.z_ });
 
-    return MakeShared<EmbreeScene>(context, device, scene, ea::move(geometryIndex), maxDistance);
+    return MakeShared<RaytracerScene>(context, device, scene, ea::move(geometryIndex), maxDistance);
 }
 
 }

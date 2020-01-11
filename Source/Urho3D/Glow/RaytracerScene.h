@@ -40,8 +40,8 @@ class Context;
 class Node;
 class StaticModel;
 
-/// Embree geometry.
-struct EmbreeGeometry
+/// Geometry for ray tracing.
+struct RaytracerGeometry
 {
     /// Object index.
     unsigned objectIndex_{};
@@ -53,8 +53,8 @@ struct EmbreeGeometry
     unsigned numLods_{};
     /// Lightmap chart index.
     unsigned lightmapIndex_{};
-    /// Embree geometry ID.
-    unsigned embreeGeometryId_{};
+    /// Raytracer geometry ID, aka index of this structure in the array of geometries.
+    unsigned raytracerGeometryId_{};
     /// Internal geometry pointer.
     RTCGeometry embreeGeometry_{};
     /// Whether the geometry is opaque.
@@ -74,7 +74,7 @@ struct EmbreeGeometry
 };
 
 /// Compare Embree geometries by objects (less).
-inline bool CompareEmbreeGeometryByObject(const EmbreeGeometry& lhs, const EmbreeGeometry& rhs)
+inline bool CompareRaytracerGeometryByObject(const RaytracerGeometry& lhs, const RaytracerGeometry& rhs)
 {
     if (lhs.objectIndex_ != rhs.objectIndex_)
         return lhs.objectIndex_ < rhs.objectIndex_;
@@ -85,8 +85,8 @@ inline bool CompareEmbreeGeometryByObject(const EmbreeGeometry& lhs, const Embre
     return lhs.lodIndex_ < rhs.lodIndex_;
 }
 
-/// Embree scene.
-class URHO3D_API EmbreeScene : public RefCounted
+/// Scene for ray tracing.
+class URHO3D_API RaytracerScene : public RefCounted
 {
 public:
     /// Vertex attribute for lightmap UV.
@@ -104,17 +104,17 @@ public:
     static const unsigned AllGeometry = 0xffffffff;
 
     /// Construct.
-    EmbreeScene(Context* context, RTCDevice embreeDevice, RTCScene embreeScene,
-        ea::vector<EmbreeGeometry> geometries, float maxDistance)
+    RaytracerScene(Context* context, RTCDevice embreeDevice, RTCScene raytracerScene,
+        ea::vector<RaytracerGeometry> geometries, float maxDistance)
         : context_(context)
         , device_(embreeDevice)
-        , scene_(embreeScene)
+        , scene_(raytracerScene)
         , geometries_(ea::move(geometries))
         , maxDistance_(maxDistance)
     {
     }
     /// Destruct.
-    ~EmbreeScene() override;
+    ~RaytracerScene() override;
 
     /// Return context.
     Context* GetContext() const { return context_; }
@@ -122,8 +122,8 @@ public:
     RTCDevice GetEmbreeDevice() const { return device_; }
     /// Return Embree scene.
     RTCScene GetEmbreeScene() const { return scene_; }
-    /// Return Embree geometries.
-    const ea::vector<EmbreeGeometry>& GetEmbreeGeometryIndex() const { return geometries_; }
+    /// Return geometries.
+    const ea::vector<RaytracerGeometry>& GetGeometries() const { return geometries_; }
     /// Return max distance between two points.
     float GetMaxDistance() const { return maxDistance_; }
 
@@ -134,13 +134,14 @@ private:
     RTCDevice device_{};
     /// Embree scene.
     RTCScene scene_{};
-    /// Embree geometries.
-    ea::vector<EmbreeGeometry> geometries_;
+    /// Geometries.
+    ea::vector<RaytracerGeometry> geometries_;
     /// Max distance between two points.
     float maxDistance_{};
 };
 
-// Create Embree scene.
-URHO3D_API SharedPtr<EmbreeScene> CreateEmbreeScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned uvChannel);
+// Create scene for raytracing.
+URHO3D_API SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context,
+    const ea::vector<StaticModel*>& staticModels, unsigned uvChannel);
 
 }

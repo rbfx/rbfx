@@ -22,9 +22,9 @@
 
 /// \file
 
-#include "../Glow/LightmapSceneCollector.h"
+#include "../Glow/BakedSceneCollector.h"
 
-#include "../Glow/EmbreeScene.h"
+#include "../Glow/RaytracerScene.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Octree.h"
@@ -94,9 +94,9 @@ BoundingBox CalculateLightmappedSceneBoundingBox(const ea::vector<Node*>& nodes)
 
 }
 
-LightmapSceneCollector::~LightmapSceneCollector() = default;
+BakedSceneCollector::~BakedSceneCollector() = default;
 
-void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunkSize)
+void DefaultBakedSceneCollector::LockScene(Scene* scene, const Vector3& chunkSize)
 {
     scene_ = scene;
     chunkSize_ = chunkSize;
@@ -147,12 +147,12 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
     }
 }
 
-ea::vector<IntVector3> DefaultLightmapSceneCollector::GetChunks()
+ea::vector<IntVector3> DefaultBakedSceneCollector::GetChunks()
 {
     return chunks_.keys();
 }
 
-ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetUniqueStaticModels(const IntVector3& chunkIndex)
+ea::vector<StaticModel*> DefaultBakedSceneCollector::GetUniqueStaticModels(const IntVector3& chunkIndex)
 {
     auto iter = chunks_.find(chunkIndex);
     if (iter != chunks_.end())
@@ -160,11 +160,11 @@ ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetUniqueStaticModels(co
     return {};
 }
 
-void DefaultLightmapSceneCollector::CommitStaticModels(const IntVector3& /*chunkIndex*/)
+void DefaultBakedSceneCollector::CommitStaticModels(const IntVector3& /*chunkIndex*/)
 {
 }
 
-ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetUniqueLightProbeGroups(const IntVector3& chunkIndex)
+ea::vector<LightProbeGroup*> DefaultBakedSceneCollector::GetUniqueLightProbeGroups(const IntVector3& chunkIndex)
 {
     auto iter = chunks_.find(chunkIndex);
     if (iter != chunks_.end())
@@ -172,11 +172,11 @@ ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetUniqueLightProbeG
     return {};
 }
 
-void DefaultLightmapSceneCollector::CommitLightProbeGroups(const IntVector3& /*chunkIndex*/)
+void DefaultBakedSceneCollector::CommitLightProbeGroups(const IntVector3& /*chunkIndex*/)
 {
 }
 
-BoundingBox DefaultLightmapSceneCollector::GetChunkBoundingBox(const IntVector3& chunkIndex)
+BoundingBox DefaultBakedSceneCollector::GetChunkBoundingBox(const IntVector3& chunkIndex)
 {
     auto iter = chunks_.find(chunkIndex);
     if (iter != chunks_.end())
@@ -184,7 +184,7 @@ BoundingBox DefaultLightmapSceneCollector::GetChunkBoundingBox(const IntVector3&
     return {};
 }
 
-ea::vector<Light*> DefaultLightmapSceneCollector::GetLightsInBoundingBox(
+ea::vector<Light*> DefaultBakedSceneCollector::GetLightsInBoundingBox(
     const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
     // Query drawables
@@ -205,7 +205,7 @@ ea::vector<Light*> DefaultLightmapSceneCollector::GetLightsInBoundingBox(
     return lights;
 }
 
-ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInBoundingBox(
+ea::vector<StaticModel*> DefaultBakedSceneCollector::GetStaticModelsInBoundingBox(
     const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
     // Query drawables
@@ -226,7 +226,7 @@ ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInBoundin
     return staticModels;
 }
 
-ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetLightProbeGroupsInBoundingBox(
+ea::vector<LightProbeGroup*> DefaultBakedSceneCollector::GetLightProbeGroupsInBoundingBox(
     const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
     auto isAppropriate = [&](const LightProbeGroup* group)
@@ -238,7 +238,7 @@ ea::vector<LightProbeGroup*> DefaultLightmapSceneCollector::GetLightProbeGroupsI
     return groups;
 }
 
-ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInFrustum(
+ea::vector<StaticModel*> DefaultBakedSceneCollector::GetStaticModelsInFrustum(
     const IntVector3& /*chunkIndex*/, const Frustum& frustum)
 {
     // Query drawables
@@ -259,7 +259,7 @@ ea::vector<StaticModel*> DefaultLightmapSceneCollector::GetStaticModelsInFrustum
     return staticModels;
 }
 
-void DefaultLightmapSceneCollector::UnlockScene()
+void DefaultBakedSceneCollector::UnlockScene()
 {
     scene_ = nullptr;
     chunkSize_ = Vector3::ZERO;
