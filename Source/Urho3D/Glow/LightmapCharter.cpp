@@ -78,13 +78,13 @@ LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& 
         if (lightmapDesc.allocator_.Allocate(paddedSize.x_, paddedSize.y_, paddedPosition.x_, paddedPosition.y_))
         {
             const IntVector2 position = paddedPosition + padding * IntVector2::ONE;
-            return { chartIndex, position, size, settings.chartSize_ };
+            return { chartIndex, position, size, settings.lightmapSize_ };
         }
         ++chartIndex;
     }
 
     // Create general-purpose chart
-    LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, settings.chartSize_);
+    LightmapChart& chart = charts.emplace_back(chartIndex + baseChartIndex, settings.lightmapSize_);
 
     // Allocate region from the new chart
     IntVector2 paddedPosition;
@@ -94,7 +94,7 @@ LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& 
     assert(paddedPosition == IntVector2::ZERO);
 
     const IntVector2 position = paddedPosition + padding * IntVector2::ONE;
-    return { chartIndex, position, size, settings.chartSize_ };
+    return { chartIndex, position, size, settings.lightmapSize_ };
 }
 
 IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const LightmapChartingSettings& settings)
@@ -109,7 +109,7 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
 ea::vector<LightmapChart> GenerateLightmapCharts(
     const ea::vector<StaticModel*>& staticModels, const LightmapChartingSettings& settings, unsigned baseChartIndex)
 {
-    const int maxRegionSize = static_cast<int>(settings.chartSize_ - settings.padding_ * 2);
+    const int maxRegionSize = static_cast<int>(settings.lightmapSize_ - settings.padding_ * 2);
     ea::vector<LightmapChart> charts;
     for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
     {

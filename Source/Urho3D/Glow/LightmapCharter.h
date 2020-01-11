@@ -89,12 +89,8 @@ struct LightmapChart
 {
     /// Lightmap chart index.
     unsigned index_{};
-    /// Width of the chart.
-    unsigned width_{};
-    /// Height of the chart.
-    unsigned height_{};
-    /// Size of the chart.
-    IntVector2 size_;
+    /// Lightmap chart size.
+    unsigned lightmapSize_{};
     /// Used region allocator.
     AreaAllocator allocator_;
     /// Allocated elements.
@@ -105,10 +101,8 @@ struct LightmapChart
     /// Construct valid.
     LightmapChart(unsigned index, unsigned size)
         : index_(index)
-        , width_{ size }
-        , height_{ size }
-        , size_{ static_cast<int>(width_), static_cast<int>(height_) }
-        , allocator_{ size_.x_, size_.y_, 0, 0, false }
+        , lightmapSize_{ size }
+        , allocator_{ static_cast<int>(size), static_cast<int>(size), 0, 0, false }
     {
     }
 };

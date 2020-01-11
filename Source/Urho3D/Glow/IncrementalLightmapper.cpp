@@ -166,7 +166,7 @@ struct IncrementalLightmapper::Impl
     {
         // Find number of tasks
         if (lightmapSettings_.tracing_.numTasks_ == M_MAX_UNSIGNED)
-            lightmapSettings_.tracing_.numTasks_ = lightmapSettings_.charting_.chartSize_;
+            lightmapSettings_.tracing_.numTasks_ = lightmapSettings_.charting_.lightmapSize_;
 
         // Find or fix output directory
         if (incrementalSettings_.outputDirectory_.empty())
@@ -272,7 +272,7 @@ struct IncrementalLightmapper::Impl
 
         // Bake geometry buffers
         const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
-            context_, uniqueStaticModels, lightmapSettings_.charting_.chartSize_, lightmapSettings_.geometryBaking_);
+            context_, uniqueStaticModels, lightmapSettings_.charting_.lightmapSize_, lightmapSettings_.geometryBaking_);
         LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScenes.bakingScenes_);
 
         ea::vector<unsigned> lightmapsInChunk;
@@ -424,7 +424,7 @@ struct IncrementalLightmapper::Impl
         {
             const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
                 cache_->LoadGeometryBuffer(lightmapIndex);
-            LightmapChartBakedDirect bakedDirect{ geometryBuffer->width_, geometryBuffer->height_ };
+            LightmapChartBakedDirect bakedDirect{ geometryBuffer->lightmapSize_ };
 
             // Bake emission
             BakeEmissionLight(bakedDirect, *geometryBuffer, lightmapSettings_.tracing_);
@@ -465,7 +465,7 @@ struct IncrementalLightmapper::Impl
         // Initialize context
         if (ctx.currentChunkIndex_ == 0)
         {
-            ctx.stitchingContext4_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.chartSize_, 4);
+            ctx.stitchingContext4_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.lightmapSize_, 4);
         }
 
         // Load chunk
@@ -501,7 +501,7 @@ struct IncrementalLightmapper::Impl
             const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
                 cache_->LoadGeometryBuffer(lightmapIndex);
             const ea::shared_ptr<const LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
-            LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->width_, geometryBuffer->height_ };
+            LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->lightmapSize_ };
 
             // Bake indirect lights
             BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
@@ -522,12 +522,12 @@ struct IncrementalLightmapper::Impl
 
             // Generate image
             auto lightmapImage = MakeShared<Image>(context_);
-            lightmapImage->SetSize(geometryBuffer->width_, geometryBuffer->height_, 4);
-            for (int y = 0; y < geometryBuffer->height_; ++y)
+            lightmapImage->SetSize(geometryBuffer->lightmapSize_, geometryBuffer->lightmapSize_, 4);
+            for (int y = 0; y < geometryBuffer->lightmapSize_; ++y)
             {
-                for (int x = 0; x < geometryBuffer->width_; ++x)
+                for (int x = 0; x < geometryBuffer->lightmapSize_; ++x)
                 {
-                    const unsigned i = y * geometryBuffer->width_ + x;
+                    const unsigned i = y * geometryBuffer->lightmapSize_ + x;
                     const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
                     const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
                     const Vector3 totalLight = directLight + indirectLight;
