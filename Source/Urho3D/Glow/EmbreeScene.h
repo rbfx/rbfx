@@ -29,6 +29,7 @@
 #include "../Graphics/LightmapSettings.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Color.h"
+#include "../Resource/Image.h"
 
 #include <EASTL/vector.h>
 
@@ -62,6 +63,14 @@ struct EmbreeGeometry
     Vector3 diffuseColor_{};
     /// Alpha value.
     float alpha_{};
+    /// Resource name of diffuse image.
+    ea::string diffuseImageName_;
+    /// Diffuse image.
+    SharedPtr<Image> diffuseImage_;
+    /// Diffuse image width.
+    int diffuseImageWidth_{};
+    /// Diffuse image height.
+    int diffuseImageHeight_{};
 };
 
 /// Compare Embree geometries by objects (less).
@@ -76,13 +85,17 @@ inline bool CompareEmbreeGeometryByObject(const EmbreeGeometry& lhs, const Embre
     return lhs.lodIndex_ < rhs.lodIndex_;
 }
 
-/// Calculate bounding box of nodes. Only StaticModel and TerrainPatch are processed.
-URHO3D_API BoundingBox CalculateBoundingBoxOfNodes(const ea::vector<Node*>& nodes, bool padIfZero = false);
-
 /// Embree scene.
 class URHO3D_API EmbreeScene : public RefCounted
 {
 public:
+    /// Vertex attribute for lightmap UV.
+    static const unsigned LightmapUVAttribute = 0;
+    /// Vertex attribute for smooth normal.
+    static const unsigned NormalAttribute = 1;
+    /// Vertex attribute for primary UV.
+    static const unsigned UVAttribute = 2;
+
     /// Mask for LOD 0.
     static const unsigned PrimaryLODGeometry = 0x00000001;
     /// Mask for LODs 1..N.

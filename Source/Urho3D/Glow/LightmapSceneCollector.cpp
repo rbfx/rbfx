@@ -39,6 +39,61 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+BoundingBox CalculateLightmappedSceneBoundingBox(const ea::vector<Node*>& nodes)
+{
+    ea::vector<StaticModel*> staticModels;
+    ea::vector<Terrain*> terrains;
+    ea::vector<LightProbeGroup*> lightProbeGroups;
+
+    BoundingBox boundingBox;
+    for (Node* node : nodes)
+    {
+        node->GetComponents(staticModels);
+        node->GetComponents(terrains);
+        node->GetComponents(lightProbeGroups);
+
+        for (StaticModel* staticModel : staticModels)
+        {
+            if (staticModel->IsEnabledEffective() && staticModel->GetBakeLightmap())
+                boundingBox.Merge(staticModel->GetWorldBoundingBox());
+        }
+
+#if 0
+        for (Terrain* terrain : terrains)
+        {
+            const IntVector2 numPatches = terrain->GetNumPatches();
+            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
+            {
+                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
+                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
+            }
+        }
+#endif
+
+        for (LightProbeGroup* lightProbeGroup : lightProbeGroups)
+        {
+            if (lightProbeGroup->IsEnabledEffective())
+                boundingBox.Merge(lightProbeGroup->GetWorldBoundingBox());
+        }
+    }
+
+    // Pad bounding box
+    const Vector3 size = boundingBox.Size();
+    if (size.x_ < M_EPSILON)
+        boundingBox.max_.x_ += M_LARGE_EPSILON;
+    if (size.y_ < M_EPSILON)
+        boundingBox.max_.y_ += M_LARGE_EPSILON;
+    if (size.z_ < M_EPSILON)
+        boundingBox.max_.z_ += M_LARGE_EPSILON;
+
+    return boundingBox;
+}
+
+}
+
 LightmapSceneCollector::~LightmapSceneCollector() = default;
 
 void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunkSize)
@@ -49,7 +104,7 @@ void DefaultLightmapSceneCollector::LockScene(Scene* scene, const Vector3& chunk
 
     // Estimate dimensions
     const ea::vector<Node*> children = scene_->GetChildren(true);
-    boundingBox_ = CalculateBoundingBoxOfNodes(children, true);
+    boundingBox_ = CalculateLightmappedSceneBoundingBox(children);
     chunkGridDimension_ = VectorMax(IntVector3::ONE, VectorRoundToInt(boundingBox_.Size() / chunkSize_));
     const IntVector3 maxChunk = chunkGridDimension_ - IntVector3::ONE;
 

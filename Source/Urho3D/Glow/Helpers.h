@@ -85,9 +85,21 @@ inline bool IsMaterialOpaque(Material* material)
 }
 
 /// Return material diffuse color.
-inline Color GetMaterialDiffuse(Material* material)
+inline Color GetMaterialDiffuseColor(Material* material)
 {
     return static_cast<Color>(material->GetShaderParameter("MatDiffColor").GetVector4());
+}
+
+/// Return material diffuse texture and UV offsets.
+inline Texture* GetMaterialDiffuseTexture(Material* material, Vector4& uOffset, Vector4& vOffset)
+{
+    Texture* texture = material->GetTexture(TU_DIFFUSE);
+    if (!texture)
+        return {};
+
+    uOffset = material->GetShaderParameter("UOffset").GetVector4();
+    vOffset = material->GetShaderParameter("VOffset").GetVector4();
+    return texture;
 }
 
 
