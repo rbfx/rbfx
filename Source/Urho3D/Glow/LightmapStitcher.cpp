@@ -187,6 +187,49 @@ SharedPtr<VertexBuffer> CreateSeamsVertexBuffer(Context* context, const Lightmap
     return vertexBuffer;
 }
 
+/// Stitch texture in intermediate buffer.
+void StitchTextureSeams(LightmapStitchingContext& stitchingContext,
+    const LightmapStitchingSettings& settings, Model* seamsModel)
+{
+    Context* context = stitchingContext.context_;
+    auto graphics = context->GetGraphics();
+    const float texelSize = 1.0f / stitchingContext.lightmapSize_;
+
+    // Initialize scenes and render path
+    SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
+    auto pingScene = CreateStitchingScene(context, settings, stitchingContext.pongTexture_, seamsModel, texelSize);
+    auto pongScene = CreateStitchingScene(context, settings, stitchingContext.pingTexture_, seamsModel, texelSize);
+    auto pingViewViewport = CreateStitchingViewAndViewport(pingScene, renderPath, stitchingContext.pingTexture_);
+    auto pongViewViewport = CreateStitchingViewAndViewport(pongScene, renderPath, stitchingContext.pongTexture_);
+
+    if (!graphics->BeginFrame())
+    {
+        URHO3D_LOGERROR("Failed to begin lightmap geometry buffer rendering \"{}\"");
+        return;
+    }
+
+    // Prepare for ping-pong
+    Texture2D* currentTexture = stitchingContext.pongTexture_;
+    Texture2D* swapTexture = stitchingContext.pingTexture_;
+    View* currentView = pingViewViewport.first;
+    View* swapView = pongViewViewport.first;
+
+    const int size = static_cast<int>(stitchingContext.lightmapSize_);
+    currentTexture->SetData(0, 0, 0, size, size, stitchingContext.data_.data());
+
+    // Ping-pong rendering
+    for (unsigned i = 0; i < settings.numIterations_; ++i)
+    {
+        currentView->Render();
+        ea::swap(currentTexture, swapTexture);
+        ea::swap(currentView, swapView);
+    }
+
+    // Finish
+    currentTexture->GetData(0, stitchingContext.data_.data());
+    graphics->EndFrame();
+}
+
 }
 
 LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned lightmapSize, unsigned numChannels)
@@ -194,6 +237,7 @@ LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned l
     LightmapStitchingContext result;
     result.context_ = context;
     result.lightmapSize_ = lightmapSize;
+    result.data_.resize(lightmapSize * lightmapSize);
 
     const unsigned textureFormat = GetStitchTextureFormat(numChannels);
     result.pingTexture_ = MakeShared<Texture2D>(context);
@@ -231,43 +275,9 @@ SharedPtr<Model> CreateSeamsModel(Context* context, const LightmapSeamVector& se
 void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector4>& imageData,
     const LightmapStitchingSettings& settings, Model* seamsModel)
 {
-    Context* context = stitchingContext.context_;
-    auto graphics = context->GetGraphics();
-    const float texelSize = 1.0f / stitchingContext.lightmapSize_;
-
-    // Initialize scenes and render path
-    SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
-    auto pingScene = CreateStitchingScene(context, settings, stitchingContext.pongTexture_, seamsModel, texelSize);
-    auto pongScene = CreateStitchingScene(context, settings, stitchingContext.pingTexture_, seamsModel, texelSize);
-    auto pingViewViewport = CreateStitchingViewAndViewport(pingScene, renderPath, stitchingContext.pingTexture_);
-    auto pongViewViewport = CreateStitchingViewAndViewport(pongScene, renderPath, stitchingContext.pongTexture_);
-
-    if (!graphics->BeginFrame())
-    {
-        URHO3D_LOGERROR("Failed to begin lightmap geometry buffer rendering \"{}\"");
-        return;
-    }
-
-    // Prepare for ping-pong
-    Texture2D* currentTexture = stitchingContext.pongTexture_;
-    Texture2D* swapTexture = stitchingContext.pingTexture_;
-    View* currentView = pingViewViewport.first;
-    View* swapView = pongViewViewport.first;
-
-    const int size = static_cast<int>(stitchingContext.lightmapSize_);
-    currentTexture->SetData(0, 0, 0, size, size, imageData.data());
-
-    // Ping-pong rendering
-    for (unsigned i = 0; i < settings.numIterations_; ++i)
-    {
-        currentView->Render();
-        ea::swap(currentTexture, swapTexture);
-        ea::swap(currentView, swapView);
-    }
-
-    // Finish
-    currentTexture->GetData(0, imageData.data());
-    graphics->EndFrame();
+    ea::swap(stitchingContext.data_, imageData);
+    StitchTextureSeams(stitchingContext, settings, seamsModel);
+    ea::swap(stitchingContext.data_, imageData);
 }
 
 }
