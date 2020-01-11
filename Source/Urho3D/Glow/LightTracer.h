@@ -46,44 +46,38 @@ struct LightmapChartBakedDirect
     /// Construct default.
     LightmapChartBakedDirect() = default;
     /// Construct valid.
-    LightmapChartBakedDirect(unsigned width, unsigned height)
-        : width_(width)
-        , height_(height)
-        , realWidth_(static_cast<float>(width_))
-        , realHeight_(static_cast<float>(height_))
-        , directLight_(width_ * height_, Vector4(0.0f, 0.0f, 0.0f, 1.0f))
-        , surfaceLight_(width_ * height_)
-        , albedo_(width_ * height_)
+    explicit LightmapChartBakedDirect(unsigned lightmapSize)
+        : lightmapSize_(lightmapSize)
+        , realLightmapSize_(static_cast<float>(lightmapSize_))
+        , directLight_(lightmapSize_ * lightmapSize_, Vector4(0.0f, 0.0f, 0.0f, 1.0f))
+        , surfaceLight_(lightmapSize_ * lightmapSize_)
+        , albedo_(lightmapSize_ * lightmapSize_)
     {
     }
     /// Return nearest point location by UV.
     IntVector2 GetNearestLocation(const Vector2& uv) const
     {
-        const int x = FloorToInt(ea::min(uv.x_ * realWidth_, realWidth_ - 1.0f));
-        const int y = FloorToInt(ea::min(uv.y_ * realHeight_, realHeight_ - 1.0f));
+        const int x = FloorToInt(ea::min(uv.x_ * realLightmapSize_, realLightmapSize_ - 1.0f));
+        const int y = FloorToInt(ea::min(uv.y_ * realLightmapSize_, realLightmapSize_ - 1.0f));
         return { x, y };
     }
     /// Return surface light for location.
     const Vector3& GetSurfaceLight(const IntVector2& location) const
     {
-        const unsigned index = location.x_ + location.y_ * width_;
+        const unsigned index = location.x_ + location.y_ * lightmapSize_;
         return surfaceLight_[index];
     }
     /// Return albedo for location.
     const Vector3& GetAlbedo(const IntVector2& location) const
     {
-        const unsigned index = location.x_ + location.y_ * width_;
+        const unsigned index = location.x_ + location.y_ * lightmapSize_;
         return albedo_[index];
     }
 
-    /// Width of the chart.
-    unsigned width_{};
-    /// Height of the chart.
-    unsigned height_{};
-    /// Width of the chart as float.
-    float realWidth_{};
-    /// Height of the chart as float.
-    float realHeight_{};
+    /// Size of lightmap chart.
+    unsigned lightmapSize_{};
+    /// Size of lightmap chart as float.
+    float realLightmapSize_{};
     /// Incoming direct light from completely backed lights, to be baked in lightmap.
     /// W-component is unused and is needed for alignment since this array is copied to GPU.
     ea::vector<Vector4> directLight_;
@@ -99,11 +93,10 @@ struct LightmapChartBakedIndirect
     /// Construct default.
     LightmapChartBakedIndirect() = default;
     /// Construct valid.
-    LightmapChartBakedIndirect(unsigned width, unsigned height)
-        : width_(width)
-        , height_(height)
-        , light_(width_ * height_)
-        , lightSwap_(width_ * height_)
+    explicit LightmapChartBakedIndirect(unsigned lightmapSize)
+        : lightmapSize_(lightmapSize)
+        , light_(lightmapSize_ * lightmapSize_)
+        , lightSwap_(lightmapSize_ * lightmapSize_)
     {
     }
     /// Normalize collected light.
@@ -116,10 +109,8 @@ struct LightmapChartBakedIndirect
         }
     }
 
-    /// Width of the chart.
-    unsigned width_{};
-    /// Height of the chart.
-    unsigned height_{};
+    /// Size of lightmap chart.
+    unsigned lightmapSize_{};
     /// Indirect light. W component represents normalization weight.
     ea::vector<Vector4> light_;
     /// Swap buffer for indirect light. Used by filters.

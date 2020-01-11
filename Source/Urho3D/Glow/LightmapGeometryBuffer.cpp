@@ -295,9 +295,9 @@ float ExtractFloatFromVector4(const Vector4& data) { return data.w_; }
 
 LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     Context* context, const ea::vector<StaticModel*>& staticModels,
-    unsigned chartSize, const LightmapGeometryBakingSettings& settings)
+    unsigned lightmapSize, const LightmapGeometryBakingSettings& settings)
 {
-    const Vector2 texelSize{ 1.0f / chartSize, 1.0f / chartSize };
+    const Vector2 texelSize{ 1.0f / lightmapSize, 1.0f / lightmapSize };
 
     // Load resources
     SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
@@ -359,9 +359,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
         {
             bakingScene.context_ = context;
             bakingScene.index_ = lightmapIndex;
-            bakingScene.width_ = chartSize;
-            bakingScene.height_ = chartSize;
-            bakingScene.size_ = IntVector2::ONE * static_cast<int>(chartSize);
+            bakingScene.lightmapSize_ = lightmapSize;
 
             bakingScene.scene_ = MakeShared<Scene>(context);
             bakingScene.scene_->CreateComponent<Octree>();
@@ -409,11 +407,12 @@ LightmapChartGeometryBuffer BakeLightmapGeometryBuffer(const LightmapGeometryBak
         return {};
     }
 
-    LightmapChartGeometryBuffer geometryBuffer{ bakingScene.index_, bakingScene.width_, bakingScene.height_ };
+    LightmapChartGeometryBuffer geometryBuffer{ bakingScene.index_, bakingScene.lightmapSize_ };
 
     // Get render surface
+    const int textureSize = static_cast<int>(geometryBuffer.lightmapSize_);
     Texture* renderTexture = renderer->GetScreenBuffer(
-        bakingScene.size_.x_, bakingScene.size_.y_,Graphics::GetRGBAFormat(), 1, true, false, false, false);
+        textureSize, textureSize, Graphics::GetRGBAFormat(), 1, true, false, false, false);
     RenderSurface* renderSurface = static_cast<Texture2D*>(renderTexture)->GetRenderSurface();
 
     // Setup viewport
