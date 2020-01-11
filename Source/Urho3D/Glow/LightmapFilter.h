@@ -24,40 +24,31 @@
 
 #pragma once
 
-#include "../Glow/BakedLightCache.h"
-#include "../Glow/BakedSceneCollector.h"
-#include "../Graphics/LightmapSettings.h"
-
-#include <EASTL/string.h>
+#include "../Glow/LightmapGeometryBuffer.h"
+#include "../Glow/LightTracer.h"
+#include "../Graphics/LightProbeGroup.h"
 
 namespace Urho3D
 {
 
-/// Incremental lightmapper.
-class URHO3D_API IncrementalLightmapper
+/// Parameters for indirect light filtering.
+struct IndirectFilterParameters
 {
-public:
-    /// Construct.
-    IncrementalLightmapper() {}
-    /// Destruct.
-    ~IncrementalLightmapper();
-
-    /// Initialize lightmapper. Relatively lightweigh.
-    bool Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
-        Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache);
-    /// Process and update the scene. Scene collector is used here.
-    void ProcessScene();
-    /// Bake lighting and save results.
-    /// It is safe to call Bake from another thread as long as lightmap cache is safe to use from said thread.
-    void Bake();
-    /// Commit the rest of changes to scene. Scene collector is used here.
-    void CommitScene();
-
-private:
-    struct Impl;
-
-    /// Implementation details.
-    ea::unique_ptr<Impl> impl_;
+    /// Kernel radius.
+    int kernelRadius_{ 2 };
+    /// Upscale factor for offsets.
+    int upscale_{ 1 };
+    /// Color weight. The lesser value is, the more color details are preserved on flat surface.
+    float luminanceSigma_{ 10.0f };
+    /// Normal weight. The higher value is, the more color details are preserved on normal edges.
+    float normalPower_{ 4.0f };
+    /// Position weight. The lesser value is, the more color details are preserved on position edges.
+    float positionSigma_{ 1.0f };
 };
+
+/// Filter indirect light.
+URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
+    const IndirectFilterParameters& params, unsigned numTasks);
+
 
 }

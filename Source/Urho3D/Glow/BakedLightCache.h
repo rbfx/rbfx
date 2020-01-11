@@ -24,9 +24,9 @@
 
 #pragma once
 
-#include "../Glow/EmbreeScene.h"
-#include "../Glow/LightmapGeometryBaker.h"
-#include "../Glow/LightmapTracer.h"
+#include "../Glow/RaytracerScene.h"
+#include "../Glow/LightmapGeometryBuffer.h"
+#include "../Glow/LightTracer.h"
 #include "../Graphics/Light.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Math/Vector3.h"
@@ -58,10 +58,10 @@ struct LightmapChunkVicinity
 {
     /// Lightmaps ownder by this chunk.
     ea::vector<unsigned> lightmaps_;
-    /// Embree scene.
-    SharedPtr<EmbreeScene> embreeScene_;
-    /// Geometry buffer ID to embree geometry ID mapping.
-    ea::vector<unsigned> geometryBufferToEmbree_;
+    /// Raytracer scene.
+    SharedPtr<RaytracerScene> raytracerScene_;
+    /// Geometry buffer ID to raytracer geometry ID mapping.
+    ea::vector<unsigned> geometryBufferToRaytracer_;
     /// Lights to bake.
     ea::vector<BakedDirectLight> bakedLights_;
     /// Light probes collection.
@@ -69,11 +69,11 @@ struct LightmapChunkVicinity
 };
 
 /// Lightmap cache interface.
-class URHO3D_API LightmapCache
+class URHO3D_API BakedLightCache
 {
 public:
     /// Destruct.
-    virtual ~LightmapCache();
+    virtual ~BakedLightCache();
 
     /// Store chunk vicinity in the cache.
     virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
@@ -94,7 +94,7 @@ public:
 };
 
 /// Memory lightmap cache.
-class URHO3D_API LightmapMemoryCache : public LightmapCache
+class URHO3D_API BakedLightMemoryCache : public BakedLightCache
 {
 public:
     /// Store baking context in the cache.

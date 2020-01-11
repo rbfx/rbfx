@@ -26,8 +26,8 @@
 #define _SSIZE_T_DEFINED
 
 #include "../Glow/Helpers.h"
-#include "../Glow/EmbreeScene.h"
-#include "../Glow/LightmapTracer.h"
+#include "../Glow/RaytracerScene.h"
+#include "../Glow/LightTracer.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../IO/Log.h"
 #include "../Math/TetrahedralMesh.h"
@@ -69,51 +69,8 @@ Vector3 RandomHemisphereDirection(const Vector3& normal)
     return result;
 }
 
-/// Get Gauss kernel of given radius.
-ea::span<const float> GetKernel(int radius)
-{
-    static const float k0[] = { 1 };
-    static const float k1[] = { 0.684538f, 0.157731f };
-    static const float k2[] = { 0.38774f, 0.24477f, 0.06136f };
-    static const float k3[] = { 0.266346f, 0.215007f, 0.113085f, 0.038735f };
-    static const float k4[] = { 0.20236f, 0.179044f, 0.124009f, 0.067234f, 0.028532f };
-    static const float k5[] = { 0.163053f, 0.150677f, 0.118904f, 0.080127f, 0.046108f, 0.022657f };
-
-    switch (radius)
-    {
-    case 0: return k0;
-    case 1: return k1;
-    case 2: return k2;
-    case 3: return k3;
-    case 4: return k4;
-    case 5: return k5;
-    default:
-        assert(0);
-        return {};
-    }
-}
-
-/// Get luminance of given color value.
-float GetLuminance(const Vector4& color)
-{
-    return Color{ color.x_, color.y_, color.z_ }.Luma();
-}
-
-/// Calculate edge-stopping weight.
-float CalculateEdgeWeight(
-    float luminance1, float luminance2, float luminanceSigma,
-    const Vector3& position1, const Vector3& position2, float positionSigma,
-    const Vector3& normal1, const Vector3& normal2, float normalPower)
-{
-    const float colorWeight = Abs(luminance1 - luminance2) / luminanceSigma;
-    const float positionWeight = positionSigma > M_EPSILON ? (position1 - position2).LengthSquared() / positionSigma : 0.0f;
-    const float normalWeight = Pow(ea::max(0.0f, normal1.DotProduct(normal2)), normalPower);
-
-    return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
-}
-
 /// Return true if first geometry is non-primary LOD of another geometry or different LOD of itself.
-bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& hitGeometry)
+bool IsUnwantedLod(const RaytracerGeometry& currentGeometry, const RaytracerGeometry& hitGeometry)
 {
     const bool hitLod = hitGeometry.lodIndex_ != 0;
     const bool sameGeometry = currentGeometry.objectIndex_ == hitGeometry.objectIndex_
@@ -125,7 +82,7 @@ bool IsUnwantedLod(const EmbreeGeometry& currentGeometry, const EmbreeGeometry& 
 }
 
 /// Return texture color at hit position. Texture must be present.
-Color GetHitDiffuseTextureColor(const EmbreeGeometry& hitGeometry, const RTCHit& hit)
+Color GetHitDiffuseTextureColor(const RaytracerGeometry& hitGeometry, const RTCHit& hit)
 {
     assert(hitGeometry.diffuseImage_);
 
@@ -139,7 +96,7 @@ Color GetHitDiffuseTextureColor(const EmbreeGeometry& hitGeometry, const RTCHit&
 }
 
 /// Return true if transparent, update incoming light. Used for direct light calculations.
-bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit, Vector3& incomingLight)
+bool IsTransparedForDirect(const RaytracerGeometry& hitGeometry, const RTCHit& hit, Vector3& incomingLight)
 {
     if (hitGeometry.opaque_)
         return false;
@@ -164,7 +121,7 @@ bool IsTransparedForDirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit,
 }
 
 /// Return true if transparent. Used for indirect light calculations.
-bool IsTransparentForIndirect(const EmbreeGeometry& hitGeometry, const RTCHit& hit)
+bool IsTransparentForIndirect(const RaytracerGeometry& hitGeometry, const RTCHit& hit)
 {
     if (hitGeometry.opaque_)
         return false;
@@ -191,9 +148,9 @@ bool IsTransparentForIndirect(const EmbreeGeometry& hitGeometry, const RTCHit& h
 struct GeometryBufferPreprocessContext : public RTCIntersectContext
 {
     /// Current geometry.
-    const EmbreeGeometry* currentGeometry_{};
+    const RaytracerGeometry* currentGeometry_{};
     /// Geometry index.
-    const ea::vector<EmbreeGeometry>* geometryIndex_{};
+    const ea::vector<RaytracerGeometry>* geometryIndex_{};
 };
 
 /// Filter function for geometry buffer preprocessing.
@@ -208,7 +165,7 @@ void GeometryBufferPreprocessFilter(const RTCFilterFunctionNArguments* args)
         return;
 
     // Ignore all LODs
-    const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    const RaytracerGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
     if (IsUnwantedLod(*ctx.currentGeometry_, hitGeometry))
         args->valid[0] = 0;
 }
@@ -217,9 +174,9 @@ void GeometryBufferPreprocessFilter(const RTCFilterFunctionNArguments* args)
 struct DirectTracingContextForCharts : public RTCIntersectContext
 {
     /// Current geometry.
-    const EmbreeGeometry* currentGeometry_{};
+    const RaytracerGeometry* currentGeometry_{};
     /// Geometry index.
-    const ea::vector<EmbreeGeometry>* geometryIndex_{};
+    const ea::vector<RaytracerGeometry>* geometryIndex_{};
     /// Incoming light.
     Vector3* incomingLight_{};
 };
@@ -236,7 +193,7 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
         return;
 
     // Ignore if unwanted LOD
-    const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    const RaytracerGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
     if (IsUnwantedLod(*ctx.currentGeometry_, hitGeometry))
         args->valid[0] = 0;
 
@@ -249,7 +206,7 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
 struct IndirectTracingContext : public RTCIntersectContext
 {
     /// Geometry index.
-    const ea::vector<EmbreeGeometry>* geometryIndex_{};
+    const ea::vector<RaytracerGeometry>* geometryIndex_{};
 };
 
 /// Filter function for indirect light baking.
@@ -264,7 +221,7 @@ void TracingFilterIndirect(const RTCFilterFunctionNArguments* args)
         return;
 
     // Ignore if transparent
-    const EmbreeGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    const RaytracerGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
     if (IsTransparentForIndirect(hitGeometry, hit))
         args->valid[0] = 0;
 }
@@ -315,9 +272,9 @@ struct ChartIndirectTracingKernel
     /// Light probes data for fallback.
     const LightProbeCollection* lightProbesData_{};
     /// Mapping from geometry buffer ID to embree geometry ID.
-    const ea::vector<unsigned>* geometryBufferToEmbree_{};
-    /// Embree geometry index.
-    const ea::vector<EmbreeGeometry>* embreeGeometryIndex_{};
+    const ea::vector<unsigned>* geometryBufferToRaytracer_{};
+    /// Raytracer geometries.
+    const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
     /// Settings.
     const LightmapTracingSettings* settings_{};
 
@@ -337,10 +294,10 @@ struct ChartIndirectTracingKernel
 
         const Vector3& position = geometryBuffer_->positions_[elementIndex];
         const Vector3& smoothNormal = geometryBuffer_->smoothNormals_[elementIndex];
-        const unsigned embreeGeometryId = (*geometryBufferToEmbree_)[geometryId];
-        const EmbreeGeometry& embreeGeometry = (*embreeGeometryIndex_)[embreeGeometryId];
+        const unsigned raytracerGeometryId = (*geometryBufferToRaytracer_)[geometryId];
+        const RaytracerGeometry& raytracerGeometry = (*raytracerGeometries_)[raytracerGeometryId];
 
-        if (embreeGeometry.numLods_ > 1)
+        if (raytracerGeometry.numLods_ > 1)
         {
             const SphericalHarmonicsDot9 sh = lightProbesMesh_->Sample(
                 lightProbesData_->bakedSphericalHarmonics_, position, lightProbesMeshHint_);
@@ -424,7 +381,7 @@ struct LightProbeIndirectTracingKernel
 /// Trace indirect lighting.
 template <class T>
 void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
-    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
+    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
 
@@ -433,9 +390,9 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
     {
         T kernel = sharedKernel;
 
-        RTCScene scene = embreeScene.GetEmbreeScene();
-        const float maxDistance = embreeScene.GetMaxDistance();
-        const auto& geometryIndex = embreeScene.GetEmbreeGeometryIndex();
+        RTCScene scene = raytracerScene.GetEmbreeScene();
+        const float maxDistance = raytracerScene.GetMaxDistance();
+        const auto& geometryIndex = raytracerScene.GetGeometries();
 
         Vector3 albedo[LightmapTracingSettings::MaxBounces];
         Vector3 incomingSamples[LightmapTracingSettings::MaxBounces];
@@ -450,7 +407,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
         rayHit.ray.tnear = 0.0f;
         rayHit.ray.time = 0.0f;
         rayHit.ray.id = 0;
-        rayHit.ray.mask = EmbreeScene::PrimaryLODGeometry;
+        rayHit.ray.mask = RaytracerScene::PrimaryLODGeometry;
         rayHit.ray.flags = 0;
 
         for (unsigned elementIndex = fromIndex; elementIndex < toIndex; ++elementIndex)
@@ -489,7 +446,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                         break;
 
                     // Sample lightmap UV
-                    const EmbreeGeometry& geometry = geometryIndex[rayHit.hit.geomID];
+                    const RaytracerGeometry& geometry = geometryIndex[rayHit.hit.geomID];
                     Vector2 lightmapUV;
                     rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
                         RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
@@ -556,21 +513,21 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
 }
 
 void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const LightmapTracingSettings& settings)
 {
-    RTCScene scene = embreeScene.GetEmbreeScene();
-    const ea::vector<EmbreeGeometry>& embreeGeometryIndex = embreeScene.GetEmbreeGeometryIndex();
+    RTCScene scene = raytracerScene.GetEmbreeScene();
+    const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
     ParallelFor(geometryBuffer.positions_.size(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         RTCRayHit rayHit;
         GeometryBufferPreprocessContext rayContext;
-        rayContext.geometryIndex_ = &embreeGeometryIndex;
+        rayContext.geometryIndex_ = &raytracerGeometries;
         rtcInitIntersectContext(&rayContext);
         rayContext.filter = GeometryBufferPreprocessFilter;
 
-        rayHit.ray.mask = EmbreeScene::AllGeometry;
+        rayHit.ray.mask = RaytracerScene::AllGeometry;
         rayHit.ray.tnear = 0.0f;
         rayHit.ray.time = 0.0f;
         rayHit.ray.id = 0;
@@ -582,7 +539,7 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             if (!geometryId)
                 continue;
 
-            rayContext.currentGeometry_ = &embreeGeometryIndex[geometryBufferToEmbree[geometryId]];
+            rayContext.currentGeometry_ = &raytracerGeometries[geometryBufferToRaytracer[geometryId]];
 
             Vector3& mutablePosition = geometryBuffer.positions_[i];
             const Vector3 faceNormal = geometryBuffer.faceNormals_[i];
@@ -664,14 +621,14 @@ void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChar
 }
 
 void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
     const Vector3 rayDirection = light.direction_.Normalized();
-    const float maxDistance = embreeScene.GetMaxDistance();
+    const float maxDistance = raytracerScene.GetMaxDistance();
     const Vector3 lightColor = light.color_.ToVector3();
-    RTCScene scene = embreeScene.GetEmbreeScene();
-    const ea::vector<EmbreeGeometry>& embreeGeometryIndex = embreeScene.GetEmbreeGeometryIndex();
+    RTCScene scene = raytracerScene.GetEmbreeScene();
+    const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
 
     ParallelFor(bakedDirect.directLight_.size(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
@@ -679,10 +636,10 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
         RTCRayHit rayHit;
         DirectTracingContextForCharts rayContext;
         rtcInitIntersectContext(&rayContext);
-        rayContext.geometryIndex_ = &embreeGeometryIndex;
+        rayContext.geometryIndex_ = &raytracerGeometries;
         rayContext.filter = TracingFilterForChartsDirect;
 
-        rayHit.ray.mask = EmbreeScene::AllGeometry;
+        rayHit.ray.mask = RaytracerScene::AllGeometry;
         rayHit.ray.dir_x = rayDirection.x_;
         rayHit.ray.dir_y = rayDirection.y_;
         rayHit.ray.dir_z = rayDirection.z_;
@@ -701,8 +658,8 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
             const Vector3& faceNormal = geometryBuffer.faceNormals_[i];
             const Vector3& smoothNormal = geometryBuffer.smoothNormals_[i];
 
-            const unsigned embreeGeometryId = geometryBufferToEmbree[geometryId];
-            rayContext.currentGeometry_ = &embreeGeometryIndex[embreeGeometryId];
+            const unsigned raytracerGeometryId = geometryBufferToRaytracer[geometryId];
+            rayContext.currentGeometry_ = &raytracerGeometries[raytracerGeometryId];
 
             Vector3 incomingLight = lightColor;
             rayContext.incomingLight_ = &incomingLight;
@@ -737,80 +694,20 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
 void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const TetrahedralMesh& lightProbesMesh, const LightProbeCollection& lightProbesData,
-    const EmbreeScene& embreeScene, const ea::vector<unsigned>& geometryBufferToEmbree,
+    const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const LightmapTracingSettings& settings)
 {
     ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &lightProbesMesh, &lightProbesData,
-        &geometryBufferToEmbree, &embreeScene.GetEmbreeGeometryIndex(), &settings };
-    TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
+        &geometryBufferToRaytracer, &raytracerScene.GetGeometries(), &settings };
+    TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);
 }
 
 void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
-    const EmbreeScene& embreeScene, const LightmapTracingSettings& settings)
+    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
 {
     LightProbeIndirectTracingKernel kernel{ &collection, &settings };
-    TraceIndirectLight(kernel, bakedDirect, embreeScene, settings);
-}
-
-void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const IndirectFilterParameters& params, unsigned numTasks)
-{
-    const ea::span<const float> kernelWeights = GetKernel(params.kernelRadius_);
-    ParallelFor(bakedIndirect.light_.size(), numTasks,
-        [&](unsigned fromIndex, unsigned toIndex)
-    {
-        for (unsigned index = fromIndex; index < toIndex; ++index)
-        {
-            const unsigned geometryId = geometryBuffer.geometryIds_[index];
-            if (!geometryId)
-                continue;
-
-            const IntVector2 centerLocation = geometryBuffer.IndexToLocation(index);
-
-            const Vector4 centerColor = bakedIndirect.light_[index];
-            const float centerLuminance = GetLuminance(centerColor);
-            const Vector3 centerPosition = geometryBuffer.positions_[index];
-            const Vector3 centerNormal = geometryBuffer.smoothNormals_[index];
-
-            float colorWeight = kernelWeights[0] * kernelWeights[0];
-            Vector4 colorSum = centerColor * colorWeight;
-            for (int dy = -params.kernelRadius_; dy <= params.kernelRadius_; ++dy)
-            {
-                for (int dx = -params.kernelRadius_; dx <= params.kernelRadius_; ++dx)
-                {
-                    if (dx == 0 && dy == 0)
-                        continue;
-
-                    const IntVector2 offset = IntVector2{ dx, dy } * params.upscale_;
-                    const IntVector2 otherLocation = centerLocation + offset;
-                    if (!geometryBuffer.IsValidLocation(otherLocation))
-                        continue;
-
-                    const float dxdy = Vector2{ static_cast<float>(dx), static_cast<float>(dy) }.Length();
-                    const float kernel = kernelWeights[Abs(dx)] * kernelWeights[Abs(dy)];
-
-                    const unsigned otherIndex = geometryBuffer.LocationToIndex(otherLocation);
-                    const unsigned otherGeometryId = geometryBuffer.geometryIds_[otherIndex];
-                    if (!otherGeometryId)
-                        continue;
-
-                    const Vector4 otherColor = bakedIndirect.light_[otherIndex];
-                    const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
-                        centerPosition, geometryBuffer.positions_[otherIndex], dxdy * params.positionSigma_,
-                        centerNormal, geometryBuffer.smoothNormals_[otherIndex], params.normalPower_);
-
-                    colorSum += otherColor * weight * kernel;
-                    colorWeight += weight * kernel;
-                }
-            }
-
-            bakedIndirect.lightSwap_[index] = colorSum / ea::max(M_EPSILON, colorWeight);
-        }
-    });
-
-    // Swap buffers
-    ea::swap(bakedIndirect.light_, bakedIndirect.lightSwap_);
+    TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);
 }
 
 }
