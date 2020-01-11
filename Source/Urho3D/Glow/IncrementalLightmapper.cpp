@@ -135,8 +135,8 @@ struct DirectLightBakingContext : public BaseIncrementalContext
 /// Context used for indirect light baking.
 struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
 {
-    /// Stitching context for 4-component textures.
-    LightmapStitchingContext stitchingContext4_;
+    /// Stitching context.
+    LightmapStitchingContext stitchingContext_;
 };
 
 /// Context used for committing chunks.
@@ -465,7 +465,7 @@ struct IncrementalLightmapper::Impl
         // Initialize context
         if (ctx.currentChunkIndex_ == 0)
         {
-            ctx.stitchingContext4_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.lightmapSize_, 4);
+            ctx.stitchingContext_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.lightmapSize_, 4);
         }
 
         // Load chunk
@@ -516,7 +516,7 @@ struct IncrementalLightmapper::Impl
             if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer->seams_.empty())
             {
                 SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer->seams_);
-                StitchLightmapSeams(ctx.stitchingContext4_, bakedIndirect.light_,
+                StitchLightmapSeams(ctx.stitchingContext_, bakedIndirect.light_,
                     lightmapSettings_.stitching_, seamsModel);
             }
 

@@ -45,6 +45,8 @@ struct LightmapStitchingContext
     SharedPtr<Texture2D> pingTexture_;
     /// Second texture for ping-pong.
     SharedPtr<Texture2D> pongTexture_;
+    /// Intermediate data buffer.
+    ea::vector<Vector4> data_;
 };
 
 /// Initialize lightmap stitching context.
