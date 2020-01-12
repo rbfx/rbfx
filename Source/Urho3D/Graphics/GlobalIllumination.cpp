@@ -60,6 +60,13 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         const Vector3& endPos = lightProbesMesh_.vertices_[edge.second];
         debug->AddLine(startPos, endPos, Color::YELLOW);
     }
+
+    for (unsigned ignoredVertex : lightProbesMesh_.ignoredVertices_)
+    {
+        const Vector3& position = lightProbesMesh_.vertices_[ignoredVertex];
+        const BoundingBox boundingBox{ position - Vector3::ONE * 0.1f, position + Vector3::ONE * 0.1f };
+        debug->AddBoundingBox(boundingBox, Color::RED);
+    }
     /*for (unsigned i = 0; i < 3; ++i)
     {
         const unsigned index = tetrahedron.indices_[i];

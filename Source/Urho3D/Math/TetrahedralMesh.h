@@ -515,6 +515,9 @@ private:
     void RemoveMarkedTetrahedrons(const ea::vector<bool>& removed);
     /// Remove super-mesh vertices.
     void RemoveSuperMeshVertices();
+    /// Update array of ignored vertices.
+    void UpdateIgnoredVertices();
+
     /// Build hull surface.
     void BuildHullSurface(TetrahedralMeshSurface& hullSurface);
     /// Calculate hull normals.
@@ -533,6 +536,8 @@ public:
     ea::vector<Tetrahedron> tetrahedrons_;
     /// Hull normals.
     ea::vector<Vector3> hullNormals_;
+    /// Array of ignored vertices.
+    ea::vector<unsigned> ignoredVertices_;
     /// Number of inner tetrahedrons.
     unsigned numInnerTetrahedrons_{};
 };
