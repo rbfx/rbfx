@@ -117,12 +117,12 @@ struct HighPrecisionSphere
     /// Radius.
     double radius_{};
 
-    /// Return whether the given position is inside the sphere or intersects it.
-    bool Intersects(const Vector3& position) const
+    /// Return signed distance from position to the sphere.
+    double Distance(const Vector3& position) const
     {
         const auto doublePosition = static_cast<HighPrecisionVector3>(position);
         const double distSquared = (doublePosition - center_).LengthSquared();
-        return Sqrt(distSquared) < radius_ - M_LARGE_EPSILON;
+        return Sqrt(distSquared) - radius_;
     }
 };
 
@@ -493,7 +493,7 @@ private:
         bool IsInsideCircumsphere(unsigned tetIndex, const Vector3& position)
         {
             const HighPrecisionSphere& sphere = circumspheres_[tetIndex];
-            return sphere.Intersects(position);
+            return sphere.Distance(position) < M_LARGE_EPSILON;
         }
         /// Triangles of hole surface.
         ea::vector<TetrahedralMeshSurfaceTriangle> holeTriangles_;
@@ -502,7 +502,7 @@ private:
     /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point.
     /// Returns hole surface. Returns true on success. Mesh remains valid in case of failure.
     bool FindAndRemoveIntersected(DelaunayContext& ctx, const Vector3& position,
-        TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const;
+        TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons, bool dumpErrors = false) const;
     /// Disconnect removed tetrahedrons from the rest.
     void DisconnectRemovedTetrahedrons(const ea::vector<unsigned>& removedTetrahedrons);
     /// Fill star-shaped hole with tetrahedrons connected to specified vertex.
@@ -540,6 +540,9 @@ public:
     ea::vector<unsigned> ignoredVertices_;
     /// Number of inner tetrahedrons.
     unsigned numInnerTetrahedrons_{};
+
+    /// Debug array of edges related to errors in generation.
+    mutable ea::vector<ea::pair<unsigned, unsigned>> debugHighlightEdges_;
 };
 
 /// Serialize tetrahedron to archive.
