@@ -24,6 +24,7 @@
 
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/Log.h"
+#include "../Math/Plane.h"
 #include "../Math/TetrahedralMesh.h"
 
 #include <EASTL/numeric.h>
@@ -42,6 +43,36 @@ void TetrahedralMesh::Define(ea::span<const Vector3> positions)
     boundingBox.max_ += Vector3::ONE;// * maxSize / 2;
     InitializeSuperMesh(boundingBox);
     BuildTetrahedrons(positions);
+}
+
+void TetrahedralMesh::CollectEdges(ea::vector<ea::pair<unsigned, unsigned>>& edges)
+{
+    edges.clear();
+
+    // Collect everything
+    for (unsigned tetIndex = 0; tetIndex < numInnerTetrahedrons_; ++tetIndex)
+    {
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            for (unsigned j = 0; j < 4; ++j)
+            {
+                const unsigned startIndex = tetrahedron.indices_[i];
+                const unsigned endIndex = tetrahedron.indices_[j];
+                edges.emplace_back(startIndex, endIndex);
+            }
+        }
+    }
+
+    // Sort edges and remove duplicates
+    for (auto& edge : edges)
+    {
+        if (edge.first > edge.second)
+            ea::swap(edge.first, edge.second);
+    }
+
+    ea::sort(edges.begin(), edges.end());
+    edges.erase(ea::unique(edges.begin(), edges.end()), edges.end());
 }
 
 HighPrecisionSphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetIndex) const
@@ -83,17 +114,7 @@ HighPrecisionSphere TetrahedralMesh::GetTetrahedronCircumsphere(unsigned tetInde
     };
 
     const double radiusSquared = *ea::min_element(ea::begin(squaredDistances), ea::end(squaredDistances));
-
-    // TODO(glow): Revise this place
-    double maxError = 0.0;
-    for (unsigned i = 0; i < 4; ++i)
-        maxError = ea::max(maxError, Abs(squaredDistances[i] - radiusSquared));
-
-    const double eps = M_LARGE_EPSILON;//0.001;
-    const double radius = Sqrt(radiusSquared) + eps;
-
-    return { center, radius * radius };
-    //return { center, radiusSquared - maxError * 1000 };
+    return { center, Sqrt(radiusSquared) };
 }
 
 void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
@@ -156,46 +177,66 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     for (unsigned i = 0; i < tetrahedrons_.size(); ++i)
         ctx.circumspheres_[i] = GetTetrahedronCircumsphere(i);
 
-    // Append vertices
+    // Append vertices and initialize queue
     const unsigned startVertex = vertices_.size();
     vertices_.insert(vertices_.end(), positions.begin(), positions.end());
+
+    ea::vector<unsigned> verticesQueue;
+    for (unsigned newVertexIndex = startVertex; newVertexIndex < vertices_.size(); ++newVertexIndex)
+        verticesQueue.push_back(newVertexIndex);
 
     // Triangulate
     TetrahedralMeshSurface holeSurface;
     ea::vector<unsigned> removedTetrahedrons;
-
-    for (unsigned newVertexIndex = startVertex; newVertexIndex < vertices_.size(); ++newVertexIndex)
+    ea::vector<unsigned> postponedVertices;
+    while (!verticesQueue.empty())
     {
-        // Carve hole in the mesh
-        FindAndRemoveIntersected(ctx, vertices_[newVertexIndex], holeSurface, removedTetrahedrons);
-        if (!holeSurface.IsClosedSurface())
+        // Process current bunch of vertices
+        postponedVertices.clear();
+        for (unsigned newVertexIndex : verticesQueue)
         {
-            URHO3D_LOGERROR("Hole surface is invalid");
-            assert(0);
-            return;
+            // Carve hole in the mesh
+            if (!FindAndRemoveIntersected(ctx, vertices_[newVertexIndex], holeSurface, removedTetrahedrons))
+            {
+                postponedVertices.push_back(newVertexIndex);
+                continue;
+            }
+
+            // Disconnect carved out tetrahedrons
+            DisconnectRemovedTetrahedrons(removedTetrahedrons);
+
+            // Allocate space for new tetrahedrons
+            while (removedTetrahedrons.size() < holeSurface.Size())
+            {
+                removedTetrahedrons.push_back(tetrahedrons_.size());
+                tetrahedrons_.push_back();
+                ctx.circumspheres_.push_back();
+                ctx.removed_.push_back(true);
+            }
+
+            // Fill hole with tetrahedrons
+            FillStarShapedHole(ctx, removedTetrahedrons, holeSurface, newVertexIndex);
         }
 
-        // Disconnect carved out tetrahedrons
-        DisconnectRemovedTetrahedrons(removedTetrahedrons);
-
-        // Allocate space for new tetrahedrons
-        while (removedTetrahedrons.size() < holeSurface.Size())
+        // If all the vertices are postponed again, ignore them
+        if (postponedVertices.size() == verticesQueue.size())
         {
-            removedTetrahedrons.push_back(tetrahedrons_.size());
-            tetrahedrons_.push_back();
-            ctx.circumspheres_.push_back();
-            ctx.removed_.push_back(true);
+            URHO3D_LOGWARNING("{} vertices are excluded from triangulation due to mathematical fluctuations",
+                postponedVertices.size());
+            break;
         }
 
-        // Fill hole with tetrahedrons
-        FillStarShapedHole(ctx, removedTetrahedrons, holeSurface, newVertexIndex);
+        // Re-enqueue postponed vertices
+        ea::swap(postponedVertices, verticesQueue);
     }
 
+    // Finalize triangulation
     DisconnectSuperMeshTetrahedrons(ctx.removed_);
     RemoveMarkedTetrahedrons(ctx.removed_);
     RemoveSuperMeshVertices();
     assert(IsAdjacencyValid(false));
 
+    // Build the outer space and precompute matrices
     TetrahedralMeshSurface hullSurface;
     BuildHullSurface(hullSurface);
 
@@ -225,11 +266,9 @@ bool TetrahedralMesh::IsAdjacencyValid(bool fullyConnected) const
     return true;
 }
 
-void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext& ctx, const Vector3& position,
+bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext& ctx, const Vector3& position,
     TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const
 {
-    ctx.searchQueue_.clear();
-
     // Reset output
     holeSurface.Clear();
     removedTetrahedrons.clear();
@@ -240,7 +279,6 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         if (!ctx.removed_[tetIndex] && ctx.IsInsideCircumsphere(tetIndex, position))
         {
             removedTetrahedrons.push_back(tetIndex);
-            ctx.searchQueue_.push_back(tetIndex);
             ctx.removed_[tetIndex] = true;
             break;
         }
@@ -248,16 +286,16 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
 
     if (removedTetrahedrons.empty())
     {
-        URHO3D_LOGERROR("Cannot update tetrahedral mesh for vertex position");
+        URHO3D_LOGERROR("Cannot update tetrahedral mesh for vertex at {}", position.ToString());
         assert(0);
-        return;
+        return false;
     }
 
     // Do breadth search to collect all bad tetrahedrons
     // Note: size may change during the loop
-    for (unsigned i = 0; i < ctx.searchQueue_.size(); ++i)
+    for (unsigned i = 0; i < removedTetrahedrons.size(); ++i)
     {
-        const unsigned tetIndex = ctx.searchQueue_[i];
+        const unsigned tetIndex = removedTetrahedrons[i];
         const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
 
         // Process neighbors
@@ -269,7 +307,7 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
             if (neighborTetIndex == M_MAX_UNSIGNED)
                 continue;
 
-            // Ignore removed tetrahedrons
+            // Ignore already removed tetrahedrons
             if (ctx.removed_[neighborTetIndex])
                 continue;
 
@@ -277,13 +315,13 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
             if (ctx.IsInsideCircumsphere(neighborTetIndex, position))
             {
                 removedTetrahedrons.push_back(neighborTetIndex);
-                ctx.searchQueue_.push_back(neighborTetIndex);
                 ctx.removed_[neighborTetIndex] = true;
             }
         }
     }
 
-    // Build hole surface
+    // Collect triangles of the hole surface
+    ctx.holeTriangles_.clear();
     for (unsigned tetIndex : removedTetrahedrons)
     {
         const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
@@ -297,7 +335,7 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
                 // Face of outer surface doesn't have underlying tetrahedron
                 const TetrahedralMeshSurfaceTriangle holeTriangle = tetrahedron.GetTriangleFace(
                     faceIndex, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
-                holeSurface.AddFace(holeTriangle);
+                ctx.holeTriangles_.push_back(holeTriangle);
                 continue;
             }
 
@@ -306,12 +344,73 @@ void TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
             {
                 const Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborTetIndex];
                 const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
+
                 const TetrahedralMeshSurfaceTriangle holeTriangle = neighborTetrahedron.GetTriangleFace(
                     neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
-                holeSurface.AddFace(holeTriangle);
+                ctx.holeTriangles_.push_back(holeTriangle);
             }
         }
     }
+
+    // Verify that all hole triangles are faced in right direction
+    bool valid = true;
+    const HighPrecisionVector3 p0{ position };
+    for (TetrahedralMeshSurfaceTriangle& triangle : ctx.holeTriangles_)
+    {
+        // Outer triangles are always oriented right
+        if (triangle.tetIndex_ == M_MAX_UNSIGNED)
+            continue;
+
+        // Normalize triangle orientation
+        triangle.Normalize(vertices_);
+
+        const HighPrecisionVector3 p1{ vertices_[triangle.indices_[0]] };
+        const HighPrecisionVector3 p2{ vertices_[triangle.indices_[1]] };
+        const HighPrecisionVector3 p3{ vertices_[triangle.indices_[2]] };
+        const HighPrecisionVector3 normal = (p2 - p1).CrossProduct(p3 - p1);
+        const double distance = (p0 - p1).DotProduct(normal);
+
+        // If coplanar or worse, cannot add new vertex
+        if (distance < M_LARGE_EPSILON)
+        {
+            valid = false;
+            break;
+        }
+    }
+
+    // Revert all changes if invalid
+    if (!valid)
+    {
+        for (unsigned tetIndex : removedTetrahedrons)
+            ctx.removed_[tetIndex] = false;
+
+        removedTetrahedrons.clear();
+        return false;
+    }
+
+    // Build hole surface
+    for (const TetrahedralMeshSurfaceTriangle& triangle : ctx.holeTriangles_)
+    {
+        if (!holeSurface.AddFace(triangle))
+        {
+            URHO3D_LOGERROR("Cannot update surface of the carved hole in tetrahedral mesh for vertex at {}",
+                position.ToString());
+            assert(0);
+            holeSurface.Clear();
+            return false;
+        }
+    }
+
+    if (!holeSurface.IsClosedSurface())
+    {
+        URHO3D_LOGERROR("Surface of the carved hole in tetrahedral mesh is incomplete for vertex at {}",
+            position.ToString());
+        assert(0);
+        holeSurface.Clear();
+        return false;
+    }
+
+    return true;
 }
 
 void TetrahedralMesh::DisconnectRemovedTetrahedrons(const ea::vector<unsigned>& removedTetrahedrons)
