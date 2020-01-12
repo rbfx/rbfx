@@ -14,27 +14,22 @@
   </PropertyGroup>
   <PropertyGroup>
     <GeneratedCodePath>$(RBFX_BINARY_DIR)Source/Urho3D/</GeneratedCodePath>
-    <CoreCompileDependsOn>GatherBuildFilesUrho3D;GatherBuildFilesImGui;$(CoreCompileDependsOn)</CoreCompileDependsOn>
   </PropertyGroup>
   <ItemGroup>
     <BindingsSourceCodeUrho3D Include="$(GeneratedCodePath)Urho3DCSharp/*.cs" />
     <BindingsSourceCodeImGui Include="$(GeneratedCodePath)ImGuiCSharp/*.cs" />
     <Compile Include="Managed/**/*.cs" />
     <Compile Include="$(RBFX_BINARY_DIR)Source/Urho3D/Urho3DCSharp/Managed/*.cs" />
-    <Compile Include="@(BindingsSourceCodeUrho3D)" />
-    <Compile Include="@(BindingsSourceCodeImGui)" />
   </ItemGroup>
-  <Target Name="GatherBuildFilesUrho3D" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCodeUrho3D)' == ''">
-    <ItemGroup>
-      <BindingsSourceCodeUrho3D Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)Urho3DCSharp&quot;, &quot;*.cs&quot;))" />
-      <Compile Include="@(BindingsSourceCodeUrho3D)" />
-    </ItemGroup>
+  <Target Name="GatherBuildFilesUrho3D" BeforeTargets="BeforeCompile">
+    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)Urho3DCSharp&quot;, &quot;*.cs&quot;))">
+      <Output TaskParameter="Include" ItemName="Compile" />
+    </CreateItem>
   </Target>
-  <Target Name="GatherBuildFilesImGui" BeforeTargets="CoreCompile" Condition="'@(BindingsSourceCodeImGui)' == ''">
-    <ItemGroup>
-      <BindingsSourceCodeImGui Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)ImGuiCSharp&quot;, &quot;*.cs&quot;))" />
-      <Compile Include="@(BindingsSourceCodeImGui)" />
-    </ItemGroup>
+  <Target Name="GatherBuildFilesImGui" BeforeTargets="BeforeCompile">
+    <CreateItem Include="$([System.IO.Directory]::GetFiles(&quot;$(GeneratedCodePath)ImGuiCSharp&quot;, &quot;*.cs&quot;))">
+      <Output TaskParameter="Include" ItemName="Compile" />
+    </CreateItem>
   </Target>
   <ItemGroup>
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
