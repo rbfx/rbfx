@@ -51,39 +51,23 @@ void GlobalIllumination::RegisterObject(Context* context)
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
-    for (unsigned tetIndex = 0; tetIndex < lightProbesMesh_.tetrahedrons_.size(); ++tetIndex)
+    static thread_local ea::vector<ea::pair<unsigned, unsigned>> edges;
+    lightProbesMesh_.CollectEdges(edges);
+
+    for (const auto& edge : edges)
     {
-        const Tetrahedron& tetrahedron = lightProbesMesh_.tetrahedrons_[tetIndex];
-        if (tetIndex < lightProbesMesh_.numInnerTetrahedrons_)
-        {
-            for (unsigned i = 0; i < 4; ++i)
-            {
-                for (unsigned j = 0; j < 4; ++j)
-                {
-                    const unsigned startIndex = tetrahedron.indices_[i];
-                    const unsigned endIndex = tetrahedron.indices_[j];
-                    const Vector3& startPos = lightProbesMesh_.vertices_[startIndex];
-                    const Vector3& endPos = lightProbesMesh_.vertices_[endIndex];
-                    const Vector3 midPos = startPos.Lerp(endPos, 0.5f);
-                    const Color startColor = lightProbesCollection_.bakedAmbient_[startIndex];
-                    const Color endColor = lightProbesCollection_.bakedAmbient_[endIndex];
-                    debug->AddLine(startPos, midPos, startColor);
-                    debug->AddLine(midPos, endPos, endColor);
-                }
-            }
-        }
-        else
-        {
-            for (unsigned i = 0; i < 3; ++i)
-            {
-                const unsigned index = tetrahedron.indices_[i];
-                const Vector3& pos = lightProbesMesh_.vertices_[index];
-                const Vector3& normal = lightProbesMesh_.hullNormals_[index];
-                const Color color = lightProbesCollection_.bakedAmbient_[index];
-                debug->AddLine(pos, pos + normal, color);
-            }
-        }
+        const Vector3& startPos = lightProbesMesh_.vertices_[edge.first];
+        const Vector3& endPos = lightProbesMesh_.vertices_[edge.second];
+        debug->AddLine(startPos, endPos, Color::YELLOW);
     }
+    /*for (unsigned i = 0; i < 3; ++i)
+    {
+        const unsigned index = tetrahedron.indices_[i];
+        const Vector3& pos = lightProbesMesh_.vertices_[index];
+        const Vector3& normal = lightProbesMesh_.hullNormals_[index];
+        const Color color = lightProbesCollection_.bakedAmbient_[index];
+        debug->AddLine(pos, pos + normal, color);
+    }*/
 }
 
 void GlobalIllumination::ResetLightProbes()
