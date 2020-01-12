@@ -218,6 +218,9 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
             FillStarShapedHole(ctx, removedTetrahedrons, holeSurface, newVertexIndex);
         }
 
+        // Re-enqueue postponed vertices
+        ea::swap(postponedVertices, verticesQueue);
+
         // If all the vertices are postponed again, ignore them
         if (postponedVertices.size() == verticesQueue.size())
         {
@@ -225,15 +228,21 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
                 postponedVertices.size());
             break;
         }
+    }
 
-        // Re-enqueue postponed vertices
-        ea::swap(postponedVertices, verticesQueue);
+    // TODO(glow): This is test code
+    if (!verticesQueue.empty())
+    {
+        const Vector3 position = vertices_[verticesQueue[0]];
+        const bool suc = FindAndRemoveIntersected(ctx, position, holeSurface, removedTetrahedrons);
+        assert(!suc);
     }
 
     // Finalize triangulation
     DisconnectSuperMeshTetrahedrons(ctx.removed_);
     RemoveMarkedTetrahedrons(ctx.removed_);
     RemoveSuperMeshVertices();
+    UpdateIgnoredVertices();
     assert(IsAdjacencyValid(false));
 
     // Build the outer space and precompute matrices
@@ -541,6 +550,23 @@ void TetrahedralMesh::RemoveSuperMeshVertices()
     {
         for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
             tetrahedrons_[tetIndex].indices_[faceIndex] -= NumSuperMeshVertices;
+    }
+}
+
+void TetrahedralMesh::UpdateIgnoredVertices()
+{
+    ea::vector<bool> ignored_(vertices_.size(), true);
+    for (const Tetrahedron& tetrahedron : tetrahedrons_)
+    {
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+            ignored_[tetrahedron.indices_[faceIndex]] = false;
+    }
+
+    ignoredVertices_.clear();
+    for (unsigned vertexIndex = 0; vertexIndex < vertices_.size(); ++vertexIndex)
+    {
+        if (ignored_[vertexIndex])
+            ignoredVertices_.push_back(vertexIndex);
     }
 }
 
