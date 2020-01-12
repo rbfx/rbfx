@@ -230,12 +230,12 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
         }
     }
 
-    // TODO(glow): This is test code
-    if (!verticesQueue.empty())
+    // Dump failed attempts for debugging
+    debugHighlightEdges_.clear();
+    for (unsigned ignoredVertex : verticesQueue)
     {
         const Vector3 position = vertices_[verticesQueue[0]];
-        const bool suc = FindAndRemoveIntersected(ctx, position, holeSurface, removedTetrahedrons);
-        assert(!suc);
+        FindAndRemoveIntersected(ctx, position, holeSurface, removedTetrahedrons, true);
     }
 
     // Finalize triangulation
@@ -276,7 +276,7 @@ bool TetrahedralMesh::IsAdjacencyValid(bool fullyConnected) const
 }
 
 bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext& ctx, const Vector3& position,
-    TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const
+    TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons, bool dumpErrors) const
 {
     // Reset output
     holeSurface.Clear();
@@ -387,9 +387,23 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         }
     }
 
-    // Revert all changes if invalid
-    if (!valid)
+    // Revert all changes if invalid or if dump error mode is on
+    if (!valid || dumpErrors)
     {
+        if (dumpErrors)
+        {
+            assert(!valid);
+            for (const TetrahedralMeshSurfaceTriangle& triangle : ctx.holeTriangles_)
+            {
+                const unsigned i0 = triangle.indices_[0];
+                const unsigned i1 = triangle.indices_[1];
+                const unsigned i2 = triangle.indices_[2];
+                debugHighlightEdges_.emplace_back(i0, i1);
+                debugHighlightEdges_.emplace_back(i1, i2);
+                debugHighlightEdges_.emplace_back(i2, i0);
+            }
+        }
+
         for (unsigned tetIndex : removedTetrahedrons)
             ctx.removed_[tetIndex] = false;
 
@@ -545,11 +559,23 @@ void TetrahedralMesh::RemoveMarkedTetrahedrons(const ea::vector<bool>& removed)
 
 void TetrahedralMesh::RemoveSuperMeshVertices()
 {
-    vertices_.erase(vertices_.begin(), vertices_.begin() + NumSuperMeshVertices);
+    ea::rotate(vertices_.begin(), vertices_.begin() + NumSuperMeshVertices, vertices_.end());
+
     for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
     {
         for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
             tetrahedrons_[tetIndex].indices_[faceIndex] -= NumSuperMeshVertices;
+    }
+
+    for (auto& edge : debugHighlightEdges_)
+    {
+        for (unsigned* index : { &edge.first, &edge.second })
+        {
+            if (*index < NumSuperMeshVertices)
+                *index += vertices_.size() - NumSuperMeshVertices;
+            else
+                *index -= NumSuperMeshVertices;
+        }
     }
 }
 
@@ -563,7 +589,7 @@ void TetrahedralMesh::UpdateIgnoredVertices()
     }
 
     ignoredVertices_.clear();
-    for (unsigned vertexIndex = 0; vertexIndex < vertices_.size(); ++vertexIndex)
+    for (unsigned vertexIndex = 0; vertexIndex < vertices_.size() - NumSuperMeshVertices; ++vertexIndex)
     {
         if (ignored_[vertexIndex])
             ignoredVertices_.push_back(vertexIndex);
