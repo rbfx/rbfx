@@ -114,15 +114,15 @@ struct HighPrecisionSphere
 {
     /// Center.
     HighPrecisionVector3 center_;
-    /// Radius (squared).
-    double radiusSquared_{};
+    /// Radius.
+    double radius_{};
 
     /// Return whether the given position is inside the sphere or intersects it.
     bool Intersects(const Vector3& position) const
     {
         const auto doublePosition = static_cast<HighPrecisionVector3>(position);
         const double distSquared = (doublePosition - center_).LengthSquared();
-        return distSquared < radiusSquared_;
+        return Sqrt(distSquared) < radius_ - M_LARGE_EPSILON;
     }
 };
 
@@ -185,8 +185,8 @@ struct TetrahedralMeshSurface
     /// Return size.
     unsigned Size() const { return faces_.size(); }
 
-    /// Add face and update adjacency information.
-    void AddFace(TetrahedralMeshSurfaceTriangle newFace)
+    /// Add face and update adjacency information. If failed, the surface data is invalid.
+    bool AddFace(TetrahedralMeshSurfaceTriangle newFace)
     {
         // Find adjacent triangles
         const unsigned newFaceIndex = faces_.size();
@@ -201,18 +201,22 @@ struct TetrahedralMeshSurface
                     const auto newEdge = newFace.GetEdge(newEdgeIndex);
                     if (oldEdge == newEdge)
                     {
-                        assert(oldFace.neighbors_[(oldEdgeIndex + 2) % 3] == M_MAX_UNSIGNED);
-                        assert(newFace.neighbors_[(newEdgeIndex + 2) % 3] == M_MAX_UNSIGNED);
-
                         // +0 and +1 vertices belong to the edge, therefore the neighbor is stored at +2
-                        oldFace.neighbors_[(oldEdgeIndex + 2) % 3] = newFaceIndex;
-                        newFace.neighbors_[(newEdgeIndex + 2) % 3] = oldFaceIndex;
+                        unsigned& oldNeighbor = oldFace.neighbors_[(oldEdgeIndex + 2) % 3];
+                        unsigned& newNeighbor = newFace.neighbors_[(newEdgeIndex + 2) % 3];
+
+                        if (oldNeighbor != M_MAX_UNSIGNED || newNeighbor != M_MAX_UNSIGNED)
+                            return false;
+
+                        oldNeighbor = newFaceIndex;
+                        newNeighbor = oldFaceIndex;
                     }
                 }
             }
         }
 
         faces_.push_back(newFace);
+        return true;
     }
 
     /// Return whether the mesh is a closed surface.
@@ -289,6 +293,9 @@ class URHO3D_API TetrahedralMesh
 public:
     /// Define mesh from vertices.
     void Define(ea::span<const Vector3> positions);
+
+    /// Collect all edges in the mesh, e.g. for debug rendering.
+    void CollectEdges(ea::vector<ea::pair<unsigned, unsigned>>& edges);
 
     /// Calculate circumsphere of given tetrahedron.
     HighPrecisionSphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
@@ -488,13 +495,13 @@ private:
             const HighPrecisionSphere& sphere = circumspheres_[tetIndex];
             return sphere.Intersects(position);
         }
-
-        /// Queue for breadth search of bad tetrahedrons. Used by FindAndRemoveIntersected only.
-        ea::vector<unsigned> searchQueue_;
+        /// Triangles of hole surface.
+        ea::vector<TetrahedralMeshSurfaceTriangle> holeTriangles_;
     };
 
-    /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point. Returns hole surface.
-    void FindAndRemoveIntersected(DelaunayContext& ctx, const Vector3& position,
+    /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point.
+    /// Returns hole surface. Returns true on success. Mesh remains valid in case of failure.
+    bool FindAndRemoveIntersected(DelaunayContext& ctx, const Vector3& position,
         TetrahedralMeshSurface& holeSurface, ea::vector<unsigned>& removedTetrahedrons) const;
     /// Disconnect removed tetrahedrons from the rest.
     void DisconnectRemovedTetrahedrons(const ea::vector<unsigned>& removedTetrahedrons);
