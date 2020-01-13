@@ -171,6 +171,21 @@ struct TetrahedralMeshSurfaceTriangle
             ea::swap(neighbors_[0], neighbors_[1]);
         }
     }
+
+    /// Calculate the ratio between longest and shortest side of the triangle.
+    float CalculateScore(const ea::vector<Vector3>& vertices) const
+    {
+        const Vector3 p1 = vertices[indices_[0]];
+        const Vector3 p2 = vertices[indices_[1]];
+        const Vector3 p3 = vertices[indices_[2]];
+
+        const float side1 = (p1 - p2).Length();
+        const float side2 = (p2 - p3).Length();
+        const float side3 = (p3 - p1).Length();
+
+        const auto minMaxSide = ea::minmax({ side1, side2, side3 });
+        return ea::min(M_LARGE_VALUE, minMaxSide.second / minMaxSide.first);
+    }
 };
 
 /// Surface of tetrahedral mesh. Vertices are shared with tetrahedral mesh and are not stored.
@@ -481,6 +496,8 @@ private:
     void BuildTetrahedrons(ea::span<const Vector3> positions);
     /// Return whether the adjacency is valid.
     bool IsAdjacencyValid(bool fullyConnected) const;
+    /// Disconnect tetrahedron from mesh.
+    void DisconnectTetrahedron(unsigned tetIndex);
 
     /// Data used for Delaunay triangulation.
     struct DelaunayContext
@@ -511,6 +528,10 @@ private:
         const TetrahedralMeshSurface& holeSurface, unsigned centerIndex);
     /// Mark super-mesh tetrahedrons in the to-be-removed array and disconnect all related adjacency.
     void DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed);
+    /// Ensure mesh connectivity, remove disconnected parts.
+    void EnsureMeshConnectivity(ea::vector<bool>& removed);
+    /// Collect surface tetrahedrons and ensure that the surface doesn't have edge connections.
+    void FilterMeshSurface(ea::vector<bool>& removed);
     /// Remove marked tetrahedrons from array.
     void RemoveMarkedTetrahedrons(const ea::vector<bool>& removed);
     /// Remove super-mesh vertices.
