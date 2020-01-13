@@ -33,6 +33,53 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+/// Edge of tetrahedral mesh.
+struct TetrahedralMeshEdge
+{
+    /// Indices. Always sorted.
+    unsigned indices_[2]{};
+    /// Degree of silver-ness. The more the worse.
+    float silverScore_{};
+    /// Tetrahedron.
+    unsigned tetIndex_{ M_MAX_UNSIGNED };
+    /// How many times the edge is present in the tetrahedron.
+    unsigned cardinality_{ 1 };
+
+    /// Construct default.
+    TetrahedralMeshEdge() = default;
+
+    /// Construct valid.
+    TetrahedralMeshEdge(unsigned i0, unsigned i1, unsigned tetIndex, float score)
+        : indices_{ i0, i1 }
+        , tetIndex_(tetIndex)
+        , silverScore_(score)
+    {
+        if (indices_[0] > indices_[1])
+            ea::swap(indices_[0], indices_[1]);
+    }
+
+    /// Compare for sorting.
+    bool operator < (const TetrahedralMeshEdge& rhs) const
+    {
+        if (indices_[0] != rhs.indices_[0])
+            return indices_[0] < rhs.indices_[0];
+        if (indices_[1] != rhs.indices_[1])
+            return indices_[1] < rhs.indices_[1];
+        return silverScore_ < rhs.silverScore_;
+    }
+
+    /// Compare edges.
+    bool IsSameEdge(const TetrahedralMeshEdge& rhs) const
+    {
+        return indices_[0] == rhs.indices_[0] && indices_[1] == rhs.indices_[1];
+    }
+};
+
+}
+
 void TetrahedralMesh::Define(ea::span<const Vector3> positions)
 {
     BoundingBox boundingBox(positions.data(), positions.size());
@@ -233,17 +280,24 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
     // Dump failed attempts for debugging
     debugHighlightEdges_.clear();
     for (unsigned ignoredVertex : verticesQueue)
-    {
-        const Vector3 position = vertices_[verticesQueue[0]];
-        FindAndRemoveIntersected(ctx, position, holeSurface, removedTetrahedrons, true);
-    }
+        FindAndRemoveIntersected(ctx, vertices_[ignoredVertex], holeSurface, removedTetrahedrons, true);
 
     // Finalize triangulation
     DisconnectSuperMeshTetrahedrons(ctx.removed_);
+    FilterMeshSurface(ctx.removed_);
+    EnsureMeshConnectivity(ctx.removed_);
     RemoveMarkedTetrahedrons(ctx.removed_);
     RemoveSuperMeshVertices();
     UpdateIgnoredVertices();
+
+    numInnerTetrahedrons_ = tetrahedrons_.size();
     assert(IsAdjacencyValid(false));
+
+    if (ignoredVertices_.size() > verticesQueue.size())
+    {
+        URHO3D_LOGWARNING("Triangulation is incomplete because vertices are too sparse, {} vertices are ignored",
+            verticesQueue.size());
+    }
 
     // Build the outer space and precompute matrices
     TetrahedralMeshSurface hullSurface;
@@ -273,6 +327,22 @@ bool TetrahedralMesh::IsAdjacencyValid(bool fullyConnected) const
         }
     }
     return true;
+}
+
+void TetrahedralMesh::DisconnectTetrahedron(unsigned tetIndex)
+{
+    Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+    for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+    {
+        const unsigned neighborIndex = tetrahedron.neighbors_[faceIndex];
+        if (neighborIndex != M_MAX_UNSIGNED)
+        {
+            Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborIndex];
+            const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
+            assert(neighborFaceIndex < 4);
+            neighborTetrahedron.neighbors_[neighborFaceIndex] = M_MAX_UNSIGNED;
+        }
+    }
 }
 
 bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext& ctx, const Vector3& position,
@@ -506,19 +576,151 @@ void TetrahedralMesh::DisconnectSuperMeshTetrahedrons(ea::vector<bool>& removed)
         if (!removed[tetIndex])
             continue;
 
-        // Disconnect adjacency
+        DisconnectTetrahedron(tetIndex);
+    }
+}
+
+void TetrahedralMesh::EnsureMeshConnectivity(ea::vector<bool>& removed)
+{
+    // Find first tetrahedron
+    unsigned firstTetIndex{};
+    for (firstTetIndex = 0; firstTetIndex < tetrahedrons_.size(); ++firstTetIndex)
+    {
+        if (!removed[firstTetIndex])
+            break;
+    }
+
+    // Mesh is empty
+    if (firstTetIndex >= tetrahedrons_.size())
+        return;
+
+    // Do breadth search to collect all tetrahedrons
+    // Note: size may change during the loop
+    ea::vector<unsigned> queue;
+    ea::vector<bool> visited(tetrahedrons_.size(), false);
+
+    queue.push_back(firstTetIndex);
+    visited[firstTetIndex] = true;
+
+    for (unsigned i = 0; i < queue.size(); ++i)
+    {
+        const unsigned tetIndex = queue[i];
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+
         for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
         {
-            const unsigned neighborIndex = tetrahedron.neighbors_[faceIndex];
-            if (neighborIndex != M_MAX_UNSIGNED)
-            {
-                Tetrahedron& neighborTetrahedron = tetrahedrons_[neighborIndex];
-                const unsigned neighborFaceIndex = neighborTetrahedron.GetNeighborFaceIndex(tetIndex);
-                assert(neighborFaceIndex < 4);
-                neighborTetrahedron.neighbors_[neighborFaceIndex] = M_MAX_UNSIGNED;
-            }
+            const unsigned neighborTetIndex = tetrahedron.neighbors_[faceIndex];
+            if (neighborTetIndex == M_MAX_UNSIGNED)
+                continue;
+
+            if (removed[neighborTetIndex] || visited[neighborTetIndex])
+                continue;
+
+            queue.push_back(neighborTetIndex);
+            visited[neighborTetIndex] = true;
         }
     }
+
+    // Remove all non-visited tetrahedrons, no need to disconnect them
+    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        if (!visited[tetIndex])
+            removed[tetIndex] = true;
+    }
+}
+
+void TetrahedralMesh::FilterMeshSurface(ea::vector<bool>& removed)
+{
+    ea::vector<TetrahedralMeshEdge> surfaceEdges;
+
+    // Append edge to vector or update cardinality and score if already present.
+    const auto appendOrAccumulate = [&surfaceEdges](unsigned startIndex, const TetrahedralMeshEdge& edge)
+    {
+        // Try to update existing edges
+        for (unsigned i = startIndex; i < surfaceEdges.size(); ++i)
+        {
+            TetrahedralMeshEdge& existingEdge = surfaceEdges[i];
+            if (existingEdge.IsSameEdge(edge) && existingEdge.tetIndex_ == edge.tetIndex_)
+            {
+                ++existingEdge.cardinality_;
+                existingEdge.silverScore_ = ea::max(existingEdge.silverScore_, edge.silverScore_);
+                return;
+            }
+        }
+
+        // Append new edge
+        surfaceEdges.push_back(edge);
+    };
+
+    // Collect surface edges
+    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    {
+        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
+        if (removed[tetIndex])
+            continue;
+
+        const unsigned startIndex = surfaceEdges.size();
+        for (unsigned faceIndex = 0; faceIndex < 4; ++faceIndex)
+        {
+            if (tetrahedron.neighbors_[faceIndex] != M_MAX_UNSIGNED)
+                continue;
+
+            const TetrahedralMeshSurfaceTriangle triangle = tetrahedron.GetTriangleFace(
+                faceIndex, tetIndex, faceIndex);
+            const float score = triangle.CalculateScore(vertices_);
+
+            appendOrAccumulate(startIndex,
+                TetrahedralMeshEdge(triangle.indices_[0], triangle.indices_[1], tetIndex, score));
+            appendOrAccumulate(startIndex,
+                TetrahedralMeshEdge(triangle.indices_[1], triangle.indices_[2], tetIndex, score));
+            appendOrAccumulate(startIndex,
+                TetrahedralMeshEdge(triangle.indices_[2], triangle.indices_[0], tetIndex, score));
+        }
+    }
+
+    // Remove extra tetrahedrons
+    ea::vector<unsigned> removedTetrahedrons;
+    ea::sort(surfaceEdges.begin(), surfaceEdges.end());
+
+    auto firstEdge = surfaceEdges.begin();
+    while (firstEdge != surfaceEdges.end())
+    {
+        const auto isSameEdge = [&](const TetrahedralMeshEdge& rhs) { return firstEdge->IsSameEdge(rhs); };
+        const auto lastEdge = ea::find_if_not(firstEdge, surfaceEdges.end(), isSameEdge);
+
+        const auto accumulateCardinality = [&](unsigned value, const TetrahedralMeshEdge& rhs)
+        {
+            if (!removed[rhs.tetIndex_])
+                return value + rhs.cardinality_;
+            return value;
+        };
+        const unsigned totalCardinality = ea::accumulate(firstEdge, lastEdge, 0u, accumulateCardinality);
+
+        // Need to remove some tetrahedrons, going from back to front
+        static const unsigned MaxCardinality = 2;
+        if (totalCardinality > MaxCardinality)
+        {
+            unsigned remainingCardinality = totalCardinality;
+            for (auto iter = ea::prev(lastEdge); iter != firstEdge; --iter)
+            {
+                if (removed[iter->tetIndex_])
+                    continue;
+
+                removed[iter->tetIndex_] = true;
+                removedTetrahedrons.push_back(iter->tetIndex_);
+
+                remainingCardinality -= iter->cardinality_;
+                if (remainingCardinality <= MaxCardinality)
+                    break;
+            }
+        }
+
+        firstEdge = lastEdge;
+    }
+
+    // Disconnect removed tetrahedrons
+    for (unsigned tetIndex : removedTetrahedrons)
+        DisconnectTetrahedron(tetIndex);
 }
 
 void TetrahedralMesh::RemoveMarkedTetrahedrons(const ea::vector<bool>& removed)
@@ -645,7 +847,6 @@ void TetrahedralMesh::CalculateHullNormals(const TetrahedralMeshSurface& hullSur
 
 void TetrahedralMesh::BuildOuterTetrahedrons(const TetrahedralMeshSurface& hullSurface)
 {
-    numInnerTetrahedrons_ = tetrahedrons_.size();
     tetrahedrons_.resize(numInnerTetrahedrons_ + hullSurface.Size());
 
     for (unsigned tetIndex = numInnerTetrahedrons_; tetIndex < tetrahedrons_.size(); ++tetIndex)
