@@ -134,9 +134,13 @@ struct DirectionalLightParameters
 URHO3D_API void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const LightmapTracingSettings& settings);
 
-/// Accumulate direct light from directional light.
-URHO3D_API void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+/// Accumulate direct light from directional light for charts.
+URHO3D_API void BakeDirectionalLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
+    const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
+
+/// Accumulate direct light from directional light for light probes.
+URHO3D_API void BakeDirectionalLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light for charts.
