@@ -188,11 +188,46 @@ struct TetrahedralMeshSurfaceTriangle
     }
 };
 
+/// Edge of the surface of tetrahedral mesh.
+struct TetrahedralMeshSurfaceEdge
+{
+    /// Indices.
+    unsigned indices_[2]{};
+    /// Face that owns this edge.
+    unsigned faceIndex_{ M_MAX_UNSIGNED };
+    /// Index of the edge in triangle.
+    unsigned edgeIndex_{};
+
+    /// Construct default.
+    TetrahedralMeshSurfaceEdge() = default;
+
+    /// Construct valid.
+    TetrahedralMeshSurfaceEdge(unsigned i0, unsigned i1, unsigned faceIndex, float edgeIndex)
+        : indices_{ i0, i1 }
+        , faceIndex_(faceIndex)
+        , edgeIndex_(edgeIndex)
+    {
+        if (indices_[0] > indices_[1])
+            ea::swap(indices_[0], indices_[1]);
+    }
+
+    /// Compare for sorting. Only edges themselves are compared.
+    bool operator < (const TetrahedralMeshSurfaceEdge& rhs) const
+    {
+        if (indices_[0] != rhs.indices_[0])
+            return indices_[0] < rhs.indices_[0];
+        return indices_[1] < rhs.indices_[1];
+    }
+};
+
 /// Surface of tetrahedral mesh. Vertices are shared with tetrahedral mesh and are not stored.
 struct TetrahedralMeshSurface
 {
     /// Faces.
     ea::vector<TetrahedralMeshSurfaceTriangle> faces_;
+
+    /// Temporary buffer for calculating adjacency.
+    ea::vector<TetrahedralMeshSurfaceEdge> edges_;
 
     /// Clear.
     void Clear() { faces_.clear(); }
@@ -200,56 +235,11 @@ struct TetrahedralMeshSurface
     /// Return size.
     unsigned Size() const { return faces_.size(); }
 
-    /// Add face and update adjacency information. If failed, the surface data is invalid.
-    bool AddFace(TetrahedralMeshSurfaceTriangle newFace)
-    {
-        // Find adjacent triangles
-        const unsigned newFaceIndex = faces_.size();
-        for (unsigned oldFaceIndex = 0; oldFaceIndex < newFaceIndex; ++oldFaceIndex)
-        {
-            TetrahedralMeshSurfaceTriangle& oldFace = faces_[oldFaceIndex];
-            for (unsigned oldEdgeIndex = 0; oldEdgeIndex < 3; ++oldEdgeIndex)
-            {
-                const auto oldEdge = oldFace.GetEdge(oldEdgeIndex);
-                for (unsigned newEdgeIndex = 0; newEdgeIndex < 3; ++newEdgeIndex)
-                {
-                    const auto newEdge = newFace.GetEdge(newEdgeIndex);
-                    if (oldEdge == newEdge)
-                    {
-                        // +0 and +1 vertices belong to the edge, therefore the neighbor is stored at +2
-                        unsigned& oldNeighbor = oldFace.neighbors_[(oldEdgeIndex + 2) % 3];
-                        unsigned& newNeighbor = newFace.neighbors_[(newEdgeIndex + 2) % 3];
-
-                        if (oldNeighbor != M_MAX_UNSIGNED || newNeighbor != M_MAX_UNSIGNED)
-                            return false;
-
-                        oldNeighbor = newFaceIndex;
-                        newNeighbor = oldFaceIndex;
-                    }
-                }
-            }
-        }
-
-        faces_.push_back(newFace);
-        return true;
-    }
+    /// Calculate adjacency information. Surface must be closed.
+    bool CalculateAdjacency();
 
     /// Return whether the mesh is a closed surface.
-    bool IsClosedSurface() const
-    {
-        for (unsigned faceIndex = 0; faceIndex < faces_.size(); ++faceIndex)
-        {
-            for (unsigned i = 0; i < 3; ++i)
-            {
-                const unsigned neighborFaceIndex = faces_[faceIndex].neighbors_[i];
-                if (neighborFaceIndex == M_MAX_UNSIGNED)
-                    return false;
-
-                assert(faces_[neighborFaceIndex].HasNeighbor(faceIndex));
-            }
-        }
-        return true;
-    }
+    bool IsClosedSurface() const;
 };
 
 /// Tetrahedron with adjacency information.
@@ -557,8 +547,6 @@ private:
             const HighPrecisionSphere& sphere = circumspheres_[tetIndex];
             return sphere.Distance(position) < M_LARGE_EPSILON;
         }
-        /// Triangles of hole surface.
-        ea::vector<TetrahedralMeshSurfaceTriangle> holeTriangles_;
     };
 
     /// Find and remove (aka set removed flag) tetrahedrons whose circumspheres intersect given point.
