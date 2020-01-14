@@ -202,6 +202,183 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
         args->valid[0] = 0;
 }
 
+/// Directional light ray generator.
+struct DirectionalRayGenerator
+{
+    /// Light color.
+    Color lightColor_;
+    /// Light direction.
+    Vector3 lightDirection_;
+
+    /// Return emitted light intensity for given position.
+    Vector3 GetLightIntensity(const Vector3& /*position*/) const { return lightColor_.ToVector3(); }
+
+    /// Return ray direction for given position.
+    Vector3 GetRayDirection(const Vector3& /*position*/) const { return lightDirection_; }
+};
+
+/// Direct light tracing for charts: tracing element.
+struct ChartDirectTracingElement
+{
+    /// Position.
+    Vector3 position_;
+    /// Smooth interpolated normal.
+    Vector3 smoothNormal_;
+    /// Geometry ID.
+    unsigned geometryId_;
+
+    /// Direct light value.
+    Vector3 directLight_;
+
+    /// Returns whether element is valid.
+    explicit operator bool() const { return geometryId_ != 0; }
+
+    /// Begin sample. Return position, normal and initial ray direction.
+    template <class T>
+    void BeginSample(unsigned /*sampleIndex*/, DirectTracingContextForCharts& rayContext, T& generator,
+        Vector3& incomingLight, Vector3& position, Vector3& rayDirection) const
+    {
+        rayContext.incomingLight_ = &incomingLight;
+        position = position_;
+        incomingLight = generator.GetLightIntensity(position_);
+        rayDirection = generator.GetRayDirection(position_);
+    }
+
+    /// End sample.
+    void EndSample(const Vector3& light, const Vector3& direction)
+    {
+        const float intensity = ea::max(0.0f, smoothNormal_.DotProduct(direction));
+        directLight_ += light * intensity;
+    }
+};
+
+/// Direct light tracing for charts: tracing kernel.
+struct ChartDirectTracingKernel
+{
+    /// Indirect light chart.
+    LightmapChartBakedDirect* bakedDirect_{};
+    /// Geometry buffer.
+    const LightmapChartGeometryBuffer* geometryBuffer_{};
+    /// Mapping from geometry buffer ID to embree geometry ID.
+    const ea::vector<unsigned>* geometryBufferToRaytracer_{};
+    /// Raytracer geometries.
+    const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
+    /// Settings.
+    const LightmapTracingSettings* settings_{};
+    /// Whether to bake direct light for direct lighting itself.
+    bool bakeDirect_{};
+    /// Whether to bake direct light for indirect lighting.
+    bool bakeIndirect_{};
+
+    /// Return number of elements to trace.
+    unsigned GetNumElements() const { return bakedDirect_->directLight_.size(); }
+
+    /// Return number of samples.
+    unsigned GetNumSamples() const { return settings_->numDirectSamples_; }
+
+    /// Return ray intersect context.
+    DirectTracingContextForCharts GetRayContext()
+    {
+        DirectTracingContextForCharts rayContext;
+        rtcInitIntersectContext(&rayContext);
+        rayContext.geometryIndex_ = raytracerGeometries_;
+        rayContext.filter = TracingFilterForChartsDirect;
+        return rayContext;
+    }
+
+    /// Begin tracing element.
+    ChartDirectTracingElement BeginElement(unsigned elementIndex, DirectTracingContextForCharts& rayContext)
+    {
+        const unsigned geometryId = geometryBuffer_->geometryIds_[elementIndex];
+        if (!geometryId)
+            return {};
+
+        const unsigned raytracerGeometryId = (*geometryBufferToRaytracer_)[geometryId];
+        rayContext.currentGeometry_ = &(*raytracerGeometries_)[raytracerGeometryId];
+
+        const Vector3& position = geometryBuffer_->positions_[elementIndex];
+        const Vector3& smoothNormal = geometryBuffer_->smoothNormals_[elementIndex];
+        const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
+
+        return { position + faceNormal * settings_->rayPositionOffset_, smoothNormal, geometryId };
+    };
+
+    /// End tracing element.
+    void EndElement(unsigned elementIndex, const ChartDirectTracingElement& element)
+    {
+        const float weight = 1.0f / GetNumSamples();
+        const Vector3 directLight = element.directLight_ * weight;
+
+        if (bakeDirect_)
+            bakedDirect_->directLight_[elementIndex] += Vector4(directLight, 0.0f);
+
+        if (bakeIndirect_)
+        {
+            const Vector3& albedo = geometryBuffer_->albedo_[elementIndex];
+            bakedDirect_->surfaceLight_[elementIndex] += albedo * directLight;
+        }
+    }
+};
+
+/// Trace direct lighting.
+template <class T, class U>
+void TraceDirectLight(T& sharedKernel, U& sharedGenerator,
+    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
+{
+    const float maxDistance = raytracerScene.GetMaxDistance();
+    RTCScene scene = raytracerScene.GetEmbreeScene();
+    const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
+
+    ParallelFor(sharedKernel.GetNumElements(), settings.numTasks_,
+        [&](unsigned fromIndex, unsigned toIndex)
+    {
+        auto kernel = sharedKernel;
+        auto generator = sharedGenerator;
+
+        auto rayContext = sharedKernel.GetRayContext();
+
+        RTCRayHit rayHit;
+        rayHit.ray.mask = RaytracerScene::AllGeometry;
+        rayHit.ray.tnear = 0.0f;
+        rayHit.ray.time = 0.0f;
+        rayHit.ray.id = 0;
+        rayHit.ray.flags = 0;
+
+        for (unsigned elementIndex = fromIndex; elementIndex < toIndex; ++elementIndex)
+        {
+            auto element = kernel.BeginElement(elementIndex, rayContext);
+            if (!element)
+                continue;
+
+            for (unsigned sampleIndex = 0; sampleIndex < kernel.GetNumSamples(); ++sampleIndex)
+            {
+                Vector3 incomingLight;
+                Vector3 position;
+                Vector3 rayDirection;
+                element.BeginSample(sampleIndex, rayContext, sharedGenerator, incomingLight, position, rayDirection);
+
+                // Cast direct ray
+                rayHit.ray.dir_x = rayDirection.x_;
+                rayHit.ray.dir_y = rayDirection.y_;
+                rayHit.ray.dir_z = rayDirection.z_;
+                rayHit.ray.org_x = position.x_ - rayDirection.x_ * maxDistance;
+                rayHit.ray.org_y = position.y_ - rayDirection.y_ * maxDistance;
+                rayHit.ray.org_z = position.z_ - rayDirection.z_ * maxDistance;
+                rayHit.ray.tfar = maxDistance;
+                rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
+                rtcIntersect1(scene, &rayContext, &rayHit);
+
+                if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
+                    continue;
+
+                element.EndSample(incomingLight, -rayDirection);
+            }
+
+            kernel.EndElement(elementIndex, element);
+        }
+    });
+}
+
 /// Ray tracing context for indirect light baking.
 struct IndirectTracingContext : public RTCIntersectContext
 {
@@ -243,6 +420,7 @@ struct ChartIndirectTracingElement
 
     /// Returns whether element is valid.
     explicit operator bool() const { return geometryId_ != 0; }
+
     /// Begin sample. Return position, normal and initial ray direction.
     void BeginSample(unsigned /*sampleIndex*/,
         Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo) const
@@ -253,6 +431,7 @@ struct ChartIndirectTracingElement
         albedo = Vector3::ONE;
         rayDirection = RandomHemisphereDirection(faceNormal_);
     }
+
     /// End sample.
     void EndSample(const Vector3& light)
     {
@@ -283,8 +462,10 @@ struct ChartIndirectTracingKernel
 
     /// Return number of elements to trace.
     unsigned GetNumElements() const { return bakedIndirect_->light_.size(); }
+
     /// Return number of samples.
     unsigned GetNumSamples() const { return settings_->numIndirectChartSamples_; }
+
     /// Begin tracing element.
     ChartIndirectTracingElement BeginElement(unsigned elementIndex)
     {
@@ -308,6 +489,7 @@ struct ChartIndirectTracingKernel
         const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
         return { position + faceNormal * settings_->rayPositionOffset_, faceNormal, smoothNormal, geometryId };
     };
+
     /// End tracing element.
     void EndElement(unsigned elementIndex, const ChartIndirectTracingElement& element)
     {
@@ -624,71 +806,10 @@ void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapC
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
-    const Vector3 rayDirection = light.direction_.Normalized();
-    const float maxDistance = raytracerScene.GetMaxDistance();
-    const Vector3 lightColor = light.color_.ToVector3();
-    RTCScene scene = raytracerScene.GetEmbreeScene();
-    const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
-
-    ParallelFor(bakedDirect.directLight_.size(), settings.numTasks_,
-        [&](unsigned fromIndex, unsigned toIndex)
-    {
-        RTCRayHit rayHit;
-        DirectTracingContextForCharts rayContext;
-        rtcInitIntersectContext(&rayContext);
-        rayContext.geometryIndex_ = &raytracerGeometries;
-        rayContext.filter = TracingFilterForChartsDirect;
-
-        rayHit.ray.mask = RaytracerScene::AllGeometry;
-        rayHit.ray.dir_x = rayDirection.x_;
-        rayHit.ray.dir_y = rayDirection.y_;
-        rayHit.ray.dir_z = rayDirection.z_;
-        rayHit.ray.tnear = 0.0f;
-        rayHit.ray.time = 0.0f;
-        rayHit.ray.id = 0;
-        rayHit.ray.flags = 0;
-
-        for (unsigned i = fromIndex; i < toIndex; ++i)
-        {
-            const unsigned geometryId = geometryBuffer.geometryIds_[i];
-            if (!geometryId)
-                continue;
-
-            const Vector3& position = geometryBuffer.positions_[i];
-            const Vector3& faceNormal = geometryBuffer.faceNormals_[i];
-            const Vector3& smoothNormal = geometryBuffer.smoothNormals_[i];
-
-            const unsigned raytracerGeometryId = geometryBufferToRaytracer[geometryId];
-            rayContext.currentGeometry_ = &raytracerGeometries[raytracerGeometryId];
-
-            Vector3 incomingLight = lightColor;
-            rayContext.incomingLight_ = &incomingLight;
-
-            // Cast direct ray
-            rayHit.ray.org_x = position.x_ + faceNormal.x_ * settings.rayPositionOffset_ - rayDirection.x_ * maxDistance;
-            rayHit.ray.org_y = position.y_ + faceNormal.y_ * settings.rayPositionOffset_ - rayDirection.y_ * maxDistance;
-            rayHit.ray.org_z = position.z_ + faceNormal.z_ * settings.rayPositionOffset_ - rayDirection.z_ * maxDistance;
-            rayHit.ray.tfar = maxDistance;
-            rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
-            rtcIntersect1(scene, &rayContext, &rayHit);
-
-            if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-                continue;
-
-            const float intensity = ea::max(0.0f, smoothNormal.DotProduct(-rayDirection));
-            const Vector3 lightIntensity = incomingLight * intensity;
-
-
-            if (light.bakeDirect_)
-                bakedDirect.directLight_[i] += Vector4(lightIntensity, 0.0f);
-
-            if (light.bakeIndirect_)
-            {
-                const Vector3& albedo = geometryBuffer.albedo_[i];
-                bakedDirect.surfaceLight_[i] += albedo * lightIntensity;
-            }
-        }
-    });
+    DirectionalRayGenerator generator{ light.color_, light.direction_ };
+    ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
+        &raytracerScene.GetGeometries(), &settings, light.bakeDirect_, light.bakeIndirect_ };
+    TraceDirectLight(kernel, generator, raytracerScene, settings);
 }
 
 void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
