@@ -80,6 +80,68 @@ struct TetrahedralMeshEdge
 
 }
 
+bool TetrahedralMeshSurface::CalculateAdjacency()
+{
+    // Collect all the edges
+    edges_.clear();
+    for (unsigned faceIndex = 0; faceIndex < faces_.size(); ++faceIndex)
+    {
+        const TetrahedralMeshSurfaceTriangle& face = faces_[faceIndex];
+        for (unsigned edgeIndex = 0; edgeIndex < 3; ++edgeIndex)
+        {
+            const unsigned i0 = face.indices_[(edgeIndex + 1) % 3];
+            const unsigned i1 = face.indices_[(edgeIndex + 2) % 3];
+            edges_.emplace_back(i0, i1, faceIndex, edgeIndex);
+        }
+    }
+
+    // Match all the edges
+    ea::sort(edges_.begin(), edges_.end());
+    if (edges_.size() % 2 != 0)
+        return false;
+
+    for (unsigned pairIndex = 0; pairIndex < edges_.size() / 2; ++pairIndex)
+    {
+        const TetrahedralMeshSurfaceEdge& firstEdge = edges_[pairIndex * 2 + 0];
+        const TetrahedralMeshSurfaceEdge& secondEdge = edges_[pairIndex * 2 + 1];
+
+        // Edges should be equivalent, i.e. same edge
+        if (firstEdge < secondEdge || secondEdge < firstEdge)
+            return false;
+
+        TetrahedralMeshSurfaceTriangle& firstFace = faces_[firstEdge.faceIndex_];
+        TetrahedralMeshSurfaceTriangle& secondFace = faces_[secondEdge.faceIndex_];
+
+        // Link should not be initialized before
+        if (firstFace.neighbors_[firstEdge.edgeIndex_] != M_MAX_UNSIGNED
+            || secondFace.neighbors_[secondEdge.edgeIndex_] != M_MAX_UNSIGNED)
+        {
+            return false;
+        }
+
+        firstFace.neighbors_[firstEdge.edgeIndex_] = secondEdge.faceIndex_;
+        secondFace.neighbors_[secondEdge.edgeIndex_] = firstEdge.faceIndex_;
+    }
+
+    return true;
+}
+
+bool TetrahedralMeshSurface::IsClosedSurface() const
+{
+    for (unsigned faceIndex = 0; faceIndex < faces_.size(); ++faceIndex)
+    {
+        for (unsigned i = 0; i < 3; ++i)
+        {
+            const unsigned neighborFaceIndex = faces_[faceIndex].neighbors_[i];
+            if (neighborFaceIndex == M_MAX_UNSIGNED)
+                return false;
+
+            assert(faces_[neighborFaceIndex].HasNeighbor(faceIndex));
+        }
+    }
+    return true;
+}
+
 void TetrahedralMesh::Define(ea::span<const Vector3> positions)
 {
     BoundingBox boundingBox(positions.data(), positions.size());
@@ -394,7 +456,6 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
     }
 
     // Collect triangles of the hole surface
-    ctx.holeTriangles_.clear();
     for (unsigned tetIndex : removedTetrahedrons)
     {
         const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
@@ -408,7 +469,7 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
                 // Face of outer surface doesn't have underlying tetrahedron
                 const TetrahedralMeshSurfaceTriangle holeTriangle = tetrahedron.GetTriangleFace(
                     faceIndex, M_MAX_UNSIGNED, M_MAX_UNSIGNED);
-                ctx.holeTriangles_.push_back(holeTriangle);
+                holeSurface.faces_.push_back(holeTriangle);
                 continue;
             }
 
@@ -420,7 +481,7 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
 
                 const TetrahedralMeshSurfaceTriangle holeTriangle = neighborTetrahedron.GetTriangleFace(
                     neighborFaceIndex, neighborTetIndex, neighborFaceIndex);
-                ctx.holeTriangles_.push_back(holeTriangle);
+                holeSurface.faces_.push_back(holeTriangle);
             }
         }
     }
@@ -428,7 +489,7 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
     // Verify that all hole triangles are faced in right direction
     bool valid = true;
     const HighPrecisionVector3 p0{ position };
-    for (TetrahedralMeshSurfaceTriangle& triangle : ctx.holeTriangles_)
+    for (TetrahedralMeshSurfaceTriangle& triangle : holeSurface.faces_)
     {
         // Outer triangles are always oriented right
         if (triangle.tetIndex_ == M_MAX_UNSIGNED)
@@ -451,13 +512,20 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
         }
     }
 
+    // Try to initialize adjacency for surface
+    if (valid)
+    {
+        if (!holeSurface.CalculateAdjacency())
+            valid = false;
+    }
+
     // Revert all changes if invalid or if dump error mode is on
     if (!valid || dumpErrors)
     {
         if (dumpErrors)
         {
             assert(!valid);
-            for (const TetrahedralMeshSurfaceTriangle& triangle : ctx.holeTriangles_)
+            for (const TetrahedralMeshSurfaceTriangle& triangle : holeSurface.faces_)
             {
                 const unsigned i0 = triangle.indices_[0];
                 const unsigned i1 = triangle.indices_[1];
@@ -472,20 +540,8 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
             ctx.removed_[tetIndex] = false;
 
         removedTetrahedrons.clear();
+        holeSurface.Clear();
         return false;
-    }
-
-    // Build hole surface
-    for (const TetrahedralMeshSurfaceTriangle& triangle : ctx.holeTriangles_)
-    {
-        if (!holeSurface.AddFace(triangle))
-        {
-            URHO3D_LOGERROR("Cannot update surface of the carved hole in tetrahedral mesh for vertex at {}",
-                position.ToString());
-            assert(0);
-            holeSurface.Clear();
-            return false;
-        }
     }
 
     if (!holeSurface.IsClosedSurface())
@@ -807,14 +863,15 @@ void TetrahedralMesh::BuildHullSurface(TetrahedralMeshSurface& hullSurface)
 
             const TetrahedralMeshSurfaceTriangle& hullTriangle = tetrahedron.GetTriangleFace(
                 faceIndex, tetIndex, faceIndex);
-            hullSurface.AddFace(hullTriangle);
+            hullSurface.faces_.push_back(hullTriangle);
         }
     }
 
+    hullSurface.CalculateAdjacency();
+    assert(hullSurface.IsClosedSurface());
+
     for (TetrahedralMeshSurfaceTriangle& hullTriangle : hullSurface.faces_)
         hullTriangle.Normalize(vertices_);
-
-    assert(hullSurface.IsClosedSurface());
 }
 
 void TetrahedralMesh::CalculateHullNormals(const TetrahedralMeshSurface& hullSurface)
