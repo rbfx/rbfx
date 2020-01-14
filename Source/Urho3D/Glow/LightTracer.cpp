@@ -202,6 +202,36 @@ void TracingFilterForChartsDirect(const RTCFilterFunctionNArguments* args)
         args->valid[0] = 0;
 }
 
+/// Ray tracing context for direct light baking for light probes.
+struct DirectTracingContextForLightProbes : public RTCIntersectContext
+{
+    /// Geometry index.
+    const ea::vector<RaytracerGeometry>* geometryIndex_{};
+    /// Incoming light.
+    Vector3* incomingLight_{};
+};
+
+/// Filter function for direct light baking for light probes.
+void TracingFilterForLightProbesDirect(const RTCFilterFunctionNArguments* args)
+{
+    const auto& ctx = *static_cast<const DirectTracingContextForLightProbes*>(args->context);
+    auto& hit = *reinterpret_cast<RTCHit*>(args->hit);
+    assert(args->N == 1);
+
+    // Ignore invalid
+    if (args->valid[0] == 0)
+        return;
+
+    // Ignore if LOD
+    const RaytracerGeometry& hitGeometry = (*ctx.geometryIndex_)[hit.geomID];
+    if (hitGeometry.lodIndex_ != 0)
+        args->valid[0] = 0;
+
+    // Accumulate and ignore if transparent
+    if (IsTransparedForDirect(hitGeometry, hit, *ctx.incomingLight_))
+        args->valid[0] = 0;
+}
+
 /// Directional light ray generator.
 struct DirectionalRayGenerator
 {
@@ -316,6 +346,86 @@ struct ChartDirectTracingKernel
         {
             const Vector3& albedo = geometryBuffer_->albedo_[elementIndex];
             bakedDirect_->surfaceLight_[elementIndex] += albedo * directLight;
+        }
+    }
+};
+
+/// Direct light tracing for light probes: tracing element.
+struct LightProbeDirectTracingElement
+{
+    /// Position.
+    Vector3 position_;
+
+    /// Indirect light SH.
+    SphericalHarmonicsColor9 sh_;
+    /// Weight.
+    float weight_{};
+
+    /// Returns whether element is valid.
+    explicit operator bool() const { return true; }
+
+    /// Begin sample. Return position, normal and initial ray direction.
+    template <class T>
+    void BeginSample(unsigned /*sampleIndex*/, DirectTracingContextForLightProbes& rayContext, T& generator,
+        Vector3& incomingLight, Vector3& position, Vector3& rayDirection) const
+    {
+        rayContext.incomingLight_ = &incomingLight;
+        position = position_;
+        incomingLight = generator.GetLightIntensity(position_);
+        rayDirection = generator.GetRayDirection(position_);
+    }
+
+    /// End sample.
+    void EndSample(const Vector3& light, const Vector3& direction)
+    {
+        sh_ += SphericalHarmonicsColor9(direction, light);
+    }
+};
+
+/// Direct light tracing for light probes: tracing kernel.
+struct LightProbeDirectTracingKernel
+{
+    /// Light probes collection.
+    LightProbeCollection* collection_{};
+    /// Settings.
+    const LightmapTracingSettings* settings_{};
+    /// Raytracer geometries.
+    const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
+    /// Whether to bake direct light for direct lighting itself.
+    bool bakeDirect_{};
+
+    /// Return number of elements to trace.
+    unsigned GetNumElements() const { return collection_->Size(); }
+
+    /// Return number of samples.
+    unsigned GetNumSamples() const { return settings_->numDirectSamples_; }
+
+    /// Return ray intersect context.
+    DirectTracingContextForLightProbes GetRayContext()
+    {
+        DirectTracingContextForLightProbes rayContext;
+        rtcInitIntersectContext(&rayContext);
+        rayContext.geometryIndex_ = raytracerGeometries_;
+        rayContext.filter = TracingFilterForLightProbesDirect;
+        return rayContext;
+    }
+
+    /// Begin tracing element.
+    LightProbeDirectTracingElement BeginElement(unsigned elementIndex, DirectTracingContextForLightProbes& /*rayContext*/)
+    {
+        const Vector3& position = collection_->worldPositions_[elementIndex];
+        return { position };
+    };
+
+    /// End tracing element.
+    void EndElement(unsigned elementIndex, const LightProbeDirectTracingElement& element)
+    {
+        if (bakeDirect_)
+        {
+            const float weight = M_PI / GetNumSamples();
+
+            SphericalHarmonicsColor9 sh = element.sh_ * weight;
+            collection_->bakedSphericalHarmonics_[elementIndex] += SphericalHarmonicsDot9{ sh };
         }
     }
 };
@@ -497,7 +607,7 @@ struct ChartIndirectTracingKernel
     }
 };
 
-/// Light probe indirect tracing: tracing element.
+/// Indirect light tracing for light probes: tracing element.
 struct LightProbeIndirectTracingElement
 {
     /// Position.
@@ -534,7 +644,7 @@ struct LightProbeIndirectTracingElement
     }
 };
 
-/// Light probe indirect tracing: tracing kernel.
+/// Indirect light tracing for light probes: tracing kernel.
 struct LightProbeIndirectTracingKernel
 {
     /// Light probes collection.
@@ -802,13 +912,21 @@ void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChar
     });
 }
 
-void BakeDirectionalLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+void BakeDirectionalLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
 {
     DirectionalRayGenerator generator{ light.color_, light.direction_ };
     ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
         &raytracerScene.GetGeometries(), &settings, light.bakeDirect_, light.bakeIndirect_ };
+    TraceDirectLight(kernel, generator, raytracerScene, settings);
+}
+
+void BakeDirectionalLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
+    const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
+{
+    DirectionalRayGenerator generator{ light.color_, light.direction_ };
+    LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), light.bakeDirect_ };
     TraceDirectLight(kernel, generator, raytracerScene, settings);
 }
 
