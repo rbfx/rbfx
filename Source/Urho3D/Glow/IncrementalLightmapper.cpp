@@ -429,7 +429,7 @@ struct IncrementalLightmapper::Impl
             // Bake emission
             BakeEmissionLight(bakedDirect, *geometryBuffer, lightmapSettings_.tracing_);
 
-            // Bake direct lights
+            // Bake direct lights for charts
             for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
             {
                 const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
@@ -442,7 +442,7 @@ struct IncrementalLightmapper::Impl
                     light.bakeDirect_ = bakeDirect;
                     light.bakeIndirect_ = bakeIndirect;
 
-                    BakeDirectionalLight(bakedDirect, *geometryBuffer, *chunkVicinity->raytracerScene_,
+                    BakeDirectionalLightForCharts(bakedDirect, *geometryBuffer, *chunkVicinity->raytracerScene_,
                         chunkVicinity->geometryBufferToRaytracer_, light, lightmapSettings_.tracing_);
                 }
             }
@@ -545,6 +545,24 @@ struct IncrementalLightmapper::Impl
             const ea::string fileName = GetLightmapFileName(lightmapIndex);
             context_->GetFileSystem()->CreateDirsRecursive(GetPath(fileName));
             lightmapImage->SaveFile(fileName);
+        }
+
+        // Bake direct lights for light probes
+        for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
+        {
+            const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
+            const bool bakeIndirect = true;
+            if (bakedLight.lightType_ == LIGHT_DIRECTIONAL)
+            {
+                DirectionalLightParameters light;
+                light.direction_ = bakedLight.direction_;
+                light.color_ = bakedLight.lightColor_;
+                light.bakeDirect_ = bakeDirect;
+                light.bakeIndirect_ = bakeIndirect;
+
+                BakeDirectionalLightForLightProbes(chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
+                    light, lightmapSettings_.tracing_);
+            }
         }
 
         // Release cache

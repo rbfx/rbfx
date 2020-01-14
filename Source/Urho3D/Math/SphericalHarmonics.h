@@ -206,7 +206,7 @@ struct SphericalHarmonicsDot9
         Bb_ = Vector4(sh.values_[4].z_, sh.values_[5].z_, sh.values_[6].z_, sh.values_[7].z_);
 
         // Nx*Nx - Ny*Ny
-        C_ = sh.values_[8];
+        C_ = Vector4(sh.values_[8], 1.0f);
     }
 
     /// Evaluate at given direction.
@@ -223,7 +223,7 @@ struct SphericalHarmonicsDot9
         result.x_ += Br_.DotProduct(b);
         result.y_ += Bg_.DotProduct(b);
         result.z_ += Bb_.DotProduct(b);
-        result += C_ * c;
+        result += static_cast<Vector3>(C_) * c;
         return result;
     }
 
@@ -286,10 +286,8 @@ struct SphericalHarmonicsDot9
     Vector4 Bg_;
     /// Dot product with (Nx*Ny, Ny*Nz, Nz*Nz, Nz*Nx), blue channel.
     Vector4 Bb_;
-    /// Color, multiplied by (Nx*Nx - Ny*Ny).
-    Vector3 C_;
-    /// Padding. Always 1.0f;
-    float padding_{ 1.0f };
+    /// Color, multiplied by (Nx*Nx - Ny*Ny). W is always 1.0f.
+    Vector4 C_;
 
     /// Zero harmonics.
     static const SphericalHarmonicsDot9 ZERO;
