@@ -28,9 +28,10 @@
 #include "../Math/Matrix3x4.h"
 #include "../Math/Vector3.h"
 
+#include <EASTL/algorithm.h>
 #include <EASTL/span.h>
-
-#include <cmath>
+#include <EASTL/utility.h>
+#include <EASTL/vector.h>
 
 namespace Urho3D
 {
@@ -140,16 +141,6 @@ struct TetrahedralMeshSurfaceTriangle
     /// Face of underlying tetrahedron, from 0 to 3.
     unsigned tetFace_{};
 
-    /// Return edge, from 0 to 2. Returned indices are sorted.
-    ea::pair<unsigned, unsigned> GetEdge(unsigned edgeIndex) const
-    {
-        unsigned begin = indices_[edgeIndex];
-        unsigned end = indices_[(edgeIndex + 1) % 3];
-        if (begin > end)
-            ea::swap(begin, end);
-        return { begin, end };
-    }
-
     /// Return whether the triangle has given neighbour.
     bool HasNeighbor(unsigned neighborIndex) const
     {
@@ -221,7 +212,7 @@ struct TetrahedralMeshSurfaceEdge
 };
 
 /// Surface of tetrahedral mesh. Vertices are shared with tetrahedral mesh and are not stored.
-struct TetrahedralMeshSurface
+struct URHO3D_API TetrahedralMeshSurface
 {
     /// Faces.
     ea::vector<TetrahedralMeshSurfaceTriangle> faces_;
@@ -319,72 +310,16 @@ public:
     HighPrecisionSphere GetTetrahedronCircumsphere(unsigned tetIndex) const;
 
     /// Calculate barycentric coordinates for inner tetrahedron.
-    Vector4 GetInnerBarycentricCoords(unsigned tetIndex, const Vector3& position) const
-    {
-        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
-        const Vector3& basePosition = vertices_[tetrahedron.indices_[0]];
-        const Vector3 coords = tetrahedron.matrix_ * (position - basePosition);
-        return { 1.0f - coords.x_ - coords.y_ - coords.z_, coords.x_, coords.y_, coords.z_ };
-    }
+    Vector4 GetInnerBarycentricCoords(unsigned tetIndex, const Vector3& position) const;
 
     /// Calculate barycentric coordinates for outer tetrahedron.
-    Vector4 GetOuterBarycentricCoords(unsigned tetIndex, const Vector3& position) const
-    {
-        const Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
-        const Vector3 p1 = vertices_[tetrahedron.indices_[0]];
-        const Vector3 p2 = vertices_[tetrahedron.indices_[1]];
-        const Vector3 p3 = vertices_[tetrahedron.indices_[2]];
-        const Vector3 normal = (p2 - p1).CrossProduct(p3 - p1);
-
-        // Position is in the inner cell, return fake barycentric
-        if (normal.DotProduct(position - p1) < 0.0f)
-            return { 0.0f, 0.0f, 0.0f, -1.0f };
-
-        const Vector3 poly = tetrahedron.matrix_ * position;
-        const float t = tetrahedron.indices_[3] == Tetrahedron::Infinity3 ? SolveCubic(poly) : SolveQuadratic(poly);
-
-        const Vector3 t1 = p1 + t * hullNormals_[tetrahedron.indices_[0]];
-        const Vector3 t2 = p2 + t * hullNormals_[tetrahedron.indices_[1]];
-        const Vector3 t3 = p3 + t * hullNormals_[tetrahedron.indices_[2]];
-        const Vector3 coords = GetTriangleBarycentricCoords(position, t1, t2, t3);
-        return { coords, 0.0f };
-    }
+    Vector4 GetOuterBarycentricCoords(unsigned tetIndex, const Vector3& position) const;
 
     /// Calculate barycentric coordinates for tetrahedron.
-    Vector4 GetBarycentricCoords(unsigned tetIndex, const Vector3& position) const
-    {
-        return tetIndex < numInnerTetrahedrons_
-            ? GetInnerBarycentricCoords(tetIndex, position)
-            : GetOuterBarycentricCoords(tetIndex, position);
-    }
+    Vector4 GetBarycentricCoords(unsigned tetIndex, const Vector3& position) const;
 
     /// Find tetrahedron containing given position and calculate barycentric coordinates within this tetrahedron.
-    Vector4 GetInterpolationFactors(const Vector3& position, unsigned& tetIndexHint) const
-    {
-        if (tetrahedrons_.empty())
-            return Vector4::ZERO;
-
-        const unsigned maxIters = tetrahedrons_.size();
-        if (tetIndexHint >= maxIters)
-            tetIndexHint = 0;
-
-        for (unsigned i = 0; i < maxIters; ++i)
-        {
-            const Vector4 weights = GetBarycentricCoords(tetIndexHint, position);
-            if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
-                return weights;
-
-            if (weights.x_ < weights.y_ && weights.x_ < weights.z_ && weights.x_ < weights.w_)
-                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[0];
-            else if (weights.y_ < weights.z_ && weights.y_ < weights.w_)
-                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[1];
-            else if (weights.z_ < weights.w_)
-                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[2];
-            else
-                tetIndexHint = tetrahedrons_[tetIndexHint].neighbors_[3];
-        }
-        return GetBarycentricCoords(tetIndexHint, position);
-    }
+    Vector4 GetInterpolationFactors(const Vector3& position, unsigned& tetIndexHint) const;
 
     /// Sample value at given position from the arbitrary container of per-vertex data.
     template <class Container>
@@ -406,122 +341,16 @@ public:
 
 private:
     /// Solve cubic equation x^3 + a*x^2 + b*x + c = 0.
-    static int SolveCubicEquation(double result[], double a, double b, double c, double eps)
-    {
-        double a2 = a * a;
-        double q = (a2 - 3 * b) / 9;
-        double r = (a * (2 * a2 - 9 * b) + 27 * c) / 54;
-        double r2 = r * r;
-        double q3 = q * q * q;
-        if (r2 <= (q3 + eps))
-        {
-            double t = r / std::sqrt(q3);
-            if (t < -1)
-                t = -1;
-            if (t > 1)
-                t = 1;
-            t = std::acos(t);
-            a /= 3;
-            q = -2 * std::sqrt(q);
-            result[0] = q * std::cos(t / 3) - a;
-            result[1] = q * std::cos((t + M_PI * 2) / 3) - a;
-            result[2] = q * std::cos((t - M_PI * 2) / 3) - a;
-            return 3;
-        }
-        else
-        {
-            double A = -std::cbrt(std::abs(r) + std::sqrt(r2 - q3));
-            if (r < 0)
-                A = -A;
-            const double B = A == 0 ? 0 : q / A;
-
-            a /= 3;
-            result[0] = (A + B) - a;
-            result[1] = -0.5 * (A + B) - a;
-            result[2] = 0.5 * std::sqrt(3.0) * (A - B);
-            if (std::abs(result[2]) < eps)
-            {
-                result[2] = result[1];
-                return 2;
-            }
-            return 1;
-        }
-    }
-
+    static int SolveCubicEquation(double result[], double a, double b, double c, double eps);
     /// Calculate most positive root of cubic equation x^3 + a*x^2 + b*x + c = 0.
-    static float SolveCubic(const Vector3& abc)
-    {
-        double result[3];
-        const int numRoots = SolveCubicEquation(result, abc.x_, abc.y_, abc.z_, M_EPSILON);
-        return static_cast<float>(*ea::max_element(result, result + numRoots));
-    }
-
+    static float SolveCubic(const Vector3& abc);
     /// Calculate most positive root of quadratic or linear equation a*x^2 + b*x + c = 0.
-    static float SolveQuadratic(const Vector3& abc)
-    {
-        const float a = abc.x_;
-        const float b = abc.y_;
-        const float c = abc.z_;
-        if (std::abs(a) < M_EPSILON)
-            return -c / b;
-
-        const float D = ea::max(0.0f, b * b - 4 * a * c);
-
-        return a > 0
-            ? (-b + std::sqrt(D)) / (2 * a)
-            : (-b - std::sqrt(D)) / (2 * a);
-    }
-
+    static float SolveQuadratic(const Vector3& abc);
     /// Calculate barycentric coordinates on triangle.
     static Vector3 GetTriangleBarycentricCoords(const Vector3& position,
-        const Vector3& p1, const Vector3& p2, const Vector3& p3)
-    {
-        const Vector3 v12 = p2 - p1;
-        const Vector3 v13 = p3 - p1;
-        const Vector3 v0 = position - p1;
-        const float d00 = v12.DotProduct(v12);
-        const float d01 = v12.DotProduct(v13);
-        const float d11 = v13.DotProduct(v13);
-        const float d20 = v0.DotProduct(v12);
-        const float d21 = v0.DotProduct(v13);
-        const float denom = d00 * d11 - d01 * d01;
-        const float v = (d11 * d20 - d01 * d21) / denom;
-        const float w = (d00 * d21 - d01 * d20) / denom;
-        const float u = 1.0f - v - w;
-        return { u, v, w };
-    }
-
+        const Vector3& p1, const Vector3& p2, const Vector3& p3);
     /// Find tetrahedron for given position. Ignore removed tetrahedrons. Return invalid index if cannot find.
-    unsigned FindTetrahedron(const Vector3& position, ea::vector<bool>& removed) const
-    {
-        auto firstNotRemovedIter = ea::find(removed.begin(), removed.end(), false);
-        if (firstNotRemovedIter == removed.end())
-            return M_MAX_UNSIGNED;
-
-        const unsigned maxIters = tetrahedrons_.size();
-        unsigned tetIndex = firstNotRemovedIter - removed.begin();
-        for (unsigned i = 0; i < maxIters; ++i)
-        {
-            // Found one
-            const Vector4 weights = GetInnerBarycentricCoords(tetIndex, position);
-            if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
-                break;
-
-            if (weights.x_ < weights.y_ && weights.x_ < weights.z_ && weights.x_ < weights.w_)
-                tetIndex = tetrahedrons_[tetIndex].neighbors_[0];
-            else if (weights.y_ < weights.z_ && weights.y_ < weights.w_)
-                tetIndex = tetrahedrons_[tetIndex].neighbors_[1];
-            else if (weights.z_ < weights.w_)
-                tetIndex = tetrahedrons_[tetIndex].neighbors_[2];
-            else
-                tetIndex = tetrahedrons_[tetIndex].neighbors_[3];
-
-            // Failed to find one
-            if (tetIndex == M_MAX_UNSIGNED)
-                break;
-        }
-        return tetIndex;
-    }
+    unsigned FindTetrahedron(const Vector3& position, ea::vector<bool>& removed) const;
 
     /// Number of initial super-mesh vertices.
     static const unsigned NumSuperMeshVertices = 8;
