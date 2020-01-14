@@ -267,6 +267,19 @@ struct Tetrahedron
     /// Pre-computed matrix for calculating barycentric coordinates.
     Matrix3x4 matrix_;
 
+    /// Calculate matrix for valid inner tetrahedron.
+    void CalculateInnerMatrix(const ea::vector<Vector3>& vertices)
+    {
+        const Vector3 p0 = vertices[indices_[0]];
+        const Vector3 p1 = vertices[indices_[1]];
+        const Vector3 p2 = vertices[indices_[2]];
+        const Vector3 p3 = vertices[indices_[3]];
+        const Vector3 u1 = p1 - p0;
+        const Vector3 u2 = p2 - p0;
+        const Vector3 u3 = p3 - p0;
+        matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
+    }
+
     /// Return indices of specified triangle face of the tetrahedron.
     void GetTriangleFaceIndices(unsigned faceIndex, unsigned (&indices)[3]) const
     {
@@ -488,6 +501,38 @@ private:
         return { u, v, w };
     }
 
+    /// Find tetrahedron for given position. Ignore removed tetrahedrons. Return invalid index if cannot find.
+    unsigned FindTetrahedron(const Vector3& position, ea::vector<bool>& removed) const
+    {
+        auto firstNotRemovedIter = ea::find(removed.begin(), removed.end(), false);
+        if (firstNotRemovedIter == removed.end())
+            return M_MAX_UNSIGNED;
+
+        const unsigned maxIters = tetrahedrons_.size();
+        unsigned tetIndex = firstNotRemovedIter - removed.begin();
+        for (unsigned i = 0; i < maxIters; ++i)
+        {
+            // Found one
+            const Vector4 weights = GetInnerBarycentricCoords(tetIndex, position);
+            if (weights.x_ >= 0.0f && weights.y_ >= 0.0f && weights.z_ >= 0.0f && weights.w_ >= 0.0f)
+                break;
+
+            if (weights.x_ < weights.y_ && weights.x_ < weights.z_ && weights.x_ < weights.w_)
+                tetIndex = tetrahedrons_[tetIndex].neighbors_[0];
+            else if (weights.y_ < weights.z_ && weights.y_ < weights.w_)
+                tetIndex = tetrahedrons_[tetIndex].neighbors_[1];
+            else if (weights.z_ < weights.w_)
+                tetIndex = tetrahedrons_[tetIndex].neighbors_[2];
+            else
+                tetIndex = tetrahedrons_[tetIndex].neighbors_[3];
+
+            // Failed to find one
+            if (tetIndex == M_MAX_UNSIGNED)
+                break;
+        }
+        return tetIndex;
+    }
+
     /// Number of initial super-mesh vertices.
     static const unsigned NumSuperMeshVertices = 8;
     /// Create super-mesh for Delaunay triangulation.
@@ -545,8 +590,6 @@ private:
     void CalculateHullNormals(const TetrahedralMeshSurface& hullSurface);
     /// Build outer tetrahedrons.
     void BuildOuterTetrahedrons(const TetrahedralMeshSurface& hullSurface);
-    /// Calculate matrices for inner tetrahedrons.
-    void CalculateInnerMatrices();
     /// Calculate matrices for outer tetrahedrons.
     void CalculateOuterMatrices();
 
