@@ -211,6 +211,7 @@ void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
             tetrahedron.indices_[j] = indices[i][j];
             tetrahedron.neighbors_[j] = neighbors[i][j];
         }
+        tetrahedron.CalculateInnerMatrix(vertices_);
         tetrahedrons_[i] = tetrahedron;
     }
 }
@@ -305,7 +306,6 @@ void TetrahedralMesh::BuildTetrahedrons(ea::span<const Vector3> positions)
 
     CalculateHullNormals(hullSurface);
     BuildOuterTetrahedrons(hullSurface);
-    CalculateInnerMatrices();
     CalculateOuterMatrices();
 }
 
@@ -353,22 +353,16 @@ bool TetrahedralMesh::FindAndRemoveIntersected(TetrahedralMesh::DelaunayContext&
     removedTetrahedrons.clear();
 
     // Find first tetrahedron to remove
-    for (unsigned tetIndex = 0; tetIndex < tetrahedrons_.size(); ++tetIndex)
+    const unsigned firstTetIndex = FindTetrahedron(position, ctx.removed_);
+    if (firstTetIndex == M_MAX_UNSIGNED || !ctx.IsInsideCircumsphere(firstTetIndex, position))
     {
-        if (!ctx.removed_[tetIndex] && ctx.IsInsideCircumsphere(tetIndex, position))
-        {
-            removedTetrahedrons.push_back(tetIndex);
-            ctx.removed_[tetIndex] = true;
-            break;
-        }
-    }
-
-    if (removedTetrahedrons.empty())
-    {
-        URHO3D_LOGERROR("Cannot update tetrahedral mesh for vertex at {}", position.ToString());
+        URHO3D_LOGERROR("Cannot find tetrahedron to insert vertex at {}", position.ToString());
         assert(0);
         return false;
     }
+
+    removedTetrahedrons.push_back(firstTetIndex);
+    ctx.removed_[firstTetIndex] = true;
 
     // Do breadth search to collect all bad tetrahedrons
     // Note: size may change during the loop
@@ -552,6 +546,8 @@ void TetrahedralMesh::FillStarShapedHole(TetrahedralMesh::DelaunayContext& ctx,
             assert(neighborTetrahedron.neighbors_[holeTriangle.tetFace_] == M_MAX_UNSIGNED);
             neighborTetrahedron.neighbors_[holeTriangle.tetFace_] = newTetIndex;
         }
+
+        tetrahedron.CalculateInnerMatrix(vertices_);
 
         ctx.removed_[newTetIndex] = false;
         ctx.circumspheres_[newTetIndex] = GetTetrahedronCircumsphere(newTetIndex);
@@ -866,22 +862,6 @@ void TetrahedralMesh::BuildOuterTetrahedrons(const TetrahedralMeshSurface& hullS
     }
 
     assert(IsAdjacencyValid(true));
-}
-
-void TetrahedralMesh::CalculateInnerMatrices()
-{
-    for (unsigned tetIndex = 0; tetIndex < numInnerTetrahedrons_; ++tetIndex)
-    {
-        Tetrahedron& tetrahedron = tetrahedrons_[tetIndex];
-        const Vector3 p0 = vertices_[tetrahedron.indices_[0]];
-        const Vector3 p1 = vertices_[tetrahedron.indices_[1]];
-        const Vector3 p2 = vertices_[tetrahedron.indices_[2]];
-        const Vector3 p3 = vertices_[tetrahedron.indices_[3]];
-        const Vector3 u1 = p1 - p0;
-        const Vector3 u2 = p2 - p0;
-        const Vector3 u3 = p3 - p0;
-        tetrahedron.matrix_ = Matrix3(u1.x_, u2.x_, u3.x_, u1.y_, u2.y_, u3.y_, u1.z_, u2.z_, u3.z_).Inverse();
-    }
 }
 
 void TetrahedralMesh::CalculateOuterMatrices()
