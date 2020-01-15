@@ -99,10 +99,10 @@ public:
     bool CookSettings() const;
     /// Create per-flavor mappings between source resource names imported names.
     bool CookCacheInfo() const;
-
-protected:
     /// Watch directory for changed assets and automatically convert them.
     void EnableWatcher();
+
+protected:
     /// Handles file watchers.
     void OnEndFrame(StringHash, VariantMap&);
     /// Handles modal dialogs.

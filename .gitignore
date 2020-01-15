@@ -8,6 +8,8 @@
 /bin/jit/
 /bin/Screenshots/
 /bin/tool/
+/bin/Cache/*
+/bin/StringHashNames.json
 /include/
 /lib*/
 generated/
