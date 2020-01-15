@@ -1,0 +1,18 @@
+{
+	"defaultScene": "",
+	"pipeline": {
+		"flavors": [
+			{
+				"name": "default",
+				"platforms": [],
+				"settings": {}
+			}
+		]
+	},
+	"plugins": [],
+	"resourcePaths": [
+		"Data",
+		"Autoload/LargeData"
+	],
+	"version": 1
+}

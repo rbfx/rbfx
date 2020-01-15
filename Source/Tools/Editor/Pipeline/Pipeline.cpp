@@ -58,14 +58,6 @@ Pipeline::Pipeline(Context* context)
         return;
 
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, OnEndFrame));
-    SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap& args) {
-        auto* archive = static_cast<Archive*>(args[EditorProjectSerialize::P_ARCHIVE].GetVoidPtr());
-        if (archive->IsInput())
-        {
-            EnableWatcher();
-            BuildCache(nullptr, PipelineBuildFlag::SKIP_UP_TO_DATE);
-        }
-    });
     SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
         using namespace ResourceRenamed;
         ea::string from = args[P_FROM].GetString();
@@ -112,8 +104,18 @@ void Pipeline::RegisterObject(Context* context)
 void Pipeline::EnableWatcher()
 {
     auto* project = GetSubsystem<Project>();
-    context_->GetFileSystem()->CreateDirsRecursive(project->GetCachePath());
-    watcher_.StartWatching(project->GetResourcePath(), true);
+    auto* fs = GetSubsystem<FileSystem>();
+
+    if (!fs->DirExists(project->GetCachePath()))
+        fs->CreateDirsRecursive(project->GetCachePath());
+
+    for (const ea::string& resourceDir : project->GetResourcePaths())
+    {
+        ea::string absolutePath = project->GetProjectPath() + resourceDir;
+        if (!fs->DirExists(absolutePath))
+            fs->CreateDirsRecursive(absolutePath);
+        watcher_.StartWatching(absolutePath, true);
+    }
 }
 
 void Pipeline::OnEndFrame(StringHash, VariantMap&)

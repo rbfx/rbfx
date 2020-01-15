@@ -110,8 +110,7 @@ ResourceTab::ResourceTab(Context* context)
 bool ResourceTab::RenderWindowContent()
 {
     auto* project = GetSubsystem<Project>();
-    auto action = ResourceBrowserWidget(project->GetResourcePath(), project->GetCachePath(), resourcePath_,
-        resourceSelection_, flags_);
+    auto action = ResourceBrowserWidget(resourcePath_, resourceSelection_, flags_);
     if (action == RBR_ITEM_OPEN)
     {
         ea::string selected = resourcePath_ + resourceSelection_;
