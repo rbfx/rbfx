@@ -50,15 +50,17 @@ public:
     /// Return project directory.
     const ea::string& GetProjectPath() const { return projectFileDir_; }
     /// Returns path to temporary asset cache.
-    ea::string GetCachePath() const;
+    const ea::string& GetCachePath() const { return cachePath_; }
     /// Returns path to permanent asset cache.
-    ea::string GetResourcePath() const;
+    const ea::string& GetResourcePath() const { return defaultResourcePath_; }
+    /// Return a list of resource directory names relative to project path.
+    const StringVector& GetResourcePaths() const { return resourcePaths_; }
 #if URHO3D_PLUGINS
     /// Returns plugin manager.
     PluginManager* GetPlugins() { return plugins_; }
 #endif
     /// Returns true in very first session of new project.
-    bool IsNewProject() const { return isNewProject_; }
+    bool NeeDefaultUIPlacement() const { return defaultUiPlacement_; }
     /// Return resource name of scene that will be executed first by the player.
     const ea::string& GetDefaultSceneName() const { return defaultScene_; }
     /// Set resource name of scene that will be executed first by the player.
@@ -82,8 +84,12 @@ protected:
     ea::string projectFileDir_;
     ///
     SharedPtr<Pipeline> pipeline_;
-    /// Copy of engine resource paths that get unregistered when project is loaded.
-    StringVector cachedEngineResourcePaths_;
+    ///
+    StringVector resourcePaths_;
+    /// Absolute path to resource cache directory. Usually projectDir/Cache.
+    ea::string cachePath_;
+    /// Absolute path to default resource directory. Must always be projectDir/resourcePaths_[0].
+    ea::string defaultResourcePath_;
     /// Path to imgui settings ini file.
     ea::string uiConfigPath_;
 #if URHO3D_PLUGINS
@@ -91,7 +97,7 @@ protected:
     SharedPtr<PluginManager> plugins_;
 #endif
     /// Flag indicating that project was just created.
-    bool isNewProject_ = true;
+    bool defaultUiPlacement_ = true;
     /// Resource name of scene that will be started by player first.
     ea::string defaultScene_;
     ///

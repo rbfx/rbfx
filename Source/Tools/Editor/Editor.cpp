@@ -558,7 +558,7 @@ void Editor::OnEndFrame()
         if (loaded)
         {
             auto* fs = context_->GetFileSystem();
-            loadDefaultLayout_ = project_->IsNewProject();
+            loadDefaultLayout_ = project_->NeeDefaultUIPlacement();
             StringVector& recents = recentProjects_;
             // Remove latest project if it was already opened or any projects that no longer exists.
             for (auto it = recents.begin(); it != recents.end();)

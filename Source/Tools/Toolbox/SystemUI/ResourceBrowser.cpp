@@ -20,8 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <EASTL/sort.h>
-
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -29,6 +27,8 @@
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/IO/Log.h>
+
+#include <EASTL/set.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stdlib.h>
@@ -42,8 +42,7 @@
 namespace Urho3D
 {
 
-ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, const ea::string& cacheDir,
-    ea::string& path, ea::string& selected, ResourceBrowserFlags flags)
+ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& selected, ResourceBrowserFlags flags)
 {
     struct State
     {
@@ -53,16 +52,49 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
         bool deletionPending = false;
         ea::string editBuffer;
         ea::string editStartItem;
-        ea::vector<ea::string> directories;
-        ea::vector<ea::string> files;
+        ea::set<ea::string> directories;
+        ea::set<ea::string> files;
         Timer updateTimer;
         std::function<void()> singleClickPending;
+        StringVector workList;
     };
 
     auto result = RBR_NOOP;
-    auto systemUI = (SystemUI*)ui::GetIO().UserData;
-    auto fs = systemUI->GetContext()->GetFileSystem();
+    auto* systemUI = (SystemUI*)ui::GetIO().UserData;
+    auto* fs = systemUI->GetSubsystem<FileSystem>();
+    auto* cache = systemUI->GetSubsystem<ResourceCache>();
     auto& state = *ui::GetUIState<State>();
+
+    if (state.updateTimer.GetMSec(false) >= 1000 || state.rescanDirs)
+    {
+        state.rescanDirs = false;
+        state.updateTimer.Reset();
+        state.files.clear();
+        state.directories.clear();
+        for (const ea::string& resourcePath : cache->GetResourceDirs())
+        {
+            // Items from the cache are rendered after file. EditorData is not meant to be visible for the user.
+            if (resourcePath.ends_with("/Cache/") || resourcePath.ends_with("/EditorData/"))
+                continue;
+
+            // Find resource files
+            state.workList.clear();
+            fs->ScanDir(state.workList, resourcePath + path, "", SCAN_FILES, false);
+            for (const ea::string& file : state.workList)
+            {
+                if (!file.ends_with(".asset"))
+                    state.files.insert(file);
+            }
+
+            // Find resource dirs
+            state.workList.clear();
+            fs->ScanDir(state.workList, resourcePath + path, "", SCAN_DIRS, false);
+            state.workList.erase_first(".");
+            state.workList.erase_first("..");
+            for (const ea::string& dir : state.workList)
+                state.directories.insert(AddTrailingSlash(dir));
+        }
+    }
 
     if (!selected.empty() && !ui::IsAnyItemActive() && ui::IsWindowFocused())
     {
@@ -127,7 +159,9 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
                 if (source != destinationName)
                 {
-                    fs->GetContext()->GetCache()->RenameResource(resourcePath + source, resourcePath + destinationName);
+                    ea::string sourceAbsolutePath = cache->GetResourceFileName(source);
+                    ea::string resourceDir = sourceAbsolutePath.substr(0, sourceAbsolutePath.length() - source.length());
+                    cache->RenameResource(sourceAbsolutePath, resourceDir + destinationName);
                     state.rescanDirs = true;
                 }
             }
@@ -174,7 +208,10 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
 
                 if (selected != state.editBuffer)
                 {
-                    fs->GetContext()->GetCache()->RenameResource(resourcePath + path + selected, resourcePath + path + state.editBuffer);
+                    ea::string source = path + selected;
+                    ea::string sourceAbsolutePath = cache->GetResourceFileName(source);
+                    ea::string resourceDir = sourceAbsolutePath.substr(0, sourceAbsolutePath.length() - source.length());
+                    cache->RenameResource(sourceAbsolutePath, resourceDir + path + state.editBuffer);
                     selected = state.editBuffer;
                     state.isEditing = false;
                     state.rescanDirs = true;
@@ -190,35 +227,6 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
         }
         return false;
     };
-
-    if (state.updateTimer.GetMSec(false) >= 1000 || state.rescanDirs)
-    {
-        state.rescanDirs = false;
-        state.updateTimer.Reset();
-
-        // Find resource files
-        fs->ScanDir(state.files, resourcePath + path, "", SCAN_FILES, false);
-        // Remove internal files
-        for (auto it = state.files.begin(); it != state.files.end();)
-        {
-            // Internal files
-            const ea::string& name = *it;
-            if (name.ends_with(".asset"))
-                it = state.files.erase(it);
-            else
-                ++it;
-        }
-        ea::quick_sort(state.files.begin(), state.files.end());
-
-        // Find resource dirs
-        fs->ScanDir(state.directories, resourcePath + path, "", SCAN_DIRS, false);
-        state.directories.erase_first(".");
-        state.directories.erase_first("..");
-        ea::quick_sort(state.directories.begin(), state.directories.end());
-
-        for (ea::string& dir : state.directories)
-            dir = AddTrailingSlash(dir);
-    }
 
     // Render dirs first
     for (const ea::string& item: state.directories)
@@ -306,6 +314,9 @@ ResourceBrowserResult ResourceBrowserWidget(const ea::string& resourcePath, cons
             }
 
             // Render cache items
+            const ea::string& cacheDir = cache->GetResourceDir(0);
+            assert(cacheDir.ends_with("/Cache/"));
+
             ea::string cacheItem = GetFileName(item);
             ea::string resourceCachePath = cacheDir + path + cacheItem;
             if (fs->DirExists(resourceCachePath))

@@ -20,9 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <regex>
-#include <EASTL/sort.h>
-
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/StringUtils.h>
@@ -35,8 +32,11 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Tabs/ConsoleTab.h>
-#include <Tabs/ResourceTab.h>
+
+#include <regex>
+#include <EASTL/sort.h>
+
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <Toolbox/SystemUI/Widgets.h>
 
 #include "Editor.h"
@@ -44,7 +44,9 @@
 #include "Project.h"
 #include "Plugins/ModulePlugin.h"
 #include "Plugins/ScriptBundlePlugin.h"
+#include "Tabs/ConsoleTab.h"
 #include "Tabs/Scene/SceneTab.h"
+#include "Tabs/ResourceTab.h"
 
 
 namespace Urho3D
@@ -81,10 +83,8 @@ Project::~Project()
     if (auto* cache = context_->GetCache())
     {
         cache->RemoveResourceDir(GetCachePath());
-        cache->RemoveResourceDir(GetResourcePath());
-
-        for (const auto& path : cachedEngineResourcePaths_)
-            context_->GetCache()->AddResourceDir(path);
+        for (const ea::string& resourcePath : resourcePaths_)
+            cache->RemoveResourceDir(projectFileDir_ + resourcePath);
         cache->SetAutoReloadResources(false);
     }
 
@@ -101,57 +101,41 @@ bool Project::LoadProject(const ea::string& projectPath)
     if (projectPath.empty())
         return false;
 
+    auto* fs = GetSubsystem<FileSystem>();
+    auto* cache = GetSubsystem<ResourceCache>();
     projectFileDir_ = AddTrailingSlash(projectPath);
 
-    if (!context_->GetFileSystem()->Exists(GetCachePath()))
-        context_->GetFileSystem()->CreateDirsRecursive(GetCachePath());
 
-    if (!context_->GetFileSystem()->Exists(GetResourcePath()))
+    // Cache directory setup. Needs to happen before deserialization of Project.json because flavors depend on cache
+    // path availability.
+    cachePath_ = projectFileDir_ + "Cache/";
+    if (!fs->Exists(GetCachePath()))
+        fs->CreateDirsRecursive(GetCachePath());
+
+    // Project.json
+    ea::string filePath(projectFileDir_ + "Project.json");
+    JSONFile file(context_);
+    if (fs->Exists(filePath))
     {
-        // Initialize new project
-        context_->GetFileSystem()->CreateDirsRecursive(GetResourcePath());
-
-        for (const auto& path : context_->GetCache()->GetResourceDirs())
-        {
-            if (path.ends_with("/EditorData/") || path.contains("/Autoload/"))
-                continue;
-
-            StringVector names;
-
-            URHO3D_LOGINFOF("Importing resources from '%s'", path.c_str());
-
-            // Copy default resources to the project.
-            context_->GetFileSystem()->ScanDir(names, path, "*", SCAN_FILES, false);
-            for (const auto& name : names)
-                context_->GetFileSystem()->Copy(path + name, GetResourcePath() + name);
-
-            context_->GetFileSystem()->ScanDir(names, path, "*", SCAN_DIRS, false);
-            for (const auto& name : names)
-            {
-                if (name == "." || name == "..")
-                    continue;
-                context_->GetFileSystem()->CopyDir(path + name, GetResourcePath() + name);
-            }
-        }
+        if (!file.LoadFile(filePath))
+            return false;
     }
+    // Loading is performed even on empty file. Give a chance for serialization function to do default setup in case of missing data.
+    JSONInputArchive archive(&file);
+    if (!Serialize(archive))
+        return false;
 
-    // Unregister engine dirs
-    auto enginePrefixPath = GetSubsystem<Editor>()->GetCoreResourcePrefixPath();
-    auto pathsCopy = context_->GetCache()->GetResourceDirs();
-    cachedEngineResourcePaths_.clear();
-    for (const auto& path : pathsCopy)
-    {
-        if (path.starts_with(enginePrefixPath) && !path.ends_with("/EditorData/"))
-        {
-            cachedEngineResourcePaths_.emplace_back(path);
-            context_->GetCache()->RemoveResourceDir(path);
-        }
-    }
+    // Default resources directory for new projects.
+    if (resourcePaths_.empty())
+        resourcePaths_.push_back("Resources");
+
+    // Default resource path is first resource directory in the list.
+    defaultResourcePath_ = projectFileDir_ + resourcePaths_.front();
 
     if (context_->GetSystemUI())
     {
         uiConfigPath_ = projectFileDir_ + ".ui.ini";
-        isNewProject_ = !context_->GetFileSystem()->FileExists(uiConfigPath_);
+        defaultUiPlacement_ = !fs->FileExists(uiConfigPath_);
         ui::GetIO().IniFilename = uiConfigPath_.c_str();
     }
 
@@ -159,7 +143,7 @@ bool Project::LoadProject(const ea::string& projectPath)
     // StringHashNames.json
     {
         ea::string filePath(projectFileDir_ + "StringHashNames.json");
-        if (context_->GetFileSystem()->Exists(filePath))
+        if (fs->Exists(filePath))
         {
             JSONFile file(context_);
             if (!file.LoadFile(filePath))
@@ -176,35 +160,34 @@ bool Project::LoadProject(const ea::string& projectPath)
 #endif
 
     // Register asset dirs
-    context_->GetCache()->AddResourceDir(GetCachePath(), 0);
-    context_->GetCache()->AddResourceDir(GetResourcePath(), 1);
-    context_->GetCache()->SetAutoReloadResources(true);
+    cache->AddResourceDir(GetCachePath(), 0);
+    for (int i = 0; i < resourcePaths_.size(); i++)
+    {
+        ea::string absolutePath = projectFileDir_ + resourcePaths_[i];
+        if (!fs->DirExists(absolutePath))
+            fs->CreateDirsRecursive(absolutePath);
+        // Directories further down the list have lower priority. (Highest priority is 0 and lowest is 0xFFFFFFFF).
+        cache->AddResourceDir(absolutePath, i + 1);
+    }
+    cache->SetAutoReloadResources(true);
 
 #if URHO3D_PLUGINS
+    // Clean up old copies of reloadable files.
     if (!context_->GetEngine()->IsHeadless())
     {
         // Normal execution cleans up old versions of plugins.
         StringVector files;
-        context_->GetFileSystem()->ScanDir(files, context_->GetFileSystem()->GetProgramDir(), "", SCAN_FILES, false);
+        fs->ScanDir(files, fs->GetProgramDir(), "", SCAN_FILES, false);
         for (const ea::string& fileName : files)
         {
             if (std::regex_match(fileName.c_str(), std::regex("^.*[0-9]+\\.(dll|dylib|so)$")))
-                context_->GetFileSystem()->Delete(context_->GetFileSystem()->GetProgramDir() + fileName);
+                fs->Delete(fs->GetProgramDir() + fileName);
         }
     }
 #endif
-
-    // Project.json
-    ea::string filePath(projectFileDir_ + "Project.json");
-    JSONFile file(context_);
-    if (context_->GetFileSystem()->Exists(filePath))
-    {
-        if (!file.LoadFile(filePath))
-            return false;
-    }
-    // Loading is performed even on empty file. Give a chance for serialization function to do default setup in case of missing data.
-    JSONInputArchive archive(&file);
-    return Serialize(archive);
+    pipeline_->EnableWatcher();
+    pipeline_->BuildCache(nullptr, PipelineBuildFlag::SKIP_UP_TO_DATE);
+    return true;
 }
 
 bool Project::SaveProject()
@@ -282,6 +265,7 @@ bool Project::Serialize(Archive& archive)
         int archiveVersion = version;
         SerializeValue(archive, "version", archiveVersion);
         SerializeValue(archive, "defaultScene", defaultScene_);
+        SerializeValue(archive, "resourcePaths", resourcePaths_);
 
         if (!pipeline_->Serialize(archive))
             return false;
@@ -298,32 +282,18 @@ bool Project::Serialize(Archive& archive)
     return true;
 }
 
-ea::string Project::GetCachePath() const
-{
-    if (projectFileDir_.empty())
-        return EMPTY_STRING;
-    return projectFileDir_ + "Cache/";
-}
-
-ea::string Project::GetResourcePath() const
-{
-    if (projectFileDir_.empty())
-        return EMPTY_STRING;
-    return projectFileDir_ + "Resources/";
-}
-
 void Project::RenderSettingsUI()
 {
     if (ui::BeginTabItem("General"))
     {
-        // Default scene
-        ui::PushID("Default Scene");
-        struct DefaultSceneState
+        struct ProjectSettingsState
         {
             /// A list of scenes present in resource directories.
             StringVector scenes_;
+            ///
+            ea::string newResourceDir_;
 
-            explicit DefaultSceneState(Project* project)
+            explicit ProjectSettingsState(Project* project)
             {
                 project->context_->GetFileSystem()->ScanDir(scenes_, project->GetResourcePath(), "*.xml", SCAN_FILES, true);
                 for (auto it = scenes_.begin(); it != scenes_.end();)
@@ -335,7 +305,10 @@ void Project::RenderSettingsUI()
                 }
             }
         };
-        auto* state = ui::GetUIState<DefaultSceneState>(this);
+        auto* state = ui::GetUIState<ProjectSettingsState>(this);
+
+        // Default scene
+        ui::PushID("Default Scene");
         if (ui::BeginCombo("Default Scene", GetDefaultSceneName().c_str()))
         {
             for (const ea::string& resourceName : state->scenes_)
@@ -408,6 +381,94 @@ void Project::RenderSettingsUI()
         }
         ui::PopID();        // Plugins
 #endif
+        ui::PushID("Resource Paths");
+        ui::Separator();
+
+        ui::Text("Resource Dirs:");
+        auto* cache = GetSubsystem<ResourceCache>();
+        auto* fs = GetSubsystem<FileSystem>();
+        if (ui::InputText("Add resource directory", &state->newResourceDir_, ImGuiInputTextFlags_EnterReturnsTrue))
+        {
+            ea::string absolutePath = projectFileDir_ + AddTrailingSlash(state->newResourceDir_);
+
+            if (absolutePath == GetCachePath())
+                URHO3D_LOGERROR("Can not add a cache path as resource directory.");
+            else
+            {
+                bool exists = false;
+                for (const ea::string& path : cache->GetResourceDirs())
+                    exists |= path == absolutePath;
+
+                if (exists)
+                    URHO3D_LOGERROR("This resource path is already added.");
+                else
+                {
+                    pipeline_->watcher_.StopWatching();
+                    resourcePaths_.push_back(state->newResourceDir_);
+                    fs->CreateDirsRecursive(absolutePath);
+                    cache->AddResourceDir(absolutePath, resourcePaths_.size());
+                    pipeline_->EnableWatcher();
+                    state->newResourceDir_.clear();
+                }
+            }
+        }
+        for (int i = 0; i < resourcePaths_.size();)
+        {
+            ui::PushID(i);
+            int swapNext = i;
+            if (ui::Button(ICON_FA_ANGLE_UP))
+                swapNext = Max(i - 1, 0);
+            if (ImGui::IsItemHovered())
+                ui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            ui::SameLine();
+            if (ui::Button(ICON_FA_ANGLE_DOWN))
+                swapNext = Min(i + 1, resourcePaths_.size() - 1);
+            if (ImGui::IsItemHovered())
+                ui::SetMouseCursor(ImGuiMouseCursor_Hand);
+            ui::SameLine();
+
+            if (swapNext != i)
+            {
+                // Remove and re-add same paths with changed priority.
+                cache->SetAutoReloadResources(false);
+                cache->RemoveResourceDir(projectFileDir_ + resourcePaths_[i]);
+                cache->RemoveResourceDir(projectFileDir_ + resourcePaths_[swapNext]);
+
+                ea::swap(resourcePaths_[i], resourcePaths_[swapNext]);
+
+                cache->AddResourceDir(projectFileDir_ + resourcePaths_[i], 1 + i);
+                cache->AddResourceDir(projectFileDir_ + resourcePaths_[swapNext], 1 + swapNext);
+                cache->SetAutoReloadResources(true);
+
+                if (i == 0 || swapNext == 0)
+                    defaultResourcePath_ = projectFileDir_ + resourcePaths_[0];
+            }
+
+            if (i == 0)
+                ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+            bool deleted = ui::Button(ICON_FA_TRASH_ALT) && i > 0;
+            if (i == 0)
+                ui::PopStyleColor();        // ImGuiCol_TextDisabled
+            ui::SameLine();
+
+            ui::TextUnformatted(resourcePaths_[i].c_str());
+
+            if (deleted)
+            {
+                pipeline_->watcher_.StopWatching();
+                cache->SetAutoReloadResources(false);
+                cache->RemoveResourceDir(projectFileDir_ + resourcePaths_[i]);
+                resourcePaths_.erase_at(i);
+                pipeline_->EnableWatcher();
+            }
+            else
+                ++i;
+
+            ui::SetHelpTooltip("Remove resource directory. This does not delete any files.");
+            ui::PopID();    // i
+        }
+        ui::PopID();        // Resource Paths
+
         ui::EndTabItem();   // General
     }
 }
