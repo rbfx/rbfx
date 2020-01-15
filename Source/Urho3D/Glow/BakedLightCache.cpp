@@ -29,12 +29,12 @@ namespace Urho3D
 
 BakedLightCache::~BakedLightCache() = default;
 
-void BakedLightMemoryCache::StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity)
+void BakedLightMemoryCache::StoreChunkVicinity(const IntVector3& chunk, BakedChunkVicinity vicinity)
 {
-    chunkVicinityCache_[chunk] = ea::make_shared<LightmapChunkVicinity>(ea::move(vicinity));
+    chunkVicinityCache_[chunk] = ea::make_shared<BakedChunkVicinity>(ea::move(vicinity));
 }
 
-ea::shared_ptr<LightmapChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
+ea::shared_ptr<BakedChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
 {
     auto iter = chunkVicinityCache_.find(chunk);
     return iter != chunkVicinityCache_.end() ? iter->second : nullptr;
@@ -42,17 +42,6 @@ ea::shared_ptr<LightmapChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(c
 
 void BakedLightMemoryCache::CommitLightProbeGroups(const IntVector3& /*chunk*/)
 {
-}
-
-void BakedLightMemoryCache::StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer)
-{
-    geometryBufferCache_[lightmapIndex] = ea::make_shared<const LightmapChartGeometryBuffer>(ea::move(geometryBuffer));
-}
-
-ea::shared_ptr<const LightmapChartGeometryBuffer> BakedLightMemoryCache::LoadGeometryBuffer(unsigned lightmapIndex)
-{
-    auto iter = geometryBufferCache_.find(lightmapIndex);
-    return iter != geometryBufferCache_.end() ? iter->second : nullptr;
 }
 
 void BakedLightMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect)
