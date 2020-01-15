@@ -1,0 +1,76 @@
+//
+// Copyright (c) 2008-2019 the Urho3D project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
+/// \file
+
+#pragma once
+
+#include "../Glow/BakedSceneCollector.h"
+#include "../Glow/LightmapGeometryBuffer.h"
+#include "../Glow/RaytracerScene.h"
+#include "../Graphics/Light.h"
+#include "../Graphics/LightProbeGroup.h"
+#include "../Math/Vector3.h"
+
+namespace Urho3D
+{
+
+/// Baked light description.
+struct BakedLight
+{
+    /// Light type.
+    LightType lightType_{};
+    /// Light mode.
+    LightMode lightMode_{};
+    /// Light color.
+    Color lightColor_{};
+    /// Position.
+    Vector3 position_;
+    /// Direction.
+    Vector3 direction_;
+    /// Rotation.
+    Quaternion rotation_;
+};
+
+/// Baked chunk vicinity. Contains everything to bake light for given chunk.
+struct BakedChunkVicinity
+{
+    /// Lightmaps owned by this chunk.
+    ea::vector<unsigned> lightmaps_;
+    /// Raytracer scene.
+    SharedPtr<RaytracerScene> raytracerScene_;
+    /// Geometry buffers.
+    ea::vector<LightmapChartGeometryBuffer> geometryBuffers_;
+    /// Geometry buffer ID to raytracer geometry ID mapping.
+    ea::vector<unsigned> geometryBufferToRaytracer_;
+    /// Lights to bake.
+    ea::vector<BakedLight> bakedLights_;
+    /// Light probes collection.
+    LightProbeCollection lightProbesCollection_;
+};
+
+/// Create baked chunk vicinity.
+URHO3D_API BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
+    BakedSceneCollector& collector, const IntVector3& chunk,
+    const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings);
+
+}
