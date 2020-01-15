@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "../Glow/BakedChunkVicinity.h"
 #include "../Glow/RaytracerScene.h"
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Glow/LightTracer.h"
@@ -36,38 +37,6 @@
 namespace Urho3D
 {
 
-/// Baked direct light description.
-struct BakedDirectLight
-{
-    /// Light type.
-    LightType lightType_{};
-    /// Light mode.
-    LightMode lightMode_{};
-    /// Light color.
-    Color lightColor_{};
-    /// Position.
-    Vector3 position_;
-    /// Direction.
-    Vector3 direction_;
-    /// Rotation.
-    Quaternion rotation_;
-};
-
-/// Lightmap chunk vicinity. Contains all required baking context from the chunk itself and adjacent chunks.
-struct LightmapChunkVicinity
-{
-    /// Lightmaps ownder by this chunk.
-    ea::vector<unsigned> lightmaps_;
-    /// Raytracer scene.
-    SharedPtr<RaytracerScene> raytracerScene_;
-    /// Geometry buffer ID to raytracer geometry ID mapping.
-    ea::vector<unsigned> geometryBufferToRaytracer_;
-    /// Lights to bake.
-    ea::vector<BakedDirectLight> bakedLights_;
-    /// Light probes collection.
-    LightProbeCollection lightProbesCollection_;
-};
-
 /// Lightmap cache interface.
 class URHO3D_API BakedLightCache
 {
@@ -76,16 +45,11 @@ public:
     virtual ~BakedLightCache();
 
     /// Store chunk vicinity in the cache.
-    virtual void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) = 0;
+    virtual void StoreChunkVicinity(const IntVector3& chunk, BakedChunkVicinity vicinity) = 0;
     /// Load chunk vicinity.
-    virtual ea::shared_ptr<LightmapChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) = 0;
+    virtual ea::shared_ptr<BakedChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) = 0;
     /// Called after light probes are updated.
     virtual void CommitLightProbeGroups(const IntVector3& chunk) = 0;
-
-    /// Store lightmap chart geometry buffer in the cache.
-    virtual void StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer) = 0;
-    /// Load geometry buffer.
-    virtual ea::shared_ptr<const LightmapChartGeometryBuffer> LoadGeometryBuffer(unsigned lightmapIndex) = 0;
 
     /// Store direct light for the lightmap chart.
     virtual void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) = 0;
@@ -98,16 +62,11 @@ class URHO3D_API BakedLightMemoryCache : public BakedLightCache
 {
 public:
     /// Store baking context in the cache.
-    void StoreChunkVicinity(const IntVector3& chunk, LightmapChunkVicinity vicinity) override;
+    void StoreChunkVicinity(const IntVector3& chunk, BakedChunkVicinity vicinity) override;
     /// Load chunk vicinity.
-    ea::shared_ptr<LightmapChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) override;
+    ea::shared_ptr<BakedChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) override;
     /// Called after light probes are updated.
     void CommitLightProbeGroups(const IntVector3& chunk) override;
-
-    /// Store lightmap chart geometry buffer in the cache.
-    void StoreGeometryBuffer(unsigned lightmapIndex, LightmapChartGeometryBuffer geometryBuffer) override;
-    /// Load geometry buffer.
-    ea::shared_ptr<const LightmapChartGeometryBuffer> LoadGeometryBuffer(unsigned lightmapIndex) override;
 
     /// Store direct light for the lightmap chart.
     void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) override;
@@ -116,9 +75,7 @@ public:
 
 private:
     /// Baking contexts cache.
-    ea::unordered_map<IntVector3, ea::shared_ptr<LightmapChunkVicinity>> chunkVicinityCache_;
-    /// Geometry buffers cache.
-    ea::unordered_map<unsigned, ea::shared_ptr<const LightmapChartGeometryBuffer>> geometryBufferCache_;
+    ea::unordered_map<IntVector3, ea::shared_ptr<BakedChunkVicinity>> chunkVicinityCache_;
     /// Direct light cache.
     ea::unordered_map<unsigned, ea::shared_ptr<LightmapChartBakedDirect>> directLightCache_;
 };

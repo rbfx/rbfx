@@ -25,12 +25,13 @@
 #include "../Glow/IncrementalLightmapper.h"
 
 #include "../Core/Context.h"
-#include "../Glow/RaytracerScene.h"
+#include "../Glow/BakedChunkVicinity.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Glow/LightmapFilter.h"
 #include "../Glow/LightmapStitcher.h"
 #include "../Glow/LightTracer.h"
+#include "../Glow/RaytracerScene.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Model.h"
 #include "../IO/FileSystem.h"
@@ -59,24 +60,6 @@ ea::string GetResourceName(ResourceCache* cache, const ea::string& fileName)
             return fileName.substr(resourceDir.length());
     }
     return {};
-}
-
-/// Calculate frustum containing all shadow casters for given volume and light direction.
-Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
-    const Vector3& lightDirection, float distance, float angle)
-{
-    const Quaternion rotation{ Vector3::DOWN, lightDirection };
-    const float widthPadding = distance * Sin(angle);
-    BoundingBox lightSpaceBoundingBox = boundingBox.Transformed(rotation.Inverse().RotationMatrix());
-    lightSpaceBoundingBox.min_.x_ -= widthPadding;
-    lightSpaceBoundingBox.min_.z_ -= widthPadding;
-    lightSpaceBoundingBox.max_.x_ += widthPadding;
-    lightSpaceBoundingBox.max_.z_ += widthPadding;
-    lightSpaceBoundingBox.max_.y_ += distance;
-
-    Frustum frustum;
-    frustum.Define(lightSpaceBoundingBox, static_cast<Matrix3x4>(rotation.RotationMatrix()));
-    return frustum;
 }
 
 /// Per-component min for 3D integer vector.
@@ -265,143 +248,9 @@ struct IncrementalLightmapper::Impl
             return true;
 
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const BoundingBox lightReceiversBoundingBox = collector_->GetChunkBoundingBox(chunk);
-        const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
-        const ea::vector<Light*> relevantLights = collector_->GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
-        const ea::vector<StaticModel*> uniqueStaticModels = collector_->GetUniqueStaticModels(chunk);
 
-        // Bake geometry buffers
-        const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
-            context_, uniqueStaticModels, lightmapSettings_.charting_.lightmapSize_, lightmapSettings_.geometryBaking_);
-        LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScenes.bakingScenes_);
-
-        ea::vector<unsigned> lightmapsInChunk;
-        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-            lightmapsInChunk.push_back(geometryBuffer.index_);
-
-        // Collect shadow casters for direct lighting
-        ea::hash_set<StaticModel*> relevantStaticModels;
-        for (Light* light : relevantLights)
-        {
-            if (light->GetLightType() == LIGHT_DIRECTIONAL)
-            {
-                const Vector3 direction = light->GetNode()->GetWorldDirection();
-                const Frustum frustum = CalculateDirectionalLightFrustum(lightReceiversBoundingBox, direction,
-                    incrementalSettings_.directionalLightShadowDistance_, 0.0f);
-                const ea::vector<StaticModel*> shadowCasters = collector_->GetStaticModelsInFrustum(chunk, frustum);
-                relevantStaticModels.insert(shadowCasters.begin(), shadowCasters.end());
-            }
-            else
-            {
-                BoundingBox extendedBoundingBox = lightReceiversBoundingBox;
-                extendedBoundingBox.Merge(light->GetNode()->GetWorldPosition());
-                BoundingBox shadowCastersBoundingBox = light->GetWorldBoundingBox();
-                shadowCastersBoundingBox.Clip(extendedBoundingBox);
-                const ea::vector<StaticModel*> shadowCasters = collector_->GetStaticModelsInBoundingBox(
-                    chunk, shadowCastersBoundingBox);
-                relevantStaticModels.insert(shadowCasters.begin(), shadowCasters.end());
-            }
-        }
-
-        // Collect light receivers for indirect lighting propagation
-        BoundingBox indirectBoundingBox = lightReceiversBoundingBox;
-        indirectBoundingBox.min_ -= Vector3::ONE * incrementalSettings_.indirectPadding_;
-        indirectBoundingBox.max_ += Vector3::ONE * incrementalSettings_.indirectPadding_;
-
-        const ea::vector<StaticModel*> indirectStaticModels = collector_->GetStaticModelsInBoundingBox(
-            chunk, indirectBoundingBox);
-        relevantStaticModels.insert(indirectStaticModels.begin(), indirectStaticModels.end());
-
-        // Collect light receivers, unique are first
-        for (StaticModel* staticModel : uniqueStaticModels)
-            relevantStaticModels.erase(staticModel);
-
-        ea::vector<StaticModel*> staticModels = uniqueStaticModels;
-        staticModels.insert(staticModels.end(), relevantStaticModels.begin(), relevantStaticModels.end());
-
-        // Collect light probes, unique are first
-        const ea::vector<LightProbeGroup*> lightProbesInVolume = collector_->GetLightProbeGroupsInBoundingBox(
-            chunk, indirectBoundingBox);
-        ea::hash_set<LightProbeGroup*> relevantLightProbes(lightProbesInVolume.begin(), lightProbesInVolume.end());
-
-        for (LightProbeGroup* group : uniqueLightProbeGroups)
-            relevantLightProbes.erase(group);
-
-        ea::vector<LightProbeGroup*> lightProbeGroups = uniqueLightProbeGroups;
-        lightProbeGroups.insert(lightProbeGroups.end(), relevantLightProbes.begin(), relevantLightProbes.end());
-
-        LightProbeCollection lightProbesCollection;
-        LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
-
-        // Create scene for raytracing
-        const unsigned uvChannel = lightmapSettings_.geometryBaking_.uvChannel_;
-        const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(context_, staticModels, uvChannel);
-
-        // Match raytracer geometries and geometry buffer
-        ea::vector<RaytracerGeometry> raytracerGeometriesSorted = raytracerScene->GetGeometries();
-        bool matching = geometryBakingScenes.idToObject_.size() <= raytracerGeometriesSorted.size() + 1;
-        if (matching)
-        {
-            ea::sort(raytracerGeometriesSorted.begin(), raytracerGeometriesSorted.end(), CompareRaytracerGeometryByObject);
-            for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
-            {
-                const RaytracerGeometry& raytracerGeometry = raytracerGeometriesSorted[i - 1];
-                const GeometryIDToObjectMapping& mapping = geometryBakingScenes.idToObject_[i];
-                if (raytracerGeometry.objectIndex_ != mapping.objectIndex_
-                    || raytracerGeometry.geometryIndex_ != mapping.geometryIndex_
-                    || raytracerGeometry.lodIndex_ != mapping.lodIndex_)
-                {
-                    matching = false;
-                    break;
-                }
-            }
-        }
-
-        if (!matching)
-        {
-            for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-                ea::fill(geometryBuffer.geometryIds_.begin(), geometryBuffer.geometryIds_.end(), 0u);
-
-            URHO3D_LOGERROR("Cannot match raytracer geometries with lightmap G-Buffer");
-        }
-
-        ea::vector<unsigned> geometryBufferToRaytracerGeometry;
-        geometryBufferToRaytracerGeometry.resize(geometryBakingScenes.idToObject_.size(), M_MAX_UNSIGNED);
-        if (matching)
-        {
-            for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
-                geometryBufferToRaytracerGeometry[i] = raytracerGeometriesSorted[i - 1].raytracerGeometryId_;
-        }
-
-        // Preprocess geometry buffers
-        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-            PreprocessGeometryBuffer(geometryBuffer, *raytracerScene, geometryBufferToRaytracerGeometry, lightmapSettings_.tracing_);
-
-        // Collect lights
-        ea::vector<BakedDirectLight> bakedLights;
-        for (Light* light : relevantLights)
-        {
-            Node* node = light->GetNode();
-            BakedDirectLight bakedLight;
-            bakedLight.lightType_ = light->GetLightType();
-            bakedLight.lightMode_ = light->GetLightMode();
-            bakedLight.lightColor_ = light->GetEffectiveColor();
-            bakedLight.position_ = node->GetWorldPosition();
-            bakedLight.rotation_ = node->GetWorldRotation();
-            bakedLight.direction_ = node->GetWorldDirection();
-            bakedLights.push_back(bakedLight);
-        }
-
-        // Store result in the cache
-        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-            cache_->StoreGeometryBuffer(geometryBuffer.index_, ea::move(geometryBuffer));
-
-        LightmapChunkVicinity chunkVicinity;
-        chunkVicinity.lightmaps_ = lightmapsInChunk;
-        chunkVicinity.raytracerScene_ = raytracerScene;
-        chunkVicinity.geometryBufferToRaytracer_ = geometryBufferToRaytracerGeometry;
-        chunkVicinity.bakedLights_ = bakedLights;
-        chunkVicinity.lightProbesCollection_ = lightProbesCollection;
+        BakedChunkVicinity chunkVicinity = CreateBakedChunkVicinity(context_, *collector_, chunk,
+            lightmapSettings_, incrementalSettings_);
         cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
 
         // Advance
@@ -417,20 +266,20 @@ struct IncrementalLightmapper::Impl
 
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::shared_ptr<const LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
 
         // Bake direct lighting
-        for (unsigned lightmapIndex : chunkVicinity->lightmaps_)
+        for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
         {
-            const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
-                cache_->LoadGeometryBuffer(lightmapIndex);
-            LightmapChartBakedDirect bakedDirect{ geometryBuffer->lightmapSize_ };
+            const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
+            const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
+            LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
 
             // Bake emission
-            BakeEmissionLight(bakedDirect, *geometryBuffer, lightmapSettings_.tracing_);
+            BakeEmissionLight(bakedDirect, geometryBuffer, lightmapSettings_.tracing_);
 
             // Bake direct lights for charts
-            for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
+            for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
             {
                 const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
                 const bool bakeIndirect = true;
@@ -442,7 +291,7 @@ struct IncrementalLightmapper::Impl
                     light.bakeDirect_ = bakeDirect;
                     light.bakeIndirect_ = bakeIndirect;
 
-                    BakeDirectionalLightForCharts(bakedDirect, *geometryBuffer, *chunkVicinity->raytracerScene_,
+                    BakeDirectionalLightForCharts(bakedDirect, geometryBuffer, *chunkVicinity->raytracerScene_,
                         chunkVicinity->geometryBufferToRaytracer_, light, lightmapSettings_.tracing_);
                 }
             }
@@ -470,7 +319,7 @@ struct IncrementalLightmapper::Impl
 
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::shared_ptr<LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        const ea::shared_ptr<BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
 
         // Collect required direct lightmaps
         ea::hash_set<unsigned> requiredDirectLightmaps;
@@ -479,55 +328,55 @@ struct IncrementalLightmapper::Impl
             requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
         }
 
-        ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
-        ea::vector<const LightmapChartBakedDirect*> bakedDirectLightmaps(numLightmapCharts_);
+        ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> BakedLightmapsRefs(numLightmapCharts_);
+        ea::vector<const LightmapChartBakedDirect*> BakedLightmaps(numLightmapCharts_);
         for (unsigned lightmapIndex : requiredDirectLightmaps)
         {
-            bakedDirectLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
-            bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
+            BakedLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
+            BakedLightmaps[lightmapIndex] = BakedLightmapsRefs[lightmapIndex].get();
         }
 
         // Bake indirect light for light probes
         chunkVicinity->lightProbesCollection_.ResetBakedData();
-        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps, *chunkVicinity->raytracerScene_, lightmapSettings_.tracing_);
+        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, BakedLightmaps, *chunkVicinity->raytracerScene_, lightmapSettings_.tracing_);
 
         // Build light probes mesh for fallback indirect
         TetrahedralMesh lightProbesMesh;
         lightProbesMesh.Define(chunkVicinity->lightProbesCollection_.worldPositions_);
 
         // Bake indirect lighting for charts
-        for (unsigned lightmapIndex : chunkVicinity->lightmaps_)
+        for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
         {
-            const ea::shared_ptr<const LightmapChartGeometryBuffer> geometryBuffer =
-                cache_->LoadGeometryBuffer(lightmapIndex);
+            const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
+            const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
             const ea::shared_ptr<const LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
-            LightmapChartBakedIndirect bakedIndirect{ geometryBuffer->lightmapSize_ };
+            LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
 
             // Bake indirect lights
-            BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
-                *geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
+            BakeIndirectLightForCharts(bakedIndirect, BakedLightmaps,
+                geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
                 *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_, lightmapSettings_.tracing_);
 
             // Filter indirect
             bakedIndirect.NormalizeLight();
-            FilterIndirectLight(bakedIndirect, *geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numTasks_);
+            FilterIndirectLight(bakedIndirect, geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numTasks_);
 
             // Stitch seams
-            if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer->seams_.empty())
+            if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
             {
-                SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer->seams_);
+                SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer.seams_);
                 StitchLightmapSeams(ctx.stitchingContext_, bakedIndirect.light_,
                     lightmapSettings_.stitching_, seamsModel);
             }
 
             // Generate image
             auto lightmapImage = MakeShared<Image>(context_);
-            lightmapImage->SetSize(geometryBuffer->lightmapSize_, geometryBuffer->lightmapSize_, 4);
-            for (int y = 0; y < geometryBuffer->lightmapSize_; ++y)
+            lightmapImage->SetSize(geometryBuffer.lightmapSize_, geometryBuffer.lightmapSize_, 4);
+            for (int y = 0; y < geometryBuffer.lightmapSize_; ++y)
             {
-                for (int x = 0; x < geometryBuffer->lightmapSize_; ++x)
+                for (int x = 0; x < geometryBuffer.lightmapSize_; ++x)
                 {
-                    const unsigned i = y * geometryBuffer->lightmapSize_ + x;
+                    const unsigned i = y * geometryBuffer.lightmapSize_ + x;
                     const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
                     const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
                     const Vector3 totalLight = directLight + indirectLight;
@@ -548,7 +397,7 @@ struct IncrementalLightmapper::Impl
         }
 
         // Bake direct lights for light probes
-        for (const BakedDirectLight& bakedLight : chunkVicinity->bakedLights_)
+        for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
         {
             const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
             const bool bakeIndirect = true;
@@ -582,7 +431,7 @@ struct IncrementalLightmapper::Impl
         // Load chunk
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::vector<LightProbeGroup*> lightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
-        const ea::shared_ptr<const LightmapChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+        const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
 
         for (unsigned i = 0; i < lightProbeGroups.size(); ++i)
             lightProbeGroups[i]->CommitLightProbes(chunkVicinity->lightProbesCollection_, i);
