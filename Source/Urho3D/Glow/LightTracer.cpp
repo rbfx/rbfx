@@ -311,6 +311,7 @@ struct ChartDirectTracingKernel
         position = geometryBuffer_->positions_[elementIndex];
         position += faceNormal * settings_->rayPositionOffset_;
 
+        // Initialize per-element state
         currentSmoothNormal_ = geometryBuffer_->smoothNormals_[elementIndex];
         currentGeometryId_ = geometryId;
 
@@ -381,7 +382,7 @@ struct LightProbeDirectTracingKernel
     }
 
     /// Begin tracing element.
-    bool BeginElement(unsigned elementIndex, DirectTracingContextForLightProbes& rayContext, Vector3& position)
+    bool BeginElement(unsigned elementIndex, DirectTracingContextForLightProbes& /*rayContext*/, Vector3& position)
     {
         position = collection_->worldPositions_[elementIndex];
 
@@ -502,42 +503,6 @@ void TracingFilterIndirect(const RTCFilterFunctionNArguments* args)
         args->valid[0] = 0;
 }
 
-/// Indirect light tracing for charts: tracing element.
-struct ChartIndirectTracingElement
-{
-    /// Position.
-    Vector3 position_;
-    /// Normal of actual geometry face.
-    Vector3 faceNormal_;
-    /// Smooth interpolated normal.
-    Vector3 smoothNormal_;
-    /// Geometry ID.
-    unsigned geometryId_;
-
-    /// Indirect light value.
-    Vector4 indirectLight_;
-
-    /// Returns whether element is valid.
-    explicit operator bool() const { return geometryId_ != 0; }
-
-    /// Begin sample. Return position, normal and initial ray direction.
-    void BeginSample(unsigned /*sampleIndex*/,
-        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo) const
-    {
-        position = position_;
-        faceNormal = faceNormal_;
-        smoothNormal = smoothNormal_;
-        albedo = Vector3::ONE;
-        rayDirection = RandomHemisphereDirection(faceNormal_);
-    }
-
-    /// End sample.
-    void EndSample(const Vector3& light)
-    {
-        indirectLight_ += Vector4(light, 1.0f);
-    }
-};
-
 /// Indirect light tracing for charts: tracing kernel.
 struct ChartIndirectTracingKernel
 {
@@ -556,6 +521,18 @@ struct ChartIndirectTracingKernel
     /// Settings.
     const LightmapTracingSettings* settings_{};
 
+    /// Current position.
+    Vector3 currentPosition_;
+    /// Current normal of actual geometry face.
+    Vector3 currentFaceNormal_;
+    /// Current smooth interpolated normal.
+    Vector3 currentSmoothNormal_;
+    /// Current geometry ID.
+    unsigned currentGeometryId_;
+
+    /// Accumulated indirect light value.
+    Vector4 accumulatedIndirectLight_;
+
     /// Last sampled tetrahedron.
     unsigned lightProbesMeshHint_{};
 
@@ -566,70 +543,57 @@ struct ChartIndirectTracingKernel
     unsigned GetNumSamples() const { return settings_->numIndirectChartSamples_; }
 
     /// Begin tracing element.
-    ChartIndirectTracingElement BeginElement(unsigned elementIndex)
+    bool BeginElement(unsigned elementIndex)
     {
         const unsigned geometryId = geometryBuffer_->geometryIds_[elementIndex];
         if (!geometryId)
-            return {};
+            return false;
 
-        const Vector3& position = geometryBuffer_->positions_[elementIndex];
-        const Vector3& smoothNormal = geometryBuffer_->smoothNormals_[elementIndex];
+        currentPosition_ = geometryBuffer_->positions_[elementIndex];
+        currentSmoothNormal_ = geometryBuffer_->smoothNormals_[elementIndex];
+        currentGeometryId_ = geometryId;
+
+        // Fallback to light probes if has LODs
         const unsigned raytracerGeometryId = (*geometryBufferToRaytracer_)[geometryId];
         const RaytracerGeometry& raytracerGeometry = (*raytracerGeometries_)[raytracerGeometryId];
 
         if (raytracerGeometry.numLods_ > 1)
         {
             const SphericalHarmonicsDot9 sh = lightProbesMesh_->Sample(
-                lightProbesData_->bakedSphericalHarmonics_, position, lightProbesMeshHint_);
-            bakedIndirect_->light_[elementIndex] += { sh.Evaluate(smoothNormal), 1.0f };
-            return {};
+                lightProbesData_->bakedSphericalHarmonics_, currentPosition_, lightProbesMeshHint_);
+            bakedIndirect_->light_[elementIndex] += { sh.Evaluate(currentSmoothNormal_), 1.0f };
+            return false;
         }
 
         const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
-        return { position + faceNormal * settings_->rayPositionOffset_, faceNormal, smoothNormal, geometryId };
+        currentPosition_ += faceNormal * settings_->rayPositionOffset_;
+
+        accumulatedIndirectLight_ = Vector4::ZERO;
+
+        return true;
     };
 
-    /// End tracing element.
-    void EndElement(unsigned elementIndex, const ChartIndirectTracingElement& element)
-    {
-        bakedIndirect_->light_[elementIndex] += element.indirectLight_;
-    }
-};
-
-/// Indirect light tracing for light probes: tracing element.
-struct LightProbeIndirectTracingElement
-{
-    /// Position.
-    Vector3 position_;
-
-    /// Current direction.
-    Vector3 currentDirection_;
-    /// Indirect light SH.
-    SphericalHarmonicsColor9 sh_;
-    /// Indirect light average value.
-    Vector3 average_;
-    /// Weight.
-    float weight_{};
-
-    /// Returns whether element is valid.
-    explicit operator bool() const { return true; }
     /// Begin sample. Return position, normal and initial ray direction.
     void BeginSample(unsigned /*sampleIndex*/,
-        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo)
+        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo) const
     {
-        position = position_;
-        RandomDirection(currentDirection_);
-        faceNormal = currentDirection_;
-        smoothNormal = currentDirection_;
-        rayDirection = currentDirection_;
+        position = currentPosition_;
+        faceNormal = currentFaceNormal_;
+        smoothNormal = currentSmoothNormal_;
         albedo = Vector3::ONE;
+        rayDirection = RandomHemisphereDirection(currentFaceNormal_);
     }
+
     /// End sample.
     void EndSample(const Vector3& light)
     {
-        sh_ += SphericalHarmonicsColor9(currentDirection_, light);
-        average_ += light;
-        weight_ += 1.0f;
+        accumulatedIndirectLight_ += Vector4(light, 1.0f);
+    }
+
+    /// End tracing element.
+    void EndElement(unsigned elementIndex)
+    {
+        bakedIndirect_->light_[elementIndex] += accumulatedIndirectLight_;
     }
 };
 
@@ -641,20 +605,54 @@ struct LightProbeIndirectTracingKernel
     /// Settings.
     const LightmapTracingSettings* settings_{};
 
+    /// Current position.
+    Vector3 currentPosition_;
+
+    /// Current sample direction.
+    Vector3 currentSampleDirection_;
+
+    /// Accumulated indirect light (SH).
+    SphericalHarmonicsColor9 accumulatedLightSH_;
+
     /// Return number of elements to trace.
     unsigned GetNumElements() const { return collection_->Size(); }
+
     /// Return number of samples.
     unsigned GetNumSamples() const { return settings_->numIndirectProbeSamples_; }
+
     /// Begin tracing element.
-    LightProbeIndirectTracingElement BeginElement(unsigned elementIndex) const
+    bool BeginElement(unsigned elementIndex)
     {
-        const Vector3& position = collection_->worldPositions_[elementIndex];
-        return { position };
+        currentPosition_ = collection_->worldPositions_[elementIndex];
+
+        accumulatedLightSH_ = {};
+        return true;
     };
-    /// End tracing element.
-    void EndElement(unsigned elementIndex, const LightProbeIndirectTracingElement& element)
+
+    /// Begin sample. Return position, normal and initial ray direction.
+    void BeginSample(unsigned /*sampleIndex*/,
+        Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo)
     {
-        const SphericalHarmonicsDot9 sh{ element.sh_ * (M_PI / element.weight_) };
+        RandomDirection(currentSampleDirection_);
+
+        position = currentPosition_;
+        faceNormal = currentSampleDirection_;
+        smoothNormal = currentSampleDirection_;
+        rayDirection = currentSampleDirection_;
+        albedo = Vector3::ONE;
+    }
+
+    /// End sample.
+    void EndSample(const Vector3& light)
+    {
+        accumulatedLightSH_ += SphericalHarmonicsColor9(currentSampleDirection_, light);
+    }
+
+    /// End tracing element.
+    void EndElement(unsigned elementIndex)
+    {
+        const float weight = M_PI / GetNumSamples();
+        const SphericalHarmonicsDot9 sh{ accumulatedLightSH_ * weight };
         collection_->bakedSphericalHarmonics_[elementIndex] += sh;
     }
 };
@@ -693,8 +691,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
 
         for (unsigned elementIndex = fromIndex; elementIndex < toIndex; ++elementIndex)
         {
-            auto element = kernel.BeginElement(elementIndex);
-            if (!element)
+            if (!kernel.BeginElement(elementIndex))
                 continue;
 
             for (unsigned sampleIndex = 0; sampleIndex < kernel.GetNumSamples(); ++sampleIndex)
@@ -703,7 +700,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                 Vector3 currentFaceNormal;
                 Vector3 currentSmoothNormal;
                 Vector3 currentRayDirection;
-                element.BeginSample(sampleIndex,
+                kernel.BeginSample(sampleIndex,
                     currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection, albedo[0]);
 
                 int numBounces = 0;
@@ -784,9 +781,9 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                     sampleIndirectLight *= albedo[bounceIndex];
                 }
 
-                element.EndSample(sampleIndirectLight);
+                kernel.EndSample(sampleIndirectLight);
             }
-            kernel.EndElement(elementIndex, element);
+            kernel.EndElement(elementIndex);
         }
     });
 }
