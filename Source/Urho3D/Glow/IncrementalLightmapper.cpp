@@ -281,19 +281,8 @@ struct IncrementalLightmapper::Impl
             // Bake direct lights for charts
             for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
             {
-                const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
-                const bool bakeIndirect = true;
-                if (bakedLight.lightType_ == LIGHT_DIRECTIONAL)
-                {
-                    DirectionalLightParameters light;
-                    light.direction_ = bakedLight.direction_;
-                    light.color_ = bakedLight.lightColor_;
-                    light.bakeDirect_ = bakeDirect;
-                    light.bakeIndirect_ = bakeIndirect;
-
-                    BakeDirectionalLightForCharts(bakedDirect, geometryBuffer, *chunkVicinity->raytracerScene_,
-                        chunkVicinity->geometryBufferToRaytracer_, light, lightmapSettings_.tracing_);
-                }
+                BakeDirectLightForCharts(bakedDirect, geometryBuffer, *chunkVicinity->raytracerScene_,
+                    chunkVicinity->geometryBufferToRaytracer_, bakedLight, lightmapSettings_.tracing_);
             }
 
             // Store direct light
@@ -399,19 +388,8 @@ struct IncrementalLightmapper::Impl
         // Bake direct lights for light probes
         for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
         {
-            const bool bakeDirect = bakedLight.lightMode_ == LM_BAKED;
-            const bool bakeIndirect = true;
-            if (bakedLight.lightType_ == LIGHT_DIRECTIONAL)
-            {
-                DirectionalLightParameters light;
-                light.direction_ = bakedLight.direction_;
-                light.color_ = bakedLight.lightColor_;
-                light.bakeDirect_ = bakeDirect;
-                light.bakeIndirect_ = bakeIndirect;
-
-                BakeDirectionalLightForLightProbes(chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
-                    light, lightmapSettings_.tracing_);
-            }
+            BakeDirectLightForLightProbes(chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
+                bakedLight, lightmapSettings_.tracing_);
         }
 
         // Release cache
