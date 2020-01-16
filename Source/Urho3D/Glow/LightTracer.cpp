@@ -898,22 +898,33 @@ void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChar
     });
 }
 
-void BakeDirectionalLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
-    const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
+    const BakedLight& light, const LightmapTracingSettings& settings)
 {
-    DirectionalRayGenerator generator{ light.color_, light.direction_ };
+    const bool bakeDirect = light.lightMode_ == LM_BAKED;
+    const bool bakeIndirect = true;
     ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
-        &raytracerScene.GetGeometries(), &settings, light.bakeDirect_, light.bakeIndirect_ };
-    TraceDirectLight(kernel, generator, raytracerScene, settings);
+        &raytracerScene.GetGeometries(), &settings, bakeDirect, bakeIndirect };
+
+    if (light.lightType_ == LIGHT_DIRECTIONAL)
+    {
+        DirectionalRayGenerator generator{ light.color_, light.direction_ };
+        TraceDirectLight(kernel, generator, raytracerScene, settings);
+    }
 }
 
-void BakeDirectionalLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
-    const DirectionalLightParameters& light, const LightmapTracingSettings& settings)
+void BakeDirectLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
+    const BakedLight& light, const LightmapTracingSettings& settings)
 {
-    DirectionalRayGenerator generator{ light.color_, light.direction_ };
-    LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), light.bakeDirect_ };
-    TraceDirectLight(kernel, generator, raytracerScene, settings);
+    const bool bakeDirect = light.lightMode_ == LM_BAKED;
+    LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), bakeDirect };
+
+    if (light.lightType_ == LIGHT_DIRECTIONAL)
+    {
+        DirectionalRayGenerator generator{ light.color_, light.direction_ };
+        TraceDirectLight(kernel, generator, raytracerScene, settings);
+    }
 }
 
 void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,

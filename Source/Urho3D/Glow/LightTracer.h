@@ -24,6 +24,7 @@
 
 #pragma once
 
+#include "../Glow/BakedLight.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Graphics/LightProbeGroup.h"
@@ -117,31 +118,18 @@ struct LightmapChartBakedIndirect
     ea::vector<Vector4> lightSwap_;
 };
 
-/// Directional light parameters.
-struct DirectionalLightParameters
-{
-    /// Direction of the light.
-    Vector3 direction_;
-    /// Color of the light.
-    Color color_;
-    /// Whether to bake direct light.
-    bool bakeDirect_{};
-    /// Whether to collect indirect light.
-    bool bakeIndirect_{};
-};
-
 /// Accumulate emission light.
 URHO3D_API void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const LightmapTracingSettings& settings);
 
-/// Accumulate direct light from directional light for charts.
-URHO3D_API void BakeDirectionalLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
+/// Accumulate direct light for charts.
+URHO3D_API void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
-    const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
+    const BakedLight& light, const LightmapTracingSettings& settings);
 
-/// Accumulate direct light from directional light for light probes.
-URHO3D_API void BakeDirectionalLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
-    const DirectionalLightParameters& light, const LightmapTracingSettings& settings);
+/// Accumulate direct light for light probes.
+URHO3D_API void BakeDirectLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
+    const BakedLight& light, const LightmapTracingSettings& settings);
 
 /// Accumulate indirect light for charts.
 URHO3D_API void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
