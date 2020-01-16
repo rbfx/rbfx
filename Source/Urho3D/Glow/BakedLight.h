@@ -24,35 +24,47 @@
 
 #pragma once
 
-#include "../Glow/BakedLight.h"
-#include "../Glow/BakedSceneCollector.h"
-#include "../Glow/LightmapGeometryBuffer.h"
-#include "../Glow/RaytracerScene.h"
-#include "../Graphics/LightProbeGroup.h"
+#include "../Graphics/Light.h"
+#include "../Math/Vector3.h"
+#include "../Scene/Node.h"
 
 namespace Urho3D
 {
 
-/// Baked chunk vicinity. Contains everything to bake light for given chunk.
-struct BakedChunkVicinity
+/// Baked light description.
+struct BakedLight
 {
-    /// Lightmaps owned by this chunk.
-    ea::vector<unsigned> lightmaps_;
-    /// Raytracer scene.
-    SharedPtr<RaytracerScene> raytracerScene_;
-    /// Geometry buffers.
-    ea::vector<LightmapChartGeometryBuffer> geometryBuffers_;
-    /// Geometry buffer ID to raytracer geometry ID mapping.
-    ea::vector<unsigned> geometryBufferToRaytracer_;
-    /// Lights to bake.
-    ea::vector<BakedLight> bakedLights_;
-    /// Light probes collection.
-    LightProbeCollection lightProbesCollection_;
-};
+    /// Construct default.
+    BakedLight() = default;
+    /// Construct valid.
+    explicit BakedLight(Light* light)
+        : lightType_(light->GetLightType())
+        , lightMode_(light->GetLightMode())
+        , color_(light->GetEffectiveColor())
+        , radius_(lightType_ != LIGHT_DIRECTIONAL ? light->GetRadius() : 0.0f)
+        , angle_(lightType_ == LIGHT_DIRECTIONAL ? light->GetRadius() : 0.0f)
+        , position_(light->GetNode()->GetWorldPosition())
+        , rotation_(light->GetNode()->GetWorldRotation())
+        , direction_(light->GetNode()->GetWorldDirection())
+    {
+    }
 
-/// Create baked chunk vicinity.
-URHO3D_API BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
-    BakedSceneCollector& collector, const IntVector3& chunk,
-    const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings);
+    /// Light type.
+    LightType lightType_{};
+    /// Light mode.
+    LightMode lightMode_{};
+    /// Light color.
+    Color color_{};
+    /// Light radius (for spot and point lights).
+    float radius_{};
+    /// Light angle (for directional light).
+    float angle_{};
+    /// Position.
+    Vector3 position_;
+    /// Direction.
+    Vector3 direction_;
+    /// Rotation.
+    Quaternion rotation_;
+};
 
 }

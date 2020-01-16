@@ -174,17 +174,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     // Collect lights
     ea::vector<BakedLight> bakedLights;
     for (Light* light : relevantLights)
-    {
-        Node* node = light->GetNode();
-        BakedLight bakedLight;
-        bakedLight.lightType_ = light->GetLightType();
-        bakedLight.lightMode_ = light->GetLightMode();
-        bakedLight.lightColor_ = light->GetEffectiveColor();
-        bakedLight.position_ = node->GetWorldPosition();
-        bakedLight.rotation_ = node->GetWorldRotation();
-        bakedLight.direction_ = node->GetWorldDirection();
-        bakedLights.push_back(bakedLight);
-    }
+        bakedLights.push_back(BakedLight{ light });
 
     BakedChunkVicinity chunkVicinity;
     chunkVicinity.lightmaps_ = lightmapsInChunk;
