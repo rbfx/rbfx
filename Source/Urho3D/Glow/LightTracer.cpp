@@ -40,8 +40,8 @@ namespace Urho3D
 namespace
 {
 
-/// Generate random direction.
-void RandomDirection(Vector3& result)
+/// Generate random 3D direction.
+void RandomDirection3(Vector3& result)
 {
     float len;
 
@@ -57,16 +57,45 @@ void RandomDirection(Vector3& result)
     result /= len;
 }
 
+/// Generate random offset within 2D circle.
+Vector2 RandomCircleOffset()
+{
+    Vector2 result;
+    float len;
+
+    do
+    {
+        result.x_ = Random(-1.0f, 1.0f);
+        result.y_ = Random(-1.0f, 1.0f);
+        len = result.Length();
+
+    } while (len > 1.0f);
+
+    return result;
+}
+
 /// Generate random hemisphere direction.
 Vector3 RandomHemisphereDirection(const Vector3& normal)
 {
     Vector3 result;
-    RandomDirection(result);
+    RandomDirection3(result);
 
     if (result.DotProduct(normal) < 0)
         result = -result;
 
     return result;
+}
+
+/// Return number of samples to use for light.
+unsigned CalculateNumSamples(const BakedLight& light, unsigned maxSamples)
+{
+    switch (light.lightType_)
+    {
+    case LIGHT_DIRECTIONAL:
+        return light.angle_ < M_LARGE_EPSILON ? 1 : maxSamples;
+    default:
+        return light.radius_ < M_LARGE_EPSILON ? 1 : maxSamples;
+    }
 }
 
 /// Return true if first geometry is non-primary LOD of another geometry or different LOD of itself.
@@ -242,13 +271,19 @@ struct RayGeneratorForDirectLight
     Color lightColor_;
     /// Light direction.
     Vector3 lightDirection_;
+    /// Light rotation.
+    Quaternion lightRotation_;
     /// Max ray distance.
     float maxRayDistance_{};
+    /// Tangent of half angle.
+    float halfAngleTan_{};
 
     /// Generate ray for given position. Return true if non-zero.
     bool Generate(const Vector3& /*position*/, Vector3& rayOffset, Vector3& lightIntensity)
     {
+        const Vector2 randomOffset = RandomCircleOffset() * maxRayDistance_ * halfAngleTan_;
         rayOffset = maxRayDistance_ * lightDirection_;
+        rayOffset += Vector3(randomOffset, 0.0f);
         lightIntensity = lightColor_.ToVector3();
         return true;
     }
@@ -269,7 +304,9 @@ struct RayGeneratorForPointLight
     /// Generate ray for given position. Return true if non-zero.
     bool Generate(const Vector3& position, Vector3& rayOffset, Vector3& lightIntensity)
     {
+        const Vector2 randomOffset = RandomCircleOffset() * lightRadius_;
         rayOffset = position - lightPosition_;
+        rayOffset += Quaternion(Vector3::FORWARD, rayOffset) * Vector3(randomOffset, 0.0f);
 
         const float distance = rayOffset.Length();
         const float distanceAttenuation = ea::max(0.0f, 1.0f - (distance - lightRadius_) / (lightDistance_ - lightRadius_));
@@ -288,6 +325,8 @@ struct RayGeneratorForSpotLight
     Vector3 lightPosition_;
     /// Light direction.
     Vector3 lightDirection_;
+    /// Light rotation.
+    Quaternion lightRotation_;
     /// Light distance.
     float lightDistance_{};
     /// Light radius.
@@ -298,7 +337,9 @@ struct RayGeneratorForSpotLight
     /// Generate ray for given position. Return true if non-zero.
     bool Generate(const Vector3& position, Vector3& rayOffset, Vector3& lightIntensity)
     {
+        const Vector2 randomOffset = RandomCircleOffset() * lightRadius_;
         rayOffset = position - lightPosition_;
+        rayOffset += lightRotation_ * Vector3(randomOffset, 0.0f);
 
         const float distance = rayOffset.Length();
 
@@ -327,6 +368,8 @@ struct ChartDirectTracingKernel
     const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
     /// Settings.
     const LightmapTracingSettings* settings_{};
+    /// Number of samples.
+    unsigned numSamples_{ 1 };
     /// Whether to bake direct light for direct lighting itself.
     bool bakeDirect_{};
     /// Whether to bake direct light for indirect lighting.
@@ -344,7 +387,7 @@ struct ChartDirectTracingKernel
     unsigned GetNumElements() const { return bakedDirect_->directLight_.size(); }
 
     /// Return number of samples.
-    unsigned GetNumSamples() const { return settings_->numDirectSamples_; }
+    unsigned GetNumSamples() const { return numSamples_; }
 
     /// Return geometry mask to use.
     unsigned GetGeometryMask() const { return RaytracerScene::AllGeometry; }
@@ -397,7 +440,7 @@ struct ChartDirectTracingKernel
     /// End tracing element.
     void EndElement(unsigned elementIndex)
     {
-        const float weight = 1.0f / GetNumSamples();
+        const float weight = 1.0f / numSamples_;
         const Vector3 directLight = accumulatedLight_ * weight;
 
         if (bakeDirect_)
@@ -420,6 +463,8 @@ struct LightProbeDirectTracingKernel
     const LightmapTracingSettings* settings_{};
     /// Raytracer geometries.
     const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
+    /// Number of samples.
+    unsigned numSamples_{ 1 };
     /// Whether to bake direct light for direct lighting itself.
     bool bakeDirect_{};
 
@@ -430,7 +475,7 @@ struct LightProbeDirectTracingKernel
     unsigned GetNumElements() const { return collection_->Size(); }
 
     /// Return number of samples.
-    unsigned GetNumSamples() const { return settings_->numDirectSamples_; }
+    unsigned GetNumSamples() const { return numSamples_; }
 
     /// Return geometry mask to use.
     unsigned GetGeometryMask() const { return RaytracerScene::PrimaryLODGeometry; }
@@ -471,7 +516,7 @@ struct LightProbeDirectTracingKernel
     {
         if (bakeDirect_)
         {
-            const float weight = M_PI / GetNumSamples();
+            const float weight = M_PI / numSamples_;
 
             const SphericalHarmonicsDot9 sh{ accumulatedLightSH_ * weight };
             collection_->bakedSphericalHarmonics_[elementIndex] += sh;
@@ -693,7 +738,7 @@ struct LightProbeIndirectTracingKernel
     void BeginSample(unsigned /*sampleIndex*/,
         Vector3& position, Vector3& faceNormal, Vector3& smoothNormal, Vector3& rayDirection, Vector3& albedo)
     {
-        RandomDirection(currentSampleDirection_);
+        RandomDirection3(currentSampleDirection_);
 
         position = currentPosition_;
         faceNormal = currentSampleDirection_;
@@ -964,12 +1009,14 @@ void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const Light
 {
     const bool bakeDirect = light.lightMode_ == LM_BAKED;
     const bool bakeIndirect = true;
+    const unsigned numSamples = CalculateNumSamples(light, settings.numDirectSamples_);
     const ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
-        &raytracerScene.GetGeometries(), &settings, bakeDirect, bakeIndirect };
+        &raytracerScene.GetGeometries(), &settings, numSamples, bakeDirect, bakeIndirect };
 
     if (light.lightType_ == LIGHT_DIRECTIONAL)
     {
-        const RayGeneratorForDirectLight generator{ light.color_, light.direction_, raytracerScene.GetMaxDistance() };
+        const RayGeneratorForDirectLight generator{ light.color_, light.direction_, light.rotation_,
+            raytracerScene.GetMaxDistance(), light.halfAngleTan_ };
         TraceDirectLight(kernel, generator, raytracerScene, settings);
     }
     else if (light.lightType_ == LIGHT_POINT)
@@ -979,7 +1026,7 @@ void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const Light
     }
     else if (light.lightType_ == LIGHT_SPOT)
     {
-        const RayGeneratorForSpotLight generator{ light.color_, light.position_, light.direction_,
+        const RayGeneratorForSpotLight generator{ light.color_, light.position_, light.direction_, light.rotation_,
             light.distance_, light.radius_, light.cutoff_ };
         TraceDirectLight(kernel, generator, raytracerScene, settings);
     }
@@ -989,11 +1036,13 @@ void BakeDirectLightForLightProbes(LightProbeCollection& collection, const Raytr
     const BakedLight& light, const LightmapTracingSettings& settings)
 {
     const bool bakeDirect = light.lightMode_ == LM_BAKED;
-    const LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), bakeDirect };
+    const unsigned numSamples = CalculateNumSamples(light, settings.numDirectSamples_);
+    const LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), numSamples, bakeDirect };
 
     if (light.lightType_ == LIGHT_DIRECTIONAL)
     {
-        const RayGeneratorForDirectLight generator{ light.color_, light.direction_, raytracerScene.GetMaxDistance() };
+        const RayGeneratorForDirectLight generator{ light.color_, light.direction_, light.rotation_,
+            raytracerScene.GetMaxDistance(), light.halfAngleTan_ };
         TraceDirectLight(kernel, generator, raytracerScene, settings);
     }
     else if (light.lightType_ == LIGHT_POINT)
@@ -1003,7 +1052,7 @@ void BakeDirectLightForLightProbes(LightProbeCollection& collection, const Raytr
     }
     else if (light.lightType_ == LIGHT_SPOT)
     {
-        const RayGeneratorForSpotLight generator{ light.color_, light.position_, light.direction_,
+        const RayGeneratorForSpotLight generator{ light.color_, light.position_, light.direction_, light.rotation_,
             light.distance_, light.radius_, light.cutoff_ };
         TraceDirectLight(kernel, generator, raytracerScene, settings);
     }
