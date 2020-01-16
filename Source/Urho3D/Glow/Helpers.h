@@ -75,7 +75,7 @@ inline bool IsMaterialOpaque(Material* material)
     if (technique && technique->GetName().contains("alpha", false))
         return false;
 
-    if (material->GetVertexShaderDefines().contains("ALPHAMASK"))
+    if (material->GetPixelShaderDefines().contains("ALPHAMASK"))
         return false;
 
     if (material->GetShaderParameter("MatDiffColor").GetVector4().w_ < 1.0f - M_LARGE_EPSILON)

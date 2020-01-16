@@ -88,7 +88,7 @@ Color GetHitDiffuseTextureColor(const RaytracerGeometry& hitGeometry, const RTCH
 
     Vector2 uv;
     rtcInterpolate0(hitGeometry.embreeGeometry_, hit.primID, hit.u, hit.v,
-        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &uv.x_, 2);
+        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, RaytracerScene::UVAttribute, &uv.x_, 2);
 
     const int x = Clamp(RoundToInt(uv.x_ * hitGeometry.diffuseImageWidth_), 0, hitGeometry.diffuseImageWidth_ - 1);
     const int y = Clamp(RoundToInt(uv.y_ * hitGeometry.diffuseImageHeight_), 0, hitGeometry.diffuseImageHeight_ - 1);
@@ -235,19 +235,83 @@ void TracingFilterForLightProbesDirect(const RTCFilterFunctionNArguments* args)
         args->valid[0] = 0;
 }
 
-/// Directional light ray generator.
-struct DirectionalRayGenerator
+/// Ray generator for directional light.
+struct RayGeneratorForDirectLight
 {
     /// Light color.
     Color lightColor_;
     /// Light direction.
     Vector3 lightDirection_;
+    /// Max ray distance.
+    float maxRayDistance_{};
 
-    /// Return emitted light intensity for given position.
-    Vector3 GetLightIntensity(const Vector3& /*position*/) const { return lightColor_.ToVector3(); }
+    /// Generate ray for given position. Return true if non-zero.
+    bool Generate(const Vector3& /*position*/, Vector3& rayOffset, Vector3& lightIntensity)
+    {
+        rayOffset = maxRayDistance_ * lightDirection_;
+        lightIntensity = lightColor_.ToVector3();
+        return true;
+    }
+};
 
-    /// Return ray direction for given position.
-    Vector3 GetRayDirection(const Vector3& /*position*/) const { return lightDirection_; }
+/// Ray generator for point light.
+struct RayGeneratorForPointLight
+{
+    /// Light color.
+    Color lightColor_;
+    /// Light position.
+    Vector3 lightPosition_;
+    /// Light distance.
+    float lightDistance_{};
+    /// Light radius.
+    float lightRadius_{};
+
+    /// Generate ray for given position. Return true if non-zero.
+    bool Generate(const Vector3& position, Vector3& rayOffset, Vector3& lightIntensity)
+    {
+        rayOffset = position - lightPosition_;
+
+        const float distance = rayOffset.Length();
+        const float distanceAttenuation = ea::max(0.0f, 1.0f - (distance - lightRadius_) / (lightDistance_ - lightRadius_));
+
+        lightIntensity = lightColor_.ToVector3() * distanceAttenuation * distanceAttenuation;
+        return distanceAttenuation > M_LARGE_EPSILON;
+    }
+};
+
+/// Ray generator for spot light.
+struct RayGeneratorForSpotLight
+{
+    /// Light color.
+    Color lightColor_;
+    /// Light position.
+    Vector3 lightPosition_;
+    /// Light direction.
+    Vector3 lightDirection_;
+    /// Light distance.
+    float lightDistance_{};
+    /// Light radius.
+    float lightRadius_{};
+    /// Light cutoff aka Cos(fov * 0.5f).
+    float lightCutoff_{};
+
+    /// Generate ray for given position. Return true if non-zero.
+    bool Generate(const Vector3& position, Vector3& rayOffset, Vector3& lightIntensity)
+    {
+        rayOffset = position - lightPosition_;
+
+        const float distance = rayOffset.Length();
+
+        const Vector3 rayDirection = rayOffset / distance;
+        const float dot = lightDirection_.DotProduct(rayDirection);
+        const float invCutoff = 1.0f / (1.0f - lightCutoff_);
+        const float spotAttenuation = Clamp((dot - lightCutoff_) * invCutoff, 0.0f, 1.0f);
+
+        const float distanceAttenuation = ea::max(0.0f, 1.0f - (distance - lightRadius_) / (lightDistance_ - lightRadius_));
+        lightIntensity = lightColor_.ToVector3() * distanceAttenuation * distanceAttenuation * spotAttenuation;
+
+        return distanceAttenuation > M_LARGE_EPSILON && spotAttenuation > M_LARGE_EPSILON;
+    }
 };
 
 /// Direct light tracing for charts: tracing kernel.
@@ -417,10 +481,9 @@ struct LightProbeDirectTracingKernel
 
 /// Trace direct lighting.
 template <class T, class U>
-void TraceDirectLight(T& sharedKernel, U& sharedGenerator,
+void TraceDirectLight(T sharedKernel, U sharedGenerator,
     const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
 {
-    const float maxDistance = raytracerScene.GetMaxDistance();
     RTCScene scene = raytracerScene.GetEmbreeScene();
     const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
 
@@ -452,26 +515,23 @@ void TraceDirectLight(T& sharedKernel, U& sharedGenerator,
             {
                 kernel.BeginSample(sampleIndex);
 
-                incomingLight = generator.GetLightIntensity(position);
-                const Vector3 rayDirection = generator.GetRayDirection(position);
+                Vector3 rayOffset;
+                if (!generator.Generate(position, rayOffset, incomingLight))
+                    continue;
 
                 // Cast direct ray
-                rayHit.ray.dir_x = rayDirection.x_;
-                rayHit.ray.dir_y = rayDirection.y_;
-                rayHit.ray.dir_z = rayDirection.z_;
-                rayHit.ray.org_x = position.x_ - rayDirection.x_ * maxDistance;
-                rayHit.ray.org_y = position.y_ - rayDirection.y_ * maxDistance;
-                rayHit.ray.org_z = position.z_ - rayDirection.z_ * maxDistance;
-                rayHit.ray.tfar = maxDistance;
+                rayHit.ray.dir_x = rayOffset.x_;
+                rayHit.ray.dir_y = rayOffset.y_;
+                rayHit.ray.dir_z = rayOffset.z_;
+                rayHit.ray.org_x = position.x_ - rayOffset.x_;
+                rayHit.ray.org_y = position.y_ - rayOffset.y_;
+                rayHit.ray.org_z = position.z_ - rayOffset.z_;
+                rayHit.ray.tfar = 1.0f;
                 rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
                 rtcIntersect1(scene, &rayContext, &rayHit);
 
-                if (rayHit.hit.geomID != RTC_INVALID_GEOMETRY_ID)
-                    incomingLight = Vector3::ZERO;
-                else
-                    incomingLight = incomingLight;
-
-                kernel.EndSample(incomingLight, -rayDirection);
+                if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
+                    kernel.EndSample(incomingLight, -rayOffset.Normalized());
             }
 
             kernel.EndElement(elementIndex);
@@ -659,7 +719,7 @@ struct LightProbeIndirectTracingKernel
 
 /// Trace indirect lighting.
 template <class T>
-void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
+void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
 {
     assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
@@ -727,7 +787,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
                     const RaytracerGeometry& geometry = geometryIndex[rayHit.hit.geomID];
                     Vector2 lightmapUV;
                     rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
-                        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 0, &lightmapUV.x_, 2);
+                        RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, RaytracerScene::LightmapUVAttribute, &lightmapUV.x_, 2);
 
                     // Modify incoming flux
                     const float probability = 1 / (2 * M_PI);
@@ -761,7 +821,7 @@ void TraceIndirectLight(T& sharedKernel, const ea::vector<const LightmapChartBak
 
                         // Update smooth normal
                         rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
-                            RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, 1, &currentSmoothNormal.x_, 3);
+                            RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, RaytracerScene::NormalAttribute, &currentSmoothNormal.x_, 3);
                         currentSmoothNormal = currentSmoothNormal.Normalized();
 
                         // Update face normal and find new direction to sample
@@ -904,12 +964,23 @@ void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const Light
 {
     const bool bakeDirect = light.lightMode_ == LM_BAKED;
     const bool bakeIndirect = true;
-    ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
+    const ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
         &raytracerScene.GetGeometries(), &settings, bakeDirect, bakeIndirect };
 
     if (light.lightType_ == LIGHT_DIRECTIONAL)
     {
-        DirectionalRayGenerator generator{ light.color_, light.direction_ };
+        const RayGeneratorForDirectLight generator{ light.color_, light.direction_, raytracerScene.GetMaxDistance() };
+        TraceDirectLight(kernel, generator, raytracerScene, settings);
+    }
+    else if (light.lightType_ == LIGHT_POINT)
+    {
+        const RayGeneratorForPointLight generator{ light.color_, light.position_, light.distance_, light.radius_ };
+        TraceDirectLight(kernel, generator, raytracerScene, settings);
+    }
+    else if (light.lightType_ == LIGHT_SPOT)
+    {
+        const RayGeneratorForSpotLight generator{ light.color_, light.position_, light.direction_,
+            light.distance_, light.radius_, light.cutoff_ };
         TraceDirectLight(kernel, generator, raytracerScene, settings);
     }
 }
@@ -918,11 +989,22 @@ void BakeDirectLightForLightProbes(LightProbeCollection& collection, const Raytr
     const BakedLight& light, const LightmapTracingSettings& settings)
 {
     const bool bakeDirect = light.lightMode_ == LM_BAKED;
-    LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), bakeDirect };
+    const LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), bakeDirect };
 
     if (light.lightType_ == LIGHT_DIRECTIONAL)
     {
-        DirectionalRayGenerator generator{ light.color_, light.direction_ };
+        const RayGeneratorForDirectLight generator{ light.color_, light.direction_, raytracerScene.GetMaxDistance() };
+        TraceDirectLight(kernel, generator, raytracerScene, settings);
+    }
+    else if (light.lightType_ == LIGHT_POINT)
+    {
+        const RayGeneratorForPointLight generator{ light.color_, light.position_, light.distance_, light.radius_ };
+        TraceDirectLight(kernel, generator, raytracerScene, settings);
+    }
+    else if (light.lightType_ == LIGHT_SPOT)
+    {
+        const RayGeneratorForSpotLight generator{ light.color_, light.position_, light.direction_,
+            light.distance_, light.radius_, light.cutoff_ };
         TraceDirectLight(kernel, generator, raytracerScene, settings);
     }
 }
@@ -933,7 +1015,7 @@ void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const LightmapTracingSettings& settings)
 {
-    ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &lightProbesMesh, &lightProbesData,
+    const ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &lightProbesMesh, &lightProbesData,
         &geometryBufferToRaytracer, &raytracerScene.GetGeometries(), &settings };
     TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);
 }
@@ -942,7 +1024,7 @@ void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
 {
-    LightProbeIndirectTracingKernel kernel{ &collection, &settings };
+    const LightProbeIndirectTracingKernel kernel{ &collection, &settings };
     TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);
 }
 
