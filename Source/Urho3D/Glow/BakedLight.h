@@ -41,6 +41,9 @@ struct BakedLight
         : lightType_(light->GetLightType())
         , lightMode_(light->GetLightMode())
         , color_(light->GetEffectiveColor())
+        , distance_(light->GetRange())
+        , fov_(light->GetFov())
+        , cutoff_(Cos(fov_ * 0.5f))
         , radius_(lightType_ != LIGHT_DIRECTIONAL ? light->GetRadius() : 0.0f)
         , angle_(lightType_ == LIGHT_DIRECTIONAL ? light->GetRadius() : 0.0f)
         , position_(light->GetNode()->GetWorldPosition())
@@ -55,6 +58,12 @@ struct BakedLight
     LightMode lightMode_{};
     /// Light color.
     Color color_{};
+    /// FOV angle (for spot lights).
+    float fov_{};
+    /// Cutoff aka Cos(FOV * 0.5) (for spot lights).
+    float cutoff_{};
+    /// Light distance (for spot and point lights).
+    float distance_{};
     /// Light radius (for spot and point lights).
     float radius_{};
     /// Light angle (for directional light).
