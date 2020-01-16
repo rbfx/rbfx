@@ -36,6 +36,7 @@ struct BakedLight
 {
     /// Construct default.
     BakedLight() = default;
+
     /// Construct valid.
     explicit BakedLight(Light* light)
         : lightType_(light->GetLightType())
@@ -46,6 +47,7 @@ struct BakedLight
         , cutoff_(Cos(fov_ * 0.5f))
         , radius_(lightType_ != LIGHT_DIRECTIONAL ? light->GetRadius() : 0.0f)
         , angle_(lightType_ == LIGHT_DIRECTIONAL ? light->GetRadius() : 0.0f)
+        , halfAngleTan_(Tan(angle_ / 2.0f))
         , position_(light->GetNode()->GetWorldPosition())
         , rotation_(light->GetNode()->GetWorldRotation())
         , direction_(light->GetNode()->GetWorldDirection())
@@ -68,6 +70,8 @@ struct BakedLight
     float radius_{};
     /// Light angle (for directional light).
     float angle_{};
+    /// Tangent of half light angle.
+    float halfAngleTan_{};
     /// Position.
     Vector3 position_;
     /// Direction.

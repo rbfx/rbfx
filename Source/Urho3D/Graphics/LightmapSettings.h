@@ -64,7 +64,7 @@ struct LightmapTracingSettings
     static const unsigned MaxBounces = 8;
 
     /// Number of direct samples.
-    unsigned numDirectSamples_{ 1 };
+    unsigned numDirectSamples_{ 10 };
     /// Number of indirect bounces.
     unsigned numBounces_{ 2 };
     /// Number of indirect samples for charts.
