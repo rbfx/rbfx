@@ -106,6 +106,19 @@ public:
     /// Return current LOD level.
     unsigned GetLodLevel() const { return lodLevel_; }
 
+    /// Set whether the lightmap is baked for this object.
+    void SetBakeLightmap(bool bakeLightmap) { bakeLightmap_ = bakeLightmap; UpdateBatchesLightmaps(); }
+    /// Return whether the lightmap is baked for this object.
+    bool GetBakeLightmap() const { return bakeLightmap_; }
+    /// Set lightmap index.
+    void SetLightmapIndex(unsigned idx) { lightmapIndex_ = idx; UpdateBatchesLightmaps(); }
+    /// Return lightmap index.
+    unsigned GetLightmapIndex() const { return lightmapIndex_; }
+    /// Set lightmap scale and offset.
+    void SetLightmapScaleOffset(const Vector4& scaleOffset) { lightmapScaleOffset_ = scaleOffset; UpdateBatchesLightmaps(); }
+    /// Return lightmap scale and offset.
+    const Vector4& GetLightmapScaleOffset() const { return lightmapScaleOffset_; }
+
 protected:
     /// Recalculate the world-space bounding box.
     void OnWorldBoundingBoxUpdate() override;
@@ -113,6 +126,8 @@ protected:
 private:
     /// Return a corrected LOD level to ensure stitching can work correctly.
     unsigned GetCorrectedLodLevel(unsigned lodLevel);
+    /// Update lightmaps in batches.
+    void UpdateBatchesLightmaps();
 
     /// Geometry.
     SharedPtr<Geometry> geometry_;
@@ -138,6 +153,13 @@ private:
     IntVector2 coordinates_;
     /// Current LOD level.
     unsigned lodLevel_;
+
+    /// Whether the lightmap is enabled.
+    bool bakeLightmap_{};
+    /// Lightmap index.
+    unsigned lightmapIndex_{};
+    /// Lightmap scale and offset.
+    Vector4 lightmapScaleOffset_{ 1.0f, 1.0f, 0.0f, 0.0f };
 };
 
 }

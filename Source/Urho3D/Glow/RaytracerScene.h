@@ -38,7 +38,7 @@ namespace Urho3D
 
 class Context;
 class Node;
-class StaticModel;
+class Component;
 
 /// Geometry for ray tracing.
 struct RaytracerGeometry
@@ -142,6 +142,6 @@ private:
 
 // Create scene for raytracing.
 URHO3D_API SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context,
-    const ea::vector<StaticModel*>& staticModels, unsigned uvChannel);
+    const ea::vector<Component*>& geometries, unsigned uvChannel);
 
 }

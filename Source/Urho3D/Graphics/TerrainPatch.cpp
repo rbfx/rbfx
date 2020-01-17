@@ -305,4 +305,18 @@ unsigned TerrainPatch::GetCorrectedLodLevel(unsigned lodLevel)
     return lodLevel;
 }
 
+void TerrainPatch::UpdateBatchesLightmaps()
+{
+    if (bakeLightmap_)
+    {
+        batches_[0].lightmapIndex_ = lightmapIndex_;
+        batches_[0].lightmapScaleOffset_ = &lightmapScaleOffset_;
+    }
+    else
+    {
+        batches_[0].lightmapIndex_ = 0;
+        batches_[0].lightmapScaleOffset_ = nullptr;
+    }
+}
+
 }

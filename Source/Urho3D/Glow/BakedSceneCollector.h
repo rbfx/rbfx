@@ -32,10 +32,11 @@
 namespace Urho3D
 {
 
+class Component;
+class Drawable;
 class Light;
 class LightProbeGroup;
 class Node;
-class StaticModel;
 class Scene;
 class Octree;
 
@@ -52,10 +53,10 @@ public:
     /// Return all scene chunks.
     virtual ea::vector<IntVector3> GetChunks() = 0;
 
-    /// Return unique static models within chunk.
-    virtual ea::vector<StaticModel*> GetUniqueStaticModels(const IntVector3& chunkIndex) = 0;
-    /// Called when static models were changed externally.
-    virtual void CommitStaticModels(const IntVector3& chunkIndex) = 0;
+    /// Return unique geometries within chunk.
+    virtual ea::vector<Component*> GetUniqueGeometries(const IntVector3& chunkIndex) = 0;
+    /// Called when geometries were changed externally.
+    virtual void CommitGeometries(const IntVector3& chunkIndex) = 0;
     /// Return unique light probe groups within chunk. Order of groups must stay the same for each call.
     virtual ea::vector<LightProbeGroup*> GetUniqueLightProbeGroups(const IntVector3& chunkIndex) = 0;
     /// Called when light probe groups were changed externally.
@@ -65,12 +66,12 @@ public:
     virtual BoundingBox GetChunkBoundingBox(const IntVector3& chunkIndex) = 0;
     /// Return lights intersecting given volume.
     virtual ea::vector<Light*> GetLightsInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) = 0;
-    /// Return static models intersecting given volume.
-    virtual ea::vector<StaticModel*> GetStaticModelsInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) = 0;
+    /// Return geometries intersecting given volume.
+    virtual ea::vector<Component*> GetGeometriesInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) = 0;
     /// Return light probe groups intersecting given volume.
     virtual ea::vector<LightProbeGroup*> GetLightProbeGroupsInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) = 0;
-    /// Return static models intersecting given frustum. The frustum is guaranteed to contain specified chunk.
-    virtual ea::vector<StaticModel*> GetStaticModelsInFrustum(const IntVector3& chunkIndex, const Frustum& frustum) = 0;
+    /// Return geometries intersecting given frustum. The frustum is guaranteed to contain specified chunk.
+    virtual ea::vector<Component*> GetGeometriesInFrustum(const IntVector3& chunkIndex, const Frustum& frustum) = 0;
 
     /// Called after everything else. Scene objects must stay unchanged before this call.
     virtual void UnlockScene() = 0;
@@ -88,10 +89,10 @@ public:
     /// Return all scene chunks.
     ea::vector<IntVector3> GetChunks() override;
 
-    /// Return unique static models within chunk.
-    ea::vector<StaticModel*> GetUniqueStaticModels(const IntVector3& chunkIndex) override;
-    /// Called after static models are changed externally.
-    void CommitStaticModels(const IntVector3& chunkIndex) override;
+    /// Return unique geometries within chunk.
+    ea::vector<Component*> GetUniqueGeometries(const IntVector3& chunkIndex) override;
+    /// Called after geometries are changed externally.
+    void CommitGeometries(const IntVector3& chunkIndex) override;
     /// Return unique light probe groups within chunk. Order of groups must stay the same for each call.
     ea::vector<LightProbeGroup*> GetUniqueLightProbeGroups(const IntVector3& chunkIndex) override;
     /// Called after light probe groups are changed externally.
@@ -101,27 +102,30 @@ public:
     BoundingBox GetChunkBoundingBox(const IntVector3& chunkIndex) override;
     /// Return lights intersecting given volume.
     ea::vector<Light*> GetLightsInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) override;
-    /// Return static models intersecting given volume.
-    ea::vector<StaticModel*> GetStaticModelsInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) override;
+    /// Return geometries intersecting given volume.
+    ea::vector<Component*> GetGeometriesInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) override;
     /// Return light probe groups intersecting given volume.
     ea::vector<LightProbeGroup*> GetLightProbeGroupsInBoundingBox(const IntVector3& chunkIndex, const BoundingBox& boundingBox) override;
-    /// Return static models intersecting given frustum. The frustum is guaranteed to contain specified chunk.
-    ea::vector<StaticModel*> GetStaticModelsInFrustum(const IntVector3& chunkIndex, const Frustum& frustum) override;
+    /// Return geometries intersecting given frustum. The frustum is guaranteed to contain specified chunk.
+    ea::vector<Component*> GetGeometriesInFrustum(const IntVector3& chunkIndex, const Frustum& frustum) override;
 
     /// Called after everything else. Scene objects must stay unchanged before this call.
     void UnlockScene() override;
 
 private:
+    /// Filter drawables and return relevant components.
+    ea::vector<Component*> CollectGeometriesFromDrawables(const ea::vector<Drawable*> drawables);
     /// Chunk data.
     struct ChunkData
     {
-        /// Unique static models.
-        ea::vector<StaticModel*> staticModels_;
+        /// Unique geometries.
+        ea::vector<Component*> geometries_;
         /// Unique light probe groups.
         ea::vector<LightProbeGroup*> lightProbeGroups_;
         /// Bounding box.
         BoundingBox boundingBox_;
     };
+
     /// Scene.
     Scene* scene_{};
     /// Chunk size.
