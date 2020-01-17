@@ -613,9 +613,6 @@ void Input::SetMouseVisible(bool enable, bool suppressEvent)
             {
                 SetMouseGrabbed(false, suppressEvent);
 
-                SDL_ShowCursor(SDL_TRUE);
-                mouseVisible_ = true;
-
 #ifndef __EMSCRIPTEN__
                 if (mouseMode_ == MM_ABSOLUTE)
                     SetMouseModeAbsolute(SDL_FALSE);
@@ -645,6 +642,8 @@ void Input::SetMouseVisible(bool enable, bool suppressEvent)
                 if (mouseMode_ == MM_ABSOLUTE && emscriptenPointerLock_)
                     emscriptenInput_->ExitPointerLock(suppressEvent);
 #endif
+                SDL_ShowCursor(SDL_TRUE);
+                mouseVisible_ = true;
             }
         }
         else
