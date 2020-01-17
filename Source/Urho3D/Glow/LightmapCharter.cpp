@@ -27,6 +27,7 @@
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/StaticModel.h"
+#include "../Graphics/Terrain.h"
 
 namespace Urho3D
 {
@@ -104,18 +105,38 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
     return CalculateModelLightmapSize(settings.texelDensity_, settings.minObjectScale_, model, node->GetWorldScale());
 }
 
+IntVector2 CalculateTerrainLightmapSize(Terrain* terrain, const LightmapChartingSettings& settings)
+{
+    Node* node = terrain->GetNode();
+    const Vector3 spacing = terrain->GetSpacing();
+    const Vector3 worldScale = node->GetWorldScale();
+    const Vector2 size = static_cast<Vector2>(terrain->GetNumPatches()) * static_cast<float>(terrain->GetPatchSize());
+    const Vector2 dimensions = size * Vector2{ worldScale.x_, worldScale.z_ } * Vector2{ spacing.x_, spacing.z_ };
+    return VectorCeilToInt(dimensions * settings.texelDensity_);
+}
+
+IntVector2 CalculateGeometryLightmapSize(Component* component, const LightmapChartingSettings& settings)
+{
+    if (auto staticModel = dynamic_cast<StaticModel*>(component))
+        return CalculateStaticModelLightmapSize(staticModel, settings);
+    else if (auto terrain = dynamic_cast<Terrain*>(component))
+        return CalculateTerrainLightmapSize(terrain, settings);
+    return {};
+}
+
 }
 
 ea::vector<LightmapChart> GenerateLightmapCharts(
-    const ea::vector<StaticModel*>& staticModels, const LightmapChartingSettings& settings, unsigned baseChartIndex)
+    const ea::vector<Component*>& geometries, const LightmapChartingSettings& settings, unsigned baseChartIndex)
 {
     const int maxRegionSize = static_cast<int>(settings.lightmapSize_ - settings.padding_ * 2);
     ea::vector<LightmapChart> charts;
-    for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
+    for (unsigned objectIndex = 0; objectIndex < geometries.size(); ++objectIndex)
     {
-        StaticModel* staticModel = staticModels[objectIndex];
-        Node* node = staticModel->GetNode();
-        const IntVector2 regionSize = CalculateStaticModelLightmapSize(staticModel, settings);
+        Component* component = geometries[objectIndex];
+        Node* node = component->GetNode();
+
+        const IntVector2 regionSize = CalculateGeometryLightmapSize(component, settings);
         const IntVector2 adjustedRegionSize = AdjustRegionSize(regionSize, maxRegionSize);
         const LightmapChartRegion region = AllocateLightmapChartRegion(
             settings, charts, adjustedRegionSize, baseChartIndex);
@@ -126,7 +147,7 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
                 node->GetName());
         }
 
-        const LightmapChartElement chartElement{ node, staticModel, objectIndex, region };
+        const LightmapChartElement chartElement{ node, component, objectIndex, region };
         charts[region.chartIndex_].elements_.push_back(chartElement);
     }
     return charts;
@@ -138,10 +159,16 @@ void ApplyLightmapCharts(const LightmapChartVector& charts)
     {
         for (const LightmapChartElement& element : chart.elements_)
         {
-            if (element.staticModel_)
+            Component* component = element.component_;
+            if (auto staticModel = dynamic_cast<StaticModel*>(component))
             {
-                element.staticModel_->SetLightmapIndex(chart.index_);
-                element.staticModel_->SetLightmapScaleOffset(element.region_.GetScaleOffset());
+                staticModel->SetLightmapIndex(chart.index_);
+                staticModel->SetLightmapScaleOffset(element.region_.GetScaleOffset());
+            }
+            else if (auto terrain = dynamic_cast<Terrain*>(component))
+            {
+                terrain->SetLightmapIndex(chart.index_);
+                terrain->SetLightmapScaleOffset(element.region_.GetScaleOffset());
             }
         }
     }

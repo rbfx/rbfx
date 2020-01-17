@@ -33,7 +33,7 @@ namespace Urho3D
 
 class Camera;
 class Context;
-class StaticModel;
+class Component;
 
 /// Used for mapping between geometry ID in geometry buffer and actual geometry.
 struct GeometryIDToObjectMapping
@@ -101,7 +101,7 @@ struct LightmapGeometryBakingScenesArray
 
 /// Generate baking scenes for lightmap charts.
 URHO3D_API LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
-    Context* context, const ea::vector<StaticModel*>& staticModels,
+    Context* context, const ea::vector<Component*>& geometries,
     unsigned lightmapSize, const LightmapGeometryBakingSettings& settings);
 
 /// Lightmap geometry buffer of lightmap chart.

@@ -42,8 +42,8 @@ namespace Urho3D
 namespace
 {
 
-/// Paramters for raytracing geometry creation.
-struct RaytracingGeometryCreateParams
+/// Parameters for raytracing geometry creation from geometry view.
+struct RaytracingFromGeometryViewParams
 {
     /// Transform from geometry to world space.
     Matrix3x4 worldTransform_;
@@ -82,7 +82,8 @@ ModelModelViewPair ParseModelForRaytracer(Model* model)
 }
 
 /// Create Embree geometry from geometry view.
-RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const RaytracingGeometryCreateParams& params, unsigned mask)
+RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice,
+    const RaytracingFromGeometryViewParams& params, unsigned mask)
 {
     const unsigned numVertices = params.geometry_->vertices_.size();
     const unsigned numIndices = params.geometry_->indices_.size();
@@ -146,8 +147,8 @@ RTCGeometry CreateEmbreeGeometry(RTCDevice embreeDevice, const RaytracingGeometr
 }
 
 /// Create raytracer geometries for static model.
-ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(
-    RTCDevice embreeDevice, ModelView* modelView, StaticModel* staticModel, unsigned objectIndex, unsigned lightmapUVChannel)
+ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(RTCDevice embreeDevice,
+    ModelView* modelView, StaticModel* staticModel, unsigned objectIndex, unsigned lightmapUVChannel)
 {
     Node* node = staticModel->GetNode();
     const unsigned lightmapIndex = staticModel->GetLightmapIndex();
@@ -190,7 +191,7 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(
                     raytracerGeometry.diffuseImageName_ = diffuseTexture->GetName();
             }
 
-            RaytracingGeometryCreateParams params;
+            RaytracingFromGeometryViewParams params;
             params.worldTransform_ = node->GetWorldTransform();
             params.worldRotation_ = node->GetWorldRotation();
             params.geometry_ = &geometryLODView;
@@ -204,7 +205,7 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(
                 params.vOffset_ = vOffset;
             }
 
-            raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometry(embreeDevice, params, mask);
+            raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometryForGeometryView(embreeDevice, params, mask);
             result.push_back(raytracerGeometry);
         }
     }
@@ -221,12 +222,15 @@ RaytracerScene::~RaytracerScene()
         rtcReleaseDevice(device_);
 }
 
-SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vector<StaticModel*>& staticModels, unsigned lightmapUVChannel)
+SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vector<Component*>& geometries, unsigned lightmapUVChannel)
 {
     // Queue models for parsing
     ea::hash_set<Model*> modelsToParse;
-    for (StaticModel* staticModel : staticModels)
-        modelsToParse.insert(staticModel->GetModel());
+    for (Component* geometry : geometries)
+    {
+        if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
+            modelsToParse.insert(staticModel->GetModel());
+    }
 
     // Start model parsing
     ea::vector<std::future<ModelModelViewPair>> modelParseTasks;
@@ -247,13 +251,15 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
     rtcSetSceneFlags(scene, RTC_SCENE_FLAG_CONTEXT_FILTER_FUNCTION);
 
     ea::vector<std::future<ea::vector<RaytracerGeometry>>> createRaytracerGeometriesTasks;
-    for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
+    for (unsigned objectIndex = 0; objectIndex < geometries.size(); ++objectIndex)
     {
-        StaticModel* staticModel = staticModels[objectIndex];
-
-        ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-        createRaytracerGeometriesTasks.push_back(std::async(CreateRaytracerGeometriesForStaticModel,
-            device, parsedModel, staticModel, objectIndex, lightmapUVChannel));
+        Component* geometry = geometries[objectIndex];
+        if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
+        {
+            ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
+            createRaytracerGeometriesTasks.push_back(std::async(CreateRaytracerGeometriesForStaticModel,
+                device, parsedModel, staticModel, objectIndex, lightmapUVChannel));
+        }
     }
 
     // Collect and attach Embree geometries
@@ -300,8 +306,11 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
 
     // Calculate max distance between objects
     BoundingBox boundingBox;
-    for (StaticModel* staticModel : staticModels)
-        boundingBox.Merge(staticModel->GetWorldBoundingBox());
+    for (Component* geometry : geometries)
+    {
+        if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
+            boundingBox.Merge(staticModel->GetWorldBoundingBox());
+    }
 
     const Vector3 sceneSize = boundingBox.Size();
     const float maxDistance = ea::max({ sceneSize.x_, sceneSize.y_, sceneSize.z_ });

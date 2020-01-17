@@ -30,6 +30,7 @@
 #include "../Graphics/Octree.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
+#include "../Graphics/TerrainPatch.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
 #include "../Scene/Scene.h"
@@ -61,17 +62,11 @@ BoundingBox CalculateLightmappedSceneBoundingBox(const ea::vector<Node*>& nodes)
                 boundingBox.Merge(staticModel->GetWorldBoundingBox());
         }
 
-#if 0
         for (Terrain* terrain : terrains)
         {
-            const IntVector2 numPatches = terrain->GetNumPatches();
-            for (unsigned i = 0; i < numPatches.x_ * numPatches.y_; ++i)
-            {
-                if (TerrainPatch* terrainPatch = terrain->GetPatch(i))
-                    boundingBox.Merge(terrainPatch->GetWorldBoundingBox());
-            }
+            if (terrain->IsEnabledEffective() && terrain->GetBakeLightmap())
+                boundingBox.Merge(terrain->CalculateWorldBoundingBox());
         }
-#endif
 
         for (LightProbeGroup* lightProbeGroup : lightProbeGroups)
         {
@@ -131,8 +126,17 @@ void DefaultBakedSceneCollector::LockScene(Scene* scene, const Vector3& chunkSiz
         {
             if (staticModel->IsEnabledEffective() && staticModel->GetBakeLightmap())
             {
-                chunkData.staticModels_.push_back(staticModel);
+                chunkData.geometries_.push_back(staticModel);
                 chunkData.boundingBox_.Merge(staticModel->GetWorldBoundingBox());
+            }
+        }
+
+        for (Terrain* terrain : terrains)
+        {
+            if (terrain->IsEnabledEffective() && terrain->GetBakeLightmap())
+            {
+                chunkData.geometries_.push_back(terrain);
+                chunkData.boundingBox_.Merge(terrain->CalculateWorldBoundingBox());
             }
         }
 
@@ -152,15 +156,15 @@ ea::vector<IntVector3> DefaultBakedSceneCollector::GetChunks()
     return chunks_.keys();
 }
 
-ea::vector<StaticModel*> DefaultBakedSceneCollector::GetUniqueStaticModels(const IntVector3& chunkIndex)
+ea::vector<Component*> DefaultBakedSceneCollector::GetUniqueGeometries(const IntVector3& chunkIndex)
 {
     auto iter = chunks_.find(chunkIndex);
     if (iter != chunks_.end())
-        return iter->second.staticModels_;
+        return iter->second.geometries_;
     return {};
 }
 
-void DefaultBakedSceneCollector::CommitStaticModels(const IntVector3& /*chunkIndex*/)
+void DefaultBakedSceneCollector::CommitGeometries(const IntVector3& /*chunkIndex*/)
 {
 }
 
@@ -205,7 +209,7 @@ ea::vector<Light*> DefaultBakedSceneCollector::GetLightsInBoundingBox(
     return lights;
 }
 
-ea::vector<StaticModel*> DefaultBakedSceneCollector::GetStaticModelsInBoundingBox(
+ea::vector<Component*> DefaultBakedSceneCollector::GetGeometriesInBoundingBox(
     const IntVector3& /*chunkIndex*/, const BoundingBox& boundingBox)
 {
     // Query drawables
@@ -214,16 +218,7 @@ ea::vector<StaticModel*> DefaultBakedSceneCollector::GetStaticModelsInBoundingBo
     octree_->GetDrawables(query);
 
     // Collect static models
-    ea::vector<StaticModel*> staticModels;
-    for (Drawable* drawable : drawables)
-    {
-        if (auto staticModel = dynamic_cast<StaticModel*>(drawable))
-        {
-            if (staticModel->GetBakeLightmap())
-                staticModels.push_back(staticModel);
-        }
-    }
-    return staticModels;
+    return CollectGeometriesFromDrawables(drawables);
 }
 
 ea::vector<LightProbeGroup*> DefaultBakedSceneCollector::GetLightProbeGroupsInBoundingBox(
@@ -238,7 +233,7 @@ ea::vector<LightProbeGroup*> DefaultBakedSceneCollector::GetLightProbeGroupsInBo
     return groups;
 }
 
-ea::vector<StaticModel*> DefaultBakedSceneCollector::GetStaticModelsInFrustum(
+ea::vector<Component*> DefaultBakedSceneCollector::GetGeometriesInFrustum(
     const IntVector3& /*chunkIndex*/, const Frustum& frustum)
 {
     // Query drawables
@@ -246,17 +241,7 @@ ea::vector<StaticModel*> DefaultBakedSceneCollector::GetStaticModelsInFrustum(
     FrustumOctreeQuery query(drawables, frustum, DRAWABLE_GEOMETRY);
     octree_->GetDrawables(query);
 
-    // Collect static models
-    ea::vector<StaticModel*> staticModels;
-    for (Drawable* drawable : drawables)
-    {
-        if (auto staticModel = dynamic_cast<StaticModel*>(drawable))
-        {
-            if (staticModel->GetBakeLightmap())
-                staticModels.push_back(staticModel);
-        }
-    }
-    return staticModels;
+    return CollectGeometriesFromDrawables(drawables);
 }
 
 void DefaultBakedSceneCollector::UnlockScene()
@@ -267,6 +252,34 @@ void DefaultBakedSceneCollector::UnlockScene()
     chunkGridDimension_ = IntVector3::ZERO;
     octree_ = nullptr;
     chunks_.clear();
+}
+
+ea::vector<Component*> DefaultBakedSceneCollector::CollectGeometriesFromDrawables(const ea::vector<Drawable*> drawables)
+{
+    ea::vector<Component*> geometries;
+    ea::hash_set<Terrain*> terrains;
+    for (Drawable* drawable : drawables)
+    {
+        if (auto staticModel = dynamic_cast<StaticModel*>(drawable))
+        {
+            if (staticModel->GetBakeLightmap())
+                geometries.push_back(staticModel);
+        }
+        if (auto terrainPatch = dynamic_cast<TerrainPatch*>(drawable))
+        {
+            Node* parentNode = terrainPatch->GetNode()->GetParent();
+            if (auto terrain = parentNode->GetComponent<Terrain>())
+            {
+                if (terrain->GetBakeLightmap())
+                    terrains.insert(terrain);
+            }
+        }
+    }
+
+    for (Terrain* terrain : terrains)
+        geometries.push_back(terrain);
+
+    return geometries;
 }
 
 }

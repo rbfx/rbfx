@@ -143,7 +143,7 @@ protected:
     bool bakeLightmap_{};
     /// Lightmap index.
     unsigned lightmapIndex_{};
-    /// Lightmap scale adn offset.
+    /// Lightmap scale and offset.
     Vector4 lightmapScaleOffset_{ 1.0f, 1.0f, 0.0f, 0.0f };
 
 private:
