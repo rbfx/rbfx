@@ -128,8 +128,6 @@ bool SceneTab::RenderWindowContent()
     if (GetScene() == nullptr)
         return true;
 
-    if (context_->GetInput()->IsMouseVisible())
-        lastMousePosition_ = context_->GetInput()->GetMousePosition();
     bool open = true;
 
     // Focus window when appearing
