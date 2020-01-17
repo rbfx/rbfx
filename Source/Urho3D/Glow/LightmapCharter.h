@@ -36,7 +36,7 @@ namespace Urho3D
 {
 
 class Node;
-class StaticModel;
+class Component;
 
 /// Region on the lightmap chart.
 struct LightmapChartRegion
@@ -76,8 +76,8 @@ struct LightmapChartElement
 {
     /// Node.
     Node* node_{};
-    /// Static model component.
-    StaticModel* staticModel_{};
+    /// Component.
+    Component* component_{};
     /// Object index, unique within array of charts.
     unsigned objectIndex_{};
     /// Allocated region.
@@ -112,7 +112,7 @@ using LightmapChartVector = ea::vector<LightmapChart>;
 
 /// Generate lightmap charts for given nodes.
 URHO3D_API LightmapChartVector GenerateLightmapCharts(
-    const ea::vector<StaticModel*>& staticModels, const LightmapChartingSettings& settings, unsigned baseChartIndex = 0);
+    const ea::vector<Component*>& geometries, const LightmapChartingSettings& settings, unsigned baseChartIndex = 0);
 
 /// Apply lightmap charts to scene components.
 URHO3D_API void ApplyLightmapCharts(const LightmapChartVector& charts);
