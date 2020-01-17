@@ -45,8 +45,6 @@ Tab::~Tab()
 bool Tab::RenderWindow()
 {
     Input* input = GetSubsystem<Input>();
-    if (input->IsMouseVisible())
-        lastMousePosition_ = input->GetMousePosition();
 
     if (autoPlace_)
     {
