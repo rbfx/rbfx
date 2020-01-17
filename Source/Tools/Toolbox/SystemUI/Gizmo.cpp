@@ -83,7 +83,7 @@ bool Gizmo::Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& no
             currentOrigin_.SetTranslation(center);
         }
         else if (!nodes.front().Expired())
-            currentOrigin_ = nodes.front()->GetTransform().ToMatrix4();
+            currentOrigin_ = nodes.front()->GetWorldTransform().ToMatrix4();
     }
 
     // Enums are compatible.
