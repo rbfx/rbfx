@@ -145,8 +145,6 @@ protected:
     ImGuiWindowFlags windowFlags_ = 0;
     /// Attribute inspector.
     AttributeInspector inspector_{context_};
-    /// Last known mouse position when it was visible.
-    IntVector2 lastMousePosition_{};
 };
 
 }
