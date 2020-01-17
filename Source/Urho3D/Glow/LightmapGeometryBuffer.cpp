@@ -294,7 +294,7 @@ float ExtractFloatFromVector4(const Vector4& data) { return data.w_; }
 }
 
 LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
-    Context* context, const ea::vector<StaticModel*>& staticModels,
+    Context* context, const ea::vector<Component*>& geometries,
     unsigned lightmapSize, const LightmapGeometryBakingSettings& settings)
 {
     const Vector2 texelSize{ 1.0f / lightmapSize, 1.0f / lightmapSize };
@@ -316,8 +316,11 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
 
     // Collect used models
     ea::hash_set<Model*> usedModels;
-    for (StaticModel* staticModel : staticModels)
-        usedModels.insert(staticModel->GetModel());
+    for (Component* geometry : geometries)
+    {
+        if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
+            usedModels.insert(staticModel->GetModel());
+    }
 
     // Schedule model seams collecting
     ea::vector<std::future<ea::pair<Model*, LightmapSeamVector>>> collectSeamsTasks;
@@ -344,47 +347,50 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     mapping.push_back();
 
     ea::unordered_map<unsigned, LightmapGeometryBakingScene> bakingScenes;
-    for (unsigned objectIndex = 0; objectIndex < staticModels.size(); ++objectIndex)
+    for (unsigned objectIndex = 0; objectIndex < geometries.size(); ++objectIndex)
     {
-        StaticModel* staticModel = staticModels[objectIndex];
-        Node* node = staticModel->GetNode();
-        const unsigned lightmapIndex = staticModel->GetLightmapIndex();
-        const Vector4 scaleOffset = staticModel->GetLightmapScaleOffset();
-        const Vector2 scale{ scaleOffset.x_, scaleOffset.y_ };
-        const Vector2 offset{ scaleOffset.z_, scaleOffset.w_ };
-
-        // Initialize baking scene if first hit
-        LightmapGeometryBakingScene& bakingScene = bakingScenes[lightmapIndex];
-        if (!bakingScene.context_)
+        Component* geometry = geometries[objectIndex];
+        if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
         {
-            bakingScene.context_ = context;
-            bakingScene.index_ = lightmapIndex;
-            bakingScene.lightmapSize_ = lightmapSize;
+            Node* node = staticModel->GetNode();
+            const unsigned lightmapIndex = staticModel->GetLightmapIndex();
+            const Vector4 scaleOffset = staticModel->GetLightmapScaleOffset();
+            const Vector2 scale{ scaleOffset.x_, scaleOffset.y_ };
+            const Vector2 offset{ scaleOffset.z_, scaleOffset.w_ };
 
-            bakingScene.scene_ = MakeShared<Scene>(context);
-            bakingScene.scene_->CreateComponent<Octree>();
+            // Initialize baking scene if first hit
+            LightmapGeometryBakingScene& bakingScene = bakingScenes[lightmapIndex];
+            if (!bakingScene.context_)
+            {
+                bakingScene.context_ = context;
+                bakingScene.index_ = lightmapIndex;
+                bakingScene.lightmapSize_ = lightmapSize;
 
-            bakingScene.camera_ = bakingScene.scene_->CreateComponent<Camera>();
+                bakingScene.scene_ = MakeShared<Scene>(context);
+                bakingScene.scene_->CreateComponent<Octree>();
 
-            bakingScene.renderPath_ = renderPath;
+                bakingScene.camera_ = bakingScene.scene_->CreateComponent<Camera>();
+
+                bakingScene.renderPath_ = renderPath;
+            }
+
+            // Add seams
+            const LightmapSeamVector& modelSeams = modelSeamsCache[staticModel->GetModel()];
+            for (const LightmapSeam& seam : modelSeams)
+                bakingScene.seams_.push_back(seam.Transformed(scale, offset));
+
+            // Add node
+            Node* bakingNode = bakingScene.scene_->CreateChild();
+            bakingNode->SetPosition(node->GetWorldPosition());
+            bakingNode->SetRotation(node->GetWorldRotation());
+            bakingNode->SetScale(node->GetWorldScale());
+
+            auto staticModelForLightmap = bakingNode->CreateComponent<StaticModelForLightmap>();
+            const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
+                staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset);
+
+            mapping.append(objectMapping);
         }
-
-        // Add seams
-        const LightmapSeamVector& modelSeams = modelSeamsCache[staticModel->GetModel()];
-        for (const LightmapSeam& seam : modelSeams)
-            bakingScene.seams_.push_back(seam.Transformed(scale, offset));
-
-        // Add node
-        Node* bakingNode = bakingScene.scene_->CreateChild();
-        bakingNode->SetPosition(node->GetWorldPosition());
-        bakingNode->SetRotation(node->GetWorldRotation());
-        bakingNode->SetScale(node->GetWorldScale());
-
-        auto staticModelForLightmap = bakingNode->CreateComponent<StaticModelForLightmap>();
-        const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
-            staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset);
-
-        mapping.append(objectMapping);
     }
 
     ea::vector<LightmapGeometryBakingScene> result;

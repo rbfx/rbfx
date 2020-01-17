@@ -145,6 +145,8 @@ public:
     IntVector2 WorldToHeightMap(const Vector3& worldPosition) const;
     /// Convert heightmap pixel position to world position.
     Vector3 HeightMapToWorld(const IntVector2& pixelPosition) const;
+    /// Convert heightmap pixel position to UV.
+    Vector2 HeightMapToUV(const IntVector2& pixelPosition) const;
 
     /// Return north neighbor terrain.
     Terrain* GetNorthNeighbor() const { return north_; }
@@ -216,6 +218,22 @@ public:
     /// Return material attribute.
     ResourceRef GetMaterialAttr() const;
 
+    /// Return world bounding box of the terrain. Calculations are not cached.
+    BoundingBox CalculateWorldBoundingBox() const;
+
+    /// Set whether the lightmap is baked for this object.
+    void SetBakeLightmap(bool bakeLightmap);
+    /// Return whether the lightmap is baked for this object.
+    bool GetBakeLightmap() const { return bakeLightmap_; }
+    /// Set lightmap index.
+    void SetLightmapIndex(unsigned idx) { lightmapIndex_ = idx; UpdatePatchesLightmaps(); }
+    /// Return lightmap index.
+    unsigned GetLightmapIndex() const { return lightmapIndex_; }
+    /// Set lightmap scale and offset.
+    void SetLightmapScaleOffset(const Vector4& scaleOffset) { lightmapScaleOffset_ = scaleOffset; UpdatePatchesLightmaps(); }
+    /// Return lightmap scale and offset.
+    const Vector4& GetLightmapScaleOffset() const { return lightmapScaleOffset_; }
+
 private:
     /// Regenerate terrain geometry.
     void CreateGeometry();
@@ -245,6 +263,8 @@ private:
     void MarkNeighborsDirty() { neighborsDirty_ = true; }
     /// Mark terrain dirty.
     void MarkTerrainDirty() { recreateTerrain_ = true; }
+    /// Update lightmap settings in patches.
+    void UpdatePatchesLightmaps();
 
     /// Shared index buffer.
     SharedPtr<IndexBuffer> indexBuffer_;
@@ -256,6 +276,12 @@ private:
     ea::shared_array<float> sourceHeightData_;
     /// Material.
     SharedPtr<Material> material_;
+    /// Whether the lightmap is enabled.
+    bool bakeLightmap_{};
+    /// Lightmap index.
+    unsigned lightmapIndex_{};
+    /// Lightmap scale and offset.
+    Vector4 lightmapScaleOffset_{ 1.0f, 1.0f, 0.0f, 0.0f };
     /// Terrain patches.
     ea::vector<WeakPtr<TerrainPatch> > patches_;
     /// Draw ranges for different LODs and stitching combinations.

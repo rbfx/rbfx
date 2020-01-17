@@ -207,15 +207,15 @@ struct IncrementalLightmapper::Impl
 
         // Collect nodes for current chunks
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::vector<StaticModel*> uniqueStaticModels = collector_->GetUniqueStaticModels(chunk);
+        const ea::vector<Component*> uniqueGeometries = collector_->GetUniqueGeometries(chunk);
 
         // Generate charts
         const LightmapChartVector charts = GenerateLightmapCharts(
-            uniqueStaticModels, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
+            uniqueGeometries, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
 
         // Apply charts to scene
         ApplyLightmapCharts(charts);
-        collector_->CommitStaticModels(chunk);
+        collector_->CommitGeometries(chunk);
 
         // Advance
         ctx.lightmapChartBaseIndex_ += charts.size();
