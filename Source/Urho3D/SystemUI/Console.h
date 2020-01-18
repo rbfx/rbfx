@@ -23,11 +23,12 @@
 
 #pragma once
 
-#include <EASTL/unique_ptr.h>
-#include <EASTL/hash_set.h>
-
 #include "../Core/Object.h"
 #include "../IO/Log.h"
+
+#include <EASTL/bonus/ring_buffer.h>
+#include <EASTL/hash_set.h>
+#include <EASTL/unique_ptr.h>
 
 namespace Urho3D
 {
@@ -111,7 +112,7 @@ private:
     /// Last used command interpreter.
     int currentInterpreter_ = 0;
     /// Command history.
-    ea::vector<LogEntry> history_{};
+    ea::ring_buffer<LogEntry> history_{2000};
     /// Command history maximum rows.
     unsigned historyRows_ = 512;
     /// Is console window open.
