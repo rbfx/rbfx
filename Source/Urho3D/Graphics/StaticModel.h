@@ -105,6 +105,10 @@ public:
     void SetBakeLightmap(bool bakeLightmap) { bakeLightmap_ = bakeLightmap; UpdateBatchesLightmaps(); }
     /// Return whether the lightmap is baked for this object.
     bool GetBakeLightmap() const { return bakeLightmap_; }
+    /// Set scale in lightmap.
+    void SetScaleInLightmap(float scale) { scaleInLightmap_ = scale; }
+    /// Return scale in lightmap.
+    float GetScaleInLightmap() const { return scaleInLightmap_; }
     /// Set lightmap index.
     void SetLightmapIndex(unsigned idx) { lightmapIndex_ = idx; UpdateBatchesLightmaps(); }
     /// Return lightmap index.
@@ -141,6 +145,8 @@ protected:
 
     /// Whether the lightmap is enabled.
     bool bakeLightmap_{};
+    /// Texel density scale in lightmap.
+    float scaleInLightmap_{ 1.0f };
     /// Lightmap index.
     unsigned lightmapIndex_{};
     /// Lightmap scale and offset.
