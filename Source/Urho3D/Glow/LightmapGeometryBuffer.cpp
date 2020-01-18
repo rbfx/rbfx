@@ -38,6 +38,7 @@
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Texture2D.h"
 #include "../Graphics/Terrain.h"
+#include "../Graphics/TerrainPatch.h"
 #include "../Graphics/View.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
@@ -413,12 +414,23 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
                 auto terrainForLightmap = bakingNode->CreateComponent<Terrain>();
                 terrainForLightmap->SetMaxLodLevels(1);
                 terrainForLightmap->SetSpacing(terrain->GetSpacing());
-                terrainForLightmap->SetHeightMap(terrain->GetHeightMap());
                 terrainForLightmap->SetPatchSize(terrain->GetPatchSize());
                 terrainForLightmap->SetSmoothing(terrain->GetSmoothing());
-                terrainForLightmap->SetBakeLightmap(true);
 
-                SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, terrainForLightmap->GetMaterial(),
+                // This is required to generate lightmap UV for terrain.
+                // However, this flag will break emission map baking.
+                // Therefore, reset this flag for all patches.
+                terrainForLightmap->SetBakeLightmap(true);
+                terrainForLightmap->SetHeightMap(terrain->GetHeightMap());
+                for (unsigned i = 0; ; ++i)
+                {
+                    if (TerrainPatch* patch = terrainForLightmap->GetPatch(i))
+                        patch->SetBakeLightmap(false);
+                    else
+                        break;
+                }
+
+                SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, terrain->GetMaterial(),
                     scaleOffset, tap, numMultiTapSamples, tapOffset, mapping.size());
 
                 terrainForLightmap->SetMaterial(material);
