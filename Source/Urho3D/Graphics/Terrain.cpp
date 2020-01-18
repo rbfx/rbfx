@@ -660,7 +660,7 @@ Vector3 Terrain::HeightMapToWorld(const IntVector2& pixelPosition) const
 Vector2 Terrain::HeightMapToUV(const IntVector2& pixelPosition) const
 {
     const float u = static_cast<float>(pixelPosition.x_) / (numVertices_.x_ - 1);
-    const float v = 1.0f - static_cast<float>(pixelPosition.y_) / (numVertices_.y_ - 1);
+    const float v = static_cast<float>(pixelPosition.y_) / (numVertices_.y_ - 1);
     return { u, v };
 }
 
@@ -743,7 +743,7 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
                 *vertexData++ = normal.z_;
 
                 // Texture coordinate(s)
-                const Vector2 texCoord = HeightMapToUV({ xPos, zPos });
+                const Vector2 texCoord = HeightMapToUV({ xPos, numVertices_.y_ - 1 - zPos });
                 *vertexData++ = texCoord.x_;
                 *vertexData++ = texCoord.y_;
 
