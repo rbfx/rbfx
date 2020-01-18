@@ -24,6 +24,7 @@
 
 #include "../Core/Variant.h"
 #include "../IO/Log.h"
+#include "../Glow/Helpers.h"
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Model.h"
 #include "../Graphics/StaticModel.h"
@@ -160,16 +161,8 @@ void ApplyLightmapCharts(const LightmapChartVector& charts)
         for (const LightmapChartElement& element : chart.elements_)
         {
             Component* component = element.component_;
-            if (auto staticModel = dynamic_cast<StaticModel*>(component))
-            {
-                staticModel->SetLightmapIndex(chart.index_);
-                staticModel->SetLightmapScaleOffset(element.region_.GetScaleOffset());
-            }
-            else if (auto terrain = dynamic_cast<Terrain*>(component))
-            {
-                terrain->SetLightmapIndex(chart.index_);
-                terrain->SetLightmapScaleOffset(element.region_.GetScaleOffset());
-            }
+            SetLightmapIndex(component, chart.index_);
+            SetLightmapScaleOffset(component, element.region_.GetScaleOffset());
         }
     }
 }

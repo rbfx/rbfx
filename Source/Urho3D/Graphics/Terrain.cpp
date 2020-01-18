@@ -887,6 +887,7 @@ void Terrain::SetBakeLightmap(bool bakeLightmap)
     if (bakeLightmap_ != bakeLightmap)
     {
         bakeLightmap_ = bakeLightmap;
+        lastPatchSize_ = 0; // Force full recreate
         CreateGeometry();
     }
 }

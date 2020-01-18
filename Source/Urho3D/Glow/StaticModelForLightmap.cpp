@@ -25,6 +25,7 @@
 #include "../Glow/StaticModelForLightmap.h"
 
 #include "../Core/Context.h"
+#include "../Glow/Helpers.h"
 #include "../Glow/LightmapUVGenerator.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Model.h"
@@ -77,30 +78,8 @@ GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(
                 const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
                 const float tapDepth = 1.0f - static_cast<float>(tap + 1) / (multiTapOffsets.size() + 1);
 
-                auto material = bakingMaterial->Clone();
-                material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
-                material->SetShaderParameter("LightmapLayer", tapDepth);
-                material->SetShaderParameter("LightmapGeometry", static_cast<float>(baseGeometryId + mapping.size()));
-                material->SetShaderParameter("MatDiffColor", sourceMaterial->GetShaderParameter("MatDiffColor").GetVector4());
-                material->SetShaderParameter("MatEmissiveColor", sourceMaterial->GetShaderParameter("MatEmissiveColor").GetVector3());
-                material->SetShaderParameter("UOffset", sourceMaterial->GetShaderParameter("UOffset").GetVector4());
-                material->SetShaderParameter("VOffset", sourceMaterial->GetShaderParameter("VOffset").GetVector4());
-
-                ea::string shaderDefines;
-
-                if (Texture* diffuseMap = sourceMaterial->GetTexture(TU_DIFFUSE))
-                {
-                    material->SetTexture(TU_DIFFUSE, diffuseMap);
-                    shaderDefines += "DIFFMAP ";
-                }
-                if (Texture* emissiveMap = sourceMaterial->GetTexture(TU_EMISSIVE))
-                {
-                    material->SetTexture(TU_EMISSIVE, emissiveMap);
-                    shaderDefines += "EMISSIVEMAP ";
-                }
-
-                material->SetVertexShaderDefines(shaderDefines);
-                material->SetPixelShaderDefines(shaderDefines);
+                SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, sourceMaterial,
+                    scaleOffset, tap, multiTapOffsets.size(), tapOffset, baseGeometryId + mapping.size());
 
                 SourceBatch& batch = batches_.push_back();
                 batch.distance_ = 0.0f;
