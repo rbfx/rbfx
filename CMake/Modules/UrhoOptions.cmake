@@ -121,8 +121,8 @@ _option2(URHO3D_THREADING         "Enable multithreading"                       
 _option(URHO3D_WEBP               "WEBP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
 # Web
 _option2(URHO3D_WEB_ASSEMBLY      "Use wasm instead of asm.js"                            ON                   "WEB"                           OFF)
-_option2(EMSCRIPTEN_MEMORY_GROWTH "Allow memory growth. Disables some optimizations."     OFF                  "WEB"                           OFF)
-set(EMSCRIPTEN_MEMORY_LIMIT 128 CACHE STRING "Memory limit in megabytes. Set to 0 for dynamic growth.")
+_option2(EMSCRIPTEN_ALLOW_MEMORY_GROWTH "Allow memory growth. Disables some optimizations." OFF                "WEB"                           OFF)
+set(EMSCRIPTEN_TOTAL_MEMORY 128MB CACHE STRING "Memory limit in megabytes. Set to 0 for dynamic growth. Must be multiple of 64KB.")
 
 # Misc
 _option2(URHO3D_EXTRAS            "Build extra tools"                                     ${URHO3D_ENABLE_ALL} "NOT WEB;NOT MOBILE"            OFF)
