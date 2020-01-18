@@ -56,8 +56,9 @@ ea::span<const float> GetKernel(int radius)
     }
 }
 
-/// Get luminance of given color value.
-float GetLuminance(const Vector4& color)
+/// Get luminance of given color value (for 3D and 4D vectors).
+template <class T>
+float GetLuminance(const T& color)
 {
     return Color{ color.x_, color.y_, color.z_ }.Luma();
 }
@@ -75,13 +76,14 @@ float CalculateEdgeWeight(
     return std::exp(0.0f - colorWeight - positionWeight) * normalWeight;
 }
 
-}
-
-void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const IndirectFilterParameters& params, unsigned numTasks)
+/// Apply Gauss filter edge stopping function to array.
+template <class T>
+void FilterArray(const ea::vector<T>& input, ea::vector<T>& output,
+    const LightmapChartGeometryBuffer& geometryBuffer,
+    const EdgeStoppingGaussFilterParameters& params, unsigned numTasks)
 {
     const ea::span<const float> kernelWeights = GetKernel(params.kernelRadius_);
-    ParallelFor(bakedIndirect.light_.size(), numTasks,
+    ParallelFor(input.size(), numTasks,
         [&](unsigned fromIndex, unsigned toIndex)
     {
         for (unsigned index = fromIndex; index < toIndex; ++index)
@@ -92,13 +94,13 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
 
             const IntVector2 centerLocation = geometryBuffer.IndexToLocation(index);
 
-            const Vector4 centerColor = bakedIndirect.light_[index];
+            const T centerColor = input[index];
             const float centerLuminance = GetLuminance(centerColor);
             const Vector3 centerPosition = geometryBuffer.positions_[index];
             const Vector3 centerNormal = geometryBuffer.smoothNormals_[index];
 
             float colorWeight = kernelWeights[0] * kernelWeights[0];
-            Vector4 colorSum = centerColor * colorWeight;
+            T colorSum = centerColor * colorWeight;
             for (int dy = -params.kernelRadius_; dy <= params.kernelRadius_; ++dy)
             {
                 for (int dx = -params.kernelRadius_; dx <= params.kernelRadius_; ++dx)
@@ -119,7 +121,7 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
                     if (!otherGeometryId)
                         continue;
 
-                    const Vector4 otherColor = bakedIndirect.light_[otherIndex];
+                    const T otherColor = input[otherIndex];
                     const float weight = CalculateEdgeWeight(centerLuminance, GetLuminance(otherColor), params.luminanceSigma_,
                         centerPosition, geometryBuffer.positions_[otherIndex], dxdy * params.positionSigma_,
                         centerNormal, geometryBuffer.smoothNormals_[otherIndex], params.normalPower_);
@@ -129,12 +131,25 @@ void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const Lightm
                 }
             }
 
-            bakedIndirect.lightSwap_[index] = colorSum / ea::max(M_EPSILON, colorWeight);
+            output[index] = colorSum / ea::max(M_EPSILON, colorWeight);
         }
     });
+}
 
-    // Swap buffers
-    ea::swap(bakedIndirect.light_, bakedIndirect.lightSwap_);
+}
+
+void FilterDirectLight(LightmapChartBakedDirect& bakedDirect, ea::vector<Vector3>& swapBuffer,
+    const LightmapChartGeometryBuffer& geometryBuffer, const EdgeStoppingGaussFilterParameters& params, unsigned numTasks)
+{
+    FilterArray(bakedDirect.directLight_, swapBuffer, geometryBuffer, params, numTasks);
+    ea::swap(bakedDirect.directLight_, swapBuffer);
+}
+
+void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, ea::vector<Vector4>& swapBuffer,
+    const LightmapChartGeometryBuffer& geometryBuffer, const EdgeStoppingGaussFilterParameters& params, unsigned numTasks)
+{
+    FilterArray(bakedIndirect.light_, swapBuffer, geometryBuffer, params, numTasks);
+    ea::swap(bakedIndirect.light_, swapBuffer);
 }
 
 }

@@ -26,29 +26,18 @@
 
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Glow/LightTracer.h"
+#include "../Graphics/LightmapSettings.h"
 #include "../Graphics/LightProbeGroup.h"
 
 namespace Urho3D
 {
 
-/// Parameters for indirect light filtering.
-struct IndirectFilterParameters
-{
-    /// Kernel radius.
-    int kernelRadius_{ 2 };
-    /// Upscale factor for offsets.
-    int upscale_{ 1 };
-    /// Color weight. The lesser value is, the more color details are preserved on flat surface.
-    float luminanceSigma_{ 10.0f };
-    /// Normal weight. The higher value is, the more color details are preserved on normal edges.
-    float normalPower_{ 4.0f };
-    /// Position weight. The lesser value is, the more color details are preserved on position edges.
-    float positionSigma_{ 1.0f };
-};
+/// Filter direct light.
+URHO3D_API void FilterDirectLight(LightmapChartBakedDirect& bakedDirect, ea::vector<Vector3>& swapBuffer,
+    const LightmapChartGeometryBuffer& geometryBuffer, const EdgeStoppingGaussFilterParameters& params, unsigned numTasks);
 
 /// Filter indirect light.
-URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const IndirectFilterParameters& params, unsigned numTasks);
-
+URHO3D_API void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, ea::vector<Vector4>& swapBuffer,
+    const LightmapChartGeometryBuffer& geometryBuffer, const EdgeStoppingGaussFilterParameters& params, unsigned numTasks);
 
 }
