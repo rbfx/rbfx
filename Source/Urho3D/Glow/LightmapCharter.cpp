@@ -38,7 +38,7 @@ namespace
 
 /// Calculate lightmap size for given model with given scale.
 IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
-    Model* model, const Vector3& scale)
+    Model* model, const Vector3& scale, float scaleInLightmap)
 {
     const Variant& modelLightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
     const Variant& modelLightmapDensityVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapDensityKey);
@@ -50,7 +50,7 @@ IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
     const float rescaleFactor = nodeScale * static_cast<float>(texelDensity) / modelLightmapDensity;
     const float clampedRescaleFactor = ea::max(minObjectScale, rescaleFactor);
 
-    return VectorCeilToInt(modelLightmapSize * clampedRescaleFactor);
+    return VectorCeilToInt(modelLightmapSize * clampedRescaleFactor * scaleInLightmap);
 }
 
 /// Adjust size to lightmap chart size.
@@ -103,7 +103,8 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
 {
     Node* node = staticModel->GetNode();
     Model* model = staticModel->GetModel();
-    return CalculateModelLightmapSize(settings.texelDensity_, settings.minObjectScale_, model, node->GetWorldScale());
+    return CalculateModelLightmapSize(settings.texelDensity_, settings.minObjectScale_, model,
+        node->GetWorldScale(), staticModel->GetScaleInLightmap());
 }
 
 IntVector2 CalculateTerrainLightmapSize(Terrain* terrain, const LightmapChartingSettings& settings)
@@ -113,7 +114,8 @@ IntVector2 CalculateTerrainLightmapSize(Terrain* terrain, const LightmapCharting
     const Vector3 worldScale = node->GetWorldScale();
     const Vector2 size = static_cast<Vector2>(terrain->GetNumPatches()) * static_cast<float>(terrain->GetPatchSize());
     const Vector2 dimensions = size * Vector2{ worldScale.x_, worldScale.z_ } * Vector2{ spacing.x_, spacing.z_ };
-    return VectorCeilToInt(dimensions * settings.texelDensity_);
+    const float scaleInLightmap = terrain->GetScaleInLightmap();
+    return VectorCeilToInt(dimensions * settings.texelDensity_ * scaleInLightmap);
 }
 
 IntVector2 CalculateGeometryLightmapSize(Component* component, const LightmapChartingSettings& settings)
