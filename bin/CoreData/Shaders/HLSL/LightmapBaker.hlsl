@@ -92,8 +92,10 @@ void PS(
     float3 dPmax = max(abs(dPdx), abs(dPdy));
     float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
 
-    oPosition = float4(iWorldPos.xyz, iMetadata.x);
-    oSmoothPosition = float4(iWorldPos.xyz, texelRadius);
+    float3 position = iWorldPos.xyz + sign(faceNormal) * abs(iWorldPos.xyz * 0.0000002);
+
+    oPosition = float4(position, iMetadata.x);
+    oSmoothPosition = float4(position, texelRadius);
     oFaceNormal = float4(faceNormal, 1.0);
     oSmoothNormal = float4(normal, 1.0);
     oAlbedo = float4(diffColor.rgb, 1.0);
