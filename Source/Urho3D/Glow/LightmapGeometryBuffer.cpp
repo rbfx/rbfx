@@ -37,6 +37,7 @@
 #include "../Graphics/Renderer.h"
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Texture2D.h"
+#include "../Graphics/Terrain.h"
 #include "../Graphics/View.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
@@ -349,47 +350,85 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     ea::unordered_map<unsigned, LightmapGeometryBakingScene> bakingScenes;
     for (unsigned objectIndex = 0; objectIndex < geometries.size(); ++objectIndex)
     {
+        // Extract input parameters
         Component* geometry = geometries[objectIndex];
+        Node* node = geometry->GetNode();
+        const unsigned lightmapIndex = GetLightmapIndex(geometry);
+        const Vector4 scaleOffset = GetLightmapScaleOffset(geometry);
+        const Vector2 scale{ scaleOffset.x_, scaleOffset.y_ };
+        const Vector2 offset{ scaleOffset.z_, scaleOffset.w_ };
+
+        // Initialize baking scene if first hit
+        LightmapGeometryBakingScene& bakingScene = bakingScenes[lightmapIndex];
+        if (!bakingScene.context_)
+        {
+            bakingScene.context_ = context;
+            bakingScene.index_ = lightmapIndex;
+            bakingScene.lightmapSize_ = lightmapSize;
+
+            bakingScene.scene_ = MakeShared<Scene>(context);
+            bakingScene.scene_->CreateComponent<Octree>();
+
+            Node* cameraNode = bakingScene.scene_->CreateChild();
+            cameraNode->SetPosition(Vector3::BACK * M_LARGE_VALUE);
+            bakingScene.camera_ = cameraNode->CreateComponent<Camera>();
+            bakingScene.camera_->SetFarClip(M_LARGE_VALUE * 2);
+            bakingScene.camera_->SetOrthographic(true);
+            bakingScene.camera_->SetOrthoSize(M_LARGE_VALUE * 2);
+
+            bakingScene.renderPath_ = renderPath;
+        }
+
         if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
         {
-            Node* node = staticModel->GetNode();
-            const unsigned lightmapIndex = staticModel->GetLightmapIndex();
-            const Vector4 scaleOffset = staticModel->GetLightmapScaleOffset();
-            const Vector2 scale{ scaleOffset.x_, scaleOffset.y_ };
-            const Vector2 offset{ scaleOffset.z_, scaleOffset.w_ };
-
-            // Initialize baking scene if first hit
-            LightmapGeometryBakingScene& bakingScene = bakingScenes[lightmapIndex];
-            if (!bakingScene.context_)
-            {
-                bakingScene.context_ = context;
-                bakingScene.index_ = lightmapIndex;
-                bakingScene.lightmapSize_ = lightmapSize;
-
-                bakingScene.scene_ = MakeShared<Scene>(context);
-                bakingScene.scene_->CreateComponent<Octree>();
-
-                bakingScene.camera_ = bakingScene.scene_->CreateComponent<Camera>();
-
-                bakingScene.renderPath_ = renderPath;
-            }
-
-            // Add seams
-            const LightmapSeamVector& modelSeams = modelSeamsCache[staticModel->GetModel()];
-            for (const LightmapSeam& seam : modelSeams)
-                bakingScene.seams_.push_back(seam.Transformed(scale, offset));
-
             // Add node
             Node* bakingNode = bakingScene.scene_->CreateChild();
             bakingNode->SetPosition(node->GetWorldPosition());
             bakingNode->SetRotation(node->GetWorldRotation());
             bakingNode->SetScale(node->GetWorldScale());
 
+            // Add seams
+            const LightmapSeamVector& modelSeams = modelSeamsCache[staticModel->GetModel()];
+            for (const LightmapSeam& seam : modelSeams)
+                bakingScene.seams_.push_back(seam.Transformed(scale, offset));
+
             auto staticModelForLightmap = bakingNode->CreateComponent<StaticModelForLightmap>();
             const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
                 staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset);
 
             mapping.append(objectMapping);
+        }
+        else if (auto terrain = dynamic_cast<Terrain*>(geometry))
+        {
+            for (unsigned tap = 0; tap < numMultiTapSamples; ++tap)
+            {
+                // Add node
+                Node* bakingNode = bakingScene.scene_->CreateChild();
+                bakingNode->SetPosition(node->GetWorldPosition());
+                bakingNode->SetRotation(node->GetWorldRotation());
+                bakingNode->SetScale(node->GetWorldScale());
+
+                // Add terrain
+                const Vector2 tapOffset = multiTapOffsets[tap] * texelSize;
+                auto terrainForLightmap = bakingNode->CreateComponent<Terrain>();
+                terrainForLightmap->SetMaxLodLevels(1);
+                terrainForLightmap->SetSpacing(terrain->GetSpacing());
+                terrainForLightmap->SetHeightMap(terrain->GetHeightMap());
+                terrainForLightmap->SetPatchSize(terrain->GetPatchSize());
+                terrainForLightmap->SetSmoothing(terrain->GetSmoothing());
+                terrainForLightmap->SetBakeLightmap(true);
+
+                SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, terrainForLightmap->GetMaterial(),
+                    scaleOffset, tap, numMultiTapSamples, tapOffset, mapping.size());
+
+                terrainForLightmap->SetMaterial(material);
+            }
+
+            GeometryIDToObjectMapping objectMapping;
+            objectMapping.objectIndex_ = objectIndex;
+            objectMapping.geometryIndex_ = 0;
+            objectMapping.lodIndex_ = 0;
+            mapping.push_back(objectMapping);
         }
     }
 

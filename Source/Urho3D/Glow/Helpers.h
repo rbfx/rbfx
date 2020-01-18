@@ -25,7 +25,10 @@
 #include "../Core/Context.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/RenderPath.h"
+#include "../Graphics/StaticModel.h"
+#include "../Graphics/Renderer.h"
 #include "../Graphics/Technique.h"
+#include "../Graphics/Terrain.h"
 #include "../Resource/ResourceCache.h"
 #include "../Resource/XMLFile.h"
 
@@ -69,7 +72,7 @@ inline SharedPtr<RenderPath> LoadRenderPath(Context* context, const ea::string& 
 }
 
 /// Return whether the material is opaque.
-inline bool IsMaterialOpaque(Material* material)
+inline bool IsMaterialOpaque(const Material* material)
 {
     const Technique* technique = material->GetTechnique(0);
     if (technique && technique->GetName().contains("alpha", false))
@@ -85,13 +88,13 @@ inline bool IsMaterialOpaque(Material* material)
 }
 
 /// Return material diffuse color.
-inline Color GetMaterialDiffuseColor(Material* material)
+inline Color GetMaterialDiffuseColor(const Material* material)
 {
     return static_cast<Color>(material->GetShaderParameter("MatDiffColor").GetVector4());
 }
 
 /// Return material diffuse texture and UV offsets.
-inline Texture* GetMaterialDiffuseTexture(Material* material, Vector4& uOffset, Vector4& vOffset)
+inline Texture* GetMaterialDiffuseTexture(const Material* material, Vector4& uOffset, Vector4& vOffset)
 {
     Texture* texture = material->GetTexture(TU_DIFFUSE);
     if (!texture)
@@ -102,5 +105,93 @@ inline Texture* GetMaterialDiffuseTexture(Material* material, Vector4& uOffset, 
     return texture;
 }
 
+/// Set lightmap index for component.
+inline void SetLightmapIndex(Component* component, unsigned lightmapIndex)
+{
+    if (auto staticModel = dynamic_cast<StaticModel*>(component))
+        staticModel->SetLightmapIndex(lightmapIndex);
+    else if (auto terrain = dynamic_cast<Terrain*>(component))
+        terrain->SetLightmapIndex(lightmapIndex);
+    else
+        assert(0);
+}
+
+/// Return lightmap index for component.
+inline unsigned GetLightmapIndex(const Component* component)
+{
+    if (auto staticModel = dynamic_cast<const StaticModel*>(component))
+        return staticModel->GetLightmapIndex();
+    else if (auto terrain = dynamic_cast<const Terrain*>(component))
+        return terrain->GetLightmapIndex();
+    else
+    {
+        assert(0);
+        return 0;
+    }
+}
+
+/// Set lightmap scale and offset for component.
+inline void SetLightmapScaleOffset(Component* component, const Vector4& scaleOffset)
+{
+    if (auto staticModel = dynamic_cast<StaticModel*>(component))
+        staticModel->SetLightmapScaleOffset(scaleOffset);
+    else if (auto terrain = dynamic_cast<Terrain*>(component))
+        terrain->SetLightmapScaleOffset(scaleOffset);
+    else
+        assert(0);
+}
+
+/// Return lightmap scale and offset for component.
+inline Vector4 GetLightmapScaleOffset(const Component* component)
+{
+    if (auto staticModel = dynamic_cast<const StaticModel*>(component))
+        return staticModel->GetLightmapScaleOffset();
+    else if (auto terrain = dynamic_cast<const Terrain*>(component))
+        return terrain->GetLightmapScaleOffset();
+    else
+    {
+        assert(0);
+        return Vector4::ZERO;
+    }
+}
+
+/// Create material for geometry buffer baking.
+inline SharedPtr<Material> CreateBakingMaterial(Material* bakingMaterial, Material* sourceMaterial,
+    const Vector4& scaleOffset, unsigned tapIndex, unsigned numTaps, const Vector2& tapOffset, unsigned geometryId)
+{
+    auto renderer = bakingMaterial->GetContext()->GetRenderer();
+    if (!sourceMaterial)
+        sourceMaterial = renderer->GetDefaultMaterial();
+
+    const Vector4 tapOffset4{ 0.0f, 0.0f, tapOffset.x_, tapOffset.y_ };
+    const float tapDepth = 1.0f - static_cast<float>(tapIndex + 1) / (numTaps + 1);
+
+    auto material = bakingMaterial->Clone();
+    material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
+    material->SetShaderParameter("LightmapLayer", tapDepth);
+    material->SetShaderParameter("LightmapGeometry", static_cast<float>(geometryId));
+    material->SetShaderParameter("MatDiffColor", sourceMaterial->GetShaderParameter("MatDiffColor").GetVector4());
+    material->SetShaderParameter("MatEmissiveColor", sourceMaterial->GetShaderParameter("MatEmissiveColor").GetVector3());
+    material->SetShaderParameter("UOffset", sourceMaterial->GetShaderParameter("UOffset").GetVector4());
+    material->SetShaderParameter("VOffset", sourceMaterial->GetShaderParameter("VOffset").GetVector4());
+
+    ea::string shaderDefines;
+
+    if (Texture* diffuseMap = sourceMaterial->GetTexture(TU_DIFFUSE))
+    {
+        material->SetTexture(TU_DIFFUSE, diffuseMap);
+        shaderDefines += "DIFFMAP ";
+    }
+    if (Texture* emissiveMap = sourceMaterial->GetTexture(TU_EMISSIVE))
+    {
+        material->SetTexture(TU_EMISSIVE, emissiveMap);
+        shaderDefines += "EMISSIVEMAP ";
+    }
+
+    material->SetVertexShaderDefines(shaderDefines);
+    material->SetPixelShaderDefines(shaderDefines);
+
+    return material;
+}
 
 }
