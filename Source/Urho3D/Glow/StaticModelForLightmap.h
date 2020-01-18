@@ -49,7 +49,8 @@ public:
     /// Initialize. Return mapping for each batch.
     GeometryIDToObjectMappingVector Initialize(
         unsigned objectIndex, StaticModel* sourceObject, Material* bakingMaterial, unsigned baseGeometryId,
-        ea::span<const Vector2> multiTapOffsets, const Vector2& texelSize, const Vector4& scaleOffset);
+        ea::span<const Vector2> multiTapOffsets, const Vector2& texelSize, const Vector4& scaleOffset,
+        const Vector2& scaledAndConstBias);
 
 protected:
     /// Recalculate the world-space bounding box.

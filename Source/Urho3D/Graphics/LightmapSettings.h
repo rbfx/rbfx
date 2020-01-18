@@ -55,31 +55,70 @@ struct LightmapGeometryBakingSettings
     ea::string materialName_{ "Materials/LightmapBaker.xml" };
     /// Lightmap UV channel. 2nd channel by default.
     unsigned uvChannel_{ 1 };
+    /// Position bias in geometry buffer in direction of face normal. Scaled with position itself.
+    float scaledPositionBias_{ 0.00002f };
+    /// Constant position bias.
+    float constantPositionBias_{};
 };
 
-/// Lightmap tracing settings.
-struct LightmapTracingSettings
+/// Settings for geometry buffer preprocessing.
+struct GeometryBufferPreprocessSettings
+{
+    /// Number of tasks to spawn.
+    unsigned numTasks_{ 1 };
+    /// Determines how much position is pushed from behind backface to prevent shadow bleeding. Scaled with position itself.
+    float scaledPositionBackfaceBias_{ 0.00002f };
+};
+
+/// Parameters of emission light tracing.
+struct EmissionLightTracingSettings
+{
+    /// Number of tasks to spawn.
+    unsigned numTasks_{ 1 };
+};
+
+/// Parameters of direct light tracing.
+struct DirectLightTracingSettings
+{
+    /// Construct default.
+    DirectLightTracingSettings() = default;
+    /// Construct for given max samples.
+    explicit DirectLightTracingSettings(unsigned maxSamples)
+        : maxSamples_(maxSamples)
+    {
+    }
+
+    /// Number of tasks to spawn.
+    unsigned numTasks_{ 1 };
+    /// Max number of samples per element.
+    unsigned maxSamples_{ 10 };
+};
+
+/// Parameters of indirect light tracing.
+struct IndirectLightTracingSettings
 {
     /// Max number of bounces.
     static const unsigned MaxBounces = 8;
 
-    /// Number of direct samples.
-    unsigned numDirectSamples_{ 10 };
-    /// Number of indirect bounces.
-    unsigned numBounces_{ 2 };
-    /// Number of indirect samples for charts.
-    unsigned numIndirectChartSamples_{ 10 };
-    /// Number of indirect samples for light probes.
-    unsigned numIndirectProbeSamples_{ 64 };
+    /// Construct default.
+    IndirectLightTracingSettings() = default;
+    /// Construct for given max samples and bounces.
+    IndirectLightTracingSettings(unsigned maxSamples, unsigned maxBounces)
+        : maxSamples_(maxSamples)
+        , maxBounces_(maxBounces)
+    {
+    }
 
-    /// Ray offset from position in geometry buffer or hit position.
-    float rayPositionOffset_{ 0.0005f };
-    /// Position offset for pushing out leaking shadows beyond backface hit by sample ray.
-    float shadowLeakOffset_{ 0.001f };
-    /// Normal bias for position adjusted to prevent leaking shadows.
-    float shadowLeakBias_{ 0.001f };
-    /// Number of asynchronous tasks to use.
-    unsigned numTasks_{ M_MAX_UNSIGNED };
+    /// Number of tasks to spawn.
+    unsigned numTasks_{ 1 };
+    /// Max number of samples per element.
+    unsigned maxSamples_{ 10 };
+    /// Max number of bounces.
+    unsigned maxBounces_{ 2 };
+    /// Position bias in direction of face normal after hit. Scaled with position.
+    float scaledPositionBounceBias_{ 0.00002f };
+    /// Constant position bias in direction of face normal after hit.
+    float constPositionBounceBias_{ 0.0f };
 };
 
 /// Lightmap filter settings.
@@ -104,15 +143,27 @@ struct LightmapStitchingSettings
     ea::string stitchSeamsTechniqueName_{ "Techniques/DiffUnlitAlpha.xml" };
 };
 
-/// Lightmap baking settings.
+/// Aggregated light baking settings.
 struct LightmapSettings
 {
     /// Charting settings.
     LightmapChartingSettings charting_;
     /// Geometry baking settings.
-    LightmapGeometryBakingSettings geometryBaking_;
-    /// Tracing settings.
-    LightmapTracingSettings tracing_;
+    LightmapGeometryBakingSettings geometryBufferBaking_;
+    /// Geometry buffer preprocessing settings.
+    GeometryBufferPreprocessSettings geometryBufferPreprocessing_;
+
+    /// Settings for emission light tracing.
+    EmissionLightTracingSettings emissionTracing_;
+    /// Settings for direct light tracing for charts.
+    DirectLightTracingSettings directChartTracing_{ 10 };
+    /// Settings for direct light tracing for light probes.
+    DirectLightTracingSettings directProbesTracing_{ 32 };
+    /// Settings for indirect light tracing for charts.
+    IndirectLightTracingSettings indirectChartTracing_{ 10, 2 };
+    /// Settings for indirect light tracing for light probes.
+    IndirectLightTracingSettings indirectProbesTracing_{ 64, 2 };
+
     /// Filtering settings.
     LightmapFilterSettings filter_;
     /// Stitching settings.

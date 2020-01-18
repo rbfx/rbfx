@@ -147,10 +147,6 @@ struct IncrementalLightmapper::Impl
     /// Initialize.
     bool Initialize()
     {
-        // Find number of tasks
-        if (lightmapSettings_.tracing_.numTasks_ == M_MAX_UNSIGNED)
-            lightmapSettings_.tracing_.numTasks_ = lightmapSettings_.charting_.lightmapSize_;
-
         // Find or fix output directory
         if (incrementalSettings_.outputDirectory_.empty())
         {
@@ -276,13 +272,13 @@ struct IncrementalLightmapper::Impl
             LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
 
             // Bake emission
-            BakeEmissionLight(bakedDirect, geometryBuffer, lightmapSettings_.tracing_);
+            BakeEmissionLight(bakedDirect, geometryBuffer, lightmapSettings_.emissionTracing_);
 
             // Bake direct lights for charts
             for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
             {
                 BakeDirectLightForCharts(bakedDirect, geometryBuffer, *chunkVicinity->raytracerScene_,
-                    chunkVicinity->geometryBufferToRaytracer_, bakedLight, lightmapSettings_.tracing_);
+                    chunkVicinity->geometryBufferToRaytracer_, bakedLight, lightmapSettings_.directChartTracing_);
             }
 
             // Store direct light
@@ -327,7 +323,8 @@ struct IncrementalLightmapper::Impl
 
         // Bake indirect light for light probes
         chunkVicinity->lightProbesCollection_.ResetBakedData();
-        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, BakedLightmaps, *chunkVicinity->raytracerScene_, lightmapSettings_.tracing_);
+        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, BakedLightmaps,
+            *chunkVicinity->raytracerScene_, lightmapSettings_.indirectProbesTracing_);
 
         // Build light probes mesh for fallback indirect
         TetrahedralMesh lightProbesMesh;
@@ -344,11 +341,12 @@ struct IncrementalLightmapper::Impl
             // Bake indirect lights
             BakeIndirectLightForCharts(bakedIndirect, BakedLightmaps,
                 geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
-                *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_, lightmapSettings_.tracing_);
+                *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
+                lightmapSettings_.indirectChartTracing_);
 
             // Filter indirect
             bakedIndirect.NormalizeLight();
-            FilterIndirectLight(bakedIndirect, geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.tracing_.numTasks_);
+            FilterIndirectLight(bakedIndirect, geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.indirectChartTracing_.numTasks_);
 
             // Stitch seams
             if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
@@ -389,7 +387,7 @@ struct IncrementalLightmapper::Impl
         for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
         {
             BakeDirectLightForLightProbes(chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
-                bakedLight, lightmapSettings_.tracing_);
+                bakedLight, lightmapSettings_.directProbesTracing_);
         }
 
         // Release cache

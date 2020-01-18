@@ -50,7 +50,8 @@ void StaticModelForLightmap::RegisterObject(Context* context)
 
 GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(
     unsigned objectIndex, StaticModel* sourceObject, Material* bakingMaterial, unsigned baseGeometryId,
-    ea::span<const Vector2> multiTapOffsets, const Vector2& texelSize, const Vector4& scaleOffset)
+    ea::span<const Vector2> multiTapOffsets, const Vector2& texelSize, const Vector4& scaleOffset,
+    const Vector2& scaledAndConstBias)
 {
     distance_ = 0.0f;
     lodDistance_ = 0.0f;
@@ -79,7 +80,8 @@ GeometryIDToObjectMappingVector StaticModelForLightmap::Initialize(
                 const float tapDepth = 1.0f - static_cast<float>(tap + 1) / (multiTapOffsets.size() + 1);
 
                 SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, sourceMaterial,
-                    scaleOffset, tap, multiTapOffsets.size(), tapOffset, baseGeometryId + mapping.size());
+                    scaleOffset, tap, multiTapOffsets.size(), tapOffset, baseGeometryId + mapping.size(),
+                    scaledAndConstBias);
 
                 SourceBatch& batch = batches_.push_back();
                 batch.distance_ = 0.0f;

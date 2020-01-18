@@ -66,10 +66,11 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Output Directory", ea::string, incrementalBakingSettings_.outputDirectory_, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, lightmapSettings_.charting_.lightmapSize_, defaultLightmapSettings.charting_.lightmapSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Texel Density", float, lightmapSettings_.charting_.texelDensity_, defaultLightmapSettings.charting_.texelDensity_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Direct Samples", unsigned, lightmapSettings_.tracing_.numDirectSamples_, defaultLightmapSettings.tracing_.numDirectSamples_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, lightmapSettings_.tracing_.numBounces_, defaultLightmapSettings.tracing_.numBounces_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Indirect Samples (Texture)", unsigned, lightmapSettings_.tracing_.numIndirectChartSamples_, defaultLightmapSettings.tracing_.numIndirectChartSamples_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Indirect Samples (Light Probes)", unsigned, lightmapSettings_.tracing_.numIndirectProbeSamples_, defaultLightmapSettings.tracing_.numIndirectProbeSamples_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Direct Samples (Lightmap)", unsigned, lightmapSettings_.directChartTracing_.maxSamples_, defaultLightmapSettings.directChartTracing_.maxSamples_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Direct Samples (Light Probes)", unsigned, lightmapSettings_.directProbesTracing_.maxSamples_, defaultLightmapSettings.directProbesTracing_.maxSamples_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, lightmapSettings_.indirectChartTracing_.maxBounces_, defaultLightmapSettings.indirectChartTracing_.maxBounces_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Samples (Texture)", unsigned, lightmapSettings_.indirectChartTracing_.maxSamples_, defaultLightmapSettings.indirectChartTracing_.maxSamples_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Samples (Light Probes)", unsigned, lightmapSettings_.indirectProbesTracing_.maxSamples_, defaultLightmapSettings.indirectProbesTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Size", Vector3, incrementalBakingSettings_.chunkSize_, defaultIncrementalSettings.chunkSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, incrementalBakingSettings_.indirectPadding_, defaultIncrementalSettings.indirectPadding_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, incrementalBakingSettings_.directionalLightShadowDistance_, defaultIncrementalSettings.directionalLightShadowDistance_, AM_DEFAULT);
@@ -78,6 +79,17 @@ void LightmapManager::RegisterObject(Context* context)
 
 void LightmapManager::Bake()
 {
+    // Fill settings
+    lightmapSettings_.indirectProbesTracing_.maxBounces_ = lightmapSettings_.indirectChartTracing_.maxBounces_;
+
+    const unsigned numTasks = lightmapSettings_.charting_.lightmapSize_;
+    lightmapSettings_.geometryBufferPreprocessing_.numTasks_ = numTasks;
+    lightmapSettings_.emissionTracing_.numTasks_ = numTasks;
+    lightmapSettings_.directChartTracing_.numTasks_ = numTasks;
+    lightmapSettings_.directProbesTracing_.numTasks_ = numTasks;
+    lightmapSettings_.indirectChartTracing_.numTasks_ = numTasks;
+    lightmapSettings_.indirectProbesTracing_.numTasks_ = numTasks;
+
     // Bake lightmaps if possible
 #if URHO3D_GLOW
     DefaultBakedSceneCollector sceneCollector;
