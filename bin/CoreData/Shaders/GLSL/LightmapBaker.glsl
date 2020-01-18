@@ -60,8 +60,10 @@ void PS()
     vec3 dPmax = max(abs(dPdx), abs(dPdy));
     float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
 
-    gl_FragData[0] = vec4(vWorldPos.xyz, vMetadata.x);
-    gl_FragData[1] = vec4(vWorldPos.xyz, texelRadius);
+    vec3 position = vWorldPos.xyz + sign(faceNormal) * abs(vWorldPos.xyz * 0.0000002);
+
+    gl_FragData[0] = vec4(position, vMetadata.x);
+    gl_FragData[1] = vec4(position, texelRadius);
     gl_FragData[2] = vec4(faceNormal, 1.0);
     gl_FragData[3] = vec4(normal, 1.0);
     gl_FragData[4] = vec4(diffColor.rgb * diffColor.a, 1.0);
