@@ -30,6 +30,7 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -1457,7 +1458,7 @@ void SceneTab::RenderDebugInfo()
             light->DrawDebugGeometry(debug, true);
         else if (auto* drawable = component->Cast<Drawable>())
             debug->AddBoundingBox(drawable->GetWorldBoundingBox(), Color::WHITE);
-        else
+        else if (!component->IsInstanceOf<Terrain>())
             component->DrawDebugGeometry(debug, true);
     };
 
