@@ -50,7 +50,7 @@ struct LightmapChartBakedDirect
     explicit LightmapChartBakedDirect(unsigned lightmapSize)
         : lightmapSize_(lightmapSize)
         , realLightmapSize_(static_cast<float>(lightmapSize_))
-        , directLight_(lightmapSize_ * lightmapSize_, Vector4(0.0f, 0.0f, 0.0f, 1.0f))
+        , directLight_(lightmapSize_ * lightmapSize_, Vector3::ZERO)
         , surfaceLight_(lightmapSize_ * lightmapSize_)
         , albedo_(lightmapSize_ * lightmapSize_)
     {
@@ -80,8 +80,7 @@ struct LightmapChartBakedDirect
     /// Size of lightmap chart as float.
     float realLightmapSize_{};
     /// Incoming direct light from completely backed lights, to be baked in lightmap.
-    /// W-component is unused and is needed for alignment since this array is copied to GPU.
-    ea::vector<Vector4> directLight_;
+    ea::vector<Vector3> directLight_;
     /// Incoming direct light from all static lights multiplied with albedo, used to calculate indirect lighting.
     ea::vector<Vector3> surfaceLight_;
     /// Albedo of the surface.
@@ -97,7 +96,6 @@ struct LightmapChartBakedIndirect
     explicit LightmapChartBakedIndirect(unsigned lightmapSize)
         : lightmapSize_(lightmapSize)
         , light_(lightmapSize_ * lightmapSize_)
-        , lightSwap_(lightmapSize_ * lightmapSize_)
     {
     }
     /// Normalize collected light.
@@ -114,8 +112,6 @@ struct LightmapChartBakedIndirect
     unsigned lightmapSize_{};
     /// Indirect light. W component represents normalization weight.
     ea::vector<Vector4> light_;
-    /// Swap buffer for indirect light. Used by filters.
-    ea::vector<Vector4> lightSwap_;
 };
 
 /// Accumulate emission light.
