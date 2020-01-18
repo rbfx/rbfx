@@ -367,7 +367,7 @@ struct ChartDirectTracingKernel
     /// Raytracer geometries.
     const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
     /// Settings.
-    const LightmapTracingSettings* settings_{};
+    const DirectLightTracingSettings* settings_{};
     /// Number of samples.
     unsigned numSamples_{ 1 };
     /// Whether to bake direct light for direct lighting itself.
@@ -416,7 +416,6 @@ struct ChartDirectTracingKernel
         // Initialize current geometry data
         const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
         position = geometryBuffer_->positions_[elementIndex];
-        position += faceNormal * settings_->rayPositionOffset_;
 
         // Initialize per-element state
         currentSmoothNormal_ = geometryBuffer_->smoothNormals_[elementIndex];
@@ -460,7 +459,7 @@ struct LightProbeDirectTracingKernel
     /// Light probes collection.
     LightProbeCollection* collection_{};
     /// Settings.
-    const LightmapTracingSettings* settings_{};
+    const DirectLightTracingSettings* settings_{};
     /// Raytracer geometries.
     const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
     /// Number of samples.
@@ -527,7 +526,7 @@ struct LightProbeDirectTracingKernel
 /// Trace direct lighting.
 template <class T, class U>
 void TraceDirectLight(T sharedKernel, U sharedGenerator,
-    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
+    const RaytracerScene& raytracerScene, const DirectLightTracingSettings& settings)
 {
     RTCScene scene = raytracerScene.GetEmbreeScene();
     const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
@@ -624,7 +623,7 @@ struct ChartIndirectTracingKernel
     /// Raytracer geometries.
     const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
     /// Settings.
-    const LightmapTracingSettings* settings_{};
+    const IndirectLightTracingSettings* settings_{};
 
     /// Current position.
     Vector3 currentPosition_;
@@ -645,7 +644,7 @@ struct ChartIndirectTracingKernel
     unsigned GetNumElements() const { return bakedIndirect_->light_.size(); }
 
     /// Return number of samples.
-    unsigned GetNumSamples() const { return settings_->numIndirectChartSamples_; }
+    unsigned GetNumSamples() const { return settings_->maxSamples_; }
 
     /// Begin tracing element.
     bool BeginElement(unsigned elementIndex)
@@ -669,9 +668,6 @@ struct ChartIndirectTracingKernel
             bakedIndirect_->light_[elementIndex] += { sh.Evaluate(currentSmoothNormal_), 1.0f };
             return false;
         }
-
-        const Vector3& faceNormal = geometryBuffer_->faceNormals_[elementIndex];
-        currentPosition_ += faceNormal * settings_->rayPositionOffset_;
 
         accumulatedIndirectLight_ = Vector4::ZERO;
 
@@ -708,7 +704,7 @@ struct LightProbeIndirectTracingKernel
     /// Light probes collection.
     LightProbeCollection* collection_{};
     /// Settings.
-    const LightmapTracingSettings* settings_{};
+    const IndirectLightTracingSettings* settings_{};
 
     /// Current position.
     Vector3 currentPosition_;
@@ -723,7 +719,7 @@ struct LightProbeIndirectTracingKernel
     unsigned GetNumElements() const { return collection_->Size(); }
 
     /// Return number of samples.
-    unsigned GetNumSamples() const { return settings_->numIndirectProbeSamples_; }
+    unsigned GetNumSamples() const { return settings_->maxSamples_; }
 
     /// Begin tracing element.
     bool BeginElement(unsigned elementIndex)
@@ -765,9 +761,9 @@ struct LightProbeIndirectTracingKernel
 /// Trace indirect lighting.
 template <class T>
 void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
-    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
+    const RaytracerScene& raytracerScene, const IndirectLightTracingSettings& settings)
 {
-    assert(settings.numBounces_ <= LightmapTracingSettings::MaxBounces);
+    assert(settings.maxBounces_ <= IndirectLightTracingSettings::MaxBounces);
 
     ParallelFor(sharedKernel.GetNumElements(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
@@ -778,9 +774,9 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
         const float maxDistance = raytracerScene.GetMaxDistance();
         const auto& geometryIndex = raytracerScene.GetGeometries();
 
-        Vector3 albedo[LightmapTracingSettings::MaxBounces];
-        Vector3 incomingSamples[LightmapTracingSettings::MaxBounces];
-        float incomingFactors[LightmapTracingSettings::MaxBounces];
+        Vector3 albedo[IndirectLightTracingSettings::MaxBounces];
+        Vector3 incomingSamples[IndirectLightTracingSettings::MaxBounces];
+        float incomingFactors[IndirectLightTracingSettings::MaxBounces];
 
         RTCRayHit rayHit;
         IndirectTracingContext rayContext;
@@ -809,7 +805,7 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     currentPosition, currentFaceNormal, currentSmoothNormal, currentRayDirection, albedo[0]);
 
                 int numBounces = 0;
-                for (unsigned bounceIndex = 0; bounceIndex < settings.numBounces_; ++bounceIndex)
+                for (unsigned bounceIndex = 0; bounceIndex < settings.maxBounces_; ++bounceIndex)
                 {
                     rayHit.ray.org_x = currentPosition.x_;
                     rayHit.ray.org_y = currentPosition.y_;
@@ -848,7 +844,7 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     ++numBounces;
 
                     // Go to next hemisphere
-                    if (numBounces < settings.numBounces_)
+                    if (numBounces < settings.maxBounces_)
                     {
                         // Update albedo for hit surface
                         albedo[bounceIndex + 1] = bakedDirect[lightmapIndex]->GetAlbedo(sampleLocation);
@@ -860,9 +856,11 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
 
                         // Offset position a bit
                         const Vector3 hitNormal = Vector3(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z).Normalized();
-                        currentPosition.x_ += hitNormal.x_ * settings.rayPositionOffset_;
-                        currentPosition.y_ += hitNormal.y_ * settings.rayPositionOffset_;
-                        currentPosition.z_ += hitNormal.z_ * settings.rayPositionOffset_;
+                        const float positionMax = ea::max({ Abs(currentPosition.x_), Abs(currentPosition.y_), Abs(currentPosition.z_) });
+                        const float bias = settings.scaledPositionBounceBias_ * positionMax;
+                        currentPosition.x_ += Sign(hitNormal.x_) * bias + hitNormal.x_ * settings.constPositionBounceBias_;
+                        currentPosition.y_ += Sign(hitNormal.y_) * bias + hitNormal.y_ * settings.constPositionBounceBias_;
+                        currentPosition.z_ += Sign(hitNormal.z_) * bias + hitNormal.z_ * settings.constPositionBounceBias_;
 
                         // Update smooth normal
                         rtcInterpolate0(geometry.embreeGeometry_, rayHit.hit.primID, rayHit.hit.u, rayHit.hit.v,
@@ -897,7 +895,7 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
 
 void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
-    const LightmapTracingSettings& settings)
+    const GeometryBufferPreprocessSettings& settings)
 {
     RTCScene scene = raytracerScene.GetEmbreeScene();
     const ea::vector<RaytracerGeometry>& raytracerGeometries = raytracerScene.GetGeometries();
@@ -929,9 +927,9 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             const float texelRadius = geometryBuffer.texelRadiuses_[i];
             const Quaternion basis{ Vector3::FORWARD, faceNormal };
 
-            rayHit.ray.org_x = mutablePosition.x_ + faceNormal.x_ * settings.shadowLeakBias_;
-            rayHit.ray.org_y = mutablePosition.y_ + faceNormal.y_ * settings.shadowLeakBias_;
-            rayHit.ray.org_z = mutablePosition.z_ + faceNormal.z_ * settings.shadowLeakBias_;
+            rayHit.ray.org_x = mutablePosition.x_;
+            rayHit.ray.org_y = mutablePosition.y_;
+            rayHit.ray.org_z = mutablePosition.z_;
 
             static const unsigned NumSamples = 4;
             static const Vector3 sampleRays[NumSamples] = { Vector3::LEFT, Vector3::RIGHT, Vector3::UP, Vector3::DOWN };
@@ -972,14 +970,17 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             }
 
             // Push the position behind closest hit
+            const float positionMax = ea::max({ Abs(mutablePosition.x_), Abs(mutablePosition.y_), Abs(mutablePosition.z_) });
+            const float offset = closestHitDistance + settings.scaledPositionBackfaceBias_ * positionMax;
+
             mutablePosition = { rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
-            mutablePosition += closestHitDirection * (closestHitDistance + settings.shadowLeakOffset_);
+            mutablePosition += closestHitDirection * offset;
         }
     });
 }
 
 void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const LightmapTracingSettings& settings)
+    const EmissionLightTracingSettings& settings)
 {
     ParallelFor(bakedDirect.directLight_.size(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
@@ -1005,11 +1006,11 @@ void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChar
 
 void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
-    const BakedLight& light, const LightmapTracingSettings& settings)
+    const BakedLight& light, const DirectLightTracingSettings& settings)
 {
     const bool bakeDirect = light.lightMode_ == LM_BAKED;
     const bool bakeIndirect = true;
-    const unsigned numSamples = CalculateNumSamples(light, settings.numDirectSamples_);
+    const unsigned numSamples = CalculateNumSamples(light, settings.maxSamples_);
     const ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
         &raytracerScene.GetGeometries(), &settings, numSamples, bakeDirect, bakeIndirect };
 
@@ -1033,10 +1034,10 @@ void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const Light
 }
 
 void BakeDirectLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
-    const BakedLight& light, const LightmapTracingSettings& settings)
+    const BakedLight& light, const DirectLightTracingSettings& settings)
 {
     const bool bakeDirect = light.lightMode_ == LM_BAKED;
-    const unsigned numSamples = CalculateNumSamples(light, settings.numDirectSamples_);
+    const unsigned numSamples = CalculateNumSamples(light, settings.maxSamples_);
     const LightProbeDirectTracingKernel kernel{ &collection, &settings, &raytracerScene.GetGeometries(), numSamples, bakeDirect };
 
     if (light.lightType_ == LIGHT_DIRECTIONAL)
@@ -1062,7 +1063,7 @@ void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
     const TetrahedralMesh& lightProbesMesh, const LightProbeCollection& lightProbesData,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
-    const LightmapTracingSettings& settings)
+    const IndirectLightTracingSettings& settings)
 {
     const ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &lightProbesMesh, &lightProbesData,
         &geometryBufferToRaytracer, &raytracerScene.GetGeometries(), &settings };
@@ -1071,7 +1072,7 @@ void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
 
 void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
-    const RaytracerScene& raytracerScene, const LightmapTracingSettings& settings)
+    const RaytracerScene& raytracerScene, const IndirectLightTracingSettings& settings)
 {
     const LightProbeIndirectTracingKernel kernel{ &collection, &settings };
     TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);

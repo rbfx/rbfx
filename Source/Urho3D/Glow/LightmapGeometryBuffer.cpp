@@ -300,6 +300,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
     unsigned lightmapSize, const LightmapGeometryBakingSettings& settings)
 {
     const Vector2 texelSize{ 1.0f / lightmapSize, 1.0f / lightmapSize };
+    const Vector2 scaledAndConstBias{ settings.scaledPositionBias_, settings.constantPositionBias_ };
 
     // Load resources
     SharedPtr<RenderPath> renderPath = LoadRenderPath(context, settings.renderPathName_);
@@ -395,7 +396,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
 
             auto staticModelForLightmap = bakingNode->CreateComponent<StaticModelForLightmap>();
             const GeometryIDToObjectMappingVector objectMapping = staticModelForLightmap->Initialize(objectIndex,
-                staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset);
+                staticModel, bakingMaterial, mapping.size(), multiTapOffsets, texelSize, scaleOffset, scaledAndConstBias);
 
             mapping.append(objectMapping);
         }
@@ -431,7 +432,7 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
                 }
 
                 SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, terrain->GetMaterial(),
-                    scaleOffset, tap, numMultiTapSamples, tapOffset, mapping.size());
+                    scaleOffset, tap, numMultiTapSamples, tapOffset, mapping.size(), scaledAndConstBias);
 
                 terrainForLightmap->SetMaterial(material);
             }
