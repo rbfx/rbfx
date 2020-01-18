@@ -121,9 +121,19 @@ struct IndirectLightTracingSettings
     float constPositionBounceBias_{ 0.0f };
 };
 
-/// Lightmap filter settings.
-struct LightmapFilterSettings
+/// Parameters for indirect light filtering.
+struct EdgeStoppingGaussFilterParameters
 {
+    /// Kernel radius.
+    int kernelRadius_{ 2 };
+    /// Upscale factor for offsets.
+    int upscale_{ 1 };
+    /// Color weight. The lesser value is, the more color details are preserved on flat surface.
+    float luminanceSigma_{ 10.0f };
+    /// Normal weight. The higher value is, the more color details are preserved on normal edges.
+    float normalPower_{ 4.0f };
+    /// Position weight. The lesser value is, the more color details are preserved on position edges.
+    float positionSigma_{ 1.0f };
 };
 
 /// Lightmap stitching settings.
@@ -164,8 +174,11 @@ struct LightmapSettings
     /// Settings for indirect light tracing for light probes.
     IndirectLightTracingSettings indirectProbesTracing_{ 64, 2 };
 
-    /// Filtering settings.
-    LightmapFilterSettings filter_;
+    /// Direct light filtering settings.
+    EdgeStoppingGaussFilterParameters directFilter_{ 1 };
+    /// Indirect light filtering settings.
+    EdgeStoppingGaussFilterParameters indirectFilter_{ 5 };
+
     /// Stitching settings.
     LightmapStitchingSettings stitching_;
 };
