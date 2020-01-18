@@ -453,6 +453,16 @@ void ui::Image(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImV
     Image(texture_id, size, uv0, uv1, tint_col, border_col);
 }
 
+void ui::ImageItem(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, const ImVec4& tint_col, const ImVec4& border_col)
+{
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ImGuiID id = window->GetID(user_texture_id);
+    ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
+    ui::Image(user_texture_id, size, uv0, uv1, tint_col, border_col);
+    ui::ItemSize(bb);
+    ui::ItemAdd(bb, id);
+}
+
 bool ui::ImageButton(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const ImVec2& uv0, const ImVec2& uv1, int frame_padding, const ImVec4& bg_col, const ImVec4& tint_col)
 {
     auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
@@ -485,3 +495,16 @@ int ui::GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate)
     return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeat_delay, rate);
 }
 
+bool ui::ItemMouseActivation(Urho3D::MouseButton button)
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiWindow* window = g.CurrentWindow;
+    bool hovered = ui::IsItemHovered();
+    if (hovered)
+        g.HoveredId = window->DC.LastItemId;
+    if (!ui::IsItemActive() && hovered && ui::IsMouseDown(button))
+        ui::SetActiveID(window->DC.LastItemId, window);
+    else if (ui::IsItemActive() && !ui::IsMouseDown(button))
+        ui::ClearActiveID();
+    return ui::IsItemActive();
+}

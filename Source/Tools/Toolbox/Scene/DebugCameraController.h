@@ -39,20 +39,34 @@ class URHO3D_TOOLBOX_API DebugCameraController : public LogicComponent
 public:
     /// Construct.
     explicit DebugCameraController(Context* context);
-    /// Create light and initialize variables.
-    void Start() override;
-    /// Remove light.
-    void Stop() override;
+    /// Process inputs and update camera.
+    virtual void RunFrame(float timeStep) = 0;
     /// Control camera.
     void Update(float timeStep) override;
+    /// Get current camera speed in units per second.
+    float GetSpeed() const { return speed_; }
+    /// Set current camera speed in units per second.
+    void SetSpeed(float speed) { speed_ = speed; }
+
+protected:
+    /// Current camera speed.
+    float speed_ = 2.f;
+};
+
+class URHO3D_TOOLBOX_API DebugCameraController3D : public DebugCameraController
+{
+    URHO3D_OBJECT(DebugCameraController3D, DebugCameraController);
+public:
+    /// Construct.
+    explicit DebugCameraController3D(Context* context);
+    /// Process inputs and update camera.
+    void RunFrame(float timeStep) override;
     /// Tell this camera which where is the rotation center.
     void SetRotationCenter(const Vector3& center);
     /// Disable the rotation center
     void ClearRotationCenter() { isRotationCenterValid_ = false; }
 
 protected:
-    /// Current camera speed.
-    float speed_ = 2.f;
     /// Current mouse sensitivity.
     float mouseSensitivity_ = 0.1f;
     /// Where the camera should rotate around
@@ -61,22 +75,14 @@ protected:
     bool isRotationCenterValid_ = false;
 };
 
-class URHO3D_TOOLBOX_API DebugCameraController2D : public LogicComponent
+class URHO3D_TOOLBOX_API DebugCameraController2D : public DebugCameraController
 {
-URHO3D_OBJECT(DebugCameraController2D, LogicComponent);
+URHO3D_OBJECT(DebugCameraController2D, DebugCameraController);
 public:
     /// Construct.
     explicit DebugCameraController2D(Context* context);
-    /// Create light and initialize variables.
-    void Start() override;
-    /// Remove light.
-    void Stop() override;
-    /// Control camera.
-    void Update(float timeStep) override;
-
-protected:
-    /// Current camera speed.
-    float speed_ = 2.f;
+    /// Process inputs and update camera.
+    void RunFrame(float timeStep) override;
 };
 
 };

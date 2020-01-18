@@ -116,8 +116,6 @@ void MaterialInspector::RenderPreview()
     ui::SetHelpTooltip("Click to switch object.");
     if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT))
         ToggleModel();
-    else
-        HandleInput();
 
     if (Material* material = inspectable_->GetMaterial())
     {

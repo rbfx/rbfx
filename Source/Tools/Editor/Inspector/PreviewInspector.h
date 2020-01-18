@@ -54,8 +54,6 @@ protected:
     void CreateObjects();
     /// Render model preview.
     virtual void RenderPreview();
-    /// Handle input of preview viewport.
-    virtual void HandleInput();
 
     /// Preview scene.
     SceneView view_;

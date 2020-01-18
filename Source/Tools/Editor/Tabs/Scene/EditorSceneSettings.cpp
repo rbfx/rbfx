@@ -167,8 +167,9 @@ void EditorSceneSettings::SetCamera2D(bool is2D)
     {
         if (is2D)
         {
-            camera->RemoveComponent<DebugCameraController>();
-            camera->GetOrCreateComponent<DebugCameraController2D>();
+            camera->RemoveComponent<DebugCameraController3D>();
+            auto* controller = camera->GetOrCreateComponent<DebugCameraController2D>();
+            controller->SetUpdateEventMask(USE_NO_EVENT);
             Vector3 pos = camera->GetWorldPosition();
             camera->SetWorldPosition(pos);
             camera->LookAt(pos + Vector3::FORWARD);
@@ -177,7 +178,8 @@ void EditorSceneSettings::SetCamera2D(bool is2D)
         else
         {
             camera->RemoveComponent<DebugCameraController2D>();
-            camera->GetOrCreateComponent<DebugCameraController>();
+            auto* controller = camera->GetOrCreateComponent<DebugCameraController3D>();
+            controller->SetUpdateEventMask(USE_NO_EVENT);
             camera->GetComponent<Camera>()->SetOrthographic(false);
         }
 

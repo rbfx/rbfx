@@ -191,7 +191,7 @@ protected:
     /// Current selected component displayed in inspector.
     ea::hash_set<WeakPtr<Component>> selectedComponents_;
     /// Flag indicating that mouse is hovering scene viewport.
-    bool mouseHoversViewport_ = false;
+    bool isViewportActive_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
     ea::vector<Node*> openHierarchyNodes_;
     /// Node to scroll to on next frame.
@@ -218,6 +218,8 @@ protected:
     ImRect selectionRect_{};
     /// Frame on which range selection will be performed.
     int performRangeSelectionFrame_ = -1;
+    /// We have to use our own because drawlist splitter may be used by other widgets.
+    ImDrawListSplitter viewportSplitter_{};
 };
 
 };

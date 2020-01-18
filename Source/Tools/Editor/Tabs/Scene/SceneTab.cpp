@@ -125,16 +125,23 @@ SceneTab::~SceneTab()
 
 bool SceneTab::RenderWindowContent()
 {
+    ImGuiContext& g = *GImGui;
+    bool open = true;
+
     if (GetScene() == nullptr)
         return true;
-
-    bool open = true;
 
     // Focus window when appearing
     if (!isRendered_)
         ui::SetWindowFocus();
 
-    ImGuiWindow* window = ui::GetCurrentWindow();
+    if (!ui::BeginChild("Scene view", g.CurrentWindow->ContentRegionRect.GetSize(), false, windowFlags_))
+    {
+        ui::EndChild();
+        return open;
+    }
+
+    ImGuiWindow* window = g.CurrentWindow;
     ImGuiViewport* viewport = window->Viewport;
 
     ImRect rect = ImRound(window->ContentRegionRect);
@@ -150,22 +157,27 @@ bool SceneTab::RenderWindowContent()
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }
 
-    ui::SetCursorScreenPos(rect.Min);
-    ImVec2 contentSize = rect.GetSize();
-    if (!ui::BeginChild("Scene view", contentSize, false, windowFlags_))
-    {
-        ui::EndChild();
-        return open;
-    }
-    ui::Image(texture_, contentSize);
+    // Buttons must render above the viewport, but they also should be rendered first in order to take precedence in
+    // item activation.
+    viewportSplitter_.Split(window->DrawList, 2);
+    viewportSplitter_.SetCurrentChannel(window->DrawList, 1);
+    RenderToolbarButtons();
+    viewportSplitter_.SetCurrentChannel(window->DrawList, 0);
+    ui::SetCursorPos({0, 0});
+    ui::ImageItem(texture_, rect.GetSize());
+    viewportSplitter_.Merge(window->DrawList);
+
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
+
+    bool wasActive = isViewportActive_;
+    isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT);
+    bool isClickedLeft = ui::IsItemClicked(MOUSEB_LEFT);
+    bool isClickedRight = ui::IsItemClicked(MOUSEB_RIGHT);
+
+    if (wasActive != isViewportActive_)
+        GetSubsystem<Input>()->SetMouseVisible(!isViewportActive_);
+
     gizmo_.ManipulateSelection(GetCamera());
-
-    if (context_->GetInput()->IsMouseVisible())
-        mouseHoversViewport_ = ui::IsItemHovered();
-
-    bool isClickedLeft = ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
-    bool isClickedRight = ui::IsMouseReleased(MOUSEB_RIGHT) && ui::IsItemHovered(ImGuiHoveredFlags_AllowWhenBlockedByPopup);
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
@@ -259,7 +271,6 @@ bool SceneTab::RenderWindowContent()
     }
 
     RenderNodeContextMenu();
-    RenderToolbarButtons();
 
     if (debugHudVisible_)
     {
@@ -818,17 +829,18 @@ void SceneTab::OnUpdate(VariantMap& args)
 
     float timeStep = args[Update::P_TIMESTEP].GetFloat();
     bool isMode3D_ = !scene->GetComponent<EditorSceneSettings>()->GetCamera2D();
-    StringHash cameraControllerType = isMode3D_ ? DebugCameraController::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
+    StringHash cameraControllerType = isMode3D_ ? DebugCameraController3D::GetTypeStatic() : DebugCameraController2D::GetTypeStatic();
     if (Camera* camera = GetCamera())
     {
-        LogicComponent* component = static_cast<LogicComponent*>(camera->GetComponent(cameraControllerType));
+        auto* component = static_cast<DebugCameraController*>(camera->GetComponent(cameraControllerType));
         if (component != nullptr)
         {
-            if (mouseHoversViewport_)
+            if (isViewportActive_)
             {
+                ui::SetMouseCursor(ImGuiMouseCursor_None);
                 if (isMode3D_)
                 {
-                    DebugCameraController* controller3D = static_cast<DebugCameraController*>(component);
+                    auto* controller3D = static_cast<DebugCameraController3D*>(component);
                     Vector3 center;
                     int selectionCount = gizmo_.GetSelectionCenter(center);
                     if (selectionCount > 0)
@@ -840,7 +852,7 @@ void SceneTab::OnUpdate(VariantMap& args)
                         controller3D->ClearRotationCenter();
                     }
                 }
-                component->Update(timeStep);
+                component->RunFrame(timeStep);
             }
         }
     }
