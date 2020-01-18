@@ -66,7 +66,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     // Bake geometry buffers
     const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
-        context, uniqueGeometries, lightmapSettings.charting_.lightmapSize_, lightmapSettings.geometryBaking_);
+        context, uniqueGeometries, lightmapSettings.charting_.lightmapSize_, lightmapSettings.geometryBufferBaking_);
     LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScenes.bakingScenes_);
 
     ea::vector<unsigned> lightmapsInChunk;
@@ -128,7 +128,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
 
     // Create scene for raytracing
-    const unsigned uvChannel = lightmapSettings.geometryBaking_.uvChannel_;
+    const unsigned uvChannel = lightmapSettings.geometryBufferBaking_.uvChannel_;
     const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(context, geometries, uvChannel);
 
     // Match raytracer geometries and geometry buffer
@@ -169,7 +169,10 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     // Preprocess geometry buffers
     for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-        PreprocessGeometryBuffer(geometryBuffer, *raytracerScene, geometryBufferToRaytracerGeometry, lightmapSettings.tracing_);
+    {
+        PreprocessGeometryBuffer(geometryBuffer, *raytracerScene, geometryBufferToRaytracerGeometry,
+            lightmapSettings.geometryBufferPreprocessing_);
+    }
 
     // Collect lights
     ea::vector<BakedLight> bakedLights;

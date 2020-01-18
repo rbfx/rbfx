@@ -8,6 +8,7 @@
 
 uniform float cLightmapLayer;
 uniform float cLightmapGeometry;
+uniform vec2 cLightmapPositionBias;
 
 #else
 
@@ -15,6 +16,7 @@ uniform LightmapVS
 {
     float cLightmapLayer;
     float cLightmapGeometry;
+    vec2 cLightmapPositionBias;
 }
 
 #endif
@@ -33,7 +35,7 @@ void VS()
     gl_Position = vec4(lightmapUV * vec2(2, 2) + vec2(-1, -1), cLightmapLayer, 1);
     vNormal = GetWorldNormal(modelMatrix);
     vWorldPos = vec4(worldPos, 1.0);
-    vMetadata = vec4(cLightmapGeometry, 0.0, 0.0, 0.0);
+    vMetadata = vec4(cLightmapGeometry, cLightmapPositionBias.x, cLightmapPositionBias.y, 0.0);
     vTexCoord = GetTexCoord(iTexCoord);
 }
 
@@ -60,7 +62,9 @@ void PS()
     vec3 dPmax = max(abs(dPdx), abs(dPdy));
     float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
 
-    vec3 position = vWorldPos.xyz + sign(faceNormal) * abs(vWorldPos.xyz * 0.0000002);
+    float scaledBias = vMetadata.y;
+    float constBias = vMetadata.z;
+    vec3 position = vWorldPos.xyz + sign(faceNormal) * abs(vWorldPos.xyz) * scaledBias + faceNormal * constBias;
 
     gl_FragData[0] = vec4(position, vMetadata.x);
     gl_FragData[1] = vec4(position, texelRadius);

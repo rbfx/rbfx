@@ -157,7 +157,8 @@ inline Vector4 GetLightmapScaleOffset(const Component* component)
 
 /// Create material for geometry buffer baking.
 inline SharedPtr<Material> CreateBakingMaterial(Material* bakingMaterial, Material* sourceMaterial,
-    const Vector4& scaleOffset, unsigned tapIndex, unsigned numTaps, const Vector2& tapOffset, unsigned geometryId)
+    const Vector4& scaleOffset, unsigned tapIndex, unsigned numTaps, const Vector2& tapOffset, unsigned geometryId,
+    const Vector2& scaledAndConstBias)
 {
     auto renderer = bakingMaterial->GetContext()->GetRenderer();
     if (!sourceMaterial)
@@ -170,6 +171,7 @@ inline SharedPtr<Material> CreateBakingMaterial(Material* bakingMaterial, Materi
     material->SetShaderParameter("LMOffset", scaleOffset + tapOffset4);
     material->SetShaderParameter("LightmapLayer", tapDepth);
     material->SetShaderParameter("LightmapGeometry", static_cast<float>(geometryId));
+    material->SetShaderParameter("LightmapPositionBias", scaledAndConstBias);
     material->SetShaderParameter("MatDiffColor", sourceMaterial->GetShaderParameter("MatDiffColor").GetVector4());
     material->SetShaderParameter("MatEmissiveColor", sourceMaterial->GetShaderParameter("MatEmissiveColor").GetVector3());
     material->SetShaderParameter("UOffset", sourceMaterial->GetShaderParameter("UOffset").GetVector4());
