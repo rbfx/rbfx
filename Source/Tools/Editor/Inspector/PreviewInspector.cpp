@@ -92,40 +92,31 @@ void PreviewInspector::CreateObjects()
 
 void PreviewInspector::RenderPreview()
 {
+    auto* input = GetSubsystem<Input>();
     auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
     view_.SetSize({0, 0, size, size});
-    ui::Image(view_.GetTexture(), ImVec2(view_.GetTexture()->GetWidth(), view_.GetTexture()->GetHeight()));
-}
-
-void PreviewInspector::HandleInput()
-{
-    Input* input = view_.GetCamera()->GetContext()->GetInput();
-    bool rightMouseButtonDown = input->GetMouseButtonDown(MOUSEB_RIGHT);
-    if (ui::IsItemHovered())
-    {
-        if (rightMouseButtonDown)
-            SetGrab(true);
-    }
+    ui::ImageItem(view_.GetTexture(), ImVec2(size, size));
+    bool wasActive = mouseGrabbed_;
+    mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT);
+    if (wasActive != mouseGrabbed_)
+        input->SetMouseVisible(!mouseGrabbed_);
 
     if (mouseGrabbed_)
     {
-        if (rightMouseButtonDown)
+        ui::SetMouseCursor(ImGuiMouseCursor_None);
+        Node* node = view_.GetCamera()->GetNode();
+        if (input->GetKeyPress(KEY_ESCAPE))
         {
-            if (input->GetKeyPress(KEY_ESCAPE))
-            {
-                view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
-                view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
-            }
-            else
-            {
-                IntVector2 delta = input->GetMouseMove();
-                view_.GetCamera()->GetNode()->RotateAround(Vector3::ZERO,
-                                                           Quaternion(delta.x_ * 0.1f, view_.GetCamera()->GetNode()->GetUp()) *
-                                                           Quaternion(delta.y_ * 0.1f, view_.GetCamera()->GetNode()->GetRight()), TS_WORLD);
-            }
+            node->SetPosition(Vector3::BACK * distance_);
+            node->LookAt(Vector3::ZERO);
         }
         else
-            SetGrab(false);
+        {
+            Vector2 delta(input->GetMouseMove());
+            Quaternion rotateDelta = Quaternion(delta.x_ * 0.1f, node->GetUp()) *
+                Quaternion(delta.y_ * 0.1f, node->GetRight());
+            node->RotateAround(Vector3::ZERO, rotateDelta, TS_WORLD);
+        }
     }
 }
 

@@ -66,8 +66,7 @@ void ModelInspector::RenderInspector(const char* filter)
     if (ui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen))
     {
         RenderPreview();
-        HandleInput();
-        if (StaticModel* staticModel = node_->GetComponent<StaticModel>())
+        if (auto* staticModel = node_->GetComponent<StaticModel>())
         {
             if (Model* modelResource = staticModel->GetModel())
             {
