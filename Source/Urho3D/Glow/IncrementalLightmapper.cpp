@@ -120,6 +120,10 @@ struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
 {
     /// Stitching context.
     LightmapStitchingContext stitchingContext_;
+    /// Buffer for filtering direct light.
+    ea::vector<Vector3> directFilterBuffer_;
+    /// Buffer for filtering indirect light.
+    ea::vector<Vector4> indirectFilterBuffer_;
 };
 
 /// Context used for committing chunks.
@@ -299,6 +303,9 @@ struct IncrementalLightmapper::Impl
         // Initialize context
         if (ctx.currentChunkIndex_ == 0)
         {
+            const unsigned numTexels = lightmapSettings_.charting_.lightmapSize_ * lightmapSettings_.charting_.lightmapSize_;
+            ctx.directFilterBuffer_.resize(numTexels);
+            ctx.indirectFilterBuffer_.resize(numTexels);
             ctx.stitchingContext_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.lightmapSize_, 4);
         }
 
@@ -335,7 +342,7 @@ struct IncrementalLightmapper::Impl
         {
             const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
             const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
-            const ea::shared_ptr<const LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
+            const ea::shared_ptr<LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
             LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
 
             // Bake indirect lights
@@ -344,9 +351,14 @@ struct IncrementalLightmapper::Impl
                 *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
                 lightmapSettings_.indirectChartTracing_);
 
-            // Filter indirect
+            // Filter direct and indirect
             bakedIndirect.NormalizeLight();
-            FilterIndirectLight(bakedIndirect, geometryBuffer, { 5, 1, 10.0f, 4.0f, 1.0f }, lightmapSettings_.indirectChartTracing_.numTasks_);
+
+            FilterDirectLight(*bakedDirect, ctx.directFilterBuffer_,
+                geometryBuffer, lightmapSettings_.directFilter_, lightmapSettings_.indirectChartTracing_.numTasks_);
+
+            FilterIndirectLight(bakedIndirect, ctx.indirectFilterBuffer_,
+                geometryBuffer, lightmapSettings_.indirectFilter_, lightmapSettings_.indirectChartTracing_.numTasks_);
 
             // Stitch seams
             if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())

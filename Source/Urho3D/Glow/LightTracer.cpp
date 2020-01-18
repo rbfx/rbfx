@@ -443,7 +443,7 @@ struct ChartDirectTracingKernel
         const Vector3 directLight = accumulatedLight_ * weight;
 
         if (bakeDirect_)
-            bakedDirect_->directLight_[elementIndex] += Vector4(directLight, 0.0f);
+            bakedDirect_->directLight_[elementIndex] += directLight;
 
         if (bakeIndirect_)
         {
@@ -997,7 +997,7 @@ void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChar
             if (emission != Vector3::ZERO)
                 i = i;
 
-            bakedDirect.directLight_[i] += Vector4(emission, 0.0f);
+            bakedDirect.directLight_[i] += emission;
             bakedDirect.surfaceLight_[i] += emission;
             bakedDirect.albedo_[i] = albedo;
         }
