@@ -7,6 +7,7 @@
 
 uniform float cLightmapLayer;
 uniform float cLightmapGeometry;
+uniform float2 cLightmapPositionBias;
 
 #else
 
@@ -14,6 +15,7 @@ cbuffer LightmapVS : register(b6)
 {
     float cLightmapLayer;
     float cLightmapGeometry;
+    float2 cLightmapPositionBias;
 }
 
 #endif
@@ -55,7 +57,7 @@ void VS(float4 iPos : POSITION,
     oTexCoord = GetTexCoord(iTexCoord);
     oNormal = GetWorldNormal(modelMatrix);
     oWorldPos = float4(worldPos, 1.0);
-    oMetadata = float4(cLightmapGeometry, 0.0, 0.0, 0.0);
+    oMetadata = float4(cLightmapGeometry, cLightmapPositionBias.x, cLightmapPositionBias.y, 0.0);
 }
 
 void PS(
@@ -92,7 +94,9 @@ void PS(
     float3 dPmax = max(abs(dPdx), abs(dPdy));
     float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
 
-    float3 position = iWorldPos.xyz + sign(faceNormal) * abs(iWorldPos.xyz * 0.0000002);
+    float scaledBias = iMetadata.y;
+    float constBias = iMetadata.z;
+    float3 position = iWorldPos.xyz + sign(faceNormal) * abs(iWorldPos.xyz * scaledBias) + faceNormal * constBias;
 
     oPosition = float4(position, iMetadata.x);
     oSmoothPosition = float4(position, texelRadius);
