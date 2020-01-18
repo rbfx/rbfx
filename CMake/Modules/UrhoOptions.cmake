@@ -116,7 +116,7 @@ _option2(URHO3D_FILEWATCHER       "Watch filesystem for resource changes"       
 _option(URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )
 _option(URHO3D_MONOLITHIC_HEADER  "Create Urho3DAll.h which includes all engine headers." OFF                                                     )
 _option2(URHO3D_MINIDUMPS         "Enable writing minidumps on crash"                     ${URHO3D_ENABLE_ALL} "MSVC"                          OFF)
-_option(URHO3D_PLUGINS            "Enable plugins"                                        ${URHO3D_ENABLE_ALL})
+_option2(URHO3D_PLUGINS           "Enable plugins"                                        ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 _option2(URHO3D_THREADING         "Enable multithreading"                                 ${URHO3D_ENABLE_ALL} "NOT WEB"                       OFF)
 _option(URHO3D_WEBP               "WEBP support enabled"                                  ${URHO3D_ENABLE_ALL}                                    )
 # Web
