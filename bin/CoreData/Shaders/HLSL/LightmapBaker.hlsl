@@ -94,7 +94,7 @@ void PS(
 
     float scaledBias = iMetadata.y;
     float constBias = iMetadata.z;
-    float3 biasScale = max(abs(iWorldPos.xyz), vec3(1.0, 1.0, 1.0));
+    float3 biasScale = max(abs(iWorldPos.xyz), float3(1.0, 1.0, 1.0));
     float3 position = iWorldPos.xyz + sign(faceNormal) * biasScale * scaledBias + faceNormal * constBias;
 
     oPosition = float4(position, iMetadata.x);
