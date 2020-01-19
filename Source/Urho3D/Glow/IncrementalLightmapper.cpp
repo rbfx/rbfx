@@ -32,6 +32,7 @@
 #include "../Glow/LightmapStitcher.h"
 #include "../Glow/LightTracer.h"
 #include "../Glow/RaytracerScene.h"
+#include "../Graphics/Graphics.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Model.h"
 #include "../IO/FileSystem.h"
@@ -151,6 +152,13 @@ struct IncrementalLightmapper::Impl
     /// Initialize.
     bool Initialize()
     {
+        // DX9 is not supported
+        if (Graphics::GetPixelUVOffset() != Vector2::ZERO)
+        {
+            URHO3D_LOGERROR("Cannot bake light on DX9");
+            return false;
+        }
+
         // Find or fix output directory
         if (incrementalSettings_.outputDirectory_.empty())
         {
