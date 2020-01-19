@@ -114,7 +114,6 @@ Terrain::Terrain(Context* context) :
     debugGeometry_(false)
 {
     indexBuffer_->SetShadowed(true);
-    SetEnableDebug(true);
 }
 
 Terrain::~Terrain() = default;
