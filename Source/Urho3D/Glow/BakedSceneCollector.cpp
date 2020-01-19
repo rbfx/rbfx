@@ -124,8 +124,7 @@ void DefaultBakedSceneCollector::LockScene(Scene* scene, const Vector3& chunkSiz
 
         for (StaticModel* staticModel : staticModels)
         {
-            if (staticModel->IsEnabledEffective()
-                && staticModel->GetBakeLightmap() && staticModel->GetScaleInLightmap() > M_LARGE_EPSILON)
+            if (staticModel->IsEnabledEffective() && staticModel->GetBakeLightmapEffective())
             {
                 chunkData.geometries_.push_back(staticModel);
                 chunkData.boundingBox_.Merge(staticModel->GetWorldBoundingBox());
@@ -134,8 +133,7 @@ void DefaultBakedSceneCollector::LockScene(Scene* scene, const Vector3& chunkSiz
 
         for (Terrain* terrain : terrains)
         {
-            if (terrain->IsEnabledEffective()
-                && terrain->GetBakeLightmap() && terrain->GetScaleInLightmap() > M_LARGE_EPSILON)
+            if (terrain->IsEnabledEffective() && terrain->GetBakeLightmapEffective())
             {
                 chunkData.geometries_.push_back(terrain);
                 chunkData.boundingBox_.Merge(terrain->CalculateWorldBoundingBox());
