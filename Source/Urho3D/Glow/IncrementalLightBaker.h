@@ -33,16 +33,16 @@
 namespace Urho3D
 {
 
-/// Incremental lightmapper.
-class URHO3D_API IncrementalLightmapper
+/// Incremental light baker.
+class URHO3D_API IncrementalLightBaker
 {
 public:
     /// Construct.
-    IncrementalLightmapper() {}
+    IncrementalLightBaker() {}
     /// Destruct.
-    ~IncrementalLightmapper();
+    ~IncrementalLightBaker();
 
-    /// Initialize lightmapper. Relatively lightweigh.
+    /// Initialize light baker. Relatively lightweigh.
     bool Initialize(const LightBakingSettings& settings,
         Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache);
     /// Process and update the scene. Scene collector is used here.
