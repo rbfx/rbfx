@@ -53,6 +53,6 @@ struct BakedChunkVicinity
 /// Create baked chunk vicinity.
 URHO3D_API BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     BakedSceneCollector& collector, const IntVector3& chunk,
-    const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings);
+    const LightBakingSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings);
 
 }

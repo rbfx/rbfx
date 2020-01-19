@@ -140,7 +140,7 @@ struct CommitContext : public BaseIncrementalContext
 struct IncrementalLightmapper::Impl
 {
     /// Construct.
-    Impl(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
+    Impl(const LightBakingSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
         Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
         : context_(scene->GetContext())
         , lightmapSettings_(lightmapSettings)
@@ -465,7 +465,7 @@ private:
     }
 
     /// Settings for lightmap generation.
-    LightmapSettings lightmapSettings_;
+    LightBakingSettings lightmapSettings_;
     /// Settings for incremental lightmapper itself.
     IncrementalLightmapperSettings incrementalSettings_;
 
@@ -487,7 +487,7 @@ IncrementalLightmapper::~IncrementalLightmapper()
 {
 }
 
-bool IncrementalLightmapper::Initialize(const LightmapSettings& lightmapSettings,
+bool IncrementalLightmapper::Initialize(const LightBakingSettings& lightmapSettings,
     const IncrementalLightmapperSettings& incrementalSettings,
     Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
 {

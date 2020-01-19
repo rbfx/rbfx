@@ -26,7 +26,7 @@
 
 #include "../Glow/BakedLightCache.h"
 #include "../Glow/BakedSceneCollector.h"
-#include "../Graphics/LightmapSettings.h"
+#include "../Graphics/LightBakingSettings.h"
 
 #include <EASTL/string.h>
 
@@ -43,7 +43,7 @@ public:
     ~IncrementalLightmapper();
 
     /// Initialize lightmapper. Relatively lightweigh.
-    bool Initialize(const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
+    bool Initialize(const LightBakingSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
         Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache);
     /// Process and update the scene. Scene collector is used here.
     void ProcessScene();

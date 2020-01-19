@@ -26,7 +26,7 @@
 
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Glow/LightTracer.h"
-#include "../Graphics/LightmapSettings.h"
+#include "../Graphics/LightBakingSettings.h"
 #include "../Graphics/LightProbeGroup.h"
 
 namespace Urho3D

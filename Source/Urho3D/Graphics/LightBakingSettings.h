@@ -156,7 +156,7 @@ struct LightmapStitchingSettings
 };
 
 /// Aggregated light baking settings.
-struct LightmapSettings
+struct LightBakingSettings
 {
     /// Charting settings.
     LightmapChartingSettings charting_;

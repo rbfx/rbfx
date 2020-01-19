@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Graphics/LightmapSettings.h"
+#include "../Graphics/LightBakingSettings.h"
 #include "../Math/AreaAllocator.h"
 #include "../Math/Rect.h"
 #include "../Math/Vector2.h"
