@@ -76,7 +76,7 @@ void LightProbeGroup::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement", GetAutoPlacementEnabled, SetAutoPlacementEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement Step", GetAutoPlacementStep, SetAutoPlacementStep, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, VariantBuffer, Variant::emptyBuffer, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Local Bounding Box Min", Vector3, localBoundingBox_.min_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Local Bounding Box Max", Vector3, localBoundingBox_.max_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
 }
@@ -226,19 +226,19 @@ void LightProbeGroup::SerializeLightProbesData(Archive& archive)
     }
 }
 
-void LightProbeGroup::SetLightProbesData(const VariantBuffer& data)
+void LightProbeGroup::SetLightProbesData(const ea::string& data)
 {
-    VectorBuffer buffer(data);
+    VectorBuffer buffer(DecodeBase64(data));
     BinaryInputArchive archive(context_, buffer);
     SerializeLightProbesData(archive);
 }
 
-VariantBuffer LightProbeGroup::GetLightProbesData() const
+ea::string LightProbeGroup::GetLightProbesData() const
 {
     VectorBuffer buffer;
     BinaryOutputArchive archive(context_, buffer);
     const_cast<LightProbeGroup*>(this)->SerializeLightProbesData(archive);
-    return buffer.GetBuffer();
+    return EncodeBase64(buffer.GetBuffer());
 }
 
 void LightProbeGroup::OnNodeSet(Node* node)

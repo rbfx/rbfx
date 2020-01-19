@@ -840,6 +840,53 @@ static inline bool IsBase64(char c) {
     return (isalnum(c) || (c == '+') || (c == '/'));
 }
 
+ea::string EncodeBase64(const ea::vector<unsigned char>& buffer)
+{
+    ea::string ret;
+
+    const unsigned char* bytesToEncode = buffer.data();
+    unsigned length = buffer.size();
+
+    int i = 0;
+    int j = 0;
+    unsigned char charArray3[3];
+    unsigned char charArray4[4];
+
+    while (length--)
+    {
+        charArray3[i++] = *(bytesToEncode++);
+        if (i == 3)
+        {
+            charArray4[0] = (charArray3[0] & 0xfc) >> 2;
+            charArray4[1] = ((charArray3[0] & 0x03) << 4) + ((charArray3[1] & 0xf0) >> 4);
+            charArray4[2] = ((charArray3[1] & 0x0f) << 2) + ((charArray3[2] & 0xc0) >> 6);
+            charArray4[3] = charArray3[2] & 0x3f;
+
+            for (i = 0; (i < 4); i++)
+                ret += base64_chars[charArray4[i]];
+            i = 0;
+        }
+    }
+
+    if (i)
+    {
+        for (j = i; j < 3; j++)
+            charArray3[j] = '\0';
+
+        charArray4[0] = (charArray3[0] & 0xfc) >> 2;
+        charArray4[1] = ((charArray3[0] & 0x03) << 4) + ((charArray3[1] & 0xf0) >> 4);
+        charArray4[2] = ((charArray3[1] & 0x0f) << 2) + ((charArray3[2] & 0xc0) >> 6);
+
+        for (j = 0; (j < i + 1); j++)
+            ret += base64_chars[charArray4[j]];
+
+        while ((i++ < 3))
+            ret += '=';
+    }
+
+    return ret;
+}
+
 ea::vector<unsigned char> DecodeBase64(ea::string encodedString)
 {
     int inLen = encodedString.length();
