@@ -928,13 +928,12 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             rayContext.currentGeometry_ = &raytracerGeometries[geometryBufferToRaytracer[geometryId]];
 
             Vector3& mutablePosition = geometryBuffer.positions_[i];
+            const float biasScale = CalculateBiasScale(mutablePosition);
+            const float bias = biasScale * settings.scaledPositionBackfaceBias_ + settings.constPositionBackfaceBias_;
+
             const Vector3 faceNormal = geometryBuffer.faceNormals_[i];
             const float texelRadius = geometryBuffer.texelRadiuses_[i];
             const Quaternion basis{ Vector3::FORWARD, faceNormal };
-
-            rayHit.ray.org_x = mutablePosition.x_;
-            rayHit.ray.org_y = mutablePosition.y_;
-            rayHit.ray.org_z = mutablePosition.z_;
 
             static const unsigned NumSamples = 4;
             static const Vector3 sampleRays[NumSamples] = { Vector3::LEFT, Vector3::RIGHT, Vector3::UP, Vector3::DOWN };
@@ -947,9 +946,14 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             {
                 const Vector3 rayDirection = basis * sampleRays[i];
 
-                rayHit.ray.dir_x = rayDirection.x_;
-                rayHit.ray.dir_y = rayDirection.y_;
-                rayHit.ray.dir_z = rayDirection.z_;
+                // Push position in the opposite direction just a bit
+                rayHit.ray.org_x = mutablePosition.x_ - rayDirection.x_ * bias;
+                rayHit.ray.org_y = mutablePosition.y_ - rayDirection.y_ * bias;
+                rayHit.ray.org_z = mutablePosition.z_ - rayDirection.z_ * bias;
+
+                rayHit.ray.dir_x = rayDirection.x_ * (1.0f + bias);
+                rayHit.ray.dir_y = rayDirection.y_ * (1.0f + bias);
+                rayHit.ray.dir_z = rayDirection.z_ * (1.0f + bias);
                 rayHit.ray.tfar = texelRadius;
                 rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
                 rtcIntersect1(scene, &rayContext, &rayHit);
@@ -975,11 +979,14 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             }
 
             // Push the position behind closest hit
-            const float offset = closestHitDistance
+            const float offset = closestHitDistance + settings.constPositionBackfaceBias_
                 + settings.scaledPositionBackfaceBias_ * CalculateBiasScale(mutablePosition);
 
-            mutablePosition = { rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
-            mutablePosition += closestHitDirection * offset;
+            if (closestHitDistance != M_LARGE_VALUE)
+            {
+                mutablePosition = { rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
+                mutablePosition += closestHitDirection * offset;
+            }
         }
     });
 }
