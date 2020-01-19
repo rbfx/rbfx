@@ -140,11 +140,9 @@ struct CommitContext : public BaseIncrementalContext
 struct IncrementalLightmapper::Impl
 {
     /// Construct.
-    Impl(const LightBakingSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings,
-        Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
+    Impl(const LightBakingSettings& settings, Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
         : context_(scene->GetContext())
-        , lightmapSettings_(lightmapSettings)
-        , incrementalSettings_(incrementalSettings)
+        , settings_(settings)
         , scene_(scene)
         , collector_(collector)
         , cache_(cache)
@@ -162,7 +160,7 @@ struct IncrementalLightmapper::Impl
         }
 
         // Find or fix output directory
-        if (incrementalSettings_.outputDirectory_.empty())
+        if (settings_.incremental_.outputDirectory_.empty())
         {
             const ea::string& sceneFileName = scene_->GetFileName();
             if (sceneFileName.empty())
@@ -171,25 +169,25 @@ struct IncrementalLightmapper::Impl
                 return false;
             }
 
-            incrementalSettings_.outputDirectory_ = ReplaceExtension(sceneFileName, "");
-            if (incrementalSettings_.outputDirectory_ == sceneFileName)
+            settings_.incremental_.outputDirectory_ = ReplaceExtension(sceneFileName, "");
+            if (settings_.incremental_.outputDirectory_ == sceneFileName)
             {
                 URHO3D_LOGERROR("Cannot find output directory for lightmaps: scene file name has no extension");
                 return false;
             }
         }
 
-        incrementalSettings_.outputDirectory_ = AddTrailingSlash(incrementalSettings_.outputDirectory_);
+        settings_.incremental_.outputDirectory_ = AddTrailingSlash(settings_.incremental_.outputDirectory_);
 
         FileSystem* fs = context_->GetFileSystem();
-        if (!fs->CreateDir(incrementalSettings_.outputDirectory_))
+        if (!fs->CreateDir(settings_.incremental_.outputDirectory_))
         {
             URHO3D_LOGERROR("Cannot create output directory for lightmaps");
             return false;
         }
 
         // Collect chunks
-        collector_->LockScene(scene_, incrementalSettings_.chunkSize_);
+        collector_->LockScene(scene_, settings_.incremental_.chunkSize_);
         chunks_ = collector_->GetChunks();
 
         // Sort chunks
@@ -221,7 +219,7 @@ struct IncrementalLightmapper::Impl
 
         // Generate charts
         const LightmapChartVector charts = GenerateLightmapCharts(
-            uniqueGeometries, lightmapSettings_.charting_, ctx.lightmapChartBaseIndex_);
+            uniqueGeometries, settings_.charting_, ctx.lightmapChartBaseIndex_);
 
         // Apply charts to scene
         ApplyLightmapCharts(charts);
@@ -259,8 +257,7 @@ struct IncrementalLightmapper::Impl
 
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
 
-        BakedChunkVicinity chunkVicinity = CreateBakedChunkVicinity(context_, *collector_, chunk,
-            lightmapSettings_, incrementalSettings_);
+        BakedChunkVicinity chunkVicinity = CreateBakedChunkVicinity(context_, *collector_, chunk, settings_);
         cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
 
         // Advance
@@ -286,13 +283,13 @@ struct IncrementalLightmapper::Impl
             LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
 
             // Bake emission
-            BakeEmissionLight(bakedDirect, geometryBuffer, lightmapSettings_.emissionTracing_);
+            BakeEmissionLight(bakedDirect, geometryBuffer, settings_.emissionTracing_);
 
             // Bake direct lights for charts
             for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
             {
                 BakeDirectLightForCharts(bakedDirect, geometryBuffer, *chunkVicinity->raytracerScene_,
-                    chunkVicinity->geometryBufferToRaytracer_, bakedLight, lightmapSettings_.directChartTracing_);
+                    chunkVicinity->geometryBufferToRaytracer_, bakedLight, settings_.directChartTracing_);
             }
 
             // Store direct light
@@ -313,11 +310,11 @@ struct IncrementalLightmapper::Impl
         // Initialize context
         if (ctx.currentChunkIndex_ == 0)
         {
-            const unsigned numTexels = lightmapSettings_.charting_.lightmapSize_ * lightmapSettings_.charting_.lightmapSize_;
+            const unsigned numTexels = settings_.charting_.lightmapSize_ * settings_.charting_.lightmapSize_;
             ctx.directFilterBuffer_.resize(numTexels);
             ctx.indirectFilterBuffer_.resize(numTexels);
             ctx.bakedLightBuffer_.resize(numTexels);
-            ctx.stitchingContext_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.lightmapSize_, 4);
+            ctx.stitchingContext_ = InitializeStitchingContext(context_, settings_.charting_.lightmapSize_, 4);
         }
 
         // Load chunk
@@ -343,7 +340,7 @@ struct IncrementalLightmapper::Impl
         // Bake indirect light for light probes
         chunkVicinity->lightProbesCollection_.ResetBakedData();
         BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps,
-            *chunkVicinity->raytracerScene_, lightmapSettings_.indirectProbesTracing_);
+            *chunkVicinity->raytracerScene_, settings_.indirectProbesTracing_);
 
         // Build light probes mesh for fallback indirect
         TetrahedralMesh lightProbesMesh;
@@ -361,21 +358,21 @@ struct IncrementalLightmapper::Impl
             BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
                 geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
                 *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
-                lightmapSettings_.indirectChartTracing_);
+                settings_.indirectChartTracing_);
 
             // Filter direct and indirect
             bakedIndirect.NormalizeLight();
 
-            if (lightmapSettings_.directFilter_.kernelRadius_ > 0)
+            if (settings_.directFilter_.kernelRadius_ > 0)
             {
                 FilterDirectLight(*bakedDirect, ctx.directFilterBuffer_,
-                    geometryBuffer, lightmapSettings_.directFilter_, lightmapSettings_.directChartTracing_.numTasks_);
+                    geometryBuffer, settings_.directFilter_, settings_.directChartTracing_.numTasks_);
             }
 
-            if (lightmapSettings_.indirectFilter_.kernelRadius_ > 0)
+            if (settings_.indirectFilter_.kernelRadius_ > 0)
             {
                 FilterIndirectLight(bakedIndirect, ctx.indirectFilterBuffer_,
-                    geometryBuffer, lightmapSettings_.indirectFilter_, lightmapSettings_.indirectChartTracing_.numTasks_);
+                    geometryBuffer, settings_.indirectFilter_, settings_.indirectChartTracing_.numTasks_);
             }
 
             // Generate image
@@ -389,11 +386,11 @@ struct IncrementalLightmapper::Impl
             }
 
             // Stitch seams
-            if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
+            if (settings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
             {
                 SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer.seams_);
                 StitchLightmapSeams(ctx.stitchingContext_, ctx.bakedLightBuffer_,
-                    lightmapSettings_.stitching_, seamsModel);
+                    settings_.stitching_, seamsModel);
             }
 
             // Generate image
@@ -422,7 +419,7 @@ struct IncrementalLightmapper::Impl
         for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
         {
             BakeDirectLightForLightProbes(chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
-                bakedLight, lightmapSettings_.directProbesTracing_);
+                bakedLight, settings_.directProbesTracing_);
         }
 
         // Release cache
@@ -457,17 +454,15 @@ private:
     ea::string GetLightmapFileName(unsigned lightmapIndex)
     {
         ea::string lightmapName;
-        lightmapName += incrementalSettings_.outputDirectory_;
-        lightmapName += incrementalSettings_.lightmapNamePrefix_;
+        lightmapName += settings_.incremental_.outputDirectory_;
+        lightmapName += settings_.incremental_.lightmapNamePrefix_;
         lightmapName += ea::to_string(lightmapIndex);
-        lightmapName += incrementalSettings_.lightmapNameSuffix_;
+        lightmapName += settings_.incremental_.lightmapNameSuffix_;
         return lightmapName;
     }
 
-    /// Settings for lightmap generation.
-    LightBakingSettings lightmapSettings_;
-    /// Settings for incremental lightmapper itself.
-    IncrementalLightmapperSettings incrementalSettings_;
+    /// Settings for light baking.
+    LightBakingSettings settings_;
 
     /// Context.
     Context* context_{};
@@ -487,11 +482,10 @@ IncrementalLightmapper::~IncrementalLightmapper()
 {
 }
 
-bool IncrementalLightmapper::Initialize(const LightBakingSettings& lightmapSettings,
-    const IncrementalLightmapperSettings& incrementalSettings,
+bool IncrementalLightmapper::Initialize(const LightBakingSettings& settings,
     Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
 {
-    impl_ = ea::make_unique<Impl>(lightmapSettings, incrementalSettings, scene, collector, cache);
+    impl_ = ea::make_unique<Impl>(settings, scene, collector, cache);
     return impl_->Initialize();
 }
 
