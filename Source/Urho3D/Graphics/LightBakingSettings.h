@@ -155,8 +155,8 @@ struct LightmapStitchingSettings
     ea::string stitchSeamsTechniqueName_{ "Techniques/DiffUnlitAlpha.xml" };
 };
 
-/// Incremental lightmapper settings.
-struct IncrementalLightmapperSettings
+/// Incremental light baker settings.
+struct IncrementalLightBakerSettings
 {
     /// Size of the chunk.
     Vector3 chunkSize_ = Vector3::ONE * 128.0f;
@@ -201,8 +201,8 @@ struct LightBakingSettings
     /// Stitching settings.
     LightmapStitchingSettings stitching_;
 
-    /// Incremental lightmapper settings.
-    IncrementalLightmapperSettings incremental_;
+    /// Incremental light baker settings.
+    IncrementalLightBakerSettings incremental_;
 };
 
 }

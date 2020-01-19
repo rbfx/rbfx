@@ -30,7 +30,7 @@
 #include "../Scene/Scene.h"
 
 #if URHO3D_GLOW
-#include "../Glow/IncrementalLightmapper.h"
+#include "../Glow/IncrementalLightBaker.h"
 #endif
 
 namespace Urho3D
@@ -95,13 +95,13 @@ void LightmapManager::Bake()
 #if URHO3D_GLOW
     DefaultBakedSceneCollector sceneCollector;
     BakedLightMemoryCache lightmapCache;
-    IncrementalLightmapper lightmapper;
+    IncrementalLightBaker lightBaker;
 
-    if (lightmapper.Initialize(settings_, GetScene(), &sceneCollector, &lightmapCache))
+    if (lightBaker.Initialize(settings_, GetScene(), &sceneCollector, &lightmapCache))
     {
-        lightmapper.ProcessScene();
-        lightmapper.Bake();
-        lightmapper.CommitScene();
+        lightBaker.ProcessScene();
+        lightBaker.Bake();
+        lightBaker.CommitScene();
     }
 #endif
 
