@@ -5,9 +5,7 @@
 
 #ifndef D3D11
 
-uniform float cLightmapLayer;
-uniform float cLightmapGeometry;
-uniform float2 cLightmapPositionBias;
+#error DX9 is not supported
 
 #else
 
