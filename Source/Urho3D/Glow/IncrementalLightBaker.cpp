@@ -22,7 +22,7 @@
 
 /// \file
 
-#include "../Glow/IncrementalLightmapper.h"
+#include "../Glow/IncrementalLightBaker.h"
 
 #include "../Core/Context.h"
 #include "../Glow/BakedChunkVicinity.h"
@@ -136,8 +136,8 @@ struct CommitContext : public BaseIncrementalContext
 
 }
 
-/// Incremental lightmapper implementation.
-struct IncrementalLightmapper::Impl
+/// Incremental light baker implementation.
+struct IncrementalLightBaker::Impl
 {
     /// Construct.
     Impl(const LightBakingSettings& settings, Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
@@ -478,18 +478,18 @@ private:
     unsigned numLightmapCharts_{};
 };
 
-IncrementalLightmapper::~IncrementalLightmapper()
+IncrementalLightBaker::~IncrementalLightBaker()
 {
 }
 
-bool IncrementalLightmapper::Initialize(const LightBakingSettings& settings,
+bool IncrementalLightBaker::Initialize(const LightBakingSettings& settings,
     Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache)
 {
     impl_ = ea::make_unique<Impl>(settings, scene, collector, cache);
     return impl_->Initialize();
 }
 
-void IncrementalLightmapper::ProcessScene()
+void IncrementalLightBaker::ProcessScene()
 {
     // Generate charts
     ChartingContext chartingContext;
@@ -505,7 +505,7 @@ void IncrementalLightmapper::ProcessScene()
         ;
 }
 
-void IncrementalLightmapper::Bake()
+void IncrementalLightBaker::Bake()
 {
     // Bake direct lighting
     DirectLightBakingContext directContext;
@@ -518,7 +518,7 @@ void IncrementalLightmapper::Bake()
         ;
 }
 
-void IncrementalLightmapper::CommitScene()
+void IncrementalLightBaker::CommitScene()
 {
     CommitContext commitContext;
     while (!impl_->StepCommit(commitContext))
