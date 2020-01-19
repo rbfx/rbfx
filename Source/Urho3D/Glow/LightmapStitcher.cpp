@@ -272,6 +272,18 @@ SharedPtr<Model> CreateSeamsModel(Context* context, const LightmapSeamVector& se
     return model;
 }
 
+void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector3>& imageData,
+    const LightmapStitchingSettings& settings, Model* seamsModel)
+{
+    for (unsigned i = 0; i < imageData.size(); ++i)
+        stitchingContext.data_[i] = Vector4(imageData[i], 1.0f);
+
+    StitchTextureSeams(stitchingContext, settings, seamsModel);
+
+    for (unsigned i = 0; i < imageData.size(); ++i)
+        imageData[i] = static_cast<Vector3>(stitchingContext.data_[i]);
+}
+
 void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector4>& imageData,
     const LightmapStitchingSettings& settings, Model* seamsModel)
 {
