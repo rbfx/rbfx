@@ -426,7 +426,8 @@ RaytracerScene::~RaytracerScene()
         rtcReleaseDevice(device_);
 }
 
-SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vector<Component*>& geometries, unsigned lightmapUVChannel)
+SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vector<Component*>& geometries,
+    unsigned lightmapUVChannel, const RaytracingBackground& background)
 {
     // Queue models for parsing
     ea::hash_set<Model*> modelsToParse;
@@ -526,7 +527,7 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
     const Vector3 sceneSize = boundingBox.Size();
     const float maxDistance = ea::max({ sceneSize.x_, sceneSize.y_, sceneSize.z_ });
 
-    return MakeShared<RaytracerScene>(context, device, scene, ea::move(geometryIndex), maxDistance);
+    return MakeShared<RaytracerScene>(context, device, scene, ea::move(geometryIndex), background, maxDistance);
 }
 
 }
