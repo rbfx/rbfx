@@ -155,6 +155,18 @@ struct LightmapStitchingSettings
     ea::string stitchSeamsTechniqueName_{ "Techniques/DiffUnlitAlpha.xml" };
 };
 
+/// Light calculation properties that can be used to adjust result.
+struct LightCalculationProperties
+{
+    /// Ambient light multiplier.
+    float indirectMultiplier_{ 1.0f };
+
+    /// Background light color.
+    Vector3 backgroundColor_{};
+    /// Background light brightness multiplier.
+    float backgroundBrightness_{ 1.0f };
+};
+
 /// Incremental light baker settings.
 struct IncrementalLightBakerSettings
 {
@@ -200,6 +212,9 @@ struct LightBakingSettings
 
     /// Stitching settings.
     LightmapStitchingSettings stitching_;
+
+    /// Calculation properties.
+    LightCalculationProperties properties_;
 
     /// Incremental light baker settings.
     IncrementalLightBakerSettings incremental_;
