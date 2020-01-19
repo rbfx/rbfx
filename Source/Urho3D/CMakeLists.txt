@@ -177,7 +177,6 @@ set (THIRD_PARTY_DEPENDENCIES
     EASTL
     entt
     ETCPACK
-    libthekla_atlas
     xatlas
     embree
 )
