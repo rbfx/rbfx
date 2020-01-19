@@ -64,6 +64,7 @@ bool Archive::ValidateName(ea::string_view name)
     return true;
 }
 
+const char* ArchiveBase::versionElementName_ = "Version";
 const char* ArchiveBase::keyElementName_ = "<Map key>";
 const char* ArchiveBase::blockElementName_ = "<Block>";
 

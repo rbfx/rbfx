@@ -119,8 +119,13 @@ void GlobalIllumination::SerializeLightProbesData(Archive& archive)
 {
     if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes"))
     {
-        SerializeValue(archive, "Data", lightProbesCollection_);
-        SerializeValue(archive, "Mesh", lightProbesMesh_);
+        static const unsigned currentVersion = 1;
+        const unsigned version = archive.SerializeVersion(currentVersion);
+        if (version == currentVersion)
+        {
+            SerializeValue(archive, "Data", lightProbesCollection_);
+            SerializeValue(archive, "Mesh", lightProbesMesh_);
+        }
     }
 }
 
