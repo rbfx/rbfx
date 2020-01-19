@@ -785,6 +785,7 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
         RTCScene scene = raytracerScene.GetEmbreeScene();
         const float maxDistance = raytracerScene.GetMaxDistance();
         const auto& geometryIndex = raytracerScene.GetGeometries();
+        const RaytracingBackground& background = raytracerScene.GetBackground();
 
         Vector3 albedo[IndirectLightTracingSettings::MaxBounces];
         Vector3 incomingSamples[IndirectLightTracingSettings::MaxBounces];
@@ -829,8 +830,14 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     rayHit.hit.geomID = RTC_INVALID_GEOMETRY_ID;
                     rtcIntersect1(scene, &rayContext, &rayHit);
 
+                    // If hit background, pick light and break
                     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
+                    {
+                        incomingSamples[bounceIndex] = background.lightIntensity_;
+                        incomingFactors[bounceIndex] = 1.0f;
+                        ++numBounces;
                         break;
+                    }
 
                     // Check normal orientation
                     if (currentRayDirection.DotProduct({ rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z }) > 0.0f)
@@ -887,8 +894,6 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                 Vector3 sampleIndirectLight;
                 for (int bounceIndex = numBounces - 1; bounceIndex >= 0; --bounceIndex)
                 {
-                    if (albedo[bounceIndex] == Color::RED.ToVector3())
-                        albedo[bounceIndex] = albedo[bounceIndex];
                     sampleIndirectLight += incomingSamples[bounceIndex];
                     sampleIndirectLight *= incomingFactors[bounceIndex];
                     sampleIndirectLight *= albedo[bounceIndex];

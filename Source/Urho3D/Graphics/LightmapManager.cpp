@@ -27,6 +27,9 @@
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
 #include "../Graphics/GlobalIllumination.h"
+#include "../Graphics/Octree.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/Zone.h"
 #include "../Scene/Scene.h"
 
 #if URHO3D_GLOW
@@ -65,6 +68,8 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Output Directory", ea::string, settings_.incremental_.outputDirectory_, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, settings_.charting_.lightmapSize_, defaultSettings.charting_.lightmapSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Texel Density", float, settings_.charting_.texelDensity_, defaultSettings.charting_.texelDensity_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Indirect Multiplier", float, settings_.properties_.indirectMultiplier_, defaultSettings.properties_.indirectMultiplier_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Background Brightness", float, settings_.properties_.backgroundBrightness_, defaultSettings.properties_.backgroundBrightness_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Direct Samples (Lightmap)", unsigned, settings_.directChartTracing_.maxSamples_, defaultSettings.directChartTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Direct Samples (Light Probes)", unsigned, settings_.directProbesTracing_.maxSamples_, defaultSettings.directProbesTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, settings_.indirectChartTracing_.maxBounces_, defaultSettings.indirectChartTracing_.maxBounces_, AM_DEFAULT);
@@ -90,6 +95,10 @@ void LightmapManager::Bake()
     settings_.directProbesTracing_.numTasks_ = numTasks;
     settings_.indirectChartTracing_.numTasks_ = numTasks;
     settings_.indirectProbesTracing_.numTasks_ = numTasks;
+
+    auto octree = GetScene()->GetComponent<Octree>();
+    Zone* zone = octree->GetZone();
+    settings_.properties_.backgroundColor_ = zone->GetFogColor().ToVector3();
 
     // Bake lightmaps if possible
 #if URHO3D_GLOW
