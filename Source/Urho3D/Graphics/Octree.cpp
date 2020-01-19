@@ -32,6 +32,8 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/Zone.h"
 #include "../IO/Log.h"
 #include "../Scene/Scene.h"
 #include "../Scene/SceneEvents.h"
@@ -44,6 +46,60 @@
 
 namespace Urho3D
 {
+
+namespace
+{
+
+/// Unused vector of drawables.
+static ea::vector<Drawable*> zoneOctreeQueryDrawables;
+
+/// %Frustum octree query for first zone.
+class ZoneOctreeQuery : public OctreeQuery
+{
+public:
+    /// Construct with frustum and query parameters.
+    ZoneOctreeQuery(unsigned viewMask = DEFAULT_VIEWMASK)
+        : OctreeQuery(zoneOctreeQueryDrawables, DRAWABLE_ZONE, viewMask_) {}
+
+    /// Intersection test for an octant.
+    Intersection TestOctant(const BoundingBox& box, bool inside) override
+    {
+        if (inside)
+            return INSIDE;
+        else
+            return box.IsInside(Vector3::ZERO);
+    }
+
+    /// Intersection test for drawables.
+    void TestDrawables(Drawable** start, Drawable** end, bool inside) override
+    {
+        if (zone_)
+            return;
+
+        while (start != end)
+        {
+            Drawable* drawable = *start++;
+
+            if ((drawable->GetDrawableFlags() & DRAWABLE_ZONE) && (drawable->GetViewMask() & viewMask_))
+            {
+                if (inside)
+                {
+                    zone_ = drawable->Cast<Zone>();
+                    break;
+                }
+            }
+        }
+    }
+
+    /// Return zone.
+    Zone* GetZone() const { return zone_; }
+
+private:
+    /// Zone.
+    Zone* zone_{};
+};
+
+}
 
 static const float DEFAULT_OCTREE_SIZE = 1000.0f;
 static const int DEFAULT_OCTREE_LEVELS = 8;
@@ -549,6 +605,14 @@ void Octree::RaycastSingle(RayOctreeQuery& query) const
         ea::quick_sort(query.result_.begin(), query.result_.end(), CompareRayQueryResults);
         query.result_.resize(1);
     }
+}
+
+Zone* Octree::GetZone(unsigned viewMask) const
+{
+    ZoneOctreeQuery query(viewMask);
+    GetDrawables(query);
+    Zone* zone = query.GetZone();
+    return zone ? zone : context_->GetRenderer()->GetDefaultZone();
 }
 
 void Octree::QueueUpdate(Drawable* drawable)

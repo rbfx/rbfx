@@ -127,8 +127,13 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
 
     // Create scene for raytracing
+    RaytracingBackground raytracingBackground;
+    raytracingBackground.lightIntensity_ =
+        settings.properties_.backgroundColor_ * settings.properties_.backgroundBrightness_;
+
     const unsigned uvChannel = settings.geometryBufferBaking_.uvChannel_;
-    const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(context, geometries, uvChannel);
+    const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(
+        context, geometries, uvChannel, raytracingBackground);
 
     // Match raytracer geometries and geometry buffer
     ea::vector<RaytracerGeometry> raytracerGeometriesSorted = raytracerScene->GetGeometries();

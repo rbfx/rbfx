@@ -40,6 +40,13 @@ class Context;
 class Node;
 class Component;
 
+/// Raytracer scene background description.
+struct RaytracingBackground
+{
+    /// Background light intensity.
+    Vector3 lightIntensity_;
+};
+
 /// Material of raytracing geometry.
 struct RaytracingGeometryMaterial
 {
@@ -140,11 +147,12 @@ public:
 
     /// Construct.
     RaytracerScene(Context* context, RTCDevice embreeDevice, RTCScene raytracerScene,
-        ea::vector<RaytracerGeometry> geometries, float maxDistance)
+        ea::vector<RaytracerGeometry> geometries, const RaytracingBackground& background, float maxDistance)
         : context_(context)
         , device_(embreeDevice)
         , scene_(raytracerScene)
         , geometries_(ea::move(geometries))
+        , background_(background)
         , maxDistance_(maxDistance)
     {
     }
@@ -159,6 +167,8 @@ public:
     RTCScene GetEmbreeScene() const { return scene_; }
     /// Return geometries.
     const ea::vector<RaytracerGeometry>& GetGeometries() const { return geometries_; }
+    /// Return background.
+    const RaytracingBackground& GetBackground() const { return background_; }
     /// Return max distance between two points.
     float GetMaxDistance() const { return maxDistance_; }
 
@@ -171,12 +181,14 @@ private:
     RTCScene scene_{};
     /// Geometries.
     ea::vector<RaytracerGeometry> geometries_;
+    /// Background.
+    RaytracingBackground background_;
     /// Max distance between two points.
     float maxDistance_{};
 };
 
 // Create scene for raytracing.
 URHO3D_API SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context,
-    const ea::vector<Component*>& geometries, unsigned uvChannel);
+    const ea::vector<Component*>& geometries, unsigned uvChannel, const RaytracingBackground& background);
 
 }
