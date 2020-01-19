@@ -155,6 +155,23 @@ struct LightmapStitchingSettings
     ea::string stitchSeamsTechniqueName_{ "Techniques/DiffUnlitAlpha.xml" };
 };
 
+/// Incremental lightmapper settings.
+struct IncrementalLightmapperSettings
+{
+    /// Size of the chunk.
+    Vector3 chunkSize_ = Vector3::ONE * 128.0f;
+    /// Additional space around chunk to collect indirect lighting.
+    float indirectPadding_ = 32.0f;
+    /// Shadow casting distance for directional light.
+    float directionalLightShadowDistance_ = 128.0f;
+    /// Output directory name.
+    ea::string outputDirectory_;
+    /// Lightmap name prefix.
+    ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
+    /// Lightmap name suffix.
+    ea::string lightmapNameSuffix_{ ".png" };
+};
+
 /// Aggregated light baking settings.
 struct LightBakingSettings
 {
@@ -183,23 +200,9 @@ struct LightBakingSettings
 
     /// Stitching settings.
     LightmapStitchingSettings stitching_;
-};
 
-/// Incremental lightmapper settings.
-struct IncrementalLightmapperSettings
-{
-    /// Size of the chunk.
-    Vector3 chunkSize_ = Vector3::ONE * 128.0f;
-    /// Additional space around chunk to collect indirect lighting.
-    float indirectPadding_ = 32.0f;
-    /// Shadow casting distance for directional light.
-    float directionalLightShadowDistance_ = 128.0f;
-    /// Output directory name.
-    ea::string outputDirectory_;
-    /// Lightmap name prefix.
-    ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
-    /// Lightmap name suffix.
-    ea::string lightmapNameSuffix_{ ".png" };
+    /// Incremental lightmapper settings.
+    IncrementalLightmapperSettings incremental_;
 };
 
 }
