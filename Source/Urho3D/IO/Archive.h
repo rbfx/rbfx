@@ -200,6 +200,8 @@ public:
     virtual bool SerializeBytes(const char* name, void* bytes, unsigned size) = 0;
     /// Serialize Variable Length Encoded unsigned integer, up to 29 significant bits.
     virtual bool SerializeVLE(const char* name, unsigned& value) = 0;
+    /// Serialize version number. 0 is invalid version.
+    virtual unsigned SerializeVersion(unsigned version) = 0;
 
     /// \}
 
@@ -254,6 +256,14 @@ public:
     /// Return first error stack.
     ea::string_view GetErrorStack() const final { return errorStack_; }
 
+    /// Serialize version number. 0 is invalid version.
+    unsigned SerializeVersion(unsigned version) final
+    {
+        if (!SerializeVLE(versionElementName_, version))
+            return 0;
+        return version;
+    }
+
     /// Set archive error.
     void SetError(ea::string_view error) override
     {
@@ -273,6 +283,8 @@ public:
     }
 
 public:
+    /// Version element name.
+    static const char* versionElementName_;
     /// Artificial element name used for error reporting related to Map keys.
     static const char* keyElementName_;
     /// Artificial element name used for error reporting related to block itself.

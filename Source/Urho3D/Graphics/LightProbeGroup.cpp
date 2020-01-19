@@ -215,7 +215,15 @@ void LightProbeGroup::SetLightProbes(const LightProbeVector& lightProbes)
 
 void LightProbeGroup::SerializeLightProbesData(Archive& archive)
 {
-    SerializeVector(archive, "LightProbes", "LightProbe", lightProbes_);
+    if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbesData"))
+    {
+        static const unsigned currentVersion = 1;
+        const unsigned version = archive.SerializeVersion(currentVersion);
+        if (version == currentVersion)
+        {
+            SerializeVector(archive, "LightProbes", "LightProbe", lightProbes_);
+        }
+    }
 }
 
 void LightProbeGroup::SetLightProbesData(const VariantBuffer& data)
