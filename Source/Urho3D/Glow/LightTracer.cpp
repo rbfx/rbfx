@@ -40,6 +40,12 @@ namespace Urho3D
 namespace
 {
 
+/// Calculate bias scale based on position.
+float CalculateBiasScale(const Vector3& position)
+{
+    return ea::min(1.0f, ea::max({ Abs(position.x_), Abs(position.y_), Abs(position.z_) }));
+}
+
 /// Generate random 3D direction.
 void RandomDirection3(Vector3& result)
 {
@@ -856,8 +862,7 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
 
                         // Offset position a bit
                         const Vector3 hitNormal = Vector3(rayHit.hit.Ng_x, rayHit.hit.Ng_y, rayHit.hit.Ng_z).Normalized();
-                        const float positionMax = ea::max({ Abs(currentPosition.x_), Abs(currentPosition.y_), Abs(currentPosition.z_) });
-                        const float bias = settings.scaledPositionBounceBias_ * positionMax;
+                        const float bias = settings.scaledPositionBounceBias_ * CalculateBiasScale(currentPosition);
                         currentPosition.x_ += Sign(hitNormal.x_) * bias + hitNormal.x_ * settings.constPositionBounceBias_;
                         currentPosition.y_ += Sign(hitNormal.y_) * bias + hitNormal.y_ * settings.constPositionBounceBias_;
                         currentPosition.z_ += Sign(hitNormal.z_) * bias + hitNormal.z_ * settings.constPositionBounceBias_;
@@ -970,8 +975,8 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
             }
 
             // Push the position behind closest hit
-            const float positionMax = ea::max({ Abs(mutablePosition.x_), Abs(mutablePosition.y_), Abs(mutablePosition.z_) });
-            const float offset = closestHitDistance + settings.scaledPositionBackfaceBias_ * positionMax;
+            const float offset = closestHitDistance
+                + settings.scaledPositionBackfaceBias_ * CalculateBiasScale(mutablePosition);
 
             mutablePosition = { rayHit.ray.org_x, rayHit.ray.org_y, rayHit.ray.org_z };
             mutablePosition += closestHitDirection * offset;

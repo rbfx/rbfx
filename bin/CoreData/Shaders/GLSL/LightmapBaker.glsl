@@ -64,7 +64,8 @@ void PS()
 
     float scaledBias = vMetadata.y;
     float constBias = vMetadata.z;
-    vec3 position = vWorldPos.xyz + sign(faceNormal) * abs(vWorldPos.xyz) * scaledBias + faceNormal * constBias;
+    vec3 biasScale = max(abs(vWorldPos.xyz), vec3(1.0, 1.0, 1.0));
+    vec3 position = vWorldPos.xyz + sign(faceNormal) * biasScale * scaledBias + faceNormal * constBias;
 
     gl_FragData[0] = vec4(position, vMetadata.x);
     gl_FragData[1] = vec4(position, texelRadius);
