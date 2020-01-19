@@ -119,29 +119,27 @@ bool IsUnwantedLod(const RaytracerGeometry& currentGeometry, const RaytracerGeom
 /// Return texture color at hit position. Texture must be present.
 Color GetHitDiffuseTextureColor(const RaytracerGeometry& hitGeometry, const RTCHit& hit)
 {
-    assert(hitGeometry.diffuseImage_);
+    assert(hitGeometry.material_.diffuseImage_);
 
     Vector2 uv;
     rtcInterpolate0(hitGeometry.embreeGeometry_, hit.primID, hit.u, hit.v,
         RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE, RaytracerScene::UVAttribute, &uv.x_, 2);
 
-    const int x = Clamp(RoundToInt(uv.x_ * hitGeometry.diffuseImageWidth_), 0, hitGeometry.diffuseImageWidth_ - 1);
-    const int y = Clamp(RoundToInt(uv.y_ * hitGeometry.diffuseImageHeight_), 0, hitGeometry.diffuseImageHeight_ - 1);
-    return hitGeometry.diffuseImage_->GetPixel(x, y);
+    return hitGeometry.material_.SampleDiffuse(uv);
 }
 
 /// Return true if transparent, update incoming light. Used for direct light calculations.
 bool IsTransparedForDirect(const RaytracerGeometry& hitGeometry, const RTCHit& hit, Vector3& incomingLight)
 {
-    if (hitGeometry.opaque_)
+    if (hitGeometry.material_.opaque_)
         return false;
 
     // Consider material
-    Vector3 hitSurfaceColor = hitGeometry.diffuseColor_;
-    float hitSurfaceAlpha = hitGeometry.alpha_;
+    Vector3 hitSurfaceColor = hitGeometry.material_.diffuseColor_;
+    float hitSurfaceAlpha = hitGeometry.material_.alpha_;
 
     // Consider texture
-    if (hitGeometry.diffuseImage_)
+    if (hitGeometry.material_.diffuseImage_)
     {
         const Color diffuseColor = GetHitDiffuseTextureColor(hitGeometry, hit);
 
@@ -158,18 +156,18 @@ bool IsTransparedForDirect(const RaytracerGeometry& hitGeometry, const RTCHit& h
 /// Return true if transparent. Used for indirect light calculations.
 bool IsTransparentForIndirect(const RaytracerGeometry& hitGeometry, const RTCHit& hit)
 {
-    if (hitGeometry.opaque_)
+    if (hitGeometry.material_.opaque_)
         return false;
 
     const float sample = Random(1.0f);
 
     // Consider material
-    float hitSurfaceAlpha = hitGeometry.alpha_;
+    float hitSurfaceAlpha = hitGeometry.material_.alpha_;
     if (hitSurfaceAlpha < sample)
         return true;
 
     // Consider texture
-    if (hitGeometry.diffuseImage_)
+    if (hitGeometry.material_.diffuseImage_)
     {
         hitSurfaceAlpha *= GetHitDiffuseTextureColor(hitGeometry, hit).a_;
         if (hitSurfaceAlpha < sample)
@@ -843,7 +841,6 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     const float reflectance = 1 / M_PI;
                     const float brdf = reflectance / M_PI;
 
-                    // TODO: Use real index here
                     const unsigned lightmapIndex = geometry.lightmapIndex_;
                     const IntVector2 sampleLocation = bakedDirect[lightmapIndex]->GetNearestLocation(lightmapUV);
                     incomingSamples[bounceIndex] = bakedDirect[lightmapIndex]->GetSurfaceLight(sampleLocation);
