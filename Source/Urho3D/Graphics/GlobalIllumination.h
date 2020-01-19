@@ -62,9 +62,9 @@ public:
     /// Serialize light probes data.
     void SerializeLightProbesData(Archive& archive);
     /// Set serialized light probes data.
-    void SetLightProbesData(const VariantBuffer& data);
+    void SetLightProbesData(const ea::string& data);
     /// Return serialized light probes data.
-    VariantBuffer GetLightProbesData() const;
+    ea::string GetLightProbesData() const;
 
 private:
     /// Light probes mesh.
