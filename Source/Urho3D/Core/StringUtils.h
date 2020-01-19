@@ -146,6 +146,8 @@ URHO3D_API unsigned ToUpper(unsigned ch);
 URHO3D_API unsigned ToLower(unsigned ch);
 /// Convert a memory size into a formatted size string, of the style "1.5 Mb".
 URHO3D_API ea::string GetFileSizeString(unsigned long long memorySize);
+/// Encode buffer into base-64 string.
+URHO3D_API ea::string EncodeBase64(const ea::vector<unsigned char>& buffer);
 /// Decode a base64-encoded string into buffer.
 URHO3D_API ea::vector<unsigned char> DecodeBase64(ea::string encodedString);
 /// Parse type from a C string.

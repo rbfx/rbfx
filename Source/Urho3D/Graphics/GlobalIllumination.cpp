@@ -46,7 +46,7 @@ void GlobalIllumination::RegisterObject(Context* context)
 {
     context->RegisterFactory<GlobalIllumination>(SUBSYSTEM_CATEGORY);
 
-    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, VariantBuffer, Variant::emptyBuffer, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
 }
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -129,19 +129,19 @@ void GlobalIllumination::SerializeLightProbesData(Archive& archive)
     }
 }
 
-void GlobalIllumination::SetLightProbesData(const VariantBuffer& data)
+void GlobalIllumination::SetLightProbesData(const ea::string& data)
 {
-    VectorBuffer buffer(data);
+    VectorBuffer buffer(DecodeBase64(data));
     BinaryInputArchive archive(context_, buffer);
     SerializeLightProbesData(archive);
 }
 
-VariantBuffer GlobalIllumination::GetLightProbesData() const
+ea::string GlobalIllumination::GetLightProbesData() const
 {
     VectorBuffer buffer;
     BinaryOutputArchive archive(context_, buffer);
     const_cast<GlobalIllumination*>(this)->SerializeLightProbesData(archive);
-    return buffer.GetBuffer();
+    return EncodeBase64(buffer.GetBuffer());
 }
 
 }
