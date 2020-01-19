@@ -26,7 +26,7 @@
 
 #include "../Container/Ptr.h"
 #include "../Glow/EmbreeForward.h"
-#include "../Graphics/LightmapSettings.h"
+#include "../Graphics/LightBakingSettings.h"
 #include "../Math/BoundingBox.h"
 #include "../Math/Color.h"
 #include "../Resource/Image.h"

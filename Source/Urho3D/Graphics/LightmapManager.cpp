@@ -56,7 +56,7 @@ LightmapManager::~LightmapManager() = default;
 void LightmapManager::RegisterObject(Context* context)
 {
     static const IncrementalLightmapperSettings defaultIncrementalSettings;
-    static const LightmapSettings defaultLightmapSettings;
+    static const LightBakingSettings defaultLightmapSettings;
     context->RegisterFactory<LightmapManager>(SUBSYSTEM_CATEGORY);
 
     auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = false; };
