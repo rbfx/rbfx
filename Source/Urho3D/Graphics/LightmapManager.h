@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Graphics/LightmapSettings.h"
+#include "../Graphics/LightBakingSettings.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D
@@ -48,7 +48,7 @@ public:
 
 private:
     /// Lightmap baking settings.
-    LightmapSettings lightmapSettings_;
+    LightBakingSettings lightmapSettings_;
     /// Incremental baking settings.
     IncrementalLightmapperSettings incrementalBakingSettings_;
     /// Whether the baking is scheduled.

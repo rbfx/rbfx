@@ -57,7 +57,7 @@ Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
 
 BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     BakedSceneCollector& collector, const IntVector3& chunk,
-    const LightmapSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings)
+    const LightBakingSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings)
 {
     const BoundingBox lightReceiversBoundingBox = collector.GetChunkBoundingBox(chunk);
     const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector.GetUniqueLightProbeGroups(chunk);
