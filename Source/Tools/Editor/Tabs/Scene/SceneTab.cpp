@@ -158,27 +158,28 @@ bool SceneTab::RenderWindowContent()
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }
 
+    bool wasActive = isViewportActive_;
+    bool isClickedLeft = false;
+    bool isClickedRight = false;
+
     // Buttons must render above the viewport, but they also should be rendered first in order to take precedence in
     // item activation.
-    viewportSplitter_.Split(window->DrawList, 2);
-    viewportSplitter_.SetCurrentChannel(window->DrawList, 1);
+    viewportSplitter_.Split(window->DrawList, 3);
+    viewportSplitter_.SetCurrentChannel(window->DrawList, 2);
     RenderToolbarButtons();
+    viewportSplitter_.SetCurrentChannel(window->DrawList, 1);
+    gizmo_.ManipulateSelection(GetCamera());
     viewportSplitter_.SetCurrentChannel(window->DrawList, 0);
     ui::SetCursorPos({0, 0});
     ui::ImageItem(texture_, rect.GetSize());
-    viewportSplitter_.Merge(window->DrawList);
-
+    isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
+    isClickedLeft = ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT);
+    isClickedRight = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT);
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
-
-    bool wasActive = isViewportActive_;
-    isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT);
-    bool isClickedLeft = ui::IsItemClicked(MOUSEB_LEFT);
-    bool isClickedRight = ui::IsItemClicked(MOUSEB_RIGHT);
+    viewportSplitter_.Merge(window->DrawList);
 
     if (wasActive != isViewportActive_)
         GetSubsystem<Input>()->SetMouseVisible(!isViewportActive_);
-
-    gizmo_.ManipulateSelection(GetCamera());
 
     // Render camera preview
     if (cameraPreviewViewport_->GetCamera() != nullptr)
