@@ -56,8 +56,7 @@ Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
 }
 
 BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
-    BakedSceneCollector& collector, const IntVector3& chunk,
-    const LightBakingSettings& lightmapSettings, const IncrementalLightmapperSettings& incrementalSettings)
+    BakedSceneCollector& collector, const IntVector3& chunk, const LightBakingSettings& settings)
 {
     const BoundingBox lightReceiversBoundingBox = collector.GetChunkBoundingBox(chunk);
     const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector.GetUniqueLightProbeGroups(chunk);
@@ -66,7 +65,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     // Bake geometry buffers
     const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
-        context, uniqueGeometries, lightmapSettings.charting_.lightmapSize_, lightmapSettings.geometryBufferBaking_);
+        context, uniqueGeometries, settings.charting_.lightmapSize_, settings.geometryBufferBaking_);
     LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScenes.bakingScenes_);
 
     ea::vector<unsigned> lightmapsInChunk;
@@ -81,7 +80,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
         {
             const Vector3 direction = light->GetNode()->GetWorldDirection();
             const Frustum frustum = CalculateDirectionalLightFrustum(lightReceiversBoundingBox, direction,
-                incrementalSettings.directionalLightShadowDistance_, 0.0f);
+                settings.incremental_.directionalLightShadowDistance_, 0.0f);
             const ea::vector<Component*> shadowCasters = collector.GetGeometriesInFrustum(chunk, frustum);
             relevantGeometries.insert(shadowCasters.begin(), shadowCasters.end());
         }
@@ -99,8 +98,8 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     // Collect light receivers for indirect lighting propagation
     BoundingBox indirectBoundingBox = lightReceiversBoundingBox;
-    indirectBoundingBox.min_ -= Vector3::ONE * incrementalSettings.indirectPadding_;
-    indirectBoundingBox.max_ += Vector3::ONE * incrementalSettings.indirectPadding_;
+    indirectBoundingBox.min_ -= Vector3::ONE * settings.incremental_.indirectPadding_;
+    indirectBoundingBox.max_ += Vector3::ONE * settings.incremental_.indirectPadding_;
 
     const ea::vector<Component*> indirectStaticModels = collector.GetGeometriesInBoundingBox(
         chunk, indirectBoundingBox);
@@ -128,7 +127,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
 
     // Create scene for raytracing
-    const unsigned uvChannel = lightmapSettings.geometryBufferBaking_.uvChannel_;
+    const unsigned uvChannel = settings.geometryBufferBaking_.uvChannel_;
     const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(context, geometries, uvChannel);
 
     // Match raytracer geometries and geometry buffer
@@ -171,7 +170,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
     {
         PreprocessGeometryBuffer(geometryBuffer, *raytracerScene, geometryBufferToRaytracerGeometry,
-            lightmapSettings.geometryBufferPreprocessing_);
+            settings.geometryBufferPreprocessing_);
     }
 
     // Collect lights

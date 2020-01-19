@@ -47,10 +47,8 @@ public:
     void Bake();
 
 private:
-    /// Lightmap baking settings.
-    LightBakingSettings lightmapSettings_;
-    /// Incremental baking settings.
-    IncrementalLightmapperSettings incrementalBakingSettings_;
+    /// Light baking settings.
+    LightBakingSettings settings_;
     /// Whether the baking is scheduled.
     bool bakingScheduled_{};
 };
