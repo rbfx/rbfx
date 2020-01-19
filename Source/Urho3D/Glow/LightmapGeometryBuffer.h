@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Graphics/LightmapSettings.h"
+#include "../Graphics/LightBakingSettings.h"
 #include "../Graphics/RenderPath.h"
 #include "../Scene/Scene.h"
 
