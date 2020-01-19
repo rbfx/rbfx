@@ -325,20 +325,21 @@ struct IncrementalLightmapper::Impl
         ea::hash_set<unsigned> requiredDirectLightmaps;
         for (const RaytracerGeometry& raytracerGeometry : chunkVicinity->raytracerScene_->GetGeometries())
         {
-            requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
+            if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
+                requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
         }
 
-        ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> BakedLightmapsRefs(numLightmapCharts_);
-        ea::vector<const LightmapChartBakedDirect*> BakedLightmaps(numLightmapCharts_);
+        ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
+        ea::vector<const LightmapChartBakedDirect*> bakedDirectLightmaps(numLightmapCharts_);
         for (unsigned lightmapIndex : requiredDirectLightmaps)
         {
-            BakedLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
-            BakedLightmaps[lightmapIndex] = BakedLightmapsRefs[lightmapIndex].get();
+            bakedDirectLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
+            bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
         }
 
         // Bake indirect light for light probes
         chunkVicinity->lightProbesCollection_.ResetBakedData();
-        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, BakedLightmaps,
+        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps,
             *chunkVicinity->raytracerScene_, lightmapSettings_.indirectProbesTracing_);
 
         // Build light probes mesh for fallback indirect
@@ -354,7 +355,7 @@ struct IncrementalLightmapper::Impl
             LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
 
             // Bake indirect lights
-            BakeIndirectLightForCharts(bakedIndirect, BakedLightmaps,
+            BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
                 geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
                 *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
                 lightmapSettings_.indirectChartTracing_);

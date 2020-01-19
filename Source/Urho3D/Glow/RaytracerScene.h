@@ -40,6 +40,49 @@ class Context;
 class Node;
 class Component;
 
+/// Material of raytracing geometry.
+struct RaytracingGeometryMaterial
+{
+    /// Whether the material is opaque.
+    bool opaque_{};
+    /// Diffuse color.
+    Vector3 diffuseColor_{};
+    /// Alpha value.
+    float alpha_{};
+
+    /// Whether to store main texture UV.
+    bool storeUV_{};
+    /// Transform for U coordinate.
+    Vector4 uOffset_;
+    /// Transform for V coordinate.
+    Vector4 vOffset_;
+
+    /// Resource name of diffuse image.
+    ea::string diffuseImageName_;
+    /// Diffuse image.
+    SharedPtr<Image> diffuseImage_;
+    /// Diffuse image width.
+    int diffuseImageWidth_{};
+    /// Diffuse image height.
+    int diffuseImageHeight_{};
+
+    /// Return transformed UV coordinates.
+    Vector2 ConvertUV(const Vector2& uv) const
+    {
+        const float u = uv.DotProduct(static_cast<Vector2>(uOffset_)) + uOffset_.w_;
+        const float v = uv.DotProduct(static_cast<Vector2>(vOffset_)) + vOffset_.w_;
+        return { u, v };
+    }
+
+    /// Return diffuse value at UV.
+    Color SampleDiffuse(const Vector2& uv) const
+    {
+        const int x = Clamp(RoundToInt(uv.x_ * diffuseImageWidth_), 0, diffuseImageWidth_ - 1);
+        const int y = Clamp(RoundToInt(uv.y_ * diffuseImageHeight_), 0, diffuseImageHeight_ - 1);
+        return diffuseImage_->GetPixel(x, y);
+    }
+};
+
 /// Geometry for ray tracing.
 struct RaytracerGeometry
 {
@@ -57,20 +100,8 @@ struct RaytracerGeometry
     unsigned raytracerGeometryId_{};
     /// Internal geometry pointer.
     RTCGeometry embreeGeometry_{};
-    /// Whether the geometry is opaque.
-    bool opaque_{};
-    /// Diffuse color of geometry.
-    Vector3 diffuseColor_{};
-    /// Alpha value.
-    float alpha_{};
-    /// Resource name of diffuse image.
-    ea::string diffuseImageName_;
-    /// Diffuse image.
-    SharedPtr<Image> diffuseImage_;
-    /// Diffuse image width.
-    int diffuseImageWidth_{};
-    /// Diffuse image height.
-    int diffuseImageHeight_{};
+    /// Material.
+    RaytracingGeometryMaterial material_;
 };
 
 /// Compare Embree geometries by objects (less).
@@ -95,11 +126,15 @@ public:
     static const unsigned NormalAttribute = 1;
     /// Vertex attribute for primary UV.
     static const unsigned UVAttribute = 2;
+    /// Max number of vertex attributes.
+    static const unsigned MaxAttributes = 3;
 
-    /// Mask for LOD 0.
+    /// Mask for lightmapped geometry, LOD 0.
     static const unsigned PrimaryLODGeometry = 0x00000001;
-    /// Mask for LODs 1..N.
+    /// Mask for lightmapped geometry, LODs 1..N.
     static const unsigned SecondaryLODGeometry = 0x00000002;
+    /// Mask for non-lightmapped geometry, LOD 0.
+    static const unsigned DirectShadowOnlyGeometry = 0x00000004;
     /// Mask for all geometry.
     static const unsigned AllGeometry = 0xffffffff;
 
