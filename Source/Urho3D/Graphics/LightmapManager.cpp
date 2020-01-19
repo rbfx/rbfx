@@ -71,6 +71,8 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, lightmapSettings_.indirectChartTracing_.maxBounces_, defaultLightmapSettings.indirectChartTracing_.maxBounces_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Samples (Texture)", unsigned, lightmapSettings_.indirectChartTracing_.maxSamples_, defaultLightmapSettings.indirectChartTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Samples (Light Probes)", unsigned, lightmapSettings_.indirectProbesTracing_.maxSamples_, defaultLightmapSettings.indirectProbesTracing_.maxSamples_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Filter Radius (Direct)", unsigned, lightmapSettings_.directFilter_.kernelRadius_, defaultLightmapSettings.directFilter_.kernelRadius_, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Filter Radius (Indirect)", unsigned, lightmapSettings_.indirectFilter_.kernelRadius_, defaultLightmapSettings.indirectFilter_.kernelRadius_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Size", Vector3, incrementalBakingSettings_.chunkSize_, defaultIncrementalSettings.chunkSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, incrementalBakingSettings_.indirectPadding_, defaultIncrementalSettings.indirectPadding_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, incrementalBakingSettings_.directionalLightShadowDistance_, defaultIncrementalSettings.directionalLightShadowDistance_, AM_DEFAULT);

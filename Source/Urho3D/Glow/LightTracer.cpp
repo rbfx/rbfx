@@ -283,12 +283,14 @@ struct RayGeneratorForDirectLight
     float halfAngleTan_{};
 
     /// Generate ray for given position. Return true if non-zero.
-    bool Generate(const Vector3& /*position*/, Vector3& rayOffset, Vector3& lightIntensity)
+    bool Generate(const Vector3& /*position*/,
+        Vector3& rayOffset, Vector3& lightIntensity, Vector3& lightIncomingDirection)
     {
         const Vector2 randomOffset = RandomCircleOffset() * maxRayDistance_ * halfAngleTan_;
         rayOffset = maxRayDistance_ * lightDirection_;
         rayOffset += Vector3(randomOffset, 0.0f);
         lightIntensity = lightColor_.ToVector3();
+        lightIncomingDirection = -lightDirection_;
         return true;
     }
 };
@@ -306,7 +308,8 @@ struct RayGeneratorForPointLight
     float lightRadius_{};
 
     /// Generate ray for given position. Return true if non-zero.
-    bool Generate(const Vector3& position, Vector3& rayOffset, Vector3& lightIntensity)
+    bool Generate(const Vector3& position,
+        Vector3& rayOffset, Vector3& lightIntensity, Vector3& lightIncomingDirection)
     {
         const Vector2 randomOffset = RandomCircleOffset() * lightRadius_;
         rayOffset = position - lightPosition_;
@@ -316,6 +319,7 @@ struct RayGeneratorForPointLight
         const float distanceAttenuation = ea::max(0.0f, 1.0f - (distance - lightRadius_) / (lightDistance_ - lightRadius_));
 
         lightIntensity = lightColor_.ToVector3() * distanceAttenuation * distanceAttenuation;
+        lightIncomingDirection = (lightPosition_ - position).Normalized();
         return distanceAttenuation > M_LARGE_EPSILON;
     }
 };
@@ -339,7 +343,8 @@ struct RayGeneratorForSpotLight
     float lightCutoff_{};
 
     /// Generate ray for given position. Return true if non-zero.
-    bool Generate(const Vector3& position, Vector3& rayOffset, Vector3& lightIntensity)
+    bool Generate(const Vector3& position,
+        Vector3& rayOffset, Vector3& lightIntensity, Vector3& lightIncomingDirection)
     {
         const Vector2 randomOffset = RandomCircleOffset() * lightRadius_;
         rayOffset = position - lightPosition_;
@@ -355,6 +360,7 @@ struct RayGeneratorForSpotLight
         const float distanceAttenuation = ea::max(0.0f, 1.0f - (distance - lightRadius_) / (lightDistance_ - lightRadius_));
         lightIntensity = lightColor_.ToVector3() * distanceAttenuation * distanceAttenuation * spotAttenuation;
 
+        lightIncomingDirection = (lightPosition_ - position).Normalized();
         return distanceAttenuation > M_LARGE_EPSILON && spotAttenuation > M_LARGE_EPSILON;
     }
 };
@@ -543,8 +549,8 @@ void TraceDirectLight(T sharedKernel, U sharedGenerator,
 
         auto rayContext = sharedKernel.GetRayContext();
 
-        Vector3 incomingLight;
-        rayContext.incomingLight_ = &incomingLight;
+        Vector3 incomingLightIntensity;
+        rayContext.incomingLight_ = &incomingLightIntensity;
 
         RTCRayHit rayHit;
         rayHit.ray.mask = sharedKernel.GetGeometryMask();
@@ -564,7 +570,8 @@ void TraceDirectLight(T sharedKernel, U sharedGenerator,
                 kernel.BeginSample(sampleIndex);
 
                 Vector3 rayOffset;
-                if (!generator.Generate(position, rayOffset, incomingLight))
+                Vector3 incomingLightDirection;
+                if (!generator.Generate(position, rayOffset, incomingLightIntensity, incomingLightDirection))
                     continue;
 
                 // Cast direct ray
@@ -579,7 +586,7 @@ void TraceDirectLight(T sharedKernel, U sharedGenerator,
                 rtcIntersect1(scene, &rayContext, &rayHit);
 
                 if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
-                    kernel.EndSample(incomingLight, -rayOffset.Normalized());
+                    kernel.EndSample(incomingLightIntensity, incomingLightDirection);
             }
 
             kernel.EndElement(elementIndex);
