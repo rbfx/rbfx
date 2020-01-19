@@ -66,6 +66,8 @@ struct GeometryBufferPreprocessSettings
 {
     /// Number of tasks to spawn.
     unsigned numTasks_{ 1 };
+    /// Determines how much position is pushed from behind backface to prevent shadow bleeding.
+    float constPositionBackfaceBias_{ 0.0f };
     /// Determines how much position is pushed from behind backface to prevent shadow bleeding. Scaled with position itself.
     float scaledPositionBackfaceBias_{ 0.00002f };
 };
