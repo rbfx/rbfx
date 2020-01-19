@@ -125,6 +125,8 @@ struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
     ea::vector<Vector3> directFilterBuffer_;
     /// Buffer for filtering indirect light.
     ea::vector<Vector4> indirectFilterBuffer_;
+    /// Buffer for accumulated lighting.
+    ea::vector<Vector3> bakedLightBuffer_;
 };
 
 /// Context used for committing chunks.
@@ -314,6 +316,7 @@ struct IncrementalLightmapper::Impl
             const unsigned numTexels = lightmapSettings_.charting_.lightmapSize_ * lightmapSettings_.charting_.lightmapSize_;
             ctx.directFilterBuffer_.resize(numTexels);
             ctx.indirectFilterBuffer_.resize(numTexels);
+            ctx.bakedLightBuffer_.resize(numTexels);
             ctx.stitchingContext_ = InitializeStitchingContext(context_, lightmapSettings_.charting_.lightmapSize_, 4);
         }
 
@@ -363,39 +366,50 @@ struct IncrementalLightmapper::Impl
             // Filter direct and indirect
             bakedIndirect.NormalizeLight();
 
-            FilterDirectLight(*bakedDirect, ctx.directFilterBuffer_,
-                geometryBuffer, lightmapSettings_.directFilter_, lightmapSettings_.indirectChartTracing_.numTasks_);
+            if (lightmapSettings_.directFilter_.kernelRadius_ > 0)
+            {
+                FilterDirectLight(*bakedDirect, ctx.directFilterBuffer_,
+                    geometryBuffer, lightmapSettings_.directFilter_, lightmapSettings_.directChartTracing_.numTasks_);
+            }
 
-            FilterIndirectLight(bakedIndirect, ctx.indirectFilterBuffer_,
-                geometryBuffer, lightmapSettings_.indirectFilter_, lightmapSettings_.indirectChartTracing_.numTasks_);
+            if (lightmapSettings_.indirectFilter_.kernelRadius_ > 0)
+            {
+                FilterIndirectLight(bakedIndirect, ctx.indirectFilterBuffer_,
+                    geometryBuffer, lightmapSettings_.indirectFilter_, lightmapSettings_.indirectChartTracing_.numTasks_);
+            }
+
+            // Generate image
+            for (unsigned i = 0; i < bakedIndirect.light_.size(); ++i)
+            {
+                const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
+                const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
+                ctx.bakedLightBuffer_[i] = Vector3::ZERO;
+                ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, directLight);
+                ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, indirectLight);
+            }
 
             // Stitch seams
             if (lightmapSettings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
             {
                 SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer.seams_);
-                StitchLightmapSeams(ctx.stitchingContext_, bakedIndirect.light_,
+                StitchLightmapSeams(ctx.stitchingContext_, ctx.bakedLightBuffer_,
                     lightmapSettings_.stitching_, seamsModel);
             }
 
             // Generate image
             auto lightmapImage = MakeShared<Image>(context_);
             lightmapImage->SetSize(geometryBuffer.lightmapSize_, geometryBuffer.lightmapSize_, 4);
-            for (int y = 0; y < geometryBuffer.lightmapSize_; ++y)
+            for (unsigned i = 0; i < bakedIndirect.light_.size(); ++i)
             {
-                for (int x = 0; x < geometryBuffer.lightmapSize_; ++x)
-                {
-                    const unsigned i = y * geometryBuffer.lightmapSize_ + x;
-                    const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
-                    const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
-                    const Vector3 totalLight = directLight + indirectLight;
+                const unsigned x = i % geometryBuffer.lightmapSize_;
+                const unsigned y = i / geometryBuffer.lightmapSize_;
 
-                    static const float multiplier = 1.0f / 2.0f;
-                    Color color = static_cast<Color>(totalLight).LinearToGamma();
-                    color.r_ *= multiplier;
-                    color.g_ *= multiplier;
-                    color.b_ *= multiplier;
-                    lightmapImage->SetPixel(x, y, color);
-                }
+                static const float multiplier = 1.0f / 2.0f;
+                Color color = static_cast<Color>(ctx.bakedLightBuffer_[i]).LinearToGamma();
+                color.r_ *= multiplier;
+                color.g_ *= multiplier;
+                color.b_ *= multiplier;
+                lightmapImage->SetPixel(x, y, color);
             }
 
             // Save image to destination folder
