@@ -14,7 +14,7 @@
 // limitations under the License.                                           //
 // ======================================================================== //
 
-/* #undef EMBREE_RAY_MASK */
+#define EMBREE_RAY_MASK
 /* #undef EMBREE_STAT_COUNTERS */
 /* #undef EMBREE_BACKFACE_CULLING */
 #define EMBREE_FILTER_FUNCTION

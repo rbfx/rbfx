@@ -105,6 +105,8 @@ public:
     void SetBakeLightmap(bool bakeLightmap) { bakeLightmap_ = bakeLightmap; UpdateBatchesLightmaps(); }
     /// Return whether the lightmap is baked for this object.
     bool GetBakeLightmap() const { return bakeLightmap_; }
+    /// Return whether the lightmap is baked for this object. Return false for objects with zero scale in lightmap.
+    bool GetBakeLightmapEffective() const { return bakeLightmap_ && scaleInLightmap_ > 0.0f; }
     /// Set scale in lightmap.
     void SetScaleInLightmap(float scale) { scaleInLightmap_ = scale; }
     /// Return scale in lightmap.

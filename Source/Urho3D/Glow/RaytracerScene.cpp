@@ -42,6 +42,67 @@ namespace Urho3D
 namespace
 {
 
+/// Return raytracing geometry material.
+RaytracingGeometryMaterial CreateRaytracingGeometryMaterial(const Material* material)
+{
+    RaytracingGeometryMaterial raytracingMaterial;
+
+    raytracingMaterial.opaque_ = !material || IsMaterialOpaque(material);
+    if (!raytracingMaterial.opaque_)
+    {
+        const Color diffuseColor = GetMaterialDiffuseColor(material);
+        raytracingMaterial.diffuseColor_ = diffuseColor.ToVector3();
+        raytracingMaterial.alpha_ = diffuseColor.a_;
+
+        Texture* diffuseTexture = GetMaterialDiffuseTexture(material,
+            raytracingMaterial.uOffset_, raytracingMaterial.vOffset_);
+        if (diffuseTexture)
+        {
+            raytracingMaterial.storeUV_ = true;
+            raytracingMaterial.diffuseImageName_ = diffuseTexture->GetName();
+        }
+    }
+
+    return raytracingMaterial;
+}
+
+/// Parameters of lightmapped raytracing geometry.
+struct LightmappedRaytracingGeometryParams
+{
+    /// Whether the geometry is for direct shadows only and is not lightmapped.
+    bool directShadowsOnly_{};
+    /// Whether the geometry is primary LOD.
+    bool primaryLod_{};
+    /// Lightmap index.
+    unsigned lightmapIndex_{};
+    /// Lightmap UV scale.
+    Vector2 lightmapUVScale_;
+    /// Lightmap UV offset.
+    Vector2 lightmapUVOffset_;
+    /// UV channel used for lightmap UV.
+    unsigned lightmapUVChannel_{};
+
+    /// Return transformed lightmap UV.
+    Vector2 ConvertUV(const Vector2& uv) const
+    {
+        return uv * lightmapUVScale_ + lightmapUVOffset_;
+    }
+
+    /// Return whether the lightmap UV and smooth normals are needed.
+    bool AreLightmapUVsAndNormalsNeeded() const { return !directShadowsOnly_ && primaryLod_; }
+
+    /// Return geometry mask to use.
+    unsigned GetMask() const
+    {
+        if (directShadowsOnly_)
+            return RaytracerScene::DirectShadowOnlyGeometry;
+        else if (primaryLod_)
+            return RaytracerScene::PrimaryLODGeometry;
+        else
+            return RaytracerScene::SecondaryLODGeometry;
+    }
+};
+
 /// Parameters for raytracing geometry creation from geometry view.
 struct RaytracingFromGeometryViewParams
 {
@@ -51,18 +112,10 @@ struct RaytracingFromGeometryViewParams
     Quaternion worldRotation_;
     /// Unpacked geometry data.
     const GeometryLODView* geometry_{};
-    /// Lightmap UV scale.
-    Vector2 lightmapUVScale_;
-    /// Lightmap UV offset.
-    Vector2 lightmapUVOffset_;
-    /// UV channel used for lightmap UV.
-    unsigned lightmapUVChannel_;
-    /// Whether to store main texture UV.
-    bool storeUV_{};
-    /// Transform for U coordinate.
-    Vector4 uOffset_;
-    /// Transform for V coordinate.
-    Vector4 vOffset_;
+    /// Material.
+    RaytracingGeometryMaterial material_;
+    /// Lightmapping parameters.
+    LightmappedRaytracingGeometryParams lightmapping_;
 };
 
 /// Parameters for raytracing geometry creation from terrain.
@@ -70,16 +123,10 @@ struct RaytracingFromTerrainParams
 {
     /// Terrain.
     const Terrain* terrain_{};
-    /// Lightmap UV scale.
-    Vector2 lightmapUVScale_;
-    /// Lightmap UV offset.
-    Vector2 lightmapUVOffset_;
-    /// UV channel used for lightmap UV.
-    unsigned lightmapUVChannel_;
-    /// Transform for U coordinate.
-    Vector4 uOffset_;
-    /// Transform for V coordinate.
-    Vector4 vOffset_;
+    /// Material.
+    RaytracingGeometryMaterial material_;
+    /// Lightmapping parameters.
+    LightmappedRaytracingGeometryParams lightmapping_;
 };
 
 /// Pair of model and corresponding model view.
@@ -99,28 +146,32 @@ ModelModelViewPair ParseModelForRaytracer(Model* model)
 }
 
 /// Create Embree geometry from geometry view.
-RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice,
-    const RaytracingFromGeometryViewParams& params, unsigned mask)
+RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const RaytracingFromGeometryViewParams& params)
 {
     const unsigned numVertices = params.geometry_->vertices_.size();
     const unsigned numIndices = params.geometry_->indices_.size();
     const ea::vector<ModelVertex>& sourceVertices = params.geometry_->vertices_;
-    const unsigned numAttributes = params.storeUV_ ? 3 : 2;
 
     RTCGeometry embreeGeometry = rtcNewGeometry(embreeDevice, RTC_GEOMETRY_TYPE_TRIANGLE);
-    rtcSetGeometryVertexAttributeCount(embreeGeometry, numAttributes);
+    rtcSetGeometryVertexAttributeCount(embreeGeometry, RaytracerScene::MaxAttributes);
 
     float* vertices = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX,
         0, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
 
-    float* lightmapUVs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        RaytracerScene::LightmapUVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+    float* lightmapUVs = nullptr;
+    float* smoothNormals = nullptr;
 
-    float* smoothNormals = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        RaytracerScene::NormalAttribute, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
+    if (params.lightmapping_.AreLightmapUVsAndNormalsNeeded())
+    {
+        lightmapUVs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
+            RaytracerScene::LightmapUVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+
+        smoothNormals = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
+            RaytracerScene::NormalAttribute, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
+    }
 
     float* uvs = nullptr;
-    if (params.storeUV_)
+    if (params.material_.storeUV_)
     {
         uvs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
             RaytracerScene::UVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
@@ -129,26 +180,36 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice,
     for (unsigned i = 0; i < numVertices; ++i)
     {
         const Vector3 localPosition = static_cast<Vector3>(sourceVertices[i].position_);
-        const Vector3 localNormal = static_cast<Vector3>(sourceVertices[i].normal_);
-        const Vector2 lightmapUV = static_cast<Vector2>(sourceVertices[i].uv_[params.lightmapUVChannel_]);
-        const Vector2 lightmapUVScaled = lightmapUV * params.lightmapUVScale_ + params.lightmapUVOffset_;
         const Vector3 worldPosition = params.worldTransform_ * localPosition;
-        const Vector3 worldNormal = params.worldRotation_ * localNormal;
 
         vertices[i * 3 + 0] = worldPosition.x_;
         vertices[i * 3 + 1] = worldPosition.y_;
         vertices[i * 3 + 2] = worldPosition.z_;
-        lightmapUVs[i * 2 + 0] = lightmapUVScaled.x_;
-        lightmapUVs[i * 2 + 1] = lightmapUVScaled.y_;
-        smoothNormals[i * 3 + 0] = worldNormal.x_;
-        smoothNormals[i * 3 + 1] = worldNormal.y_;
-        smoothNormals[i * 3 + 2] = worldNormal.z_;
+
+        if (lightmapUVs)
+        {
+            const Vector2 lightmapUV = static_cast<Vector2>(sourceVertices[i].uv_[params.lightmapping_.lightmapUVChannel_]);
+            const Vector2 lightmapUVScaled = params.lightmapping_.ConvertUV(lightmapUV);
+            lightmapUVs[i * 2 + 0] = lightmapUVScaled.x_;
+            lightmapUVs[i * 2 + 1] = lightmapUVScaled.y_;
+        }
+
+        if (smoothNormals)
+        {
+            const Vector3 localNormal = static_cast<Vector3>(sourceVertices[i].normal_);
+            const Vector3 worldNormal = params.worldRotation_ * localNormal;
+
+            smoothNormals[i * 3 + 0] = worldNormal.x_;
+            smoothNormals[i * 3 + 1] = worldNormal.y_;
+            smoothNormals[i * 3 + 2] = worldNormal.z_;
+        }
 
         if (uvs)
         {
             const Vector2 uv = static_cast<Vector2>(sourceVertices[i].uv_[0]);
-            uvs[i * 2 + 0] = uv.DotProduct(static_cast<Vector2>(params.uOffset_)) + params.uOffset_.w_;
-            uvs[i * 2 + 1] = uv.DotProduct(static_cast<Vector2>(params.vOffset_)) + params.vOffset_.w_;
+            const Vector2 uvScaled = params.material_.ConvertUV(uv);
+            uvs[i * 2 + 0] = uvScaled.x_;
+            uvs[i * 2 + 1] = uvScaled.y_;
         }
     }
 
@@ -158,14 +219,13 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice,
     for (unsigned i = 0; i < numIndices; ++i)
         indices[i] = params.geometry_->indices_[i];
 
-    rtcSetGeometryMask(embreeGeometry, mask);
+    rtcSetGeometryMask(embreeGeometry, params.lightmapping_.GetMask());
     rtcCommitGeometry(embreeGeometry);
     return embreeGeometry;
 }
 
 /// Create Embree geometry from geometry view.
-RTCGeometry CreateEmbreeGeometryForTerrain(RTCDevice embreeDevice,
-    const RaytracingFromTerrainParams& params, unsigned mask)
+RTCGeometry CreateEmbreeGeometryForTerrain(RTCDevice embreeDevice, const RaytracingFromTerrainParams& params)
 {
     const Terrain* terrain = params.terrain_;
     const IntVector2 terrainSize = terrain->GetNumVertices();
@@ -181,34 +241,59 @@ RTCGeometry CreateEmbreeGeometryForTerrain(RTCDevice embreeDevice,
     float* vertices = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX,
         0, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
 
-    float* lightmapUVs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        RaytracerScene::LightmapUVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+    float* lightmapUVs = nullptr;
+    float* smoothNormals = nullptr;
 
-    float* smoothNormals = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        RaytracerScene::NormalAttribute, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
+    if (params.lightmapping_.AreLightmapUVsAndNormalsNeeded())
+    {
+        lightmapUVs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
+            RaytracerScene::LightmapUVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
 
-    float* uvs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
-        RaytracerScene::UVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+        smoothNormals = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
+            RaytracerScene::NormalAttribute, RTC_FORMAT_FLOAT3, sizeof(Vector3), numVertices));
+    }
+
+    float* uvs = nullptr;
+    if (params.material_.storeUV_)
+    {
+        uvs = reinterpret_cast<float*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE,
+            RaytracerScene::UVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
+    }
 
     for (unsigned i = 0; i < numVertices; ++i)
     {
         const int x = static_cast<int>(i) % terrainSize.x_;
         const int y = terrainSize.y_ - static_cast<int>(i) / terrainSize.x_ - 1;
         const Vector3 worldPosition = terrain->HeightMapToWorld({ x, y });
-        const Vector3 worldNormal = terrain->GetNormal(worldPosition);
         const Vector2 uv = terrain->HeightMapToUV({ x, y });
-        const Vector2 lightmapUVScaled = uv * params.lightmapUVScale_ + params.lightmapUVOffset_;
 
         vertices[i * 3 + 0] = worldPosition.x_;
         vertices[i * 3 + 1] = worldPosition.y_;
         vertices[i * 3 + 2] = worldPosition.z_;
-        lightmapUVs[i * 2 + 0] = lightmapUVScaled.x_;
-        lightmapUVs[i * 2 + 1] = lightmapUVScaled.y_;
-        smoothNormals[i * 3 + 0] = worldNormal.x_;
-        smoothNormals[i * 3 + 1] = worldNormal.y_;
-        smoothNormals[i * 3 + 2] = worldNormal.z_;
-        uvs[i * 2 + 0] = uv.DotProduct(static_cast<Vector2>(params.uOffset_)) + params.uOffset_.w_;
-        uvs[i * 2 + 1] = uv.DotProduct(static_cast<Vector2>(params.vOffset_)) + params.vOffset_.w_;
+
+        if (lightmapUVs)
+        {
+            const Vector2 lightmapUVScaled = params.lightmapping_.ConvertUV(uv);
+
+            lightmapUVs[i * 2 + 0] = lightmapUVScaled.x_;
+            lightmapUVs[i * 2 + 1] = lightmapUVScaled.y_;
+        }
+
+        if (smoothNormals)
+        {
+            const Vector3 worldNormal = terrain->GetNormal(worldPosition);
+
+            smoothNormals[i * 3 + 0] = worldNormal.x_;
+            smoothNormals[i * 3 + 1] = worldNormal.y_;
+            smoothNormals[i * 3 + 2] = worldNormal.z_;
+        }
+
+        if (params.material_.storeUV_)
+        {
+            const Vector2 uvScaled = params.material_.ConvertUV(uv);
+            uvs[i * 2 + 0] = uvScaled.x_;
+            uvs[i * 2 + 1] = uvScaled.y_;
+        }
     }
 
     unsigned* indices = reinterpret_cast<unsigned*>(rtcSetNewGeometryBuffer(embreeGeometry, RTC_BUFFER_TYPE_INDEX,
@@ -232,7 +317,7 @@ RTCGeometry CreateEmbreeGeometryForTerrain(RTCDevice embreeDevice,
     }
     assert(i == numQuads * 2 * 3);
 
-    rtcSetGeometryMask(embreeGeometry, mask);
+    rtcSetGeometryMask(embreeGeometry, params.lightmapping_.GetMask());
     rtcCommitGeometry(embreeGeometry);
     return embreeGeometry;
 }
@@ -244,10 +329,19 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(RTCDevice 
     auto renderer = staticModel->GetContext()->GetRenderer();
 
     Node* node = staticModel->GetNode();
-    const unsigned lightmapIndex = staticModel->GetLightmapIndex();
-    const Vector4 lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
-    const Vector2 lightmapUVScale{ lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
-    const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
+    const Vector4& lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
+
+    RaytracingFromGeometryViewParams params;
+    params.worldTransform_ = node->GetWorldTransform();
+    params.worldRotation_ = node->GetWorldRotation();
+    params.lightmapping_.directShadowsOnly_ = !staticModel->GetBakeLightmapEffective();
+    params.lightmapping_.lightmapIndex_ = staticModel->GetLightmapIndex();
+    params.lightmapping_.lightmapUVScale_ = { lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
+    params.lightmapping_.lightmapUVOffset_ = { lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
+    params.lightmapping_.lightmapUVChannel_ = lightmapUVChannel;
+
+    if (params.lightmapping_.directShadowsOnly_)
+        params.lightmapping_.lightmapIndex_ = M_MAX_UNSIGNED;
 
     ea::vector<RaytracerGeometry> result;
 
@@ -262,45 +356,21 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(RTCDevice 
         for (unsigned lodIndex = 0; lodIndex < geometryView.lods_.size(); ++lodIndex)
         {
             const GeometryLODView& geometryLODView = geometryView.lods_[lodIndex];
-            const unsigned mask = lodIndex == 0 ? RaytracerScene::PrimaryLODGeometry : RaytracerScene::SecondaryLODGeometry;
 
             RaytracerGeometry raytracerGeometry;
             raytracerGeometry.objectIndex_ = objectIndex;
             raytracerGeometry.geometryIndex_ = geometryIndex;
             raytracerGeometry.lodIndex_ = lodIndex;
             raytracerGeometry.numLods_ = geometryView.lods_.size();
-            raytracerGeometry.lightmapIndex_ = lightmapIndex;
+            raytracerGeometry.lightmapIndex_ = params.lightmapping_.lightmapIndex_;
             raytracerGeometry.raytracerGeometryId_ = M_MAX_UNSIGNED;
+            raytracerGeometry.material_ = CreateRaytracingGeometryMaterial(material);
 
-            Vector4 uOffset;
-            Vector4 vOffset;
-            raytracerGeometry.opaque_ = !material || IsMaterialOpaque(material);
-            if (!raytracerGeometry.opaque_)
-            {
-                const Color diffuseColor = GetMaterialDiffuseColor(material);
-                raytracerGeometry.diffuseColor_ = diffuseColor.ToVector3();
-                raytracerGeometry.alpha_ = diffuseColor.a_;
-
-                Texture* diffuseTexture = GetMaterialDiffuseTexture(material, uOffset, vOffset);
-                if (diffuseTexture)
-                    raytracerGeometry.diffuseImageName_ = diffuseTexture->GetName();
-            }
-
-            RaytracingFromGeometryViewParams params;
-            params.worldTransform_ = node->GetWorldTransform();
-            params.worldRotation_ = node->GetWorldRotation();
             params.geometry_ = &geometryLODView;
-            params.lightmapUVScale_ = lightmapUVScale;
-            params.lightmapUVOffset_ = lightmapUVOffset;
-            params.lightmapUVChannel_ = lightmapUVChannel;
-            if (!raytracerGeometry.diffuseImageName_.empty())
-            {
-                params.storeUV_ = true;
-                params.uOffset_ = uOffset;
-                params.vOffset_ = vOffset;
-            }
+            params.material_ = raytracerGeometry.material_;
+            params.lightmapping_.primaryLod_ = lodIndex == 0;
 
-            raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometryForGeometryView(embreeDevice, params, mask);
+            raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometryForGeometryView(embreeDevice, params);
             result.push_back(raytracerGeometry);
         }
     }
@@ -317,46 +387,32 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForTerrain(RTCDevice embr
     if (!material)
         material = renderer->GetDefaultMaterial();
 
-    const unsigned lightmapIndex = terrain->GetLightmapIndex();
-    const Vector4 lightmapUVScaleOffset = terrain->GetLightmapScaleOffset();
-    const Vector2 lightmapUVScale{ lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
-    const Vector2 lightmapUVOffset{ lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
+    const Vector4& lightmapUVScaleOffset = terrain->GetLightmapScaleOffset();
+
+    RaytracingFromTerrainParams params;
+    params.lightmapping_.primaryLod_ = true;
+    params.lightmapping_.directShadowsOnly_ = !terrain->GetBakeLightmapEffective();
+    params.lightmapping_.lightmapIndex_ = terrain->GetLightmapIndex();
+    params.lightmapping_.lightmapUVScale_ = { lightmapUVScaleOffset.x_, lightmapUVScaleOffset.y_ };
+    params.lightmapping_.lightmapUVOffset_ = { lightmapUVScaleOffset.z_, lightmapUVScaleOffset.w_ };
+    params.lightmapping_.lightmapUVChannel_ = lightmapUVChannel;
+
+    if (params.lightmapping_.directShadowsOnly_)
+        params.lightmapping_.lightmapIndex_ = M_MAX_UNSIGNED;
 
     RaytracerGeometry raytracerGeometry;
     raytracerGeometry.objectIndex_ = objectIndex;
     raytracerGeometry.geometryIndex_ = 0;
     raytracerGeometry.lodIndex_ = 0;
     raytracerGeometry.numLods_ = 1;
-    raytracerGeometry.lightmapIndex_ = lightmapIndex;
+    raytracerGeometry.lightmapIndex_ = params.lightmapping_.lightmapIndex_;
     raytracerGeometry.raytracerGeometryId_ = M_MAX_UNSIGNED;
+    raytracerGeometry.material_ = CreateRaytracingGeometryMaterial(material);
 
-    Vector4 uOffset;
-    Vector4 vOffset;
-    raytracerGeometry.opaque_ = !material || IsMaterialOpaque(material);
-    if (!raytracerGeometry.opaque_)
-    {
-        const Color diffuseColor = GetMaterialDiffuseColor(material);
-        raytracerGeometry.diffuseColor_ = diffuseColor.ToVector3();
-        raytracerGeometry.alpha_ = diffuseColor.a_;
-
-        Texture* diffuseTexture = GetMaterialDiffuseTexture(material, uOffset, vOffset);
-        if (diffuseTexture)
-            raytracerGeometry.diffuseImageName_ = diffuseTexture->GetName();
-    }
-
-    RaytracingFromTerrainParams params;
     params.terrain_ = terrain;
-    params.lightmapUVScale_ = lightmapUVScale;
-    params.lightmapUVOffset_ = lightmapUVOffset;
-    params.lightmapUVChannel_ = lightmapUVChannel;
-    if (!raytracerGeometry.diffuseImageName_.empty())
-    {
-        params.uOffset_ = uOffset;
-        params.vOffset_ = vOffset;
-    }
+    params.material_ = raytracerGeometry.material_;
 
-    const unsigned mask = RaytracerScene::PrimaryLODGeometry;
-    raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometryForTerrain(embreeDevice, params, mask);
+    raytracerGeometry.embreeGeometry_ = CreateEmbreeGeometryForTerrain(embreeDevice, params);
     return { raytracerGeometry };
 }
 
@@ -429,7 +485,7 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
             geometryIndex.resize(geomID + 1);
             geometryIndex[geomID] = raytracerGeometry;
             geometryIndex[geomID].raytracerGeometryId_ = geomID;
-            diffuseImages[raytracerGeometry.diffuseImageName_] = nullptr;
+            diffuseImages[raytracerGeometry.material_.diffuseImageName_] = nullptr;
         }
     }
 
@@ -449,11 +505,11 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
 
     for (RaytracerGeometry& raytracerGeometry : geometryIndex)
     {
-        raytracerGeometry.diffuseImage_ = diffuseImages[raytracerGeometry.diffuseImageName_];
-        if (raytracerGeometry.diffuseImage_)
+        raytracerGeometry.material_.diffuseImage_ = diffuseImages[raytracerGeometry.material_.diffuseImageName_];
+        if (raytracerGeometry.material_.diffuseImage_)
         {
-            raytracerGeometry.diffuseImageWidth_ = raytracerGeometry.diffuseImage_->GetWidth();
-            raytracerGeometry.diffuseImageHeight_ = raytracerGeometry.diffuseImage_->GetHeight();
+            raytracerGeometry.material_.diffuseImageWidth_ = raytracerGeometry.material_.diffuseImage_->GetWidth();
+            raytracerGeometry.material_.diffuseImageHeight_ = raytracerGeometry.material_.diffuseImage_->GetHeight();
         }
     }
 
