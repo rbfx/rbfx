@@ -21,7 +21,11 @@
 #
 
 # Set CMake minimum version and CMake policy required by UrhoCommon module
-cmake_minimum_required (VERSION 3.14.5)
+if (ANDROID)
+    cmake_minimum_required (VERSION 3.6)
+else ()
+    cmake_minimum_required (VERSION 3.14)
+endif ()
 
 # Set C++ standard
 set (CMAKE_CXX_STANDARD 17)

@@ -28,12 +28,17 @@ jobs:
     steps:
       - bash: |
           sudo apt-get update
+          # CMake
+          sudo apt-get remove -y cmake
+          sudo pip3 install --upgrade pip
+          sudo pip3 install cmake
           # Default compiler on this build worker image does not support c++17.
           sudo apt-get install -y --no-install-recommends uuid-dev gcc-8 g++-8
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-8 100
           sudo update-alternatives --set cc /usr/bin/gcc-8
           sudo update-alternatives --install /usr/bin/c++ c++ /usr/bin/g++-8 100
           sudo update-alternatives --set c++ /usr/bin/g++-8
+          # Emscripten
           wget -q https://github.com/emscripten-core/emsdk/archive/master.tar.gz
           tar -xvf master.tar.gz
           emsdk-master/emsdk install latest
@@ -98,6 +103,10 @@ jobs:
 
     steps:
       - bash: |
+          # CMake
+          sudo pip3 install --upgrade pip
+          sudo pip3 install cmake
+
           # Mono
           sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
           echo "deb http://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
@@ -157,6 +166,10 @@ jobs:
 
     steps:
     - script: |
+        # CMake
+        sudo pip3 install --upgrade pip
+        sudo pip3 install cmake
+        # Setup
         cd $(Build.SourcesDirectory)/android
         gradle wrapper
 
