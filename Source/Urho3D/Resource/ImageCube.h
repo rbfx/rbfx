@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2020-2020 the rbfx project.
+// Copyright (c) 2020-2020 the Urho3D project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,46 +20,59 @@
 // THE SOFTWARE.
 //
 
-/// \file
-
 #pragma once
 
-#include "../Container/ByteVector.h"
+#include "../Graphics/GraphicsDefs.h"
+#include "../Resource/Image.h"
 #include "../Resource/Resource.h"
+#include "../Math/SphericalHarmonics.h"
+
+#include <EASTL/vector.h>
 
 namespace Urho3D
 {
 
-/// Resource for generic binary file.
-class URHO3D_API BinaryFile : public Resource
+class Deserializer;
+class Image;
+class XMLFile;
+
+/// Cube texture resource.
+class URHO3D_API ImageCube : public Resource
 {
-    URHO3D_OBJECT(BinaryFile, Resource);
+    URHO3D_OBJECT(ImageCube, Resource);
 
 public:
-    /// Construct empty.
-    explicit BinaryFile(Context* context);
+    /// Construct.
+    explicit ImageCube(Context* context);
     /// Destruct.
-    ~BinaryFile() override;
+    ~ImageCube() override;
     /// Register object factory.
     static void RegisterObject(Context* context);
 
     /// Load resource from stream. May be called from a worker thread. Return true if successful.
     bool BeginLoad(Deserializer& source) override;
-    /// Save resource to a stream.
-    bool Save(Serializer& dest) const override;
-    /// Save resource to a file.
-    bool SaveFile(const ea::string& fileName) const override;
 
-    /// Set data.
-    void SetData(const ByteVector& data) { data_ = data; SetMemoryUse(data_.size()); }
-    /// Return immutable data.
-    const ByteVector& GetData() const { return data_; }
-    /// Return mutable data.
-    ByteVector& GetMutableData() { return data_; }
+    /// Return face images.
+    const ea::vector<SharedPtr<Image>>& GetImages() const { return faceImages_; }
+
+    /// Return parameters XML.
+    XMLFile* GetParametersXML() const { return parametersXml_; }
+
+    /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
+    Image* GetImage(CubeMapFace face) const { return faceImages_[face]; }
+
+    /// Return offset from the center of the unit cube for given texel (assuming zero mip level).
+    Vector3 GetTexelOffsetVector(CubeMapFace face, int x, int y) const;
+    /// Calculate spherical harmonics for the cube map.
+    SphericalHarmonicsColor9 CalculateSphericalHarmonics() const;
 
 private:
-    /// Data.
-    ByteVector data_;
+    /// Face images.
+    ea::vector<SharedPtr<Image>> faceImages_;
+    /// Parameter file.
+    SharedPtr<XMLFile> parametersXml_;
+    /// Cube width.
+    int width_{};
 };
 
 }
