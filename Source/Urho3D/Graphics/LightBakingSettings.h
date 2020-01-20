@@ -182,6 +182,10 @@ struct IncrementalLightBakerSettings
     ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
     /// Lightmap name suffix.
     ea::string lightmapNameSuffix_{ ".png" };
+    /// Light probe group name prefix.
+    ea::string lightProbeGroupNamePrefix_{ "Binary/LightProbeGroup-" };
+    /// Light probe group name suffix.
+    ea::string lightProbeGroupNameSuffix_{ ".bin" };
 };
 
 /// Aggregated light baking settings.

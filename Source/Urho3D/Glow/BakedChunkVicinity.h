@@ -48,6 +48,8 @@ struct BakedChunkVicinity
     ea::vector<BakedLight> bakedLights_;
     /// Light probes collection.
     LightProbeCollection lightProbesCollection_;
+    /// Number of unique light probe groups. Used for saving results.
+    unsigned numUniqueLightProbes_{};
 };
 
 /// Create baked chunk vicinity.
