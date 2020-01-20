@@ -57,7 +57,7 @@ public:
     /// Sample ambient spherical harmonics.
     SphericalHarmonicsDot9 SampleAmbientSH(const Vector3& position, unsigned& hint) const;
     /// Sample average ambient lighting.
-    Color SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
+    Vector3 SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
     /// Serialize light probes data.
     void SerializeLightProbesData(Archive& archive);
@@ -69,8 +69,8 @@ public:
 private:
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;
-    /// Light probes collection.
-    LightProbeCollection lightProbesCollection_;
+    /// Baked light probes data.
+    LightProbeCollectionBakedData lightProbesBakedData_;
 };
 
 }

@@ -127,6 +127,8 @@ struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
     ea::vector<Vector4> indirectFilterBuffer_;
     /// Buffer for accumulated lighting.
     ea::vector<Vector3> bakedLightBuffer_;
+    /// Buffer for baked light probes data.
+    LightProbeCollectionBakedData lightProbesBakedData_;
 };
 
 /// Context used for committing chunks.
@@ -216,6 +218,7 @@ struct IncrementalLightBaker::Impl
         // Collect nodes for current chunks
         const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
         const ea::vector<Component*> uniqueGeometries = collector_->GetUniqueGeometries(chunk);
+        const ea::vector<LightProbeGroup*> uniqueLightProbes = collector_->GetUniqueLightProbeGroups(chunk);
 
         // Generate charts
         const LightmapChartVector charts = GenerateLightmapCharts(
@@ -224,6 +227,16 @@ struct IncrementalLightBaker::Impl
         // Apply charts to scene
         ApplyLightmapCharts(charts);
         collector_->CommitGeometries(chunk);
+
+        // Assign baked data files for light probe groups
+        auto fileSystem = context_->GetFileSystem();
+        for (unsigned i = 0; i < uniqueLightProbes.size(); ++i)
+        {
+            LightProbeGroup* group = uniqueLightProbes[i];
+            const ea::string fileName = GetLightProbeBakedDataFileName(chunk, i);
+            fileSystem->CreateDirsRecursive(GetPath(fileName));
+            group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), fileName });
+        }
 
         // Advance
         ctx.lightmapChartBaseIndex_ += charts.size();
@@ -337,10 +350,12 @@ struct IncrementalLightBaker::Impl
             bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
         }
 
+        // Allocate storage for light probes
+        ctx.lightProbesBakedData_.Resize(chunkVicinity->lightProbesCollection_.GetNumProbes());
+
         // Bake indirect light for light probes
-        chunkVicinity->lightProbesCollection_.ResetBakedData();
-        BakeIndirectLightForLightProbes(chunkVicinity->lightProbesCollection_, bakedDirectLightmaps,
-            *chunkVicinity->raytracerScene_, settings_.indirectProbesTracing_);
+        BakeIndirectLightForLightProbes(ctx.lightProbesBakedData_, chunkVicinity->lightProbesCollection_,
+            bakedDirectLightmaps, *chunkVicinity->raytracerScene_, settings_.indirectProbesTracing_);
 
         // Build light probes mesh for fallback indirect
         TetrahedralMesh lightProbesMesh;
@@ -356,7 +371,7 @@ struct IncrementalLightBaker::Impl
 
             // Bake indirect lights
             BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
-                geometryBuffer, lightProbesMesh, chunkVicinity->lightProbesCollection_,
+                geometryBuffer, lightProbesMesh, ctx.lightProbesBakedData_,
                 *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
                 settings_.indirectChartTracing_);
 
@@ -419,12 +434,23 @@ struct IncrementalLightBaker::Impl
         // Bake direct lights for light probes
         for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
         {
-            BakeDirectLightForLightProbes(chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
+            BakeDirectLightForLightProbes(ctx.lightProbesBakedData_,
+                chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
                 bakedLight, settings_.directProbesTracing_);
         }
 
-        // Release cache
-        cache_->CommitLightProbeGroups(chunk);
+        // Save light probes
+        for (unsigned groupIndex = 0; groupIndex < chunkVicinity->numUniqueLightProbes_; ++groupIndex)
+        {
+            if (!LightProbeGroup::SaveLightProbesBakedData(context_,
+                chunkVicinity->lightProbesCollection_, ctx.lightProbesBakedData_, groupIndex))
+            {
+                const ea::string groupName = groupIndex < chunkVicinity->lightProbesCollection_.GetNumGroups()
+                    ? chunkVicinity->lightProbesCollection_.names_[groupIndex] : "";
+                URHO3D_LOGERROR("Cannot save light probes for group '{}' in chunk {}",
+                    groupName, chunk.ToString());
+            }
+        }
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -436,14 +462,6 @@ struct IncrementalLightBaker::Impl
     {
         if (ctx.currentChunkIndex_ >= chunks_.size())
             return true;
-
-        // Load chunk
-        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::vector<LightProbeGroup*> lightProbeGroups = collector_->GetUniqueLightProbeGroups(chunk);
-        const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-
-        for (unsigned i = 0; i < lightProbeGroups.size(); ++i)
-            lightProbeGroups[i]->CommitLightProbes(chunkVicinity->lightProbesCollection_, i);
 
         // Advance
         ++ctx.currentChunkIndex_;
@@ -460,6 +478,17 @@ private:
         lightmapName += ea::to_string(lightmapIndex);
         lightmapName += settings_.incremental_.lightmapNameSuffix_;
         return lightmapName;
+    }
+
+    /// Return light probe group baked data file.
+    ea::string GetLightProbeBakedDataFileName(const IntVector3& chunk, unsigned index)
+    {
+        ea::string fileName;
+        fileName += settings_.incremental_.outputDirectory_;
+        fileName += settings_.incremental_.lightProbeGroupNamePrefix_;
+        fileName += Format("{}-{}-{}-{}", chunk.x_, chunk.y_, chunk.z_, index);
+        fileName += settings_.incremental_.lightProbeGroupNameSuffix_;
+        return fileName;
     }
 
     /// Settings for light baking.

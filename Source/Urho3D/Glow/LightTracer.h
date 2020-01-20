@@ -124,18 +124,20 @@ URHO3D_API void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, 
     const BakedLight& light, const DirectLightTracingSettings& settings);
 
 /// Accumulate direct light for light probes.
-URHO3D_API void BakeDirectLightForLightProbes(LightProbeCollection& collection, const RaytracerScene& raytracerScene,
-    const BakedLight& light, const DirectLightTracingSettings& settings);
+URHO3D_API void BakeDirectLightForLightProbes(
+    LightProbeCollectionBakedData& bakedData, const LightProbeCollection& collection,
+    const RaytracerScene& raytracerScene, const BakedLight& light, const DirectLightTracingSettings& settings);
 
 /// Accumulate indirect light for charts.
 URHO3D_API void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const TetrahedralMesh& lightProbesMesh, const LightProbeCollection& lightProbesData,
+    const TetrahedralMesh& lightProbesMesh, const LightProbeCollectionBakedData& lightProbesData,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const IndirectLightTracingSettings& settings);
 
 /// Accumulate indirect light for light probes.
-URHO3D_API void BakeIndirectLightForLightProbes(LightProbeCollection& collection,
+URHO3D_API void BakeIndirectLightForLightProbes(
+    LightProbeCollectionBakedData& bakedData, const LightProbeCollection& collection,
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const RaytracerScene& raytracerScene, const IndirectLightTracingSettings& settings);
 

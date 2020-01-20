@@ -85,7 +85,7 @@ static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone*
     {
         unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
         const Vector3& position = drawable->GetNode()->GetWorldPosition();
-        ambient += gi->SampleAverageAmbient(position, hint).ToVector3();
+        ambient += gi->SampleAverageAmbient(position, hint);
     }
     ambient += zone->GetAmbientColor().ToVector3();
     return { ambient, 1.0f };

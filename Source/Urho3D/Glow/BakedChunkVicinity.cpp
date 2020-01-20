@@ -124,7 +124,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     lightProbeGroups.insert(lightProbeGroups.end(), relevantLightProbes.begin(), relevantLightProbes.end());
 
     LightProbeCollection lightProbesCollection;
-    LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection);
+    LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection, nullptr);
 
     // Create scene for raytracing
     RaytracingBackground raytracingBackground;
@@ -190,6 +190,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     chunkVicinity.geometryBufferToRaytracer_ = ea::move(geometryBufferToRaytracerGeometry);
     chunkVicinity.bakedLights_ = bakedLights;
     chunkVicinity.lightProbesCollection_ = lightProbesCollection;
+    chunkVicinity.numUniqueLightProbes_ = uniqueLightProbeGroups.size();
 
     return chunkVicinity;
 }
