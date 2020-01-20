@@ -26,10 +26,12 @@
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
+#include "../Core/Timer.h"
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
 #include "../Graphics/Zone.h"
+#include "../IO/Log.h"
 #include "../Scene/Scene.h"
 
 #if URHO3D_GLOW
@@ -100,8 +102,9 @@ void LightmapManager::Bake()
     Zone* zone = octree->GetZone();
     settings_.properties_.backgroundColor_ = zone->GetFogColor().ToVector3();
 
-    // Bake lightmaps if possible
+    // Bake light if possible
 #if URHO3D_GLOW
+    Timer timer;
     DefaultBakedSceneCollector sceneCollector;
     BakedLightMemoryCache lightmapCache;
     IncrementalLightBaker lightBaker;
@@ -112,6 +115,8 @@ void LightmapManager::Bake()
         lightBaker.Bake();
         lightBaker.CommitScene();
     }
+#else
+    URHO3D_LOGERROR("Enable URHO3D_GLOW in build options");
 #endif
 
     // Compile light probes
@@ -119,6 +124,12 @@ void LightmapManager::Bake()
     {
         gi->CompileLightProbes();
     }
+
+#if URHO3D_GLOW
+    // Log overall time
+    const unsigned totalMSec = timer.GetMSec(true);
+    URHO3D_LOGINFO("Light baking is finished in {} seconds", totalMSec / 1000);
+#endif
 }
 
 }
