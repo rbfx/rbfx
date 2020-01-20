@@ -31,6 +31,7 @@
 #include "../IO/Log.h"
 #include "../IO/PackageFile.h"
 #include "../Resource/BackgroundLoader.h"
+#include "../Resource/BinaryFile.h"
 #include "../Resource/Image.h"
 #include "../Resource/JSONFile.h"
 #include "../Resource/PListFile.h"
@@ -1141,6 +1142,7 @@ File* ResourceCache::SearchPackages(const ea::string& name)
 
 void RegisterResourceLibrary(Context* context)
 {
+    BinaryFile::RegisterObject(context);
     Image::RegisterObject(context);
     JSONFile::RegisterObject(context);
     PListFile::RegisterObject(context);

@@ -29,6 +29,7 @@
 #include "../IO/BinaryArchive.h"
 #include "../IO/Log.h"
 #include "../Graphics/DebugRenderer.h"
+#include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
 #include "../Scene/Scene.h"
 
@@ -42,22 +43,32 @@ bool SerializeValue(Archive& archive, const char* name, LightProbe& value)
     if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
     {
         SerializeValue(archive, "Position", value.position_);
-        SerializeValue(archive, "SH9", value.sphericalHarmonics_);
         return true;
     }
     return false;
 }
 
-bool SerializeValue(Archive& archive, const char* name, LightProbeCollection& value)
+bool SerializeValue(Archive& archive, const char* name, LightProbeCollectionBakedData& value)
 {
     if (ArchiveBlock block = archive.OpenUnorderedBlock(name))
     {
-        SerializeVector(archive, "BakedSH", "SH9", value.bakedSphericalHarmonics_);
-        SerializeVector(archive, "BakedAmbient", "Color", value.bakedAmbient_);
-        SerializeVector(archive, "WorldPositions", "Position", value.worldPositions_);
-        SerializeVector(archive, "SubsetOffsets", "Offset", value.offsets_);
-        SerializeVector(archive, "SubsetCounts", "Count", value.counts_);
-        return true;
+        static const unsigned currentVersion = 1;
+        const unsigned version = archive.SerializeVersion(currentVersion);
+        if (version == currentVersion)
+        {
+            SerializeVector(archive, "SH9", "Element", value.sphericalHarmonics_);
+
+            // Generate ambient if loading
+            if (archive.IsInput())
+            {
+                const unsigned numLightProbes = value.Size();
+                value.ambient_.resize(numLightProbes);
+                for (unsigned i = 0; i < numLightProbes; ++i)
+                    value.ambient_[i] = value.sphericalHarmonics_[i].GetDebugColor().ToVector3();
+            }
+
+            return true;
+        }
     }
     return false;
 }
@@ -76,20 +87,24 @@ void LightProbeGroup::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Is Enabled", IsEnabled, SetEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement", GetAutoPlacementEnabled, SetAutoPlacementEnabled, bool, true, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Auto Placement Step", GetAutoPlacementStep, SetAutoPlacementStep, float, 1.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Local Bounding Box Min", Vector3, localBoundingBox_.min_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
     URHO3D_ATTRIBUTE("Local Bounding Box Max", Vector3, localBoundingBox_.max_, Vector3::ZERO, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Serialized Light Probes", GetSerializedLightProbes, SetSerializedLightProbes, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Baked Data File", GetBakedDataFileRef, SetBakedDataFileRef, ResourceRef, ResourceRef{ BinaryFile::GetTypeStatic() }, AM_DEFAULT | AM_NOEDIT);
 }
 
 void LightProbeGroup::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 {
+    UpdateBakedData();
+
     const BoundingBox boundingBox{ -Vector3::ONE * 0.5f, Vector3::ONE * 0.5f };
     debug->AddBoundingBox(boundingBox, node_->GetWorldTransform(), Color::GREEN);
 
-    for (const LightProbe& probe : lightProbes_)
+    for (unsigned i = 0; i < lightProbes_.size(); ++i)
     {
+        const LightProbe& probe = lightProbes_[i];
         const Vector3 worldPosition = node_->LocalToWorld(probe.position_);
-        debug->AddSphere(Sphere(worldPosition, 0.1f), probe.sphericalHarmonics_.GetDebugColor());
+        debug->AddSphere(Sphere(worldPosition, 0.1f), static_cast<Color>(bakedData_.ambient_[i]));
     }
 }
 
@@ -98,31 +113,50 @@ BoundingBox LightProbeGroup::GetWorldBoundingBox() const
     return localBoundingBox_.Transformed(node_->GetWorldTransform());
 }
 
-void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups, LightProbeCollection& collection)
+void LightProbeGroup::CollectLightProbes(const ea::vector<LightProbeGroup*>& lightProbeGroups,
+    LightProbeCollection& collection, LightProbeCollectionBakedData* bakedData, bool reload)
 {
     // Initialize offset according to current state of collection
-    unsigned offset = collection.Size();
+    unsigned offset = collection.GetNumProbes();
 
     for (LightProbeGroup* group : lightProbeGroups)
     {
+        // Ensure that baked data is up to data
+        if (bakedData)
+        {
+            if (reload)
+                group->ReloadBakedData();
+            group->UpdateBakedData();
+        }
+
+        // Store metadata
         Node* node = group->GetNode();
         const LightProbeVector& probes = group->GetLightProbes();
 
         collection.offsets_.push_back(offset);
         collection.counts_.push_back(probes.size());
+        collection.bakedDataFiles_.push_back(group->GetBakedDataFileRef().name_);
+        collection.names_.push_back(node->GetName());
         offset += probes.size();
 
+        // Store light probes data
         for (const LightProbe& probe : probes)
         {
             const Vector3 worldPosition = node->LocalToWorld(probe.position_);
-            collection.bakedSphericalHarmonics_.push_back(probe.sphericalHarmonics_);
-            collection.bakedAmbient_.push_back(probe.sphericalHarmonics_.GetDebugColor());
             collection.worldPositions_.push_back(worldPosition);
+        }
+
+        // Store baked data
+        if (bakedData)
+        {
+            bakedData->sphericalHarmonics_.append(group->bakedData_.sphericalHarmonics_);
+            bakedData->ambient_.append(group->bakedData_.ambient_);
         }
     }
 }
 
-void LightProbeGroup::CollectLightProbes(Scene* scene, LightProbeCollection& collection)
+void LightProbeGroup::CollectLightProbes(Scene* scene,
+    LightProbeCollection& collection, LightProbeCollectionBakedData* bakedData, bool reload)
 {
     ea::vector<LightProbeGroup*> lightProbeGroups;
     scene->GetComponents(lightProbeGroups, true);
@@ -130,11 +164,47 @@ void LightProbeGroup::CollectLightProbes(Scene* scene, LightProbeCollection& col
     const auto isNotEnabled = [](const LightProbeGroup* lightProbeGroup) { return !lightProbeGroup->IsEnabledEffective(); };
     lightProbeGroups.erase(ea::remove_if(lightProbeGroups.begin(), lightProbeGroups.end(), isNotEnabled), lightProbeGroups.end());
 
-    CollectLightProbes(lightProbeGroups, collection);
+    CollectLightProbes(lightProbeGroups, collection, bakedData, reload);
 }
 
-void LightProbeGroup::ArrangeLightProbes()
+bool LightProbeGroup::SaveLightProbesBakedData(Context* context,
+    const LightProbeCollection& collection, const LightProbeCollectionBakedData& bakedData, unsigned index)
 {
+    if (index >= collection.GetNumGroups())
+        return false;
+
+    const ea::string fileName = collection.bakedDataFiles_[index];
+    if (fileName.empty())
+        return false;
+
+    const unsigned offset = collection.offsets_[index];
+    const unsigned count = collection.counts_[index];
+    if (offset + count > bakedData.Size())
+        return false;
+
+    LightProbeCollectionBakedData copy;
+
+    auto sphericalHarmonicsBegin = bakedData.sphericalHarmonics_.begin() + offset;
+    auto ambientBegin = bakedData.ambient_.begin() + offset;
+    copy.sphericalHarmonics_.assign(sphericalHarmonicsBegin, sphericalHarmonicsBegin + count);
+    copy.ambient_.assign(ambientBegin, ambientBegin + count);
+
+    VectorBuffer buffer;
+    BinaryOutputArchive archive(context, buffer);
+    if (!SerializeBakedData(archive, copy))
+        return false;
+
+    BinaryFile bakedDataFile(context);
+    bakedDataFile.SetData(buffer.GetBuffer());
+    if (!bakedDataFile.SaveFile(fileName))
+        return false;
+
+    return true;
+}
+
+void LightProbeGroup::ArrangeLightProbesInVolume()
+{
+    bakedDataDirty_ = true; // Reset baked data every time light probes change
     lightProbes_.clear();
     if (autoPlacementStep_ <= M_LARGE_EPSILON)
         return;
@@ -162,7 +232,7 @@ void LightProbeGroup::ArrangeLightProbes()
             for (index.x_ = 0; index.x_ < gridSize.x_; ++index.x_)
             {
                 const Vector3 localPosition = -Vector3::ONE / 2 + static_cast<Vector3>(index) * gridStep;
-                lightProbes_.push_back(LightProbe{ localPosition, SphericalHarmonicsDot9{} });
+                lightProbes_.push_back(LightProbe{ localPosition });
             }
         }
     }
@@ -170,54 +240,38 @@ void LightProbeGroup::ArrangeLightProbes()
     localBoundingBox_ = { -Vector3::ONE / 2, Vector3::ONE / 2 };
 }
 
-bool LightProbeGroup::CommitLightProbes(const LightProbeCollection& collection, unsigned index)
+void LightProbeGroup::ReloadBakedData()
 {
-    if (index >= collection.Size())
-    {
-        URHO3D_LOGERROR("Cannot commit light probes: index is out of range");
-        return false;
-    }
-
-    if (collection.counts_[index] != lightProbes_.size())
-    {
-        URHO3D_LOGERROR("Cannot commit light probes: number of light probes doesn't match");
-        return false;
-    }
-
-    const unsigned offset = collection.offsets_[index];
-    for (unsigned probeIndex = 0; probeIndex < lightProbes_.size(); ++probeIndex)
-    {
-        lightProbes_[probeIndex].sphericalHarmonics_ = collection.bakedSphericalHarmonics_[offset + probeIndex];
-    }
-
-    return true;
+    bakedDataDirty_ = true;
+    UpdateBakedData();
 }
 
 void LightProbeGroup::SetAutoPlacementEnabled(bool enabled)
 {
     autoPlacementEnabled_ = enabled;
     if (autoPlacementEnabled_)
-        ArrangeLightProbes();
+        ArrangeLightProbesInVolume();
 }
 
 void LightProbeGroup::SetAutoPlacementStep(float step)
 {
     autoPlacementStep_ = step;
     if (autoPlacementEnabled_)
-        ArrangeLightProbes();
+        ArrangeLightProbesInVolume();
 }
 
 void LightProbeGroup::SetLightProbes(const LightProbeVector& lightProbes)
 {
     lightProbes_ = lightProbes;
+    bakedDataDirty_ = true; // Reset baked data every time light probes change
     UpdateLocalBoundingBox();
 }
 
-void LightProbeGroup::SerializeLightProbesData(Archive& archive)
+void LightProbeGroup::SerializeLightProbes(Archive& archive)
 {
     if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbesData"))
     {
-        static const unsigned currentVersion = 1;
+        static const unsigned currentVersion = 2;
         const unsigned version = archive.SerializeVersion(currentVersion);
         if (version == currentVersion)
         {
@@ -226,19 +280,39 @@ void LightProbeGroup::SerializeLightProbesData(Archive& archive)
     }
 }
 
-void LightProbeGroup::SetLightProbesData(const ea::string& data)
+void LightProbeGroup::SetSerializedLightProbes(const ea::string& data)
 {
     VectorBuffer buffer(DecodeBase64(data));
     BinaryInputArchive archive(context_, buffer);
-    SerializeLightProbesData(archive);
+    SerializeLightProbes(archive);
+    bakedDataDirty_ = true; // Reset baked data every time light probes change
 }
 
-ea::string LightProbeGroup::GetLightProbesData() const
+ea::string LightProbeGroup::GetSerializedLightProbes() const
 {
     VectorBuffer buffer;
     BinaryOutputArchive archive(context_, buffer);
-    const_cast<LightProbeGroup*>(this)->SerializeLightProbesData(archive);
+    const_cast<LightProbeGroup*>(this)->SerializeLightProbes(archive);
     return EncodeBase64(buffer.GetBuffer());
+}
+
+bool LightProbeGroup::SerializeBakedData(Archive& archive, LightProbeCollectionBakedData& bakedData)
+{
+    return SerializeValue(archive, "LightProbesBakedData", bakedData);
+}
+
+void LightProbeGroup::SetBakedDataFileRef(const ResourceRef& fileRef)
+{
+    if (bakedDataRef_ != fileRef)
+    {
+        bakedDataDirty_ = true;
+        bakedDataRef_ = fileRef;
+    }
+}
+
+ResourceRef LightProbeGroup::GetBakedDataFileRef() const
+{
+    return bakedDataRef_;
 }
 
 void LightProbeGroup::OnNodeSet(Node* node)
@@ -252,7 +326,7 @@ void LightProbeGroup::OnMarkedDirty(Node* node)
     if (autoPlacementEnabled_ && lastNodeScale_ != node->GetScale())
     {
         lastNodeScale_ = node->GetScale();
-        ArrangeLightProbes();
+        ArrangeLightProbesInVolume();
     }
 }
 
@@ -261,6 +335,41 @@ void LightProbeGroup::UpdateLocalBoundingBox()
     localBoundingBox_.Clear();
     for (const LightProbe& probe : lightProbes_)
         localBoundingBox_.Merge(probe.position_);
+}
+
+void LightProbeGroup::UpdateBakedData()
+{
+    if (!bakedDataDirty_)
+        return;
+
+    bakedDataDirty_ = false;
+    auto cache = context_->GetCache();
+    auto bakedDataFile = cache->GetResource<BinaryFile>(bakedDataRef_.name_);
+
+    // Try to load from file
+    bool success = false;
+    bakedData_.Resize(lightProbes_.size());
+
+    if (bakedDataFile)
+    {
+        VectorBuffer buffer(bakedDataFile->GetData());
+        BinaryInputArchive archive(context_, buffer);
+        if (SerializeBakedData(archive, bakedData_))
+        {
+            if (bakedData_.sphericalHarmonics_.size() == lightProbes_.size())
+                success = true;
+        }
+    }
+
+    // Reset to default if failed
+    if (!success)
+    {
+        for (unsigned i = 0; i < lightProbes_.size(); ++i)
+        {
+            bakedData_.sphericalHarmonics_[i] = SphericalHarmonicsDot9::ZERO;
+            bakedData_.ambient_[i] = Vector3::ZERO;
+        }
+    }
 }
 
 }

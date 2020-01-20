@@ -74,19 +74,11 @@ void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
         const Vector3& endPos = lightProbesMesh_.vertices_[highlightEdge.second];
         debug->AddLine(startPos, endPos, Color::RED);
     }
-    /*for (unsigned i = 0; i < 3; ++i)
-    {
-        const unsigned index = tetrahedron.indices_[i];
-        const Vector3& pos = lightProbesMesh_.vertices_[index];
-        const Vector3& normal = lightProbesMesh_.hullNormals_[index];
-        const Color color = lightProbesCollection_.bakedAmbient_[index];
-        debug->AddLine(pos, pos + normal, color);
-    }*/
 }
 
 void GlobalIllumination::ResetLightProbes()
 {
-    lightProbesCollection_.Clear();
+    lightProbesBakedData_.Clear();
     lightProbesMesh_ = {};
 }
 
@@ -95,36 +87,37 @@ void GlobalIllumination::CompileLightProbes()
     ResetLightProbes();
 
     // Collect light probes
-    LightProbeGroup::CollectLightProbes(GetScene(), lightProbesCollection_);
-    if (lightProbesCollection_.Empty())
+    LightProbeCollection collection;
+    LightProbeGroup::CollectLightProbes(GetScene(), collection, &lightProbesBakedData_, true /*reload*/);
+    if (collection.Empty())
         return;
 
     // Add padding to avoid vertex collision
-    lightProbesMesh_.Define(lightProbesCollection_.worldPositions_);
+    lightProbesMesh_.Define(collection.worldPositions_);
 }
 
 SphericalHarmonicsDot9 GlobalIllumination::SampleAmbientSH(const Vector3& position, unsigned& hint) const
 {
     // TODO(glow): Use real ambient here
-    return lightProbesMesh_.Sample(lightProbesCollection_.bakedSphericalHarmonics_, position, hint);
+    return lightProbesMesh_.Sample(lightProbesBakedData_.sphericalHarmonics_, position, hint);
 }
 
-Color GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsigned& hint) const
+Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsigned& hint) const
 {
     // TODO(glow): Use real ambient here
-    return lightProbesMesh_.Sample(lightProbesCollection_.bakedAmbient_, position, hint);
+    return lightProbesMesh_.Sample(lightProbesBakedData_.ambient_, position, hint);
 }
 
 void GlobalIllumination::SerializeLightProbesData(Archive& archive)
 {
     if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes"))
     {
-        static const unsigned currentVersion = 1;
+        static const unsigned currentVersion = 2;
         const unsigned version = archive.SerializeVersion(currentVersion);
         if (version == currentVersion)
         {
-            SerializeValue(archive, "Data", lightProbesCollection_);
             SerializeValue(archive, "Mesh", lightProbesMesh_);
+            SerializeValue(archive, "Data", lightProbesBakedData_);
         }
     }
 }

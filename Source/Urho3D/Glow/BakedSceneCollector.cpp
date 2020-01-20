@@ -176,10 +176,6 @@ ea::vector<LightProbeGroup*> DefaultBakedSceneCollector::GetUniqueLightProbeGrou
     return {};
 }
 
-void DefaultBakedSceneCollector::CommitLightProbeGroups(const IntVector3& /*chunkIndex*/)
-{
-}
-
 BoundingBox DefaultBakedSceneCollector::GetChunkBoundingBox(const IntVector3& chunkIndex)
 {
     auto iter = chunks_.find(chunkIndex);
