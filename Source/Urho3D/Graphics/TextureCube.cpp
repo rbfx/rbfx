@@ -99,137 +99,16 @@ bool TextureCube::BeginLoad(Deserializer& source)
 
     cache->ResetDependencies(this);
 
-    ea::string texPath, texName, texExt;
-    SplitPath(GetName(), texPath, texName, texExt);
-
-    loadParameters_ = (context_->CreateObject<XMLFile>());
-    if (!loadParameters_->Load(source))
-    {
-        loadParameters_.Reset();
+    // Load resource
+    loadImageCube_ = cache->GetTempResource<ImageCube>(GetName());
+    if (!loadImageCube_)
         return false;
-    }
 
-    loadImages_.clear();
-
-    XMLElement textureElem = loadParameters_->GetRoot();
-    XMLElement imageElem = textureElem.GetChild("image");
-    // Single image and multiple faces with layout
-    if (imageElem)
+    // Update dependencies
+    for (Image* image : loadImageCube_->GetImages())
     {
-        ea::string name = imageElem.GetAttribute("name");
-        // If path is empty, add the XML file path
-        if (GetPath(name).empty())
-            name = texPath + name;
-
-        SharedPtr<Image> image = cache->GetTempResource<Image>(name);
-        if (!image)
-            return false;
-
-        int faceWidth, faceHeight;
-        loadImages_.resize(MAX_CUBEMAP_FACES);
-
-        if (image->IsCubemap())
-        {
-            loadImages_[FACE_POSITIVE_X] = image;
-            loadImages_[FACE_NEGATIVE_X] = loadImages_[FACE_POSITIVE_X]->GetNextSibling();
-            loadImages_[FACE_POSITIVE_Y] = loadImages_[FACE_NEGATIVE_X]->GetNextSibling();
-            loadImages_[FACE_NEGATIVE_Y] = loadImages_[FACE_POSITIVE_Y]->GetNextSibling();
-            loadImages_[FACE_POSITIVE_Z] = loadImages_[FACE_NEGATIVE_Y]->GetNextSibling();
-            loadImages_[FACE_NEGATIVE_Z] = loadImages_[FACE_POSITIVE_Z]->GetNextSibling();
-        }
-        else
-        {
-
-            CubeMapLayout layout =
-                (CubeMapLayout)GetStringListIndex(imageElem.GetAttribute("layout").c_str(), cubeMapLayoutNames, CML_HORIZONTAL);
-
-            switch (layout)
-            {
-            case CML_HORIZONTAL:
-                faceWidth = image->GetWidth() / MAX_CUBEMAP_FACES;
-                faceHeight = image->GetHeight();
-                loadImages_[FACE_POSITIVE_Z] = GetTileImage(image, 0, 0, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_X] = GetTileImage(image, 1, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Z] = GetTileImage(image, 2, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_X] = GetTileImage(image, 3, 0, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_Y] = GetTileImage(image, 4, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Y] = GetTileImage(image, 5, 0, faceWidth, faceHeight);
-                break;
-
-            case CML_HORIZONTALNVIDIA:
-                faceWidth = image->GetWidth() / MAX_CUBEMAP_FACES;
-                faceHeight = image->GetHeight();
-                for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
-                    loadImages_[i] = GetTileImage(image, i, 0, faceWidth, faceHeight);
-                break;
-
-            case CML_HORIZONTALCROSS:
-                faceWidth = image->GetWidth() / 4;
-                faceHeight = image->GetHeight() / 3;
-                loadImages_[FACE_POSITIVE_Y] = GetTileImage(image, 1, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_X] = GetTileImage(image, 0, 1, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_Z] = GetTileImage(image, 1, 1, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_X] = GetTileImage(image, 2, 1, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Z] = GetTileImage(image, 3, 1, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Y] = GetTileImage(image, 1, 2, faceWidth, faceHeight);
-                break;
-
-            case CML_VERTICALCROSS:
-                faceWidth = image->GetWidth() / 3;
-                faceHeight = image->GetHeight() / 4;
-                loadImages_[FACE_POSITIVE_Y] = GetTileImage(image, 1, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_X] = GetTileImage(image, 0, 1, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_Z] = GetTileImage(image, 1, 1, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_X] = GetTileImage(image, 2, 1, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Y] = GetTileImage(image, 1, 2, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Z] = GetTileImage(image, 1, 3, faceWidth, faceHeight);
-                if (loadImages_[FACE_NEGATIVE_Z])
-                {
-                    loadImages_[FACE_NEGATIVE_Z]->FlipVertical();
-                    loadImages_[FACE_NEGATIVE_Z]->FlipHorizontal();
-                }
-                break;
-
-            case CML_BLENDER:
-                faceWidth = image->GetWidth() / 3;
-                faceHeight = image->GetHeight() / 2;
-                loadImages_[FACE_NEGATIVE_X] = GetTileImage(image, 0, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Z] = GetTileImage(image, 1, 0, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_X] = GetTileImage(image, 2, 0, faceWidth, faceHeight);
-                loadImages_[FACE_NEGATIVE_Y] = GetTileImage(image, 0, 1, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_Y] = GetTileImage(image, 1, 1, faceWidth, faceHeight);
-                loadImages_[FACE_POSITIVE_Z] = GetTileImage(image, 2, 1, faceWidth, faceHeight);
-                break;
-            }
-        }
-    }
-    // Face per image
-    else
-    {
-        XMLElement faceElem = textureElem.GetChild("face");
-        while (faceElem)
-        {
-            ea::string name = faceElem.GetAttribute("name");
-
-            // If path is empty, add the XML file path
-            if (GetPath(name).empty())
-                name = texPath + name;
-
-            loadImages_.push_back(cache->GetTempResource<Image>(name));
-            cache->StoreResourceDependency(this, name);
-
-            faceElem = faceElem.GetNext("face");
-        }
-    }
-
-    // Precalculate mip levels if async loading
-    if (GetAsyncLoadState() == ASYNC_LOADING)
-    {
-        for (unsigned i = 0; i < loadImages_.size(); ++i)
-        {
-            if (loadImages_[i])
-                loadImages_[i]->PrecalculateLevels();
-        }
+        if (image && !image->GetName().empty())
+            cache->StoreResourceDependency(this, image->GetName());
     }
 
     return true;
@@ -244,13 +123,13 @@ bool TextureCube::EndLoad()
     // If over the texture budget, see if materials can be freed to allow textures to be freed
     CheckTextureBudget(GetTypeStatic());
 
-    SetParameters(loadParameters_);
+    SetParameters(loadImageCube_->GetParametersXML());
 
-    for (unsigned i = 0; i < loadImages_.size() && i < MAX_CUBEMAP_FACES; ++i)
-        SetData((CubeMapFace)i, loadImages_[i]);
+    const auto& images = loadImageCube_->GetImages();
+    for (unsigned i = 0; i < images.size() && i < MAX_CUBEMAP_FACES; ++i)
+        SetData((CubeMapFace)i, images[i]);
 
-    loadImages_.clear();
-    loadParameters_.Reset();
+    loadImageCube_ = nullptr;
 
     return true;
 }

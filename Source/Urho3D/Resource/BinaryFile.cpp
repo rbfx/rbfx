@@ -56,6 +56,7 @@ bool BinaryFile::BeginLoad(Deserializer& source)
         return false;
     }
 
+    SetMemoryUse(data_.size());
     return true;
 }
 

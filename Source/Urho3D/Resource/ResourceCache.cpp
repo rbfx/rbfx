@@ -33,6 +33,7 @@
 #include "../Resource/BackgroundLoader.h"
 #include "../Resource/BinaryFile.h"
 #include "../Resource/Image.h"
+#include "../Resource/ImageCube.h"
 #include "../Resource/JSONFile.h"
 #include "../Resource/PListFile.h"
 #include "../Resource/ResourceCache.h"
@@ -1144,6 +1145,7 @@ void RegisterResourceLibrary(Context* context)
 {
     BinaryFile::RegisterObject(context);
     Image::RegisterObject(context);
+    ImageCube::RegisterObject(context);
     JSONFile::RegisterObject(context);
     PListFile::RegisterObject(context);
     XMLFile::RegisterObject(context);
