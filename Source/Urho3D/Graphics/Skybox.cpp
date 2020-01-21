@@ -26,6 +26,9 @@
 #include "../Graphics/Batch.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/Skybox.h"
+#include "../Graphics/TextureCube.h"
+#include "../Resource/ImageCube.h"
+#include "../Resource/ResourceCache.h"
 #include "../Scene/Node.h"
 
 #include "../DebugNew.h"
@@ -75,6 +78,22 @@ void Skybox::UpdateBatches(const FrameInfo& frame)
         batches_[i].worldTransform_ = &it.first->second;
         batches_[i].distance_ = 0.0f;
     }
+}
+
+ImageCube* Skybox::GetImage() const
+{
+    if (batches_.empty())
+        return nullptr;
+
+    Material* material = batches_[0].material_;
+    if (!material)
+        return nullptr;
+
+    Texture* texture = material->GetTexture(TU_DIFFUSE);
+    if (!texture || !texture->IsInstanceOf<TextureCube>())
+        return nullptr;
+
+    return context_->GetCache()->GetResource<ImageCube>(texture->GetName());
 }
 
 void Skybox::OnWorldBoundingBoxUpdate()

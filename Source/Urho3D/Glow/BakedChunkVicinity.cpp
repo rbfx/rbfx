@@ -130,6 +130,8 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     RaytracingBackground raytracingBackground;
     raytracingBackground.lightIntensity_ =
         settings.properties_.backgroundColor_ * settings.properties_.backgroundBrightness_;
+    raytracingBackground.backgroundImage_ = settings.properties_.backgroundImage_;
+    raytracingBackground.backgroundImageBrightness_ = settings.properties_.backgroundBrightness_;
 
     const unsigned uvChannel = settings.geometryBufferBaking_.uvChannel_;
     const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(

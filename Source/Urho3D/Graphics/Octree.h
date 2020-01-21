@@ -30,6 +30,7 @@ namespace Urho3D
 {
 
 class Octree;
+class Skybox;
 class Zone;
 
 static const int NUM_OCTANTS = 8;
@@ -189,9 +190,11 @@ public:
     void Raycast(RayOctreeQuery& query) const;
     /// Return the closest drawable object by a ray query.
     void RaycastSingle(RayOctreeQuery& query) const;
-    /// Return the active Zone or default renderer zone if none found.
+    /// Return active Zone or default renderer zone if none found.
     /// Behavior is underfined if there are multiple active zones.
     Zone* GetZone(unsigned viewMask = DEFAULT_VIEWMASK) const;
+    /// Return active Skybox. Behavior is underfined if there are multiple active skyboxes.
+    Skybox* GetSkybox(unsigned viewMask = DEFAULT_VIEWMASK) const;
 
     /// Return subdivision levels.
     unsigned GetNumLevels() const { return numLevels_; }

@@ -223,6 +223,28 @@ bool ImageCube::BeginLoad(Deserializer& source)
     return true;
 }
 
+SharedPtr<ImageCube> ImageCube::GetDecompressedImage() const
+{
+    auto copy = MakeShared<ImageCube>(context_);
+
+    copy->parametersXml_ = parametersXml_;
+    copy->faceImages_ = faceImages_;
+
+    for (SharedPtr<Image>& faceImage : copy->faceImages_)
+    {
+        if (faceImage)
+            faceImage = faceImage->GetDecompressedImage();
+    }
+
+    return copy;
+}
+
+Color ImageCube::SampleNearest(const Vector3& direction) const
+{
+    // TODO(glow): Implement me
+    return Color::BLACK;
+}
+
 Vector3 ImageCube::GetTexelOffsetVector(CubeMapFace face, int x, int y) const
 {
     const float u = (x + 0.5f) / width_ * 2.0f - 1.0f;

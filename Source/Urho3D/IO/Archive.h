@@ -237,7 +237,7 @@ public:
 };
 
 /// Archive implementation helper. Provides default Archive implementation for most cases.
-class ArchiveBase : public Archive, private NonCopyable
+class URHO3D_API ArchiveBase : public Archive, private NonCopyable
 {
 public:
     /// Get context.

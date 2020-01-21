@@ -30,6 +30,7 @@
 #include "../Math/BoundingBox.h"
 #include "../Math/Color.h"
 #include "../Resource/Image.h"
+#include "../Resource/ImageCube.h"
 
 #include <EASTL/vector.h>
 
@@ -45,6 +46,18 @@ struct RaytracingBackground
 {
     /// Background light intensity.
     Vector3 lightIntensity_;
+    /// Background image.
+    SharedPtr<ImageCube> backgroundImage_;
+    /// Background image brightness.
+    float backgroundImageBrightness_{ 1.0f };
+
+    /// Sample background.
+    Vector3 SampleBackground(const Vector3& direction) const
+    {
+        if (!backgroundImage_)
+            return lightIntensity_;
+        return backgroundImageBrightness_ * backgroundImage_->SampleNearest(direction).ToVector3();
+    }
 };
 
 /// Material of raytracing geometry.
