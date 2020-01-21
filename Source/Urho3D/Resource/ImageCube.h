@@ -28,6 +28,7 @@
 #include "../Math/SphericalHarmonics.h"
 
 #include <EASTL/vector.h>
+#include <EASTL/utility.h>
 
 namespace Urho3D
 {
@@ -64,9 +65,16 @@ public:
     /// Return nearest pixel color at given direction.
     Color SampleNearest(const Vector3& direction) const;
     /// Return offset from the center of the unit cube for given texel (assuming zero mip level).
-    Vector3 GetTexelOffsetVector(CubeMapFace face, int x, int y) const;
+    Vector3 ProjectTexelOnCube(CubeMapFace face, int x, int y) const;
+    /// Project direction on texel of cubemap face.
+    ea::pair<CubeMapFace, IntVector2> ProjectDirectionOnFaceTexel(const Vector3& direction) const;
     /// Calculate spherical harmonics for the cube map.
     SphericalHarmonicsColor9 CalculateSphericalHarmonics() const;
+
+    /// Project UV onto cube.
+    static Vector3 ProjectUVOnCube(CubeMapFace face, const Vector2& uv);
+    /// Project direction onto cubemap.
+    static ea::pair<CubeMapFace, Vector2> ProjectDirectionOnFace(const Vector3& direction);
 
 private:
     /// Face images.

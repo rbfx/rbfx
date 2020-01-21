@@ -395,10 +395,9 @@ struct IncrementalLightBaker::Impl
             {
                 const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
                 const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
-                const float indirectScale = settings_.properties_.indirectMultiplier_;
                 ctx.bakedLightBuffer_[i] = Vector3::ZERO;
                 ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, directLight);
-                ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, indirectScale * indirectLight);
+                ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, indirectLight);
             }
 
             // Stitch seams

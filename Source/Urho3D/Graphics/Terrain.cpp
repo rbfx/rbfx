@@ -674,6 +674,8 @@ void Terrain::CreatePatchGeometry(TerrainPatch* patch)
     Geometry* maxLodGeometry = patch->GetMaxLodGeometry();
     Geometry* occlusionGeometry = patch->GetOcclusionGeometry();
 
+    // Scale in lightmap is intentionally ignored here
+    // because lightmapper itself needs Terrain with lightmap UV but without lightmapping during rendering
     VertexMaskFlags vertexMask{ MASK_POSITION | MASK_NORMAL | MASK_TEXCOORD1 | MASK_TANGENT };
     if (bakeLightmap_)
         vertexMask |= MASK_TEXCOORD2;
@@ -1116,7 +1118,7 @@ void Terrain::CreateGeometry()
                         patch->SetOccludee(occludee_);
                     }
 
-                    patch->SetBakeLightmap(bakeLightmap_);
+                    patch->SetBakeLightmap(GetBakeLightmapEffective());
                     patch->SetLightmapIndex(lightmapIndex_);
                     patch->SetLightmapScaleOffset(lightmapScaleOffset_);
 
@@ -1525,7 +1527,7 @@ void Terrain::UpdatePatchesLightmaps()
     {
         if (patch)
         {
-            patch->SetBakeLightmap(bakeLightmap_);
+            patch->SetBakeLightmap(GetBakeLightmapEffective());
             patch->SetLightmapIndex(lightmapIndex_);
             patch->SetLightmapScaleOffset(lightmapScaleOffset_);
         }

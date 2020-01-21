@@ -418,18 +418,11 @@ LightmapGeometryBakingScenesArray GenerateLightmapGeometryBakingScenes(
                 terrainForLightmap->SetPatchSize(terrain->GetPatchSize());
                 terrainForLightmap->SetSmoothing(terrain->GetSmoothing());
 
-                // This is required to generate lightmap UV for terrain.
-                // However, this flag will break emission map baking.
-                // Therefore, reset this flag for all patches.
+                // This is required to generate lightmap UV for terrain
+                // but render terrain without lightmaps so it has valid emission texture.
                 terrainForLightmap->SetBakeLightmap(true);
+                terrainForLightmap->SetScaleInLightmap(0.0f);
                 terrainForLightmap->SetHeightMap(terrain->GetHeightMap());
-                for (unsigned i = 0; ; ++i)
-                {
-                    if (TerrainPatch* patch = terrainForLightmap->GetPatch(i))
-                        patch->SetBakeLightmap(false);
-                    else
-                        break;
-                }
 
                 SharedPtr<Material> material = CreateBakingMaterial(bakingMaterial, terrain->GetMaterial(),
                     scaleOffset, tap, numMultiTapSamples, tapOffset, mapping.size(), scaledAndConstBias);

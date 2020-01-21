@@ -159,9 +159,6 @@ struct LightmapStitchingSettings
 /// Light calculation properties that can be used to adjust result.
 struct LightCalculationProperties
 {
-    /// Ambient light multiplier.
-    float indirectMultiplier_{ 1.0f };
-
     /// Background light color.
     Vector3 backgroundColor_{};
     /// Background light brightness multiplier.

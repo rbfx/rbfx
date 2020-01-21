@@ -241,25 +241,25 @@ SharedPtr<ImageCube> ImageCube::GetDecompressedImage() const
 
 Color ImageCube::SampleNearest(const Vector3& direction) const
 {
-    // TODO(glow): Implement me
-    return Color::BLACK;
+    const auto projection = ProjectDirectionOnFaceTexel(direction);
+    const IntVector2& texel = projection.second;
+    return faceImages_[projection.first]->GetPixel(texel.x_, texel.y_);
 }
 
-Vector3 ImageCube::GetTexelOffsetVector(CubeMapFace face, int x, int y) const
+Vector3 ImageCube::ProjectTexelOnCube(CubeMapFace face, int x, int y) const
 {
-    const float u = (x + 0.5f) / width_ * 2.0f - 1.0f;
-    const float v = (y + 0.5f) / width_ * 2.0f - 1.0f;
+    const float u = (x + 0.5f) / width_;
+    const float v = (y + 0.5f) / width_;
+    return ProjectUVOnCube(face, { u, v });
+}
 
-    switch (face)
-    {
-    case FACE_POSITIVE_X: return Vector3( 1, -v, -u);
-    case FACE_NEGATIVE_X: return Vector3(-1, -v,  u);
-    case FACE_POSITIVE_Y: return Vector3( u,  1,  v);
-    case FACE_NEGATIVE_Y: return Vector3( u, -1, -v);
-    case FACE_POSITIVE_Z: return Vector3( u, -v,  1);
-    case FACE_NEGATIVE_Z: return Vector3(-u, -v, -1);
-    default: return Vector3::ZERO;
-    }
+ea::pair<CubeMapFace, IntVector2> ImageCube::ProjectDirectionOnFaceTexel(const Vector3& direction) const
+{
+    const auto faceUV = ProjectDirectionOnFace(direction);
+    const Vector2& uv = faceUV.second;
+    const int x = Clamp(FloorToInt(uv.x_ * width_), 0, width_);
+    const int y = Clamp(FloorToInt(uv.y_ * width_), 0, width_);
+    return { faceUV.first, { x, y } };
 }
 
 SphericalHarmonicsColor9 ImageCube::CalculateSphericalHarmonics() const
@@ -282,7 +282,7 @@ SphericalHarmonicsColor9 ImageCube::CalculateSphericalHarmonics() const
             for (int x = 0; x < width_; ++x)
             {
                 const Color sample = decompressedImage->GetPixel(x, y);
-                const Vector3 offset = GetTexelOffsetVector(face, x, y);
+                const Vector3 offset = ProjectTexelOnCube(face, x, y);
                 const float distance = offset.Length();
                 const float weight = 4.0f / (distance * distance * distance);
                 const Vector3 direction = offset / distance;
@@ -294,6 +294,52 @@ SphericalHarmonicsColor9 ImageCube::CalculateSphericalHarmonics() const
     }
 
     result *= 4.0f * M_PI / weightSum;
+    return result;
+}
+
+Vector3 ImageCube::ProjectUVOnCube(CubeMapFace face, const Vector2& uv)
+{
+    // Convert from [0, 1] to [-1, 1]
+    const float u = uv.x_ * 2.0f - 1.0f;
+    const float v = uv.y_ * 2.0f - 1.0f;
+
+    switch (face)
+    {
+    case FACE_POSITIVE_X: return Vector3( 1, -v, -u);
+    case FACE_NEGATIVE_X: return Vector3(-1, -v,  u);
+    case FACE_POSITIVE_Y: return Vector3( u,  1,  v);
+    case FACE_NEGATIVE_Y: return Vector3( u, -1, -v);
+    case FACE_POSITIVE_Z: return Vector3( u, -v,  1);
+    case FACE_NEGATIVE_Z: return Vector3(-u, -v, -1);
+    default: return Vector3::ZERO;
+    }
+}
+
+ea::pair<CubeMapFace, Vector2> ImageCube::ProjectDirectionOnFace(const Vector3& direction)
+{
+    const float x = direction.x_;
+    const float y = direction.y_;
+    const float z = direction.z_;
+
+    auto testAxis = [](float axis, float a, float b) { return 2 * axis + M_LARGE_EPSILON > Abs(a) + Abs(b); };
+
+    ea::pair<CubeMapFace, Vector2> result;
+    if (testAxis(x, y, z))
+        result = { FACE_POSITIVE_X, { -z /  x, -y /  x } }; // x =  1, y = -v, z = -u
+    else if (testAxis(-x, y, z))
+        result = { FACE_NEGATIVE_X, {  z / -x, -y / -x } }; // x = -1, y = -v, z =  u
+    else if (testAxis(y, x, z))
+        result = { FACE_POSITIVE_Y, {  x /  y,  z /  y } }; // x =  u, y =  1, z =  v
+    else if (testAxis(-y, x, z))
+        result = { FACE_NEGATIVE_Y, {  x / -y, -z / -y } }; // x =  u, y = -1, z = -v
+    else if (testAxis(z, x, y))
+        result = { FACE_POSITIVE_Z, {  x /  y, -y /  z } }; // x =  u, y = -v, z =  1
+    else // if (testAxis(-z, x, y))
+        result = { FACE_NEGATIVE_Z, { -x / -y, -y / -z } }; // x = -u, y = -v, z = -1
+
+    // Convert from [-1, 1] to [0, 1]
+    result.second.x_ = result.second.x_ * 0.5f + 0.5f;
+    result.second.y_ = result.second.y_ * 0.5f + 0.5f;
     return result;
 }
 

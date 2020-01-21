@@ -213,6 +213,8 @@ public:
     void SetSpecularIntensity(float intensity);
     /// Set light brightness multiplier. Both the color and specular intensity are multiplied with this. When "use physical values" is enabled, the value is specified in lumens.
     void SetBrightness(float brightness);
+    /// Set indirect light brightness multiplier. May have no effect for realtime lights.
+    void SetIndirectBrightness(float indirectBrightness);
     /// Set range.
     void SetRange(float range);
     /// Set spotlight field of view.
@@ -277,6 +279,9 @@ public:
 
     /// Return brightness multiplier. Specified in lumens when "use physical values" is enabled.
     float GetBrightness() const { return brightness_; }
+
+    /// Return indirect brightness multiplier.
+    float GetIndirectBrightness() const { return indirectBrightness_; }
 
     /// Return effective color, multiplied by brightness and affected by temperature when "use physical values" is enabled. Alpha is always 1 so that can compare against the default black color to detect a light with no effect.
     Color GetEffectiveColor() const;
@@ -408,6 +413,8 @@ private:
     float specularIntensity_;
     /// Brightness multiplier.
     float brightness_;
+    /// Indirect brightness multiplier.
+    float indirectBrightness_{ 1.0f };
     /// Range.
     float range_;
     /// Spotlight field of view.
