@@ -837,7 +837,7 @@ void TraceIndirectLight(T sharedKernel, const ea::vector<const LightmapChartBake
                     // If hit background, pick light and break
                     if (rayHit.hit.geomID == RTC_INVALID_GEOMETRY_ID)
                     {
-                        incomingSamples[bounceIndex] = background.lightIntensity_;
+                        incomingSamples[bounceIndex] = background.SampleBackground(currentRayDirection);
                         incomingFactors[bounceIndex] = 1.0f;
                         ++numBounces;
                         break;
