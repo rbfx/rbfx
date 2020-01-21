@@ -59,6 +59,15 @@ public:
     /// Sample average ambient lighting.
     Vector3 SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
+    /// Set background static.
+    void SetBackgroundStatic(bool backgroundStatic) { backgroundStatic_ = backgroundStatic; }
+    /// Return whether the background is static.
+    bool GetBackgroundStatic() const { return backgroundStatic_; }
+    /// Set background brightness.
+    void SetBackgroundBrightness(float brightness) { backgroundBrightness_ = brightness; }
+    /// Return background brightness.
+    float GetBackgroundBrightness() const { return backgroundBrightness_; }
+
     /// Serialize light probes data.
     void SerializeLightProbesData(Archive& archive);
     /// Set serialized light probes data.
@@ -67,6 +76,11 @@ public:
     ea::string GetLightProbesData() const;
 
 private:
+    /// Whether the background (Zone and Skybox) is static.
+    bool backgroundStatic_{};
+    /// Background brightness multiplier.
+    float backgroundBrightness_{};
+
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;
     /// Baked light probes data.

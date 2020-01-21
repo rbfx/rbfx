@@ -25,6 +25,7 @@
 #pragma once
 
 #include "../Math/Vector3.h"
+#include "../Resource/ImageCube.h"
 
 #include <EASTL/string.h>
 
@@ -165,6 +166,8 @@ struct LightCalculationProperties
     Vector3 backgroundColor_{};
     /// Background light brightness multiplier.
     float backgroundBrightness_{ 1.0f };
+    /// Background cubemap.
+    SharedPtr<ImageCube> backgroundImage_{};
 };
 
 /// Incremental light baker settings.

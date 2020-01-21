@@ -33,6 +33,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
+#include "../Graphics/Skybox.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
 #include "../Scene/Scene.h"
@@ -51,7 +52,7 @@ namespace
 {
 
 /// Unused vector of drawables.
-static ea::vector<Drawable*> zoneOctreeQueryDrawables;
+static ea::vector<Drawable*> unusedDrawablesVector;
 
 /// %Frustum octree query for first zone.
 class ZoneOctreeQuery : public OctreeQuery
@@ -59,7 +60,7 @@ class ZoneOctreeQuery : public OctreeQuery
 public:
     /// Construct with frustum and query parameters.
     ZoneOctreeQuery(unsigned viewMask = DEFAULT_VIEWMASK)
-        : OctreeQuery(zoneOctreeQueryDrawables, DRAWABLE_ZONE, viewMask_) {}
+        : OctreeQuery(unusedDrawablesVector, DRAWABLE_ZONE, viewMask_) {}
 
     /// Intersection test for an octant.
     Intersection TestOctant(const BoundingBox& box, bool inside) override
@@ -97,6 +98,52 @@ public:
 private:
     /// Zone.
     Zone* zone_{};
+};
+
+/// %Frustum octree query for first skybox.
+class SkyboxOctreeQuery : public OctreeQuery
+{
+public:
+    /// Construct with frustum and query parameters.
+    SkyboxOctreeQuery(unsigned viewMask = DEFAULT_VIEWMASK)
+        : OctreeQuery(unusedDrawablesVector, DRAWABLE_GEOMETRY, viewMask_) {}
+
+    /// Intersection test for an octant.
+    Intersection TestOctant(const BoundingBox& box, bool inside) override
+    {
+        if (inside)
+            return INSIDE;
+        else
+            return box.IsInside(Vector3::ZERO);
+    }
+
+    /// Intersection test for drawables.
+    void TestDrawables(Drawable** start, Drawable** end, bool inside) override
+    {
+        if (skybox_)
+            return;
+
+        while (start != end)
+        {
+            Drawable* drawable = *start++;
+
+            if ((drawable->GetDrawableFlags() & DRAWABLE_GEOMETRY) && (drawable->GetViewMask() & viewMask_))
+            {
+                if (inside && drawable->IsInstanceOf<Skybox>())
+                {
+                    skybox_ = drawable->Cast<Skybox>();
+                    break;
+                }
+            }
+        }
+    }
+
+    /// Return skybox.
+    Skybox* GetSkybox() const { return skybox_; }
+
+private:
+    /// Skybox.
+    Skybox* skybox_{};
 };
 
 }
@@ -613,6 +660,13 @@ Zone* Octree::GetZone(unsigned viewMask) const
     GetDrawables(query);
     Zone* zone = query.GetZone();
     return zone ? zone : context_->GetRenderer()->GetDefaultZone();
+}
+
+Skybox* Octree::GetSkybox(unsigned viewMask) const
+{
+    SkyboxOctreeQuery query(viewMask);
+    GetDrawables(query);
+    return query.GetSkybox();
 }
 
 void Octree::QueueUpdate(Drawable* drawable)

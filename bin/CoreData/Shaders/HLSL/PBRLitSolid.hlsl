@@ -116,7 +116,7 @@ void VS(float4 iPos : POSITION,
         oVertexLight = float3(0.0, 0.0, 0.0);
         oTexCoord2 = GetLightMapTexCoord(iTexCoord2);
     #else
-        oVertexLight = GetAmbientLight(float4(oNormal, 1.0));
+        oVertexLight = GetAmbientLight(float4(oNormal, 1.0)) + GetAmbient(0);
     #endif
 
     #ifdef PERPIXEL
@@ -299,7 +299,7 @@ void PS(
         #ifdef AMBIENT
             finalColor += iVertexLight * diffColor.rgb;
             #ifdef LIGHTMAP
-                finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb * 2.0f;
+                finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb * 2.0 + cAmbientColor.rgb;
             #elif defined(EMISSIVEMAP)
                 finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
             #else
@@ -351,7 +351,7 @@ void PS(
             finalColor += cMatEnvMapColor * SampleCube(EnvCubeMap, reflect(iReflectionVec, normal)).rgb;
         #endif
         #ifdef LIGHTMAP
-            finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb * 2.0f;
+            finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * diffColor.rgb * 2.0 + cAmbientColor.rgb;
         #elif defined(EMISSIVEMAP)
             finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
         #else

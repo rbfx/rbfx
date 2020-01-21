@@ -46,6 +46,8 @@ void GlobalIllumination::RegisterObject(Context* context)
 {
     context->RegisterFactory<GlobalIllumination>(SUBSYSTEM_CATEGORY);
 
+    URHO3D_ATTRIBUTE("Is Background Static", bool, backgroundStatic_, false, AM_DEFAULT);
+    URHO3D_ATTRIBUTE("Background Brightness", float, backgroundBrightness_, 0.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
 }
 
@@ -98,13 +100,11 @@ void GlobalIllumination::CompileLightProbes()
 
 SphericalHarmonicsDot9 GlobalIllumination::SampleAmbientSH(const Vector3& position, unsigned& hint) const
 {
-    // TODO(glow): Use real ambient here
     return lightProbesMesh_.Sample(lightProbesBakedData_.sphericalHarmonics_, position, hint);
 }
 
 Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsigned& hint) const
 {
-    // TODO(glow): Use real ambient here
     return lightProbesMesh_.Sample(lightProbesBakedData_.ambient_, position, hint);
 }
 
