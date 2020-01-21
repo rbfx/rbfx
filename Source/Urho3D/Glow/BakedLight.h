@@ -42,6 +42,7 @@ struct BakedLight
         : lightType_(light->GetLightType())
         , lightMode_(light->GetLightMode())
         , color_(light->GetEffectiveColor())
+        , indirectBrightness_(light->GetIndirectBrightness())
         , distance_(light->GetRange())
         , fov_(light->GetFov())
         , cutoff_(Cos(fov_ * 0.5f))
@@ -60,6 +61,8 @@ struct BakedLight
     LightMode lightMode_{};
     /// Light color.
     Color color_{};
+    /// Indirect brightness.
+    float indirectBrightness_{};
     /// FOV angle (for spot lights).
     float fov_{};
     /// Cutoff aka Cos(FOV * 0.5) (for spot lights).

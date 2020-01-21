@@ -117,6 +117,7 @@ void Light::RegisterObject(Context* context)
     URHO3D_ACCESSOR_ATTRIBUTE("Specular Intensity", GetSpecularIntensity, SetSpecularIntensity, float, DEFAULT_SPECULARINTENSITY,
         AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Brightness Multiplier", GetBrightness, SetBrightness, float, DEFAULT_BRIGHTNESS, AM_DEFAULT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Indirect Brightness", GetIndirectBrightness, SetIndirectBrightness, float, 1.0f, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Temperature", GetTemperature, SetTemperature, float, DEFAULT_TEMPERATURE, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Use Physical Values", bool, usePhysicalValues_, false, AM_DEFAULT);
     URHO3D_ACCESSOR_ATTRIBUTE("Radius", GetRadius, SetRadius, float, DEFAULT_RADIUS, AM_DEFAULT);
@@ -316,6 +317,12 @@ void Light::SetSpecularIntensity(float intensity)
 void Light::SetBrightness(float brightness)
 {
     brightness_ = brightness;
+    MarkNetworkUpdate();
+}
+
+void Light::SetIndirectBrightness(float indirectBrightness)
+{
+    indirectBrightness_ = indirectBrightness;
     MarkNetworkUpdate();
 }
 
