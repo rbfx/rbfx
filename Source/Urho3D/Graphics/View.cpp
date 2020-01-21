@@ -1268,7 +1268,8 @@ void View::GetBaseBatches()
                 Batch destBatch(srcBatch);
                 destBatch.pass_ = pass;
                 destBatch.zone_ = GetZone(drawable);
-                destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_),
+                if (!destBatch.lightmapScaleOffset_)
+                    destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_),
                 destBatch.isBase_ = true;
                 destBatch.lightMask_ = (unsigned char)GetLightMask(drawable);
 
@@ -1469,7 +1470,8 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
         destBatch.lightQueue_ = &lightQueue;
         destBatch.zone_ = zone;
-        destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_);
+        if (!destBatch.lightmapScaleOffset_)
+            destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_);
 
         if (!isLitAlpha)
         {

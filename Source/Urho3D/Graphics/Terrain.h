@@ -228,7 +228,7 @@ public:
     /// Return whether the lightmap is baked for this object. Return false for objects with zero scale in lightmap.
     bool GetBakeLightmapEffective() const { return bakeLightmap_ && scaleInLightmap_ > 0.0f; }
     /// Set scale in lightmap.
-    void SetScaleInLightmap(float scale) { scaleInLightmap_ = scale; }
+    void SetScaleInLightmap(float scale) { scaleInLightmap_ = scale; UpdatePatchesLightmaps(); }
     /// Return scale in lightmap.
     float GetScaleInLightmap() const { return scaleInLightmap_; }
     /// Set lightmap index.

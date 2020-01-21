@@ -83,11 +83,8 @@ public:
 
             if ((drawable->GetDrawableFlags() & DRAWABLE_ZONE) && (drawable->GetViewMask() & viewMask_))
             {
-                if (inside)
-                {
-                    zone_ = drawable->Cast<Zone>();
-                    break;
-                }
+                zone_ = drawable->Cast<Zone>();
+                break;
             }
         }
     }
@@ -129,7 +126,7 @@ public:
 
             if ((drawable->GetDrawableFlags() & DRAWABLE_GEOMETRY) && (drawable->GetViewMask() & viewMask_))
             {
-                if (inside && drawable->IsInstanceOf<Skybox>())
+                if (drawable->IsInstanceOf<Skybox>())
                 {
                     skybox_ = drawable->Cast<Skybox>();
                     break;
