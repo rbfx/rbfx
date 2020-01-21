@@ -73,7 +73,7 @@ void VS()
         vVertexLight = vec3(0.0, 0.0, 0.0);
         vTexCoord2 = GetLightMapTexCoord(iTexCoord1);
     #else
-        vVertexLight = GetAmbientLight(vec4(vNormal, 1));
+        vVertexLight = GetAmbientLight(vec4(vNormal, 1)) + GetAmbient(0);
     #endif
 
     #ifdef PERPIXEL
@@ -205,7 +205,7 @@ void PS()
         #ifdef AMBIENT
             finalColor += vVertexLight * diffColor.rgb;
             #ifdef LIGHTMAP
-                finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb * 2.0f;
+                finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb * 2.0 + cAmbientColor.rgb;
             #elif defined(EMISSIVEMAP)
                 finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
             #else
@@ -254,7 +254,7 @@ void PS()
             finalColor += cMatEnvMapColor * textureCube(sEnvCubeMap, reflect(vReflectionVec, normal)).rgb;
         #endif
         #ifdef LIGHTMAP
-            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb * 2.0f;
+            finalColor += texture2D(sEmissiveMap, vTexCoord2).rgb * diffColor.rgb * 2.0 + cAmbientColor.rgb;
         #elif defined(EMISSIVEMAP)
             finalColor += cMatEmissiveColor * texture2D(sEmissiveMap, vTexCoord.xy).rgb;
         #else

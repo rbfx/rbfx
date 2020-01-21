@@ -30,6 +30,7 @@
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Octree.h"
 #include "../Graphics/Renderer.h"
+#include "../Graphics/Skybox.h"
 #include "../Graphics/Zone.h"
 #include "../IO/Log.h"
 #include "../Scene/Scene.h"
@@ -71,7 +72,6 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, settings_.charting_.lightmapSize_, defaultSettings.charting_.lightmapSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Texel Density", float, settings_.charting_.texelDensity_, defaultSettings.charting_.texelDensity_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Multiplier", float, settings_.properties_.indirectMultiplier_, defaultSettings.properties_.indirectMultiplier_, AM_DEFAULT);
-    URHO3D_ATTRIBUTE("Background Brightness", float, settings_.properties_.backgroundBrightness_, defaultSettings.properties_.backgroundBrightness_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Direct Samples (Lightmap)", unsigned, settings_.directChartTracing_.maxSamples_, defaultSettings.directChartTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Direct Samples (Light Probes)", unsigned, settings_.directProbesTracing_.maxSamples_, defaultSettings.directProbesTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, settings_.indirectChartTracing_.maxBounces_, defaultSettings.indirectChartTracing_.maxBounces_, AM_DEFAULT);
@@ -87,6 +87,18 @@ void LightmapManager::RegisterObject(Context* context)
 
 void LightmapManager::Bake()
 {
+    Scene* scene = GetScene();
+    auto octree = scene->GetComponent<Octree>();
+    auto gi = scene->GetComponent<GlobalIllumination>();
+    Zone* zone = octree->GetZone();
+    Skybox* skybox = octree->GetSkybox();
+
+    if (!gi)
+    {
+        URHO3D_LOGERROR("GlobalIllumination scene system is required to bake light");
+        return;
+    }
+
     // Fill settings
     settings_.indirectProbesTracing_.maxBounces_ = settings_.indirectChartTracing_.maxBounces_;
 
@@ -98,9 +110,22 @@ void LightmapManager::Bake()
     settings_.indirectChartTracing_.numTasks_ = numTasks;
     settings_.indirectProbesTracing_.numTasks_ = numTasks;
 
-    auto octree = GetScene()->GetComponent<Octree>();
-    Zone* zone = octree->GetZone();
-    settings_.properties_.backgroundColor_ = zone->GetFogColor().ToVector3();
+    settings_.properties_.backgroundImage_ = nullptr;
+    if (gi->GetBackgroundStatic())
+    {
+        settings_.properties_.backgroundColor_ = zone->GetFogColor().ToVector3();
+        settings_.properties_.backgroundBrightness_ = gi->GetBackgroundBrightness();
+        if (skybox)
+        {
+            if (auto image = skybox->GetImage())
+                settings_.properties_.backgroundImage_ = image->GetDecompressedImage();
+        }
+    }
+    else
+    {
+        settings_.properties_.backgroundColor_ = Vector3::ZERO;
+        settings_.properties_.backgroundBrightness_ = 0.0f;
+    }
 
     // Bake light if possible
 #if URHO3D_GLOW
@@ -120,10 +145,8 @@ void LightmapManager::Bake()
 #endif
 
     // Compile light probes
-    if (auto gi = GetScene()->GetComponent<GlobalIllumination>())
-    {
+    if (gi)
         gi->CompileLightProbes();
-    }
 
 #if URHO3D_GLOW
     // Log overall time

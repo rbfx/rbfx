@@ -54,13 +54,15 @@ public:
 
     /// Return face images.
     const ea::vector<SharedPtr<Image>>& GetImages() const { return faceImages_; }
-
     /// Return parameters XML.
     XMLFile* GetParametersXML() const { return parametersXml_; }
-
-    /// Get image data from a face's zero mip level. Only RGB and RGBA textures are supported.
+    /// Return image data from a face's zero mip level.
     Image* GetImage(CubeMapFace face) const { return faceImages_[face]; }
+    /// Return decompressed cube image.
+    SharedPtr<ImageCube> GetDecompressedImage() const;
 
+    /// Return nearest pixel color at given direction.
+    Color SampleNearest(const Vector3& direction) const;
     /// Return offset from the center of the unit cube for given texel (assuming zero mip level).
     Vector3 GetTexelOffsetVector(CubeMapFace face, int x, int y) const;
     /// Calculate spherical harmonics for the cube map.

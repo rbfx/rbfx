@@ -27,6 +27,8 @@
 namespace Urho3D
 {
 
+class ImageCube;
+
 /// Static model component with fixed position in relation to the camera.
 class URHO3D_API Skybox : public StaticModel
 {
@@ -44,6 +46,8 @@ public:
     void ProcessRayQuery(const RayOctreeQuery& query, ea::vector<RayQueryResult>& results) override;
     /// Calculate distance and prepare batches for rendering. May be called from worker thread(s), possibly re-entrantly.
     void UpdateBatches(const FrameInfo& frame) override;
+    /// Return skybox image.
+    ImageCube* GetImage() const;
 
 protected:
     /// Recalculate the world-space bounding box.
