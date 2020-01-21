@@ -451,7 +451,7 @@ void StaticModel::CalculateLodLevels()
 
 void StaticModel::UpdateBatchesLightmaps()
 {
-    if (bakeLightmap_)
+    if (GetBakeLightmapEffective())
     {
         for (unsigned i = 0; i < batches_.size(); ++i)
         {

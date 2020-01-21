@@ -212,58 +212,6 @@ SharedPtr<Image> TextureCube::GetImage(CubeMapFace face) const
     return SharedPtr<Image>(rawImage);
 }
 
-Vector3 TextureCube::GetTexelOffsetVector(CubeMapFace face, int x, int y) const
-{
-    const float u = (x + 0.5f) / width_ * 2.0f - 1.0f;
-    const float v = (y + 0.5f) / width_ * 2.0f - 1.0f;
-
-    switch (face)
-    {
-    case FACE_POSITIVE_X: return Vector3( 1, -v, -u);
-    case FACE_NEGATIVE_X: return Vector3(-1, -v,  u);
-    case FACE_POSITIVE_Y: return Vector3( u,  1,  v);
-    case FACE_NEGATIVE_Y: return Vector3( u, -1, -v);
-    case FACE_POSITIVE_Z: return Vector3( u, -v,  1);
-    case FACE_NEGATIVE_Z: return Vector3(-u, -v, -1);
-    default: return Vector3::ZERO;
-    }
-}
-
-SphericalHarmonicsColor9 TextureCube::CalculateSphericalHarmonics() const
-{
-    SharedPtr<Image> images[6];
-    for (unsigned face = 0; face < 6; ++face)
-    {
-        images[face] = GetImage(static_cast<CubeMapFace>(face));
-        if (!images[face])
-            return SphericalHarmonicsColor9::ZERO;
-    }
-
-    SphericalHarmonicsColor9 result;
-    float weightSum = 0.0f;
-
-    for (unsigned face = 0; face < 6; ++face)
-    {
-        for (int y = 0; y < width_; ++y)
-        {
-            for (int x = 0; x < width_; ++x)
-            {
-                const Color sample = images[face]->GetPixel(x, y);
-                const Vector3 offset = GetTexelOffsetVector(static_cast<CubeMapFace>(face), x, y);
-                const float distance = offset.Length();
-                const float weight = 4.0f / (distance * distance * distance);
-                const Vector3 direction = offset / distance;
-
-                result += SphericalHarmonicsColor9(direction, sample) * weight;
-                weightSum += weight;
-            }
-        }
-    }
-
-    result *= 4.0f * M_PI / weightSum;
-    return result;
-}
-
 void TextureCube::HandleRenderSurfaceUpdate(StringHash eventType, VariantMap& eventData)
 {
     auto* renderer = GetSubsystem<Renderer>();

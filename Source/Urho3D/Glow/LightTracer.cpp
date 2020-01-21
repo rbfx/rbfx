@@ -378,6 +378,8 @@ struct ChartDirectTracingKernel
     const ea::vector<RaytracerGeometry>* raytracerGeometries_{};
     /// Settings.
     const DirectLightTracingSettings* settings_{};
+    /// Indirect brightness multiplier.
+    float indirectBrightness_{};
     /// Number of samples.
     unsigned numSamples_{ 1 };
     /// Whether to bake direct light for direct lighting itself.
@@ -458,7 +460,7 @@ struct ChartDirectTracingKernel
         if (bakeIndirect_)
         {
             const Vector3& albedo = geometryBuffer_->albedo_[elementIndex];
-            bakedDirect_->surfaceLight_[elementIndex] += albedo * directLight;
+            bakedDirect_->surfaceLight_[elementIndex] += indirectBrightness_ * albedo * directLight;
         }
     }
 };
@@ -1038,7 +1040,7 @@ void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const Light
     const bool bakeIndirect = true;
     const unsigned numSamples = CalculateNumSamples(light, settings.maxSamples_);
     const ChartDirectTracingKernel kernel{ &bakedDirect, &geometryBuffer, &geometryBufferToRaytracer,
-        &raytracerScene.GetGeometries(), &settings, numSamples, bakeDirect, bakeIndirect };
+        &raytracerScene.GetGeometries(), &settings, light.indirectBrightness_, numSamples, bakeDirect, bakeIndirect };
 
     if (light.lightType_ == LIGHT_DIRECTIONAL)
     {
