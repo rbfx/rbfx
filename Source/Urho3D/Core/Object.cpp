@@ -287,6 +287,24 @@ void Object::UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& except
     }
 }
 
+void Object::UnsubscribeFromAllEventsExcept(const ea::vector<Object*>& exceptions, bool onlyUserData)
+{
+    for (auto handler = eventHandlers_.begin(); handler != eventHandlers_.end(); )
+    {
+        if ((!onlyUserData || handler->GetUserData()) && !exceptions.contains(handler->GetSender()))
+        {
+            if (handler->GetSender())
+                context_->RemoveEventReceiver(this, handler->GetSender(), handler->GetEventType());
+            else
+                context_->RemoveEventReceiver(this, handler->GetEventType());
+
+            handler = EraseEventHandler(handler);
+        }
+        else
+            ++handler;
+    }
+}
+
 void Object::SendEvent(StringHash eventType)
 {
     VariantMap noEventData;

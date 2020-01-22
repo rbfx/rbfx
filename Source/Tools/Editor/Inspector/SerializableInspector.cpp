@@ -19,36 +19,24 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
-#pragma once
-
-#include <EASTL/utility.h>
-#include <Urho3D/Container/Ptr.h>
-
-#include "Inspector/InspectorProvider.h"
-#include "Tabs/Tab.h"
-
+#include <Urho3D/Scene/Node.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
+#include "Editor.h"
+#include "Inspector/SerializableInspector.h"
 
 namespace Urho3D
 {
 
-class InspectorTab : public Tab
+SerializableInspector::SerializableInspector(Context* context)
+    : InspectorProvider(context)
 {
-    URHO3D_OBJECT(InspectorTab, Tab)
-public:
-    explicit InspectorTab(Context* context);
-    ///
-    bool RenderWindowContent() override;
-    ///
-    void AddProvider(InspectorProvider* provider);
-    ///
-    void ClearProviders() { providers_.clear(); }
+}
 
-protected:
-    ///
-    ea::string filter_;
-    ///
-    ea::vector<SharedPtr<InspectorProvider>> providers_;
-};
+void SerializableInspector::RenderInspector(const char* filter)
+{
+    if (inspected_.Expired())
+        return;
+    RenderAttributes(static_cast<Node*>(inspected_.Get()), filter);
+}
 
 }

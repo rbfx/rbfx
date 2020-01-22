@@ -105,8 +105,6 @@ public:
     /// Register object with the engine.
     static void RegisterObject(Context* context);
     ///
-    void RenderInspector(const char* filter) override;
-    ///
     bool Accepts(const ea::string& path) const override;
     ///
     bool Execute(Urho3D::Asset* input, const ea::string& outputPath) override;

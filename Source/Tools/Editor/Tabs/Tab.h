@@ -44,15 +44,6 @@ public:
     virtual void RenderHierarchy() = 0;
 };
 
-class IInspectorProvider
-{
-public:
-    /// Clear current selection. Usually invoked when new selection is replacing old one.
-    virtual void ClearSelection() { }
-    /// Render inspector window.
-    virtual void RenderInspector(const char* filter) = 0;
-};
-
 class Tab : public Object
 {
     URHO3D_OBJECT(Tab, Object);

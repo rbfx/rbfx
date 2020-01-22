@@ -45,12 +45,6 @@ void SceneConverter::RegisterObject(Context* context)
     context->RegisterFactory<SceneConverter>();
     URHO3D_COPY_BASE_ATTRIBUTES(AssetImporter);
 }
-
-void SceneConverter::RenderInspector(const char* filter)
-{
-    BaseClassName::RenderInspector(filter);
-}
-
 bool SceneConverter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 {
     if (!BaseClassName::Execute(input, outputPath))

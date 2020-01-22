@@ -74,7 +74,7 @@ struct SceneState
     SharedPtr<XMLFile> defaultStyle_;
 };
 
-class SceneTab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
+class SceneTab : public BaseResourceTab, public IHierarchyProvider
 {
     URHO3D_OBJECT(SceneTab, BaseResourceTab);
 public:
@@ -82,10 +82,6 @@ public:
     explicit SceneTab(Context* context);
     /// Destruct.
     ~SceneTab() override;
-    /// Clear current selection.
-    void ClearSelection() override;
-    /// Render inspector window.
-    void RenderInspector(const char* filter) override;
     /// Render scene hierarchy window starting from the root node (scene).
     void RenderHierarchy() override;
     /// Render buttons which customize gizmo behavior.
@@ -157,8 +153,6 @@ protected:
     void OnComponentRemoved(VariantMap& args);
     ///
     void OnTemporaryChanged(VariantMap& args);
-    ///
-    void OnInspectorRenderStart(VariantMap& args);
     ///
     void OnSceneActivated(VariantMap& args);
     ///

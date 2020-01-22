@@ -72,5 +72,7 @@ URHO3D_TOOLBOX_API ea::string GetFileIcon(const ea::string& fileName);
 
 /// Return content type by inspecting file contents.
 URHO3D_TOOLBOX_API ContentType GetContentType(Context* context, const ea::string& resourcePath);
+/// Return resource type by inspecting file contents.
+URHO3D_TOOLBOX_API StringHash GetContentResourceType(Context* context, const ea::string& resourcePath);
 
 }

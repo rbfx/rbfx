@@ -45,14 +45,12 @@ enum class AssetImporterFlag : unsigned
 URHO3D_FLAGSET(AssetImporterFlag, AssetImporterFlags);
 
 /// A base class for all asset importers. Classes that inherit from this class must be added to Pipeline::importers_ list.
-class AssetImporter : public Serializable, public IInspectorProvider
+class AssetImporter : public Serializable
 {
     URHO3D_OBJECT(AssetImporter, Serializable);
 public:
     ///
     explicit AssetImporter(Context* context);
-    /// Renders inspector contents of asset importer.
-    void RenderInspector(const char* filter) override;
     /// Returns `true` if importer is going to try importing specified path.
     virtual bool Accepts(const ea::string& path) const { return false; }
     /// May be called from non-main thread. Returns a list of produced files in `byproducts` vector and `true` on success.
@@ -98,10 +96,6 @@ protected:
     WeakPtr<Flavor> flavor_{};
     /// Assets that were created by running this asset through conversion pipeline.
     StringVector byproducts_{};
-    /// Set to true when attributes are modified in inspector.
-    bool attributesModified_ = false;
-    /// Attribute inspector "namespace" object.
-    AttributeInspector inspector_{context_};
     /// Flag indicating that project may function without running this importer.
     /// For example project may skip texture compression and load uncompressed textures.
     AssetImporterFlags flags_{};

@@ -275,7 +275,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             bool dirty = v.compare(buffer->c_str()) != 0;
             if (dirty)
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-            modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
+            modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
             if (dirty)
             {
                 ui::PopStyleColor();
@@ -579,7 +579,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
         return false;
 
     if (eventNamespace == nullptr)
-        eventNamespace = ui::GetSystemUI();
+        eventNamespace = item;
 
     auto isOpen = ui::CollapsingHeader(item->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
     if (isOpen)

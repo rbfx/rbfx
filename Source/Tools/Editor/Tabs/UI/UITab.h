@@ -31,7 +31,7 @@
 namespace Urho3D
 {
 
-class UITab : public BaseResourceTab, public IHierarchyProvider, public IInspectorProvider
+class UITab : public BaseResourceTab, public IHierarchyProvider
 {
     URHO3D_OBJECT(UITab, BaseResourceTab);
 public:
@@ -39,10 +39,6 @@ public:
     explicit UITab(Context* context);
     /// Render scene hierarchy window.
     void RenderHierarchy() override;
-    /// Clear current selection.
-    void ClearSelection() override;
-    /// Render inspector window.
-    void RenderInspector(const char* filter) override;
     /// Render content of tab window.
     bool RenderWindowContent() override;
     /// Render toolbar buttons.
@@ -90,10 +86,13 @@ protected:
     SharedPtr<Texture2D> texture_;
     /// Flag enabling display of internal elements.
     bool showInternal_ = false;
-
+    ///
     WeakPtr<UIElement> selectedElement_;
+    ///
     bool hideResizeHandles_ = false;
+    ///
     ea::vector<ea::string> styleNames_;
+    ///
     ea::string textureSelectorAttribute_;
 };
 

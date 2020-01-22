@@ -25,6 +25,7 @@
 
 #include <Toolbox/Graphics/SceneView.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
+#include "Editor.h"
 #include "PreviewInspector.h"
 
 
@@ -37,7 +38,7 @@ namespace Inspectable
 /// A serializable proxy for Urho3D::Material for enabling inspection in attribute inspector.
 class Material : public Serializable
 {
-URHO3D_OBJECT(Material, Serializable);
+    URHO3D_OBJECT(Material, Serializable);
 public:
     /// Construct.
     explicit Material(Urho3D::Material* material);
@@ -61,14 +62,11 @@ class MaterialInspector : public PreviewInspector
 {
     URHO3D_OBJECT(MaterialInspector, PreviewInspector);
 public:
-    ///
+    /// Construct.
     explicit MaterialInspector(Context* context);
-    ///
-    static void RegisterObject(Context* context);
-    ///
-    void SetResource(const ea::string& resourceName) override;
-
-    /// Render inspector window.
+    /// Set currently inspected object.
+    void SetInspected(Object* inspected) override;
+    /// Render inspector UI.
     void RenderInspector(const char* filter) override;
     /// Change material preview model to next one in the list.
     void ToggleModel();
@@ -83,6 +81,8 @@ protected:
 
     /// Material which is being previewed.
     SharedPtr<Inspectable::Material> inspectable_;
+    /// Parent asset (for undo tracking).
+    WeakPtr<Asset> asset_;
     /// Material attribute inspector namespace.
     AttributeInspector attributeInspector_;
     /// Index of current figure displaying material.

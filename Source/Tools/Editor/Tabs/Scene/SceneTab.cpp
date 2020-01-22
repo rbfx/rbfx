@@ -103,7 +103,6 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, [this](StringHash, VariantMap&) { OnNodeSelectionChanged(); });
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
     SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
-    SubscribeToEvent(&inspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap& args) { OnInspectorRenderStart(args); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
     SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) { OnSceneActivated(args); });
     SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) { OnEditorProjectClosing(); });
@@ -158,6 +157,7 @@ bool SceneTab::RenderWindowContent()
         texture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
     }
 
+    Input* input = GetSubsystem<Input>();
     bool wasActive = isViewportActive_;
     bool isClickedLeft = false;
     bool isClickedRight = false;
@@ -174,7 +174,7 @@ bool SceneTab::RenderWindowContent()
     ui::ImageItem(texture_, rect.GetSize());
     isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
     isClickedLeft = ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT);
-    isClickedRight = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT);
+    isClickedRight = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT) && input->IsMouseVisible();
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     viewportSplitter_.Merge(window->DrawList);
 
@@ -559,43 +559,39 @@ void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
     auto* editor = GetSubsystem<Editor>();
-    editor->GetTab<InspectorTab>()->SetProvider(this);
+
+    editor->ClearInspector();
+    int inspectedNodes = 0;
+    int inspectedComponents = 0;
+    Node* lastInspectedNode = nullptr;
+
+    // Inspect all selected nodes.
+    for (Node* node : gizmo_.GetSelection())
+    {
+        if (node)
+        {
+            editor->Inspect(node);
+            inspectedNodes++;
+            lastInspectedNode = node;
+        }
+    }
+    // And all selected components.
+    for (Component* component : selectedComponents_)
+    {
+        if (component)
+        {
+            editor->Inspect(component);
+            inspectedComponents++;
+        }
+    }
+    // However if we selected a single node and no components - inspect all components of that node for convenience.
+    if (inspectedNodes == 1 && inspectedComponents == 0)
+    {
+        for (Component* component : lastInspectedNode->GetComponents())
+            editor->Inspect(component);
+    }
+
     editor->GetTab<HierarchyTab>()->SetProvider(this);
-}
-
-void SceneTab::ClearSelection()
-{
-    UnselectAll();
-}
-
-void SceneTab::RenderInspector(const char* filter)
-{
-    const auto& selection = GetSelection();
-    bool singleNodeMode = selection.size() == 1 && selectedComponents_.empty();
-    for (auto& node : GetSelection())
-    {
-        if (node.Expired())
-            continue;
-        RenderAttributes(node.Get(), filter, &inspector_);
-        if (singleNodeMode)
-        {
-            for (auto& component : node->GetComponents())
-            {
-                if (!component->IsTemporary())
-                    RenderAttributes(component.Get(), filter, &inspector_);
-            }
-        }
-    }
-
-    if (!singleNodeMode)
-    {
-        for (auto& component : selectedComponents_)
-        {
-            if (component.Expired())
-                continue;
-            RenderAttributes(component.Get(), filter, &inspector_);
-        }
-    }
 }
 
 void SceneTab::RenderHierarchy()
@@ -1180,27 +1176,6 @@ void SceneTab::OnTemporaryChanged(VariantMap& args)
     }
 }
 
-void SceneTab::OnInspectorRenderStart(VariantMap& args)
-{
-    Serializable* serializable = static_cast<Serializable*>(args[InspectorRenderStart::P_SERIALIZABLE].GetPtr());
-    if (serializable->GetType() == Node::GetTypeStatic())
-    {
-        UI_UPIDSCOPE(1)
-            ui::Columns(2);
-        Node* node = static_cast<Node*>(serializable);
-        ui::TextUnformatted("ID");
-        ui::NextColumn();
-        ui::Text("%u", node->GetID());
-        if (node->IsReplicated())
-        {
-            ui::SameLine();
-            ui::TextUnformatted(ICON_FA_WIFI);
-            ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
-        }
-        ui::NextColumn();
-    }
-}
-
 void SceneTab::OnSceneActivated(VariantMap& args)
 {
     using namespace SceneActivated;
@@ -1405,7 +1380,7 @@ void SceneTab::PasteNextToSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.insert(WeakPtr<Component>(component));
+        Select(component);
 }
 
 void SceneTab::PasteIntoSelection()
@@ -1423,7 +1398,7 @@ void SceneTab::PasteIntoSelection()
         Select(node);
 
     for (Component* component : result.components_)
-        selectedComponents_.insert(WeakPtr<Component>(component));
+        Select(WeakPtr<Component>(component));
 }
 
 void SceneTab::PasteIntuitive()
