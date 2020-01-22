@@ -1,10 +1,10 @@
 trigger:
   branches:
     include:
-    - '*'
+      - '*'
     exclude:
-    - 'no-ci-*'
-    - 'skip-ci-*'
+      - 'no-ci-*'
+      - 'skip-ci-*'
 
 variables:
   CMAKE_BUILD_ARGS: ""
@@ -17,7 +17,7 @@ variables:
 jobs:
   - job: Web
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: 'ubuntu-18.04'
 
     variables:
       URHO3D_CSHARP: OFF
@@ -26,12 +26,8 @@ jobs:
       EMSCRIPTEN_ROOT_PATH: $(Build.SourcesDirectory)/emsdk-master/upstream/emscripten
 
     steps:
+      - template: .ci/cmake.yml
       - bash: |
-          sudo apt-get update
-          # CMake
-          sudo apt-get remove -y cmake
-          sudo pip3 install --upgrade pip
-          sudo pip3 install cmake
           # Default compiler on this build worker image does not support c++17.
           sudo apt-get install -y --no-install-recommends uuid-dev gcc-8 g++-8
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-8 100
@@ -73,7 +69,7 @@ jobs:
 
   - job: Linux
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: 'ubuntu-18.04'
 
     variables:
       CMAKE_GENERATE_ARGS: -G Ninja
@@ -103,21 +99,16 @@ jobs:
 
     steps:
       - bash: |
-          # CMake
-          sudo pip3 install --upgrade pip
-          sudo pip3 install cmake
-
           # Mono
           sudo apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys 3FA7E0328081BFF6A14DA29AA6A19B38D3D831EF
-          echo "deb http://download.mono-project.com/repo/ubuntu stable-xenial main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
-
+          echo "deb http://download.mono-project.com/repo/ubuntu stable-bionic main" | sudo tee /etc/apt/sources.list.d/mono-official-stable.list
           # Clang
           wget -O - https://apt.llvm.org/llvm-snapshot.gpg.key|sudo apt-key add -
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
-          sudo apt-add-repository "deb http://apt.llvm.org/xenial/ llvm-toolchain-xenial-8 main"
-
-          sudo apt-get update
-
+          sudo apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main"
+        displayName: 'Add Repositories'
+      - template: .ci/cmake.yml
+      - bash: |
           sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build $(EXTRA_PACKAGES)
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/$(CC) 100
           sudo update-alternatives --set cc /usr/bin/$(CC)
@@ -153,41 +144,39 @@ jobs:
       vmImage: 'macOS-10.13'
 
     variables:
-        BUILD_SHARED_LIBS: OFF
-        URHO3D_CSHARP: OFF
-        CMAKE_GENERATE_ARGS: -G Xcode -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake -DPLATFORM=SIMULATOR64
+      BUILD_SHARED_LIBS: OFF
+      URHO3D_CSHARP: OFF
+      CMAKE_GENERATE_ARGS: -G Xcode -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake -DPLATFORM=SIMULATOR64
 
     steps:
       - template: .ci/build.yml
 
   - job: Android
     pool:
-      vmImage: 'ubuntu-16.04'
+      vmImage: 'ubuntu-18.04'
 
     steps:
-    - script: |
-        # CMake
-        sudo pip3 install --upgrade pip
-        sudo pip3 install cmake
-        # Setup
-        cd $(Build.SourcesDirectory)/android
-        gradle wrapper
+      - template: .ci/cmake.yml
+      - bash: |
+          # Setup
+          cd $(Build.SourcesDirectory)/android
+          gradle wrapper
 
-    - task: Gradle@2
-      inputs:
-        workingDirectory: android
-        gradleWrapperFile: android/gradlew
-        gradleOptions: -Xmx3072m
-        publishJUnitResults: false
-        tasks: assembleRelease
+      - task: Gradle@2
+        inputs:
+          workingDirectory: android
+          gradleWrapperFile: android/gradlew
+          gradleOptions: -Xmx3072m
+          publishJUnitResults: false
+          tasks: assembleRelease
 
-    - task: CopyFiles@2
-      inputs:
-        contents: '**/*.apk'
-        targetFolder: $(build.artifactStagingDirectory)
+      - task: CopyFiles@2
+        inputs:
+          contents: '**/*.apk'
+          targetFolder: $(build.artifactStagingDirectory)
 
-    - task: PublishBuildArtifacts@1
-      inputs:
-        pathToPublish: $(build.artifactStagingDirectory)
-        artifactName: rbfx-APK-$(Agent.JobName)-$(Build.SourceVersion)
-        artifactType: container
+      - task: PublishBuildArtifacts@1
+        inputs:
+          pathToPublish: $(build.artifactStagingDirectory)
+          artifactName: rbfx-APK-$(Agent.JobName)-$(Build.SourceVersion)
+          artifactType: container
