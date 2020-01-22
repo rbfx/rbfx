@@ -28,9 +28,10 @@
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/WorkQueue.h>
 #include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/IO/FileSystem.h>
-#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/IO/Log.h>
+#include <Urho3D/Resource/JSONArchive.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/SystemUI/Console.h>
@@ -61,8 +62,11 @@
 #include "Pipeline/Importers/TextureImporter.h"
 #include "Plugins/ModulePlugin.h"
 #include "Plugins/ScriptBundlePlugin.h"
+#include "Inspector/AssetInspector.h"
 #include "Inspector/MaterialInspector.h"
 #include "Inspector/ModelInspector.h"
+#include "Inspector/NodeInspector.h"
+#include "Inspector/SerializableInspector.h"
 #include "Tabs/ProfilerTab.h"
 
 namespace Urho3D
@@ -165,16 +169,19 @@ void Editor::Setup()
     context_->RegisterFactory<PreviewTab>();
     context_->RegisterFactory<ProfilerTab>();
 
+    // Inspectors
+    RegisterProvider<Asset, AssetInspector>();
+    RegisterProvider<Model, ModelInspector>();
+    RegisterProvider<Material, MaterialInspector>();
+    RegisterProvider<Node, NodeInspector>();
+
 #if URHO3D_PLUGINS
     RegisterPluginsLibrary(context_);
 #endif
     RegisterToolboxTypes(context_);
     EditorSceneSettings::RegisterObject(context_);
     Inspectable::Material::RegisterObject(context_);
-
-    // Inspectors
-    ModelInspector::RegisterObject(context_);
-    MaterialInspector::RegisterObject(context_);
+    context_->RegisterFactory<SerializableInspector>();
 
     // Importers
     ModelImporter::RegisterObject(context_);
@@ -196,6 +203,7 @@ void Editor::Setup()
 
 void Editor::Start()
 {
+
     // Execute specified subcommand and exit.
     for (SharedPtr<SubCommand>& cmd : subCommands_)
     {
@@ -894,6 +902,42 @@ void Editor::OnConsoleUriClick(VariantMap& args)
         const ea::string& address = args[P_ADDRESS].GetString();
         if (protocol == "res")
             context_->GetFileSystem()->SystemOpen(context_->GetCache()->GetResourceFileName(address));
+    }
+}
+
+void Editor::ClearInspector()
+{
+    inspected_.clear();
+    GetTab<InspectorTab>()->ClearProviders();
+}
+
+void Editor::Inspect(Object* object)
+{
+    bool inspected = false;
+    for (const auto& pair : registeredInspectorProviders_)
+    {
+        if (object->IsInstanceOf(pair.first))
+        {
+            inspected = true;
+            inspected_.push_back(WeakPtr(object));
+            SharedPtr<InspectorProvider> provider(context_->CreateObject(pair.second)->Cast<InspectorProvider>());
+            provider->SetInspected(object);
+            GetTab<InspectorTab>()->AddProvider(provider);
+        }
+    }
+
+    if (!inspected)
+    {
+        // A special case. If no custom inspector exists we use default inspector for Serializable items. This inspector
+        // is not registered to registeredInspectorProviders_ because we want to use it only if no other inspectors
+        // supporting specified object exist.
+        if (auto* serializable = object->Cast<Serializable>())
+        {
+            inspected_.push_back(WeakPtr(serializable));
+            SharedPtr<InspectorProvider> provider(context_->CreateObject<SerializableInspector>());
+            provider->SetInspected(serializable);
+            GetTab<InspectorTab>()->AddProvider(provider);
+        }
     }
 }
 

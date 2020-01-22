@@ -61,11 +61,6 @@ void ModelImporter::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE(MODEL_IMPORTER_FBX_PIVOT, bool, noFbxPivot_, false, AM_DEFAULT);
 }
 
-void ModelImporter::RenderInspector(const char* filter)
-{
-    BaseClassName::RenderInspector(filter);
-}
-
 bool ModelImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
 {
     // outputPath - absolute path to Cache or Cache/{flavor} folder.

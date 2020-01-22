@@ -60,6 +60,7 @@ UITab::UITab(Context* context)
     rootElement_ = new RootUIElement(context_);
     rootElement_->SetTraversalMode(TM_BREADTH_FIRST);
     rootElement_->SetEnabled(true);
+    rootElement_->SetElementEventSender(true);
 
     offScreenUI_ = new UI(context_);
     offScreenUI_->SetRoot(rootElement_);
@@ -183,17 +184,6 @@ void UITab::RenderNodeTree(UIElement* element)
         }
         ui::EndDragDropTarget();
     }
-}
-
-void UITab::ClearSelection()
-{
-    selectedElement_ = nullptr;
-}
-
-void UITab::RenderInspector(const char* filter)
-{
-    if (auto selected = GetSelected())
-        RenderAttributes(selected, filter, &inspector_);
 }
 
 bool UITab::RenderWindowContent()
@@ -491,7 +481,8 @@ void UITab::SelectItem(UIElement* current)
     selectedElement_ = current;
 
     auto* editor = GetSubsystem<Editor>();
-    editor->GetTab<InspectorTab>()->SetProvider(this);
+    editor->ClearInspector();
+    editor->Inspect(current);
     editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 

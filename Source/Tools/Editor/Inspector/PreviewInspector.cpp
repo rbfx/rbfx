@@ -19,30 +19,25 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #include <Urho3D/Graphics/Viewport.h>
 #include <Urho3D/Graphics/RenderPath.h>
-#include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/Light.h>
 #include <Urho3D/Graphics/Camera.h>
 #include <Urho3D/Graphics/Model.h>
+#include <Urho3D/Input/Input.h>
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/Input/Input.h>
-#include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Graphics/StaticModel.h>
-#include <Toolbox/SystemUI/Widgets.h>
-#include <Urho3D/IO/Log.h>
 #include "Tabs/Scene/SceneTab.h"
-#include "EditorEvents.h"
 #include "PreviewInspector.h"
 #include "Editor.h"
+
 
 namespace Urho3D
 {
 
 PreviewInspector::PreviewInspector(Context* context)
-    : ResourceInspector(context)
+    : InspectorProvider(context)
     , view_(context, {0, 0, 200, 200})
 {
     // Workaround: for some reason this overriden method of our class does not get called by SceneView constructor.
@@ -68,19 +63,6 @@ void PreviewInspector::SetModel(const ea::string& resourceName)
     SetModel(context_->GetCache()->GetResource<Model>(resourceName));
 }
 
-void PreviewInspector::SetGrab(bool enable)
-{
-    if (mouseGrabbed_ == enable)
-        return;
-
-    mouseGrabbed_ = enable;
-    Input* input = view_.GetCamera()->GetContext()->GetInput();
-    if (enable && input->IsMouseVisible())
-        input->SetMouseVisible(false);
-    else if (!enable && !input->IsMouseVisible())
-        input->SetMouseVisible(true);
-}
-
 void PreviewInspector::CreateObjects()
 {
     view_.CreateObjects();
@@ -97,7 +79,7 @@ void PreviewInspector::RenderPreview()
     view_.SetSize({0, 0, size, size});
     ui::ImageItem(view_.GetTexture(), ImVec2(size, size));
     bool wasActive = mouseGrabbed_;
-    mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT);
+    mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
     if (wasActive != mouseGrabbed_)
         input->SetMouseVisible(!mouseGrabbed_);
 

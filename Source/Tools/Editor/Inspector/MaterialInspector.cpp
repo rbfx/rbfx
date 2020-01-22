@@ -19,7 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #include <Urho3D/Graphics/Viewport.h>
 #include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/Renderer.h>
@@ -37,10 +36,10 @@
 #include <ImGui/imgui_stdlib.h>
 #include <Urho3D/IO/Log.h>
 #include "Tabs/Scene/SceneTab.h"
-#include "EditorEvents.h"
 #include "MaterialInspector.h"
 #include "MaterialInspectorUndo.h"
 #include "Editor.h"
+
 
 namespace Urho3D
 {
@@ -51,38 +50,36 @@ MaterialInspector::MaterialInspector(Context* context)
 {
 }
 
-void MaterialInspector::RegisterObject(Context* context)
+void MaterialInspector::SetInspected(Object* inspected)
 {
-    context->RegisterFactory<MaterialInspector>();
-}
+    assert(inspected->IsInstanceOf<Material>());
+    BaseClassName::SetInspected(inspected);
 
-void MaterialInspector::SetResource(const ea::string& resourceName)
-{
-    auto* material = context_->GetCache()->GetResource<Material>(resourceName);
-    if (!material)
-        return;
+    // TODO: Refactor this thing to not use fake Serializable. Make SetInspected non-virtual maybe.
+    if (auto* material = static_cast<Material*>(inspected))
+    {
+        inspectable_ = new Inspectable::Material(material);
+        auto autoSave = [this](StringHash, VariantMap&) {
+            // Auto-save material on modification
+            auto* cache = GetSubsystem<ResourceCache>();
+            Material* material = inspectable_->GetMaterial();
+            cache->IgnoreResourceReload(material);
+            material->SaveFile(asset_->GetResourcePath());
+        };
+        SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
+        SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
+        SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
 
-    BaseClassName::SetResource(resourceName);
+        auto* pipeline = GetSubsystem<Project>()->GetPipeline();
+        asset_ = pipeline->GetAsset(material->GetName());
+        asset_->GetUndo().Connect(&attributeInspector_);
 
-    inspectable_ = new Inspectable::Material(material);
-    auto autoSave = [this](StringHash, VariantMap&) {
-        // Auto-save material on modification
-        auto* material = inspectable_->GetMaterial();
-        context_->GetCache()->IgnoreResourceReload(material);
-        material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
-    };
-    SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
-    SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
-    SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
-
-    undo_.Connect(&attributeInspector_);
-
-    ToggleModel();
+        ToggleModel();
+    }
 }
 
 void MaterialInspector::RenderInspector(const char* filter)
 {
-    SharedPtr<MaterialInspector> ref(this);
     if (inspectable_.NotNull())
         RenderAttributes(inspectable_, filter, &attributeInspector_);
 }
@@ -93,7 +90,7 @@ void MaterialInspector::ToggleModel()
     SetModel(ToString("Models/%s.mdl", currentModel));
     figureIndex_ = ++figureIndex_ % figures_.size();
 
-    StaticModel* model = node_->GetComponent<StaticModel>();
+    auto* model = node_->GetComponent<StaticModel>();
     model->SetMaterial(inspectable_->GetMaterial());
 
     auto bb = model->GetBoundingBox();
@@ -164,7 +161,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                     if (technique)
                     {
                         material->SetTechnique(i, technique, tech.qualityLevel_, tech.lodDistance_);
-                        undo_.Track<Undo::TechniqueChangedAction>(material, i, &tech, &material->GetTechniqueEntry(i));
+                        asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &tech, &material->GetTechniqueEntry(i));
                         modified = true;
                     }
                 }
@@ -186,7 +183,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 {
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                         material->SetTechnique(j - 1, material->GetTechnique(j));
-                    undo_.Track<Undo::TechniqueChangedAction>(material, i, &tech, nullptr);
+                    asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &tech, nullptr);
                     // Technique removed possibly from the middle. Shift existing techniques back to the front and remove last one.
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                     {
@@ -230,7 +227,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::NextColumn();
 
             if (modification->TrackModification(modifiedField, [material, i]() { return material->GetTechniqueEntry(i); }))
-                undo_.Track<Undo::TechniqueChangedAction>(material, i, &modification->GetInitialValue(), &tech);
+                asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &modification->GetInitialValue(), &tech);
 
             if (modifiedField)
                 material->SetTechnique(i, tech.original_.Get(), tech.qualityLevel_, tech.lodDistance_);
@@ -256,7 +253,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                     auto index = material->GetNumTechniques();
                     material->SetNumTechniques(index + 1);
                     material->SetTechnique(index, technique);
-                    undo_.Track<Undo::TechniqueChangedAction>(material, index, nullptr, &material->GetTechniqueEntry(index));
+                    asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, index, nullptr, &material->GetTechniqueEntry(index));
                     modified = true;
                 }
             }
@@ -309,7 +306,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 bool modifiedNow = RenderSingleAttribute(value);
                 if (modification->TrackModification(modifiedNow, [material, &parameterName]() { return material->GetShaderParameter(parameterName); }))
                 {
-                    undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, modification->GetInitialValue(), value);
+                    asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, parameterName, modification->GetInitialValue(), value);
                     modified = true;
                 }
                 if (modifiedNow)
@@ -319,7 +316,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SameLine();
             if (ui::Button(ICON_FA_TRASH))
             {
-                undo_.Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second.value_, Variant{});
+                asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second.value_, Variant{});
                 material->RemoveShaderParameter(parameterName);
                 modified = true;
                 break;
@@ -365,7 +362,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
                 {
                     Variant value{shaderParameterVariantTypes[paramState->variantTypeIndex_]};
-                    undo_.Track<Undo::ShaderParameterChangedAction>(material, paramState->fieldName_.c_str(), Variant{}, value);
+                    asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, paramState->fieldName_.c_str(), Variant{}, value);
                     material->SetShaderParameter(paramState->fieldName_.c_str(), value);
                     modified = true;
                     paramState->fieldName_.clear();

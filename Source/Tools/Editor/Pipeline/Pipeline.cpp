@@ -37,6 +37,7 @@
 #include <Urho3D/Resource/JSONArchive.h>
 
 #include <Toolbox/SystemUI/Widgets.h>
+#include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 
 #include <EASTL/sort.h>
@@ -91,6 +92,11 @@ Pipeline::Pipeline(Context* context)
     });
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap&) { OnUpdate(); });
     SubscribeToEvent(E_EDITORIMPORTERATTRIBUTEMODIFIED, [this](StringHash, VariantMap& args) { OnImporterModified(args); });
+    SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
+        using namespace ResourceBrowserDelete;
+        if (Asset* asset = GetAsset(args[P_NAME].GetString(), false))
+            assets_.erase(asset->GetName());
+    });
 
     auto* editor = GetSubsystem<Editor>();
     editor->settingsTabs_.Subscribe(this, &Pipeline::RenderSettingsUI);
@@ -132,8 +138,16 @@ void Pipeline::OnEndFrame(StringHash, VariantMap&)
 
     if (!dirtyAssets_.empty())
     {
+        auto* editor = GetSubsystem<Editor>();
         MutexLock lock(mutex_);
-        dirtyAssets_.back()->Save();
+        Asset* dirty = dirtyAssets_.back();
+        dirty->Save();
+        if (editor->IsInspected(dirty))
+        {
+            // Asset import may introduce new imported resources which we want to be appear in inspection if importing
+            // asset was selected when import triggered.
+            dirty->Inspect();
+        }
         dirtyAssets_.pop_back();
     }
 }
@@ -152,32 +166,36 @@ Asset* Pipeline::GetAsset(const ea::string& resourceName, bool autoCreate)
         return nullptr;
 
     auto* project = GetSubsystem<Project>();
-    auto* fs = context_->GetFileSystem();
+    auto* fs = GetSubsystem<FileSystem>();
 
-    ea::string resourcePath = project->GetResourcePath() + resourceName;
-    ea::string resourceDirName;
-    if (fs->DirExists(resourcePath))
+    for (const ea::string& resourceDir : project->GetResourcePaths())
     {
-        resourcePath = AddTrailingSlash(resourcePath);
-        resourceDirName = AddTrailingSlash(resourceName);
-    }
-    const ea::string& actualResourceName = !resourceDirName.empty() ? resourceDirName : resourceName;
+        ea::string resourcePath = Format("{}{}/{}", project->GetProjectPath(), resourceDir, resourceName);
+        ea::string resourceDirName;
+        if (fs->DirExists(resourcePath))
+        {
+            resourcePath = AddTrailingSlash(resourcePath);
+            resourceDirName = AddTrailingSlash(resourceName);
+        }
+        const ea::string& actualResourceName = !resourceDirName.empty() ? resourceDirName : resourceName;
 
-    auto it = assets_.find(actualResourceName);
-    if (it != assets_.end())
-        return it->second;
+        auto it = assets_.find(actualResourceName);
+        if (it != assets_.end())
+            return it->second;
 
-    if (!autoCreate)
-        return nullptr;
+        if (!autoCreate)
+            return nullptr;
 
-    if (fs->Exists(resourcePath))
-    {
-        SharedPtr<Asset> asset(context_->CreateObject<Asset>());
-        asset->SetName(actualResourceName);
-        asset->Load();
-        assert(asset->GetName() == actualResourceName);
-        assets_[actualResourceName] = asset;
-        return asset.Get();
+        if (fs->Exists(resourcePath))
+        {
+            SharedPtr<Asset> asset(context_->CreateObject<Asset>());
+            asset->SetName(actualResourceName);
+            asset->resourcePath_ = resourcePath;    // TODO: Clean this up!
+            asset->Load();
+            assert(asset->GetName() == actualResourceName);
+            assets_[actualResourceName] = asset;
+            return asset.Get();
+        }
     }
 
     return nullptr;

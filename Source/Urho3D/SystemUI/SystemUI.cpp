@@ -459,7 +459,6 @@ void ui::ImageItem(Urho3D::Texture2D* user_texture_id, const ImVec2& size, const
     ImGuiID id = window->GetID(user_texture_id);
     ImRect bb(window->DC.CursorPos, window->DC.CursorPos + size);
     ui::Image(user_texture_id, size, uv0, uv1, tint_col, border_col);
-    ui::ItemSize(bb);
     ui::ItemAdd(bb, id);
 }
 

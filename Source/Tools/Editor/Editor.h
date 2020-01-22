@@ -25,6 +25,7 @@
 #include <Urho3D/Engine/Application.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 
+#include "Inspector/InspectorProvider.h"
 #include "KeyBindings.h"
 #include "Project.h"
 #include "Pipeline/Commands/SubCommand.h"
@@ -38,6 +39,14 @@ class Tab;
 class SceneTab;
 
 static const unsigned EDITOR_VIEW_LAYER = 1U << 31;
+
+struct InspectArgs
+{
+    /// In. Object that is to be inspected.
+    WeakPtr<Object> object_;
+    /// Out. Inspector that is going to perform the inspection.
+    ea::vector<WeakPtr<InspectorProvider>> inspectors_;
+};
 
 class Editor : public Application
 {
@@ -104,11 +113,19 @@ public:
 #endif
     /// Serialize editor user-specific settings.
     bool Serialize(Archive& archive) override;
+    /// Remove all items from inspector.
+    void ClearInspector();
+    /// Request editor to inspect specified object. Reference to this object will not be held.
+    void Inspect(Object* object);
+    /// Returns true when specified object is currently inspected.
+    bool IsInspected(Object* object) const { return object != nullptr && inspected_.contains(WeakPtr(object)); }
 
     /// Key bindings manager.
     KeyBindings keyBindings_{context_};
     /// Signal is fired when settings tabs are rendered. Various subsystems can register their tabs.
     Signal<void> settingsTabs_{};
+    /// Signal is fired when something wants to inspect a certain object.
+    Signal<InspectArgs> onInspect_;
 
 protected:
     /// Process console commands.
@@ -133,6 +150,13 @@ protected:
     void OpenOrCreateProject();
     ///
     void OnConsoleUriClick(VariantMap& args);
+    ///
+    template<typename Inspectable, typename Inspector>
+    void RegisterProvider()
+    {
+        context_->RegisterFactory<Inspector>();
+        registeredInspectorProviders_[Inspectable::GetTypeStatic()] = Inspector::GetTypeStatic();
+    }
 
     /// List of active scene tabs.
     ea::vector<SharedPtr<Tab>> tabs_;
@@ -164,6 +188,10 @@ protected:
     IntVector2 windowPos_{0, 0};
     /// Window size which is saved between sessions.
     IntVector2 windowSize_{1920, 1080};
+    /// Map inspectable object type to inspector type.
+    ea::unordered_map<StringHash /*inspectable*/, StringHash /*inspector*/> registeredInspectorProviders_;
+    /// All currently inspected objects.
+    ea::vector<WeakPtr<Object>> inspected_;
 };
 
 }

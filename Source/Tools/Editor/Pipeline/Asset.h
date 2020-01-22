@@ -30,9 +30,8 @@
 #include <Urho3D/Container/FlagSet.h>
 #include <Urho3D/IO/Archive.h>
 #include <Urho3D/Scene/Serializable.h>
-#include <Inspector/ModelInspector.h>
-#include <Inspector/MaterialInspector.h>
 #include <Toolbox/IO/ContentUtilities.h>
+#include <Toolbox/Common/UndoManager.h>
 
 #include "Importers/AssetImporter.h"
 
@@ -42,21 +41,22 @@ namespace Urho3D
 
 class Flavor;
 
-class Asset : public Serializable, public IInspectorProvider
+class Asset : public Serializable
 {
     URHO3D_OBJECT(Asset, Serializable);
+    void Inspect();
 public:
     using AssetImporterMap = ea::unordered_map<SharedPtr<Flavor>, ea::vector<SharedPtr<AssetImporter>>>;
 
-    ///
+    /// Construct.
     explicit Asset(Context* context);
-    ///
+    /// Registers object with the engine.
     static void RegisterObject(Context* context);
     /// Returns resource name.
     const ea::string& GetName() const { return name_; }
     /// Set resource name.
     void SetName(const ea::string& name);
-    ///
+    /// Returns absolute path to resource file.
     const ea::string& GetResourcePath() const { return resourcePath_; }
     /// Returns true when source asset is newer than last conversion date.
     bool IsOutOfDate(Flavor* flavor) const;
@@ -66,15 +66,13 @@ public:
     ContentType GetContentType() const { return contentType_; }
     /// Delete all byproducts of this asset.
     void ClearCache();
-    ///
-    void RenderInspector(const char* filter) override;
     /// Saves asset data to resourceName.asset file. If asset does not have any settings set - this file will be deleted
     /// if it exists.
     bool Save();
     ///
     bool Load();
     ///
-    bool Serialize(Archive& archive);
+    bool Serialize(Archive& archive) override;
     ///
     const AssetImporterMap& GetImporters() const { return importers_; }
     ///
@@ -83,6 +81,8 @@ public:
     AssetImporter* GetImporter(Flavor* flavor, StringHash type) const;
     /// Returns true when asset importers of any flavor are being executed in worker threads.
     bool IsImporting() const { return importing_; }
+    ///
+    Undo::Manager& GetUndo() { return undo_; }
 
 protected:
     ///
@@ -104,10 +104,8 @@ protected:
     AssetImporterMap importers_;
     /// Flag indicating that asset is being imported.
     std::atomic<bool> importing_{false};
-    ///
-    ea::unordered_map<ea::string, SharedPtr<ResourceInspector>> extraInspectors_{};
-    ///
-    WeakPtr<ResourceInspector> currentExtraInspectorProvider_{};
+    /// Asset changes tracker.
+    Undo::Manager undo_{context_};
 
     friend class Pipeline;
     friend class AssetImporter;
