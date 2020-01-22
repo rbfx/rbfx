@@ -29,6 +29,7 @@
 #include "../Math/Sphere.h"
 #include "../Math/TetrahedralMesh.h"
 #include "../Math/Vector3.h"
+#include "../Resource/BinaryFile.h"
 #include "../Scene/Component.h"
 
 namespace Urho3D
@@ -68,18 +69,25 @@ public:
     /// Return background brightness.
     float GetBackgroundBrightness() const { return backgroundBrightness_; }
 
-    /// Serialize light probes data.
-    void SerializeLightProbesData(Archive& archive);
-    /// Set serialized light probes data.
-    void SetLightProbesData(const ea::string& data);
-    /// Return serialized light probes data.
-    ea::string GetLightProbesData() const;
+    /// Set reference on file with baked data.
+    void SetFileRef(const ResourceRef& fileRef);
+    /// Return reference on file with baked data.
+    ResourceRef GetFileRef() const;
+
+    /// Serialize GI data.
+    bool SerializeData(Archive& archive);
 
 private:
+    /// Reload GI data.
+    void ReloadData();
+
     /// Whether the background (Zone and Skybox) is static.
     bool backgroundStatic_{};
     /// Background brightness multiplier.
     float backgroundBrightness_{};
+
+    /// Reference on file with GI data.
+    ResourceRef fileRef_{ BinaryFile::GetTypeStatic() };
 
     /// Light probes mesh.
     TetrahedralMesh lightProbesMesh_;
