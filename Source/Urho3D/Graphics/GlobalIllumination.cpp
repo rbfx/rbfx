@@ -28,6 +28,8 @@
 #include "../Graphics/DebugRenderer.h"
 #include "../IO/ArchiveSerialization.h"
 #include "../IO/BinaryArchive.h"
+#include "../IO/Log.h"
+#include "../Resource/ResourceCache.h"
 #include "../Scene/Scene.h"
 
 namespace Urho3D
@@ -48,7 +50,7 @@ void GlobalIllumination::RegisterObject(Context* context)
 
     URHO3D_ATTRIBUTE("Is Background Static", bool, backgroundStatic_, false, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Background Brightness", float, backgroundBrightness_, 0.0f, AM_DEFAULT);
-    URHO3D_ACCESSOR_ATTRIBUTE("Light Probes Data", GetLightProbesData, SetLightProbesData, ea::string, EMPTY_STRING, AM_DEFAULT | AM_NOEDIT);
+    URHO3D_ACCESSOR_ATTRIBUTE("Data File", GetFileRef, SetFileRef, ResourceRef, ResourceRef{ BinaryFile::GetTypeStatic() }, AM_DEFAULT | AM_NOEDIT);
 }
 
 void GlobalIllumination::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
@@ -96,6 +98,30 @@ void GlobalIllumination::CompileLightProbes()
 
     // Add padding to avoid vertex collision
     lightProbesMesh_.Define(collection.worldPositions_);
+
+    // Store in file
+    auto cache = context_->GetCache();
+    auto file = cache->GetTempResource<BinaryFile>(fileRef_.name_);
+    if (!file)
+    {
+        URHO3D_LOGERROR("Cannot save Global Illumination data: output file doesn't exist");
+        return;
+    }
+
+    file->Clear();
+    BinaryOutputArchive archive = file->AsOutputArchive();
+
+    if (!SerializeData(archive))
+    {
+        URHO3D_LOGERROR("Cannot save Global Illumination data: serialization failed");
+        return;
+    }
+
+    if (!file->SaveFile(file->GetNativeFileName()))
+    {
+        URHO3D_LOGERROR("Cannot save Global Illumination data: cannot save file");
+        return;
+    }
 }
 
 SphericalHarmonicsDot9 GlobalIllumination::SampleAmbientSH(const Vector3& position, unsigned& hint) const
@@ -108,7 +134,21 @@ Vector3 GlobalIllumination::SampleAverageAmbient(const Vector3& position, unsign
     return lightProbesMesh_.Sample(lightProbesBakedData_.ambient_, position, hint);
 }
 
-void GlobalIllumination::SerializeLightProbesData(Archive& archive)
+void GlobalIllumination::SetFileRef(const ResourceRef& fileRef)
+{
+    if (fileRef_ != fileRef)
+    {
+        fileRef_ = fileRef;
+        ReloadData();
+    }
+}
+
+ResourceRef GlobalIllumination::GetFileRef() const
+{
+    return fileRef_;
+}
+
+bool GlobalIllumination::SerializeData(Archive& archive)
 {
     if (ArchiveBlock block = archive.OpenUnorderedBlock("LightProbes"))
     {
@@ -118,23 +158,30 @@ void GlobalIllumination::SerializeLightProbesData(Archive& archive)
         {
             SerializeValue(archive, "Mesh", lightProbesMesh_);
             SerializeValue(archive, "Data", lightProbesBakedData_);
+            return true;
         }
     }
+    return false;
 }
 
-void GlobalIllumination::SetLightProbesData(const ea::string& data)
+void GlobalIllumination::ReloadData()
 {
-    VectorBuffer buffer(DecodeBase64(data));
-    BinaryInputArchive archive(context_, buffer);
-    SerializeLightProbesData(archive);
-}
+    auto cache = context_->GetCache();
+    auto file = cache->GetTempResource<BinaryFile>(fileRef_.name_);
 
-ea::string GlobalIllumination::GetLightProbesData() const
-{
-    VectorBuffer buffer;
-    BinaryOutputArchive archive(context_, buffer);
-    const_cast<GlobalIllumination*>(this)->SerializeLightProbesData(archive);
-    return EncodeBase64(buffer.GetBuffer());
+    bool success = false;
+    if (file)
+    {
+        BinaryInputArchive archive = file->AsInputArchive();
+        if (SerializeData(archive))
+            success = true;
+    }
+
+    if (!success)
+    {
+        lightProbesMesh_ = {};
+        lightProbesBakedData_.Clear();
+    }
 }
 
 }

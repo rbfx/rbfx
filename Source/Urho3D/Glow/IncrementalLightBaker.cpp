@@ -32,6 +32,7 @@
 #include "../Glow/LightmapStitcher.h"
 #include "../Glow/LightTracer.h"
 #include "../Glow/RaytracerScene.h"
+#include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Graphics.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Model.h"
@@ -184,7 +185,7 @@ struct IncrementalLightBaker::Impl
         FileSystem* fs = context_->GetFileSystem();
         if (!fs->CreateDir(settings_.incremental_.outputDirectory_))
         {
-            URHO3D_LOGERROR("Cannot create output directory for lightmaps");
+            URHO3D_LOGERROR("Cannot create output directory \"{}\" for lightmaps", settings_.incremental_.outputDirectory_);
             return false;
         }
 
@@ -202,6 +203,24 @@ struct IncrementalLightBaker::Impl
             };
             ea::sort(chunks_.begin(), chunks_.end(), compareSwizzled);
         }
+
+        // Initialize GI data file
+        auto gi = scene_->GetComponent<GlobalIllumination>();
+        const ea::string giFileName = settings_.incremental_.outputDirectory_ + settings_.incremental_.giDataFileName_;
+        const ea::string giFilePath = GetPath(giFileName);
+        if (!fs->CreateDir(giFilePath))
+        {
+            URHO3D_LOGERROR("Cannot create output directory \"{}\" for GI data file", giFilePath);
+            return false;
+        }
+
+        BinaryFile file(context_);
+        if (!file.SaveFile(giFileName))
+        {
+            URHO3D_LOGERROR("Cannot allocate GI data file at \"{}\"", giFileName);
+            return false;
+        }
+        gi->SetFileRef({ BinaryFile::GetTypeStatic(), GetResourceName(context_->GetCache(), giFileName) });
 
         return true;
     }

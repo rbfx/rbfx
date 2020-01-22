@@ -189,13 +189,12 @@ bool LightProbeGroup::SaveLightProbesBakedData(Context* context,
     copy.sphericalHarmonics_.assign(sphericalHarmonicsBegin, sphericalHarmonicsBegin + count);
     copy.ambient_.assign(ambientBegin, ambientBegin + count);
 
-    VectorBuffer buffer;
-    BinaryOutputArchive archive(context, buffer);
+    BinaryFile bakedDataFile(context);
+
+    BinaryOutputArchive archive = bakedDataFile.AsOutputArchive();
     if (!SerializeBakedData(archive, copy))
         return false;
 
-    BinaryFile bakedDataFile(context);
-    bakedDataFile.SetData(buffer.GetBuffer());
     if (!bakedDataFile.SaveFile(fileName))
         return false;
 
@@ -344,7 +343,7 @@ void LightProbeGroup::UpdateBakedData()
 
     bakedDataDirty_ = false;
     auto cache = context_->GetCache();
-    auto bakedDataFile = cache->GetResource<BinaryFile>(bakedDataRef_.name_);
+    auto bakedDataFile = cache->GetTempResource<BinaryFile>(bakedDataRef_.name_);
 
     // Try to load from file
     bool success = false;
@@ -352,8 +351,7 @@ void LightProbeGroup::UpdateBakedData()
 
     if (bakedDataFile)
     {
-        VectorBuffer buffer(bakedDataFile->GetData());
-        BinaryInputArchive archive(context_, buffer);
+        BinaryInputArchive archive = bakedDataFile->AsInputArchive();
         if (SerializeBakedData(archive, bakedData_))
         {
             if (bakedData_.sphericalHarmonics_.size() == lightProbes_.size())

@@ -178,6 +178,8 @@ struct IncrementalLightBakerSettings
     float directionalLightShadowDistance_ = 128.0f;
     /// Output directory name.
     ea::string outputDirectory_;
+    /// Global illumination data file.
+    ea::string giDataFileName_{ "GI.bin" };
     /// Lightmap name prefix.
     ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
     /// Lightmap name suffix.
