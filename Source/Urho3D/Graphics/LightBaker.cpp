@@ -22,7 +22,7 @@
 
 #include "../Precompiled.h"
 
-#include "../Graphics/LightmapManager.h"
+#include "../Graphics/LightBaker.h"
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
@@ -44,7 +44,7 @@ namespace Urho3D
 
 extern const char* SUBSYSTEM_CATEGORY;
 
-LightmapManager::LightmapManager(Context* context) :
+LightBaker::LightBaker(Context* context) :
     Component(context)
 {
     SubscribeToEvent(E_UPDATE, [this](StringHash eventType, VariantMap& eventData)
@@ -57,12 +57,12 @@ LightmapManager::LightmapManager(Context* context) :
     });
 }
 
-LightmapManager::~LightmapManager() = default;
+LightBaker::~LightBaker() = default;
 
-void LightmapManager::RegisterObject(Context* context)
+void LightBaker::RegisterObject(Context* context)
 {
     static const LightBakingSettings defaultSettings;
-    context->RegisterFactory<LightmapManager>(SUBSYSTEM_CATEGORY);
+    context->RegisterFactory<LightBaker>(SUBSYSTEM_CATEGORY);
 
     auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = false; };
     auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.bakingScheduled_ = true; };
@@ -84,7 +84,7 @@ void LightmapManager::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Stitch Iterations", unsigned, settings_.stitching_.numIterations_, defaultSettings.stitching_.numIterations_, AM_DEFAULT);
 }
 
-void LightmapManager::Bake()
+void LightBaker::Bake()
 {
     Scene* scene = GetScene();
     auto octree = scene->GetComponent<Octree>();
