@@ -594,22 +594,19 @@ bool CrowdManager::CreateCrowd()
         return false;
     }
 
-    if (recreate)
-    {
-        // Reconfigure the newly initialized crowd
-        SetQueryFilterTypesAttr(queryFilterTypeConfiguration);
-        SetObstacleAvoidanceTypesAttr(obstacleAvoidanceTypeConfiguration);
+    // Reconfigure the newly initialized crowd
+    SetQueryFilterTypesAttr(queryFilterTypeConfiguration);
+    SetObstacleAvoidanceTypesAttr(obstacleAvoidanceTypeConfiguration);
 
-        // Re-add the existing crowd agents
-        ea::vector<CrowdAgent*> agents = GetAgents();
-        for (unsigned i = 0; i < agents.size(); ++i)
+    // Re-add the existing crowd agents
+    ea::vector<CrowdAgent*> agents = GetAgents(nullptr, false);
+    for (unsigned i = 0; i < agents.size(); ++i)
+    {
+        // Keep adding until the crowd cannot take it anymore
+        if (agents[i]->AddAgentToCrowd(true) == -1)
         {
-            // Keep adding until the crowd cannot take it anymore
-            if (agents[i]->AddAgentToCrowd(true) == -1)
-            {
-                URHO3D_LOGWARNINGF("CrowdManager: %d crowd agents orphaned", agents.size() - i);
-                break;
-            }
+            URHO3D_LOGWARNINGF("CrowdManager: %d crowd agents orphaned", agents.size() - i);
+            break;
         }
     }
 

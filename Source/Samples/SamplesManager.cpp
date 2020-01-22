@@ -115,6 +115,7 @@
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
 #include "105_Serialization/Serialization.h"
+#include "106_BakedLighting/BakedLighting.h"
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -201,6 +202,8 @@ void SamplesManager::Start()
     logoSprite_->SetOpacity(0.9f);
     logoSprite_->SetPriority(-100);
 
+    // TODO(glow): Move it to the end
+    RegisterSample<BakedLighting>();
     RegisterSample<HelloWorld>();
     RegisterSample<HelloGUI>();
     RegisterSample<Sprites>();
