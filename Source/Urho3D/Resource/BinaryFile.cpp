@@ -49,20 +49,14 @@ void BinaryFile::RegisterObject(Context* context)
 bool BinaryFile::BeginLoad(Deserializer& source)
 {
     source.Seek(0);
-    data_.resize(source.GetSize());
-    if (source.Read(data_.data(), data_.size()) != data_.size())
-    {
-        URHO3D_LOGERROR("Can not load binary file" + source.GetName());
-        return false;
-    }
-
-    SetMemoryUse(data_.size());
+    VectorBuffer::SetData(source, source.GetSize());
+    SetMemoryUse(VectorBuffer::GetBuffer().capacity());
     return true;
 }
 
 bool BinaryFile::Save(Serializer& dest) const
 {
-    if (dest.Write(data_.data(), data_.size()) != data_.size())
+    if (dest.Write(VectorBuffer::GetData(), VectorBuffer::GetSize()) != VectorBuffer::GetSize())
     {
         URHO3D_LOGERROR("Can not save binary file" + GetName());
         return false;
@@ -78,6 +72,22 @@ bool BinaryFile::SaveFile(const ea::string& fileName) const
         return Save(outFile);
     else
         return false;
+}
+
+void BinaryFile::Clear()
+{
+    VectorBuffer::Clear();
+}
+
+void BinaryFile::SetData(const ByteVector& data)
+{
+    VectorBuffer::SetData(data);
+    SetMemoryUse(VectorBuffer::GetBuffer().capacity());
+}
+
+const ByteVector& BinaryFile::GetData() const
+{
+    return VectorBuffer::GetBuffer();
 }
 
 }

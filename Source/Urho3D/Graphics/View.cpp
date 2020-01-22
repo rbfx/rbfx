@@ -61,34 +61,20 @@
 namespace Urho3D
 {
 
-/// Return ambient for Drawable.
+/// Update ambient for Drawable.
+static void UpdateBatchAmbient(Batch& destBatch, GlobalIllumination* gi, Drawable* drawable)
+{
+    if (gi && !destBatch.lightmapScaleOffset_)
+    {
+        unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
+        const Vector3& samplePosition = drawable->GetWorldBoundingBox().Center();
 #if URHO3D_SPHERICAL_HARMONICS
-static SphericalHarmonicsDot9 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
-{
-    SphericalHarmonicsDot9 ambient;
-    if (gi)
-    {
-        unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
-        const Vector3& position = drawable->GetNode()->GetWorldPosition();
-        ambient += gi->SampleAmbientSH(position, hint);
-    }
-    return ambient;
-}
+        destBatch.shaderParameters_.ambient_ = gi->SampleAmbientSH(samplePosition, hint);
 #else
-static Vector4 GetAmbientLight(GlobalIllumination* gi, Drawable* drawable, Zone* zone)
-{
-    // TODO(glow): Add zone gradient or remove Zones at all
-    // TODO(glow): Ambient is in gamma space, it's not really correct to add it like this
-    Vector3 ambient;
-    if (gi)
-    {
-        unsigned& hint = drawable->GetMutableLightProbeTetrahedronHint();
-        const Vector3& position = drawable->GetNode()->GetWorldPosition();
-        ambient += gi->SampleAverageAmbient(position, hint);
-    }
-    return { ambient, 1.0f };
-}
+        destBatch.shaderParameters_.ambient_ = gi->SampleAverageAmbient(samplePosition, hint);
 #endif
+    }
+}
 
 /// %Frustum octree query for shadowcasters.
 class ShadowCasterOctreeQuery : public FrustumOctreeQuery
@@ -1268,8 +1254,7 @@ void View::GetBaseBatches()
                 Batch destBatch(srcBatch);
                 destBatch.pass_ = pass;
                 destBatch.zone_ = GetZone(drawable);
-                if (!destBatch.lightmapScaleOffset_)
-                    destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_),
+                UpdateBatchAmbient(destBatch, globalIllumination_, drawable);
                 destBatch.isBase_ = true;
                 destBatch.lightMask_ = (unsigned char)GetLightMask(drawable);
 
@@ -1470,8 +1455,7 @@ void View::GetLitBatches(Drawable* drawable, LightBatchQueue& lightQueue, BatchQ
 
         destBatch.lightQueue_ = &lightQueue;
         destBatch.zone_ = zone;
-        if (!destBatch.lightmapScaleOffset_)
-            destBatch.shaderParameters_.ambient_ = GetAmbientLight(globalIllumination_, drawable, destBatch.zone_);
+        UpdateBatchAmbient(destBatch, globalIllumination_, drawable);
 
         if (!isLitAlpha)
         {
