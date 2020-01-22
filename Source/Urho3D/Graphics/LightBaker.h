@@ -30,16 +30,16 @@
 namespace Urho3D
 {
 
-/// Lightmap manager component.
-class URHO3D_API LightmapManager : public Component
+/// Light baker component.
+class URHO3D_API LightBaker : public Component
 {
-    URHO3D_OBJECT(LightmapManager, Component);
+    URHO3D_OBJECT(LightBaker, Component);
 
 public:
     /// Construct.
-    explicit LightmapManager(Context* context);
+    explicit LightBaker(Context* context);
     /// Destruct.
-    ~LightmapManager() override;
+    ~LightBaker() override;
     /// Register object factory. Drawable must be registered first.
     static void RegisterObject(Context* context);
 
