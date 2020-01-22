@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/Diff.xml" />
+    <texture unit="diffuse" name="Textures/StoneDiffuse.dds" />
+    <shader vsdefines="LIGHTMAP" psdefines="LIGHTMAP" />
+</material>
