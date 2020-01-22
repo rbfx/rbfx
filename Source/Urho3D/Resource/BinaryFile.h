@@ -25,13 +25,15 @@
 #pragma once
 
 #include "../Container/ByteVector.h"
+#include "../IO/BinaryArchive.h"
+#include "../IO/VectorBuffer.h"
 #include "../Resource/Resource.h"
 
 namespace Urho3D
 {
 
 /// Resource for generic binary file.
-class URHO3D_API BinaryFile : public Resource
+class URHO3D_API BinaryFile : public Resource, private VectorBuffer
 {
     URHO3D_OBJECT(BinaryFile, Resource);
 
@@ -49,17 +51,25 @@ public:
     bool Save(Serializer& dest) const override;
     /// Save resource to a file.
     bool SaveFile(const ea::string& fileName) const override;
+    /// Return name of the stream.
+    const ea::string& GetName() const override { return Resource::GetName(); }
 
+    /// Clear data.
+    void Clear();
     /// Set data.
-    void SetData(const ByteVector& data) { data_ = data; SetMemoryUse(data_.size()); }
+    void SetData(const ByteVector& data);
     /// Return immutable data.
-    const ByteVector& GetData() const { return data_; }
-    /// Return mutable data.
-    ByteVector& GetMutableData() { return data_; }
+    const ByteVector& GetData() const;
 
-private:
-    /// Data.
-    ByteVector data_;
+    /// Cast to Serializer.
+    Serializer& AsSerializer() { return *this; }
+    /// Cast to Deserializer.
+    Deserializer& AsDeserializer() { return *this; }
+
+    /// Create input archive that reads from the resource. Don't use more than one archive simultaneously.
+    BinaryInputArchive AsInputArchive() { return BinaryInputArchive(context_, *this); }
+    /// Create output archive that writes to the resource. Don't use more than one archive simultaneously.
+    BinaryOutputArchive AsOutputArchive() { return BinaryOutputArchive(context_, *this); }
 };
 
 }
