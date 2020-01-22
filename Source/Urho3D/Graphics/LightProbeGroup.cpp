@@ -347,7 +347,6 @@ void LightProbeGroup::UpdateBakedData()
 
     // Try to load from file
     bool success = false;
-    bakedData_.Resize(lightProbes_.size());
 
     if (bakedDataFile)
     {
@@ -362,6 +361,7 @@ void LightProbeGroup::UpdateBakedData()
     // Reset to default if failed
     if (!success)
     {
+        bakedData_.Resize(lightProbes_.size());
         for (unsigned i = 0; i < lightProbes_.size(); ++i)
         {
             bakedData_.sphericalHarmonics_[i] = SphericalHarmonicsDot9::ZERO;
