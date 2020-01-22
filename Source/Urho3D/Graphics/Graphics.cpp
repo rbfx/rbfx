@@ -36,7 +36,7 @@
 #include "../Graphics/Graphics.h"
 #include "../Graphics/GraphicsImpl.h"
 #include "../Graphics/IndexBuffer.h"
-#include "../Graphics/LightmapManager.h"
+#include "../Graphics/LightBaker.h"
 #include "../Graphics/LightProbeGroup.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/OcclusionBuffer.h"
@@ -428,7 +428,7 @@ void RegisterGraphicsLibrary(Context* context)
     Camera::RegisterObject(context);
     Drawable::RegisterObject(context);
     Light::RegisterObject(context);
-    LightmapManager::RegisterObject(context);
+    LightBaker::RegisterObject(context);
     LightProbeGroup::RegisterObject(context);
     GlobalIllumination::RegisterObject(context);
     StaticModel::RegisterObject(context);
