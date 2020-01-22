@@ -19,34 +19,39 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
-#pragma once
-
-
-#include <Urho3D/Core/Object.h>
-#include <Toolbox/Common/UndoManager.h>
-#include <Tabs/Tab.h>
-
+#include <Urho3D/Scene/Node.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
+#include <IconFontCppHeaders/IconsFontAwesome5.h>
+#include "Inspector/NodeInspector.h"
 
 namespace Urho3D
 {
 
-/// Base class for resource inspectors.
-class ResourceInspector : public Object, public IInspectorProvider
+NodeInspector::NodeInspector(Context* context)
+    : SerializableInspector(context)
 {
-    URHO3D_OBJECT(ResourceInspector, Object);
-public:
-    explicit ResourceInspector(Context* context);
-    ///
-    virtual void SetResource(const ea::string& resourceName);
-    ///
-    const ea::string& GetResourceName() const { return resourceName_; }
+}
 
-protected:
-    /// Asset changes tracker.
-    Undo::Manager undo_;
-    ///
-    ea::string resourceName_;
-};
+void NodeInspector::RenderInspector(const char* filter)
+{
+    if (inspected_.Expired())
+        return;
+
+    ui::Columns(2);
+    Node* node = static_cast<Node*>(inspected_.Get());
+    ui::TextUnformatted("ID");
+    ui::NextColumn();
+    ui::Text("%u", node->GetID());
+    if (node->IsReplicated())
+    {
+        ui::SameLine();
+        ui::TextUnformatted(ICON_FA_WIFI);
+        ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
+    }
+    ui::NextColumn();
+    ui::Columns();
+    RenderAttributes(static_cast<Node*>(inspected_.Get()), filter);
+}
 
 }

@@ -122,11 +122,6 @@ void TextureImporter::RegisterObject(Context* context)
     URHO3D_ENUM_ATTRIBUTE("Pixel Format", pixelFormat_, pixelFormatNames, PixelFormat::None, AM_DEFAULT);
 }
 
-void TextureImporter::RenderInspector(const char* filter)
-{
-    BaseClassName::RenderInspector(filter);
-}
-
 bool TextureImporter::Accepts(const ea::string& path) const
 {
     return path.ends_with(".png");

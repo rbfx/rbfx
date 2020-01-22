@@ -19,36 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
-#include <EASTL/utility.h>
-#include <Urho3D/Container/Ptr.h>
 
 #include "Inspector/InspectorProvider.h"
-#include "Tabs/Tab.h"
 
 
 namespace Urho3D
 {
 
-class InspectorTab : public Tab
+class AssetInspector : public InspectorProvider
 {
-    URHO3D_OBJECT(InspectorTab, Tab)
+    URHO3D_OBJECT(AssetInspector, InspectorProvider);
 public:
-    explicit InspectorTab(Context* context);
-    ///
-    bool RenderWindowContent() override;
-    ///
-    void AddProvider(InspectorProvider* provider);
-    ///
-    void ClearProviders() { providers_.clear(); }
-
-protected:
-    ///
-    ea::string filter_;
-    ///
-    ea::vector<SharedPtr<InspectorProvider>> providers_;
+    /// Construct.
+    explicit AssetInspector(Context* context);
+    /// Render inspector UI.
+    void RenderInspector(const char* filter) override;
 };
 
 }

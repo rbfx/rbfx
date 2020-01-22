@@ -162,6 +162,8 @@ public:
     void UnsubscribeFromAllEvents();
     /// Unsubscribe from all events except those listed, and optionally only those with userdata (script registered events.)
     void UnsubscribeFromAllEventsExcept(const ea::vector<StringHash>& exceptions, bool onlyUserData);
+    /// Unsubscribe from all events except those with listed senders, and optionally only those with userdata (script registered events.)
+    void UnsubscribeFromAllEventsExcept(const ea::vector<Object*>& exceptions, bool onlyUserData);
     /// Send event to all subscribers.
     void SendEvent(StringHash eventType);
     /// Send event with parameters to all subscribers.

@@ -292,74 +292,19 @@ ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
     std::abort();
 }
 
-void ResourceTab::ClearSelection()
-{
-    inspectors_.clear();
-    resourceSelection_.clear();
-}
-
-void ResourceTab::RenderInspector(const char* filter)
-{
-    for (auto& pair : inspectors_)
-    {
-        if (pair.first.NotNull())
-            pair.second->RenderInspector(filter);
-    }
-}
-
 void ResourceTab::SelectCurrentItemInspector()
 {
     ea::string selected = resourcePath_ + resourceSelection_;
 
-    inspectors_.clear();
-
+    auto* editor = GetSubsystem<Editor>();
     auto* pipeline = GetSubsystem<Pipeline>();
+    editor->ClearInspector();
+
     if (Asset* asset = pipeline->GetAsset(selected))
-    {
-        // This is a meta-asset or a source asset whose byproducts we would like to view.
-        inspectors_.push_back({SharedPtr(asset), dynamic_cast<IInspectorProvider*>(asset)});
-
-        StringVector byproducts;
-        for (AssetImporter* importer : asset->GetImporters(pipeline->GetDefaultFlavor()))
-            byproducts.insert(byproducts.end(), importer->GetByproducts().begin(), importer->GetByproducts().end());
-
-        ea::quick_sort(byproducts.begin(), byproducts.end());
-        for (const ea::string& resourceName : byproducts)
-        {
-            if (ResourceInspector* inspector = CreateInspector(resourceName))
-                inspectors_.push_back({SharedPtr(inspector), dynamic_cast<IInspectorProvider*>(inspector)});
-        }
-    }
-
-    // This may be a byproduct, or preprocessed resource.
-    if (ResourceInspector* inspector = CreateInspector(selected))
-        inspectors_.push_back({SharedPtr(inspector), dynamic_cast<IInspectorProvider*>(inspector)});
-
-    GetSubsystem<Editor>()->GetTab<InspectorTab>()->SetProvider(this);
+        asset->Inspect();
 
     using namespace EditorResourceSelected;
     SendEvent(E_EDITORRESOURCESELECTED, P_CTYPE, GetContentType(context_, selected), P_RESOURCENAME, selected);
-}
-
-ResourceInspector* ResourceTab::CreateInspector(const ea::string& resourceName) const
-{
-    ResourceInspector* result = nullptr;
-    switch (GetContentType(context_, resourceName))
-    {
-    case CTYPE_MODEL:
-        result = context_->CreateObject<ModelInspector>().Detach();
-        break;
-    case CTYPE_MATERIAL:
-        result = context_->CreateObject<MaterialInspector>().Detach();
-        break;
-    default:
-        break;
-    }
-
-    if (result != nullptr)
-        result->SetResource(resourceName);
-
-    return result;
 }
 
 }

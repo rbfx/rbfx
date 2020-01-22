@@ -654,8 +654,8 @@ public:
 
     /// Track changes performed by this scene.
     void Connect(Scene* scene);
-    /// Track changes performed by this attribute inspector.
-    void Connect(AttributeInspector* inspector);
+    /// Track changes performed by this object. It usually is instance of AttributeInspector or Serializable.
+    void Connect(Object* inspector);
     /// Track changes performed to UI hierarchy of this root element.
     void Connect(UIElement* root);
     /// Track changes performed by this gizmo.

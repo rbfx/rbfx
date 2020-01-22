@@ -19,23 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#pragma once
 
-#include "ResourceInspector.h"
-
+#include "Inspector/SerializableInspector.h"
 
 namespace Urho3D
 {
 
-ResourceInspector::ResourceInspector(Urho3D::Context* context)
-    : Object(context)
-    , undo_(context)
-{
+class Node;
 
-}
-
-void ResourceInspector::SetResource(const ea::string& resourceName)
+class NodeInspector : public SerializableInspector
 {
-    resourceName_ = resourceName;
-}
+    URHO3D_OBJECT(NodeInspector, SerializableInspector);
+public:
+    /// Construct.
+    explicit NodeInspector(Context* context);
+    /// Render inspector UI.
+    void RenderInspector(const char* filter) override;
+};
 
 }

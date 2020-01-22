@@ -35,6 +35,7 @@
 #include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/SystemUI/ResourceBrowser.h>
 
+#include "Editor.h"
 #include "EditorEvents.h"
 #include "Project.h"
 #include "Pipeline/Pipeline.h"
@@ -65,12 +66,6 @@ Asset::Asset(Context* context)
                 return;
         }
 
-        if (extraInspectors_.contains(from))
-        {
-            extraInspectors_[to] = extraInspectors_[from];
-            extraInspectors_.erase(from);
-        }
-
         auto* fs = context_->GetFileSystem();
         auto* project = GetSubsystem<Project>();
         ea::string newName = to + (isDir ? name_.substr(from.size()) : "");
@@ -90,13 +85,9 @@ Asset::Asset(Context* context)
         resourcePath_ = project->GetResourcePath() + name_;
     });
 
-    SubscribeToEvent(E_RESOURCEBROWSERDELETE, [this](StringHash, VariantMap& args) {
-        using namespace ResourceBrowserDelete;
-        extraInspectors_.erase(args[P_NAME].GetString());
-    });
-
     SubscribeToEvent(E_EDITORFLAVORADDED, [this](StringHash, VariantMap& args) { OnFlavorAdded(args); });
     SubscribeToEvent(E_EDITORFLAVORREMOVED, [this](StringHash, VariantMap& args) { OnFlavorRemoved(args); });
+    undo_.Connect(this);
 }
 
 void Asset::RegisterObject(Context* context)
@@ -138,102 +129,6 @@ void Asset::ClearCache()
     ea::string cachePath = project->GetCachePath() + GetName();
     if (fs->DirExists(cachePath))
         fs->RemoveDir(cachePath, true);
-}
-
-void Asset::RenderInspector(const char* filter)
-{
-    auto* project = GetSubsystem<Project>();
-    if (currentExtraInspectorProvider_)
-    {
-        auto* fs = GetSubsystem<FileSystem>();
-
-        ea::string resourceFileName = context_->GetCache()->GetResourceFileName(currentExtraInspectorProvider_->GetResourceName());
-        if (resourceFileName.empty() || !fs->FileExists(resourceFileName))
-        {
-            extraInspectors_.erase(currentExtraInspectorProvider_->GetResourceName());
-            currentExtraInspectorProvider_ = nullptr;
-        }
-        else
-            currentExtraInspectorProvider_->RenderInspector(filter);
-    }
-
-    bool tabBarStarted = false;
-    bool save = false;
-
-    // Use flavors list from the pipeline because it is sorted. Asset::importers_ is unordered.
-    for (const SharedPtr<Flavor>& flavor : project->GetPipeline()->GetFlavors())
-    {
-        bool tabStarted = false;
-        bool tabVisible = false;
-        for (const auto& importer : importers_[flavor])
-        {
-            bool importerSupportsFiles = false;
-            if (IsMetaAsset())
-            {
-                // This is a meta-asset pointing to a directory. Such assets are used to hold importer settings
-                // for downstream importers to inherit from. Show all importers for directories.
-                // TODO: Look into subdirectories and show only importers valid for contents of the folder.
-                importerSupportsFiles = true;
-            }
-            else
-            {
-                // This is a real asset. Show only those importers that can import asset itself or any of it's
-                // byproducts.
-                importerSupportsFiles = importer->Accepts(resourcePath_);
-                for (const auto& siblingImporter : importers_[flavor])
-                {
-                    if (importer == siblingImporter)
-                        continue;
-
-                    for (const auto& byproduct : siblingImporter->GetByproducts())
-                    {
-                        importerSupportsFiles |= importer->Accepts(byproduct);
-                        if (importerSupportsFiles)
-                            break;
-                    }
-                    if (importerSupportsFiles)
-                        break;
-                }
-            }
-
-            if (importerSupportsFiles)
-            {
-                // Defer rendering of tab bar and tabs until we know that we have compatible importers. As a result if
-                // file is not supported by any importer - tab bar with flavors and no content will not be shown.
-                if (!tabBarStarted)
-                {
-                    ui::TextUnformatted("Importers");
-                    ui::Separator();
-                    ui::BeginTabBar(Format("###{}", (void*) this).c_str(), ImGuiTabBarFlags_None);
-                    tabBarStarted = true;
-                }
-
-                if (!tabStarted)
-                {
-                    tabStarted = true;
-                    tabVisible = ui::BeginTabItem(flavor->GetName().c_str());
-                    if (tabVisible)
-                        ui::SetHelpTooltip("Pipeline flavor");
-                }
-
-                if (tabVisible)
-                {
-                    importer->RenderInspector(filter);
-                    save |= importer->attributesModified_;
-                    importer->attributesModified_ = false;
-                }
-            }
-        }
-
-        if (tabVisible)
-            ui::EndTabItem();
-    }
-
-    if (tabBarStarted)
-        ui::EndTabBar();
-
-    if (save)
-        Save();
 }
 
 bool Asset::Save()
@@ -356,6 +251,7 @@ void Asset::AddFlavor(Flavor* flavor)
     {
         SharedPtr<AssetImporter> importer(context_->CreateObject(importerType->GetType())->Cast<AssetImporter>());
         importer->Initialize(this, flavor);
+        undo_.Connect(importer);
         importers.emplace_back(importer);
     }
 }
@@ -413,6 +309,38 @@ void Asset::OnFlavorRemoved(VariantMap& args)
     using namespace EditorFlavorRemoved;
     auto* flavor = static_cast<Flavor*>(args[P_FLAVOR].GetPtr());
     importers_.erase(SharedPtr(flavor));
+}
+
+void Asset::Inspect()
+{
+    ea::vector<Object*> safeSenders{this};
+    auto* editor = GetSubsystem<Editor>();
+    auto* pipeline = GetSubsystem<Pipeline>();
+    auto* cache = GetSubsystem<ResourceCache>();
+    editor->ClearInspector();
+    // Asset inspector will show inspectors for importers.
+    editor->Inspect(this);
+    // Show inspectors for byproducts too.
+    for (AssetImporter* importer : GetImporters(pipeline->GetDefaultFlavor()))
+    {
+        safeSenders.push_back(importer);
+        for (const ea::string& byproduct : importer->GetByproducts())
+        {
+            if (StringHash resourceType = GetContentResourceType(context_, byproduct))
+            {
+                Resource* resource = cache->GetResource(resourceType, byproduct);
+                editor->Inspect(resource);
+                undo_.Connect(resource);
+            }
+        }
+    }
+    // Show inspector for raw resource.
+    if (StringHash resourceType = GetContentResourceType(context_, GetName()))
+    {
+        Resource* resource = cache->GetResource(resourceType, GetName());
+        editor->Inspect(resource);
+        undo_.Connect(resource);
+    }
 }
 
 }

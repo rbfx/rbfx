@@ -35,10 +35,9 @@ namespace Urho3D
 AssetImporter::AssetImporter(Context* context)
     : Serializable(context)
 {
-    SubscribeToEvent(&inspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, [this](StringHash, VariantMap& args) {
+    SubscribeToEvent(this, E_ATTRIBUTEINSPECTVALUEMODIFIED, [this](StringHash, VariantMap& args) {
         using namespace AttributeInspectorValueModified;
         const AttributeInfo& attr = *reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
-        attributesModified_ = true;
         // Set to true when modified and to false when reset
         AttributeInspectorModifiedFlags flags(args[P_MODIFIED].GetUInt());
 
@@ -59,16 +58,11 @@ AssetImporter::AssetImporter(Context* context)
         if (flavor_->IsDefault())
             asset_->ReimportOutOfDateRecursive();
     });
-    SubscribeToEvent(&inspector_, E_ATTRIBUTEINSPECTOATTRIBUTE, [this](StringHash, VariantMap& args) {
+    SubscribeToEvent(this, E_ATTRIBUTEINSPECTOATTRIBUTE, [this](StringHash, VariantMap& args) {
         using namespace AttributeInspectorAttribute;
         if (isAttributeSet_[reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_])
             args[P_COLOR] = Color::WHITE;
     });
-}
-
-void AssetImporter::RenderInspector(const char* filter)
-{
-    RenderAttributes(this, filter, &inspector_);
 }
 
 bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)

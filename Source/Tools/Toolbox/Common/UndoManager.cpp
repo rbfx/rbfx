@@ -134,7 +134,7 @@ void Manager::Connect(Scene* scene)
     });
 }
 
-void Manager::Connect(AttributeInspector* inspector)
+void Manager::Connect(Object* inspector)
 {
     SubscribeToEvent(inspector, E_ATTRIBUTEINSPECTVALUEMODIFIED, [&](StringHash, VariantMap& args)
     {
@@ -164,25 +164,20 @@ void Manager::Connect(AttributeInspector* inspector)
 
 void Manager::Connect(UIElement* root)
 {
-    SubscribeToEvent(E_ELEMENTADDED, [&, root](StringHash, VariantMap& args)
+    assert(root->IsElementEventSender());
+
+    SubscribeToEvent(root, E_ELEMENTADDED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
         using namespace ElementAdded;
-        auto eventRoot = dynamic_cast<UIElement*>(args[P_ROOT].GetPtr());
-        if (root != eventRoot)
-            return;
         Track<CreateUIElementAction>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
     });
-
-    SubscribeToEvent(E_ELEMENTREMOVED, [&, root](StringHash, VariantMap& args)
+    SubscribeToEvent(root, E_ELEMENTREMOVED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
         using namespace ElementRemoved;
-        auto eventRoot = dynamic_cast<UIElement*>(args[P_ROOT].GetPtr());
-        if (root != eventRoot)
-            return;
         Track<DeleteUIElementAction>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
     });
 }
