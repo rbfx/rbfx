@@ -199,11 +199,12 @@ void Editor::Setup()
 
     keyBindings_.Bind(ActionType::OpenProject, this, &Editor::OpenOrCreateProject);
     keyBindings_.Bind(ActionType::Exit, this, &Editor::OnExitHotkeyPressed);
+    keyBindings_.Bind(ActionType::UndoAction, this, &Editor::OnUndo);
+    keyBindings_.Bind(ActionType::RedoAction, this, &Editor::OnRedo);
 }
 
 void Editor::Start()
 {
-
     // Execute specified subcommand and exit.
     for (SharedPtr<SubCommand>& cmd : subCommands_)
     {
@@ -353,8 +354,6 @@ void Editor::OnUpdate(VariantMap& args)
             loadDefaultLayout_ = false;
             LoadDefaultLayout();
         }
-
-        HandleHotkeys();
     }
     else
     {
@@ -667,33 +666,24 @@ void Editor::CloseProject()
     project_.Reset();
 }
 
-void Editor::HandleHotkeys()
+void Editor::OnUndo()
 {
-    if (ui::IsAnyItemActive())
-        return;
+    VariantMap args;
+    args[Undo::P_TIME] = 0;
+    SendEvent(E_UNDO, args);
+    auto it = args.find(Undo::P_MANAGER);
+    if (it != args.end())
+        ((Undo::Manager*)it->second.GetPtr())->Undo();
+}
 
-    auto* input = context_->GetInput();
-    if (input->GetKeyDown(KEY_CTRL))
-    {
-        if (input->GetKeyPress(KEY_Y) || (input->GetKeyDown(KEY_SHIFT) && input->GetKeyPress(KEY_Z)))
-        {
-            VariantMap args;
-            args[Undo::P_TIME] = M_MAX_UNSIGNED;
-            SendEvent(E_REDO, args);
-            auto it = args.find(Undo::P_MANAGER);
-            if (it != args.end())
-                ((Undo::Manager*)it->second.GetPtr())->Redo();
-        }
-        else if (input->GetKeyPress(KEY_Z))
-        {
-            VariantMap args;
-            args[Undo::P_TIME] = 0;
-            SendEvent(E_UNDO, args);
-            auto it = args.find(Undo::P_MANAGER);
-            if (it != args.end())
-                ((Undo::Manager*)it->second.GetPtr())->Undo();
-        }
-    }
+void Editor::OnRedo()
+{
+    VariantMap args;
+    args[Undo::P_TIME] = M_MAX_UNSIGNED;
+    SendEvent(E_REDO, args);
+    auto it = args.find(Undo::P_MANAGER);
+    if (it != args.end())
+        ((Undo::Manager*)it->second.GetPtr())->Redo();
 }
 
 Tab* Editor::GetTabByName(const ea::string& uniqueName)
