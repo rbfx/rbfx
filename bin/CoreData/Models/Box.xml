@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<model>
+	<metadata name="LightmapSize" type="IntVector2" value="35 23" />
+	<metadata name="LightmapDensity" type="Int" value="10" />
+	<metadata name="LightmapSharedUV" type="Bool" value="0" />
+</model>
