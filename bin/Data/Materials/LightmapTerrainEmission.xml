@@ -1,0 +1,7 @@
+<material>
+    <technique name="Techniques/DiffEmissive.xml" />
+    <texture unit="diffuse" name="Textures/TestTerrainDiffuseMap.png" />
+    <texture unit="emissive" name="Textures/TestTerrainEmissiveMap.png" />
+    <shader vsdefines="LIGHTMAP" psdefines="LIGHTMAP" />
+    <parameter name="MatEmissiveColor" value="1 1 1" />
+</material>

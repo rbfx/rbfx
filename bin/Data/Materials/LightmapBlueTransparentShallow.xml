@@ -1,0 +1,5 @@
+<material>
+    <technique name="Techniques/NoTextureAlpha.xml" />
+    <shader vsdefines="LIGHTMAP" psdefines="LIGHTMAP" />
+    <parameter name="MatDiffColor" value="0 0 1 0.3" />
+</material>
