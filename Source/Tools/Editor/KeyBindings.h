@@ -39,6 +39,10 @@ enum ActionType : unsigned
     OpenProject,
     /// File > Exit.
     Exit,
+    /// Undo action requested.
+    UndoAction,
+    /// Redo action requested.
+    RedoAction,
     /// The End.
     MaxCount
 };
