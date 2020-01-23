@@ -346,6 +346,8 @@ private:
     static float SolveCubic(const Vector3& abc);
     /// Calculate most positive root of quadratic or linear equation a*x^2 + b*x + c = 0.
     static float SolveQuadratic(const Vector3& abc);
+    /// Pick smallest positive root.
+    static double GetSmallestPositiveRoot(const double roots[], int count);
     /// Calculate barycentric coordinates on triangle.
     static Vector3 GetTriangleBarycentricCoords(const Vector3& position,
         const Vector3& p1, const Vector3& p2, const Vector3& p3);
