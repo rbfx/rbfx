@@ -58,28 +58,46 @@ static const char* qualityNames[] =
 
 extern const char* SUBSYSTEM_CATEGORY;
 
+/// State of async light baker task.
+struct LightBaker::TaskData
+{
+    /// Caller.
+    WeakPtr<LightBaker> weakSelf_;
+    /// Timer to measure total time.
+    Timer timer_;
+#if URHO3D_GLOW
+    /// Scene collector.
+    DefaultBakedSceneCollector sceneCollector_;
+    /// Memory cache
+    BakedLightMemoryCache cache_;
+    /// Baker.
+    IncrementalLightBaker baker_;
+#endif
+};
+
 LightBaker::LightBaker(Context* context) :
     Component(context)
 {
     SubscribeToEvent(E_UPDATE, [this](StringHash eventType, VariantMap& eventData)
     {
-        if (bakingScheduled_)
-        {
-            bakingScheduled_ = false;
-            Bake();
-        }
+        Update();
     });
 }
 
-LightBaker::~LightBaker() = default;
+LightBaker::~LightBaker()
+{
+    if (state_ != InternalState::NotStarted)
+        task_.wait();
+}
 
 void LightBaker::RegisterObject(Context* context)
 {
     static const LightBakingSettings defaultSettings;
     context->RegisterFactory<LightBaker>(SUBSYSTEM_CATEGORY);
 
-    auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = false; };
-    auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.bakingScheduled_ = true; };
+    auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = self.state_ != InternalState::NotStarted; };
+    auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.state_ = InternalState::ScheduledSync; };
+    //auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.BakeAsync(); };
     URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake!", getBake, setBake, bool, false, AM_EDIT);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, settings_.incremental_.outputDirectory_, "", AM_DEFAULT);
@@ -130,6 +148,21 @@ void LightBaker::SetQuality(LightBakingQuality quality)
 
 void LightBaker::Bake()
 {
+    if (state_ == InternalState::NotStarted)
+    {
+        state_ = InternalState::ScheduledSync;
+        Update();
+    }
+}
+
+void LightBaker::BakeAsync()
+{
+    if (state_ == InternalState::NotStarted)
+        state_ = InternalState::ScheduledAsync;
+}
+
+bool LightBaker::UpdateSettings()
+{
     Scene* scene = GetScene();
     auto octree = scene->GetComponent<Octree>();
     auto gi = scene->GetComponent<GlobalIllumination>();
@@ -139,7 +172,7 @@ void LightBaker::Bake()
     if (!gi)
     {
         URHO3D_LOGERROR("GlobalIllumination scene system is required to bake light");
-        return;
+        return false;
     }
 
     // Fill settings
@@ -169,32 +202,86 @@ void LightBaker::Bake()
         settings_.properties_.backgroundColor_ = Vector3::ZERO;
         settings_.properties_.backgroundBrightness_ = 0.0f;
     }
+    return true;
+}
 
-    // Bake light if possible
-#if URHO3D_GLOW
-    Timer timer;
-    DefaultBakedSceneCollector sceneCollector;
-    BakedLightMemoryCache lightmapCache;
-    IncrementalLightBaker lightBaker;
-
-    if (lightBaker.Initialize(settings_, GetScene(), &sceneCollector, &lightmapCache))
+void LightBaker::Update()
+{
+    // Start baking
+    if (state_ == InternalState::ScheduledSync || state_ == InternalState::ScheduledAsync)
     {
-        lightBaker.ProcessScene();
-        lightBaker.Bake();
-        lightBaker.CommitScene();
-    }
-#else
-    URHO3D_LOGERROR("Enable URHO3D_GLOW in build options");
-#endif
+#if URHO3D_GLOW
+        UpdateSettings();
 
-    // Compile light probes
-    gi->CompileLightProbes();
+        auto taskData = ea::make_shared<TaskData>();
+        taskData->weakSelf_ = this;
+        if (!taskData->baker_.Initialize(settings_, GetScene(), &taskData->sceneCollector_, &taskData->cache_))
+        {
+            URHO3D_LOGERROR("Cannot initialize light baking");
+            state_ = InternalState::NotStarted;
+            return;
+        }
+
+        // Do all the work with Scene here
+        taskData->baker_.ProcessScene();
+
+        // Bake now or schedule task
+        if (state_ == InternalState::ScheduledSync)
+        {
+            taskData->baker_.Bake();
+
+            state_ = InternalState::CommitPending;
+            taskData_ = taskData;
+            // Fall through to the next if
+        }
+        else
+        {
+            const auto taskFunction = [taskData]()
+            {
+                taskData->baker_.Bake();
+
+                // Self is never destroyed before the task is finished
+                taskData->weakSelf_->state_ = InternalState::CommitPending;
+            };
+
+            task_ = std::async(taskFunction);
+
+            // Don't expect any results now, so return
+            state_ = InternalState::InProgress;
+            taskData_ = taskData;
+            return;
+        }
+#else
+        // Cannot start baking, return
+        URHO3D_LOGERROR("Enable URHO3D_GLOW in build options");
+        state_ = InternalState::NotStarted;
+        return;
+#endif
+    }
+
+    // Commit changes
+    if (state_ == InternalState::CommitPending)
+    {
+        // If was async task, close future
+        if (task_.valid())
+            task_.get();
 
 #if URHO3D_GLOW
-    // Log overall time
-    const unsigned totalMSec = timer.GetMSec(true);
-    URHO3D_LOGINFO("Light baking is finished in {} seconds", totalMSec / 1000);
+        taskData_->baker_.CommitScene();
 #endif
+
+        // Compile light probes
+        auto gi = GetScene()->GetComponent<GlobalIllumination>();
+        gi->CompileLightProbes();
+
+        // Log overall time
+        const unsigned totalMSec = taskData_->timer_.GetMSec(true);
+        URHO3D_LOGINFO("Light baking is finished in {} seconds", totalMSec / 1000);
+
+        // Reset
+        state_ = InternalState::NotStarted;
+        taskData_ = nullptr;
+    }
 }
 
 }
