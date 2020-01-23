@@ -64,14 +64,23 @@ void MaterialInspector::SetInspected(Object* inspected)
             auto* cache = GetSubsystem<ResourceCache>();
             Material* material = inspectable_->GetMaterial();
             cache->IgnoreResourceReload(material);
-            material->SaveFile(asset_->GetResourcePath());
+            material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
         };
         SubscribeToEvent(&attributeInspector_, E_ATTRIBUTEINSPECTVALUEMODIFIED, autoSave);
         SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERSTART, [this](StringHash, VariantMap&) { RenderPreview(); });
         SubscribeToEvent(&attributeInspector_, E_INSPECTORRENDERATTRIBUTE, [this](StringHash, VariantMap& args) { RenderCustomWidgets(args); });
 
-        auto* pipeline = GetSubsystem<Project>()->GetPipeline();
-        asset_ = pipeline->GetAsset(material->GetName());
+        // TODO: We need to look up asset by it's byproduct.
+        auto* editor = GetSubsystem<Editor>();
+        Asset* asset = nullptr;
+        for (Object* object : editor->GetInspected())
+        {
+            asset = object ? object->Cast<Asset>() : nullptr;
+            if (asset)
+                break;
+        }
+        assert(asset != nullptr);
+        asset_ = asset;
         asset_->GetUndo().Connect(&attributeInspector_);
 
         ToggleModel();
