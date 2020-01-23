@@ -5,22 +5,27 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="443" />
-	<attribute name="Next Replicated Component ID" value="441" />
-	<attribute name="Next Local Node ID" value="16777544" />
-	<attribute name="Next Local Component ID" value="16777618" />
+	<attribute name="Next Replicated Node ID" value="503" />
+	<attribute name="Next Replicated Component ID" value="501" />
+	<attribute name="Next Local Node ID" value="16777592" />
+	<attribute name="Next Local Component ID" value="16777678" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D;Scenes/BakedLightingExample/Textures/Lightmap-0.png;Scenes/BakedLightingExample/Textures/Lightmap-1.png;Scenes/BakedLightingExample/Textures/Lightmap-2.png" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="-9.36555 3.40726 7.01662" />
-		<attribute name="Camera Rotation" value="0.995805 0.0767791 0.0496235 -0.00382741" />
+		<attribute name="Camera Position" value="0.888305 1.69657 7.70694" />
+		<attribute name="Camera Rotation" value="-0.288244 -4.39898e-05 0.957557 -0.00014562" />
 	</component>
-	<component type="LightBaker" id="3" />
+	<component type="LightBaker" id="3">
+		<attribute name="Quality" value="High" />
+		<attribute name="Direct Samples (Lightmap)" value="32" />
+		<attribute name="Indirect Samples (Texture)" value="256" />
+		<attribute name="Indirect Samples (Light Probes)" value="256" />
+	</component>
 	<component type="GlobalIllumination" id="4">
 		<attribute name="Is Background Static" value="1" />
-		<attribute name="Background Brightness" value="0.300000" />
+		<attribute name="Background Brightness" value="0.100000" />
 		<attribute name="Data File" value="BinaryFile;Scenes/BakedLightingExample/GI.bin" />
 	</component>
 	<component type="Zone" id="24">
@@ -41,7 +46,6 @@
 	</component>
 	<component type="NavigationMesh" id="363">
 		<attribute name="Agent Radius" value="0.200000" />
-		<attribute name="Detail Sample Max Error" value="0.010000" />
 	</component>
 	<component type="DebugRenderer" id="409" />
 	<node id="2">
@@ -202,7 +206,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Transparent Shallow" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-1 1.5 0" />
+				<attribute name="Position" value="-2 2.5 -1" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="2 0.2 2" />
 				<attribute name="Variables" />
@@ -218,7 +222,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Transparent Deep" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-4 1.5 0" />
+				<attribute name="Position" value="-5 2.5 -1" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="2 0.2 2" />
 				<attribute name="Variables" />
@@ -234,7 +238,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Transparent Stone" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="2 1.5 0" />
+				<attribute name="Position" value="1 2.5 -1" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="2 0.2 2" />
 				<attribute name="Variables" />
@@ -259,7 +263,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Boxes" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="0 0.55 -2" />
+				<attribute name="Position" value="-1 0.55 -2" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="8 1 1" />
 				<attribute name="Variables" />
@@ -275,15 +279,15 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Shadows" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="0 1 1" />
+				<attribute name="Position" value="-1 1 1" />
 				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="9 1.5 3" />
+				<attribute name="Scale" value="8.5 1.5 3" />
 				<attribute name="Variables" />
 				<component type="LightProbeGroup" id="198">
-					<attribute name="Auto Placement Step" value="0.500000" />
+					<attribute name="Auto Placement Step" value="0.700000" />
 					<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 					<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
-					<attribute name="Serialized Light Probes" value="AvAxAAAAvwAAAL8AAAC/OY7jvgAAAL8AAAC/chzHvgAAAL8AAAC/qqqqvgAAAL8AAAC/5DiOvgAAAL8AAAC/OI5jvgAAAL8AAAC/qqoqvgAAAL8AAAC/OI7jvQAAAL8AAAC/OI5jvQAAAL8AAAC/AAAAAAAAAL8AAAC/QI5jPQAAAL8AAAC/OI7jPQAAAL8AAAC/rKoqPgAAAL8AAAC/OI5jPgAAAL8AAAC/5DiOPgAAAL8AAAC/qqqqPgAAAL8AAAC/chzHPgAAAL8AAAC/Oo7jPgAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAv6qqKr4AAAC/OY7jvqqqKr4AAAC/chzHvqqqKr4AAAC/qqqqvqqqKr4AAAC/5DiOvqqqKr4AAAC/OI5jvqqqKr4AAAC/qqoqvqqqKr4AAAC/OI7jvaqqKr4AAAC/OI5jvaqqKr4AAAC/AAAAAKqqKr4AAAC/QI5jPaqqKr4AAAC/OI7jPaqqKr4AAAC/rKoqPqqqKr4AAAC/OI5jPqqqKr4AAAC/5DiOPqqqKr4AAAC/qqqqPqqqKr4AAAC/chzHPqqqKr4AAAC/Oo7jPqqqKr4AAAC/AAAAP6qqKr4AAAC/AAAAv6yqKj4AAAC/OY7jvqyqKj4AAAC/chzHvqyqKj4AAAC/qqqqvqyqKj4AAAC/5DiOvqyqKj4AAAC/OI5jvqyqKj4AAAC/qqoqvqyqKj4AAAC/OI7jvayqKj4AAAC/OI5jvayqKj4AAAC/AAAAAKyqKj4AAAC/QI5jPayqKj4AAAC/OI7jPayqKj4AAAC/rKoqPqyqKj4AAAC/OI5jPqyqKj4AAAC/5DiOPqyqKj4AAAC/qqqqPqyqKj4AAAC/chzHPqyqKj4AAAC/Oo7jPqyqKj4AAAC/AAAAP6yqKj4AAAC/AAAAvwAAAD8AAAC/OY7jvgAAAD8AAAC/chzHvgAAAD8AAAC/qqqqvgAAAD8AAAC/5DiOvgAAAD8AAAC/OI5jvgAAAD8AAAC/qqoqvgAAAD8AAAC/OI7jvQAAAD8AAAC/OI5jvQAAAD8AAAC/AAAAAAAAAD8AAAC/QI5jPQAAAD8AAAC/OI7jPQAAAD8AAAC/rKoqPgAAAD8AAAC/OI5jPgAAAD8AAAC/5DiOPgAAAD8AAAC/qqqqPgAAAD8AAAC/chzHPgAAAD8AAAC/Oo7jPgAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL+qqqq+OY7jvgAAAL+qqqq+chzHvgAAAL+qqqq+qqqqvgAAAL+qqqq+5DiOvgAAAL+qqqq+OI5jvgAAAL+qqqq+qqoqvgAAAL+qqqq+OI7jvQAAAL+qqqq+OI5jvQAAAL+qqqq+AAAAAAAAAL+qqqq+QI5jPQAAAL+qqqq+OI7jPQAAAL+qqqq+rKoqPgAAAL+qqqq+OI5jPgAAAL+qqqq+5DiOPgAAAL+qqqq+qqqqPgAAAL+qqqq+chzHPgAAAL+qqqq+Oo7jPgAAAL+qqqq+AAAAPwAAAL+qqqq+AAAAv6qqKr6qqqq+OY7jvqqqKr6qqqq+chzHvqqqKr6qqqq+qqqqvqqqKr6qqqq+5DiOvqqqKr6qqqq+OI5jvqqqKr6qqqq+qqoqvqqqKr6qqqq+OI7jvaqqKr6qqqq+OI5jvaqqKr6qqqq+AAAAAKqqKr6qqqq+QI5jPaqqKr6qqqq+OI7jPaqqKr6qqqq+rKoqPqqqKr6qqqq+OI5jPqqqKr6qqqq+5DiOPqqqKr6qqqq+qqqqPqqqKr6qqqq+chzHPqqqKr6qqqq+Oo7jPqqqKr6qqqq+AAAAP6qqKr6qqqq+AAAAv6yqKj6qqqq+OY7jvqyqKj6qqqq+chzHvqyqKj6qqqq+qqqqvqyqKj6qqqq+5DiOvqyqKj6qqqq+OI5jvqyqKj6qqqq+qqoqvqyqKj6qqqq+OI7jvayqKj6qqqq+OI5jvayqKj6qqqq+AAAAAKyqKj6qqqq+QI5jPayqKj6qqqq+OI7jPayqKj6qqqq+rKoqPqyqKj6qqqq+OI5jPqyqKj6qqqq+5DiOPqyqKj6qqqq+qqqqPqyqKj6qqqq+chzHPqyqKj6qqqq+Oo7jPqyqKj6qqqq+AAAAP6yqKj6qqqq+AAAAvwAAAD+qqqq+OY7jvgAAAD+qqqq+chzHvgAAAD+qqqq+qqqqvgAAAD+qqqq+5DiOvgAAAD+qqqq+OI5jvgAAAD+qqqq+qqoqvgAAAD+qqqq+OI7jvQAAAD+qqqq+OI5jvQAAAD+qqqq+AAAAAAAAAD+qqqq+QI5jPQAAAD+qqqq+OI7jPQAAAD+qqqq+rKoqPgAAAD+qqqq+OI5jPgAAAD+qqqq+5DiOPgAAAD+qqqq+qqqqPgAAAD+qqqq+chzHPgAAAD+qqqq+Oo7jPgAAAD+qqqq+AAAAPwAAAD+qqqq+AAAAvwAAAL+qqiq+OY7jvgAAAL+qqiq+chzHvgAAAL+qqiq+qqqqvgAAAL+qqiq+5DiOvgAAAL+qqiq+OI5jvgAAAL+qqiq+qqoqvgAAAL+qqiq+OI7jvQAAAL+qqiq+OI5jvQAAAL+qqiq+AAAAAAAAAL+qqiq+QI5jPQAAAL+qqiq+OI7jPQAAAL+qqiq+rKoqPgAAAL+qqiq+OI5jPgAAAL+qqiq+5DiOPgAAAL+qqiq+qqqqPgAAAL+qqiq+chzHPgAAAL+qqiq+Oo7jPgAAAL+qqiq+AAAAPwAAAL+qqiq+AAAAv6qqKr6qqiq+OY7jvqqqKr6qqiq+chzHvqqqKr6qqiq+qqqqvqqqKr6qqiq+5DiOvqqqKr6qqiq+OI5jvqqqKr6qqiq+qqoqvqqqKr6qqiq+OI7jvaqqKr6qqiq+OI5jvaqqKr6qqiq+AAAAAKqqKr6qqiq+QI5jPaqqKr6qqiq+OI7jPaqqKr6qqiq+rKoqPqqqKr6qqiq+OI5jPqqqKr6qqiq+5DiOPqqqKr6qqiq+qqqqPqqqKr6qqiq+chzHPqqqKr6qqiq+Oo7jPqqqKr6qqiq+AAAAP6qqKr6qqiq+AAAAv6yqKj6qqiq+OY7jvqyqKj6qqiq+chzHvqyqKj6qqiq+qqqqvqyqKj6qqiq+5DiOvqyqKj6qqiq+OI5jvqyqKj6qqiq+qqoqvqyqKj6qqiq+OI7jvayqKj6qqiq+OI5jvayqKj6qqiq+AAAAAKyqKj6qqiq+QI5jPayqKj6qqiq+OI7jPayqKj6qqiq+rKoqPqyqKj6qqiq+OI5jPqyqKj6qqiq+5DiOPqyqKj6qqiq+qqqqPqyqKj6qqiq+chzHPqyqKj6qqiq+Oo7jPqyqKj6qqiq+AAAAP6yqKj6qqiq+AAAAvwAAAD+qqiq+OY7jvgAAAD+qqiq+chzHvgAAAD+qqiq+qqqqvgAAAD+qqiq+5DiOvgAAAD+qqiq+OI5jvgAAAD+qqiq+qqoqvgAAAD+qqiq+OI7jvQAAAD+qqiq+OI5jvQAAAD+qqiq+AAAAAAAAAD+qqiq+QI5jPQAAAD+qqiq+OI7jPQAAAD+qqiq+rKoqPgAAAD+qqiq+OI5jPgAAAD+qqiq+5DiOPgAAAD+qqiq+qqqqPgAAAD+qqiq+chzHPgAAAD+qqiq+Oo7jPgAAAD+qqiq+AAAAPwAAAD+qqiq+AAAAvwAAAL8AAAAAOY7jvgAAAL8AAAAAchzHvgAAAL8AAAAAqqqqvgAAAL8AAAAA5DiOvgAAAL8AAAAAOI5jvgAAAL8AAAAAqqoqvgAAAL8AAAAAOI7jvQAAAL8AAAAAOI5jvQAAAL8AAAAAAAAAAAAAAL8AAAAAQI5jPQAAAL8AAAAAOI7jPQAAAL8AAAAArKoqPgAAAL8AAAAAOI5jPgAAAL8AAAAA5DiOPgAAAL8AAAAAqqqqPgAAAL8AAAAAchzHPgAAAL8AAAAAOo7jPgAAAL8AAAAAAAAAPwAAAL8AAAAAAAAAv6qqKr4AAAAAOY7jvqqqKr4AAAAAchzHvqqqKr4AAAAAqqqqvqqqKr4AAAAA5DiOvqqqKr4AAAAAOI5jvqqqKr4AAAAAqqoqvqqqKr4AAAAAOI7jvaqqKr4AAAAAOI5jvaqqKr4AAAAAAAAAAKqqKr4AAAAAQI5jPaqqKr4AAAAAOI7jPaqqKr4AAAAArKoqPqqqKr4AAAAAOI5jPqqqKr4AAAAA5DiOPqqqKr4AAAAAqqqqPqqqKr4AAAAAchzHPqqqKr4AAAAAOo7jPqqqKr4AAAAAAAAAP6qqKr4AAAAAAAAAv6yqKj4AAAAAOY7jvqyqKj4AAAAAchzHvqyqKj4AAAAAqqqqvqyqKj4AAAAA5DiOvqyqKj4AAAAAOI5jvqyqKj4AAAAAqqoqvqyqKj4AAAAAOI7jvayqKj4AAAAAOI5jvayqKj4AAAAAAAAAAKyqKj4AAAAAQI5jPayqKj4AAAAAOI7jPayqKj4AAAAArKoqPqyqKj4AAAAAOI5jPqyqKj4AAAAA5DiOPqyqKj4AAAAAqqqqPqyqKj4AAAAAchzHPqyqKj4AAAAAOo7jPqyqKj4AAAAAAAAAP6yqKj4AAAAAAAAAvwAAAD8AAAAAOY7jvgAAAD8AAAAAchzHvgAAAD8AAAAAqqqqvgAAAD8AAAAA5DiOvgAAAD8AAAAAOI5jvgAAAD8AAAAAqqoqvgAAAD8AAAAAOI7jvQAAAD8AAAAAOI5jvQAAAD8AAAAAAAAAAAAAAD8AAAAAQI5jPQAAAD8AAAAAOI7jPQAAAD8AAAAArKoqPgAAAD8AAAAAOI5jPgAAAD8AAAAA5DiOPgAAAD8AAAAAqqqqPgAAAD8AAAAAchzHPgAAAD8AAAAAOo7jPgAAAD8AAAAAAAAAPwAAAD8AAAAAAAAAvwAAAL+sqio+OY7jvgAAAL+sqio+chzHvgAAAL+sqio+qqqqvgAAAL+sqio+5DiOvgAAAL+sqio+OI5jvgAAAL+sqio+qqoqvgAAAL+sqio+OI7jvQAAAL+sqio+OI5jvQAAAL+sqio+AAAAAAAAAL+sqio+QI5jPQAAAL+sqio+OI7jPQAAAL+sqio+rKoqPgAAAL+sqio+OI5jPgAAAL+sqio+5DiOPgAAAL+sqio+qqqqPgAAAL+sqio+chzHPgAAAL+sqio+Oo7jPgAAAL+sqio+AAAAPwAAAL+sqio+AAAAv6qqKr6sqio+OY7jvqqqKr6sqio+chzHvqqqKr6sqio+qqqqvqqqKr6sqio+5DiOvqqqKr6sqio+OI5jvqqqKr6sqio+qqoqvqqqKr6sqio+OI7jvaqqKr6sqio+OI5jvaqqKr6sqio+AAAAAKqqKr6sqio+QI5jPaqqKr6sqio+OI7jPaqqKr6sqio+rKoqPqqqKr6sqio+OI5jPqqqKr6sqio+5DiOPqqqKr6sqio+qqqqPqqqKr6sqio+chzHPqqqKr6sqio+Oo7jPqqqKr6sqio+AAAAP6qqKr6sqio+AAAAv6yqKj6sqio+OY7jvqyqKj6sqio+chzHvqyqKj6sqio+qqqqvqyqKj6sqio+5DiOvqyqKj6sqio+OI5jvqyqKj6sqio+qqoqvqyqKj6sqio+OI7jvayqKj6sqio+OI5jvayqKj6sqio+AAAAAKyqKj6sqio+QI5jPayqKj6sqio+OI7jPayqKj6sqio+rKoqPqyqKj6sqio+OI5jPqyqKj6sqio+5DiOPqyqKj6sqio+qqqqPqyqKj6sqio+chzHPqyqKj6sqio+Oo7jPqyqKj6sqio+AAAAP6yqKj6sqio+AAAAvwAAAD+sqio+OY7jvgAAAD+sqio+chzHvgAAAD+sqio+qqqqvgAAAD+sqio+5DiOvgAAAD+sqio+OI5jvgAAAD+sqio+qqoqvgAAAD+sqio+OI7jvQAAAD+sqio+OI5jvQAAAD+sqio+AAAAAAAAAD+sqio+QI5jPQAAAD+sqio+OI7jPQAAAD+sqio+rKoqPgAAAD+sqio+OI5jPgAAAD+sqio+5DiOPgAAAD+sqio+qqqqPgAAAD+sqio+chzHPgAAAD+sqio+Oo7jPgAAAD+sqio+AAAAPwAAAD+sqio+AAAAvwAAAL+sqqo+OY7jvgAAAL+sqqo+chzHvgAAAL+sqqo+qqqqvgAAAL+sqqo+5DiOvgAAAL+sqqo+OI5jvgAAAL+sqqo+qqoqvgAAAL+sqqo+OI7jvQAAAL+sqqo+OI5jvQAAAL+sqqo+AAAAAAAAAL+sqqo+QI5jPQAAAL+sqqo+OI7jPQAAAL+sqqo+rKoqPgAAAL+sqqo+OI5jPgAAAL+sqqo+5DiOPgAAAL+sqqo+qqqqPgAAAL+sqqo+chzHPgAAAL+sqqo+Oo7jPgAAAL+sqqo+AAAAPwAAAL+sqqo+AAAAv6qqKr6sqqo+OY7jvqqqKr6sqqo+chzHvqqqKr6sqqo+qqqqvqqqKr6sqqo+5DiOvqqqKr6sqqo+OI5jvqqqKr6sqqo+qqoqvqqqKr6sqqo+OI7jvaqqKr6sqqo+OI5jvaqqKr6sqqo+AAAAAKqqKr6sqqo+QI5jPaqqKr6sqqo+OI7jPaqqKr6sqqo+rKoqPqqqKr6sqqo+OI5jPqqqKr6sqqo+5DiOPqqqKr6sqqo+qqqqPqqqKr6sqqo+chzHPqqqKr6sqqo+Oo7jPqqqKr6sqqo+AAAAP6qqKr6sqqo+AAAAv6yqKj6sqqo+OY7jvqyqKj6sqqo+chzHvqyqKj6sqqo+qqqqvqyqKj6sqqo+5DiOvqyqKj6sqqo+OI5jvqyqKj6sqqo+qqoqvqyqKj6sqqo+OI7jvayqKj6sqqo+OI5jvayqKj6sqqo+AAAAAKyqKj6sqqo+QI5jPayqKj6sqqo+OI7jPayqKj6sqqo+rKoqPqyqKj6sqqo+OI5jPqyqKj6sqqo+5DiOPqyqKj6sqqo+qqqqPqyqKj6sqqo+chzHPqyqKj6sqqo+Oo7jPqyqKj6sqqo+AAAAP6yqKj6sqqo+AAAAvwAAAD+sqqo+OY7jvgAAAD+sqqo+chzHvgAAAD+sqqo+qqqqvgAAAD+sqqo+5DiOvgAAAD+sqqo+OI5jvgAAAD+sqqo+qqoqvgAAAD+sqqo+OI7jvQAAAD+sqqo+OI5jvQAAAD+sqqo+AAAAAAAAAD+sqqo+QI5jPQAAAD+sqqo+OI7jPQAAAD+sqqo+rKoqPgAAAD+sqqo+OI5jPgAAAD+sqqo+5DiOPgAAAD+sqqo+qqqqPgAAAD+sqqo+chzHPgAAAD+sqqo+Oo7jPgAAAD+sqqo+AAAAPwAAAD+sqqo+AAAAvwAAAL8AAAA/OY7jvgAAAL8AAAA/chzHvgAAAL8AAAA/qqqqvgAAAL8AAAA/5DiOvgAAAL8AAAA/OI5jvgAAAL8AAAA/qqoqvgAAAL8AAAA/OI7jvQAAAL8AAAA/OI5jvQAAAL8AAAA/AAAAAAAAAL8AAAA/QI5jPQAAAL8AAAA/OI7jPQAAAL8AAAA/rKoqPgAAAL8AAAA/OI5jPgAAAL8AAAA/5DiOPgAAAL8AAAA/qqqqPgAAAL8AAAA/chzHPgAAAL8AAAA/Oo7jPgAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAv6qqKr4AAAA/OY7jvqqqKr4AAAA/chzHvqqqKr4AAAA/qqqqvqqqKr4AAAA/5DiOvqqqKr4AAAA/OI5jvqqqKr4AAAA/qqoqvqqqKr4AAAA/OI7jvaqqKr4AAAA/OI5jvaqqKr4AAAA/AAAAAKqqKr4AAAA/QI5jPaqqKr4AAAA/OI7jPaqqKr4AAAA/rKoqPqqqKr4AAAA/OI5jPqqqKr4AAAA/5DiOPqqqKr4AAAA/qqqqPqqqKr4AAAA/chzHPqqqKr4AAAA/Oo7jPqqqKr4AAAA/AAAAP6qqKr4AAAA/AAAAv6yqKj4AAAA/OY7jvqyqKj4AAAA/chzHvqyqKj4AAAA/qqqqvqyqKj4AAAA/5DiOvqyqKj4AAAA/OI5jvqyqKj4AAAA/qqoqvqyqKj4AAAA/OI7jvayqKj4AAAA/OI5jvayqKj4AAAA/AAAAAKyqKj4AAAA/QI5jPayqKj4AAAA/OI7jPayqKj4AAAA/rKoqPqyqKj4AAAA/OI5jPqyqKj4AAAA/5DiOPqyqKj4AAAA/qqqqPqyqKj4AAAA/chzHPqyqKj4AAAA/Oo7jPqyqKj4AAAA/AAAAP6yqKj4AAAA/AAAAvwAAAD8AAAA/OY7jvgAAAD8AAAA/chzHvgAAAD8AAAA/qqqqvgAAAD8AAAA/5DiOvgAAAD8AAAA/OI5jvgAAAD8AAAA/qqoqvgAAAD8AAAA/OI7jvQAAAD8AAAA/OI5jvQAAAD8AAAA/AAAAAAAAAD8AAAA/QI5jPQAAAD8AAAA/OI7jPQAAAD8AAAA/rKoqPgAAAD8AAAA/OI5jPgAAAD8AAAA/5DiOPgAAAD8AAAA/qqqqPgAAAD8AAAA/chzHPgAAAD8AAAA/Oo7jPgAAAD8AAAA/AAAAPwAAAD8AAAA/" />
+					<attribute name="Serialized Light Probes" value="AqQSAAAAvwAAAL8AAAC/VVXVvgAAAL8AAAC/qqqqvgAAAL8AAAC/AACAvgAAAL8AAAC/qqoqvgAAAL8AAAC/qKqqvQAAAL8AAAC/AAAAAAAAAL8AAAC/sKqqPQAAAL8AAAC/rKoqPgAAAL8AAAC/AACAPgAAAL8AAAC/rKqqPgAAAL8AAAC/VlXVPgAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAAAAAAAC/VVXVvgAAAAAAAAC/qqqqvgAAAAAAAAC/AACAvgAAAAAAAAC/qqoqvgAAAAAAAAC/qKqqvQAAAAAAAAC/AAAAAAAAAAAAAAC/sKqqPQAAAAAAAAC/rKoqPgAAAAAAAAC/AACAPgAAAAAAAAC/rKqqPgAAAAAAAAC/VlXVPgAAAAAAAAC/AAAAPwAAAAAAAAC/AAAAvwAAAD8AAAC/VVXVvgAAAD8AAAC/qqqqvgAAAD8AAAC/AACAvgAAAD8AAAC/qqoqvgAAAD8AAAC/qKqqvQAAAD8AAAC/AAAAAAAAAD8AAAC/sKqqPQAAAD8AAAC/rKoqPgAAAD8AAAC/AACAPgAAAD8AAAC/rKqqPgAAAD8AAAC/VlXVPgAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL8AAIC+VVXVvgAAAL8AAIC+qqqqvgAAAL8AAIC+AACAvgAAAL8AAIC+qqoqvgAAAL8AAIC+qKqqvQAAAL8AAIC+AAAAAAAAAL8AAIC+sKqqPQAAAL8AAIC+rKoqPgAAAL8AAIC+AACAPgAAAL8AAIC+rKqqPgAAAL8AAIC+VlXVPgAAAL8AAIC+AAAAPwAAAL8AAIC+AAAAvwAAAAAAAIC+VVXVvgAAAAAAAIC+qqqqvgAAAAAAAIC+AACAvgAAAAAAAIC+qqoqvgAAAAAAAIC+qKqqvQAAAAAAAIC+AAAAAAAAAAAAAIC+sKqqPQAAAAAAAIC+rKoqPgAAAAAAAIC+AACAPgAAAAAAAIC+rKqqPgAAAAAAAIC+VlXVPgAAAAAAAIC+AAAAPwAAAAAAAIC+AAAAvwAAAD8AAIC+VVXVvgAAAD8AAIC+qqqqvgAAAD8AAIC+AACAvgAAAD8AAIC+qqoqvgAAAD8AAIC+qKqqvQAAAD8AAIC+AAAAAAAAAD8AAIC+sKqqPQAAAD8AAIC+rKoqPgAAAD8AAIC+AACAPgAAAD8AAIC+rKqqPgAAAD8AAIC+VlXVPgAAAD8AAIC+AAAAPwAAAD8AAIC+AAAAvwAAAL8AAAAAVVXVvgAAAL8AAAAAqqqqvgAAAL8AAAAAAACAvgAAAL8AAAAAqqoqvgAAAL8AAAAAqKqqvQAAAL8AAAAAAAAAAAAAAL8AAAAAsKqqPQAAAL8AAAAArKoqPgAAAL8AAAAAAACAPgAAAL8AAAAArKqqPgAAAL8AAAAAVlXVPgAAAL8AAAAAAAAAPwAAAL8AAAAAAAAAvwAAAAAAAAAAVVXVvgAAAAAAAAAAqqqqvgAAAAAAAAAAAACAvgAAAAAAAAAAqqoqvgAAAAAAAAAAqKqqvQAAAAAAAAAAAAAAAAAAAAAAAAAAsKqqPQAAAAAAAAAArKoqPgAAAAAAAAAAAACAPgAAAAAAAAAArKqqPgAAAAAAAAAAVlXVPgAAAAAAAAAAAAAAPwAAAAAAAAAAAAAAvwAAAD8AAAAAVVXVvgAAAD8AAAAAqqqqvgAAAD8AAAAAAACAvgAAAD8AAAAAqqoqvgAAAD8AAAAAqKqqvQAAAD8AAAAAAAAAAAAAAD8AAAAAsKqqPQAAAD8AAAAArKoqPgAAAD8AAAAAAACAPgAAAD8AAAAArKqqPgAAAD8AAAAAVlXVPgAAAD8AAAAAAAAAPwAAAD8AAAAAAAAAvwAAAL8AAIA+VVXVvgAAAL8AAIA+qqqqvgAAAL8AAIA+AACAvgAAAL8AAIA+qqoqvgAAAL8AAIA+qKqqvQAAAL8AAIA+AAAAAAAAAL8AAIA+sKqqPQAAAL8AAIA+rKoqPgAAAL8AAIA+AACAPgAAAL8AAIA+rKqqPgAAAL8AAIA+VlXVPgAAAL8AAIA+AAAAPwAAAL8AAIA+AAAAvwAAAAAAAIA+VVXVvgAAAAAAAIA+qqqqvgAAAAAAAIA+AACAvgAAAAAAAIA+qqoqvgAAAAAAAIA+qKqqvQAAAAAAAIA+AAAAAAAAAAAAAIA+sKqqPQAAAAAAAIA+rKoqPgAAAAAAAIA+AACAPgAAAAAAAIA+rKqqPgAAAAAAAIA+VlXVPgAAAAAAAIA+AAAAPwAAAAAAAIA+AAAAvwAAAD8AAIA+VVXVvgAAAD8AAIA+qqqqvgAAAD8AAIA+AACAvgAAAD8AAIA+qqoqvgAAAD8AAIA+qKqqvQAAAD8AAIA+AAAAAAAAAD8AAIA+sKqqPQAAAD8AAIA+rKoqPgAAAD8AAIA+AACAPgAAAD8AAIA+rKqqPgAAAD8AAIA+VlXVPgAAAD8AAIA+AAAAPwAAAD8AAIA+AAAAvwAAAL8AAAA/VVXVvgAAAL8AAAA/qqqqvgAAAL8AAAA/AACAvgAAAL8AAAA/qqoqvgAAAL8AAAA/qKqqvQAAAL8AAAA/AAAAAAAAAL8AAAA/sKqqPQAAAL8AAAA/rKoqPgAAAL8AAAA/AACAPgAAAL8AAAA/rKqqPgAAAL8AAAA/VlXVPgAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAAAAAAAA/VVXVvgAAAAAAAAA/qqqqvgAAAAAAAAA/AACAvgAAAAAAAAA/qqoqvgAAAAAAAAA/qKqqvQAAAAAAAAA/AAAAAAAAAAAAAAA/sKqqPQAAAAAAAAA/rKoqPgAAAAAAAAA/AACAPgAAAAAAAAA/rKqqPgAAAAAAAAA/VlXVPgAAAAAAAAA/AAAAPwAAAAAAAAA/AAAAvwAAAD8AAAA/VVXVvgAAAD8AAAA/qqqqvgAAAD8AAAA/AACAvgAAAD8AAAA/qqoqvgAAAD8AAAA/qKqqvQAAAD8AAAA/AAAAAAAAAD8AAAA/sKqqPQAAAD8AAAA/rKoqPgAAAD8AAAA/AACAPgAAAD8AAAA/rKqqPgAAAD8AAAA/VlXVPgAAAD8AAAA/AAAAPwAAAD8AAAA/" />
 					<attribute name="Baked Data File" value="BinaryFile;D:/Root/Repos/Urho/rbfx-glow/bin/Data/Scenes/BakedLightingExample/Binary/LightProbeGroup-0-0-0-1.bin" />
 				</component>
 			</node>
@@ -512,7 +516,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Glowing Floor" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="5 0.5 4" />
+				<attribute name="Position" value="5 0.5 8.5" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="5 0.7 5" />
 				<attribute name="Variables" />
@@ -567,7 +571,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Box" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="5 2.5 8" />
+				<attribute name="Position" value="4 2.5 7" />
 				<attribute name="Rotation" value="0.866025 -1.63912e-07 0.5 -2.83904e-07" />
 				<attribute name="Scale" value="5 1 5" />
 				<attribute name="Variables" />
@@ -773,7 +777,7 @@
 		<attribute name="Scale" value="1 1 1" />
 		<attribute name="Variables" />
 		<component type="CrowdAgent" id="361">
-			<attribute name="Max Accel" value="10000.000000" />
+			<attribute name="Max Accel" value="30.000000" />
 			<attribute name="Radius" value="0.200000" />
 			<attribute name="Height" value="1.000000" />
 		</component>
@@ -1131,7 +1135,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Camera Rotation Pitch" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="0 1.2 0" />
+				<attribute name="Position" value="0 1.1 0" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="1 1 1" />
 				<attribute name="Variables" />
@@ -1139,7 +1143,7 @@
 					<attribute name="Is Enabled" value="1" />
 					<attribute name="Name" value="Camera" />
 					<attribute name="Tags" />
-					<attribute name="Position" value="0 0 -2" />
+					<attribute name="Position" value="0 0 -3" />
 					<attribute name="Rotation" value="1 0 0 0" />
 					<attribute name="Scale" value="1 1 1" />
 					<attribute name="Variables" />

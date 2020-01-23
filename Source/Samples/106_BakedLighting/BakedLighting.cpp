@@ -92,8 +92,10 @@ void BakedLighting::CreateScene()
     navMesh->Build();
 
     agent_ = scene_->GetComponent<CrowdAgent>(true);
-    auto agentNode = agent_->GetNode();
-    agentNode->SetWorldPosition(navMesh->FindNearestPoint(agentNode->GetWorldPosition()));
+    agent_->SetUpdateNodePosition(false);
+
+    auto animController = agent_->GetNode()->GetComponent<AnimationController>(true);
+    animController->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true);
 
     auto crowdManager = scene_->GetComponent<CrowdManager>();
     CrowdObstacleAvoidanceParams params = crowdManager->GetObstacleAvoidanceParams(0);
@@ -169,9 +171,25 @@ void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
     const float speed = input->GetKeyDown(KEY_SHIFT) ? 5.0f : 2.0f;
     agent_->SetTargetVelocity(speed * movementDirection);
 
-    // TODO(glow): Remove debug renderer
+    // Animate model
+    auto animController = agent_->GetNode()->GetComponent<AnimationController>(true);
+    auto rotationNode = animController->GetNode()->GetParent();
+    const Vector3 actualVelocityFlat = (agent_->GetActualVelocity() * Vector3(1, 0, 1));
+    if (actualVelocityFlat.Length() > M_LARGE_EPSILON)
+    {
+        rotationNode->SetWorldDirection(actualVelocityFlat);
+        animController->PlayExclusive("Models/Mutant/Mutant_Run.ani", 0, true, 0.2f);
+        animController->SetSpeed("Models/Mutant/Mutant_Run.ani", actualVelocityFlat.Length() * 0.3f);
+    }
+    else
+    {
+        animController->PlayExclusive("Models/Mutant/Mutant_Idle0.ani", 0, true, 0.2f);
+    }
+
+    // Snap position to ground
+    agent_->GetNode()->SetWorldPosition(agent_->GetPosition() * Vector3(1, 0, 1));
+
+    // Draw debug geometry
     auto navmesh = scene_->GetComponent<NavigationMesh>();
-    auto crowdManager = scene_->GetComponent<CrowdManager>();
     navmesh->DrawDebugGeometry(true);
-    crowdManager->DrawDebugGeometry(true);
 }
