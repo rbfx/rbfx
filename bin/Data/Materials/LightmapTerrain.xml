@@ -3,5 +3,5 @@
     <texture unit="diffuse" name="Textures/LightmapTerrainDiffuseMap.png" />
     <texture unit="emissive" name="Textures/LightmapTerrainEmissiveMap.png" />
     <shader vsdefines="LIGHTMAP" psdefines="LIGHTMAP" />
-    <parameter name="MatEmissiveColor" value="3 3 3" />
+    <parameter name="MatEmissiveColor" value="32 32 32" />
 </material>
