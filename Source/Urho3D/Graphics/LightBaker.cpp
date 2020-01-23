@@ -144,8 +144,7 @@ void LightBaker::Bake()
 #endif
 
     // Compile light probes
-    if (gi)
-        gi->CompileLightProbes();
+    gi->CompileLightProbes();
 
 #if URHO3D_GLOW
     // Log overall time

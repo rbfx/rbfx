@@ -5,17 +5,17 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="427" />
-	<attribute name="Next Replicated Component ID" value="425" />
-	<attribute name="Next Local Node ID" value="16777532" />
-	<attribute name="Next Local Component ID" value="16777603" />
+	<attribute name="Next Replicated Node ID" value="443" />
+	<attribute name="Next Replicated Component ID" value="441" />
+	<attribute name="Next Local Node ID" value="16777544" />
+	<attribute name="Next Local Component ID" value="16777618" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D;Scenes/BakedLightingExample/Textures/Lightmap-0.png;Scenes/BakedLightingExample/Textures/Lightmap-1.png;Scenes/BakedLightingExample/Textures/Lightmap-2.png" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="1.38592 0.911631 0.767539" />
-		<attribute name="Camera Rotation" value="0.999522 0.00887898 -0.0296171 0.000261407" />
+		<attribute name="Camera Position" value="-9.36555 3.40726 7.01662" />
+		<attribute name="Camera Rotation" value="0.995805 0.0767791 0.0496235 -0.00382741" />
 	</component>
 	<component type="LightBaker" id="3" />
 	<component type="GlobalIllumination" id="4">
@@ -365,14 +365,14 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Mushrooms" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="-1.5 0.9 0" />
+				<attribute name="Position" value="-1 0.9 0" />
 				<attribute name="Rotation" value="1 0 0 0" />
-				<attribute name="Scale" value="4 3.5 4" />
+				<attribute name="Scale" value="3 3.5 4" />
 				<attribute name="Variables" />
 				<component type="LightProbeGroup" id="199">
 					<attribute name="Local Bounding Box Min" value="-0.5 -0.5 -0.5" />
 					<attribute name="Local Bounding Box Max" value="0.5 0.5 0.5" />
-					<attribute name="Serialized Light Probes" value="AtwLAAAAvwAAAL8AAAC/AACAvgAAAL8AAAC/AAAAAAAAAL8AAAC/AACAPgAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAgL4AAAC/AACAvgAAgL4AAAC/AAAAAAAAgL4AAAC/AACAPgAAgL4AAAC/AAAAPwAAgL4AAAC/AAAAvwAAAAAAAAC/AACAvgAAAAAAAAC/AAAAAAAAAAAAAAC/AACAPgAAAAAAAAC/AAAAPwAAAAAAAAC/AAAAvwAAgD4AAAC/AACAvgAAgD4AAAC/AAAAAAAAgD4AAAC/AACAPgAAgD4AAAC/AAAAPwAAgD4AAAC/AAAAvwAAAD8AAAC/AACAvgAAAD8AAAC/AAAAAAAAAD8AAAC/AACAPgAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL8AAIC+AACAvgAAAL8AAIC+AAAAAAAAAL8AAIC+AACAPgAAAL8AAIC+AAAAPwAAAL8AAIC+AAAAvwAAgL4AAIC+AACAvgAAgL4AAIC+AAAAAAAAgL4AAIC+AACAPgAAgL4AAIC+AAAAPwAAgL4AAIC+AAAAvwAAAAAAAIC+AACAvgAAAAAAAIC+AAAAAAAAAAAAAIC+AACAPgAAAAAAAIC+AAAAPwAAAAAAAIC+AAAAvwAAgD4AAIC+AACAvgAAgD4AAIC+AAAAAAAAgD4AAIC+AACAPgAAgD4AAIC+AAAAPwAAgD4AAIC+AAAAvwAAAD8AAIC+AACAvgAAAD8AAIC+AAAAAAAAAD8AAIC+AACAPgAAAD8AAIC+AAAAPwAAAD8AAIC+AAAAvwAAAL8AAAAAAACAvgAAAL8AAAAAAAAAAAAAAL8AAAAAAACAPgAAAL8AAAAAAAAAPwAAAL8AAAAAAAAAvwAAgL4AAAAAAACAvgAAgL4AAAAAAAAAAAAAgL4AAAAAAACAPgAAgL4AAAAAAAAAPwAAgL4AAAAAAAAAvwAAAAAAAAAAAACAvgAAAAAAAAAAAAAAAAAAAAAAAAAAAACAPgAAAAAAAAAAAAAAPwAAAAAAAAAAAAAAvwAAgD4AAAAAAACAvgAAgD4AAAAAAAAAAAAAgD4AAAAAAACAPgAAgD4AAAAAAAAAPwAAgD4AAAAAAAAAvwAAAD8AAAAAAACAvgAAAD8AAAAAAAAAAAAAAD8AAAAAAACAPgAAAD8AAAAAAAAAPwAAAD8AAAAAAAAAvwAAAL8AAIA+AACAvgAAAL8AAIA+AAAAAAAAAL8AAIA+AACAPgAAAL8AAIA+AAAAPwAAAL8AAIA+AAAAvwAAgL4AAIA+AACAvgAAgL4AAIA+AAAAAAAAgL4AAIA+AACAPgAAgL4AAIA+AAAAPwAAgL4AAIA+AAAAvwAAAAAAAIA+AACAvgAAAAAAAIA+AAAAAAAAAAAAAIA+AACAPgAAAAAAAIA+AAAAPwAAAAAAAIA+AAAAvwAAgD4AAIA+AACAvgAAgD4AAIA+AAAAAAAAgD4AAIA+AACAPgAAgD4AAIA+AAAAPwAAgD4AAIA+AAAAvwAAAD8AAIA+AACAvgAAAD8AAIA+AAAAAAAAAD8AAIA+AACAPgAAAD8AAIA+AAAAPwAAAD8AAIA+AAAAvwAAAL8AAAA/AACAvgAAAL8AAAA/AAAAAAAAAL8AAAA/AACAPgAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAgL4AAAA/AACAvgAAgL4AAAA/AAAAAAAAgL4AAAA/AACAPgAAgL4AAAA/AAAAPwAAgL4AAAA/AAAAvwAAAAAAAAA/AACAvgAAAAAAAAA/AAAAAAAAAAAAAAA/AACAPgAAAAAAAAA/AAAAPwAAAAAAAAA/AAAAvwAAgD4AAAA/AACAvgAAgD4AAAA/AAAAAAAAgD4AAAA/AACAPgAAgD4AAAA/AAAAPwAAgD4AAAA/AAAAvwAAAD8AAAA/AACAvgAAAD8AAAA/AAAAAAAAAD8AAAA/AACAPgAAAD8AAAA/AAAAPwAAAD8AAAA/" />
+					<attribute name="Serialized Light Probes" value="ArAJAAAAvwAAAL8AAAC/qqoqvgAAAL8AAAC/rKoqPgAAAL8AAAC/AAAAPwAAAL8AAAC/AAAAvwAAgL4AAAC/qqoqvgAAgL4AAAC/rKoqPgAAgL4AAAC/AAAAPwAAgL4AAAC/AAAAvwAAAAAAAAC/qqoqvgAAAAAAAAC/rKoqPgAAAAAAAAC/AAAAPwAAAAAAAAC/AAAAvwAAgD4AAAC/qqoqvgAAgD4AAAC/rKoqPgAAgD4AAAC/AAAAPwAAgD4AAAC/AAAAvwAAAD8AAAC/qqoqvgAAAD8AAAC/rKoqPgAAAD8AAAC/AAAAPwAAAD8AAAC/AAAAvwAAAL8AAIC+qqoqvgAAAL8AAIC+rKoqPgAAAL8AAIC+AAAAPwAAAL8AAIC+AAAAvwAAgL4AAIC+qqoqvgAAgL4AAIC+rKoqPgAAgL4AAIC+AAAAPwAAgL4AAIC+AAAAvwAAAAAAAIC+qqoqvgAAAAAAAIC+rKoqPgAAAAAAAIC+AAAAPwAAAAAAAIC+AAAAvwAAgD4AAIC+qqoqvgAAgD4AAIC+rKoqPgAAgD4AAIC+AAAAPwAAgD4AAIC+AAAAvwAAAD8AAIC+qqoqvgAAAD8AAIC+rKoqPgAAAD8AAIC+AAAAPwAAAD8AAIC+AAAAvwAAAL8AAAAAqqoqvgAAAL8AAAAArKoqPgAAAL8AAAAAAAAAPwAAAL8AAAAAAAAAvwAAgL4AAAAAqqoqvgAAgL4AAAAArKoqPgAAgL4AAAAAAAAAPwAAgL4AAAAAAAAAvwAAAAAAAAAAqqoqvgAAAAAAAAAArKoqPgAAAAAAAAAAAAAAPwAAAAAAAAAAAAAAvwAAgD4AAAAAqqoqvgAAgD4AAAAArKoqPgAAgD4AAAAAAAAAPwAAgD4AAAAAAAAAvwAAAD8AAAAAqqoqvgAAAD8AAAAArKoqPgAAAD8AAAAAAAAAPwAAAD8AAAAAAAAAvwAAAL8AAIA+qqoqvgAAAL8AAIA+rKoqPgAAAL8AAIA+AAAAPwAAAL8AAIA+AAAAvwAAgL4AAIA+qqoqvgAAgL4AAIA+rKoqPgAAgL4AAIA+AAAAPwAAgL4AAIA+AAAAvwAAAAAAAIA+qqoqvgAAAAAAAIA+rKoqPgAAAAAAAIA+AAAAPwAAAAAAAIA+AAAAvwAAgD4AAIA+qqoqvgAAgD4AAIA+rKoqPgAAgD4AAIA+AAAAPwAAgD4AAIA+AAAAvwAAAD8AAIA+qqoqvgAAAD8AAIA+rKoqPgAAAD8AAIA+AAAAPwAAAD8AAIA+AAAAvwAAAL8AAAA/qqoqvgAAAL8AAAA/rKoqPgAAAL8AAAA/AAAAPwAAAL8AAAA/AAAAvwAAgL4AAAA/qqoqvgAAgL4AAAA/rKoqPgAAgL4AAAA/AAAAPwAAgL4AAAA/AAAAvwAAAAAAAAA/qqoqvgAAAAAAAAA/rKoqPgAAAAAAAAA/AAAAPwAAAAAAAAA/AAAAvwAAgD4AAAA/qqoqvgAAgD4AAAA/rKoqPgAAgD4AAAA/AAAAPwAAgD4AAAA/AAAAvwAAAD8AAAA/qqoqvgAAAD8AAAA/rKoqPgAAAD8AAAA/AAAAPwAAAD8AAAA/" />
 					<attribute name="Baked Data File" value="BinaryFile;D:/Root/Repos/Urho/rbfx-glow/bin/Data/Scenes/BakedLightingExample/Binary/LightProbeGroup-0-0-0-2.bin" />
 				</component>
 			</node>
@@ -396,7 +396,7 @@
 			<attribute name="Is Enabled" value="1" />
 			<attribute name="Name" value="Big Mushroom" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="-2 -0.02 0" />
+			<attribute name="Position" value="-1 -0.02 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="2 2 2" />
 			<attribute name="Variables" />
@@ -411,7 +411,7 @@
 			<attribute name="Is Enabled" value="1" />
 			<attribute name="Name" value="Small Mushroom" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="0 -0.02 0" />
+			<attribute name="Position" value="1 -0.02 0" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="0.5 0.5 0.5" />
 			<attribute name="Variables" />
@@ -441,7 +441,7 @@
 			<attribute name="Is Enabled" value="1" />
 			<attribute name="Name" value="Mushroom Text" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="-0.411001 0.194063 -0.654592" />
+			<attribute name="Position" value="-1.36056 0.194063 -2.21141" />
 			<attribute name="Rotation" value="0.866025 0.5 0 0" />
 			<attribute name="Scale" value="0.15 0.2 0.2" />
 			<attribute name="Variables" />
@@ -723,7 +723,7 @@
 		<attribute name="Tags" />
 		<attribute name="Position" value="-5 1.1 10" />
 		<attribute name="Rotation" value="1 0 0 0" />
-		<attribute name="Scale" value="15 2 35" />
+		<attribute name="Scale" value="16.5 2 35" />
 		<attribute name="Variables" />
 		<component type="LightProbeGroup" id="205">
 			<attribute name="Auto Placement Step" value="2.000000" />
@@ -1150,5 +1150,22 @@
 				</node>
 			</node>
 		</node>
+	</node>
+	<node id="432">
+		<attribute name="Is Enabled" value="0" />
+		<attribute name="Name" value="Probe Object" />
+		<attribute name="Tags" />
+		<attribute name="Position" value="-11.3865 3.34096 15.8676" />
+		<attribute name="Rotation" value="1 0 0 0" />
+		<attribute name="Scale" value="0.5 0.5 0.5" />
+		<attribute name="Variables" />
+		<component type="StaticModel" id="430">
+			<attribute name="Model" value="Model;Models/Sphere.mdl" />
+			<attribute name="Material" value="Material;Materials/DefaultWhite.xml" />
+			<attribute name="Cast Shadows" value="1" />
+			<attribute name="Bake Lightmap" value="1" />
+			<attribute name="Scale in Lightmap" value="0.000000" />
+			<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.216797 0.00195313" />
+		</component>
 	</node>
 </scene>

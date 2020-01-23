@@ -336,24 +336,38 @@ int TetrahedralMesh::SolveCubicEquation(double result[], double a, double b, dou
 
 float TetrahedralMesh::SolveCubic(const Vector3& abc)
 {
-    double result[3];
-    const int numRoots = SolveCubicEquation(result, abc.x_, abc.y_, abc.z_, M_EPSILON);
-    return static_cast<float>(*ea::max_element(result, result + numRoots));
+    double results[3];
+    const int numRoots = SolveCubicEquation(results, abc.x_, abc.y_, abc.z_, M_EPSILON);
+    return static_cast<float>(GetSmallestPositiveRoot(results, numRoots));
 }
 
 float TetrahedralMesh::SolveQuadratic(const Vector3& abc)
 {
-    const float a = abc.x_;
-    const float b = abc.y_;
-    const float c = abc.z_;
+    const double a = abc.x_;
+    const double b = abc.y_;
+    const double c = abc.z_;
     if (std::abs(a) < M_EPSILON)
         return -c / b;
 
-    const float D = ea::max(0.0f, b * b - 4 * a * c);
+    const double D = ea::max(0.0, b * b - 4 * a * c);
+    const double invA = 1 / (2 * a);
+    const double roots[2] = {
+        (-b + std::sqrt(D)) * invA,
+        (-b - std::sqrt(D)) * invA
+    };
 
-    return a > 0
-        ? (-b + std::sqrt(D)) / (2 * a)
-        : (-b - std::sqrt(D)) / (2 * a);
+    return GetSmallestPositiveRoot(roots, 2);
+}
+
+double TetrahedralMesh::GetSmallestPositiveRoot(const double roots[], int count)
+{
+    double root = M_LARGE_VALUE;
+    for (int i = 0; i < count; ++i)
+    {
+        if (roots[i] > -M_LARGE_EPSILON && roots[i] < root)
+            root = roots[i];
+    }
+    return ea::max(0.0, root);
 }
 
 Vector3 TetrahedralMesh::GetTriangleBarycentricCoords(const Vector3& position,
@@ -1191,7 +1205,7 @@ void TetrahedralMesh::CalculateOuterMatrices()
             + Ap.y_ * Bp.z_ * Cp.x_
             - Ap.x_ * Bp.z_ * Cp.y_;
 
-        if (Abs(a) > M_EPSILON)
+        if (Abs(a) > M_LARGE_EPSILON)
         {
             // d is not zero, so the polynomial at^3 + bt^2 + ct + d = 0 is actually cubic
             // and we can simplify to the monic form t^3 + pt^2 + qt + r = 0
