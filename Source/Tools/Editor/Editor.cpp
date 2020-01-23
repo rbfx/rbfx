@@ -903,6 +903,11 @@ void Editor::ClearInspector()
 
 void Editor::Inspect(Object* object)
 {
+    if (object == nullptr)
+    {
+        URHO3D_LOGERROR("Editor can not inspect a null object.");
+        return;
+    }
     bool inspected = false;
     for (const auto& pair : registeredInspectorProviders_)
     {
