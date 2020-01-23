@@ -42,6 +42,20 @@
 namespace Urho3D
 {
 
+namespace
+{
+
+static const char* qualityNames[] =
+{
+    "Custom",
+    "Low",
+    "Medium",
+    "High",
+    nullptr
+};
+
+}
+
 extern const char* SUBSYSTEM_CATEGORY;
 
 LightBaker::LightBaker(Context* context) :
@@ -71,6 +85,7 @@ void LightBaker::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Output Directory", ea::string, settings_.incremental_.outputDirectory_, "", AM_DEFAULT);
     URHO3D_ATTRIBUTE("Lightmap Size", unsigned, settings_.charting_.lightmapSize_, defaultSettings.charting_.lightmapSize_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Texel Density", float, settings_.charting_.texelDensity_, defaultSettings.charting_.texelDensity_, AM_DEFAULT);
+    URHO3D_ENUM_ACCESSOR_ATTRIBUTE("Quality", GetQuality, SetQuality, LightBakingQuality, qualityNames, LightBakingQuality::Custom, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Direct Samples (Lightmap)", unsigned, settings_.directChartTracing_.maxSamples_, defaultSettings.directChartTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Direct Samples (Light Probes)", unsigned, settings_.directProbesTracing_.maxSamples_, defaultSettings.directProbesTracing_.maxSamples_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Indirect Bounces", unsigned, settings_.indirectChartTracing_.maxBounces_, defaultSettings.indirectChartTracing_.maxBounces_, AM_DEFAULT);
@@ -82,6 +97,35 @@ void LightBaker::RegisterObject(Context* context)
     URHO3D_ATTRIBUTE("Chunk Indirect Padding", float, settings_.incremental_.indirectPadding_, defaultSettings.incremental_.indirectPadding_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Chunk Shadow Distance", float, settings_.incremental_.directionalLightShadowDistance_, defaultSettings.incremental_.directionalLightShadowDistance_, AM_DEFAULT);
     URHO3D_ATTRIBUTE("Stitch Iterations", unsigned, settings_.stitching_.numIterations_, defaultSettings.stitching_.numIterations_, AM_DEFAULT);
+}
+
+void LightBaker::SetQuality(LightBakingQuality quality)
+{
+    quality_ = quality;
+    switch (quality)
+    {
+    case LightBakingQuality::Low:
+        settings_.directChartTracing_.maxSamples_ = 10;
+        settings_.directProbesTracing_.maxSamples_ = 32;
+        settings_.indirectChartTracing_.maxSamples_ = 10;
+        settings_.indirectProbesTracing_.maxSamples_ = 64;
+        break;
+    case LightBakingQuality::Medium:
+        settings_.directChartTracing_.maxSamples_ = 32;
+        settings_.directProbesTracing_.maxSamples_ = 32;
+        settings_.indirectChartTracing_.maxSamples_ = 64;
+        settings_.indirectProbesTracing_.maxSamples_ = 256;
+        break;
+    case LightBakingQuality::High:
+        settings_.directChartTracing_.maxSamples_ = 32;
+        settings_.directProbesTracing_.maxSamples_ = 32;
+        settings_.indirectChartTracing_.maxSamples_ = 256;
+        settings_.indirectProbesTracing_.maxSamples_ = 256;
+        break;
+    case LightBakingQuality::Custom:
+    default:
+        break;
+    }
 }
 
 void LightBaker::Bake()
