@@ -67,16 +67,18 @@ void PreviewInspector::CreateObjects()
 {
     view_.CreateObjects();
     node_ = view_.GetScene()->CreateChild("Preview");
-    view_.GetCamera()->GetNode()->CreateComponent<Light>();
-    view_.GetCamera()->GetNode()->SetPosition(Vector3::BACK * distance_);
-    view_.GetCamera()->GetNode()->LookAt(Vector3::ZERO);
+    Node* node = view_.GetCamera()->GetNode();
+    node->CreateComponent<Light>();
+    node->SetPosition(Vector3::BACK * distance_);
+    node->LookAt(Vector3::ZERO);
 }
 
 void PreviewInspector::RenderPreview()
 {
     auto* input = GetSubsystem<Input>();
-    auto size = static_cast<int>(ui::GetWindowWidth() - ui::GetCursorPosX());
-    view_.SetSize({0, 0, size, size});
+    float dpi = ui::GetCurrentWindow()->Viewport->DpiScale;
+    float size = ui::GetWindowWidth() - ui::GetCursorPosX();
+    view_.SetSize({0, 0, static_cast<int>(size * dpi), static_cast<int>(size * dpi)});
     ui::ImageItem(view_.GetTexture(), ImVec2(size, size));
     bool wasActive = mouseGrabbed_;
     mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
