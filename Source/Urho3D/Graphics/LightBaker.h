@@ -30,6 +30,19 @@
 namespace Urho3D
 {
 
+/// Light baking quality settings.
+enum class LightBakingQuality
+{
+    /// Custom quality.
+    Custom,
+    /// Fast baking, low quality.
+    Low,
+    /// Slower baking, medium quality.
+    Medium,
+    /// Slow baking, high quality.
+    High
+};
+
 /// Light baker component.
 class URHO3D_API LightBaker : public Component
 {
@@ -43,10 +56,17 @@ public:
     /// Register object factory. Drawable must be registered first.
     static void RegisterObject(Context* context);
 
-    /// Bake lightmaps in main thread.
+    /// Set baking quality.
+    void SetQuality(LightBakingQuality quality);
+    /// Return baking quality.
+    LightBakingQuality GetQuality() const { return quality_; };
+
+    /// Bake light in main thread.
     void Bake();
 
 private:
+    /// Quality.
+    LightBakingQuality quality_{};
     /// Light baking settings.
     LightBakingSettings settings_;
     /// Whether the baking is scheduled.
