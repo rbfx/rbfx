@@ -202,8 +202,6 @@ void SamplesManager::Start()
     logoSprite_->SetOpacity(0.9f);
     logoSprite_->SetPriority(-100);
 
-    // TODO(glow): Move it to the end
-    RegisterSample<BakedLighting>();
     RegisterSample<HelloWorld>();
     RegisterSample<HelloGUI>();
     RegisterSample<Sprites>();
@@ -289,6 +287,10 @@ void SamplesManager::Start()
     RegisterSample<HelloSystemUi>();
 #endif
     RegisterSample<Serialization>();
+    RegisterSample<BakedLighting>();
+
+    // TODO(glow): Remove it
+    startSample_ = "BakedLighting";
 
     if (!startSample_.empty())
         StartSample(startSample_);
