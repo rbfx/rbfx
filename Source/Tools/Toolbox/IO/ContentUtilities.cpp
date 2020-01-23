@@ -181,8 +181,6 @@ StringHash GetContentResourceType(Context* context, const ea::string& resourcePa
 {
     switch (GetContentType(context, resourcePath))
     {
-    case CTYPE_SCENE:
-        return Scene::GetTypeStatic();
     case CTYPE_SCENEOBJECT:
         return Node::GetTypeStatic();
     case CTYPE_UILAYOUT:

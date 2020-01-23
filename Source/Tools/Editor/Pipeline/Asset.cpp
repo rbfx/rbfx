@@ -337,9 +337,11 @@ void Asset::Inspect()
     // Show inspector for raw resource.
     if (StringHash resourceType = GetContentResourceType(context_, GetName()))
     {
-        Resource* resource = cache->GetResource(resourceType, GetName());
-        editor->Inspect(resource);
-        undo_.Connect(resource);
+        if (Resource* resource = cache->GetResource(resourceType, GetName()))
+        {
+            editor->Inspect(resource);
+            undo_.Connect(resource);
+        }
     }
 }
 
