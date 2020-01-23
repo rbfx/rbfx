@@ -119,6 +119,8 @@ public:
     void Inspect(Object* object);
     /// Returns true when specified object is currently inspected.
     bool IsInspected(Object* object) const { return object != nullptr && inspected_.contains(WeakPtr(object)); }
+    /// Return a list of currently inspected objects.
+    const ea::vector<WeakPtr<Object>>& GetInspected() const { return inspected_; }
 
     /// Key bindings manager.
     KeyBindings keyBindings_{context_};
