@@ -45,7 +45,7 @@ void BakedLightMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapCha
     directLightCache_[lightmapIndex] = ea::make_shared<LightmapChartBakedDirect>(ea::move(bakedDirect));
 }
 
-ea::shared_ptr<LightmapChartBakedDirect> BakedLightMemoryCache::LoadDirectLight(unsigned lightmapIndex)
+ea::shared_ptr<const LightmapChartBakedDirect> BakedLightMemoryCache::LoadDirectLight(unsigned lightmapIndex)
 {
     auto iter = directLightCache_.find(lightmapIndex);
     return iter != directLightCache_.end() ? iter->second : nullptr;
