@@ -69,7 +69,7 @@ public:
     /// Store direct light for the lightmap chart.
     virtual void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) = 0;
     /// Load direct light for the lightmap chart.
-    virtual ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) = 0;
+    virtual ea::shared_ptr<const LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) = 0;
 
     /// Store baked lightmap.
     virtual void StoreLightmap(unsigned lightmapIndex, BakedLightmap bakedLightmap) = 0;
@@ -89,7 +89,7 @@ public:
     /// Store direct light for the lightmap chart.
     void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) override;
     /// Load direct light for the lightmap chart.
-    ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) override;
+    ea::shared_ptr<const LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) override;
 
     /// Store baked lightmap.
     void StoreLightmap(unsigned lightmapIndex, BakedLightmap bakedLightmap) override;
@@ -100,7 +100,7 @@ private:
     /// Baking contexts cache.
     ea::unordered_map<IntVector3, ea::shared_ptr<const BakedSceneChunk>> bakedChunkCache_;
     /// Direct light cache.
-    ea::unordered_map<unsigned, ea::shared_ptr<LightmapChartBakedDirect>> directLightCache_;
+    ea::unordered_map<unsigned, ea::shared_ptr<const LightmapChartBakedDirect>> directLightCache_;
     /// Baked lightmaps.
     ea::unordered_map<unsigned, ea::shared_ptr<const BakedLightmap>> lightmapCache_;
 };
