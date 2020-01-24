@@ -30,6 +30,8 @@
 #include "../Graphics/StaticModel.h"
 #include "../Graphics/Terrain.h"
 
+#include <EASTL/sort.h>
+
 namespace Urho3D
 {
 
@@ -99,6 +101,7 @@ LightmapChartRegion AllocateLightmapChartRegion(const LightmapChartingSettings& 
     return { chartIndex, position, size, settings.lightmapSize_ };
 }
 
+/// Calculate size in lightmap for StaticModel component.
 IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const LightmapChartingSettings& settings)
 {
     Node* node = staticModel->GetNode();
@@ -107,6 +110,7 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
         node->GetWorldScale(), staticModel->GetScaleInLightmap());
 }
 
+/// Calculate size in lightmap for Terrain component.
 IntVector2 CalculateTerrainLightmapSize(Terrain* terrain, const LightmapChartingSettings& settings)
 {
     Node* node = terrain->GetNode();
@@ -118,6 +122,7 @@ IntVector2 CalculateTerrainLightmapSize(Terrain* terrain, const LightmapCharting
     return VectorCeilToInt(dimensions * settings.texelDensity_ * scaleInLightmap);
 }
 
+/// Calculate size in lightmap for component.
 IntVector2 CalculateGeometryLightmapSize(Component* component, const LightmapChartingSettings& settings)
 {
     if (auto staticModel = dynamic_cast<StaticModel*>(component))
@@ -127,13 +132,25 @@ IntVector2 CalculateGeometryLightmapSize(Component* component, const LightmapCha
     return {};
 }
 
+/// Region to be requested for chunk.
+struct RequestedChartRegion
+{
+    /// Index of the object.
+    unsigned objectIndex_{};
+    /// Adjusted region size.
+    IntVector2 adjustedRegionSize_;
+    /// Component to bake.
+    Component* component_{};
+};
+
 }
 
 ea::vector<LightmapChart> GenerateLightmapCharts(
     const ea::vector<Component*>& geometries, const LightmapChartingSettings& settings, unsigned baseChartIndex)
 {
+    // Collect object regions
     const int maxRegionSize = static_cast<int>(settings.lightmapSize_ - settings.padding_ * 2);
-    ea::vector<LightmapChart> charts;
+    ea::vector<RequestedChartRegion> requestedRegions;
     for (unsigned objectIndex = 0; objectIndex < geometries.size(); ++objectIndex)
     {
         Component* component = geometries[objectIndex];
@@ -141,8 +158,6 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
 
         const IntVector2 regionSize = CalculateGeometryLightmapSize(component, settings);
         const IntVector2 adjustedRegionSize = AdjustRegionSize(regionSize, maxRegionSize);
-        const LightmapChartRegion region = AllocateLightmapChartRegion(
-            settings, charts, adjustedRegionSize, baseChartIndex);
 
         if (regionSize != adjustedRegionSize)
         {
@@ -150,7 +165,26 @@ ea::vector<LightmapChart> GenerateLightmapCharts(
                 node->GetName());
         }
 
-        const LightmapChartElement chartElement{ node, component, objectIndex, region };
+        requestedRegions.emplace_back(RequestedChartRegion{ objectIndex, adjustedRegionSize, component });
+    }
+
+    // Sort regions by max dimensions
+    const auto compareDimensions = [](const RequestedChartRegion& lhs, const RequestedChartRegion& rhs)
+    {
+        const IntVector2& lhsRegion = lhs.adjustedRegionSize_;
+        const IntVector2& rhsRegion = rhs.adjustedRegionSize_;
+        return ea::max(lhsRegion.x_, lhsRegion.y_) > ea::max(rhsRegion.x_, rhsRegion.y_);
+    };
+    ea::sort(requestedRegions.begin(), requestedRegions.end(), compareDimensions);
+
+    // Generate charts
+    ea::vector<LightmapChart> charts;
+    for (const RequestedChartRegion& requestedRegion : requestedRegions)
+    {
+        const LightmapChartRegion region = AllocateLightmapChartRegion(
+            settings, charts, requestedRegion.adjustedRegionSize_, baseChartIndex);
+
+        const LightmapChartElement chartElement{ requestedRegion.component_, requestedRegion.objectIndex_, region };
         charts[region.chartIndex_].elements_.push_back(chartElement);
     }
     return charts;
