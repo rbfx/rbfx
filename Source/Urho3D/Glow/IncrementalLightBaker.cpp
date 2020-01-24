@@ -100,18 +100,6 @@ struct BaseIncrementalContext
     unsigned currentChunkIndex_{};
 };
 
-/// Context used for incremental lightmap chunk processing (first pass).
-struct ChartingContext : public BaseIncrementalContext
-{
-    /// Current lightmap chart base index.
-    unsigned lightmapChartBaseIndex_{};
-};
-
-/// Context used for incremental lightmap chunk processing (second pass).
-struct AdjacentChartProcessingContext : public BaseIncrementalContext
-{
-};
-
 /// Context used for direct light baking.
 struct DirectLightBakingContext : public BaseIncrementalContext
 {
@@ -225,47 +213,40 @@ struct IncrementalLightBaker::Impl
         return true;
     }
 
-    /// Step charting. Chunks are processed individually. Return true when completed.
-    bool StepCharting(ChartingContext& ctx)
+    /// Generate charts and allocate light probes.
+    void GenerateChartsAndUpdateScene()
     {
-        if (ctx.currentChunkIndex_ >= chunks_.size())
+        numLightmapCharts_ = 0;
+
+        for (const IntVector3& chunk : chunks_)
         {
-            numLightmapCharts_ = ctx.lightmapChartBaseIndex_;
-            return true;
+            // Collect nodes for current chunks
+            const ea::vector<Component*> uniqueGeometries = collector_->GetUniqueGeometries(chunk);
+            const ea::vector<LightProbeGroup*> uniqueLightProbes = collector_->GetUniqueLightProbeGroups(chunk);
+
+            // Generate charts
+            const LightmapChartVector charts = GenerateLightmapCharts(
+                uniqueGeometries, settings_.charting_, numLightmapCharts_);
+
+            // Apply charts to scene
+            ApplyLightmapCharts(charts);
+            collector_->CommitGeometries(chunk);
+
+            // Assign baked data files for light probe groups
+            auto fileSystem = context_->GetFileSystem();
+            for (unsigned i = 0; i < uniqueLightProbes.size(); ++i)
+            {
+                LightProbeGroup* group = uniqueLightProbes[i];
+                const ea::string fileName = GetLightProbeBakedDataFileName(chunk, i);
+                fileSystem->CreateDirsRecursive(GetPath(fileName));
+                group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), fileName });
+            }
+
+            // Update base index
+            numLightmapCharts_ += charts.size();
         }
 
-        // Collect nodes for current chunks
-        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::vector<Component*> uniqueGeometries = collector_->GetUniqueGeometries(chunk);
-        const ea::vector<LightProbeGroup*> uniqueLightProbes = collector_->GetUniqueLightProbeGroups(chunk);
-
-        // Generate charts
-        const LightmapChartVector charts = GenerateLightmapCharts(
-            uniqueGeometries, settings_.charting_, ctx.lightmapChartBaseIndex_);
-
-        // Apply charts to scene
-        ApplyLightmapCharts(charts);
-        collector_->CommitGeometries(chunk);
-
-        // Assign baked data files for light probe groups
-        auto fileSystem = context_->GetFileSystem();
-        for (unsigned i = 0; i < uniqueLightProbes.size(); ++i)
-        {
-            LightProbeGroup* group = uniqueLightProbes[i];
-            const ea::string fileName = GetLightProbeBakedDataFileName(chunk, i);
-            fileSystem->CreateDirsRecursive(GetPath(fileName));
-            group->SetBakedDataFileRef({ BinaryFile::GetTypeStatic(), fileName });
-        }
-
-        // Advance
-        ctx.lightmapChartBaseIndex_ += charts.size();
-        ++ctx.currentChunkIndex_;
-        return false;
-    }
-
-    /// Reference lightmaps by the scene.
-    void ReferenceLightmapsByScene()
-    {
+        // Update scene
         scene_->ResetLightmaps();
         for (unsigned i = 0; i < numLightmapCharts_; ++i)
         {
@@ -281,20 +262,14 @@ struct IncrementalLightBaker::Impl
         }
     }
 
-    /// Step chunk processing. Chunks are processed with adjacent context. Return true when completed.
-    bool StepAdjacentChunkProcessing(AdjacentChartProcessingContext& ctx)
+    /// Generate baking chunks.
+    void GenerateBakingChunks()
     {
-        if (ctx.currentChunkIndex_ >= chunks_.size())
-            return true;
-
-        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-
-        BakedChunkVicinity chunkVicinity = CreateBakedChunkVicinity(context_, *collector_, chunk, settings_);
-        cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
-
-        // Advance
-        ++ctx.currentChunkIndex_;
-        return false;
+        for (const IntVector3& chunk : chunks_)
+        {
+            BakedChunkVicinity chunkVicinity = CreateBakedChunkVicinity(context_, *collector_, chunk, settings_);
+            cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
+        }
     }
 
     /// Step baking direct lighting.
@@ -539,18 +514,8 @@ bool IncrementalLightBaker::Initialize(const LightBakingSettings& settings,
 
 void IncrementalLightBaker::ProcessScene()
 {
-    // Generate charts
-    ChartingContext chartingContext;
-    while (!impl_->StepCharting(chartingContext))
-        ;
-
-    // Reference generated charts by the scene
-    impl_->ReferenceLightmapsByScene();
-
-    // Generate baking geometry
-    AdjacentChartProcessingContext geometryBakingContext;
-    while (!impl_->StepAdjacentChunkProcessing(geometryBakingContext))
-        ;
+    impl_->GenerateChartsAndUpdateScene();
+    impl_->GenerateBakingChunks();
 }
 
 void IncrementalLightBaker::Bake()
