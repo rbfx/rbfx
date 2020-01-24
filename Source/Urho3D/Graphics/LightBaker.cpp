@@ -101,8 +101,7 @@ void LightBaker::RegisterObject(Context* context)
     context->RegisterFactory<LightBaker>(SUBSYSTEM_CATEGORY);
 
     auto getBake = [](const ClassName& self, Urho3D::Variant& value) { value = self.state_ != InternalState::NotStarted; };
-    auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.state_ = InternalState::ScheduledSync; };
-    //auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.BakeAsync(); };
+    auto setBake = [](ClassName& self, const Urho3D::Variant& value) { if (value.GetBool()) self.BakeAsync(); };
     URHO3D_CUSTOM_ACCESSOR_ATTRIBUTE("Bake!", getBake, setBake, bool, false, AM_EDIT);
 
     URHO3D_ATTRIBUTE("Output Directory", ea::string, settings_.incremental_.outputDirectory_, "", AM_DEFAULT);
