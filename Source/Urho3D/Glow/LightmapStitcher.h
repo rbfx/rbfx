@@ -45,8 +45,6 @@ struct LightmapStitchingContext
     SharedPtr<Texture2D> pingTexture_;
     /// Second texture for ping-pong.
     SharedPtr<Texture2D> pongTexture_;
-    /// Intermediate data buffer.
-    ea::vector<Vector4> data_;
 };
 
 /// Initialize lightmap stitching context.
@@ -56,12 +54,9 @@ URHO3D_API LightmapStitchingContext InitializeStitchingContext(
 /// Create model for lightmap seams.
 URHO3D_API SharedPtr<Model> CreateSeamsModel(Context* context, const LightmapSeamVector& seams);
 
-/// Stitch seams in the image.
-URHO3D_API void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector3>& imageData,
-    const LightmapStitchingSettings& settings, Model* seamsModel);
-
-/// Stitch seams in the image.
-URHO3D_API void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector4>& imageData,
+/// Stitch seams in the image and store result in context.
+URHO3D_API void StitchLightmapSeams(LightmapStitchingContext& stitchingContext,
+    const ea::vector<Vector3>& inputData, ea::vector<Vector4>& outputData,
     const LightmapStitchingSettings& settings, Model* seamsModel);
 
 }
