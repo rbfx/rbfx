@@ -22,7 +22,7 @@
 
 /// \file
 
-#include "../Glow/BakedChunkVicinity.h"
+#include "../Glow/BakedSceneChunk.h"
 
 #include "../Glow/LightTracer.h"
 #include "../IO/Log.h"
