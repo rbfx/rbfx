@@ -138,6 +138,7 @@ void SamplesManager::Setup()
     engineParameters_[EP_FULL_SCREEN]  = false;
     engineParameters_[EP_HEADLESS]     = false;
     engineParameters_[EP_SOUND]        = true;
+    engineParameters_[EP_HIGH_DPI]     = false;
 #if MOBILE
     engineParameters_[EP_ORIENTATIONS] = "Portrait";
 #endif
