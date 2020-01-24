@@ -56,7 +56,7 @@ URHO3D_API SharedPtr<Model> CreateSeamsModel(Context* context, const LightmapSea
 
 /// Stitch seams in the image and store result in context.
 URHO3D_API void StitchLightmapSeams(LightmapStitchingContext& stitchingContext,
-    const ea::vector<Vector3>& inputData, ea::vector<Vector4>& outputData,
+    const ea::vector<Vector3>& inputBuffer, ea::vector<Vector4>& outputBuffer,
     const LightmapStitchingSettings& settings, Model* seamsModel);
 
 }
