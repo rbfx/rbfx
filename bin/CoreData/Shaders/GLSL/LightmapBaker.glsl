@@ -60,7 +60,7 @@ void PS()
         faceNormal *= -1.0;
 
     vec3 dPmax = max(abs(dPdx), abs(dPdy));
-    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135;
+    float texelRadius = max(dPmax.x, max(dPmax.y, dPmax.z)) * 1.4142135 * 0.5;
 
     float scaledBias = vMetadata.y;
     float constBias = vMetadata.z;

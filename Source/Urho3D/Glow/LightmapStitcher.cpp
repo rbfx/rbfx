@@ -189,7 +189,7 @@ SharedPtr<VertexBuffer> CreateSeamsVertexBuffer(Context* context, const Lightmap
 
 /// Stitch texture in intermediate buffer.
 void StitchTextureSeams(LightmapStitchingContext& stitchingContext,
-    const LightmapStitchingSettings& settings, Model* seamsModel)
+    ea::vector<Vector4>& buffer, const LightmapStitchingSettings& settings, Model* seamsModel)
 {
     Context* context = stitchingContext.context_;
     auto graphics = context->GetGraphics();
@@ -215,7 +215,7 @@ void StitchTextureSeams(LightmapStitchingContext& stitchingContext,
     View* swapView = pongViewViewport.first;
 
     const int size = static_cast<int>(stitchingContext.lightmapSize_);
-    currentTexture->SetData(0, 0, 0, size, size, stitchingContext.data_.data());
+    currentTexture->SetData(0, 0, 0, size, size, buffer.data());
 
     // Ping-pong rendering
     for (unsigned i = 0; i < settings.numIterations_; ++i)
@@ -226,7 +226,7 @@ void StitchTextureSeams(LightmapStitchingContext& stitchingContext,
     }
 
     // Finish
-    currentTexture->GetData(0, stitchingContext.data_.data());
+    currentTexture->GetData(0, buffer.data());
     graphics->EndFrame();
 }
 
@@ -237,7 +237,6 @@ LightmapStitchingContext InitializeStitchingContext(Context* context, unsigned l
     LightmapStitchingContext result;
     result.context_ = context;
     result.lightmapSize_ = lightmapSize;
-    result.data_.resize(lightmapSize * lightmapSize);
 
     const unsigned textureFormat = GetStitchTextureFormat(numChannels);
     result.pingTexture_ = MakeShared<Texture2D>(context);
@@ -272,24 +271,15 @@ SharedPtr<Model> CreateSeamsModel(Context* context, const LightmapSeamVector& se
     return model;
 }
 
-void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector3>& imageData,
+void StitchLightmapSeams(LightmapStitchingContext& stitchingContext,
+    const ea::vector<Vector3>& inputData, ea::vector<Vector4>& outputData,
     const LightmapStitchingSettings& settings, Model* seamsModel)
 {
-    for (unsigned i = 0; i < imageData.size(); ++i)
-        stitchingContext.data_[i] = Vector4(imageData[i], 1.0f);
+    for (unsigned i = 0; i < inputData.size(); ++i)
+        outputData[i] = Vector4(inputData[i], 1.0f);
 
-    StitchTextureSeams(stitchingContext, settings, seamsModel);
-
-    for (unsigned i = 0; i < imageData.size(); ++i)
-        imageData[i] = static_cast<Vector3>(stitchingContext.data_[i]);
+    StitchTextureSeams(stitchingContext, outputData, settings, seamsModel);
 }
 
-void StitchLightmapSeams(LightmapStitchingContext& stitchingContext, ea::vector<Vector4>& imageData,
-    const LightmapStitchingSettings& settings, Model* seamsModel)
-{
-    ea::swap(stitchingContext.data_, imageData);
-    StitchTextureSeams(stitchingContext, settings, seamsModel);
-    ea::swap(stitchingContext.data_, imageData);
-}
 
 }

@@ -34,14 +34,10 @@ void BakedLightMemoryCache::StoreChunkVicinity(const IntVector3& chunk, BakedChu
     chunkVicinityCache_[chunk] = ea::make_shared<BakedChunkVicinity>(ea::move(vicinity));
 }
 
-ea::shared_ptr<BakedChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
+ea::shared_ptr<const BakedChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
 {
     auto iter = chunkVicinityCache_.find(chunk);
     return iter != chunkVicinityCache_.end() ? iter->second : nullptr;
-}
-
-void BakedLightMemoryCache::CommitLightProbeGroups(const IntVector3& /*chunk*/)
-{
 }
 
 void BakedLightMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect)
@@ -53,6 +49,17 @@ ea::shared_ptr<LightmapChartBakedDirect> BakedLightMemoryCache::LoadDirectLight(
 {
     auto iter = directLightCache_.find(lightmapIndex);
     return iter != directLightCache_.end() ? iter->second : nullptr;
+}
+
+void BakedLightMemoryCache::StoreLightmap(unsigned lightmapIndex, BakedLightmap bakedLightmap)
+{
+    lightmapCache_[lightmapIndex] = ea::make_shared<BakedLightmap>(ea::move(bakedLightmap));
+}
+
+ea::shared_ptr<const BakedLightmap> BakedLightMemoryCache::LoadLightmap(unsigned lightmapIndex)
+{
+    auto iter = lightmapCache_.find(lightmapIndex);
+    return iter != lightmapCache_.end() ? iter->second : nullptr;
 }
 
 }
