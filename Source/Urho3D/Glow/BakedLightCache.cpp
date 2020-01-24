@@ -29,15 +29,15 @@ namespace Urho3D
 
 BakedLightCache::~BakedLightCache() = default;
 
-void BakedLightMemoryCache::StoreChunkVicinity(const IntVector3& chunk, BakedChunkVicinity vicinity)
+void BakedLightMemoryCache::StoreBakedChunk(const IntVector3& chunk, BakedSceneChunk bakedChunk)
 {
-    chunkVicinityCache_[chunk] = ea::make_shared<BakedChunkVicinity>(ea::move(vicinity));
+    bakedChunkCache_[chunk] = ea::make_shared<BakedSceneChunk>(ea::move(bakedChunk));
 }
 
-ea::shared_ptr<const BakedChunkVicinity> BakedLightMemoryCache::LoadChunkVicinity(const IntVector3& chunk)
+ea::shared_ptr<const BakedSceneChunk> BakedLightMemoryCache::LoadBakedChunk(const IntVector3& chunk)
 {
-    auto iter = chunkVicinityCache_.find(chunk);
-    return iter != chunkVicinityCache_.end() ? iter->second : nullptr;
+    auto iter = bakedChunkCache_.find(chunk);
+    return iter != bakedChunkCache_.end() ? iter->second : nullptr;
 }
 
 void BakedLightMemoryCache::StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect)
