@@ -69,7 +69,7 @@ void VS()
         vVertexLight = vec3(0.0, 0.0, 0.0);
         vTexCoord2 = GetLightMapTexCoord(iTexCoord1);
     #else
-        vVertexLight = GetAmbientLight(vec4(vNormal, 1)) + GetAmbient(0);
+        vVertexLight = GetAmbientLight(vec4(vNormal, 1)) + GetAmbient(0.0);
     #endif
 
     #ifdef PERPIXEL
