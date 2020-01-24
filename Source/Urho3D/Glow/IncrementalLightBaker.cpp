@@ -25,7 +25,7 @@
 #include "../Glow/IncrementalLightBaker.h"
 
 #include "../Core/Context.h"
-#include "../Glow/BakedChunkVicinity.h"
+#include "../Glow/BakedSceneChunk.h"
 #include "../Glow/LightmapCharter.h"
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Glow/LightmapFilter.h"

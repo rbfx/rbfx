@@ -24,7 +24,7 @@
 
 #pragma once
 
-#include "../Glow/BakedChunkVicinity.h"
+#include "../Glow/BakedSceneChunk.h"
 #include "../Glow/RaytracerScene.h"
 #include "../Glow/LightmapGeometryBuffer.h"
 #include "../Glow/LightTracer.h"
