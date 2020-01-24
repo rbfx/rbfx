@@ -113,7 +113,7 @@ void VS(float4 iPos : POSITION,
         oVertexLight = float3(0.0, 0.0, 0.0);
         oTexCoord2 = GetLightMapTexCoord(iTexCoord2);
     #else
-        oVertexLight = GetAmbientLight(float4(oNormal, 1)) + GetAmbient(0);
+        oVertexLight = GetAmbientLight(float4(oNormal, 1)) + GetAmbient(0.0);
     #endif
 
     #ifdef PERPIXEL
