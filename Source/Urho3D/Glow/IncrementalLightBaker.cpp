@@ -235,8 +235,8 @@ struct IncrementalLightBaker::Impl
     {
         for (const IntVector3& chunk : chunks_)
         {
-            BakedChunkVicinity chunkVicinity = CreateBakedChunkVicinity(context_, *collector_, chunk, settings_);
-            cache_->StoreChunkVicinity(chunk, ea::move(chunkVicinity));
+            BakedSceneChunk bakedChunk = CreateBakedSceneChunk(context_, *collector_, chunk, settings_);
+            cache_->StoreBakedChunk(chunk, ea::move(bakedChunk));
         }
     }
 
@@ -245,26 +245,26 @@ struct IncrementalLightBaker::Impl
     {
         for (const IntVector3 chunk : chunks_)
         {
-            const ea::shared_ptr<const BakedChunkVicinity> bakingChunk = cache_->LoadChunkVicinity(chunk);
+            const ea::shared_ptr<const BakedSceneChunk> bakedChunk = cache_->LoadBakedChunk(chunk);
 
             // Bake direct lighting
-            for (unsigned i = 0; i < bakingChunk->lightmaps_.size(); ++i)
+            for (unsigned i = 0; i < bakedChunk->lightmaps_.size(); ++i)
             {
                 if (stopToken.IsStopped())
                     return false;
 
-                const unsigned lightmapIndex = bakingChunk->lightmaps_[i];
-                const LightmapChartGeometryBuffer& geometryBuffer = bakingChunk->geometryBuffers_[i];
+                const unsigned lightmapIndex = bakedChunk->lightmaps_[i];
+                const LightmapChartGeometryBuffer& geometryBuffer = bakedChunk->geometryBuffers_[i];
                 LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
 
                 // Bake emission
                 BakeEmissionLight(bakedDirect, geometryBuffer, settings_.emissionTracing_);
 
                 // Bake direct lights for charts
-                for (const BakedLight& bakedLight : bakingChunk->bakedLights_)
+                for (const BakedLight& bakedLight : bakedChunk->bakedLights_)
                 {
-                    BakeDirectLightForCharts(bakedDirect, geometryBuffer, *bakingChunk->raytracerScene_,
-                        bakingChunk->geometryBufferToRaytracer_, bakedLight, settings_.directChartTracing_);
+                    BakeDirectLightForCharts(bakedDirect, geometryBuffer, *bakedChunk->raytracerScene_,
+                        bakedChunk->geometryBufferToRaytracer_, bakedLight, settings_.directChartTracing_);
                 }
 
                 // Store direct light
@@ -285,11 +285,11 @@ struct IncrementalLightBaker::Impl
 
         for (const IntVector3 chunk : chunks_)
         {
-            const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+            const ea::shared_ptr<const BakedSceneChunk> bakedChunk = cache_->LoadBakedChunk(chunk);
 
             // Collect required direct lightmaps
             ea::hash_set<unsigned> requiredDirectLightmaps;
-            for (const RaytracerGeometry& raytracerGeometry : chunkVicinity->raytracerScene_->GetGeometries())
+            for (const RaytracerGeometry& raytracerGeometry : bakedChunk->raytracerScene_->GetGeometries())
             {
                 if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
                     requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
@@ -304,31 +304,31 @@ struct IncrementalLightBaker::Impl
             }
 
             // Allocate storage for light probes
-            lightProbesBakedData.Resize(chunkVicinity->lightProbesCollection_.GetNumProbes());
+            lightProbesBakedData.Resize(bakedChunk->lightProbesCollection_.GetNumProbes());
 
             // Bake indirect light for light probes
-            BakeIndirectLightForLightProbes(lightProbesBakedData, chunkVicinity->lightProbesCollection_,
-                bakedDirectLightmaps, *chunkVicinity->raytracerScene_, settings_.indirectProbesTracing_);
+            BakeIndirectLightForLightProbes(lightProbesBakedData, bakedChunk->lightProbesCollection_,
+                bakedDirectLightmaps, *bakedChunk->raytracerScene_, settings_.indirectProbesTracing_);
 
             // Build light probes mesh for fallback indirect
             TetrahedralMesh lightProbesMesh;
-            lightProbesMesh.Define(chunkVicinity->lightProbesCollection_.worldPositions_);
+            lightProbesMesh.Define(bakedChunk->lightProbesCollection_.worldPositions_);
 
             // Bake indirect lighting for charts
-            for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
+            for (unsigned i = 0; i < bakedChunk->lightmaps_.size(); ++i)
             {
                 if (stopToken.IsStopped())
                     return false;
 
-                const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
-                const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
+                const unsigned lightmapIndex = bakedChunk->lightmaps_[i];
+                const LightmapChartGeometryBuffer& geometryBuffer = bakedChunk->geometryBuffers_[i];
                 const ea::shared_ptr<LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
                 LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
 
                 // Bake indirect lights
                 BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
                     geometryBuffer, lightProbesMesh, lightProbesBakedData,
-                    *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
+                    *bakedChunk->raytracerScene_, bakedChunk->geometryBufferToRaytracer_,
                     settings_.indirectChartTracing_);
 
                 // Filter direct and indirect
@@ -361,21 +361,21 @@ struct IncrementalLightBaker::Impl
             }
 
             // Bake direct lights for light probes
-            for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
+            for (const BakedLight& bakedLight : bakedChunk->bakedLights_)
             {
                 BakeDirectLightForLightProbes(lightProbesBakedData,
-                    chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
+                    bakedChunk->lightProbesCollection_, *bakedChunk->raytracerScene_,
                     bakedLight, settings_.directProbesTracing_);
             }
 
             // Save light probes
-            for (unsigned groupIndex = 0; groupIndex < chunkVicinity->numUniqueLightProbes_; ++groupIndex)
+            for (unsigned groupIndex = 0; groupIndex < bakedChunk->numUniqueLightProbes_; ++groupIndex)
             {
                 if (!LightProbeGroup::SaveLightProbesBakedData(context_,
-                    chunkVicinity->lightProbesCollection_, lightProbesBakedData, groupIndex))
+                    bakedChunk->lightProbesCollection_, lightProbesBakedData, groupIndex))
                 {
-                    const ea::string groupName = groupIndex < chunkVicinity->lightProbesCollection_.GetNumGroups()
-                        ? chunkVicinity->lightProbesCollection_.names_[groupIndex] : "";
+                    const ea::string groupName = groupIndex < bakedChunk->lightProbesCollection_.GetNumGroups()
+                        ? bakedChunk->lightProbesCollection_.names_[groupIndex] : "";
                     URHO3D_LOGERROR("Cannot save light probes for group '{}' in chunk {}",
                         groupName, chunk.ToString());
                 }
@@ -406,12 +406,12 @@ struct IncrementalLightBaker::Impl
         // Process all chunks
         for (const IntVector3 chunk : chunks_)
         {
-            const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-            for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
+            const ea::shared_ptr<const BakedSceneChunk> bakedChunk = cache_->LoadBakedChunk(chunk);
+            for (unsigned i = 0; i < bakedChunk->lightmaps_.size(); ++i)
             {
-                const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
+                const unsigned lightmapIndex = bakedChunk->lightmaps_[i];
                 const ea::shared_ptr<const BakedLightmap> bakedLightmap = cache_->LoadLightmap(lightmapIndex);
-                const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
+                const LightmapChartGeometryBuffer& geometryBuffer = bakedChunk->geometryBuffers_[i];
 
                 // Stitch seams or just copy data to buffer
                 if (settings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())

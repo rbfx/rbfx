@@ -55,12 +55,12 @@ Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
 
 }
 
-BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
+BakedSceneChunk CreateBakedSceneChunk(Context* context,
     BakedSceneCollector& collector, const IntVector3& chunk, const LightBakingSettings& settings)
 {
     const BoundingBox lightReceiversBoundingBox = collector.GetChunkBoundingBox(chunk);
     const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector.GetUniqueLightProbeGroups(chunk);
-    const ea::vector<Light*> relevantLights = collector.GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
+    const ea::vector<Light*> lightsInChunk = collector.GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
     const ea::vector<Component*> uniqueGeometries = collector.GetUniqueGeometries(chunk);
 
     // Bake geometry buffers
@@ -74,7 +74,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     // Collect shadow casters for direct lighting
     ea::hash_set<Component*> relevantGeometries;
-    for (Light* light : relevantLights)
+    for (Light* light : lightsInChunk)
     {
         if (light->GetLightType() == LIGHT_DIRECTIONAL)
         {
@@ -109,8 +109,8 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     for (Component* geometry : uniqueGeometries)
         relevantGeometries.erase(geometry);
 
-    ea::vector<Component*> geometries = uniqueGeometries;
-    geometries.insert(geometries.end(), relevantGeometries.begin(), relevantGeometries.end());
+    ea::vector<Component*> geometriesInChunk = uniqueGeometries;
+    geometriesInChunk.insert(geometriesInChunk.end(), relevantGeometries.begin(), relevantGeometries.end());
 
     // Collect light probes, unique are first
     const ea::vector<LightProbeGroup*> lightProbesInVolume = collector.GetLightProbeGroupsInBoundingBox(
@@ -120,11 +120,11 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
     for (LightProbeGroup* group : uniqueLightProbeGroups)
         relevantLightProbes.erase(group);
 
-    ea::vector<LightProbeGroup*> lightProbeGroups = uniqueLightProbeGroups;
-    lightProbeGroups.insert(lightProbeGroups.end(), relevantLightProbes.begin(), relevantLightProbes.end());
+    ea::vector<LightProbeGroup*> lightProbeGroupsInChunk = uniqueLightProbeGroups;
+    lightProbeGroupsInChunk.insert(lightProbeGroupsInChunk.end(), relevantLightProbes.begin(), relevantLightProbes.end());
 
     LightProbeCollection lightProbesCollection;
-    LightProbeGroup::CollectLightProbes(lightProbeGroups, lightProbesCollection, nullptr);
+    LightProbeGroup::CollectLightProbes(lightProbeGroupsInChunk, lightProbesCollection, nullptr);
 
     // Create scene for raytracing
     RaytracingBackground raytracingBackground;
@@ -135,7 +135,7 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     const unsigned uvChannel = settings.geometryBufferBaking_.uvChannel_;
     const SharedPtr<RaytracerScene> raytracerScene = CreateRaytracingScene(
-        context, geometries, uvChannel, raytracingBackground);
+        context, geometriesInChunk, uvChannel, raytracingBackground);
 
     // Match raytracer geometries and geometry buffer
     ea::vector<RaytracerGeometry> raytracerGeometriesSorted = raytracerScene->GetGeometries();
@@ -182,19 +182,28 @@ BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
 
     // Collect lights
     ea::vector<BakedLight> bakedLights;
-    for (Light* light : relevantLights)
+    for (Light* light : lightsInChunk)
         bakedLights.push_back(BakedLight{ light });
 
-    BakedChunkVicinity chunkVicinity;
-    chunkVicinity.lightmaps_ = lightmapsInChunk;
-    chunkVicinity.raytracerScene_ = raytracerScene;
-    chunkVicinity.geometryBuffers_ = ea::move(geometryBuffers);
-    chunkVicinity.geometryBufferToRaytracer_ = ea::move(geometryBufferToRaytracerGeometry);
-    chunkVicinity.bakedLights_ = bakedLights;
-    chunkVicinity.lightProbesCollection_ = lightProbesCollection;
-    chunkVicinity.numUniqueLightProbes_ = uniqueLightProbeGroups.size();
+    // Collect direct lightmaps required for chunk
+    ea::hash_set<unsigned> requiredDirectLightmaps;
+    for (const RaytracerGeometry& raytracerGeometry : raytracerScene->GetGeometries())
+    {
+        if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
+            requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
+    }
 
-    return chunkVicinity;
+    // Create baked chunk
+    BakedSceneChunk bakedChunk;
+    bakedChunk.lightmaps_ = lightmapsInChunk;
+    bakedChunk.raytracerScene_ = raytracerScene;
+    bakedChunk.geometryBuffers_ = ea::move(geometryBuffers);
+    bakedChunk.geometryBufferToRaytracer_ = ea::move(geometryBufferToRaytracerGeometry);
+    bakedChunk.bakedLights_ = bakedLights;
+    bakedChunk.lightProbesCollection_ = lightProbesCollection;
+    bakedChunk.numUniqueLightProbes_ = uniqueLightProbeGroups.size();
+
+    return bakedChunk;
 }
 
 }
