@@ -53,24 +53,19 @@ Frustum CalculateDirectionalLightFrustum(const BoundingBox& boundingBox,
     return frustum;
 }
 
-}
-
-BakedSceneChunk CreateBakedSceneChunk(Context* context,
-    BakedSceneCollector& collector, const IntVector3& chunk, const LightBakingSettings& settings)
+/// Collect lights required to bake chunk.
+ea::vector<Light*> CollectLightsInChunk(BakedSceneCollector& collector, const IntVector3& chunk)
 {
     const BoundingBox lightReceiversBoundingBox = collector.GetChunkBoundingBox(chunk);
-    const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector.GetUniqueLightProbeGroups(chunk);
-    const ea::vector<Light*> lightsInChunk = collector.GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
-    const ea::vector<Component*> uniqueGeometries = collector.GetUniqueGeometries(chunk);
+    return collector.GetLightsInBoundingBox(chunk, lightReceiversBoundingBox);
+}
 
-    // Bake geometry buffers
-    const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
-        context, uniqueGeometries, settings.charting_.lightmapSize_, settings.geometryBufferBaking_);
-    LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(geometryBakingScenes.bakingScenes_);
-
-    ea::vector<unsigned> lightmapsInChunk;
-    for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-        lightmapsInChunk.push_back(geometryBuffer.index_);
+/// Collect geometries required to bake chunk.
+ea::vector<Component*> CollectGeometriesInChunk(BakedSceneCollector& collector, const IntVector3& chunk,
+    const ea::vector<Component*>& uniqueGeometries, const ea::vector<Light*>& lightsInChunk,
+    float directionalLightShadowDistance, float indirectPadding)
+{
+    const BoundingBox lightReceiversBoundingBox = collector.GetChunkBoundingBox(chunk);
 
     // Collect shadow casters for direct lighting
     ea::hash_set<Component*> relevantGeometries;
@@ -80,7 +75,7 @@ BakedSceneChunk CreateBakedSceneChunk(Context* context,
         {
             const Vector3 direction = light->GetNode()->GetWorldDirection();
             const Frustum frustum = CalculateDirectionalLightFrustum(lightReceiversBoundingBox, direction,
-                settings.incremental_.directionalLightShadowDistance_, 0.0f);
+                directionalLightShadowDistance, 0.0f);
             const ea::vector<Component*> shadowCasters = collector.GetGeometriesInFrustum(chunk, frustum);
             relevantGeometries.insert(shadowCasters.begin(), shadowCasters.end());
         }
@@ -98,8 +93,8 @@ BakedSceneChunk CreateBakedSceneChunk(Context* context,
 
     // Collect light receivers for indirect lighting propagation
     BoundingBox indirectBoundingBox = lightReceiversBoundingBox;
-    indirectBoundingBox.min_ -= Vector3::ONE * settings.incremental_.indirectPadding_;
-    indirectBoundingBox.max_ += Vector3::ONE * settings.incremental_.indirectPadding_;
+    indirectBoundingBox.min_ -= Vector3::ONE * indirectPadding;
+    indirectBoundingBox.max_ += Vector3::ONE * indirectPadding;
 
     const ea::vector<Component*> indirectStaticModels = collector.GetGeometriesInBoundingBox(
         chunk, indirectBoundingBox);
@@ -112,9 +107,17 @@ BakedSceneChunk CreateBakedSceneChunk(Context* context,
     ea::vector<Component*> geometriesInChunk = uniqueGeometries;
     geometriesInChunk.insert(geometriesInChunk.end(), relevantGeometries.begin(), relevantGeometries.end());
 
-    // Collect light probes, unique are first
+    return geometriesInChunk;
+}
+
+/// Collect light probe groups in chunk.
+ea::vector<LightProbeGroup*> CollectLightProbeGroupsInChunk(
+    BakedSceneCollector& collector, const IntVector3& chunk, const ea::vector<LightProbeGroup*>& uniqueLightProbeGroups)
+{
+    const BoundingBox lightReceiversBoundingBox = collector.GetChunkBoundingBox(chunk);
+
     const ea::vector<LightProbeGroup*> lightProbesInVolume = collector.GetLightProbeGroupsInBoundingBox(
-        chunk, indirectBoundingBox);
+        chunk, lightReceiversBoundingBox);
     ea::hash_set<LightProbeGroup*> relevantLightProbes(lightProbesInVolume.begin(), lightProbesInVolume.end());
 
     for (LightProbeGroup* group : uniqueLightProbeGroups)
@@ -123,6 +126,102 @@ BakedSceneChunk CreateBakedSceneChunk(Context* context,
     ea::vector<LightProbeGroup*> lightProbeGroupsInChunk = uniqueLightProbeGroups;
     lightProbeGroupsInChunk.insert(lightProbeGroupsInChunk.end(), relevantLightProbes.begin(), relevantLightProbes.end());
 
+    return lightProbeGroupsInChunk;
+}
+
+/// Create mapping from geometry buffer to raytracing scene.
+ea::vector<unsigned> CreateGeometryMapping(
+    const GeometryIDToObjectMappingVector& idToObject, const ea::vector<RaytracerGeometry>& raytracerGeometries)
+{
+    ea::vector<RaytracerGeometry> raytracerGeometriesSorted = raytracerGeometries;
+    bool matching = idToObject.size() <= raytracerGeometriesSorted.size() + 1;
+    if (matching)
+    {
+        ea::sort(raytracerGeometriesSorted.begin(), raytracerGeometriesSorted.end(), CompareRaytracerGeometryByObject);
+        for (unsigned i = 1; i < idToObject.size(); ++i)
+        {
+            const RaytracerGeometry& raytracerGeometry = raytracerGeometriesSorted[i - 1];
+            const GeometryIDToObjectMapping& mapping = idToObject[i];
+            if (raytracerGeometry.objectIndex_ != mapping.objectIndex_
+                || raytracerGeometry.geometryIndex_ != mapping.geometryIndex_
+                || raytracerGeometry.lodIndex_ != mapping.lodIndex_)
+            {
+                matching = false;
+                break;
+            }
+        }
+    }
+
+    if (!matching)
+    {
+        URHO3D_LOGERROR("Cannot match raytracer geometries with lightmap G-Buffer");
+    }
+
+    ea::vector<unsigned> geometryBufferToRaytracerGeometry;
+    geometryBufferToRaytracerGeometry.resize(idToObject.size(), M_MAX_UNSIGNED);
+    if (matching)
+    {
+        for (unsigned i = 1; i < idToObject.size(); ++i)
+            geometryBufferToRaytracerGeometry[i] = raytracerGeometriesSorted[i - 1].raytracerGeometryId_;
+    }
+
+    return geometryBufferToRaytracerGeometry;
+}
+
+/// Create baked lights.
+ea::vector<BakedLight> CreateBakedLights(const ea::vector<Light*>& lightsInChunk)
+{
+    ea::vector<BakedLight> bakedLights;
+    for (Light* light : lightsInChunk)
+        bakedLights.push_back(BakedLight{ light });
+    return bakedLights;
+}
+
+/// Collect lightmaps in chunk.
+ea::vector<unsigned> CollectLightmapsInChunk(const LightmapChartGeometryBufferVector& geometryBuffers)
+{
+    ea::vector<unsigned> lightmapsInChunk;
+    for (const LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
+        lightmapsInChunk.push_back(geometryBuffer.index_);
+    return lightmapsInChunk;
+}
+
+/// Collect direct lightmaps required for chunk.
+ea::vector<unsigned> CollectLightmapsRequiredForChunk(const ea::vector<RaytracerGeometry>& raytracerGeometries)
+{
+    ea::hash_set<unsigned> requiredDirectLightmaps;
+    for (const RaytracerGeometry& raytracerGeometry : raytracerGeometries)
+    {
+        if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
+            requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
+    }
+    return ea::vector<unsigned>(requiredDirectLightmaps.begin(), requiredDirectLightmaps.end());
+}
+
+}
+
+BakedSceneChunk CreateBakedSceneChunk(Context* context,
+    BakedSceneCollector& collector, const IntVector3& chunk, const LightBakingSettings& settings)
+{
+    // Collect objects
+    const ea::vector<Component*> uniqueGeometries = collector.GetUniqueGeometries(chunk);
+    const ea::vector<LightProbeGroup*> uniqueLightProbeGroups = collector.GetUniqueLightProbeGroups(chunk);
+
+    const ea::vector<Light*> lightsInChunk = CollectLightsInChunk(collector, chunk);
+    ea::vector<LightProbeGroup*> lightProbeGroupsInChunk = CollectLightProbeGroupsInChunk(
+        collector, chunk, uniqueLightProbeGroups);
+
+    const ea::vector<Component*> geometriesInChunk = CollectGeometriesInChunk(
+        collector, chunk, uniqueGeometries, lightsInChunk,
+        settings.incremental_.directionalLightShadowDistance_, settings.incremental_.indirectPadding_);
+
+    // Bake geometry buffers
+    const LightmapGeometryBakingScenesArray geometryBakingScenes = GenerateLightmapGeometryBakingScenes(
+        context, uniqueGeometries, settings.charting_.lightmapSize_, settings.geometryBufferBaking_);
+    LightmapChartGeometryBufferVector geometryBuffers = BakeLightmapGeometryBuffers(
+        geometryBakingScenes.bakingScenes_);
+
+    // Collect light probes, unique are first
     LightProbeCollection lightProbesCollection;
     LightProbeGroup::CollectLightProbes(lightProbeGroupsInChunk, lightProbesCollection, nullptr);
 
@@ -138,40 +237,8 @@ BakedSceneChunk CreateBakedSceneChunk(Context* context,
         context, geometriesInChunk, uvChannel, raytracingBackground);
 
     // Match raytracer geometries and geometry buffer
-    ea::vector<RaytracerGeometry> raytracerGeometriesSorted = raytracerScene->GetGeometries();
-    bool matching = geometryBakingScenes.idToObject_.size() <= raytracerGeometriesSorted.size() + 1;
-    if (matching)
-    {
-        ea::sort(raytracerGeometriesSorted.begin(), raytracerGeometriesSorted.end(), CompareRaytracerGeometryByObject);
-        for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
-        {
-            const RaytracerGeometry& raytracerGeometry = raytracerGeometriesSorted[i - 1];
-            const GeometryIDToObjectMapping& mapping = geometryBakingScenes.idToObject_[i];
-            if (raytracerGeometry.objectIndex_ != mapping.objectIndex_
-                || raytracerGeometry.geometryIndex_ != mapping.geometryIndex_
-                || raytracerGeometry.lodIndex_ != mapping.lodIndex_)
-            {
-                matching = false;
-                break;
-            }
-        }
-    }
-
-    if (!matching)
-    {
-        for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
-            ea::fill(geometryBuffer.geometryIds_.begin(), geometryBuffer.geometryIds_.end(), 0u);
-
-        URHO3D_LOGERROR("Cannot match raytracer geometries with lightmap G-Buffer");
-    }
-
-    ea::vector<unsigned> geometryBufferToRaytracerGeometry;
-    geometryBufferToRaytracerGeometry.resize(geometryBakingScenes.idToObject_.size(), M_MAX_UNSIGNED);
-    if (matching)
-    {
-        for (unsigned i = 1; i < geometryBakingScenes.idToObject_.size(); ++i)
-            geometryBufferToRaytracerGeometry[i] = raytracerGeometriesSorted[i - 1].raytracerGeometryId_;
-    }
+    ea::vector<unsigned> geometryBufferToRaytracerGeometry = CreateGeometryMapping(
+        geometryBakingScenes.idToObject_, raytracerScene->GetGeometries());
 
     // Preprocess geometry buffers
     for (LightmapChartGeometryBuffer& geometryBuffer : geometryBuffers)
@@ -180,27 +247,15 @@ BakedSceneChunk CreateBakedSceneChunk(Context* context,
             settings.geometryBufferPreprocessing_);
     }
 
-    // Collect lights
-    ea::vector<BakedLight> bakedLights;
-    for (Light* light : lightsInChunk)
-        bakedLights.push_back(BakedLight{ light });
-
-    // Collect direct lightmaps required for chunk
-    ea::hash_set<unsigned> requiredDirectLightmaps;
-    for (const RaytracerGeometry& raytracerGeometry : raytracerScene->GetGeometries())
-    {
-        if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
-            requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
-    }
-
     // Create baked chunk
     BakedSceneChunk bakedChunk;
-    bakedChunk.lightmaps_ = lightmapsInChunk;
+    bakedChunk.lightmaps_ = CollectLightmapsInChunk(geometryBuffers);
+    bakedChunk.requiredDirectLightmaps_ = CollectLightmapsRequiredForChunk(raytracerScene->GetGeometries());
     bakedChunk.raytracerScene_ = raytracerScene;
     bakedChunk.geometryBuffers_ = ea::move(geometryBuffers);
     bakedChunk.geometryBufferToRaytracer_ = ea::move(geometryBufferToRaytracerGeometry);
-    bakedChunk.bakedLights_ = bakedLights;
-    bakedChunk.lightProbesCollection_ = lightProbesCollection;
+    bakedChunk.bakedLights_ = CreateBakedLights(lightsInChunk);
+    bakedChunk.lightProbesCollection_ = ea::move(lightProbesCollection);
     bakedChunk.numUniqueLightProbes_ = uniqueLightProbeGroups.size();
 
     return bakedChunk;

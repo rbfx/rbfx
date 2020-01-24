@@ -282,22 +282,19 @@ struct IncrementalLightBaker::Impl
         ea::vector<Vector3> directFilterBuffer(numTexels);
         ea::vector<Vector4> indirectFilterBuffer(numTexels);
         LightProbeCollectionBakedData lightProbesBakedData;
+        LightmapChartBakedIndirect bakedIndirect{ settings_.charting_.lightmapSize_ };
 
         for (const IntVector3 chunk : chunks_)
         {
+            if (stopToken.IsStopped())
+                return false;
+
             const ea::shared_ptr<const BakedSceneChunk> bakedChunk = cache_->LoadBakedChunk(chunk);
 
             // Collect required direct lightmaps
-            ea::hash_set<unsigned> requiredDirectLightmaps;
-            for (const RaytracerGeometry& raytracerGeometry : bakedChunk->raytracerScene_->GetGeometries())
-            {
-                if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
-                    requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
-            }
-
             ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
             ea::vector<const LightmapChartBakedDirect*> bakedDirectLightmaps(numLightmapCharts_);
-            for (unsigned lightmapIndex : requiredDirectLightmaps)
+            for (unsigned lightmapIndex : bakedChunk->requiredDirectLightmaps_)
             {
                 bakedDirectLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
                 bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
@@ -322,8 +319,9 @@ struct IncrementalLightBaker::Impl
 
                 const unsigned lightmapIndex = bakedChunk->lightmaps_[i];
                 const LightmapChartGeometryBuffer& geometryBuffer = bakedChunk->geometryBuffers_[i];
-                const ea::shared_ptr<LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
-                LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
+                const ea::shared_ptr<const LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
+
+                ea::fill(bakedIndirect.light_.begin(), bakedIndirect.light_.end(), Vector4::ZERO);
 
                 // Bake indirect lights
                 BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
@@ -350,8 +348,8 @@ struct IncrementalLightBaker::Impl
                 BakedLightmap bakedLightmap(settings_.charting_.lightmapSize_);
                 for (unsigned i = 0; i < bakedLightmap.lightmap_.size(); ++i)
                 {
-                    const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
-                    const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
+                    const Vector3 directLight = static_cast<Vector3>(directFilterBuffer[i]);
+                    const Vector3 indirectLight = static_cast<Vector3>(indirectFilterBuffer[i]);
                     bakedLightmap.lightmap_[i] = VectorMax(Vector3::ZERO, directLight);
                     bakedLightmap.lightmap_[i] += VectorMax(Vector3::ZERO, indirectLight);
                 }

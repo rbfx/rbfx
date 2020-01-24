@@ -138,18 +138,16 @@ void FilterArray(const ea::vector<T>& input, ea::vector<T>& output,
 
 }
 
-void FilterDirectLight(LightmapChartBakedDirect& bakedDirect, ea::vector<Vector3>& swapBuffer,
+void FilterDirectLight(const LightmapChartBakedDirect& bakedDirect, ea::vector<Vector3>& outputBuffer,
     const LightmapChartGeometryBuffer& geometryBuffer, const EdgeStoppingGaussFilterParameters& params, unsigned numTasks)
 {
-    FilterArray(bakedDirect.directLight_, swapBuffer, geometryBuffer, params, numTasks);
-    ea::swap(bakedDirect.directLight_, swapBuffer);
+    FilterArray(bakedDirect.directLight_, outputBuffer, geometryBuffer, params, numTasks);
 }
 
-void FilterIndirectLight(LightmapChartBakedIndirect& bakedIndirect, ea::vector<Vector4>& swapBuffer,
+void FilterIndirectLight(const LightmapChartBakedIndirect& bakedIndirect, ea::vector<Vector4>& outputBuffer,
     const LightmapChartGeometryBuffer& geometryBuffer, const EdgeStoppingGaussFilterParameters& params, unsigned numTasks)
 {
-    FilterArray(bakedIndirect.light_, swapBuffer, geometryBuffer, params, numTasks);
-    ea::swap(bakedIndirect.light_, swapBuffer);
+    FilterArray(bakedIndirect.light_, outputBuffer, geometryBuffer, params, numTasks);
 }
 
 }
