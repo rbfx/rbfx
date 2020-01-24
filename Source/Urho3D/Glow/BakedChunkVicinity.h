@@ -33,11 +33,13 @@
 namespace Urho3D
 {
 
-/// Baked chunk vicinity. Contains everything to bake light for given chunk.
-struct BakedChunkVicinity
+/// Baking chunk. Contains everything to bake light for given chunk.
+struct BakedSceneChunk
 {
     /// Lightmaps owned by this chunk.
     ea::vector<unsigned> lightmaps_;
+    /// Direct lightmaps required to bake this chunk.
+    ea::vector<unsigned> requiredDirectLightmaps_;
     /// Raytracer scene.
     SharedPtr<RaytracerScene> raytracerScene_;
     /// Geometry buffers.
@@ -52,8 +54,8 @@ struct BakedChunkVicinity
     unsigned numUniqueLightProbes_{};
 };
 
-/// Create baked chunk vicinity.
-URHO3D_API BakedChunkVicinity CreateBakedChunkVicinity(Context* context,
+/// Create baked scene chunk.
+URHO3D_API BakedSceneChunk CreateBakedSceneChunk(Context* context,
     BakedSceneCollector& collector, const IntVector3& chunk, const LightBakingSettings& settings);
 
 }
