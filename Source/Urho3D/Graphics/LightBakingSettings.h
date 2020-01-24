@@ -212,7 +212,7 @@ struct LightBakingSettings
     IndirectLightTracingSettings indirectProbesTracing_{ 64, 2 };
 
     /// Direct light filtering settings.
-    EdgeStoppingGaussFilterParameters directFilter_{ 1 };
+    EdgeStoppingGaussFilterParameters directFilter_{ 2 };
     /// Indirect light filtering settings.
     EdgeStoppingGaussFilterParameters indirectFilter_{ 5 };
 
