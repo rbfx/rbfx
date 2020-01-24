@@ -90,7 +90,10 @@ void FilterArray(const ea::vector<T>& input, ea::vector<T>& output,
         {
             const unsigned geometryId = geometryBuffer.geometryIds_[index];
             if (!geometryId)
+            {
+                output[index] = {};
                 continue;
+            }
 
             const IntVector2 centerLocation = geometryBuffer.IndexToLocation(index);
 

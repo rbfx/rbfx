@@ -74,8 +74,6 @@ struct LightmapChartRegion
 /// Individual element of the lightmap chart.
 struct LightmapChartElement
 {
-    /// Node.
-    Node* node_{};
     /// Component.
     Component* component_{};
     /// Object index, unique within array of charts.
