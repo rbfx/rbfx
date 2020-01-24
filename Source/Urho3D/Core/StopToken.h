@@ -1,5 +1,5 @@
 //
-// Copyright (c) 2019-2020 the rbfx project.
+// Copyright (c) 2020-2020 the rbfx project.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -20,46 +20,31 @@
 // THE SOFTWARE.
 //
 
-/// \file
-
 #pragma once
 
-#include "../Core/StopToken.h"
-#include "../Glow/BakedLightCache.h"
-#include "../Glow/BakedSceneCollector.h"
-#include "../Graphics/LightBakingSettings.h"
+#include <EASTL/shared_ptr.h>
 
-#include <EASTL/string.h>
+#include <atomic>
 
 namespace Urho3D
 {
 
-/// Incremental light baker.
-class URHO3D_API IncrementalLightBaker
+/// Stop token used to thread-safely stop asynchronous task.
+class StopToken
 {
 public:
-    /// Construct.
-    IncrementalLightBaker() {}
-    /// Destruct.
-    ~IncrementalLightBaker();
+    /// Construct default.
+    StopToken() : stopped_(ea::make_shared<std::atomic<bool>>(false)) {}
 
-    /// Initialize light baker. Relatively lightweigh.
-    bool Initialize(const LightBakingSettings& settings,
-        Scene* scene, BakedSceneCollector* collector, BakedLightCache* cache);
-    /// Process and update the scene. Scene collector is used here.
-    void ProcessScene();
-    /// Bake lighting and save results.
-    /// It is safe to call Bake from another thread as long as lightmap cache is safe to use from said thread.
-    /// Return false if canceled.
-    bool Bake(StopToken stopToken);
-    /// Commit the rest of changes to scene. Scene collector is used here.
-    void CommitScene();
+    /// Signal stop.
+    void Stop() { *stopped_ = true; }
+
+    /// Check whether is stopped.
+    bool IsStopped() const { return *stopped_; }
 
 private:
-    struct Impl;
-
-    /// Implementation details.
-    ea::unique_ptr<Impl> impl_;
+    /// Whether the token is stopped.
+    ea::shared_ptr<std::atomic<bool>> stopped_;
 };
 
 }
