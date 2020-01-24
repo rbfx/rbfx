@@ -37,6 +37,23 @@
 namespace Urho3D
 {
 
+/// Baked lightmap data.
+struct BakedLightmap
+{
+    /// Construct default.
+    BakedLightmap() = default;
+    /// Construct.
+    explicit BakedLightmap(unsigned lightmapSize)
+        : lightmapSize_(lightmapSize)
+        , lightmap_(lightmapSize_ * lightmapSize_)
+    {}
+
+    /// Size of lightmap.
+    unsigned lightmapSize_;
+    /// Lightmap data, in linear space.
+    ea::vector<Vector3> lightmap_;
+};
+
 /// Lightmap cache interface.
 class URHO3D_API BakedLightCache
 {
@@ -47,14 +64,17 @@ public:
     /// Store chunk vicinity in the cache.
     virtual void StoreChunkVicinity(const IntVector3& chunk, BakedChunkVicinity vicinity) = 0;
     /// Load chunk vicinity.
-    virtual ea::shared_ptr<BakedChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) = 0;
-    /// Called after light probes are updated.
-    virtual void CommitLightProbeGroups(const IntVector3& chunk) = 0;
+    virtual ea::shared_ptr<const BakedChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) = 0;
 
     /// Store direct light for the lightmap chart.
     virtual void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) = 0;
     /// Load direct light for the lightmap chart.
     virtual ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) = 0;
+
+    /// Store baked lightmap.
+    virtual void StoreLightmap(unsigned lightmapIndex, BakedLightmap bakedLightmap) = 0;
+    /// Load baked lightmap.
+    virtual ea::shared_ptr<const BakedLightmap> LoadLightmap(unsigned lightmapIndex) = 0;
 };
 
 /// Memory lightmap cache.
@@ -64,20 +84,25 @@ public:
     /// Store baking context in the cache.
     void StoreChunkVicinity(const IntVector3& chunk, BakedChunkVicinity vicinity) override;
     /// Load chunk vicinity.
-    ea::shared_ptr<BakedChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) override;
-    /// Called after light probes are updated.
-    void CommitLightProbeGroups(const IntVector3& chunk) override;
+    ea::shared_ptr<const BakedChunkVicinity> LoadChunkVicinity(const IntVector3& chunk) override;
 
     /// Store direct light for the lightmap chart.
     void StoreDirectLight(unsigned lightmapIndex, LightmapChartBakedDirect bakedDirect) override;
     /// Load direct light for the lightmap chart.
     ea::shared_ptr<LightmapChartBakedDirect> LoadDirectLight(unsigned lightmapIndex) override;
 
+    /// Store baked lightmap.
+    void StoreLightmap(unsigned lightmapIndex, BakedLightmap bakedLightmap) override;
+    /// Load baked lightmap.
+    ea::shared_ptr<const BakedLightmap> LoadLightmap(unsigned lightmapIndex) override;
+
 private:
     /// Baking contexts cache.
-    ea::unordered_map<IntVector3, ea::shared_ptr<BakedChunkVicinity>> chunkVicinityCache_;
+    ea::unordered_map<IntVector3, ea::shared_ptr<const BakedChunkVicinity>> chunkVicinityCache_;
     /// Direct light cache.
     ea::unordered_map<unsigned, ea::shared_ptr<LightmapChartBakedDirect>> directLightCache_;
+    /// Baked lightmaps.
+    ea::unordered_map<unsigned, ea::shared_ptr<const BakedLightmap>> lightmapCache_;
 };
 
 }

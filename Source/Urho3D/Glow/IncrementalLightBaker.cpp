@@ -93,38 +93,6 @@ unsigned long long Swizzle(const IntVector3& vec, const IntVector3& base = IntVe
     return result;
 }
 
-/// Base context for incremental lightmap lightmapping.
-struct BaseIncrementalContext
-{
-    /// Current chunk.
-    unsigned currentChunkIndex_{};
-};
-
-/// Context used for direct light baking.
-struct DirectLightBakingContext : public BaseIncrementalContext
-{
-};
-
-/// Context used for indirect light baking.
-struct IndirectLightBakingFilterAndSaveContext : public BaseIncrementalContext
-{
-    /// Stitching context.
-    LightmapStitchingContext stitchingContext_;
-    /// Buffer for filtering direct light.
-    ea::vector<Vector3> directFilterBuffer_;
-    /// Buffer for filtering indirect light.
-    ea::vector<Vector4> indirectFilterBuffer_;
-    /// Buffer for accumulated lighting.
-    ea::vector<Vector3> bakedLightBuffer_;
-    /// Buffer for baked light probes data.
-    LightProbeCollectionBakedData lightProbesBakedData_;
-};
-
-/// Context used for committing chunks.
-struct CommitContext : public BaseIncrementalContext
-{
-};
-
 }
 
 /// Incremental light baker implementation.
@@ -272,193 +240,212 @@ struct IncrementalLightBaker::Impl
         }
     }
 
-    /// Step baking direct lighting.
-    bool StepBakeDirect(DirectLightBakingContext& ctx)
+    /// Step direct light for charts.
+    bool BakeDirectCharts(StopToken stopToken)
     {
-        if (ctx.currentChunkIndex_ >= chunks_.size())
-            return true;
-
-        // Load chunk
-        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-
-        // Bake direct lighting
-        for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
+        for (const IntVector3 chunk : chunks_)
         {
-            const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
-            const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
-            LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
+            const ea::shared_ptr<const BakedChunkVicinity> bakingChunk = cache_->LoadChunkVicinity(chunk);
 
-            // Bake emission
-            BakeEmissionLight(bakedDirect, geometryBuffer, settings_.emissionTracing_);
+            // Bake direct lighting
+            for (unsigned i = 0; i < bakingChunk->lightmaps_.size(); ++i)
+            {
+                if (stopToken.IsStopped())
+                    return false;
 
-            // Bake direct lights for charts
+                const unsigned lightmapIndex = bakingChunk->lightmaps_[i];
+                const LightmapChartGeometryBuffer& geometryBuffer = bakingChunk->geometryBuffers_[i];
+                LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
+
+                // Bake emission
+                BakeEmissionLight(bakedDirect, geometryBuffer, settings_.emissionTracing_);
+
+                // Bake direct lights for charts
+                for (const BakedLight& bakedLight : bakingChunk->bakedLights_)
+                {
+                    BakeDirectLightForCharts(bakedDirect, geometryBuffer, *bakingChunk->raytracerScene_,
+                        bakingChunk->geometryBufferToRaytracer_, bakedLight, settings_.directChartTracing_);
+                }
+
+                // Store direct light
+                cache_->StoreDirectLight(lightmapIndex, ea::move(bakedDirect));
+            }
+        }
+
+        return true;
+    }
+
+    /// Bake indirect light, filter baked direct and indirect, bake direct light probes.
+    bool BakeIndirectAndFilter(StopToken stopToken)
+    {
+        const unsigned numTexels = settings_.charting_.lightmapSize_ * settings_.charting_.lightmapSize_;
+        ea::vector<Vector3> directFilterBuffer(numTexels);
+        ea::vector<Vector4> indirectFilterBuffer(numTexels);
+        LightProbeCollectionBakedData lightProbesBakedData;
+
+        for (const IntVector3 chunk : chunks_)
+        {
+            const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+
+            // Collect required direct lightmaps
+            ea::hash_set<unsigned> requiredDirectLightmaps;
+            for (const RaytracerGeometry& raytracerGeometry : chunkVicinity->raytracerScene_->GetGeometries())
+            {
+                if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
+                    requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
+            }
+
+            ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
+            ea::vector<const LightmapChartBakedDirect*> bakedDirectLightmaps(numLightmapCharts_);
+            for (unsigned lightmapIndex : requiredDirectLightmaps)
+            {
+                bakedDirectLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
+                bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
+            }
+
+            // Allocate storage for light probes
+            lightProbesBakedData.Resize(chunkVicinity->lightProbesCollection_.GetNumProbes());
+
+            // Bake indirect light for light probes
+            BakeIndirectLightForLightProbes(lightProbesBakedData, chunkVicinity->lightProbesCollection_,
+                bakedDirectLightmaps, *chunkVicinity->raytracerScene_, settings_.indirectProbesTracing_);
+
+            // Build light probes mesh for fallback indirect
+            TetrahedralMesh lightProbesMesh;
+            lightProbesMesh.Define(chunkVicinity->lightProbesCollection_.worldPositions_);
+
+            // Bake indirect lighting for charts
+            for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
+            {
+                if (stopToken.IsStopped())
+                    return false;
+
+                const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
+                const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
+                const ea::shared_ptr<LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
+                LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
+
+                // Bake indirect lights
+                BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
+                    geometryBuffer, lightProbesMesh, lightProbesBakedData,
+                    *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
+                    settings_.indirectChartTracing_);
+
+                // Filter direct and indirect
+                bakedIndirect.NormalizeLight();
+
+                if (settings_.directFilter_.kernelRadius_ > 0)
+                {
+                    FilterDirectLight(*bakedDirect, directFilterBuffer,
+                        geometryBuffer, settings_.directFilter_, settings_.directChartTracing_.numTasks_);
+                }
+
+                if (settings_.indirectFilter_.kernelRadius_ > 0)
+                {
+                    FilterIndirectLight(bakedIndirect, indirectFilterBuffer,
+                        geometryBuffer, settings_.indirectFilter_, settings_.indirectChartTracing_.numTasks_);
+                }
+
+                // Generate final images
+                BakedLightmap bakedLightmap(settings_.charting_.lightmapSize_);
+                for (unsigned i = 0; i < bakedLightmap.lightmap_.size(); ++i)
+                {
+                    const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
+                    const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
+                    bakedLightmap.lightmap_[i] = VectorMax(Vector3::ZERO, directLight);
+                    bakedLightmap.lightmap_[i] += VectorMax(Vector3::ZERO, indirectLight);
+                }
+
+                // Store lightmap
+                cache_->StoreLightmap(lightmapIndex, ea::move(bakedLightmap));
+            }
+
+            // Bake direct lights for light probes
             for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
             {
-                BakeDirectLightForCharts(bakedDirect, geometryBuffer, *chunkVicinity->raytracerScene_,
-                    chunkVicinity->geometryBufferToRaytracer_, bakedLight, settings_.directChartTracing_);
+                BakeDirectLightForLightProbes(lightProbesBakedData,
+                    chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
+                    bakedLight, settings_.directProbesTracing_);
             }
 
-            // Store direct light
-            cache_->StoreDirectLight(lightmapIndex, ea::move(bakedDirect));
+            // Save light probes
+            for (unsigned groupIndex = 0; groupIndex < chunkVicinity->numUniqueLightProbes_; ++groupIndex)
+            {
+                if (!LightProbeGroup::SaveLightProbesBakedData(context_,
+                    chunkVicinity->lightProbesCollection_, lightProbesBakedData, groupIndex))
+                {
+                    const ea::string groupName = groupIndex < chunkVicinity->lightProbesCollection_.GetNumGroups()
+                        ? chunkVicinity->lightProbesCollection_.names_[groupIndex] : "";
+                    URHO3D_LOGERROR("Cannot save light probes for group '{}' in chunk {}",
+                        groupName, chunk.ToString());
+                }
+            }
         }
-
-        // Advance
-        ++ctx.currentChunkIndex_;
-        return false;
+        return true;
     }
 
-    /// Step baking indirect lighting, filter and save images.
-    bool StepBakeIndirectFilterAndSave(IndirectLightBakingFilterAndSaveContext& ctx)
+    // Stitch and save lightmaps.
+    void StitchAndSaveImages()
     {
-        if (ctx.currentChunkIndex_ >= chunks_.size())
-            return true;
+        const unsigned numTexels = settings_.charting_.lightmapSize_ * settings_.charting_.lightmapSize_;
 
-        // Initialize context
-        if (ctx.currentChunkIndex_ == 0)
+        // Allocate stitching context
+        LightmapStitchingContext stitchingContext = InitializeStitchingContext(
+            context_, settings_.charting_.lightmapSize_, 4);
+
+        // Allocate image to save
+        ea::vector<Vector4> buffer(numTexels);
+
+        auto lightmapImage = MakeShared<Image>(context_);
+        if (!lightmapImage->SetSize(settings_.charting_.lightmapSize_, settings_.charting_.lightmapSize_, 4))
         {
-            const unsigned numTexels = settings_.charting_.lightmapSize_ * settings_.charting_.lightmapSize_;
-            ctx.directFilterBuffer_.resize(numTexels);
-            ctx.indirectFilterBuffer_.resize(numTexels);
-            ctx.bakedLightBuffer_.resize(numTexels);
-            ctx.stitchingContext_ = InitializeStitchingContext(context_, settings_.charting_.lightmapSize_, 4);
+            URHO3D_LOGERROR("Cannot allocate image for lightmap");
+            return;
         }
 
-        // Load chunk
-        const IntVector3 chunk = chunks_[ctx.currentChunkIndex_];
-        const ea::shared_ptr<BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
-
-        // Collect required direct lightmaps
-        ea::hash_set<unsigned> requiredDirectLightmaps;
-        for (const RaytracerGeometry& raytracerGeometry : chunkVicinity->raytracerScene_->GetGeometries())
+        // Process all chunks
+        for (const IntVector3 chunk : chunks_)
         {
-            if (raytracerGeometry.lightmapIndex_ != M_MAX_UNSIGNED)
-                requiredDirectLightmaps.insert(raytracerGeometry.lightmapIndex_);
-        }
-
-        ea::vector<ea::shared_ptr<const LightmapChartBakedDirect>> bakedDirectLightmapsRefs(numLightmapCharts_);
-        ea::vector<const LightmapChartBakedDirect*> bakedDirectLightmaps(numLightmapCharts_);
-        for (unsigned lightmapIndex : requiredDirectLightmaps)
-        {
-            bakedDirectLightmapsRefs[lightmapIndex] = cache_->LoadDirectLight(lightmapIndex);
-            bakedDirectLightmaps[lightmapIndex] = bakedDirectLightmapsRefs[lightmapIndex].get();
-        }
-
-        // Allocate storage for light probes
-        ctx.lightProbesBakedData_.Resize(chunkVicinity->lightProbesCollection_.GetNumProbes());
-
-        // Bake indirect light for light probes
-        BakeIndirectLightForLightProbes(ctx.lightProbesBakedData_, chunkVicinity->lightProbesCollection_,
-            bakedDirectLightmaps, *chunkVicinity->raytracerScene_, settings_.indirectProbesTracing_);
-
-        // Build light probes mesh for fallback indirect
-        TetrahedralMesh lightProbesMesh;
-        lightProbesMesh.Define(chunkVicinity->lightProbesCollection_.worldPositions_);
-
-        // Bake indirect lighting for charts
-        for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
-        {
-            const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
-            const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
-            const ea::shared_ptr<LightmapChartBakedDirect> bakedDirect = cache_->LoadDirectLight(lightmapIndex);
-            LightmapChartBakedIndirect bakedIndirect{ geometryBuffer.lightmapSize_ };
-
-            // Bake indirect lights
-            BakeIndirectLightForCharts(bakedIndirect, bakedDirectLightmaps,
-                geometryBuffer, lightProbesMesh, ctx.lightProbesBakedData_,
-                *chunkVicinity->raytracerScene_, chunkVicinity->geometryBufferToRaytracer_,
-                settings_.indirectChartTracing_);
-
-            // Filter direct and indirect
-            bakedIndirect.NormalizeLight();
-
-            if (settings_.directFilter_.kernelRadius_ > 0)
+            const ea::shared_ptr<const BakedChunkVicinity> chunkVicinity = cache_->LoadChunkVicinity(chunk);
+            for (unsigned i = 0; i < chunkVicinity->lightmaps_.size(); ++i)
             {
-                FilterDirectLight(*bakedDirect, ctx.directFilterBuffer_,
-                    geometryBuffer, settings_.directFilter_, settings_.directChartTracing_.numTasks_);
-            }
+                const unsigned lightmapIndex = chunkVicinity->lightmaps_[i];
+                const ea::shared_ptr<const BakedLightmap> bakedLightmap = cache_->LoadLightmap(lightmapIndex);
+                const LightmapChartGeometryBuffer& geometryBuffer = chunkVicinity->geometryBuffers_[i];
 
-            if (settings_.indirectFilter_.kernelRadius_ > 0)
-            {
-                FilterIndirectLight(bakedIndirect, ctx.indirectFilterBuffer_,
-                    geometryBuffer, settings_.indirectFilter_, settings_.indirectChartTracing_.numTasks_);
-            }
+                // Stitch seams or just copy data to buffer
+                if (settings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
+                {
+                    SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer.seams_);
+                    StitchLightmapSeams(stitchingContext, bakedLightmap->lightmap_, buffer,
+                        settings_.stitching_, seamsModel);
+                }
+                else
+                {
+                    for (unsigned i = 0; i < numTexels; ++i)
+                        buffer[i] = Vector4(bakedLightmap->lightmap_[i], 1.0f);
+                }
 
-            // Generate image
-            for (unsigned i = 0; i < bakedIndirect.light_.size(); ++i)
-            {
-                const Vector3 directLight = static_cast<Vector3>(bakedDirect->directLight_[i]);
-                const Vector3 indirectLight = static_cast<Vector3>(bakedIndirect.light_[i]);
-                ctx.bakedLightBuffer_[i] = Vector3::ZERO;
-                ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, directLight);
-                ctx.bakedLightBuffer_[i] += VectorMax(Vector3::ZERO, indirectLight);
-            }
+                // Generate image
+                for (unsigned i = 0; i < numTexels; ++i)
+                {
+                    const unsigned x = i % geometryBuffer.lightmapSize_;
+                    const unsigned y = i / geometryBuffer.lightmapSize_;
 
-            // Stitch seams
-            if (settings_.stitching_.numIterations_ > 0 && !geometryBuffer.seams_.empty())
-            {
-                SharedPtr<Model> seamsModel = CreateSeamsModel(context_, geometryBuffer.seams_);
-                StitchLightmapSeams(ctx.stitchingContext_, ctx.bakedLightBuffer_,
-                    settings_.stitching_, seamsModel);
-            }
+                    static const float multiplier = 1.0f / 2.0f;
+                    Color color = static_cast<Color>(static_cast<Vector3>(buffer[i])).LinearToGamma();
+                    color.r_ *= multiplier;
+                    color.g_ *= multiplier;
+                    color.b_ *= multiplier;
+                    lightmapImage->SetPixel(x, y, color);
+                }
 
-            // Generate image
-            auto lightmapImage = MakeShared<Image>(context_);
-            lightmapImage->SetSize(geometryBuffer.lightmapSize_, geometryBuffer.lightmapSize_, 4);
-            for (unsigned i = 0; i < bakedIndirect.light_.size(); ++i)
-            {
-                const unsigned x = i % geometryBuffer.lightmapSize_;
-                const unsigned y = i / geometryBuffer.lightmapSize_;
-
-                static const float multiplier = 1.0f / 2.0f;
-                Color color = static_cast<Color>(ctx.bakedLightBuffer_[i]).LinearToGamma();
-                color.r_ *= multiplier;
-                color.g_ *= multiplier;
-                color.b_ *= multiplier;
-                lightmapImage->SetPixel(x, y, color);
-            }
-
-            // Save image to destination folder
-            const ea::string fileName = GetLightmapFileName(lightmapIndex);
-            context_->GetFileSystem()->CreateDirsRecursive(GetPath(fileName));
-            lightmapImage->SaveFile(fileName);
-        }
-
-        // Bake direct lights for light probes
-        for (const BakedLight& bakedLight : chunkVicinity->bakedLights_)
-        {
-            BakeDirectLightForLightProbes(ctx.lightProbesBakedData_,
-                chunkVicinity->lightProbesCollection_, *chunkVicinity->raytracerScene_,
-                bakedLight, settings_.directProbesTracing_);
-        }
-
-        // Save light probes
-        for (unsigned groupIndex = 0; groupIndex < chunkVicinity->numUniqueLightProbes_; ++groupIndex)
-        {
-            if (!LightProbeGroup::SaveLightProbesBakedData(context_,
-                chunkVicinity->lightProbesCollection_, ctx.lightProbesBakedData_, groupIndex))
-            {
-                const ea::string groupName = groupIndex < chunkVicinity->lightProbesCollection_.GetNumGroups()
-                    ? chunkVicinity->lightProbesCollection_.names_[groupIndex] : "";
-                URHO3D_LOGERROR("Cannot save light probes for group '{}' in chunk {}",
-                    groupName, chunk.ToString());
+                // Save image to destination folder
+                const ea::string fileName = GetLightmapFileName(lightmapIndex);
+                context_->GetFileSystem()->CreateDirsRecursive(GetPath(fileName));
+                lightmapImage->SaveFile(fileName);
             }
         }
-
-        // Advance
-        ++ctx.currentChunkIndex_;
-        return false;
-    }
-
-    // Step committing to scene.
-    bool StepCommit(CommitContext& ctx)
-    {
-        if (ctx.currentChunkIndex_ >= chunks_.size())
-            return true;
-
-        // Advance
-        ++ctx.currentChunkIndex_;
-        return false;
     }
 
 private:
@@ -518,24 +505,20 @@ void IncrementalLightBaker::ProcessScene()
     impl_->GenerateBakingChunks();
 }
 
-void IncrementalLightBaker::Bake()
+bool IncrementalLightBaker::Bake(StopToken stopToken)
 {
-    // Bake direct lighting
-    DirectLightBakingContext directContext;
-    while (!impl_->StepBakeDirect(directContext))
-        ;
+    if (!impl_->BakeDirectCharts(stopToken))
+        return false;
 
-    // Bake indirect lighting, filter and save images
-    IndirectLightBakingFilterAndSaveContext indirectContext;
-    while (!impl_->StepBakeIndirectFilterAndSave(indirectContext))
-        ;
+    if (!impl_->BakeIndirectAndFilter(stopToken))
+        return false;
+
+    return true;
 }
 
 void IncrementalLightBaker::CommitScene()
 {
-    CommitContext commitContext;
-    while (!impl_->StepCommit(commitContext))
-        ;
+    impl_->StitchAndSaveImages();
 }
 
 }

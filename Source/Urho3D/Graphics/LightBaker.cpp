@@ -63,6 +63,8 @@ struct LightBaker::TaskData
 {
     /// Caller.
     WeakPtr<LightBaker> weakSelf_;
+    /// Stop token.
+    StopToken stopToken_;
     /// Timer to measure total time.
     Timer timer_;
 #if URHO3D_GLOW
@@ -87,7 +89,10 @@ LightBaker::LightBaker(Context* context) :
 LightBaker::~LightBaker()
 {
     if (state_ != InternalState::NotStarted)
+    {
+        taskData_->stopToken_.Stop();
         task_.wait();
+    }
 }
 
 void LightBaker::RegisterObject(Context* context)
@@ -228,7 +233,7 @@ void LightBaker::Update()
         // Bake now or schedule task
         if (state_ == InternalState::ScheduledSync)
         {
-            taskData->baker_.Bake();
+            taskData->baker_.Bake(taskData->stopToken_);
 
             state_ = InternalState::CommitPending;
             taskData_ = taskData;
@@ -238,7 +243,7 @@ void LightBaker::Update()
         {
             const auto taskFunction = [taskData]()
             {
-                taskData->baker_.Bake();
+                taskData->baker_.Bake(taskData->stopToken_);
 
                 // Self is never destroyed before the task is finished
                 taskData->weakSelf_->state_ = InternalState::CommitPending;
