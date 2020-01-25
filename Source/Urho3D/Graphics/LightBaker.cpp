@@ -26,6 +26,7 @@
 
 #include "../Core/Context.h"
 #include "../Core/CoreEvents.h"
+#include "../Core/StopToken.h"
 #include "../Core/Timer.h"
 #include "../Graphics/GlobalIllumination.h"
 #include "../Graphics/Octree.h"
