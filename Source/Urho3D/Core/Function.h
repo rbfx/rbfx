@@ -22,7 +22,9 @@
 #pragma once
 
 
+#include <cassert>
 #include <type_traits>
+#include <EASTL/utility.h>
 
 
 namespace Urho3D
@@ -102,7 +104,10 @@ public:
         invoker_ = other.invoker_;
         operator_ = other.operator_;
         if (operator_)
-            operator_(Operation::Copy, storage_, other.storage_);
+        {
+            const void* storage = other.storage_;
+            operator_(Operation::Copy, storage_, const_cast<void*>(storage));    // Even though constness is cast away object will not be modified.
+        }
         return *this;
     }
 
