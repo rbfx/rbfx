@@ -25,6 +25,7 @@
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
+#include <EASTL/sort.h>
 #include <SDL/SDL_keyboard.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 
@@ -50,6 +51,8 @@ KeyBindings::KeyBindings(Context* context)
         actions_[i].binding_ = KeysToString(actions_[i].qualifiers_, actions_[i].key_);
         defaults_[i] = actions_[i];
     }
+
+    SortActions();
 
     // We have to delay any access to Editor object because constructor of this object runs as part of Editor
     // constructor and at that point Editor is not registered as a subsystem yet.
@@ -93,6 +96,7 @@ bool KeyBindings::Serialize(Archive& archive)
             }
         }
     }
+    SortActions();
     return true;
 }
 
@@ -156,6 +160,7 @@ void KeyBindings::RenderSettingsUI()
                         action.qualifiers_ = pressedQualifiers;
                         action.key_ = pressedKey;
                         action.binding_ = KeysToString(pressedQualifiers, pressedKey);
+                        SortActions();
                     }
                     break;
                 }
@@ -167,6 +172,7 @@ void KeyBindings::RenderSettingsUI()
             action.key_ = defaults_[i].key_;
             action.qualifiers_ = defaults_[i].qualifiers_;
             action.binding_ = KeysToString(action.qualifiers_, action.key_);
+            SortActions();
         }
         ui::PopID();
         ui::NextColumn();
@@ -181,6 +187,7 @@ void KeyBindings::RenderSettingsUI()
             action.qualifiers_ = defaults_[i].qualifiers_;
             action.binding_ = KeysToString(action.qualifiers_, action.key_);
         }
+        SortActions();
     }
     ui::EndTabItem();
 }
@@ -193,18 +200,22 @@ void KeyBindings::OnInputEnd(StringHash, VariantMap&)
         return;
     }
 
-    for (KeyBoundAction& action : actions_)
+    for (int i : actionOrder_)
     {
+        KeyBoundAction& action = actions_[i];
         QualifierFlags qualifiersDown = GetCurrentQualifiers() & action.qualifiers_;
-        bool keyDown = false;
         if (qualifiersDown == action.qualifiers_)
         {
             bool keyPressed = ui::IsKeyPressed(action.key_);
-            keyDown = keyPressed || ui::IsKeyDown(action.key_);
+            action.isDown_ = keyPressed || ui::IsKeyDown(action.key_);
             if (keyPressed)
+            {
                 action.onPressed_(this);
+                break;
+            }
         }
-        action.isDown_ = keyDown;
+        else
+            action.isDown_ = false;
     }
 }
 
@@ -238,6 +249,25 @@ QualifierFlags KeyBindings::GetCurrentQualifiers() const
     if (io.KeyAlt)
         pressedQualifiers |= QUAL_ALT;
     return pressedQualifiers;
+}
+
+void KeyBindings::SortActions()
+{
+    // Actions are sorted by putting items with largest mask in the front. Only one action is invoked for certain key
+    // binding. We prioritize bindings with larger modifier quantity so that F+CTRL does not block F+SHIFT+CTRL from
+    // triggering.
+
+    for (int i = 0; i < ActionType::MaxCount; i++)
+        actionOrder_[i] = i;
+
+    ea::quick_sort(actionOrder_, actionOrder_ + URHO3D_ARRAYSIZE(actionOrder_), [this](int a, int b) {
+        unsigned na = 0, nb = 0;
+        for (unsigned i = 0; i < 4; i++)
+            na += ((unsigned)actions_[a].qualifiers_ >> i) & 1u;
+        for (unsigned i = 0; i < 4; i++)
+            nb += ((unsigned)actions_[b].qualifiers_ >> i) & 1u;
+        return na > nb;
+    });
 }
 
 }

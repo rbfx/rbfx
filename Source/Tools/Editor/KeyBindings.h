@@ -108,13 +108,17 @@ protected:
     ea::string KeysToString(QualifierFlags qualifiers, Key key);
     /// Returns mask of currently pressed qualifiers.
     QualifierFlags GetCurrentQualifiers() const;
+    /// Sort actions by size of modifier flags.
+    void SortActions();
 
-    ///
-    KeyBoundAction actions_[ActionType::MaxCount]{};
     /// Suppress firing any of key binding actions on the next frame.
     bool ignoreKeyPresses_ = false;
+    /// Configured key bindings.
+    KeyBoundAction actions_[ActionType::MaxCount]{};
     /// Default key bindings.
     KeyCombination defaults_[ActionType::MaxCount]{};
+    /// Order which will be used for checking actions.
+    int actionOrder_[ActionType::MaxCount]{};
 };
 
 }
