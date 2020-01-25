@@ -668,6 +668,9 @@ void Editor::CloseProject()
 
 void Editor::OnUndo()
 {
+    if (ui::IsAnyItemActive())
+        return;
+
     VariantMap args;
     args[Undo::P_TIME] = 0;
     SendEvent(E_UNDO, args);
@@ -678,6 +681,9 @@ void Editor::OnUndo()
 
 void Editor::OnRedo()
 {
+    if (ui::IsAnyItemActive())
+        return;
+
     VariantMap args;
     args[Undo::P_TIME] = M_MAX_UNSIGNED;
     SendEvent(E_REDO, args);
