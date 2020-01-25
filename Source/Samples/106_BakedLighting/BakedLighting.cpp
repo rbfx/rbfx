@@ -190,6 +190,6 @@ void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
     agent_->GetNode()->SetWorldPosition(agent_->GetPosition() * Vector3(1, 0, 1));
 
     // Draw debug geometry
-    auto navmesh = scene_->GetComponent<NavigationMesh>();
-    navmesh->DrawDebugGeometry(true);
+    //auto navmesh = scene_->GetComponent<NavigationMesh>();
+    //navmesh->DrawDebugGeometry(true);
 }
