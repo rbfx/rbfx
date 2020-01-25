@@ -5,20 +5,23 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="568" />
-	<attribute name="Next Replicated Component ID" value="566" />
-	<attribute name="Next Local Node ID" value="16777644" />
-	<attribute name="Next Local Component ID" value="16777743" />
+	<attribute name="Next Replicated Node ID" value="603" />
+	<attribute name="Next Replicated Component ID" value="606" />
+	<attribute name="Next Local Node ID" value="16777672" />
+	<attribute name="Next Local Component ID" value="16777778" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D;Scenes/BakedLightingExample/Textures/Lightmap-0.png;Scenes/BakedLightingExample/Textures/Lightmap-1.png" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="-0.168037 3.19597 9.12655" />
-		<attribute name="Camera Rotation" value="0.859808 -0.0788735 -0.50238 -0.0460854" />
+		<attribute name="Camera Position" value="1.78492 1.28539 2.45172" />
+		<attribute name="Camera Rotation" value="0.913465 -0.0134152 -0.406654 -0.00597094" />
 	</component>
 	<component type="LightBaker" id="3">
-		<attribute name="Quality" value="Low" />
+		<attribute name="Quality" value="High" />
+		<attribute name="Direct Samples (Lightmap)" value="32" />
+		<attribute name="Indirect Samples (Texture)" value="256" />
+		<attribute name="Indirect Samples (Light Probes)" value="256" />
 	</component>
 	<component type="GlobalIllumination" id="4">
 		<attribute name="Is Background Static" value="1" />
@@ -42,7 +45,10 @@
 		</attribute>
 	</component>
 	<component type="NavigationMesh" id="363">
-		<attribute name="Agent Radius" value="0.200000" />
+		<attribute name="Cell Height" value="0.050000" />
+		<attribute name="Agent Height" value="0.200000" />
+		<attribute name="Agent Radius" value="0.100000" />
+		<attribute name="Agent Max Slope" value="5.000000" />
 	</component>
 	<component type="DebugRenderer" id="409" />
 	<node id="2">
@@ -381,7 +387,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Sphere Shadow" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="2 2.2 -1.5" />
+				<attribute name="Position" value="2.5 2.2 -0.5" />
 				<attribute name="Rotation" value="1 0 0 0" />
 				<attribute name="Scale" value="4 4 4" />
 				<attribute name="Variables" />
@@ -407,6 +413,7 @@
 				<attribute name="Bake Lightmap" value="1" />
 				<attribute name="Lightmap Scale &amp; Offset" value="0.34375 0.347656 0.00195313 0.544922" />
 			</component>
+			<component type="Navigable" id="577" />
 		</node>
 		<node id="75">
 			<attribute name="Is Enabled" value="1" />
@@ -422,12 +429,13 @@
 				<attribute name="Bake Lightmap" value="1" />
 				<attribute name="Lightmap Scale &amp; Offset" value="0.171875 0.173828 0.826172 0.00195313" />
 			</component>
+			<component type="Navigable" id="578" />
 		</node>
 		<node id="76">
 			<attribute name="Is Enabled" value="1" />
 			<attribute name="Name" value="Sphere" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="2 2 -2" />
+			<attribute name="Position" value="2 3 -2" />
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="3 3 3" />
 			<attribute name="Variables" />
@@ -461,7 +469,7 @@
 			<attribute name="Is Enabled" value="1" />
 			<attribute name="Name" value="Sphere Text" />
 			<attribute name="Tags" />
-			<attribute name="Position" value="2.86676 1.54636 -3.27084" />
+			<attribute name="Position" value="2.86676 2.8714 -3.27084" />
 			<attribute name="Rotation" value="0.931155 0 -0.36456 0" />
 			<attribute name="Scale" value="0.15 0.2 0.2" />
 			<attribute name="Variables" />
@@ -564,6 +572,7 @@
 			<attribute name="Rotation" value="1 0 0 0" />
 			<attribute name="Scale" value="1 1 1" />
 			<attribute name="Variables" />
+			<component type="Navigable" id="580" />
 			<node id="114">
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Box" />
@@ -584,7 +593,7 @@
 				<attribute name="Is Enabled" value="1" />
 				<attribute name="Name" value="Box" />
 				<attribute name="Tags" />
-				<attribute name="Position" value="3 0.5 -2" />
+				<attribute name="Position" value="3.38241 0.5 -1.77921" />
 				<attribute name="Rotation" value="0.866025 1.49011e-08 0.5 2.58095e-08" />
 				<attribute name="Scale" value="3 3 3" />
 				<attribute name="Variables" />
