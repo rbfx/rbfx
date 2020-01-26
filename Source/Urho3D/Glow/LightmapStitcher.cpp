@@ -112,7 +112,7 @@ SharedPtr<Scene> CreateStitchingScene(Context* context,
     for (unsigned i = 0; i < numMultiTapSamples; ++i)
     {
         const Vector3 offsetAndWeight = seamsMultitap[i];
-        const Vector3 offset = Vector3{ offsetAndWeight.x_, 0.0f, offsetAndWeight.y_ } * texelSize;
+        const Vector3 offset = Vector3{ offsetAndWeight.x_, 0.0f, offsetAndWeight.y_ } * texelSize * 0.5f;
         const float alpha = settings.blendFactor_ * offsetAndWeight.z_;
 
         if (Node* seamsNode = scene->CreateChild("Seams"))
