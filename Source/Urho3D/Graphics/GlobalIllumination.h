@@ -60,6 +60,10 @@ public:
     /// Sample average ambient lighting.
     Vector3 SampleAverageAmbient(const Vector3& position, unsigned& hint) const;
 
+    /// Set emission brightness.
+    void SetEmissionBrightness(float emissionBrightness) { emissionBrightness_ = emissionBrightness; }
+    /// Return emission brightness.
+    float GetEmissionBrightness() const { return emissionBrightness_; }
     /// Set background static.
     void SetBackgroundStatic(bool backgroundStatic) { backgroundStatic_ = backgroundStatic; }
     /// Return whether the background is static.
@@ -81,6 +85,8 @@ private:
     /// Reload GI data.
     void ReloadData();
 
+    /// Emission indirect brightness.
+    float emissionBrightness_{ 1.0f };
     /// Whether the background (Zone and Skybox) is static.
     bool backgroundStatic_{};
     /// Background brightness multiplier.

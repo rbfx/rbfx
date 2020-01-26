@@ -2,5 +2,5 @@
     <technique name="Techniques/NoTexture.xml" />
     <shader vsdefines="LIGHTMAP" psdefines="LIGHTMAP" />
     <parameter name="MatDiffColor" value="0 1 0 1" />
-    <parameter name="MatEmissiveColor" value="0 2 0" />
+    <parameter name="MatEmissiveColor" value="0 1 0" />
 </material>

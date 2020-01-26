@@ -116,7 +116,7 @@ struct LightmapChartBakedIndirect
 
 /// Accumulate emission light.
 URHO3D_API void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmissionLightTracingSettings& settings);
+    const EmissionLightTracingSettings& settings, float indirectBrightnessMultiplier);
 
 /// Accumulate direct light for charts.
 URHO3D_API void BakeDirectLightForCharts(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
