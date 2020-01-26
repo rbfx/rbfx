@@ -402,7 +402,7 @@ To instantiate the saved node into a scene, call \ref Scene::Instantiate "Instan
 
 \section SceneModel_Events Scene graph events
 
-The Scene object sends events on scene graph modification, such as nodes or components being added or removed, the enabled status of a node or component being 
+The Scene object sends events on scene graph modification, such as nodes or components being added or removed, the enabled status of a node or component being
 changed, or name or tags being changed. These are used in the Editor to implement keeping the scene hierarchy window up to date. See the include file
 SceneEvents.h. Note that when a node is removed from the scene, individual component removals are not signaled.
 
@@ -2923,13 +2923,19 @@ C# support is provided by customized SWIG wrapper interface generator.
 * Mono (5.4+) (Linux/MacOS/Android/iOS)
 * `-DBUILD_SHARED_LIBS=ON` build parameter.
 * `-DURHO3D_CSHARP=ON` build parameter.
+* `-DURHO3D_PLUGINS=ON` build parameter (optional).
 
 \subsection CSharp_IDE IDE support
 
-On Windows it is advised to use Visual Studio. C# projects will be automatically
-embedded into generated solution. C# code can be edited and debugged, including
-hot-reloadable plugins running in the editor. To debug these plugins set
-`EditorHost` as your startup application and start debugger.
+On Windows it is advised to use Visual Studio. C# projects will be automatically embedded into generated solution. C# code can be edited and
+debugged, including hot-reloadable plugins running in the editor. To debug these plugins set `EditorHost` as your startup application and
+start debugger.
+
+\subsection CSharp_Scripting Scripting
+
+Building engine with `-DURHO3D_PLUGINS=ON` includes a dummy plugin that is in charge of compiling `Scripts/*.cs` files from resource path at
+runtime. Build option name is rather misleading because said flag actually implements hot code reload in the editor, by building reloadable
+code as plugins that can be loaded and unloaded.
 
 \section CSharp_Implementation Implementation details
 
@@ -2998,6 +3004,13 @@ fixed to not throw them.
 
 Calling "Dispose()" on non-owning wrapper instances will dispose of managed wrapper instance only. Native object is not freed and may be accessed
 later.
+
+\section CSharp_Common_Problems Common Problems
+
+\subsection CSharp_BadImageFormatException BadImageFormatException
+
+Application may throw a `BadImageFormatException` on startup if you configured `PlatformTarget` property of your `.csproj` incorrectly. Always set
+`PlatformTarget` to your target platform. `x64` for 64bit and `x86` for 32bit. Never use `AnyCPU`.
 
 \page Tools Tools
 
