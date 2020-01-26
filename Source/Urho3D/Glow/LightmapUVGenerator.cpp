@@ -77,6 +77,7 @@ bool GenerateLightmapUV(ModelView& modelView, const LightmapUVGenerationSettings
 
     // Generate things
     xatlas::PackOptions packOptions;
+    packOptions.padding = 1;
     packOptions.texelsPerUnit = settings.texelPerUnit_;
 
     xatlas::AddMeshJoin(atlas.get());
