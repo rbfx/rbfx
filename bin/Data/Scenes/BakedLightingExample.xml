@@ -5,17 +5,17 @@
 	<attribute name="Smoothing Constant" value="50.000000" />
 	<attribute name="Snap Threshold" value="5.000000" />
 	<attribute name="Elapsed Time" value="0.000000" />
-	<attribute name="Next Replicated Node ID" value="603" />
-	<attribute name="Next Replicated Component ID" value="606" />
-	<attribute name="Next Local Node ID" value="16777672" />
-	<attribute name="Next Local Component ID" value="16777778" />
+	<attribute name="Next Replicated Node ID" value="613" />
+	<attribute name="Next Replicated Component ID" value="616" />
+	<attribute name="Next Local Node ID" value="16777680" />
+	<attribute name="Next Local Component ID" value="16777788" />
 	<attribute name="Variables" />
 	<attribute name="Variable Names" value="" />
 	<attribute name="Lightmaps" value="Texture2D;Scenes/BakedLightingExample/Textures/Lightmap-0.png;Scenes/BakedLightingExample/Textures/Lightmap-1.png" />
 	<component type="Octree" id="1" />
 	<component type="EditorSceneSettings" id="16777216">
-		<attribute name="Camera Position" value="1.78492 1.28539 2.45172" />
-		<attribute name="Camera Rotation" value="0.913465 -0.0134152 -0.406654 -0.00597094" />
+		<attribute name="Camera Position" value="-5.40711 2.29394 4.42282" />
+		<attribute name="Camera Rotation" value="-0.323446 -0.0374733 0.939222 -0.108814" />
 	</component>
 	<component type="LightBaker" id="3">
 		<attribute name="Quality" value="High" />
@@ -97,7 +97,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.283203 0.900391" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.833984 0.949219" />
 				</component>
 			</node>
 			<node id="41">
@@ -113,7 +113,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapGreen.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.283203 0.949219" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.914063 0.949219" />
 				</component>
 			</node>
 			<node id="25">
@@ -129,7 +129,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapStone.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.355469 0.900391" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.00195313 0.941406" />
 				</component>
 			</node>
 			<node id="24">
@@ -145,7 +145,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.355469 0.949219" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.0820313 0.941406" />
 				</component>
 			</node>
 			<node id="15">
@@ -161,7 +161,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapRed.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.427734 0.900391" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.162109 0.941406" />
 				</component>
 			</node>
 			<node id="13">
@@ -177,7 +177,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.427734 0.949219" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.242188 0.941406" />
 				</component>
 			</node>
 			<node id="34">
@@ -193,7 +193,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapGlowingGreen.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.0683594 0.0449219 0.904297 0.728516" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.0761719 0.0488281 0.322266 0.941406" />
 				</component>
 			</node>
 		</node>
@@ -218,7 +218,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapBlueTransparentShallow.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.136719 0.0898438 0.541016 0.773438" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.152344 0.0976563 0.833984 0.847656" />
 				</component>
 			</node>
 			<node id="9">
@@ -234,7 +234,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapBlueTransparentDeep.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.136719 0.0898438 0.00195313 0.896484" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.152344 0.0976563 0.00195313 0.839844" />
 				</component>
 			</node>
 			<node id="50">
@@ -250,7 +250,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapStoneTransparent.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.136719 0.0898438 0.142578 0.896484" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.152344 0.0976563 0.158203 0.839844" />
 				</component>
 			</node>
 		</node>
@@ -411,7 +411,8 @@
 				<attribute name="Model" value="Model;Models/LightmapMushroom.mdl" />
 				<attribute name="Material" value="Material;Materials/LightmapGreen.xml" />
 				<attribute name="Bake Lightmap" value="1" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.34375 0.347656 0.00195313 0.544922" />
+				<attribute name="Lightmap Index" value="1" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.5 0.503906 0.380859 0.00195313" />
 			</component>
 			<component type="Navigable" id="577" />
 		</node>
@@ -427,7 +428,7 @@
 				<attribute name="Model" value="Model;Models/LightmapMushroom.mdl" />
 				<attribute name="Material" value="Material;Materials/LightmapGreen.xml" />
 				<attribute name="Bake Lightmap" value="1" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.171875 0.173828 0.826172 0.00195313" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.25 0.251953 0.695313 0.591797" />
 			</component>
 			<component type="Navigable" id="578" />
 		</node>
@@ -443,7 +444,7 @@
 				<attribute name="Model" value="Model;Models/Sphere.mdl" />
 				<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 				<attribute name="Bake Lightmap" value="1" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.1875 0.123047 0.349609 0.773438" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.210938 0.134766 0.619141 0.847656" />
 			</component>
 		</node>
 		<node id="306">
@@ -586,7 +587,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.341797 0.224609 0.349609 0.544922" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.380859 0.244141 0.00195313 0.591797" />
 				</component>
 			</node>
 			<node id="115">
@@ -602,7 +603,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.205078 0.134766 0.695313 0.728516" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.228516 0.146484 0.386719 0.791016" />
 				</component>
 			</node>
 			<node id="116">
@@ -618,7 +619,7 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.820313 0.539063 0.00195313 0.00195313" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.914063 0.585938 0.00195313 0.00195313" />
 				</component>
 			</node>
 			<node id="117">
@@ -634,7 +635,8 @@
 					<attribute name="Material" value="Material;Materials/LightmapWhite.xml" />
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.136719 0.0898438 0.541016 0.867188" />
+					<attribute name="Lightmap Index" value="1" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.152344 0.0976563 0.00195313 0.755859" />
 				</component>
 			</node>
 			<node id="119">
@@ -651,7 +653,7 @@
 					<attribute name="Cast Shadows" value="1" />
 					<attribute name="Bake Lightmap" value="1" />
 					<attribute name="Scale in Lightmap" value="2.000000" />
-					<attribute name="Lightmap Scale &amp; Offset" value="0.273438 0.179688 0.695313 0.544922" />
+					<attribute name="Lightmap Scale &amp; Offset" value="0.304688 0.195313 0.386719 0.591797" />
 				</component>
 			</node>
 			<node id="316">
@@ -722,7 +724,7 @@
 				<attribute name="Material" value="Material;Materials/LightmapLogo.xml" />
 				<attribute name="Cast Shadows" value="1" />
 				<attribute name="Bake Lightmap" value="1" />
-				<attribute name="Lightmap Scale &amp; Offset" value="0.046875 0.046875 0.904297 0.777344" />
+				<attribute name="Lightmap Scale &amp; Offset" value="0.046875 0.046875 0.619141 0.791016" />
 			</component>
 		</node>
 	</node>
