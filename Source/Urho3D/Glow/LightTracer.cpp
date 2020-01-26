@@ -1008,7 +1008,7 @@ void PreprocessGeometryBuffer(LightmapChartGeometryBuffer& geometryBuffer,
 }
 
 void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChartGeometryBuffer& geometryBuffer,
-    const EmissionLightTracingSettings& settings)
+    const EmissionLightTracingSettings& settings, float indirectBrightnessMultiplier)
 {
     ParallelFor(bakedDirect.directLight_.size(), settings.numTasks_,
         [&](unsigned fromIndex, unsigned toIndex)
@@ -1022,11 +1022,8 @@ void BakeEmissionLight(LightmapChartBakedDirect& bakedDirect, const LightmapChar
             const Vector3& albedo = geometryBuffer.albedo_[i];
             const Vector3& emission = geometryBuffer.emission_[i];
 
-            if (emission != Vector3::ZERO)
-                i = i;
-
             bakedDirect.directLight_[i] += emission;
-            bakedDirect.surfaceLight_[i] += emission;
+            bakedDirect.surfaceLight_[i] += indirectBrightnessMultiplier * emission;
             bakedDirect.albedo_[i] = albedo;
         }
     });

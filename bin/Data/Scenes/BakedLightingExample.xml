@@ -24,6 +24,7 @@
 		<attribute name="Indirect Samples (Light Probes)" value="256" />
 	</component>
 	<component type="GlobalIllumination" id="4">
+		<attribute name="Emission Brightness" value="32.000000" />
 		<attribute name="Is Background Static" value="1" />
 		<attribute name="Background Brightness" value="0.100000" />
 		<attribute name="Data File" value="BinaryFile;Scenes/BakedLightingExample/GI.bin" />

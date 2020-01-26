@@ -191,6 +191,7 @@ bool LightBaker::UpdateSettings()
     settings_.indirectChartTracing_.numTasks_ = numTasks;
     settings_.indirectProbesTracing_.numTasks_ = numTasks;
 
+    settings_.properties_.emissionBrightness_ = gi->GetEmissionBrightness();
     settings_.properties_.backgroundImage_ = nullptr;
     if (gi->GetBackgroundStatic())
     {

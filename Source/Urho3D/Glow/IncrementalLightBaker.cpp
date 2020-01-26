@@ -258,7 +258,8 @@ struct IncrementalLightBaker::Impl
                 LightmapChartBakedDirect bakedDirect{ geometryBuffer.lightmapSize_ };
 
                 // Bake emission
-                BakeEmissionLight(bakedDirect, geometryBuffer, settings_.emissionTracing_);
+                BakeEmissionLight(bakedDirect, geometryBuffer,
+                    settings_.emissionTracing_, settings_.properties_.emissionBrightness_);
 
                 // Bake direct lights for charts
                 for (const BakedLight& bakedLight : bakedChunk->bakedLights_)
