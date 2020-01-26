@@ -137,10 +137,21 @@ struct ModelModelViewPair
 };
 
 /// Parse model data.
-ModelModelViewPair ParseModelForRaytracer(Model* model)
+ModelModelViewPair ParseModelForRaytracer(Model* model, bool needLightmapUVAndNormal, unsigned uvChannel)
 {
     auto modelView = MakeShared<ModelView>(model->GetContext());
     modelView->ImportModel(model);
+
+    const ModelVertexFormat vertexFormat = modelView->GetVertexFormat();
+    const bool missingPosition = vertexFormat.position_ == ModelVertexFormat::Undefined;
+    const bool missingNormal = vertexFormat.normal_ == ModelVertexFormat::Undefined;
+    const bool missingUv1 = vertexFormat.uv_[uvChannel] == ModelVertexFormat::Undefined;
+
+    if (missingPosition || (needLightmapUVAndNormal && (missingNormal || missingUv1)))
+    {
+        URHO3D_LOGERROR("Model \"{}\" doesn't have required vertex attributes", model->GetName());
+        return {};
+    }
 
     return { model, modelView };
 }
@@ -429,18 +440,23 @@ RaytracerScene::~RaytracerScene()
 SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vector<Component*>& geometries,
     unsigned lightmapUVChannel, const RaytracingBackground& background)
 {
-    // Queue models for parsing
-    ea::hash_set<Model*> modelsToParse;
+    // Queue models for parsing.
+    // Value determines whether the model needs lightmap UV and smooth normal.
+    ea::hash_map<Model*, bool> modelsToParse;
     for (Component* geometry : geometries)
     {
         if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
-            modelsToParse.insert(staticModel->GetModel());
+        {
+            const bool directShadowOnly = !staticModel->GetBakeLightmapEffective();
+            bool& needLightmapUVAndNormal = modelsToParse[staticModel->GetModel()];
+            needLightmapUVAndNormal = needLightmapUVAndNormal && !directShadowOnly;
+        }
     }
 
     // Start model parsing
     ea::vector<std::future<ModelModelViewPair>> modelParseTasks;
-    for (Model* model : modelsToParse)
-        modelParseTasks.push_back(std::async(ParseModelForRaytracer, model));
+    for (const auto& item : modelsToParse)
+        modelParseTasks.push_back(std::async(ParseModelForRaytracer, item.first, item.second, lightmapUVChannel));
 
     // Finish model parsing
     ea::unordered_map<Model*, SharedPtr<ModelView>> parsedModelCache;
@@ -461,9 +477,11 @@ SharedPtr<RaytracerScene> CreateRaytracingScene(Context* context, const ea::vect
         Component* geometry = geometries[objectIndex];
         if (auto staticModel = dynamic_cast<StaticModel*>(geometry))
         {
-            ModelView* parsedModel = parsedModelCache[staticModel->GetModel()];
-            createRaytracerGeometriesTasks.push_back(std::async(CreateRaytracerGeometriesForStaticModel,
-                device, parsedModel, staticModel, objectIndex, lightmapUVChannel));
+            if (ModelView* parsedModel = parsedModelCache[staticModel->GetModel()])
+            {
+                createRaytracerGeometriesTasks.push_back(std::async(CreateRaytracerGeometriesForStaticModel,
+                    device, parsedModel, staticModel, objectIndex, lightmapUVChannel));
+            }
         }
         else if (auto terrain = dynamic_cast<Terrain*>(geometry))
         {
