@@ -96,14 +96,13 @@ A number of build options can be defined when invoking the build scripts or when
 
 |Build Option         |Value|Description          |
 |---------------------|-----|---------------------|
-|URHO3D_64BIT         |*|Enable 64-bit build, the default is set based on the native ABI of the chosen compiler toolchain|
 |URHO3D_IK            |1|Enable inverse kinematics support|
 |URHO3D_NETWORK       |1|Enable Networking support|
 |URHO3D_PHYSICS       |1|Enable Physics support|
 |URHO3D_NAVIGATION    |1|Enable Navigation support|
 |URHO3D_URHO2D        |1|Enable 2D rendering & physics support|
 |URHO3D_PLAYER        |1|Build Urho3D script player|
-|URHO3D_PLUGINSR        |1|Build Urho3D script player|
+|URHO3D_PLUGINS       |1|Enable editor plugin support and runtime-compiled scripting|
 |URHO3D_SAMPLES       |1|Build sample applications|
 |URHO3D_TOOLS         |1|Build tools (native, RPI, and ARM on Linux only)|
 |URHO3D_EXTRAS        |0|Build extras (native, RPI, and ARM on Linux only)|
@@ -120,8 +119,7 @@ A number of build options can be defined when invoking the build scripts or when
 |URHO3D_THREADING     |*|Enable thread support, on Web platform default to 0, on other platforms default to 1|
 |URHO3D_TESTING       |0|Enable testing support|
 |URHO3D_TEST_TIMEOUT  |*|Number of seconds to test run the executables (when testing support is enabled only), default to 10 on Web platform and 5 on other platforms|
-|URHO3D_OPENGL        |0|Use OpenGL instead of Direct3D (Windows platform only)|
-|URHO3D_D3D11         |0|Use Direct3D11 instead of Direct3D9 (Windows platform only); overrides URHO3D_OPENGL option|
+|URHO3D_GRAPHICS_API  |*|Specify which graphics API to use. Possible values: D3D9, D3D11 (windows default), OpenGL (linux default), GLES2 (mobile default), GLES3|
 |URHO3D_STATIC_RUNTIME|0|Use static C/C++ runtime libraries and eliminate the need for runtime DLLs installation (VS only)|
 |URHO3D_WIN32_CONSOLE |0|Use console main() instead of WinMain() as entry point when setting up Windows executable targets (Windows platform only)|
 |URHO3D_MACOSX_BUNDLE |0|Use MACOSX_BUNDLE when setting up macOS executable targets (macOS platform only)|
@@ -134,11 +132,8 @@ A number of build options can be defined when invoking the build scripts or when
 |DIRECTX_LIB_SEARCH_PATHS|-|Additional search paths to find DirectX libraries (MinGW only)|
 |DIRECT3D_DLL_REDIST_SEARCH_PATHS|-|Additional search paths to find DirectX runtime DLL (MinGW only); should only be used for older MinGW version that still uses 'd3dcompiler_43.dll' or 'd3dcompiler_42.dll'.|
 |EMSCRIPTEN_WASM      |1|Enable Binaryen support to generate output to WASM (WebAssembly) format (Emscripten only)|
-|EMSCRIPTEN_AUTO_SHELL|1|Auto adding a default HTML shell-file when it is not explicitly specified (Emscripten only)|
 |EMSCRIPTEN_ALLOW_MEMORY_GROWTH|*|Enable memory growing based on application demand when targeting asm.js, it is not set by default due to performance penalty (Emscripten with STATIC or SHARED library type only)|
 |EMSCRIPTEN_TOTAL_MEMORY|*|Specify the total size of memory to be used (Emscripten only); default to 128 MB, must be in multiple of 64 KB when targeting WebAssembly and in multiple of 16 MB when targeting asm.js|
-|EMSCRIPTEN_SHARE_DATA|0|Enable sharing data file support (Emscripten only)|
-|EMSCRIPTEN_EMRUN_BROWSER|firefox|Specify the particular browser to be spawned by emrun during testing (Emscripten only), use 'emrun --list_browsers' command to get the list of possible values|
 
 Note that the specified build option values are cached by CMake after the initial configuration step. The cached values will be used by CMake in the subsequent configuration. The same build options are not required to be specified again and again. But once a non-default build option value is being cached, it can only be reverted back to its default value by explicitly resetting it. That is, simply by not passing the corresponding build option would not revert it back to its default. One way to revert all the build options to their default values is by clearing the CMake cache by executing cmake_clean.bat or cmake_clean.sh with the location of the build tree as the first argument or by executing it in the build tree itself.
 
