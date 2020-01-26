@@ -149,9 +149,8 @@ void TetrahedralMesh::Define(ea::span<const Vector3> positions)
     BoundingBox boundingBox(positions.data(), positions.size());
     const Vector3 size = boundingBox.Size();
     const float maxSize = ea::max({ 1.0f, size.x_, size.y_, size.z_ });
-    // TODO(glow): Revise this place
-    boundingBox.min_ -= Vector3::ONE;// * maxSize / 2;
-    boundingBox.max_ += Vector3::ONE;// * maxSize / 2;
+    boundingBox.min_ -= Vector3::ONE;
+    boundingBox.max_ += Vector3::ONE;
     InitializeSuperMesh(boundingBox);
     BuildTetrahedrons(positions);
 }
@@ -433,7 +432,6 @@ void TetrahedralMesh::InitializeSuperMesh(const BoundingBox& boundingBox)
         { 1.0f, 1.0f, 1.0f }  // 7:
     };
 
-    // TODO(glow): Use Tetrahedron here
     static const unsigned numTetrahedrons = 5;
     static const unsigned indices[numTetrahedrons][4] =
     {

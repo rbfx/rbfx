@@ -110,7 +110,7 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
     ModelView modelView(model->GetContext());
     if (!modelView.ImportModel(model))
     {
-        URHO3D_LOGERROR("Failed to import model \"{}\"", model->GetName());
+        URHO3D_LOGERROR("Cannot import model \"{}\"", model->GetName());
         return {};
     }
 
@@ -131,8 +131,14 @@ LightmapSeamVector CollectModelSeams(Model* model, unsigned uvChannel)
         return VectorFloorToInt((position - boundingBox.min_) / hashStep);
     };
 
-    // TODO(glow): Check vertex format
-    //const ModelVertexFormat vertexFormat = modelView.GetVertexFormat();
+    const ModelVertexFormat vertexFormat = modelView.GetVertexFormat();
+    if (vertexFormat.position_ == ModelVertexFormat::Undefined
+        || vertexFormat.normal_ == ModelVertexFormat::Undefined
+        || vertexFormat.uv_[uvChannel] == ModelVertexFormat::Undefined)
+    {
+        URHO3D_LOGERROR("Model \"{}\" doesn't have required vertex attributes", model->GetName());
+        return {};
+    }
 
     ea::vector<LightmapSeam> seams;
     for (const GeometryView& geometry : modelView.GetGeometries())

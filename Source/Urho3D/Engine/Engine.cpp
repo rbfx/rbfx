@@ -146,7 +146,8 @@ Engine::Engine(Context* context) :
     RegisterSceneLibrary(context_);
 
 #ifdef URHO3D_GLOW
-    // TODO(glow): Do we want to move this code into function like the others?
+    // Light baker needs only one class so far, so register it directly.
+    // Extract this code into function if you are adding more.
     StaticModelForLightmap::RegisterObject(context_);
 #endif
 
