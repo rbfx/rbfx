@@ -30,6 +30,8 @@ namespace Urho3D
 {
 
 /// Stop token used to thread-safely stop asynchronous task.
+/// TODO: For better memory management split this class into StopSource with shared_ptr
+/// and StopToken with weak_ptr, or reuse corresponding classes from C++20 standard library.
 class StopToken
 {
 public:
