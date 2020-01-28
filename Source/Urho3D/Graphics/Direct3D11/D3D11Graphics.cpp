@@ -25,6 +25,7 @@
 #include "../../Core/Context.h"
 #include "../../Core/ProcessUtils.h"
 #include "../../Core/Profiler.h"
+#include "../../Graphics/ComputeDevice.h"
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Geometry.h"
 #include "../../Graphics/Graphics.h"
@@ -200,6 +201,7 @@ bool Graphics::gl3Support = false;
 Graphics::Graphics(Context* context) :
     Object(context),
     impl_(new GraphicsImpl()),
+    computeDevice_(new ComputeDevice(context, this)),
     position_(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED),
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
@@ -262,6 +264,9 @@ Graphics::~Graphics()
         SDL_DestroyWindow(window_);
         window_ = nullptr;
     }
+
+    delete computeDevice_;
+    computeDevice_ = nullptr;
 
     delete impl_;
     impl_ = nullptr;

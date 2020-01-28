@@ -39,6 +39,7 @@ struct SDL_Window;
 namespace Urho3D
 {
 
+class ComputeDevice;
 class ConstantBuffer;
 class File;
 class Image;
@@ -328,6 +329,9 @@ public:
 
     /// Return graphics implementation, which holds the actual API-specific resources.
     GraphicsImpl* GetImpl() const { return impl_; }
+
+    /// Return the compute interface, may be null if unsupported on this machine.
+    ComputeDevice* GetComputeDevice() const { return computeDevice_; }
 
     /// Return OS-specific external window handle. Null if not in use.
     void* GetExternalWindow() const { return externalWindow_; }
@@ -720,6 +724,8 @@ private:
     Mutex gpuObjectMutex_;
     /// Implementation.
     GraphicsImpl* impl_;
+    /// Compute device interface.
+    ComputeDevice* computeDevice_;
     /// SDL window.
     SDL_Window* window_{};
     /// Window title.
