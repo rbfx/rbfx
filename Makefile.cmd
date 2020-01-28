@@ -24,7 +24,7 @@ if "!PROCESSOR_ARCHITECTURE!" == "AMD64" (
 )
 
 echo set "PLATFORM=!PLATFORM!" > cmake-build\environment.cmd
-set /P "VS=Visual Studio (2015/2017/[2019]): " || set "VS=2019"
+set /P "VS=Visual Studio (2017/[2019]): " || set "VS=2019"
 echo set "VS=!VS!" >> cmake-build\environment.cmd
 
 :process
@@ -34,10 +34,7 @@ if "!VS_PLATFORM!" == "x86" (
 )
 
 set "CMAKE_GENRATOR=Visual Studio"
-if "!VS!" == "2015" (
-    set "CMAKE_GENRATOR=!CMAKE_GENRATOR! 14"
-    call "C:\Program Files (x86)\Microsoft Visual Studio 14.0\VC\vcvarsall.bat" !PLATFORM!
-) else if "!VS!" == "2017" (
+if "!VS!" == "2017" (
     set "CMAKE_GENRATOR=!CMAKE_GENRATOR! 15"
     call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Auxiliary\Build\vcvarsall.bat" !PLATFORM!
 ) else if "!VS!" == "2019" (
