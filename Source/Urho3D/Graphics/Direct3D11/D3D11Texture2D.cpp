@@ -51,6 +51,10 @@ void Texture2D::OnDeviceReset()
 
 void Texture2D::Release()
 {
+    VariantMap& eventData = GetEventDataMap();
+    eventData[GPUResourceReleased::P_OBJECT] = this;
+    SendEvent(E_GPURESOURCERELEASED, eventData);
+
     if (graphics_ && object_.ptr_)
     {
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)

@@ -55,6 +55,10 @@ void TextureCube::OnDeviceReset()
 
 void TextureCube::Release()
 {
+    VariantMap& eventData = GetEventDataMap();
+    eventData[GPUResourceReleased::P_OBJECT] = this;
+    SendEvent(E_GPURESOURCERELEASED, eventData);
+
     if (graphics_)
     {
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
