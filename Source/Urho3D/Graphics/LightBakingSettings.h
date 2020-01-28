@@ -182,14 +182,13 @@ struct IncrementalLightBakerSettings
     ea::string outputDirectory_;
     /// Global illumination data file.
     ea::string giDataFileName_{ "GI.bin" };
-    /// Lightmap name prefix.
-    ea::string lightmapNamePrefix_{ "Textures/Lightmap-" };
-    /// Lightmap name suffix.
-    ea::string lightmapNameSuffix_{ ".png" };
-    /// Light probe group name prefix.
-    ea::string lightProbeGroupNamePrefix_{ "Binary/LightProbeGroup-" };
-    /// Light probe group name suffix.
-    ea::string lightProbeGroupNameSuffix_{ ".bin" };
+    /// Lightmap name format string.
+    /// Placeholder 1: global lightmap index.
+    ea::string lightmapNameFormat_{ "Textures/Lightmap-{}.png" };
+    /// Light probe group name format string.
+    /// Placeholders 1-3: x, y and z components of chunk index.
+    /// Placeholder 4: light probe group index within chunk.
+    ea::string lightProbeGroupNameFormat_{ "Binary/LightProbeGroup-{}-{}-{}-{}.bin" };
 };
 
 /// Aggregated light baking settings.

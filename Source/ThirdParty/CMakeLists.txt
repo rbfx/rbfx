@@ -61,11 +61,7 @@ if (NOT MINI_URHO)
         set (EMBREE_ISA_AVX2 OFF CACHE BOOL "")
         set (EMBREE_ISA_AVX512KNL OFF CACHE BOOL "")
         set (EMBREE_ISA_AVX512SKX OFF CACHE BOOL "")
-
-        # TODO: Try to remove CMAKE_INCLUDE_CURRENT_DIR at all
-        set (CMAKE_INCLUDE_CURRENT_DIR OFF)
         add_subdirectory(embree)
-        set (CMAKE_INCLUDE_CURRENT_DIR ON)
     endif ()
 
     if (URHO3D_SYSTEMUI)

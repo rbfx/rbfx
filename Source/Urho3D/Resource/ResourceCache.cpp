@@ -608,7 +608,7 @@ Resource* ResourceCache::GetResource(StringHash type, const ea::string& name, bo
 
     URHO3D_LOGDEBUG("Loading resource " + sanitatedName);
     resource->SetName(sanitatedName);
-    resource->SetNativeFileName(file->GetNativeName());
+    resource->SetAbsoluteFileName(file->GetAbsoluteName());
 
     if (!resource->Load(*(file.Get())))
     {
@@ -688,7 +688,7 @@ SharedPtr<Resource> ResourceCache::GetTempResource(StringHash type, const ea::st
 
     URHO3D_LOGDEBUG("Loading temporary resource " + sanitatedName);
     resource->SetName(file->GetName());
-    resource->SetNativeFileName(file->GetNativeName());
+    resource->SetAbsoluteFileName(file->GetAbsoluteName());
 
     if (!resource->Load(*(file.Get())))
     {
@@ -1296,7 +1296,7 @@ bool ResourceCache::RenameResource(const ea::string& source, const ea::string& d
 
             groupPair.second.resources_.erase(resource->GetNameHash());
             resource->SetName(newName);
-            resource->SetNativeFileName(newNativeFileName);
+            resource->SetAbsoluteFileName(newNativeFileName);
             groupPair.second.resources_[resource->GetNameHash()] = resource;
             movedAny = true;
 

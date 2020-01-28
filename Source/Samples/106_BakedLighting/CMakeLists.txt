@@ -20,7 +20,7 @@
 # THE SOFTWARE.
 #
 
-if (NOT URHO3D_PHYSICS)
+if (NOT URHO3D_NAVIGATION)
     return ()
 endif ()
 

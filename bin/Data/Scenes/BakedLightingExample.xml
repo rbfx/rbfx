@@ -346,7 +346,8 @@
 		<component type="Light" id="11">
 			<attribute name="Light Type" value="Directional" />
 			<attribute name="Light Mode" value="Baked" />
-			<attribute name="Brightness Multiplier" value="0.700000" />
+			<attribute name="Color" value="0.986498 0.925566 0.700122 1" />
+			<attribute name="Brightness Multiplier" value="0.800000" />
 			<attribute name="Indirect Brightness" value="4.000000" />
 			<attribute name="Radius" value="5.000000" />
 			<attribute name="Cast Shadows" value="1" />
