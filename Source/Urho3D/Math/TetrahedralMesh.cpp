@@ -293,6 +293,7 @@ Vector4 TetrahedralMesh::GetInterpolationFactors(const Vector3& position, unsign
 
 int TetrahedralMesh::SolveCubicEquation(double result[], double a, double b, double c, double eps)
 {
+    // Performance-critical code, don't use degree-based functions here
     double a2 = a * a;
     double q = (a2 - 3 * b) / 9;
     double r = (a * (2 * a2 - 9 * b) + 27 * c) / 54;

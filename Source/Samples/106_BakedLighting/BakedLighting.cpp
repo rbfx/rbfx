@@ -117,7 +117,8 @@ void BakedLighting::CreateInstructions()
     // Construct new Text object, set string to display and font to use
     auto* instructionText = ui->GetRoot()->CreateChild<Text>();
     instructionText->SetText(
-        "Use WASD keys and mouse/touch to move"
+        "Use WASD keys and mouse/touch to move\n"
+        "Shift to sprint, Tab to toggle character textures"
     );
     instructionText->SetFont(cache->GetResource<Font>("Fonts/Anonymous Pro.ttf"), 15);
     // The text has multiple rows. Center them in relation to each other
@@ -188,6 +189,19 @@ void BakedLighting::HandleUpdate(StringHash eventType, VariantMap& eventData)
 
     // Snap position to ground
     agent_->GetNode()->SetWorldPosition(agent_->GetPosition() * Vector3(1, 0, 1));
+
+    // Toggle textures
+    if (input->GetKeyPress(KEY_TAB))
+    {
+        auto cache = context_->GetCache();
+        auto animModel = animController->GetNode()->GetComponent<AnimatedModel>();
+
+        texturesEnabled_ = !texturesEnabled_;
+        if (texturesEnabled_)
+            animModel->SetMaterial(cache->GetResource<Material>("Models/Mutant/Materials/mutant_M.xml"));
+        else
+            animModel->SetMaterial(cache->GetResource<Material>("Materials/DefaultWhite.xml"));
+    }
 
     // Draw debug geometry
     //auto navmesh = scene_->GetComponent<NavigationMesh>();
