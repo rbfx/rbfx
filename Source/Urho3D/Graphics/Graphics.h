@@ -40,6 +40,7 @@ struct SDL_Window;
 namespace Urho3D
 {
 
+class ComputeDevice;
 class ConstantBuffer;
 class ShaderProgramLayout;
 class File;
@@ -392,6 +393,9 @@ public:
 
     /// Return whether shader validation is enabled.
     bool IsShaderValidationEnabled() const { return validateShaders_; }
+
+    /// Return the compute interface, may be null if unsupported on this machine.
+    ComputeDevice* GetComputeDevice() const { return computeDevice_; }
 
     /// Return OS-specific external window handle. Null if not in use.
     void* GetExternalWindow() const { return externalWindow_; }
@@ -832,6 +836,8 @@ private:
     Mutex gpuObjectMutex_;
     /// Implementation.
     GraphicsImpl* impl_;
+    /// Compute device interface.
+    ComputeDevice* computeDevice_;
     /// SDL window.
     SDL_Window* window_{};
     /// Window title.
