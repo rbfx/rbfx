@@ -63,4 +63,6 @@ private:
     float yaw_{};
     /// Pitch angle.
     float pitch_{};
+    /// Whether the character textures are enabled.
+    bool texturesEnabled_{ true };
 };

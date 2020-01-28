@@ -451,12 +451,10 @@ private:
     /// Return lightmap file name.
     ea::string GetLightmapFileName(unsigned lightmapIndex)
     {
-        ea::string lightmapName;
-        lightmapName += settings_.incremental_.outputDirectory_;
-        lightmapName += settings_.incremental_.lightmapNamePrefix_;
-        lightmapName += ea::to_string(lightmapIndex);
-        lightmapName += settings_.incremental_.lightmapNameSuffix_;
-        return lightmapName;
+        ea::string fileName;
+        fileName += settings_.incremental_.outputDirectory_;
+        fileName += Format(settings_.incremental_.lightmapNameFormat_, lightmapIndex);
+        return fileName;
     }
 
     /// Return light probe group baked data file.
@@ -464,9 +462,7 @@ private:
     {
         ea::string fileName;
         fileName += settings_.incremental_.outputDirectory_;
-        fileName += settings_.incremental_.lightProbeGroupNamePrefix_;
-        fileName += Format("{}-{}-{}-{}", chunk.x_, chunk.y_, chunk.z_, index);
-        fileName += settings_.incremental_.lightProbeGroupNameSuffix_;
+        fileName += Format(settings_.incremental_.lightProbeGroupNameFormat_, chunk.x_, chunk.y_, chunk.z_, index);
         return fileName;
     }
 

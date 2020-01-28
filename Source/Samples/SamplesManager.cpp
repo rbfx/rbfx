@@ -115,7 +115,9 @@
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
 #include "105_Serialization/Serialization.h"
+#if URHO3D_NAVIGATION
 #include "106_BakedLighting/BakedLighting.h"
+#endif
 #include "Rotator.h"
 
 #include "SamplesManager.h"
@@ -287,10 +289,12 @@ void SamplesManager::Start()
     RegisterSample<HelloSystemUi>();
 #endif
     RegisterSample<Serialization>();
+#if URHO3D_NAVIGATION
     RegisterSample<BakedLighting>();
 
     // TODO(glow): Remove it
     startSample_ = "BakedLighting";
+#endif
 
     if (!startSample_.empty())
         StartSample(startSample_);

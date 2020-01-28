@@ -85,8 +85,8 @@ public:
     /// Return the file name.
     const ea::string& GetName() const override { return fileName_; }
 
-    /// Return native file name in file system.
-    const ea::string& GetNativeName() const { return nativeFileName_; }
+    /// Return absolute file name in file system.
+    const ea::string& GetAbsoluteName() const { return absoluteFileName_; }
 
     /// Return a checksum of the file contents using the SDBM hash algorithm.
     unsigned GetChecksum() override;
@@ -138,10 +138,10 @@ private:
     /// Seek in file internally using either C standard IO functions or SDL RWops for Android asset files.
     void SeekInternal(unsigned newPosition);
 
-    /// File name.
+    /// File name. For files from ResourceCache, relative to cache directory.
     ea::string fileName_;
-    /// Native file name.
-    ea::string nativeFileName_;
+    /// Absolute file name.
+    ea::string absoluteFileName_;
     /// Open mode.
     FileMode mode_;
     /// File handle.
