@@ -75,6 +75,7 @@ static Uint64       g_Time = 0;
 static bool         g_MousePressed[3] = { false, false, false };
 static SDL_Cursor*  g_MouseCursors[ImGuiMouseCursor_COUNT] = {};
 static char*        g_ClipboardTextData = NULL;
+static bool         g_UseVulkan = false;
 
 // Forward Declarations
 static void ImGui_ImplSDL2_InitPlatformInterface(SDL_Window* window, void* sdl_gl_context);
@@ -233,6 +234,7 @@ bool ImGui_ImplSDL2_InitForVulkan(SDL_Window* window)
 #if !SDL_HAS_VULKAN
     IM_ASSERT(0 && "Unsupported");
 #endif
+    g_UseVulkan = true;
     return ImGui_ImplSDL2_Init(window, NULL);
 }
 
@@ -451,7 +453,7 @@ static void ImGui_ImplSDL2_CreateWindow(ImGuiViewport* viewport)
     }
 
     Uint32 sdl_flags = 0;
-    sdl_flags |= use_opengl ? SDL_WINDOW_OPENGL : SDL_WINDOW_VULKAN;
+    sdl_flags |= use_opengl ? SDL_WINDOW_OPENGL : (g_UseVulkan ? SDL_WINDOW_VULKAN : 0);
     sdl_flags |= SDL_GetWindowFlags(g_Window) & SDL_WINDOW_ALLOW_HIGHDPI;
     sdl_flags |= SDL_WINDOW_HIDDEN;
     sdl_flags |= (viewport->Flags & ImGuiViewportFlags_NoDecoration) ? SDL_WINDOW_BORDERLESS : 0;
