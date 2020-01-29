@@ -1092,6 +1092,9 @@ void BakeIndirectLightForCharts(LightmapChartBakedIndirect& bakedIndirect,
     const RaytracerScene& raytracerScene, const ea::vector<unsigned>& geometryBufferToRaytracer,
     const IndirectLightTracingSettings& settings)
 {
+    if (settings.maxBounces_ == 0)
+        return;
+
     const ChartIndirectTracingKernel kernel{ &bakedIndirect, &geometryBuffer, &lightProbesMesh, &lightProbesData,
         &geometryBufferToRaytracer, &raytracerScene.GetGeometries(), &settings };
     TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);
@@ -1102,6 +1105,9 @@ void BakeIndirectLightForLightProbes(
     const ea::vector<const LightmapChartBakedDirect*>& bakedDirect,
     const RaytracerScene& raytracerScene, const IndirectLightTracingSettings& settings)
 {
+    if (settings.maxBounces_ == 0)
+        return;
+
     const LightProbeIndirectTracingKernel kernel{ &collection, &bakedData, &settings };
     TraceIndirectLight(kernel, bakedDirect, raytracerScene, settings);
 }

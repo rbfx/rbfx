@@ -60,7 +60,7 @@ class ZoneOctreeQuery : public OctreeQuery
 public:
     /// Construct with frustum and query parameters.
     ZoneOctreeQuery(unsigned viewMask = DEFAULT_VIEWMASK)
-        : OctreeQuery(unusedDrawablesVector, DRAWABLE_ZONE, viewMask_) {}
+        : OctreeQuery(unusedDrawablesVector, DRAWABLE_ZONE, viewMask) {}
 
     /// Intersection test for an octant.
     Intersection TestOctant(const BoundingBox& box, bool inside) override
@@ -103,7 +103,7 @@ class SkyboxOctreeQuery : public OctreeQuery
 public:
     /// Construct with frustum and query parameters.
     SkyboxOctreeQuery(unsigned viewMask = DEFAULT_VIEWMASK)
-        : OctreeQuery(unusedDrawablesVector, DRAWABLE_GEOMETRY, viewMask_) {}
+        : OctreeQuery(unusedDrawablesVector, DRAWABLE_GEOMETRY, viewMask) {}
 
     /// Intersection test for an octant.
     Intersection TestOctant(const BoundingBox& box, bool inside) override
