@@ -74,7 +74,7 @@ extern "C" {
 #endif
 
 // Urho3D: additional test for actually having NEON support enabled
-#if defined(__ANDROID__) && defined(__ARM_ARCH_7A__) && defined(__ARM_NEON)
+#if defined(__ANDROID__) && defined(__ARM_ARCH_7A__) && defined(HAVE_CPU_FEATURES_H)
     #define WEBP_ANDROID_NEON  // Android targets that might support NEON
 #endif
 
