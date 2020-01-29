@@ -280,7 +280,8 @@ Renderer::Renderer(Context* context) :
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Renderer, HandleScreenMode));
 
 #if URHO3D_SPHERICAL_HARMONICS
-    SetSphericalHarmonics(true);
+    sphericalHarmonics_ = true;
+    SetGlobalShaderDefine("SPHERICALHARMONICS", sphericalHarmonics_);
 #endif
 
     // Try to initialize right now, but skip if screen mode is not yet set
@@ -553,22 +554,10 @@ void Renderer::SetMobileNormalOffsetMul(float mul)
 
 void Renderer::SetSphericalHarmonics(bool enable)
 {
-#if URHO3D_SPHERICAL_HARMONICS
-    if (!enable)
+    if (sphericalHarmonics_ != enable)
     {
-        URHO3D_LOGERROR("Spherical Harmonics cannot be disabled in runtime");
-        return;
+        URHO3D_LOGERROR("Spherical Harmonics cannot be enabled or disabled in runtime");
     }
-#else
-    if (enable)
-    {
-        URHO3D_LOGERROR("Spherical Harmonics cannot be enabled in runtime");
-        return;
-    }
-#endif
-
-    sphericalHarmonics_ = enable;
-    SetGlobalShaderDefine("SPHERICALHARMONICS", sphericalHarmonics_);
 }
 
 void Renderer::SetOccluderSizeThreshold(float screenSize)
