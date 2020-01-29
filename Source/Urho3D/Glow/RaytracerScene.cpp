@@ -106,6 +106,8 @@ struct LightmappedRaytracingGeometryParams
 /// Parameters for raytracing geometry creation from geometry view.
 struct RaytracingFromGeometryViewParams
 {
+    /// Node name.
+    ea::string nodeName_;
     /// Transform from geometry to world space.
     Matrix3x4 worldTransform_;
     /// Rotation from geometry to world space.
@@ -188,6 +190,7 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
             RaytracerScene::UVAttribute, RTC_FORMAT_FLOAT2, sizeof(Vector2), numVertices));
     }
 
+    bool errorReported = false;
     for (unsigned i = 0; i < numVertices; ++i)
     {
         const Vector3 localPosition = static_cast<Vector3>(sourceVertices[i].position_);
@@ -201,8 +204,16 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
         {
             const Vector2 lightmapUV = static_cast<Vector2>(sourceVertices[i].uv_[params.lightmapping_.lightmapUVChannel_]);
             const Vector2 lightmapUVScaled = params.lightmapping_.ConvertUV(lightmapUV);
-            lightmapUVs[i * 2 + 0] = lightmapUVScaled.x_;
-            lightmapUVs[i * 2 + 1] = lightmapUVScaled.y_;
+            const Vector2 lightmapUVClamped = VectorMax(Vector2::ZERO, VectorMin(lightmapUVScaled, Vector2::ONE));
+
+            if (!errorReported && lightmapUVScaled != lightmapUVClamped)
+            {
+                errorReported = true;
+                URHO3D_LOGWARNING("Lightmap UVs for node {} are clamped, lighting may be incorrect", params.nodeName_);
+            }
+
+            lightmapUVs[i * 2 + 0] = lightmapUVClamped.x_;
+            lightmapUVs[i * 2 + 1] = lightmapUVClamped.y_;
         }
 
         if (smoothNormals)
@@ -219,8 +230,16 @@ RTCGeometry CreateEmbreeGeometryForGeometryView(RTCDevice embreeDevice, const Ra
         {
             const Vector2 uv = static_cast<Vector2>(sourceVertices[i].uv_[0]);
             const Vector2 uvScaled = params.material_.ConvertUV(uv);
-            uvs[i * 2 + 0] = uvScaled.x_;
-            uvs[i * 2 + 1] = uvScaled.y_;
+            const Vector2 uvClamped = VectorMax(Vector2::ZERO, VectorMin(uvScaled, Vector2::ONE));
+
+            if (!errorReported && uvScaled != uvClamped)
+            {
+                errorReported = true;
+                URHO3D_LOGWARNING("UVs for node {} are clamped, lighting may be incorrect", params.nodeName_);
+            }
+
+            uvs[i * 2 + 0] = uvClamped.x_;
+            uvs[i * 2 + 1] = uvClamped.y_;
         }
     }
 
@@ -343,6 +362,7 @@ ea::vector<RaytracerGeometry> CreateRaytracerGeometriesForStaticModel(RTCDevice 
     const Vector4& lightmapUVScaleOffset = staticModel->GetLightmapScaleOffset();
 
     RaytracingFromGeometryViewParams params;
+    params.nodeName_ = node->GetName();
     params.worldTransform_ = node->GetWorldTransform();
     params.worldRotation_ = node->GetWorldRotation();
     params.lightmapping_.directShadowsOnly_ = !staticModel->GetBakeLightmapEffective();

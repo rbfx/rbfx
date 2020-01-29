@@ -40,10 +40,17 @@ namespace
 
 /// Calculate lightmap size for given model with given scale.
 IntVector2 CalculateModelLightmapSize(float texelDensity, float minObjectScale,
-    Model* model, const Vector3& scale, float scaleInLightmap)
+    Model* model, const Vector3& scale, float scaleInLightmap, const IntVector2& defaultChartSize)
 {
     const Variant& modelLightmapSizeVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapSizeKey);
     const Variant& modelLightmapDensityVar = model->GetMetadata(LightmapUVGenerationSettings::LightmapDensityKey);
+
+    if (modelLightmapDensityVar.IsEmpty() || modelLightmapDensityVar.IsEmpty())
+    {
+        URHO3D_LOGWARNING("Cannot calculate chart size for model \"{}\", fallback to default.",
+            model->GetName());
+        return defaultChartSize;
+    }
 
     const auto modelLightmapSize = static_cast<Vector2>(modelLightmapSizeVar.GetIntVector2());
     const float modelLightmapDensity = modelLightmapDensityVar.GetFloat();
@@ -106,8 +113,9 @@ IntVector2 CalculateStaticModelLightmapSize(StaticModel* staticModel, const Ligh
 {
     Node* node = staticModel->GetNode();
     Model* model = staticModel->GetModel();
+    const IntVector2 defaultChartSize = IntVector2::ONE * static_cast<int>(settings.defaultChartSize_);
     return CalculateModelLightmapSize(settings.texelDensity_, settings.minObjectScale_, model,
-        node->GetWorldScale(), staticModel->GetScaleInLightmap());
+        node->GetWorldScale(), staticModel->GetScaleInLightmap(), defaultChartSize);
 }
 
 /// Calculate size in lightmap for Terrain component.

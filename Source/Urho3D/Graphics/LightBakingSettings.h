@@ -45,6 +45,8 @@ struct LightmapChartingSettings
     /// Values below 1 may cause lightmap bleeding due to insufficient padding.
     /// Values above 0 may cause inconsistent lightmap density if object scale is too small.
     float minObjectScale_{ 1.0f };
+    /// Default chart size for models w/o metadata. Don't rely on it.
+    unsigned defaultChartSize_{ 16 };
 };
 
 /// Lightmap geometry buffer baking settings.

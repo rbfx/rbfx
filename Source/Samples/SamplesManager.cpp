@@ -291,9 +291,6 @@ void SamplesManager::Start()
     RegisterSample<Serialization>();
 #if URHO3D_NAVIGATION
     RegisterSample<BakedLighting>();
-
-    // TODO(glow): Remove it
-    startSample_ = "BakedLighting";
 #endif
 
     if (!startSample_.empty())
