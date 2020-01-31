@@ -66,7 +66,7 @@ Licensed under the MIT license, see [LICENSE](https://github.com/urho3d/Urho3D/b
 * Supported compiler toolchains: MSVC, GCC, Clang, MinGW, and their cross-compiling derivatives
 * Supports both 32-bit and 64-bit build
 * Build as single external library (can be linked against statically or dynamically)
-* ImGui integration used in tools
+* Dear ImGui integration used in tools
 
 ## Screenshots
 
@@ -98,7 +98,7 @@ rbfx uses the following third-party libraries:
 - stb_vorbis 1.13b (https://nothings.org)
 - WebP (https://chromium.googlesource.com/webm/libwebp)
 - ETCPACK (https://github.com/Ericsson/ETCPACK)
-- imgui 1.74 (https://github.com/ocornut/imgui/tree/docking)
+- Dear ImGui 1.74 (https://github.com/ocornut/imgui/tree/docking)
 - tracy (https://bitbucket.org/wolfpld/tracy/)
 - nativefiledialog (https://github.com/mlabbe/nativefiledialog)
 - IconFontCppHeaders (https://github.com/juliettef/IconFontCppHeaders)
