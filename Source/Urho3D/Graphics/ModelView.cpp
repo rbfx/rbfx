@@ -57,10 +57,9 @@ const ea::vector<VertexElement> GetEffectiveVertexElements(const Model* model)
 /// Read vertex buffer data.
 ea::vector<ModelVertex> GetVertexBufferData(const VertexBuffer* vertexBuffer, unsigned start, unsigned count)
 {
-    const unsigned vertexCount = vertexBuffer->GetVertexCount();
     const ea::vector<Vector4> unpackedData = vertexBuffer->GetUnpackedData(start, count);
 
-    ea::vector<ModelVertex> result(vertexCount);
+    ea::vector<ModelVertex> result(count);
     VertexBuffer::ShuffleUnpackedVertexData(count, unpackedData.data(), vertexBuffer->GetElements(),
         reinterpret_cast<Vector4*>(result.data()), ModelVertex::VertexElements);
 
