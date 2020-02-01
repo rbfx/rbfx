@@ -351,47 +351,50 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             if (ui::Button(ICON_FA_PLUS))
                 mapState->insertingNew = true;
 
-            if (!map->empty())
-                ui::NextColumn();
-
-            unsigned index = 0;
-            unsigned size = map->size();
-            for (auto it = map->begin(); it != map->end(); it++)
+            if (map != nullptr && !map->empty())
             {
-                VariantType type = it->second.GetType();
-                if (type == VAR_RESOURCEREFLIST || type == VAR_VARIANTMAP || type == VAR_VARIANTVECTOR ||
-                    type == VAR_BUFFER || type == VAR_VOIDPTR || type == VAR_PTR)
-                    // TODO: Support nested collections.
-                    continue;
+                unsigned index = 0;
+                unsigned size = map->size();
+                for (auto it = map->begin(); it != map->end(); it++)
+                {
+                    VariantType type = it->second.GetType();
+                    if (type == VAR_RESOURCEREFLIST || type == VAR_VARIANTMAP || type == VAR_VARIANTVECTOR ||
+                        type == VAR_BUFFER || type == VAR_VOIDPTR || type == VAR_PTR)
+                        // TODO: Support nested collections.
+                        continue;
 
 #if URHO3D_HASH_DEBUG
-                const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
-                // Column-friendly indent
-                ui::NewLine();
-                ui::SameLine(20);
-                ui::TextUnformatted((name.empty() ? it->first.ToString() : name).c_str());
+                    const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
+                    // Column-friendly indent
+                    ui::NewLine();
+                    ui::SameLine(20);
+                    ui::TextUnformatted((name.empty() ? it->first.ToString() : name).c_str());
 #else
-                // Column-friendly indent
-                ui::NewLine();
-                ui::SameLine(20_dpx);
-                ui::TextUnformatted(it->first_.ToString().c_str());
+                    // Column-friendly indent
+                    ui::NewLine();
+                    ui::SameLine(20_dpx);
+                    ui::TextUnformatted(it->first_.ToString().c_str());
 #endif
 
-                ui::NextColumn();
-                ui::IdScope entryIdScope(index++);
-                UI_ITEMWIDTH(-26) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
-                    modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second);
-                ui::SameLine(it->second.GetType());
-                if (ui::Button(ICON_FA_TRASH))
-                {
-                    it = map->erase(it);
-                    modified |= true;
-                    break;
-                }
-
-                if (--size > 0)
                     ui::NextColumn();
+                    ui::IdScope entryIdScope(index++);
+                    UI_ITEMWIDTH(
+                        -26) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
+                        modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second);
+                    ui::SameLine(it->second.GetType());
+                    if (ui::Button(ICON_FA_TRASH))
+                    {
+                        it = map->erase(it);
+                        modified |= true;
+                        break;
+                    }
+
+                    if (--size > 0)
+                        ui::NextColumn();
+                }
             }
+            else
+                ui::NextColumn();
 
             if (mapState->insertingNew)
             {
@@ -610,8 +613,10 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             bool hidden = false;
             Color color = Color::WHITE;
             ea::string tooltip;
+            ui::IdScope idGuard(info.name_.c_str());
 
-            Variant value = item->GetAttribute(info.name_);
+            auto& modification = ValueHistory<Variant>::Get(item->GetAttribute(info.name_));
+            Variant& value = modification.current_;
 
             Variant inheritedDefault = item->GetInstanceDefault(info.name_);
             bool hasInherited = !inheritedDefault.IsEmpty();
@@ -761,13 +766,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             }
 
             // Normal attributes
-            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant, AttributeInspectorModifiedFlags>>();
-            if (auto lastModified = modification->TrackModification(modified, [item, &info]() {
-                auto previousValue = item->GetAttribute(info.name_);
-                if (previousValue.GetType() == VAR_NONE)
-                    return info.defaultValue_;
-                return previousValue;
-            }))
+            if (modification.IsModified())
             {
                 if (!nonVariantValue)
                 {
@@ -779,9 +778,13 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                 // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                 // has ended and we can fire attribute modification event.
                 using namespace AttributeInspectorValueModified;
-                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, P_SERIALIZABLE, item, P_ATTRIBUTEINFO,
-                                          (void*)&info, P_OLDVALUE, modification->GetInitialValue(), P_NEWVALUE, value,
-                                          P_MODIFIED, lastModified.AsInteger());
+                VariantMap& args = eventNamespace->GetEventDataMap();
+                args[P_SERIALIZABLE] = item;
+                args[P_ATTRIBUTEINFO] = (void*)&info;
+                args[P_OLDVALUE] = modification.initial_;
+                args[P_NEWVALUE] = value;
+                args[P_MODIFIED] = (unsigned)modified;
+                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, args);
             }
             else if (!nonVariantValue && modified)
             {
