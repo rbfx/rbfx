@@ -152,8 +152,8 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
 
             ui::IdScope idScope(i);
 
-            auto tech = material->GetTechniqueEntry(i);
-            auto* modification = ui::GetUIState<ModifiedStateTracker<TechniqueEntry, bool>>();
+            auto& techValue = ValueHistory<TechniqueEntry>::Get(material->GetTechniqueEntry(i));
+            auto& tech = techValue.current_;
 
             ui::Columns();
             ea::string techName = tech.technique_->GetName();
@@ -218,7 +218,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::TextUnformatted("LOD Distance");
             ui::NextColumn();
             UI_ITEMWIDTH(secondColWidth)
-                modifiedField |= ui::DragFloat("###LOD Distance", &tech.lodDistance_);
+                ui::DragFloat("###LOD Distance", &tech.lodDistance_);
             ui::NextColumn();
 
             // ---------------------------------------------------------------------------------------------------------
@@ -235,11 +235,12 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 modifiedField |= ui::Combo("###Quality", reinterpret_cast<int*>(&tech.qualityLevel_), qualityNames, SDL_arraysize(qualityNames));
             ui::NextColumn();
 
-            if (modification->TrackModification(modifiedField, [material, i]() { return material->GetTechniqueEntry(i); }))
-                asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &modification->GetInitialValue(), &tech);
-
+            modifiedField |= techValue.IsModified();
             if (modifiedField)
+            {
+                asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &material->GetTechniqueEntry(i), &tech);
                 material->SetTechnique(i, tech.original_.Get(), tech.qualityLevel_, tech.lodDistance_);
+            }
 
             modified |= modifiedField;
         }
@@ -302,24 +303,28 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
         {
             const ea::string& parameterName = pair.second.name_;
             ui::IdScope id(parameterName.c_str());
-            auto* modification = ui::GetUIState<ModifiedStateTracker<Variant, bool>>();
 
             ui::NewLine();
             ui::SameLine(20);
             ui::TextUnformatted(parameterName.c_str());
             ui::NextColumn();
-            Variant value = pair.second.value_;
+
+            auto& value = ValueHistory<Variant>::Get(pair.second.value_);
+            float f = value.current_.GetFloat();
 
             UI_ITEMWIDTH(-22)
             {
-                bool modifiedNow = RenderSingleAttribute(value);
-                if (modification->TrackModification(modifiedNow, [material, &parameterName]() { return material->GetShaderParameter(parameterName); }))
+                bool modifiedNow = RenderSingleAttribute(value.current_);
+                if ((bool)value)
                 {
-                    asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, parameterName, modification->GetInitialValue(), value);
+                    asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, parameterName, value.initial_, value.current_);
                     modified = true;
                 }
                 if (modifiedNow)
-                    material->SetShaderParameter(parameterName, value);
+                {
+                    f = value.current_.GetFloat();
+                    material->SetShaderParameter(parameterName, value.current_);
+                }
             }
 
             ui::SameLine();

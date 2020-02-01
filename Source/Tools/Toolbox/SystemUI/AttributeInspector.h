@@ -23,13 +23,13 @@
 #pragma once
 
 
-#include <array>
-
-#include "ToolboxAPI.h"
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Core/Variant.h>
 #include <Urho3D/SystemUI/SystemUI.h>
+
+#include "ToolboxAPI.h"
+#include "SystemUI/Widgets.h"
 
 
 namespace Urho3D
@@ -68,45 +68,46 @@ URHO3D_EVENT(E_INSPECTORRENDERATTRIBUTE, InspectorRenderAttribute)
     URHO3D_PARAM(P_HANDLED, Handled);                                           // bool
     URHO3D_PARAM(P_MODIFIED, Modified);                                         // unsigned (AttributeInspectorModifiedFlags)
 }
-
 /// Automate tracking of initial values that are modified by ImGui widget.
-template<typename TValue, typename MValue>
-struct ModifiedStateTracker
+template<typename Value>
+struct ValueHistory
 {
-    MValue TrackModification(MValue modified, std::function<TValue()> getInitial)
-    {
-        if (modified)
-        {
-            if (!lastModified_)
-            {
-                initial_ = getInitial();
-                lastModified_ = modified;
-            }
-            return {};
-        }
-        else if (!ui::IsAnyItemActive() && lastModified_)
-        {
-            auto result = lastModified_;
-            lastModified_ = MValue{};
-            return result;
-        }
+    using ValueCopy = typename ea::remove_cvref_t<Value>;
+    using ValueRef = typename std::conditional_t<!std::is_reference_v<std::remove_cv_t<Value>>, const ValueCopy&, ValueCopy&>;
 
-        return {};
+    ValueHistory(ValueRef current) : current_(current) { }
+
+    static ValueHistory& Get(ValueRef value)
+    {
+        auto history = ui::GetUIState<ValueHistory>(value);
+        if (history->expired_)
+        {
+            history->initial_ = history->current_ = value;
+            history->expired_ = false;
+        }
+        return *history;
     }
 
-    MValue TrackModification(MValue modified, const TValue& initialValue)
+    /// Returns true when value is modified and no continuous modification is happening.
+    bool IsModified()
     {
-        std::function<TValue()> fn = [&]() { return initialValue; };
-        return TrackModification(modified, fn);
+        if (initial_ != current_ && !ui::IsAnyItemActive())
+        {
+            expired_ = true;
+            return true;
+        }
+        return false;
     }
+    /// Returns true if value is modified.
+    explicit operator bool() { return IsModified(); }
 
-    const TValue& GetInitialValue() { return initial_; }
-
-protected:
     /// Initial value.
-    TValue initial_{};
-    /// Flag indicating if value was modified on previous frame.
-    MValue lastModified_{};
+    ValueCopy initial_{};
+    /// Last value.
+    Value current_{};
+    /// Flag indicating this history entry is expired and initial value can be overwritten.
+    bool expired_ = true;
+
 };
 
 /// A dummy object used as namespace for subscribing to events.
