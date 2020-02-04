@@ -46,6 +46,21 @@ void SoundInspector::RenderInspector(const char* filter)
         if (Sound* asset = dynamic_cast<Sound*>(self.Get()))
         {
             ui::Text(asset->GetName().c_str());
+
+            ui::Separator();
+
+            ui::Text("Frequency %u", (unsigned)asset->GetFrequency());
+            ui::Text(asset->IsStereo() ? "Stereo" : "Mono");
+            if (asset->IsSixteenBit())
+            {
+                ui::SameLine();
+                ui::Text(", 16-bit");
+            }
+            if (asset->IsCompressed())
+                ui::Text("Compressed");
+            if (asset->IsLooped())
+                ui::Text("Loop Start: %ull", asset->GetRepeat() - asset->GetStart());
+
             if (ui::Button(ICON_FA_PLAY " Play"))
             {
                 playingSource_.Reset(new SoundSource(context_));
