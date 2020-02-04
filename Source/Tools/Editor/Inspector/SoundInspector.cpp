@@ -45,19 +45,19 @@ void SoundInspector::RenderInspector(const char* filter)
     {
         if (Sound* asset = dynamic_cast<Sound*>(self.Get()))
         {
-            ui::Text(asset->GetName().c_str());
+            ui::TextUnformatted(asset->GetName().c_str());
 
             ui::Separator();
 
             ui::Text("Frequency %u", (unsigned)asset->GetFrequency());
-            ui::Text(asset->IsStereo() ? "Stereo" : "Mono");
+            ui::TextUnformatted(asset->IsStereo() ? "Stereo" : "Mono");
             if (asset->IsSixteenBit())
             {
                 ui::SameLine();
-                ui::Text(", 16-bit");
+                ui::TextUnformatted(", 16-bit");
             }
             if (asset->IsCompressed())
-                ui::Text("Compressed");
+                ui::TextUnformatted("Compressed");
             if (asset->IsLooped())
                 ui::Text("Loop Start: %ull", asset->GetRepeat() - asset->GetStart());
 
@@ -75,6 +75,8 @@ void SoundInspector::RenderInspector(const char* filter)
             }
             if (playingSource_)
             {
+                ui::SameLine();
+
                 float pos = playingSource_->GetTimePosition();
                 if (ui::SliderFloat("##time", &pos, 0.0f, asset->GetLength()))
                     playingSource_->Seek(Max(Min(pos, asset->GetLength()), 0.0f));
