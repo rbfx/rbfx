@@ -193,7 +193,7 @@ struct TetrahedralMeshSurfaceEdge
     TetrahedralMeshSurfaceEdge() = default;
 
     /// Construct valid.
-    TetrahedralMeshSurfaceEdge(unsigned i0, unsigned i1, unsigned faceIndex, float edgeIndex)
+    TetrahedralMeshSurfaceEdge(unsigned i0, unsigned i1, unsigned faceIndex, unsigned edgeIndex)
         : indices_{ i0, i1 }
         , faceIndex_(faceIndex)
         , edgeIndex_(edgeIndex)
