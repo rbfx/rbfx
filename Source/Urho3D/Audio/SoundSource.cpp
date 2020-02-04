@@ -328,7 +328,7 @@ void SoundSource::SetPlayPosition(signed char* pos)
 
 void SoundSource::Update(float timeStep)
 {
-    if (!audio_ || !IsEnabledEffective())
+    if (!audio_ || (!IsEnabledEffective() && node_ != nullptr))
         return;
 
     // If there is no actual audio output, perform fake mixing into a nonexistent buffer to check stopping/looping
@@ -341,7 +341,7 @@ void SoundSource::Update(float timeStep)
 
     bool playing = IsPlaying();
 
-    if (!playing && sendFinishedEvent_)
+    if (!playing && sendFinishedEvent_ && node_ != nullptr)
     {
         sendFinishedEvent_ = false;
 
@@ -365,7 +365,7 @@ void SoundSource::Update(float timeStep)
 
 void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation)
 {
-    if (!position_ || (!sound_ && !soundStream_) || !IsEnabledEffective())
+    if (!position_ || (!sound_ && !soundStream_) || (!IsEnabledEffective() && node_ != nullptr))
         return;
 
     int streamFilledSize, outBytes;
