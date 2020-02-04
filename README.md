@@ -4,9 +4,13 @@
 
 [![Join the chat at https://gitter.im/rokups/rbfx](https://badges.gitter.im/rokups/rbfx.svg)](https://gitter.im/rokups/rbfx?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
 
-**rbfx** is a free lightweight, cross-platform 2D and 3D game engine implemented in C++ and released under the MIT license. Greatly inspired by OGRE and Horde3D.
+**Urho3D Rebel Fork** aka **rbfx** is an experimental fork of [Urho3D](http://urho3d.github.io/) game engine.
 
-This project is a fork of [urho3d.github.io](http://urho3d.github.io/).
+[GitHub Wiki](https://github.com/rokups/rbfx/wiki) contains fork-specific documentation including [build instructions](https://github.com/rokups/rbfx/wiki/first-application) and differences between original project and **rbfx**.
+
+[Doxygen Documentation](https://rbfx.github.io/) is cloned from original project and is not updated (yet?), although it still contains relevant information regarding core functionality of the engine.
+
+Note that **rbfx** is undergoing active developement. Please report all spotted bugs in the [issue tracker](https://github.com/rokups/rbfx/issues).
 
 ## License
 
