@@ -38,6 +38,7 @@
 #include <Urho3D/SystemUI/DebugHud.h>
 #include <Urho3D/LibraryInfo.h>
 #include <Urho3D/Core/CommandLine.h>
+#include <Urho3D/Audio/Sound.h>
 
 #include <Toolbox/ToolboxAPI.h>
 #include <Toolbox/SystemUI/Widgets.h>
@@ -67,6 +68,7 @@
 #include "Inspector/ModelInspector.h"
 #include "Inspector/NodeInspector.h"
 #include "Inspector/SerializableInspector.h"
+#include "Inspector/SoundInspector.h"
 #include "Tabs/ProfilerTab.h"
 
 namespace Urho3D
@@ -173,6 +175,7 @@ void Editor::Setup()
     RegisterProvider<Asset, AssetInspector>();
     RegisterProvider<Model, ModelInspector>();
     RegisterProvider<Material, MaterialInspector>();
+    RegisterProvider<Sound, SoundInspector>();
     RegisterProvider<Node, NodeInspector>();
 
 #if URHO3D_PLUGINS
