@@ -154,37 +154,25 @@ struct IdScopeGoUp : ScopeHelper
 #define UI_ID(id) for (ImGui::IdScope ___idscope_bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__(id); static_cast<bool>(___idscope_bef482cf_157b_47e9_b8da_0f3d82a7ab3e##__LINE__);)
 #define UI_UPIDSCOPE(id) for (ImGui::IdScopeGoUp ___idscopeup_b0614a09_2df3_4258_b1d5_ee0daafcd388##__LINE__(id); static_cast<bool>(___idscopeup_b0614a09_2df3_4258_b1d5_ee0daafcd388##__LINE__);)
 
-/// Set custom user pointer storing UI state at given position of id stack. Optionally pass deleter function which is
-/// responsible for freeing state object when it is no longer used.
-URHO3D_TOOLBOX_API void SetUIStateP(void* state, void(* deleter)(void*) = nullptr);
-/// Get custom user pointer storing UI state at given position of id stack. If this function is not called for 30s or
-/// longer then state will expire and will be removed.
-URHO3D_TOOLBOX_API void* GetUIStateP();
-/// Expire custom ui state at given position if id stack, created with SetUIStateP(). It will be freed immediately.
-URHO3D_TOOLBOX_API void ExpireUIStateP();
-/// Get custom user iu state at given position of id stack. If state does not exist then state object will be created.
-/// Using different type at the same id stack position will return new object of that type. Arguments passed to this
 /// function will be passed to constructor of type T.
 template<typename T, typename... Args>
 T* GetUIState(Args... args)
 {
-    ImGui::PushID(typeid(T).name());
-    T* state = (T*)GetUIStateP();
-    if (state == nullptr)
-    {
-        state = new T(args...);
-        SetUIStateP(state, [](void* s) { delete (T*)s; });
-    }
-    ImGui::PopID();
-    return state;
+    ImGuiIO& io = ui::GetIO();
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    auto systemUI = static_cast<Urho3D::SystemUI*>(io.UserData);
+    Urho3D::ValueCache& cache = systemUI->GetValueCache();
+    return cache.Get<T>(window->IDStack.back(), std::forward<Args>(args)...);
 }
 /// Expire custom ui state at given position if id stack, created with GetUIState<T>. It will be freed immediately.
 template<typename T>
-void ExpireUIState()
+void RemoveUIState()
 {
-    ImGui::PushID(typeid(T).name());
-    ExpireUIStateP();
-    ImGui::PopID();
+    ImGuiIO& io = ui::GetIO();
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    auto systemUI = static_cast<Urho3D::SystemUI*>(io.UserData);
+    Urho3D::ValueCache& cache = systemUI->GetValueCache();
+    return cache.Remove<T>(window->IDStack.back());
 }
 /// Same as Selectable(), except returns 1 when clicked once, 2 when double-clicked, 0 otherwise.
 URHO3D_TOOLBOX_API int DoubleClickSelectable(const char* label, bool* p_selected, ImGuiSelectableFlags flags = 0, const ImVec2& size = ImVec2(0,0));
