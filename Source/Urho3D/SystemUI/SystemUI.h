@@ -23,6 +23,7 @@
 #pragma once
 
 
+#include "../Container/ValueCache.h"
 #include "../Core/Object.h"
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Texture2D.h"
@@ -85,6 +86,8 @@ public:
     void Start();
     /// Hold a reference to this texture until end of frame.
     void ReferenceTexture(Texture2D* texture) { referencedTextures_.push_back(SharedPtr(texture)); }
+    /// Return value cache for storing temporary UI state that expires when unused.
+    ValueCache& GetValueCache() { return cache_; }
 
 protected:
     VertexBuffer vertexBuffer_;
@@ -93,6 +96,7 @@ protected:
     ea::vector<float> fontSizes_;
     ImGuiContext* imContext_;
     ea::vector<SharedPtr<Texture2D>> referencedTextures_;
+    ValueCache cache_{context_};
 
     void PlatformInitialize();
     void PlatformShutdown();

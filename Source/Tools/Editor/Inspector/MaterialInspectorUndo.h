@@ -32,12 +32,9 @@
 namespace Urho3D
 {
 
-namespace Undo
-{
-
 /// Tracks addition, removal and modification of techniques in material
-class TechniqueChangedAction
-        : public EditAction
+class UndoTechniqueChanged
+        : public UndoAction
 {
 public:
     struct TechniqueInfo
@@ -47,13 +44,12 @@ public:
         float lodDistance_;
     };
 
-    TechniqueChangedAction(const Material* material, unsigned index, const TechniqueEntry* oldEntry,
-        const TechniqueEntry* newEntry);
+    UndoTechniqueChanged(const Material* material, unsigned index, const TechniqueEntry* oldEntry, const TechniqueEntry* newEntry);
     void RemoveTechnique();
     void AddTechnique(const TechniqueInfo& info);
     void SetTechnique(const TechniqueInfo& info);
-    void Undo() override;
-    void Redo() override;
+    void Undo(Context* context) override;
+    void Redo(Context* context) override;
 
 private:
     Context* context_;
@@ -65,8 +61,8 @@ private:
 
 
 /// Tracks addition, removal and modification of shader parameters in material
-class ShaderParameterChangedAction
-    : public EditAction
+class UndoShaderParameterChanged
+    : public UndoAction
 {
 public:
     struct ShaderParameterInfo
@@ -76,9 +72,9 @@ public:
         float lodDistance_;
     };
 
-    ShaderParameterChangedAction(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue);
-    void Undo() override;
-    void Redo() override;
+    UndoShaderParameterChanged(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue);
+    void Undo(Context* context) override;
+    void Redo(Context* context) override;
 
 private:
     Context* context_;
@@ -87,7 +83,5 @@ private:
     Variant oldValue_;
     Variant newValue_;
 };
-
-}
 
 }

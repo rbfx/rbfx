@@ -40,9 +40,9 @@ enum ActionType : unsigned
     /// File > Exit.
     Exit,
     /// Undo action requested.
-    UndoAction,
+    Undo,
     /// Redo action requested.
-    RedoAction,
+    Redo,
     /// The End.
     MaxCount
 };

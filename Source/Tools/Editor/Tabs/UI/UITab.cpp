@@ -66,8 +66,7 @@ UITab::UITab(Context* context)
     offScreenUI_->SetRoot(rootElement_);
     offScreenUI_->SetRenderTarget(texture_, Color::BLACK);
 
-    undo_.Connect(rootElement_);
-    undo_.Connect(&inspector_);
+    undo_.Connect(static_cast<UIElement*>(rootElement_.Get()));
 
     SubscribeToEvent(E_ATTRIBUTEINSPECTORMENU, std::bind(&UITab::AttributeMenu, this, _2));
     SubscribeToEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, std::bind(&UITab::AttributeCustomize, this, _2));
@@ -256,8 +255,8 @@ bool UITab::RenderWindowContent()
         if (s->resizeActive_ && !ui::IsItemActive())
         {
             s->resizeActive_ = false;
-            undo_.Track<Undo::EditAttributeAction>(selected, "Position", s->resizeStartPos_, selected->GetPosition());
-            undo_.Track<Undo::EditAttributeAction>(selected, "Size", s->resizeStartSize_, selected->GetSize());
+            undo_.Add<UndoEditAttribute>(selected, "Position", s->resizeStartPos_, selected->GetPosition());
+            undo_.Add<UndoEditAttribute>(selected, "Size", s->resizeStartSize_, selected->GetSize());
         }
     }
 
@@ -335,7 +334,7 @@ bool UITab::LoadResource(const ea::string& resourcePath)
         return false;
     }
 
-    Undo::SetTrackingScoped noTrack(undo_, false);
+    UndoTrackGuard noTrack(undo_, false);
 
     auto cache = GetSubsystem<ResourceCache>();
     rootElement_->RemoveAllChildren();
@@ -673,8 +672,8 @@ void UITab::RenderRectSelector()
         else if (!ui::IsItemActive() && s->isResizing_)
         {
             s->isResizing_ = false;
-            undo_.Track<Undo::EditAttributeAction>(selected, textureSelectorAttribute_, s->startRect_,
-                selected->GetAttribute(textureSelectorAttribute_));
+            undo_.Add<UndoEditAttribute>(selected, textureSelectorAttribute_, s->startRect_,
+                                         selected->GetAttribute(textureSelectorAttribute_));
         }
     }
     ui::End();
@@ -757,7 +756,7 @@ void UITab::AttributeMenu(VariantMap& args)
                         styleAttribute.SetAttribute("name", info->name_);
                     }
                     // To save some writing undo system performs value update action as well.
-                    undo_.Track<Undo::EditUIStyleAction>(selected, styleAttribute, value);
+                    undo_.Add<UndoEditUIStyle>(selected, styleAttribute, value);
                 }
             }
         }
@@ -767,7 +766,7 @@ void UITab::AttributeMenu(VariantMap& args)
             if (ui::MenuItem("Remove from style"))
             {
                 // To save some writing undo system performs value update action as well. Empty variant means removal.
-                undo_.Track<Undo::EditUIStyleAction>(selected, styleAttribute, Variant::EMPTY);
+                undo_.Add<UndoEditUIStyle>(selected, styleAttribute, Variant::EMPTY);
             }
         }
 

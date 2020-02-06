@@ -54,7 +54,7 @@ class SceneClipboard : public Object
     URHO3D_OBJECT(SceneClipboard, Object);
 public:
     ///
-    explicit SceneClipboard(Context* context, Undo::Manager& undo);
+    explicit SceneClipboard(Context* context, UndoStack& undo);
     ///
     void Clear();
     ///
@@ -86,7 +86,7 @@ protected:
     ///
     ea::vector<VectorBuffer> components_;
     ///
-    Undo::Manager& undo_;
+    UndoStack& undo_;
 };
 
 
