@@ -19,35 +19,27 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include <Urho3D/Scene/Node.h>
-#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/UI/UIElement.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
-#include "Inspector/NodeInspector.h"
+#include "Inspector/UIElementInspector.h"
 
 namespace Urho3D
 {
 
-NodeInspector::NodeInspector(Context* context)
+UIElementInspector::UIElementInspector(Context* context)
     : SerializableInspector(context)
 {
 }
 
-void NodeInspector::RenderInspector(const char* filter)
+void UIElementInspector::RenderInspector(const char* filter)
 {
     if (inspected_.Expired())
         return;
 
-    auto node = static_cast<Node*>(inspected_.Get());
-    ui::Text("ID: %u", node->GetID());
-    if (node->IsReplicated())
-    {
-        ui::SameLine();
-        ui::TextUnformatted(ICON_FA_WIFI);
-        ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
-    }
-    RenderAttributes(node, filter, const_cast<Scene*>(node->GetScene()));
+    auto element = static_cast<UIElement*>(inspected_.Get());
+    RenderAttributes(element, filter, const_cast<UIElement*>(element->GetRoot()));
 }
 
 }

@@ -107,7 +107,6 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) { OnSceneActivated(args); });
     SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) { OnEditorProjectClosing(); });
 
-    undo_.Connect(&inspector_);
     undo_.Connect(&gizmo_);
 
     SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) { undo_.Clear(); });
@@ -298,7 +297,7 @@ bool SceneTab::RenderWindowContent()
 
 bool SceneTab::LoadResource(const ea::string& resourcePath)
 {
-    Undo::SetTrackingScoped noTrack(undo_, false);
+    UndoTrackGuard noTrack(undo_, false);
 
     if (resourcePath == GetResourceName())
         // Already loaded.
@@ -309,6 +308,8 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
 
     SceneManager* manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
+    undo_.Connect(scene);
+
     manager->SetActiveScene(scene);
 
     bool loaded = false;
@@ -925,7 +926,7 @@ void SceneTab::OnUpdate(VariantMap& args)
 
 void SceneTab::SaveState(SceneState& destination)
 {
-    Undo::SetTrackingScoped tracking(undo_, false);
+    UndoTrackGuard tracking(undo_, false);
 
     // Preserve current selection
     savedNodeSelection_.clear();
@@ -946,7 +947,7 @@ void SceneTab::SaveState(SceneState& destination)
 
 void SceneTab::RestoreState(SceneState& source)
 {
-    Undo::SetTrackingScoped tracking(undo_, false);
+    UndoTrackGuard tracking(undo_, false);
 
     VectorBuffer editorObjectsState;
     if (Node* editorObjects = GetScene()->GetChild("EditorObjects"))
@@ -1250,7 +1251,7 @@ void SceneTab::AddComponentIcon(Component* component)
         if (!node->GetChildrenWithTag(iconTag).empty())
             return;                                                 // Icon for component of this type is already added
 
-        Undo::SetTrackingScoped tracking(undo_, false);
+        UndoTrackGuard tracking(undo_, false);
         int count = node->GetChildrenWithTag("DebugIcon").size();
         node = node->CreateChild();                                 // !! from now on `node` is a container for debug icon
         node->AddTag("DebugIcon");
@@ -1295,7 +1296,7 @@ void SceneTab::RemoveComponentIcon(Component* component)
     if (node->IsTemporary())
         return;
 
-    Undo::SetTrackingScoped tracking(undo_, false);
+    UndoTrackGuard tracking(undo_, false);
 
     for (auto* icon : node->GetChildrenWithTag("DebugIcon" + component->GetTypeName()))
         icon->Remove();
@@ -1472,7 +1473,7 @@ void SceneTab::RenderDebugInfo()
 
 void SceneTab::Close()
 {
-    Undo::SetTrackingScoped noTrack(undo_, false);
+    UndoTrackGuard noTrack(undo_, false);
 
     SceneManager* manager = GetSubsystem<SceneManager>();
     manager->UnloadScene(GetScene());

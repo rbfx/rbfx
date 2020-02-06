@@ -25,10 +25,7 @@
 namespace Urho3D
 {
 
-namespace Undo
-{
-
-TechniqueChangedAction::TechniqueChangedAction(const Material* material, unsigned index, const TechniqueEntry* oldEntry, const TechniqueEntry* newEntry)
+UndoTechniqueChanged::UndoTechniqueChanged(const Material* material, unsigned index, const TechniqueEntry* oldEntry, const TechniqueEntry* newEntry)
     : context_(material->GetContext())
     , materialName_(material->GetName())
     , index_(index)
@@ -47,7 +44,7 @@ TechniqueChangedAction::TechniqueChangedAction(const Material* material, unsigne
     }
 }
 
-void TechniqueChangedAction::RemoveTechnique()
+void UndoTechniqueChanged::RemoveTechnique()
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -62,7 +59,7 @@ void TechniqueChangedAction::RemoveTechnique()
     }
 }
 
-void TechniqueChangedAction::AddTechnique(const TechniqueChangedAction::TechniqueInfo& info)
+void UndoTechniqueChanged::AddTechnique(const UndoTechniqueChanged::TechniqueInfo& info)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -83,7 +80,7 @@ void TechniqueChangedAction::AddTechnique(const TechniqueChangedAction::Techniqu
     }
 }
 
-void TechniqueChangedAction::SetTechnique(const TechniqueChangedAction::TechniqueInfo& info)
+void UndoTechniqueChanged::SetTechnique(const UndoTechniqueChanged::TechniqueInfo& info)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -92,7 +89,7 @@ void TechniqueChangedAction::SetTechnique(const TechniqueChangedAction::Techniqu
     }
 }
 
-void TechniqueChangedAction::Undo()
+void UndoTechniqueChanged::Undo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -111,7 +108,7 @@ void TechniqueChangedAction::Undo()
     }
 }
 
-void TechniqueChangedAction::Redo()
+void UndoTechniqueChanged::Redo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -130,7 +127,7 @@ void TechniqueChangedAction::Redo()
     }
 }
 
-ShaderParameterChangedAction::ShaderParameterChangedAction(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue)
+UndoShaderParameterChanged::UndoShaderParameterChanged(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue)
     : context_(material->GetContext())
     , materialName_(material->GetName())
     , parameterName_(parameterName)
@@ -139,7 +136,7 @@ ShaderParameterChangedAction::ShaderParameterChangedAction(const Material* mater
 {
 }
 
-void ShaderParameterChangedAction::Undo()
+void UndoShaderParameterChanged::Undo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -155,7 +152,7 @@ void ShaderParameterChangedAction::Undo()
     }
 }
 
-void ShaderParameterChangedAction::Redo()
+void UndoShaderParameterChanged::Redo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -170,7 +167,5 @@ void ShaderParameterChangedAction::Redo()
         material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
     }
 }
-
-}   // namespace Undo
 
 }   // namespace Urho3D

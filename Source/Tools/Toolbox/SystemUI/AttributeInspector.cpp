@@ -491,8 +491,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                     modified = true;
 
                     // Expire buffer of this new item just in case other item already used it.
-                    UI_ID(v.size())
-                        ui::ExpireUIState<ea::string>();
+                    UI_ID(v.size())ui::RemoveUIState<ea::string>();
                 }
                 if (ui::IsItemHovered())
                     ui::SetTooltip("Press [Enter] to insert new item.");
@@ -510,13 +509,13 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 {
                     it = v.erase(it);
                     modified = true;
-                    ui::ExpireUIState<ea::string>();
+                    ui::RemoveUIState<ea::string>();
                 }
                 else if (modified)
                 {
                     // After modification of the vector all buffers are expired and recreated because their indexes
                     // changed. Index is used as id in this loop.
-                    ui::ExpireUIState<ea::string>();
+                    ui::RemoveUIState<ea::string>();
                     ++it;
                 }
                 else
@@ -734,14 +733,14 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             // Buffers have to be expired outside of popup, because popup has it's own id stack. Careful when pushing
             // new IDs in code below, buffer expiring will break!
             if (expireBuffers)
-                ui::ExpireUIState<ea::string>();
+                ui::RemoveUIState<ea::string>();
 
             ui::NextColumn();
 
             ui::PushItemWidth(-1);
 
             // Value widget rendering
-            bool nonVariantValue{};
+            bool nonVariantValue{}; // TODO: Get rid of this after inspector rework is done
             {
                 using namespace InspectorRenderAttribute;
                 VariantMap args{ };
@@ -765,16 +764,21 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                 }
             }
 
+            // Flag modification as modified. Needed in order to avoid sending E_ATTRIBUTEINSPECTVALUEMODIFIED when
+            // external modifications (like from undo) happen.
+            if (modified)
+                modification.SetModified(true);
+
+            // Always apply our own modifications.
+            if (!nonVariantValue && modified)
+            {
+                item->SetAttribute(info.name_, value);
+                item->ApplyAttributes();
+            }
+
             // Normal attributes
             if (modification.IsModified())
             {
-                if (!nonVariantValue)
-                {
-                    // Update attribute value and do nothing else for now.
-                    item->SetAttribute(info.name_, value);
-                    item->ApplyAttributes();
-                }
-
                 // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
                 // has ended and we can fire attribute modification event.
                 using namespace AttributeInspectorValueModified;
@@ -785,12 +789,6 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                 args[P_NEWVALUE] = value;
                 args[P_MODIFIED] = (unsigned)modified;
                 eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, args);
-            }
-            else if (!nonVariantValue && modified)
-            {
-                // Update attribute value and do nothing else for now.
-                item->SetAttribute(info.name_, value);
-                item->ApplyAttributes();
             }
 
             ui::PopItemWidth();

@@ -170,7 +170,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                     if (technique)
                     {
                         material->SetTechnique(i, technique, tech.qualityLevel_, tech.lodDistance_);
-                        asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &tech, &material->GetTechniqueEntry(i));
+                        asset_->GetUndo().Add<UndoTechniqueChanged>(material, i, &tech, &material->GetTechniqueEntry(i));
                         modified = true;
                     }
                 }
@@ -192,7 +192,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 {
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                         material->SetTechnique(j - 1, material->GetTechnique(j));
-                    asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &tech, nullptr);
+                    asset_->GetUndo().Add<UndoTechniqueChanged>(material, i, &tech, nullptr);
                     // Technique removed possibly from the middle. Shift existing techniques back to the front and remove last one.
                     for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                     {
@@ -238,7 +238,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             modifiedField |= techValue.IsModified();
             if (modifiedField)
             {
-                asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, i, &material->GetTechniqueEntry(i), &tech);
+                asset_->GetUndo().Add<UndoTechniqueChanged>(material, i, &material->GetTechniqueEntry(i), &tech);
                 material->SetTechnique(i, tech.original_.Get(), tech.qualityLevel_, tech.lodDistance_);
             }
 
@@ -263,7 +263,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                     auto index = material->GetNumTechniques();
                     material->SetNumTechniques(index + 1);
                     material->SetTechnique(index, technique);
-                    asset_->GetUndo().Track<Undo::TechniqueChangedAction>(material, index, nullptr, &material->GetTechniqueEntry(index));
+                    asset_->GetUndo().Add<UndoTechniqueChanged>(material, index, nullptr, &material->GetTechniqueEntry(index));
                     modified = true;
                 }
             }
@@ -310,19 +310,17 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::NextColumn();
 
             auto& value = ValueHistory<Variant>::Get(pair.second.value_);
-            float f = value.current_.GetFloat();
 
             UI_ITEMWIDTH(-22)
             {
                 bool modifiedNow = RenderSingleAttribute(value.current_);
                 if ((bool)value)
                 {
-                    asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, parameterName, value.initial_, value.current_);
+                    asset_->GetUndo().Add<UndoShaderParameterChanged>(material, parameterName, value.initial_, value.current_);
                     modified = true;
                 }
                 if (modifiedNow)
                 {
-                    f = value.current_.GetFloat();
                     material->SetShaderParameter(parameterName, value.current_);
                 }
             }
@@ -330,7 +328,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
             ui::SameLine();
             if (ui::Button(ICON_FA_TRASH))
             {
-                asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, parameterName, pair.second.value_, Variant{});
+                asset_->GetUndo().Add<UndoShaderParameterChanged>(material, parameterName, pair.second.value_, Variant{});
                 material->RemoveShaderParameter(parameterName);
                 modified = true;
                 break;
@@ -376,7 +374,7 @@ void MaterialInspector::RenderCustomWidgets(VariantMap& args)
                 if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
                 {
                     Variant value{shaderParameterVariantTypes[paramState->variantTypeIndex_]};
-                    asset_->GetUndo().Track<Undo::ShaderParameterChangedAction>(material, paramState->fieldName_.c_str(), Variant{}, value);
+                    asset_->GetUndo().Add<UndoShaderParameterChanged>(material, paramState->fieldName_.c_str(), Variant{}, value);
                     material->SetShaderParameter(paramState->fieldName_.c_str(), value);
                     modified = true;
                     paramState->fieldName_.clear();

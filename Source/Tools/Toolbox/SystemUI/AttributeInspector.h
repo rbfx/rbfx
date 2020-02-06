@@ -72,42 +72,61 @@ URHO3D_EVENT(E_INSPECTORRENDERATTRIBUTE, InspectorRenderAttribute)
 template<typename Value>
 struct ValueHistory
 {
+    /// Copy value type.
     using ValueCopy = typename ea::remove_cvref_t<Value>;
+    /// Reference value type.
     using ValueRef = typename std::conditional_t<!std::is_reference_v<std::remove_cv_t<Value>>, const ValueCopy&, ValueCopy&>;
+    /// Reference or a copy, depending on whether Value is const.
+    using ValueCurrent = std::conditional_t<!std::is_const_v<Value> && std::is_reference_v<Value>, ValueCopy&, ValueCopy>;
 
+    /// Construct. For internal use. Never construct ValueHistory directly.
     ValueHistory(ValueRef current) : current_(current) { }
-
+    /// A helper getter. It should be used to obtain the value.
     static ValueHistory& Get(ValueRef value)
     {
         auto history = ui::GetUIState<ValueHistory>(value);
+        history->current_ = value;
         if (history->expired_)
         {
-            history->initial_ = history->current_ = value;
+            history->initial_ = value;
             history->expired_ = false;
+            history->modified_ = false;
         }
         return *history;
     }
-
     /// Returns true when value is modified and no continuous modification is happening.
     bool IsModified()
     {
         if (initial_ != current_ && !ui::IsAnyItemActive())
         {
-            expired_ = true;
-            return true;
+            if (modified_)
+            {
+                // User changed this value explicitly.
+                expired_ = true;
+                modified_ = false;
+                return true;
+            }
+            else
+            {
+                // Change is external.
+                expired_ = true;
+            }
         }
         return false;
     }
     /// Returns true if value is modified.
     explicit operator bool() { return IsModified(); }
+    /// Flag value as modified.
+    void SetModified(bool modified) { modified_ = modified; }
 
     /// Initial value.
     ValueCopy initial_{};
     /// Last value.
-    Value current_{};
+    ValueCurrent current_{};
     /// Flag indicating this history entry is expired and initial value can be overwritten.
     bool expired_ = true;
-
+    ///
+    bool modified_ = false;
 };
 
 /// A dummy object used as namespace for subscribing to events.
