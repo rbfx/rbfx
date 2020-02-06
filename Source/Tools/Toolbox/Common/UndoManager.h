@@ -23,6 +23,7 @@
 #pragma once
 
 #include "ToolboxAPI.h"
+#include <Urho3D/Container/ValueCache.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Graphics/Drawable.h>
 #include <Urho3D/Math/MathDefs.h>
@@ -32,7 +33,9 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/UI/UI.h>
 #include <Urho3D/UI/UIElement.h>
-
+#if URHO3D_SYSTEMUI
+#include <Urho3D/SystemUI/SystemUI.h>
+#endif
 
 namespace Urho3D
 {
@@ -42,47 +45,94 @@ class Gizmo;
 class Scene;
 
 /// Notify undo managers that state is about to be undone.
-URHO3D_EVENT(E_UNDO, Undo)
+URHO3D_EVENT(E_UNDO, UndoEvent)
 {
-    URHO3D_PARAM(P_TIME, Time);                       // unsigned.
-    URHO3D_PARAM(P_MANAGER, Manager);                 // Undo::Manager pointer.
+    URHO3D_PARAM(P_FRAME, Frame);                     // unsigned
+    URHO3D_PARAM(P_MANAGER, Manager);                 // UndoStack pointer
 }
 
 /// Notify undo managers that state is about to be redone.
-URHO3D_EVENT(E_REDO, Redo)
+URHO3D_EVENT(E_REDO, RedoEvent)
 {
-    URHO3D_PARAM(P_TIME, Time);                       // unsigned.
-    URHO3D_PARAM(P_MANAGER, Manager);                 // Undo::Manager pointer.
+    URHO3D_PARAM(P_FRAME, Frame);                     // unsigned
+    URHO3D_PARAM(P_MANAGER, Manager);                 // UndoStack pointer
 }
 
-namespace Undo
-{
-
-class URHO3D_TOOLBOX_API EditAction : public RefCounted
+/// A base class for undo actions.
+class URHO3D_TOOLBOX_API UndoAction : public RefCounted
 {
 public:
-    virtual void Undo() = 0;
-    virtual void Redo() = 0;
+    /// Go back in the state history.
+    virtual void Undo(Context* context) = 0;
+    /// Go forward in the state history.
+    virtual void Redo(Context* context) = 0;
 
-    /// Time when action was recorded.
-    unsigned time_ = Time::GetSystemTime();
+    /// Frame when action was recorded.
+    unsigned long long frame_ = 0;
 };
 
-class URHO3D_TOOLBOX_API CreateNodeAction : public EditAction
+/// A custom undo action that manages application state using lambdas. Used in cases where tracked undo action is very
+/// specific and is not expected to be tracked again in another place in same program.
+template<typename Value>
+class UndoCustomAction : public UndoAction
+{
+public:
+    /// Type of tracked value.
+    using ValueType = Value;
+    /// Copy value type.
+    using ValueCopy = ea::remove_cvref_t<Value>;
+    /// Reference value type.
+    using ValueRef = std::conditional_t<!std::is_reference_v<Value>, Value&, Value>;
+    /// Reference or a copy, depending on whether Value is const.
+    using ValueCurrent = std::conditional_t<!std::is_const_v<Value> && std::is_reference_v<Value>, ValueCopy&, ValueCopy>;
+    /// Callback type.
+    using Setter = ea::function<void(Context* context, const ValueCopy&)>;
+
+    /// Construct.
+    UndoCustomAction(ValueRef value, Setter onUndo, Setter onRedo={})
+        : initial_(value)
+          , current_(value)
+          , onUndo_(std::move(onUndo))
+          , onRedo_(std::move(onRedo))
+    {
+    }
+
+    /// Go back in the state history.
+    void Undo(Context* context) override { onUndo_(context, initial_); }
+    /// Go forward in the state history.
+    void Redo(Context* context) override
+    {
+        if ((bool)onRedo_)
+            onRedo_(context, current_);
+        else
+            onUndo_(context, current_);         // Undo and redo code may be same for simple cases.
+    }
+
+    /// Initial value.
+    ValueCopy initial_;
+    /// Latest value.
+    ValueCurrent current_;
+    /// Callback that commits old value.
+    Setter onUndo_;
+    /// Callback that commits new value.
+    Setter onRedo_;
+};
+
+class URHO3D_TOOLBOX_API UndoCreateNode : public UndoAction
 {
     unsigned parentID;
     VectorBuffer nodeData;
     WeakPtr<Scene> editorScene;
 
 public:
-    explicit CreateNodeAction(Node* node)
+    explicit UndoCreateNode(Node* node)
         : editorScene(node->GetScene())
     {
         parentID = node->GetParent()->GetID();
         node->Save(nodeData);
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         nodeData.Seek(0);
         auto nodeID = nodeData.ReadUInt();
@@ -94,7 +144,7 @@ public:
         }
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         Node* parent = editorScene->GetNode(parentID);
         if (parent != nullptr)
@@ -110,7 +160,7 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
+class URHO3D_TOOLBOX_API UndoDeleteNode : public UndoAction
 {
     unsigned parentID;
     unsigned parentIndex;
@@ -118,7 +168,7 @@ class URHO3D_TOOLBOX_API DeleteNodeAction : public EditAction
     WeakPtr<Scene> editorScene;
 
 public:
-    explicit DeleteNodeAction(Node* node)
+    explicit UndoDeleteNode(Node* node)
         : editorScene(node->GetScene())
     {
         parentID = node->GetParent()->GetID();
@@ -126,7 +176,7 @@ public:
         node->Save(nodeData);
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         Node* parent = editorScene->GetNode(parentID);
         if (parent != nullptr)
@@ -141,7 +191,7 @@ public:
         }
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         nodeData.Seek(0);
         auto nodeID = nodeData.ReadUInt();
@@ -155,7 +205,7 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
+class URHO3D_TOOLBOX_API UndoReparentNode : public UndoAction
 {
     unsigned nodeID;
     unsigned oldParentID;
@@ -165,7 +215,7 @@ class URHO3D_TOOLBOX_API ReparentNodeAction : public EditAction
     WeakPtr<Scene> editorScene;
 
 public:
-    ReparentNodeAction(Node* node, Node* newParent)
+    UndoReparentNode(Node* node, Node* newParent)
         : editorScene(node->GetScene())
     {
         multiple = false;
@@ -174,7 +224,7 @@ public:
         newParentID = newParent->GetID();
     }
 
-    ReparentNodeAction(const ea::vector<Node*>& nodes, Node* newParent)
+    UndoReparentNode(const ea::vector<Node*>& nodes, Node* newParent)
         : editorScene(newParent->GetScene())
     {
         multiple = true;
@@ -187,7 +237,7 @@ public:
         }
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         if (multiple)
         {
@@ -210,7 +260,7 @@ public:
         }
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         if (multiple)
         {
@@ -236,21 +286,21 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API CreateComponentAction : public EditAction
+class URHO3D_TOOLBOX_API UndoCreateComponent : public UndoAction
 {
     unsigned nodeID;
     VectorBuffer componentData;
     WeakPtr<Scene> editorScene;
 
 public:
-    explicit CreateComponentAction(Component* component)
+    explicit UndoCreateComponent(Component* component)
         : editorScene(component->GetScene())
     {
         nodeID = component->GetNode()->GetID();
         component->Save(componentData);
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         componentData.Seek(sizeof(StringHash));
         auto componentID = componentData.ReadUInt();
@@ -260,7 +310,7 @@ public:
             node->RemoveComponent(component);
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         Node* node = editorScene->GetNode(nodeID);
         if (node != nullptr)
@@ -279,21 +329,21 @@ public:
 
 };
 
-class URHO3D_TOOLBOX_API DeleteComponentAction : public EditAction
+class URHO3D_TOOLBOX_API UndoDeleteComponent : public UndoAction
 {
     unsigned nodeID;
     VectorBuffer componentData;
     WeakPtr<Scene> editorScene;
 
 public:
-    DeleteComponentAction(Component* component)
+    UndoDeleteComponent(Component* component)
         : editorScene(component->GetScene())
     {
         nodeID = component->GetNode()->GetID();
         component->Save(componentData);
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         Node* node = editorScene->GetNode(nodeID);
         if (node != nullptr)
@@ -311,7 +361,7 @@ public:
         }
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         componentData.Seek(sizeof(StringHash));
         unsigned componentID = componentData.ReadUInt();
@@ -358,7 +408,7 @@ static UIElement* GetUIElementByPath(UIElement* el, const UIElementPath& path)
     return el;
 }
 
-class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
+class URHO3D_TOOLBOX_API UndoEditAttribute : public UndoAction
 {
     unsigned targetID;
     UIElementPath targetPath_;
@@ -371,7 +421,7 @@ class URHO3D_TOOLBOX_API EditAttributeAction : public EditAction
     WeakPtr<Serializable> target_;
 
 public:
-    EditAttributeAction(Serializable* target, const ea::string& name, const Variant& oldValue, const Variant& newValue)
+    UndoEditAttribute(Serializable* target, const ea::string& name, const Variant& oldValue, const Variant& newValue)
     {
         attrName_ = name;
         undoValue_ = oldValue;
@@ -408,7 +458,7 @@ public:
         return target_.Get();
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         Serializable* target = GetTarget();
         if (target != nullptr)
@@ -418,7 +468,7 @@ public:
         }
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         Serializable* target = GetTarget();
         if (target != nullptr)
@@ -429,7 +479,7 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API UndoCreateUIElement : public UndoAction
 {
     UIElementPath elementPath_;
     UIElementPath parentPath_;
@@ -438,7 +488,7 @@ class URHO3D_TOOLBOX_API CreateUIElementAction : public EditAction
     WeakPtr<UIElement> root_;
 
 public:
-    explicit CreateUIElementAction(UIElement* element)
+    explicit UndoCreateUIElement(UIElement* element)
         : elementData_(element->GetContext())
     {
         root_ = element->GetRoot();
@@ -450,7 +500,7 @@ public:
         styleFile_ = element->GetDefaultStyle();
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         UIElement* element = GetUIElementByPath(root_, elementPath_);
@@ -458,7 +508,7 @@ public:
             parent->RemoveChild(element);
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         if (parent != nullptr)
@@ -466,7 +516,7 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API UndoDeleteUIElement : public UndoAction
 {
     UIElementPath elementPath_;
     UIElementPath parentPath_;
@@ -475,7 +525,7 @@ class URHO3D_TOOLBOX_API DeleteUIElementAction : public EditAction
     WeakPtr<UIElement> root_;
 
 public:
-    explicit DeleteUIElementAction(UIElement* element)
+    explicit UndoDeleteUIElement(UIElement* element)
         : elementData_(element->GetContext())
     {
         root_ = element->GetRoot();
@@ -487,14 +537,14 @@ public:
         styleFile_ = SharedPtr<XMLFile>(element->GetDefaultStyle());
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         if (parent != nullptr)
             parent->LoadChildXML(elementData_.GetRoot(), styleFile_);
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         UIElement* element = GetUIElementByPath(root_, elementPath_);
@@ -503,7 +553,7 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
+class URHO3D_TOOLBOX_API UndoReparentUIElement : public UndoAction
 {
     UIElementPath elementPath_;
     UIElementPath oldParentPath_;
@@ -512,7 +562,7 @@ class URHO3D_TOOLBOX_API ReparentUIElementAction : public EditAction
     WeakPtr<UIElement> root;
 
 public:
-    ReparentUIElementAction(UIElement* element, UIElement* newParent)
+    UndoReparentUIElement(UIElement* element, UIElement* newParent)
     : root(element->GetRoot())
     {
         elementPath_ = GetUIElementPath(element);
@@ -521,7 +571,7 @@ public:
         newParentPath_ = GetUIElementPath(newParent);
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         UIElement* parent = GetUIElementByPath(root, oldParentPath_);
         UIElement* element = GetUIElementByPath(root, elementPath_);
@@ -529,7 +579,7 @@ public:
             element->SetParent(parent, oldChildIndex_);
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         UIElement* parent = GetUIElementByPath(root, newParentPath_);
         UIElement* element = GetUIElementByPath(root, elementPath_);
@@ -538,7 +588,7 @@ public:
     }
 };
 
-class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
+class URHO3D_TOOLBOX_API UndoApplyUIElementStyle : public UndoAction
 {
     UIElementPath elementPath_;
     UIElementPath parentPath_;
@@ -549,7 +599,7 @@ class URHO3D_TOOLBOX_API ApplyUIElementStyleAction : public EditAction
     WeakPtr<UIElement> root_;
 
 public:
-    ApplyUIElementStyleAction(UIElement* element, const ea::string& newStyle)
+    UndoApplyUIElementStyle(UIElement* element, const ea::string& newStyle)
         : elementData_(element->GetContext())
     {
         root_ = element->GetRoot();
@@ -576,18 +626,18 @@ public:
         }
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         ApplyStyle(elementOldStyle_);
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         ApplyStyle(elementNewStyle_);
     }
 };
 
-class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
+class URHO3D_TOOLBOX_API UndoEditUIStyle : public UndoAction
 {
     XMLFile oldStyle_;
     XMLFile newStyle_;
@@ -598,7 +648,7 @@ class URHO3D_TOOLBOX_API EditUIStyleAction : public EditAction
     ea::string attributeName_;
 
 public:
-    EditUIStyleAction(UIElement* element, XMLElement& styleElement, const Variant& newValue)
+    UndoEditUIStyle(UIElement* element, XMLElement& styleElement, const Variant& newValue)
         : oldStyle_(element->GetContext())
         , newStyle_(element->GetContext())
     {
@@ -616,7 +666,7 @@ public:
         newStyle_.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
     }
 
-    void Undo() override
+    void Undo(Context* context) override
     {
         UIElement* element = GetUIElementByPath(root_, elementId_);
         element->SetInstanceDefault(attributeName_, oldValue_);
@@ -626,7 +676,7 @@ public:
             root.AppendChild(child, true);
     }
 
-    void Redo() override
+    void Redo(Context* context) override
     {
         UIElement* element = GetUIElementByPath(root_, elementId_);
         element->SetInstanceDefault(attributeName_, newValue_);
@@ -637,20 +687,46 @@ public:
     }
 };
 
-using StateCollection = ea::vector<SharedPtr<EditAction>>;
+template<typename T> class UndoValueScope;
 
-class URHO3D_TOOLBOX_API Manager : public Object
+class URHO3D_TOOLBOX_API UndoStack : public Object
 {
-URHO3D_OBJECT(Manager, Object);
+    URHO3D_OBJECT(UndoStack, Object);
 public:
     /// Construct.
-    explicit Manager(Context* ctx);
+    explicit UndoStack(Context* context);
+
     /// Go back in the state history.
     void Undo();
     /// Go forward in the state history.
     void Redo();
     /// Clear all tracked state.
     void Clear();
+    /// Enables or disables tracking changes.
+    void SetTrackingEnabled(bool enabled) { trackingEnabled_ = enabled; }
+    /// Return true if manager is tracking undoable changes.
+    bool IsTrackingEnabled() const { return trackingEnabled_; }
+    /// Return current index in undo stack.
+    int Index() const { return index_; }
+#if URHO3D_SYSTEMUI
+    /// Track a continuous modification and record it to undo stack when value is no longer modified. Should be used
+    /// with sliders, draggable widgets and similar. T type must define ValueType type and store initial_ and current_
+    /// members that/ can be compared for equality. T will be recorded into undo stack when value is modified and no
+    /// widget is active. Note that modifications are applied to the program state each time they happen as undo action
+    /// knows how to do that. You do not have to do anything when widget returns true indicating that value was modified.
+    /// Usage:
+    /// if (auto value = undo.Track<UndoCustomAction<float>>(value, ...))
+    ///     ui::DragFloat(..., &value.current_, ...);
+    template<typename T, typename... Args>
+    UndoValueScope<T> Track(typename T::ValueType current, Args&&... args);
+#endif
+    /// Record action into undo stack. Should be used for cases where continuous change does not span multiple frames.
+    /// For example with text input widgets that are committed with [Enter] key, combo boxes, checkboxes and similar.
+    template<typename T, typename... Args>
+    void Add(Args&&... args) { Add(new T(std::forward<Args>(args)...)); }
+    /// Record action into undo stack. Should be used for cases where continuous change does not span multiple frames.
+    /// For example with text input widgets that are committed with [Enter] key, combo boxes, checkboxes and similar.
+    void Add(UndoAction* action) { currentFrameActions_.push_back(SharedPtr(action)); }
 
     /// Track changes performed by this scene.
     void Connect(Scene* scene);
@@ -661,54 +737,106 @@ public:
     /// Track changes performed by this gizmo.
     void Connect(Gizmo* gizmo);
 
-    template<typename T, typename... Args>
-    void Track(Args... args)
-    {
-        if (trackingEnabled_)
-            currentFrameStates_.push_back(SharedPtr<T>(new T(args...)));
-    };
-
-    /// Enables or disables tracking changes.
-    void SetTrackingEnabled(bool enabled) { trackingEnabled_ = enabled; }
-    /// Return true if manager is tracking undoable changes.
-    bool IsTrackingEnabled() const { return trackingEnabled_; }
-    ///
-    int32_t Index() const { return index_; }
-
 protected:
+    using StateCollection = ea::vector<SharedPtr<UndoAction>>;
+
     /// State stack
     ea::vector<StateCollection> stack_;
     /// Current state index.
-    int32_t index_ = 0;
+    int index_ = 0;
     /// Flag indicating that state tracking is suspended. For example when undo manager is restoring states.
     bool trackingEnabled_ = true;
     /// All actions performed on current frame. They will be applied together.
-    StateCollection currentFrameStates_{};
+    StateCollection currentFrameActions_{};
+    /// Cache of backup original values.
+    ValueCache workingValueCache_{context_};
+
+    template<typename> friend class UndoValueScope;
 };
 
-class URHO3D_TOOLBOX_API SetTrackingScoped
+#if URHO3D_SYSTEMUI
+template<typename T>
+class UndoValueScope
 {
 public:
-    /// Set undo manager tracking in this scope. Restore to the old value on scope exit.
-    explicit SetTrackingScoped(Manager& manager, bool tracking)
-        : manager_(manager)
-        , tracking_(manager.IsTrackingEnabled())
+    /// Construct.
+    UndoValueScope(UndoStack* stack, unsigned hash, T* action)
+        : value_(action->current_)
+          , stack_(stack)
+          , hash_(hash)
+          , action_(action)
     {
-        manager.SetTrackingEnabled(tracking);
     }
+    /// Destruct.
+    ~UndoValueScope()
+    {
+        if (stack_ == nullptr || action_ == nullptr)
+            // Noop. Undo tracking is not enabled.
+            return;
 
-    ~SetTrackingScoped()
-    {
-        manager_.SetTrackingEnabled(tracking_);
+        if (action_->initial_ != action_->current_)
+        {
+            // UI works with a copy value. Fake redo applies that value and user does not have to apply it manually.
+            action_->Redo(stack_->GetContext());
+            // This value was modified and user is no longer interacting with UI. Detach undo action from cache and
+            // promote it to recorded undo actions.
+            if (!ui::IsAnyItemActive())
+            {
+                SharedPtr<UndoAction> actionPtr(stack_->workingValueCache_.template Detach<T>(hash_));
+                stack_->currentFrameActions_.push_back(actionPtr);
+            }
+        }
     }
+    /// Allow use of object in if ().
+    operator bool() { return true; }
+
+    /// Current value. Should be used by UI.
+    typename T::ValueType& value_;
 
 protected:
-    /// Undo manager which is being operated upon.
-    Manager& manager_;
-    /// Old tracking value.
-    bool tracking_;
+    /// Undo stack value was created by.
+    UndoStack* stack_ = nullptr;
+    /// Hash pointing to currect action in undo stack value cache.
+    unsigned hash_ = 0;
+    /// Undo action that is pending to be recorded into undo stack.
+    T* action_ = nullptr;
 };
+#endif
 
+#if URHO3D_SYSTEMUI
+template<typename T, typename... Args>
+UndoValueScope<T> UndoStack::Track(typename T::ValueType current, Args&&... args)
+{
+    if (!trackingEnabled_)
+        return UndoValueScope<T>(nullptr, 0, nullptr);
+    unsigned hash = ui::GetCurrentWindow()->IDStack.back();
+    auto action = workingValueCache_.Get<T>(hash, current, std::forward<Args>(args)...);
+    action->current_ = current;
+    return UndoValueScope<T>(this, hash, action);
 }
+#endif
+
+/// Enables or disables undo tracking for the lifetime of the object. Restores original tracking state on destruction.
+class URHO3D_TOOLBOX_API UndoTrackGuard
+{
+public:
+    /// Construct.
+    explicit UndoTrackGuard(UndoStack& stack, bool track)
+        : stack_(stack)
+          , tracking_(stack.IsTrackingEnabled())
+    {
+        stack_.SetTrackingEnabled(track);
+    }
+    /// Construct.
+    explicit UndoTrackGuard(UndoStack* stack, bool track) : UndoTrackGuard(*stack, track) { }
+    /// Destruct.
+    ~UndoTrackGuard() { stack_.SetTrackingEnabled(tracking_); }
+
+private:
+    /// Undo stack that is being guarded.
+    UndoStack& stack_;
+    /// Initial trackingstate.
+    bool tracking_ = false;
+};
 
 }

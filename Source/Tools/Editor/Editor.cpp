@@ -201,8 +201,8 @@ void Editor::Setup()
 
     keyBindings_.Bind(ActionType::OpenProject, this, &Editor::OpenOrCreateProject);
     keyBindings_.Bind(ActionType::Exit, this, &Editor::OnExitHotkeyPressed);
-    keyBindings_.Bind(ActionType::UndoAction, this, &Editor::OnUndo);
-    keyBindings_.Bind(ActionType::RedoAction, this, &Editor::OnRedo);
+    keyBindings_.Bind(ActionType::Undo, this, &Editor::OnUndo);
+    keyBindings_.Bind(ActionType::Redo, this, &Editor::OnRedo);
 }
 
 void Editor::Start()
@@ -673,12 +673,13 @@ void Editor::OnUndo()
     if (ui::IsAnyItemActive())
         return;
 
+    using namespace UndoEvent;
     VariantMap args;
-    args[Undo::P_TIME] = 0;
+    args[P_FRAME] = 0;
     SendEvent(E_UNDO, args);
-    auto it = args.find(Undo::P_MANAGER);
+    auto it = args.find(P_MANAGER);
     if (it != args.end())
-        ((Undo::Manager*)it->second.GetPtr())->Undo();
+        ((UndoStack*)it->second.GetPtr())->Undo();
 }
 
 void Editor::OnRedo()
@@ -686,12 +687,13 @@ void Editor::OnRedo()
     if (ui::IsAnyItemActive())
         return;
 
+    using namespace RedoEvent;
     VariantMap args;
-    args[Undo::P_TIME] = M_MAX_UNSIGNED;
+    args[P_FRAME] = M_MAX_UNSIGNED;
     SendEvent(E_REDO, args);
-    auto it = args.find(Undo::P_MANAGER);
+    auto it = args.find(P_MANAGER);
     if (it != args.end())
-        ((Undo::Manager*)it->second.GetPtr())->Redo();
+        ((UndoStack*)it->second.GetPtr())->Redo();
 }
 
 Tab* Editor::GetTabByName(const ea::string& uniqueName)

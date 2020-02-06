@@ -82,7 +82,7 @@ public:
     /// Returns true when asset importers of any flavor are being executed in worker threads.
     bool IsImporting() const { return importing_; }
     ///
-    Undo::Manager& GetUndo() { return undo_; }
+    UndoStack& GetUndo() { return undo_; }
 
 protected:
     ///
@@ -105,7 +105,7 @@ protected:
     /// Flag indicating that asset is being imported.
     std::atomic<bool> importing_{false};
     /// Asset changes tracker.
-    Undo::Manager undo_{context_};
+    UndoStack undo_{context_};
 
     friend class Pipeline;
     friend class AssetImporter;

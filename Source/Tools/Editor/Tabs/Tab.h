@@ -134,8 +134,6 @@ protected:
     bool noContentPadding_ = false;
     /// Current window flags.
     ImGuiWindowFlags windowFlags_ = 0;
-    /// Attribute inspector.
-    AttributeInspector inspector_{context_};
 };
 
 }

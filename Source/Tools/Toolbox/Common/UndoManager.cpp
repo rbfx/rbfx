@@ -8,89 +8,93 @@
 namespace Urho3D
 {
 
-namespace Undo
-{
-
-Manager::Manager(Context* ctx)
-    : Object(ctx)
+UndoStack::UndoStack(Context* context)
+    : Object(context)
 {
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&)
     {
-        if (trackingEnabled_ && !currentFrameStates_.empty())
-        {
-            stack_.resize(index_);              // Discard unneeded states
-            stack_.push_back(currentFrameStates_);
-            index_++;
-            currentFrameStates_.clear();
-        }
+        if (!trackingEnabled_ || currentFrameActions_.empty())
+            return;
+
+        auto time = GetSubsystem<Time>();
+        unsigned frame = time->GetFrameNumber();
+        for (auto& action : currentFrameActions_)
+            action->frame_ = frame;
+
+        stack_.resize(index_);              // Discard unneeded states
+        stack_.push_back(currentFrameActions_);
+        index_++;
+        currentFrameActions_.clear();
     });
 
     SubscribeToEvent(E_UNDO, [this](StringHash, VariantMap& args)
     {
-        if (index_ > 0)
+        if (index_ <= 0)
+            return;
+
+        // Pick a state with latest time
+        using namespace UndoEvent;
+        unsigned frame = stack_[index_ - 1][0]->frame_;
+        if (args[P_FRAME].GetUInt() < frame)
         {
-            // Pick a state with latest time
-            auto time = stack_[index_ - 1][0]->time_;
-            if (args[P_TIME].GetUInt() < time)
-            {
-                // Find and return undo manager with latest state recording
-                args[P_TIME] = time;
-                args[P_MANAGER] = this;
-            }
+            // Find and return undo manager with latest state recording
+            args[P_FRAME] = frame;
+            args[P_MANAGER] = this;
         }
     });
 
     SubscribeToEvent(E_REDO, [this](StringHash, VariantMap& args)
     {
-        if (index_ < stack_.size())
+        if (index_ >= stack_.size())
+            return;
+
+        using namespace RedoEvent;
+        unsigned frame = stack_[index_][0]->frame_;
+        if (args[P_FRAME].GetUInt() > frame)
         {
-            auto time = stack_[index_][0]->time_;
-            if (args[P_TIME].GetUInt() > time)
-            {
-                // Find and return undo manager with latest state recording
-                args[P_TIME] = time;
-                args[P_MANAGER] = this;
-            }
+            // Find and return undo manager with latest state recording
+            args[P_FRAME] = frame;
+            args[P_MANAGER] = this;
         }
     });
 }
 
-void Manager::Undo()
+void UndoStack::Undo()
 {
-    bool isTracking = IsTrackingEnabled();
-    SetTrackingEnabled(false);
     if (index_ > 0)
     {
+        UndoTrackGuard noTrack(this, false);
+        workingValueCache_.Clear();
         index_--;
         const auto& actions = stack_[index_];
-        for (int i = actions.size() - 1; i >= 0; --i)
-            actions[i]->Undo();
+        for (int i = (int)actions.size() - 1; i >= 0; --i)
+            actions[i]->Undo(context_);
     }
-    SetTrackingEnabled(isTracking);
 }
 
-void Manager::Redo()
+void UndoStack::Redo()
 {
-    bool isTracking = IsTrackingEnabled();
-    SetTrackingEnabled(false);
     if (index_ < stack_.size())
     {
+        UndoTrackGuard noTrack(this, false);
+        workingValueCache_.Clear();
         for (auto& action : stack_[index_])
-            action->Redo();
+            action->Redo(context_);
         index_++;
     }
-    SetTrackingEnabled(isTracking);
 }
 
-void Manager::Clear()
+void UndoStack::Clear()
 {
     stack_.clear();
-    currentFrameStates_.clear();
+    currentFrameActions_.clear();
     index_ = 0;
 }
 
-void Manager::Connect(Scene* scene)
+void UndoStack::Connect(Scene* scene)
 {
+    Connect(static_cast<Object*>(scene));
+
     SubscribeToEvent(scene, E_NODEADDED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
@@ -98,7 +102,7 @@ void Manager::Connect(Scene* scene)
         auto* node = dynamic_cast<Node*>(args[NodeAdded::P_NODE].GetPtr());
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
-        Track<CreateNodeAction>(node);
+        Add<UndoCreateNode>(node);
     });
 
     SubscribeToEvent(scene, E_NODEREMOVED, [&](StringHash, VariantMap& args)
@@ -108,7 +112,7 @@ void Manager::Connect(Scene* scene)
         auto* node = dynamic_cast<Node*>(args[NodeRemoved::P_NODE].GetPtr());
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
-        Track<DeleteNodeAction>(node);
+        Add<UndoDeleteNode>(node);
     });
 
     SubscribeToEvent(scene, E_COMPONENTADDED, [&](StringHash, VariantMap& args)
@@ -119,7 +123,7 @@ void Manager::Connect(Scene* scene)
         auto* component = dynamic_cast<Component*>(args[ComponentAdded::P_COMPONENT].GetPtr());
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
-        Track<CreateComponentAction>(component);
+        Add<UndoCreateComponent>(component);
     });
 
     SubscribeToEvent(scene, E_COMPONENTREMOVED, [&](StringHash, VariantMap& args)
@@ -130,11 +134,11 @@ void Manager::Connect(Scene* scene)
         auto* component = dynamic_cast<Component*>(args[ComponentRemoved::P_COMPONENT].GetPtr());
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
-        Track<DeleteComponentAction>(component);
+        Add<UndoDeleteComponent>(component);
     });
 }
 
-void Manager::Connect(Object* inspector)
+void UndoStack::Connect(Object* inspector)
 {
     SubscribeToEvent(inspector, E_ATTRIBUTEINSPECTVALUEMODIFIED, [&](StringHash, VariantMap& args)
     {
@@ -157,32 +161,34 @@ void Manager::Connect(Object* inspector)
             // These dummy values are not modified, however inspector event is still useful for tapping into their
             // modifications. State tracking for these dummy values is not needed and would introduce extra ctrl+z
             // presses that do nothing.
-            Track<EditAttributeAction>(item, name, oldValue, newValue);
+            Add<UndoEditAttribute>(item, name, oldValue, newValue);
         }
     });
 }
 
-void Manager::Connect(UIElement* root)
+void UndoStack::Connect(UIElement* root)
 {
     assert(root->IsElementEventSender());
+
+    Connect(static_cast<Object*>(root));
 
     SubscribeToEvent(root, E_ELEMENTADDED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
         using namespace ElementAdded;
-        Track<CreateUIElementAction>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
+        Add<UndoCreateUIElement>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
     });
     SubscribeToEvent(root, E_ELEMENTREMOVED, [&](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
         using namespace ElementRemoved;
-        Track<DeleteUIElementAction>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
+        Add<UndoDeleteUIElement>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
     });
 }
 
-void Manager::Connect(Gizmo* gizmo)
+void UndoStack::Connect(Gizmo* gizmo)
 {
     SubscribeToEvent(gizmo, E_GIZMONODEMODIFIED, [&](StringHash, VariantMap& args)
     {
@@ -195,12 +201,10 @@ void Manager::Connect(Gizmo* gizmo)
         const auto& oldTransform = args[P_OLDTRANSFORM].GetMatrix3x4();
         const auto& newTransform = args[P_NEWTRANSFORM].GetMatrix3x4();
 
-        Track<EditAttributeAction>(node, "Position", oldTransform.Translation(), newTransform.Translation());
-        Track<EditAttributeAction>(node, "Rotation", oldTransform.Rotation(), newTransform.Rotation());
-        Track<EditAttributeAction>(node, "Scale", oldTransform.Scale(), newTransform.Scale());
+        Add<UndoEditAttribute>(node, "Position", oldTransform.Translation(), newTransform.Translation());
+        Add<UndoEditAttribute>(node, "Rotation", oldTransform.Rotation(), newTransform.Rotation());
+        Add<UndoEditAttribute>(node, "Scale", oldTransform.Scale(), newTransform.Scale());
     });
-}
-
 }
 
 }
