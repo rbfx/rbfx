@@ -92,6 +92,7 @@ if (DOXYGEN_FOUND)
     add_custom_target (doc ${ALL}
         ${UPDATE_COMMANDS}
         DEPENDS ${CMAKE_CURRENT_BINARY_DIR}/html/index.html)
+    set_target_properties(doc PROPERTIES EXCLUDE_FROM_ALL ON EXCLUDE_FROM_DEFAULT_BUILD ON)
 endif ()
 
 # Make sure html output directory exists and not empty
