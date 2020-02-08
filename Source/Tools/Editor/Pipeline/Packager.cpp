@@ -30,6 +30,7 @@
 #include <LZ4/lz4hc.h>
 
 #include "Project.h"
+#include "Pipeline/Pipeline.h"
 #include "Pipeline/Asset.h"
 #include "Pipeline/Packager.h"
 

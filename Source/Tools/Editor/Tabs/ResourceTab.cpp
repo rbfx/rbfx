@@ -39,12 +39,10 @@
 #include <SDL/SDL_clipboard.h>
 
 #include "EditorEvents.h"
-#include "Inspector/MaterialInspector.h"
-#include "Inspector/ModelInspector.h"
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/UI/UITab.h"
 #include "Tabs/InspectorTab.h"
-#include "Pipeline/Importers/ModelImporter.h"
+#include "Pipeline/Pipeline.h"
 #include "Editor.h"
 #include "ResourceTab.h"
 
