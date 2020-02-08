@@ -117,6 +117,8 @@ public:
     /// Release all resources. When called with the force flag false, releases all currently unused resources.
     void ReleaseAllResources(bool force = false);
     /// Reload a resource. Return true on success. The resource will not be removed from the cache in case of failure.
+    bool ReloadResource(const ea::string_view resourceName);
+    /// Reload a resource. Return true on success. The resource will not be removed from the cache in case of failure.
     bool ReloadResource(Resource* resource);
     /// Reload a resource based on filename. Causes also reload of dependent resources if necessary.
     void ReloadResourceWithDependencies(const ea::string& fileName);
@@ -150,7 +152,7 @@ public:
     unsigned GetNumBackgroundLoadResources() const;
     /// Return all loaded resources of a specific type.
     void GetResources(ea::vector<Resource*>& result, StringHash type) const;
-    /// Return an already loaded resource of specific type & name, or null if not found. Will not load if does not exist.
+    /// Return an already loaded resource of specific type & name, or null if not found. Will not load if does not exist. Specifying zero type will search all types.
     Resource* GetExistingResource(StringHash type, const ea::string& name);
 
     /// Return all loaded resources.
