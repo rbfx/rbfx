@@ -184,10 +184,12 @@ URHO3D_TOOLBOX_API bool CollapsingHeaderSimple(const char* label, ImGuiTreeNodeF
 URHO3D_TOOLBOX_API bool ToolbarButton(const char* label);
 /// Display help tooltip when alt is pressed.
 URHO3D_TOOLBOX_API void SetHelpTooltip(const char* text, Urho3D::Key requireKey = Urho3D::KEY_ALT);
+/// Returns edge length of square icon button.
+URHO3D_TOOLBOX_API float IconButtonSize();
 /// A square button whose width and height are equal to the height of previous item.
 URHO3D_TOOLBOX_API bool IconButton(const char* label);
 /// Draw a mask selector widget.
-URHO3D_TOOLBOX_API bool MaskSelector(unsigned int* mask);
+URHO3D_TOOLBOX_API bool MaskSelector(const char* title, unsigned int* mask);
 /// Draw a transform rect and allow it's modification by dragging handles with mouse.
 URHO3D_TOOLBOX_API bool TransformRect(ImRect& inOut, TransformSelectorFlags flags = TSF_NONE);
 /// Draw a transform rect and allow it's modification by dragging handles with mouse.
@@ -204,4 +206,13 @@ URHO3D_TOOLBOX_API void BeginButtonGroup();
 URHO3D_TOOLBOX_API void EndButtonGroup();
 /// Render text of specified width, elide it if text is longer. If shorter - cursor will still skip specified width.
 URHO3D_TOOLBOX_API void TextElided(const char* text, float width);
+/// Render autocomplete for previous item.
+URHO3D_TOOLBOX_API bool Autocomplete(ImGuiID id, ea::string* buf, Urho3D::StringVector* suggestions, int maxVisible=15);
+/// Returns true when last item was just active. Clears last active item and will return false on the next frame.
+URHO3D_TOOLBOX_API bool WasItemActive();
+/// Align next item so it's label matches labels of other items.
+URHO3D_TOOLBOX_API void ItemAlign(float itemWidth);
+/// Render text in the center of current available region.
+URHO3D_TOOLBOX_API void TextCentered(const char* text);
+
 }

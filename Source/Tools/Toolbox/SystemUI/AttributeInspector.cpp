@@ -106,14 +106,16 @@ const char* supportedVariantNames[] = {
     "Int64",
 };
 
-bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string& name, ea::string& result)
+bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string& name, ea::string& result, const char* title)
 {
     SharedPtr<Resource> resource;
     auto returnValue = false;
+    ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = ui::GetStyle();
+    float w = ui::CalcItemWidth();
 
-    UI_ITEMWIDTH((-style.ItemSpacing.x - ui::GetCurrentContext()->FontSize) * (eventNamespace != nullptr ? 2 : 1) - style.WindowPadding.x)
-        ui::InputText("", const_cast<char*>(name.c_str()), name.length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+    UI_ITEMWIDTH(w - ((eventNamespace ? 2 : 1) * (style.ItemSpacing.x + ui::IconButtonSize())))
+        ui::InputTextWithHint("", "Drag & Drop a resource", const_cast<char*>(name.c_str()), name.length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
 
     if (eventNamespace != nullptr)
     {
@@ -152,10 +154,15 @@ bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string
     }
     ui::SetHelpTooltip("Stop using resource.");
 
+    if (title)
+    {
+        ui::SameLine();
+        ui::TextUnformatted(title);
+    }
     return returnValue;
 }
 
-bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value)
+bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value, const char* title)
 {
     const float floatMin = -std::numeric_limits<float>::infinity();
     const float floatMax = std::numeric_limits<float>::infinity();
@@ -163,6 +170,10 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
     const double doubleMax = std::numeric_limits<double>::infinity();
     const float floatStep = 0.01f;
     const float power = 3.0f;
+    const ImGuiStyle& style = ui::GetStyle();
+
+    if (title == nullptr)
+        title = "";
 
     bool modified = false;
     auto comboValuesNum = 0;
@@ -181,7 +192,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         else
             assert(false);
 
-        modified |= ui::Combo("", &current, info->enumNames_, comboValuesNum);
+        modified |= ui::Combo(title, &current, info->enumNames_, comboValuesNum);
         if (modified)
         {
             if (info->type_ == VAR_INT)
@@ -201,15 +212,15 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         {
             if (info && (info->name_.ends_with(" Mask") || info->name_.ends_with(" Bits")))
             {
-                auto v = value.GetUInt();
-                modified |= ui::MaskSelector(&v);
+                unsigned v = value.GetUInt();
+                modified |= ui::MaskSelector(title, &v);
                 if (modified)
                     value = v;
             }
             else
             {
-                auto v = value.GetInt();
-                modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT);
+                int v = value.GetInt();
+                modified |= ui::DragInt(title, &v, 1, M_MIN_INT, M_MAX_INT);
                 if (modified)
                     value = v;
             }
@@ -218,7 +229,8 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_BOOL:
         {
             auto v = value.GetBool();
-            modified |= ui::Checkbox("", &v);
+            ui::ItemAlign(ui::GetFrameHeight());
+            modified |= ui::Checkbox(title, &v);
             if (modified)
                 value = v;
             break;
@@ -226,7 +238,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_FLOAT:
         {
             auto v = value.GetFloat();
-            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat(title, &v, floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = v;
             break;
@@ -234,28 +246,28 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_VECTOR2:
         {
             auto& v = value.GetVector2();
-            modified |= ui::DragFloat2("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat2(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("xy");
             break;
         }
         case VAR_VECTOR3:
         {
             auto& v = value.GetVector3();
-            modified |= ui::DragFloat3("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("xyz");
             break;
         }
         case VAR_VECTOR4:
         {
             auto& v = value.GetVector4();
-            modified |= ui::DragFloat4("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("xyzw");
             break;
         }
         case VAR_QUATERNION:
         {
             auto v = value.GetQuaternion().EulerAngles();
-            modified |= ui::DragFloat3("", const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("xyz");
             if (modified)
                 value = Quaternion(v.x_, v.y_, v.z_);
@@ -264,7 +276,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_COLOR:
         {
             auto& v = value.GetColor();
-            modified |= ui::ColorEdit4("", const_cast<float*>(&v.r_));
+            modified |= ui::ColorEdit4(title, const_cast<float*>(&v.r_));
             ui::SetHelpTooltip("rgba");
             break;
         }
@@ -275,13 +287,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             bool dirty = v.compare(buffer->c_str()) != 0;
             if (dirty)
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-            modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
+            modified |= ui::InputTextWithHint(title, "Enter text and press [Enter]", buffer, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
             if (dirty)
-            {
                 ui::PopStyleColor();
-                if (ui::IsItemHovered())
-                    ui::SetTooltip("Press [Enter] to commit changes.");
-            }
             if (modified)
                 value = *buffer;
             break;
@@ -296,7 +304,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 refType = info->defaultValue_.GetResourceRef().type_;
 
             ea::string result;
-            if (RenderResourceRef(eventNamespace, refType, ref.name_, result))
+            if (RenderResourceRef(eventNamespace, refType, ref.name_, result, title))
             {
                 value = ResourceRef(refType, result);
                 modified = true;
@@ -316,7 +324,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                     if (refType == StringHash::ZERO && info)
                         refType = info->defaultValue_.GetResourceRef().type_;
 
-                    modified |= RenderResourceRef(eventNamespace, refType, refList.names_[i], result);
+                    modified |= RenderResourceRef(eventNamespace, refType, refList.names_[i], result, nullptr);
                     if (modified)
                     {
                         ResourceRefList newRefList(refList);
@@ -339,140 +347,128 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         {
             struct VariantMapState
             {
-                ea::string fieldName;
-                int variantTypeIndex = 0;
-                bool insertingNew = false;
+                // Map key.
+                ea::string key_{};
+                // Index of type in supportedVariantTypes array.
+                int valueTypeIndex_ = 0;
             };
-
             ui::IdScope idScope(VAR_VARIANTMAP);
 
-            auto* mapState = ui::GetUIState<VariantMapState>();
-            auto* map = value.GetVariantMapPtr();
-            if (ui::Button(ICON_FA_PLUS))
-                mapState->insertingNew = true;
+            // Centered title.
+            ui::TextCentered(title);
+            ui::Separator();
 
-            if (map != nullptr && !map->empty())
+            auto* map = value.GetVariantMapPtr();
+            auto* mapState = ui::GetUIState<VariantMapState>();
+            float w = ui::CalcItemWidth();
+
+            // Keys and values.
+            unsigned index = 0;
+            for (auto it = map->begin(); it != map->end(); it++)
             {
-                unsigned index = 0;
-                unsigned size = map->size();
-                for (auto it = map->begin(); it != map->end(); it++)
-                {
-                    VariantType type = it->second.GetType();
-                    if (type == VAR_RESOURCEREFLIST || type == VAR_VARIANTMAP || type == VAR_VARIANTVECTOR ||
-                        type == VAR_BUFFER || type == VAR_VOIDPTR || type == VAR_PTR)
-                        // TODO: Support nested collections.
-                        continue;
+                VariantType type = it->second.GetType();
+                if (type == VAR_RESOURCEREFLIST || type == VAR_VARIANTMAP || type == VAR_VARIANTVECTOR ||
+                    type == VAR_BUFFER || type == VAR_VOIDPTR || type == VAR_PTR)
+                    // TODO: Support nested collections.
+                    continue;
 
 #if URHO3D_HASH_DEBUG
-                    const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
-                    // Column-friendly indent
-                    ui::NewLine();
-                    ui::SameLine(20);
-                    ui::TextUnformatted((name.empty() ? it->first.ToString() : name).c_str());
+                const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
+                const char* attributeName = (name.empty() ? it->first.ToString() : name).c_str();
 #else
-                    // Column-friendly indent
-                    ui::NewLine();
-                    ui::SameLine(20_dpx);
-                    ui::TextUnformatted(it->first_.ToString().c_str());
+                const char* attributeName = it->first_.ToString().c_str();
 #endif
 
-                    ui::NextColumn();
-                    ui::IdScope entryIdScope(index++);
-                    UI_ITEMWIDTH(
-                        -26) // Space for trashcan button. TODO: trashcan goes out of screen a little for matrices.
-                        modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second);
-                    ui::SameLine(it->second.GetType());
-                    if (ui::Button(ICON_FA_TRASH))
-                    {
-                        it = map->erase(it);
-                        modified |= true;
-                        break;
-                    }
+                ui::IdScope entryIdScope(index++);
+                modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second, attributeName);
 
-                    if (--size > 0)
-                        ui::NextColumn();
-                }
-            }
-            else
-                ui::NextColumn();
-
-            if (mapState->insertingNew)
-            {
-                ui::NextColumn();
-                UI_ITEMWIDTH(-1)
-                    ui::InputText("###Key", &mapState->fieldName);
-                ui::NextColumn();
-                UI_ITEMWIDTH(-26) // Space for OK button
-                    ui::Combo("###Type", &mapState->variantTypeIndex, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
-                ui::SameLine(0, 4);
-                if (ui::Button(ICON_FA_CHECK))
+                // TODO: Trashcan after label looks inconsistent with the rest of UI.
+                ui::SameLine();
+                if (ui::Button(ICON_FA_TRASH))
                 {
-                    if (map->find(mapState->fieldName.c_str()) == map->end())   // TODO: Show warning about duplicate name
-                    {
-                        map->insert(
-                            {mapState->fieldName.c_str(), Variant{supportedVariantTypes[mapState->variantTypeIndex]}});
-                        mapState->fieldName.clear();
-                        mapState->variantTypeIndex = 0;
-                        mapState->insertingNew = false;
-                        modified = true;
-                    }
+                    it = map->erase(it);
+                    modified |= true;
+                    break;
+                }
+
+                ui::Separator();
+            }
+
+            // New key insertion
+            ui::SetNextItemWidth(w * 0.7f - style.ItemSpacing.x);
+            if (ui::InputTextWithHint("##Key", "Enter key and press [Enter]", &mapState->key_, ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                if (map->find(mapState->key_.c_str()) == map->end())   // TODO: Show warning about duplicate name
+                {
+                    map->insert({ mapState->key_.c_str(), Variant{ supportedVariantTypes[mapState->valueTypeIndex_] } });
+                    mapState->key_.clear();
+                    mapState->valueTypeIndex_ = 0;
+                    modified = true;
                 }
             }
+            ui::SameLine();
+            ui::SetNextItemWidth(w * 0.3f);
+            ui::Combo("Key: Type", &mapState->valueTypeIndex_, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
+            ui::Separator();
+
+            if (!map->empty())
+                ui::Separator();
+
             break;
         }
         case VAR_INTRECT:
         {
             auto& v = value.GetIntRect();
-            modified |= ui::DragInt4("", const_cast<int*>(&v.left_), 1, M_MIN_INT, M_MAX_INT);
+            modified |= ui::DragInt4(title, const_cast<int*>(&v.left_), 1, M_MIN_INT, M_MAX_INT);
             ui::SetHelpTooltip("ltbr");
             break;
         }
         case VAR_INTVECTOR2:
         {
             auto& v = value.GetIntVector2();
-            modified |= ui::DragInt2("", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
+            modified |= ui::DragInt2(title, const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
             ui::SetHelpTooltip("xy");
             break;
         }
         case VAR_MATRIX3:
         {
             auto& v = value.GetMatrix3();
-            modified |= ui::DragFloat3("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3(*title ? title : "###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
             modified |= ui::DragFloat3("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m1");
-            modified |= ui::DragFloat3("###m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat3("##m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m2");
             break;
         }
         case VAR_MATRIX3X4:
         {
             auto& v = value.GetMatrix3x4();
-            modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4(*title ? title : "##m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
-            modified |= ui::DragFloat4("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("##m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m1");
-            modified |= ui::DragFloat4("###m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("##m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m2");
             break;
         }
         case VAR_MATRIX4:
         {
             auto& v = value.GetMatrix4();
-            modified |= ui::DragFloat4("###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4(*title ? title : "##m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m0");
-            modified |= ui::DragFloat4("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("##m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m1");
-            modified |= ui::DragFloat4("###m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("##m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m2");
-            modified |= ui::DragFloat4("###m3", const_cast<float*>(&v.m30_), floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat4("##m3", const_cast<float*>(&v.m30_), floatStep, floatMin, floatMax, "%.3f", power);
             ui::SetHelpTooltip("m3");
             break;
         }
         case VAR_DOUBLE:
         {
             auto v = value.GetDouble();
-            modified |= ui::DragScalar("", ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", power);
+            modified |= ui::DragScalar(title, ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", power);
             if (modified)
                 value = v;
             break;
@@ -484,17 +480,16 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             // Insert new item.
             {
                 auto* buffer = ui::GetUIState<ea::string>();
-                if (ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue))
+                if (ui::InputTextWithHint(title, "Enter text and press [Enter]", buffer, ImGuiInputTextFlags_EnterReturnsTrue))
                 {
                     v.push_back(*buffer);
                     buffer->clear();
                     modified = true;
 
                     // Expire buffer of this new item just in case other item already used it.
-                    UI_ID(v.size())ui::RemoveUIState<ea::string>();
+                    UI_ID(v.size())
+                        ui::RemoveUIState<ea::string>();
                 }
-                if (ui::IsItemHovered())
-                    ui::SetTooltip("Press [Enter] to insert new item.");
             }
 
             // List of current items.
@@ -505,38 +500,40 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
                 ui::IdScope idScope(++index);
                 auto* buffer = ui::GetUIState<ea::string>(sv.c_str());
-                if (ui::Button(ICON_FA_TRASH))
+                bool dirty = sv.compare(buffer->c_str()) != 0;
+                if (dirty)
+                    ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
+
+                ui::SetNextItemWidth(ui::CalcItemWidth() - ui::IconButtonSize() - style.ItemSpacing.x);
+                modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
+                if (dirty)
                 {
-                    it = v.erase(it);
-                    modified = true;
-                    ui::RemoveUIState<ea::string>();
+                    ui::PopStyleColor();
+                    if (ui::IsItemHovered())
+                        ui::SetTooltip("Press [Enter] to commit changes.");
                 }
-                else if (modified)
+                if (modified)
+                    sv = *buffer;
+
+                ui::SameLine();
+                bool deleted = ui::IconButton(ICON_FA_TRASH);
+                modified |= deleted;
+
+                if (deleted)
+                    it = v.erase(it);
+                else
+                    ++it;
+
+                if (modified)
                 {
                     // After modification of the vector all buffers are expired and recreated because their indexes
                     // changed. Index is used as id in this loop.
                     ui::RemoveUIState<ea::string>();
-                    ++it;
-                }
-                else
-                {
-                    ui::SameLine();
-
-                    bool dirty = sv.compare(buffer->c_str()) != 0;
-                    if (dirty)
-                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-                    modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
-                    if (dirty)
-                    {
-                        ui::PopStyleColor();
-                        if (ui::IsItemHovered())
-                            ui::SetTooltip("Press [Enter] to commit changes.");
-                    }
-                    if (modified)
-                        sv = *buffer;
-                    ++it;
                 }
             }
+
+            if (!v.empty())
+                ui::Separator();
 
             if (modified)
                 value = StringVector(v);
@@ -546,7 +543,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_RECT:
         {
             auto& v = value.GetRect();
-            modified |= ui::DragFloat4("###minmax", const_cast<float*>(&v.min_.x_), floatStep, floatMin,
+            modified |= ui::DragFloat4(title, const_cast<float*>(&v.min_.x_), floatStep, floatMin,
                                        floatMax, "%.3f", power);
             ui::SetHelpTooltip("min xy, max xy");
             break;
@@ -554,7 +551,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_INTVECTOR3:
         {
             auto& v = value.GetIntVector3();
-            modified |= ui::DragInt3("xyz", const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
+            modified |= ui::DragInt3(title, const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
             ui::SetHelpTooltip("xyz");
             break;
         }
@@ -563,7 +560,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             auto minVal = std::numeric_limits<long long int>::min();
             auto maxVal = std::numeric_limits<long long int>::max();
             auto v = value.GetInt64();
-            modified |= ui::DragScalar("", ImGuiDataType_S64, &v, 1, &minVal, &maxVal);
+            modified |= ui::DragScalar(title, ImGuiDataType_S64, &v, 1, &minVal, &maxVal);
             if (modified)
                 value = v;
             break;
@@ -593,16 +590,16 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
         ui::PushID(item);
         eventNamespace->SendEvent(E_INSPECTORRENDERSTART, InspectorRenderStart::P_SERIALIZABLE, item);
 
-        UI_UPIDSCOPE(1)
-        {
-            // Show columns after custom widgets at inspector start, but have them in a global
-            // context. Columns of all components will be resized simultaneously.
-            // [/!\ WARNING /!\]
-            // Adding new ID scopes here will break code in custom inspector widgets if that code
-            // uses ui::Columns() calls.
-            // [/!\ WARNING /!\]
-            ui::Columns(2);
-        }
+        // UI_UPIDSCOPE(1)
+        // {
+        //     // Show columns after custom widgets at inspector start, but have them in a global
+        //     // context. Columns of all components will be resized simultaneously.
+        //     // [/!\ WARNING /!\]
+        //     // Adding new ID scopes here will break code in custom inspector widgets if that code
+        //     // uses ui::Columns() calls.
+        //     // [/!\ WARNING /!\]
+        //     ui::Columns(2);
+        // }
 
         for (const AttributeInfo& info: *attributes)
         {
@@ -659,7 +656,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
 
             ui::PushID(info.name_.c_str());
 
-            ui::TextColored(ToImGui(color), "%s", info.name_.c_str());
+            // ui::TextColored(ToImGui(color), "%s", info.name_.c_str());
 
             if (!tooltip.empty() && ui::IsItemHovered())
                 ui::SetTooltip("%s", tooltip.c_str());
@@ -735,10 +732,6 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
             if (expireBuffers)
                 ui::RemoveUIState<ea::string>();
 
-            ui::NextColumn();
-
-            ui::PushItemWidth(-1);
-
             // Value widget rendering
             bool nonVariantValue{}; // TODO: Get rid of this after inspector rework is done
             {
@@ -759,7 +752,7 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                 else
                 {
                     // Rendering of default widgets for Variant values.
-                    if (RenderSingleAttribute(eventNamespace, &info, value))
+                    if (RenderSingleAttribute(eventNamespace, &info, value, info.name_.c_str()))
                         modified = AttributeInspectorModified::SET_BY_USER;
                 }
             }
@@ -791,12 +784,12 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
                 eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, args);
             }
 
-            ui::PopItemWidth();
+            // ui::PopItemWidth();
             ui::PopID();
 
-            ui::NextColumn();
+            // ui::NextColumn();
         }
-        ui::Columns();
+        // ui::Columns();
         eventNamespace->SendEvent(E_INSPECTORRENDEREND);
         ui::PopID();
     }
@@ -804,9 +797,9 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
     return isOpen;
 }
 
-bool RenderSingleAttribute(Variant& value)
+bool RenderSingleAttribute(Variant& value, const char* title)
 {
-    return RenderSingleAttribute(nullptr, nullptr, value);
+    return RenderSingleAttribute(nullptr, nullptr, value, title);
 }
 
 }

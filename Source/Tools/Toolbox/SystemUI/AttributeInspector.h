@@ -141,6 +141,6 @@ public:
 /// If `filter` is not null then only attributes containing this substring will be rendered.
 /// If `eventNamespace` is not null then this object will be used to send events.
 URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=nullptr, Object* eventNamespace=nullptr);
-URHO3D_TOOLBOX_API bool RenderSingleAttribute(Variant& value);
+URHO3D_TOOLBOX_API bool RenderSingleAttribute(Variant& value, const char* title=nullptr);
 
 }
