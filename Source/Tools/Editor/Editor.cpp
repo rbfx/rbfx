@@ -70,7 +70,7 @@
 #include "Inspector/SerializableInspector.h"
 #include "Inspector/SoundInspector.h"
 #include "Tabs/ProfilerTab.h"
-
+// #undef URHO3D_SYSTEMUI_VIEWPORTS
 namespace Urho3D
 {
 
@@ -183,7 +183,6 @@ void Editor::Setup()
 #endif
     RegisterToolboxTypes(context_);
     EditorSceneSettings::RegisterObject(context_);
-    Inspectable::Material::RegisterObject(context_);
     context_->RegisterFactory<SerializableInspector>();
 
     // Importers
