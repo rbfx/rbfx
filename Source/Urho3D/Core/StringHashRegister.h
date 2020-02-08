@@ -44,9 +44,9 @@ public:
     ~StringHashRegister();
 
     /// Register string for hash reverse mapping. Could be used from StringHash ctor.
-    StringHash RegisterString(const StringHash& hash, const char* string);
+    StringHash RegisterString(const StringHash& hash, ea::string_view string);
     /// Register string for hash reverse mapping.
-    StringHash RegisterString(const char* string);
+    StringHash RegisterString(ea::string_view string);
     /// Return string for given StringHash. Return empty string if not found.
     ea::string GetStringCopy(const StringHash& hash) const;
     /// Return whether the string in contained in the register.

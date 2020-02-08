@@ -68,6 +68,14 @@ StringHash::StringHash(const ea::string& str) noexcept :
 #endif
 }
 
+StringHash::StringHash(const ea::string_view& str) noexcept :
+    value_(Calculate(str.data(), str.length()))
+{
+#ifdef URHO3D_HASH_DEBUG
+    Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str);
+#endif
+}
+
 #ifdef URHO3D_HASH_DEBUG
 unsigned StringHash::Calculate(const char* str, unsigned hash)
 {

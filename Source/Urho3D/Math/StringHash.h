@@ -62,6 +62,8 @@ public:
 #endif
     /// Construct from a string.
     StringHash(const ea::string& str) noexcept;      // NOLINT(google-explicit-constructor)
+    /// Construct from a string.
+    StringHash(const ea::string_view& str) noexcept;      // NOLINT(google-explicit-constructor)
 
     /// Assign from another hash.
     StringHash& operator =(const StringHash& rhs) noexcept = default;
