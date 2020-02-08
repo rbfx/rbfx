@@ -102,26 +102,62 @@ ResourceTab::ResourceTab(Context* context)
     });
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, [&](StringHash, VariantMap& args) {
         using namespace ResourceBrowserDelete;
-        auto* project = GetSubsystem<Project>();
-        auto fileName = project->GetResourcePath() + args[P_NAME].GetString();
-        if (context_->GetFileSystem()->FileExists(fileName))
-            context_->GetFileSystem()->Delete(fileName);
-        else if (context_->GetFileSystem()->DirExists(fileName))
-            context_->GetFileSystem()->RemoveDir(fileName, true);
+        auto project = GetSubsystem<Project>();
+        auto cache = GetSubsystem<ResourceCache>();
+        auto fs = GetSubsystem<FileSystem>();
+        const ea::string& resourceName = args[P_NAME].GetString();
+        auto fileName = cache->GetResourceFileName(resourceName);
+        if (fs->FileExists(fileName))
+        {
+            cache->IgnoreResourceReload(resourceName);
+            fs->Delete(fileName);
+        }
+        else
+        {
+            for (const ea::string& resourceDir : project->GetResourcePaths())
+            {
+                ea::string resourcePath = resourceDir + resourceName;
+                if (fs->DirExists(resourcePath))
+                {
+                    StringVector resources;
+                    cache->Scan(resources, resourceName, "", SCAN_FILES, true);
+                    for (const ea::string& name : resources)
+                        cache->IgnoreResourceReload(AddTrailingSlash(resourceName) + name);
+                    fs->RemoveDir(resourcePath, true);
+                }
+            }
+        }
     });
 }
 
 bool ResourceTab::RenderWindowContent()
 {
-    auto* project = GetSubsystem<Project>();
     auto action = ResourceBrowserWidget(resourcePath_, resourceSelection_, flags_);
     if (action == RBR_ITEM_OPEN)
     {
+        auto project = GetSubsystem<Project>();
+        auto cache = GetSubsystem<ResourceCache>();
+        auto editor = GetSubsystem<Editor>();
+        auto fs = GetSubsystem<FileSystem>();
+
         ea::string selected = resourcePath_ + resourceSelection_;
+        ea::string resourcePath = cache->GetResourceFileName(selected);
+        // CoreData is special. Opening it is supposed to copy a resource from CoreData to main resource directory.
+        ea::string resourceDirName = GetFileName(resourcePath.substr(0, resourcePath.length() - selected.length() - 1));    // Gets a dir name actually.
+        if (resourceDirName == "CoreData")
+        {
+            ea::string destination = project->GetResourcePath() + selected;
+            fs->CreateDirsRecursive(GetParentPath(destination));
+            fs->Copy(resourcePath, destination);
+            resourcePath = destination;
+            // Read copied resource from project->GetResourcePath() because it has highest priority.
+            cache->ReloadResource(selected);
+        }
+
         auto it = contentToTabType.find(GetContentType(context_, selected));
         if (it != contentToTabType.end())
         {
-            if (auto* tab = GetSubsystem<Editor>()->GetTab(it->second))
+            if (auto* tab = editor->GetTab(it->second))
             {
                 if (tab->IsUtility())
                 {
@@ -132,9 +168,9 @@ bool ResourceTab::RenderWindowContent()
                 else
                 {
                     // Tabs that can be opened multiple times.
-                    if ((tab = GetSubsystem<Editor>()->GetTabByResource(selected)))
+                    if ((tab = editor->GetTabByResource(selected)))
                         tab->Activate();
-                    else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second)))
+                    else if ((tab = editor->CreateTab(it->second)))
                     {
                         tab->LoadResource(selected);
                         tab->AutoPlace();
@@ -142,7 +178,7 @@ bool ResourceTab::RenderWindowContent()
                     }
                 }
             }
-            else if ((tab = GetSubsystem<Editor>()->CreateTab(it->second)))
+            else if ((tab = editor->CreateTab(it->second)))
             {
                 // Tabs that can be opened multiple times.
                 tab->LoadResource(selected);
@@ -153,12 +189,8 @@ bool ResourceTab::RenderWindowContent()
         else
         {
             // Unknown resources are opened with associated application.
-            ea::string resourcePath = GetSubsystem<Project>()->GetResourcePath() + selected;
-            if (!context_->GetFileSystem()->Exists(resourcePath))
-                resourcePath = GetSubsystem<Project>()->GetCachePath() + selected;
-
-            if (context_->GetFileSystem()->Exists(resourcePath))
-                context_->GetFileSystem()->SystemOpen(resourcePath);
+            if (fs->Exists(resourcePath))
+                fs->SystemOpen(resourcePath);
         }
     }
     else if (action == RBR_ITEM_CONTEXT_MENU)
@@ -307,19 +339,21 @@ bool ResourceTab::RenderWindowContent()
 
 ea::string ResourceTab::GetNewResourcePath(const ea::string& name)
 {
-    auto* project = GetSubsystem<Project>();
-    if (!context_->GetFileSystem()->FileExists(project->GetResourcePath() + name))
-        return project->GetResourcePath() + name;
+    auto project = GetSubsystem<Project>();
+    auto fs = GetSubsystem<FileSystem>();
+    ea::string resourcePath = project->GetResourcePath() + name;
+    if (!fs->FileExists(resourcePath))
+        return resourcePath;
 
-    auto basePath = GetPath(name);
-    auto baseName = GetFileName(name);
-    auto ext = GetExtension(name, false);
+    ea::string basePath = GetPath(name);
+    ea::string baseName = GetFileName(name);
+    ea::string ext = GetExtension(name, false);
 
     for (auto i = 1; i < M_MAX_INT; i++)
     {
-        auto newName = project->GetResourcePath() + ToString("%s%s %d%s", basePath.c_str(), baseName.c_str(), i, ext.c_str());
-        if (!context_->GetFileSystem()->FileExists(newName))
-            return newName;
+        resourcePath = Format("{}{} {}{}", project->GetResourcePath(), basePath, baseName, i, ext);
+        if (!context_->GetFileSystem()->FileExists(resourcePath))
+            return resourcePath;
     }
 
     std::abort();
