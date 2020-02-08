@@ -107,7 +107,8 @@ enum FillMode
 {
     FILL_SOLID = 0,
     FILL_WIREFRAME,
-    FILL_POINT
+    FILL_POINT,
+    MAX_FILLMODES
 };
 
 /// Stencil operation.

@@ -24,10 +24,12 @@
 
 #include "ToolboxAPI.h"
 #include <Urho3D/Container/ValueCache.h>
+#include <Urho3D/Core/Context.h>
 #include <Urho3D/Core/Object.h>
 #include <Urho3D/Graphics/Drawable.h>
 #include <Urho3D/Math/MathDefs.h>
 #include <Urho3D/IO/VectorBuffer.h>
+#include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
@@ -91,9 +93,17 @@ public:
     /// Construct.
     UndoCustomAction(ValueRef value, Setter onUndo, Setter onRedo={})
         : initial_(value)
-          , current_(value)
-          , onUndo_(std::move(onUndo))
-          , onRedo_(std::move(onRedo))
+        , current_(value)
+        , onUndo_(std::move(onUndo))
+        , onRedo_(std::move(onRedo))
+    {
+    }
+    /// Construct.
+    UndoCustomAction(ValueRef oldValue, ValueRef newValue, Setter onUndo, Setter onRedo={})
+        : initial_(oldValue)
+        , current_(newValue)
+        , onUndo_(std::move(onUndo))
+        , onRedo_(std::move(onRedo))
     {
     }
 
@@ -112,6 +122,8 @@ public:
     ValueCopy initial_;
     /// Latest value.
     ValueCurrent current_;
+    /// Flag indicating this action was explicitly modified by the user.
+    bool modified_ = false;
     /// Callback that commits old value.
     Setter onUndo_;
     /// Callback that commits new value.
@@ -687,6 +699,38 @@ public:
     }
 };
 
+template<typename Resource, typename Value>
+class UndoResourceSetter : public UndoAction
+{
+    ea::string name_;
+    Value oldValue_;
+    Value newValue_;
+    void (Resource::*setter_)(Value value);
+
+public:
+    UndoResourceSetter(ea::string_view name, Value oldValue, Value newValue, void (Resource::*setter)(Value))
+        : name_(name)
+        , oldValue_(oldValue)
+        , newValue_(newValue)
+        , setter_(setter)
+    {
+    }
+
+    void Undo(Context* context) override
+    {
+        auto* cache = context->GetSubsystem<ResourceCache>();
+        if (auto* resource = cache->template GetResource<Resource>(name_))
+            (resource->*setter_)(oldValue_);
+    }
+
+    void Redo(Context* context) override
+    {
+        auto* cache = context->GetSubsystem<ResourceCache>();
+        if (auto* resource = cache->template GetResource<Resource>(name_))
+            (resource->*setter_)(newValue_);
+    }
+};
+
 template<typename T> class UndoValueScope;
 
 class URHO3D_TOOLBOX_API UndoStack : public Object
@@ -762,9 +806,9 @@ public:
     /// Construct.
     UndoValueScope(UndoStack* stack, unsigned hash, T* action)
         : value_(action->current_)
-          , stack_(stack)
-          , hash_(hash)
-          , action_(action)
+        , stack_(stack)
+        , hash_(hash)
+        , action_(action)
     {
     }
     /// Destruct.
@@ -782,13 +826,24 @@ public:
             // promote it to recorded undo actions.
             if (!ui::IsAnyItemActive())
             {
-                SharedPtr<UndoAction> actionPtr(stack_->workingValueCache_.template Detach<T>(hash_));
-                stack_->currentFrameActions_.push_back(actionPtr);
+                if (action_->modified_)
+                {
+                    // User modifications are promoted to undo stack.
+                    SharedPtr<UndoAction> actionPtr(stack_->workingValueCache_.template Detach<T>(hash_));
+                    stack_->currentFrameActions_.push_back(actionPtr);
+                }
+                else
+                {
+                    // External modifications are ignored.
+                    action_->initial_ = action_->current_;
+                }
             }
         }
     }
     /// Allow use of object in if ().
     operator bool() { return true; }
+    ///
+    void SetModified(bool modified) { if (action_) action_->modified_ |= modified; }
 
     /// Current value. Should be used by UI.
     typename T::ValueType& value_;
