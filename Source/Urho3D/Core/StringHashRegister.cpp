@@ -45,7 +45,7 @@ StringHashRegister::~StringHashRegister()       // NOLINT(hicpp-use-equals-defau
     // Keep destructor here to let mutex_ destruct
 }
 
-StringHash StringHashRegister::RegisterString(const StringHash& hash, const char* string)
+StringHash StringHashRegister::RegisterString(const StringHash& hash, ea::string_view string)
 {
     if (mutex_)
         mutex_->Acquire();
@@ -53,9 +53,9 @@ StringHash StringHashRegister::RegisterString(const StringHash& hash, const char
     auto iter = map_.find(hash);
     if (iter == map_.end())
     {
-        map_.populate(hash, string);
+        map_.populate(hash, ea::string(string));
     }
-    else if (iter->second != string)
+    else if (ea::string_view(iter->second) != string)
     {
         URHO3D_LOGWARNINGF("StringHash collision detected! Both \"%s\" and \"%s\" have hash #%s",
             string, iter->second.c_str(), hash.ToString().c_str());
@@ -67,7 +67,7 @@ StringHash StringHashRegister::RegisterString(const StringHash& hash, const char
     return hash;
 }
 
-StringHash StringHashRegister::RegisterString(const char* string)
+StringHash StringHashRegister::RegisterString(ea::string_view string)
 {
     StringHash hash(string);
     return RegisterString(hash, string);
