@@ -127,7 +127,7 @@ bool Project::LoadProject(const ea::string& projectPath)
 
     // Default resources directory for new projects.
     if (resourcePaths_.empty())
-        resourcePaths_.push_back("Resources");
+        resourcePaths_.push_back("Resources/");
 
     // Default resource path is first resource directory in the list.
     defaultResourcePath_ = projectFileDir_ + resourcePaths_.front();
@@ -267,6 +267,15 @@ bool Project::Serialize(Archive& archive)
         SerializeValue(archive, "defaultScene", defaultScene_);
         SerializeValue(archive, "resourcePaths", resourcePaths_);
 
+        if (archive.IsInput())
+        {
+            for (ea::string& path : resourcePaths_)
+            {
+                if (!path.ends_with("/"))
+                    path.append("/");
+            }
+        }
+
         if (!pipeline_->Serialize(archive))
             return false;
 
@@ -404,7 +413,7 @@ void Project::RenderSettingsUI()
                 else
                 {
                     pipeline_->watcher_.StopWatching();
-                    resourcePaths_.push_back(state->newResourceDir_);
+                    resourcePaths_.push_back(AddTrailingSlash(state->newResourceDir_));
                     fs->CreateDirsRecursive(absolutePath);
                     cache->AddResourceDir(absolutePath, resourcePaths_.size());
                     pipeline_->EnableWatcher();

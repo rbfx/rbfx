@@ -11,8 +11,8 @@
 	},
 	"plugins": [],
 	"resourcePaths": [
-		"Data",
-		"Autoload/LargeData"
+		"Data/",
+		"Autoload/LargeData/"
 	],
 	"version": 1
 }
