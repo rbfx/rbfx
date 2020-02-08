@@ -26,7 +26,7 @@ jobs:
       EMSCRIPTEN_ROOT_PATH: $(Build.SourcesDirectory)/emsdk-master/upstream/emscripten
 
     steps:
-      - template: .ci/cmake.yml
+      - template: cmake.yml
       - bash: |
           # Default compiler on this build worker image does not support c++17.
           sudo apt-get install -y --no-install-recommends uuid-dev gcc-8 g++-8
@@ -40,7 +40,7 @@ jobs:
           emsdk-master/emsdk install latest
           emsdk-master/emsdk activate latest
         displayName: 'Setup'
-      - template: .ci/build.yml
+      - template: build.yml
 
   - job: Windows
     pool:
@@ -65,7 +65,7 @@ jobs:
           call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           echo '##vso[task.setvariable variable=PATH]%PATH%;%VSINSTALLDIR%\MSBuild\%VisualStudioVersion%;%WindowsSDK_ExecutablePath_x64%'
         displayName: 'Setup'
-      - template: .ci/build.yml
+      - template: build.yml
 
   - job: Linux
     pool:
@@ -107,7 +107,7 @@ jobs:
           sudo add-apt-repository ppa:ubuntu-toolchain-r/test
           sudo apt-add-repository "deb http://apt.llvm.org/bionic/ llvm-toolchain-bionic-8 main"
         displayName: 'Add Repositories'
-      - template: .ci/cmake.yml
+      - template: cmake.yml
       - bash: |
           sudo apt-get install -y --no-install-recommends libasound2-dev libxrandr-dev libgl1-mesa-dev libglu1-mesa-dev uuid-dev ninja-build $(EXTRA_PACKAGES)
           sudo update-alternatives --install /usr/bin/cc cc /usr/bin/$(CC) 100
@@ -117,7 +117,7 @@ jobs:
           mkdir "$(Build.SourcesDirectory)/SDK"
         displayName: 'Setup'
 
-      - template: .ci/build.yml
+      - template: build.yml
 
   - job: MacOS
     pool:
@@ -137,7 +137,7 @@ jobs:
           sudo installer -pkg /tmp/Mono.pkg -target /
         displayName: 'Setup'
 
-      - template: .ci/build.yml
+      - template: build.yml
 
   - job: iOS
     pool:
@@ -149,14 +149,14 @@ jobs:
       CMAKE_GENERATE_ARGS: -G Xcode -DCMAKE_TOOLCHAIN_FILE=CMake/Toolchains/IOS.cmake -DPLATFORM=SIMULATOR64
 
     steps:
-      - template: .ci/build.yml
+      - template: build.yml
 
   - job: Android
     pool:
       vmImage: 'ubuntu-18.04'
 
     steps:
-      - template: .ci/cmake.yml
+      - template: cmake.yml
       - bash: |
           # Setup
           cd $(Build.SourcesDirectory)/android
@@ -180,28 +180,3 @@ jobs:
           pathToPublish: $(build.artifactStagingDirectory)
           artifactName: rbfx-APK-$(Agent.JobName)-$(Build.SourceVersion)
           artifactType: container
-
-  - job: Docs
-    pool:
-      vmImage: 'ubuntu-18.04'
-
-    steps:
-      - template: .ci/cmake.yml
-      - bash: |
-          sudo apt-get install -y --no-install-recommends doxygen
-        displayName: 'Setup'
-
-      - task: CMake@1
-        displayName: 'Generate'
-        inputs:
-          workingDirectory: cmake-build
-          cmakeArgs: -DCMAKE_BUILD_TYPE=Release -DURHO3D_ENABLE_ALL=ON -DURHO3D_DOCS=ON -DBUILD_SHARED_LIBS=ON $(Build.SourcesDirectory)
-
-      - task: CMake@1
-        displayName: 'Build'
-        inputs:
-          workingDirectory: cmake-build
-          cmakeArgs: --build . --config Release --target doc
-
-      - publish: $(Build.SourcesDirectory)/cmake-build/Docs/html/
-        artifact: rbfx-$(Agent.JobName)-$(Build.SourceVersion)
