@@ -213,9 +213,9 @@ ResourceBrowserResult ResourceBrowserWidget(ea::string& path, ea::string& select
                     ea::string resourceDir = sourceAbsolutePath.substr(0, sourceAbsolutePath.length() - source.length());
                     cache->RenameResource(sourceAbsolutePath, resourceDir + path + state.editBuffer);
                     selected = state.editBuffer;
-                    state.isEditing = false;
                     state.rescanDirs = true;
                 }
+                state.isEditing = false;
             }
 
             if (!state.wasEditing)
