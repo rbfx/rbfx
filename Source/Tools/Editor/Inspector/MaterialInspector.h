@@ -54,8 +54,6 @@ protected:
 
     /// Material which is being previewed.
     WeakPtr<Material> material_;
-    /// Parent asset (for undo tracking).
-    WeakPtr<Asset> asset_;
     /// Material attribute inspector namespace.
     AttributeInspector attributeInspector_;
     /// Index of current figure displaying material.

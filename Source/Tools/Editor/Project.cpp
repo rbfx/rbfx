@@ -19,8 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
-#include <Urho3D/Resource/XMLFile.h>
 #include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Graphics/Graphics.h>
@@ -41,10 +39,13 @@
 
 #include "Editor.h"
 #include "EditorEvents.h"
+#include "Pipeline/Pipeline.h"
 #include "Project.h"
-#include "Plugins/ModulePlugin.h"
-#include "Plugins/ScriptBundlePlugin.h"
-#include "Tabs/ConsoleTab.h"
+#if URHO3D_PLUGINS
+#   include "Plugins/ModulePlugin.h"
+#   include "Plugins/PluginManager.h"
+#   include "Plugins/ScriptBundlePlugin.h"
+#endif
 #include "Tabs/Scene/SceneTab.h"
 #include "Tabs/ResourceTab.h"
 

@@ -42,6 +42,8 @@ class URHO3D_TOOLBOX_API SceneView
 public:
     /// Construct.
     explicit SceneView(Context* context, const IntRect& rect);
+    /// Destruct.
+    ~SceneView() = default;
     /// Set screen rectangle where scene is being rendered.
     virtual void SetSize(const IntRect& rect);
     /// Return scene debug camera component.

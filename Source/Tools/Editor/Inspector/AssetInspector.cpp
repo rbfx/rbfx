@@ -24,6 +24,8 @@
 
 #include "Editor.h"
 #include "Project.h"
+#include "Pipeline/Pipeline.h"
+#include "Pipeline/Asset.h"
 #include "Inspector/AssetInspector.h"
 
 namespace Urho3D
