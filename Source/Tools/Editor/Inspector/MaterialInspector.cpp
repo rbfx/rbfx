@@ -37,6 +37,7 @@
 
 #include <EASTL/sort.h>
 
+#include <Toolbox/Common/UndoManager.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stdlib.h>
@@ -60,7 +61,6 @@ void MaterialInspector::SetInspected(Object* inspected)
     assert(inspected->IsInstanceOf<Material>());
     BaseClassName::SetInspected(inspected);
 
-    // TODO: Refactor this thing to not use fake Serializable. Make SetInspected non-virtual maybe.
     material_ = static_cast<Material*>(inspected);
     // if (auto* material = )
     // {
@@ -101,7 +101,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         return;
 
     float w = ui::CalcItemWidth();
-    auto& undo_ = asset_->GetUndo();
+    auto undo = GetSubsystem<UndoStack>();
 
     ui::PushID(material_);
     // Cull
@@ -110,7 +110,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Combo("Cull", &value, cullModeNames, MAX_CULLMODES))
         {
             material_->SetCullMode(static_cast<CullMode>(value));
-            undo_.Add<UndoResourceSetter<Material, CullMode>>(material_->GetName(), static_cast<CullMode>(valuePrev),
+            undo->Add<UndoResourceSetter<Material, CullMode>>(material_->GetName(), static_cast<CullMode>(valuePrev),
                 static_cast<CullMode>(value), &Material::SetCullMode);
         }
     }
@@ -120,7 +120,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Combo("Shadow Cull", &value, cullModeNames, MAX_CULLMODES))
         {
             material_->SetShadowCullMode(static_cast<CullMode>(value));
-            undo_.Add<UndoResourceSetter<Material, CullMode>>(material_->GetName(), static_cast<CullMode>(valuePrev),
+            undo->Add<UndoResourceSetter<Material, CullMode>>(material_->GetName(), static_cast<CullMode>(valuePrev),
                 static_cast<CullMode>(value), &Material::SetShadowCullMode);
         }
     }
@@ -130,7 +130,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Combo("Fill Mode", &value, fillModeNames, MAX_FILLMODES))
         {
             material_->SetFillMode(static_cast<FillMode>(value));
-            undo_.Add<UndoResourceSetter<Material, FillMode>>(material_->GetName(), static_cast<FillMode>(valuePrev),
+            undo->Add<UndoResourceSetter<Material, FillMode>>(material_->GetName(), static_cast<FillMode>(valuePrev),
                 static_cast<FillMode>(value), &Material::SetFillMode);
         }
     }
@@ -141,7 +141,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Checkbox("Alpha To Coverage", &value))
         {
             material_->SetAlphaToCoverage(value);
-            undo_.Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetAlphaToCoverage);
+            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetAlphaToCoverage);
         }
     }
     // Line Anti Alias
@@ -151,7 +151,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Checkbox("Line Anti Alias", &value))
         {
             material_->SetLineAntiAlias(value);
-            undo_.Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetLineAntiAlias);
+            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetLineAntiAlias);
         }
     }
     // Render Order
@@ -163,7 +163,7 @@ void MaterialInspector::RenderInspector(const char* filter)
             material_->SetRenderOrder(value);
         if (value != valuePrev && !ui::IsItemActive())
         {
-            undo_.Add<UndoResourceSetter<Material, unsigned char>>(material_->GetName(), valuePrev, value, &Material::SetRenderOrder);
+            undo->Add<UndoResourceSetter<Material, unsigned char>>(material_->GetName(), valuePrev, value, &Material::SetRenderOrder);
             valuePrev = value;
         }
         ui::PopID();
@@ -175,7 +175,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Checkbox("Occlusion", &value))
         {
             material_->SetOcclusion(value);
-            undo_.Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetOcclusion);
+            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetOcclusion);
         }
     }
     // Specular
@@ -185,7 +185,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         if (ui::Checkbox("Specular", &value))
         {
             material_->SetSpecular(value);
-            undo_.Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetSpecular);
+            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetSpecular);
         }
     }
     // Constant Bias
@@ -201,7 +201,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 material->SetDepthBias(bias);
             }
         };
-        if (auto mod = undo_.Track<UndoCustomAction<float>>(material_->GetDepthBias().constantBias_, setDepthBias))
+        if (auto mod = undo->Track<UndoCustomAction<float>>(material_->GetDepthBias().constantBias_, setDepthBias))
             mod.SetModified(ui::DragScalar("Constant Bias", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
     }
@@ -218,7 +218,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 material->SetDepthBias(bias);
             }
         };
-        if (auto mod = undo_.Track<UndoCustomAction<float>>(material_->GetDepthBias().slopeScaledBias_, setSlopeScaledBias))
+        if (auto mod = undo->Track<UndoCustomAction<float>>(material_->GetDepthBias().slopeScaledBias_, setSlopeScaledBias))
             mod.SetModified(ui::DragScalar("Slope Scaled Bias", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
     }
@@ -235,7 +235,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 material->SetDepthBias(bias);
             }
         };
-        if (auto mod = undo_.Track<UndoCustomAction<float>>(material_->GetDepthBias().normalOffset_, setNormalOffset))
+        if (auto mod = undo->Track<UndoCustomAction<float>>(material_->GetDepthBias().normalOffset_, setNormalOffset))
             mod.SetModified(ui::DragScalar("Normal Offset", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
     }
@@ -308,7 +308,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 if (auto* technique = cache->GetResource<Technique>(*techName))
                 {
                     // Track
-                    undo_.Add<UndoCustomAction<const ea::string>>(tech.technique_->GetName(), *techName,
+                    undo->Add<UndoCustomAction<const ea::string>>(tech.technique_->GetName(), *techName,
                         [name=material_->GetName(), index=i](Context* context, const ea::string& value)
                         {
                             auto* cache = context->GetSubsystem<ResourceCache>();
@@ -356,7 +356,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                     }
                 };
 
-                undo_.Add<UndoCustomAction<const TechniqueInfo>>(TechniqueInfo{context_, tech, (int)i}, TechniqueInfo{context_, tech, (int)i},
+                undo->Add<UndoCustomAction<const TechniqueInfo>>(TechniqueInfo{context_, tech, (int)i}, TechniqueInfo{context_, tech, (int)i},
                     [name=material_->GetName()](Context* context, const TechniqueInfo& info)
                     {
                         // Re-add
@@ -408,14 +408,14 @@ void MaterialInspector::RenderInspector(const char* filter)
                     material->SetTechnique(index, entry.original_, entry.qualityLevel_, value);
                 }
             };
-            if (auto mod = undo_.Track<UndoCustomAction<float>>(tech.lodDistance_, setLodDistance))
+            if (auto mod = undo->Track<UndoCustomAction<float>>(tech.lodDistance_, setLodDistance))
                 mod.SetModified(ui::DragFloat("LOD Distance", &mod.value_));
             // Quality
             static const char* qualityNames[] = {"low", "medium", "high", "max"};
             int quality = tech.qualityLevel_;
             if (ui::Combo("Quality", &quality, qualityNames,URHO3D_ARRAYSIZE(qualityNames)))
             {
-                undo_.Add<UndoCustomAction<const int>>(static_cast<int>(tech.qualityLevel_), quality,
+                undo->Add<UndoCustomAction<const int>>(static_cast<int>(tech.qualityLevel_), quality,
                     [name=material_->GetName(), index=i](Context* context, int value)
                     {
                         auto* cache = context->GetSubsystem<ResourceCache>();
@@ -456,7 +456,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 auto index = material_->GetNumTechniques();
                 material_->SetNumTechniques(index + 1);
                 material_->SetTechnique(index, technique);
-                undo_.Add<UndoCustomAction<const ea::string>>("", *newTechniqueName,
+                undo->Add<UndoCustomAction<const ea::string>>("", *newTechniqueName,
                     [name=material_->GetName()](Context* context, const ea::string& techniqueName)
                     {
                         auto* cache = context->GetSubsystem<ResourceCache>();
@@ -500,7 +500,7 @@ void MaterialInspector::RenderInspector(const char* filter)
 
             if (ui::Button(ICON_FA_TRASH))
             {
-                undo_.Add<UndoShaderParameterChanged>(material_, parameterName, pair.second.value_, Variant{});
+                undo->Add<UndoShaderParameterChanged>(material_, parameterName, pair.second.value_, Variant{});
                 material_->RemoveShaderParameter(parameterName);
                 break;
             }
@@ -513,7 +513,7 @@ void MaterialInspector::RenderInspector(const char* filter)
             }
 
             if (value.IsModified())
-                undo_.Add<UndoShaderParameterChanged>(material_, parameterName, value.initial_, value.current_);
+                undo->Add<UndoShaderParameterChanged>(material_, parameterName, value.initial_, value.current_);
         }
 
         {
@@ -551,7 +551,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 if (!paramState->fieldName_.empty() && material_->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
                 {
                     Variant value{shaderParameterVariantTypes[paramState->variantTypeIndex_]};
-                    undo_.Add<UndoShaderParameterChanged>(material_, paramState->fieldName_.c_str(), Variant{}, value);
+                    undo->Add<UndoShaderParameterChanged>(material_, paramState->fieldName_.c_str(), Variant{}, value);
                     material_->SetShaderParameter(paramState->fieldName_.c_str(), value);
                     paramState->fieldName_.clear();
                     paramState->variantTypeIndex_ = 0;
@@ -583,7 +583,7 @@ void MaterialInspector::RenderInspector(const char* filter)
             if (auto texture = dynamic_cast<Texture*>(cache->GetResource(ref.type_, ref.name_)))
                 material_->SetTexture(textureUnit, texture);
 
-            undo_.Add<UndoCustomAction<const ResourceRef>>(resourceRef, ref,
+            undo->Add<UndoCustomAction<const ResourceRef>>(resourceRef, ref,
                 [name=material_->GetName(), textureUnit=textureUnit](Context* context, const ResourceRef& ref) {
                     auto cache = context->GetSubsystem<ResourceCache>();
                     if (auto material = cache->GetResource<Material>(name))

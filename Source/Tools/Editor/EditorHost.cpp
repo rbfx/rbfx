@@ -24,6 +24,7 @@
 #   include <Urho3D/Script/Script.h>
 #endif
 #include "Editor.h"
+#include "Tabs/Tab.h"
 #if URHO3D_SAMPLES && URHO3D_STATIC
 #   include "../Samples/103_GamePlugin/GamePlugin.h"
 #endif

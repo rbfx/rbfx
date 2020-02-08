@@ -46,6 +46,7 @@
 #include "EditorEvents.h"
 #include "Project.h"
 #include "Pipeline/Pipeline.h"
+#include "Plugins/PluginManager.h"
 #include "Plugins/ModulePlugin.h"
 
 namespace Urho3D

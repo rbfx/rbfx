@@ -56,12 +56,16 @@
 #include "Tabs/ConsoleTab.h"
 #include "Tabs/ResourceTab.h"
 #include "Tabs/PreviewTab.h"
+#include "Pipeline/Asset.h"
 #include "Pipeline/Commands/CookScene.h"
 #include "Pipeline/Commands/BuildAssets.h"
 #include "Pipeline/Importers/ModelImporter.h"
 #include "Pipeline/Importers/SceneConverter.h"
 #include "Pipeline/Importers/TextureImporter.h"
-#include "Plugins/ModulePlugin.h"
+#if URHO3D_PLUGINS
+#   include "Plugins/PluginManager.h"
+#   include "Plugins/ModulePlugin.h"
+#endif
 #include "Plugins/ScriptBundlePlugin.h"
 #include "Inspector/AssetInspector.h"
 #include "Inspector/MaterialInspector.h"

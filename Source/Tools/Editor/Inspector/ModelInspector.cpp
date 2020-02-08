@@ -20,8 +20,9 @@
 // THE SOFTWARE.
 //
 #include <Urho3D/Graphics/Model.h>
-#include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Scene/Scene.h>
+#include <Urho3D/SystemUI/SystemUI.h>
 
 #include "ModelInspector.h"
 #include "Editor.h"

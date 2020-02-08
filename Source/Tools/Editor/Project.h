@@ -24,14 +24,15 @@
 
 
 #include <Urho3D/Core/Object.h>
-#if URHO3D_PLUGINS
-#   include "Plugins/PluginManager.h"
-#endif
-#include "Pipeline/Pipeline.h"
+#include <Urho3D/Core/Timer.h>
 
 
 namespace Urho3D
 {
+
+class UndoStack;
+class Pipeline;
+class PluginManager;
 
 class Project : public Object
 {

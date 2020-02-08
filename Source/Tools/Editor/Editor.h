@@ -54,6 +54,8 @@ class Editor : public Application
 public:
     /// Construct.
     explicit Editor(Context* context);
+    /// Destruct.
+    ~Editor() override = default;
     /// Set up editor application.
     void Setup() override;
     /// Initialize editor application.
