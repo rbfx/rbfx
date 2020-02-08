@@ -47,7 +47,8 @@ void Editor::RenderSettingsWindow()
     if (!settingsOpen_)
     {
         // Settings window is closing.
-        if (!project_->GetPipeline()->CookSettings())
+        auto pipeline = GetSubsystem<Pipeline>();
+        if (!pipeline->CookSettings())
             URHO3D_LOGERROR("Cooking settings failed");
     }
 }

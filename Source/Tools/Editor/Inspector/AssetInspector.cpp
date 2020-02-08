@@ -40,12 +40,13 @@ void AssetInspector::RenderInspector(const char* filter)
         return;
 
     auto* project = GetSubsystem<Project>();
+    auto* pipeline = GetSubsystem<Pipeline>();
     auto* asset = static_cast<Asset*>(inspected_.Get());
     bool tabBarStarted = false;
     bool save = false;
 
     // Use flavors list from the pipeline because it is sorted. Asset::importers_ is unordered.
-    for (const SharedPtr<Flavor>& flavor : project->GetPipeline()->GetFlavors())
+    for (const SharedPtr<Flavor>& flavor : pipeline->GetFlavors())
     {
         bool tabStarted = false;
         bool tabVisible = false;
