@@ -372,6 +372,13 @@ void ResourceCache::ReleaseAllResources(bool force)
     } while (released && !force);
 }
 
+bool ResourceCache::ReloadResource(const ea::string_view resourceName)
+{
+    if (Resource* resource = FindResource(StringHash::ZERO, resourceName))
+        return ReloadResource(resource);
+    return false;
+}
+
 bool ResourceCache::ReloadResource(Resource* resource)
 {
     if (!resource)
@@ -553,7 +560,7 @@ Resource* ResourceCache::GetExistingResource(StringHash type, const ea::string& 
 
     StringHash nameHash(sanitatedName);
 
-    const SharedPtr<Resource>& existing = FindResource(type, nameHash);
+    const SharedPtr<Resource>& existing = type == StringHash::ZERO ? FindResource(type, nameHash) : FindResource(nameHash);
     return existing;
 }
 
