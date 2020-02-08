@@ -165,7 +165,7 @@ void Editor::RenderProjectMenu()
 
     if (ui::BeginMenu(ICON_FA_BOXES " Repackage files"))
     {
-        Pipeline* pipeline = project_->GetPipeline();
+        auto pipeline = GetSubsystem<Pipeline>();
 
         if (ui::MenuItem("All Flavors"))
         {

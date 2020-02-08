@@ -280,9 +280,8 @@ void Asset::ReimportOutOfDateRecursive() const
     if (!IsMetaAsset())
         return;
 
-    auto* fs = context_->GetFileSystem();
-    auto* project = GetSubsystem<Project>();
-    Pipeline* pipeline = project->GetPipeline();
+    auto fs = context_->GetFileSystem();
+    auto pipeline = GetSubsystem<Pipeline>();
 
     StringVector files;
     fs->ScanDir(files, GetResourcePath(), "", SCAN_FILES, true);

@@ -137,8 +137,9 @@ void Packager::WritePackage()
     }
 
     // Has to be done here in case any resources were imported during packaging.
-    project->GetPipeline()->CookSettings(); // TODO: Thread safety
-    project->GetPipeline()->CookCacheInfo();// TODO: Thread safety
+    auto pipeline = GetSubsystem<Pipeline>();
+    pipeline->CookSettings(); // TODO: Thread safety
+    pipeline->CookCacheInfo();// TODO: Thread safety
     AddFile(cachePath, "CacheInfo.json");   filesDone_++;
     AddFile(cachePath, "Settings.json");    filesDone_++;
 
