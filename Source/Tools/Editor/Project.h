@@ -65,8 +65,6 @@ public:
     const ea::string& GetDefaultSceneName() const { return defaultScene_; }
     /// Set resource name of scene that will be executed first by the player.
     void SetDefaultSceneName(const ea::string& defaultScene) { defaultScene_ = defaultScene; }
-    ///
-    Pipeline* GetPipeline() { return pipeline_; }
 
 protected:
     /// Save project when resource is saved.
@@ -100,7 +98,7 @@ protected:
     bool defaultUiPlacement_ = true;
     /// Resource name of scene that will be started by player first.
     ea::string defaultScene_;
-    ///
+    /// Timer for project auto-save.
     Timer saveProjectTimer_;
 };
 
