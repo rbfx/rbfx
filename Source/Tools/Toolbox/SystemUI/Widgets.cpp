@@ -80,24 +80,32 @@ void SetHelpTooltip(const char* text, Key requireKey)
         ui::SetTooltip("%s", text);
 }
 
+float IconButtonSize()
+{
+    ImGuiContext& g = *GImGui;
+    return g.FontSize + g.Style.FramePadding.y * 2.0f;
+}
+
 bool IconButton(const char* label)
 {
-    float size = ui::GetItemRectSize().y;
+    float size = ui::IconButtonSize();
     return ui::Button(label, {size, size});
 }
 
-bool MaskSelector(unsigned int* mask)
+bool MaskSelector(const char* title, unsigned int* mask)
 {
     bool modified = false;
     const ImGuiStyle& style = ui::GetStyle();
     ImVec2 pos = ui::GetCursorPos();
+    float w = CalcItemWidth();
+    ImVec2 buttonSize(w / 16.0f, GImGui->FontSize / 2.0f - 1);
 
-    for (auto row = 0; row < 2; row++)
+    for (unsigned row = 0; row < 2; row++)
     {
-        for (auto col = 0; col < 16; col++)
+        for (unsigned col = 0; col < 16; col++)
         {
-            auto bitPosition = row * 16 + col;
-            int bitMask = 1 << bitPosition;
+            unsigned bitPosition = row * 16 + col;
+            unsigned bitMask = 1u << bitPosition;
             bool selected = (*mask & bitMask) != 0;
             if (selected)
             {
@@ -111,7 +119,7 @@ bool MaskSelector(unsigned int* mask)
             }
 
             ui::PushID(bitMask);
-            if (ui::Button("", {8, 9}))
+            if (ui::Button("", buttonSize))
             {
                 modified = true;
                 *mask ^= bitMask;
@@ -124,7 +132,13 @@ bool MaskSelector(unsigned int* mask)
         }
         ui::NewLine();
         if (row < 1)
-            ui::SetCursorPos({pos.x, pos.y + 9});
+            ui::SetCursorPos({pos.x, pos.y + buttonSize.y + 1});
+    }
+
+    if (title && *title)
+    {
+        ui::SetCursorPos(pos + ImVec2(w + style.ItemSpacing.x, 0));
+        ui::TextUnformatted(title);
     }
 
     return modified;
@@ -390,6 +404,72 @@ void TextElided(const char* text, float width)
     }
     ui::SetCursorPosX(x + width);
     ui::NewLine();
+}
+
+bool Autocomplete(ImGuiID id, ea::string* buf, Urho3D::StringVector* suggestions, int maxVisible)
+{
+    IM_ASSERT(buf != nullptr);
+    IM_ASSERT(suggestions != nullptr);
+    if (suggestions->empty())
+        return false;
+
+    bool committed = false;
+    const ImGuiStyle& style = ui::GetStyle();
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ui::PushID(id);
+    bool& isOpen = *window->StateStorage.GetBoolRef(window->IDStack.back());
+    bool isFocused = ui::IsItemFocused() || ui::IsItemActive();
+    isOpen |= isFocused;
+    if (isOpen)
+    {
+        ui::SetNextWindowPos({ui::GetItemRectMin().x, ui::GetItemRectMax().y});
+        ui::SetNextWindowSize({ui::GetItemRectSize().x, Min(suggestions->size(), maxVisible) * window->CalcFontSize() + style.WindowPadding.y * 2});
+        if (ui::Begin("##autocomplete", &isOpen, ImGuiWindowFlags_NoTitleBar|ImGuiWindowFlags_NoMove|ImGuiWindowFlags_NoResize|ImGuiWindowFlags_NoSavedSettings|ImGuiWindowFlags_Tooltip))
+        {
+            ui::BringWindowToDisplayFront(ui::GetCurrentWindow());
+            isFocused |= ui::IsWindowFocused();
+            for (const ea::string& suggestion : *suggestions)
+            {
+                if (!suggestion.contains(*buf))
+                    continue;
+                if (ui::Selectable(suggestion.c_str()) || (ui::IsItemFocused() && ui::IsKeyPressedMap(ImGuiKey_Enter)))
+                {
+                    *buf = suggestion;
+                    committed = true;
+                }
+            }
+        }
+        ui::End();
+        isOpen &= isFocused;
+    }
+    ui::PopID();
+    if (committed)
+        isOpen = false;
+    return committed;
+}
+
+bool WasItemActive()
+{
+    ImGuiContext& g = *GImGui;
+    ImGuiID lastID = g.CurrentWindow->DC.LastItemId;
+    if ((!g.ActiveId || g.ActiveId != lastID) && g.LastActiveId == lastID)
+    {
+        g.LastActiveId = 0;
+        g.LastActiveIdTimer = 0.0f;
+        return true;
+    }
+    return false;
+}
+
+void ItemAlign(float itemWidth)
+{
+    ui::SetCursorPosX(ui::GetCursorPosX() + ui::CalcItemWidth() - itemWidth);
+}
+
+void TextCentered(const char* text)
+{
+    ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(text).x) / 2);
+    ui::TextUnformatted(text);
 }
 
 }

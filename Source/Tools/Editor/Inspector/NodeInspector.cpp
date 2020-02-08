@@ -40,13 +40,9 @@ void NodeInspector::RenderInspector(const char* filter)
         return;
 
     auto node = static_cast<Node*>(inspected_.Get());
-    ui::Text("ID: %u", node->GetID());
+    ui::Text("Node ID: %u %s", node->GetID(), node->IsReplicated() ? ICON_FA_WIFI : "");
     if (node->IsReplicated())
-    {
-        ui::SameLine();
-        ui::TextUnformatted(ICON_FA_WIFI);
         ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
-    }
     RenderAttributes(node, filter, const_cast<Scene*>(node->GetScene()));
 }
 

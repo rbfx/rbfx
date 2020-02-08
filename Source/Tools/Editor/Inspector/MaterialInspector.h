@@ -32,31 +32,6 @@
 namespace Urho3D
 {
 
-namespace Inspectable
-{
-
-/// A serializable proxy for Urho3D::Material for enabling inspection in attribute inspector.
-class Material : public Serializable
-{
-    URHO3D_OBJECT(Material, Serializable);
-public:
-    /// Construct.
-    explicit Material(Urho3D::Material* material);
-    /// Returns attached material.
-    Urho3D::Material* GetMaterial() const { return material_.Get(); }
-    /// Returns attached material.
-    Urho3D::Material* GetMaterial() { return material_.Get(); }
-
-    /// Registers object with the engine.
-    static void RegisterObject(Context* context);
-
-protected:
-    /// Attached material.
-    SharedPtr<Urho3D::Material> material_;
-};
-
-}
-
 /// Renders material preview in attribute inspector.
 class MaterialInspector : public PreviewInspector
 {
@@ -76,11 +51,9 @@ protected:
     void Save();
     ///
     void RenderPreview() override;
-    ///
-    void RenderCustomWidgets(VariantMap& args);
 
     /// Material which is being previewed.
-    SharedPtr<Inspectable::Material> inspectable_;
+    WeakPtr<Material> material_;
     /// Parent asset (for undo tracking).
     WeakPtr<Asset> asset_;
     /// Material attribute inspector namespace.
