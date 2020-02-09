@@ -19,13 +19,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
+#if URHO3D_PLUGINS && URHO3D_CSHARP
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/Script/Script.h>
+#include "Plugins/PluginManager.h"
 #include "Plugins/ScriptBundlePlugin.h"
 #include "Project.h"
 
-#if URHO3D_PLUGINS && URHO3D_CSHARP
 namespace Urho3D
 {
 

@@ -87,7 +87,9 @@ Asset::Asset(Context* context)
 
     SubscribeToEvent(E_EDITORFLAVORADDED, [this](StringHash, VariantMap& args) { OnFlavorAdded(args); });
     SubscribeToEvent(E_EDITORFLAVORREMOVED, [this](StringHash, VariantMap& args) { OnFlavorRemoved(args); });
-    undo_.Connect(this);
+
+    auto undo = GetSubsystem<UndoStack>();
+    undo->Connect(this);
 }
 
 void Asset::RegisterObject(Context* context)
@@ -251,7 +253,6 @@ void Asset::AddFlavor(Flavor* flavor)
     {
         SharedPtr<AssetImporter> importer(context_->CreateObject(importerType->GetType())->Cast<AssetImporter>());
         importer->Initialize(this, flavor);
-        undo_.Connect(importer);
         importers.emplace_back(importer);
     }
 }
@@ -316,6 +317,7 @@ void Asset::Inspect()
     auto* editor = GetSubsystem<Editor>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* cache = GetSubsystem<ResourceCache>();
+    auto* undo = GetSubsystem<UndoStack>();
     editor->ClearInspector();
     // Asset inspector will show inspectors for importers.
     editor->Inspect(this);
@@ -329,7 +331,7 @@ void Asset::Inspect()
             {
                 Resource* resource = cache->GetResource(resourceType, byproduct);
                 editor->Inspect(resource);
-                undo_.Connect(resource);
+                undo->Connect(resource);    // ??
             }
         }
     }
@@ -339,7 +341,7 @@ void Asset::Inspect()
         if (Resource* resource = cache->GetResource(resourceType, GetName()))
         {
             editor->Inspect(resource);
-            undo_.Connect(resource);
+            undo->Connect(resource);    // ??
         }
     }
 }

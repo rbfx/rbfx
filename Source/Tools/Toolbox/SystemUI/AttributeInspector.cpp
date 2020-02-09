@@ -580,8 +580,8 @@ bool RenderAttributes(Serializable* item, const char* filter, Object* eventNames
     if (eventNamespace == nullptr)
         eventNamespace = item;
 
-    auto isOpen = ui::CollapsingHeader(item->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-    if (isOpen)
+    auto isOpen = true;//ui::CollapsingHeader(item->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
+    // if (isOpen)
     {
         const ea::vector<AttributeInfo>* attributes = item->GetAttributes();
         if (attributes == nullptr)

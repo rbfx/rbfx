@@ -29,9 +29,8 @@
 namespace Urho3D
 {
 
-SceneClipboard::SceneClipboard(Context* context, UndoStack& undo)
+SceneClipboard::SceneClipboard(Context* context)
     : Object(context)
-    , undo_(undo)
 {
 }
 
@@ -82,7 +81,10 @@ PasteResult SceneClipboard::Paste(Node* node)
         {
             newNode->ApplyAttributes();
             if (!newNode->GetName().empty())
-                undo_.Add<UndoEditAttribute>(newNode, "Name", EMPTY_STRING, newNode->GetName());
+            {
+                auto undo = GetSubsystem<UndoStack>();
+                undo->Add<UndoEditAttribute>(newNode, "Name", EMPTY_STRING, newNode->GetName());
+            }
             result.nodes_.push_back(newNode);
         }
         else

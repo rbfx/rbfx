@@ -37,6 +37,8 @@
 namespace Urho3D
 {
 
+class UndoStack;
+
 class IHierarchyProvider
 {
 public:
@@ -134,6 +136,8 @@ protected:
     bool noContentPadding_ = false;
     /// Current window flags.
     ImGuiWindowFlags windowFlags_ = 0;
+    /// Global undo stack reference.
+    WeakPtr<UndoStack> undo_;
 };
 
 }

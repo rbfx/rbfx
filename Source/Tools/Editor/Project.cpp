@@ -59,6 +59,7 @@ Project::Project(Context* context)
 #if URHO3D_PLUGINS
     , plugins_(new PluginManager(context))
 #endif
+    , undo_(new UndoStack(context))
 {
     SubscribeToEvent(E_EDITORRESOURCESAVED, URHO3D_HANDLER(Project, OnEditorResourceSaved));
     SubscribeToEvent(E_RESOURCERENAMED, URHO3D_HANDLER(Project, OnResourceRenamed));
@@ -66,15 +67,19 @@ Project::Project(Context* context)
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Project, OnEndFrame));
     context_->RegisterSubsystem(pipeline_);
     context_->RegisterSubsystem(plugins_);
+    context_->RegisterSubsystem(undo_);
 
     // Key bindings
     auto* editor = GetSubsystem<Editor>();
     editor->keyBindings_.Bind(ActionType::SaveProject, this, &Project::SaveProject);
+    editor->keyBindings_.Bind(ActionType::Undo, this, &Project::OnUndo);
+    editor->keyBindings_.Bind(ActionType::Redo, this, &Project::OnRedo);
     editor->settingsTabs_.Subscribe(this, &Project::RenderSettingsUI);
 }
 
 Project::~Project()
 {
+    context_->RemoveSubsystem(undo_->GetType());
     context_->RemoveSubsystem(pipeline_->GetType());
     context_->RemoveSubsystem(plugins_->GetType());
 
@@ -511,6 +516,22 @@ void Project::OnEndFrame(StringHash, VariantMap&)
         SaveProject();
         saveProjectTimer_.Reset();
     }
+}
+
+void Project::OnUndo()
+{
+    if (ui::IsAnyItemActive())
+        return;
+
+    undo_->Undo();
+}
+
+void Project::OnRedo()
+{
+    if (ui::IsAnyItemActive())
+        return;
+
+    undo_->Redo();
 }
 
 }

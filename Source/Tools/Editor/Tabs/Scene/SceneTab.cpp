@@ -64,7 +64,7 @@ SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
     , rect_({0, 0, 1024, 768})
     , gizmo_(context)
-    , clipboard_(context, undo_)
+    , clipboard_(context)
 {
     SetID("be1c7280-08e4-4b9f-b6ec-6d32bd9e3293");
     SetTitle("Scene");
@@ -107,11 +107,7 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) { OnSceneActivated(args); });
     SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) { OnEditorProjectClosing(); });
 
-    undo_.Connect(&gizmo_);
-
-    SubscribeToEvent(GetScene(), E_ASYNCLOADFINISHED, [&](StringHash, VariantMap&) { undo_.Clear(); });
-
-    undo_.Clear();
+    undo_->Connect(&gizmo_);
 
     UpdateUniqueTitle();
 }
@@ -306,23 +302,26 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     if (!BaseClassName::LoadResource(resourcePath))
         return false;
 
-    SceneManager* manager = GetSubsystem<SceneManager>();
+    auto cache = GetSubsystem<ResourceCache>();
+    auto manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
-    undo_.Connect(scene);
+
+    UndoTrackGuard(undo_, false);
+    undo_->Connect(scene);
 
     manager->SetActiveScene(scene);
 
     bool loaded = false;
     if (resourcePath.ends_with(".xml", false))
     {
-        auto* file = context_->GetCache()->GetResource<XMLFile>(resourcePath);
+        auto* file = cache->GetResource<XMLFile>(resourcePath);
         loaded = file && scene->LoadXML(file->GetRoot());
         if (file)
             scene->SetFileName(file->GetNativeFileName());
     }
     else if (resourcePath.ends_with(".json", false))
     {
-        auto* file = context_->GetCache()->GetResource<JSONFile>(resourcePath);
+        auto* file = cache->GetResource<JSONFile>(resourcePath);
         loaded = file && scene->LoadJSON(file->GetRoot());
         if (file)
             scene->SetFileName(file->GetNativeFileName());
@@ -331,7 +330,7 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     {
         URHO3D_LOGERRORF("Unknown scene file format %s", GetExtension(resourcePath).c_str());
         manager->UnloadScene(scene);
-        context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -339,7 +338,7 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     {
         URHO3D_LOGERRORF("Loading scene %s failed", GetFileName(resourcePath).c_str());
         manager->UnloadScene(scene);
-        context_->GetCache()->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
+        cache->ReleaseResource(XMLFile::GetTypeStatic(), resourcePath, true);
         return false;
     }
 
@@ -348,8 +347,7 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     scene->GetOrCreateComponent<Octree>();
     scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
 
-    undo_.Clear();
-    lastUndoIndex_ = undo_.Index();
+    lastUndoIndex_ = undo_->Index();
 
     GetSubsystem<Editor>()->UpdateWindowTitle(resourcePath);
 
@@ -1190,8 +1188,7 @@ void SceneTab::OnSceneActivated(VariantMap& args)
         SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
         SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
 
-        undo_.Clear();
-        undo_.Connect(scene);
+        undo_->Connect(scene);
 
         // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
         // updates per frame.

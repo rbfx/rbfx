@@ -78,6 +78,10 @@ protected:
     void OnEndFrame(StringHash, VariantMap&);
     /// Render a project tab in settings window.
     void RenderSettingsUI();
+    /// User executed undo action.
+    void OnUndo();
+    /// User executed redo action.
+    void OnRedo();
 
     /// Directory containing project.
     ea::string projectFileDir_;
@@ -101,6 +105,8 @@ protected:
     ea::string defaultScene_;
     /// Timer for project auto-save.
     Timer saveProjectTimer_;
+    /// Global undo stack.
+    SharedPtr<UndoStack> undo_;
 };
 
 
