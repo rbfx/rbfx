@@ -152,7 +152,7 @@ void BorderImage::GetBatches(ea::vector<UIBatch>& batches, ea::vector<float>& ve
         batch(this, blendMode_ == BLEND_REPLACE && !allOpaque ? BLEND_ALPHA : blendMode_, currentScissor, texture_, &vertexData);
 
     if (material_)
-        batch.custom_material_ = material_;
+        batch.customMaterial_ = material_;
 
     // Calculate size of the inner rect, and texture dimensions of the inner rect
     const IntRect& uvBorder = (imageBorder_ == IntRect::ZERO) ? border_ : imageBorder_;
