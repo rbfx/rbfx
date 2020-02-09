@@ -54,8 +54,6 @@ protected:
 
     /// Material which is being previewed.
     WeakPtr<Material> material_;
-    /// Material attribute inspector namespace.
-    AttributeInspector attributeInspector_;
     /// Index of current figure displaying material.
     unsigned figureIndex_ = 0;
     /// A list of figures between which material view can be toggled.

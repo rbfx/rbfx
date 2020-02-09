@@ -26,7 +26,7 @@
 #include <Urho3D/Core/Context.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Resource/ResourceCache.h>
-#include <Toolbox/Common/UndoManager.h>
+#include <Toolbox/Common/UndoStack.h>
 
 
 namespace Urho3D
@@ -48,8 +48,8 @@ public:
     void RemoveTechnique();
     void AddTechnique(const TechniqueInfo& info);
     void SetTechnique(const TechniqueInfo& info);
-    void Undo(Context* context) override;
-    void Redo(Context* context) override;
+    bool Undo(Context* context) override;
+    bool Redo(Context* context) override;
 
 private:
     Context* context_;
@@ -73,8 +73,8 @@ public:
     };
 
     UndoShaderParameterChanged(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue);
-    void Undo(Context* context) override;
-    void Redo(Context* context) override;
+    bool Undo(Context* context) override;
+    bool Redo(Context* context) override;
 
 private:
     Context* context_;

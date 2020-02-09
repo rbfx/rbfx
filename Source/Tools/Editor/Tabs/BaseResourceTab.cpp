@@ -31,7 +31,6 @@ namespace Urho3D
 
 BaseResourceTab::BaseResourceTab(Context* context)
     : Tab(context)
-    , undo_(context)
 {
     onTabContextMenu_.Subscribe(this, &BaseResourceTab::OnRenderContextMenu);
 
@@ -63,7 +62,7 @@ bool BaseResourceTab::LoadResource(const ea::string& resourcePath)
     return true;
 }
 
-bool Urho3D::BaseResourceTab::SaveResource()
+bool BaseResourceTab::SaveResource()
 {
     if (!Tab::SaveResource())
         return false;
@@ -71,7 +70,7 @@ bool Urho3D::BaseResourceTab::SaveResource()
     if (resourceName_.empty())
         return false;
 
-    lastUndoIndex_ = undo_.Index();
+    lastUndoIndex_ = undo_->Index();
 
     return true;
 }
@@ -104,14 +103,14 @@ void BaseResourceTab::SetResourceName(const ea::string& resourceName)
 
 bool BaseResourceTab::IsModified() const
 {
-    return lastUndoIndex_ != undo_.Index();
+    return lastUndoIndex_ != undo_->Index();
 }
 
 void BaseResourceTab::Close()
 {
-    undo_.Clear();
+    auto cache = GetSubsystem<ResourceCache>();
+    cache->ReleaseResource(GetResourceType(), GetResourceName(), true);
     lastUndoIndex_ = 0;
-    context_->GetCache()->ReleaseResource(GetResourceType(), GetResourceName(), true);
     resourceName_.clear();
 }
 

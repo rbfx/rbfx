@@ -24,7 +24,7 @@
 #include "SystemUI/Gizmo.h"
 #include "SystemUI/AttributeInspector.h"
 #include "Scene/DebugCameraController.h"
-#include "Common/UndoManager.h"
+#include "Common/UndoStack.h"
 
 
 namespace Urho3D

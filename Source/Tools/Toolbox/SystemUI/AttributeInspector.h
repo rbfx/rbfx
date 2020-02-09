@@ -142,5 +142,6 @@ public:
 /// If `eventNamespace` is not null then this object will be used to send events.
 URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=nullptr, Object* eventNamespace=nullptr);
 URHO3D_TOOLBOX_API bool RenderSingleAttribute(Variant& value, const char* title=nullptr);
+URHO3D_TOOLBOX_API bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value, const char* title);
 
 }

@@ -45,7 +45,8 @@ void SoundInspector::RenderInspector(const char* filter)
     {
         if (Sound* asset = dynamic_cast<Sound*>(self.Get()))
         {
-            ui::TextUnformatted(asset->GetName().c_str());
+            if (!ui::CollapsingHeader(asset->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                return;
 
             ui::Separator();
 

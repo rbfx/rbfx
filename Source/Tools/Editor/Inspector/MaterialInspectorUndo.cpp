@@ -89,7 +89,7 @@ void UndoTechniqueChanged::SetTechnique(const UndoTechniqueChanged::TechniqueInf
     }
 }
 
-void UndoTechniqueChanged::Undo(Context* context)
+bool UndoTechniqueChanged::Undo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -105,10 +105,12 @@ void UndoTechniqueChanged::Undo(Context* context)
 
         context_->GetCache()->IgnoreResourceReload(material);
         material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        return true;
     }
+    return false;
 }
 
-void UndoTechniqueChanged::Redo(Context* context)
+bool UndoTechniqueChanged::Redo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -124,7 +126,9 @@ void UndoTechniqueChanged::Redo(Context* context)
 
         context_->GetCache()->IgnoreResourceReload(material);
         material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        return true;
     }
+    return false;
 }
 
 UndoShaderParameterChanged::UndoShaderParameterChanged(const Material* material, const ea::string& parameterName, const Variant& oldValue, const Variant& newValue)
@@ -136,7 +140,7 @@ UndoShaderParameterChanged::UndoShaderParameterChanged(const Material* material,
 {
 }
 
-void UndoShaderParameterChanged::Undo(Context* context)
+bool UndoShaderParameterChanged::Undo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -149,10 +153,12 @@ void UndoShaderParameterChanged::Undo(Context* context)
 
         context_->GetCache()->IgnoreResourceReload(material);
         material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        return true;
     }
+    return false;
 }
 
-void UndoShaderParameterChanged::Redo(Context* context)
+bool UndoShaderParameterChanged::Redo(Context* context)
 {
     if (auto* material = context_->GetCache()->GetResource<Material>(materialName_))
     {
@@ -165,7 +171,9 @@ void UndoShaderParameterChanged::Redo(Context* context)
 
         context_->GetCache()->IgnoreResourceReload(material);
         material->SaveFile(context_->GetCache()->GetResourceFileName(material->GetName()));
+        return true;
     }
+    return false;
 }
 
 }   // namespace Urho3D

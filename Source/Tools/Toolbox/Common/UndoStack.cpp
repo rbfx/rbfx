@@ -3,7 +3,7 @@
 #include <Urho3D/SystemUI/SystemUIEvents.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <Toolbox/SystemUI/Gizmo.h>
-#include "UndoManager.h"
+#include "UndoStack.h"
 
 namespace Urho3D
 {
@@ -26,60 +26,44 @@ UndoStack::UndoStack(Context* context)
         index_++;
         currentFrameActions_.clear();
     });
-
-    SubscribeToEvent(E_UNDO, [this](StringHash, VariantMap& args)
-    {
-        if (index_ <= 0)
-            return;
-
-        // Pick a state with latest time
-        using namespace UndoEvent;
-        unsigned frame = stack_[index_ - 1][0]->frame_;
-        if (args[P_FRAME].GetUInt() < frame)
-        {
-            // Find and return undo manager with latest state recording
-            args[P_FRAME] = frame;
-            args[P_MANAGER] = this;
-        }
-    });
-
-    SubscribeToEvent(E_REDO, [this](StringHash, VariantMap& args)
-    {
-        if (index_ >= stack_.size())
-            return;
-
-        using namespace RedoEvent;
-        unsigned frame = stack_[index_][0]->frame_;
-        if (args[P_FRAME].GetUInt() > frame)
-        {
-            // Find and return undo manager with latest state recording
-            args[P_FRAME] = frame;
-            args[P_MANAGER] = this;
-        }
-    });
 }
 
 void UndoStack::Undo()
 {
-    if (index_ > 0)
+    bool doneAnything = false;
+    while (index_ > 0 && !doneAnything)
     {
         UndoTrackGuard noTrack(this, false);
         workingValueCache_.Clear();
         index_--;
         const auto& actions = stack_[index_];
         for (int i = (int)actions.size() - 1; i >= 0; --i)
-            actions[i]->Undo(context_);
+        {
+            UndoAction* action = actions[i];
+            if (action->Undo(context_))
+            {
+                doneAnything = true;
+                action->OnModified(context_);
+            }
+        }
     }
 }
 
 void UndoStack::Redo()
 {
-    if (index_ < stack_.size())
+    bool doneAnything = false;
+    while (index_ < stack_.size() && !doneAnything)
     {
         UndoTrackGuard noTrack(this, false);
         workingValueCache_.Clear();
         for (auto& action : stack_[index_])
-            action->Redo(context_);
+        {
+            if (action->Redo(context_))
+            {
+                doneAnything = true;
+                action->OnModified(context_);
+            }
+        }
         index_++;
     }
 }

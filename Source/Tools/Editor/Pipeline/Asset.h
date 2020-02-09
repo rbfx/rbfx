@@ -31,7 +31,7 @@
 #include <Urho3D/IO/Archive.h>
 #include <Urho3D/Scene/Serializable.h>
 #include <Toolbox/IO/ContentUtilities.h>
-#include <Toolbox/Common/UndoManager.h>
+#include <Toolbox/Common/UndoStack.h>
 
 #include "Importers/AssetImporter.h"
 
@@ -81,8 +81,6 @@ public:
     AssetImporter* GetImporter(Flavor* flavor, StringHash type) const;
     /// Returns true when asset importers of any flavor are being executed in worker threads.
     bool IsImporting() const { return importing_; }
-    ///
-    UndoStack& GetUndo() { return undo_; }
 
 protected:
     ///
@@ -104,8 +102,6 @@ protected:
     AssetImporterMap importers_;
     /// Flag indicating that asset is being imported.
     std::atomic<bool> importing_{false};
-    /// Asset changes tracker.
-    UndoStack undo_{context_};
 
     friend class Pipeline;
     friend class AssetImporter;
