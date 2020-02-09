@@ -1664,9 +1664,9 @@ void Input::ResetState()
     ResetTouches();
 
     // Use SetMouseButton() to reset the state so that mouse events will be sent properly
-    SetMouseButton(MOUSEB_LEFT, false);
-    SetMouseButton(MOUSEB_RIGHT, false);
-    SetMouseButton(MOUSEB_MIDDLE, false);
+    SetMouseButton(MOUSEB_LEFT, false, 0);
+    SetMouseButton(MOUSEB_RIGHT, false, 0);
+    SetMouseButton(MOUSEB_MIDDLE, false, 0);
 
     mouseMove_ = IntVector2::ZERO;
     mouseMoveWheel_ = 0;
@@ -1763,7 +1763,7 @@ void Input::SendInputFocusEvent()
     SendEvent(E_INPUTFOCUS, eventData);
 }
 
-void Input::SetMouseButton(MouseButton button, bool newState)
+void Input::SetMouseButton(MouseButton button, bool newState, int clicks)
 {
     if (newState)
     {
@@ -1791,6 +1791,7 @@ void Input::SetMouseButton(MouseButton button, bool newState)
     eventData[P_BUTTON] = button;
     eventData[P_BUTTONS] = (unsigned)mouseButtonDown_;
     eventData[P_QUALIFIERS] = (unsigned)GetQualifiers();
+    eventData[P_CLICKS] = clicks;
     SendEvent(newState ? E_MOUSEBUTTONDOWN : E_MOUSEBUTTONUP, eventData);
 }
 
@@ -1958,7 +1959,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
         if (!touchEmulation_)
         {
             const auto mouseButton = static_cast<MouseButton>(1u << (evt.button.button - 1u));  // NOLINT(misc-misplaced-widening-cast)
-            SetMouseButton(mouseButton, true);
+            SetMouseButton(mouseButton, true, evt.button.clicks);
         }
         else
         {
@@ -1984,7 +1985,7 @@ void Input::HandleSDLEvent(void* sdlEvent)
         if (!touchEmulation_)
         {
             const auto mouseButton = static_cast<MouseButton>(1u << (evt.button.button - 1u));  // NOLINT(misc-misplaced-widening-cast)
-            SetMouseButton(mouseButton, false);
+            SetMouseButton(mouseButton, false, evt.button.clicks);
         }
         else
         {

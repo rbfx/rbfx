@@ -91,6 +91,7 @@ Urho3D development, contributions and bugfixes by:
 - Fastran
 - Firegorilla
 - Gordon-F
+- Igor Segalla
 - LordGolias
 - Lumak
 - Magic.Lixin
@@ -125,7 +126,6 @@ Urho3D development, contributions and bugfixes by:
 - gleblebedev
 - hdunderscore
 - holyfight6
-- hsnabn
 - lhinuz
 - lvshiling
 - marynate
@@ -138,6 +138,7 @@ Urho3D development, contributions and bugfixes by:
 - orefkov
 - pat2nav
 - proller
+- r-a-sattarov
 - raould
 - rasteron
 - reattiva
