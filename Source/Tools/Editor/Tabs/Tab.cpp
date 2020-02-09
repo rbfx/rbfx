@@ -34,6 +34,7 @@ namespace Urho3D
 
 Tab::Tab(Context* context)
     : Object(context)
+    , undo_(context->GetSubsystem<UndoStack>())
 {
 }
 

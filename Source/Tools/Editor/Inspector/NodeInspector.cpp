@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Toolbox/SystemUI/Widgets.h>
@@ -40,10 +41,15 @@ void NodeInspector::RenderInspector(const char* filter)
         return;
 
     auto node = static_cast<Node*>(inspected_.Get());
-    ui::Text("Node ID: %u %s", node->GetID(), node->IsReplicated() ? ICON_FA_WIFI : "");
-    if (node->IsReplicated())
-        ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
-    RenderAttributes(node, filter, const_cast<Scene*>(node->GetScene()));
+    const char* name = node->GetName().empty() ? "Node" : node->GetName().c_str();
+    if (ui::CollapsingHeader(Format("{} ({}) {}", name, node->GetID(),
+        node->IsReplicated() ? ICON_FA_WIFI : "").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+    {
+        if (node->IsReplicated())
+            ui::SetHelpTooltip("Replicated over the network.");
+        RenderAttributes(node, filter, const_cast<Scene*>(node->GetScene()));
+    }
+
 }
 
 }

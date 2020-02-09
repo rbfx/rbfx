@@ -113,7 +113,7 @@ void PreviewTab::OnEditorUserCodeReloadStart(StringHash type, VariantMap& args)
     if (tab == nullptr || tab->GetScene() == nullptr)
         return;
 
-    tab->GetUndo().SetTrackingEnabled(false);
+    undo_->SetTrackingEnabled(false);
     tab->SaveState(sceneReloadState_);
     tab->GetScene()->RemoveAllChildren();
     tab->GetScene()->RemoveAllComponents();
@@ -126,7 +126,7 @@ void PreviewTab::OnEditorUserCodeReloadEnd(StringHash type, VariantMap& args)
         return;
 
     tab->RestoreState(sceneReloadState_);
-    tab->GetUndo().SetTrackingEnabled(true);
+    undo_->SetTrackingEnabled(true);
 }
 
 void PreviewTab::OnEndAllViewsRender(StringHash type, VariantMap& args)
@@ -304,7 +304,7 @@ void PreviewTab::Play()
     case SCENE_SIMULATION_STOPPED:
     {
         // Scene was not running. Allow scene to set up input parameters.
-        tab->GetUndo().SetTrackingEnabled(false);
+        undo_->SetTrackingEnabled(false);
         tab->SaveState(sceneState_);
         context_->GetUI()->SetBlockEvents(false);
         context_->GetAudio()->Play();
@@ -373,7 +373,7 @@ void PreviewTab::Stop()
         SendEvent(E_SIMULATIONSTOP);
         simulationStatus_ = SCENE_SIMULATION_STOPPED;
         tab->RestoreState(sceneState_);
-        tab->GetUndo().SetTrackingEnabled(true);
+        undo_->SetTrackingEnabled(true);
         context_->GetUI()->SetBlockEvents(true);
         context_->GetAudio()->Stop();
     }
@@ -383,7 +383,6 @@ void PreviewTab::Snapshot()
 {
     SceneTab* tab = GetSubsystem<Editor>()->GetTab<SceneTab>();
 
-    tab->GetUndo().Clear();
     tab->SaveState(sceneState_);
 }
 

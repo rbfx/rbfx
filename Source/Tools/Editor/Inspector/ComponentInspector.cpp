@@ -19,6 +19,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
+#include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Scene/Component.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Toolbox/SystemUI/Widgets.h>
@@ -40,14 +41,13 @@ void ComponentInspector::RenderInspector(const char* filter)
         return;
 
     auto component = static_cast<Component*>(inspected_.Get());
-    ui::Text("ID: %u", component->GetID());
-    if (component->IsReplicated())
+    if (ui::CollapsingHeader(Format("Component ({}) {}", component->GetID(),
+        component->IsReplicated() ? ICON_FA_WIFI : "").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
     {
-        ui::SameLine();
-        ui::TextUnformatted(ICON_FA_WIFI);
-        ui::SetHelpTooltip("Replicated over the network.", KEY_UNKNOWN);
+        if (component->IsReplicated())
+            ui::SetHelpTooltip("Replicated over the network.");
+        RenderAttributes(component, filter, const_cast<Scene*>(component->GetScene()));
     }
-    RenderAttributes(component, filter, const_cast<Scene*>(component->GetScene()));
 }
 
 }

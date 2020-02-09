@@ -140,10 +140,6 @@ protected:
     void OnExitRequested();
     /// Handle user closing editor with a hotkey.
     void OnExitHotkeyPressed();
-    /// Handle undo request.
-    void OnUndo();
-    /// Handle redo request.
-    void OnRedo();
     /// Renders a project plugins submenu.
     void RenderProjectMenu();
     ///

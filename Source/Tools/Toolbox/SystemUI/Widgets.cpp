@@ -440,7 +440,8 @@ bool Autocomplete(ImGuiID id, ea::string* buf, Urho3D::StringVector* suggestions
             }
         }
         ui::End();
-        isOpen &= isFocused;
+        // isOpen &= isFocused;
+        isOpen &= !ui::IsKeyPressedMap(ImGuiKey_Escape);    // Close on [esc] press.
     }
     ui::PopID();
     if (committed)

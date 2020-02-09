@@ -125,8 +125,6 @@ public:
     Scene* GetScene();
     /// Returns editor viewport.
     Viewport* GetViewport() { return viewport_; }
-    /// Returns undo state manager.
-    UndoStack& GetUndo() { return undo_; }
     /// Serialize scene to binary buffer.
     void SaveState(SceneState& destination);
     /// Unserialize scene from binary buffer.

@@ -46,28 +46,16 @@ class AttributeInspector;
 class Gizmo;
 class Scene;
 
-/// Notify undo managers that state is about to be undone.
-URHO3D_EVENT(E_UNDO, UndoEvent)
-{
-    URHO3D_PARAM(P_FRAME, Frame);                     // unsigned
-    URHO3D_PARAM(P_MANAGER, Manager);                 // UndoStack pointer
-}
-
-/// Notify undo managers that state is about to be redone.
-URHO3D_EVENT(E_REDO, RedoEvent)
-{
-    URHO3D_PARAM(P_FRAME, Frame);                     // unsigned
-    URHO3D_PARAM(P_MANAGER, Manager);                 // UndoStack pointer
-}
-
 /// A base class for undo actions.
 class URHO3D_TOOLBOX_API UndoAction : public RefCounted
 {
 public:
-    /// Go back in the state history.
-    virtual void Undo(Context* context) = 0;
-    /// Go forward in the state history.
-    virtual void Redo(Context* context) = 0;
+    /// Go back in the state history. Returns false when undo action target is expired and nothing was done.
+    virtual bool Undo(Context* context) = 0;
+    /// Go forward in the state history. Returns false when undo action target is expired and nothing was done.
+    virtual bool Redo(Context* context) = 0;
+    /// Called when Undo() or Redo() execute successfully and return true.
+    virtual void OnModified(Context* context) { }
 
     /// Frame when action was recorded.
     unsigned long long frame_ = 0;
@@ -88,35 +76,47 @@ public:
     /// Reference or a copy, depending on whether Value is const.
     using ValueCurrent = std::conditional_t<!std::is_const_v<Value> && std::is_reference_v<Value>, ValueCopy&, ValueCopy>;
     /// Callback type.
-    using Setter = ea::function<void(Context* context, const ValueCopy&)>;
+    using Setter = ea::function<bool(Context* context, const ValueCopy&)>;
+    /// Callback type.
+    using Modified = ea::function<void(Context* context)>;
 
     /// Construct.
-    UndoCustomAction(ValueRef value, Setter onUndo, Setter onRedo={})
-        : initial_(value)
-        , current_(value)
-        , onUndo_(std::move(onUndo))
-        , onRedo_(std::move(onRedo))
-    {
-    }
-    /// Construct.
-    UndoCustomAction(ValueRef oldValue, ValueRef newValue, Setter onUndo, Setter onRedo={})
+    UndoCustomAction(ValueRef oldValue, ValueRef newValue, Setter onUndo, Setter onRedo, Modified onModified={})
         : initial_(oldValue)
         , current_(newValue)
         , onUndo_(std::move(onUndo))
         , onRedo_(std::move(onRedo))
+        , onModified_(std::move(onModified))
+    {
+    }
+    /// Construct.
+    UndoCustomAction(ValueRef oldValue, ValueRef newValue, Setter onUndo, Modified onModified={})
+        : UndoCustomAction(oldValue, newValue, onUndo, onUndo, std::move(onModified))
+    {
+    }
+    /// Construct.
+    UndoCustomAction(ValueRef value, Setter onUndo, Setter onRedo, Modified onModified={})
+        : UndoCustomAction(value, value, onUndo, onRedo, std::move(onModified))
+    {
+    }
+    /// Construct.
+    UndoCustomAction(ValueRef value, Setter onUndo, Modified onModified={})
+        : UndoCustomAction(value, value, onUndo, {}, std::move(onModified))
     {
     }
 
     /// Go back in the state history.
-    void Undo(Context* context) override { onUndo_(context, initial_); }
+    bool Undo(Context* context) override { return onUndo_(context, initial_); }
     /// Go forward in the state history.
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
         if ((bool)onRedo_)
-            onRedo_(context, current_);
+            return onRedo_(context, current_);
         else
-            onUndo_(context, current_);         // Undo and redo code may be same for simple cases.
+            return onUndo_(context, current_);         // Undo and redo code may be same for simple cases.
     }
+    /// Execute onModified callback.
+    void OnModified(Context* context) override { if (onModified_) onModified_(context); }
 
     /// Initial value.
     ValueCopy initial_;
@@ -128,262 +128,303 @@ public:
     Setter onUndo_;
     /// Callback that commits new value.
     Setter onRedo_;
+    /// Callback that commits new value.
+    Modified onModified_;
 };
 
 class URHO3D_TOOLBOX_API UndoCreateNode : public UndoAction
 {
-    unsigned parentID;
-    VectorBuffer nodeData;
-    WeakPtr<Scene> editorScene;
+    unsigned parentID_;
+    VectorBuffer nodeData_;
+    WeakPtr<Scene> scene_;
 
 public:
     explicit UndoCreateNode(Node* node)
-        : editorScene(node->GetScene())
+        : scene_(node->GetScene())
     {
-        parentID = node->GetParent()->GetID();
-        node->Save(nodeData);
+        parentID_ = node->GetParent()->GetID();
+        node->Save(nodeData_);
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
-        nodeData.Seek(0);
-        auto nodeID = nodeData.ReadUInt();
-        Node* parent = editorScene->GetNode(parentID);
-        Node* node = editorScene->GetNode(nodeID);
+        if (scene_.Expired())
+            return false;
+
+        nodeData_.Seek(0);
+        auto nodeID = nodeData_.ReadUInt();
+        Node* parent = scene_->GetNode(parentID_);
+        Node* node = scene_->GetNode(nodeID);
         if (parent != nullptr && node != nullptr)
-        {
             parent->RemoveChild(node);
-        }
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
-        Node* parent = editorScene->GetNode(parentID);
+        if (scene_.Expired())
+            return false;
+
+        Node* parent = scene_->GetNode(parentID_);
         if (parent != nullptr)
         {
-            nodeData.Seek(0);
-            auto nodeID = nodeData.ReadUInt();
-            nodeData.Seek(0);
+            nodeData_.Seek(0);
+            auto nodeID = nodeData_.ReadUInt();
+            nodeData_.Seek(0);
 
             Node* node = parent->CreateChild(EMPTY_STRING, nodeID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, nodeID);
-            node->Load(nodeData);
+            node->Load(nodeData_);
             // FocusNode(node);
         }
+
+        return true;
     }
 };
 
 class URHO3D_TOOLBOX_API UndoDeleteNode : public UndoAction
 {
-    unsigned parentID;
-    unsigned parentIndex;
-    VectorBuffer nodeData;
-    WeakPtr<Scene> editorScene;
+    unsigned parentID_;
+    unsigned parentIndex_;
+    VectorBuffer nodeData_;
+    WeakPtr<Scene> scene_;
 
 public:
     explicit UndoDeleteNode(Node* node)
-        : editorScene(node->GetScene())
+        : scene_(node->GetScene())
     {
-        parentID = node->GetParent()->GetID();
-        parentIndex = node->GetParent()->GetChildren().index_of(SharedPtr<Node>(node));
-        node->Save(nodeData);
+        parentID_ = node->GetParent()->GetID();
+        parentIndex_ = node->GetParent()->GetChildren().index_of(SharedPtr<Node>(node));
+        node->Save(nodeData_);
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
-        Node* parent = editorScene->GetNode(parentID);
+        if (scene_.Expired())
+            return false;
+
+        Node* parent = scene_->GetNode(parentID_);
         if (parent != nullptr)
         {
-            nodeData.Seek(0);
-            auto nodeID = nodeData.ReadUInt();
+            nodeData_.Seek(0);
+            auto nodeID = nodeData_.ReadUInt();
             SharedPtr<Node> node(new Node(parent->GetContext()));
             node->SetID(nodeID);
-            parent->AddChild(node, parentIndex);
-            nodeData.Seek(0);
-            node->Load(nodeData);
+            parent->AddChild(node, parentIndex_);
+            nodeData_.Seek(0);
+            node->Load(nodeData_);
         }
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
-        nodeData.Seek(0);
-        auto nodeID = nodeData.ReadUInt();
+        if (scene_.Expired())
+            return false;
 
-        Node* parent = editorScene->GetNode(parentID);
-        Node* node = editorScene->GetNode(nodeID);
+        nodeData_.Seek(0);
+        auto nodeID = nodeData_.ReadUInt();
+
+        Node* parent = scene_->GetNode(parentID_);
+        Node* node = scene_->GetNode(nodeID);
         if (parent != nullptr && node != nullptr)
-        {
             parent->RemoveChild(node);
-        }
+
+        return true;
     }
 };
 
 class URHO3D_TOOLBOX_API UndoReparentNode : public UndoAction
 {
-    unsigned nodeID;
-    unsigned oldParentID;
-    unsigned newParentID;
-    ea::vector<unsigned> nodeList; // 2 uints get inserted per node (node, node->GetParent())
-    bool multiple;
-    WeakPtr<Scene> editorScene;
+    unsigned nodeID_;
+    unsigned oldParentID_;
+    unsigned newParentID_;
+    ea::vector<unsigned> nodeList_; // 2 uints get inserted per node (node, node->GetParent())
+    bool multiple_;
+    WeakPtr<Scene> scene_;
 
 public:
     UndoReparentNode(Node* node, Node* newParent)
-        : editorScene(node->GetScene())
+        : scene_(node->GetScene())
     {
-        multiple = false;
-        nodeID = node->GetID();
-        oldParentID = node->GetParent()->GetID();
-        newParentID = newParent->GetID();
+        multiple_ = false;
+        nodeID_ = node->GetID();
+        oldParentID_ = node->GetParent()->GetID();
+        newParentID_ = newParent->GetID();
     }
 
     UndoReparentNode(const ea::vector<Node*>& nodes, Node* newParent)
-        : editorScene(newParent->GetScene())
+        : scene_(newParent->GetScene())
     {
-        multiple = true;
-        newParentID = newParent->GetID();
-        for(unsigned i = 0; i < nodes.size(); ++i)
+        multiple_ = true;
+        newParentID_ = newParent->GetID();
+        for(Node* node : nodes)
         {
-            Node* node = nodes[i];
-            nodeList.push_back(node->GetID());
-            nodeList.push_back(node->GetParent()->GetID());
+            nodeList_.push_back(node->GetID());
+            nodeList_.push_back(node->GetParent()->GetID());
         }
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
-        if (multiple)
+        if (scene_.Expired())
+            return false;
+
+        if (multiple_)
         {
-            for (unsigned i = 0; i < nodeList.size(); i+=2)
+            for (unsigned i = 0; i < nodeList_.size(); i+=2)
             {
-                unsigned nodeID_ = nodeList[i];
-                unsigned oldParentID_ = nodeList[i+1];
-                Node* parent = editorScene->GetNode(oldParentID_);
-                Node* node = editorScene->GetNode(nodeID_);
+                unsigned nodeID = nodeList_[i];
+                unsigned oldParentID = nodeList_[i + 1];
+                Node* parent = scene_->GetNode(oldParentID);
+                Node* node = scene_->GetNode(nodeID);
                 if (parent != nullptr && node != nullptr)
                 node->SetParent(parent);
             }
         }
         else
         {
-            Node* parent = editorScene->GetNode(oldParentID);
-            Node* node = editorScene->GetNode(nodeID);
+            Node* parent = scene_->GetNode(oldParentID_);
+            Node* node = scene_->GetNode(nodeID_);
             if (parent != nullptr && node != nullptr)
             node->SetParent(parent);
         }
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
-        if (multiple)
-        {
-            Node* parent = editorScene->GetNode(newParentID);
-            if (parent == nullptr)
-                return;
+        if (scene_.Expired())
+            return false;
 
-            for (unsigned i = 0; i < nodeList.size(); i+=2)
+        if (multiple_)
+        {
+            Node* parent = scene_->GetNode(newParentID_);
+            if (parent == nullptr)
+                return false;
+
+            for (unsigned i = 0; i < nodeList_.size(); i += 2)
             {
-                unsigned nodeID_ = nodeList[i];
-                Node* node = editorScene->GetNode(nodeID_);
+                unsigned nodeID = nodeList_[i];
+                Node* node = scene_->GetNode(nodeID);
                 if (node != nullptr)
                 node->SetParent(parent);
             }
         }
         else
         {
-            Node* parent = editorScene->GetNode(newParentID);
-            Node* node = editorScene->GetNode(nodeID);
+            Node* parent = scene_->GetNode(newParentID_);
+            Node* node = scene_->GetNode(nodeID_);
             if (parent != nullptr && node != nullptr)
             node->SetParent(parent);
         }
+        return true;
     }
 };
 
 class URHO3D_TOOLBOX_API UndoCreateComponent : public UndoAction
 {
-    unsigned nodeID;
-    VectorBuffer componentData;
-    WeakPtr<Scene> editorScene;
+    unsigned nodeID_;
+    VectorBuffer componentData_;
+    WeakPtr<Scene> scene_;
 
 public:
     explicit UndoCreateComponent(Component* component)
-        : editorScene(component->GetScene())
+        : scene_(component->GetScene())
     {
-        nodeID = component->GetNode()->GetID();
-        component->Save(componentData);
+        nodeID_ = component->GetNode()->GetID();
+        component->Save(componentData_);
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
-        componentData.Seek(sizeof(StringHash));
-        auto componentID = componentData.ReadUInt();
-        Node* node = editorScene->GetNode(nodeID);
-        Component* component = editorScene->GetComponent(componentID);
+        if (scene_.Expired())
+            return false;
+
+        componentData_.Seek(sizeof(StringHash));
+        auto componentID = componentData_.ReadUInt();
+        Node* node = scene_->GetNode(nodeID_);
+        Component* component = scene_->GetComponent(componentID);
         if (node != nullptr && component != nullptr)
             node->RemoveComponent(component);
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
-        Node* node = editorScene->GetNode(nodeID);
+        if (scene_.Expired())
+            return false;
+
+        Node* node = scene_->GetNode(nodeID_);
         if (node != nullptr)
         {
-            componentData.Seek(0);
-            auto componentType = componentData.ReadStringHash();
-            auto componentID = componentData.ReadUInt();
+            componentData_.Seek(0);
+            auto componentType = componentData_.ReadStringHash();
+            auto componentID = componentData_.ReadUInt();
 
             Component* component = node->CreateComponent(componentType,
                 componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
-            component->Load(componentData);
+            component->Load(componentData_);
             component->ApplyAttributes();
             // FocusComponent(component);
         }
+        return true;
     }
 
 };
 
 class URHO3D_TOOLBOX_API UndoDeleteComponent : public UndoAction
 {
-    unsigned nodeID;
-    VectorBuffer componentData;
-    WeakPtr<Scene> editorScene;
+    unsigned nodeID_;
+    VectorBuffer componentData_;
+    WeakPtr<Scene> scene_;
 
 public:
-    UndoDeleteComponent(Component* component)
-        : editorScene(component->GetScene())
+    explicit UndoDeleteComponent(Component* component)
+        : scene_(component->GetScene())
     {
-        nodeID = component->GetNode()->GetID();
-        component->Save(componentData);
+        nodeID_ = component->GetNode()->GetID();
+        component->Save(componentData_);
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
-        Node* node = editorScene->GetNode(nodeID);
+        if (scene_.Expired())
+            return false;
+
+        Node* node = scene_->GetNode(nodeID_);
         if (node != nullptr)
         {
-            componentData.Seek(0);
-            auto componentType = componentData.ReadStringHash();
-            unsigned componentID = componentData.ReadUInt();
+            componentData_.Seek(0);
+            auto componentType = componentData_.ReadStringHash();
+            unsigned componentID = componentData_.ReadUInt();
             Component* component = node->CreateComponent(componentType, componentID < FIRST_LOCAL_ID ? REPLICATED : LOCAL, componentID);
 
-            if (component->Load(componentData))
+            if (component->Load(componentData_))
             {
                 component->ApplyAttributes();
                 // FocusComponent(component);
             }
         }
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
-        componentData.Seek(sizeof(StringHash));
-        unsigned componentID = componentData.ReadUInt();
+        if (scene_.Expired())
+            return false;
 
-        Node* node = editorScene->GetNode(nodeID);
-        Component* component = editorScene->GetComponent(componentID);
+        componentData_.Seek(sizeof(StringHash));
+        unsigned componentID = componentData_.ReadUInt();
+
+        Node* node = scene_->GetNode(nodeID_);
+        Component* component = scene_->GetComponent(componentID);
         if (node != nullptr && component != nullptr)
         {
             node->RemoveComponent(component);
         }
+        return true;
     }
 };
 
@@ -470,24 +511,42 @@ public:
         return target_.Get();
     }
 
-    void Undo(Context* context) override
+    bool IsExpired()
     {
+        if (targetType_ == Node::GetTypeStatic() || targetType_ == Component::GetTypeStatic())
+            return editorScene_.Expired();
+        else if (targetType_ == UIElement::GetTypeStatic())
+            return root_.Expired();
+
+        return target_.Expired();
+    }
+
+    bool Undo(Context* context) override
+    {
+        if (IsExpired())
+            return false;
+
         Serializable* target = GetTarget();
         if (target != nullptr)
         {
             target->SetAttribute(attrName_, undoValue_);
             target->ApplyAttributes();
         }
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
+        if (IsExpired())
+            return false;
+
         Serializable* target = GetTarget();
         if (target != nullptr)
         {
             target->SetAttribute(attrName_, redoValue_);
             target->ApplyAttributes();
         }
+        return true;
     }
 };
 
@@ -512,19 +571,29 @@ public:
         styleFile_ = element->GetDefaultStyle();
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
             parent->RemoveChild(element);
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         if (parent != nullptr)
             parent->LoadChildXML(elementData_.GetRoot(), styleFile_);
+
+        return true;
     }
 };
 
@@ -549,19 +618,29 @@ public:
         styleFile_ = SharedPtr<XMLFile>(element->GetDefaultStyle());
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         if (parent != nullptr)
             parent->LoadChildXML(elementData_.GetRoot(), styleFile_);
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         UIElement* parent = GetUIElementByPath(root_, parentPath_);
         UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
             parent->RemoveChild(element);
+
+        return true;
     }
 };
 
@@ -571,11 +650,11 @@ class URHO3D_TOOLBOX_API UndoReparentUIElement : public UndoAction
     UIElementPath oldParentPath_;
     unsigned oldChildIndex_;
     UIElementPath newParentPath_;
-    WeakPtr<UIElement> root;
+    WeakPtr<UIElement> root_;
 
 public:
     UndoReparentUIElement(UIElement* element, UIElement* newParent)
-    : root(element->GetRoot())
+    : root_(element->GetRoot())
     {
         elementPath_ = GetUIElementPath(element);
         oldParentPath_ = GetUIElementPath(element->GetParent());
@@ -583,20 +662,30 @@ public:
         newParentPath_ = GetUIElementPath(newParent);
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
-        UIElement* parent = GetUIElementByPath(root, oldParentPath_);
-        UIElement* element = GetUIElementByPath(root, elementPath_);
+        if (root_.Expired())
+            return false;
+
+        UIElement* parent = GetUIElementByPath(root_, oldParentPath_);
+        UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
             element->SetParent(parent, oldChildIndex_);
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
-        UIElement* parent = GetUIElementByPath(root, newParentPath_);
-        UIElement* element = GetUIElementByPath(root, elementPath_);
+        if (root_.Expired())
+            return false;
+
+        UIElement* parent = GetUIElementByPath(root_, newParentPath_);
+        UIElement* element = GetUIElementByPath(root_, elementPath_);
         if (parent != nullptr && element != nullptr)
             element->SetParent(parent);
+
+        return true;
     }
 };
 
@@ -638,14 +727,24 @@ public:
         }
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         ApplyStyle(elementOldStyle_);
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         ApplyStyle(elementNewStyle_);
+
+        return true;
     }
 };
 
@@ -678,24 +777,34 @@ public:
         newStyle_.CreateRoot("style").AppendChild(element->GetDefaultStyle()->GetRoot(), true);
     }
 
-    void Undo(Context* context) override
+    bool Undo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         UIElement* element = GetUIElementByPath(root_, elementId_);
         element->SetInstanceDefault(attributeName_, oldValue_);
         XMLElement root = element->GetDefaultStyle()->GetRoot();
         root.RemoveChildren();
         for (auto child = oldStyle_.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
             root.AppendChild(child, true);
+
+        return true;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
+        if (root_.Expired())
+            return false;
+
         UIElement* element = GetUIElementByPath(root_, elementId_);
         element->SetInstanceDefault(attributeName_, newValue_);
         XMLElement root = element->GetDefaultStyle()->GetRoot();
         root.RemoveChildren();
         for (auto child = newStyle_.GetRoot().GetChild(); !child.IsNull(); child = child.GetNext())
             root.AppendChild(child, true);
+
+        return true;
     }
 };
 
@@ -716,18 +825,38 @@ public:
     {
     }
 
-    void Undo(Context* context) override
+    ~UndoResourceSetter() = default;
+
+    bool Undo(Context* context) override
     {
         auto* cache = context->GetSubsystem<ResourceCache>();
         if (auto* resource = cache->template GetResource<Resource>(name_))
+        {
             (resource->*setter_)(oldValue_);
+            return true;
+        }
+        return false;
     }
 
-    void Redo(Context* context) override
+    bool Redo(Context* context) override
     {
         auto* cache = context->GetSubsystem<ResourceCache>();
         if (auto* resource = cache->template GetResource<Resource>(name_))
+        {
             (resource->*setter_)(newValue_);
+            return true;
+        }
+        return false;
+    }
+    /// Auto-save resource.
+    void OnModified(Context* context) override
+    {
+        auto* cache = context->GetSubsystem<ResourceCache>();
+        if (auto* resource = cache->template GetResource<Resource>(name_))
+        {
+            cache->IgnoreResourceReload(name_);
+            resource->SaveFile(cache->GetResourceFileName(name_));
+        }
     }
 };
 
@@ -767,10 +896,10 @@ public:
     /// Record action into undo stack. Should be used for cases where continuous change does not span multiple frames.
     /// For example with text input widgets that are committed with [Enter] key, combo boxes, checkboxes and similar.
     template<typename T, typename... Args>
-    void Add(Args&&... args) { Add(new T(std::forward<Args>(args)...)); }
+    T* Add(Args&&... args) { return static_cast<T*>(Add(new T(std::forward<Args>(args)...))); }
     /// Record action into undo stack. Should be used for cases where continuous change does not span multiple frames.
     /// For example with text input widgets that are committed with [Enter] key, combo boxes, checkboxes and similar.
-    void Add(UndoAction* action) { currentFrameActions_.push_back(SharedPtr(action)); }
+    UndoAction* Add(UndoAction* action) { currentFrameActions_.push_back(SharedPtr(action)); return action; }
 
     /// Track changes performed by this scene.
     void Connect(Scene* scene);
@@ -878,7 +1007,7 @@ public:
     /// Construct.
     explicit UndoTrackGuard(UndoStack& stack, bool track)
         : stack_(stack)
-          , tracking_(stack.IsTrackingEnabled())
+        , tracking_(stack.IsTrackingEnabled())
     {
         stack_.SetTrackingEnabled(track);
     }

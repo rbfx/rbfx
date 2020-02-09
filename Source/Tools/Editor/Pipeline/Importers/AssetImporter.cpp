@@ -147,6 +147,8 @@ void AssetImporter::OnSetAttribute(const AttributeInfo& attr, const Variant& src
 
 void AssetImporter::Initialize(Asset* asset, Flavor* flavor)
 {
+    auto undo = GetSubsystem<UndoStack>();
+    undo->Connect(this);
     asset_ = asset;
     flavor_ = WeakPtr(flavor);
 }

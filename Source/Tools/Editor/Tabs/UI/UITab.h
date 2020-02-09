@@ -23,7 +23,7 @@
 #pragma once
 
 
-#include <Toolbox/Common/UndoManager.h>
+#include <Toolbox/Common/UndoStack.h>
 #include "Tabs/BaseResourceTab.h"
 #include "Tabs/UI/RootUIElement.h"
 
