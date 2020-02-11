@@ -26,6 +26,7 @@
 
 #include "../Graphics/VertexBuffer.h"
 #include "../Math/BoundingBox.h"
+#include "../Math/Color.h"
 
 namespace Urho3D
 {
@@ -54,6 +55,16 @@ struct URHO3D_API ModelVertex
     Vector4 color_[MaxColors];
     /// UV coordinates.
     Vector4 uv_[MaxUVs];
+
+    /// Set position from 3-vector.
+    void SetPosition(const Vector3& position) { position_ = Vector4(position, 1.0f); }
+    /// Set color for given channel.
+    void SetColor(unsigned i, const Color& color) { color_[i] = color.ToVector4(); }
+
+    /// Return position as 3-vector.
+    Vector3 GetPosition() const { return static_cast<Vector3>(position_); }
+    /// Return color from given channel.
+    Color GetColor(unsigned i = 0) const { return static_cast<Color>(color_[i]); }
 
     /// Return whether the vertex has normal.
     bool HasNormal() const { return normal_ != Vector4::ZERO; }
