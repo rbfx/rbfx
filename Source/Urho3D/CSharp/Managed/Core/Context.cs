@@ -60,12 +60,21 @@ namespace Urho3DNet
 
             // Register factories marked with attributes
             foreach (var assembly in AppDomain.CurrentDomain.GetAssemblies())
-            {
-                foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
-                    RegisterFactory(pair.Item1, pair.Item2.Category);
-            }
+                RegisterFactories(assembly);
 
             Instance = this;
+        }
+
+        public void RegisterFactories(Assembly assembly)
+        {
+            foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
+                RegisterFactory(pair.Item1, pair.Item2.Category);
+        }
+
+        public void RemoveFactories(Assembly assembly)
+        {
+            foreach (var pair in assembly.GetTypesWithAttribute<ObjectFactoryAttribute>())
+                RemoveFactory(pair.Item1, pair.Item2.Category);
         }
 
         public void RegisterFactory<T>(string category = "") where T : Object
