@@ -198,7 +198,7 @@ namespace Urho3DNet
 
             // New projects may have no C# scripts. In this case a dummy plugin instance that does nothing will be
             // returned. Once new scripts appear - plugin will be reloaded properly.
-            var plugin = new PluginApplication(Context.Instance);
+            var plugin = new RuntimeCompiledScriptPluginApplication(Context.Instance);
             plugin.SetHostAssembly(results.CompiledAssembly);
             return plugin;
         }
