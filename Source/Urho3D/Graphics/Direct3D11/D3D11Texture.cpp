@@ -213,4 +213,21 @@ unsigned Texture::GetDataType(unsigned format)
     return 0;
 }
 
+bool Texture::IsComputeWriteable(unsigned format)
+{
+    switch (format)
+    {
+    case DXGI_FORMAT_R8G8B8A8_UNORM:
+    case DXGI_FORMAT_R8G8B8A8_SNORM:
+    case DXGI_FORMAT_R8G8B8A8_UINT:
+        return true;
+    case DXGI_FORMAT_R16G16B16A16_FLOAT:
+    case DXGI_FORMAT_R32G32B32A32_FLOAT:
+        return true;
+    case DXGI_FORMAT_R32_FLOAT:
+        return true;
+    }
+    return false;
+}
+
 }
