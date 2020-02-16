@@ -19,7 +19,7 @@ ComputeDevice::ComputeDevice(Context* context, Graphics* graphics) :
 
 ComputeDevice::~ComputeDevice()
 {
-
+    ReleaseLocalState();
 }
 
 }

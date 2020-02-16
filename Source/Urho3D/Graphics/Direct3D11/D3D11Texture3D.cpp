@@ -398,6 +398,10 @@ bool Texture3D::Create()
     textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
     textureDesc.CPUAccessFlags = usage_ == TEXTURE_DYNAMIC ? D3D11_CPU_ACCESS_WRITE : 0;
 
+    // Is this format supported by compute?
+    if (IsComputeWriteable(format_))
+        textureDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+
     HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateTexture3D(&textureDesc, nullptr, (ID3D11Texture3D**)&object_.ptr_);
     if (FAILED(hr))
     {

@@ -231,6 +231,8 @@ public:
     /// Return the data type corresponding to an OpenGL internal format.
     /// @nobind
     static unsigned GetDataType(unsigned format);
+    /// Returns true if the given texture format is viable as a compute shader write-target (ie. it's a plain RGBA nature).
+    static bool IsComputeWriteable(unsigned format);
 
     using GPUObject::GetGraphics;
 protected:
