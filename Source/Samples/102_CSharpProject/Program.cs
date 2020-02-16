@@ -29,8 +29,8 @@ namespace DemoApplication
 {
     class DemoApplication : Application
     {
-        private Scene _scene;
         private Viewport _viewport;
+        private Scene _scene;
         private Node _camera;
         private Node _cube;
         private Node _light;
@@ -41,12 +41,9 @@ namespace DemoApplication
 
         protected override void Dispose(bool disposing)
         {
-            Context.Renderer.SetViewport(0, null);    // Enable disposal of viewport by making it unreferenced by engine.
+            // It is vital to dispose of objects that were allocated by using `new` operator or context factories.
             _viewport.Dispose();
             _scene.Dispose();
-            _camera.Dispose();
-            _cube.Dispose();
-            _light.Dispose();
             base.Dispose(disposing);
         }
 
@@ -58,6 +55,8 @@ namespace DemoApplication
             engineParameters_[Urho3D.EpWindowHeight] = 1080;
             engineParameters_[Urho3D.EpWindowTitle] = "Hello C#";
             engineParameters_[Urho3D.EpResourcePrefixPaths] = $"{currentDir};{currentDir}/..";
+            // Opt in for automatic compilation of scripts in ResourcePath/Script folder.
+            engineParameters_[Urho3D.EpEngineAutoLoadScripts] = true;
         }
 
         public override void Start()
@@ -98,7 +97,7 @@ namespace DemoApplication
 
             SubscribeToEvent(E.Update, args =>
             {
-                var timestep = args[E.Update.TimeStep].Float;
+                float timestep = args[E.Update.TimeStep].Float;
                 Debug.Assert(this != null);
 
                 if (ImGui.Begin("Urho3D.NET"))
@@ -118,7 +117,7 @@ namespace DemoApplication
             {
                 using (var application = new DemoApplication(context))
                 {
-                    application.Run();
+                    Environment.ExitCode = application.Run();
                 }
             }
         }

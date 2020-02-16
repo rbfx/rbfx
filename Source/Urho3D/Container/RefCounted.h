@@ -91,9 +91,11 @@ protected:
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
     void* GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
-    void SetScriptObject(void* handle) { scriptObject_ = handle; }
+    void SetScriptObject(void* handle);
     /// Sets handle to wrapper script object and returns previous handle value.
     void* SwapScriptObject(void* handle);
+    /// Call Dispose(true) and dereference script object.
+    void DisposeScriptObject();
 #endif
 private:
     /// Pointer to the reference count structure.

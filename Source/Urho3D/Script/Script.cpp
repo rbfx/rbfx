@@ -59,18 +59,20 @@ Script::~Script()
     }
 }
 
-void Script::ReleaseRefOnMainThread(RefCounted* object)
+int Script::ReleaseRefOnMainThread(RefCounted* object)
 {
     if (object == nullptr)
-        return;
+        return 0;
 
     if (Thread::IsMainThread())
-        object->ReleaseRef();
+        return object->ReleaseRef();
     else
     {
         MutexLock lock(destructionQueueLock_);
         destructionQueue_.push_back(object);
     }
+    // FIXME: ReleaseRefOnMainThread() is called from a finalizer thread. Not thread-safe.
+    return object->Refs() - 1;
 }
 
 void ScriptRuntimeApi::DereferenceAndDispose(RefCounted* instance)
