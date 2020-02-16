@@ -98,13 +98,27 @@ bool Shader::BeginLoad(Deserializer& source)
     // Comment out the unneeded shader function
     vsSourceCode_ = shaderCode;
     psSourceCode_ = shaderCode;
+    csSourceCode_ = shaderCode;
+
     CommentOutFunction(vsSourceCode_, "void PS(");
+    CommentOutFunction(vsSourceCode_, "void CS(");
+
     CommentOutFunction(psSourceCode_, "void VS(");
+    CommentOutFunction(psSourceCode_, "void CS(");
+
+    CommentOutFunction(csSourceCode_, "void VS(");
+    CommentOutFunction(csSourceCode_, "void PS(");
 
     // OpenGL: rename either VS() or PS() to main()
 #ifdef URHO3D_OPENGL
-    vsSourceCode_.replace("void VS(", "void main(");
-    psSourceCode_.replace("void PS(", "void main(");
+#define HANDLE_SHADER_STAGE(SHORTNAME, LCASESHORTNAME) \
+    LCASESHORTNAME ## SourceCode_.replace("void " #SHORTNAME "(", "void main(");
+
+    HANDLE_SHADER_STAGE(VS, vs);
+    HANDLE_SHADER_STAGE(PS, ps);
+    HANDLE_SHADER_STAGE(CS, cs);
+
+#undef HANDLE_SHADER_STAGE
 #endif
 
     RefreshMemoryUse();
@@ -113,13 +127,15 @@ bool Shader::BeginLoad(Deserializer& source)
 
 bool Shader::EndLoad()
 {
+#define FREE_VARIATIONS(STAGE) \
+    for (auto i = STAGE ## Variations_.begin(); i != STAGE ## Variations_.end(); ++i) i->second->Release();
+
     // If variations had already been created, release them and require recompile
-    for (auto i = vsVariations_.begin(); i !=
-        vsVariations_.end(); ++i)
-        i->second->Release();
-    for (auto i = psVariations_.begin(); i !=
-        psVariations_.end(); ++i)
-        i->second->Release();
+    FREE_VARIATIONS(vs);
+    FREE_VARIATIONS(ps);
+    FREE_VARIATIONS(cs);
+
+#undef FREE_VARIATIONS
 
     return true;
 }
@@ -133,24 +149,40 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
 {
     const unsigned definesHash = GetShaderDefinesHash(defines);
 
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >& variations(type == VS ? vsVariations_ : psVariations_);
-    auto i = variations.find(definesHash);
-    if (i == variations.end())
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >* variations = nullptr;
+    switch (type)
+    {
+    case VS:
+        variations = &vsVariations_;
+        break;
+    case PS:
+        variations = &psVariations_;
+        break;
+    case CS:
+        variations = &csVariations_;
+        break;
+    }
+
+    if (variations == nullptr)
+        return nullptr;
+    
+    auto i = variations->find(definesHash);
+    if (i == variations->end())
     {
         // If shader not found, normalize the defines (to prevent duplicates) and check again. In that case make an alias
         // so that further queries are faster
         const ea::string normalizedDefines = NormalizeDefines(defines);
         const unsigned normalizedHash = GetShaderDefinesHash(normalizedDefines.c_str());
 
-        i = variations.find(normalizedHash);
-        if (i != variations.end())
-            variations.insert(ea::make_pair(definesHash, i->second));
+        i = variations->find(normalizedHash);
+        if (i != variations->end())
+            variations->insert(ea::make_pair(definesHash, i->second));
         else
         {
             // No shader variation found. Create new
-            i = variations.insert(ea::make_pair(normalizedHash, SharedPtr<ShaderVariation>(new ShaderVariation(this, type)))).first;
+            i = variations->insert(ea::make_pair(normalizedHash, SharedPtr<ShaderVariation>(new ShaderVariation(this, type)))).first;
             if (definesHash != normalizedHash)
-                variations.insert(ea::make_pair(definesHash, i->second));
+                variations->insert(ea::make_pair(definesHash, i->second));
 
             Graphics* graphics = context_->GetGraphics();
             i->second->SetName(GetFileName(GetName()));
@@ -229,7 +261,11 @@ ea::string Shader::NormalizeDefines(const ea::string& defines)
 void Shader::RefreshMemoryUse()
 {
     SetMemoryUse(
-        (unsigned)(sizeof(Shader) + vsSourceCode_.length() + psSourceCode_.length() + numVariations_ * sizeof(ShaderVariation)));
+        (unsigned)(sizeof(Shader) +
+            vsSourceCode_.length() +
+            psSourceCode_.length() +
+            csSourceCode_.length() +
+            numVariations_ * sizeof(ShaderVariation)));
 }
 
 }
