@@ -107,6 +107,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     if (FAILED(result))
     {
         URHO3D_LOGD3DERROR("Failed to create UAV for texture", result);
+        URHO3D_SAFE_RELEASE(view);
         return false;
     }
 
@@ -129,6 +130,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     return true;
 }
 
+/* JSandusky: not currently supported - writable buffers are a bit of a mess on DX-11
 bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, unsigned unit)
 {
     if (buffer == nullptr)
@@ -156,6 +158,7 @@ bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, unsigned unit)
 
     return true;
 }
+*/
 
 void ComputeDevice::ApplyBindings()
 {
@@ -235,7 +238,9 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
         }
 
         for (auto& entry : foundUAV->second)
+        {
             URHO3D_SAFE_RELEASE(entry.uav_);
+        }
 
         constructedUAVs_.erase(foundUAV);
     }
@@ -257,6 +262,24 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
     }
 
     UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);
+}
+
+void ComputeDevice::ReleaseLocalState()
+{
+    for (auto& uav : constructedUAVs_)
+    {
+        for (auto& item : uav.second)
+        {
+            URHO3D_SAFE_RELEASE(item.uav_);
+        }
+    }
+    constructedUAVs_.clear();
+
+    for (auto& srv : constructedBufferSRVs_)
+    {
+        URHO3D_SAFE_RELEASE(srv.second);
+    }
+    constructedBufferSRVs_.clear();
 }
 
 }
