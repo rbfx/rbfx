@@ -83,7 +83,7 @@ public:
     ~Script() override;
     /// Script runtime may release references from GC thread. It may be unsafe to run destructors from non-main thread
     /// therefore this method queues them to run at the end of next frame on the main thread.
-    void ReleaseRefOnMainThread(RefCounted* object);
+    int ReleaseRefOnMainThread(RefCounted* object);
     /// Returns script runtime api implemented in managed code.
     static ScriptRuntimeApi* GetRuntimeApi() { return api_; }
     /// Should be called from managed code and provide implementation of ScriptRuntimeApi.
