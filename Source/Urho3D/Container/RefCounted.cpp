@@ -61,6 +61,14 @@ RefCounted::~RefCounted()
     assert(refCount_->refs_ == 0);
     assert(refCount_->weakRefs_ > 0);
 
+#if URHO3D_CSHARP
+    // Dispose of managed object when native object was a part of other object (did not use refcounting). Native
+    // destructors have run their course already. This is fine, because Dispose(true) is called only for wrapped but not
+    // inherited classes and Dispose(true) of wrapper classes merely sets C++ pointer to null and does not interact with
+    // native object in any way.
+    DisposeScriptObject();
+#endif
+
     // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
     refCount_->refs_ = -1;
 
@@ -68,24 +76,6 @@ RefCounted::~RefCounted()
         RefCount::Free(refCount_);
 
     refCount_ = nullptr;
-
-#if URHO3D_CSHARP
-    if (scriptObject_)
-    {
-        // Last reference to this object was released while we still have a handle to managed script. This happens only
-        // when this object is wrapped as a director class and user inherited from it. User lost all managed references
-        // to this class, however engine kept a reference. It is then possible that managed finalizer was executed and
-        // wrapper replaced weak reference with a strong one and resurrected managed object. This happens because native
-        // instance depends on managed instance for logic implementation. So we likely have a strong reference and
-        // therefore we must dispose of managed object, release this strong reference in order to allow garbage
-        // collection of managed object.
-        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
-        {
-            api->FreeGCHandle(scriptObject_);
-            scriptObject_ = 0;
-        }
-    }
-#endif
 }
 
 int RefCounted::AddRef()
@@ -93,15 +83,6 @@ int RefCounted::AddRef()
     int refs = ea::Internal::atomic_increment(&refCount_->refs_);
     assert(refs > 0);
 
-#if URHO3D_CSHARP
-    if (URHO3D_UNLIKELY(refs == 2 && scriptObject_))
-    {
-        // There is at least 1 script reference and 1 engine reference
-        // Convert to strong ref in order to prevent freeing of script object
-        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
-            scriptObject_ = api->RecreateGCHandle(scriptObject_, true);
-    }
-#endif
     return refs;
 }
 
@@ -111,17 +92,16 @@ int RefCounted::ReleaseRef()
     assert(refs >= 0);
 
     if (refs == 0)
-        delete this;
-
-#if URHO3D_CSHARP
-    else if (URHO3D_UNLIKELY(refs == 1 && scriptObject_))
     {
-        // Only script object holds 1 reference to this native object
-        // Convert to weak ref in order to allow object deletion when script runtime no longer references this object
-        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
-            scriptObject_ = api->RecreateGCHandle(scriptObject_, false);
-    }
+#if URHO3D_CSHARP
+        // Dispose managed object while native object is still intact. This code path is taken for user classes that
+        // inherit from a native base, because such objects are always heap-allocated. Because of this, it is guaranteed
+        // that user's Dispose(true) method will be called before execution of native object destructors.
+        DisposeScriptObject();
 #endif
+        delete this;
+    }
+
     return refs;
 }
 
@@ -140,6 +120,29 @@ void* RefCounted::SwapScriptObject(void* handle)
 {
     ea::swap(handle, scriptObject_);
     return handle;
+}
+
+void RefCounted::SetScriptObject(void* handle)
+{
+    if (scriptObject_ != nullptr)
+    {
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+            Script::GetRuntimeApi()->FreeGCHandle(scriptObject_);
+    }
+    scriptObject_ = handle;
+}
+
+void RefCounted::DisposeScriptObject()
+{
+    if (scriptObject_)
+    {
+        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
+        {
+            api->FreeGCHandle(scriptObject_);
+            scriptObject_ = nullptr;
+            api->Dispose(this);
+        }
+    }
 }
 #endif
 }

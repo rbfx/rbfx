@@ -15,13 +15,15 @@
 %enddef
 
 %typemap(csdisposed_extra_early_optional) Urho3D::Context {
-    Instance = null;
-  }
-
-%typemap(csdisposed_extra_optional) Urho3D::Context {
+    // First GC round. Dispose of all unreferenced objects. They have a chance to get freed with Context intact.
+    // Context destructor will do a second GC round right before the end.
     global::System.GC.Collect();                    // Find garbage and queue finalizers.
     global::System.GC.WaitForPendingFinalizers();   // Run finalizers, release references to remaining unreferenced objects.
     global::System.GC.Collect();                    // Collect those finalized objects.
+    Instance = null;
+  }
+
+  %typemap(csdisposed_extra_optional) Urho3D::Context {
     SetRuntimeApi(null);
   }
 
