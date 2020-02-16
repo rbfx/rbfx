@@ -80,6 +80,9 @@
 #ifdef URHO3D_PARTICLE_GRAPH
 #include "../Particles/ParticleGraphSystem.h"
 #endif
+#ifndef URHO3D_D3D9
+#include "../Graphics/ComputeDevice.h"
+#endif
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
 #include <emscripten/emscripten.h>
@@ -227,6 +230,9 @@ bool Engine::Initialize(const VariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
+#ifndef URHO3D_D3D9
+        context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));
+#endif
     }
 #ifdef URHO3D_PARTICLE_GRAPH
     context_->RegisterSubsystem(new ParticleGraphSystem(context_));
