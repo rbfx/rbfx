@@ -14,6 +14,9 @@
 #elif defined(URHO3D_OPENGL)
 #endif
 
+// The only absolute is that D3D9 doesn't have compute ... barring an OpenCL fallback using cl_khr_dx9_media_sharing.
+#ifndef URHO3D_D3D9
+
 namespace Urho3D
 {
 
@@ -22,6 +25,8 @@ class Graphics;
 class ShaderVariation;
 class Texture;
 
+/// Common interface for GP-GPU that is responsible for dispatch and keeping track of the compute-specific state of the DX and GL APIs. Usage has no explicit rules but is most likely appropriate in
+/// event handlers for E_BEGINRENDERING, E_ENDRENDERING, E_BEGINVIEWUPDATE, E_BEGINVIEWRENDER, and other events that are clean segues.
 class URHO3D_API ComputeDevice : public Object
 {
     URHO3D_OBJECT(ComputeDevice, Object);
@@ -41,8 +46,6 @@ public:
 
     /// Sets a texture for image write usage.
     bool SetWriteTexture(Texture* texture, unsigned unit, unsigned faceIndex, unsigned mipLevel);
-    /// Sets a buffer for writing to via UAV.
-    bool SetWriteBuffer(ConstantBuffer* texture, unsigned unit);
 
     /// Sets or clears the compute shader to use.
     bool SetProgram(SharedPtr<ShaderVariation> computeShader);
@@ -54,6 +57,8 @@ private:
     void ApplyBindings();
     /// Removes any constructed resources in response to a GPUObject::Release of a resource
     void HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData);
+    /// Frees any locally created GPU objects.
+    void ReleaseLocalState();
 
 #if defined(URHO3D_D3D11)
     /// Record for a mip+face UAV combination.
@@ -77,7 +82,7 @@ private:
     /// UAV targets for writing.
     ID3D11UnorderedAccessView* uavs_[MAX_TEXTURE_UNITS];
 #elif defined(URHO3D_OPENGL)
-
+    
 #endif
 
     /// Handle to the graphics object for device specific access.
@@ -99,3 +104,6 @@ private:
 };
     
 }
+
+#endif
+
