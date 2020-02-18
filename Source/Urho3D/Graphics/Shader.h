@@ -55,7 +55,7 @@ public:
     ShaderVariation* GetVariation(ShaderType type, const char* defines);
 
     /// Return either vertex or pixel shader source code.
-    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : psSourceCode_; }
+    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : type == PS ? psSourceCode_ : csSourceCode_; }
 
     /// Return whether the shader is GLSL shader. Used for universal shader support by DX11.
     bool IsGLSL() const { return GetName().ends_with(".glsl"); }

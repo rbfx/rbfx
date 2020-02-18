@@ -55,12 +55,13 @@ void Texture2DArray::OnDeviceReset()
 
 void Texture2DArray::Release()
 {
-    VariantMap& eventData = GetEventDataMap();
-    eventData[GPUResourceReleased::P_OBJECT] = this;
-    SendEvent(E_GPURESOURCERELEASED, eventData);
-
     if (graphics_)
     {
+        // if we have graphics we also have the Context/Engine sufficently alive.
+        VariantMap& eventData = GetEventDataMap();
+        eventData[GPUResourceReleased::P_OBJECT] = this;
+        SendEvent(E_GPURESOURCERELEASED, eventData);
+
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
         {
             if (graphics_->GetTexture(i) == this)
