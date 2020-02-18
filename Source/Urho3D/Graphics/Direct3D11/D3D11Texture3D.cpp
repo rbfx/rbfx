@@ -51,12 +51,12 @@ void Texture3D::OnDeviceReset()
 
 void Texture3D::Release()
 {
-    VariantMap& eventData = GetEventDataMap();
-    eventData[GPUResourceReleased::P_OBJECT] = this;
-    SendEvent(E_GPURESOURCERELEASED, eventData);
-
     if (graphics_ && object_.ptr_)
     {
+        VariantMap& eventData = GetEventDataMap();
+        eventData[GPUResourceReleased::P_OBJECT] = this;
+        SendEvent(E_GPURESOURCERELEASED, eventData);
+
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
         {
             if (graphics_->GetTexture(i) == this)

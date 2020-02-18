@@ -53,6 +53,8 @@ public:
     void Dispatch(unsigned xDim, unsigned yDim, unsigned zDim);
 
 private:
+    /// Setup necessary initial member state.
+    void Init();
     /// Apply all dirty GPU object bindings.
     void ApplyBindings();
     /// Removes any constructed resources in response to a GPUObject::Release of a resource
@@ -88,7 +90,7 @@ private:
     /// Handle to the graphics object for device specific access.
     Graphics* graphics_;
     /// Active compute shader that will be invoked with dispatch.
-    SharedPtr<ShaderVariation> computeShader_;
+    WeakPtr<ShaderVariation> computeShader_;
     /// Tags samplers as dirty.
     bool samplersDirty_;
     /// Tags constant buffers as dirty.
