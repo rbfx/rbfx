@@ -5,6 +5,7 @@
 #include "../Graphics/ShaderVariation.h"
 #include "../Graphics/Texture.h"
 
+#ifndef URHO3D_D3D9
 
 namespace Urho3D
 {
@@ -40,3 +41,5 @@ bool ComputeDevice::SetProgram(SharedPtr<ShaderVariation> shaderVariation)
 }
 
 }
+
+#endif
