@@ -359,4 +359,14 @@ unsigned Texture::GetDSVFormat(unsigned format)
     return 0;
 }
 
+bool Texture::IsComputeWriteable(unsigned format)
+{
+    switch (format)
+    {
+    case GL_RGBA:
+        return true;
+    }
+    return false;
+}
+
 }
