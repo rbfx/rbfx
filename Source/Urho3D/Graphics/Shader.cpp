@@ -73,9 +73,12 @@ Shader::Shader(Context* context) :
 
 Shader::~Shader()
 {
-    auto* cache = GetSubsystem<ResourceCache>();
-    if (cache)
-        cache->ResetDependencies(this);
+    if (!context_.Expired())
+    {
+        auto* cache = GetSubsystem<ResourceCache>();
+        if (cache)
+            cache->ResetDependencies(this);
+    }
 }
 
 void Shader::RegisterObject(Context* context)

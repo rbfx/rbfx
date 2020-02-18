@@ -15,6 +15,28 @@
 namespace Urho3D
 {
 
+bool ComputeDevice_ClearUAV(ID3D11UnorderedAccessView* view, ID3D11UnorderedAccessView** table, size_t tableSize)
+{
+    bool changedAny = false;
+    for (size_t i = 0; i < tableSize; ++i)
+    {
+        if (table[i] == view)
+        {
+            table[i] = nullptr;
+            changedAny = true;
+        }
+    }
+    return changedAny;
+}
+
+void ComputeDevice::Init()
+{
+    ZeroMemory(shaderResourceViews_, sizeof(shaderResourceViews_));
+    ZeroMemory(uavs_, sizeof(uavs_));
+    ZeroMemory(samplerBindings_, sizeof(samplerBindings_));
+    ZeroMemory(constantBuffers_, sizeof(constantBuffers_));
+}
+
 bool ComputeDevice::IsSupported() const
 {
     auto device = graphics_->GetImpl()->GetDevice();
@@ -77,23 +99,23 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc;
     ZeroMemory(&viewDesc, sizeof(viewDesc));
 
+    viewDesc.Format = (DXGI_FORMAT)texture->GetFormat();
     if (auto tex2D = dynamic_cast<Texture2D*>(texture))
     {
         viewDesc.Texture2D.MipSlice = mipLevel;
         viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
     }
-    if (auto tex2DArray = dynamic_cast<Texture2DArray*>(texture))
+    else if (auto tex2DArray = dynamic_cast<Texture2DArray*>(texture))
     {
-        // subtract face index so we're not indexing into undefined land
-        viewDesc.Texture2DArray.ArraySize = tex2DArray->GetLayers() - faceIndex;
-        viewDesc.Texture2DArray.FirstArraySlice = faceIndex;
+        viewDesc.Texture2DArray.ArraySize = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
+        viewDesc.Texture2DArray.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
         viewDesc.Texture2DArray.MipSlice = mipLevel;
         viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
     }
     else if (auto texCube = dynamic_cast<TextureCube*>(texture))
     {
-        viewDesc.Texture2DArray.ArraySize = 1;
-        viewDesc.Texture2DArray.FirstArraySlice = faceIndex;
+        viewDesc.Texture2DArray.ArraySize = faceIndex == UINT_MAX ? 6 : 1;
+        viewDesc.Texture2DArray.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
         viewDesc.Texture2DArray.MipSlice = mipLevel;
         viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
     }
@@ -118,9 +140,11 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         existingRecord->second.push_back(binding);
     else
     {
-        // list not found, create it - also need to subscribe to the event for release
+        // list not found, create it
         eastl::vector<UAVBinding> bindingList = { binding };
         constructedUAVs_.insert({ WeakPtr<Object>(texture), bindingList });
+
+        // Subscribe to the release event so the UAV can be cleaned up.
         SubscribeToEvent(texture, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
     }
 
@@ -130,7 +154,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     return true;
 }
 
-/* JSandusky: not currently supported - writable buffers are a bit of a mess on DX-11
+/* JSandusky: not currently supported - writable buffers are a bit of a mess on DX-11 between R32_FLOAT and MISC_STRUCTURED ... not trivial to make generic.
 bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, unsigned unit)
 {
     if (buffer == nullptr)
@@ -156,6 +180,10 @@ bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, unsigned unit)
     D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc;
     ZeroMemory(&viewDesc, sizeof(viewDesc));
 
+    viewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+    viewDesc.Buffer.NumElements = buffer->GetSize() / sizeof(Vector4);
+
     return true;
 }
 */
@@ -174,7 +202,11 @@ void ComputeDevice::ApplyBindings()
         d3dContext->CSSetConstantBuffers(0, MAX_TEXTURE_UNITS, constantBuffers_);
 
     if (uavsDirty_)
+    {
+        unsigned deadCounts[16];
+        ZeroMemory(deadCounts, sizeof(deadCounts));
         d3dContext->CSSetUnorderedAccessViews(0, MAX_TEXTURE_UNITS, uavs_, nullptr);
+    }
 
     if (programDirty_)
     {
@@ -191,18 +223,6 @@ void ComputeDevice::ApplyBindings()
     programDirty_ = false;
 }
 
-bool ComputeDevice::SetProgram(SharedPtr<ShaderVariation> shaderVariation)
-{
-    if (shaderVariation && shaderVariation->GetShaderType() != CS)
-    {
-        URHO3D_LOGERROR("Attempted to provide a non-compute shader to compute");
-        return false;
-    }
-
-    computeShader_ = shaderVariation;
-    return true;
-}
-
 void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
 {
     if (!IsSupported())
@@ -211,16 +231,35 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
         return;
     }
 
+    if (computeShader_ && !computeShader_->GetGPUObject())
+    {
+        if (computeShader_->GetCompilerOutput().empty())
+        {
+            bool success = computeShader_->Create();
+            if (!success)
+                URHO3D_LOGERROR("Failed to compile compute shader " + computeShader_->GetFullName() + ":\n" + computeShader_->GetCompilerOutput());
+        }
+        else
+            computeShader_ = nullptr;
+    }
+
+    if (!computeShader_)
+        return;
+
     ApplyBindings();
 
     auto d3dContext = graphics_->GetImpl()->GetDeviceContext();
     if (computeShader_.NotNull())
+    {
         d3dContext->Dispatch(xDim, yDim, zDim);
+    }
 }
 
 void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData)
 {
     SharedPtr<Object> object(dynamic_cast<Object*>(eventData["GPUObject"].GetPtr()));
+    if (object.Null())
+        return;
     void* gpuObject = ((GPUObject*)object.Get())->GetGPUObject();
 
     auto foundUAV = constructedUAVs_.find(object);
@@ -228,17 +267,9 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
     {
         auto d3dDevice = graphics_->GetImpl()->GetDevice();
 
-        for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
-        {
-            if (uavs_[i] == gpuObject)
-            {
-                uavs_[i] = nullptr;
-                uavsDirty_ = true;
-            }
-        }
-
         for (auto& entry : foundUAV->second)
         {
+            uavsDirty_ |= ComputeDevice_ClearUAV(entry.uav_, uavs_, MAX_TEXTURE_UNITS);
             URHO3D_SAFE_RELEASE(entry.uav_);
         }
 
