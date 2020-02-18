@@ -142,6 +142,7 @@ class URHO3D_API Graphics : public Object
 {
     URHO3D_OBJECT(Graphics, Object);
 
+    friend class ComputeDevice; // OpenGL needs this to mess with texture slots.
 public:
     /// Construct.
     explicit Graphics(Context* context);
