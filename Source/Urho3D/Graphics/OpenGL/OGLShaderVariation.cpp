@@ -71,7 +71,7 @@ void ShaderVariation::Release()
                 if (graphics_->GetVertexShader() == this)
                     graphics_->SetShaders(nullptr, nullptr);
             }
-            else
+            else if (type_ == PS)
             {
                 if (graphics_->GetPixelShader() == this)
                     graphics_->SetShaders(nullptr, nullptr);
@@ -97,7 +97,30 @@ bool ShaderVariation::Create()
         return false;
     }
 
-    object_.name_ = glCreateShader(type_ == VS ? GL_VERTEX_SHADER : GL_FRAGMENT_SHADER);
+    GLenum shaderStage = GL_VERTEX_SHADER;
+    switch (type_)
+    {
+    case VS:
+        shaderStage = GL_VERTEX_SHADER;
+        break;
+    case PS:
+        shaderStage = GL_FRAGMENT_SHADER;
+        break;
+    case GS:
+        shaderStage = GL_GEOMETRY_SHADER;
+        break;
+    case HS:
+        shaderStage = GL_TESS_CONTROL_SHADER;
+        break;
+    case DS:
+        shaderStage = GL_TESS_EVALUATION_SHADER;
+        break;
+    case CS:
+        shaderStage = GL_COMPUTE_SHADER;
+        break;
+    }
+
+    object_.name_ = glCreateShader(shaderStage);
     if (!object_.name_)
     {
         compilerOutput_ = "Could not create shader object";
@@ -143,7 +166,15 @@ bool ShaderVariation::Create()
 #endif
 
     // Distinguish between VS and PS compile in case the shader code wants to include/omit different things
-    shaderCode += type_ == VS ? "#define COMPILEVS\n" : "#define COMPILEPS\n";
+    static const char* STAGE_DEFS[] = {
+        "#define COMPILEVS\n", // VS
+        "#define COMPILEPS\n", // PS
+        "#define COMPILEGS\n", // GS
+        "#define COMPILEHS\n", // HS
+        "#define COMPILEDS\n", // DS
+        "#define COMPILECS\n", // CS
+    };
+    shaderCode += STAGE_DEFS[type_];
 
     // Add define for the maximum number of supported bones
     shaderCode += "#define MAXBONES " + ea::to_string(Graphics::GetMaxBones()) + "\n";
