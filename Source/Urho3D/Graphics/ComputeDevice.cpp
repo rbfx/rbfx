@@ -1,7 +1,9 @@
 #include "ComputeDevice.h"
 
 #include "../IO/Log.h"
+#include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/ShaderVariation.h"
+#include "../Graphics/Texture.h"
 
 
 namespace Urho3D
