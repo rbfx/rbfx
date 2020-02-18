@@ -1,6 +1,8 @@
 #include "ComputeDevice.h"
 
+#include "../IO/Log.h"
 #include "../Graphics/ShaderVariation.h"
+
 
 namespace Urho3D
 {
@@ -14,12 +16,25 @@ ComputeDevice::ComputeDevice(Context* context, Graphics* graphics) :
     texturesDirty_(false),
     programDirty_(false)
 {
-
+    Init();
 }
 
 ComputeDevice::~ComputeDevice()
 {
-    ReleaseLocalState();
+    //ReleaseLocalState();
+}
+
+bool ComputeDevice::SetProgram(SharedPtr<ShaderVariation> shaderVariation)
+{
+    if (shaderVariation && shaderVariation->GetShaderType() != CS)
+    {
+        URHO3D_LOGERROR("Attempted to provide a non-compute shader to compute");
+        return false;
+    }
+
+    computeShader_ = shaderVariation;
+    programDirty_ = true;
+    return true;
 }
 
 }
