@@ -67,6 +67,41 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, 
         parameterSource = (const void*)(uintptr_t)M_MAX_UNSIGNED;
 }
 
+ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* computeShader) :
+    GPUObject(graphics),
+    computeShader_(computeShader)
+{
+    if (computeShader == nullptr)
+    {
+        URHO3D_LOGERROR("Provided null compute shader to ShaderProgram constructor");
+    }
+
+    if (computeShader->GetShaderType() != CS)
+    {
+        switch (computeShader->GetShaderType())
+        {
+        case VS:
+            URHO3D_LOGERROR("Provided vertex shader to ShaderProgram compute-shader constructor");
+            break;
+        case PS:
+            URHO3D_LOGERROR("Provided pixel shader to ShaderProgram compute-shader constructor");
+            break;
+        case GS:
+            URHO3D_LOGERROR("Provided geometry shader to ShaderProgram compute-shader constructor");
+            break;
+        case HS:
+            URHO3D_LOGERROR("Provided hull shader to ShaderProgram compute-shader constructor");
+            break;
+        case DS:
+            URHO3D_LOGERROR("Provided domain shader to ShaderProgram compute-shader constructor");
+            break;
+        }
+    }
+
+    for (auto& parameterSource : parameterSources_)
+        parameterSource = (const void*)(uintptr_t)M_MAX_UNSIGNED;
+}
+
 ShaderProgram::~ShaderProgram()
 {
     Release();
@@ -116,6 +151,36 @@ void ShaderProgram::Release()
 bool ShaderProgram::Link()
 {
     Release();
+
+    // Compute shader has a short path at present.
+    if (computeShader_)
+    {
+        object_.name_ = glCreateProgram();
+        if (!object_.name_)
+        {
+            linkerOutput_ = "Could not create shader program";
+            return false;
+        }
+
+        glAttachShader(object_.name_, computeShader_->GetGPUObjectName());
+        glLinkProgram(object_.name_);
+
+        int linked, length;
+        glGetProgramiv(object_.name_, GL_LINK_STATUS, &linked);
+        if (!linked)
+        {
+            glGetProgramiv(object_.name_, GL_INFO_LOG_LENGTH, &length);
+            linkerOutput_.resize((unsigned)length);
+            int outLength;
+            glGetProgramInfoLog(object_.name_, length, &outLength, &linkerOutput_[0]);
+            glDeleteProgram(object_.name_);
+            object_.name_ = 0;
+            return false;
+        }
+
+        linkerOutput_.clear();
+        return true;
+    }
 
     if (!vertexShader_ || !pixelShader_ || !vertexShader_->GetGPUObjectName() || !pixelShader_->GetGPUObjectName())
         return false;
@@ -328,6 +393,11 @@ ShaderVariation* ShaderProgram::GetVertexShader() const
 ShaderVariation* ShaderProgram::GetPixelShader() const
 {
     return pixelShader_;
+}
+
+ShaderVariation* ShaderProgram::GetComputeShader() const
+{
+    return computeShader_;
 }
 
 bool ShaderProgram::HasParameter(StringHash param) const
