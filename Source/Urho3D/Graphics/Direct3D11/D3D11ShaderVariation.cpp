@@ -145,7 +145,7 @@ void ShaderVariation::Release()
         }
         else if (type_ == CS)
         {
-            // JSandusky TODO
+            // Nothing to-do here yet?
         }
         else
         {
