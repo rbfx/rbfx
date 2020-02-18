@@ -84,7 +84,19 @@ private:
     /// UAV targets for writing.
     ID3D11UnorderedAccessView* uavs_[MAX_TEXTURE_UNITS];
 #elif defined(URHO3D_OPENGL)
-    
+    /// OpenGL requires some additional information in order to make the bind since a UAV-object isn't a thing.
+    struct WriteTexBinding
+    {
+        SharedPtr<Texture> object_;
+        int mipLevel_;
+        int layer_;
+        int layerCount_;
+    };
+    /// Table of bound constant buffers, uses the lower range of the parameter groups.
+    SharedPtr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
+    /// Table of write-texture targets.
+    WriteTexBinding uavs_[MAX_TEXTURE_UNITS];
+
 #endif
 
     /// Handle to the graphics object for device specific access.
