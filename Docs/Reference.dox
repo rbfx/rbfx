@@ -735,6 +735,65 @@ Forward rendering makes it possible to use hardware multisampling and different 
 
 Finally note that due to OpenGL framebuffer object limitations an extra framebuffer blit has to happen at the end in both light pre-pass and deferred rendering, which costs some performance. Also, because multiple rendertargets on OpenGL must have the same format, an R32F texture can not be used for linear depth, but instead 24-bit depth is manually encoded and decoded into RGB channels.
 
+\page Compute Compute
+
+Limited GPU compute capability is exposed through the \ref ComputeDevice "Compute Device" class.
+
+The interface for compute is raw and expects the caller to perform all setup, manage \ref ConstantBuffers "constant buffers" as wells as textures.
+
+Notably compute provides a clean means to directly write into texture layers and mipmaps which is of value for filtering tasks.
+
+\code
+// C#
+ComputeDevice cd = Context.GetSubsystem<ComputeDevice>();
+cd.SetReadTexture(rampTexture, 0);
+cd.SetWriteTexture(tex2D, 1, 0, 0);
+cd.SetProgram(computeKernel);
+cd.Dispatch(64,64,1);
+tex2D.GetImage().SavePNG("TestFilter.png");
+\endcode
+
+\section Compute_Trickiness Compute Trickiness
+
+Due to OpenGL image-unit space sharing it's recommend that D3D11 UAV registers do not overlap with texture and sampler registers so that the same C++/C# code can be used regardless of the underlying backend.
+
+\code
+// Valid HLSL
+Texture2D myTex : register(t0);
+
+SamplerState mySampler : register(s0);
+
+RWTexture2D<float4> myWriteTexture : register(u0);
+\endcode
+
+\code
+// Bad GLSL
+layout(binding = 0)
+uniform sampler2D myTex;
+
+layout(binding = 0, rgba8)
+uniform image2D myWriteTexture;
+\endcode
+
+In the above code the image-units for `myTex` and `myWriteTexture` overlap. The ideal situation is:
+
+\code
+// Better HLSL
+Texture2D myTex : register(t0);
+
+SamplerState mySampler : register(s0);
+
+RWTexture2D<float4> myWriteTexture : register(u1);
+\endcode
+
+\code
+// Good GLSL
+layout(binding = 0)
+uniform sampler2D myTex;
+
+layout(binding = 1, rgba8)
+uniform image2D myWriteTexture;
+\endcode
 
 \page APIDifferences Differences between rendering APIs
 
