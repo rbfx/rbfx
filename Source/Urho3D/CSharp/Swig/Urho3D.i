@@ -562,8 +562,10 @@ public:
 %include "Urho3D/Graphics/ShaderPrecache.h"
 #if defined(URHO3D_OPENGL)
 %include "Urho3D/Graphics/OpenGL/OGLShaderProgram.h"
+%include "Urho3D/Graphics/ComputeDevice.h"
 #elif defined(URHO3D_D3D11)
 %include "Urho3D/Graphics/Direct3D11/D3D11ShaderProgram.h"
+%include "Urho3D/Graphics/ComputeDevice.h"
 #else
 %include "Urho3D/Graphics/Direct3D9/D3D9ShaderProgram.h"
 #endif
