@@ -737,11 +737,11 @@ Finally note that due to OpenGL framebuffer object limitations an extra framebuf
 
 \page Compute Compute
 
-Limited GPU compute capability is exposed through the \ref ComputeDevice "Compute Device" class.
+Limited GPU compute capability is exposed through the \ref ComputeDevice "Compute Device" class. Compute is currently only available on desktop targets.
 
-The interface for compute is raw and expects the caller to perform all setup, manage \ref ConstantBuffers "constant buffers" as wells as textures.
+The interface for compute is raw and expects the caller to perform all setup, manage \ref ConstantBuffer "constant buffers", as well as textures and even fetch the \ref ShaderVariation "shader variations" oneself.
 
-Notably compute provides a clean means to directly write into texture layers and mipmaps which is of value for filtering tasks.
+Notably compute provides a clean means to directly write into texture layers and mipmaps which is of value for filtering tasks. Currently the only supported write-targets are images which must be of the RGBA8, RGBA16F, RGBA32F, or R32F formats to allow writing.
 
 \code
 // C#
