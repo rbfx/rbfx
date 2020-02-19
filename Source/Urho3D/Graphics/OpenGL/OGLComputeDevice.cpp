@@ -11,6 +11,19 @@
 namespace Urho3D
 {
 
+GLuint ComputeDevice_GetImageTextureFormat(Texture* texture)
+{
+    if (texture->GetComponents() == 4)
+    {
+        switch (texture->GetFormat())
+        {
+        case GL_RGBA:
+            return GL_RGBA8;
+        }
+    }
+    return texture->GetFormat();
+}
+
 void ComputeDevice::Init()
 {
     // No work to perform.
@@ -97,12 +110,17 @@ void ComputeDevice::ApplyBindings()
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
+        const auto& uav = uavs_[i];
         if (uavs_[i].object_)
         {
             // Bnd as writable.
-            glBindImageTexture(i, uavs_[i].object_->GetGPUObjectName(),
-                uavs_[i].mipLevel_, uavs_[i].layerCount_ > 1 ? GL_TRUE : GL_FALSE, uavs_[i].layer_,
-                GL_READ_WRITE, uavs_[i].object_->GetFormat());
+            glBindImageTexture(i,
+                uav.object_->GetGPUObjectName(),
+                uav.mipLevel_,
+                uav.layerCount_ > 1 ? GL_TRUE : GL_FALSE,
+                uav.layer_,
+                GL_READ_WRITE,
+                ComputeDevice_GetImageTextureFormat(uav.object_));
 
             // Force it to null so that if the same object is bound later as a texture it'll work, rebinding as an image in a following dispatch is less of a concern.
             graphics_->textures_[i] = nullptr;
@@ -125,7 +143,7 @@ bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, unsigned unit)
 {
     if (unit >= MAX_SHADER_PARAMETER_GROUPS)
     {
-        URHO3D_LOGERROR("ComputeDevice::SetConstantBuffer, unit %u exceed limit of MAX_SHADER_PARAMETER_GROUPS (%u)", unit, MAX_SHADER_PARAMETER_GROUPS);
+        URHO3D_LOGERROR("ComputeDevice::SetConstantBuffer, unit {} exceed limit of MAX_SHADER_PARAMETER_GROUPS ({})", unit, MAX_SHADER_PARAMETER_GROUPS);
         return false;
     }
 
@@ -141,13 +159,13 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
 
     if (!texture || unit >= MAX_TEXTURE_UNITS)
     {
-        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, attempted to assign write texture to out-of-bounds slot %u", texture->GetFormat());
+        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, attempted to assign write texture to out-of-bounds slot {}", unit);
         return false;
     }
 
-    if (Texture::IsComputeWriteable(texture->GetFormat()))
+    if (!Texture::IsComputeWriteable(texture->GetFormat()))
     {
-        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, texture format %u is not a compute-writeable format", texture->GetFormat());
+        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, texture format {} is not a compute-writeable format", texture->GetFormat());
         return false;
     }
 
@@ -185,6 +203,7 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
 
     glDispatchCompute(Max(xDim, 1), Max(yDim, 1), Max(zDim, 1));
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+    glFlush();
 }
 
 
