@@ -364,6 +364,12 @@ bool Texture::IsComputeWriteable(unsigned format)
     switch (format)
     {
     case GL_RGBA:
+    case GL_RGBA8:
+    case GL_RGBA16:
+    case GL_RGBA16F:
+    case GL_RGBA32F:
+    case GL_R32F:
+    case GL_R32UI:
         return true;
     }
     return false;
