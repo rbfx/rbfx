@@ -659,6 +659,9 @@ public:
 %include "Urho3D/Graphics/ConstantBuffer.h"
 %include "Urho3D/Graphics/ShaderVariation.h"
 %include "Urho3D/Graphics/ShaderPrecache.h"
+#if defined(URHO3D_OPENGL) || defined(URHO3D_D3D11)
+%include "Urho3D/Graphics/ComputeDevice.h"
+#endif
 %include "Urho3D/Graphics/Tangent.h"
 //%include "Urho3D/Graphics/VertexDeclaration.h"
 %include "Urho3D/Graphics/Camera.h"
