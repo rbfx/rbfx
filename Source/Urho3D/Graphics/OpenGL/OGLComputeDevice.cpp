@@ -203,7 +203,6 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
 
     glDispatchCompute(Max(xDim, 1), Max(yDim, 1), Max(zDim, 1));
     glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
-    glFlush();
 }
 
 
