@@ -64,7 +64,7 @@
 //#  define isa sse3
 //#  define ISA SSE3
 //#  define ISA_STR "SSE3"
-#elif defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__)
+#elif defined(__SSE2__) || defined(__SSE3__) || defined(__SSSE3__) || _M_X64    // Urho3D: All x64 CPUs support SSE2.
 #  define isa sse2
 #  define ISA SSE2
 #  define ISA_STR "SSE2"
