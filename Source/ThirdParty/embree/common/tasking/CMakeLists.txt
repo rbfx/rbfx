@@ -13,24 +13,23 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
-
+# Urho3D: Rename target and hide it in a subfolder.
 IF (TASKING_INTERNAL)
-  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp)
+  ADD_LIBRARY(embree-tasking STATIC taskschedulerinternal.cpp)
 ELSEIF (TASKING_TBB)
-  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
-  TARGET_LINK_LIBRARIES(tasking PRIVATE sys math)
-  TARGET_LINK_LIBRARIES(tasking PUBLIC ${TBB_LIBRARIES})
+  ADD_LIBRARY(embree-tasking STATIC taskschedulertbb.cpp)
+  TARGET_LINK_LIBRARIES(embree-tasking PRIVATE embree-sys embree-math)
+  TARGET_LINK_LIBRARIES(embree-tasking PUBLIC ${TBB_LIBRARIES})
 ELSEIF (TASKING_PPL)
-  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp)
-  TARGET_LINK_LIBRARIES(tasking PRIVATE sys math)
-  TARGET_LINK_LIBRARIES(tasking PUBLIC ${PPL_LIBRARIES})
+  ADD_LIBRARY(embree-tasking STATIC taskschedulerppl.cpp)
+  TARGET_LINK_LIBRARIES(embree-tasking PRIVATE embree-sys embree-math)
+  TARGET_LINK_LIBRARIES(embree-tasking PUBLIC ${PPL_LIBRARIES})
 ENDIF()
 
-SET_PROPERTY(TARGET tasking PROPERTY FOLDER common)
-SET_PROPERTY(TARGET tasking APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+SET_PROPERTY(TARGET embree-tasking PROPERTY FOLDER ThirdParty/embree3/common)
+SET_PROPERTY(TARGET embree-tasking APPEND PROPERTY INTERFACE_COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
-IF (EMBREE_STATIC_LIB)
-  INSTALL(TARGETS tasking EXPORT tasking-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
-  INSTALL(EXPORT tasking-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
-  SIGN_TARGET(tasking)
-ENDIF()
+# Urho3D: Install targets
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+  install(TARGETS embree-tasking EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

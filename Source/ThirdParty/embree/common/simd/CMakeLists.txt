@@ -13,13 +13,12 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
+# Urho3D: Rename target and hide it in a subfolder.
+ADD_LIBRARY(embree-simd STATIC sse.cpp)
+SET_PROPERTY(TARGET embree-simd PROPERTY FOLDER ThirdParty/embree3/common)
+SET_PROPERTY(TARGET embree-simd APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
-ADD_LIBRARY(simd STATIC sse.cpp)
-SET_PROPERTY(TARGET simd PROPERTY FOLDER common)
-SET_PROPERTY(TARGET simd APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
-
-IF (EMBREE_STATIC_LIB)
-  INSTALL(TARGETS simd EXPORT simd-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
-  INSTALL(EXPORT simd-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
-  SIGN_TARGET(simd)
-ENDIF()
+# Urho3D: Install targets
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS embree-simd EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
