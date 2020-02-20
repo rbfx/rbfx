@@ -13,14 +13,12 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
+# Urho3D: Rename target and hide it in a subfolder.
+ADD_LIBRARY(embree-math STATIC constants.cpp)
+SET_PROPERTY(TARGET embree-math PROPERTY FOLDER ThirdParty/embree3/common)
+SET_PROPERTY(TARGET embree-math APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
-ADD_LIBRARY(math STATIC constants.cpp)
-SET_PROPERTY(TARGET math PROPERTY FOLDER common)
-SET_PROPERTY(TARGET math APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
-
-IF (EMBREE_STATIC_LIB)
-  INSTALL(TARGETS math EXPORT math-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
-  INSTALL(EXPORT math-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
-  SIGN_TARGET(math)
-ENDIF()
-
+# Urho3D: Install targets
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+    install(TARGETS embree-math EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
