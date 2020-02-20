@@ -403,6 +403,7 @@ if (URHO3D_CSHARP)
         COMMAND ${CMAKE_COMMAND} -E touch ${CMAKE_BINARY_DIR}/NugetRestore.h
         COMMENT "Nuget restore"
     )
+    add_dependencies(Urho3DNet NugetRestore)
 
     target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx
         ${CMAKE_BINARY_DIR}/NugetRestore.h)
