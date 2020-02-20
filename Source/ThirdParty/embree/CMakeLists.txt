@@ -135,7 +135,7 @@ OPTION(EMBREE_GEOMETRY_GRID "Enables support for grid geometries." ON)
 OPTION(EMBREE_GEOMETRY_POINT "Enables support for point geometries." ON)
 OPTION(EMBREE_RAY_PACKETS "Enabled support for ray packets." ON)
 
-SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE INT "Maximum number of instance levels.")
+SET(EMBREE_MAX_INSTANCE_LEVEL_COUNT 1 CACHE STRING "Maximum number of instance levels.")  # Urho3D: Fix CMake warning.
 SET(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR 2.0 CACHE STRING "Self intersection avoidance factor for flat curves. Specify floating point value in range 0 to inf.")
 
 SET(EMBREE_TASKING_SYSTEM "TBB" CACHE STRING "Selects tasking system")
@@ -433,7 +433,8 @@ INCLUDE (ispc)
 ##############################################################
 # Create Binary Packages (uses above config options)
 ##############################################################
-include(package)
+# Urho3D: Not needed for source distributions
+#include(package)
 
 ##############################################################
 # Create Config files
@@ -473,9 +474,10 @@ ENDIF()
 ##############################################################
 # Output paths
 ##############################################################
-SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
-SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
-SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+# Urho3D: Avoid polluting root bin dir.
+#SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+#SET(CMAKE_ARCHIVE_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
+#SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 ##############################################################
 # Directories to compile
@@ -483,30 +485,32 @@ SET(CMAKE_LIBRARY_OUTPUT_DIRECTORY "${CMAKE_CURRENT_BINARY_DIR}")
 
 ADD_SUBDIRECTORY(common)
 ADD_SUBDIRECTORY(kernels)
-IF (EMBREE_TUTORIALS)
-  ADD_SUBDIRECTORY(tutorials)
-ENDIF()
-
-##############################################################
-# Uninstall
-##############################################################
-
-configure_file(
-    "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/uninstall.cmake.in"
-    "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
-    IMMEDIATE @ONLY)
-
-add_custom_target(uninstall
-    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
-
-SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
-
-##############################################################
-# Has to be last
-##############################################################
-INCLUDE(CPack)
+# Urho3D: These are not needed either.
+#IF (EMBREE_TUTORIALS)
+#  ADD_SUBDIRECTORY(tutorials)
+#ENDIF()
+#
+###############################################################
+## Uninstall
+###############################################################
+#
+#configure_file(
+#    "${CMAKE_CURRENT_SOURCE_DIR}/common/cmake/uninstall.cmake.in"
+#    "${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake"
+#    IMMEDIATE @ONLY)
+#
+#add_custom_target(uninstall
+#    COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/uninstall.cmake)
+#
+#SET_PROPERTY(TARGET uninstall PROPERTY FOLDER CMakePredefinedTargets)
+#
+###############################################################
+## Has to be last
+###############################################################
+#INCLUDE(CPack)
 
 # Urho3D: Install headers
 target_include_directories(embree PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
 )
+install(DIRECTORY include/embree3 DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/)

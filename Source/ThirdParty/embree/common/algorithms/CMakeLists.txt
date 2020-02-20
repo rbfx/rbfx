@@ -13,8 +13,8 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
-
-ADD_LIBRARY(algorithms OBJECT
+# Urho3D: Rename target and hide it in a subfolder.
+ADD_LIBRARY(embree-algorithms OBJECT
  parallel_for.cpp
  parallel_reduce.cpp
  parallel_prefix_sum.cpp
@@ -27,5 +27,5 @@ ADD_LIBRARY(algorithms OBJECT
  parallel_filter.cpp
 )
 
-SET_PROPERTY(TARGET algorithms PROPERTY FOLDER common)
-SET_PROPERTY(TARGET algorithms APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+SET_PROPERTY(TARGET embree-algorithms PROPERTY FOLDER ThirdParty/embree3/common)
+SET_PROPERTY(TARGET embree-algorithms APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")

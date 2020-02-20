@@ -179,6 +179,8 @@ MACRO (ADD_EMBREE_ISPC_EXECUTABLE name)
   ENDFOREACH()
   ISPC_COMPILE(${ISPC_SOURCES})
   ADD_EXECUTABLE(${name} ${ISPC_OBJECTS} ${OTHER_SOURCES})
+  # Urho3D: Hide targets in a folder.
+  SET_PROPERTY(TARGET ${name} PROPERTY FOLDER ThirdParty/embree3/ispc)
 ENDMACRO()
 
 MACRO (ADD_ISPC_LIBRARY name type)
@@ -194,6 +196,8 @@ MACRO (ADD_ISPC_LIBRARY name type)
   ENDFOREACH()
   ISPC_COMPILE(${ISPC_SOURCES})
   ADD_LIBRARY(${name} ${type} ${ISPC_OBJECTS} ${OTHER_SOURCES})
+  # Urho3D: Hide targets in a folder.
+  SET_PROPERTY(TARGET ${name} PROPERTY FOLDER ThirdParty/embree3/ispc)
 ENDMACRO()
 
 ELSE (EMBREE_ISPC_SUPPORT)
@@ -210,6 +214,8 @@ MACRO (ADD_ISPC_LIBRARY name type)
     ENDIF ()
   ENDFOREACH()
   ADD_LIBRARY(${name} ${type} ${OTHER_SOURCES})
+  # Urho3D: Hide targets in a folder.
+  SET_PROPERTY(TARGET ${name} PROPERTY FOLDER ThirdParty/embree3/ispc)
 ENDMACRO()
 
 ENDIF (EMBREE_ISPC_SUPPORT)

@@ -13,17 +13,16 @@
 ## See the License for the specific language governing permissions and      ##
 ## limitations under the License.                                           ##
 ## ======================================================================== ##
-
-ADD_LIBRARY(lexers STATIC
+# Urho3D: Rename target and hide it in a subfolder.
+ADD_LIBRARY(embree-lexers STATIC
  stringstream.cpp
  tokenstream.cpp
 )
-TARGET_LINK_LIBRARIES(lexers sys math)
-SET_PROPERTY(TARGET lexers PROPERTY FOLDER common)
-SET_PROPERTY(TARGET lexers APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+TARGET_LINK_LIBRARIES(embree-lexers embree-sys embree-math)
+SET_PROPERTY(TARGET embree-lexers PROPERTY FOLDER ThirdParty/embree3/common)
+SET_PROPERTY(TARGET embree-lexers APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
 
-IF (EMBREE_STATIC_LIB)
-  INSTALL(TARGETS lexers EXPORT lexers-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
-  INSTALL(EXPORT lexers-targets DESTINATION ${EMBREE_CMAKECONFIG_DIR} COMPONENT devel)
-  SIGN_TARGET(lexers)
-ENDIF()
+# Urho3D: Install targets
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+  install(TARGETS embree-lexers EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()
