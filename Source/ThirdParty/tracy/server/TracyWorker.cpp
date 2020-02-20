@@ -12,8 +12,9 @@
 #include <chrono>
 #include <string.h>
 #include <inttypes.h>
-
-#if ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
+#ifdef TRACY_NO_PARALLEL_ALGORITHMS // rbfx: Need a way to disable use of tbb. It is broken on any version of clang on ubuntu 18.04 (2020-02-20).
+#  define MY_LIBCPP_SUCKS
+#elif ( defined _MSC_VER && _MSVC_LANG >= 201703L ) || __cplusplus >= 201703L
 #  if __has_include(<execution>)
 #    include <execution>
 #  else
