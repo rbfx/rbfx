@@ -159,7 +159,7 @@ bool Scene::CreateComponentIndex(StringHash componentType)
 ea::span<Component* const> Scene::GetComponentIndex(StringHash componentType)
 {
     if (auto storage = GetComponentIndexStorage(componentType))
-        return { storage->raw(), static_cast<ptrdiff_t>(storage->size()) };
+        return { storage->raw(), static_cast<ea::span<Component* const>::index_type>(storage->size()) };
     return {};
 }
 

@@ -111,7 +111,7 @@ rbfx uses the following third-party libraries:
 - CLI11 v1.5.1 (https://github.com/CLIUtils/CLI11/)
 - fmt 6.0.0 (http://fmtlib.net/)
 - spdlog 1.4.2 (https://github.com/gabime/spdlog/)
-- EASTL 3.13.04 (https://github.com/electronicarts/EASTL/)
+- EASTL 3.16.01 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
 
 rbfx optionally uses the following external third-party libraries:

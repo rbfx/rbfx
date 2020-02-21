@@ -311,11 +311,8 @@ namespace eastl
 		// random_access_iterator operator[] is merely required to return something convertible to reference. 
 		// reverse_iterator operator[] can't necessarily know what to return as the underlying iterator 
 		// operator[] may return something other than reference.
-		// reference operator[](difference_type n) const
-		//     { return mIterator[-n - 1]; }
-
 		EA_CPP14_CONSTEXPR reference operator[](difference_type n) const
-			{ return *(*this + n); }
+			{ return mIterator[-n - 1]; }
 	};
 
 
@@ -638,6 +635,9 @@ namespace eastl
 
 		back_insert_iterator& operator=(const_reference value)
 			{ container.push_back(value); return *this; }
+
+		back_insert_iterator& operator=(typename Container::value_type&& value)
+			{ container.push_back(eastl::move(value)); return *this; }
 
 		back_insert_iterator& operator*()
 			{ return *this; }
@@ -985,7 +985,7 @@ namespace eastl
 	EA_CPP14_CONSTEXPR auto data(const Container& c) -> decltype(c.data())
 		{ return c.data(); }
 
-	template <class T, std::size_t N>
+	template <class T, size_t N>
 	EA_CPP14_CONSTEXPR T* data(T(&array)[N]) EA_NOEXCEPT 
 		{ return array; }
 
@@ -1002,9 +1002,26 @@ namespace eastl
 	EA_CPP14_CONSTEXPR auto size(const C& c) -> decltype(c.size())
 		{ return c.size(); }
 
-	template <class T, std::size_t N>
-	EA_CPP14_CONSTEXPR std::size_t size(const T (&)[N]) EA_NOEXCEPT
+	template <class T, size_t N>
+	EA_CPP14_CONSTEXPR size_t size(const T (&)[N]) EA_NOEXCEPT
 		{ return N; }
+
+
+	// eastl::ssize
+	//
+	// https://en.cppreference.com/w/cpp/iterator/size
+	//
+	template <class T, ptrdiff_t N>
+	EA_CPP14_CONSTEXPR ptrdiff_t ssize(const T(&)[N]) EA_NOEXCEPT
+		{ return N; }
+
+	template <class C>
+	EA_CPP14_CONSTEXPR auto ssize(const C& c)
+	    -> eastl::common_type_t<ptrdiff_t, eastl::make_signed_t<decltype(c.size())>>
+	{
+		using R = eastl::common_type_t<ptrdiff_t, eastl::make_signed_t<decltype(c.size())>>;
+		return static_cast<R>(c.size());
+	}
 
 
 	// eastl::empty
@@ -1015,7 +1032,7 @@ namespace eastl
 	EA_CPP14_CONSTEXPR auto empty(const Container& c) -> decltype(c.empty())
 		{ return c.empty(); }
 
-	template <class T, std::size_t N>
+	template <class T, size_t N>
 	EA_CPP14_CONSTEXPR bool empty(const T (&)[N]) EA_NOEXCEPT
 		{ return false; }
 

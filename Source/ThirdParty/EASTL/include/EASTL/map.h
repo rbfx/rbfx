@@ -95,10 +95,14 @@ namespace eastl
 		using base_type::find;
 		using base_type::lower_bound;
 		using base_type::upper_bound;
-		using base_type::mCompare;
 		using base_type::insert;
 		using base_type::erase;
 
+	protected:
+		using base_type::compare;
+		using base_type::get_compare;
+
+	public:
 		class value_compare 
 		{
 		protected:
@@ -201,10 +205,14 @@ namespace eastl
 		using base_type::find;
 		using base_type::lower_bound;
 		using base_type::upper_bound;
-		using base_type::mCompare;
 		using base_type::insert;
 		using base_type::erase;
 
+	protected:
+		using base_type::compare;
+		using base_type::get_compare;
+
+	public:
 		class value_compare 
 		{
 		protected:
@@ -333,7 +341,7 @@ namespace eastl
 	inline typename map<Key, T, Compare, Allocator>::value_compare 
 	map<Key, T, Compare, Allocator>::value_comp() const
 	{
-		return value_compare(mCompare);
+		return value_compare(get_compare());
 	}
 
 
@@ -372,7 +380,7 @@ namespace eastl
 		// result is a range of size zero or one.
 		const iterator itLower(lower_bound(key));
 
-		if((itLower == end()) || mCompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
+		if((itLower == end()) || compare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
 			return eastl::pair<iterator, iterator>(itLower, itLower);
 
 		iterator itUpper(itLower);
@@ -388,7 +396,7 @@ namespace eastl
 		// See equal_range above for comments.
 		const const_iterator itLower(lower_bound(key));
 
-		if((itLower == end()) || mCompare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
+		if((itLower == end()) || compare(key, itLower.mpNode->mValue.first)) // If at the end or if (key is < itLower)...
 			return eastl::pair<const_iterator, const_iterator>(itLower, itLower);
 
 		const_iterator itUpper(itLower);
@@ -401,7 +409,7 @@ namespace eastl
 	{
 		iterator itLower(lower_bound(key)); // itLower->first is >= key.
 
-		if((itLower == end()) || mCompare(key, (*itLower).first))
+		if((itLower == end()) || compare(key, (*itLower).first))
 		{
 			itLower = base_type::DoInsertKey(true_type(), itLower, key);
 		}
@@ -419,7 +427,7 @@ namespace eastl
 	{
 		iterator itLower(lower_bound(key)); // itLower->first is >= key.
 
-		if((itLower == end()) || mCompare(key, (*itLower).first))
+		if((itLower == end()) || compare(key, (*itLower).first))
 		{
 			itLower = base_type::DoInsertKey(true_type(), itLower, eastl::move(key));
 		}
@@ -468,7 +476,26 @@ namespace eastl
 	}
 
 
-
+	///////////////////////////////////////////////////////////////////////
+	// erase_if
+	//
+	// https://en.cppreference.com/w/cpp/container/map/erase_if
+	///////////////////////////////////////////////////////////////////////
+	template <class Key, class T, class Compare, class Allocator, class Predicate>
+	void erase_if(map<Key, T, Compare, Allocator>& c, Predicate predicate)
+	{
+		for (auto i = c.begin(), last = c.end(); i != last;)
+		{
+			if (predicate(*i))
+			{
+				i = c.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
 
 
 	///////////////////////////////////////////////////////////////////////
@@ -536,7 +563,7 @@ namespace eastl
 	inline typename multimap<Key, T, Compare, Allocator>::value_compare 
 	multimap<Key, T, Compare, Allocator>::value_comp() const
 	{
-		return value_compare(mCompare);
+		return value_compare(get_compare());
 	}
 
 
@@ -600,7 +627,7 @@ namespace eastl
 		const iterator itLower(lower_bound(key));
 		iterator       itUpper(itLower);
 
-		while((itUpper != end()) && !mCompare(key, itUpper.mpNode->mValue.first))
+		while((itUpper != end()) && !compare(key, itUpper.mpNode->mValue.first))
 			++itUpper;
 
 		return eastl::pair<iterator, iterator>(itLower, itUpper);
@@ -617,7 +644,7 @@ namespace eastl
 		const const_iterator itLower(lower_bound(key));
 		const_iterator       itUpper(itLower);
 
-		while((itUpper != end()) && !mCompare(key, itUpper.mpNode->mValue.first))
+		while((itUpper != end()) && !compare(key, itUpper.mpNode->mValue.first))
 			++itUpper;
 
 		return eastl::pair<const_iterator, const_iterator>(itLower, itUpper);
@@ -625,6 +652,27 @@ namespace eastl
 
 
 
+	///////////////////////////////////////////////////////////////////////
+	// erase_if
+	//
+	// https://en.cppreference.com/w/cpp/container/multimap/erase_if
+	///////////////////////////////////////////////////////////////////////
+	template <class Key, class T, class Compare, class Allocator, class Predicate>
+	void erase_if(multimap<Key, T, Compare, Allocator>& c, Predicate predicate)
+	{
+		// Erases all elements that satisfy the predicate pred from the container.
+		for (auto i = c.begin(), last = c.end(); i != last;)
+		{
+			if (predicate(*i))
+			{
+				i = c.erase(i);
+			}
+			else
+			{
+				++i;
+			}
+		}
+	}
 
 } // namespace eastl
 

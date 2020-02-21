@@ -13,18 +13,43 @@
 
 namespace eastl
 {
-
-	#define EASTL_INTERNAL_FIXED_FUNCTION_STATIC_ASSERT(TYPE) \
-		static_assert(sizeof(TYPE) <= sizeof(typename Base::FunctorStorageType), "fixed_function local buffer is not large enough to hold the callable object.")
-
 	template <int, typename>
 	class fixed_function;
 
+	namespace internal
+	{
+		template <typename>
+		struct is_fixed_function
+			: public eastl::false_type {};
+
+		template <int SIZE_IN_BYTES, typename R, typename... Args>
+		struct is_fixed_function<eastl::fixed_function<SIZE_IN_BYTES, R(Args...)>>
+			: public eastl::true_type {};
+
+		template<typename T>
+		EA_CONSTEXPR bool is_fixed_function_v = is_fixed_function<T>::value;
+	}
+
+	#define EASTL_INTERNAL_FIXED_FUNCTION_STATIC_ASSERT(TYPE)                    \
+		static_assert(sizeof(TYPE) <= sizeof(typename Base::FunctorStorageType), \
+					  "fixed_function local buffer is not large enough to hold the callable object.")
+
+    #define EASTL_INTERNAL_FIXED_FUNCTION_NEW_SIZE_STATIC_ASSERT(NEW_SIZE_IN_BYTES) \
+		static_assert(SIZE_IN_BYTES >= NEW_SIZE_IN_BYTES,                           \
+					  "fixed_function local buffer is not large enough to hold the new fixed_function type.")
+
+	template <typename Functor>
+	using EASTL_DISABLE_OVERLOAD_IF_FIXED_FUNCTION =
+	    eastl::disable_if_t<internal::is_fixed_function_v<eastl::decay_t<Functor>>>;
+
+
+	// fixed_function
+	//
 	template <int SIZE_IN_BYTES, typename R, typename... Args>
 	class fixed_function<SIZE_IN_BYTES, R(Args...)> : public internal::function_detail<SIZE_IN_BYTES, R(Args...)>
 	{
-	private:
 		using Base = internal::function_detail<SIZE_IN_BYTES, R(Args...)>;
+
 	public:
 		using typename Base::result_type;
 
@@ -44,11 +69,27 @@ namespace eastl
 		{
 		}
 
-		template <typename Functor, typename = EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(Functor, R, Args..., Base, fixed_function)>
+		template <typename Functor,
+		          typename = EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(Functor, R, Args..., Base, fixed_function),
+		          typename = EASTL_DISABLE_OVERLOAD_IF_FIXED_FUNCTION<Functor>>
 		fixed_function(Functor functor)
-			: Base(eastl::move(functor))
+		    : Base(eastl::move(functor))
 		{
 			EASTL_INTERNAL_FIXED_FUNCTION_STATIC_ASSERT(Functor);
+		}
+
+		template<int NEW_SIZE_IN_BYTES>
+		fixed_function(const fixed_function<NEW_SIZE_IN_BYTES, R(Args...)>& other)
+			: Base(other)
+		{
+			EASTL_INTERNAL_FIXED_FUNCTION_NEW_SIZE_STATIC_ASSERT(NEW_SIZE_IN_BYTES);
+		}
+
+		template<int NEW_SIZE_IN_BYTES>
+		fixed_function(fixed_function<NEW_SIZE_IN_BYTES, R(Args...)>&& other)
+			: Base(eastl::move(other))
+		{
+			EASTL_INTERNAL_FIXED_FUNCTION_NEW_SIZE_STATIC_ASSERT(NEW_SIZE_IN_BYTES);
 		}
 
 		~fixed_function() EA_NOEXCEPT = default;
@@ -71,7 +112,27 @@ namespace eastl
 			return *this;
 		}
 
-		template <typename Functor, typename = EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(Functor, R, Args..., Base, fixed_function)>
+		template<int NEW_SIZE_IN_BYTES>
+		fixed_function& operator=(const fixed_function<NEW_SIZE_IN_BYTES, R(Args...)>& other)
+		{
+			EASTL_INTERNAL_FIXED_FUNCTION_NEW_SIZE_STATIC_ASSERT(NEW_SIZE_IN_BYTES);
+
+			Base::operator=(other);
+			return *this;
+		}
+
+		template<int NEW_SIZE_IN_BYTES>
+		fixed_function& operator=(fixed_function<NEW_SIZE_IN_BYTES, R(Args...)>&& other)
+		{
+			EASTL_INTERNAL_FIXED_FUNCTION_NEW_SIZE_STATIC_ASSERT(NEW_SIZE_IN_BYTES);
+
+			Base::operator=(eastl::move(other));
+			return *this;
+		}
+
+		template <typename Functor,
+		          typename = EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(Functor, R, Args..., Base, fixed_function),
+		          typename = EASTL_DISABLE_OVERLOAD_IF_FIXED_FUNCTION<Functor>>
 		fixed_function& operator=(Functor&& functor)
 		{
 			EASTL_INTERNAL_FIXED_FUNCTION_STATIC_ASSERT(eastl::decay_t<Functor>);
@@ -103,7 +164,6 @@ namespace eastl
 		}
 
 	#if EASTL_RTTI_ENABLED
-
 		const std::type_info& target_type() const EA_NOEXCEPT
 		{
 			return Base::target_type();
@@ -120,7 +180,6 @@ namespace eastl
 		{
 			return Base::target();
 		}
-
 	#endif
 	};
 

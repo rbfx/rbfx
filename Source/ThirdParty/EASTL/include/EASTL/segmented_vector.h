@@ -213,7 +213,8 @@ namespace eastl
 	segmented_vector_iterator<T, Count, Allocator>::operator++(int)
 	{
 		this_type i(*this);
-		return ++i;
+		operator++();
+		return i;
 	}
 
 
@@ -415,6 +416,8 @@ namespace eastl
 	inline void
 	segmented_vector<T, Count, Allocator>::erase_unsorted(segment_type& segment, typename segment_type::iterator it)
 	{
+		EA_UNUSED(segment);
+
 		*it = back();
 		pop_back();
 	}
