@@ -187,23 +187,78 @@ namespace eastl
 	}; // rbtree_iterator
 
 
+	///////////////////////////////////////////////////////////////////////////////
+	// rb_base_compare_ebo
+	//
+	// Utilizes the "empty base-class optimization" to reduce the size of the rbtree
+	// when its Compare template argument is an empty class.
+	///////////////////////////////////////////////////////////////////////////////
+
+	template <typename Compare, bool /*isEmpty*/ = is_empty<Compare>::value>
+	struct rb_base_compare_ebo
+	{
+	protected:
+		rb_base_compare_ebo() : mCompare() {}
+		rb_base_compare_ebo(const Compare& compare) : mCompare(compare) {}
+
+		Compare& get_compare() { return mCompare; }
+		const Compare& get_compare() const { return mCompare; }
+
+		template <typename T>
+		bool compare(const T& lhs, const T& rhs) 
+		{
+			return mCompare(lhs, rhs);
+		}
+
+		template <typename T>
+		bool compare(const T& lhs, const T& rhs) const
+		{
+			return mCompare(lhs, rhs);
+		}
+
+	private:
+		Compare mCompare;
+	};
+
+	template <typename Compare>
+	struct rb_base_compare_ebo<Compare, true> : private Compare
+	{
+	protected:
+		rb_base_compare_ebo() {}
+		rb_base_compare_ebo(const Compare& compare) : Compare(compare) {}
+
+		Compare& get_compare() { return *this; }
+		const Compare& get_compare() const { return *this; }
+
+		template <typename T>
+		bool compare(const T& lhs, const T& rhs) 
+		{
+			return Compare::operator()(lhs, rhs);
+		}
+
+		template <typename T>
+		bool compare(const T& lhs, const T& rhs) const
+		{
+			return Compare::operator()(lhs, rhs);
+		}
+	};
 
 
 
 	///////////////////////////////////////////////////////////////////////////////
-	// rb_base
-	//
-	// This class allows us to use a generic rbtree as the basis of map, multimap,
-	// set, and multiset transparently. The vital template parameters for this are 
-	// the ExtractKey and the bUniqueKeys parameters.
-	//
-	// If the rbtree has a value type of the form pair<T1, T2> (i.e. it is a map or
-	// multimap and not a set or multiset) and a key extraction policy that returns 
-	// the first part of the pair, the rbtree gets a mapped_type typedef. 
-	// If it satisfies those criteria and also has unique keys, then it also gets an 
-	// operator[] (which only map and set have and multimap and multiset don't have).
-	//
-	///////////////////////////////////////////////////////////////////////////////
+    // rb_base
+    //
+    // This class allows us to use a generic rbtree as the basis of map, multimap,
+    // set, and multiset transparently. The vital template parameters for this are 
+    // the ExtractKey and the bUniqueKeys parameters.
+    //
+    // If the rbtree has a value type of the form pair<T1, T2> (i.e. it is a map or
+    // multimap and not a set or multiset) and a key extraction policy that returns 
+    // the first part of the pair, the rbtree gets a mapped_type typedef. 
+    // If it satisfies those criteria and also has unique keys, then it also gets an 
+    // operator[] (which only map and set have and multimap and multiset don't have).
+    //
+    ///////////////////////////////////////////////////////////////////////////////
 
 
 
@@ -212,16 +267,17 @@ namespace eastl
 	/// will be the same as each other and ExtractKey will be eastl::use_self.
 	///
 	template <typename Key, typename Value, typename Compare, typename ExtractKey, bool bUniqueKeys, typename RBTree>
-	struct rb_base
+	struct rb_base : public rb_base_compare_ebo<Compare>
 	{
 		typedef ExtractKey extract_key;
 
-	public:
-		Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+	protected:
+		using rb_base_compare_ebo<Compare>::compare;
+		using rb_base_compare_ebo<Compare>::get_compare;
 
 	public:
-		rb_base() : mCompare() {}
-		rb_base(const Compare& compare) : mCompare(compare) {}
+		rb_base() {}
+		rb_base(const Compare& compare) : rb_base_compare_ebo<Compare>(compare) {}
 	};
 
 
@@ -231,16 +287,17 @@ namespace eastl
 	/// other and ExtractKey will be eastl::use_self.
 	///
 	template <typename Key, typename Value, typename Compare, typename ExtractKey, typename RBTree>
-	struct rb_base<Key, Value, Compare, ExtractKey, false, RBTree>
+	struct rb_base<Key, Value, Compare, ExtractKey, false, RBTree> : public rb_base_compare_ebo<Compare>
 	{
 		typedef ExtractKey extract_key;
 
-	public:
-		Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+	protected:
+		using rb_base_compare_ebo<Compare>::compare;
+		using rb_base_compare_ebo<Compare>::get_compare;
 
 	public:
-		rb_base() : mCompare() {}
-		rb_base(const Compare& compare) : mCompare(compare) {}
+		rb_base() {}
+		rb_base(const Compare& compare) : rb_base_compare_ebo<Compare>(compare) {}
 	};
 
 
@@ -248,16 +305,16 @@ namespace eastl
 	/// This specialization is used for 'map'.
 	///
 	template <typename Key, typename Pair, typename Compare, typename RBTree>
-	struct rb_base<Key, Pair, Compare, eastl::use_first<Pair>, true, RBTree>
+	struct rb_base<Key, Pair, Compare, eastl::use_first<Pair>, true, RBTree> : public rb_base_compare_ebo<Compare>
 	{
 		typedef eastl::use_first<Pair> extract_key;
 
-	public:
-		Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+		using rb_base_compare_ebo<Compare>::compare;
+		using rb_base_compare_ebo<Compare>::get_compare;
 
 	public:
-		rb_base() : mCompare() {}
-		rb_base(const Compare& compare) : mCompare(compare) {}
+		rb_base() {}
+		rb_base(const Compare& compare) : rb_base_compare_ebo<Compare>(compare) {}
 	};
 
 
@@ -265,20 +322,17 @@ namespace eastl
 	/// This specialization is used for 'multimap'.
 	///
 	template <typename Key, typename Pair, typename Compare, typename RBTree>
-	struct rb_base<Key, Pair, Compare, eastl::use_first<Pair>, false, RBTree>
+	struct rb_base<Key, Pair, Compare, eastl::use_first<Pair>, false, RBTree> : public rb_base_compare_ebo<Compare>
 	{
 		typedef eastl::use_first<Pair> extract_key;
 
-	public:
-		Compare mCompare; // To do: Make sure that empty Compare classes go away via empty base optimizations.
+		using rb_base_compare_ebo<Compare>::compare;
+		using rb_base_compare_ebo<Compare>::get_compare;
 
 	public:
-		rb_base() : mCompare() {}
-		rb_base(const Compare& compare) : mCompare(compare) {}
+		rb_base() {}
+		rb_base(const Compare& compare) : rb_base_compare_ebo<Compare>(compare) {}
 	};
-
-
-
 
 
 	/// rbtree
@@ -362,7 +416,9 @@ namespace eastl
 		typedef integral_constant<bool, bUniqueKeys>                                            has_unique_keys_type;
 		typedef typename base_type::extract_key                                                 extract_key;
 
-		using base_type::mCompare;
+	protected:
+		using base_type::compare;
+		using base_type::get_compare;
 
 	public:
 		rbtree_node_base  mAnchor;      /// This node acts as end() and its mpLeft points to begin(), and mpRight points to rbegin() (the last node on the right).
@@ -389,8 +445,8 @@ namespace eastl
 		allocator_type&       get_allocator() EA_NOEXCEPT;
 		void                  set_allocator(const allocator_type& allocator);
 
-		const key_compare& key_comp() const { return mCompare; }
-		key_compare&       key_comp()       { return mCompare; }
+		const key_compare& key_comp() const { return get_compare(); }
+		key_compare&       key_comp()       { return get_compare(); }
 
 		this_type& operator=(const this_type& x);
 		this_type& operator=(std::initializer_list<value_type> ilist);
@@ -748,7 +804,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	inline rbtree<K, V, C, A, E, bM, bU>::rbtree(const this_type& x)
-		: base_type(x.mCompare),
+		: base_type(x.get_compare()),
 		  mAnchor(),
 		  mnSize(0),
 		  mAllocator(x.mAllocator)
@@ -767,7 +823,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	inline rbtree<K, V, C, A, E, bM, bU>::rbtree(this_type&& x)
-		: base_type(x.mCompare),
+		: base_type(x.get_compare()),
 		  mAnchor(),
 		  mnSize(0),
 		  mAllocator(x.mAllocator)
@@ -778,7 +834,7 @@ namespace eastl
 
 	template <typename K, typename V, typename C, typename A, typename E, bool bM, bool bU>
 	inline rbtree<K, V, C, A, E, bM, bU>::rbtree(this_type&& x, const allocator_type& allocator)
-		: base_type(x.mCompare),
+		: base_type(x.get_compare()),
 		  mAnchor(),
 		  mnSize(0),
 		  mAllocator(allocator)
@@ -942,7 +998,7 @@ namespace eastl
 				mAllocator = x.mAllocator;
 			#endif
 
-			base_type::mCompare = x.mCompare;
+			get_compare() = x.get_compare();
 
 			if(x.mAnchor.mpNodeParent) // mAnchor.mpNodeParent is the rb_tree root node.
 			{
@@ -991,8 +1047,8 @@ namespace eastl
 		{
 			// Most of our members can be exchaged by a basic swap:
 			// We leave mAllocator as-is.
-			eastl::swap(mnSize,              x.mnSize);
-			eastl::swap(base_type::mCompare, x.mCompare);
+			eastl::swap(mnSize,        x.mnSize);
+			eastl::swap(get_compare(), x.get_compare());
 		#if !EASTL_RBTREE_LEGACY_SWAP_BEHAVIOUR_REQUIRES_COPY_CTOR
 			eastl::swap(mAllocator,          x.mAllocator);
 		#endif
@@ -1229,12 +1285,12 @@ namespace eastl
 		// end(), which we treat like a position which is greater than the value.
 		while(EASTL_LIKELY(pCurrent)) // Do a walk down the tree.
 		{
-			bValueLessThanNode = mCompare(key, extractKey(pCurrent->mValue));
+			bValueLessThanNode = compare(key, extractKey(pCurrent->mValue));
 			pLowerBound        = pCurrent;
 
 			if(bValueLessThanNode)
 			{
-				EASTL_VALIDATE_COMPARE(!mCompare(extractKey(pCurrent->mValue), key)); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!compare(extractKey(pCurrent->mValue), key)); // Validate that the compare function is sane.
 				pCurrent = (node_type*)pCurrent->mpNodeLeft;
 			}
 			else
@@ -1259,9 +1315,9 @@ namespace eastl
 		}
 
 		// Since here we require values to be unique, we will do nothing if the value already exists.
-		if(mCompare(extractKey(pLowerBound->mValue), key)) // If the node is < the value (i.e. if value is >= the node)...
+		if(compare(extractKey(pLowerBound->mValue), key)) // If the node is < the value (i.e. if value is >= the node)...
 		{
-			EASTL_VALIDATE_COMPARE(!mCompare(key, extractKey(pLowerBound->mValue))); // Validate that the compare function is sane.
+			EASTL_VALIDATE_COMPARE(!compare(key, extractKey(pLowerBound->mValue))); // Validate that the compare function is sane.
 			canInsert = true;
 			return pParent;
 		}
@@ -1285,9 +1341,9 @@ namespace eastl
 		{
 			pRangeEnd = pCurrent;
 
-			if(mCompare(key, extractKey(pCurrent->mValue)))
+			if(compare(key, extractKey(pCurrent->mValue)))
 			{
-				EASTL_VALIDATE_COMPARE(!mCompare(extractKey(pCurrent->mValue), key)); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!compare(extractKey(pCurrent->mValue), key)); // Validate that the compare function is sane.
 				pCurrent = (node_type*)pCurrent->mpNodeLeft;
 			}
 			else
@@ -1396,7 +1452,7 @@ namespace eastl
 		// The reason we may want to have bForceToLeft == true is that pNodeParent->mValue and value may be equal.
 		// In that case it doesn't matter what side we insert on, except that the C++ LWG #233 improvement report
 		// suggests that we should use the insert hint position to force an ordering. So that's what we do.
-		if(bForceToLeft || (pNodeParent == &mAnchor) || mCompare(key, extractKey(pNodeParent->mValue)))
+		if(bForceToLeft || (pNodeParent == &mAnchor) || compare(key, extractKey(pNodeParent->mValue)))
 			side = kRBTreeSideLeft;
 		else
 			side = kRBTreeSideRight;
@@ -1453,17 +1509,17 @@ namespace eastl
 			// To consider: Change this so that 'position' specifies the position after 
 			// where the insertion goes and not the position before where the insertion goes.
 			// Doing so would make this more in line with user expectations and with LWG #233.
-			const bool bPositionLessThanValue = mCompare(extractKey(position.mpNode->mValue), key);
+			const bool bPositionLessThanValue = compare(extractKey(position.mpNode->mValue), key);
 
 			if(bPositionLessThanValue) // If (value > *position)...
 			{
-				EASTL_VALIDATE_COMPARE(!mCompare(key, extractKey(position.mpNode->mValue))); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!compare(key, extractKey(position.mpNode->mValue))); // Validate that the compare function is sane.
 
-				const bool bValueLessThanNext = mCompare(key, extractKey(itNext.mpNode->mValue));
+				const bool bValueLessThanNext = compare(key, extractKey(itNext.mpNode->mValue));
 
 				if(bValueLessThanNext) // If value < *itNext...
 				{
-					EASTL_VALIDATE_COMPARE(!mCompare(extractKey(itNext.mpNode->mValue), key)); // Validate that the compare function is sane.
+					EASTL_VALIDATE_COMPARE(!compare(extractKey(itNext.mpNode->mValue), key)); // Validate that the compare function is sane.
 
 					if(position.mpNode->mpNodeRight)
 					{
@@ -1480,9 +1536,9 @@ namespace eastl
 			return NULL;  // The above specified hint was not useful, then we do a regular insertion.
 		}
 
-		if(mnSize && mCompare(extractKey(((node_type*)mAnchor.mpNodeRight)->mValue), key))
+		if(mnSize && compare(extractKey(((node_type*)mAnchor.mpNodeRight)->mValue), key))
 		{
-			EASTL_VALIDATE_COMPARE(!mCompare(key, extractKey(((node_type*)mAnchor.mpNodeRight)->mValue))); // Validate that the compare function is sane.
+			EASTL_VALIDATE_COMPARE(!compare(key, extractKey(((node_type*)mAnchor.mpNodeRight)->mValue))); // Validate that the compare function is sane.
 			bForceToLeft = false;
 			return (node_type*)mAnchor.mpNodeRight;
 		}
@@ -1506,8 +1562,8 @@ namespace eastl
 			// To consider: Change this so that 'position' specifies the position after 
 			// where the insertion goes and not the position before where the insertion goes.
 			// Doing so would make this more in line with user expectations and with LWG #233.
-			if(!mCompare(key, extractKey(position.mpNode->mValue)) && // If value >= *position && 
-			   !mCompare(extractKey(itNext.mpNode->mValue), key))     // if value <= *itNext...
+			if(!compare(key, extractKey(position.mpNode->mValue)) && // If value >= *position && 
+			   !compare(extractKey(itNext.mpNode->mValue), key))     // if value <= *itNext...
 			{
 				if(position.mpNode->mpNodeRight) // If there are any nodes to the right... [this expression will always be true as long as we aren't at the end()]
 				{
@@ -1525,7 +1581,7 @@ namespace eastl
 
 		// This pathway shouldn't be commonly executed, as the user shouldn't be calling 
 		// this hinted version of insert if the user isn't providing a useful hint.
-		if(mnSize && !mCompare(key, extractKey(((node_type*)mAnchor.mpNodeRight)->mValue))) // If we are non-empty and the value is >= the last node...
+		if(mnSize && !compare(key, extractKey(((node_type*)mAnchor.mpNodeRight)->mValue))) // If we are non-empty and the value is >= the last node...
 		{
 			bForceToLeft =false;
 			return (node_type*)mAnchor.mpNodeRight;
@@ -1619,7 +1675,7 @@ namespace eastl
 		// The reason we may want to have bForceToLeft == true is that pNodeParent->mValue and value may be equal.
 		// In that case it doesn't matter what side we insert on, except that the C++ LWG #233 improvement report
 		// suggests that we should use the insert hint position to force an ordering. So that's what we do.
-		if(bForceToLeft || (pNodeParent == &mAnchor) || mCompare(key, extractKey(pNodeParent->mValue)))
+		if(bForceToLeft || (pNodeParent == &mAnchor) || compare(key, extractKey(pNodeParent->mValue)))
 			side = kRBTreeSideLeft;
 		else
 			side = kRBTreeSideRight;
@@ -1759,7 +1815,7 @@ namespace eastl
 		// To consider: Implement this instead via calling lower_bound and 
 		// inspecting the result. The following is an implementation of this:
 		//    const iterator it(lower_bound(key));
-		//    return ((it.mpNode == &mAnchor) || mCompare(key, extractKey(it.mpNode->mValue))) ? iterator(&mAnchor) : it;
+		//    return ((it.mpNode == &mAnchor) || compare(key, extractKey(it.mpNode->mValue))) ? iterator(&mAnchor) : it;
 		// We don't currently implement the above because in practice people tend to call 
 		// find a lot with trees, but very uncommonly call lower_bound.
 		extract_key extractKey;
@@ -1769,19 +1825,19 @@ namespace eastl
 
 		while(EASTL_LIKELY(pCurrent)) // Do a walk down the tree.
 		{
-			if(EASTL_LIKELY(!mCompare(extractKey(pCurrent->mValue), key))) // If pCurrent is >= key...
+			if(EASTL_LIKELY(!compare(extractKey(pCurrent->mValue), key))) // If pCurrent is >= key...
 			{
 				pRangeEnd = pCurrent;
 				pCurrent  = (node_type*)pCurrent->mpNodeLeft;
 			}
 			else
 			{
-				EASTL_VALIDATE_COMPARE(!mCompare(key, extractKey(pCurrent->mValue))); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!compare(key, extractKey(pCurrent->mValue))); // Validate that the compare function is sane.
 				pCurrent  = (node_type*)pCurrent->mpNodeRight;
 			}
 		}
 
-		if(EASTL_LIKELY((pRangeEnd != &mAnchor) && !mCompare(key, extractKey(pRangeEnd->mValue))))
+		if(EASTL_LIKELY((pRangeEnd != &mAnchor) && !compare(key, extractKey(pRangeEnd->mValue))))
 			return iterator(pRangeEnd);
 		return iterator((node_type*)&mAnchor);
 	}
@@ -1847,14 +1903,14 @@ namespace eastl
 
 		while(EASTL_LIKELY(pCurrent)) // Do a walk down the tree.
 		{
-			if(EASTL_LIKELY(!mCompare(extractKey(pCurrent->mValue), key))) // If pCurrent is >= key...
+			if(EASTL_LIKELY(!compare(extractKey(pCurrent->mValue), key))) // If pCurrent is >= key...
 			{
 				pRangeEnd = pCurrent;
 				pCurrent  = (node_type*)pCurrent->mpNodeLeft;
 			}
 			else
 			{
-				EASTL_VALIDATE_COMPARE(!mCompare(key, extractKey(pCurrent->mValue))); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!compare(key, extractKey(pCurrent->mValue))); // Validate that the compare function is sane.
 				pCurrent  = (node_type*)pCurrent->mpNodeRight;
 			}
 		}
@@ -1883,9 +1939,9 @@ namespace eastl
 
 		while(EASTL_LIKELY(pCurrent)) // Do a walk down the tree.
 		{
-			if(EASTL_LIKELY(mCompare(key, extractKey(pCurrent->mValue)))) // If key is < pCurrent...
+			if(EASTL_LIKELY(compare(key, extractKey(pCurrent->mValue)))) // If key is < pCurrent...
 			{
-				EASTL_VALIDATE_COMPARE(!mCompare(extractKey(pCurrent->mValue), key)); // Validate that the compare function is sane.
+				EASTL_VALIDATE_COMPARE(!compare(extractKey(pCurrent->mValue), key)); // Validate that the compare function is sane.
 				pRangeEnd = pCurrent;
 				pCurrent  = (node_type*)pCurrent->mpNodeLeft;
 			}
@@ -1918,7 +1974,7 @@ namespace eastl
 		//   4 Every simple path from a node to a descendant leaf contains the same number of black nodes.
 		//   5 The mnSize member of the tree must equal the number of nodes in the tree.
 		//   6 The tree is sorted as per a conventional binary tree.
-		//   7 The comparison function is sane; it obeys strict weak ordering. If mCompare(a,b) is true, then mCompare(b,a) must be false. Both cannot be true.
+		//   7 The comparison function is sane; it obeys strict weak ordering. If compare(a,b) is true, then compare(b,a) must be false. Both cannot be true.
 
 		extract_key extractKey;
 
@@ -1944,11 +2000,11 @@ namespace eastl
 				const node_type* const pNodeLeft  = (const node_type*)pNode->mpNodeLeft;
 
 				// Verify #7 above.
-				if(pNodeRight && mCompare(extractKey(pNodeRight->mValue), extractKey(pNode->mValue)) && mCompare(extractKey(pNode->mValue), extractKey(pNodeRight->mValue))) // Validate that the compare function is sane.
+				if(pNodeRight && compare(extractKey(pNodeRight->mValue), extractKey(pNode->mValue)) && compare(extractKey(pNode->mValue), extractKey(pNodeRight->mValue))) // Validate that the compare function is sane.
 					return false;
 
 				// Verify #7 above.
-				if(pNodeLeft && mCompare(extractKey(pNodeLeft->mValue), extractKey(pNode->mValue)) && mCompare(extractKey(pNode->mValue), extractKey(pNodeLeft->mValue))) // Validate that the compare function is sane.
+				if(pNodeLeft && compare(extractKey(pNodeLeft->mValue), extractKey(pNode->mValue)) && compare(extractKey(pNode->mValue), extractKey(pNodeLeft->mValue))) // Validate that the compare function is sane.
 					return false;
 
 				// Verify item #1 above.
@@ -1964,10 +2020,10 @@ namespace eastl
 				}
 
 				// Verify item #6 above.
-				if(pNodeRight && mCompare(extractKey(pNodeRight->mValue), extractKey(pNode->mValue)))
+				if(pNodeRight && compare(extractKey(pNodeRight->mValue), extractKey(pNode->mValue)))
 					return false;
 
-				if(pNodeLeft && mCompare(extractKey(pNode->mValue), extractKey(pNodeLeft->mValue)))
+				if(pNodeLeft && compare(extractKey(pNode->mValue), extractKey(pNodeLeft->mValue)))
 					return false;
 
 				if(!pNodeRight && !pNodeLeft) // If we are at a bottom node of the tree...

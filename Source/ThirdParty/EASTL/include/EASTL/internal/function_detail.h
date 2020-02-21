@@ -101,6 +101,9 @@ namespace eastl
 			    (eastl::alignment_of_v<functor_storage<SIZE_IN_BYTES>> % eastl::alignment_of_v<Functor>) == 0;
 		};
 
+
+		/// function_base_detail
+		///
 		template <int SIZE_IN_BYTES>
 		class function_base_detail
 		{
@@ -320,14 +323,17 @@ namespace eastl
 			~function_base_detail() EA_NOEXCEPT = default;
 		};
 
-		#define EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(FUNCTOR, RET, ARGS, BASE, MYSELF) \
-			typename eastl::enable_if<eastl::is_invocable_r<RET, FUNCTOR, ARGS>::value \
-									  && !eastl::is_base_of_v<BASE, eastl::decay_t<FUNCTOR>> \
-									  && !eastl::is_same_v<eastl::decay_t<FUNCTOR>, MYSELF>>::type
+		#define EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(FUNCTOR, RET, ARGS, BASE, MYSELF)  \
+			typename eastl::enable_if_t<eastl::is_invocable_r_v<RET, FUNCTOR, ARGS> &&         \
+										!eastl::is_base_of_v<BASE, eastl::decay_t<FUNCTOR>> && \
+										!eastl::is_same_v<eastl::decay_t<FUNCTOR>, MYSELF>>
 
 		#define EASTL_INTERNAL_FUNCTION_DETAIL_VALID_FUNCTION_ARGS(FUNCTOR, RET, ARGS, MYSELF) \
 			EASTL_INTERNAL_FUNCTION_VALID_FUNCTION_ARGS(FUNCTOR, RET, ARGS, MYSELF, MYSELF)
 
+
+		/// function_detail
+		///
 		template <int, typename>
 		class function_detail;
 

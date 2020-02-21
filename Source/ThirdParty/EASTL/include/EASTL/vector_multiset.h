@@ -230,12 +230,27 @@ namespace eastl
 		}
 		eastl::pair<const_iterator, const_iterator> equal_range_small(const key_type& k) const;
 
-		// Functions which are disallowed due to being unsafe. We are looking for a way to disable these at
-		// compile-time. Declaring but not defining them doesn't work due to explicit template instantiations.
+		// Functions which are disallowed due to being unsafe. 
+		void      push_back(const value_type& value) = delete;
+		reference push_back()                        = delete;
+		void*     push_back_uninitialized()          = delete;
+		template <class... Args>
+		reference emplace_back(Args&&...)            = delete;
+
+		// NOTE(rparolin): It is undefined behaviour if user code fails to ensure the container
+		// invariants are respected by performing an explicit call to 'sort' before any other
+		// operations on the container are performed that do not clear the elements.
 		//
-		// void      push_back(const value_type& value);
-		// reference push_back();
-		// void*     push_back_uninitialized();
+		// 'push_back_unsorted' and 'emplace_back_unsorted' do not satisfy container invariants
+		// for being sorted. We provide these overloads explicitly labelled as '_unsorted' as an
+		// optimization opportunity when batch inserting elements so users can defer the cost of
+		// sorting the container once when all elements are contained. This was done to clarify
+		// the intent of code by leaving a trace that a manual call to sort is required.
+		// 
+		template <typename... Args> decltype(auto) push_back_unsorted(Args&&... args)    
+			{ return base_type::push_back(eastl::forward<Args>(args)...); }
+		template <typename... Args> decltype(auto) emplace_back_unsorted(Args&&... args) 
+			{ return base_type::emplace_back(eastl::forward<Args>(args)...); }
 
 	}; // vector_multiset
 
@@ -421,8 +436,8 @@ namespace eastl
 	inline typename vector_multiset<K, C, A, RAC>::iterator
 	vector_multiset<K, C, A, RAC>::insert(const value_type& value)
 	{
-		const iterator itLB(lower_bound(value));
-		return base_type::insert(itLB, value);
+		const iterator itUB(upper_bound(value));
+		return base_type::insert(itUB, value);
 	}
 
 
@@ -432,8 +447,8 @@ namespace eastl
 	vector_multiset<K, C, A, RAC>::insert(P&& otherValue)
 	{
 		value_type value(eastl::forward<P>(otherValue));
-		const iterator itLB(lower_bound(value));
-		return base_type::insert(itLB, eastl::move(value));
+		const iterator itUB(upper_bound(value));
+		return base_type::insert(itUB, eastl::move(value));
 	}
 
 
@@ -492,7 +507,7 @@ namespace eastl
 		//              like this container, use the property that they are 
 		//              known to be sorted and speed up the inserts here.
 		for(; first != last; ++first)                               
-			base_type::insert(lower_bound(*first), *first);
+			base_type::insert(upper_bound(*first), *first);
 	}
 
 
@@ -678,7 +693,7 @@ namespace eastl
 	inline bool operator==(const vector_multiset<Key, Compare, Allocator, RandomAccessContainer>& a, 
 						   const vector_multiset<Key, Compare, Allocator, RandomAccessContainer>& b) 
 	{
-		return (a.size() == b.size()) && equal(b.begin(), b.end(), a.begin());
+		return (a.size() == b.size()) && eastl::equal(b.begin(), b.end(), a.begin());
 	}
 
 
@@ -686,7 +701,7 @@ namespace eastl
 	inline bool operator<(const vector_multiset<Key, Compare, Allocator, RandomAccessContainer>& a,
 						  const vector_multiset<Key, Compare, Allocator, RandomAccessContainer>& b)
 	{
-		return lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), a.value_comp());
+		return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(), a.value_comp());
 	}
 
 
