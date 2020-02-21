@@ -157,12 +157,15 @@ struct TupleRecurser<>
 
 	static EA_CONSTEXPR size_type GetTotalAllocationSize(size_type capacity, size_type offset)
 	{
+		EA_UNUSED(capacity);
 		return offset;
 	}
 
 	template<typename Allocator, size_type I, typename Indices, typename... VecTypes>
 	static pair<void*, size_type> DoAllocate(TupleVecImpl<Allocator, Indices, VecTypes...> &vec, void** ppNewLeaf, size_type capacity, size_type offset)
 	{
+		EA_UNUSED(ppNewLeaf);
+
 		// If n is zero, then we allocate no memory and just return NULL. 
 		// This is fine, as our default ctor initializes with NULL pointers. 
 		size_type alignment = TupleRecurser<VecTypes...>::GetTotalAlignment();
@@ -180,7 +183,12 @@ struct TupleRecurser<>
 
 	template<typename TupleVecImplType, size_type I>
 	static void SetNewData(TupleVecImplType &vec, void* pData, size_type capacity, size_type offset) 
-	{ }
+	{ 
+		EA_UNUSED(vec);
+		EA_UNUSED(pData);
+		EA_UNUSED(capacity);
+		EA_UNUSED(offset);
+	}
 };
 
 template <typename T, typename... Ts>
@@ -1471,21 +1479,21 @@ template <typename AllocatorA, typename AllocatorB, typename Indices, typename..
 inline bool operator==(const TupleVecInternal::TupleVecImpl<AllocatorA, Indices, Ts...>& a,
 					   const TupleVecInternal::TupleVecImpl<AllocatorB, Indices, Ts...>& b)
 {
-	return ((a.size() == b.size()) && equal(a.begin(), a.end(), b.begin()));
+	return ((a.size() == b.size()) && eastl::equal(a.begin(), a.end(), b.begin()));
 }
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>
 inline bool operator!=(const TupleVecInternal::TupleVecImpl<AllocatorA, Indices, Ts...>& a,
 					   const TupleVecInternal::TupleVecImpl<AllocatorB, Indices, Ts...>& b)
 {
-	return ((a.size() != b.size()) || !equal(a.begin(), a.end(), b.begin()));
+	return ((a.size() != b.size()) || !eastl::equal(a.begin(), a.end(), b.begin()));
 }
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>
 inline bool operator<(const TupleVecInternal::TupleVecImpl<AllocatorA, Indices, Ts...>& a,
 					  const TupleVecInternal::TupleVecImpl<AllocatorB, Indices, Ts...>& b)
 {
-	return lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+	return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 }
 
 template <typename AllocatorA, typename AllocatorB, typename Indices, typename... Ts>

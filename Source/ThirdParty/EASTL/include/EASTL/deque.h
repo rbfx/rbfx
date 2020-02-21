@@ -2612,19 +2612,19 @@ namespace eastl
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	inline bool operator==(const deque<T, Allocator, kDequeSubarraySize>& a, const deque<T, Allocator, kDequeSubarraySize>& b)
 	{
-		return ((a.size() == b.size()) && equal(a.begin(), a.end(), b.begin()));
+		return ((a.size() == b.size()) && eastl::equal(a.begin(), a.end(), b.begin()));
 	}
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	inline bool operator!=(const deque<T, Allocator, kDequeSubarraySize>& a, const deque<T, Allocator, kDequeSubarraySize>& b)
 	{
-		return ((a.size() != b.size()) || !equal(a.begin(), a.end(), b.begin()));
+		return ((a.size() != b.size()) || !eastl::equal(a.begin(), a.end(), b.begin()));
 	}
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
 	inline bool operator<(const deque<T, Allocator, kDequeSubarraySize>& a, const deque<T, Allocator, kDequeSubarraySize>& b)
 	{
-		return lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
+		return eastl::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end());
 	}
 
 	template <typename T, typename Allocator, unsigned kDequeSubarraySize>
@@ -2649,6 +2649,25 @@ namespace eastl
 	inline void swap(deque<T, Allocator, kDequeSubarraySize>& a, deque<T, Allocator, kDequeSubarraySize>& b)
 	{
 		a.swap(b);
+	}
+
+	///////////////////////////////////////////////////////////////////////
+	// erase / erase_if
+	//
+	// https://en.cppreference.com/w/cpp/container/deque/erase2
+	///////////////////////////////////////////////////////////////////////
+	template <class T, class Allocator, class U>
+	void erase(deque<T, Allocator>& c, const U& value)
+	{
+		// Erases all elements that compare equal to value from the container.
+		c.erase(eastl::remove(c.begin(), c.end(), value), c.end());
+	}
+
+	template <class T, class Allocator, class Predicate>
+	void erase_if(deque<T, Allocator>& c, Predicate predicate)
+	{
+		// Erases all elements that satisfy the predicate pred from the container.
+		c.erase(eastl::remove_if(c.begin(), c.end(), predicate), c.end());
 	}
 
 

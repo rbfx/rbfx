@@ -89,8 +89,8 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #ifndef EASTL_VERSION
-	#define EASTL_VERSION   "3.13.04"
-	#define EASTL_VERSION_N  31304
+	#define EASTL_VERSION   "3.16.01"
+	#define EASTL_VERSION_N  31601
 #endif
 
 
@@ -146,15 +146,15 @@
 
 	#if defined(EA_COMPILER_MSVC_2015)
 		#define EA_CPP14_CONSTEXPR  // not supported
-		#define EA_NO_CPP14_CONSTEXPR
+		#define EA_NO_CPP14_CONSTEXPR 
 	#elif defined(__GNUC__) && (EA_COMPILER_VERSION < 9000)   // Before GCC 9.0
 		#define EA_CPP14_CONSTEXPR  // not supported
-		#define EA_NO_CPP14_CONSTEXPR
+		#define EA_NO_CPP14_CONSTEXPR 
 	#elif defined(EA_COMPILER_CPP14_ENABLED)
 		#define EA_CPP14_CONSTEXPR constexpr
 	#else
 		#define EA_CPP14_CONSTEXPR  // not supported
-		#define EA_NO_CPP14_CONSTEXPR
+		#define EA_NO_CPP14_CONSTEXPR 
 	#endif
 #endif
 
@@ -245,6 +245,20 @@ namespace eastl
 		#define EASTL_DLL 1
 	#else
 		#define EASTL_DLL 0
+	#endif
+#endif
+
+
+///////////////////////////////////////////////////////////////////////////////
+// EASTL_IF_NOT_DLL
+//
+// Utility to include expressions only for static builds. 
+//
+#ifndef EASTL_IF_NOT_DLL
+	#if EASTL_DLL
+		#define EASTL_IF_NOT_DLL(x) 
+	#else
+		#define EASTL_IF_NOT_DLL(x) x
 	#endif
 #endif
 
@@ -647,6 +661,9 @@ namespace eastl
 			#define EASTL_DEBUG_BREAK() { __asm int 3 }
 		#elif (defined(EA_PROCESSOR_X86) || defined(EA_PROCESSOR_X86_64)) && (defined(EA_ASM_STYLE_ATT) || defined(__GNUC__))
 			#define EASTL_DEBUG_BREAK() asm("int3")
+		#elif defined(EA_PLATFORM_POSIX)
+			#include <signal.h>
+			#define EASTL_DEBUG_BREAK() raise(SIGTRAP)  // Urho3D
 		#else
 			void EASTL_DEBUG_BREAK(); // User must define this externally.
 		#endif
@@ -1861,10 +1878,10 @@ typedef EASTL_SSIZE_T eastl_ssize_t; // Signed version of eastl_size_t. Concept 
 
 
 /// EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
-/// This feature define allows users to toggle the problematic eastl::pair implicit
+/// This feature define allows users to toggle the problematic eastl::pair implicit 
 /// single element constructor.
 #ifndef EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR
-	#define EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR 1
+	#define EASTL_ENABLE_PAIR_FIRST_ELEMENT_CONSTRUCTOR 0
 #endif
 
 

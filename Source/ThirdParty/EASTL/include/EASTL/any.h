@@ -501,16 +501,20 @@ namespace eastl
 				m_handler = tmp.m_handler;
 				tmp.m_handler(storage_operation::MOVE, &tmp, this);
 			}
-			else if (m_handler == nullptr)
+			else if (m_handler == nullptr && other.m_handler)
 			{
 				eastl::swap(m_handler, other.m_handler);
 				m_handler(storage_operation::MOVE, &other, this);
 			}
-			else if(other.m_handler == nullptr)
+			else if(m_handler && other.m_handler == nullptr)
 			{
 				eastl::swap(m_handler, other.m_handler);
 				other.m_handler(storage_operation::MOVE, this, &other);
 			}
+			//else if (m_handler == nullptr && other.m_handler == nullptr)
+			//{
+			//     // nothing to swap 
+			//}
 		}
 
 	    // 20.7.3.4, observers
@@ -592,7 +596,7 @@ namespace eastl
 	template <class ValueType>
 	inline const ValueType* any_cast(const any* pAny) EA_NOEXCEPT
 	{
-		return (pAny && pAny->m_handler //== &any::storage_handler<decay_t<ValueType>>::handler_func
+		return (pAny && pAny->m_handler EASTL_IF_NOT_DLL(== &any::storage_handler<decay_t<ValueType>>::handler_func)
 				#if EASTL_RTTI_ENABLED
 					&& pAny->type() == typeid(typename remove_reference<ValueType>::type)
 				#endif
@@ -604,7 +608,7 @@ namespace eastl
 	template <class ValueType>
 	inline ValueType* any_cast(any* pAny) EA_NOEXCEPT
 	{
-		return (pAny && pAny->m_handler //== &any::storage_handler<decay_t<ValueType>>::handler_func
+		return (pAny && pAny->m_handler EASTL_IF_NOT_DLL(== &any::storage_handler<decay_t<ValueType>>::handler_func)
 				#if EASTL_RTTI_ENABLED
 					&& pAny->type() == typeid(typename remove_reference<ValueType>::type)
 				#endif

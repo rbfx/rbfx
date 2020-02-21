@@ -100,6 +100,9 @@
  *  C++17 functionality
  *     EA_COMPILER_NO_INLINE_VARIABLES
  *     EA_COMPILER_NO_ALIGNED_NEW
+ *
+ *  C++20 functionality
+ *     EA_COMPILER_NO_DESIGNATED_INITIALIZERS
  *     
  *-----------------------------------------------------------------------------
  *
@@ -258,10 +261,6 @@
 			#define EA_COMPILER_CPP11_ENABLED 1
 		#elif defined(_MSC_VER) && _MSC_VER >= 1600         // Microsoft unilaterally enables its C++11 support; there is no way to disable it.
 			#define EA_COMPILER_CPP11_ENABLED 1
-		#elif defined(__SN_VER__) && (__SN_VER__ >= 43001)
-			#if __option(cpp11)
-				#define EA_COMPILER_CPP11_ENABLED 1
-			#endif
 		#elif defined(__EDG_VERSION__) // && ???
 			// To do: Is there a generic way to determine this?
 		#endif
@@ -298,8 +297,30 @@
 	#if !defined(EA_COMPILER_CPP17_ENABLED) && defined(__cplusplus)
 		#if (__cplusplus >= 201703L) 
 			#define EA_COMPILER_CPP17_ENABLED 1
+		#elif defined(_MSVC_LANG) && (_MSVC_LANG >= 201703L) // C++17+
+			#define EA_COMPILER_CPP17_ENABLED 1
 		#endif
 	#endif
+
+
+	// EA_COMPILER_CPP20_ENABLED
+	//
+	// Defined as 1 if the compiler has its available C++20 support enabled, else undefined.
+	// This does not mean that all of C++20 or any particular feature of C++20 is supported
+	// by the compiler. It means that whatever C++20 support the compiler has is enabled.
+ 	//
+	// We cannot use (__cplusplus >= 202003L) alone because some compiler vendors have
+	// decided to not define __cplusplus like thus until they have fully completed their
+	// C++20 support.
+	#if !defined(EA_COMPILER_CPP20_ENABLED) && defined(__cplusplus)
+ 		// TODO(rparoin): enable once a C++20 value for the __cplusplus macro has been published
+		// #if (__cplusplus >= 202003L)
+		//     #define EA_COMPILER_CPP20_ENABLED 1
+		// #elif defined(_MSVC_LANG) && (_MSVC_LANG >= 202003L) // C++20+
+		//     #define EA_COMPILER_CPP20_ENABLED 1
+		// #endif
+	#endif
+
 
 
 	#if   defined(__ARMCC_VERSION)
@@ -676,7 +697,7 @@
 			#define EA_THROW_SPEC_DELETE_NONE() throw() 
 
 		#else
-			#if defined(EA_PLATFORM_PS4)
+			#if defined(EA_PLATFORM_SONY)
 				#define EA_THROW_SPEC_NEW(X)        _THROWS(X)
 			#elif defined(_MSC_VER)
 				// Disabled warning "nonstandard extension used: 'throw (...)'" as this warning is a W4 warning which is usually off by default
@@ -1292,6 +1313,24 @@
 	#endif
 
 
+	// EA_COMPILER_NO_DESIGNATED_INITIALIZERS
+	//
+	// Indicates the target compiler supports the C++20 "designated initializer" language feature.
+	// https://en.cppreference.com/w/cpp/language/aggregate_initialization
+	//
+	// Example:
+	//   struct A { int x; int y; };
+	//   A a = { .y = 42, .x = 1 };
+	//
+	#if !defined(EA_COMPILER_NO_DESIGNATED_INITIALIZERS)
+		#if defined(EA_COMPILER_CPP20_ENABLED)
+			// supported.
+		#else
+			#define EA_COMPILER_NO_DESIGNATED_INITIALIZERS 1
+		#endif
+	#endif
+
+
 	// EA_COMPILER_NO_NONSTATIC_MEMBER_INITIALIZERS
 	//
 	// Refers to C++11 declaration attribute: carries_dependency.
@@ -1716,13 +1755,12 @@
 	// specifically to full C++11 thread_local support. The EAThread package provides a wrapper for 
 	// __thread via EA_THREAD_LOCAL (which unfortunately sounds like C++ thread_local). 
 	//
+	// https://en.cppreference.com/w/cpp/keyword/thread_local
+	//
 	#if !defined(EA_COMPILER_NO_THREAD_LOCAL)
-		// Not supported by VC++ as of VS2013, though all VC++ versions have partial support via __thread.
-
-		//#if defined(EA_COMPILER_CPP11_ENABLED) && defined(__clang__) && __has_feature(cxx_thread_local) && _______
-		//    // thread_local requires a cooperating standard library, and we yet don't have a means to identify such a thing.
-
-		#if defined(EA_COMPILER_CPP11_ENABLED) && defined(_MSC_VER) && (EA_COMPILER_VERSION >= 1900)     // VS2015+
+		#if defined(EA_COMPILER_CPP11_ENABLED) && defined(__clang__) && EA_COMPILER_HAS_FEATURE(cxx_thread_local)
+			// supported.
+		#elif defined(EA_COMPILER_CPP11_ENABLED) && defined(_MSC_VER) && (EA_COMPILER_VERSION >= 1900)     // VS2015+
 			// supported.
 		#elif defined(EA_COMPILER_CPP11_ENABLED) && defined(__GNUC__) && (EA_COMPILER_VERSION >= 4008)   // GCC 4.8+
 			// supported.
