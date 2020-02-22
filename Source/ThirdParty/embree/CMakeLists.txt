@@ -439,28 +439,31 @@ INCLUDE (ispc)
 ##############################################################
 # Create Config files
 ##############################################################
+# Urho3D: Configure files in the build tree
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/kernels)
+file (MAKE_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/include/embree3)
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/config.h.in"
-  "${PROJECT_SOURCE_DIR}/kernels/config.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/kernels/config.h"
 )
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/rtcore_config.h.in"
-  "${PROJECT_SOURCE_DIR}/include/embree3/rtcore_config.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/include/embree3/rtcore_config.h"
 )
 
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/hash.h.in"
-  "${PROJECT_SOURCE_DIR}/kernels/hash.h"
+  "${CMAKE_CURRENT_BINARY_DIR}/kernels/hash.h"
 )
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/export.linux.map.in"
-  "${PROJECT_SOURCE_DIR}/kernels/export.linux.map"
+  "${CMAKE_CURRENT_BINARY_DIR}/kernels/export.linux.map"
 )
 CONFIGURE_FILE(
   "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map.in"
-  "${PROJECT_SOURCE_DIR}/kernels/export.macosx.map"
+  "${CMAKE_CURRENT_BINARY_DIR}/kernels/export.macosx.map"
 )
 
 ##############################################################
@@ -509,8 +512,8 @@ ADD_SUBDIRECTORY(kernels)
 ###############################################################
 #INCLUDE(CPack)
 
-# Urho3D: Install headers
+# Urho3D: Includes.
 target_include_directories(embree PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}/include>
 )
-install(DIRECTORY include/embree3 DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/)
