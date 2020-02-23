@@ -143,8 +143,12 @@ set (CMAKE_RANLIB       ${EMSCRIPTEN_ROOT_PATH}/emranlib${TOOL_EXT} CACHE PATH "
 set (CMAKE_LINKER       ${EMSCRIPTEN_ROOT_PATH}/emlink.py           CACHE PATH "linker")
 # Specific to Emscripten
 set (EMRUN              ${EMSCRIPTEN_ROOT_PATH}/emrun${TOOL_EXT}    CACHE PATH "emrun")
-set (EMPACKAGER         python2 ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
-set (EMBUILDER          python2 ${EMSCRIPTEN_ROOT_PATH}/embuilder.py CACHE PATH "embuilder.py")
+find_program(PYTHON NAMES python2 python)
+if (NOT PYTHON)
+    message(FATAL_ERROR "Python v2.7 is required")
+endif ()
+set (EMPACKAGER         ${PYTHON} ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
+set (EMBUILDER          ${PYTHON} ${EMSCRIPTEN_ROOT_PATH}/embuilder.py CACHE PATH "embuilder.py")
 
 # Still perform the compiler checks except for those stated otherwise below
 foreach (LANG C CXX)
