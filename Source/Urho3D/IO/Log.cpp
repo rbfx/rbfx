@@ -234,7 +234,7 @@ Log::~Log()
 
 void Log::Open(const ea::string& fileName)
 {
-#if !defined(MOBILE) && !defined(WEB)
+#if !defined(MOBILE) && !defined(__EMSCRIPTEN__)
     if (fileName.empty())
         return;
 
@@ -251,7 +251,7 @@ void Log::Open(const ea::string& fileName)
 
 void Log::Close()
 {
-#if !defined(MOBILE) && !defined(WEB)
+#if !defined(MOBILE) && !defined(__EMSCRIPTEN__)
     if (impl_->fileSink_)
     {
         impl_->sinkProxy_->remove_sink(impl_->fileSink_);
@@ -285,7 +285,7 @@ void Log::SetLogFormat(const ea::string& format)
     if (impl_->platformSink_)
         impl_->platformSink_->set_pattern(format.c_str());
 
-#if !defined(MOBILE) && !defined(WEB)
+#if !defined(MOBILE) && !defined(__EMSCRIPTEN__)
     // May not be opened yet if patter is set from Application::Setup().
     if (impl_->fileSink_)
         impl_->fileSink_->set_pattern(format.c_str());
