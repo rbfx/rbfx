@@ -550,9 +550,11 @@ function (package_resources_web)
         set (PRELOAD_FILES ${PRELOAD_FILES} ${file}@${rel_file})
     endforeach ()
 
-    if (CMAKE_BUILD_TYPE STREQUAL Debug AND EMSCRIPTEN_EMCC_VERSION VERSION_GREATER 1.32.2)
-        set (SEPARATE_METADATA --separate-metadata)
-    endif ()
+    # TODO: Do we need it? It breaks debug build.
+    # See https://github.com/emscripten-core/emscripten/issues/10555
+    #if (CMAKE_BUILD_TYPE STREQUAL Debug AND EMSCRIPTEN_EMCC_VERSION VERSION_GREATER 1.32.2)
+    #    set (SEPARATE_METADATA --separate-metadata)
+    #endif ()
     get_filename_component(LOADER_DIR "${PAK_OUTPUT}" DIRECTORY)
     add_custom_target("${PAK_OUTPUT}"
         COMMAND ${EMPACKAGER} ${PAK_RELATIVE_DIR}${PAK_OUTPUT}.data --preload ${PRELOAD_FILES} --js-output=${PAK_RELATIVE_DIR}${PAK_OUTPUT} --use-preload-cache ${SEPARATE_METADATA}

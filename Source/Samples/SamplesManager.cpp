@@ -378,7 +378,9 @@ void SamplesManager::OnFrameStart()
                 }
             }
 #endif
+#if !defined(__EMSCRIPTEN__)
             context_->GetEngine()->Exit();
+#endif
         }
     }
 }
