@@ -4,6 +4,7 @@
     %typemap(csbody) TYPE %{
       [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+      private bool _disposing = true;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // This function gets called when we want to turn a native cPtr into managed instance. For example when some
         // method returns a pointer to a wrapped object.
@@ -107,15 +108,16 @@
 
     %typemap(csdispose) TYPE %{
       ~$csclassname() {
+        _disposing = false;
         if (!Expired) {
-          Dispose(false);
           // Finalizer should only execute if only .NET held references to a managed object and lost them.
           global::System.Diagnostics.Debug.Assert(_netRefs == Refs());
           // Release all references but one here on this thread.
           while (_netRefs > 1)
               _ReleaseRefNet();
           // Release last reference on main thread if possible.
-          ReleaseRefSafe();
+          if (_netRefs == 1)
+              ReleaseRefSafe();
         }
       }
 

@@ -127,7 +127,7 @@ void RefCounted::SetScriptObject(void* handle)
     if (scriptObject_ != nullptr)
     {
         if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
-            Script::GetRuntimeApi()->FreeGCHandle(scriptObject_);
+            api->FreeGCHandle(scriptObject_);
     }
     scriptObject_ = handle;
 }
