@@ -899,7 +899,15 @@ public:
     T* Add(Args&&... args) { return static_cast<T*>(Add(new T(std::forward<Args>(args)...))); }
     /// Record action into undo stack. Should be used for cases where continuous change does not span multiple frames.
     /// For example with text input widgets that are committed with [Enter] key, combo boxes, checkboxes and similar.
-    UndoAction* Add(UndoAction* action) { currentFrameActions_.push_back(SharedPtr(action)); return action; }
+    UndoAction* Add(UndoAction* action)
+    {
+        if (trackingEnabled_)
+        {
+            currentFrameActions_.push_back(SharedPtr(action));
+            return action;
+        }
+        return nullptr;
+    }
 
     /// Track changes performed by this scene.
     void Connect(Scene* scene);
