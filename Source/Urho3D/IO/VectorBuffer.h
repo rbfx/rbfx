@@ -69,6 +69,8 @@ public:
 
     /// Return the buffer.
     const ea::vector<unsigned char>& GetBuffer() const { return buffer_; }
+    /// Return the buffer.
+    ea::vector<unsigned char>& GetBuffer() { return buffer_; }
 
 private:
     /// Dynamic data buffer.
