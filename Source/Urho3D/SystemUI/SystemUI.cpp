@@ -65,7 +65,29 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     // UI subsystem is responsible for managing cursors and that interferes with ImGui.
     io.ConfigFlags |= flags;
 
+    PlatformInitialize();
+
+    // Subscribe to events
+    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
+    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
+    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
+    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
+    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
+    SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
+    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
+}
+
+SystemUI::~SystemUI()
+{
+    PlatformShutdown();
+    ui::DestroyContext(imContext_);
+    imContext_ = nullptr;
+}
+
+void SystemUI::PlatformInitialize()
+{
     Graphics* graphics = GetSubsystem<Graphics>();
+    ImGuiIO& io = ui::GetIO();
     io.DisplaySize = { static_cast<float>(graphics->GetWidth()), static_cast<float>(graphics->GetHeight()) };
 #if URHO3D_OPENGL
     ImGui_ImplSDL2_InitForOpenGL(static_cast<SDL_Window*>(graphics->GetSDLWindow()), graphics->GetImpl()->GetGLContext());
@@ -84,40 +106,6 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
 #else
     ImGui_ImplDX9_Init(graphics->GetImpl()->GetDevice());
 #endif
-
-    // Subscribe to events
-    SubscribeToEvent(E_SDLRAWINPUT, [this](StringHash, VariantMap& args) { OnRawEvent(args); });
-    SubscribeToEvent(E_SCREENMODE, [this](StringHash, VariantMap& args) { OnScreenMode(args); });
-    SubscribeToEvent(E_INPUTEND, [this](StringHash, VariantMap& args) { OnInputEnd(args); });
-    SubscribeToEvent(E_ENDRENDERING, [this](StringHash, VariantMap&) { OnRenderEnd(); });
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
-    SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
-    SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
-}
-
-SystemUI::~SystemUI()
-{
-#if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_Shutdown();
-#elif URHO3D_D3D11
-    ImGui_ImplDX11_Shutdown();
-#else
-    ImGui_ImplDX9_Shutdown();
-#endif
-    ImGui_ImplSDL2_Shutdown();
-    ui::DestroyContext(imContext_);
-    imContext_ = nullptr;
-}
-
-void SystemUI::PlatformInitialize()
-{
-#if URHO3D_OPENGL
-    ImGui_ImplOpenGL3_CreateDeviceObjects();
-#elif URHO3D_D3D11
-    ImGui_ImplDX11_CreateDeviceObjects();
-#else
-    ImGui_ImplDX9_CreateDeviceObjects();
-#endif
 }
 
 void SystemUI::PlatformShutdown()
@@ -129,6 +117,7 @@ void SystemUI::PlatformShutdown()
 #else
     ImGui_ImplDX9_InvalidateDeviceObjects();
 #endif
+    ImGui_ImplSDL2_Shutdown();
 }
 
 void SystemUI::OnRawEvent(VariantMap& args)
@@ -211,8 +200,6 @@ void SystemUI::OnRenderEnd()
 
     URHO3D_PROFILE("SystemUiRender");
     SendEvent(E_ENDRENDERINGSYSTEMUI);
-
-    Graphics* graphics = GetSubsystem<Graphics>();
 
     ImGuiIO& io = ui::GetIO();
     ui::Render();
