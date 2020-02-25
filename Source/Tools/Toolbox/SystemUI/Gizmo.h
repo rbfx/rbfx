@@ -23,15 +23,16 @@
 #pragma once
 
 #include "ToolboxAPI.h"
+#include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Scene/Node.h>
+#include <Urho3D/Graphics/Camera.h>
+#include <Urho3D/IO/Log.h>
 #include <Urho3D/SystemUI/SystemUI.h>
-
+#include <Urho3D/SystemUI/SystemUIEvents.h>
+#include <ImGuizmo/ImGuizmo.h>
 
 namespace Urho3D
 {
-
-class Camera;
-class Node;
 
 enum GizmoOperation
 {
@@ -46,23 +47,30 @@ class URHO3D_TOOLBOX_API Gizmo : public Object
     URHO3D_OBJECT(Gizmo, Object);
 public:
     /// Construct.
-    Gizmo(Context* context);
+    explicit Gizmo(Context* context);
     /// Destruct.
-    virtual ~Gizmo();
+    ~Gizmo() override;
     /// Manipulate node. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param node to be manipulated.
     /// \returns true if node was manipulated on current frame.
-    bool Manipulate(const Camera* camera, Node* node);
+    bool ManipulateNode(const Camera* camera, Node* node);
     /// Manipulate multiple nodes. Should be called from within E_UPDATE event.
     /// \param camera which observes the node.
     /// \param nodes to be manipulated. Specifying more than one node manipulates them in world space.
     /// \returns true if node was manipulated on current frame.
-    bool Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& nodes);
-    /// Manipulate current node selection. Should be called from within E_UPDATE event.
-    /// \param camera which observes the node.
-    /// \returns true if node(s) were manipulated on current frame.
-    bool ManipulateSelection(const Camera* camera);
+    bool Manipulate(const Camera* camera, Node** begin, Node** end);
+    template<typename Container>
+    bool Manipulate(const Camera* camera, const Container& container)
+    {
+        manipulatedNodes_.clear();
+        for (Node* node : container)
+        {
+            if (node)
+                manipulatedNodes_.push_back(node);
+        }
+        return Manipulate(camera, manipulatedNodes_.begin(), manipulatedNodes_.end());
+    }
     /// Set operation mode. Possible modes: rotation, translation and scaling.
     void SetOperation(GizmoOperation operation) { operation_ = operation; }
     /// Get current manipulation mode.
@@ -76,48 +84,36 @@ public:
     bool IsActive() const;
     /// Render gizmo ui. This needs to be called between ui::Begin() / ui::End().
     void RenderUI();
-    /// Add a node to selection.
-    bool Select(Node* node);
-    /// Add a node to selection.
-    bool Select(ea::vector<Node*> nodes);
-    /// Remove a node from selection.
-    bool Unselect(Node* node);
-    /// Select if node was not selected or unselect if node was selected.
-    void ToggleSelection(Node* node);
-    /// Unselect all nodes.
-    bool UnselectAll();
-    /// Return true if node is selected by gizmo.
-    bool IsSelected(Node* node) const;
-    /// Return list of selected nodes.
-    const ea::vector<WeakPtr<Node>>& GetSelection() const { return nodeSelection_; }
     /// Get the center of selected nodes.
-    /// \param outCenter If returns true, it gets the center, else it will be set to ZERO vector
     /// \param nodes The nodes to be calculated.
-    /// \returns Returns the number of selected nodes.
-    const int GetSelectionCenter(Vector3& outCenter, const ea::vector<WeakPtr<Node>>& nodes) const;
-    /// Get the center of selected nodes.
     /// \param outCenter If returns true, it gets the center, else it will be set to ZERO vector
     /// \returns Returns the number of selected nodes.
-    const int GetSelectionCenter(Vector3& outCenter) const;
+    static int GetSelectionCenter(Vector3& outCenter, Node** begin, Node** end);
+    template<typename Container>
+    int GetSelectionCenter(Vector3& outCenter, const Container& container)
+    {
+        manipulatedNodes_.clear();
+        for (Node* node : container)
+        {
+            if (node)
+                manipulatedNodes_.push_back(node);
+        }
+        return GetSelectionCenter(outCenter, manipulatedNodes_.begin(), manipulatedNodes_.end());
+    }
 
 protected:
-
     /// Current gizmo operation. Translation, rotation or scaling.
     GizmoOperation operation_ = GIZMOOP_TRANSLATE;
     /// Current coordinate space to operate in. World or local.
     TransformSpace transformSpace_ = TS_WORLD;
     /// Saved node scale on operation start.
     ea::unordered_map<Node*, Vector3> nodeScaleStart_;
-    /// Current operation origin. This is center point between all nodes that are being manipulated.
-    Matrix4 currentOrigin_;
-    /// Current node selection. Nodes removed from the scene are automatically unselected.
-    ea::vector<WeakPtr<Node> > nodeSelection_;
-    /// Camera which is used for automatic node selection in the scene camera belongs to.
-    WeakPtr<Camera> autoModeCamera_;
     /// Flag indicating that gizmo was active on the last frame.
     bool wasActive_ = false;
     /// A map of initial transforms.
     ea::unordered_map<Node*, Matrix3x4> initialTransforms_;
+    ///
+    ea::vector<Node*> manipulatedNodes_;
 };
 
 }

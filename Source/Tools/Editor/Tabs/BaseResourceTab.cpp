@@ -103,7 +103,8 @@ void BaseResourceTab::SetResourceName(const ea::string& resourceName)
 
 bool BaseResourceTab::IsModified() const
 {
-    return lastUndoIndex_ != undo_->Index();
+    // return lastUndoIndex_ != undo_->Index();
+    return false;
 }
 
 void BaseResourceTab::Close()
@@ -136,9 +137,15 @@ bool BaseResourceTab::RenderWindowContent()
                 GetFileNameAndExtension(resourceName_).c_str(),
                 GetFileNameAndExtension(pendingLoadResource_).c_str());
 
-            if (ui::Button(ICON_FA_SAVE " Save & Open"))
-            {
+            bool save = ui::Button(ICON_FA_SAVE " Save & Open");
+            ui::SameLine();
+            bool open = save || ui::Button(ICON_FA_EXCLAMATION_TRIANGLE " Close & Open");
+
+            if (save)
                 SaveResource();
+
+            if (open)
+            {
                 LoadResource(pendingLoadResource_);
                 pendingLoadResource_.clear();
                 ui::CloseCurrentPopup();

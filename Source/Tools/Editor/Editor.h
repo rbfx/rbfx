@@ -159,11 +159,17 @@ protected:
         context_->RegisterFactory<Inspector>();
         registeredInspectorProviders_[Inspectable::GetTypeStatic()] = Inspector::GetTypeStatic();
     }
+    /// Handle selection changes.
+    void OnSelectionChanged(StringHash, VariantMap& args);
 
     /// List of active scene tabs.
     ea::vector<SharedPtr<Tab>> tabs_;
     /// Last focused scene tab.
     WeakPtr<Tab> activeTab_;
+    /// Tab containing current user selection.
+    WeakPtr<Tab> selectionTab_;
+    /// Current selection serialized.
+    ByteVector selectionBuffer_;
     /// Prefix path of CoreData and EditorData.
     ea::string coreResourcePrefixPath_;
     /// Currently loaded project.

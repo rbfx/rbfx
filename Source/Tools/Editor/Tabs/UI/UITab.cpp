@@ -23,6 +23,7 @@
 #include <EASTL/sort.h>
 
 #include <Urho3D/Graphics/Graphics.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Input/Input.h>
@@ -478,6 +479,8 @@ void UITab::SelectItem(UIElement* current)
         textureSelectorAttribute_.clear();
 
     selectedElement_ = current;
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
 
     auto* editor = GetSubsystem<Editor>();
     editor->ClearInspector();
@@ -813,6 +816,29 @@ void UITab::OnFocused()
 {
     auto* editor = GetSubsystem<Editor>();
     editor->GetTab<HierarchyTab>()->SetProvider(this);
+}
+
+void UITab::ClearSelection()
+{
+    selectedElement_ = nullptr;
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
+}
+
+bool UITab::SerializeSelection(Archive& archive)
+{
+    if (auto block = archive.OpenSequentialBlock("selection"))
+    {
+        UIElementPath path;
+        if (!archive.IsInput())
+            path = GetUIElementPath(selectedElement_);
+        if (!SerializeVector(archive, "path", "index", path))
+            return false;
+        if (archive.IsInput())
+            selectedElement_ = GetUIElementByPath(rootElement_, path);
+        return true;
+    }
+    return false;
 }
 
 }

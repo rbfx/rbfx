@@ -432,7 +432,10 @@ using UIElementPath = ea::vector<unsigned>;
 
 static UIElementPath GetUIElementPath(UIElement* element)
 {
-    ea::vector<unsigned> path;
+    UIElementPath path;
+    if (element == nullptr)
+        return path;
+
     unsigned pathCount = 1;
     for (UIElement* el = element; el->GetParent() != nullptr; el = el->GetParent())
         pathCount++;
@@ -449,16 +452,16 @@ static UIElementPath GetUIElementPath(UIElement* element)
     return path;
 }
 
-static UIElement* GetUIElementByPath(UIElement* el, const UIElementPath& path)
+static UIElement* GetUIElementByPath(UIElement* root, const UIElementPath& path)
 {
     for (unsigned index : path)
     {
-        const ea::vector<SharedPtr<UIElement>>& children = el->GetChildren();
+        const ea::vector<SharedPtr<UIElement>>& children = root->GetChildren();
         if (index >= children.size())
             return nullptr;
-        el = children[index].Get();
+        root = children[index].Get();
     }
-    return el;
+    return root;
 }
 
 class URHO3D_TOOLBOX_API UndoEditAttribute : public UndoAction

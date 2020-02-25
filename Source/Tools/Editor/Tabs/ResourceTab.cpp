@@ -27,6 +27,7 @@
 #include <Urho3D/Resource/ResourceEvents.h>
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Model.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/Log.h>
 #ifdef URHO3D_GLOW
 #include <Urho3D/Glow/LightmapUVGenerator.h>
@@ -370,6 +371,30 @@ void ResourceTab::SelectCurrentItemInspector()
 
     using namespace EditorResourceSelected;
     SendEvent(E_EDITORRESOURCESELECTED, P_CTYPE, GetContentType(context_, selected), P_RESOURCENAME, selected);
+
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
+}
+
+void ResourceTab::ClearSelection()
+{
+    // Do not clear resource path to keep current folder user is navigated into.
+    resourceSelection_.clear();
+    using namespace EditorSelectionChanged;
+    SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
+}
+
+bool ResourceTab::SerializeSelection(Archive& archive)
+{
+    if (auto block = archive.OpenSequentialBlock("paths"))
+    {
+        if (!SerializeValue(archive, "path", resourcePath_))
+            return false;
+        if (!SerializeValue(archive, "item", resourceSelection_))
+            return false;
+        return true;
+    }
+    return false;
 }
 
 }
