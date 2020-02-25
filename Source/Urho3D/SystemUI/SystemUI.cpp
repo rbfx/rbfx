@@ -209,6 +209,7 @@ void SystemUI::OnRenderEnd()
 #elif URHO3D_D3D11
     // Resetting render target view required because if last view we rendered into was a texture
     // ImGui would try to render into that texture and we would see no UI on screen.
+    auto* graphics = GetSubsystem<Graphics>();
     auto* graphicsImpl = graphics->GetImpl();
     ID3D11RenderTargetView* defaultRenderTargetView = graphicsImpl->GetDefaultRenderTargetView();
     graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
