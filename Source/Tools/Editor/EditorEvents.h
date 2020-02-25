@@ -36,10 +36,10 @@ URHO3D_EVENT(E_EDITORTOOLBARBUTTONS, EditorToolbarButtons)
     URHO3D_PARAM(P_SCENE, Scene);                     // Scene pointer.
 }
 
-/// Event sent when node selection in scene view changes.
+/// Event sent when selection in any tab changes.
 URHO3D_EVENT(E_EDITORSELECTIONCHANGED, EditorSelectionChanged)
 {
-    URHO3D_PARAM(P_SCENE, Scene);                     // Scene pointer.
+    URHO3D_PARAM(P_TAB, Tab);                         // Tab pointer.
 }
 
 /// Event sent when rendering top menu bar of editor.

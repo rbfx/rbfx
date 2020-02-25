@@ -75,7 +75,8 @@
 #include "Inspector/SerializableInspector.h"
 #include "Inspector/SoundInspector.h"
 #include "Tabs/ProfilerTab.h"
-// #undef URHO3D_SYSTEMUI_VIEWPORTS
+#include "EditorUndo.h"
+
 namespace Urho3D
 {
 
@@ -245,6 +246,7 @@ void Editor::Start()
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
+    SubscribeToEvent(E_EDITORSELECTIONCHANGED, URHO3D_HANDLER(Editor, OnSelectionChanged));
     SetupSystemUI();
     if (!defaultProjectPath_.empty())
     {
@@ -920,6 +922,27 @@ void Editor::Inspect(Object* object)
             GetTab<InspectorTab>()->AddProvider(provider);
         }
     }
+}
+
+void Editor::OnSelectionChanged(StringHash, VariantMap& args)
+{
+    using namespace EditorSelectionChanged;
+    auto tab = static_cast<Tab*>(args[P_TAB].GetPtr());
+    auto undo = GetSubsystem<UndoStack>();
+    ByteVector newSelection = tab->SerializeSelection();
+    if (tab == selectionTab_)
+    {
+        if (newSelection == selectionBuffer_)
+            return;
+    }
+    else
+    {
+        if (!selectionTab_.Expired())
+            selectionTab_->ClearSelection();
+    }
+    undo->Add<UndoSetSelection>(selectionTab_, selectionBuffer_, tab, newSelection);
+    selectionTab_ = tab;
+    selectionBuffer_ = newSelection;
 }
 
 }

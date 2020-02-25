@@ -78,6 +78,17 @@ class SceneTab : public BaseResourceTab, public IHierarchyProvider
 {
     URHO3D_OBJECT(SceneTab, BaseResourceTab);
 public:
+    /// Selection mode.
+    enum class SelectionMode
+    {
+        /// Include items in selection.
+        Add,
+        /// Exclude items from selection.
+        Subtract,
+        /// Toggle item selection status.
+        Toggle,
+    };
+
     /// Construct.
     explicit SceneTab(Context* context);
     /// Destruct.
@@ -94,31 +105,58 @@ public:
     bool SaveResource() override;
     ///
     StringHash GetResourceType() override { return XMLFile::GetTypeStatic(); };
-
     /// Called when tab focused.
     void OnFocused() override;
-    /// Add a node to selection.
-    void Select(Node* node);
-    /// Add a component to selection.
-    void Select(Component* component);
-    /// Add multiple nodes to selection.
-    void Select(ea::vector<Node*> nodes);
-    /// Remove a node from selection.
-    void Unselect(Node* node);
-    /// Remove a component from selection.
-    void Unselect(Component* component);
-    /// Select if node was not selected or unselect if node was selected.
-    void ToggleSelection(Node* node);
-    /// Select if component was not selected or unselect if component was selected.
-    void ToggleSelection(Component* component);
-    /// Unselect all nodes.
-    void UnselectAll();
+    /// Modify current scene selection.
+    void ModifySelection(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components, SelectionMode mode);
+    /// Modify current scene selection.
+    void ModifySelection(const ea::vector<Component*>& components, SelectionMode mode)              { ModifySelection({}, components, mode); }
+    /// Modify current scene selection.
+    void ModifySelection(const ea::vector<Node*>& nodes, SelectionMode mode)                        { ModifySelection(nodes, {}, mode); }
+    /// Select nodes and components.
+    void Select(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components)           { ModifySelection(nodes, components, SelectionMode::Add); }
+    /// Select components.
+    void Select(const ea::vector<Component*>& components)                                           { ModifySelection({}, components, SelectionMode::Add); }
+    /// Select nodes.
+    void Select(const ea::vector<Node*>& nodes)                                                     { ModifySelection(nodes, {}, SelectionMode::Add); }
+    /// Select node and component.
+    void Select(Node* node, Component* component)                                                   { ModifySelection({node}, {component}, SelectionMode::Add); }
+    /// Select component.
+    void Select(Component* component)                                                               { ModifySelection({}, {component}, SelectionMode::Add); }
+    /// Select node.
+    void Select(Node* node)                                                                         { ModifySelection({node}, {}, SelectionMode::Add); }
+    /// Unselect nodes and components.
+    void Unselect(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components)         { ModifySelection(nodes, components, SelectionMode::Subtract); }
+    /// Unselect components.
+    void Unselect(const ea::vector<Component*>& components)                                         { ModifySelection({}, components, SelectionMode::Subtract); }
+    /// Unselect nodes.
+    void Unselect(const ea::vector<Node*>& nodes)                                                   { ModifySelection(nodes, {}, SelectionMode::Subtract); }
+    /// Unselect node and component.
+    void Unselect(Node* node, Component* component)                                                 { ModifySelection({node}, {component}, SelectionMode::Subtract); }
+    /// Unselect component.
+    void Unselect(Component* component)                                                             { ModifySelection({}, {component}, SelectionMode::Subtract); }
+    /// Unselect node.
+    void Unselect(Node* node)                                                                       { ModifySelection({node}, {}, SelectionMode::Subtract); }
+    /// Toggle selection of nodes and components.
+    void ToggleSelection(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components)  { ModifySelection(nodes, components, SelectionMode::Toggle); }
+    /// Toggle selection of components.
+    void ToggleSelection(const ea::vector<Component*>& components)                                  { ModifySelection({}, components, SelectionMode::Toggle); }
+    /// Toggle selection of nodes.
+    void ToggleSelection(const ea::vector<Node*>& nodes)                                            { ModifySelection(nodes, {}, SelectionMode::Toggle); }
+    /// Toggle selection of node and component.
+    void ToggleSelection(Node* node, Component* component)                                          { ModifySelection({node}, {component}, SelectionMode::Toggle); }
+    /// Toggle selection of component.
+    void ToggleSelection(Component* component)                                                      { ModifySelection({}, {component}, SelectionMode::Toggle); }
+    /// Toggle selection of node.
+    void ToggleSelection(Node* node)                                                                { ModifySelection({node}, {}, SelectionMode::Toggle); }
+    /// Clear any user selection tracked by this tab.
+    void ClearSelection() override;
+    /// Serialize current user selection into a buffer and return it.
+    bool SerializeSelection(Archive& archive) override;
     /// Return true if node is selected.
     bool IsSelected(Node* node) const;
     /// Return true if component is selected.
     bool IsSelected(Component* component) const;
-    /// Return list of selected nodes.
-    const ea::vector<WeakPtr<Node>>& GetSelection() const;
     /// Removes component if it was selected in inspector, otherwise removes selected scene nodes.
     void RemoveSelection();
     /// Return scene displayed in the tab viewport.
@@ -180,6 +218,8 @@ protected:
     SharedPtr<Viewport> viewport_;
     /// Gizmo used for manipulating scene elements.
     Gizmo gizmo_;
+    /// Current selected nodes displayed in inspector.
+    ea::hash_set<WeakPtr<Node>> selectedNodes_;
     /// Current selected component displayed in inspector.
     ea::hash_set<WeakPtr<Component>> selectedComponents_;
     /// Flag indicating that mouse is hovering scene viewport.

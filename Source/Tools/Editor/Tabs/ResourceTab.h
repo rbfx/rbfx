@@ -42,6 +42,10 @@ public:
 
     /// Render content of tab window. Returns false if tab was closed.
     bool RenderWindowContent() override;
+    /// Clear any user selection tracked by this tab.
+    void ClearSelection() override;
+    /// Serialize current user selection into a buffer and return it.
+    bool SerializeSelection(Archive& archive) override;
 
 protected:
     /// Constructs a name for newly created resource based on specified template name.
