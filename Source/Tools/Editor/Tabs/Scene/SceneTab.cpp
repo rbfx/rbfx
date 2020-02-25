@@ -31,6 +31,7 @@
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/Terrain.h>
+#include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -100,7 +101,6 @@ SceneTab::SceneTab(Context* context)
     cameraPreviewtexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
 
     // Events
-    SubscribeToEvent(this, E_EDITORSELECTIONCHANGED, [this](StringHash, VariantMap&) { OnNodeSelectionChanged(); });
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
     SubscribeToEvent(E_POSTRENDERUPDATE, [&](StringHash, VariantMap&) { RenderDebugInfo(); });
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { UpdateCameras(); });
@@ -163,7 +163,7 @@ bool SceneTab::RenderWindowContent()
     viewportSplitter_.SetCurrentChannel(window->DrawList, 2);
     RenderToolbarButtons();
     viewportSplitter_.SetCurrentChannel(window->DrawList, 1);
-    gizmo_.ManipulateSelection(GetCamera());
+    gizmo_.Manipulate(GetCamera(), selectedNodes_);
     viewportSplitter_.SetCurrentChannel(window->DrawList, 0);
     ui::SetCursorPos({0, 0});
     ui::ImageItem(texture_, rect.GetSize());
@@ -231,12 +231,12 @@ bool SceneTab::RenderWindowContent()
             if (isClickedLeft)
             {
                 if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
-                    UnselectAll();
+                    ClearSelection();
 
                 if (clickNode == GetScene())
                 {
                     if (componentType != StringHash::ZERO)
-                        ToggleSelection(clickNode->GetComponent(componentType));
+                        ModifySelection({}, {clickNode->GetComponent(componentType)}, SelectionMode::Toggle);
                 }
                 else
                     ToggleSelection(clickNode);
@@ -250,21 +250,21 @@ bool SceneTab::RenderWindowContent()
                         Component* component = clickNode->GetComponent(componentType);
                         if (!IsSelected(component))
                         {
-                            UnselectAll();
+                            ClearSelection();
                             ToggleSelection(component);
                         }
                     }
                 }
                 else if (!IsSelected(clickNode))
                 {
-                    UnselectAll();
+                    ClearSelection();
                     ToggleSelection(clickNode);
                 }
                 ui::OpenPopupEx(ui::GetID("Node context menu"));
             }
         }
         else
-            UnselectAll();
+            ClearSelection();
     }
 
     RenderNodeContextMenu();
@@ -389,106 +389,6 @@ bool SceneTab::SaveResource()
     return result;
 }
 
-void SceneTab::Select(Node* node)
-{
-    if (node == nullptr)
-        return;
-
-    if (gizmo_.Select(node))
-    {
-        using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-    }
-}
-
-void SceneTab::Select(Component* component)
-{
-    if (component == nullptr)
-        return;
-
-    selectedComponents_.insert(WeakPtr<Component>(component));
-    using namespace EditorSelectionChanged;
-    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-}
-
-void SceneTab::Select(ea::vector<Node*> nodes)
-{
-    if (nodes.empty())
-        return;
-
-    if (gizmo_.Select(nodes))
-    {
-        using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-    }
-}
-
-void SceneTab::Unselect(Node* node)
-{
-    if (node == nullptr)
-        return;
-
-    if (gizmo_.Unselect(node))
-    {
-        using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-    }
-}
-
-void SceneTab::Unselect(Component* component)
-{
-    if (component == nullptr)
-        return;
-
-    if (selectedComponents_.erase(WeakPtr<Component>(component)))
-    {
-        using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-    }
-}
-
-void SceneTab::ToggleSelection(Node* node)
-{
-    if (node == nullptr)
-        return;
-
-    gizmo_.ToggleSelection(node);
-    using namespace EditorSelectionChanged;
-    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-}
-
-void SceneTab::ToggleSelection(Component* component)
-{
-    if (component == nullptr)
-        return;
-
-    WeakPtr<Component> componentPtr(component);
-    if (selectedComponents_.contains(componentPtr))
-        selectedComponents_.erase(componentPtr);
-    else
-        selectedComponents_.insert(componentPtr);
-
-    using namespace EditorSelectionChanged;
-    SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-}
-
-void SceneTab::UnselectAll()
-{
-    selectionRect_ = {ui::GetMousePos(), ui::GetMousePos()};
-    bool hadComponents = !selectedComponents_.empty();
-    selectedComponents_.clear();
-    if (gizmo_.UnselectAll() || hadComponents)
-    {
-        using namespace EditorSelectionChanged;
-        SendEvent(E_EDITORSELECTIONCHANGED, P_SCENE, GetScene());
-    }
-}
-
-const ea::vector<WeakPtr<Node>>& SceneTab::GetSelection() const
-{
-    return gizmo_.GetSelection();
-}
-
 void SceneTab::RenderToolbarButtons()
 {
     ui::SetCursorPos({4, 4});
@@ -547,7 +447,7 @@ bool SceneTab::IsSelected(Node* node) const
     if (node == nullptr)
         return false;
 
-    return gizmo_.IsSelected(node);
+    return selectedNodes_.contains(WeakPtr(node));
 }
 
 bool SceneTab::IsSelected(Component* component) const
@@ -555,21 +455,22 @@ bool SceneTab::IsSelected(Component* component) const
     if (component == nullptr)
         return false;
 
-    return selectedComponents_.contains(WeakPtr<Component>(component));
+    return selectedComponents_.contains(WeakPtr(component));
 }
 
 void SceneTab::OnNodeSelectionChanged()
 {
     using namespace EditorSelectionChanged;
-    auto* editor = GetSubsystem<Editor>();
+    SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
 
+    auto* editor = GetSubsystem<Editor>();
     editor->ClearInspector();
     int inspectedNodes = 0;
     int inspectedComponents = 0;
     Node* lastInspectedNode = nullptr;
 
     // Inspect all selected nodes.
-    for (Node* node : gizmo_.GetSelection())
+    for (Node* node : selectedNodes_)
     {
         if (node)
         {
@@ -611,7 +512,7 @@ void SceneTab::RenderHierarchy()
 
     // Perform range selection on next frame. Only then we can have a rectangle covering selection ends
     // which we need to do range selection.
-    if (ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsKeyDown(SCANCODE_SHIFT) && !GetSelection().empty())
+    if (ui::IsMouseClicked(MOUSEB_LEFT) && ui::IsKeyDown(SCANCODE_SHIFT) && !selectedNodes_.empty())
         performRangeSelectionFrame_ = ui::GetFrameCount() + 1;
 }
 
@@ -691,7 +592,7 @@ void SceneTab::RenderNodeTree(Node* node)
         {
             // Select single node.
             if (!ui::IsKeyDown(SCANCODE_SHIFT) && !ui::IsKeyDown(SCANCODE_CTRL))
-                UnselectAll();
+                ClearSelection();
 
             if (ui::IsKeyDown(SCANCODE_SHIFT))
                 Select(node);
@@ -702,7 +603,7 @@ void SceneTab::RenderNodeTree(Node* node)
         {
             if (!IsSelected(node))
             {
-                UnselectAll();
+                ClearSelection();
                 ToggleSelection(node);
             }
             ui::OpenPopupEx(ui::GetID("Node context menu"));
@@ -747,14 +648,14 @@ void SceneTab::RenderNodeTree(Node* node)
                     if (ui::IsMouseClicked(MOUSEB_LEFT))
                     {
                         if (!ui::IsKeyDown(SCANCODE_CTRL))
-                            UnselectAll();
+                            ClearSelection();
                         Select(component);
                     }
                     else if (ui::IsMouseReleased(MOUSEB_RIGHT) && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
                     {
                         if (!IsSelected(component))
                         {
-                            UnselectAll();
+                            ClearSelection();
                             Select(component);
                         }
                         ui::OpenPopupEx(ui::GetID("Node context menu"));
@@ -773,9 +674,9 @@ void SceneTab::RenderNodeTree(Node* node)
             for (Node* child : children)
             {
                 // ensure the tree is expanded to the currently selected node if there is one node selected.
-                if (GetSelection().size() == 1)
+                if (selectedNodes_.size() == 1)
                 {
-                    for (auto& selectedNode : GetSelection())
+                    for (auto& selectedNode : selectedNodes_)
                     {
                         if (selectedNode.Expired())
                             continue;
@@ -808,13 +709,13 @@ void SceneTab::RemoveSelection()
             component->Remove();
     }
 
-    for (auto& selected : GetSelection())
+    for (auto& selected : selectedNodes_)
     {
         if (!selected.Expired())
             selected->Remove();
     }
 
-    UnselectAll();
+    ClearSelection();
 }
 
 Scene* SceneTab::GetScene()
@@ -843,7 +744,7 @@ void SceneTab::OnUpdate(VariantMap& args)
                 {
                     auto* controller3D = static_cast<DebugCameraController3D*>(component);
                     Vector3 center;
-                    int selectionCount = gizmo_.GetSelectionCenter(center);
+                    int selectionCount = gizmo_.GetSelectionCenter(center, selectedNodes_);
                     if (selectionCount > 0)
                     {
                         controller3D->SetRotationCenter(center);
@@ -881,7 +782,7 @@ void SceneTab::OnUpdate(VariantMap& args)
                     }
                 }
                 else if (context_->GetInput()->GetKeyPress(KEY_ESCAPE))
-                    UnselectAll();
+                    ClearSelection();
             }
         }
 
@@ -929,7 +830,7 @@ void SceneTab::SaveState(SceneState& destination)
     // Preserve current selection
     savedNodeSelection_.clear();
     savedComponentSelection_.clear();
-    for (auto& node : GetSelection())
+    for (auto& node : selectedNodes_)
     {
         if (node)
             savedNodeSelection_.push_back(node->GetID());
@@ -972,7 +873,7 @@ void SceneTab::RestoreState(SceneState& source)
     }
 
     // Restore previous selection
-    UnselectAll();
+    ClearSelection();
     for (unsigned id : savedNodeSelection_)
         Select(GetScene()->GetNode(id));
 
@@ -984,7 +885,7 @@ void SceneTab::RestoreState(SceneState& source)
 
 void SceneTab::RenderNodeContextMenu()
 {
-    if ((!GetSelection().empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
+    if ((!selectedNodes_.empty() || !selectedComponents_.empty()) && ui::BeginPopup("Node context menu"))
     {
         Input* input = GetSubsystem<Input>();
         if (ui::IsKeyPressed(KEY_ESCAPE) || !input->IsMouseVisible())
@@ -995,14 +896,14 @@ void SceneTab::RenderNodeContextMenu()
             return;
         }
 
-        if (!GetSelection().empty())
+        if (!selectedNodes_.empty())
         {
             bool alternative = ui::IsKeyDown(KEY_SHIFT);
 
             if (ui::MenuItem(alternative ? "Create Child (Local)" : "Create Child"))
             {
                 ea::vector<Node*> newNodes;
-                for (auto& selectedNode : GetSelection())
+                for (auto& selectedNode : selectedNodes_)
                 {
                     if (!selectedNode.Expired())
                     {
@@ -1013,7 +914,7 @@ void SceneTab::RenderNodeContextMenu()
                     }
                 }
 
-                UnselectAll();
+                ClearSelection();
                 Select(newNodes);
             }
 
@@ -1040,7 +941,7 @@ void SceneTab::RenderNodeContextMenu()
                             ui::SameLine();
                             if (ui::MenuItem(component.c_str()))
                             {
-                                for (auto& selectedNode : GetSelection())
+                                for (auto& selectedNode : selectedNodes_)
                                 {
                                     if (!selectedNode.Expired())
                                     {
@@ -1083,7 +984,7 @@ void SceneTab::RenderNodeContextMenu()
                 NONE,
             } debugMode = DebugInfoMode::NONE;
 
-            for (auto& node : GetSelection())
+            for (auto& node : selectedNodes_)
             {
                 if (!node)
                     continue;
@@ -1124,7 +1025,7 @@ void SceneTab::RenderNodeContextMenu()
 
             if (setDebugMode)
             {
-                for (auto& node : GetSelection())
+                for (auto& node : selectedNodes_)
                 {
                     if (!node)
                         continue;
@@ -1195,8 +1096,7 @@ void SceneTab::OnSceneActivated(VariantMap& args)
         scene->SetUpdateEnabled(false);
         cameraPreviewViewport_->SetScene(scene);
         viewport_->SetScene(scene);
-        selectedComponents_.clear();
-        gizmo_.UnselectAll();
+        ClearSelection();
     }
 }
 
@@ -1316,13 +1216,149 @@ void SceneTab::OnFocused()
     editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 
+void SceneTab::ModifySelection(const ea::vector<Node*>& nodes, const ea::vector<Component*>& components, SceneTab::SelectionMode mode)
+{
+    int numSelectedNodes = selectedNodes_.size();
+    int numSelectedComponents = selectedComponents_.size();
+
+    switch (mode)
+    {
+    case SelectionMode::Add:
+    {
+        for (Node* node : nodes)
+            selectedNodes_.insert(WeakPtr(node));
+        for (Component* component : components)
+            selectedComponents_.insert(WeakPtr(component));
+
+        if (selectedNodes_.size() != numSelectedNodes || selectedComponents_.size() != numSelectedComponents)
+            OnNodeSelectionChanged();
+        break;
+    }
+    case SelectionMode::Subtract:
+    {
+        for (Node* node : nodes)
+            selectedNodes_.erase(WeakPtr(node));
+        for (Component* component : components)
+            selectedComponents_.erase(WeakPtr(component));
+
+        if (selectedNodes_.size() != numSelectedNodes || selectedComponents_.size() != numSelectedComponents)
+            OnNodeSelectionChanged();
+        break;
+    }
+    case SelectionMode::Toggle:
+    {
+        for (Node* node : nodes)
+        {
+            WeakPtr nodePtr(node);
+            if (selectedNodes_.contains(nodePtr))
+                selectedNodes_.erase(nodePtr);
+            else
+                selectedNodes_.insert(nodePtr);
+        }
+        for (Component* component : components)
+        {
+            WeakPtr componentPtr(component);
+            if (selectedComponents_.contains(componentPtr))
+                selectedComponents_.erase(componentPtr);
+            else
+                selectedComponents_.insert(componentPtr);
+        }
+        if (!nodes.empty() || components.empty())
+            OnNodeSelectionChanged();
+        break;
+    }
+    }
+}
+
+void SceneTab::ClearSelection()
+{
+    if (!selectedNodes_.empty() || !selectedComponents_.empty())
+    {
+        selectedNodes_.clear();
+        selectedComponents_.clear();
+        OnNodeSelectionChanged();
+    }
+}
+
+bool SceneTab::SerializeSelection(Archive& archive)
+{
+    if (auto block = archive.OpenSequentialBlock("items"))
+    {
+        if (auto block = archive.OpenArrayBlock("nodes", selectedNodes_.size()))
+        {
+            unsigned id;
+            if (archive.IsInput())
+            {
+                selectedNodes_.clear();
+                Scene* scene = GetScene();
+                for (unsigned i = 0; i < block.GetSizeHint(); ++i)
+                {
+                    if (!SerializeValue(archive, "id", id))
+                        return false;
+                    if (Node* node = scene->GetNode(id))
+                        selectedNodes_.insert(WeakPtr(node));
+                    else
+                        return false;
+                }
+            }
+            else
+            {
+                for (Node* node : selectedNodes_)
+                {
+                    if (node == nullptr)
+                        continue;
+                    id = node->GetID();
+                    if (!SerializeValue(archive, "id", id))
+                        return false;
+                }
+            }
+        }
+
+        if (auto block = archive.OpenArrayBlock("components", selectedComponents_.size()))
+        {
+            unsigned id;
+            if (archive.IsInput())
+            {
+                selectedComponents_.clear();
+                Scene* scene = GetScene();
+                for (unsigned i = 0; i < block.GetSizeHint(); ++i)
+                {
+                    if (!SerializeValue(archive, "id", id))
+                        return false;
+                    if (Component* component = scene->GetComponent(id))
+                        selectedComponents_.insert(WeakPtr(component));
+                    else
+                        return false;
+                }
+            }
+            else
+            {
+                for (Component* component : selectedComponents_)
+                {
+                    if (component == nullptr)
+                        continue;
+                    id = component->GetID();
+                    if (!SerializeValue(archive, "id", id))
+                        return false;
+                }
+            }
+        }
+
+        if (archive.IsInput())
+            OnNodeSelectionChanged();
+
+        return true;
+    }
+    return false;
+}
+
 void SceneTab::UpdateCameras()
 {
     cameraPreviewViewport_->SetCamera(nullptr);
 
-    if (GetSelection().size())
+    if (selectedNodes_.size() == 1)
     {
-        if (Node* node = GetSelection().at(0))
+        if (Node* node = *selectedNodes_.begin())
         {
             if (Camera* camera = node->GetComponent<Camera>())
             {
@@ -1343,11 +1379,11 @@ void SceneTab::UpdateCameras()
 
 void SceneTab::CopySelection()
 {
-    const auto& selection = GetSelection();
+    const auto& selection = selectedNodes_;
     if (!selection.empty())
     {
         clipboard_.Clear();
-        clipboard_.Copy(GetSelection());
+        clipboard_.Copy(selectedNodes_);
     }
     else if (!selectedComponents_.empty())
     {
@@ -1358,15 +1394,14 @@ void SceneTab::CopySelection()
 
 void SceneTab::PasteNextToSelection()
 {
-    const auto& selection = GetSelection();
+    const auto& selection = selectedNodes_;
     PasteResult result;
     Node* target = nullptr;
     if (!selection.empty())
     {
         target = nullptr;
-        unsigned i = 0;
-        while (target == nullptr && i < selection.size())   // Selected node may be null
-            target = selection[i++].Get();
+        for (auto it = selection.begin(); it != selection.end() && target == nullptr; it++)   // Selected node may be null
+            target = *it;
         if (target != nullptr)
             target = target->GetParent();
     }
@@ -1376,7 +1411,7 @@ void SceneTab::PasteNextToSelection()
 
     result = clipboard_.Paste(target);
 
-    UnselectAll();
+    ClearSelection();
 
     for (Node* node : result.nodes_)
         Select(node);
@@ -1387,14 +1422,14 @@ void SceneTab::PasteNextToSelection()
 
 void SceneTab::PasteIntoSelection()
 {
-    const auto& selection = GetSelection();
+    const auto& selection = selectedNodes_;
     PasteResult result;
     if (selection.empty())
         result = clipboard_.Paste(GetScene());
     else
         result = clipboard_.Paste(selection);
 
-    UnselectAll();
+    ClearSelection();
 
     for (Node* node : result.nodes_)
         Select(node);
@@ -1440,7 +1475,7 @@ void SceneTab::RenderDebugInfo()
             component->DrawDebugGeometry(debug, true);
     };
 
-    const auto& selection = GetSelection();
+    const auto& selection = selectedNodes_;
     for (auto& node : selection)
     {
         if (node && !node->HasTag("DebugInfoNever"))
@@ -1479,4 +1514,5 @@ void SceneTab::Close()
 
     GetSubsystem<Editor>()->UpdateWindowTitle();
 }
+
 }

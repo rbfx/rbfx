@@ -19,67 +19,36 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
-
-#include <EASTL/hash_set.h>
-#include <Urho3D/Core/Object.h>
 #include <Toolbox/Common/UndoStack.h>
-
 
 namespace Urho3D
 {
 
-class Node;
-class Component;
+class Tab;
+class SceneTab;
+class ResourceTab;
 
-struct PasteResult
+class UndoSetSelection : public UndoAction
 {
-    ///
-    void Merge(const PasteResult& other)
-    {
-        nodes_.append(other.nodes_);
-        components_.append(other.components_);
-    }
-
-    ///
-    ea::vector<Node*> nodes_;
-    ///
-    ea::vector<Component*> components_;
-};
-
-class SceneClipboard : public Object
-{
-    URHO3D_OBJECT(SceneClipboard, Object);
 public:
     ///
-    explicit SceneClipboard(Context* context);
+    UndoSetSelection(Tab* oldTab, ByteVector  oldSelection, Tab* newTab, ByteVector  newSelection);
     ///
-    void Clear();
+    bool Undo(Context* context) override;
     ///
-    void Copy(Node* node);
-    ///
-    void Copy(Component* component);
-    ///
-    void Copy(const ea::hash_set<WeakPtr<Node>>& nodes);
-    ///
-    void Copy(const ea::hash_set<WeakPtr<Component>>& components);
-    ///
-    PasteResult Paste(Node* node);
-    ///
-    PasteResult Paste(const ea::hash_set<WeakPtr<Node>>& nodes);
-    ///
-    bool HasNodes() const { return !nodes_.empty(); }
-    ///
-    bool HasComponents() const { return !components_.empty(); }
+    bool Redo(Context* context) override;
 
 protected:
     ///
-    ea::vector<VectorBuffer> nodes_;
+    WeakPtr<Tab> oldTab_;
     ///
-    ea::vector<VectorBuffer> components_;
+    ByteVector oldSelection_;
+    ///
+    WeakPtr<Tab> newTab_;
+    ///
+    ByteVector newSelection_;
 };
-
 
 }

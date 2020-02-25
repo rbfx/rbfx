@@ -19,67 +19,57 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
-#pragma once
-
-
-#include <EASTL/hash_set.h>
-#include <Urho3D/Core/Object.h>
-#include <Toolbox/Common/UndoStack.h>
+#include "Tabs/Scene/SceneTab.h"
+#include "EditorUndo.h"
 
 
 namespace Urho3D
 {
 
-class Node;
-class Component;
-
-struct PasteResult
+UndoSetSelection::UndoSetSelection(Tab* oldTab, ByteVector oldSelection, Tab* newTab, ByteVector newSelection)
+    : oldTab_(oldTab)
+    , oldSelection_(std::move(oldSelection))
+    , newTab_(newTab)
+    , newSelection_(std::move(newSelection))
 {
-    ///
-    void Merge(const PasteResult& other)
+}
+
+bool UndoSetSelection::Undo(Context* context)
+{
+    bool success = false;
+
+    if (!oldTab_.Expired())
     {
-        nodes_.append(other.nodes_);
-        components_.append(other.components_);
+        success |= oldTab_->DeserializeSelection(oldSelection_);
+        oldTab_->Activate();
     }
 
-    ///
-    ea::vector<Node*> nodes_;
-    ///
-    ea::vector<Component*> components_;
-};
+    if (!newTab_.Expired() && oldTab_ != newTab_)
+    {
+        newTab_->ClearSelection();
+        success = true;
+    }
 
-class SceneClipboard : public Object
+    return success;
+}
+
+bool UndoSetSelection::Redo(Context* context)
 {
-    URHO3D_OBJECT(SceneClipboard, Object);
-public:
-    ///
-    explicit SceneClipboard(Context* context);
-    ///
-    void Clear();
-    ///
-    void Copy(Node* node);
-    ///
-    void Copy(Component* component);
-    ///
-    void Copy(const ea::hash_set<WeakPtr<Node>>& nodes);
-    ///
-    void Copy(const ea::hash_set<WeakPtr<Component>>& components);
-    ///
-    PasteResult Paste(Node* node);
-    ///
-    PasteResult Paste(const ea::hash_set<WeakPtr<Node>>& nodes);
-    ///
-    bool HasNodes() const { return !nodes_.empty(); }
-    ///
-    bool HasComponents() const { return !components_.empty(); }
+    bool success = false;
 
-protected:
-    ///
-    ea::vector<VectorBuffer> nodes_;
-    ///
-    ea::vector<VectorBuffer> components_;
-};
+    if (!newTab_.Expired())
+    {
+        success |= newTab_->DeserializeSelection(newSelection_);
+        newTab_->Activate();
+    }
 
+    if (!oldTab_.Expired() && oldTab_ != newTab_)
+    {
+        oldTab_->ClearSelection();
+        success = true;
+    }
+
+    return success;
+}
 
 }

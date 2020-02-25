@@ -99,6 +99,13 @@ bool Tab::RenderWindow()
     }
     bool wasRendered = isRendered_;
     wasOpen_ = open_;
+
+    if (activateTab_)
+    {
+        open_ = true;
+        isActive_ = true;
+    }
+
     if (open_)
     {
         bool noContentPadding = noContentPadding_;
@@ -149,6 +156,12 @@ bool Tab::RenderWindow()
                 ui::PushStyleVar(ImGuiStyleVar_WindowPadding, {0, 0});
         }
 
+        if (activateTab_)
+        {
+            ui::SetWindowFocus();
+            activateTab_ = false;
+        }
+
         ui::End();
         if (noContentPadding)
             ui::PopStyleVar();
@@ -157,14 +170,6 @@ bool Tab::RenderWindow()
     {
         isActive_ = false;
         isRendered_ = false;
-    }
-
-    if (activateTab_)
-    {
-        ui::SetWindowFocus();
-        open_ = true;
-        isActive_ = true;
-        activateTab_ = false;
     }
 
     return open_;
@@ -220,6 +225,22 @@ void Tab::SetID(const ea::string& id)
     id_ = id;
     uniqueName_ = GetTypeName() + "###" + id;
     UpdateUniqueTitle();
+}
+
+ByteVector Tab::SerializeSelection()
+{
+    VectorBuffer buffer;
+    BinaryOutputArchive archive(context_, buffer);
+    if (SerializeSelection(archive))
+        return std::move(buffer.GetBuffer());
+    return {};
+}
+
+bool Tab::DeserializeSelection(const ByteVector& data)
+{
+    VectorBuffer buffer(data);
+    BinaryInputArchive archive(context_, buffer);
+    return SerializeSelection(archive);
 }
 
 

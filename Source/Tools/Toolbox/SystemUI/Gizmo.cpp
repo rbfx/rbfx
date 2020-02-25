@@ -20,22 +20,6 @@
 // THE SOFTWARE.
 //
 
-#include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/Scene/Node.h>
-#include <Urho3D/Core/CoreEvents.h>
-#include <Urho3D/Input/Input.h>
-#include <Urho3D/UI/UI.h>
-#include <Urho3D/Scene/Scene.h>
-#include <Urho3D/Graphics/Octree.h>
-#include <Urho3D/Graphics/Graphics.h>
-#include <Urho3D/Graphics/GraphicsEvents.h>
-#include <Urho3D/Graphics/AnimatedModel.h>
-#include <Urho3D/Graphics/DebugRenderer.h>
-#include <Urho3D/IO/Log.h>
-#include <Urho3D/SystemUI/SystemUI.h>
-#include <Urho3D/Graphics/Light.h>
-#include <ImGui/imgui_internal.h>
-#include <ImGuizmo/ImGuizmo.h>
 #include "Gizmo.h"
 
 namespace Urho3D
@@ -50,157 +34,14 @@ Gizmo::~Gizmo()
     UnsubscribeFromAllEvents();
 }
 
-bool Gizmo::Manipulate(const Camera* camera, Node* node)
-{
-    ea::vector<WeakPtr<Node>> nodes;
-    nodes.push_back(WeakPtr<Node>(node));
-    return Manipulate(camera, nodes);
-}
-
 bool Gizmo::IsActive() const
 {
     return ImGuizmo::IsUsing();
 }
 
-bool Gizmo::Manipulate(const Camera* camera, const ea::vector<WeakPtr<Node>>& nodes)
+bool Gizmo::ManipulateNode(const Camera* camera, Node* node)
 {
-    if (nodes.empty())
-        return false;
-
-    ImGuizmo::SetOrthographic(camera->IsOrthographic());
-
-    if (!IsActive())
-    {
-        if (nodes.size() > 1)
-        {
-            // Find center point of all nodes
-            // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
-            // multiselection operations to world space (see above).
-            Vector3 center;
-            auto count = GetSelectionCenter(center, nodes);
-            if (count == 0)
-                return false;
-            currentOrigin_.SetTranslation(center);
-        }
-        else if (!nodes.front().Expired())
-            currentOrigin_ = nodes.front()->GetWorldTransform().ToMatrix4();
-    }
-
-    // Enums are compatible.
-    auto operation = static_cast<ImGuizmo::OPERATION>(operation_);
-    ImGuizmo::MODE mode = ImGuizmo::WORLD;
-    // Scaling only works in local space. Multiselections only work in world space.
-    if (transformSpace_ == TS_LOCAL)
-        mode = ImGuizmo::LOCAL;
-    else if (transformSpace_ == TS_WORLD)
-        mode = ImGuizmo::WORLD;
-
-    // Scaling is always done in local space even for multiselections.
-    if (operation_ == GIZMOOP_SCALE)
-        mode = ImGuizmo::LOCAL;
-        // Any other operations on multiselections are done in world space.
-    else if (nodes.size() > 1)
-        mode = ImGuizmo::WORLD;
-
-    Matrix4 view = camera->GetView().ToMatrix4().Transpose();
-    Matrix4 proj = camera->GetProjection().Transpose();
-    Matrix4 tran = currentOrigin_.Transpose();
-    Matrix4 delta;
-
-    ImGuiWindow* window = ui::GetCurrentWindow();
-    ImGuizmo::SetRect(window->Pos.x, window->Pos.y, window->Size.x, window->Size.y);
-    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
-
-    if (IsActive())
-    {
-        if (!wasActive_)
-        {
-            // Just started modifying nodes.
-            for (const auto& node: nodes)
-                initialTransforms_[node] = node->GetTransform();
-        }
-
-        wasActive_ = true;
-        tran = tran.Transpose();
-        delta = delta.Transpose();
-
-        currentOrigin_ = Matrix4(tran);
-
-        for (const auto& node: nodes)
-        {
-            if (node == nullptr)
-            {
-                URHO3D_LOGERROR("Gizmo received null pointer of node.");
-                continue;
-            }
-
-            if (operation_ == GIZMOOP_SCALE)
-            {
-                // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
-                if (!nodeScaleStart_.contains(node))
-                    nodeScaleStart_[node] = node->GetScale();
-                node->SetScale(nodeScaleStart_[node] * delta.Scale());
-            }
-            else
-            {
-                // Delta matrix is always in world-space.
-                if (operation_ == GIZMOOP_ROTATE)
-                    node->RotateAround(currentOrigin_.Translation(), -delta.Rotation(), TS_WORLD);
-                else
-                    node->Translate(delta.Translation(), TS_WORLD);
-            }
-        }
-
-        return true;
-    }
-    else
-    {
-        if (wasActive_)
-        {
-            // Just finished modifying nodes.
-            using namespace GizmoNodeModified;
-            for (const auto& node: nodes)
-            {
-                if (node.Expired())
-                {
-                    URHO3D_LOGWARNINGF("Node expired while manipulating it with gizmo.");
-                    continue;
-                }
-
-                auto it = initialTransforms_.find(node.Get());
-                if (it == initialTransforms_.end())
-                {
-                    URHO3D_LOGWARNINGF("Gizmo has no record of initial node transform. List of transformed nodes "
-                        "changed mid-manipulation?");
-                    continue;
-                }
-
-                SendEvent(E_GIZMONODEMODIFIED, P_NODE, node.Get(), P_OLDTRANSFORM, it->second,
-                    P_NEWTRANSFORM, node->GetTransform());
-            }
-        }
-        wasActive_ = false;
-        initialTransforms_.clear();
-        if (operation_ == GIZMOOP_SCALE && !nodeScaleStart_.empty())
-            nodeScaleStart_.clear();
-    }
-    return false;
-}
-
-bool Gizmo::ManipulateSelection(const Camera* camera)
-{
-    ImGuizmo::SetDrawlist();
-
-    // Remove expired selections
-    for (auto it = nodeSelection_.begin(); it != nodeSelection_.end();)
-    {
-        if (it->Expired())
-            it = nodeSelection_.erase(it);
-        else
-            ++it;
-    }
-
-    return Manipulate(camera, nodeSelection_);
+    return Manipulate(camera, &node, &node + 1);
 }
 
 void Gizmo::RenderUI()
@@ -226,74 +67,14 @@ void Gizmo::RenderUI()
         SetTransformSpace(TS_LOCAL);
 }
 
-bool Gizmo::Select(Node* node)
-{
-    WeakPtr<Node> weakNode(node);
-    if (nodeSelection_.contains(weakNode))
-        return false;
-    nodeSelection_.push_back(weakNode);
-    SendEvent(E_GIZMOSELECTIONCHANGED);
-    return true;
-}
-
-bool Gizmo::Select(ea::vector<Node*> nodes)
-{
-    bool selectedAny = false;
-    for (auto* node : nodes)
-    {
-        WeakPtr<Node> weakNode(node);
-        if (!nodeSelection_.contains(weakNode))
-        {
-            nodeSelection_.push_back(weakNode);
-            selectedAny = true;
-        }
-    }
-    if (selectedAny)
-        SendEvent(E_GIZMOSELECTIONCHANGED);
-
-    return selectedAny;
-}
-
-bool Gizmo::Unselect(Node* node)
-{
-    WeakPtr<Node> weakNode(node);
-    if (!nodeSelection_.contains(weakNode))
-        return false;
-    nodeSelection_.erase_first(weakNode);
-    SendEvent(E_GIZMOSELECTIONCHANGED);
-    return true;
-}
-
-void Gizmo::ToggleSelection(Node* node)
-{
-    if (IsSelected(node))
-        Unselect(node);
-    else
-        Select(node);
-}
-
-bool Gizmo::UnselectAll()
-{
-    if (nodeSelection_.empty())
-        return false;
-    nodeSelection_.clear();
-    SendEvent(E_GIZMOSELECTIONCHANGED);
-    return true;
-}
-
-bool Gizmo::IsSelected(Node* node) const
-{
-    WeakPtr<Node> pNode(node);
-    return nodeSelection_.contains(pNode);
-}
-
-const int Gizmo::GetSelectionCenter(Vector3& outCenter, const ea::vector<WeakPtr<Node>>& nodes) const
+int Gizmo::GetSelectionCenter(Vector3& outCenter, Node** begin, Node** end)
 {
     outCenter = Vector3::ZERO;
     auto count = 0;
-    for (const auto& node: nodes)
+    for (auto it = begin; it != end; it++)
     {
-        if (node.Expired() || node->GetType() == Scene::GetTypeStatic())
+        Node* node = *it;
+        if (!node || node->GetType() == Scene::GetTypeStatic())
             continue;
         outCenter += node->GetWorldPosition();
         count++;
@@ -304,10 +85,126 @@ const int Gizmo::GetSelectionCenter(Vector3& outCenter, const ea::vector<WeakPtr
     return count;
 }
 
-const int Gizmo::GetSelectionCenter(Vector3& outCenter) const
+bool Gizmo::Manipulate(const Camera* camera, Node** begin, Node** end)
 {
-    int ret = GetSelectionCenter(outCenter, GetSelection());
-    return ret;
+    if (begin == end)
+        return false;
+
+    ImGuizmo::SetOrthographic(camera->IsOrthographic());
+
+    Matrix4 currentOrigin;
+    if (begin + 1 != end)   // nodes.size() > 1
+    {
+        // Find center point of all nodes
+        // It is not clear what should be rotation and scale of center point for multiselection, therefore we limit
+        // multiselection operations to world space (see above).
+        Vector3 center;
+        int count = GetSelectionCenter(center, begin, end);
+        if (count == 0)
+            return false;
+        currentOrigin.SetTranslation(center);
+    }
+    else if (*begin)
+        currentOrigin = (*begin)->GetWorldTransform().ToMatrix4();
+
+    // Enums are compatible.
+    auto operation = static_cast<ImGuizmo::OPERATION>(operation_);
+    ImGuizmo::MODE mode = ImGuizmo::WORLD;
+    // Scaling only works in local space. Multiselections only work in world space.
+    if (transformSpace_ == TS_LOCAL)
+        mode = ImGuizmo::LOCAL;
+    else if (transformSpace_ == TS_WORLD)
+        mode = ImGuizmo::WORLD;
+
+    // Scaling is always done in local space even for multiselections.
+    if (operation_ == GIZMOOP_SCALE)
+        mode = ImGuizmo::LOCAL;
+        // Any other operations on multiselections are done in world space.
+    if (begin + 1 != end)   // nodes.size() > 1
+        mode = ImGuizmo::WORLD;
+
+    Matrix4 view = camera->GetView().ToMatrix4().Transpose();
+    Matrix4 proj = camera->GetProjection().Transpose();
+    Matrix4 tran = currentOrigin.Transpose();
+    Matrix4 delta;
+
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    ImGuizmo::SetDrawlist();
+    ImGuizmo::SetRect(window->Pos.x, window->Pos.y, window->Size.x, window->Size.y);
+    ImGuizmo::Manipulate(&view.m00_, &proj.m00_, operation, mode, &tran.m00_, &delta.m00_, nullptr);
+
+    if (IsActive())
+    {
+        if (!wasActive_)
+        {
+            // Just started modifying nodes.
+            for (auto it = begin; it != end; it++)
+                initialTransforms_[*it] = (*it)->GetTransform();
+        }
+
+        wasActive_ = true;
+        tran = tran.Transpose();
+        delta = delta.Transpose();
+
+        currentOrigin = Matrix4(tran);
+
+        for (auto it = begin; it != end; it++)
+        {
+            Node* node = *it;
+            if (node == nullptr)
+            {
+                URHO3D_LOGERROR("Gizmo received null pointer of node.");
+                continue;
+            }
+
+            if (operation_ == GIZMOOP_SCALE)
+            {
+                // A workaround for ImGuizmo bug where delta matrix returns absolute scale value.
+                if (!nodeScaleStart_.contains(node))
+                    nodeScaleStart_[node] = node->GetScale();
+                node->SetScale(nodeScaleStart_[node] * delta.Scale());
+            }
+            // Delta matrix is always in world-space.
+            else if (operation_ == GIZMOOP_ROTATE)
+                node->RotateAround(currentOrigin.Translation(), -delta.Rotation(), TS_WORLD);
+            else
+                node->Translate(delta.Translation(), TS_WORLD);
+        }
+
+        return true;
+    }
+    else
+    {
+        if (wasActive_)
+        {
+            // Just finished modifying nodes.
+            using namespace GizmoNodeModified;
+            for (auto it = begin; it != end; it++)
+            {
+                Node* node = *it;
+                if (!node)
+                {
+                    URHO3D_LOGWARNINGF("Node expired while manipulating it with gizmo.");
+                    continue;
+                }
+
+                auto jt = initialTransforms_.find(node);
+                if (jt == initialTransforms_.end())
+                {
+                    URHO3D_LOGWARNINGF("Gizmo has no record of initial node transform. List of transformed nodes "
+                                       "changed mid-manipulation?");
+                    continue;
+                }
+
+                SendEvent(E_GIZMONODEMODIFIED, P_NODE, &*node, P_OLDTRANSFORM, jt->second,
+                    P_NEWTRANSFORM, node->GetTransform());
+            }
+        }
+        wasActive_ = false;
+        initialTransforms_.clear();
+        nodeScaleStart_.clear();
+    }
+    return false;
 }
 
 }
