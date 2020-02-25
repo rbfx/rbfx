@@ -78,7 +78,7 @@ namespace Urho3DNet
         /// </summary>
         internal void DisposeInternal()
         {
-            Dispose(true);
+            Dispose(_disposing);
         }
         /// <summary>
         /// Returns true if native object pointer is null.
