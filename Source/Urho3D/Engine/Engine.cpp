@@ -931,8 +931,8 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
         return true;
     })->set_custom_option(createOptions("string in {%s}", logLevelNames).c_str());
     addOptionString("--log-file", EP_LOG_NAME, "Log output file");
-    addOptionInt("-x,--height", EP_WINDOW_WIDTH, "Window width");
-    addOptionInt("-y,--width", EP_WINDOW_WIDTH, "Window height");
+    addOptionInt("-x,--width", EP_WINDOW_WIDTH, "Window width");
+    addOptionInt("-y,--height", EP_WINDOW_HEIGHT, "Window height");
     addOptionInt("--monitor", EP_MONITOR, "Create window on the specified monitor");
     addOptionInt("--hz", EP_REFRESH_RATE, "Use custom refresh rate");
     addOptionInt("-m,--multisample", EP_MULTI_SAMPLE, "Multisampling samples");
