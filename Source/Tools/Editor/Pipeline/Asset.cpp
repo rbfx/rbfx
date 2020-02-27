@@ -313,7 +313,6 @@ void Asset::OnFlavorRemoved(VariantMap& args)
 
 void Asset::Inspect()
 {
-    ea::vector<Object*> safeSenders{this};
     auto* editor = GetSubsystem<Editor>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* cache = GetSubsystem<ResourceCache>();
@@ -324,7 +323,6 @@ void Asset::Inspect()
     // Show inspectors for byproducts too.
     for (AssetImporter* importer : GetImporters(pipeline->GetDefaultFlavor()))
     {
-        safeSenders.push_back(importer);
         for (const ea::string& byproduct : importer->GetByproducts())
         {
             if (StringHash resourceType = GetContentResourceType(context_, byproduct))

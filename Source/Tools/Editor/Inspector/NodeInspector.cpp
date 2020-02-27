@@ -47,7 +47,7 @@ void NodeInspector::RenderInspector(const char* filter)
     {
         if (node->IsReplicated())
             ui::SetHelpTooltip("Replicated over the network.");
-        RenderAttributes(node, filter, const_cast<Scene*>(node->GetScene()));
+        RenderAttributes(node, filter, eventSender_);
     }
 
 }

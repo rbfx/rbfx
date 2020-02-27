@@ -89,6 +89,10 @@ protected:
     unsigned HashEffectiveAttributeValues() const;
     /// Returns true if user explicitly modified a specific attribute and did not reset it to default value.
     bool IsAttributeSet(const eastl::string& name) const;
+    /// Handle importer settings modifications.
+    void OnInspectorModified(StringHash, VariantMap& args);
+    /// Customize rendering of inspector attributes.
+    void OnRenderInspectorAttribute(StringHash, VariantMap& args);
 
     /// Asset this importer belongs to.
     WeakPtr<Asset> asset_{};

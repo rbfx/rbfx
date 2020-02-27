@@ -41,7 +41,7 @@ void UIElementInspector::RenderInspector(const char* filter)
     auto element = static_cast<UIElement*>(inspected_.Get());
     const char* name = element->GetName().empty() ? element->GetTypeName().c_str() : element->GetName().c_str();
     if (ui::CollapsingHeader(name, ImGuiTreeNodeFlags_DefaultOpen))
-        RenderAttributes(element, filter, const_cast<UIElement*>(element->GetRoot()));
+        RenderAttributes(element, filter, eventSender_);
 }
 
 }

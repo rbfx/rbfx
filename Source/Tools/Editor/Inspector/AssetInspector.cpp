@@ -41,11 +41,13 @@ void AssetInspector::RenderInspector(const char* filter)
     if (inspected_.Expired())
         return;
 
-    auto* project = GetSubsystem<Project>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* asset = static_cast<Asset*>(inspected_.Get());
     bool tabBarStarted = false;
     bool save = false;
+
+    ui::TextCentered(Format("Asset: {}", asset->GetName()).c_str());
+    ui::Separator();
 
     // Use flavors list from the pipeline because it is sorted. Asset::importers_ is unordered.
     for (const SharedPtr<Flavor>& flavor : pipeline->GetFlavors())
@@ -90,8 +92,6 @@ void AssetInspector::RenderInspector(const char* filter)
                 // file is not supported by any importer - tab bar with flavors and no content will not be shown.
                 if (!tabBarStarted)
                 {
-                    ui::TextUnformatted("Importers");
-                    ui::Separator();
                     ui::BeginTabBar(Format("###{}", (void*)this).c_str(), ImGuiTabBarFlags_None);
                     tabBarStarted = true;
                 }
@@ -106,8 +106,12 @@ void AssetInspector::RenderInspector(const char* filter)
 
                 if (tabVisible)
                 {
-                    RenderAttributes(importer, filter);
-                    save |= importer->IsModified();
+                    if (importer->GetNumAttributes() > 0 &&
+                        ui::CollapsingHeader(importer->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+                    {
+                        RenderAttributes(importer, filter, importer);
+                        save |= importer->IsModified();
+                    }
                 }
             }
         }
