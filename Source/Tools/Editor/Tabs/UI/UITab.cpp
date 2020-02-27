@@ -69,8 +69,8 @@ UITab::UITab(Context* context)
 
     undo_->Connect(static_cast<UIElement*>(rootElement_.Get()));
 
-    SubscribeToEvent(E_ATTRIBUTEINSPECTORMENU, std::bind(&UITab::AttributeMenu, this, _2));
-    SubscribeToEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, std::bind(&UITab::AttributeCustomize, this, _2));
+    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTORMENU, std::bind(&UITab::AttributeMenu, this, _2));
+    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTOATTRIBUTE, std::bind(&UITab::AttributeCustomize, this, _2));
 
     AutoLoadDefaultStyle();
 }
@@ -484,7 +484,7 @@ void UITab::SelectItem(UIElement* current)
 
     auto* editor = GetSubsystem<Editor>();
     editor->ClearInspector();
-    editor->Inspect(current);
+    editor->Inspect(current, rootElement_);
     editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 

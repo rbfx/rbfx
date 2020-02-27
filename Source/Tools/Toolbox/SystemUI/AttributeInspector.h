@@ -52,22 +52,6 @@ URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
     URHO3D_PARAM(P_NAME, ResourceName);                                         // String
 }
 
-URHO3D_EVENT(E_INSPECTORRENDERSTART, InspectorRenderStart)
-{
-    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                                 // Serializable*
-}
-
-URHO3D_EVENT(E_INSPECTORRENDEREND, InspectorRenderEnd)
-{
-}
-
-URHO3D_EVENT(E_INSPECTORRENDERATTRIBUTE, InspectorRenderAttribute)
-{
-    URHO3D_PARAM(P_ATTRIBUTEINFO, AttributeInfo);                               // void*
-    URHO3D_PARAM(P_SERIALIZABLE, Serializable);                                 // RefCounted*
-    URHO3D_PARAM(P_HANDLED, Handled);                                           // bool
-    URHO3D_PARAM(P_MODIFIED, Modified);                                         // unsigned (AttributeInspectorModifiedFlags)
-}
 /// Automate tracking of initial values that are modified by ImGui widget.
 template<typename Value>
 struct ValueHistory
@@ -129,19 +113,10 @@ struct ValueHistory
     bool modified_ = false;
 };
 
-/// A dummy object used as namespace for subscribing to events.
-class URHO3D_TOOLBOX_API AttributeInspector : public Object
-{
-    URHO3D_OBJECT(AttributeInspector, Object);
-public:
-    explicit AttributeInspector(Context* context) : Object(context) { }
-};
-
 /// Render attribute inspector of `item`.
 /// If `filter` is not null then only attributes containing this substring will be rendered.
-/// If `eventNamespace` is not null then this object will be used to send events.
-URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, const char* filter=nullptr, Object* eventNamespace=nullptr);
-URHO3D_TOOLBOX_API bool RenderSingleAttribute(Variant& value, const char* title=nullptr);
-URHO3D_TOOLBOX_API bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value, const char* title);
+/// If `eventSender` is not null then this object will be used to send events.
+URHO3D_TOOLBOX_API bool RenderAttribute(ea::string_view title, Variant& value, const Color& color=Color::WHITE, ea::string_view tooltip="", const AttributeInfo* info=nullptr, Object* eventSender=nullptr, float item_width=0);
+URHO3D_TOOLBOX_API bool RenderAttributes(Serializable* item, ea::string_view filter="", Object* eventSender=nullptr);
 
 }

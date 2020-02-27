@@ -889,7 +889,7 @@ void Editor::ClearInspector()
     GetTab<InspectorTab>()->ClearProviders();
 }
 
-void Editor::Inspect(Object* object)
+void Editor::Inspect(Object* object, Object* eventSender)
 {
     if (object == nullptr)
     {
@@ -897,6 +897,8 @@ void Editor::Inspect(Object* object)
         return;
     }
     bool inspected = false;
+    if (eventSender == nullptr)
+        eventSender = object;
     for (const auto& pair : registeredInspectorProviders_)
     {
         if (object->IsInstanceOf(pair.first))
@@ -904,7 +906,7 @@ void Editor::Inspect(Object* object)
             inspected = true;
             inspected_.push_back(WeakPtr(object));
             SharedPtr<InspectorProvider> provider(context_->CreateObject(pair.second)->Cast<InspectorProvider>());
-            provider->SetInspected(object);
+            provider->SetInspected(object, eventSender);
             GetTab<InspectorTab>()->AddProvider(provider);
         }
     }
@@ -918,7 +920,7 @@ void Editor::Inspect(Object* object)
         {
             inspected_.push_back(WeakPtr(serializable));
             SharedPtr<InspectorProvider> provider(context_->CreateObject<SerializableInspector>());
-            provider->SetInspected(serializable);
+            provider->SetInspected(serializable, eventSender);
             GetTab<InspectorTab>()->AddProvider(provider);
         }
     }

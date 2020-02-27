@@ -38,7 +38,7 @@ void SerializableInspector::RenderInspector(const char* filter)
         return;
 
     if (ui::CollapsingHeader(inspected_->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-        RenderAttributes(static_cast<Node*>(inspected_.Get()), filter);
+        RenderAttributes(static_cast<Node*>(inspected_.Get()), filter, eventSender_);
 }
 
 }

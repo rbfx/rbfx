@@ -40,7 +40,7 @@ public:
     /// Construct.
     explicit MaterialInspector(Context* context);
     /// Set currently inspected object.
-    void SetInspected(Object* inspected) override;
+    void SetInspected(Object* inspected, Object* eventSender) override;
     /// Render inspector UI.
     void RenderInspector(const char* filter) override;
     /// Change material preview model to next one in the list.

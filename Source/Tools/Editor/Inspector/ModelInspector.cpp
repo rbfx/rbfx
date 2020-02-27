@@ -36,10 +36,10 @@ ModelInspector::ModelInspector(Context* context)
 {
 }
 
-void ModelInspector::SetInspected(Object* inspected)
+void ModelInspector::SetInspected(Object* inspected, Object* eventSender)
 {
     assert(inspected->IsInstanceOf<Model>());
-    InspectorProvider::SetInspected(inspected);
+    InspectorProvider::SetInspected(inspected, eventSender);
     SetModel(static_cast<Model*>(inspected));
 }
 

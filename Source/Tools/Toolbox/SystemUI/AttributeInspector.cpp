@@ -24,7 +24,6 @@
 
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Core/StringUtils.h>
-#include <Urho3D/Core/CoreEvents.h>
 #include <Urho3D/Scene/Serializable.h>
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/Resource/ResourceCache.h>
@@ -34,7 +33,6 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Technique.h>
 #include <Urho3D/Graphics/Camera.h>
-#include <Urho3D/Graphics/Model.h>
 #include <Urho3D/Graphics/Renderer.h>
 #include <Urho3D/Graphics/RenderPath.h>
 #include "AttributeInspector.h"
@@ -46,7 +44,6 @@
 #include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/Graphics.h>
-#include <Graphics/SceneView.h>
 
 namespace Urho3D
 {
@@ -106,93 +103,97 @@ const char* supportedVariantNames[] = {
     "Int64",
 };
 
-bool RenderResourceRef(Object* eventNamespace, StringHash type, const ea::string& name, ea::string& result, const char* title)
+bool RenderResourceRef(ResourceRef& ref, Object* eventSender)
 {
     SharedPtr<Resource> resource;
-    auto returnValue = false;
+    auto modified = false;
     ImGuiContext& g = *GImGui;
     const ImGuiStyle& style = ui::GetStyle();
     float w = ui::CalcItemWidth();
 
-    UI_ITEMWIDTH(w - ((eventNamespace ? 2 : 1) * (style.ItemSpacing.x + ui::IconButtonSize())))
-        ui::InputTextWithHint("", "Drag & Drop a resource", const_cast<char*>(name.c_str()), name.length(), ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
-
-    if (eventNamespace != nullptr)
+    // Reduce resource input width to make space for two buttons.
+    ui::SetNextItemWidth(w - (style.ItemSpacing.x + ui::IconButtonSize()) * 2);
+    ui::InputTextWithHint("", "Drag & Drop a resource", &ref.name_, ImGuiInputTextFlags_AutoSelectAll | ImGuiInputTextFlags_ReadOnly);
+    // Resources are assigned by dropping on to them.
+    if (ui::BeginDragDropTarget())
     {
-        bool dropped = false;
-        if (ui::BeginDragDropTarget())
+        const Variant& payload = ui::AcceptDragDropVariant("path");
+        if (!payload.IsEmpty())
         {
-            const Variant& payload = ui::AcceptDragDropVariant("path");
-            if (!payload.IsEmpty())
-            {
-                resource = eventNamespace->GetContext()->GetCache()->GetResource(type, payload.GetString());
-                dropped = resource != nullptr;
-            }
-            ui::EndDragDropTarget();
+            resource = eventSender->GetContext()->GetCache()->GetResource(ref.type_, payload.GetString());
+            assert(resource != nullptr);
+            ref.name_ = resource->GetName();
+            modified = true;
         }
-        ui::SetHelpTooltip("Drag resource here.");
-
-        if (dropped)
-        {
-            result = resource->GetName();
-            returnValue = true;
-        }
-
-        ui::SameLine();
-        if (ui::IconButton(ICON_FA_CROSSHAIRS))
-        {
-            eventNamespace->SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, name);
-        }
-        ui::SetHelpTooltip("Locate resource.");
+        ui::EndDragDropTarget();
     }
 
+    // Locate resource button.
+    ui::SameLine();
+    if (ui::IconButton(ICON_FA_CROSSHAIRS))
+        eventSender->SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, ref.name_);
+    ui::SetHelpTooltip("Locate resource.");
+
+    // Clear resource button.
     ui::SameLine();
     if (ui::IconButton(ICON_FA_TRASH))
     {
-        result.clear();
-        returnValue = true;
+        ref.name_.clear();
+        modified = true;
     }
-    ui::SetHelpTooltip("Stop using resource.");
-
-    if (title)
-    {
-        ui::SameLine();
-        ui::TextUnformatted(title);
-    }
-    return returnValue;
+    ui::SetHelpTooltip("Clear resource.");
+    return modified;
 }
 
-bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Variant& value, const char* title)
+bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, ea::string_view tooltip,
+    const AttributeInfo* info, Object* eventSender, float item_width)
 {
     const float floatMin = -std::numeric_limits<float>::infinity();
     const float floatMax = std::numeric_limits<float>::infinity();
     const double doubleMin = -std::numeric_limits<double>::infinity();
     const double doubleMax = std::numeric_limits<double>::infinity();
+    int intMin = std::numeric_limits<int>::min();
+    int intMax = std::numeric_limits<int>::max();
     const float floatStep = 0.01f;
     const float power = 3.0f;
     const ImGuiStyle& style = ui::GetStyle();
 
-    if (title == nullptr)
-        title = "";
-
-    bool modified = false;
-    auto comboValuesNum = 0;
-    if (info != nullptr)
+    // FIXME: string_view is used as zero-terminated C string. Fix this when https://github.com/ocornut/imgui/pull/3038 is merged. Until then do not use string slices with attribute inspector!
+    if (title.empty())
     {
-        for (; info->enumNames_ && info->enumNames_[++comboValuesNum];);
+        if (info != nullptr)
+            title = info->name_;
+        else
+            title = "";
     }
 
-    if (comboValuesNum > 0 && info != nullptr)
+    bool modified = false;
+    bool openAttributeMenu = false;
+    bool showHelperLabels = false;
+
+    // Render label
+    ui::ItemLabelFlags flags = ui::ItemLabelFlag::Left;
+    ItemLabel(title, &color, flags);
+    openAttributeMenu |= ui::IsItemClicked(MOUSEB_RIGHT);
+    if (item_width != 0)
+        ui::PushItemWidth(item_width);
+
+    if (info != nullptr && info->enumNames_ != nullptr)
     {
+        // Count enum names.
+        auto comboValuesNum = 0;
+        for (; info->enumNames_ && info->enumNames_[++comboValuesNum];) { }
+        // Render enums.
+        assert(info != nullptr);
         int current = 0;
         if (info->type_ == VAR_INT)
             current = value.GetInt();
         else if (info->type_ == VAR_STRING)
-            current = GetStringListIndex(value.GetString().c_str(), info->enumNames_, 0);
+            current = static_cast<int>(GetStringListIndex(value.GetString().c_str(), info->enumNames_, 0));
         else
             assert(false);
 
-        modified |= ui::Combo(title, &current, info->enumNames_, comboValuesNum);
+        modified |= ui::Combo("###enum", &current, info->enumNames_, comboValuesNum);
         if (modified)
         {
             if (info->type_ == VAR_INT)
@@ -210,17 +211,17 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             break;
         case VAR_INT:
         {
-            if (info && (info->name_.ends_with(" Mask") || info->name_.ends_with(" Bits")))
+            if (title.ends_with(" Mask") || title.ends_with(" Bits"))
             {
                 unsigned v = value.GetUInt();
-                modified |= ui::MaskSelector(title, &v);
+                modified |= ui::MaskSelector("", &v);
                 if (modified)
                     value = v;
             }
             else
             {
                 int v = value.GetInt();
-                modified |= ui::DragInt(title, &v, 1, M_MIN_INT, M_MAX_INT);
+                modified |= ui::DragInt("", &v, 1, M_MIN_INT, M_MAX_INT);
                 if (modified)
                     value = v;
             }
@@ -229,8 +230,9 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_BOOL:
         {
             auto v = value.GetBool();
-            ui::ItemAlign(ui::GetFrameHeight());
-            modified |= ui::Checkbox(title, &v);
+            if (flags & ui::ItemLabelFlag::Right)
+                ui::ItemAlign(ui::GetFrameHeight());    // Align checkbox to the right side.
+            modified |= ui::Checkbox("", &v);
             if (modified)
                 value = v;
             break;
@@ -238,7 +240,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_FLOAT:
         {
             auto v = value.GetFloat();
-            modified |= ui::DragFloat(title, &v, floatStep, floatMin, floatMax, "%.3f", power);
+            modified |= ui::DragFloat("", &v, floatStep, floatMin, floatMax, "%.3f", power);
             if (modified)
                 value = v;
             break;
@@ -246,38 +248,66 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
         case VAR_VECTOR2:
         {
             auto& v = value.GetVector2();
-            modified |= ui::DragFloat2(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("xy");
+            const char* formats[] = {"X=%.3f", "Y=%.3f"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 2, floatStep, &floatMin, &floatMax, formats, power);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 2, floatStep, &floatMin, &floatMax, "%.3f", power);
             break;
         }
         case VAR_VECTOR3:
         {
             auto& v = value.GetVector3();
-            modified |= ui::DragFloat3(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("xyz");
+            const char* formats[] = {"X=%.3f", "Y=%.3f", "Z=%.3f"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 3, floatStep, &floatMin, &floatMax, formats, power);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
             break;
         }
         case VAR_VECTOR4:
         {
             auto& v = value.GetVector4();
-            modified |= ui::DragFloat4(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("xyzw");
+            const char* formats[] = {"X=%.3f", "Y=%.3f", "Z=%.3f", "W=%.3f"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 4, floatStep, &floatMin, &floatMax, formats, power);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.x_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
             break;
         }
         case VAR_QUATERNION:
         {
-            auto v = value.GetQuaternion().EulerAngles();
-            modified |= ui::DragFloat3(title, const_cast<float*>(&v.x_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("xyz");
+            const Quaternion& rotation = value.GetQuaternion();
+            Vector3 angles, anglesInitial;
+            angles = anglesInitial = rotation.EulerAngles();
+            const char* formats[] = {"P=%.3f", "Y=%.3f", "R=%.3f"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, formats, power);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, &angles.x_, 3, floatStep, &floatMin, &floatMax, "%.3f", power);
             if (modified)
-                value = Quaternion(v.x_, v.y_, v.z_);
+            {
+                // FIXME: This is most likely wrong.
+                static Vector3 directions[3]{Vector3::RIGHT, Vector3::UP, Vector3::FORWARD};
+                Quaternion result = rotation;
+                Quaternion delta;
+                for (int i = 0; i < 3; i++)
+                {
+                    float angle = angles.Data()[i] - anglesInitial.Data()[i];
+                    if (angle != 0.0f)
+                    {
+                        delta.FromAngleAxis(angle, directions[i]);
+                        result = result * delta;
+                    }
+                }
+                value = result;
+            }
             break;
         }
         case VAR_COLOR:
         {
             auto& v = value.GetColor();
-            modified |= ui::ColorEdit4(title, const_cast<float*>(&v.r_));
-            ui::SetHelpTooltip("rgba");
+            modified |= ui::ColorEdit4("", const_cast<float*>(&v.r_));
             break;
         }
         case VAR_STRING:
@@ -287,62 +317,55 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             bool dirty = v.compare(buffer->c_str()) != 0;
             if (dirty)
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-            modified |= ui::InputTextWithHint(title, "Enter text and press [Enter]", buffer, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
+            modified |= ui::InputTextWithHint("", "Enter text and press [Enter]", buffer, ImGuiInputTextFlags_EnterReturnsTrue | ImGuiInputTextFlags_NoUndoRedo);
             if (dirty)
                 ui::PopStyleColor();
             if (modified)
                 value = *buffer;
             break;
         }
-//        case VAR_BUFFER:
+        // case VAR_BUFFER:
         case VAR_RESOURCEREF:
         {
-            const auto& ref = value.GetResourceRef();
-            auto refType = ref.type_;
+            ResourceRef ref = value.GetResourceRef();
+            if (ref.type_ == StringHash::ZERO && info)
+                ref.type_ = info->defaultValue_.GetResourceRef().type_;
 
-            if (refType == StringHash::ZERO && info)
-                refType = info->defaultValue_.GetResourceRef().type_;
+            modified = RenderResourceRef(ref, eventSender);
 
-            ea::string result;
-            if (RenderResourceRef(eventNamespace, refType, ref.name_, result, title))
-            {
-                value = ResourceRef(refType, result);
-                modified = true;
-            }
+            if (modified)
+                value = ref;
             break;
         }
         case VAR_RESOURCEREFLIST:
         {
-            auto& refList = value.GetResourceRefList();
+            const ResourceRefList& refList = value.GetResourceRefList();
+            float posX = ui::GetCursorPosX();
             for (auto i = 0; i < refList.names_.size(); i++)
             {
                 UI_ID(i)
                 {
-                    ea::string result;
-
-                    auto refType = refList.type_;
-                    if (refType == StringHash::ZERO && info)
-                        refType = info->defaultValue_.GetResourceRef().type_;
-
-                    modified |= RenderResourceRef(eventNamespace, refType, refList.names_[i], result, nullptr);
+                    ResourceRef ref(refList.type_, refList.names_[i]);
+                    ui::SetCursorPosX(posX);
+                    modified |= RenderResourceRef(ref, eventSender);
                     if (modified)
                     {
                         ResourceRefList newRefList(refList);
-                        newRefList.names_[i] = result;
+                        newRefList.names_[i] = ref.name_;
                         value = newRefList;
                         break;
                     }
                 }
-
             }
             if (refList.names_.empty())
             {
                 ui::SetCursorPosY(ui::GetCursorPosY() + 5);
                 ui::TextUnformatted("...");
             }
+            // TODO: Do we need list expansion?
             break;
         }
-//            case VAR_VARIANTVECTOR:
+        // case VAR_VARIANTVECTOR:
         case VAR_VARIANTMAP:
         {
             struct VariantMapState
@@ -353,14 +376,25 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                 int valueTypeIndex_ = 0;
             };
             ui::IdScope idScope(VAR_VARIANTMAP);
-
-            // Centered title.
-            ui::TextCentered(title);
-            ui::Separator();
-
             auto* map = value.GetVariantMapPtr();
             auto* mapState = ui::GetUIState<VariantMapState>();
-            float w = ui::CalcItemWidth();
+
+            // New key insertion
+            ui::ItemLabel(title);
+            ui::SetNextItemWidth(ui::CalcItemWidth() * 0.3f);
+            ui::Combo("###key-type", &mapState->valueTypeIndex_, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
+            ui::SameLine();
+            ui::SetNextItemWidth(ui::CalcItemWidth() * 0.7f - style.ItemSpacing.x);
+            if (ui::InputTextWithHint("##key", "Enter key and press [Enter]", &mapState->key_, ImGuiInputTextFlags_EnterReturnsTrue))
+            {
+                if (map->find(mapState->key_.c_str()) == map->end())   // TODO: Show warning about duplicate name
+                {
+                    map->insert({ mapState->key_.c_str(), Variant{ supportedVariantTypes[mapState->valueTypeIndex_] } });
+                    mapState->key_.clear();
+                    mapState->valueTypeIndex_ = 0;
+                    modified = true;
+                }
+            }
 
             // Keys and values.
             unsigned index = 0;
@@ -374,15 +408,16 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
 
 #if URHO3D_HASH_DEBUG
                 const ea::string& name = StringHash::GetGlobalStringHashRegister()->GetString(it->first);
-                const char* attributeName = (name.empty() ? it->first.ToString() : name).c_str();
+                const char* keyName = (name.empty() ? it->first.ToString() : name).c_str();
 #else
-                const char* attributeName = it->first_.ToString().c_str();
+                const char* keyName = it->first_.ToString().c_str();
 #endif
 
                 ui::IdScope entryIdScope(index++);
-                modified |= RenderSingleAttribute(eventNamespace, nullptr, it->second, attributeName);
-
-                // TODO: Trashcan after label looks inconsistent with the rest of UI.
+                // FIXME: Number of components in rendered attribute affects item width and causes misalignment.
+                ui::ItemLabel(keyName);
+                modified |= RenderAttribute("", it->second, Color::WHITE, "", nullptr, eventSender, ui::CalcItemWidth() - ui::IconButtonSize());
+                // Delete button.
                 ui::SameLine();
                 if (ui::Button(ICON_FA_TRASH))
                 {
@@ -390,169 +425,191 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
                     modified |= true;
                     break;
                 }
-
-                ui::Separator();
             }
-
-            // New key insertion
-            ui::SetNextItemWidth(w * 0.7f - style.ItemSpacing.x);
-            if (ui::InputTextWithHint("##Key", "Enter key and press [Enter]", &mapState->key_, ImGuiInputTextFlags_EnterReturnsTrue))
-            {
-                if (map->find(mapState->key_.c_str()) == map->end())   // TODO: Show warning about duplicate name
-                {
-                    map->insert({ mapState->key_.c_str(), Variant{ supportedVariantTypes[mapState->valueTypeIndex_] } });
-                    mapState->key_.clear();
-                    mapState->valueTypeIndex_ = 0;
-                    modified = true;
-                }
-            }
-            ui::SameLine();
-            ui::SetNextItemWidth(w * 0.3f);
-            ui::Combo("Key: Type", &mapState->valueTypeIndex_, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
             ui::Separator();
-
-            if (!map->empty())
-                ui::Separator();
 
             break;
         }
         case VAR_INTRECT:
         {
             auto& v = value.GetIntRect();
-            modified |= ui::DragInt4(title, const_cast<int*>(&v.left_), 1, M_MIN_INT, M_MAX_INT);
-            ui::SetHelpTooltip("ltbr");
+            const char* formats[] = {"L=%d", "T=%d", "B=%d", "R=%d"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_S32, const_cast<int*>(&v.left_), 4, 1, &intMin, &intMax, formats, 1.0f);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_S32, const_cast<int*>(&v.left_), 4, 1, &intMin, &intMax, "%.3f", 1.0f);
             break;
         }
         case VAR_INTVECTOR2:
         {
             auto& v = value.GetIntVector2();
-            modified |= ui::DragInt2(title, const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
-            ui::SetHelpTooltip("xy");
+            const char* formats[] = {"X=%d", "Y=%d"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 2, 1, &intMin, &intMax, formats, 1.0f);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 2, 1, &intMin, &intMax, "%.3f", 1.0f);
             break;
         }
         case VAR_MATRIX3:
         {
             auto& v = value.GetMatrix3();
-            modified |= ui::DragFloat3(*title ? title : "###m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m0");
-            modified |= ui::DragFloat3("###m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m1");
-            modified |= ui::DragFloat3("##m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m2");
+            const char* formats[3][3] = {
+                {"M00=%.3f", "M01=%.3f", "M02=%.3f"},
+                {"M10=%.3f", "M11=%.3f", "M12=%.3f"},
+                {"M20=%.3f", "M21=%.3f", "M22=%.3f"}
+            };
+            ui::BeginGroup();
+            if (showHelperLabels)
+            {
+                modified |= ui::DragScalarFormatsN("###m0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 3, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 3, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 3, floatStep, &floatMin, &floatMax, formats[0], power);
+            }
+            else
+            {
+                modified |= ui::DragScalarN("###m0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 3, floatStep, &floatMin, &floatMax, "%.3f", power);
+            }
+            ui::EndGroup();
             break;
         }
         case VAR_MATRIX3X4:
         {
             auto& v = value.GetMatrix3x4();
-            modified |= ui::DragFloat4(*title ? title : "##m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m0");
-            modified |= ui::DragFloat4("##m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m1");
-            modified |= ui::DragFloat4("##m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m2");
+            const char* formats[3][4] = {
+                {"M00=%.3f", "M01=%.3f", "M02=%.3f", "M03=%.3f"},
+                {"M10=%.3f", "M11=%.3f", "M12=%.3f", "M13=%.3f"},
+                {"M20=%.3f", "M21=%.3f", "M22=%.3f", "M23=%.3f"}
+            };
+            ui::BeginGroup();
+            if (showHelperLabels)
+            {
+                modified |= ui::DragScalarFormatsN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+            }
+            else
+            {
+                modified |= ui::DragScalarN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+            }
+            ui::EndGroup();
             break;
         }
         case VAR_MATRIX4:
         {
             auto& v = value.GetMatrix4();
-            modified |= ui::DragFloat4(*title ? title : "##m0", const_cast<float*>(&v.m00_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m0");
-            modified |= ui::DragFloat4("##m1", const_cast<float*>(&v.m10_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m1");
-            modified |= ui::DragFloat4("##m2", const_cast<float*>(&v.m20_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m2");
-            modified |= ui::DragFloat4("##m3", const_cast<float*>(&v.m30_), floatStep, floatMin, floatMax, "%.3f", power);
-            ui::SetHelpTooltip("m3");
+            const char* formats[4][4] = {
+                {"M00=%.3f", "M01=%.3f", "M02=%.3f", "M03=%.3f"},
+                {"M10=%.3f", "M11=%.3f", "M12=%.3f", "M13=%.3f"},
+                {"M20=%.3f", "M21=%.3f", "M22=%.3f", "M23=%.3f"},
+                {"M30=%.3f", "M31=%.3f", "M32=%.3f", "M33=%.3f"},
+            };
+            ui::BeginGroup();
+            if (showHelperLabels)
+            {
+                modified |= ui::DragScalarFormatsN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+                modified |= ui::DragScalarFormatsN("###mm3", ImGuiDataType_Float, const_cast<float*>(&v.m30_), 4, floatStep, &floatMin, &floatMax, formats[0], power);
+            }
+            else
+            {
+                modified |= ui::DragScalarN("###mm0", ImGuiDataType_Float, const_cast<float*>(&v.m00_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm1", ImGuiDataType_Float, const_cast<float*>(&v.m10_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm2", ImGuiDataType_Float, const_cast<float*>(&v.m20_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+                modified |= ui::DragScalarN("###mm3", ImGuiDataType_Float, const_cast<float*>(&v.m30_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
+            }
+            ui::EndGroup();
             break;
         }
         case VAR_DOUBLE:
         {
             auto v = value.GetDouble();
-            modified |= ui::DragScalar(title, ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", power);
+            modified |= ui::DragScalar("", ImGuiDataType_Double, &v, floatStep, &doubleMin, &doubleMax, "%.3f", power);
             if (modified)
                 value = v;
             break;
         }
         case VAR_STRINGVECTOR:
         {
-            auto& v = const_cast<StringVector&>(value.GetStringVector());
-
+            StringVector* v = value.GetStringVectorPtr();
             // Insert new item.
             {
                 auto* buffer = ui::GetUIState<ea::string>();
-                if (ui::InputTextWithHint(title, "Enter text and press [Enter]", buffer, ImGuiInputTextFlags_EnterReturnsTrue))
+                modified = ui::InputTextWithHint("", "Enter text and press [Enter]", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
+                if (modified)
                 {
-                    v.push_back(*buffer);
+                    v->push_back(*buffer);
                     buffer->clear();
-                    modified = true;
-
-                    // Expire buffer of this new item just in case other item already used it.
-                    UI_ID(v.size())
-                        ui::RemoveUIState<ea::string>();
+                    ui::RemoveUIState<ea::string>();
                 }
             }
-
             // List of current items.
-            unsigned index = 0;
-            for (auto it = v.begin(); it != v.end();)
+            StringVector& buffers = *ui::GetUIState<StringVector>();
+            buffers.resize(v->size());
+            for (int i = 0; i < v->size();)
             {
-                ea::string& sv = *it;
+                ea::string& sv = v->at(i);
+                ea::string& buffer = buffers[i];
+                // Initial value for temporary buffer that will be edited. Committing value will save it to sv.
+                if (buffer.empty() && buffer != sv)
+                    buffer = sv;
 
-                ui::IdScope idScope(++index);
-                auto* buffer = ui::GetUIState<ea::string>(sv.c_str());
-                bool dirty = sv.compare(buffer->c_str()) != 0;
+                bool dirty = sv != buffer;
                 if (dirty)
                     ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-
+                // Input widget of one item.
                 ui::SetNextItemWidth(ui::CalcItemWidth() - ui::IconButtonSize() - style.ItemSpacing.x);
-                modified |= ui::InputText("", buffer, ImGuiInputTextFlags_EnterReturnsTrue);
+                if (ui::InputTextWithHint(Format("[{}]", i).c_str(), "Enter value and press [Enter]",
+                    &buffer, ImGuiInputTextFlags_EnterReturnsTrue))
+                {
+                    sv = buffer;
+                    modified = true;
+                }
                 if (dirty)
                 {
                     ui::PopStyleColor();
                     if (ui::IsItemHovered())
                         ui::SetTooltip("Press [Enter] to commit changes.");
                 }
-                if (modified)
-                    sv = *buffer;
-
+                // Delete button.
                 ui::SameLine();
                 bool deleted = ui::IconButton(ICON_FA_TRASH);
-                modified |= deleted;
-
                 if (deleted)
-                    it = v.erase(it);
-                else
-                    ++it;
-
-                if (modified)
                 {
-                    // After modification of the vector all buffers are expired and recreated because their indexes
-                    // changed. Index is used as id in this loop.
-                    ui::RemoveUIState<ea::string>();
+                    v->erase_at(i);
+                    buffers.erase_at(i);                    // Remove temporary buffer of deleted item.
+                    modified = true;
                 }
+                else
+                    ++i;
             }
-
-            if (!v.empty())
+            // Separate array of items from following attributes.
+            if (!v->empty())
                 ui::Separator();
-
-            if (modified)
-                value = StringVector(v);
-
             break;
         }
         case VAR_RECT:
         {
             auto& v = value.GetRect();
-            modified |= ui::DragFloat4(title, const_cast<float*>(&v.min_.x_), floatStep, floatMin,
-                                       floatMax, "%.3f", power);
-            ui::SetHelpTooltip("min xy, max xy");
+            const char* formats[] = {"MinX=%.3f", "MinY=%.3f", "MaxX=%.3f", "MaxY=%.3f"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_Float, const_cast<float*>(&v.min_.x_), 4, floatStep, &floatMin, &floatMax, formats, power);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_Float, const_cast<float*>(&v.min_.x_), 4, floatStep, &floatMin, &floatMax, "%.3f", power);
             break;
         }
         case VAR_INTVECTOR3:
         {
             auto& v = value.GetIntVector3();
-            modified |= ui::DragInt3(title, const_cast<int*>(&v.x_), 1, M_MIN_INT, M_MAX_INT);
-            ui::SetHelpTooltip("xyz");
+            const char* formats[] = {"X=%d", "Y=%d", "Z=%d"};
+            if (showHelperLabels)
+                modified |= ui::DragScalarFormatsN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 3, 1, &intMin, &intMax, formats, 1.0f);
+            else
+                modified |= ui::DragScalarN("", ImGuiDataType_S32, const_cast<int*>(&v.x_), 3, 1, &intMin, &intMax, "%d", 1.0f);
             break;
         }
         case VAR_INT64:
@@ -560,7 +617,7 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             auto minVal = std::numeric_limits<long long int>::min();
             auto maxVal = std::numeric_limits<long long int>::max();
             auto v = value.GetInt64();
-            modified |= ui::DragScalar(title, ImGuiDataType_S64, &v, 1, &minVal, &maxVal);
+            modified |= ui::DragScalar("", ImGuiDataType_S64, &v, 1, &minVal, &maxVal);
             if (modified)
                 value = v;
             break;
@@ -569,237 +626,169 @@ bool RenderSingleAttribute(Object* eventNamespace, const AttributeInfo* info, Va
             break;
         }
     }
+
+    if (item_width != 0)
+        ui::PopItemWidth();
+
+    if (openAttributeMenu)
+        ui::OpenPopup("Attribute Menu");
+
     return modified;
 }
 
-bool RenderAttributes(Serializable* item, const char* filter, Object* eventNamespace)
+bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventSender)
 {
     if (item->GetNumAttributes() == 0)
         return false;
 
-    if (eventNamespace == nullptr)
-        eventNamespace = item;
+    if (eventSender == nullptr)
+        eventSender = item;
 
-    auto isOpen = true;//ui::CollapsingHeader(item->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen);
-    // if (isOpen)
+    const ea::vector<AttributeInfo>* attributes = item->GetAttributes();
+    if (attributes == nullptr)
+        return false;
+
+    ui::IdScope itemId(item);
+
+    for (const AttributeInfo& info: *attributes)
     {
-        const ea::vector<AttributeInfo>* attributes = item->GetAttributes();
-        if (attributes == nullptr)
-            return false;
+        // Attribute is not meant to be edited in editor.
+        if (info.mode_ & AM_NOEDIT)
+            continue;
+        // Ignore attributes not matching user-provided filter.
+        if (!filter.empty() && !info.name_.contains(filter, false))
+            continue;
+        // Ignore not supported variant types.
+        if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
+            continue;
+        ui::IdScope attributeNameId(info.name_.c_str());
 
-        ui::PushID(item);
-        eventNamespace->SendEvent(E_INSPECTORRENDERSTART, InspectorRenderStart::P_SERIALIZABLE, item);
+        Color color = Color::WHITE;                                 // Modified value color
+        auto& modification = ValueHistory<Variant>::Get(item->GetAttribute(info.name_));
+        Variant& value = modification.current_;
 
-        // UI_UPIDSCOPE(1)
-        // {
-        //     // Show columns after custom widgets at inspector start, but have them in a global
-        //     // context. Columns of all components will be resized simultaneously.
-        //     // [/!\ WARNING /!\]
-        //     // Adding new ID scopes here will break code in custom inspector widgets if that code
-        //     // uses ui::Columns() calls.
-        //     // [/!\ WARNING /!\]
-        //     ui::Columns(2);
-        // }
+        Variant inheritedDefault = item->GetInstanceDefault(info.name_);
+        if (!inheritedDefault.IsEmpty() && value == inheritedDefault)
+            color = Color::GREEN;                                   // Inherited value color
+        else if (value == info.defaultValue_)
+            color = Color::GRAY;                                    // Default value color
 
-        for (const AttributeInfo& info: *attributes)
+        // Customize attribute rendering
+        const ea::string* tooltip = &EMPTY_STRING;
         {
-            if (info.mode_ & AM_NOEDIT)
+            using namespace AttributeInspectorAttribute;
+            VariantMap& args = eventSender->GetEventDataMap();
+            args[P_SERIALIZABLE] = item;
+            args[P_ATTRIBUTEINFO] = (void*)&info;
+            args[P_COLOR] = color;
+            args[P_HIDDEN] = false;
+            args[P_TOOLTIP] = "";
+            eventSender->SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
+            if (args[P_HIDDEN].GetBool())
                 continue;
-
-            bool hidden = false;
-            Color color = Color::WHITE;
-            ea::string tooltip;
-            ui::IdScope idGuard(info.name_.c_str());
-
-            auto& modification = ValueHistory<Variant>::Get(item->GetAttribute(info.name_));
-            Variant& value = modification.current_;
-
-            Variant inheritedDefault = item->GetInstanceDefault(info.name_);
-            bool hasInherited = !inheritedDefault.IsEmpty();
-            if (!inheritedDefault.IsEmpty() /*&& inheritedDefault != info.defaultValue_*/)
-            {
-                // Inherited = green, modified = white
-                if (value == inheritedDefault)
-                    color = Color::GREEN;
-            }
-            else if (value == info.defaultValue_)
-            {
-                // Default = gray, modified = white
-                color = Color::GRAY;
-            }
-
-            if (info.mode_ & AM_NOEDIT)
-                hidden = true;
-            else if (filter != nullptr && *filter && !info.name_.contains(filter, false))
-                hidden = true;
-
-            if (info.type_ == VAR_BUFFER || info.type_ == VAR_VARIANTVECTOR || info.type_ == VAR_VOIDPTR || info.type_ == VAR_PTR)
-                hidden = true;
-
-            // Customize attribute rendering
-            {
-                using namespace AttributeInspectorAttribute;
-                VariantMap args;
-                args[P_SERIALIZABLE] = item;
-                args[P_ATTRIBUTEINFO] = (void*)&info;
-                args[P_COLOR] = color;
-                args[P_HIDDEN] = hidden;
-                args[P_TOOLTIP] = tooltip;
-                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
-                hidden = args[P_HIDDEN].GetBool();
-                color = args[P_COLOR].GetColor();
-                tooltip = args[P_TOOLTIP].GetString();
-            }
-
-            if (hidden)
-                continue;
-
-            ui::PushID(info.name_.c_str());
-
-            // ui::TextColored(ToImGui(color), "%s", info.name_.c_str());
-
-            if (!tooltip.empty() && ui::IsItemHovered())
-                ui::SetTooltip("%s", tooltip.c_str());
-
-            if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_RIGHT))
-                ui::OpenPopup("Attribute Menu");
-
-            AttributeInspectorModifiedFlags modified{AttributeInspectorModified::NO_CHANGE};
-            bool expireBuffers = false;
-            if (ui::BeginPopup("Attribute Menu"))
-            {
-                if (!info.defaultValue_.IsEmpty())
-                {
-                    bool isSame = value == info.defaultValue_;
-                    if (isSame)
-                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-
-                    if (ui::MenuItem("Reset to default"))
-                    {
-                        value = info.defaultValue_;     // For current frame to render correctly
-                        expireBuffers = true;
-                        modified = AttributeInspectorModified::SET_DEFAULT;
-                    }
-                    if (isSame)
-                        ui::PopStyleColor();
-                }
-
-                if (!inheritedDefault.IsEmpty())
-                {
-                    bool isSame = value == inheritedDefault;
-                    if (isSame)
-                        ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-
-                    if (ui::MenuItem("Reset to inherited"))
-                    {
-                        value = inheritedDefault;     // For current frame to render correctly
-                        expireBuffers = true;
-                        modified = AttributeInspectorModified::SET_INHERITED;
-                    }
-
-                    if (isSame)
-                        ui::PopStyleColor();
-                }
-
-                if (value.GetType() == VAR_INT && info.name_.ends_with(" Mask"))
-                {
-                    if (ui::MenuItem("Enable All"))
-                    {
-                        value = M_MAX_UNSIGNED;
-                        modified = AttributeInspectorModified::SET_BY_USER;
-                    }
-                    if (ui::MenuItem("Disable All"))
-                    {
-                        value = 0;
-                        modified = AttributeInspectorModified::SET_BY_USER;
-                    }
-                    if (ui::MenuItem("Toggle"))
-                    {
-                        value = value.GetUInt() ^ M_MAX_UNSIGNED;
-                        modified = AttributeInspectorModified::SET_BY_USER;
-                    }
-                }
-
-                // Allow customization of attribute menu.
-                using namespace AttributeInspectorMenu;
-                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
-
-                ImGui::EndPopup();
-            }
-
-            // Buffers have to be expired outside of popup, because popup has it's own id stack. Careful when pushing
-            // new IDs in code below, buffer expiring will break!
-            if (expireBuffers)
-                ui::RemoveUIState<ea::string>();
-
-            // Value widget rendering
-            bool nonVariantValue{}; // TODO: Get rid of this after inspector rework is done
-            {
-                using namespace InspectorRenderAttribute;
-                VariantMap args{ };
-                args[P_ATTRIBUTEINFO] = (void*) &info;
-                args[P_SERIALIZABLE] = item;
-                args[P_HANDLED] = false;
-                args[P_MODIFIED] = false;
-                // Rendering of custom widgets for values that do not map to Variant.
-                eventNamespace->SendEvent(E_INSPECTORRENDERATTRIBUTE, args);
-                nonVariantValue = args[P_HANDLED].GetBool();
-                if (nonVariantValue)
-                {
-                    if (args[P_MODIFIED].GetBool())
-                        modified = AttributeInspectorModified::SET_BY_USER;
-                }
-                else
-                {
-                    // Rendering of default widgets for Variant values.
-                    if (RenderSingleAttribute(eventNamespace, &info, value, info.name_.c_str()))
-                        modified = AttributeInspectorModified::SET_BY_USER;
-                }
-            }
-
-            // Flag modification as modified. Needed in order to avoid sending E_ATTRIBUTEINSPECTVALUEMODIFIED when
-            // external modifications (like from undo) happen.
-            if (modified)
-                modification.SetModified(true);
-
-            // Always apply our own modifications.
-            if (!nonVariantValue && modified)
-            {
-                item->SetAttribute(info.name_, value);
-                item->ApplyAttributes();
-            }
-
-            // Normal attributes
-            if (modification.IsModified())
-            {
-                // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
-                // has ended and we can fire attribute modification event.
-                using namespace AttributeInspectorValueModified;
-                VariantMap& args = eventNamespace->GetEventDataMap();
-                args[P_SERIALIZABLE] = item;
-                args[P_ATTRIBUTEINFO] = (void*)&info;
-                args[P_OLDVALUE] = modification.initial_;
-                args[P_NEWVALUE] = value;
-                args[P_MODIFIED] = (unsigned)modified;
-                eventNamespace->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, args);
-            }
-
-            // ui::PopItemWidth();
-            ui::PopID();
-
-            // ui::NextColumn();
+            color = args[P_COLOR].GetColor();
+            tooltip = &args[P_TOOLTIP].GetString();
         }
-        // ui::Columns();
-        eventNamespace->SendEvent(E_INSPECTORRENDEREND);
-        ui::PopID();
+
+        AttributeInspectorModified modifiedReason = AttributeInspectorModified::NO_CHANGE;
+        bool modified = RenderAttribute(info.name_, value, color, *tooltip, &info, eventSender, 0);
+
+        if (ui::BeginPopup("Attribute Menu"))
+        {
+            auto& style = ui::GetStyle();
+            if (!info.defaultValue_.IsEmpty())
+            {
+                bool isSame = value == info.defaultValue_;
+                if (isSame)
+                {
+                    ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+                    ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+                }
+                if (ui::MenuItem("Reset to default"))
+                {
+                    value = info.defaultValue_;
+                    modified = true;
+                    modifiedReason = AttributeInspectorModified::SET_DEFAULT;
+                }
+                if (isSame)
+                {
+                    ui::PopStyleColor();
+                    ui::PopItemFlag();
+                }
+            }
+            if (!inheritedDefault.IsEmpty())
+            {
+                bool isSame = value == inheritedDefault;
+                if (isSame)
+                {
+                    ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+                    ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
+                }
+                if (ui::MenuItem("Reset to inherited"))
+                {
+                    value = inheritedDefault;     // For current frame to render correctly
+                    modified = true;
+                    modifiedReason = AttributeInspectorModified::SET_INHERITED;
+                }
+                if (isSame)
+                {
+                    ui::PopStyleColor();
+                    ui::PopItemFlag();
+                }
+            }
+
+            if (value.GetType() == VAR_INT && info.name_.ends_with(" Mask"))
+            {
+                if (ui::MenuItem("Enable All"))
+                {
+                    value = M_MAX_UNSIGNED;
+                    modified = true;
+                }
+                if (ui::MenuItem("Disable All"))
+                {
+                    value = 0;
+                    modified = true;
+                }
+                if (ui::MenuItem("Toggle"))
+                {
+                    value = value.GetUInt() ^ M_MAX_UNSIGNED;
+                    modified = true;
+                }
+            }
+
+            // Allow customization of attribute menu.
+            using namespace AttributeInspectorMenu;
+            eventSender->SendEvent(E_ATTRIBUTEINSPECTORMENU, P_SERIALIZABLE, item, P_ATTRIBUTEINFO, (void*)&info);
+
+            ImGui::EndPopup();
+        }
+
+        if (modified)
+        {
+            if (modifiedReason == AttributeInspectorModified::NO_CHANGE)
+                modifiedReason = AttributeInspectorModified::SET_BY_USER;
+
+            modification.SetModified(true);
+            item->SetAttribute(info.name_, value);
+            item->ApplyAttributes();
+        }
+
+        if (modification.IsModified())
+        {
+            // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
+            // has ended and we can fire attribute modification event.
+            using namespace AttributeInspectorValueModified;
+            VariantMap& args = eventSender->GetEventDataMap();
+            args[P_SERIALIZABLE] = item;
+            args[P_ATTRIBUTEINFO] = (void*)&info;
+            args[P_OLDVALUE] = modification.initial_;
+            args[P_NEWVALUE] = modification.current_;
+            args[P_REASON] = (unsigned)modifiedReason;
+            eventSender->SendEvent(E_ATTRIBUTEINSPECTVALUEMODIFIED, args);
+            return true;
+        }
     }
-
-    return isOpen;
-}
-
-bool RenderSingleAttribute(Variant& value, const char* title)
-{
-    return RenderSingleAttribute(nullptr, nullptr, value, title);
+    return false;
 }
 
 }

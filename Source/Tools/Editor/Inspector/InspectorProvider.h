@@ -35,7 +35,7 @@ public:
     /// Construct.
     explicit InspectorProvider(Context* context) : Object(context) { }
     /// Set currently inspected object.
-    virtual void SetInspected(Object* inspected) { inspected_ = inspected; }
+    virtual void SetInspected(Object* inspected, Object* eventSender) { inspected_ = inspected; eventSender_ = eventSender; }
     /// Render inspector UI.
     virtual void RenderInspector(const char* filter) = 0;
     /// Release associated resources.
@@ -44,6 +44,8 @@ public:
 protected:
     /// Currently inspected object.
     WeakPtr<Object> inspected_;
+    /// Currently inspected object.
+    WeakPtr<Object> eventSender_;
 };
 
 }
