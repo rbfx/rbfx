@@ -98,7 +98,7 @@ bool MaskSelector(const char* title, unsigned int* mask)
     const ImGuiStyle& style = ui::GetStyle();
     ImVec2 pos = ui::GetCursorPos();
     float w = CalcItemWidth();
-    ImVec2 buttonSize(w / 16.0f, GImGui->FontSize / 2.0f - 1);
+    ImVec2 buttonSize(w / 16.0f, (GImGui->FontSize + style.ItemSpacing.y * 2) / 2.0f - 1);
 
     for (unsigned row = 0; row < 2; row++)
     {
@@ -471,6 +471,86 @@ void TextCentered(const char* text)
 {
     ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(text).x) / 2);
     ui::TextUnformatted(text);
+}
+
+void ItemLabel(ea::string_view title, const Color* color, ItemLabelFlags flags)
+{
+    const ImGuiStyle& style = ui::GetStyle();
+    ImVec2 lineStart = ui::GetCursorPos();
+    float fullWidth = ui::GetContentRegionAvail().x;
+    if (flags & ItemLabelFlag::Left)
+    {
+        float textWidth = ui::CalcTextSize(title.begin(), title.end()).x;
+        ui::SetCursorPosX(ui::GetCursorPosX() + (fullWidth - ui::CalcItemWidth() - textWidth - style.ItemSpacing.x));
+    }
+    else if (flags & ItemLabelFlag::Right)
+        ui::SetCursorPosX(ui::GetCursorPosX() + ui::CalcItemWidth() + style.ItemSpacing.x);
+
+    ImGui::AlignTextToFramePadding();
+    if (color != nullptr)
+        ui::PushStyleColor(ImGuiCol_Text, color->ToUInt());
+    ui::Text("%.*s", (int)title.size(), title.data());
+    if (color != nullptr)
+        ui::PopStyleColor();
+    if (flags & ItemLabelFlag::Left)
+        ui::SameLine();
+    else if (flags & ItemLabelFlag::Right)
+        ui::SetCursorPos(lineStart);
+}
+
+static const ImGuiDataTypeInfo GDataTypeInfo[] =
+{
+    { sizeof(char),             "%d",   "%d"    },  // ImGuiDataType_S8
+    { sizeof(unsigned char),    "%u",   "%u"    },
+    { sizeof(short),            "%d",   "%d"    },  // ImGuiDataType_S16
+    { sizeof(unsigned short),   "%u",   "%u"    },
+    { sizeof(int),              "%d",   "%d"    },  // ImGuiDataType_S32
+    { sizeof(unsigned int),     "%u",   "%u"    },
+#ifdef _MSC_VER
+    { sizeof(ImS64),            "%I64d","%I64d" },  // ImGuiDataType_S64
+    { sizeof(ImU64),            "%I64u","%I64u" },
+#else
+    { sizeof(ImS64),            "%lld", "%lld"  },  // ImGuiDataType_S64
+    { sizeof(ImU64),            "%llu", "%llu"  },
+#endif
+    { sizeof(float),            "%f",   "%f"    },  // ImGuiDataType_Float (float are promoted to double in va_arg)
+    { sizeof(double),           "%f",   "%lf"   },  // ImGuiDataType_Double
+};
+IM_STATIC_ASSERT(IM_ARRAYSIZE(GDataTypeInfo) == ImGuiDataType_COUNT);
+// Copied from DragScalarN() from imgui_widgets.cpp and modified to support different formats.
+bool DragScalarFormatsN(const char* label, ImGuiDataType data_type, void* p_data, int components, float v_speed, const void* p_min, const void* p_max, const char** formats, float power)
+{
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    if (window->SkipItems)
+        return false;
+
+    ImGuiContext& g = *GImGui;
+    bool value_changed = false;
+    ui::BeginGroup();
+    ui::PushID(label);
+    ui::PushMultiItemsWidths(components, ui::CalcItemWidth());
+    size_t type_size = GDataTypeInfo[data_type].Size;
+    for (int i = 0; i < components; i++)
+    {
+        ui::PushID(i);
+        if (i > 0)
+            ui::SameLine(0, g.Style.ItemInnerSpacing.x);
+        value_changed |= ui::DragScalar("", data_type, p_data, v_speed, p_min, p_max, formats ? formats[i] : GDataTypeInfo[data_type].PrintFmt, power);
+        ui::PopID();
+        ui::PopItemWidth();
+        p_data = (void*)((char*)p_data + type_size);
+    }
+    ui::PopID();
+
+    const char* label_end = ui::FindRenderedTextEnd(label);
+    if (label != label_end)
+    {
+        ui::SameLine(0, g.Style.ItemInnerSpacing.x);
+        ui::TextEx(label, label_end);
+    }
+
+    ui::EndGroup();
+    return value_changed;
 }
 
 }

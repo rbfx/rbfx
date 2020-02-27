@@ -118,7 +118,7 @@ public:
     /// Remove all items from inspector.
     void ClearInspector();
     /// Request editor to inspect specified object. Reference to this object will not be held.
-    void Inspect(Object* object);
+    void Inspect(Object* object, Object* eventSender=nullptr);
     /// Returns true when specified object is currently inspected.
     bool IsInspected(Object* object) const { return object != nullptr && inspected_.contains(WeakPtr(object)); }
     /// Return a list of currently inspected objects.

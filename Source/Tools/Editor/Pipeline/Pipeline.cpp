@@ -909,7 +909,7 @@ void Pipeline::RenderSettingsUI()
                     ui::SameLine();
                     ui::SetCursorPosX(startPos + 180 + ui::GetStyle().ItemSpacing.x);
                     UI_ITEMWIDTH(100)
-                        RenderSingleAttribute(value);
+                        RenderAttribute("", value);
                     ui::SameLine();
                     ui::SetCursorPosX(startPos + 280 + ui::GetStyle().ItemSpacing.x);
                     if (ui::Button(ICON_FA_TRASH))

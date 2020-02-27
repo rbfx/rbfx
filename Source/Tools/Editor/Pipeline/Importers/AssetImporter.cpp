@@ -35,34 +35,36 @@ namespace Urho3D
 AssetImporter::AssetImporter(Context* context)
     : Serializable(context)
 {
-    SubscribeToEvent(this, E_ATTRIBUTEINSPECTVALUEMODIFIED, [this](StringHash, VariantMap& args) {
-        using namespace AttributeInspectorValueModified;
-        const AttributeInfo& attr = *reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
-        // Set to true when modified and to false when reset
-        AttributeInspectorModifiedFlags flags(args[P_MODIFIED].GetUInt());
+    SubscribeToEvent(this, E_ATTRIBUTEINSPECTVALUEMODIFIED, URHO3D_HANDLER(AssetImporter, OnInspectorModified));
+    SubscribeToEvent(this, E_ATTRIBUTEINSPECTOATTRIBUTE, URHO3D_HANDLER(AssetImporter, OnRenderInspectorAttribute));
+}
 
-        if (flags & AttributeInspectorModified::SET_DEFAULT)
-        {
-            // Resetting value to default. Set as modified still if it is not same as inherited.
-            Variant inherited = GetInstanceDefault(attr.name_);
-            if (!inherited.IsEmpty())
-                isAttributeSet_[attr.name_] = inherited != attr.defaultValue_;
-            else
-                isAttributeSet_[attr.name_] = false;
-        }
-        else if (flags & AttributeInspectorModified::SET_INHERITED)
-        {
+void AssetImporter::OnInspectorModified(StringHash, VariantMap& args)
+{
+    using namespace AttributeInspectorValueModified;
+    const AttributeInfo& attr = *reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr());
+    auto reason = static_cast<AttributeInspectorModified>(args[P_REASON].GetUInt());
+    // Resetting value to default. Set as modified still if it is not same as inherited.
+    if (reason & AttributeInspectorModified::SET_DEFAULT)
+    {
+        Variant inherited = GetInstanceDefault(attr.name_);
+        if (!inherited.IsEmpty())
+            isAttributeSet_[attr.name_] = inherited != attr.defaultValue_;
+        else
             isAttributeSet_[attr.name_] = false;
-        }
+    }
+    else if (reason & AttributeInspectorModified::SET_INHERITED)
+        isAttributeSet_[attr.name_] = false;
 
-        if (flavor_->IsDefault())
-            asset_->ReimportOutOfDateRecursive();
-    });
-    SubscribeToEvent(this, E_ATTRIBUTEINSPECTOATTRIBUTE, [this](StringHash, VariantMap& args) {
-        using namespace AttributeInspectorAttribute;
-        if (isAttributeSet_[reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_])
-            args[P_COLOR] = Color::WHITE;
-    });
+    if (flavor_->IsDefault())
+        asset_->ReimportOutOfDateRecursive();
+}
+
+void AssetImporter::OnRenderInspectorAttribute(StringHash, VariantMap& args)
+{
+    using namespace AttributeInspectorAttribute;
+    if (isAttributeSet_[reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_])
+        args[P_COLOR] = Color::WHITE;
 }
 
 bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)

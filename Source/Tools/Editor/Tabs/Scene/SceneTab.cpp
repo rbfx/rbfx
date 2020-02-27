@@ -474,7 +474,7 @@ void SceneTab::OnNodeSelectionChanged()
     {
         if (node)
         {
-            editor->Inspect(node);
+            editor->Inspect(node, GetScene());
             inspectedNodes++;
             lastInspectedNode = node;
         }
@@ -484,7 +484,7 @@ void SceneTab::OnNodeSelectionChanged()
     {
         if (component)
         {
-            editor->Inspect(component);
+            editor->Inspect(component, GetScene());
             inspectedComponents++;
         }
     }
@@ -492,7 +492,7 @@ void SceneTab::OnNodeSelectionChanged()
     if (inspectedNodes == 1 && inspectedComponents == 0)
     {
         for (Component* component : lastInspectedNode->GetComponents())
-            editor->Inspect(component);
+            editor->Inspect(component, GetScene());
     }
 
     editor->GetTab<HierarchyTab>()->SetProvider(this);

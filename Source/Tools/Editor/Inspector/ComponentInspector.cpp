@@ -41,12 +41,12 @@ void ComponentInspector::RenderInspector(const char* filter)
         return;
 
     auto component = static_cast<Component*>(inspected_.Get());
-    if (ui::CollapsingHeader(Format("Component ({}) {}", component->GetID(),
+    if (ui::CollapsingHeader(Format("{} ({}) {}", component->GetTypeName(), component->GetID(),
         component->IsReplicated() ? ICON_FA_WIFI : "").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (component->IsReplicated())
             ui::SetHelpTooltip("Replicated over the network.");
-        RenderAttributes(component, filter, const_cast<Scene*>(component->GetScene()));
+        RenderAttributes(component, filter, eventSender_);
     }
 }
 
