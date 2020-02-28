@@ -227,7 +227,7 @@ public:
     Integer& AsInteger() { return value_; }
 
     /// Return hash value.
-    unsigned ToHash() const { return (unsigned)value_; }
+    unsigned ToHash() const { return static_cast<unsigned>(value_); }
 
 protected:
     /// Value
