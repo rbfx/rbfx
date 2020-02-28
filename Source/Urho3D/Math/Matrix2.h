@@ -202,25 +202,29 @@ public:
     /// Return float data.
     const float* Data() const { return &m00_; }
 
-
-    /// Return whether is NaN.
-    bool IsNaN() const {
-        return (
-            Urho3D::IsInf(m00_) ||
-            Urho3D::IsInf(m01_) ||
-            Urho3D::IsInf(m10_) ||
-            Urho3D::IsInf(m11_));
+    /// Return whether any element is NaN.
+    bool IsNaN() const
+    {
+        const float* data = Data();
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            if (Urho3D::IsNaN(data[i]))
+                return true;
+        }
+        return false;
     }
 
-    /// Return whether is Inf.
-    bool IsInf() const {
-        return (
-            Urho3D::IsInf(m00_) ||
-            Urho3D::IsInf(m01_) ||
-            Urho3D::IsInf(m10_) ||
-            Urho3D::IsInf(m11_));
+    /// Return whether any element is Inf.
+    bool IsInf() const
+    {
+        const float* data = Data();
+        for (unsigned i = 0; i < 4; ++i)
+        {
+            if (Urho3D::IsInf(data[i]))
+                return true;
+        }
+        return false;
     }
-
 
     /// Return as string.
     ea::string ToString() const;

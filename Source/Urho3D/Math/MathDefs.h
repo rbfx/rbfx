@@ -165,19 +165,19 @@ template <class T> inline T Ln(T x) { return log(x); }
 /// Return square root of X.
 template <class T> inline T Sqrt(T x) { return sqrt(x); }
 
-/// Return remainder of X/Y.
-template<typename T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
+/// Return remainder of X/Y for float values.
+template <class T, typename std::enable_if<std::is_floating_point<T>::value>::type* = nullptr>
 inline T Mod(T x, T y) { return fmod(x, y); }
 
-/// Return remainder of X/Y.
-template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+/// Return remainder of X/Y for integer values.
+template <class T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
 inline T Mod(T x, T y) { return x % y; }
 
-/// Return positive remainder of X/Y.
-template<typename T, typename std::enable_if<std::is_integral<T>::value>::type* = nullptr>
+/// Return always positive remainder of X/Y.
+template <class T>
 inline T AbsMod(T x, T y)
 {
-    const T result = x % y;
+    const T result = Mod(x, y);
     return result < 0 ? result + y : result;
 }
 
@@ -221,7 +221,7 @@ template <class T> inline T RoundToNearestMultiple(T x, T multiple)
     if (remainder >= multiple / 2)
         return (FloorToInt<T>(mag / multiple) * multiple + multiple) * Sign(x);
     else
-        return (FloorToInt<T>(mag / multiple) * multiple)*Sign(x);
+        return (FloorToInt<T>(mag / multiple) * multiple) * Sign(x);
 }
 
 /// Round value up.
@@ -252,8 +252,8 @@ inline unsigned NextPowerOfTwo(unsigned value)
 /// Round up or down to the closest power of two.
 inline unsigned ClosestPowerOfTwo(unsigned value)
 {
-    unsigned next = NextPowerOfTwo(value);
-    unsigned prev = next >> (unsigned)1;
+    const unsigned next = NextPowerOfTwo(value);
+    const unsigned prev = next >> 1u;
     return (value - prev) > (next - value) ? next : prev;
 }
 

@@ -41,13 +41,13 @@ unsigned Color::ToUInt() const
     return (a << 24u) | (b << 16u) | (g << 8u) | r;
 }
 
-unsigned Color::ToUIntMask(ChannelMask mask) const
+unsigned Color::ToUIntMask(const ChannelMask& mask) const
 {
     const auto max = static_cast<double>(M_MAX_UNSIGNED);
-    const auto r = static_cast<unsigned>(Clamp(static_cast<double>(r_) * mask.red_,   0.0, max)) & mask.red_;
-    const auto g = static_cast<unsigned>(Clamp(static_cast<double>(g_) * mask.green_, 0.0, max)) & mask.green_;
-    const auto b = static_cast<unsigned>(Clamp(static_cast<double>(b_) * mask.blue_,  0.0, max)) & mask.blue_;
-    const auto a = static_cast<unsigned>(Clamp(static_cast<double>(a_) * mask.alpha_, 0.0, max)) & mask.alpha_;
+    const auto r = static_cast<unsigned>(Clamp(static_cast<double>(r_) * mask.r_, 0.0, max)) & mask.r_;
+    const auto g = static_cast<unsigned>(Clamp(static_cast<double>(g_) * mask.g_, 0.0, max)) & mask.g_;
+    const auto b = static_cast<unsigned>(Clamp(static_cast<double>(b_) * mask.b_, 0.0, max)) & mask.b_;
+    const auto a = static_cast<unsigned>(Clamp(static_cast<double>(a_) * mask.a_, 0.0, max)) & mask.a_;
     return r | g | b | a;
 }
 
@@ -83,13 +83,13 @@ void Color::FromUInt(unsigned color)
     r_ = ((color >> 0u)  & 0xffu) / 255.0f;
 }
 
-void Color::FromUIntMask(unsigned color, ChannelMask mask)
+void Color::FromUIntMask(unsigned color, const ChannelMask& mask)
 {
     // Channel offset is irrelevant during division, but double should be used to avoid precision loss.
-    r_ = !mask.red_   ? 0.0f : static_cast<float>((color & mask.red_)   / static_cast<double>(mask.red_));
-    g_ = !mask.green_ ? 0.0f : static_cast<float>((color & mask.green_) / static_cast<double>(mask.green_));
-    b_ = !mask.blue_  ? 0.0f : static_cast<float>((color & mask.blue_)  / static_cast<double>(mask.blue_));
-    a_ = !mask.alpha_ ? 1.0f : static_cast<float>((color & mask.alpha_) / static_cast<double>(mask.alpha_));
+    r_ = !mask.r_ ? 0.0f : static_cast<float>((color & mask.r_) / static_cast<double>(mask.r_));
+    g_ = !mask.g_ ? 0.0f : static_cast<float>((color & mask.g_) / static_cast<double>(mask.g_));
+    b_ = !mask.b_ ? 0.0f : static_cast<float>((color & mask.b_) / static_cast<double>(mask.b_));
+    a_ = !mask.a_ ? 1.0f : static_cast<float>((color & mask.a_) / static_cast<double>(mask.a_));
 }
 
 void Color::FromHSL(float h, float s, float l, float a)

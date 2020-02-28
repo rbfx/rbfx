@@ -324,8 +324,11 @@ public:
     /// Test for equality with another vector with epsilon.
     bool Equals(const Vector2& rhs, float eps = M_EPSILON) const { return Urho3D::Equals(x_, rhs.x_, eps) && Urho3D::Equals(y_, rhs.y_, eps); }
 
-    /// Return whether is NaN.
+    /// Return whether any component is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_); }
+
+    /// Return whether any component is Inf.
+    bool IsInf() const { return Urho3D::IsInf(x_) || Urho3D::IsInf(y_); }
 
     /// Return normalized to unit length.
     Vector2 Normalized() const
