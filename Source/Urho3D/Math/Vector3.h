@@ -413,12 +413,11 @@ public:
     /// Returns the angle between this vector and another vector in degrees.
     float Angle(const Vector3& rhs) const { return Urho3D::Acos(DotProduct(rhs) / (Length() * rhs.Length())); }
 
-    /// Return whether is NaN.
+    /// Return whether any component is NaN.
     bool IsNaN() const { return Urho3D::IsNaN(x_) || Urho3D::IsNaN(y_) || Urho3D::IsNaN(z_); }
 
-    /// Return whether is Inf.
+    /// Return whether any component is Inf.
     bool IsInf() const { return Urho3D::IsInf(x_) || Urho3D::IsInf(y_) || Urho3D::IsInf(z_); }
-
 
     /// Return normalized to unit length.
     Vector3 Normalized() const

@@ -37,13 +37,13 @@ public:
     struct ChannelMask
     {
         /// Red channel mask. If zero, red channel is set to 0.
-        unsigned red_;
+        unsigned r_;
         /// Green channel mask. If zero, green channel is set to 0.
-        unsigned green_;
+        unsigned g_;
         /// Blue channel mask. If zero, blue channel is set to 0.
-        unsigned blue_;
+        unsigned b_;
         /// Alpha channel mask. If zero, alpha channel is set to 1.
-        unsigned alpha_;
+        unsigned a_;
     };
     /// Mask for 0xAABBGGRR layout.
     static const ChannelMask ABGR;
@@ -99,7 +99,7 @@ public:
     }
 
     /// Construct from 32-bit integer. Default format is 0xAABBGGRR.
-    explicit Color(unsigned color, ChannelMask mask = ABGR) { FromUIntMask(color, mask); }
+    explicit Color(unsigned color, const ChannelMask& mask = ABGR) { FromUIntMask(color, mask); }
 
     /// Construct from 3-vector.
     explicit Color(const Vector3& color) : Color(color.x_, color.y_, color.z_) {}
@@ -144,7 +144,7 @@ public:
     /// Return color packed to a 32-bit integer, with R component in the lowest 8 bits. Components are clamped to [0, 1] range.
     unsigned ToUInt() const;
     /// Return color packed to a 32-bit integer with arbitrary channel mask. Components are clamped to [0, 1] range.
-    unsigned ToUIntMask(ChannelMask mask) const;
+    unsigned ToUIntMask(const ChannelMask& mask) const;
     /// Return HSL color-space representation as a Vector3; the RGB values are clipped before conversion but not changed in the process.
     Vector3 ToHSL() const;
     /// Return HSV color-space representation as a Vector3; the RGB values are clipped before conversion but not changed in the process.
@@ -152,7 +152,7 @@ public:
     /// Set RGBA values from packed 32-bit integer, with R component in the lowest 8 bits (format 0xAABBGGRR).
     void FromUInt(unsigned color);
     /// Set RGBA values from packed 32-bit integer with arbitrary channel mask.
-    void FromUIntMask(unsigned color, ChannelMask mask);
+    void FromUIntMask(unsigned color, const ChannelMask& mask);
     /// Set RGBA values from specified HSL values and alpha.
     void FromHSL(float h, float s, float l, float a = 1.0f);
     /// Set RGBA values from specified HSV values and alpha.

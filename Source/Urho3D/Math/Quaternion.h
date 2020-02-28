@@ -111,7 +111,7 @@ public:
     }
 
     /// Construct from Euler angles (in degrees.)
-    explicit Quaternion(Vector3 angles) noexcept
+    explicit Quaternion(const Vector3& angles) noexcept
     {
         FromEulerAngles(angles.x_, angles.y_, angles.z_);
     }
