@@ -190,6 +190,9 @@ bool Project::LoadProject(const ea::string& projectPath)
                 fs->Delete(fs->GetProgramDir() + fileName);
         }
     }
+#if URHO3D_CSHARP
+    plugins_->Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
+#endif
 #endif
     pipeline_->EnableWatcher();
     pipeline_->BuildCache(nullptr, PipelineBuildFlag::SKIP_UP_TO_DATE);
