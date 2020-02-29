@@ -362,9 +362,9 @@ void ResourceTab::SelectCurrentItemInspector()
 {
     ea::string selected = resourcePath_ + resourceSelection_;
 
-    auto* editor = GetSubsystem<Editor>();
+    auto* inspector = GetSubsystem<InspectorTab>();
     auto* pipeline = GetSubsystem<Pipeline>();
-    editor->ClearInspector();
+    inspector->Clear();
 
     if (Asset* asset = pipeline->GetAsset(selected))
         asset->Inspect();

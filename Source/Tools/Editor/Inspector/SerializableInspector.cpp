@@ -20,25 +20,33 @@
 // THE SOFTWARE.
 //
 #include <Urho3D/Scene/Node.h>
+
 #include <Toolbox/SystemUI/AttributeInspector.h>
+
 #include "Editor.h"
 #include "Inspector/SerializableInspector.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
 
 SerializableInspector::SerializableInspector(Context* context)
-    : InspectorProvider(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &SerializableInspector::RenderInspector);
 }
 
-void SerializableInspector::RenderInspector(const char* filter)
+void SerializableInspector::RenderInspector(InspectArgs& args)
 {
-    if (inspected_.Expired())
+    auto* serializable = args.object_->Cast<Serializable>();
+    if (serializable == nullptr || args.handledTimes_ > 0)
         return;
 
-    if (ui::CollapsingHeader(inspected_->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
-        RenderAttributes(static_cast<Node*>(inspected_.Get()), filter, eventSender_);
+    args.handledTimes_++;
+    ui::IdScope idScope(serializable);
+    if (ui::CollapsingHeader(serializable->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+        RenderAttributes(serializable, args.filter_, args.eventSender_);
 }
 
 }

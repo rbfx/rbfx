@@ -74,11 +74,27 @@
 #include "Inspector/ComponentInspector.h"
 #include "Inspector/SerializableInspector.h"
 #include "Inspector/SoundInspector.h"
+#include "Inspector/UIElementInspector.h"
 #include "Tabs/ProfilerTab.h"
 #include "EditorUndo.h"
 
 namespace Urho3D
 {
+
+namespace
+{
+
+const auto&& DEFAULT_TAB_TYPES = {
+    InspectorTab::GetTypeStatic(),
+    HierarchyTab::GetTypeStatic(),
+    ResourceTab::GetTypeStatic(),
+    ConsoleTab::GetTypeStatic(),
+    PreviewTab::GetTypeStatic(),
+    SceneTab::GetTypeStatic(),
+    ProfilerTab::GetTypeStatic()
+};
+
+}
 
 Editor::Editor(Context* context)
     : Application(context)
@@ -177,13 +193,16 @@ void Editor::Setup()
     context_->RegisterFactory<PreviewTab>();
     context_->RegisterFactory<ProfilerTab>();
 
-    // Inspectors
-    RegisterProvider<Asset, AssetInspector>();
-    RegisterProvider<Model, ModelInspector>();
-    RegisterProvider<Material, MaterialInspector>();
-    RegisterProvider<Sound, SoundInspector>();
-    RegisterProvider<Node, NodeInspector>();
-    RegisterProvider<Component, ComponentInspector>();
+    // Inspectors.
+    inspectors_.push_back(SharedPtr(new AssetInspector(context_)));
+    inspectors_.push_back(SharedPtr(new ModelInspector(context_)));
+    inspectors_.push_back(SharedPtr(new MaterialInspector(context_)));
+    inspectors_.push_back(SharedPtr(new SoundInspector(context_)));
+    inspectors_.push_back(SharedPtr(new NodeInspector(context_)));
+    inspectors_.push_back(SharedPtr(new ComponentInspector(context_)));
+    inspectors_.push_back(SharedPtr(new UIElementInspector(context_)));
+    // FIXME: If user registers their own inspector later then SerializableInspector would no longer come in last.
+    inspectors_.push_back(SharedPtr(new SerializableInspector(context_)));
 
 #if URHO3D_PLUGINS
     RegisterPluginsLibrary(context_);
@@ -616,14 +635,16 @@ void Editor::OnExitHotkeyPressed()
 
 void Editor::CreateDefaultTabs()
 {
+    for (StringHash type : DEFAULT_TAB_TYPES)
+        context_->RemoveSubsystem(type);
     tabs_.clear();
-    tabs_.emplace_back(new InspectorTab(context_));
-    tabs_.emplace_back(new HierarchyTab(context_));
-    tabs_.emplace_back(new ResourceTab(context_));
-    tabs_.emplace_back(new ConsoleTab(context_));
-    tabs_.emplace_back(new PreviewTab(context_));
-    tabs_.emplace_back(new SceneTab(context_));
-    tabs_.emplace_back(new ProfilerTab(context_));
+
+    for (StringHash type : DEFAULT_TAB_TYPES)
+    {
+        SharedPtr<Tab> tab;
+        tab.StaticCast(context_->CreateObject(type));
+        tabs_.push_back(tab);
+    }
 }
 
 void Editor::LoadDefaultLayout()
@@ -670,6 +691,8 @@ void Editor::CloseProject()
 {
     SendEvent(E_EDITORPROJECTCLOSING);
     context_->RemoveSubsystem<Project>();
+    for (StringHash type : DEFAULT_TAB_TYPES)
+        context_->RemoveSubsystem(type);
     tabs_.clear();
     project_.Reset();
 }
@@ -880,49 +903,6 @@ void Editor::OnConsoleUriClick(VariantMap& args)
         const ea::string& address = args[P_ADDRESS].GetString();
         if (protocol == "res")
             context_->GetFileSystem()->SystemOpen(context_->GetCache()->GetResourceFileName(address));
-    }
-}
-
-void Editor::ClearInspector()
-{
-    inspected_.clear();
-    GetTab<InspectorTab>()->ClearProviders();
-}
-
-void Editor::Inspect(Object* object, Object* eventSender)
-{
-    if (object == nullptr)
-    {
-        URHO3D_LOGERROR("Editor can not inspect a null object.");
-        return;
-    }
-    bool inspected = false;
-    if (eventSender == nullptr)
-        eventSender = object;
-    for (const auto& pair : registeredInspectorProviders_)
-    {
-        if (object->IsInstanceOf(pair.first))
-        {
-            inspected = true;
-            inspected_.push_back(WeakPtr(object));
-            SharedPtr<InspectorProvider> provider(context_->CreateObject(pair.second)->Cast<InspectorProvider>());
-            provider->SetInspected(object, eventSender);
-            GetTab<InspectorTab>()->AddProvider(provider);
-        }
-    }
-
-    if (!inspected)
-    {
-        // A special case. If no custom inspector exists we use default inspector for Serializable items. This inspector
-        // is not registered to registeredInspectorProviders_ because we want to use it only if no other inspectors
-        // supporting specified object exist.
-        if (auto* serializable = object->Cast<Serializable>())
-        {
-            inspected_.push_back(WeakPtr(serializable));
-            SharedPtr<InspectorProvider> provider(context_->CreateObject<SerializableInspector>());
-            provider->SetInspected(serializable, eventSender);
-            GetTab<InspectorTab>()->AddProvider(provider);
-        }
     }
 }
 

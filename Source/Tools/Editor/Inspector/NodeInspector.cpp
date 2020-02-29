@@ -22,34 +22,41 @@
 #include <Urho3D/Core/StringUtils.h>
 #include <Urho3D/Scene/Node.h>
 #include <Urho3D/Scene/Scene.h>
+
 #include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
+
+#include "Editor.h"
 #include "Inspector/NodeInspector.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
 
 NodeInspector::NodeInspector(Context* context)
-    : SerializableInspector(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &NodeInspector::RenderInspector);
 }
 
-void NodeInspector::RenderInspector(const char* filter)
+void NodeInspector::RenderInspector(InspectArgs& args)
 {
-    if (inspected_.Expired())
+    auto* node = args.object_->Cast<Node>();
+    if (node == nullptr)
         return;
 
-    auto node = static_cast<Node*>(inspected_.Get());
+    args.handledTimes_++;
+    ui::IdScope idScope(node);
     const char* name = node->GetName().empty() ? "Node" : node->GetName().c_str();
     if (ui::CollapsingHeader(Format("{} ({}) {}", name, node->GetID(),
         node->IsReplicated() ? ICON_FA_WIFI : "").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (node->IsReplicated())
             ui::SetHelpTooltip("Replicated over the network.");
-        RenderAttributes(node, filter, eventSender_);
+        RenderAttributes(node, args.filter_, args.eventSender_);
     }
-
 }
 
 }

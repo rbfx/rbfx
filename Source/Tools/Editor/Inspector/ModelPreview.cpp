@@ -28,28 +28,33 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Graphics/StaticModel.h>
+
 #include "Tabs/Scene/SceneTab.h"
-#include "PreviewInspector.h"
+#include "ModelPreview.h"
 #include "Editor.h"
 
 
 namespace Urho3D
 {
 
-PreviewInspector::PreviewInspector(Context* context)
-    : InspectorProvider(context)
+ModelPreview::ModelPreview(Context* context)
+    : Object(context)
     , view_(context, {0, 0, 200, 200})
 {
     // Workaround: for some reason this overriden method of our class does not get called by SceneView constructor.
     CreateObjects();
 
-    if (SceneTab* sceneTab = GetSubsystem<Editor>()->GetTab<SceneTab>())
+    if (auto* sceneTab = GetSubsystem<Editor>()->GetTab<SceneTab>())
         SetEffectSource(sceneTab->GetViewport()->GetRenderPath());
+
+    ToggleModel();
 }
 
-void PreviewInspector::SetModel(Model* model)
+void ModelPreview::SetModel(Model* model)
 {
-    auto staticModel = node_->GetOrCreateComponent<StaticModel>();
+    auto* staticModel = node_->GetOrCreateComponent<StaticModel>();
+    if (staticModel->GetModel() == model)
+        return;
 
     staticModel->SetModel(model);
     auto bb = model->GetBoundingBox();
@@ -58,12 +63,25 @@ void PreviewInspector::SetModel(Model* model)
     node_->SetWorldPosition(node_->GetWorldPosition() - staticModel->GetWorldBoundingBox().Center());
 }
 
-void PreviewInspector::SetModel(const ea::string& resourceName)
+void ModelPreview::SetModel(const ea::string& resourceName)
 {
-    SetModel(context_->GetCache()->GetResource<Model>(resourceName));
+    auto* cache = context_->GetSubsystem<ResourceCache>();
+    SetModel(cache->GetResource<Model>(resourceName));
 }
 
-void PreviewInspector::CreateObjects()
+void ModelPreview::SetMaterial(const ea::string& resourceName, int index)
+{
+    auto* cache = context_->GetSubsystem<ResourceCache>();
+    SetMaterial(cache->GetResource<Material>(resourceName), index);
+}
+
+void ModelPreview::SetMaterial(Material* material, int index)
+{
+    auto* model = node_->GetOrCreateComponent<StaticModel>();
+    model->SetMaterial(index, material);
+}
+
+void ModelPreview::CreateObjects()
 {
     view_.CreateObjects();
     node_ = view_.GetScene()->CreateChild("Preview");
@@ -73,7 +91,7 @@ void PreviewInspector::CreateObjects()
     node->LookAt(Vector3::ZERO);
 }
 
-void PreviewInspector::RenderPreview()
+void ModelPreview::RenderPreview()
 {
     auto* input = GetSubsystem<Input>();
     float dpi = ui::GetCurrentWindow()->Viewport->DpiScale;
@@ -104,7 +122,7 @@ void PreviewInspector::RenderPreview()
     }
 }
 
-void PreviewInspector::SetEffectSource(RenderPath* renderPath)
+void ModelPreview::SetEffectSource(RenderPath* renderPath)
 {
     if (renderPath == nullptr)
         return;
@@ -126,6 +144,30 @@ void PreviewInspector::SetEffectSource(RenderPath* renderPath)
     light->SetUsePhysicalValues(false);
     light->SetBrightness(DEFAULT_BRIGHTNESS);
     light->SetShadowCascade(CascadeParameters(DEFAULT_SHADOWSPLIT, 0.0f, 0.0f, 0.0f, DEFAULT_SHADOWFADESTART));
+}
+
+void ModelPreview::ToggleModel()
+{
+    const char* currentModel = figures_[figureIndex_];
+    ResourceRefList materials;
+    if (auto* model = node_->GetComponent<StaticModel>())
+        materials = model->GetMaterialsAttr();
+
+    SetModel(ToString("Models/%s.mdl", currentModel));
+    figureIndex_ = ++figureIndex_ % figures_.size();
+
+    auto* cache = GetSubsystem<ResourceCache>();
+    auto* model = node_->GetComponent<StaticModel>();
+    for (int i = 0; i < materials.names_.size(); i++)
+        model->SetMaterial(i, cache->GetResource<Material>(materials.names_[i]));
+
+    auto bb = model->GetBoundingBox();
+    auto scale = 1.f / Max(bb.Size().x_, Max(bb.Size().y_, bb.Size().z_));
+    if (strcmp(currentModel, "Box") == 0)            // Box is rather big after autodetecting scale, but other
+        scale *= 0.7f;                               // figures are ok. Patch the box then.
+    else if (strcmp(currentModel, "TeaPot") == 0)    // And teapot is rather small.
+        scale *= 1.2f;
+    node_->SetScale(scale);
 }
 
 }

@@ -21,21 +21,22 @@
 //
 #pragma once
 
-#include "Inspector/InspectorProvider.h"
+#include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
 
 class Node;
+struct InspectArgs;
 
-class SerializableInspector : public InspectorProvider
+class SerializableInspector : public Object
 {
-    URHO3D_OBJECT(SerializableInspector, InspectorProvider);
+    URHO3D_OBJECT(SerializableInspector, Object);
 public:
     /// Construct.
     explicit SerializableInspector(Context* context);
     /// Render inspector UI.
-    void RenderInspector(const char* filter) override;
+    void RenderInspector(InspectArgs& args);
 };
 
 }
