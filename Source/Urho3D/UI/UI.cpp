@@ -713,10 +713,9 @@ IntVector2 UI::GetCursorPosition() const
     return cursor_ ? cursor_->GetPosition() : GetSubsystem<Input>()->GetMousePosition();
 }
 
-UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly, IntVector2* elementScreenPosition)
+UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly)
 {
     UIElement* result = nullptr;
-    IntVector2 screenPosition;
 
     if (HasModalElement())
         result = GetElementAt(rootModalElement_, position, enabledOnly);
@@ -724,15 +723,7 @@ UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly, IntVec
     if (!result)
         result = GetElementAt(rootElement_, position, enabledOnly);
 
-    if (result && elementScreenPosition)
-        *elementScreenPosition = position;
-
     return result;
-}
-
-UIElement* UI::GetElementAt(const IntVector2& position, bool enabledOnly)
-{
-    return GetElementAt(position, enabledOnly, nullptr);
 }
 
 UIElement* UI::GetElementAt(UIElement* root, const IntVector2& position, bool enabledOnly)
@@ -1273,8 +1264,8 @@ void UI::ReleaseFontFaces()
 
 void UI::ProcessHover(const IntVector2& windowCursorPos, MouseButtonFlags buttons, QualifierFlags qualifiers, Cursor* cursor)
 {
-    IntVector2 cursorPos;
-    WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
+    IntVector2 cursorPos = windowCursorPos;
+    WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true));
 
     for (auto i = dragElements_.begin(); i !=
         dragElements_.end();)
@@ -1365,8 +1356,8 @@ void UI::ProcessClickBegin(const IntVector2& windowCursorPos, MouseButton button
 {
     if (cursorVisible)
     {
-        IntVector2 cursorPos;
-        WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true, &cursorPos));
+        IntVector2 cursorPos = windowCursorPos;
+        WeakPtr<UIElement> element(GetElementAt(windowCursorPos, true));
 
         bool newButton;
         if (usingTouchInput_)
@@ -1448,7 +1439,7 @@ void UI::ProcessClickEnd(const IntVector2& windowCursorPos, MouseButton button, 
     WeakPtr<UIElement> element;
     IntVector2 cursorPos = windowCursorPos;
     if (cursorVisible)
-        element = GetElementAt(cursorPos, true, &cursorPos);
+        element = GetElementAt(cursorPos, true);
 
     // Handle end of drag
     for (auto i = dragElements_.begin(); i !=
@@ -1515,8 +1506,7 @@ void UI::ProcessMove(const IntVector2& windowCursorPos, const IntVector2& cursor
 {
     if (cursorVisible && dragElementsCount_ > 0 && buttons)
     {
-        IntVector2 cursorPos;
-        GetElementAt(windowCursorPos, true, &cursorPos);
+        IntVector2 cursorPos = windowCursorPos;
 
         auto* input = GetSubsystem<Input>();
         bool mouseGrabbed = input->IsMouseGrabbed();
