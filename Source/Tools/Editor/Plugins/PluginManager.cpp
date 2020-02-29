@@ -302,11 +302,6 @@ bool PluginManager::Serialize(Archive& archive)
     }
 #endif
 
-#if URHO3D_CSHARP
-    if (archive.IsInput())
-        Load(ScriptBundlePlugin::GetTypeStatic(), "Scripts");
-#endif
-
     return true;
 }
 

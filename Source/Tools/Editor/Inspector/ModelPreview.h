@@ -19,13 +19,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
-
+#include <Urho3D/Core/Object.h>
 #include <Toolbox/Graphics/SceneView.h>
-#include "Inspector/InspectorProvider.h"
-
 
 namespace Urho3D
 {
@@ -33,25 +30,31 @@ namespace Urho3D
 class Model;
 
 /// Renders a model preview in attribute inspector.
-class PreviewInspector : public InspectorProvider
+class ModelPreview : public Object
 {
-    URHO3D_OBJECT(PreviewInspector, InspectorProvider);
+    URHO3D_OBJECT(ModelPreview, Object);
 public:
     /// Construct.
-    explicit PreviewInspector(Context* context);
+    explicit ModelPreview(Context* context);
 
     /// Copy effects from specified render path.
     void SetEffectSource(RenderPath* renderPath);
     /// Set preview model by passing a resource name.
     void SetModel(const ea::string& resourceName);
-    /// Set preview model by passing model resourcei nstance.
+    /// Set preview model by passing model resource instance.
     void SetModel(Model* model);
+    /// Set preview model by passing a resource name.
+    void SetMaterial(const ea::string& resourceName, int index = 0);
+    /// Set preview model by passing model resource instance.
+    void SetMaterial(Material* material, int index = 0);
+    /// Change material preview model to next one in the list (sphere/box/torus/teapot). If custom model was set it will be reset.
+    void ToggleModel();
+    /// Render model preview.
+    void RenderPreview();
 
 protected:
     /// Initialize preview.
     void CreateObjects();
-    /// Render model preview.
-    virtual void RenderPreview();
 
     /// Preview scene.
     SceneView view_;
@@ -61,6 +64,10 @@ protected:
     bool mouseGrabbed_ = false;
     /// Distance from camera to figure.
     float distance_ = 1.5f;
+    /// Index of current figure displaying material.
+    unsigned figureIndex_ = 0;
+    /// A list of figures between which material view can be toggled.
+    ea::vector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
 };
 
 }

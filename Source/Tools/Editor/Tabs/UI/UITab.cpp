@@ -483,8 +483,9 @@ void UITab::SelectItem(UIElement* current)
     SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
 
     auto* editor = GetSubsystem<Editor>();
-    editor->ClearInspector();
-    editor->Inspect(current, rootElement_);
+    auto* inspector = GetSubsystem<InspectorTab>();
+    inspector->Clear();
+    inspector->Inspect(current, rootElement_);
     editor->GetTab<HierarchyTab>()->SetProvider(this);
 }
 

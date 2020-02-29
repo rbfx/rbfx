@@ -380,11 +380,10 @@ bool RenderAttribute(ea::string_view title, Variant& value, const Color& color, 
             auto* mapState = ui::GetUIState<VariantMapState>();
 
             // New key insertion
-            ui::ItemLabel(title);
-            ui::SetNextItemWidth(ui::CalcItemWidth() * 0.3f);
+            ui::SetNextItemWidth(ui::CalcItemWidth() * 0.325f);
             ui::Combo("###key-type", &mapState->valueTypeIndex_, supportedVariantNames, MAX_SUPPORTED_VAR_TYPES);
             ui::SameLine();
-            ui::SetNextItemWidth(ui::CalcItemWidth() * 0.7f - style.ItemSpacing.x);
+            ui::SetNextItemWidth(ui::CalcItemWidth() * 0.675f - style.ItemSpacing.x);
             if (ui::InputTextWithHint("##key", "Enter key and press [Enter]", &mapState->key_, ImGuiInputTextFlags_EnterReturnsTrue))
             {
                 if (map->find(mapState->key_.c_str()) == map->end())   // TODO: Show warning about duplicate name
@@ -672,6 +671,18 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             color = Color::GREEN;                                   // Inherited value color
         else if (value == info.defaultValue_)
             color = Color::GRAY;                                    // Default value color
+        else if (info.type_ == VAR_RESOURCEREFLIST)
+        {
+            // Model insists on keeping non-empty ResourceRefList of Materials, even when names are unset. Treat such
+            // list with empty names as equal to default empty resource reflist.
+            const ResourceRefList& defaultList = info.defaultValue_.GetResourceRefList();
+            const ResourceRefList& valueList = value.GetResourceRefList();
+            bool allEmpty = defaultList.names_.empty();
+            for (const auto& name : valueList.names_)
+                allEmpty &= name.empty();
+            if (allEmpty && defaultList.type_ == valueList.type_)
+                color = Color::GRAY;                                // Default value color
+        }
 
         // Customize attribute rendering
         const ea::string* tooltip = &EMPTY_STRING;

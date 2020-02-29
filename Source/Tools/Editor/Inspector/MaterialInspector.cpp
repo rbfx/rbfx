@@ -31,128 +31,131 @@
 #include <Urho3D/SystemUI/SystemUI.h>
 #include <Urho3D/Input/Input.h>
 #include <Urho3D/Core/StringUtils.h>
-#include <Urho3D/Graphics/StaticModel.h>
 #include <Urho3D/IO/Log.h>
 #include <Urho3D/IO/FileSystem.h>
 
 #include <EASTL/sort.h>
 
-#include <Toolbox/Common/UndoStack.h>
-#include <Toolbox/SystemUI/Widgets.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stdlib.h>
+#include <Toolbox/Common/UndoStack.h>
+#include <Toolbox/SystemUI/Widgets.h>
+#include <Toolbox/SystemUI/AttributeInspector.h>
+
+#include "ModelPreview.h"
+#include "Editor.h"
 #include "Tabs/Scene/SceneTab.h"
+#include "Tabs/InspectorTab.h"
 #include "MaterialInspector.h"
 #include "MaterialInspectorUndo.h"
-#include "Editor.h"
-
 
 namespace Urho3D
 {
 
-namespace
-{
-
-void SaveMaterial(Context* context, const ea::string& name)
-{
-    auto* cache = context->GetSubsystem<ResourceCache>();
-    if (auto material = cache->GetResource<Material>(name))
-    {
-        cache->IgnoreResourceReload(material);
-        material->SaveFile(cache->GetResourceFileName(material->GetName()));
-    }
-}
-
-}
-
 MaterialInspector::MaterialInspector(Context* context)
-    : PreviewInspector(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &MaterialInspector::RenderInspector);
 }
 
-void MaterialInspector::SetInspected(Object* inspected, Object* eventSender)
+void MaterialInspector::RenderInspector(InspectArgs& args)
 {
-    assert(inspected->IsInstanceOf<Material>());
-    BaseClassName::SetInspected(inspected, eventSender);
-    material_ = static_cast<Material*>(inspected);
-    ToggleModel();
-}
-
-void MaterialInspector::RenderInspector(const char* filter)
-{
-    ImGuiStyle& style = ui::GetStyle();
-
-    if (!ui::CollapsingHeader(material_->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+    auto* material = args.object_->Cast<Material>();
+    if (material == nullptr)
         return;
 
-    float w = ui::CalcItemWidth();
+    args.handledTimes_++;
+    ui::IdScope idScope(material);
+    ImGuiStyle& style = ui::GetStyle();
+
+    if (!ui::CollapsingHeader(material->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
+        return;
+
     auto undo = GetSubsystem<UndoStack>();
-    auto&& save = [name=material_->GetName()](Context* context) { SaveMaterial(context, name); };
+    auto&& save = [name=material->GetName()](Context* context)
+    {
+        auto* cache = context->GetSubsystem<ResourceCache>();
+        if (auto material = cache->GetResource<Material>(name))
+        {
+            cache->IgnoreResourceReload(material);
+            material->SaveFile(cache->GetResourceFileName(material->GetName()));
+        }
+    };
 
-    ui::PushID(material_);
 
-    RenderPreview();
+    // Render a material preview
+    auto* preview = ui::GetUIState<ModelPreview>(context_);
+    preview->RenderPreview();
+    ui::SetHelpTooltip("Click to switch object.");
+    if (ui::IsItemClicked(MOUSEB_LEFT))
+        preview->ToggleModel();
+
+    const char* resourceName = material->GetName().c_str();
+    ui::TextCentered(resourceName);
+    ui::Separator();
+
 
     // Cull
     {
-        int value = material_->GetCullMode(), valuePrev = value;
+        int value = material->GetCullMode(), valuePrev = value;
         ui::ItemLabel("Cull");
         if (ui::Combo("###Cull", &value, cullModeNames, MAX_CULLMODES) && value != valuePrev)
         {
-            material_->SetCullMode(static_cast<CullMode>(value));
-            undo->Add<UndoResourceSetter<Material, CullMode>>(material_->GetName(), static_cast<CullMode>(valuePrev),
-                static_cast<CullMode>(value), &Material::SetCullMode)->Redo(context_);
+            material->SetCullMode(static_cast<CullMode>(value));
+            undo->Add<UndoResourceSetter<Material, CullMode>>(material->GetName(), static_cast<CullMode>(valuePrev),
+                                                              static_cast<CullMode>(value), &Material::SetCullMode)->Redo(context_);
         }
     }
     // Shadow Cull
     {
-        int value = material_->GetShadowCullMode(), valuePrev = value;
+        int value = material->GetShadowCullMode(), valuePrev = value;
         ui::ItemLabel("Shadow Cull");
         if (ui::Combo("###Shadow Cull", &value, cullModeNames, MAX_CULLMODES) && value != valuePrev)
         {
-            material_->SetShadowCullMode(static_cast<CullMode>(value));
-            undo->Add<UndoResourceSetter<Material, CullMode>>(material_->GetName(), static_cast<CullMode>(valuePrev),
-                static_cast<CullMode>(value), &Material::SetShadowCullMode)->Redo(context_);
+            material->SetShadowCullMode(static_cast<CullMode>(value));
+            undo->Add<UndoResourceSetter<Material, CullMode>>(material->GetName(), static_cast<CullMode>(valuePrev),
+                                                              static_cast<CullMode>(value), &Material::SetShadowCullMode)->Redo(context_);
         }
     }
     // Fill Mode
     {
-        int value = material_->GetFillMode(), valuePrev = value;
+        int value = material->GetFillMode(), valuePrev = value;
         ui::ItemLabel("Fill Mode");
         if (ui::Combo("###Fill Mode", &value, fillModeNames, MAX_FILLMODES) && value != valuePrev)
         {
-            material_->SetFillMode(static_cast<FillMode>(value));
-            undo->Add<UndoResourceSetter<Material, FillMode>>(material_->GetName(), static_cast<FillMode>(valuePrev),
-                static_cast<FillMode>(value), &Material::SetFillMode)->Redo(context_);
+            material->SetFillMode(static_cast<FillMode>(value));
+            undo->Add<UndoResourceSetter<Material, FillMode>>(material->GetName(), static_cast<FillMode>(valuePrev),
+                                                              static_cast<FillMode>(value), &Material::SetFillMode)->Redo(context_);
         }
     }
     // Alpha To Coverage
     {
-        bool value = material_->GetAlphaToCoverage();
+        bool value = material->GetAlphaToCoverage();
         ui::ItemAlign(ui::GetFrameHeight());
         ui::ItemLabel("Alpha To Coverage");
         if (ui::Checkbox("###Alpha To Coverage", &value))
         {
-            material_->SetAlphaToCoverage(value);
-            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetAlphaToCoverage);
+            material->SetAlphaToCoverage(value);
+            undo->Add<UndoResourceSetter<Material, bool>>(material->GetName(), !value, value, &Material::SetAlphaToCoverage);
         }
     }
     // Line Anti Alias
     {
-        bool value = material_->GetLineAntiAlias();
+        bool value = material->GetLineAntiAlias();
         ui::ItemLabel("Line Anti Alias");
         // if (flags & ui::ItemLabelFlag::Right)
         //     ui::ItemAlign(ui::GetFrameHeight());
         if (ui::Checkbox("###Line Anti Alias", &value))
         {
-            material_->SetLineAntiAlias(value);
-            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetLineAntiAlias);
+            material->SetLineAntiAlias(value);
+            undo->Add<UndoResourceSetter<Material, bool>>(material->GetName(), !value, value, &Material::SetLineAntiAlias);
         }
     }
     // Render Order
     {
         ui::PushID("Render Order");
-        auto&& setRenderOrder = [name=material_->GetName()](Context* context, unsigned char value)
+        auto&& setRenderOrder = [name=material->GetName()](Context* context, unsigned char value)
         {
             auto* cache = context->GetSubsystem<ResourceCache>();
             if (auto* material = cache->GetResource<Material>(name))
@@ -163,38 +166,38 @@ void MaterialInspector::RenderInspector(const char* filter)
             return false;
         };
         ui::ItemLabel("Render Order");
-        if (auto mod = undo->Track<UndoCustomAction<unsigned char>>(material_->GetRenderOrder(), setRenderOrder, save))
+        if (auto mod = undo->Track<UndoCustomAction<unsigned char>>(material->GetRenderOrder(), setRenderOrder, save))
             mod.SetModified(ui::DragScalar("###Render Order", ImGuiDataType_U8, &mod.value_, 0.1f));
         ui::PopID();
     }
     // Occlusion
     {
-        bool value = material_->GetOcclusion();
+        bool value = material->GetOcclusion();
         ui::ItemLabel("Occlusion");
         // if (flags & ui::ItemLabelFlag::Right)
         //     ui::ItemAlign(ui::GetFrameHeight());
         if (ui::Checkbox("###Occlusion", &value))
         {
-            material_->SetOcclusion(value);
-            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetOcclusion);
+            material->SetOcclusion(value);
+            undo->Add<UndoResourceSetter<Material, bool>>(material->GetName(), !value, value, &Material::SetOcclusion);
         }
     }
     // Specular
     {
-        bool value = material_->GetSpecular();
+        bool value = material->GetSpecular();
         ui::ItemLabel("Specular");
         // if (flags & ui::ItemLabelFlag::Right)
         //     ui::ItemAlign(ui::GetFrameHeight());
         if (ui::Checkbox("###Specular", &value))
         {
-            material_->SetSpecular(value);
-            undo->Add<UndoResourceSetter<Material, bool>>(material_->GetName(), !value, value, &Material::SetSpecular);
+            material->SetSpecular(value);
+            undo->Add<UndoResourceSetter<Material, bool>>(material->GetName(), !value, value, &Material::SetSpecular);
         }
     }
     // Constant Bias
     {
         ui::PushID("Constant Bias");
-        auto&& setDepthBias = [name=material_->GetName()](Context* context, float value)
+        auto&& setDepthBias = [name=material->GetName()](Context* context, float value)
         {
             auto* cache = context->GetSubsystem<ResourceCache>();
             if (auto* material = cache->GetResource<Material>(name))
@@ -207,14 +210,14 @@ void MaterialInspector::RenderInspector(const char* filter)
             return false;
         };
         ui::ItemLabel("Constant Bias");
-        if (auto mod = undo->Track<UndoCustomAction<float>>(material_->GetDepthBias().constantBias_, setDepthBias, save))
+        if (auto mod = undo->Track<UndoCustomAction<float>>(material->GetDepthBias().constantBias_, setDepthBias, save))
             mod.SetModified(ui::DragScalar("###Constant Bias", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
     }
     // Slope Scaled Bias
     {
         ui::PushID("Slope Scaled Bias");
-        auto&& setSlopeScaledBias = [name=material_->GetName()](Context* context, float value)
+        auto&& setSlopeScaledBias = [name=material->GetName()](Context* context, float value)
         {
             auto* cache = context->GetSubsystem<ResourceCache>();
             if (auto* material = cache->GetResource<Material>(name))
@@ -227,14 +230,14 @@ void MaterialInspector::RenderInspector(const char* filter)
             return false;
         };
         ui::ItemLabel("Slope Scaled Bias");
-        if (auto mod = undo->Track<UndoCustomAction<float>>(material_->GetDepthBias().slopeScaledBias_, setSlopeScaledBias, save))
+        if (auto mod = undo->Track<UndoCustomAction<float>>(material->GetDepthBias().slopeScaledBias_, setSlopeScaledBias, save))
             mod.SetModified(ui::DragScalar("###Slope Scaled Bias", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
     }
     // Normal Offset
     {
         ui::PushID("Normal Offset");
-        auto&& setNormalOffset = [name=material_->GetName()](Context* context, float value)
+        auto&& setNormalOffset = [name=material->GetName()](Context* context, float value)
         {
             auto* cache = context->GetSubsystem<ResourceCache>();
             if (auto* material = cache->GetResource<Material>(name))
@@ -247,7 +250,7 @@ void MaterialInspector::RenderInspector(const char* filter)
             return false;
         };
         ui::ItemLabel("Normal Offset");
-        if (auto mod = undo->Track<UndoCustomAction<float>>(material_->GetDepthBias().normalOffset_, setNormalOffset, save))
+        if (auto mod = undo->Track<UndoCustomAction<float>>(material->GetDepthBias().normalOffset_, setNormalOffset, save))
             mod.SetModified(ui::DragScalar("###Normal Offset", ImGuiDataType_Float, &mod.value_, 0.01f));
         ui::PopID();
     }
@@ -282,14 +285,14 @@ void MaterialInspector::RenderInspector(const char* filter)
         auto* techniquesCache = ui::GetUIState<TechniquesCache>(context_);
         techniquesCache->Update();
 
-        for (unsigned i = 0; i < material_->GetNumTechniques(); i++)
+        for (unsigned i = 0; i < material->GetNumTechniques(); i++)
         {
             if (i > 0)
                 ui::Separator();
 
             ui::IdScope idScope(i);
 
-            auto& tech = material_->GetTechniqueEntry(i);
+            auto& tech = material->GetTechniqueEntry(i);
             auto* techName = ui::GetUIState<ea::string>(tech.technique_->GetName());
             bool modifiedInput = *techName != tech.technique_->GetName();
 
@@ -323,7 +326,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 {
                     // Track
                     undo->Add<UndoCustomAction<const ea::string>>(tech.technique_->GetName(), *techName,
-                        [name=material_->GetName(), index=i](Context* context, const ea::string& value)
+                        [name=material->GetName(), index=i](Context* context, const ea::string& value)
                         {
                             auto* cache = context->GetSubsystem<ResourceCache>();
                             if (auto* material = cache->GetResource<Material>(name))
@@ -338,8 +341,8 @@ void MaterialInspector::RenderInspector(const char* filter)
                             return false;
                         }, save);
                     // Update
-                    const TechniqueEntry& entry = material_->GetTechniqueEntry(i);
-                    material_->SetTechnique(i, technique, entry.qualityLevel_, entry.lodDistance_);
+                    const TechniqueEntry& entry = material->GetTechniqueEntry(i);
+                    material->SetTechnique(i, technique, entry.qualityLevel_, entry.lodDistance_);
                 }
             }
             else if (*techName != tech.technique_->GetName() && !ui::IsItemActive() && !ui::IsItemFocused())
@@ -348,7 +351,7 @@ void MaterialInspector::RenderInspector(const char* filter)
             // Locate
             ui::SameLine();
             if (ui::IconButton(ICON_FA_CROSSHAIRS))
-                SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, material_->GetTechnique(i)->GetName());
+                SendEvent(E_INSPECTORLOCATERESOURCE, InspectorLocateResource::P_NAME, material->GetTechnique(i)->GetName());
             ui::SetHelpTooltip("Locate resource");
             // Delete
             ui::SameLine();
@@ -373,7 +376,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                 };
 
                 undo->Add<UndoCustomAction<const TechniqueInfo>>(TechniqueInfo{context_, tech, (int)i}, TechniqueInfo{context_, tech, (int)i},
-                    [name=material_->GetName()](Context* context, const TechniqueInfo& info)
+                    [name=material->GetName()](Context* context, const TechniqueInfo& info)
                     {
                         // Re-add
                         auto* cache = context->GetSubsystem<ResourceCache>();
@@ -392,7 +395,7 @@ void MaterialInspector::RenderInspector(const char* filter)
                         // Insert back
                         material->SetTechnique(info.index_, technique, info.qualityLevel_, info.lodDistance_);
                         return true;
-                    }, [name=material_->GetName()](Context* context, const TechniqueInfo& info)
+                    }, [name=material->GetName()](Context* context, const TechniqueInfo& info)
                     {
                         // Remove again
                         auto* cache = context->GetSubsystem<ResourceCache>();
@@ -409,15 +412,15 @@ void MaterialInspector::RenderInspector(const char* filter)
                     }, save);
 
                 // Technique removed possibly from the middle. Shift existing techniques back to the front and remove last one.
-                for (auto j = i + 1; j < material_->GetNumTechniques(); j++)
+                for (auto j = i + 1; j < material->GetNumTechniques(); j++)
                 {
-                    const TechniqueEntry& entry = material_->GetTechniqueEntry(j);
-                    material_->SetTechnique(j - 1, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
+                    const TechniqueEntry& entry = material->GetTechniqueEntry(j);
+                    material->SetTechnique(j - 1, entry.original_.Get(), entry.qualityLevel_, entry.lodDistance_);
                 }
-                material_->SetNumTechniques(material_->GetNumTechniques() - 1);
+                material->SetNumTechniques(material->GetNumTechniques() - 1);
             }
             // LOD Distance
-            auto&& setLodDistance = [name=material_->GetName(), index=i](Context* context, float value)
+            auto&& setLodDistance = [name=material->GetName(), index=i](Context* context, float value)
             {
                 auto* cache = context->GetSubsystem<ResourceCache>();
                 if (auto* material = cache->GetResource<Material>(name))
@@ -438,7 +441,7 @@ void MaterialInspector::RenderInspector(const char* filter)
             if (ui::Combo("###Quality", &quality, qualityNames, URHO3D_ARRAYSIZE(qualityNames)) && quality != tech.qualityLevel_)
             {
                 undo->Add<UndoCustomAction<const int>>(static_cast<int>(tech.qualityLevel_), quality,
-                    [name=material_->GetName(), index=i](Context* context, int value)
+                    [name=material->GetName(), index=i](Context* context, int value)
                     {
                         auto* cache = context->GetSubsystem<ResourceCache>();
                         if (auto* material = cache->GetResource<Material>(name))
@@ -477,11 +480,11 @@ void MaterialInspector::RenderInspector(const char* filter)
             auto* cache = GetSubsystem<ResourceCache>();
             if (auto* technique = cache->GetResource<Technique>(*newTechniqueName))
             {
-                auto index = material_->GetNumTechniques();
-                material_->SetNumTechniques(index + 1);
-                material_->SetTechnique(index, technique);
+                auto index = material->GetNumTechniques();
+                material->SetNumTechniques(index + 1);
+                material->SetTechnique(index, technique);
                 undo->Add<UndoCustomAction<const ea::string>>("", *newTechniqueName,
-                    [name=material_->GetName()](Context* context, const ea::string& techniqueName)
+                    [name=material->GetName()](Context* context, const ea::string& techniqueName)
                     {
                         auto* cache = context->GetSubsystem<ResourceCache>();
                         if (auto* material = cache->GetResource<Material>(name))
@@ -517,7 +520,7 @@ void MaterialInspector::RenderInspector(const char* filter)
         ui::Separator();
 
         auto* paramState = ui::GetUIState<ShaderParameterState>();
-        const auto& parameters = material_->GetShaderParameters();
+        const auto& parameters = material->GetShaderParameters();
         for (const auto& pair : parameters)
         {
             const ea::string& parameterName = pair.second.name_;
@@ -525,18 +528,18 @@ void MaterialInspector::RenderInspector(const char* filter)
             auto& value = ValueHistory<Variant>::Get(pair.second.value_);
 
             float width = ui::CalcItemWidth() - (ui::IconButtonSize() + style.ItemSpacing.x) * 1;
-            if (RenderAttribute(parameterName, value.current_, Color::WHITE, "", nullptr, eventSender_, width))
+            if (RenderAttribute(parameterName, value.current_, Color::WHITE, "", nullptr, args.eventSender_, width))
             {
-                material_->SetShaderParameter(parameterName, value.current_);
+                material->SetShaderParameter(parameterName, value.current_);
                 value.SetModified(true);
             }
             if (value.IsModified())
-                undo->Add<UndoShaderParameterChanged>(material_, parameterName, value.initial_, value.current_);
+                undo->Add<UndoShaderParameterChanged>(material, parameterName, value.initial_, value.current_);
 
             ui::SameLine();
             if (ui::Button(ICON_FA_TRASH))
             {
-                undo->Add<UndoShaderParameterChanged>(material_, parameterName, pair.second.value_, Variant{})
+                undo->Add<UndoShaderParameterChanged>(material, parameterName, pair.second.value_, Variant{})
                     ->Redo(context_);
                 break;
             }
@@ -576,11 +579,11 @@ void MaterialInspector::RenderInspector(const char* filter)
             addNew |= ui::Button(ICON_FA_CHECK);
             if (addNew)
             {
-                if (!paramState->fieldName_.empty() && material_->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
+                if (!paramState->fieldName_.empty() && material->GetShaderParameter(paramState->fieldName_.c_str()).GetType() == VAR_NONE)   // TODO: Show warning about duplicate name
                 {
                     Variant value{shaderParameterVariantTypes[paramState->variantTypeIndex_]};
-                    undo->Add<UndoShaderParameterChanged>(material_, paramState->fieldName_.c_str(), Variant{}, value);
-                    material_->SetShaderParameter(paramState->fieldName_.c_str(), value);
+                    undo->Add<UndoShaderParameterChanged>(material, paramState->fieldName_.c_str(), Variant{}, value);
+                    material->SetShaderParameter(paramState->fieldName_.c_str(), value);
                     paramState->fieldName_.clear();
                     paramState->variantTypeIndex_ = 0;
                 }
@@ -600,21 +603,21 @@ void MaterialInspector::RenderInspector(const char* filter)
         auto textureUnit = static_cast<TextureUnit>(i);
 
         ResourceRef resourceRef;
-        if (auto* texture = material_->GetTexture(textureUnit))
+        if (auto* texture = material->GetTexture(textureUnit))
             resourceRef = ResourceRef(texture->GetType(), texture->GetName());
         else
             resourceRef = ResourceRef(Texture2D::GetTypeStatic());  // FIXME: cubemap support.
 
         Variant resource(resourceRef);
-        if (RenderAttribute(finalName, resource, Color::WHITE, "", nullptr, eventSender_))
+        if (RenderAttribute(finalName, resource, Color::WHITE, "", nullptr, args.eventSender_))
         {
             const auto& ref = resource.GetResourceRef();
             auto cache = GetSubsystem<ResourceCache>();
             if (auto texture = dynamic_cast<Texture*>(cache->GetResource(ref.type_, ref.name_)))
-                material_->SetTexture(textureUnit, texture);
+                material->SetTexture(textureUnit, texture);
 
             undo->Add<UndoCustomAction<const ResourceRef>>(resourceRef, ref,
-                [name=material_->GetName(), textureUnit=textureUnit](Context* context, const ResourceRef& ref)
+                [name=material->GetName(), textureUnit=textureUnit](Context* context, const ResourceRef& ref)
                 {
                     auto cache = context->GetSubsystem<ResourceCache>();
                     if (auto material = cache->GetResource<Material>(name))
@@ -632,47 +635,6 @@ void MaterialInspector::RenderInspector(const char* filter)
         }
     }
     ui::Separator();
-    ui::Separator();
-    ui::PopID();    // material_
-}
-
-void MaterialInspector::ToggleModel()
-{
-    const char* currentModel = figures_[figureIndex_];
-    SetModel(ToString("Models/%s.mdl", currentModel));
-    figureIndex_ = ++figureIndex_ % figures_.size();
-
-    auto* model = node_->GetComponent<StaticModel>();
-    model->SetMaterial(material_);
-
-    auto bb = model->GetBoundingBox();
-    auto scale = 1.f / Max(bb.Size().x_, Max(bb.Size().y_, bb.Size().z_));
-    if (strcmp(currentModel, "Box") == 0)            // Box is rather big after autodetecting scale, but other
-        scale *= 0.7f;                               // figures are ok. Patch the box then.
-    else if (strcmp(currentModel, "TeaPot") == 0)    // And teapot is rather small.
-        scale *= 1.2f;
-    node_->SetScale(scale);
-}
-
-void MaterialInspector::Save()
-{
-    auto* cache = GetSubsystem<ResourceCache>();
-    cache->IgnoreResourceReload(material_);
-    material_->SaveFile(cache->GetResourceFileName(material_->GetName()));
-}
-
-void MaterialInspector::RenderPreview()
-{
-    if (material_.Expired())
-        return;
-
-    PreviewInspector::RenderPreview();
-    ui::SetHelpTooltip("Click to switch object.");
-    if (ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT))
-        ToggleModel();
-
-    const char* resourceName = material_->GetName().c_str();
-    ui::TextCentered(resourceName);
     ui::Separator();
 }
 

@@ -22,10 +22,7 @@
 
 #pragma once
 
-
-#include <Toolbox/Graphics/SceneView.h>
-#include "PreviewInspector.h"
-
+#include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
@@ -33,17 +30,14 @@ namespace Urho3D
 struct InspectArgs;
 
 /// Renders a model preview in attribute inspector.
-class ModelInspector : public PreviewInspector
+class ModelInspector : public Object
 {
-    URHO3D_OBJECT(ModelInspector, PreviewInspector);
+    URHO3D_OBJECT(ModelInspector, Object);
 public:
     /// Construct.
     explicit ModelInspector(Context* context);
-    /// Set currently inspected object.
-    void SetInspected(Object* inspected, Object* eventSender) override;
-
     /// Render inspector UI.
-    void RenderInspector(const char* filter) override;
+    void RenderInspector(InspectArgs& args);
 };
 
 }

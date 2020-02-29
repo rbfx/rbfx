@@ -25,28 +25,35 @@
 #include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
+
+#include "Editor.h"
 #include "Inspector/ComponentInspector.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
 
 ComponentInspector::ComponentInspector(Context* context)
-    : SerializableInspector(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &ComponentInspector::RenderInspector);
 }
 
-void ComponentInspector::RenderInspector(const char* filter)
+void ComponentInspector::RenderInspector(InspectArgs& args)
 {
-    if (inspected_.Expired())
+    auto* component = args.object_->Cast<Component>();
+    if (component == nullptr)
         return;
 
-    auto component = static_cast<Component*>(inspected_.Get());
+    ui::IdScope idScope(component);
+    args.handledTimes_++;
     if (ui::CollapsingHeader(Format("{} ({}) {}", component->GetTypeName(), component->GetID(),
         component->IsReplicated() ? ICON_FA_WIFI : "").c_str(), ImGuiTreeNodeFlags_DefaultOpen))
     {
         if (component->IsReplicated())
             ui::SetHelpTooltip("Replicated over the network.");
-        RenderAttributes(component, filter, eventSender_);
+        RenderAttributes(component, args.filter_, args.eventSender_);
     }
 }
 

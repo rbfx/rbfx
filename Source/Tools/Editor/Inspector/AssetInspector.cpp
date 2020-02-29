@@ -23,26 +23,30 @@
 #include <Toolbox/SystemUI/Widgets.h>
 
 #include "Editor.h"
-#include "Project.h"
 #include "Pipeline/Pipeline.h"
 #include "Pipeline/Asset.h"
 #include "Inspector/AssetInspector.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
 
 AssetInspector::AssetInspector(Context* context)
-    : InspectorProvider(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &AssetInspector::RenderInspector);
 }
 
-void AssetInspector::RenderInspector(const char* filter)
+void AssetInspector::RenderInspector(InspectArgs& args)
 {
-    if (inspected_.Expired())
+    auto* asset = static_cast<Asset*>(args.object_->Cast<Asset>());
+    if (asset == nullptr)
         return;
 
+    args.handledTimes_++;
+    ui::IdScope idScope(asset);
     auto* pipeline = GetSubsystem<Pipeline>();
-    auto* asset = static_cast<Asset*>(inspected_.Get());
     bool tabBarStarted = false;
     bool save = false;
 
@@ -109,7 +113,7 @@ void AssetInspector::RenderInspector(const char* filter)
                     if (importer->GetNumAttributes() > 0 &&
                         ui::CollapsingHeader(importer->GetTypeName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
                     {
-                        RenderAttributes(importer, filter, importer);
+                        RenderAttributes(importer, args.filter_, importer);
                         save |= importer->IsModified();
                     }
                 }

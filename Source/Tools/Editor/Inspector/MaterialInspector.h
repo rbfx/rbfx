@@ -22,42 +22,22 @@
 
 #pragma once
 
-
-#include <Toolbox/Graphics/SceneView.h>
-#include <Toolbox/SystemUI/AttributeInspector.h>
-#include "Editor.h"
-#include "PreviewInspector.h"
-
+#include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
 
+struct InspectArgs;
+
 /// Renders material preview in attribute inspector.
-class MaterialInspector : public PreviewInspector
+class MaterialInspector : public Object
 {
-    URHO3D_OBJECT(MaterialInspector, PreviewInspector);
+    URHO3D_OBJECT(MaterialInspector, Object);
 public:
     /// Construct.
     explicit MaterialInspector(Context* context);
-    /// Set currently inspected object.
-    void SetInspected(Object* inspected, Object* eventSender) override;
     /// Render inspector UI.
-    void RenderInspector(const char* filter) override;
-    /// Change material preview model to next one in the list.
-    void ToggleModel();
-
-protected:
-    /// Save material resource to disk.
-    void Save();
-    ///
-    void RenderPreview() override;
-
-    /// Material which is being previewed.
-    WeakPtr<Material> material_;
-    /// Index of current figure displaying material.
-    unsigned figureIndex_ = 0;
-    /// A list of figures between which material view can be toggled.
-    ea::vector<const char*> figures_{"Sphere", "Box", "Torus", "TeaPot"};
+    void RenderInspector(InspectArgs& args);
 };
 
 }

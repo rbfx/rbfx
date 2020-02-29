@@ -36,6 +36,7 @@ InspectorTab::InspectorTab(Context* context)
     SetID("6e62fa62-811c-4bf2-9b85-bffaf7be239f");
     SetTitle("Inspector");
     isUtility_ = true;
+    context_->RegisterSubsystem(this);
 }
 
 bool InspectorTab::RenderWindowContent()
@@ -46,19 +47,49 @@ bool InspectorTab::RenderWindowContent()
     if (ui::IsItemHovered())
         ui::SetTooltip("Filter attributes by name.");
 
-    for (InspectorProvider* provider : providers_)
+    auto* editor = GetSubsystem<Editor>();
+    InspectArgs args;
+    args.filter_ = filter_;
+    for (const auto& pair : inspected_)
     {
-        if (provider)
-            provider->RenderInspector(filter_.c_str());
+        args.object_ = pair.first;
+        args.eventSender_ = pair.second;
+        args.handledTimes_ = 0;
+        editor->onInspect_(this, args);
     }
 
     return true;
 }
 
-void InspectorTab::AddProvider(InspectorProvider* provider)
+void InspectorTab::Clear()
 {
-    assert(provider != nullptr);
-    providers_.push_back(SharedPtr(provider));
+    inspected_.clear();
+}
+
+void InspectorTab::Inspect(Object* object, Object* eventSender)
+{
+    if (object == nullptr)
+    {
+        URHO3D_LOGERROR("Editor can not inspect a null object.");
+        return;
+    }
+    if (eventSender == nullptr)
+        eventSender = object;
+    inspected_.push_back(ea::make_pair(WeakPtr(object), WeakPtr(eventSender)));
+}
+
+bool InspectorTab::IsInspected(Object* object) const
+{
+    if (object == nullptr)
+        return false;
+
+    for (const auto& pair : inspected_)
+    {
+        if (pair.first.Get() == object)
+            return true;
+    }
+
+    return false;
 }
 
 }
