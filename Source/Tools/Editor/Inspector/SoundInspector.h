@@ -19,36 +19,23 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-
 #pragma once
 
-#include "Inspector/InspectorProvider.h"
-
-#include <Urho3D/Audio/SoundSource.h>
+#include <Urho3D/Core/Object.h>
 
 namespace Urho3D
 {
 
 struct InspectArgs;
 
-class SoundInspector : public InspectorProvider
+class SoundInspector : public Object
 {
-    URHO3D_OBJECT(SoundInspector, InspectorProvider);
+    URHO3D_OBJECT(SoundInspector, Object);
 public:
     /// Construct.
-    explicit SoundInspector(Context* context) : InspectorProvider(context) { }
-    /// Destruct.
-    virtual ~SoundInspector();
-
+    explicit SoundInspector(Context* context);
     /// Render inspector UI.
-    virtual void RenderInspector(const char* filter) override;
-    /// Release associated resources.
-    virtual void ClearSelection() override;
-
-protected:
-    void StopPlaying();
-
-    SharedPtr<SoundSource> playingSource_;
+    void RenderInspector(InspectArgs& args);
 };
 
 }

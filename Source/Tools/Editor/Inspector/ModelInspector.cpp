@@ -24,43 +24,39 @@
 #include <Urho3D/Scene/Scene.h>
 #include <Urho3D/SystemUI/SystemUI.h>
 
-#include "ModelInspector.h"
 #include "Editor.h"
-
+#include "ModelPreview.h"
+#include "ModelInspector.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
 
 ModelInspector::ModelInspector(Context* context)
-    : PreviewInspector(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &ModelInspector::RenderInspector);
 }
 
-void ModelInspector::SetInspected(Object* inspected, Object* eventSender)
+void ModelInspector::RenderInspector(InspectArgs& args)
 {
-    assert(inspected->IsInstanceOf<Model>());
-    InspectorProvider::SetInspected(inspected, eventSender);
-    SetModel(static_cast<Model*>(inspected));
-}
-
-void ModelInspector::RenderInspector(const char* filter)
-{
-    if (inspected_.Expired())
+    auto* model = args.object_->Cast<Model>();
+    if (model == nullptr)
         return;
+
+    args.handledTimes_++;
+    ui::IdScope idScope(model);
+    auto* preview = ui::GetUIState<ModelPreview>(context_);
+    preview->SetModel(model);
 
     if (ui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen))
     {
-        RenderPreview();
-        if (auto* staticModel = node_->GetComponent<StaticModel>())
-        {
-            if (Model* modelResource = staticModel->GetModel())
-            {
-                const char* resourceName = modelResource->GetName().c_str();
-                ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
-                ui::TextUnformatted(resourceName);
-                ui::Separator();
-            }
-        }
+        preview->RenderPreview();
+        const char* resourceName = model->GetName().c_str();
+        ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
+        ui::TextUnformatted(resourceName);
+        ui::Separator();
     }
 }
 

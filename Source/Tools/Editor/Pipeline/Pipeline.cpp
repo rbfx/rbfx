@@ -48,6 +48,7 @@
 #include "Pipeline/Pipeline.h"
 #include "Plugins/PluginManager.h"
 #include "Plugins/ModulePlugin.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
@@ -139,11 +140,11 @@ void Pipeline::OnEndFrame(StringHash, VariantMap&)
 
     if (!dirtyAssets_.empty())
     {
-        auto* editor = GetSubsystem<Editor>();
+        auto* inspector = GetSubsystem<InspectorTab>();
         MutexLock lock(mutex_);
         Asset* dirty = dirtyAssets_.back();
         dirty->Save();
-        if (editor->IsInspected(dirty))
+        if (inspector->IsInspected(dirty))
         {
             // Asset import may introduce new imported resources which we want to be appear in inspection if importing
             // asset was selected when import triggered.

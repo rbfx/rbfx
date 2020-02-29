@@ -41,7 +41,7 @@
 #include "Pipeline/Pipeline.h"
 #include "Pipeline/Asset.h"
 #include "Pipeline/Importers/ModelImporter.h"
-
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
@@ -313,13 +313,13 @@ void Asset::OnFlavorRemoved(VariantMap& args)
 
 void Asset::Inspect()
 {
-    auto* editor = GetSubsystem<Editor>();
+    auto* inspector = GetSubsystem<InspectorTab>();
     auto* pipeline = GetSubsystem<Pipeline>();
     auto* cache = GetSubsystem<ResourceCache>();
     auto* undo = GetSubsystem<UndoStack>();
-    editor->ClearInspector();
+    inspector->Clear();
     // Asset inspector will show inspectors for importers.
-    editor->Inspect(this);
+    inspector->Inspect(this);
     // Show inspectors for byproducts too.
     for (AssetImporter* importer : GetImporters(pipeline->GetDefaultFlavor()))
     {
@@ -328,7 +328,7 @@ void Asset::Inspect()
             if (StringHash resourceType = GetContentResourceType(context_, byproduct))
             {
                 Resource* resource = cache->GetResource(resourceType, byproduct);
-                editor->Inspect(resource);
+                inspector->Inspect(resource);
                 undo->Connect(resource);    // ??
             }
         }
@@ -338,7 +338,7 @@ void Asset::Inspect()
     {
         if (Resource* resource = cache->GetResource(resourceType, GetName()))
         {
-            editor->Inspect(resource);
+            inspector->Inspect(resource);
             undo->Connect(resource);    // ??
         }
     }

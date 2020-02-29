@@ -463,8 +463,9 @@ void SceneTab::OnNodeSelectionChanged()
     using namespace EditorSelectionChanged;
     SendEvent(E_EDITORSELECTIONCHANGED, P_TAB, this);
 
+    auto* inspector = GetSubsystem<InspectorTab>();
     auto* editor = GetSubsystem<Editor>();
-    editor->ClearInspector();
+    inspector->Clear();
     int inspectedNodes = 0;
     int inspectedComponents = 0;
     Node* lastInspectedNode = nullptr;
@@ -474,7 +475,7 @@ void SceneTab::OnNodeSelectionChanged()
     {
         if (node)
         {
-            editor->Inspect(node, GetScene());
+            inspector->Inspect(node, GetScene());
             inspectedNodes++;
             lastInspectedNode = node;
         }
@@ -484,7 +485,7 @@ void SceneTab::OnNodeSelectionChanged()
     {
         if (component)
         {
-            editor->Inspect(component, GetScene());
+            inspector->Inspect(component, GetScene());
             inspectedComponents++;
         }
     }
@@ -492,7 +493,7 @@ void SceneTab::OnNodeSelectionChanged()
     if (inspectedNodes == 1 && inspectedComponents == 0)
     {
         for (Component* component : lastInspectedNode->GetComponents())
-            editor->Inspect(component, GetScene());
+            inspector->Inspect(component, GetScene());
     }
 
     editor->GetTab<HierarchyTab>()->SetProvider(this);

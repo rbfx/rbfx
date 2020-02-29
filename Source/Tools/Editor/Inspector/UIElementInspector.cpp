@@ -22,26 +22,32 @@
 #include <Urho3D/UI/UIElement.h>
 #include <Toolbox/SystemUI/Widgets.h>
 #include <Toolbox/SystemUI/AttributeInspector.h>
-#include <IconFontCppHeaders/IconsFontAwesome5.h>
+
+#include "Editor.h"
 #include "Inspector/UIElementInspector.h"
+#include "Tabs/InspectorTab.h"
 
 namespace Urho3D
 {
 
 UIElementInspector::UIElementInspector(Context* context)
-    : SerializableInspector(context)
+    : Object(context)
 {
+    auto* editor = GetSubsystem<Editor>();
+    editor->onInspect_.Subscribe(this, &UIElementInspector::RenderInspector);
 }
 
-void UIElementInspector::RenderInspector(const char* filter)
+void UIElementInspector::RenderInspector(InspectArgs& args)
 {
-    if (inspected_.Expired())
+    auto* element = args.object_->Cast<UIElement>();
+    if (element == nullptr)
         return;
 
-    auto element = static_cast<UIElement*>(inspected_.Get());
+    args.handledTimes_++;
+    ui::IdScope idScope(element);
     const char* name = element->GetName().empty() ? element->GetTypeName().c_str() : element->GetName().c_str();
     if (ui::CollapsingHeader(name, ImGuiTreeNodeFlags_DefaultOpen))
-        RenderAttributes(element, filter, eventSender_);
+        RenderAttributes(element, args.filter_, args.eventSender_);
 }
 
 }

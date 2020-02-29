@@ -25,12 +25,23 @@
 #include <EASTL/utility.h>
 #include <Urho3D/Container/Ptr.h>
 
-#include "Inspector/InspectorProvider.h"
 #include "Tabs/Tab.h"
 
 
 namespace Urho3D
 {
+
+struct InspectArgs
+{
+    /// In. Attribute filter string.
+    ea::string_view filter_;
+    /// In. Object that is to be inspected.
+    WeakPtr<Object> object_;
+    /// In. Object that will be sending events on attribute modification. If null, object_ will be used for event sending.
+    WeakPtr<Object> eventSender_;
+    /// In/Out. Number of times object object inspection was handled this frame.
+    unsigned handledTimes_ = 0;
+};
 
 class InspectorTab : public Tab
 {
@@ -39,16 +50,18 @@ public:
     explicit InspectorTab(Context* context);
     ///
     bool RenderWindowContent() override;
-    ///
-    void AddProvider(InspectorProvider* provider);
-    ///
-    void ClearProviders() { providers_.clear(); }
+    /// Remove all items from inspector.
+    void Clear();
+    /// Request editor to inspect specified object. Reference to this object will not be held.
+    void Inspect(Object* object, Object* eventSender=nullptr);
+    /// Returns true when specified object is currently inspected.
+    bool IsInspected(Object* object) const;
 
 protected:
-    ///
+    /// Inspector attribute filter string.
     ea::string filter_;
-    ///
-    ea::vector<SharedPtr<InspectorProvider>> providers_;
+    /// All currently inspected objects.
+    ea::vector<ea::pair<WeakPtr<Object>, WeakPtr<Object>>> inspected_;
 };
 
 }
