@@ -22,7 +22,7 @@
 
 #pragma once
 
-#include "ThirdParty/tracy/Tracy.hpp"
+#include <tracy/Tracy.hpp>
 
 namespace Urho3D
 {
