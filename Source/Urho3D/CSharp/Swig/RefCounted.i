@@ -38,15 +38,11 @@
         // Construct a wrapper object wrapping a native instance.
         // Only most downstream class gets cMemoryOwn=true. Base classes do not.
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
-        if (cMemoryOwn) {
-          // Object is created from a value type like SharedPtr<T> or by invoking operator `new` directly in managed
-          // code. Managed side adds a reference. AddRef() sets a weak gchandle.
+        global::System.Runtime.InteropServices.GCHandleType handleType;
+        if (cMemoryOwn)
           AddRef();
-        } else {
-          // Wrapping existing object that is referenced by native side. Do not add a reference. If user intends to keep
-          // a reference then user should call AddRef(). Set a strong gchandle because native side holds a reference.
-          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this, global::System.Runtime.InteropServices.GCHandleType.Normal)));
-        }
+        SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
+          global::System.Runtime.InteropServices.GCHandle.Alloc(this, global::System.Runtime.InteropServices.GCHandleType.Weak)), false);
       }
 
       internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
@@ -90,15 +86,9 @@
         // Construct a wrapper object wrapping a native instance.
         // Only most downstream class gets cMemoryOwn=true. Base classes do not.
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
-        if (cMemoryOwn) {
-          // Object is created from a value type like SharedPtr<T> or by invoking operator `new` directly in managed
-          // code. Managed side adds a reference. AddRef() sets a weak gchandle.
+        global::System.Runtime.InteropServices.GCHandleType handleType;
+        if (cMemoryOwn)
           AddRef();
-        } else {
-          // Wrapping existing object that is referenced by native side. Do not add a reference. If user intends to keep
-          // a reference then user should call AddRef(). Set a strong gchandle because native side holds a reference.
-          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(global::System.Runtime.InteropServices.GCHandle.Alloc(this, global::System.Runtime.InteropServices.GCHandleType.Normal)));
-        }
       }
 
       internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
@@ -111,13 +101,25 @@
         _disposing = false;
         if (!Expired) {
           // Finalizer should only execute if only .NET held references to a managed object and lost them.
-          global::System.Diagnostics.Debug.Assert(_netRefs == Refs());
+          global::System.Diagnostics.Debug.Assert(ScriptRefs() == Refs());
           // Release all references but one here on this thread.
-          while (_netRefs > 1)
-              _ReleaseRefNet();
-          // Release last reference on main thread if possible.
-          if (_netRefs == 1)
-              ReleaseRefSafe();
+          while (ScriptRefs() > 1)
+            ReleaseRef();
+          // Here be dragons. This evil hack prevents crashes on application exit. Lost objects are being finalized on
+          // finalizer thread, however runtime scripting API object is gone already and we can not invoke Dispose(false)
+          // from C++ side, therefore we do it manually.
+          var ptrBkp = swigCPtr;                                        // Native instance pointer backup.
+          Dispose(_disposing);                                          // Dispose of resources. This resets swigCPtr. Also frees GC handle.
+          swigCPtr = ptrBkp;                                            // Restore swigCPtr so we can call ReleaseRef().
+          if (ScriptRefs() == 1) {                                      // Last remaining reference.
+            var script = Context.Instance?.GetSubsystem<Script>();      // Wont return an object when finalizers run on application exit.
+            if (script != null)
+              script.ReleaseRefOnMainThread(this);                      // Called when objects are lost and finalized during application lifetime.
+            else
+              ReleaseRef();                                             // Called when application is quitting. Main loop is not running.
+          }
+          // Object is completely destroyed. Reset swigCPtr so Expired once again returns true.
+          swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
         }
       }
 
@@ -132,8 +134,12 @@
     %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
       lock(this) {
         $typemap(csdisposed_extra_early_optional, TYPE)
+        FreeGCHandle();
         if (swigCPtr.Handle != global::System.IntPtr.Zero)
           swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
+        if (disposing) {
+          global::System.GC.SuppressFinalize(this);
+        }
         $typemap(csdisposed_extra_optional, TYPE)
       }
     }
@@ -208,10 +214,11 @@ URHO3D_REFCOUNTED(Urho3D::ShaderProgram);
 %ignore Urho3D::RefCount;
 %csmethodmodifiers Urho3D::RefCounted::SetScriptObject "internal"
 %csmethodmodifiers Urho3D::RefCounted::GetScriptObject "internal"
-%csmethodmodifiers Urho3D::RefCounted::SwapScriptObject "internal"
 %csmethodmodifiers Urho3D::RefCounted::AddRef "internal"
 %csmethodmodifiers Urho3D::RefCounted::ReleaseRef "internal"
-%rename(_AddRef) Urho3D::RefCounted::AddRef;
-%rename(_ReleaseRef) Urho3D::RefCounted::ReleaseRef;
+%rename(NativeAddRef) Urho3D::RefCounted::AddRef;
+%rename(NativeReleaseRef) Urho3D::RefCounted::ReleaseRef;
+%rename(AddRef) Urho3D::RefCounted::ScriptAddRef;
+%rename(ReleaseRef) Urho3D::RefCounted::ScriptReleaseRef;
 %include "Urho3D/Container/RefCounted.h"
 %include "Urho3D/Container/Ptr.h"

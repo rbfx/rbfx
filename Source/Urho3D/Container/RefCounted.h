@@ -45,6 +45,9 @@ public:
         // Set reference counts below zero to fire asserts if this object is still accessed
         refs_ = -1;
         weakRefs_ = -1;
+#if URHO3D_CSHARP
+        scriptRefs_ = -1;
+#endif
     }
 
     /// Allocate RefCount using it's default allocator.
@@ -56,6 +59,10 @@ public:
     int refs_ = 0;
     /// Weak reference count.
     int weakRefs_ = 0;
+#if URHO3D_CSHARP
+    /// Reference count acquired from scripts. This is always equal or less than refs_.
+    int scriptRefs_ = 0;
+#endif
 };
 
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
@@ -85,24 +92,32 @@ public:
     RefCount* RefCountPtr() { return refCount_; }
 #if URHO3D_CSHARP
     /// Return true if script runtime object wrapping this native object exists.
-    bool HasScriptObject() const { return scriptObject_ != 0; }
+    bool HasScriptObject() const { return scriptObject_ != nullptr; }
+    /// Increment script reference count. For internal use.
+    int ScriptAddRef();
+    /// Decrement script reference count. For internal use.
+    int ScriptReleaseRef();
+    /// Return script reference count.
+    int ScriptRefs() const;
 
 protected:
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
     void* GetScriptObject() const { return scriptObject_; }
     /// Sets handle to wrapper script object. This is scripting-runtime-dependent.
-    void SetScriptObject(void* handle);
-    /// Sets handle to wrapper script object and returns previous handle value.
-    void* SwapScriptObject(void* handle);
-    /// Call Dispose(true) and dereference script object.
-    void DisposeScriptObject();
+    void SetScriptObject(void* handle, bool isStrong);
+    /// Clears script object value. Script object has to be freed externally.
+    void ResetScriptObject();
 #endif
 private:
     /// Pointer to the reference count structure.
     RefCount* refCount_ = nullptr;
 #if URHO3D_CSHARP
     /// A handle to script object that wraps this native instance.
-    void* scriptObject_ = 0;
+    void* scriptObject_ = nullptr;
+#if URHO3D_DEBUG
+    /// GC Handle type (strong vs weak).
+    bool isScriptStrongRef_ = false;
+#endif
 #endif
 };
 
