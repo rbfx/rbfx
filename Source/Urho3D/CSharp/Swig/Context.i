@@ -24,7 +24,8 @@
   }
 
   %typemap(csdisposed_extra_optional) Urho3D::Context {
-    SetRuntimeApi(null);
+    // Should not discard runtime API yet. Disposing of Context needs runtime API available.
+    // SetRuntimeApi(null);
   }
 
 %wrapper %{

@@ -75,7 +75,6 @@ namespace Urho3DNet
 
         public override void Dispose(RefCounted instance)
         {
-            GC.SuppressFinalize(instance);
             instance?.DisposeInternal();
         }
 

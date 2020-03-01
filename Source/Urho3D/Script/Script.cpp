@@ -43,7 +43,7 @@ Script::Script(Context* context)
         MutexLock lock(destructionQueueLock_);
         if (!destructionQueue_.empty())
         {
-            destructionQueue_.back()->ReleaseRef();
+            destructionQueue_.back()->ScriptReleaseRef();
             destructionQueue_.pop_back();
         }
     });
@@ -54,7 +54,7 @@ Script::~Script()
     URHO3D_PROFILE("Script::~Script");
     while (!destructionQueue_.empty())
     {
-        destructionQueue_.back()->ReleaseRef();
+        destructionQueue_.back()->ScriptReleaseRef();
         destructionQueue_.pop_back();
     }
 }

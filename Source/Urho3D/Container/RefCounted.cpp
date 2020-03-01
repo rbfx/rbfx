@@ -66,7 +66,14 @@ RefCounted::~RefCounted()
     // destructors have run their course already. This is fine, because Dispose(true) is called only for wrapped but not
     // inherited classes and Dispose(true) of wrapper classes merely sets C++ pointer to null and does not interact with
     // native object in any way.
-    DisposeScriptObject();
+    if (scriptObject_)
+    {
+        // API may be null when application when finalizers run on application exit.
+        ScriptRuntimeApi* api = Script::GetRuntimeApi();
+        assert(api != nullptr);
+        api->Dispose(this);
+        assert(scriptObject_ == nullptr);
+    }
 #endif
 
     // Mark object as expired, release the self weak ref and delete the refcount if no other weak refs exist
@@ -82,7 +89,20 @@ int RefCounted::AddRef()
 {
     int refs = ea::Internal::atomic_increment(&refCount_->refs_);
     assert(refs > 0);
-
+#if URHO3D_CSHARP
+    if (URHO3D_UNLIKELY(scriptObject_ && /*!isScriptStrongRef_ &&*/ refs - refCount_->scriptRefs_ == 1))
+    {
+        // More than one native reference exists. Ensure strong GC handle to prevent garbage collection of managed
+        // wrapper object.
+        ScriptRuntimeApi* api = Script::GetRuntimeApi();
+        assert(api != nullptr);
+#if URHO3D_DEBUG
+        assert(!isScriptStrongRef_);
+        isScriptStrongRef_ = true;
+#endif
+        scriptObject_ = api->RecreateGCHandle(scriptObject_, true);
+    }
+#endif
     return refs;
 }
 
@@ -90,21 +110,77 @@ int RefCounted::ReleaseRef()
 {
     int refs = ea::Internal::atomic_decrement(&refCount_->refs_);
     assert(refs >= 0);
-
+#if URHO3D_CSHARP
     if (refs == 0)
     {
-#if URHO3D_CSHARP
         // Dispose managed object while native object is still intact. This code path is taken for user classes that
         // inherit from a native base, because such objects are always heap-allocated. Because of this, it is guaranteed
         // that user's Dispose(true) method will be called before execution of native object destructors.
-        DisposeScriptObject();
-#endif
+        if (scriptObject_)
+        {
+            // API may be null when application when finalizers run on application exit.
+            ScriptRuntimeApi* api = Script::GetRuntimeApi();
+            assert(api != nullptr);
+            api->Dispose(this);
+            assert(scriptObject_ == nullptr);
+        }
         delete this;
     }
-
+    else if (URHO3D_UNLIKELY(scriptObject_ && refs == refCount_->scriptRefs_))
+    {
+        // No more native references exist. Convert GC handle to weak. If user loses all managed references such
+        // object can be freed by GC.
+        auto api = Script::GetRuntimeApi();
+        assert(api != nullptr);
+#if URHO3D_DEBUG
+        assert(isScriptStrongRef_);
+        isScriptStrongRef_ = false;
+#endif
+        scriptObject_ = api->RecreateGCHandle(scriptObject_, false);
+    }
+#else
+    if (refs == 0)
+        delete this;
+#endif
     return refs;
 }
+#if URHO3D_CSHARP
+int RefCounted::ScriptAddRef()
+{
+    // Adding a script reference does not affect GC handle type.
+    int refs = ea::Internal::atomic_increment(&refCount_->refs_);
+    int scriptRefs = ea::Internal::atomic_increment(&refCount_->scriptRefs_);
+    assert(refs > 0);
+    assert(scriptRefs > 0);
+    assert(scriptRefs <= refs);
+    return scriptRefs;
+}
 
+int RefCounted::ScriptReleaseRef()
+{
+    int scriptRefs = ea::Internal::atomic_decrement(&refCount_->scriptRefs_);
+    int refs = ea::Internal::atomic_decrement(&refCount_->refs_);
+    assert(refs >= 0);
+    assert(scriptRefs >= 0);
+    assert(scriptRefs <= refs);
+    if (URHO3D_UNLIKELY(refs == 0))
+    {
+        // Dispose managed object while native object is still intact. This code path is taken for user classes that
+        // inherit from a native base, because such objects are always heap-allocated. Because of this, it is guaranteed
+        // that user's Dispose(true) method will be called before execution of native object destructors.
+        if (scriptObject_)
+        {
+            // API may be null when application when finalizers run on application exit.
+            ScriptRuntimeApi* api = Script::GetRuntimeApi();
+            assert(api != nullptr);
+            api->Dispose(this);
+            assert(scriptObject_ == nullptr);
+        }
+        delete this;
+    }
+    return scriptRefs;
+}
+#endif
 int RefCounted::Refs() const
 {
     return refCount_->refs_;
@@ -116,33 +192,31 @@ int RefCounted::WeakRefs() const
     return refCount_->weakRefs_ - 1;
 }
 #if URHO3D_CSHARP
-void* RefCounted::SwapScriptObject(void* handle)
+int RefCounted::ScriptRefs() const
 {
-    ea::swap(handle, scriptObject_);
-    return handle;
+    return refCount_->scriptRefs_;
 }
 
-void RefCounted::SetScriptObject(void* handle)
+void RefCounted::SetScriptObject(void* handle, bool isStrong)
 {
     if (scriptObject_ != nullptr)
     {
-        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
-            api->FreeGCHandle(scriptObject_);
+        auto api = Script::GetRuntimeApi();
+        assert(api != nullptr);
+        api->FreeGCHandle(scriptObject_);
     }
     scriptObject_ = handle;
+#if URHO3D_DEBUG
+    isScriptStrongRef_ = isStrong;
+#endif
 }
 
-void RefCounted::DisposeScriptObject()
+void RefCounted::ResetScriptObject()
 {
-    if (scriptObject_)
-    {
-        if (ScriptRuntimeApi* api = Script::GetRuntimeApi())
-        {
-            api->FreeGCHandle(scriptObject_);
-            scriptObject_ = nullptr;
-            api->Dispose(this);
-        }
-    }
+    scriptObject_ = nullptr;
+#if URHO3D_DEBUG
+    isScriptStrongRef_ = false;
+#endif
 }
 #endif
 }

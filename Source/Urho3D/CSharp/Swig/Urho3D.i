@@ -45,9 +45,9 @@
 %}
 
 %apply void* VOID_INT_PTR {
-	void*,
-	signed char*,
-	unsigned char*
+  void*,
+  signed char*,
+  unsigned char*
 }
 
 %typemap(csvarin, excode=SWIGEXCODE2) void* VOID_INT_PTR %{
