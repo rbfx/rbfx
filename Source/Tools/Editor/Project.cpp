@@ -523,7 +523,7 @@ void Project::OnEndFrame(StringHash, VariantMap&)
 
 void Project::OnUndo()
 {
-    if (ui::IsAnyItemActive())
+    if (ui::IsAnyItemActive() || !undo_->IsTrackingEnabled())
         return;
 
     undo_->Undo();
@@ -531,7 +531,7 @@ void Project::OnUndo()
 
 void Project::OnRedo()
 {
-    if (ui::IsAnyItemActive())
+    if (ui::IsAnyItemActive() || !undo_->IsTrackingEnabled())
         return;
 
     undo_->Redo();
