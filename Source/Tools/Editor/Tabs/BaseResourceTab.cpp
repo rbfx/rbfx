@@ -41,6 +41,15 @@ BaseResourceTab::BaseResourceTab(Context* context)
         if (resourceName_ == nameFrom)
             SetResourceName(args[P_TO].GetString());
     });
+    SubscribeToEvent(this, E_DOCUMENTMODIFIEDREQUEST, [this](StringHash, VariantMap&)
+    {
+        if (!modified_)
+        {
+            undo_->Add<UndoModifiedState>(this, true);
+            modified_ = true;
+        }
+    });
+    SubscribeToEvent(E_DOCUMENTMODIFIED, [this](StringHash, VariantMap& args) { modified_ = args[DocumentModified::P_MODIFIED].GetBool(); });
 }
 
 bool BaseResourceTab::LoadResource(const ea::string& resourcePath)
@@ -58,6 +67,7 @@ bool BaseResourceTab::LoadResource(const ea::string& resourcePath)
     }
 
     SetResourceName(resourcePath);
+    modified_ = false;
 
     return true;
 }
@@ -70,7 +80,12 @@ bool BaseResourceTab::SaveResource()
     if (resourceName_.empty())
         return false;
 
-    lastUndoIndex_ = undo_->Index();
+    // Mark tab as not modified.
+    if (modified_)
+    {
+        undo_->Add<UndoModifiedState>(this, false);
+        modified_ = false;
+    }
 
     return true;
 }
@@ -101,17 +116,11 @@ void BaseResourceTab::SetResourceName(const ea::string& resourceName)
         SetTitle(GetFileName(resourceName_));
 }
 
-bool BaseResourceTab::IsModified() const
-{
-    // return lastUndoIndex_ != undo_->Index();
-    return false;
-}
-
 void BaseResourceTab::Close()
 {
     auto cache = GetSubsystem<ResourceCache>();
     cache->ReleaseResource(GetResourceType(), GetResourceName(), true);
-    lastUndoIndex_ = 0;
+    modified_ = false;
     resourceName_.clear();
 }
 

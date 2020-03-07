@@ -114,6 +114,9 @@ void SceneManager::UnloadAllButActiveScene()
 
 void SceneManager::SetActiveScene(Scene* scene)
 {
+    if (activeScene_ == scene)
+        return;
+
     using namespace SceneActivated;
     VariantMap& eventData = GetEventDataMap();
     eventData[P_OLDSCENE] = activeScene_;
