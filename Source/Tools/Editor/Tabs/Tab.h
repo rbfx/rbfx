@@ -99,7 +99,7 @@ public:
     /// Make tab active.
     void Activate() { activateTab_ = true; }
     /// Returns true when loaded resource was modified.
-    virtual bool IsModified() const { return false; }
+    bool IsModified() const { return modified_; }
     /// Closes current tab and unloads it's contents from memory.
     virtual void Close() { open_ = false; }
     /// Clear any user selection tracked by this tab.
@@ -146,6 +146,8 @@ protected:
     ImGuiWindowFlags windowFlags_ = 0;
     /// Global undo stack reference.
     WeakPtr<UndoStack> undo_;
+    /// Flag indicating that tab is modified.
+    bool modified_ = false;
 };
 
 }

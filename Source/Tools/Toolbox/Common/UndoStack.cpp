@@ -16,6 +16,12 @@ UndoStack::UndoStack(Context* context)
         if (!trackingEnabled_ || currentFrameActions_.empty())
             return;
 
+        if (modifiedThisFrame_.NotNull())
+        {
+            modifiedThisFrame_->SendEvent(E_DOCUMENTMODIFIEDREQUEST);
+            modifiedThisFrame_ = nullptr;
+        }
+
         auto time = GetSubsystem<Time>();
         unsigned frame = time->GetFrameNumber();
         for (auto& action : currentFrameActions_)
@@ -25,6 +31,7 @@ UndoStack::UndoStack(Context* context)
         stack_.push_back(currentFrameActions_);
         index_++;
         currentFrameActions_.clear();
+        modifiedThisFrame_ = nullptr;
     });
 }
 
@@ -75,11 +82,11 @@ void UndoStack::Clear()
     index_ = 0;
 }
 
-void UndoStack::Connect(Scene* scene)
+void UndoStack::Connect(Scene* scene, Object* modified)
 {
-    Connect(static_cast<Object*>(scene));
+    Connect(static_cast<Object*>(scene), modified);
 
-    SubscribeToEvent(scene, E_NODEADDED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(scene, E_NODEADDED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
@@ -87,9 +94,11 @@ void UndoStack::Connect(Scene* scene)
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
         Add<UndoCreateNode>(node);
+
+        SetModifiedObject(modifiedPtr);
     });
 
-    SubscribeToEvent(scene, E_NODEREMOVED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(scene, E_NODEREMOVED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
@@ -97,9 +106,11 @@ void UndoStack::Connect(Scene* scene)
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
         Add<UndoDeleteNode>(node);
+
+        SetModifiedObject(modifiedPtr);
     });
 
-    SubscribeToEvent(scene, E_COMPONENTADDED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(scene, E_COMPONENTADDED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
@@ -108,9 +119,11 @@ void UndoStack::Connect(Scene* scene)
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
         Add<UndoCreateComponent>(component);
+
+        SetModifiedObject(modifiedPtr);
     });
 
-    SubscribeToEvent(scene, E_COMPONENTREMOVED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(scene, E_COMPONENTREMOVED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
@@ -119,12 +132,14 @@ void UndoStack::Connect(Scene* scene)
         if (node->HasTag("__EDITOR_OBJECT__"))
             return;
         Add<UndoDeleteComponent>(component);
+
+        SetModifiedObject(modifiedPtr);
     });
 }
 
-void UndoStack::Connect(Object* inspector)
+void UndoStack::Connect(Object* inspector, Object* modified)
 {
-    SubscribeToEvent(inspector, E_ATTRIBUTEINSPECTVALUEMODIFIED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(inspector, E_ATTRIBUTEINSPECTVALUEMODIFIED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
@@ -146,35 +161,41 @@ void UndoStack::Connect(Object* inspector)
             // modifications. State tracking for these dummy values is not needed and would introduce extra ctrl+z
             // presses that do nothing.
             Add<UndoEditAttribute>(item, name, oldValue, newValue);
+
+            SetModifiedObject(modifiedPtr);
         }
     });
 }
 
-void UndoStack::Connect(UIElement* root)
+void UndoStack::Connect(UIElement* root, Object* modified)
 {
     assert(root->IsElementEventSender());
 
-    Connect(static_cast<Object*>(root));
+    Connect(static_cast<Object*>(root), modified);
 
-    SubscribeToEvent(root, E_ELEMENTADDED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(root, E_ELEMENTADDED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
         using namespace ElementAdded;
         Add<UndoCreateUIElement>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
+
+        SetModifiedObject(modifiedPtr);
     });
-    SubscribeToEvent(root, E_ELEMENTREMOVED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(root, E_ELEMENTREMOVED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
         using namespace ElementRemoved;
         Add<UndoDeleteUIElement>(dynamic_cast<UIElement*>(args[P_ELEMENT].GetPtr()));
+
+        SetModifiedObject(modifiedPtr);
     });
 }
 
-void UndoStack::Connect(Gizmo* gizmo)
+void UndoStack::Connect(Gizmo* gizmo, Object* modified)
 {
-    SubscribeToEvent(gizmo, E_GIZMONODEMODIFIED, [&](StringHash, VariantMap& args)
+    SubscribeToEvent(gizmo, E_GIZMONODEMODIFIED, [this, modifiedPtr=WeakPtr(modified)](StringHash, VariantMap& args)
     {
         if (!trackingEnabled_)
             return;
@@ -188,7 +209,23 @@ void UndoStack::Connect(Gizmo* gizmo)
         Add<UndoEditAttribute>(node, "Position", oldTransform.Translation(), newTransform.Translation());
         Add<UndoEditAttribute>(node, "Rotation", oldTransform.Rotation(), newTransform.Rotation());
         Add<UndoEditAttribute>(node, "Scale", oldTransform.Scale(), newTransform.Scale());
+
+        SetModifiedObject(modifiedPtr);
     });
+}
+
+void UndoStack::SetModifiedObject(Object* modified)
+{
+    if (modified == nullptr)
+        return;
+
+    if (modifiedThisFrame_.Null())
+        modifiedThisFrame_ = modified;
+    else
+    {
+        // We definitely do not want to modify multiple tabs with one action. Guard against it.
+        assert(modifiedThisFrame_ == modified);
+    }
 }
 
 }

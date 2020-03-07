@@ -46,8 +46,6 @@ public:
     const char* OnLoadUISettings(const char* name, const char* line) override;
     /// Returns name of opened resource.
     ea::string GetResourceName() const { return resourceName_; }
-    /// Returns true when loaded resource was modified.
-    bool IsModified() const override;
     /// Closes current tab and unloads it's contents from memory.
     void Close() override;
     ///
@@ -61,8 +59,6 @@ protected:
 
     /// Name of loaded resource.
     ea::string resourceName_;
-    /// Comparing undo stack size allows determining if open resource was modified during last frame.
-    int lastUndoIndex_ = 0;
     /// Resource that user would like to open on top of current loaded resource. Used for displaying warning.
     ea::string pendingLoadResource_;
 };

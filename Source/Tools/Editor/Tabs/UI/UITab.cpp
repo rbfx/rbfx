@@ -67,7 +67,7 @@ UITab::UITab(Context* context)
     offScreenUI_->SetRoot(rootElement_);
     offScreenUI_->SetRenderTarget(texture_, Color::BLACK);
 
-    undo_->Connect(static_cast<UIElement*>(rootElement_.Get()));
+    undo_->Connect(static_cast<UIElement*>(rootElement_.Get()), this);
 
     SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTORMENU, std::bind(&UITab::AttributeMenu, this, _2));
     SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTOATTRIBUTE, std::bind(&UITab::AttributeCustomize, this, _2));
@@ -388,7 +388,6 @@ bool UITab::LoadResource(const ea::string& resourcePath)
     }
 
     undo_->Clear();
-    lastUndoIndex_ = undo_->Index();
 
     return true;
 }
