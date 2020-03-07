@@ -863,6 +863,55 @@ public:
     }
 };
 
+/// Event sent at the end of frame when document has created undoable action that modifies said document. User should
+/// handle this event by calling `undo_->Add<UndoModifiedState>(this, true)` if current document state is "not modified".
+URHO3D_EVENT(E_DOCUMENTMODIFIEDREQUEST, DocumentModifiedRequest)
+{
+}
+
+/// Event sent when document "modified" state is changed by executing undo/redo actions. User should handle this event
+/// by setting internal "modified" flat to value specified by P_MODIFIED.
+URHO3D_EVENT(E_DOCUMENTMODIFIED, DocumentModified)
+{
+    URHO3D_PARAM(P_MODIFIED, Modified);         // bool
+}
+
+class URHO3D_TOOLBOX_API UndoModifiedState : public UndoAction
+{
+    /// Object that tracks it's modified state.
+    WeakPtr<Object> object_;
+    /// Flag indicating whether object was modified or saved.
+    bool isModified_ = false;
+
+public:
+    /// Construct.
+    UndoModifiedState(Object* object, bool isModified)
+        : object_(object)
+        , isModified_(isModified)
+    {
+    }
+
+    bool Undo(Context* context) override
+    {
+        if (object_.Expired())
+            return false;
+
+        using namespace DocumentModified;
+        object_->SendEvent(E_DOCUMENTMODIFIED, P_MODIFIED, !isModified_);
+        return true;
+    }
+
+    bool Redo(Context* context) override
+    {
+        if (object_.Expired())
+            return false;
+
+        using namespace DocumentModified;
+        object_->SendEvent(E_DOCUMENTMODIFIED, P_MODIFIED, isModified_);
+        return true;
+    }
+};
+
 template<typename T> class UndoValueScope;
 
 class URHO3D_TOOLBOX_API UndoStack : public Object
@@ -912,17 +961,20 @@ public:
         return nullptr;
     }
 
-    /// Track changes performed by this scene.
-    void Connect(Scene* scene);
+    /// Track changes performed by this scene. If \param modified is specified then any modification will cause
+    /// \param modified send E_DOCUMENTMODIFIEDREQUEST event.
+    void Connect(Scene* scene, Object* modified = nullptr);
     /// Track changes performed by this object. It usually is instance of AttributeInspector or Serializable.
-    void Connect(Object* inspector);
+    void Connect(Object* inspector, Object* modified = nullptr);
     /// Track changes performed to UI hierarchy of this root element.
-    void Connect(UIElement* root);
+    void Connect(UIElement* root, Object* modified = nullptr);
     /// Track changes performed by this gizmo.
-    void Connect(Gizmo* gizmo);
+    void Connect(Gizmo* gizmo, Object* modified = nullptr);
 
 protected:
     using StateCollection = ea::vector<SharedPtr<UndoAction>>;
+    /// Set an object which enters "modified" state as a consequence of creating undoable actions on this frame.
+    void SetModifiedObject(Object* modifed);
 
     /// State stack
     ea::vector<StateCollection> stack_;
@@ -934,6 +986,8 @@ protected:
     StateCollection currentFrameActions_{};
     /// Cache of backup original values.
     ValueCache workingValueCache_{context_};
+    /// Object which was modified on current frame.
+    WeakPtr<Object> modifiedThisFrame_{};
 
     template<typename> friend class UndoValueScope;
 };

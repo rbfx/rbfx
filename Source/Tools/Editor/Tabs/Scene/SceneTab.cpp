@@ -53,7 +53,6 @@
 #include "Tabs/HierarchyTab.h"
 #include "Tabs/InspectorTab.h"
 #include "Tabs/PreviewTab.h"
-#include "Inspector/MaterialInspector.h"
 
 
 namespace Urho3D
@@ -107,7 +106,7 @@ SceneTab::SceneTab(Context* context)
     SubscribeToEvent(E_SCENEACTIVATED, [this](StringHash, VariantMap& args) { OnSceneActivated(args); });
     SubscribeToEvent(E_EDITORPROJECTCLOSING, [this](StringHash, VariantMap&) { OnEditorProjectClosing(); });
 
-    undo_->Connect(&gizmo_);
+    undo_->Connect(&gizmo_, this);
 
     UpdateUniqueTitle();
 }
@@ -306,8 +305,7 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     auto manager = GetSubsystem<SceneManager>();
     Scene* scene = manager->GetOrCreateScene(GetFileName(resourcePath));
 
-    UndoTrackGuard(undo_, false);
-    undo_->Connect(scene);
+    undo_->Connect(scene, this);
 
     manager->SetActiveScene(scene);
 
@@ -346,8 +344,6 @@ bool SceneTab::LoadResource(const ea::string& resourcePath)
     scene->SetUpdateEnabled(false);    // Scene is updated manually.
     scene->GetOrCreateComponent<Octree>();
     scene->GetOrCreateComponent<EditorSceneSettings>(LOCAL);
-
-    lastUndoIndex_ = undo_->Index();
 
     GetSubsystem<Editor>()->UpdateWindowTitle(resourcePath);
 
@@ -1090,7 +1086,7 @@ void SceneTab::OnSceneActivated(VariantMap& args)
         SubscribeToEvent(scene, E_COMPONENTREMOVED, [this](StringHash, VariantMap& args) { OnComponentRemoved(args); });
         SubscribeToEvent(scene, E_TEMPORARYCHANGED, [this](StringHash, VariantMap& args) { OnTemporaryChanged(args); });
 
-        undo_->Connect(scene);
+        undo_->Connect(scene, this);
 
         // If application logic switches to another scene it will have updates enabled. Ensure they are disabled so we do not get double
         // updates per frame.
