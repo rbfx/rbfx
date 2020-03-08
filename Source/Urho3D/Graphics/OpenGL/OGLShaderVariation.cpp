@@ -106,10 +106,10 @@ bool ShaderVariation::Create()
     case PS:
         shaderStage = GL_FRAGMENT_SHADER;
         break;
+#if 0
     case GS:
         shaderStage = GL_GEOMETRY_SHADER;
         break;
-#if 0
     case HS:
         shaderStage = GL_TESS_CONTROL_SHADER;
         break;
