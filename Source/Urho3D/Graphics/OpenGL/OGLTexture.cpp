@@ -361,6 +361,7 @@ unsigned Texture::GetDSVFormat(unsigned format)
 
 bool Texture::IsComputeWriteable(unsigned format)
 {
+#ifdef URHO3D_COMPUTE
     switch (format)
     {
     case GL_RGBA:
@@ -372,6 +373,7 @@ bool Texture::IsComputeWriteable(unsigned format)
     case GL_R32UI:
         return true;
     }
+#endif
     return false;
 }
 
