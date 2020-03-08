@@ -135,4 +135,9 @@ unsigned Texture::GetDataType(unsigned format)
     return 0;
 }
 
+bool Texture::IsComputeWriteable(unsigned format)
+{
+    return false;
+}
+
 }
