@@ -28,6 +28,7 @@
 #include "../../Graphics/Texture.h"
 #include "../../Graphics/Texture2D.h"
 #include "../../Graphics/Texture2DArray.h"
+#include "../../Graphics/Texture3D.h"
 #include "../../Graphics/TextureCube.h"
 
 #include "../../Graphics/IndexBuffer.h"
@@ -148,24 +149,31 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     ZeroMemory(&viewDesc, sizeof(viewDesc));
 
     viewDesc.Format = (DXGI_FORMAT)texture->GetFormat();
-    if (auto tex2D = dynamic_cast<Texture2D*>(texture))
+    if (auto tex2D = texture->Cast<Texture2D>())
     {
         viewDesc.Texture2D.MipSlice = mipLevel;
         viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2D;
     }
-    else if (auto tex2DArray = dynamic_cast<Texture2DArray*>(texture))
+    else if (auto tex2DArray = texture->Cast<Texture2DArray>())
     {
         viewDesc.Texture2DArray.ArraySize = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
         viewDesc.Texture2DArray.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
         viewDesc.Texture2DArray.MipSlice = mipLevel;
         viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
     }
-    else if (auto texCube = dynamic_cast<TextureCube*>(texture))
+    else if (auto texCube = texture->Cast<TextureCube>())
     {
         viewDesc.Texture2DArray.ArraySize = faceIndex == UINT_MAX ? 6 : 1;
         viewDesc.Texture2DArray.FirstArraySlice = faceIndex == UINT_MAX ? 0 : faceIndex;
         viewDesc.Texture2DArray.MipSlice = mipLevel;
         viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE2DARRAY;
+    }
+    else if (auto tex3D = texture->Cast<Texture3D>())
+    {
+        viewDesc.Texture3D.MipSlice = mipLevel;
+        viewDesc.Texture3D.FirstWSlice = 0;
+        viewDesc.Texture3D.WSize = texture->GetLevelDepth(mipLevel);
+        viewDesc.ViewDimension = D3D11_UAV_DIMENSION_TEXTURE3D;
     }
     else
     {
