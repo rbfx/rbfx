@@ -215,18 +215,19 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     uavs_[unit].layer_ = faceIndex;
     uavs_[unit].layerCount_ = 1;
 
-    if (auto tex2DArray = dynamic_cast<Texture2DArray*>(texture))
+    if (auto tex2DArray = texture->Cast<Texture2DArray>())
     {
         uavs_[unit].layerCount_ = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
         if (faceIndex >= tex2DArray->GetLayers())
             uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
     }
-    else if (auto texCube = dynamic_cast<TextureCube*>(texture))
+    else if (auto texCube = texture->Cast<TextureCube>())
     {
         uavs_[unit].layerCount_ = faceIndex == UINT_MAX ? 6 : 1;
         if (faceIndex >= 6)
             uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
     }
+    // Texture3D *SHOULD* work by default
 
     uavsDirty_ = true;
     return true;
