@@ -201,12 +201,12 @@ bool Graphics::gl3Support = false;
 Graphics::Graphics(Context* context) :
     Object(context),
     impl_(new GraphicsImpl()),
-    computeDevice_(new ComputeDevice(context, this)),
     position_(SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED),
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
-    apiName_("D3D11")
+    apiName_("D3D11"),
+    computeDevice_(nullptr) // will be set when the subsystem is registered
 {
     SetTextureUnitMappings();
     ResetCachedState();

@@ -67,8 +67,8 @@
 #include "../Urho2D/Urho2D.h"
 #endif
 #include "../Engine/EngineEvents.h"
-#ifndef URHO3D_D3D9
-#include "../Graphics/ComputeDevice.h"
+#ifdef URHO3D_COMPUTE
+    #include "../Graphics/ComputeDevice.h"
 #endif
 
 #if defined(__EMSCRIPTEN__) && defined(URHO3D_TESTING)
@@ -199,7 +199,7 @@ bool Engine::Initialize(const VariantMap& parameters)
     {
         context_->RegisterSubsystem(new Graphics(context_));
         context_->RegisterSubsystem(new Renderer(context_));
-#ifndef URHO3D_D3D9
+#ifdef URHO3D_COMPUTE
         context_->RegisterSubsystem(new ComputeDevice(context_, context_->GetSubsystem<Graphics>()));
 #endif
     }

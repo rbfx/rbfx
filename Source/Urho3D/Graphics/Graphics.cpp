@@ -65,6 +65,10 @@
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
 
+#if !defined(URHO3D_D3D9) && !defined(GL_ES_VERSION_2_0)
+    #include "../Graphics/ComputeBuffer.h"
+#endif
+
 #include <SDL/SDL.h>
 
 #include "../DebugNew.h"
@@ -653,6 +657,10 @@ void RegisterGraphicsLibrary(Context* context)
     View::RegisterObject(context);
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);
+
+#ifdef URHO3D_COMPUTE
+    ComputeBuffer::RegisterObject(context);
+#endif
 }
 
 

@@ -301,7 +301,8 @@ Graphics::Graphics(Context* context) :
     hiresShadowMapFormat_(GL_DEPTH_COMPONENT24),
     shaderPath_("Shaders/GLSL/"),
     shaderExtension_(".glsl"),
-    orientations_("LandscapeLeft LandscapeRight")
+    orientations_("LandscapeLeft LandscapeRight"),
+    computeDevice_(nullptr)
 {
     SetTextureUnitMappings();
     ResetCachedState();
