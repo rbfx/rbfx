@@ -117,7 +117,7 @@ bool ComputeBuffer::SetData(void* data, unsigned dataSize, unsigned structureSiz
     return true;
 }
 
-bool ComputeBuffer::GetData(void* writeInto)
+bool ComputeBuffer::GetData(void* writeInto, unsigned offset, unsigned readLength)
 {
     if (!object_.ptr_)
     {
@@ -153,7 +153,7 @@ bool ComputeBuffer::GetData(void* writeInto)
         return false;
     }
 
-    memcpy(writeInto, mappedData.pData, size_);
+    memcpy(writeInto, ((unsigned char*)mappedData.pData) + offset, readLength);
 
     graphics_->GetImpl()->GetDeviceContext()->Unmap(staging, 0);
     URHO3D_SAFE_RELEASE(staging);
