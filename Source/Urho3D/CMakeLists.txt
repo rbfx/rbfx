@@ -97,6 +97,20 @@ if (URHO3D_CSHARP)
     define_engine_source_files (Script)
 endif ()
 
+# Remove compute source files as needed
+if (NOT URHO3D_COMPUTE)
+    list(REMOVE_ITEM SOURCE_FILES 
+        Graphics/Direct3D11/D3D11ComputeBuffer.cpp
+        Graphics/Direct3D11/D3D11ComputeDevice.cpp
+        Graphics/OpenGL/OGLComputeBuffer.cpp
+        Graphics/OpenGL/OGLComputeDevice.cpp
+        Graphics/ComputeBuffer.cpp
+        Graphics/ComputeBuffer.h
+        Graphics/ComputeDevice.cpp
+        Graphics/ComputeDevice.h
+    )
+endif ()
+
 # Group source code in VS solution
 group_sources()
 
