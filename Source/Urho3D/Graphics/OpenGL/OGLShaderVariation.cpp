@@ -122,10 +122,7 @@ bool ShaderVariation::Create()
         shaderStage = GL_COMPUTE_SHADER;
         break;
 #endif
-    }
-
-    if (shaderStage == 0)
-    {
+    default:
         URHO3D_LOGERROR("ShaderVariation::Create, unsupported shader stage {}", GetShaderType());
         return false;
     }
