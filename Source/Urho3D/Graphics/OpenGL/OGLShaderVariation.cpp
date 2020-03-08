@@ -97,7 +97,7 @@ bool ShaderVariation::Create()
         return false;
     }
 
-    GLenum shaderStage = GL_VERTEX_SHADER;
+    GLenum shaderStage = 0;
     switch (type_)
     {
     case VS:
@@ -109,15 +109,25 @@ bool ShaderVariation::Create()
     case GS:
         shaderStage = GL_GEOMETRY_SHADER;
         break;
+#if 0
     case HS:
         shaderStage = GL_TESS_CONTROL_SHADER;
         break;
     case DS:
         shaderStage = GL_TESS_EVALUATION_SHADER;
         break;
+#endif
+#ifdef URHO3D_COMPUTE
     case CS:
         shaderStage = GL_COMPUTE_SHADER;
         break;
+#endif
+    }
+
+    if (shaderStage == 0)
+    {
+        URHO3D_LOGERROR("ShaderVariation::Create, unsupported shader stage {}", GetShaderType());
+        return false;
     }
 
     object_.name_ = glCreateShader(shaderStage);

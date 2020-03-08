@@ -71,6 +71,7 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* computeShader)
     GPUObject(graphics),
     computeShader_(computeShader)
 {
+#ifdef URHO3D_COMPUTE
     if (computeShader == nullptr)
     {
         URHO3D_LOGERROR("Provided null compute shader to ShaderProgram constructor");
@@ -100,6 +101,9 @@ ShaderProgram::ShaderProgram(Graphics* graphics, ShaderVariation* computeShader)
 
     for (auto& parameterSource : parameterSources_)
         parameterSource = (const void*)(uintptr_t)M_MAX_UNSIGNED;
+#else
+    URHO3D_LOGERROR("ComputeShader is not supported");
+#endif
 }
 
 ShaderProgram::~ShaderProgram()
@@ -153,6 +157,7 @@ bool ShaderProgram::Link()
     Release();
 
     // Compute shader has a short path at present.
+#if URHO3D_COMPUTE
     if (computeShader_)
     {
         object_.name_ = glCreateProgram();
@@ -181,6 +186,7 @@ bool ShaderProgram::Link()
         linkerOutput_.clear();
         return true;
     }
+#endif
 
     if (!vertexShader_ || !pixelShader_ || !vertexShader_->GetGPUObjectName() || !pixelShader_->GetGPUObjectName())
         return false;
