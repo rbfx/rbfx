@@ -48,6 +48,7 @@ static const char* commandTypeNames[] =
     "lightvolumes",
     "renderui",
     "sendevent",
+    "compute_filter",
     nullptr
 };
 
@@ -174,6 +175,10 @@ void RenderPathCommand::Load(const XMLElement& element)
 
     case CMD_SENDEVENT:
         eventName_ = element.GetAttribute("name");
+        break;
+
+    case CMD_COMPUTE_FILTER:
+        computeDispatchDim_ = element.GetIntVector3("dispatch");
         break;
 
     default:

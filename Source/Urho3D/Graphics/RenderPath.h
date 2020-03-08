@@ -48,7 +48,8 @@ enum RenderCommandType
     CMD_FORWARDLIGHTS,
     CMD_LIGHTVOLUMES,
     CMD_RENDERUI,
-    CMD_SENDEVENT
+    CMD_SENDEVENT,
+    CMD_COMPUTE_FILTER
 };
 
 /// Rendering path sorting modes.
@@ -176,6 +177,8 @@ struct URHO3D_API RenderPathCommand
     ea::string vertexShaderName_;
     /// Pixel shader name.
     ea::string pixelShaderName_;
+    /// Compute shader name.
+    ea::string computeShaderName_;
     /// Vertex shader defines.
     ea::string vertexShaderDefines_;
     /// Pixel shader defines.
@@ -210,6 +213,8 @@ struct URHO3D_API RenderPathCommand
     bool vertexLights_{};
     /// Event name.
     ea::string eventName_;
+    /// Dispatch dimensions.
+    IntVector3 computeDispatchDim_;
 };
 
 /// Rendering path definition. A sequence of commands (e.g. clear screen, draw objects with specific pass) that yields the scene rendering result.
