@@ -1,7 +1,30 @@
+//
+// Copyright (c) 2017-2020 the Urho3D project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
 #pragma once
 
 #include "../Core/Object.h"
 #include "../Graphics/GraphicsDefs.h"
+#include "../Graphics/ComputeBuffer.h"
 
 #include <EASTL/map.h>
 #include <EASTL/vector.h>
@@ -14,16 +37,17 @@
 #elif defined(URHO3D_OPENGL)
 #endif
 
-// The only absolute is that D3D9 doesn't have compute ... barring an OpenCL fallback using cl_khr_dx9_media_sharing.
-#ifndef URHO3D_D3D9
+#if defined(URHO3D_COMPUTE)
 
 namespace Urho3D
 {
 
 class ConstantBuffer;
+class IndexBuffer;
 class Graphics;
 class ShaderVariation;
 class Texture;
+class VertexBuffer;
 
 /// Common interface for GP-GPU that is responsible for dispatch and keeping track of the compute-specific state of the DX and GL APIs. Usage has no explicit rules but is most likely appropriate in
 /// event handlers for E_BEGINRENDERING, E_ENDRENDERING, E_BEGINVIEWUPDATE, E_BEGINVIEWRENDER, and other events that are clean segues.
@@ -44,8 +68,16 @@ public:
     /// Set a constant buffer for standard usage.
     bool SetConstantBuffer(ConstantBuffer* buffer, unsigned unit);
 
-    /// Sets a texture for image write usage.
+    /// Sets a texture for image write usage. Use UINT_MAX for faceIndex to bind all layers/faces.
     bool SetWriteTexture(Texture* texture, unsigned unit, unsigned faceIndex, unsigned mipLevel);
+    /// Sets a constant buffer for write usage. Compute write-capable buffers must NOT be dynamic.
+    bool SetWriteBuffer(ConstantBuffer* buffer, unsigned unit);
+    /// Sets a vertex buffer for write usage, must be float4 compliant. Compute write-capable buffers must NOT be dynamic.
+    bool SetWriteBuffer(VertexBuffer* buffer, unsigned unit);
+    /// Sets an index buffer for write usage. Compute write-capable buffers must NOT be dynamic.
+    bool SetWriteBuffer(IndexBuffer* buffer, unsigned unit);
+    /// Sets a structured-buffer/SSBO for read/write usage.
+    bool SetWriteBuffer(ComputeBuffer* buffer, unsigned unit);
 
     /// Sets or clears the compute shader to use.
     bool SetProgram(SharedPtr<ShaderVariation> computeShader);
@@ -61,6 +93,9 @@ private:
     void HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData);
     /// Frees any locally created GPU objects.
     void ReleaseLocalState();
+    /// Internal implementation of buffer object setting.
+    bool SetWritableBuffer(Object*, unsigned slot);
+
 
 #if defined(URHO3D_D3D11)
     /// Record for a mip+face UAV combination.
@@ -68,12 +103,13 @@ private:
         ID3D11UnorderedAccessView* uav_;
         unsigned face_;
         unsigned mipLevel_;
+        bool isBuffer_;
     };
 
     /// As needed UAVs are constructed for textures and those UAVs are saved here.
     eastl::map<WeakPtr<Object>, eastl::vector<UAVBinding> > constructedUAVs_;
     /// As needed SRVs are constructed for buffers and those are saved here.
-    eastl::map<WeakPtr<Object>, ID3D11ShaderResourceView*> constructedBufferSRVs_;
+    eastl::map<WeakPtr<Object>, ID3D11UnorderedAccessView*> constructedBufferUAVs_;
 
     /// List of sampler bindings.
     ID3D11SamplerState* samplerBindings_[MAX_TEXTURE_UNITS];
@@ -92,10 +128,20 @@ private:
         int layer_;
         int layerCount_;
     };
+
+    /// Structure for SSBO record list.
+    struct WriteBufferBinding
+    {
+        unsigned object_ = { 0 };
+        bool dirty_ = { false };
+    };
+
     /// Table of bound constant buffers, uses the lower range of the parameter groups.
     SharedPtr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Table of write-texture targets.
     WriteTexBinding uavs_[MAX_TEXTURE_UNITS];
+    /// Table of write-buffer targets (SSBO).
+    WriteBufferBinding ssbos_[MAX_TEXTURE_UNITS];
 
 #endif
 
