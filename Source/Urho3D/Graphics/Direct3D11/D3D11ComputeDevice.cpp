@@ -1,3 +1,25 @@
+//
+// Copyright (c) 2017-2020 the Urho3D project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
 #include "../../Precompiled.h"
 
 #include "../../Graphics/ComputeDevice.h"
@@ -7,6 +29,9 @@
 #include "../../Graphics/Texture2D.h"
 #include "../../Graphics/Texture2DArray.h"
 #include "../../Graphics/TextureCube.h"
+
+#include "../../Graphics/IndexBuffer.h"
+#include "../../Graphics/VertexBuffer.h"
 
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsEvents.h"
@@ -47,6 +72,11 @@ bool ComputeDevice::IsSupported() const
 
 bool ComputeDevice::SetReadTexture(Texture* texture, unsigned unit)
 {
+    if (unit >= MAX_TEXTURE_UNITS)
+    {
+        URHO3D_LOGERROR("ComputeDevice::SetReadTexture, invalid unit {} specified", unit);
+        return false;
+    }
     if (shaderResourceViews_[unit] != texture->GetGPUObject())
     {
         samplerBindings_[unit] = (ID3D11SamplerState*)texture->GetSampler();
@@ -55,11 +85,17 @@ bool ComputeDevice::SetReadTexture(Texture* texture, unsigned unit)
         texturesDirty_ = true;
     }
 
-    return false;
+    return true;
 }
 
 bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, unsigned unit)
 {
+    if (unit >= MAX_SHADER_PARAMETER_GROUPS)
+    {
+        URHO3D_LOGERROR("ComputeDevice::SetConstantBuffer, invalid unit {} specified", unit);
+        return false;
+    }
+
     if (constantBuffers_[unit] != buffer->GetGPUObject())
     {
         constantBuffers_[unit] = (ID3D11Buffer*)buffer->GetGPUObject();
@@ -70,12 +106,24 @@ bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, unsigned unit)
 
 bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned faceIndex, unsigned mipLevel)
 {
+    if (unit >= MAX_TEXTURE_UNITS)
+    {
+        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, invalid unit {} specified", unit);
+        return false;
+    }
+
     // If null then clear and mark.
     if (texture == nullptr)
     {
         uavs_[unit] = nullptr;
         uavsDirty_ = true;
         return true;
+    }
+
+    if (!Texture::IsComputeWriteable(texture->GetFormat()))
+    {
+        URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, provided texture of format {} is not writeable", texture->GetFormat());
+        return false;
     }
 
     // First try to find a UAV that's already been constructed for this resource.
@@ -122,6 +170,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     else
     {
         URHO3D_LOGERROR("Unsupported texture type for UAV");
+        return false;
     }
 
     ID3D11UnorderedAccessView* view = nullptr;
@@ -134,7 +183,7 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     }
 
     // Store the UAV now
-    UAVBinding binding = { view, faceIndex, mipLevel };
+    UAVBinding binding = { view, faceIndex, mipLevel, false };
     // List found, so append
     if (existingRecord != constructedUAVs_.end())
         existingRecord->second.push_back(binding);
@@ -154,39 +203,74 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     return true;
 }
 
-/* JSandusky: not currently supported - writable buffers are a bit of a mess on DX-11 between R32_FLOAT and MISC_STRUCTURED ... not trivial to make generic.
-bool ComputeDevice::SetWriteBuffer(ConstantBuffer* buffer, unsigned unit)
+bool ComputeDevice::SetWritableBuffer(Object* object, unsigned slot)
 {
-    if (buffer == nullptr)
+    // Null object is trivial
+    if (object == nullptr)
     {
-        uavs_[unit] = nullptr;
+        uavsDirty_ = uavs_[slot] != nullptr;
+        uavs_[slot] = nullptr;
+        return true;
+    }
+
+    // Easy case, it's a structured-buffer and thus manages the UAV itself
+    if (auto structuredBuffer = object->Cast<ComputeBuffer>())
+    {
+        uavs_[slot] = structuredBuffer->GetUAV();
         uavsDirty_ = true;
         return true;
     }
 
-    auto existingRecord = constructedUAVs_.find(WeakPtr<Object>(buffer));
-    if (existingRecord != constructedUAVs_.end())
+    auto found = constructedBufferUAVs_.find(WeakPtr(object));
+    if (found != constructedBufferUAVs_.end())
     {
-        if (existingRecord->second.empty() == false)
-        {
-            uavs_[unit] = existingRecord->second[0].uav_;
-            uavsDirty_ = true;
-            return true;
-        }
+        uavs_[slot] = found->second;
+        uavsDirty_ = true;
+        return true;
     }
 
-    auto d3dDevice = graphics_->GetImpl()->GetDevice();
-
     D3D11_UNORDERED_ACCESS_VIEW_DESC viewDesc;
-    ZeroMemory(&viewDesc, sizeof(viewDesc));
-
-    viewDesc.Format = DXGI_FORMAT_R32_FLOAT;
+    ZeroMemory(&viewDesc, sizeof viewDesc);
     viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-    viewDesc.Buffer.NumElements = buffer->GetSize() / sizeof(Vector4);
+
+    if (auto cbuffer = object->Cast<ConstantBuffer>())
+    {
+        viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        viewDesc.Buffer.NumElements = cbuffer->GetSize() / sizeof(Vector4);
+    }
+    else if (auto vbuffer = object->Cast<VertexBuffer>())
+    {
+        viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+        viewDesc.Buffer.NumElements = vbuffer->GetElements().size() * vbuffer->GetVertexCount();
+    }
+    else if (auto ibuffer = object->Cast<IndexBuffer>())
+    {
+        if (ibuffer->GetIndexSize() == sizeof(unsigned short))
+            viewDesc.Format = DXGI_FORMAT_R16_UINT;
+        else
+            viewDesc.Format = DXGI_FORMAT_R32_UINT;
+
+        viewDesc.Buffer.NumElements = ibuffer->GetIndexCount();
+    }
+
+    ID3D11Buffer* buffer = (ID3D11Buffer*)((GPUObject*)object)->GetGPUObject();
+    ID3D11UnorderedAccessView* uav = nullptr;
+    auto hr = graphics_->GetImpl()->GetDevice()->CreateUnorderedAccessView(buffer, &viewDesc, &uav);
+    if (FAILED(hr))
+    {
+        URHO3D_SAFE_RELEASE(uav);
+        URHO3D_LOGD3DERROR("Failed to create UAV for buffer", hr);
+    }
+
+    // Subscribe for the clean-up opportunity
+    SubscribeToEvent(object, E_GPURESOURCERELEASED, URHO3D_HANDLER(ComputeDevice, HandleGPUResourceRelease));
+
+    constructedBufferUAVs_.insert({ WeakPtr(object), uav });
+    uavs_[slot] = uav;
+    uavsDirty_ = true;
 
     return true;
 }
-*/
 
 void ComputeDevice::ApplyBindings()
 {
@@ -276,8 +360,8 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
         constructedUAVs_.erase(foundUAV);
     }
 
-    auto foundSRV = constructedBufferSRVs_.find(object);
-    if (foundSRV != constructedBufferSRVs_.end())
+    auto foundBuffUAV = constructedBufferUAVs_.find(object);
+    if (foundBuffUAV != constructedBufferUAVs_.end())
     {
         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
         {
@@ -288,8 +372,8 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
             }
         }
 
-        URHO3D_SAFE_RELEASE(foundSRV->second);
-        constructedBufferSRVs_.erase(foundSRV);
+        URHO3D_SAFE_RELEASE(foundBuffUAV->second);
+        constructedBufferUAVs_.erase(foundBuffUAV);
     }
 
     UnsubscribeFromEvent(object.Get(), E_GPURESOURCERELEASED);
@@ -306,11 +390,11 @@ void ComputeDevice::ReleaseLocalState()
     }
     constructedUAVs_.clear();
 
-    for (auto& srv : constructedBufferSRVs_)
+    for (auto& srv : constructedBufferUAVs_)
     {
         URHO3D_SAFE_RELEASE(srv.second);
     }
-    constructedBufferSRVs_.clear();
+    constructedBufferUAVs_.clear();
 }
 
 }

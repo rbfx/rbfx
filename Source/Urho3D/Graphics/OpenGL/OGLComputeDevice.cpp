@@ -1,12 +1,42 @@
+//
+// Copyright (c) 2017-2020 the Urho3D project.
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+//
+
 #include "../../Precompiled.h"
 
-#include "../../Graphics/ComputeDevice.h"
+#include "../../Graphics/ComputeBuffer.h"
+#ifdef URHO3D_COMPUTE
+    #include "../../Graphics/ComputeDevice.h"
+#endif
+#include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
+#include "../../Graphics/IndexBuffer.h"
 #include "../../Graphics/Texture.h"
 #include "../../Graphics/Texture2DArray.h"
 #include "../../Graphics/TextureCube.h"
+#include "../../Graphics/VertexBuffer.h"
 #include "../../IO/Log.h"
+
+#if defined(URHO3D_COMPUTE)
 
 namespace Urho3D
 {
@@ -106,7 +136,7 @@ void ComputeDevice::ApplyBindings()
         }
     }
 
-    // Textures were already handled through graphics in `ComputeDevice::SetReadTexture(...)`
+    // Read-only textures were already handled through graphics in `ComputeDevice::SetReadTexture(...)`
 
     for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
     {
@@ -126,6 +156,17 @@ void ComputeDevice::ApplyBindings()
             graphics_->textures_[i] = nullptr;
         }
     }
+
+    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+    {
+        if (ssbos_[i].dirty_)
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, ssbos_[i].object_);
+    }
+
+    programDirty_ = false;
+    uavsDirty_ = false;
+    constantBuffersDirty_ = false;
+    texturesDirty_ = false;
 }
 
 void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData)
@@ -176,19 +217,56 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
 
     if (auto tex2DArray = dynamic_cast<Texture2DArray*>(texture))
     {
-        uavs_[unit].layerCount_ = tex2DArray->GetLayers();
+        uavs_[unit].layerCount_ = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
         if (faceIndex >= tex2DArray->GetLayers())
-            uavs_[unit].layer_ = 0;
+            uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
     }
     else if (auto texCube = dynamic_cast<TextureCube*>(texture))
     {
-        uavs_[unit].layerCount_ = 6;
+        uavs_[unit].layerCount_ = faceIndex == UINT_MAX ? 6 : 1;
         if (faceIndex >= 6)
-            uavs_[unit].layer_ = 0;
+            uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
     }
 
     uavsDirty_ = true;
     return true;
+}
+
+bool ComputeDevice::SetWritableBuffer(Object* buffer, unsigned slot)
+{
+    // easy case
+    if (buffer == nullptr)
+    {
+        if (ssbos_[slot].object_ != 0)
+        {
+            ssbos_[slot] = { 0, true };
+            uavsDirty_ = true;
+        }
+        return true;
+    }
+
+    // Note: that just because we *might* be able to doesn't mean the underlying buffer will map reasonably.
+    GLuint objectName = 0;
+    if (auto vbo = buffer->Cast<VertexBuffer>())
+        objectName = vbo->GetGPUObjectName();
+    else if (auto ibo = buffer->Cast<IndexBuffer>())
+        objectName = ibo->GetGPUObjectName();
+    else if (auto ubo = buffer->Cast<ConstantBuffer>())
+        objectName = ubo->GetGPUObjectName();
+    else if(auto ssbo = buffer->Cast<ComputeBuffer>())
+        objectName = ssbo->GetGPUObjectName();
+    else
+    {
+        URHO3D_LOGERROR("ComputeDevice::SetWritableBuffer, attempted ot use unsupported object type: {}", buffer->GetTypeName());
+    }
+
+    if (ssbos_[slot].object_ != objectName)
+    {
+        ssbos_[slot] = { objectName, true };
+        uavsDirty_ = true;
+    }
+
+    return objectName != 0;
 }
 
 void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
@@ -202,9 +280,29 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
     }
 
     glDispatchCompute(Max(xDim, 1), Max(yDim, 1), Max(zDim, 1));
-    glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+    // check if there are any UAVs before deciding to place a barrier on images.
+    bool anyUavs = false;
+    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+    {
+        if (uavs_[i].object_)
+        {
+            anyUavs = true;
+            break;
+        }
+    }
+
+    // The real necessity of this barrier depends on usage.
+    // Example: if compute is done before render (ie. BeginFrame) and shadowmap reuse disabled
+    //          then this barrier doesn't really contribute so long as a CS isn't writing to an 
+    //          alpha-texture that a shadow pass is using.
+    if (anyUavs)
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
 }
 
 
 
 }
+
+#endif
+
