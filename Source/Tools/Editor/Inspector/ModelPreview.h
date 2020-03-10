@@ -43,10 +43,12 @@ public:
     void SetModel(const ea::string& resourceName);
     /// Set preview model by passing model resource instance.
     void SetModel(Model* model);
-    /// Set preview model by passing a resource name.
+    /// Set preview material by passing a resource name.
     void SetMaterial(const ea::string& resourceName, int index = 0);
-    /// Set preview model by passing model resource instance.
+    /// Set preview material by passing material resource instance.
     void SetMaterial(Material* material, int index = 0);
+    /// Get preview material resource instance.
+    Material* GetMaterial(int index);
     /// Change material preview model to next one in the list (sphere/box/torus/teapot). If custom model was set it will be reset.
     void ToggleModel();
     /// Render model preview.
