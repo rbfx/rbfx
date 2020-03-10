@@ -60,7 +60,7 @@ bool BaseResourceTab::LoadResource(const ea::string& resourcePath)
     if (resourcePath.empty())
         return false;
 
-    if (IsModified())
+    if (IsModified() && pendingLoadResource_.empty())
     {
         pendingLoadResource_ = resourcePath;
         return false;
