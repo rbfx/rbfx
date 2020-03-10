@@ -93,10 +93,6 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     if (ui::IsItemClicked(MOUSEB_LEFT))
         preview->ToggleModel();
 
-    const char* resourceName = material->GetName().c_str();
-    ui::TextCentered(resourceName);
-    ui::Separator();
-
     // Cull
     {
         int value = material->GetCullMode(), valuePrev = value;

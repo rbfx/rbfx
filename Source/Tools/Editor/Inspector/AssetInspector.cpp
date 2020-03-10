@@ -49,9 +49,7 @@ void AssetInspector::RenderInspector(InspectArgs& args)
     auto* pipeline = GetSubsystem<Pipeline>();
     bool tabBarStarted = false;
     bool save = false;
-
-    ui::TextCentered(Format("Asset: {}", asset->GetName()).c_str());
-    ui::Separator();
+    bool headerRendered = false;
 
     // Use flavors list from the pipeline because it is sorted. Asset::importers_ is unordered.
     for (const SharedPtr<Flavor>& flavor : pipeline->GetFlavors())
@@ -94,6 +92,13 @@ void AssetInspector::RenderInspector(InspectArgs& args)
             {
                 // Defer rendering of tab bar and tabs until we know that we have compatible importers. As a result if
                 // file is not supported by any importer - tab bar with flavors and no content will not be shown.
+                if (!headerRendered)
+                {
+                    ui::TextCentered(Format("Asset: {}", asset->GetName()).c_str());
+                    ui::Separator();
+                    headerRendered = true;
+                }
+
                 if (!tabBarStarted)
                 {
                     ui::BeginTabBar(Format("###{}", (void*)this).c_str(), ImGuiTabBarFlags_None);
