@@ -148,4 +148,11 @@ URHO3D_EVENT(E_GPURESOURCERELEASED, GPUResourceReleased)
     URHO3D_PARAM(P_OBJECT, Object);                // Ptr
 }
 
+URHO3D_EVENT(E_CUBEMAPCAPTUREUPDATE, CubemapCaptureUpdate)
+{
+    URHO3D_PARAM(P_NODE, Node);                    // Node pointer
+    URHO3D_PARAM(P_CAPTURE, Capture);              // CubemapCapture pointer
+    URHO3D_PARAM(P_TEXTURE, Texture);              // TextureCube pointer
+}
+
 }
