@@ -779,6 +779,10 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             if (modifiedReason == AttributeInspectorModified::NO_CHANGE)
                 modifiedReason = AttributeInspectorModified::SET_BY_USER;
 
+            // Discard temporary string buffer so input field clears.
+            if (value.GetType() == VAR_STRING)
+                ui::RemoveUIState<ea::string>();
+
             modification.SetModified(true);
             item->SetAttribute(info.name_, value);
             item->ApplyAttributes();
