@@ -475,27 +475,49 @@ void TextCentered(const char* text)
 
 void ItemLabel(ea::string_view title, const Color* color, ItemLabelFlags flags)
 {
+    ImGuiWindow* window = ui::GetCurrentWindow();
+    const ImVec2 lineStart = ui::GetCursorScreenPos();
     const ImGuiStyle& style = ui::GetStyle();
-    ImVec2 lineStart = ui::GetCursorPos();
     float fullWidth = ui::GetContentRegionAvail().x;
-    if (flags & ItemLabelFlag::Left)
-    {
-        float textWidth = ui::CalcTextSize(title.begin(), title.end()).x;
-        ui::SetCursorPosX(ui::GetCursorPosX() + (fullWidth - ui::CalcItemWidth() - textWidth - style.ItemSpacing.x));
-    }
-    else if (flags & ItemLabelFlag::Right)
-        ui::SetCursorPosX(ui::GetCursorPosX() + ui::CalcItemWidth() + style.ItemSpacing.x);
+    float itemWidth = ui::CalcItemWidth() + style.ItemSpacing.x;
+    ImVec2 textSize = ui::CalcTextSize(title.begin(), title.end());
+    ImRect textRect;
+    textRect.Min = ui::GetCursorScreenPos();
+    if (flags & ItemLabelFlag::Right)
+        textRect.Min.x = textRect.Min.x + itemWidth;
+    textRect.Max = textRect.Min;
+    textRect.Max.x += fullWidth - itemWidth;
+    textRect.Max.y += textSize.y;
+
+    ui::SetCursorScreenPos(textRect.Min);
 
     ImGui::AlignTextToFramePadding();
-    if (color != nullptr)
-        ui::PushStyleColor(ImGuiCol_Text, color->ToUInt());
-    ui::Text("%.*s", (int)title.size(), title.data());
-    if (color != nullptr)
-        ui::PopStyleColor();
+    // Adjust text rect manually because we render it directly into a drawlist instead of using public functions.
+    textRect.Min.y += window->DC.CurrLineTextBaseOffset;
+    textRect.Max.y += window->DC.CurrLineTextBaseOffset;
+
+    ItemSize(textRect);
+    if (ItemAdd(textRect, window->GetID(title.data(), title.data() + title.size())))
+    {
+        if (color != nullptr)
+            ui::PushStyleColor(ImGuiCol_Text, color->ToUInt());
+
+        RenderTextEllipsis(ui::GetWindowDrawList(), textRect.Min, textRect.Max, textRect.Max.x,
+            textRect.Max.x, title.data(), title.data() + title.size(), &textSize);
+
+        if (color != nullptr)
+            ui::PopStyleColor();
+
+        if (textRect.GetWidth() < textSize.x && ui::IsItemHovered())
+            ui::SetTooltip("%.*s", (int)title.size(), title.data());
+    }
     if (flags & ItemLabelFlag::Left)
+    {
+        ui::SetCursorScreenPos(textRect.Max - ImVec2{0, textSize.y + window->DC.CurrLineTextBaseOffset});
         ui::SameLine();
+    }
     else if (flags & ItemLabelFlag::Right)
-        ui::SetCursorPos(lineStart);
+        ui::SetCursorScreenPos(lineStart);
 }
 
 static const ImGuiDataTypeInfo GDataTypeInfo[] =
