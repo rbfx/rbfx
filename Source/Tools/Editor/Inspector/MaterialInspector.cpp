@@ -526,10 +526,27 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
             const ea::string& parameterName = pair.second.name_;
             ui::IdScope pushId(parameterName.c_str());
             auto& value = ValueHistory<Variant>::Get(pair.second.value_);
-
             float width = ui::CalcItemWidth() - (ui::IconButtonSize() + style.ItemSpacing.x) * 1;
-            if (RenderAttribute(parameterName, value.current_, Color::WHITE, "", nullptr, args.eventSender_, width))
+
+            // Shaders do not support Color type, but we would like to editr colors as shader parameters.
+            Variant colorVariant;
+            if (parameterName.ends_with("Color"))
             {
+                if (pair.second.value_.GetType() == VAR_VECTOR3)
+                    colorVariant = Color(value.current_.GetVector3());
+                else if (pair.second.value_.GetType() == VAR_VECTOR4)
+                    colorVariant = Color(value.current_.GetVector4());
+            }
+
+            if (RenderAttribute(parameterName, colorVariant.IsEmpty() ? value.current_ : colorVariant, Color::WHITE, "", nullptr, args.eventSender_, width))
+            {
+                if (!colorVariant.IsEmpty())
+                {
+                    if (pair.second.value_.GetType() == VAR_VECTOR3)
+                        value.current_ = colorVariant.GetVector3();
+                    else if (pair.second.value_.GetType() == VAR_VECTOR4)
+                        value.current_ = colorVariant.GetVector4();
+                }
                 material->SetShaderParameter(parameterName, value.current_);
                 value.SetModified(true);
             }
@@ -551,8 +568,6 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
                 VAR_VECTOR2,
                 VAR_VECTOR3,
                 VAR_VECTOR4,
-                VAR_COLOR,
-                VAR_RECT,
             };
 
             static const char* shaderParameterVariantNames[] = {
@@ -560,8 +575,6 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
                 "Vector2",
                 "Vector3",
                 "Vector4",
-                "Color",
-                "Rect",
             };
 
             ui::ItemLabel("Add Parameter");
