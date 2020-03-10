@@ -86,6 +86,8 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
 
     // Render a material preview
     auto* preview = ui::GetUIState<ModelPreview>(context_);
+    if (preview->GetMaterial(0) == nullptr)
+        preview->SetMaterial(material, 0);
     preview->RenderPreview();
     ui::SetHelpTooltip("Click to switch object.");
     if (ui::IsItemClicked(MOUSEB_LEFT))
@@ -94,7 +96,6 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
     const char* resourceName = material->GetName().c_str();
     ui::TextCentered(resourceName);
     ui::Separator();
-
 
     // Cull
     {

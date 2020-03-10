@@ -170,4 +170,11 @@ void ModelPreview::ToggleModel()
     node_->SetScale(scale);
 }
 
+Material* ModelPreview::GetMaterial(int index)
+{
+    if (auto* model = node_->GetComponent<StaticModel>())
+        return model->GetMaterial(index);
+    return nullptr;
+}
+
 }
