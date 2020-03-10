@@ -50,14 +50,8 @@ void ModelInspector::RenderInspector(InspectArgs& args)
     auto* preview = ui::GetUIState<ModelPreview>(context_);
     preview->SetModel(model);
 
-    if (ui::CollapsingHeader("Model", ImGuiTreeNodeFlags_DefaultOpen))
-    {
+    if (ui::CollapsingHeader(model->GetName().c_str(), ImGuiTreeNodeFlags_DefaultOpen))
         preview->RenderPreview();
-        const char* resourceName = model->GetName().c_str();
-        ui::SetCursorPosX((ui::GetContentRegionMax().x - ui::CalcTextSize(resourceName).x) / 2);
-        ui::TextUnformatted(resourceName);
-        ui::Separator();
-    }
 }
 
 }
