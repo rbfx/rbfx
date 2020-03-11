@@ -762,7 +762,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
         }
         else
         {
-            OnServerDisconnected();
+            OnServerDisconnected(packet->systemAddress);
         }
         packetHandled = true;
     }
@@ -774,7 +774,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
         }
         else
         {
-            OnServerDisconnected();
+            OnServerDisconnected(packet->systemAddress);
         }
         packetHandled = true;
     }
@@ -788,7 +788,7 @@ void Network::HandleIncomingPacket(SLNet::Packet* packet, bool isServer)
 
             if (!isServer)
             {
-                OnServerDisconnected();
+                OnServerDisconnected(packet->systemAddress);
             }
         }
         packetHandled = true;
@@ -1002,8 +1002,13 @@ void Network::OnServerConnected(const SLNet::AddressOrGUID& address)
     SendEvent(E_SERVERCONNECTED);
 }
 
-void Network::OnServerDisconnected()
+void Network::OnServerDisconnected(const SLNet::AddressOrGUID& address)
 {
+    if (natPunchServerAddress_ && *natPunchServerAddress_ == address.systemAddress) {
+        SendEvent(E_NATMASTERDISCONNECTED);
+        return;
+    }
+
     // Differentiate between failed connection, and disconnection
     bool failedConnect = serverConnection_ && serverConnection_->IsConnectPending();
     serverConnection_.Reset();

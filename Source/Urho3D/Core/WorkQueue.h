@@ -28,6 +28,8 @@
 #include "../Core/Mutex.h"
 #include "../Core/Object.h"
 
+#include <atomic>
+
 namespace Urho3D
 {
 
