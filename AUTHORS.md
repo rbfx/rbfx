@@ -1,4 +1,5 @@
 ## Credits
+
 Urho3D development, contributions and bugfixes by:
 - Lasse Öörni
 - Wei Tjong Yao
@@ -14,6 +15,7 @@ Urho3D development, contributions and bugfixes by:
 - Danny Boisvert
 - Sergey Bosko
 - Lisandro Bruzzo
+- Steven Burns
 - Thomas Böhm
 - Carlo Carollo
 - Pete Chown
@@ -102,6 +104,7 @@ Urho3D development, contributions and bugfixes by:
 - OvermindDL1
 - Polynominal
 - PredatorMF
+- PsychoCircuitry
 - Scellow
 - Skrylar
 - SuperWangKai
@@ -126,6 +129,7 @@ Urho3D development, contributions and bugfixes by:
 - gleblebedev
 - hdunderscore
 - holyfight6
+- hsnabn
 - lhinuz
 - lvshiling
 - marynate
@@ -137,6 +141,7 @@ Urho3D development, contributions and bugfixes by:
 - ninjastone
 - orefkov
 - pat2nav
+- pflat
 - proller
 - r-a-sattarov
 - raould

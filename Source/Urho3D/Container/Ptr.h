@@ -99,7 +99,7 @@ public:
     /// Move-assign from another shared pointer.
     SharedPtr<T>& operator =(SharedPtr<T>&& rhs)
     {
-        SharedPtr<T> copy(ea::move(rhs));
+        SharedPtr<T> copy(std::move(rhs));
         Swap(copy);
 
         return *this;
@@ -163,7 +163,7 @@ public:
     operator T*() const { return ptr_; }    // NOLINT(google-explicit-constructor)
 
     /// Swap with another SharedPtr.
-    void Swap(SharedPtr<T>& rhs) { ea::swap(ptr_, rhs.ptr_); }
+    void Swap(SharedPtr& rhs) { ea::swap(ptr_, rhs.ptr_); }
 
     /// Reset with another pointer.
     void Reset(T* ptr = nullptr)
@@ -353,7 +353,7 @@ public:
     /// Move-assign from another weak pointer.
     WeakPtr<T>& operator =(WeakPtr<T>&& rhs)
     {
-        WeakPtr<T> copy(ea::move(rhs));
+        WeakPtr<T> copy(std::move(rhs));
         Swap(copy);
 
         return *this;
