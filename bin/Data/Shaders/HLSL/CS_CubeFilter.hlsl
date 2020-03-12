@@ -4,10 +4,10 @@
 // ===============================
 // Requires the following #defines
 // ===============================
-// #define RAY_COUNT 16
-// #define FILTER_RES 64
+// #define RAY_COUNT 16     (number of rays to cast)
+// #define FILTER_RES 64    (resolution of face edge)
 // #define FILTER_INV_RES 1.0/FILTER_RES
-// #define ROUGHNESS 1.0
+// #define ROUGHNESS 1.0    (not academic roughness)
 
 /*
     for a 128x128 cube
@@ -32,10 +32,12 @@
     }
 */
 
+#define PI 3.141596
+
 TextureCube srcTex : register(t0);
 SamplerState srcSampler : register(s0);
 
-RWTextureCube<float4> outputTexture : register(u1);
+RWTexture2DArray<float4> outputTexture : register(u1);
 
 inline float2 Hammersley(uint seed, uint ct) 
 {
@@ -49,36 +51,42 @@ inline float2 Hammersley(uint seed, uint ct)
 	return float2(float(seed) / float(ct), radInv);
 }
 
-float3 HemisphereDir(float u, float v)
-{
-    float phi = v * 2.0 * 3.141596;
-    float yawFactor = 1.0 - u;
-    float pitchFactor = sqrt(1.0 - cosTheta * cosTheta);
-    return float3(cos(phi) * pitchFactor, sin(phi) * pitchFactor, yawFactor);
-}
-
 float3x3 CalcTangentSpace(const float3 n)
 {
     float3 alignmentCheck = abs(n.x) > 0.99f ? float3(0, 0, 1) : float3(1, 0, 0);
-	float3 tangent = normalize(cross(n, alignmentCheck));
-	float3 binormal = normalize(cross(n, tangent));
-	return float3x3(tangent, binormal, n);
+    float3 tangent = normalize(cross(n, alignmentCheck));
+    float3 binormal = normalize(cross(n, tangent));
+    return float3x3(tangent, binormal, n);
 }
 
-#define RAY_COUNT 16
+float3 ImportanceSample(float2 interval, float roughness)
+{
+	float roughFactor = roughness * roughness;
+    roughFactor *= roughFactor;
+    
+	const float phi = PI * 2.0 * interval.x;
+	const float cosTheta = sqrt((1.0 - interval.y) / (1.0 + (roughFactor - 1.0) * interval.y));
+	const float sinTheta = sqrt(1.0 - cosTheta * cosTheta);
+    
+	float3 lobeVec;
+	lobeVec.x = sinTheta * cos(phi);
+	lobeVec.y = sinTheta * sin(phi); 
+	lobeVec.z = cosTheta;
+	return lobeVec;
+}
 
 [numthreads(16,16,1)]
 void CS(uint3 dispatchThreadId : SV_DispatchThreadID)
 {
     if (dispatchThreadId.x < FILTER_RES && dispatchThreadId.y < FILTER_RES)
     {
-        // squash down to 0 - 0.5 range
-        float2 uvCoords = (dispatchThreadId.xy * 0.5f) * FILTER_INV_RES;
+        // squash down to 0 - 1.0 range
+        float2 uvCoords = (dispatchThreadId.xy) * FILTER_INV_RES;
         
         // then scale to domain of -1 to 1 and flip Y for sample correctness
         uvCoords = uvCoords * 2.0 - 1.0;
         uvCoords.y *= -1.0;
-
+        
         float3 sampleDir;
         switch (dispatchThreadId.z)
         {
@@ -89,7 +97,7 @@ void CS(uint3 dispatchThreadId : SV_DispatchThreadID)
             sampleDir = float3(-1, uvCoords.yx);
             break;
         case 2: // +Y
-            sampleDir = float3(uvCoords.x, 1, -uv.y);
+            sampleDir = float3(uvCoords.x, 1, -uvCoords.y);
             break;
         case 3: // -Y
             sampleDir = float3(uvCoords.x, -1, uvCoords.y);
@@ -103,19 +111,19 @@ void CS(uint3 dispatchThreadId : SV_DispatchThreadID)
         }
         
         const float3x3 tanFrame = CalcTangentSpace(sampleDir);        
-        float4 color = 0.0;    
+        
+        float4 color = float4(0.0, 0.0, 0.0, 1.0);
         
         // gather samples on the dome, could instead use importance sampling
         for (uint i = 0; i < RAY_COUNT; ++i)
         {
             float2 h = Hammersley(i, RAY_COUNT);
-            float3 hemi = HemisphereDir(h.x, h.y);
-            float3 coneDir = mul(hemi, tanFrame);
-            coneDir = lerp(sampleDir, cone, ROUGHNESS);
+            float3 hemisphere = ImportanceSample(h, ROUGHNESS);
+			float3 finalDir = mul(hemisphere, tanFrame);
             
-            color += srcTex.SampleLevel(srcSampler, cone, 0);
+            color.rgb += srcTex.SampleLevel(srcSampler, finalDir, 0).rgb;
         }
-        color /= (float)RAY_COUNT;
+        color.rgb /= RAY_COUNT;
         
         outputTexture[dispatchThreadId] = color;
     }
