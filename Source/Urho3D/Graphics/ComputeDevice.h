@@ -142,9 +142,9 @@ private:
     /// Table of bound constant buffers, uses the lower range of the parameter groups.
     SharedPtr<ConstantBuffer> constantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Table of write-texture targets.
-    WriteTexBinding uavs_[MAX_TEXTURE_UNITS];
+    WriteTexBinding uavs_[MAX_COMPUTE_WRITE_TARGETS];
     /// Table of write-buffer targets (SSBO).
-    WriteBufferBinding ssbos_[MAX_TEXTURE_UNITS];
+    WriteBufferBinding ssbos_[MAX_COMPUTE_WRITE_TARGETS];
 
 #endif
 
