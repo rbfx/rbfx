@@ -50,7 +50,7 @@ namespace Urho3D
 CubemapCapture::CubemapCapture(Context* context) :
     Component(context)
 {
-
+    SubscribeToEvent("SceneUpdate", [&](StringHash h, VariantMap& eventData) { Render(); });
 }
 
 CubemapCapture::~CubemapCapture()
@@ -117,7 +117,6 @@ void CubemapCapture::Render()
         dataMap[CubemapCaptureUpdate::P_CAPTURE] = this;
         dataMap[CubemapCaptureUpdate::P_TEXTURE] = target_;
         SendEvent(E_CUBEMAPCAPTUREUPDATE, dataMap);
-
     }
 
     SetupZone();
@@ -187,6 +186,7 @@ void CubemapCapture::RenderAll(SharedPtr<Scene> scene, unsigned maxCt)
         }
     }
 
+    graphics->ResetRenderTargets();
     graphics->EndFrame();
 }
 
@@ -286,7 +286,7 @@ void CubemapCapture::SetupTextures()
     target_->SetFilterMode(FILTER_BILINEAR);
 
     filtered_.Reset(new TextureCube(GetContext()));
-    filtered_->SetSize(faceSize_, Graphics::GetRGBAFormat());
+    filtered_->SetSize(faceSize_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET); // render-target usage is to make GL happy mip-map wise, otherwise have to refactor for glTexImage2D for each level
     filtered_->SetFilterMode(FILTER_BILINEAR);
 }
 
@@ -304,6 +304,9 @@ SharedPtr<TextureCube> CubemapCapture::FilterCubemap(SharedPtr<TextureCube> cube
 
 void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> >& cubemaps, const eastl::vector< SharedPtr<TextureCube> >& destCubemaps, const eastl::vector<unsigned>& rayCounts)
 {
+#if !defined(URHO3D_COMPUTE)
+    URHO3D_LOGERROR("CubemapCapture::FilterCubemaps, cannot be executed without URHO3D_COMPUTE enabled");
+#else
     if (cubemaps.empty())
         return;
 
@@ -317,7 +320,6 @@ void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> 
         }
     }
 
-#ifdef URHO3D_COMPUTE
     unsigned levelCt = destCubemaps[0]->GetLevels();
 
     auto graphics = cubemaps[0]->GetSubsystem<Graphics>();
@@ -353,7 +355,6 @@ void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> 
             computeDevice->Dispatch(destCube->GetLevelWidth(i), destCube->GetLevelHeight(i), 6);
         }
     }
-
 #endif
 }
 
