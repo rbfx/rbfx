@@ -75,6 +75,8 @@ void ComputeDevice::ApplyBindings()
     if (!computeShader_)
         return;
 
+    graphics_->ResetRenderTargets();
+
     // Does the shader require compilation?
     if (!computeShader_->GetGPUObjectName())
     {
@@ -138,7 +140,7 @@ void ComputeDevice::ApplyBindings()
 
     // Read-only textures were already handled through graphics in `ComputeDevice::SetReadTexture(...)`
 
-    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+    for (unsigned i = 0; i < MAX_COMPUTE_WRITE_TARGETS; ++i)
     {
         const auto& uav = uavs_[i];
         if (uavs_[i].object_)
@@ -157,7 +159,7 @@ void ComputeDevice::ApplyBindings()
         }
     }
 
-    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+    for (unsigned i = 0; i < MAX_COMPUTE_WRITE_TARGETS; ++i)
     {
         if (ssbos_[i].dirty_)
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, i, ssbos_[i].object_);
@@ -176,6 +178,8 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
 
 bool ComputeDevice::SetReadTexture(Texture* texture, unsigned unit)
 {
+    graphics_->ResetRenderTargets();
+
     graphics_->SetTexture(unit, texture);
     return true;
 }
@@ -198,7 +202,9 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     if (texture == nullptr)
         return false;
 
-    if (!texture || unit >= MAX_TEXTURE_UNITS)
+    graphics_->ResetRenderTargets();
+
+    if (!texture || unit >= MAX_COMPUTE_WRITE_TARGETS)
     {
         URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, attempted to assign write texture to out-of-bounds slot {}", unit);
         return false;
@@ -210,6 +216,13 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
         return false;
     }
 
+    // Clear out anything bound to read.
+    for (unsigned t = 0; t < MAX_TEXTURE_UNITS; ++t)
+    {
+        if (graphics_->textures_[t] == texture)
+            graphics_->SetTexture(t, nullptr);
+    }
+
     uavs_[unit].object_ = texture;
     uavs_[unit].mipLevel_ = mipLevel;
     uavs_[unit].layer_ = faceIndex;
@@ -218,14 +231,12 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
     if (auto tex2DArray = texture->Cast<Texture2DArray>())
     {
         uavs_[unit].layerCount_ = faceIndex == UINT_MAX ? tex2DArray->GetLayers() : 1;
-        if (faceIndex >= tex2DArray->GetLayers())
-            uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
+        uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
     }
     else if (auto texCube = texture->Cast<TextureCube>())
     {
         uavs_[unit].layerCount_ = faceIndex == UINT_MAX ? 6 : 1;
-        if (faceIndex >= 6)
-            uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
+        uavs_[unit].layer_ = faceIndex != UINT_MAX ? faceIndex : 0;
     }
     // Texture3D *SHOULD* work by default
 
@@ -280,11 +291,9 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
         return;
     }
 
-    glDispatchCompute(Max(xDim, 1), Max(yDim, 1), Max(zDim, 1));
-
     // check if there are any UAVs before deciding to place a barrier on images.
     bool anyUavs = false;
-    for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
+    for (unsigned i = 0; i < MAX_COMPUTE_WRITE_TARGETS; ++i)
     {
         if (uavs_[i].object_)
         {
@@ -293,12 +302,23 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
         }
     }
 
+    glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+    glDispatchCompute(Max(xDim, 1), Max(yDim, 1), Max(zDim, 1));
+
+    auto err = glGetError();
+    while (err != GL_NO_ERROR)
+    {
+        URHO3D_LOGERROR((const char*)glewGetErrorString(err));
+        err = glGetError();
+    }
+
     // The real necessity of this barrier depends on usage.
     // Example: if compute is done before render (ie. BeginFrame) and shadowmap reuse disabled
     //          then this barrier doesn't really contribute so long as a CS isn't writing to an 
     //          alpha-texture that a shadow pass is using.
+    // Not that this actually does anything.
     if (anyUavs)
-        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+        glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_SHADER_STORAGE_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT);
 }
 
 
