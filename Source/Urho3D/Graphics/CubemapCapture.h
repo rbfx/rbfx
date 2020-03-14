@@ -25,6 +25,7 @@
 #include "../Precompiled.h"
 
 #include "../Scene/Component.h"
+#include "../Graphics/TextureCube.h"
 
 namespace Urho3D
 {
@@ -77,6 +78,8 @@ public:
 
     /// Performs the render from the location of this object's Node. Must be called from outside of the core render-loop.
     void Render();
+    /// Runs the Filter_128 function on the target if it exists.
+    void Filter();
 
     /// Utility to render all dirty CubemapCapture components in the given scene. Optionally limit how many to process.
     static void RenderAll(SharedPtr<Scene> scene, unsigned maxCt = UINT_MAX);
@@ -85,20 +88,33 @@ public:
     /// Utility for determining the rotation required to face a cubemap axis for render-capture.
     static Quaternion CubeFaceRotation(CubeMapFace face);
 
+    /// Utility function for blurring cubemaps for use with IBL.
+    static SharedPtr<TextureCube> FilterCubemap(SharedPtr<TextureCube> cubeMap, unsigned rayCt);
+    /// Utility function for blurring cubemaps for use with IBL.
+    static void FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> >& cubemaps, const eastl::vector< SharedPtr<TextureCube> >& destCubemaps, unsigned rayCt) { FilterCubemaps(cubemaps, destCubemaps, eastl::vector<unsigned> { rayCt }); }
+    /// Utility function for blurring cubemaps, accepts a list raycast counts to provide the shaders.
+    static void FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> >& cubemaps, const eastl::vector< SharedPtr<TextureCube> >& destCubemaps, const eastl::vector<unsigned>& rayCts);
+    /// Sensible default setup for bluring 128x128 face cubemaps for IBL, using more rays as roughness increases.
+    static void FilterCubemaps_128(const eastl::vector< SharedPtr<TextureCube> >& cubemaps, const eastl::vector< SharedPtr<TextureCube> >& destCubes) { FilterCubemaps(cubemaps, destCubes, { 1, 8, 16, 16, 16, 16, 32, 32 }); }
+
 private:
     /// Set zone to use our target cube.
     void SetupZone();
+    /// Constructs the cubemaps if needed.
+    void SetupTextures();
 
     /// Renderpath to use.
     SharedPtr<RenderPath> renderPath_;
     /// Active cubemap target.
     SharedPtr<TextureCube> target_;
+    /// Filtered cubemap target.
+    SharedPtr<TextureCube> filtered_;
     /// Clip distance limit.
     float farDist_ = { 10000.0f };
     /// Length of cubemap face edge.
-    unsigned faceSize_ = { 64 };
+    unsigned faceSize_ = { 128 };
     /// Dirty indicator bit for rerender needs.
-    bool dirty_ = { false };
+    bool dirty_ = { true };
     /// Indicates the local cubemap should be the same as that for Zone component in the same node or the parent node.
     bool matchToZone_ = { false };
 };

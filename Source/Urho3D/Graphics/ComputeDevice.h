@@ -49,6 +49,9 @@ class ShaderVariation;
 class Texture;
 class VertexBuffer;
 
+//  On devices created at a Feature Level D3D_FEATURE_LEVEL_11_0, the maximum Compute Shader Unordered Access View slot is 7.
+#define MAX_COMPUTE_WRITE_TARGETS 6
+
 /// Common interface for GP-GPU that is responsible for dispatch and keeping track of the compute-specific state of the DX and GL APIs. Usage has no explicit rules but is most likely appropriate in
 /// event handlers for E_BEGINRENDERING, E_ENDRENDERING, E_BEGINVIEWUPDATE, E_BEGINVIEWRENDER, and other events that are clean segues.
 class URHO3D_API ComputeDevice : public Object
@@ -118,7 +121,7 @@ private:
     /// Constant buffer bindings.
     ID3D11Buffer* constantBuffers_[MAX_TEXTURE_UNITS];
     /// UAV targets for writing.
-    ID3D11UnorderedAccessView* uavs_[MAX_TEXTURE_UNITS];
+    ID3D11UnorderedAccessView* uavs_[MAX_COMPUTE_WRITE_TARGETS];
 #elif defined(URHO3D_OPENGL)
     /// OpenGL requires some additional information in order to make the bind since a UAV-object isn't a thing.
     struct WriteTexBinding

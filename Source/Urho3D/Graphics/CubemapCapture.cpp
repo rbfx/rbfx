@@ -36,6 +36,14 @@
 #include "../Graphics/View.h"
 #include "../Graphics/Zone.h"
 
+#ifdef URHO3D_COMPUTE
+    #include "../Graphics/ComputeDevice.h"
+#endif
+
+#include "../DebugNew.h"
+
+#pragma optimize("", off)
+
 namespace Urho3D
 {
 
@@ -65,12 +73,9 @@ void CubemapCapture::SetFaceSize(unsigned dim)
 
     if (target_.NotNull())
     {
-        target_.Reset(new TextureCube(GetContext()));
+        SetupTextures();
         SetupZone();
     }
-
-    if (target_)
-        target_->SetSize(faceSize_, Graphics::GetFloat32Format(), TEXTURE_RENDERTARGET, 1);
 }
 
 void CubemapCapture::SetTarget(SharedPtr<TextureCube> texTarget)
@@ -99,11 +104,7 @@ SharedPtr<RenderPath> CubemapCapture::GetRenderPath() const
 void CubemapCapture::Render()
 {
     if (target_.Null())
-    {
-        target_.Reset(new TextureCube(GetContext()));
-        target_->SetSize(faceSize_, Graphics::GetFloat32Format(), TEXTURE_RENDERTARGET, 1);
-        SetupZone();
-    }
+        SetupTextures();
     if (dirty_)
     {
         if (renderPath_.Null())
@@ -116,13 +117,25 @@ void CubemapCapture::Render()
         dataMap[CubemapCaptureUpdate::P_CAPTURE] = this;
         dataMap[CubemapCaptureUpdate::P_TEXTURE] = target_;
         SendEvent(E_CUBEMAPCAPTUREUPDATE, dataMap);
+
     }
+
+    SetupZone();
+    dirty_ = false;
+}
+
+void CubemapCapture::Filter()
+{
+    FilterCubemaps_128({ target_ }, { filtered_ });
+    SetupZone();
     dirty_ = false;
 }
 
 void CubemapCapture::RenderAll(SharedPtr<Scene> scene, unsigned maxCt)
 {
-    auto graphics = scene->GetSubsystem<Graphics>();
+    // If a caller's calculations gave a zero we'd make a dead BeginFrame/EndFrame scope.
+    if (maxCt == 0)
+        return;
 
     ea::vector<CubemapCapture*> captures;
     scene->GetComponents<CubemapCapture>(captures, true);
@@ -144,6 +157,7 @@ void CubemapCapture::RenderAll(SharedPtr<Scene> scene, unsigned maxCt)
     if (!anyDirty)
         return;
 
+    auto graphics = scene->GetSubsystem<Graphics>();
     if (!graphics->BeginFrame())
     {
         URHO3D_LOGERROR("CubemapCapture::RenderAll, failed to BeginFrame");
@@ -200,15 +214,14 @@ void CubemapCapture::Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> render
     camera->SetFarClip(farDist);
     camera->SetAspectRatio(1.0f);
 
-    Viewport vpt(context, scene, camera, renderPath);
-    vpt.SetRect(IntRect(0, 0, cubeTarget->GetWidth(), cubeTarget->GetHeight()));
+    Viewport vpt(context, scene, camera, IntRect(0, 0, cubeTarget->GetWidth(), cubeTarget->GetHeight()), renderPath);
     vpt.AllocateView();
 
     for (unsigned i = 0; i < MAX_CUBEMAP_FACES; ++i)
     {
         vpt.GetView()->Define(cubeTarget->GetRenderSurface((CubeMapFace)i), &vpt);
         cameraNode.SetWorldRotation(CubeFaceRotation((CubeMapFace)i));
-
+        vpt.GetView()->Update(FrameInfo { 0, 0.0f, { cubeTarget->GetWidth(), cubeTarget->GetHeight()}, camera });
         vpt.GetView()->Render();
     }    
 
@@ -245,25 +258,103 @@ Quaternion CubemapCapture::CubeFaceRotation(CubeMapFace face)
 
 void CubemapCapture::SetupZone()
 {
-    Zone* zone = nullptr;
+    if (GetNode() == nullptr)
+        return;
 
-    zone = GetNode()->GetComponent<Zone>();
+    Zone* zone = GetNode()->GetComponent<Zone>();
 
-    // check the parent too so we can have a position independent of the Zone centroid.
+    // check the parent too so we can have a capture position independent of the Zone centroid.
     if (zone == nullptr && GetNode()->GetParent())
         zone = GetNode()->GetParent()->GetComponent<Zone>();
 
     if (zone)
     {
+        auto tgt = filtered_.NotNull() ? filtered_ : target_;
+
         if (matchToZone_)
-            zone->SetZoneTexture(GetTarget());
-        else
+            zone->SetZoneTexture(tgt);
+        else if (zone->GetZoneTexture() == tgt) // if it's the same as us then clear it
+            zone->SetZoneTexture(nullptr);
+    }
+}
+
+void CubemapCapture::SetupTextures()
+{
+    target_.Reset(new TextureCube(GetContext()));
+    target_->SetNumLevels(1);
+    target_->SetSize(faceSize_, Graphics::GetRGBAFormat(), TEXTURE_RENDERTARGET);
+    target_->SetFilterMode(FILTER_BILINEAR);
+
+    filtered_.Reset(new TextureCube(GetContext()));
+    filtered_->SetSize(faceSize_, Graphics::GetRGBAFormat());
+    filtered_->SetFilterMode(FILTER_BILINEAR);
+}
+
+SharedPtr<TextureCube> CubemapCapture::FilterCubemap(SharedPtr<TextureCube> cubeMap, unsigned rayCt)
+{
+    eastl::vector< SharedPtr<TextureCube> > dest;
+    SharedPtr<TextureCube> copy(new TextureCube(cubeMap->GetContext()));
+    copy->SetSize(cubeMap->GetWidth(), cubeMap->GetFormat());
+    dest.push_back(copy);
+
+    FilterCubemaps({ cubeMap }, dest, eastl::vector<unsigned> { rayCt });
+
+    return dest.back();
+}
+
+void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> >& cubemaps, const eastl::vector< SharedPtr<TextureCube> >& destCubemaps, const eastl::vector<unsigned>& rayCounts)
+{
+    if (cubemaps.empty())
+        return;
+
+    unsigned firstDim = cubemaps[0]->GetWidth();
+    for (auto& c : cubemaps)
+    {
+        if (c->GetWidth() != firstDim)
         {
-            // if it's the same as us then clear it
-            if (zone->GetZoneTexture() == GetTarget())
-                zone->SetZoneTexture(nullptr);
+            URHO3D_LOGERROR("CubemapCapture::FilterCubemaps, all cubemaps must have the same dimensions");
+            return;
         }
     }
+
+#ifdef URHO3D_COMPUTE
+    unsigned levelCt = destCubemaps[0]->GetLevels();
+
+    auto graphics = cubemaps[0]->GetSubsystem<Graphics>();
+    auto cache = graphics->GetSubsystem<ResourceCache>();
+
+    float roughStep = 1.0f / (float)(levelCt - 1);
+
+    ea::vector< SharedPtr<ShaderVariation> > shaders;
+    for (unsigned i = 0; i < levelCt; ++i)
+    {
+        const unsigned w = destCubemaps[0]->GetLevelWidth(i);
+        const unsigned rayCt = rayCounts[Clamp<unsigned>(i, 0, rayCounts.size() - 1)]; // clip it to the first or last value if needed
+
+        shaders.push_back(SharedPtr<ShaderVariation>(graphics->GetShader(CS, "CS_CubeFilter", Format("RAY_COUNT={} FILTER_RES={} FILTER_INV_RES={} ROUGHNESS={}",
+            rayCt,
+            w,
+            1.0f / (float)w,
+            roughStep * i)
+        )));
+    }
+
+    // go through them cubemap -> level 
+    auto computeDevice = graphics->GetSubsystem<ComputeDevice>();
+    for (unsigned c = 0; c < cubemaps.size(); ++c)
+    {
+        auto& cube = cubemaps[c];
+        auto& destCube = destCubemaps[c];
+        computeDevice->SetReadTexture(cube, 0);
+        for (unsigned i = 0; i < levelCt; ++i)
+        {
+            computeDevice->SetWriteTexture(destCube, 1, UINT_MAX, i);
+            computeDevice->SetProgram(shaders[i]);
+            computeDevice->Dispatch(destCube->GetLevelWidth(i), destCube->GetLevelHeight(i), 6);
+        }
+    }
+
+#endif
 }
 
 }

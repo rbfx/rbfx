@@ -38,6 +38,8 @@
 #include "../../Graphics/GraphicsEvents.h"
 #include "../../Graphics/GraphicsImpl.h"
 
+#pragma optimize("", off)
+
 namespace Urho3D
 {
 
@@ -80,6 +82,9 @@ bool ComputeDevice::SetReadTexture(Texture* texture, unsigned unit)
     }
     if (shaderResourceViews_[unit] != texture->GetGPUObject())
     {
+        if (texture->GetParametersDirty())
+            texture->UpdateParameters();
+
         samplerBindings_[unit] = (ID3D11SamplerState*)texture->GetSampler();
         shaderResourceViews_[unit] = (ID3D11ShaderResourceView*)texture->GetShaderResourceView();
         samplersDirty_ = true;
@@ -107,7 +112,7 @@ bool ComputeDevice::SetConstantBuffer(ConstantBuffer* buffer, unsigned unit)
 
 bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned faceIndex, unsigned mipLevel)
 {
-    if (unit >= MAX_TEXTURE_UNITS)
+    if (unit >= MAX_COMPUTE_WRITE_TARGETS)
     {
         URHO3D_LOGERROR("ComputeDevice::SetWriteTexture, invalid unit {} specified", unit);
         return false;
@@ -284,11 +289,18 @@ void ComputeDevice::ApplyBindings()
 {
     auto d3dContext = graphics_->GetImpl()->GetDeviceContext();
 
+    if (texturesDirty_)
+    {
+        // attempting to sample an active render-target doesn't work...
+        graphics_->SetRenderTarget(0, (RenderSurface*)nullptr);
+        // ...so make certain the deed is done.
+        d3dContext->OMSetRenderTargets(0, nullptr, nullptr);
+
+        d3dContext->CSSetShaderResources(0, MAX_TEXTURE_UNITS, shaderResourceViews_);
+    }
+
     if (samplersDirty_)
         d3dContext->CSSetSamplers(0, MAX_TEXTURE_UNITS, samplerBindings_);
-
-    if (texturesDirty_)
-        d3dContext->CSSetShaderResources(0, MAX_TEXTURE_UNITS, shaderResourceViews_);
 
     if (constantBuffersDirty_)
         d3dContext->CSSetConstantBuffers(0, MAX_TEXTURE_UNITS, constantBuffers_);
@@ -297,7 +309,7 @@ void ComputeDevice::ApplyBindings()
     {
         unsigned deadCounts[16];
         ZeroMemory(deadCounts, sizeof(deadCounts));
-        d3dContext->CSSetUnorderedAccessViews(0, MAX_TEXTURE_UNITS, uavs_, nullptr);
+        d3dContext->CSSetUnorderedAccessViews(0, MAX_COMPUTE_WRITE_TARGETS, uavs_, nullptr);
     }
 
     if (programDirty_)
@@ -342,9 +354,7 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
 
     auto d3dContext = graphics_->GetImpl()->GetDeviceContext();
     if (computeShader_.NotNull())
-    {
         d3dContext->Dispatch(xDim, yDim, zDim);
-    }
 }
 
 void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eventData)
@@ -361,7 +371,7 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
 
         for (auto& entry : foundUAV->second)
         {
-            uavsDirty_ |= ComputeDevice_ClearUAV(entry.uav_, uavs_, MAX_TEXTURE_UNITS);
+            uavsDirty_ |= ComputeDevice_ClearUAV(entry.uav_, uavs_, MAX_COMPUTE_WRITE_TARGETS);
             URHO3D_SAFE_RELEASE(entry.uav_);
         }
 
@@ -377,6 +387,15 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
             {
                 shaderResourceViews_[i] = nullptr;
                 texturesDirty_ = true;
+            }
+        }
+
+        for (unsigned i = 0; i < MAX_COMPUTE_WRITE_TARGETS; ++i)
+        {
+            if (uavs_[i] == foundBuffUAV->second)
+            {
+                uavs_[i] = nullptr;
+                uavsDirty_ = true;
             }
         }
 
