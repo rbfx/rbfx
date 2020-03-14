@@ -25,6 +25,7 @@
 #include "../../Core/Context.h"
 #include "../../Graphics/Graphics.h"
 #include "../../Graphics/GraphicsImpl.h"
+#include "../../Graphics/GraphicsEvents.h"
 #include "../../Graphics/IndexBuffer.h"
 #include "../../IO/Log.h"
 
@@ -46,6 +47,10 @@ void IndexBuffer::OnDeviceReset()
 void IndexBuffer::Release()
 {
     Unlock();
+
+    VariantMap& eventData = GetEventDataMap();
+    eventData[GPUResourceReleased::P_OBJECT] = this;
+    SendEvent(E_GPURESOURCERELEASED, eventData);
 
     if (graphics_ && graphics_->GetIndexBuffer() == this)
         graphics_->SetIndexBuffer(nullptr);
@@ -243,6 +248,8 @@ bool IndexBuffer::Create()
         bufferDesc.CPUAccessFlags = dynamic_ ? D3D11_CPU_ACCESS_WRITE : 0;
         bufferDesc.Usage = dynamic_ ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         bufferDesc.ByteWidth = (UINT)(indexCount_ * indexSize_);
+        if (!dynamic_)
+            bufferDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
         HRESULT hr = graphics_->GetImpl()->GetDevice()->CreateBuffer(&bufferDesc, nullptr, (ID3D11Buffer**)&object_.ptr_);
         if (FAILED(hr))
