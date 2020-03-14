@@ -242,7 +242,7 @@ bool VertexBuffer::Create()
 {
     Release();
 
-    if (!vertexCount_ || !elementMask_)
+    if (!vertexCount_ || (!elementMask_ && elements_.empty()))
         return true;
 
     if (graphics_)
@@ -250,6 +250,10 @@ bool VertexBuffer::Create()
         D3D11_BUFFER_DESC bufferDesc;
         memset(&bufferDesc, 0, sizeof bufferDesc);
         bufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+
+        if (!dynamic_)
+            bufferDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
+
         bufferDesc.CPUAccessFlags = dynamic_ ? D3D11_CPU_ACCESS_WRITE : 0;
         bufferDesc.Usage = dynamic_ ? D3D11_USAGE_DYNAMIC : D3D11_USAGE_DEFAULT;
         bufferDesc.ByteWidth = (UINT)(vertexCount_ * vertexSize_);
