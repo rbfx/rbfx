@@ -71,6 +71,8 @@ public:
     inline unsigned GetFaceSize() const { return faceSize_; }
     /// Returns the active target cubemap.
     SharedPtr<TextureCube> GetTarget() const;
+    /// Returns the filtered cubemap.
+    SharedPtr<TextureCube> GetFiltered() const;
     /// Returns the active render-path.
     SharedPtr<RenderPath> GetRenderPath() const;
     /// Returns true if the zone should be using the same texture.
