@@ -246,18 +246,23 @@ bool ComputeDevice::SetWritableBuffer(Object* object, unsigned slot)
     ZeroMemory(&viewDesc, sizeof viewDesc);
     viewDesc.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 
-    if (auto cbuffer = object->Cast<ConstantBuffer>())
+    ID3D11Buffer* buffer = nullptr;
+    //if (auto cbuffer = object->Cast<ConstantBuffer>())
+    //{
+    //    buffer = (ID3D11Buffer*)cbuffer->GetGPUObject();
+    //    viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+    //    viewDesc.Buffer.NumElements = cbuffer->GetSize() / sizeof(Vector4);
+    //}
+    //else
+    if (auto vbuffer = object->Cast<VertexBuffer>())
     {
-        viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-        viewDesc.Buffer.NumElements = cbuffer->GetSize() / sizeof(Vector4);
-    }
-    else if (auto vbuffer = object->Cast<VertexBuffer>())
-    {
+        buffer = (ID3D11Buffer*)vbuffer->GetGPUObject();
         viewDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
         viewDesc.Buffer.NumElements = vbuffer->GetElements().size() * vbuffer->GetVertexCount();
     }
     else if (auto ibuffer = object->Cast<IndexBuffer>())
     {
+        buffer = (ID3D11Buffer*)ibuffer->GetGPUObject();
         if (ibuffer->GetIndexSize() == sizeof(unsigned short))
             viewDesc.Format = DXGI_FORMAT_R16_UINT;
         else
@@ -265,8 +270,12 @@ bool ComputeDevice::SetWritableBuffer(Object* object, unsigned slot)
 
         viewDesc.Buffer.NumElements = ibuffer->GetIndexCount();
     }
+    else
+    {
+        URHO3D_LOGERROR("ComputeDevice::SetWritableBuffer, cannot bind {} as write target", object->GetTypeName());
+        return false;
+    }
 
-    ID3D11Buffer* buffer = (ID3D11Buffer*)((GPUObject*)object)->GetGPUObject();
     ID3D11UnorderedAccessView* uav = nullptr;
     auto hr = graphics_->GetImpl()->GetDevice()->CreateUnorderedAccessView(buffer, &viewDesc, &uav);
     if (FAILED(hr))
