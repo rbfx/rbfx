@@ -96,6 +96,11 @@ SharedPtr<TextureCube> CubemapCapture::GetTarget() const
     return target_;
 }
 
+SharedPtr<TextureCube> CubemapCapture::GetFiltered() const
+{
+    return filtered_;
+}
+
 SharedPtr<RenderPath> CubemapCapture::GetRenderPath() const
 {
     return renderPath_;
@@ -125,7 +130,11 @@ void CubemapCapture::Render()
 
 void CubemapCapture::Filter()
 {
-    FilterCubemaps_128({ target_ }, { filtered_ });
+    if (faceSize_ == 128)
+        FilterCubemaps_128({ target_ }, { filtered_ });
+    else
+        FilterCubemaps({ target_ }, { filtered_ }, { 1, 8, 16 });
+
     SetupZone();
     dirty_ = false;
 }
