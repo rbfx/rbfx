@@ -228,7 +228,7 @@ void VertexBuffer::Unlock()
 
 bool VertexBuffer::Create()
 {
-    if (!vertexCount_ || !elementMask_)
+    if (!vertexCount_ || (!elementMask_ && elements_.empty()))
     {
         Release();
         return true;
