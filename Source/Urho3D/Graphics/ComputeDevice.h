@@ -119,7 +119,7 @@ private:
     /// List of SRV bindings (textures or buffers).
     ID3D11ShaderResourceView* shaderResourceViews_[MAX_TEXTURE_UNITS];
     /// Constant buffer bindings.
-    ID3D11Buffer* constantBuffers_[MAX_TEXTURE_UNITS];
+    ID3D11Buffer* constantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// UAV targets for writing.
     ID3D11UnorderedAccessView* uavs_[MAX_COMPUTE_WRITE_TARGETS];
 #elif defined(URHO3D_OPENGL)
