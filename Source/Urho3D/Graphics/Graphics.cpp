@@ -28,6 +28,7 @@
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
 #include "../Graphics/ConstantBuffer.h"
+#include "../Graphics/CubemapCapture.h"
 #include "../Graphics/Geometry.h"
 #include "../Graphics/CustomGeometry.h"
 #include "../Graphics/DebugRenderer.h"
@@ -658,6 +659,7 @@ void RegisterGraphicsLibrary(Context* context)
     Viewport::RegisterObject(context);
     OcclusionBuffer::RegisterObject(context);
 
+    CubemapCapture::RegisterObject(context);
 #ifdef URHO3D_COMPUTE
     ComputeBuffer::RegisterObject(context);
 #endif
