@@ -303,7 +303,7 @@ void ComputeDevice::ApplyBindings()
         d3dContext->CSSetSamplers(0, MAX_TEXTURE_UNITS, samplerBindings_);
 
     if (constantBuffersDirty_)
-        d3dContext->CSSetConstantBuffers(0, MAX_TEXTURE_UNITS, constantBuffers_);
+        d3dContext->CSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, constantBuffers_);
 
     if (uavsDirty_)
     {
