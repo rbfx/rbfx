@@ -75,8 +75,6 @@ void ComputeDevice::ApplyBindings()
     if (!computeShader_)
         return;
 
-    graphics_->ResetRenderTargets();
-
     // Does the shader require compilation?
     if (!computeShader_->GetGPUObjectName())
     {
@@ -178,7 +176,15 @@ void ComputeDevice::HandleGPUResourceRelease(StringHash eventID, VariantMap& eve
 
 bool ComputeDevice::SetReadTexture(Texture* texture, unsigned unit)
 {
-    graphics_->ResetRenderTargets();
+    // backup-texture handling will mess everything up if there's a target sitting in a slot, on GL we don't actually care about what's really bound
+    for (auto& rt : graphics_->renderTargets_)
+    {
+        if (rt && rt->GetParentTexture() == texture)
+        {
+            graphics_->ResetRenderTargets();
+            break;
+        }
+    }
 
     graphics_->SetTexture(unit, texture);
     return true;
@@ -201,8 +207,6 @@ bool ComputeDevice::SetWriteTexture(Texture* texture, unsigned unit, unsigned fa
 {
     if (texture == nullptr)
         return false;
-
-    graphics_->ResetRenderTargets();
 
     if (!texture || unit >= MAX_COMPUTE_WRITE_TARGETS)
     {
@@ -300,9 +304,15 @@ void ComputeDevice::Dispatch(unsigned xDim, unsigned yDim, unsigned zDim)
             anyUavs = true;
             break;
         }
+
+        if (ssbos_[i].object_)
+        {
+            anyUavs = true;
+            break;
+        }
     }
 
-    glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT);
+    glMemoryBarrier(GL_FRAMEBUFFER_BARRIER_BIT | GL_TEXTURE_UPDATE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
     glDispatchCompute(Max(xDim, 1), Max(yDim, 1), Max(zDim, 1));
 
     auto err = glGetError();

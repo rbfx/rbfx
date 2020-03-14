@@ -58,14 +58,14 @@ bool ComputeBuffer::SetSize(unsigned bytes, unsigned structureSize)
     if (object_.name_)
         Release();
 
+    size_ = bytes;
+    structureSize_ = structureSize;
+
     if (size_ == 0 || structureSize_ == 0)
     {
         URHO3D_LOGERROR("Unable to created ComputeBuffer with size: {} and struct-size: {}", size_, structureSize_);
         return false;
     }
-
-    size_ = bytes;
-    structureSize_ = structureSize;
 
     glGenBuffers(1, &object_.name_);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, object_.name_);
@@ -78,7 +78,7 @@ bool ComputeBuffer::SetData(void* data, unsigned dataSize, unsigned structureSiz
     if (object_.name_ == 0)
         return false;
 
-    if (!graphics_->IsDeviceLost())
+    if (graphics_->IsDeviceLost())
     {
         URHO3D_LOGERROR("ComptueBuffer::SetData, attempted to call while device is lost");
         return false;
@@ -94,9 +94,7 @@ bool ComputeBuffer::SetData(void* data, unsigned dataSize, unsigned structureSiz
     }
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, object_.name_);
-    GLvoid* mappedData = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_WRITE_ONLY);
-    memcpy(mappedData, &data, dataSize);
-    glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+    glBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, dataSize, data);
     return true;
 }
 
@@ -105,14 +103,21 @@ bool ComputeBuffer::GetData(void* writeInto, unsigned offset, unsigned readLengt
     if (object_.name_ == 0)
         return false;
 
-    if (!graphics_->IsDeviceLost())
+    if (graphics_->IsDeviceLost())
     {
-        URHO3D_LOGERROR("ComptueBuffer::GetData, attempted to call while device is lost");
+        URHO3D_LOGERROR("ComputeBuffer::GetData, attempted to call while device is lost");
         return false;
     }
 
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, object_.name_);
     GLvoid* mappedData = glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+
+    if (mappedData == nullptr)
+    {
+        URHO3D_LOGERROR("ComputeBuffer::GetData, failed to map");
+        return false;
+    }
+
     memcpy(writeInto, ((unsigned char*)mappedData) + offset, readLength);
     glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
     return true;
