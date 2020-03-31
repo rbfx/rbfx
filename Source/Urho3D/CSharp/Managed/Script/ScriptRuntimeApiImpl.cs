@@ -122,7 +122,6 @@ namespace Urho3DNet
             var scriptRsrcs = new StringList();
             var scriptCodes = new List<string>();
             var sourceFiles = new List<string>();
-            bool compileFromText = false;
             Context.Instance.Cache.Scan(scriptRsrcs, "", "*.cs", Urho3D.ScanFiles, true);
             foreach (string fileName in scriptRsrcs)
             {
@@ -131,9 +130,9 @@ namespace Urho3DNet
                     // Gather both paths and code text here. If scripts are packaged we must compile them from
                     // text form. However if we are running a development version of application we prefer to
                     // compile scripts directly from file because then we get proper error locations.
-                    compileFromText |= file.IsPackaged();
-                    scriptCodes.Add(file.ReadString());
-                    if (!compileFromText)
+                    if (file.IsPackaged())
+                        scriptCodes.Add(file.ReadString());
+                    else
                     {
                         string path = Context.Instance.Cache.GetResourceFileName(fileName);
                         path = Urho3D.GetAbsolutePath(path);
@@ -142,9 +141,6 @@ namespace Urho3DNet
                     }
                 }
             }
-
-            if (sourceFiles.Count == 0)
-                return null;
 
             var csc = new CSharpCodeProvider();
             var compileParameters = new CompilerParameters(new[] // TODO: User may need to extend this list
@@ -166,40 +162,44 @@ namespace Urho3DNet
                 TreatWarningsAsErrors = false,
             };
 
-            CompilerResults results;
-            if (compileFromText)
+            CompilerResults results = null;
+            if (scriptCodes.Count > 0)
                 results = csc.CompileAssemblyFromSource(compileParameters, scriptCodes.ToArray());
-            else
+            else if (sourceFiles.Count > 0)
                 results = csc.CompileAssemblyFromFile(compileParameters, sourceFiles.ToArray());
-
-            if (results.Errors.HasErrors)
-            {
-                foreach (CompilerError error in results.Errors)
-                {
-                    string resourceName = error.FileName;
-                    foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
-                    {
-                        if (resourceName.StartsWith(resourceDir))
-                        {
-                            resourceName = resourceName.Substring(resourceDir.Length);
-                            break;
-                        }
-                    }
-
-                    string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
-                    if (error.IsWarning)
-                        Log.Warning(message);
-                    else
-                        Log.Error(message);
-                }
-
-                return null;
-            }
 
             // New projects may have no C# scripts. In this case a dummy plugin instance that does nothing will be
             // returned. Once new scripts appear - plugin will be reloaded properly.
             var plugin = new RuntimeCompiledScriptPluginApplication(Context.Instance);
-            plugin.SetHostAssembly(results.CompiledAssembly);
+
+            if (results != null)
+            {
+                if (results.Errors.HasErrors)
+                {
+                    foreach (CompilerError error in results.Errors)
+                    {
+                        string resourceName = error.FileName;
+                        foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
+                        {
+                            if (resourceName.StartsWith(resourceDir))
+                            {
+                                resourceName = resourceName.Substring(resourceDir.Length);
+                                break;
+                            }
+                        }
+
+                        string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
+                        if (error.IsWarning)
+                            Log.Warning(message);
+                        else
+                            Log.Error(message);
+                    }
+
+                    return null;
+                }
+                plugin.SetHostAssembly(results.CompiledAssembly);
+            }
+
             return plugin;
         }
     }
