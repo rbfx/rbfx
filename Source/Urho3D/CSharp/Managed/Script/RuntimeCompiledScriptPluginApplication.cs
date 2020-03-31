@@ -19,12 +19,14 @@ namespace Urho3DNet
 
         public override void Load()
         {
-            Context.RegisterFactories(_hostAssembly);
+            if (_hostAssembly != null)
+                Context.RegisterFactories(_hostAssembly);
         }
 
         public override void Unload()
         {
-            Context.RemoveFactories(_hostAssembly);
+            if (_hostAssembly != null)
+                Context.RemoveFactories(_hostAssembly);
         }
     }
 }
