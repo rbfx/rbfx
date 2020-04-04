@@ -413,7 +413,7 @@ bool ui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, Im
     if (SetDragDropPayload(type, nullptr, 0, cond))
     {
         auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-        systemUI->GetContext()->SetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type), variant);
+        systemUI->GetContext()->SetGlobalVar("SystemUI_Drag&Drop_Value", variant);
         return true;
     }
     return false;
@@ -421,10 +421,17 @@ bool ui::SetDragDropVariant(const char* type, const Urho3D::Variant& variant, Im
 
 const Urho3D::Variant& ui::AcceptDragDropVariant(const char* type, ImGuiDragDropFlags flags)
 {
-    if (AcceptDragDropPayload(type, flags))
+    if (const ImGuiPayload* payload = GetDragDropPayload())
     {
-        auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
-        return systemUI->GetContext()->GetGlobalVar(Urho3D::ToString("SystemUI_Drag&Drop_%s", type));
+        Urho3D::StringVector types = ea::string(payload->DataType).split(',');
+        for (const ea::string& t : types)
+        {
+            if (t == type && AcceptDragDropPayload(payload->DataType, flags))
+            {
+                auto* systemUI = static_cast<Urho3D::SystemUI*>(GetIO().UserData);
+                return systemUI->GetContext()->GetGlobalVar("SystemUI_Drag&Drop_Value");
+            }
+        }
     }
     return Urho3D::Variant::EMPTY;
 }

@@ -81,13 +81,6 @@ URHO3D_EVENT(E_EDITORRESOURCESELECTED, EditorResourceSelected)
     URHO3D_PARAM(P_RESOURCENAME, ResourceName);         // String
 }
 
-/// Sent when user right-clicks a resource in resource browser. Use for extending context menu.
-URHO3D_EVENT(E_EDITORRESOURCECONTEXTMENU, EditorResourceContextMenu)
-{
-    URHO3D_PARAM(P_CTYPE, CType);                       // ContentType
-    URHO3D_PARAM(P_RESOURCENAME, ResourceName);         // String
-}
-
 /// Sent when user adds a new flavor.
 URHO3D_EVENT(E_EDITORFLAVORADDED, EditorFlavorAdded)
 {
