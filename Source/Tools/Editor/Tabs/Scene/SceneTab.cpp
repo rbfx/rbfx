@@ -263,7 +263,10 @@ bool SceneTab::RenderWindowContent()
             }
         }
         else
+        {
             ClearSelection();
+            OnNodeSelectionChanged();
+        }
     }
 
     RenderNodeContextMenu();
@@ -461,10 +464,11 @@ void SceneTab::OnNodeSelectionChanged()
 
     auto* inspector = GetSubsystem<InspectorTab>();
     auto* editor = GetSubsystem<Editor>();
-    inspector->Clear();
     int inspectedNodes = 0;
     int inspectedComponents = 0;
     Node* lastInspectedNode = nullptr;
+
+    inspector->Clear();
 
     // Inspect all selected nodes.
     for (Node* node : selectedNodes_)
@@ -943,7 +947,10 @@ void SceneTab::RenderNodeContextMenu()
                                     if (!selectedNode.Expired())
                                     {
                                         if (selectedNode->CreateComponent(StringHash(component), alternative ? LOCAL : REPLICATED))
+                                        {
                                             openHierarchyNodes_.push_back(selectedNode);
+                                            OnNodeSelectionChanged();
+                                        }
                                     }
                                 }
                             }
@@ -1273,7 +1280,6 @@ void SceneTab::ClearSelection()
     {
         selectedNodes_.clear();
         selectedComponents_.clear();
-        OnNodeSelectionChanged();
     }
 }
 
@@ -1409,6 +1415,7 @@ void SceneTab::PasteNextToSelection()
     result = clipboard_.Paste(target);
 
     ClearSelection();
+    OnNodeSelectionChanged();
 
     for (Node* node : result.nodes_)
         Select(node);
@@ -1427,6 +1434,7 @@ void SceneTab::PasteIntoSelection()
         result = clipboard_.Paste(selection);
 
     ClearSelection();
+    OnNodeSelectionChanged();
 
     for (Node* node : result.nodes_)
         Select(node);
