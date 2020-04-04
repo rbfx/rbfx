@@ -168,7 +168,7 @@ bool SceneTab::RenderWindowContent()
     ui::ImageItem(texture_, rect.GetSize());
     isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
     isClickedLeft = ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT);
-    isClickedRight = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT) && input->IsMouseVisible();
+    isClickedRight = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT) && ui::GetMouseCursor() != ImGuiMouseCursor_None;
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     viewportSplitter_.Merge(window->DrawList);
 
