@@ -47,6 +47,13 @@ enum class AttributeInspectorModified : unsigned
 };
 URHO3D_FLAGSET(AttributeInspectorModified, AttributeInspectorModifiedFlags);
 
+enum class AttributeValueKind
+{
+    ATTRIBUTE_VALUE_DEFAULT,
+    ATTRIBUTE_VALUE_INHERITED,
+    ATTRIBUTE_VALUE_CUSTOM,
+};
+
 URHO3D_EVENT(E_INSPECTORLOCATERESOURCE, InspectorLocateResource)
 {
     URHO3D_PARAM(P_NAME, ResourceName);                                         // String

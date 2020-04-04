@@ -33,7 +33,6 @@
 #include <Urho3D/Resource/ResourceEvents.h>
 
 #include <Toolbox/SystemUI/Widgets.h>
-#include <Toolbox/SystemUI/ResourceBrowser.h>
 
 #include "Editor.h"
 #include "EditorEvents.h"

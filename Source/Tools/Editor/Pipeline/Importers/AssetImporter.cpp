@@ -64,7 +64,7 @@ void AssetImporter::OnRenderInspectorAttribute(StringHash, VariantMap& args)
 {
     using namespace AttributeInspectorAttribute;
     if (isAttributeSet_[reinterpret_cast<AttributeInfo*>(args[P_ATTRIBUTEINFO].GetVoidPtr())->name_])
-        args[P_COLOR] = Color::WHITE;
+        args[P_VALUE_KIND] = (int)AttributeValueKind::ATTRIBUTE_VALUE_CUSTOM;
 }
 
 bool AssetImporter::Execute(Urho3D::Asset* input, const ea::string& outputPath)
