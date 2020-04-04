@@ -43,7 +43,7 @@ NodeInspector::NodeInspector(Context* context)
 
 void NodeInspector::RenderInspector(InspectArgs& args)
 {
-    auto* node = args.object_->Cast<Node>();
+    auto* node = args.object_.Expired() ? nullptr : args.object_->Cast<Node>();
     if (node == nullptr)
         return;
 
