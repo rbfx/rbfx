@@ -39,7 +39,7 @@ SerializableInspector::SerializableInspector(Context* context)
 
 void SerializableInspector::RenderInspector(InspectArgs& args)
 {
-    auto* serializable = args.object_->Cast<Serializable>();
+    auto* serializable = args.object_.Expired() ? nullptr : args.object_->Cast<Serializable>();
     if (serializable == nullptr || args.handledTimes_ > 0)
         return;
 

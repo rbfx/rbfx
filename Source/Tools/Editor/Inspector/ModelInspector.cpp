@@ -41,7 +41,7 @@ ModelInspector::ModelInspector(Context* context)
 
 void ModelInspector::RenderInspector(InspectArgs& args)
 {
-    auto* model = args.object_->Cast<Model>();
+    auto* model = args.object_.Expired() ? nullptr : args.object_->Cast<Model>();
     if (model == nullptr)
         return;
 

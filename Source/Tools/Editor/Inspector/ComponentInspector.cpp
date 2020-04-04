@@ -42,7 +42,7 @@ ComponentInspector::ComponentInspector(Context* context)
 
 void ComponentInspector::RenderInspector(InspectArgs& args)
 {
-    auto* component = args.object_->Cast<Component>();
+    auto* component = args.object_.Expired() ? nullptr : args.object_->Cast<Component>();
     if (component == nullptr)
         return;
 

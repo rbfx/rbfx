@@ -44,7 +44,7 @@ SoundInspector::SoundInspector(Context* context)
 
 void SoundInspector::RenderInspector(InspectArgs& args)
 {
-    auto* asset = args.object_->Cast<Sound>();
+    auto* asset = args.object_.Expired() ? nullptr : args.object_->Cast<Sound>();
     if (asset == nullptr)
         return;
 

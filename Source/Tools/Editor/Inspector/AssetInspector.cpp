@@ -40,7 +40,7 @@ AssetInspector::AssetInspector(Context* context)
 
 void AssetInspector::RenderInspector(InspectArgs& args)
 {
-    auto* asset = static_cast<Asset*>(args.object_->Cast<Asset>());
+    auto* asset = args.object_.Expired() ? nullptr : args.object_->Cast<Asset>();
     if (asset == nullptr)
         return;
 
