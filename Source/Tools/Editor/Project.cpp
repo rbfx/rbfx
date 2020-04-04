@@ -91,6 +91,7 @@ Project::~Project()
         cache->RemoveResourceDir(GetCachePath());
         for (const ea::string& resourcePath : resourcePaths_)
             cache->RemoveResourceDir(projectFileDir_ + resourcePath);
+        cache->AddResourceDir(coreDataPath_);
         cache->SetAutoReloadResources(false);
     }
 
@@ -133,7 +134,10 @@ bool Project::LoadProject(const ea::string& projectPath)
 
     // Default resources directory for new projects.
     if (resourcePaths_.empty())
+    {
         resourcePaths_.push_back("Resources/");
+        resourcePaths_.push_back("CoreData/");
+    }
 
     // Default resource path is first resource directory in the list.
     defaultResourcePath_ = projectFileDir_ + resourcePaths_.front();
@@ -164,6 +168,20 @@ bool Project::LoadProject(const ea::string& projectPath)
         }
     }
 #endif
+
+    // Find CoreData path, it will be useful for other subsystems later.
+    for (const ea::string& resourcePath : cache->GetResourceDirs())
+    {
+        if (resourcePath.ends_with("/CoreData/"))
+        {
+            coreDataPath_ = resourcePath;
+            break;
+        }
+    }
+    assert(!coreDataPath_.empty());
+    cache->RemoveResourceDir(coreDataPath_);
+    if (!fs->DirExists(projectFileDir_ + "CoreData/"))
+        fs->CopyDir(coreDataPath_, projectFileDir_ + "CoreData/");
 
     // Register asset dirs
     cache->AddResourceDir(GetCachePath(), 0);
@@ -279,10 +297,7 @@ bool Project::Serialize(Archive& archive)
         if (archive.IsInput())
         {
             for (ea::string& path : resourcePaths_)
-            {
-                if (!path.ends_with("/"))
-                    path.append("/");
-            }
+                path = AddTrailingSlash(path);
         }
 
         if (!pipeline_->Serialize(archive))
@@ -462,11 +477,18 @@ void Project::RenderSettingsUI()
                     defaultResourcePath_ = projectFileDir_ + resourcePaths_[0];
             }
 
-            if (i == 0)
+            // Deleting CoreData is unsafe.
+            if (i == 0 || resourcePaths_[i] == "CoreData/")
+            {
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
-            bool deleted = ui::Button(ICON_FA_TRASH_ALT) && i > 0;
+                ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
+            }
+            bool deleted = ui::Button(ICON_FA_TRASH_ALT);
             if (i == 0)
+            {
+                ui::PopItemFlag();
                 ui::PopStyleColor();        // ImGuiCol_TextDisabled
+            }
             ui::SameLine();
 
             ui::TextUnformatted(resourcePaths_[i].c_str());
