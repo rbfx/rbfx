@@ -101,7 +101,8 @@
         _disposing = false;
         if (!Expired) {
           // Finalizer should only execute if only .NET held references to a managed object and lost them.
-          global::System.Diagnostics.Debug.Assert(ScriptRefs() == Refs());
+          if (ScriptRefs() != Refs())
+            System.Console.WriteLine($"Object of type '{GetType().Name}' has native references during execution of finalizer. This is a bug!");
           // Release all references but one here on this thread.
           while (ScriptRefs() > 1)
             ReleaseRef();
