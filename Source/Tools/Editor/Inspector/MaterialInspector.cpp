@@ -61,7 +61,7 @@ MaterialInspector::MaterialInspector(Context* context)
 
 void MaterialInspector::RenderInspector(InspectArgs& args)
 {
-    auto* material = args.object_->Cast<Material>();
+    auto* material = args.object_.Expired() ? nullptr : args.object_->Cast<Material>();
     if (material == nullptr)
         return;
 
