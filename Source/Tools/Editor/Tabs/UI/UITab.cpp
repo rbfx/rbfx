@@ -69,8 +69,8 @@ UITab::UITab(Context* context)
 
     undo_->Connect(static_cast<UIElement*>(rootElement_.Get()), this);
 
-    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTORMENU, std::bind(&UITab::AttributeMenu, this, _2));
-    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTOATTRIBUTE, std::bind(&UITab::AttributeCustomize, this, _2));
+    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTORMENU, URHO3D_HANDLER(UITab, AttributeMenu));
+    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTOATTRIBUTE, URHO3D_HANDLER(UITab, AttributeCustomize));
 
     AutoLoadDefaultStyle();
 }
@@ -732,7 +732,7 @@ void UITab::GetStyleData(const AttributeInfo& info, XMLElement& style, XMLElemen
         value = GetVariantFromXML(attribute, info);
 }
 
-void UITab::AttributeMenu(VariantMap& args)
+void UITab::AttributeMenu(StringHash, VariantMap& args)
 {
     using namespace AttributeInspectorMenu;
 
@@ -781,7 +781,7 @@ void UITab::AttributeMenu(VariantMap& args)
     }
 }
 
-void UITab::AttributeCustomize(VariantMap& args)
+void UITab::AttributeCustomize(StringHash, VariantMap& args)
 {
     if (GetSelected() == nullptr)
         return;
@@ -801,12 +801,12 @@ void UITab::AttributeCustomize(VariantMap& args)
     {
         if (styleVariant == value)
         {
-            args[P_COLOR] = Color::GRAY;
+            args[P_VALUE_KIND] = (int)AttributeValueKind::ATTRIBUTE_VALUE_DEFAULT;
             args[P_TOOLTIP] = "Value inherited from style.";
         }
         else
         {
-            args[P_COLOR] = Color::GREEN;
+            args[P_VALUE_KIND] = (int)AttributeValueKind::ATTRIBUTE_VALUE_INHERITED;
             args[P_TOOLTIP] = "Style value was modified.";
         }
     }
