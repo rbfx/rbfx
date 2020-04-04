@@ -39,7 +39,7 @@ UIElementInspector::UIElementInspector(Context* context)
 
 void UIElementInspector::RenderInspector(InspectArgs& args)
 {
-    auto* element = args.object_->Cast<UIElement>();
+    auto* element = args.object_.Expired() ? nullptr : args.object_->Cast<UIElement>();
     if (element == nullptr)
         return;
 
