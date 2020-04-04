@@ -37,7 +37,6 @@
 #include <Urho3D/Resource/JSONArchive.h>
 
 #include <Toolbox/SystemUI/Widgets.h>
-#include <Toolbox/SystemUI/ResourceBrowser.h>
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 
 #include <EASTL/sort.h>
@@ -49,6 +48,7 @@
 #include "Plugins/PluginManager.h"
 #include "Plugins/ModulePlugin.h"
 #include "Tabs/InspectorTab.h"
+#include "Tabs/ResourceTab.h"
 
 namespace Urho3D
 {

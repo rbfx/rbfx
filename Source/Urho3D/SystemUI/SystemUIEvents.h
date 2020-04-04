@@ -59,6 +59,7 @@ URHO3D_EVENT(E_ATTRIBUTEINSPECTOATTRIBUTE, AttributeInspectorAttribute)
     URHO3D_PARAM(P_COLOR, Color);                                // Color
     URHO3D_PARAM(P_HIDDEN, Hidden);                              // Boolean
     URHO3D_PARAM(P_TOOLTIP, Tooltip);                            // String
+    URHO3D_PARAM(P_VALUE_KIND, ValueKind);                       // int
 }
 
 URHO3D_EVENT(E_GIZMONODEMODIFIED, GizmoNodeModified)

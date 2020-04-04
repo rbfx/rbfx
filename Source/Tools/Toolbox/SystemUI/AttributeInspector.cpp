@@ -117,7 +117,7 @@ bool RenderResourceRef(ResourceRef& ref, Object* eventSender)
     // Resources are assigned by dropping on to them.
     if (ui::BeginDragDropTarget())
     {
-        const Variant& payload = ui::AcceptDragDropVariant("path");
+        const Variant& payload = ui::AcceptDragDropVariant("res");
         if (!payload.IsEmpty())
         {
             resource = eventSender->GetContext()->GetCache()->GetResource(ref.type_, payload.GetString());
@@ -662,15 +662,16 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             continue;
         ui::IdScope attributeNameId(info.name_.c_str());
 
-        Color color = Color::WHITE;                                 // Modified value color
+        Color color = Color::TRANSPARENT_BLACK;                                 // No change, determine automatically later.
         auto& modification = ValueHistory<Variant>::Get(item->GetAttribute(info.name_));
         Variant& value = modification.current_;
 
+        AttributeValueKind valueKind = AttributeValueKind::ATTRIBUTE_VALUE_CUSTOM;
         Variant inheritedDefault = item->GetInstanceDefault(info.name_);
         if (!inheritedDefault.IsEmpty() && value == inheritedDefault)
-            color = Color::GREEN;                                   // Inherited value color
+            valueKind = AttributeValueKind::ATTRIBUTE_VALUE_INHERITED;
         else if (value == info.defaultValue_)
-            color = Color::GRAY;                                    // Default value color
+            valueKind = AttributeValueKind::ATTRIBUTE_VALUE_DEFAULT;
         else if (info.type_ == VAR_RESOURCEREFLIST)
         {
             // Model insists on keeping non-empty ResourceRefList of Materials, even when names are unset. Treat such
@@ -681,7 +682,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             for (const auto& name : valueList.names_)
                 allEmpty &= name.empty();
             if (allEmpty && defaultList.type_ == valueList.type_)
-                color = Color::GRAY;                                // Default value color
+                valueKind = AttributeValueKind::ATTRIBUTE_VALUE_DEFAULT;
         }
 
         // Customize attribute rendering
@@ -694,11 +695,29 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             args[P_COLOR] = color;
             args[P_HIDDEN] = false;
             args[P_TOOLTIP] = "";
+            args[P_VALUE_KIND] = (int)valueKind;
             eventSender->SendEvent(E_ATTRIBUTEINSPECTOATTRIBUTE, args);
             if (args[P_HIDDEN].GetBool())
                 continue;
             color = args[P_COLOR].GetColor();
+            valueKind = (AttributeValueKind)args[P_VALUE_KIND].GetInt();
             tooltip = &args[P_TOOLTIP].GetString();
+        }
+
+        if (color == Color::TRANSPARENT_BLACK)
+        {
+            switch (valueKind)
+            {
+            case AttributeValueKind::ATTRIBUTE_VALUE_INHERITED:
+                color = Color::GREEN;
+                break;
+            case AttributeValueKind::ATTRIBUTE_VALUE_CUSTOM:
+                color = Color::WHITE;
+                break;
+            case AttributeValueKind::ATTRIBUTE_VALUE_DEFAULT:
+            default:
+                color = Color::GRAY;
+            }
         }
 
         AttributeInspectorModified modifiedReason = AttributeInspectorModified::NO_CHANGE;
@@ -709,8 +728,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             auto& style = ui::GetStyle();
             if (!info.defaultValue_.IsEmpty())
             {
-                bool isSame = value == info.defaultValue_;
-                if (isSame)
+                if (valueKind == AttributeValueKind::ATTRIBUTE_VALUE_DEFAULT)
                 {
                     ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
                     ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
@@ -721,7 +739,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
                     modified = true;
                     modifiedReason = AttributeInspectorModified::SET_DEFAULT;
                 }
-                if (isSame)
+                if (valueKind == AttributeValueKind::ATTRIBUTE_VALUE_DEFAULT)
                 {
                     ui::PopStyleColor();
                     ui::PopItemFlag();
@@ -729,8 +747,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             }
             if (!inheritedDefault.IsEmpty())
             {
-                bool isSame = value == inheritedDefault;
-                if (isSame)
+                if (valueKind == AttributeValueKind::ATTRIBUTE_VALUE_INHERITED)
                 {
                     ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
                     ui::PushStyleColor(ImGuiCol_Text, style.Colors[ImGuiCol_TextDisabled]);
@@ -741,7 +758,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
                     modified = true;
                     modifiedReason = AttributeInspectorModified::SET_INHERITED;
                 }
-                if (isSame)
+                if (valueKind == AttributeValueKind::ATTRIBUTE_VALUE_INHERITED)
                 {
                     ui::PopStyleColor();
                     ui::PopItemFlag();
@@ -788,7 +805,7 @@ bool RenderAttributes(Serializable* item, ea::string_view filter, Object* eventS
             item->ApplyAttributes();
         }
 
-        if (modification.IsModified())
+        if (modification.IsModified() || modifiedReason != AttributeInspectorModified::NO_CHANGE)
         {
             // This attribute was modified on last frame, but not on this frame. Continuous attribute value modification
             // has ended and we can fire attribute modification event.

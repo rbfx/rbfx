@@ -25,12 +25,23 @@
 
 #include <EASTL/utility.h>
 
-#include <Toolbox/SystemUI/ResourceBrowser.h>
 #include "Tabs/Tab.h"
 
 
 namespace Urho3D
 {
+
+class Asset;
+
+struct ResourceContextMenuArgs
+{
+    ea::string resourceName_;
+};
+
+URHO3D_EVENT(E_RESOURCEBROWSERDELETE, ResourceBrowserDelete)
+{
+    URHO3D_PARAM(P_NAME, Name);                                     // String
+}
 
 /// Resource browser tab.
 class ResourceTab : public Tab
@@ -47,18 +58,57 @@ public:
     /// Serialize current user selection into a buffer and return it.
     bool SerializeSelection(Archive& archive) override;
 
+    /// Signal set when user right-clicks a resource or folder.
+    Signal<ResourceContextMenuArgs> resourceContextMenu_;
+
 protected:
+    ///
+    void OnLocateResource(StringHash, VariantMap& args);
     /// Constructs a name for newly created resource based on specified template name.
     ea::string GetNewResourcePath(const ea::string& name);
     /// Select current item in attribute inspector.
     void SelectCurrentItemInspector();
+    ///
+    void ScanAssets();
+    ///
+    void OpenResource(const ea::string& resourceName);
+    ///
+    void RenderContextMenu();
+    ///
+    void RenderDirectoryTree(const eastl::string& path = "");
+    ///
+    void ScanDirTree(StringVector& result, const eastl::string& path);
+    ///
+    void RenderDeletionDialog();
+    ///
+    void StartRename();
+    ///
+    bool RenderRenameWidget(const ea::string& icon = "");
 
     /// Current open resource path.
-    ea::string resourcePath_;
+    ea::string currentDir_;
     /// Current selected resource file name.
-    ea::string resourceSelection_;
-    /// Resource browser flags.
-    ResourceBrowserFlags flags_{RBF_NONE};
+    ea::string selectedItem_;
+    /// Assets visible in resource browser.
+    ea::vector<WeakPtr<Asset>> assets_;
+    /// Cache of directory names at current selected resource path.
+    StringVector currentDirs_;
+    /// Cache of file names at current selected resource path.
+    StringVector currentFiles_;
+    /// Flag which requests rescan of current selected resource path.
+    bool rescan_ = true;
+    /// Flag indicating that current selection is being deleted. Deletion confirmation dialog is rendered.
+    bool deletionPending_ = false;
+    /// Flag requesting to scroll to selection on next frame.
+    bool scrollToCurrent_ = false;
+    /// Timer for periodic selected resource path rescan.
+    Timer rescanTimer_;
+    /// State cache.
+    ValueCache cache_{context_};
+    /// Frame at which rename started. Non-zero means rename is in-progress.
+    unsigned isRenamingFrame_ = 0;
+    /// Current value of text widget during rename.
+    ea::string renameBuffer_;
 };
 
 }

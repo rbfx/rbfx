@@ -78,9 +78,9 @@ protected:
     ///
     void GetStyleData(const AttributeInfo& info, XMLElement& style, XMLElement& attribute, Variant& value);
     ///
-    void AttributeMenu(VariantMap& args);
+    void AttributeMenu(StringHash, VariantMap& args);
     ///
-    void AttributeCustomize(VariantMap& args);
+    void AttributeCustomize(StringHash, VariantMap& args);
 
     ///
     SharedPtr<UI> offScreenUI_;
