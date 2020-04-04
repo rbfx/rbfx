@@ -85,6 +85,8 @@ protected:
 
     /// Directory containing project.
     ea::string projectFileDir_;
+    /// Full path of CoreData resource directory. Can be empty.
+    ea::string coreDataPath_;
     ///
     SharedPtr<Pipeline> pipeline_;
     ///
