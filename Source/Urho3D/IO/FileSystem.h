@@ -100,6 +100,8 @@ public:
     bool DirExists(const ea::string& pathName) const;
     /// Scan a directory for specified files.
     void ScanDir(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
+    /// Scan a directory for specified files. Appends to result container instead of clearing it.
+    void ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const;
     /// Return the program's directory.
     ea::string GetProgramDir() const;
 #if DESKTOP
