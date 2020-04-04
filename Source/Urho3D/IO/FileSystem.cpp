@@ -819,6 +819,15 @@ void FileSystem::ScanDir(ea::vector<ea::string>& result, const ea::string& pathN
     }
 }
 
+void FileSystem::ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pathName, const ea::string& filter, unsigned flags, bool recursive) const
+{
+    if (CheckAccess(pathName))
+    {
+        ea::string initialPath = AddTrailingSlash(pathName);
+        ScanDirInternal(result, initialPath, initialPath, filter, flags, recursive);
+    }
+}
+
 ea::string FileSystem::GetProgramDir() const
 {
 #if defined(__ANDROID__)
