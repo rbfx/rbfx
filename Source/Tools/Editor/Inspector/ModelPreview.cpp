@@ -101,7 +101,10 @@ void ModelPreview::RenderPreview()
     bool wasActive = mouseGrabbed_;
     mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
     if (wasActive != mouseGrabbed_)
+    {
         input->SetMouseVisible(!mouseGrabbed_);
+        ui::SetMouseCursor(ImGuiMouseCursor_None);  // Hint for SceneTab that mouse was hidden on this frame.
+    }
 
     if (mouseGrabbed_)
     {
