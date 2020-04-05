@@ -326,7 +326,7 @@ bool ResourceTab::RenderWindowContent()
     }
 
     // Context menu when clicking empty area
-    if (!ui::IsAnyItemHovered() && ui::IsMouseClicked(MOUSEB_RIGHT))
+    if (!ui::IsAnyItemHovered() && ui::IsWindowHovered(ImGuiHoveredFlags_RootAndChildWindows) && ui::IsMouseClicked(MOUSEB_RIGHT))
     {
         ui::OpenPopup("Resource Item Context Menu");
         selectedItem_.clear();
