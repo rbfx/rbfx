@@ -57,10 +57,16 @@ void DebugCameraController::Update(float timeStep)
             input->SetMouseVisible(false);
 
         if (!input->IsMouseVisible())
+        {
             RunFrame(timeStep);
+            ui::SetMouseCursor(ImGuiMouseCursor_None);  // Hint for SceneView that mouse was hidden on this frame
+        }
     }
     else if (!input->IsMouseVisible())
+    {
         input->SetMouseVisible(true);
+        ui::SetMouseCursor(ImGuiMouseCursor_None);  // Hint for SceneView that mouse was hidden on this frame
+    }
 }
 
 DebugCameraController3D::DebugCameraController3D(Context* context)
