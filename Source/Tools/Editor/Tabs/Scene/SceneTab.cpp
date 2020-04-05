@@ -172,6 +172,37 @@ bool SceneTab::RenderWindowContent()
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     viewportSplitter_.Merge(window->DrawList);
 
+    // Render editor camera rotation guide
+    if (!GetScene()->GetComponent<EditorSceneSettings>()->GetCamera2D())
+    {
+        const ImVec2 size{128, 128};
+        const ImVec2 pos{rect.Max.x - 128, rect.Min.y};
+        ui::SetCursorScreenPos(pos);
+        ui::InvisibleButton("##view-manipulator", size);
+
+        Camera* camera = GetCamera();
+        Node* cameraNode = camera->GetNode();
+        float length = 1;
+        // if (!selectedNodes_.empty())
+        // {
+        //     Vector3 posSum;
+        //     for (Node* node : selectedNodes_)
+        //         posSum += node->GetWorldPosition();
+        //     length = ((posSum / selectedNodes_.size()) - cameraNode->GetWorldPosition()).Length();
+        // }
+        Matrix4 view = camera->GetView().ToMatrix4();
+        view = view.Transpose();
+        ImGuizmo::ViewManipulate(&view.m00_, length, pos, size, 0);
+        view = view.Transpose().Inverse();
+        // if (!selectedNodes_.empty())
+        //     cameraNode->SetPosition(view.Translation());
+        cameraNode->SetRotation(view.Rotation());
+
+        // Eat click event so selection does not change.
+        if (ui::IsItemClicked(MOUSEB_LEFT))
+            isClickedLeft = isClickedRight = isViewportActive_ = false;
+    }
+
     if (wasActive != isViewportActive_)
         GetSubsystem<Input>()->SetMouseVisible(!isViewportActive_);
 
@@ -804,21 +835,6 @@ void SceneTab::OnUpdate(VariantMap& args)
                 {
                     gizmo_.SetOperation(GIZMOOP_SCALE);
                 }
-            }
-        }
-    }
-
-    // Render editor camera rotation guide
-    if (isMode3D_)
-    {
-        if (auto* debug = GetScene()->GetComponent<DebugRenderer>())
-        {
-            if (Camera* camera = GetCamera())
-            {
-                Vector3 guideRoot = GetCamera()->ScreenToWorldPoint({0.95, 0.1, 1});
-                debug->AddLine(guideRoot, guideRoot + Vector3::RIGHT * 0.05f, Color::RED, false);
-                debug->AddLine(guideRoot, guideRoot + Vector3::UP * 0.05f, Color::GREEN, false);
-                debug->AddLine(guideRoot, guideRoot + Vector3::FORWARD * 0.05f, Color::BLUE, false);
             }
         }
     }
