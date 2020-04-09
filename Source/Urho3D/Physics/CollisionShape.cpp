@@ -192,7 +192,7 @@ public:
     bool useQuantize_;
 
 private:
-    /// Shared vertex/index data used in the collision
+    /// Shared vertex/index data used in the collision.
     ea::vector<ea::shared_array<unsigned char> > dataArrays_;
 };
 

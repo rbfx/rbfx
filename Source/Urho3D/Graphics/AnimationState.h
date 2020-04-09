@@ -55,7 +55,7 @@ struct URHO3D_API AnimationStateTrack
 {
     /// Construct with defaults.
     AnimationStateTrack();
-    /// Destruct
+    /// Destruct.
     ~AnimationStateTrack();
 
     /// Instance equality operator.
@@ -119,9 +119,9 @@ public:
     /// Return animation.
     Animation* GetAnimation() const { return animation_; }
 
-    /// Return animated model this state belongs to (model mode.)
+    /// Return animated model this state belongs to (model mode).
     AnimatedModel* GetModel() const;
-    /// Return root scene node this state controls (node hierarchy mode.)
+    /// Return root scene node this state controls (node hierarchy mode).
     Node* GetNode() const;
     /// Return start bone.
     Bone* GetStartBone() const;
@@ -170,9 +170,9 @@ private:
     /// Apply track.
     void ApplyTrack(AnimationStateTrack& stateTrack, float weight, bool silent);
 
-    /// Animated model (model mode.)
+    /// Animated model (model mode).
     WeakPtr<AnimatedModel> model_;
-    /// Root scene node (node hierarchy mode.)
+    /// Root scene node (node hierarchy mode).
     WeakPtr<Node> node_;
     /// Animation.
     SharedPtr<Animation> animation_;

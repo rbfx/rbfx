@@ -104,7 +104,7 @@ struct URHO3D_API AnimationTrack
     ea::string name_;
     /// Name hash.
     StringHash nameHash_;
-    /// Bitmask of included data (position, rotation, scale.)
+    /// Bitmask of included data (position, rotation, scale).
     AnimationChannelFlags channelMask_{};
     /// Keyframes.
     ea::vector<AnimationKeyFrame> keyFrames_;

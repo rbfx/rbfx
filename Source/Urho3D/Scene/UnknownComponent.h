@@ -87,7 +87,7 @@ private:
     ea::string typeName_;
     /// XML format attribute infos.
     ea::vector<AttributeInfo> xmlAttributeInfos_;
-    /// XML format attribute data (as strings)
+    /// XML format attribute data (as strings).
     ea::vector<ea::string> xmlAttributes_;
     /// Binary attributes.
     ea::vector<unsigned char> binaryAttributes_;
