@@ -182,6 +182,7 @@ bool SceneTab::RenderWindowContent()
 
         Camera* camera = GetCamera();
         Node* cameraNode = camera->GetNode();
+        // TODO: Calculate length of selected objects in front of the camera?
         float length = 1;
         // if (!selectedNodes_.empty())
         // {
@@ -190,13 +191,11 @@ bool SceneTab::RenderWindowContent()
         //         posSum += node->GetWorldPosition();
         //     length = ((posSum / selectedNodes_.size()) - cameraNode->GetWorldPosition()).Length();
         // }
-        Matrix4 view = camera->GetView().ToMatrix4();
-        view = view.Transpose();
+        Matrix4 view = camera->GetView().ToMatrix4().Transpose();
         ImGuizmo::ViewManipulate(&view.m00_, length, pos, size, 0);
-        view = view.Transpose().Inverse();
-        // if (!selectedNodes_.empty())
-        //     cameraNode->SetPosition(view.Translation());
-        cameraNode->SetRotation(view.Rotation());
+        cameraNode->SetRotation(view.Transpose().Inverse().Rotation());
+        // TODO: We should be setting entire world transform, however then manipulator rotates around the point behind camera, that needs fixed first. For now manipulator is just a rotation guide.
+        // cameraNode->SetWorldTransform(Matrix3x4(view.Transpose().Inverse()));
 
         // Eat click event so selection does not change.
         if (ui::IsItemClicked(MOUSEB_LEFT))
