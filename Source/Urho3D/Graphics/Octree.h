@@ -36,7 +36,7 @@ class Zone;
 static const int NUM_OCTANTS = 8;
 static const unsigned ROOT_INDEX = M_MAX_UNSIGNED;
 
-/// %Octree octant
+/// %Octree octant.
 class URHO3D_API Octant
 {
 public:
@@ -155,11 +155,11 @@ protected:
     Octant* parent_;
     /// Octree root.
     Octree* root_;
-    /// Octant index relative to its siblings or ROOT_INDEX for root octant
+    /// Octant index relative to its siblings or ROOT_INDEX for root octant.
     unsigned index_;
 };
 
-/// %Octree component. Should be added only to the root scene node
+/// %Octree component. Should be added only to the root scene node.
 class URHO3D_API Octree : public Component, public Octant
 {
     URHO3D_OBJECT(Octree, Component);

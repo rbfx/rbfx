@@ -694,7 +694,7 @@ public:
         return *this;
     }
 
-    /// Assign from a StringHash (convert to integer.)
+    /// Assign from a StringHash (convert to integer).
     Variant& operator =(const StringHash& rhs)
     {
         SetType(VAR_INT);
