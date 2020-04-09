@@ -44,13 +44,13 @@ template <class E>
 class FlagSet
 {
 public:
-    /// Enum type
+    /// Enum type.
     using Enum = E;
-    /// Integer type
+    /// Integer type.
     using Integer = typename std::underlying_type<Enum>::type;
 
 public:
-    /// Ctor by integer
+    /// Ctor by integer.
     explicit FlagSet(Integer value)
         : value_(value)
     {
@@ -230,7 +230,7 @@ public:
     unsigned ToHash() const { return static_cast<unsigned>(value_); }
 
 protected:
-    /// Value
+    /// Value.
     Integer value_ = 0;
 };
 

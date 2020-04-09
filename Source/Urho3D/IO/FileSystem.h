@@ -160,13 +160,13 @@ URHO3D_API ea::string GetExtension(const ea::string& fullPath, bool lowercaseExt
 URHO3D_API ea::string GetFileNameAndExtension(const ea::string& fileName, bool lowercaseExtension = false);
 /// Replace the extension of a file name with another.
 URHO3D_API ea::string ReplaceExtension(const ea::string& fullPath, const ea::string& newExtension);
-/// Add a slash at the end of the path if missing and convert to internal format (use slashes.)
+/// Add a slash at the end of the path if missing and convert to internal format (use slashes).
 URHO3D_API ea::string AddTrailingSlash(const ea::string& pathName);
-/// Remove the slash from the end of a path if exists and convert to internal format (use slashes.)
+/// Remove the slash from the end of a path if exists and convert to internal format (use slashes).
 URHO3D_API ea::string RemoveTrailingSlash(const ea::string& pathName);
 /// Return the parent path, or the path itself if not available.
 URHO3D_API ea::string GetParentPath(const ea::string& path);
-/// Convert a path to internal format (use slashes.)
+/// Convert a path to internal format (use slashes).
 URHO3D_API ea::string GetInternalPath(const ea::string& pathName);
 /// Convert a path to the format required by the operating system.
 URHO3D_API ea::string GetNativePath(const ea::string& pathName);

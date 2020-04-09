@@ -455,9 +455,9 @@ bool TmxFile2D::EndLoad()
 
     XMLElement rootElem = loadXMLFile_->GetRoot("map");
     ea::string version = rootElem.GetAttribute("version");
-    if (version != "1.0")
+    if (!version.starts_with("1."))
     {
-        URHO3D_LOGERROR("Invalid version");
+        URHO3D_LOGERRORF("Invalid TMX version: %s", version.c_str());
         return false;
     }
 

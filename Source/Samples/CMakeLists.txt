@@ -71,7 +71,7 @@ if (WEB)
         INSTALL_TO   ${DEST_BIN_DIR_CONFIG}
     )
     web_link_resources(Samples Resources.js)
-    target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/application.html")
+    target_link_libraries(Samples PRIVATE "--shell-file ${CMAKE_SOURCE_DIR}/bin/shell.html")
     install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.js" DESTINATION ${DEST_BIN_DIR_CONFIG})
     if (EMSCRIPTEN_WASM)
         install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Samples.wasm" DESTINATION ${DEST_BIN_DIR_CONFIG})

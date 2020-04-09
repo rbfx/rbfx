@@ -208,7 +208,7 @@ public:
     bool HasAttribute(const ea::string& name) const;
     /// Return whether has an attribute.
     bool HasAttribute(const char* name) const;
-    /// Return inner value, or empty if missing for nodes like <node>value</node>
+    /// Return inner value, or empty if missing for nodes like <node>value</node>.
     ea::string GetValue() const;
     /// Return attribute, or empty if missing.
     ea::string GetAttribute(const ea::string& name = EMPTY_STRING) const;

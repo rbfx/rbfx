@@ -129,7 +129,7 @@ public:
     void SetTags(const StringVector& tags);
     /// Add a tag.
     void AddTag(const ea::string& tag);
-    /// Add tags with the specified separator, by default ;
+    /// Add tags with the specified separator (; by default).
     void AddTags(const ea::string& tags, char separator = ';');
     /// Add tags.
     void AddTags(const StringVector& tags);
@@ -224,7 +224,7 @@ public:
     void SetWorldTransform(const Vector3& position, const Quaternion& rotation, float scale);
     /// Set position, rotation, and scale in world space as an atomic opration.
     void SetWorldTransform(const Vector3& position, const Quaternion& rotation, const Vector3& scale);
-    /// Set position, rotation, and scale in world space as an atomic operation from a transformation matrix
+    /// Set position, rotation, and scale in world space as an atomic operation from a transformation matrix.
     void SetWorldTransform(const Matrix3x4& worldTransform);
 
     /// Set both position and rotation in world space as an atomic operation (for Urho2D).
@@ -697,7 +697,7 @@ protected:
 private:
     /// Parent scene node.
     Node* parent_;
-    /// Scene (root node.)
+    /// Scene (root node).
     Scene* scene_;
     /// Entity ID within registry.
     entt::entity entity_{ entt::null };

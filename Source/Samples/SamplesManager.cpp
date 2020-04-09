@@ -111,6 +111,7 @@
 #include "52_NATPunchtrough/NATPunchtrough.h"
 #include "53_LANDiscovery/LANDiscovery.h"
 #endif
+#include "54_WindowSettingsDemo/WindowSettingsDemo.h"
 #if URHO3D_SYSTEMUI
 #include "100_HelloSystemUI/HelloSystemUI.h"
 #endif
@@ -286,6 +287,7 @@ void SamplesManager::Start()
     RegisterSample<NATPunchtrough>();
     RegisterSample<LANDiscovery>();
 #endif
+    RegisterSample<WindowSettingsDemo>();
 #if URHO3D_SYSTEMUI
     RegisterSample<HelloSystemUi>();
 #endif
