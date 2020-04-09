@@ -44,7 +44,7 @@ jobs:
 
   - job: Windows
     pool:
-      vmImage: 'windows-latest'
+      vmImage: 'vs2017-win2016'
 
     strategy:
       matrix:
@@ -62,7 +62,7 @@ jobs:
 
     steps:
       - script: |
-          call "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          call "C:\Program Files (x86)\Microsoft Visual Studio\2017\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
           echo '##vso[task.setvariable variable=PATH]%PATH%;%VSINSTALLDIR%\MSBuild\%VisualStudioVersion%;%WindowsSDK_ExecutablePath_x64%'
         displayName: 'Setup'
       - template: build.yml
