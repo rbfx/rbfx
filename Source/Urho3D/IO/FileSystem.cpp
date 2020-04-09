@@ -1062,7 +1062,7 @@ void FileSystem::ScanDirInternal(ea::vector<ea::string>& result, ea::string path
 
 void FileSystem::HandleBeginFrame(StringHash eventType, VariantMap& eventData)
 {
-    /// Go through the execution queue and post + remove completed requests
+    // Go through the execution queue and post + remove completed requests
     for (auto i = asyncExecQueue_.begin(); i != asyncExecQueue_.end();)
     {
         AsyncExecRequest* request = *i;
@@ -1367,7 +1367,7 @@ bool FileSystem::CopyDir(const ea::string& directoryIn, const ea::string& direct
         if (!CreateDirsRecursive(dstPath))
             return false;
 
-        //LOGINFOF("SRC: %s DST: %s", srcFile.CString(), dstFile.CString());
+        //LOGINFOF("SRC: %s DST: %s", srcFile.c_str(), dstFile.c_str());
         if (!Copy(srcFile, dstFile))
             return false;
     }

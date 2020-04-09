@@ -10,7 +10,7 @@
   public $typemap(cstype, const eastl::string &) Animation {
     get { return GetAnimation(); }
   }
-  public $typemap(cstype, LoopMode2D) LoopMode {
+  public $typemap(cstype, Urho3D::LoopMode2D) LoopMode {
     get { return GetLoopMode(); }
     set { SetLoopMode(value); }
   }

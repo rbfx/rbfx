@@ -73,7 +73,7 @@ URHO3D_API ea::string GetConsoleInput();
 URHO3D_API ea::string GetPlatform();
 /// Return the number of physical CPU cores.
 URHO3D_API unsigned GetNumPhysicalCPUs();
-/// Return the number of logical CPUs (different from physical if hyperthreading is used.)
+/// Return the number of logical CPUs (different from physical if hyperthreading is used).
 URHO3D_API unsigned GetNumLogicalCPUs();
 /// Set minidump write location as an absolute path. If empty, uses default (UserProfile/AppData/Roaming/urho3D/crashdumps) Minidumps are only supported on MSVC compiler.
 URHO3D_API void SetMiniDumpDir(const ea::string& pathName);

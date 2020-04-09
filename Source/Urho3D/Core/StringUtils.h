@@ -114,7 +114,7 @@ URHO3D_API Matrix3x4 ToMatrix3x4(const char* source);
 URHO3D_API Matrix4 ToMatrix4(const ea::string& source);
 /// Parse a Matrix4 from a C string.
 URHO3D_API Matrix4 ToMatrix4(const char* source);
-/// Convert a pointer to string (returns hexadecimal.)
+/// Convert a pointer to string (returns hexadecimal).
 URHO3D_API ea::string ToString(void* value);
 /// Convert an unsigned integer to string as hexadecimal.
 URHO3D_API ea::string ToStringHex(unsigned value);
