@@ -2071,7 +2071,7 @@ bool Graphics::CreateDevice(int width, int height)
 
     // Check that multisample level is supported
     ea::vector<int> multiSampleLevels = GetMultiSampleLevels();
-    if (!multiSampleLevels.Contains(screenParams_.multiSample_))
+    if (!multiSampleLevels.contains(screenParams_.multiSample_))
         screenParams_.multiSample_ = 1;
 
     // Create swap chain. Release old if necessary
