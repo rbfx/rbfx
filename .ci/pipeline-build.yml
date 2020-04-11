@@ -50,8 +50,10 @@ jobs:
       matrix:
         static-msvc-d3d11:
           BUILD_SHARED_LIBS: OFF
+          MSBUILD: 1
         shared-msvc-d3d11:
           BUILD_SHARED_LIBS: ON
+          MSBUILD: 1
         static-mingw-d3d9:
           BUILD_SHARED_LIBS: OFF
           CMAKE_GENERATE_ARGS: -G Ninja -DURHO3D_GRAPHICS_API=D3D9
