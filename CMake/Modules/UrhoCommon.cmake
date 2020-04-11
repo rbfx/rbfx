@@ -266,21 +266,24 @@ function(vs_group_subdirectory_targets DIRECTORY FOLDER_NAME)
     endforeach()
 endfunction()
 
+if (URHO3D_CSHARP)
+	if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+		# Workaround for some cases where csc has issues when invoked by CMake.
+		set (TERM_WORKAROUND env TERM=xterm)
+	endif ()
+	find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+endif ()
+
 function (add_msbuild_target)
     if (URHO3D_CSHARP)
         cmake_parse_arguments(MSBUILD "EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS;BYPRODUCTS" ${ARGN})
 
-        find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
         if (NOT MSBUILD)
             if (WIN32)
                 message(FATAL_ERROR "MSBuild could not be found.")
             else ()
                 message(FATAL_ERROR "MSBuild could not be found. You may need to install 'msbuild' package.")
             endif ()
-        endif ()
-        if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
-            # Workaround for some cases where csc has issues when invoked by CMake.
-            set (TERM_WORKAROUND env TERM=xterm)
         endif ()
         add_custom_target(${MSBUILD_TARGET} ALL
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
@@ -313,6 +316,22 @@ if (URHO3D_CSHARP)
     else ()
         set (CSHARP_PLATFORM x86)
     endif ()
+
+    # Prefer binary dir - generated msvc solution with .csproj projects included in it.
+    file (GLOB VS_SOLUTIONS ${CMAKE_BINARY_DIR}/*.sln)
+    if (NOT VS_SOLUTIONS)
+        # On unixes source directory will contain manually crafted .sln
+        file (GLOB VS_SOLUTIONS ${CMAKE_SOURCE_DIR}/*.sln)
+        if (NOT VS_SOLUTIONS)
+            # Otherwise use engine .sln
+            file (GLOB VS_SOLUTIONS ${rbfx_SOURCE_DIR}/*.sln)
+        endif ()
+    endif ()
+    add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
+
+    execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
+		/p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
+    )
 
     # Strong name signatures
     find_program(SN sn PATHS PATHS
