@@ -213,6 +213,7 @@ void SystemUI::OnRenderEnd()
     auto* graphicsImpl = graphics->GetImpl();
     ID3D11RenderTargetView* defaultRenderTargetView = graphicsImpl->GetDefaultRenderTargetView();
     graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
+    graphicsImpl->MarkRenderTargetsDirty();
     ImGui_ImplDX11_RenderDrawData(ui::GetDrawData());
 #else
     ImGui_ImplDX9_RenderDrawData(ui::GetDrawData());
@@ -229,6 +230,7 @@ void SystemUI::OnRenderEnd()
         SDL_GL_MakeCurrent(backup_current_window, backup_current_context);
 #elif URHO3D_D3D11
         graphicsImpl->GetDeviceContext()->OMSetRenderTargets(1, &defaultRenderTargetView, nullptr);
+        graphicsImpl->MarkRenderTargetsDirty();
 #endif
     }
 }

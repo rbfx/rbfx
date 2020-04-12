@@ -69,6 +69,9 @@ public:
     /// Return multisample quality level for a given texture format and sample count. The sample count must be supported. On D3D feature level 10.1+, uses the standard level. Below that uses the best quality.
     unsigned GetMultiSampleQuality(DXGI_FORMAT format, unsigned sampleCount) const;
 
+    /// Mark render targets as dirty. Must be called if render targets were set using DX11 device directly.
+    void MarkRenderTargetsDirty() { renderTargetsDirty_ = true; }
+
 private:
     /// Graphics device.
     ID3D11Device* device_;
