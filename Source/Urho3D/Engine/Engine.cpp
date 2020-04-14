@@ -916,12 +916,12 @@ void Engine::DefineParameters(CLI::App& commandLine, VariantMap& engineParameter
     addFlag("--nothreads", EP_WORKER_THREADS, false, "Disable multithreading");
     addFlag("-v,--vsync", EP_VSYNC, true, "Enable vsync");
     addFlag("-t,--tripple-buffer", EP_TRIPLE_BUFFER, true, "Enable tripple-buffering");
-    addFlag("-w,--windoed", EP_FULL_SCREEN, false, "Windowed mode");
+    addFlag("-w,--windowed", EP_FULL_SCREEN, false, "Windowed mode");
     addFlag("-f,--full-screen", EP_FULL_SCREEN, true, "Full screen mode");
     addFlag("--borderless", EP_BORDERLESS, true, "Borderless window mode");
     addFlag("--lowdpi", EP_HIGH_DPI, false, "Disable high-dpi handling");
     addFlag("--highdpi", EP_HIGH_DPI, true, "Enable high-dpi handling");
-    addFlag("-s,--resizeable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
+    addFlag("-s,--resizable", EP_WINDOW_RESIZABLE, true, "Enable window resizing");
     addFlag("-q,--quiet", EP_LOG_QUIET, true, "Disable logging");
     addFlagInternal("-l,--log", "Logging level", [&](CLI::results_t res) {
         unsigned logLevel = GetStringListIndex(ea::string(res[0].c_str()).to_upper().c_str(), logLevelNames, M_MAX_UNSIGNED);
