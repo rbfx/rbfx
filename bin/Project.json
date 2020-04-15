@@ -12,6 +12,7 @@
 	"plugins": [],
 	"resourcePaths": [
 		"Data/",
+		"CoreData/",
 		"Autoload/LargeData/"
 	],
 	"version": 1
