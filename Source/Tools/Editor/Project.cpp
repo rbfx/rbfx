@@ -66,7 +66,9 @@ Project::Project(Context* context)
     SubscribeToEvent(E_RESOURCEBROWSERDELETE, URHO3D_HANDLER(Project, OnResourceBrowserDelete));
     SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Project, OnEndFrame));
     context_->RegisterSubsystem(pipeline_);
+#if URHO3D_PLUGINS
     context_->RegisterSubsystem(plugins_);
+#endif
     context_->RegisterSubsystem(undo_);
 
     // Key bindings
@@ -81,8 +83,9 @@ Project::~Project()
 {
     context_->RemoveSubsystem(undo_->GetType());
     context_->RemoveSubsystem(pipeline_->GetType());
+#if URHO3D_PLUGINS
     context_->RemoveSubsystem(plugins_->GetType());
-
+#endif
     if (context_->GetSystemUI())
         ui::GetIO().IniFilename = nullptr;
 
@@ -302,10 +305,10 @@ bool Project::Serialize(Archive& archive)
 
         if (!pipeline_->Serialize(archive))
             return false;
-
+#if URHO3D_PLUGINS
         if (!plugins_->Serialize(archive))
             return false;
-
+#endif
         using namespace EditorProjectSerialize;
         SendEvent(E_EDITORPROJECTSERIALIZE, P_ARCHIVE, (void*)&archive);
     }
