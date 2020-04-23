@@ -27,6 +27,7 @@
 #include "../Graphics/Animation.h"
 #include "../Graphics/AnimationController.h"
 #include "../Graphics/Camera.h"
+#include "../Graphics/ComputeBuffer.h"
 #include "../Graphics/ConstantBuffer.h"
 #include "../Graphics/CubemapCapture.h"
 #include "../Graphics/Geometry.h"
@@ -65,10 +66,6 @@
 #include "../Graphics/Zone.h"
 #include "../IO/FileSystem.h"
 #include "../IO/Log.h"
-
-#if !defined(URHO3D_D3D9) && !defined(GL_ES_VERSION_2_0)
-    #include "../Graphics/ComputeBuffer.h"
-#endif
 
 #include <SDL/SDL.h>
 
@@ -660,7 +657,7 @@ void RegisterGraphicsLibrary(Context* context)
     OcclusionBuffer::RegisterObject(context);
 
     CubemapCapture::RegisterObject(context);
-#ifdef URHO3D_COMPUTE
+#if defined(URHO3D_COMPUTE)
     ComputeBuffer::RegisterObject(context);
 #endif
 }

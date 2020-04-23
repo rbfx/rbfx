@@ -42,8 +42,6 @@
 
 #include "../DebugNew.h"
 
-#pragma optimize("", off)
-
 namespace Urho3D
 {
 
@@ -232,7 +230,7 @@ void CubemapCapture::Render(SharedPtr<Scene> scene, SharedPtr<RenderPath> render
         cameraNode.SetWorldRotation(CubeFaceRotation((CubeMapFace)i));
         vpt.GetView()->Update(FrameInfo { 0, 0.0f, { cubeTarget->GetWidth(), cubeTarget->GetHeight()}, camera });
         vpt.GetView()->Render();
-    }    
+    }
 
     if (needBeginEnd)
         graphics->EndFrame();
@@ -350,7 +348,7 @@ void CubemapCapture::FilterCubemaps(const eastl::vector< SharedPtr<TextureCube> 
         )));
     }
 
-    // go through them cubemap -> level 
+    // go through them cubemap -> level
     auto computeDevice = graphics->GetSubsystem<ComputeDevice>();
     for (unsigned c = 0; c < cubemaps.size(); ++c)
     {
