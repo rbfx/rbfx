@@ -22,8 +22,10 @@
   <PropertyGroup Condition="'$(TargetFramework)' == ''">
     <TargetFramework Condition=" '$(URHO3D_NETFX)' == '' ">net471</TargetFramework>
     <TargetFramework Condition=" '$(URHO3D_NETFX)' != '' ">$(URHO3D_NETFX)</TargetFramework>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(RuntimeIdentifiers)' == ''">
     <RuntimeIdentifiers Condition=" '$(OS)' == 'Unix' ">linux-$(PlatformTarget)</RuntimeIdentifiers>
-    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win7-$(PlatformTarget)</RuntimeIdentifiers>
+    <RuntimeIdentifiers Condition=" '$(OS)' == 'Windows_NT' ">win-$(PlatformTarget)</RuntimeIdentifiers>
     <RuntimeIdentifiers Condition=" '$(OS)' == 'OSX' ">osx.10.10-$(PlatformTarget)</RuntimeIdentifiers>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(CMAKE_BINARY_DIR)' == '' ">
