@@ -35,24 +35,24 @@
     <PackageReference Include="System.Numerics.Vectors" Version="4.5.0" />
   </ItemGroup>
   <ItemGroup Condition=" '$(OS)' == 'Windows_NT' And '$(NoBuild)' == 'true' And '$(ExcludeRestorePackageImports)' != 'true' ">
-    <Content Include="../../../LICENSE">
-      <PackagePath>.</PackagePath>
-    </Content>
-    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)CoreData/**">
-      <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
-    </Content>
     <Content Include="build/**">
       <PackagePath>build/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
     </Content>
-    <Content Include="C:/rbfx/cmake-build/bin/RelWithDebInfo/Urho3D.dll">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <PackagePath>runtimes/win-x64/native/</PackagePath>
-      <Link>Urho3D.dll</Link>
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3D.dll">
+      <PackagePath>runtimes/win-$(PlatformTarget)/native/%(Filename)%(Extension)</PackagePath>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </Content>
-    <Content Include="C:/rbfx/cmake-build/bin/RelWithDebInfo/Urho3D.pdb">
-      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
-      <PackagePath>runtimes/win-x64/native/</PackagePath>
-      <Link>Urho3D.pdb</Link>
+    <Content Include="$(CMAKE_RUNTIME_OUTPUT_DIRECTORY)$(Configuration)/Urho3D.pdb">
+      <PackagePath>runtimes/win-$(PlatformTarget)/native/%(Filename)%(Extension)</PackagePath>
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </Content>
+    <Content Include="$(RBFX_SOURCE_DIR)/bin/CoreData/**">
+      <PackagePath>content/CoreData/%(RecursiveDir)%(Filename)%(Extension)</PackagePath>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
+    </Content>
+    <Content Include="../../../LICENSE">
+      <PackagePath>.</PackagePath>
+      <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'RelWithDebInfo|x64'"></PropertyGroup>
