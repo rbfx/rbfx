@@ -224,12 +224,18 @@ protected:
     ea::hash_set<WeakPtr<Component>> selectedComponents_;
     /// Flag indicating that mouse is hovering scene viewport.
     bool isViewportActive_ = false;
+    /// Mouse button that clicked viewport.
+    ImGuiMouseButton mouseButtonClickedViewport_ = ImGuiMouseButton_COUNT;
+    /// Flag indicating that left mouse button was clicked on scene viewport.
+    bool isClickedLeft_ = false;
+    /// Flag indicating that right mouse button was clicked on scene viewport.
+    bool isClickedRight_ = false;
     /// Nodes whose entries in hierarchy tree should be opened on next frame.
     ea::vector<Node*> openHierarchyNodes_;
     /// Node to scroll to on next frame.
     WeakPtr<Node> scrollTo_;
     /// Selected camera preview texture.
-    SharedPtr<Texture2D> cameraPreviewtexture_;
+    SharedPtr<Texture2D> cameraPreviewTexture_;
     /// Selected camera preview viewport.
     SharedPtr<Viewport> cameraPreviewViewport_;
     /// Utility for copying and pasting scene nodes.
