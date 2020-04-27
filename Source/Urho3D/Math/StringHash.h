@@ -120,7 +120,7 @@ public:
     static unsigned Calculate(const char* str, unsigned hash = 0);
 #endif
     /// Calculate hash value from binary data.
-    static unsigned Calculate(void* data, unsigned length, unsigned hash = 0);
+    static unsigned Calculate(const void* data, unsigned length, unsigned hash = 0);
 
     /// Get global StringHashRegister. Use for debug purposes only. Return nullptr if URHO3D_HASH_DEBUG is off.
     static StringHashRegister* GetGlobalStringHashRegister();
