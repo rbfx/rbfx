@@ -69,7 +69,7 @@ StringHash::StringHash(const ea::string& str) noexcept :
 }
 
 StringHash::StringHash(const ea::string_view& str) noexcept :
-    value_(Calculate(str.data(), str.length()))
+    value_(Calculate(static_cast<const void*>(str.data()), str.length()))
 {
 #ifdef URHO3D_HASH_DEBUG
     Urho3D::GetGlobalStringHashRegister().RegisterString(*this, str);
@@ -89,12 +89,12 @@ unsigned StringHash::Calculate(const char* str, unsigned hash)
 }
 #endif
 
-unsigned StringHash::Calculate(void* data, unsigned int length, unsigned int hash)
+unsigned StringHash::Calculate(const void* data, unsigned int length, unsigned int hash)
 {
     if (!data)
         return hash;
 
-    auto* bytes = static_cast<unsigned char*>(data);
+    auto* bytes = static_cast<const unsigned char*>(data);
     auto* end = bytes + length;
     while (bytes < end)
         hash = SDBMHash(hash, (unsigned char)*bytes++);
