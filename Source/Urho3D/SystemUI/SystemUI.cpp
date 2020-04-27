@@ -359,11 +359,11 @@ int ToImGui(MouseButton button)
     switch (button)
     {
     case MOUSEB_LEFT:
-        return 0;
+        return ImGuiMouseButton_Left;
     case MOUSEB_MIDDLE:
-        return 2;
+        return ImGuiMouseButton_Middle;
     case MOUSEB_RIGHT:
-        return 1;
+        return ImGuiMouseButton_Right;
     case MOUSEB_X1:
         return 3;
     case MOUSEB_X2:
@@ -498,7 +498,7 @@ bool ui::ItemMouseActivation(Urho3D::MouseButton button)
     bool hovered = ui::IsItemHovered();
     if (hovered)
         g.HoveredId = window->DC.LastItemId;
-    if (!ui::IsItemActive() && hovered && ui::IsMouseDown(button))
+    if (!ui::IsItemActive() && hovered && ui::IsMouseClicked(button))
         ui::SetActiveID(window->DC.LastItemId, window);
     else if (ui::IsItemActive() && !ui::IsMouseDown(button))
         ui::ClearActiveID();

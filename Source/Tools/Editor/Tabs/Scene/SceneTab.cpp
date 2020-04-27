@@ -94,10 +94,10 @@ SceneTab::SceneTab(Context* context)
     cameraPreviewViewport_ = new Viewport(context_);
     cameraPreviewViewport_->SetRect(IntRect{{0, 0}, cameraPreviewSize});
     cameraPreviewViewport_->SetDrawDebug(false);
-    cameraPreviewtexture_ = new Texture2D(context_);
-    cameraPreviewtexture_->SetSize(cameraPreviewSize.x_, cameraPreviewSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
-    cameraPreviewtexture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
-    cameraPreviewtexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
+    cameraPreviewTexture_ = new Texture2D(context_);
+    cameraPreviewTexture_->SetSize(cameraPreviewSize.x_, cameraPreviewSize.y_, Graphics::GetRGBFormat(), TEXTURE_RENDERTARGET);
+    cameraPreviewTexture_->GetRenderSurface()->SetUpdateMode(SURFACE_UPDATEALWAYS);
+    cameraPreviewTexture_->GetRenderSurface()->SetViewport(0, cameraPreviewViewport_);
 
     // Events
     SubscribeToEvent(E_UPDATE, [this](StringHash, VariantMap& args) { OnUpdate(args); });
@@ -153,8 +153,6 @@ bool SceneTab::RenderWindowContent()
 
     Input* input = GetSubsystem<Input>();
     bool wasActive = isViewportActive_;
-    bool isClickedLeft = false;
-    bool isClickedRight = false;
 
     // Buttons must render above the viewport, but they also should be rendered first in order to take precedence in
     // item activation.
@@ -167,8 +165,29 @@ bool SceneTab::RenderWindowContent()
     ui::SetCursorPos({0, 0});
     ui::ImageItem(texture_, rect.GetSize());
     isViewportActive_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
-    isClickedLeft = ui::IsItemHovered() && ui::IsMouseClicked(MOUSEB_LEFT) && !ui::IsMouseDragging(MOUSEB_RIGHT);
-    isClickedRight = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT) && !ui::IsMouseDragging(MOUSEB_RIGHT) && (ui::GetMouseCursor() != ImGuiMouseCursor_None && input->IsMouseVisible());
+
+    // Left click happens immediately.
+    isClickedLeft_ = ui::IsItemClicked(MOUSEB_LEFT) && !ui::IsMouseDragging(MOUSEB_LEFT);
+    // Right click is registerd only on release, because we want to support both opening a context menu and camera
+    // rotation in scene viewport. Context menu is displayed on button release without dragging and camera is rotated
+    // when mouse is dragged before button release.
+    isClickedRight_ = ui::IsItemHovered() && ui::IsMouseReleased(MOUSEB_RIGHT) && !ui::IsMouseDragging(MOUSEB_RIGHT) &&
+                      mouseButtonClickedViewport_ == ImGuiMouseButton_Right;   // Ensure that clicks from outside if this viewport do not register.
+
+    // Store mouse button that clicked viewport.
+    if (!ui::IsAnyMouseDown())
+        mouseButtonClickedViewport_ = ImGuiMouseButton_COUNT;
+    else
+    {
+        for (int i = 0; i < ImGuiMouseButton_COUNT; i++)
+        {
+            if (ui::IsMouseClicked(i))
+            {
+                mouseButtonClickedViewport_ = i;
+                break;
+            }
+        }
+    }
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     viewportSplitter_.Merge(window->DrawList);
 
@@ -199,7 +218,7 @@ bool SceneTab::RenderWindowContent()
 
         // Eat click event so selection does not change.
         if (ui::IsItemClicked(MOUSEB_LEFT))
-            isClickedLeft = isClickedRight = isViewportActive_ = false;
+            isClickedLeft_ = isClickedRight_ = isViewportActive_ = false;
     }
 
     if (wasActive != isViewportActive_)
@@ -213,7 +232,7 @@ bool SceneTab::RenderWindowContent()
         ui::PushStyleColor(ImGuiCol_Border, ui::GetColorU32(ImGuiCol_Border, 255.f));                                   // Make a border opaque, otherwise it is barely visible.
         ui::SetCursorScreenPos(rect.Max - ToImGui(cameraPreviewSize) - ImVec2{10, 10});
 
-        ui::Image(cameraPreviewtexture_.Get(), ToImGui(cameraPreviewSize));
+        ui::Image(cameraPreviewTexture_.Get(), ToImGui(cameraPreviewSize));
         ui::RenderFrameBorder(ui::GetItemRectMin() - ImVec2{border, border}, ui::GetItemRectMax() + ImVec2{border, border});
 
         ui::PopStyleColor();
@@ -226,7 +245,7 @@ bool SceneTab::RenderWindowContent()
     else
         windowFlags_ &= ~ImGuiWindowFlags_NoMove;
 
-    if (!gizmo_.IsActive() && (isClickedLeft || isClickedRight) && context_->GetInput()->IsMouseVisible())
+    if (!gizmo_.IsActive() && (isClickedLeft_ || isClickedRight_) && context_->GetInput()->IsMouseVisible())
     {
         // Handle object selection.
         ImGuiIO& io = ui::GetIO();
@@ -257,7 +276,7 @@ bool SceneTab::RenderWindowContent()
             while (!clickNode.Expired() && clickNode->HasTag("__EDITOR_OBJECT__"))
                 clickNode = clickNode->GetParent();
 
-            if (isClickedLeft)
+            if (isClickedLeft_)
             {
                 if (!context_->GetInput()->GetKeyDown(KEY_CTRL))
                     ClearSelection();
@@ -270,7 +289,7 @@ bool SceneTab::RenderWindowContent()
                 else
                     ToggleSelection(clickNode);
             }
-            else if (isClickedRight && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
+            else if (isClickedRight_ && ImLengthSqr(ui::GetMouseDragDelta(MOUSEB_RIGHT)) == 0.0f)
             {
                 if (clickNode == GetScene())
                 {
@@ -712,7 +731,7 @@ void SceneTab::RenderNodeTree(Node* node)
                         if (selectedNode.Expired())
                             continue;
 
-                        if(selectedNode->IsChildOf(child))
+                        if (selectedNode->IsChildOf(child))
                             ui::SetNextItemOpen(true);
                     }
                 }
