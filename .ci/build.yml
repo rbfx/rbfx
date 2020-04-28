@@ -10,14 +10,14 @@ steps:
 - script: |
     cd cmake-build
     msbuild /t:restore rbfx.sln
-    msbuild /p:Configuration=Release rbfx.sln
+    msbuild /p:Configuration=RelWithDebInfo rbfx.sln
   condition: eq(variables['MSBUILD'], '1')
 
 - task: CMake@1
   displayName: 'Build'
   inputs:
     workingDirectory: cmake-build
-    cmakeArgs: --build . --config Release $(CMAKE_BUILD_ARGS)
+    cmakeArgs: --build . --config RelWithDebInfo $(CMAKE_BUILD_ARGS)
   condition: ne(variables['MSBUILD'], '1')
 
 # --build . is technically not necessary, but web builds somehow insist on installing
@@ -26,7 +26,7 @@ steps:
   displayName: 'Install SDK'
   inputs:
     workingDirectory: cmake-build
-    cmakeArgs: --build . --target install --config Release
+    cmakeArgs: --build . --target install --config RelWithDebInfo
 
 - publish: $(Build.SourcesDirectory)/SDK
   artifact: rbfx-SDK-$(Agent.JobName)-$(Build.SourceVersion)
