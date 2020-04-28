@@ -267,11 +267,15 @@ function(vs_group_subdirectory_targets DIRECTORY FOLDER_NAME)
 endfunction()
 
 if (URHO3D_CSHARP)
-	if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
-		# Workaround for some cases where csc has issues when invoked by CMake.
-		set (TERM_WORKAROUND env TERM=xterm)
-	endif ()
-	find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+    if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
+        # Workaround for some cases where csc has issues when invoked by CMake.
+        set (TERM_WORKAROUND env TERM=xterm)
+    endif ()
+    if (CMAKE_VS_MSBUILD_COMMAND)
+        set (MSBUILD ${CMAKE_VS_MSBUILD_COMMAND} CACHE STRING "")
+    else ()
+        find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+    endif ()
 endif ()
 
 function (add_msbuild_target)
@@ -330,7 +334,7 @@ if (URHO3D_CSHARP)
     add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
 
     execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
-		/p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
+        /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
     )
 
     # Strong name signatures
