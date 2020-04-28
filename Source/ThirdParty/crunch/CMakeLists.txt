@@ -58,7 +58,7 @@ if (WIN32)
 endif ()
 
 if (NOT WIN32 OR MINGW)
-    target_compile_options(crnlib PRIVATE -O3 -fomit-frame-pointer -ffast-math -fno-math-errno -g -fno-strict-aliasing -Wall -Wno-unused-value -Wno-unused -march=core2)
+    target_compile_options(crnlib PRIVATE -O3 -fomit-frame-pointer -ffast-math -fno-math-errno -fno-strict-aliasing -Wall -Wno-unused-value -Wno-unused -march=core2)
     target_link_libraries(crnlib pthread)
 endif ()
 
