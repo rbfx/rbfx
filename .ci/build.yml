@@ -3,7 +3,7 @@ steps:
   displayName: 'Generate'
   inputs:
     workingDirectory: cmake-build
-    cmakeArgs: $(CMAKE_GENERATE_ARGS) -DCMAKE_INSTALL_PREFIX=$(Build.SourcesDirectory)/SDK -DCMAKE_BUILD_TYPE=Release -DURHO3D_SAMPLES=ON -DURHO3D_CSHARP=$(URHO3D_CSHARP) -DURHO3D_PACKAGING=ON -DBUILD_SHARED_LIBS=$(BUILD_SHARED_LIBS) $(Build.SourcesDirectory)
+    cmakeArgs: $(CMAKE_GENERATE_ARGS) -DCMAKE_INSTALL_PREFIX=$(Build.SourcesDirectory)/SDK -DCMAKE_BUILD_TYPE=RelWithDebInfo -DURHO3D_SAMPLES=ON -DURHO3D_CSHARP=$(URHO3D_CSHARP) -DURHO3D_PACKAGING=ON -DBUILD_SHARED_LIBS=$(BUILD_SHARED_LIBS) $(Build.SourcesDirectory)
 
 # VS2017, VS2019 may not honor build dependencies of custom targets if we invoke build through cmake, therefore we use
 # msbuild directly in this case.
