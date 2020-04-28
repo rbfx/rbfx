@@ -22,10 +22,23 @@
 
 include(ucm)
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+    set (CLANG ON)
+    set (GNU ON)
+elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+    set (GCC ON)
+    set (GNU ON)
+endif()
+
 # Set compiler variable
 set ("${CMAKE_CXX_COMPILER_ID}" ON)
 if (NOT WEB)
     set (CMAKE_INSTALL_RPATH "$ORIGIN")
+    if (GNU OR MINGW)
+        # Reduce size of debugging information in RelWithDebInfo builds.
+        ucm_replace_flag(-g -g1 CONFIG RelWithDebInfo)
+        ucm_replace_flag(-O2 -Og CONFIG RelWithDebInfo)
+    endif ()
 endif ()
 
 # Configure variables
@@ -129,14 +142,6 @@ if (WEB)
     set (CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
     set (CMAKE_MODULE_LINKER_FLAGS_DEBUG "${CMAKE_MODULE_LINKER_FLAGS_DEBUG} -g4 -s DISABLE_EXCEPTION_CATCHING=1")
 endif ()
-
-if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
-    set (CLANG ON)
-    set (GNU ON)
-elseif ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-    set (GCC ON)
-    set (GNU ON)
-endif()
 
 if ("${CMAKE_HOST_SYSTEM_NAME}" STREQUAL "Linux")
     set (HOST_LINUX 1)
