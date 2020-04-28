@@ -338,7 +338,7 @@ if (URHO3D_CSHARP)
     )
 
     # Strong name signatures
-    find_program(SN sn PATHS PATHS
+    find_program(SN sn PATHS
         ${MONO_PATH}/bin
         /Library/Frameworks/Mono.framework/Versions/Current/bin
         $ENV{WindowsSDK_ExecutablePath_${CSHARP_PLATFORM}}
