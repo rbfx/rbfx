@@ -398,6 +398,11 @@ Input::Input(Context* context) :
 
     SubscribeToEvent(E_SCREENMODE, URHO3D_HANDLER(Input, HandleScreenMode));
 
+#ifdef __EMSCRIPTEN__
+    // Toggle fullscreen is implemented at the level of the shell
+    toggleFullscreen_ = false;
+#endif
+
 #if defined(__ANDROID__)
     // Prevent mouse events from being registered as synthetic touch events and vice versa
     SDL_SetHint(SDL_HINT_MOUSE_TOUCH_EVENTS, "0");
