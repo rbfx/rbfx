@@ -14,7 +14,7 @@ void VS()
     #else
         vTexCoord.xy = GetTexCoord(iTexCoord);
     #endif
-    vTexCoord.w = GetDepth(gl_Position);
+    vTexCoord.z = GetDepth(gl_Position);
 }
 
 void PS()
