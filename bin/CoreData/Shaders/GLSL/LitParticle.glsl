@@ -37,7 +37,11 @@ void VS()
     mat4 modelMatrix = iModelMatrix;
     vec3 worldPos = GetWorldPos(modelMatrix);
     gl_Position = GetClipPos(worldPos);
-    vTexCoord = GetTexCoord(iTexCoord);
+    #ifdef NOUV
+        vTexCoord = vec2(0.0, 0.0);
+    #else
+        vTexCoord = GetTexCoord(iTexCoord);
+    #endif
     vWorldPos = vec4(worldPos, GetDepth(gl_Position));
 
     #ifdef SOFTPARTICLES
@@ -62,7 +66,7 @@ void VS()
             // Spotlight projection: transform from world space to projector texture coordinates
             vSpotPos = projWorldPos * cLightMatrices[0];
         #endif
-    
+
         #ifdef POINTLIGHT
             vCubeMaskVec = (worldPos - cLightPos.xyz) * mat3(cLightMatrices[0][0].xyz, cLightMatrices[0][1].xyz, cLightMatrices[0][2].xyz);
         #endif
@@ -139,7 +143,7 @@ void PS()
         #ifdef SHADOW
             diff *= GetShadow(vShadowPos, vWorldPos.w);
         #endif
-    
+
         #if defined(SPOTLIGHT)
             lightColor = vSpotPos.w > 0.0 ? texture2DProj(sLightSpotMap, vSpotPos).rgb * cLightColor.rgb : vec3(0.0, 0.0, 0.0);
         #elif defined(CUBEMASK)
