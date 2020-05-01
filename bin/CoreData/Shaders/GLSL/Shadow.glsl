@@ -21,7 +21,7 @@ void VS()
     #endif
 
     #ifdef VSM_SHADOW
-        vTexCoord.zw = vec2(gl_Position.z, gl_Position.w);
+        vTexCoord.zw = gl_Position.zw;
     #endif
 }
 
