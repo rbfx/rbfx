@@ -29,8 +29,6 @@ namespace Editor
 {
     internal class Program
     {
-        private Context _context;
-
         private void Run(string[] args)
         {
             int argc = args.Length + 1;                 // args + executable path
@@ -40,9 +38,9 @@ namespace Editor
             Urho3D.ParseArguments(argc, argv);
 
             Context.SetRuntimeApi(new ScriptRuntimeApiReloadableImpl());
-            using (_context = new Context())
+            using (var context = new Context())
             {
-                using (Application editor = Application.wrap(CreateApplication(Context.getCPtr(_context).Handle), true))
+                using (Application editor = Application.CreateApplicationFromFactory(context, CreateApplication))
                 {
                     Environment.ExitCode = editor.Run();
                 }
@@ -56,6 +54,6 @@ namespace Editor
         }
 
         [DllImport("libEditor")]
-        private static extern IntPtr CreateApplication(IntPtr context);
+        private static extern IntPtr CreateApplication(HandleRef context);
     }
 }
