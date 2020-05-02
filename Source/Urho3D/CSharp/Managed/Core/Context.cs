@@ -40,7 +40,7 @@ namespace Urho3DNet
 
         private readonly Dictionary<uint, Type> _factoryTypes = new Dictionary<uint, Type>();
 
-        internal static void SetRuntimeApi(ScriptRuntimeApi impl)
+        public static void SetRuntimeApi(ScriptRuntimeApi impl)
         {
             Script.GetRuntimeApi()?.Dispose();
             Script.SetRuntimeApi(impl);
