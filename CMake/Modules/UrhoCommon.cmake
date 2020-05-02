@@ -341,35 +341,6 @@ if (URHO3D_CSHARP)
     execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
         /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
     )
-
-    # Strong name signatures
-    find_program(SN sn PATHS
-        ${MONO_PATH}/bin
-        /Library/Frameworks/Mono.framework/Versions/Current/bin
-        $ENV{WindowsSDK_ExecutablePath_${CSHARP_PLATFORM}}
-        ENV PATH)
-    if (NOT SN)
-        if (WIN32)
-            message(FATAL_ERROR "sn could not be found. Please install .NET framework.")
-        else ()
-            message(FATAL_ERROR "sn could not be found. Please install Mono.")
-        endif ()
-    endif ()
-    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CSharp.snk)
-        execute_process(COMMAND ${SN} -k ${CMAKE_BINARY_DIR}/CSharp.snk)
-    endif ()
-    if (NOT EXISTS ${CMAKE_CURRENT_BINARY_DIR}/CSharp.snk.pub)
-        execute_process(COMMAND ${SN} -p ${CMAKE_BINARY_DIR}/CSharp.snk ${CMAKE_BINARY_DIR}/CSharp.snk.pub)
-    endif ()
-
-    execute_process(
-        COMMAND ${SN} -tp ${CMAKE_BINARY_DIR}/CSharp.snk.pub
-        OUTPUT_VARIABLE SNK_PUB_KEY
-    )
-    string(REGEX MATCH "Public [Kk]ey(.+)?:[0-9a-f\r\n]+\r?\n\r?\n" SNK_PUB_KEY "${SNK_PUB_KEY}")
-    string(REGEX REPLACE "Public [Kk]ey(.+)?:" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
-    string(REGEX REPLACE "[ \r\n]+" "" SNK_PUB_KEY "${SNK_PUB_KEY}")
-    set(SNK_PUB_KEY "${SNK_PUB_KEY}" CACHE STRING "Public key for .NET assemblies" FORCE)
 endif()
 
 
