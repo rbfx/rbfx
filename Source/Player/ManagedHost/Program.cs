@@ -32,25 +32,23 @@ namespace Player
 {
     internal class Program
     {
-        private Context _context;
-
         private Program()
         {
         }
 
         private void Run(string[] args)
         {
-            var argc = args.Length + 1;                 // args + executable path
+            int argc = args.Length + 1;                 // args + executable path
             var argv = new string[args.Length + 2];     // args + executable path + null
             argv[0] = new Uri(Assembly.GetExecutingAssembly().CodeBase).LocalPath;
             args.CopyTo(argv, 1);
             Urho3D.ParseArguments(argc, argv);
 
-            using (_context = new Context())
+            using (var context = new Context())
             {
-                using (Application editor = Application.wrap(CreateApplication(Context.getCPtr(_context).Handle), true))
+                using (var player = Application.CreateApplicationFromFactory(context, CreateApplication))
                 {
-                    Environment.ExitCode = editor.Run();
+                    Environment.ExitCode = player.Run();
                 }
             }
         }
@@ -62,6 +60,6 @@ namespace Player
         }
 
         [DllImport("libPlayer")]
-        private static extern IntPtr CreateApplication(IntPtr context);
+        private static extern IntPtr CreateApplication(HandleRef context);
     }
 }

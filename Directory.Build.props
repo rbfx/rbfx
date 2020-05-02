@@ -47,8 +47,4 @@
     <OutDir>$(BaseOutputPath)</OutDir>
     <OutputPath>$(BaseOutputPath)</OutputPath>
   </PropertyGroup>
-  <PropertyGroup>
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>$(CMAKE_BINARY_DIR)/CSharp.snk</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
 </Project>

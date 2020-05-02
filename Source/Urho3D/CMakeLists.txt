@@ -380,7 +380,6 @@ if (URHO3D_CSHARP)
         )
     endif ()
     unset (CMAKE_SWIG_OUTDIR)
-    configure_file(CSharp/Managed/AssemblyInfo.cs.in ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Managed/AssemblyInfo.cs @ONLY)
     file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
     file (GLOB_RECURSE WRAPPER_FILES )
 
