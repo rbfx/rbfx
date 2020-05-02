@@ -1,3 +1,0 @@
-<technique vs="LightmapBaker" ps="LightmapBaker">
-    <pass name="deferred" psdefines="DEFERRED" cull="none" />
-</technique>

@@ -1,3 +1,0 @@
-<technique vs="Basic" ps="Basic" vsdefines="NOUV" >
-    <pass name="postalpha" depthtest="always" depthwrite="false" />
-</technique>

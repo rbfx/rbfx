@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<AutoVisualizer xmlns="http://schemas.microsoft.com/vstudio/debugger/natvis/2010">
+
+	<Type Name="Lumix::Array&lt;*&gt;">
+		<DisplayString Condition="m_data == nullptr">size={m_size}</DisplayString>
+		<DisplayString Condition="m_data != nullptr">size={m_size} [0]=>{m_data[0]}</DisplayString>
+		<Expand>
+			<ArrayItems>
+				<Size>m_size</Size>
+				<ValuePointer>m_data</ValuePointer>
+			</ArrayItems>
+		</Expand>
+	</Type>
+
+	<Type Name="Lumix::Path">
+		<DisplayString>{m_data->m_path,na}</DisplayString>
+	</Type>
+	
+	<Type Name="Lumix::Span&lt;*&gt;">
+		<DisplayString Condition="m_end == m_begin">size=0</DisplayString>
+		<DisplayString Condition="m_end != m_begin">size={m_end - m_begin} [0]=>{m_begin[0]}</DisplayString>
+		<Expand>
+			<ArrayItems>
+				<Size>m_end - m_begin</Size>
+				<ValuePointer>m_begin</ValuePointer>
+			</ArrayItems>
+		</Expand>
+  </Type>
+		
+	<Type Name="Lumix::HashMap&lt;*,*&gt;">
+    <DisplayString>{{ size={m_size} }}</DisplayString>
+    <Expand>
+      <Item Name="[size]" ExcludeView="simple">m_size</Item>
+      <CustomListItems MaxItemsPerView="5000" ExcludeView="Test">
+        <Variable Name="i" InitialValue="0" />
+        <Variable Name="k" InitialValue="m_keys" />
+        <Loop>
+          <Break Condition="i == m_capacity" />
+          <If Condition="m_keys[i].valid">
+            <Item Name="[{*($T1*)m_keys[i].key_mem}]">m_values[i]</Item>
+          </If>
+          <Exec>++i</Exec>
+        </Loop>
+      </CustomListItems>
+    </Expand>
+  </Type>
+</AutoVisualizer>

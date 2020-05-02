@@ -1,0 +1,75 @@
+#pragma once
+
+
+#include "engine/hash_map.h"
+#include "engine/delegate_list.h"
+#include "engine/resource.h"
+#include "engine/resource_manager.h"
+#include "engine/stream.h"
+#include "renderer/draw2d.h"
+
+
+namespace Lumix
+{
+
+
+struct Font;
+struct Renderer;
+struct Texture;
+
+
+struct Glyph {
+	u32 codepoint;
+	float u0, v0, u1, v1;
+	float x0, y0, x1, y1;
+	float advance_x;
+};
+
+
+LUMIX_RENDERER_API Vec2 measureTextA(const Font& font, const char* str, const char* str_end);
+LUMIX_RENDERER_API const Glyph* findGlyph(const Font& font, u32 codepoint);
+LUMIX_RENDERER_API float getAdvanceY(const Font& font);
+LUMIX_RENDERER_API float getDescender(const Font& font);
+LUMIX_RENDERER_API float getAscender(const Font& font);
+
+
+struct LUMIX_RENDERER_API FontResource final : Resource
+{
+	FontResource(const Path& path, ResourceManager& manager, IAllocator& allocator);
+
+	ResourceType getType() const override { return TYPE; }
+
+	void unload() override { file_data.free(); }
+	bool load(u64 size, const u8* mem) override;
+	Font* addRef(int font_size);
+	void removeRef(Font& font);
+
+	OutputMemoryStream file_data;
+	static const ResourceType TYPE;
+};
+
+
+struct LUMIX_RENDERER_API FontManager final : ResourceManager
+{
+friend struct FontResource;
+public:
+	FontManager(Renderer& renderer, IAllocator& allocator);
+	~FontManager();
+
+	Texture* getAtlasTexture();
+
+private:
+	Resource* createResource(const Path& path) override;
+	void destroyResource(Resource& resource) override;
+	bool build();
+
+private:
+	IAllocator& m_allocator;
+	Renderer& m_renderer;
+	Texture* m_atlas_texture;
+	Array<Font*> m_fonts;
+	bool m_dirty = true;
+};
+
+
+} // namespace Lumix

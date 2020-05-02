@@ -1,0 +1,22 @@
+include "pipelines/common.glsl"
+
+vertex_shader [[
+	layout(location=0) out vec2 v_uv;
+	void main() {
+		vec4 pos = fullscreenQuad(gl_VertexID, v_uv);
+		gl_Position = pos;
+	}
+]]
+
+
+fragment_shader [[
+	layout (binding=0) uniform sampler2D u_source;
+
+	layout(location=0) in vec2 v_uv;
+	layout(location=0) out vec4 o_color;
+
+	void main() {
+		o_color.rgb = texture(u_source, v_uv).rgb;
+		o_color.w = 1;
+	}
+]]

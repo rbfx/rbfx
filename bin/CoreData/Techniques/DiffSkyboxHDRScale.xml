@@ -1,3 +1,0 @@
-<technique vs="Skybox" ps="Skybox" psdefines="HDRSCALE">
-    <pass name="postopaque" depthwrite="false" />
-</technique>

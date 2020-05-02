@@ -1,0 +1,2 @@
+shader "pipelines/editor_icon.shd"
+texture "/editor/models/phy_controller_icon.tga"

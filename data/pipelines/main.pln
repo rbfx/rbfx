@@ -1,0 +1,441 @@
+local direct_shader = preloadShader("pipelines/direct.shd")
+local textured_quad_shader = preloadShader("pipelines/textured_quad.shd")
+local tonemap_shader = preloadShader("pipelines/tonemap.shd")
+local indirect_shader =  preloadShader("pipelines/indirect.shd")
+local light_probe_grid_shader =  preloadShader("pipelines/light_probe_grid.shd")
+local selection_outline_shader = preloadShader("pipelines/selection_outline.shd")
+local local_light_shader = preloadShader("pipelines/local_light.shd")
+local blur_shader = preloadShader("pipelines/blur.shd")
+local debug_shadowmap = false
+local debug_normal = false
+local debug_albedo = false
+local screenshot_request = 0
+local enable_icons = true
+
+local decal_state = {
+	blending = "add",
+	depth_write = false
+}
+
+local transparent_state = {
+	blending = "add",
+	depth_write = false
+}
+
+local water_state = {
+	depth_write = false
+}
+
+local default_state = {
+	define = "DEFERRED",
+	depth_write = true,
+	stencil_func = STENCIL_ALWAYS,
+	stencil_write_mask = 0xff,
+	stencil_ref = 1,
+	stencil_mask = 0xff, 
+	stencil_sfail = STENCIL_REPLACE,
+	stencil_zfail = STENCIL_REPLACE,
+	stencil_zpass = STENCIL_REPLACE,
+	wireframe = false
+}
+
+function waterPass(water_set, colorbuffer, dsbuffer)
+	setRenderTargetsReadonlyDS(colorbuffer, dsbuffer)
+
+	beginBlock("water_pass")
+	pass(getCameraParams())
+	bindRenderbuffers({ dsbuffer, }, 4);
+	renderBucket(water_set, water_state)
+	endBlock()
+end
+
+function transparentPass(transparent_set, colorbuffer, dsbuffer)
+	setRenderTargets(colorbuffer, dsbuffer)
+
+	beginBlock("transparent_pass")
+	pass(getCameraParams())
+	renderBucket(transparent_set, transparent_state)
+	local view_params = getCameraParams()
+	renderParticles(view_params)
+	endBlock()
+end
+
+function geomPass(default_set, decal_set)
+	beginBlock("geom_pass")
+		local gbuffer0 = createRenderbuffer(1, 1, true, "rgba8", "gbuffer0")
+		local gbuffer1 = createRenderbuffer(1, 1, true, "rgba16", "gbuffer1")
+		local gbuffer2 = createRenderbuffer(1, 1, true, "rgba8", "gbuffer2")
+		local dsbuffer = createRenderbuffer(1, 1, true, "depth24stencil8", "gbuffer_ds")
+	
+		setRenderTargets(gbuffer0, gbuffer1, gbuffer2, dsbuffer)
+		if PREVIEW ~= nil then
+			clear(CLEAR_ALL, 0.9, 0.9, 0.9, 1, 0)
+		else
+			clear(CLEAR_ALL, 0.0, 0.0, 0.0, 1, 0)
+		end
+		local view_params = getCameraParams()
+		pass(view_params)
+		renderTerrains(view_params, default_state)
+		renderBucket(default_set, default_state)
+	endBlock()
+
+	beginBlock("decals")
+		setRenderTargetsReadonlyDS(gbuffer0, gbuffer1, gbuffer2, dsbuffer)
+		bindRenderbuffers({
+			dsbuffer,
+		}, 1)
+		renderBucket(decal_set, decal_state)
+	endBlock()
+	
+	return gbuffer0, gbuffer1, gbuffer2, dsbuffer
+end
+
+function lightPass(gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap, local_light_set)
+	local hdr_rb = 0
+	if PROBE ~= nil then
+		hdr_rb = createRenderbuffer(1, 1, true, "rgba32f", "hdr")
+	else
+		hdr_rb = createRenderbuffer(1, 1, true, "rgba16f", "hdr")
+	end
+	setRenderTargets(hdr_rb)
+	clear(CLEAR_COLOR, 0, 0, 0, 0, 0)
+	
+	local view_params = getCameraParams()
+
+	if PROBE_BOUNCE == nil or PROBE_BOUNCE then
+		beginBlock("indirect diffuse")
+			beginBlock("weights")
+				local wrb = createRenderbuffer(1, 1, true, "r16f", "indirect_weights")
+				setRenderTargetsReadonlyDS(wrb, gbuffer_depth)
+				clear(CLEAR_COLOR, 0, 0, 0, 0, 0)
+				bindRenderbuffers({
+					gbuffer0,
+					gbuffer1,
+					gbuffer2,
+					gbuffer_depth,
+				}, 0)
+				renderEnvProbeVolumes(indirect_shader, view_params, false, true)
+			endBlock()
+
+			setRenderTargetsReadonlyDS(hdr_rb, gbuffer_depth)
+			bindRenderbuffers({
+				gbuffer0,
+				gbuffer1,
+				gbuffer2,
+				gbuffer_depth,
+				wrb,
+			}, 0)
+			renderEnvProbeVolumes(indirect_shader, view_params, false, false)
+		endBlock()
+
+		beginBlock("indirect specular")
+			beginBlock("weights")
+				setRenderTargetsReadonlyDS(wrb, gbuffer_depth)
+				clear(CLEAR_COLOR, 0, 0, 0, 0, 0)
+				bindRenderbuffers({
+					gbuffer0,
+					gbuffer1,
+					gbuffer2,
+					gbuffer_depth,
+				}, 0)
+				renderEnvProbeVolumes(indirect_shader, view_params, true, true)
+			endBlock()
+
+			setRenderTargetsReadonlyDS(hdr_rb, gbuffer_depth)
+			bindRenderbuffers({
+				gbuffer0,
+				gbuffer1,
+				gbuffer2,
+				gbuffer_depth,
+				wrb,
+			}, 0)
+			renderEnvProbeVolumes(indirect_shader, view_params, true, false)
+		endBlock()
+
+		beginBlock("light probe grid")
+			setRenderTargetsReadonlyDS(hdr_rb, gbuffer_depth)
+			bindRenderbuffers({
+				gbuffer0,
+				gbuffer1,
+				gbuffer2,
+				gbuffer_depth,
+			}, 0)
+			renderLightProbeGrids(light_probe_grid_shader, view_params);
+		endBlock()
+	end
+	
+	beginBlock("direct")
+	drawArray(0, 4, direct_shader,
+		{
+			gbuffer0,
+			gbuffer1,
+			gbuffer2,
+			gbuffer_depth,
+			shadowmap
+		}, {}, {}, 
+		{ 
+			depth_test = false,
+			blending = "add",
+			stencil_write_mask = 0,
+			stencil_func = STENCIL_EQUAL,
+			stencil_ref = 1,
+			stencil_mask = 0xff,
+			stencil_sfail = STENCIL_KEEP,
+			stencil_zfail = STENCIL_KEEP,
+			stencil_zpass = STENCIL_REPLACE,
+		}
+	)
+
+	endBlock()
+	
+	beginBlock("local_lights")
+	bindRenderbuffers({
+		gbuffer0,
+		gbuffer1,
+		gbuffer2,
+		gbuffer_depth,
+		shadowmap
+	}, 0)
+	renderLocalLights("", local_light_shader, local_light_set)
+	endBlock()
+
+	return hdr_rb
+end
+
+function debugRenderbuffer(rb, output, channel_mask)
+	setRenderTargets(output)
+	
+	drawArray(0, 4, textured_quad_shader
+		, { rb }
+		, { { 0, 0, 1, 1 }, channel_mask }
+		, {}
+		, { depth_test = false });
+end
+
+function blur(buffer, format, w, h, tmp_rb_dbg_name) 
+	local blur_buf = createRenderbuffer(w, h, false, format, tmp_rb_dbg_name)
+	setRenderTargets(blur_buf)
+	viewport(0, 0, w, h)
+	drawArray(0, 4, blur_shader
+		, { buffer }
+		, { {1.0 / w, 1.0 / h, 0, 0 }}
+		, "BLUR_H"
+		, { depth_test = false, depth_write = false }
+	)
+	setRenderTargets(buffer)
+	viewport(0, 0, w, h)
+	drawArray(0, 4, blur_shader
+		, { blur_buf }
+		, { {1.0 / w, 1.0 / h, 0, 0 } }
+		, {}
+		, { depth_test = false, depth_write = false }
+	)
+end
+
+function shadowPass()
+	if not environmentCastShadows() then
+		local rb = createRenderbuffer(1, 1, false, "r32f", "shadowmap")
+		setRenderTargets(rb)
+		clear(CLEAR_ALL, 0, 0, 0, 1, 0)
+		return rb
+	else 
+		beginBlock("shadows")
+			local rb = createRenderbuffer(4096, 1024, false, "r32f", "shadowmap")
+			local depthbuf = createRenderbuffer(4096, 1024, false, "depth24", "shadowmap_depth")
+			setRenderTargets(rb, depthbuf)
+			clear(CLEAR_ALL, 0, 0, 0, 1, 0)
+			
+			for slice = 0, 3 do 
+				local view_params = getShadowCameraParams(slice, 4096)
+				local shadow_set = prepareCommands(view_params, { { layers = { "default" }, defines = { "DEPTH" } } })
+				
+				viewport(slice * 1024, 0, 1024, 1024)
+				beginBlock("slice " .. tostring(slice + 1))
+				pass(view_params)
+				renderBucket(shadow_set, {})
+				renderTerrains(view_params, {})
+				endBlock()
+			end
+		endBlock()
+		
+		beginBlock("shadow_blur")
+			blur(rb, "r32f", 4096, 1024, "shadowmap_blur")
+		endBlock()
+		return rb
+	end
+end
+
+function postprocess(phase, hdr_buffer, gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap)
+	local prev = hdr_buffer
+	if _G["postprocesses"] ~= nil then
+		for _, value in pairs(_G["postprocesses"]) do
+			prev = value(getfenv(1), phase, prev, gbuffer0, gbuffer1, gbuffer_depth, shadowmap)
+		end
+	end
+	return prev
+end
+
+function tonemap(hdr_buffer)
+	if PROBE ~= nil then
+		return hdr_buffer
+	end
+
+	beginBlock("tonemap")
+	local rb
+	if APP ~= nil or PREVIEW ~= nil then
+		rb = createRenderbuffer(1, 1, true, "rgba8", "tonemap")
+	else
+		rb = createRenderbuffer(1, 1, true, "rgba16f", "tonemap")
+	end
+	setRenderTargets(rb)
+	drawArray(0, 4, tonemap_shader
+		, { hdr_buffer }
+		, {}
+		, {}
+		, { depth_test = false }
+	)
+	endBlock()
+	return rb
+end
+
+function debugPass(output, gb0, gb1, gb2, gb_depth, shadowmap)
+	if debug_shadowmap then
+		debugRenderbuffer(shadowmap, output, {1, 1, 1, 1})
+	end
+	if debug_normal then
+		debugRenderbuffer(gb1, output, {1, 1, 0, 0})
+	end
+	if debug_albedo then
+		debugRenderbuffer(gb0, output, {1, 1, 1, 0})
+	end
+end
+
+
+function renderSelectionOutline(output)
+	local selection_mask = createRenderbuffer(1, 1, true, "rgba16f", "selection outline")
+	setRenderTargets(selection_mask)
+	clear(CLEAR_COLOR, 0, 0, 0, 0, 0)
+	renderSelection()
+	
+	setRenderTargets(output)
+	drawArray(0, 4, selection_outline_shader
+		, { selection_mask }
+		, {}
+		, {}
+		, { depth_test = false }
+	)
+	
+end
+
+
+function main()
+	local view_params = getCameraParams()
+	local default_set, decal_set, local_light_set, transparent_set, water_set = prepareCommands(view_params, 
+		{ 
+			{ layers = { "default" }, defines = { "DEFERRED" } },
+			{ layers = { "decal" } },
+			{ layers = { "local_light" } },
+			{ layers = { "transparent" }, sort = "depth" },
+			{ layers = { "water" }, sort = "depth" }
+		}
+	)
+
+	
+	local shadowmap = shadowPass()
+	local gbuffer0, gbuffer1, gbuffer2, gbuffer_depth = geomPass(default_set, decal_set)
+	local hdr_buffer = lightPass(gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap, local_light_set)
+	
+	local res = hdr_buffer		
+	if PREVIEW == nil then
+		res = postprocess("pre", hdr_buffer, gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap)
+	end
+	
+	waterPass(water_set, res, gbuffer_depth)
+	transparentPass(transparent_set, res, gbuffer_depth)
+	setRenderTargetsReadonlyDS(hdr_buffer, gbuffer_depth)
+	renderTextMeshes()
+
+	if PREVIEW == nil then
+		res = postprocess("post", res, gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap)
+	end
+	
+	res = tonemap(res)
+
+	if PREVIEW == nil and PROBE == nil then
+		res = postprocess("post_tonemap", res, gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap)
+	end
+
+	if GAME_VIEW or APP then
+		if renderIngameGUI ~= nil then
+			renderIngameGUI()
+		end
+	end
+
+	debugPass(res, gbuffer0, gbuffer1, gbuffer2, gbuffer_depth, shadowmap)
+	local icon_ds = -1
+	if SCENE_VIEW ~= nil then
+		icon_ds = createRenderbuffer(1, 1, true, "depth24stencil8", "icon_ds")
+		pass(getCameraParams())
+			setRenderTargets(res, icon_ds)
+			clear(CLEAR_DEPTH, 0, 0, 0, 1, 0)
+			renderGizmos()
+	end
+
+	render2D()
+
+	if SCENE_VIEW ~= nil then
+		renderDebugShapes()
+		renderSelectionOutline(res)
+		if enable_icons then 
+			setRenderTargets(res, icon_ds)
+			bindRenderbuffers({
+				gbuffer_depth,
+			}, 1)
+			renderIcons()
+		end
+	end
+
+	if APP ~= nil then
+		setRenderTargets()
+		drawArray(0, 4, textured_quad_shader
+			, { res }
+			, { { 0, 0, 1, 1 }, { 1, 1, 1, 1 } }
+			, {}
+			, { depth_test = false });
+	end
+	setOutput(res)
+
+	if screenshot_request > 1 then
+		-- we have to wait for a few frames to propagate changed resolution
+		-- only then we can take a screeshot
+		screenshot_request = screenshot_request - 1
+		GameView.forceViewport(true, 4096, 2160)
+	elseif screenshot_request == 1 then
+		saveRenderbuffer(res, "screenshot.tga")
+		GameView.forceViewport(false, 0, 0)
+		screenshot_request = 0
+	end		
+end
+
+function onGUI()
+	if GAME_VIEW then
+		ImGui.SameLine()
+		if ImGui.Button("Screenshot") then
+			screenshot_request = 2
+		end
+		return
+	end
+
+	if ImGui.Button("Debug") then
+		ImGui.OpenPopup("debug_popup")
+	end
+
+	if ImGui.BeginPopup("debug_popup") then
+		changed, debug_shadowmap = ImGui.Checkbox("Shadowmap", debug_shadowmap)
+		changed, debug_albedo = ImGui.Checkbox("Albedo", debug_albedo)
+		changed, debug_normal = ImGui.Checkbox("Normal", debug_normal)
+		changed, enable_icons = ImGui.Checkbox("Icons", enable_icons)
+		changed, default_state.wireframe = ImGui.Checkbox("wireframe", default_state.wireframe)
+		ImGui.EndPopup()
+	end
+end
