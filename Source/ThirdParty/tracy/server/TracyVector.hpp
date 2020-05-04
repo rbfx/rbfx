@@ -22,6 +22,8 @@ namespace tracy
 template<typename T>
 class Vector
 {
+    constexpr uint8_t MaxCapacity() { return 0x7F; }
+
 public:
     using iterator = T*;
     using const_iterator = const T*;
@@ -30,6 +32,7 @@ public:
         : m_ptr( nullptr )
         , m_size( 0 )
         , m_capacity( 0 )
+        , m_magic( 0 )
     {
     }
 
@@ -44,16 +47,17 @@ public:
         : m_ptr( new T[1] )
         , m_size( 1 )
         , m_capacity( 0 )
+        , m_magic( 0 )
     {
-        memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
+        memUsage += sizeof( T );
         m_ptr[0] = value;
     }
 
     tracy_force_inline ~Vector()
     {
-        if( m_capacity != std::numeric_limits<uint8_t>::max() )
+        if( m_capacity != MaxCapacity() && m_ptr )
         {
-            memUsage.fetch_sub( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            memUsage -= Capacity() * sizeof( T );
             delete[] (T*)m_ptr;
         }
     }
@@ -61,7 +65,11 @@ public:
     Vector& operator=( const Vector& ) = delete;
     tracy_force_inline Vector& operator=( Vector&& src ) noexcept
     {
-        delete[] (T*)m_ptr;
+        if( m_capacity != MaxCapacity() && m_ptr )
+        {
+            memUsage -= Capacity() * sizeof( T );
+            delete[] (T*)m_ptr;
+        }
         memcpy( this, &src, sizeof( Vector<T> ) );
         memset( &src, 0, sizeof( Vector<T> ) );
         return *this;
@@ -69,15 +77,16 @@ public:
 
     tracy_force_inline void swap( Vector& other )
     {
-        std::swap( m_ptr, other.m_ptr );
-        std::swap( m_size, other.m_size );
-        std::swap( m_capacity, other.m_capacity );
+        uint8_t tmp[sizeof( Vector<T> )];
+        memcpy( tmp, &other, sizeof( Vector<T> ) );
+        memcpy( &other, this, sizeof( Vector<T> ) );
+        memcpy( this, tmp, sizeof( Vector<T> ) );
     }
 
     tracy_force_inline bool empty() const { return m_size == 0; }
     tracy_force_inline size_t size() const { return m_size; }
 
-    tracy_force_inline void set_size( size_t sz ) { assert( m_capacity != std::numeric_limits<uint8_t>::max() ); m_size = sz; }
+    tracy_force_inline void set_size( size_t sz ) { assert( m_capacity != MaxCapacity() ); m_size = sz; }
 
     tracy_force_inline T* data() { return m_ptr; }
     tracy_force_inline const T* data() const { return m_ptr; };
@@ -98,49 +107,49 @@ public:
 
     tracy_force_inline void push_back( const T& v )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
         m_ptr[m_size++] = v;
     }
 
     tracy_force_inline void push_back_non_empty( const T& v )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         if( m_size == CapacityNoNullptrCheck() ) AllocMore();
         m_ptr[m_size++] = v;
     }
 
     tracy_force_inline void push_back_no_space_check( const T& v )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( m_size < Capacity() );
         m_ptr[m_size++] = v;
     }
 
     tracy_force_inline void push_back( T&& v )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
         m_ptr[m_size++] = std::move( v );
     }
 
     tracy_force_inline T& push_next()
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         if( m_size == Capacity() ) AllocMore();
         return m_ptr[m_size++];
     }
 
     tracy_force_inline T& push_next_no_space_check()
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( m_size < Capacity() );
         return m_ptr[m_size++];
     }
 
     T* insert( T* it, const T& v )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( it >= m_ptr && it <= m_ptr + m_size );
         const auto dist = it - m_ptr;
         if( m_size == Capacity() ) AllocMore();
@@ -152,7 +161,7 @@ public:
 
     T* insert( T* it, T&& v )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( it >= m_ptr && it <= m_ptr + m_size );
         const auto dist = it - m_ptr;
         if( m_size == Capacity() ) AllocMore();
@@ -164,7 +173,7 @@ public:
 
     void insert( T* it, T* begin, T* end )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( it >= m_ptr && it <= m_ptr + m_size );
         const auto sz = end - begin;
         const auto dist = it - m_ptr;
@@ -176,7 +185,7 @@ public:
 
     T* erase( T* it )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( it >= m_ptr && it <= m_ptr + m_size );
         m_size--;
         memmove( it, it+1, ( m_size - ( it - m_ptr ) ) * sizeof( T ) );
@@ -185,7 +194,7 @@ public:
 
     T* erase( T* begin, T* end )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( begin >= m_ptr && begin <= m_ptr + m_size );
         assert( end >= m_ptr && end <= m_ptr + m_size );
         assert( begin <= end );
@@ -201,14 +210,14 @@ public:
 
     tracy_force_inline void pop_back()
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( m_size > 0 );
         m_size--;
     }
 
     tracy_force_inline T& back_and_pop()
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         assert( m_size > 0 );
         m_size--;
         return m_ptr[m_size];
@@ -222,7 +231,7 @@ public:
 
     void reserve_non_zero( size_t cap )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         cap--;
         cap |= cap >> 1;
         cap |= cap >> 2;
@@ -230,14 +239,14 @@ public:
         cap |= cap >> 8;
         cap |= cap >> 16;
         cap = TracyCountBits( cap );
-        memUsage.fetch_add( ( ( 1 << cap ) - Capacity() ) * sizeof( T ), std::memory_order_relaxed );
+        memUsage += ( ( 1 << cap ) - Capacity() ) * sizeof( T );
         m_capacity = cap;
         Realloc();
     }
 
     tracy_force_inline void reserve_and_use( size_t sz )
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         reserve( sz );
         m_size = sz;
     }
@@ -246,31 +255,34 @@ public:
     tracy_force_inline void reserve_exact( uint32_t sz, Slab<U>& slab )
     {
         assert( !m_ptr );
-        m_capacity = std::numeric_limits<uint8_t>::max();
+        m_capacity = MaxCapacity();
         m_size = sz;
         m_ptr = (T*)slab.AllocBig( sizeof( T ) * sz );
     }
 
     tracy_force_inline void clear()
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
         m_size = 0;
     }
+
+    tracy_force_inline bool is_magic() const { return m_magic; }
+    tracy_force_inline void set_magic() { assert( !m_magic ); m_magic = 1; }
 
 private:
     tracy_no_inline void AllocMore()
     {
-        assert( m_capacity != std::numeric_limits<uint8_t>::max() );
+        assert( m_capacity != MaxCapacity() );
 
         if( m_ptr == nullptr )
         {
-            memUsage.fetch_add( sizeof( T ), std::memory_order_relaxed );
+            memUsage += sizeof( T );
             m_ptr = new T[1];
             m_capacity = 0;
         }
         else
         {
-            memUsage.fetch_add( Capacity() * sizeof( T ), std::memory_order_relaxed );
+            memUsage += Capacity() * sizeof( T );
             m_capacity++;
             Realloc();
         }
@@ -313,8 +325,14 @@ private:
     short_ptr<T> m_ptr;
 #endif
     uint32_t m_size;
-    uint8_t m_capacity;
+    uint8_t m_capacity : 7;
+    uint8_t m_magic : 1;
 };
+
+
+template<typename T> struct VectorAdapterDirect { const T& operator()( const T& it ) const { return it; } };
+template<typename T> struct VectorAdapterPointer { const T& operator()( const short_ptr<T>& it ) const { return *it; } };
+
 #pragma pack()
 
 enum { VectorSize = sizeof( Vector<int> ) };

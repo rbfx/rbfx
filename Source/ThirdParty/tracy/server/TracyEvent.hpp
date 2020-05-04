@@ -10,7 +10,7 @@
 #include "TracyCharUtil.hpp"
 #include "TracyShortPtr.hpp"
 #include "TracyVector.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 #include "../common/TracyForceInline.hpp"
 
 namespace tracy
@@ -95,14 +95,18 @@ public:
 
     tracy_force_inline void SetVal( uint32_t val )
     {
-        memcpy( m_val, &val, 3 );
+        memcpy( m_val, &val, 2 );
+        val >>= 16;
+        memcpy( m_val+2, &val, 1 );
     }
 
     tracy_force_inline uint32_t Val() const
     {
-        uint32_t val = 0;
-        memcpy( &val, m_val, 3 );
-        return val;
+        uint8_t hi;
+        memcpy( &hi, m_val+2, 1 );
+        uint16_t lo;
+        memcpy( &lo, m_val, 2 );
+        return ( uint32_t( hi ) << 16 ) | lo;
     }
 
 private:
@@ -120,15 +124,23 @@ public:
 
     tracy_force_inline void SetVal( int64_t val )
     {
-        memcpy( m_val, &val, 6 );
+        memcpy( m_val, &val, 4 );
+        val >>= 32;
+        memcpy( m_val+4, &val, 2 );
     }
 
     tracy_force_inline int64_t Val() const
     {
-        int64_t val = 0;
-        memcpy( ((char*)&val)+2, m_val, 6 );
-        val >>= 16;
-        return val;
+        int16_t hi;
+        memcpy( &hi, m_val+4, 2 );
+        uint32_t lo;
+        memcpy( &lo, m_val, 4 );
+        return ( int64_t( hi ) << 32 ) | lo;
+    }
+
+    tracy_force_inline bool IsNonNegative() const
+    {
+        return ( m_val[5] >> 7 ) == 0;
     }
 
 private:
@@ -161,21 +173,33 @@ struct ZoneEvent
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_srcloc)+2, &start, 4 ); memcpy( ((char*)&_start_srcloc)+6, ((char*)&start)+4, 2 ); }
     tracy_force_inline int64_t End() const { return int64_t( _end_child1 ) >> 16; }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_child1)+2, &end, 4 ); memcpy( ((char*)&_end_child1)+6, ((char*)&end)+4, 2 ); }
+    tracy_force_inline bool IsEndValid() const { return ( _end_child1 >> 63 ) == 0; }
     tracy_force_inline int16_t SrcLoc() const { return int16_t( _start_srcloc & 0xFFFF ); }
     tracy_force_inline void SetSrcLoc( int16_t srcloc ) { memcpy( &_start_srcloc, &srcloc, 2 ); }
-    tracy_force_inline int32_t Child() const { return int32_t( uint32_t( _end_child1 & 0xFFFF ) | ( uint32_t( _child2 ) << 16 ) ); }
-    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_end_child1, &child, 2 ); _child2 = uint32_t( child ) >> 16; }
+    tracy_force_inline int32_t Child() const { int32_t child; memcpy( &child, &_child2, 4 ); return child; }
+    tracy_force_inline void SetChild( int32_t child ) { memcpy( &_child2, &child, 4 ); }
+    tracy_force_inline bool HasChildren() const { uint8_t tmp; memcpy( &tmp, ((char*)&_end_child1)+1, 1 ); return ( tmp >> 7 ) == 0; }
+
+    tracy_force_inline void SetStartSrcLoc( int64_t start, int16_t srcloc ) { assert( start < (int64_t)( 1ull << 47 ) ); start <<= 16; start |= uint16_t( srcloc ); memcpy( &_start_srcloc, &start, 8 ); }
 
     uint64_t _start_srcloc;
-    uint64_t _end_child1;
-    StringIdx text;
-    Int24 callstack;
-    StringIdx name;
     uint16_t _child2;
+    uint64_t _end_child1;
+    uint32_t extra;
 };
 
 enum { ZoneEventSize = sizeof( ZoneEvent ) };
 static_assert( std::is_standard_layout<ZoneEvent>::value, "ZoneEvent is not standard layout" );
+
+
+struct ZoneExtra
+{
+    Int24 callstack;
+    StringIdx text;
+    StringIdx name;
+};
+
+enum { ZoneExtraSize = sizeof( ZoneExtra ) };
 
 
 struct LockEvent
@@ -267,6 +291,9 @@ struct MemEvent
     tracy_force_inline uint16_t ThreadFree() const { return uint16_t( _time_thread_free ); }
     tracy_force_inline void SetThreadFree( uint16_t thread ) { memcpy( &_time_thread_free, &thread, 2 ); }
 
+    tracy_force_inline void SetTimeThreadAlloc( int64_t time, uint16_t thread ) { time <<= 16; time |= thread; memcpy( &_time_thread_alloc, &time, 8 ); }
+    tracy_force_inline void SetTimeThreadFree( int64_t time, uint16_t thread ) { time <<= 16; time |= thread; memcpy( &_time_thread_free, &time, 8 ); }
+
     uint64_t _ptr_csalloc1;
     uint64_t _size_csalloc2;
     Int24 csFree;
@@ -313,11 +340,13 @@ enum { CallstackFrameIdSize = sizeof( CallstackFrameId ) };
 
 struct CallstackFrameTree
 {
+    CallstackFrameTree( CallstackFrameId id ) : frame( id ), alloc( 0 ), count( 0 ) {}
+
     CallstackFrameId frame;
     uint64_t alloc;
     uint32_t count;
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> children;
-    flat_hash_set<uint32_t, nohash<uint32_t>> callstacks;
+    unordered_flat_map<uint64_t, CallstackFrameTree> children;
+    unordered_flat_set<uint32_t> callstacks;
 };
 
 enum { CallstackFrameTreeSize = sizeof( CallstackFrameTree ) };
@@ -343,6 +372,7 @@ struct ContextSwitchData
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_cpu)+2, &start, 4 ); memcpy( ((char*)&_start_cpu)+6, ((char*)&start)+4, 2 ); }
     tracy_force_inline int64_t End() const { return int64_t( _end_reason_state ) >> 16; }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_end_reason_state)+2, &end, 4 ); memcpy( ((char*)&_end_reason_state)+6, ((char*)&end)+4, 2 ); }
+    tracy_force_inline bool IsEndValid() const { return ( _end_reason_state >> 63 ) == 0; }
     tracy_force_inline uint8_t Cpu() const { return uint8_t( _start_cpu & 0xFF ); }
     tracy_force_inline void SetCpu( uint8_t cpu ) { memcpy( &_start_cpu, &cpu, 1 ); }
     tracy_force_inline int8_t Reason() const { return int8_t( (_end_reason_state >> 8) & 0xFF ); }
@@ -366,6 +396,7 @@ struct ContextSwitchCpu
     tracy_force_inline void SetStart( int64_t start ) { assert( start < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_start_thread)+2, &start, 4 ); memcpy( ((char*)&_start_thread)+6, ((char*)&start)+4, 2 ); }
     tracy_force_inline int64_t End() const { return _end.Val(); }
     tracy_force_inline void SetEnd( int64_t end ) { assert( end < (int64_t)( 1ull << 47 ) ); _end.SetVal( end ); }
+    tracy_force_inline bool IsEndValid() const { return _end.IsNonNegative(); }
     tracy_force_inline uint16_t Thread() const { return uint16_t( _start_thread ); }
     tracy_force_inline void SetThread( uint16_t thread ) { memcpy( &_start_thread, &thread, 2 ); }
 
@@ -385,7 +416,7 @@ struct ContextSwitchUsage
     tracy_force_inline void SetTime( int64_t time ) { assert( time < (int64_t)( 1ull << 47 ) ); memcpy( ((char*)&_time_other_own)+2, &time, 4 ); memcpy( ((char*)&_time_other_own)+6, ((char*)&time)+4, 2 ); }
     tracy_force_inline uint8_t Other() const { return uint8_t( _time_other_own ); }
     tracy_force_inline void SetOther( uint8_t other ) { memcpy( &_time_other_own, &other, 1 ); }
-    tracy_force_inline uint8_t Own() const { return uint8_t( _time_other_own >> 8 ); }
+    tracy_force_inline uint8_t Own() const { uint8_t v; memcpy( &v, ((char*)&_time_other_own)+1, 1 );return v; }
     tracy_force_inline void SetOwn( uint8_t own ) { memcpy( ((char*)&_time_other_own)+1, &own, 1 ); }
 
     uint64_t _time_other_own;
@@ -400,6 +431,7 @@ struct MessageData
     StringRef ref;
     uint16_t thread;
     uint32_t color;
+    Int24 callstack;
 };
 
 enum { MessageDataSize = sizeof( MessageData ) };
@@ -453,7 +485,7 @@ struct GpuCtxData
     uint64_t count;
     uint8_t accuracyBits;
     float period;
-    flat_hash_map<uint64_t, GpuCtxThreadData, nohash<uint64_t>> threadData;
+    unordered_flat_map<uint64_t, GpuCtxThreadData> threadData;
     short_ptr<GpuEvent> query[64*1024];
 };
 
@@ -469,7 +501,7 @@ struct LockMap
 
     int16_t srcloc;
     Vector<LockEventPtr> timeline;
-    flat_hash_map<uint64_t, uint8_t, nohash<uint64_t>> threadMap;
+    unordered_flat_map<uint64_t, uint8_t> threadMap;
     std::vector<uint64_t> threadList;
     LockType type;
     int64_t timeAnnounce;
@@ -519,7 +551,7 @@ struct MemData
 {
     Vector<MemEvent> data;
     Vector<uint32_t> frees;
-    flat_hash_map<uint64_t, size_t, nohash<uint64_t>> active;
+    unordered_flat_map<uint64_t, size_t> active;
     uint64_t high = std::numeric_limits<uint64_t>::min();
     uint64_t low = std::numeric_limits<uint64_t>::max();
     uint64_t usage = 0;
@@ -550,7 +582,6 @@ struct SourceLocationHasher
     {
         return charutil::hash( (const char*)ptr, sizeof( SourceLocationBase ) );
     }
-    typedef tracy::power_of_two_hash_policy hash_policy;
 };
 
 struct SourceLocationComparator
@@ -591,6 +622,15 @@ struct CpuThreadData
 };
 
 enum { CpuThreadDataSize = sizeof( CpuThreadData ) };
+
+
+struct Parameter
+{
+    uint32_t idx;
+    StringRef name;
+    bool isBool;
+    int32_t val;
+};
 
 }
 
