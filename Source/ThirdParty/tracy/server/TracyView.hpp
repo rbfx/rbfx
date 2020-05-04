@@ -17,7 +17,7 @@
 #include "TracyVector.hpp"
 #include "TracyViewData.hpp"
 #include "TracyWorker.hpp"
-#include "tracy_flat_hash_map.hpp"
+#include "tracy_robin_hood.h"
 
 struct ImVec2;
 struct ImFont;
@@ -120,11 +120,15 @@ private:
     void DrawZones();
     void DrawContextSwitches( const ContextSwitch* ctx, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int endOffset );
     int DispatchZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
-    int DrawZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
-    int SkipZoneLevel( const Vector<short_ptr<ZoneEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    template<typename Adapter, typename V>
+    int DrawZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
+    template<typename Adapter, typename V>
+    int SkipZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, float yMin, float yMax, uint64_t tid );
     int DispatchGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
-    int DrawGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
-    int SkipGpuZoneLevel( const Vector<short_ptr<GpuEvent>>& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    template<typename Adapter, typename V>
+    int DrawGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
+    template<typename Adapter, typename V>
+    int SkipGpuZoneLevel( const V& vec, bool hover, double pxns, int64_t nspx, const ImVec2& wpos, int offset, int depth, uint64_t thread, float yMin, float yMax, int64_t begin, int drift );
     void DrawLockHeader( uint32_t id, const LockMap& lockmap, const SourceLocation& srcloc, bool hover, ImDrawList* draw, const ImVec2& wpos, float w, float ty, float offset, uint8_t tid );
     int DrawLocks( uint64_t tid, bool hover, double pxns, const ImVec2& wpos, int offset, LockHighlight& highlight, float yMin, float yMax );
     int DrawPlots( int offset, double pxns, const ImVec2& wpos, bool hover, float yMin, float yMax );
@@ -149,18 +153,22 @@ private:
     void DrawSelectedAnnotation();
     void DrawAnnotationList();
 
-    template<class T>
-    void ListMemData( T ptr, T end, std::function<void(T&)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
+    void ListMemData( std::vector<const MemEvent*>& vec, std::function<void(const MemEvent*)> DrawAddress, const char* id = nullptr, int64_t startTime = -1 );
 
-    flat_hash_map<uint32_t, PathData, nohash<uint32_t>> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
-    flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
-    void DrawFrameTreeLevel( const flat_hash_map<uint64_t, CallstackFrameTree, nohash<uint64_t>>& tree, int& idx );
+    unordered_flat_map<uint32_t, PathData> GetCallstackPaths( const MemData& mem, bool onlyActive ) const;
+    unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeBottomUp( const MemData& mem ) const;
+    unordered_flat_map<uint64_t, CallstackFrameTree> GetCallstackFrameTreeTopDown( const MemData& mem ) const;
+    void DrawFrameTreeLevel( const unordered_flat_map<uint64_t, CallstackFrameTree>& tree, int& idx );
     void DrawZoneList( const Vector<short_ptr<ZoneEvent>>& zones );
 
     void DrawInfoWindow();
     void DrawZoneInfoWindow();
     void DrawGpuInfoWindow();
+
+    template<typename Adapter, typename V>
+    void DrawZoneInfoChildren( const V& children, int64_t ztime );
+    template<typename Adapter, typename V>
+    void DrawGpuInfoChildren( const V& children, int64_t ztime );
 
     void HandleZoneViewMouse( int64_t timespan, const ImVec2& wpos, float w, double& pxns );
 
@@ -213,6 +221,7 @@ private:
     const char* GetPlotName( const PlotData* plot ) const;
 
     void SmallCallstackButton( const char* name, uint32_t callstack, int& idx, bool tooltip = true );
+    void DrawCallstackCalls( uint32_t callstack, uint8_t limit ) const;
     void SetViewToLastFrames();
     int64_t GetZoneChildTime( const ZoneEvent& zone );
     int64_t GetZoneChildTime( const GpuEvent& zone );
@@ -221,15 +230,19 @@ private:
     int64_t GetZoneSelfTime( const GpuEvent& zone );
     bool GetZoneRunningTime( const ContextSwitch* ctx, const ZoneEvent& ev, int64_t& time, uint64_t& cnt );
 
-    void CalcZoneTimeData( flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
-    void CalcZoneTimeData( const ContextSwitch* ctx, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>& data, flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>>::iterator zit, const ZoneEvent& zone );
+    tracy_force_inline void CalcZoneTimeData( unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
+    tracy_force_inline void CalcZoneTimeData( const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
+    template<typename Adapter, typename V>
+    void CalcZoneTimeDataImpl( const V& children, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
+    template<typename Adapter, typename V>
+    void CalcZoneTimeDataImpl( const V& children, const ContextSwitch* ctx, unordered_flat_map<int16_t, ZoneTimeData>& data, int64_t& ztime, const ZoneEvent& zone );
 
     void SetPlaybackFrame( uint32_t idx );
 
-    flat_hash_map<const void*, VisData, nohash<const void*>> m_visData;
-    flat_hash_map<uint64_t, bool, nohash<uint64_t>> m_visibleMsgThread;
-    flat_hash_map<const void*, int, nohash<const void*>> m_gpuDrift;
-    flat_hash_map<const PlotData*, PlotView, nohash<const PlotData*>> m_plotView;
+    unordered_flat_map<const void*, VisData> m_visData;
+    unordered_flat_map<uint64_t, bool> m_visibleMsgThread;
+    unordered_flat_map<const void*, int> m_gpuDrift;
+    unordered_flat_map<const PlotData*, PlotView> m_plotView;
     Vector<const ThreadData*> m_threadOrder;
     Vector<float> m_threadDnd;
 
@@ -287,6 +300,7 @@ private:
     const FrameData* m_frames;
     uint32_t m_lockInfoWindow = InvalidId;
     const ZoneEvent* m_zoneHover = nullptr;
+    DecayValue<const ZoneEvent*> m_zoneHover2 = nullptr;
     int m_frameHover = -1;
     bool m_messagesScrollBottom;
     ImGuiTextFilter m_messageFilter;
@@ -300,6 +314,7 @@ private:
     Region m_highlight;
     Region m_highlightZoom;
 
+    DecayValue<uint64_t> m_cpuDataThread = 0;
     uint64_t m_gpuThread = 0;
     int64_t m_gpuStart = 0;
     int64_t m_gpuEnd = 0;
@@ -331,6 +346,7 @@ private:
     bool m_groupChildrenLocations = false;
     bool m_allocTimeRelativeToZone = true;
     bool m_ctxSwitchTimeRelativeToZone = true;
+    bool m_messageTimeRelativeToZone = true;
 
     ShortcutAction m_shortcut = ShortcutAction::None;
     Namespace m_namespace = Namespace::Short;
@@ -375,6 +391,8 @@ private:
 
     std::atomic<SaveThreadState> m_saveThreadState { SaveThreadState::Inert };
     std::thread m_saveThread;
+    std::atomic<size_t> m_srcFileBytes { 0 };
+    std::atomic<size_t> m_dstFileBytes { 0 };
 
     void* m_frameTexture = nullptr;
     const void* m_frameTexturePtr = nullptr;
@@ -390,6 +408,7 @@ private:
 
         struct Group
         {
+            uint16_t id;
             Vector<short_ptr<ZoneEvent>> zones;
             int64_t time = 0;
         };
@@ -397,8 +416,9 @@ private:
         bool show = false;
         bool ignoreCase = false;
         std::vector<int16_t> match;
-        std::map<uint64_t, Group> groups;
+        unordered_flat_map<uint64_t, Group> groups;
         size_t processed;
+        uint16_t groupId;
         int selMatch = 0;
         uint64_t selGroup = Unselected;
         char pattern[1024] = {};
@@ -414,17 +434,21 @@ private:
         int64_t hlOrig_t0, hlOrig_t1;
         int64_t numBins = -1;
         std::unique_ptr<int64_t[]> bins, binTime, selBin;
-        std::vector<int64_t> sorted, selSort;
+        Vector<int64_t> sorted, selSort;
         size_t sortedNum = 0, selSortNum, selSortActive;
         float average, selAverage;
         float median, selMedian;
         int64_t total, selTotal;
+        int64_t selTime;
         bool drawAvgMed = true;
         bool drawSelAvgMed = true;
         bool scheduleResetMatch = false;
         int selCs = 0;
         int minBinVal = 1;
         int64_t tmin, tmax;
+        bool showZoneInFrames = false;
+        bool limitRange = false;
+        int64_t rangeMin, rangeMax;
 
         struct
         {
@@ -459,7 +483,9 @@ private:
             ResetSelection();
             groups.clear();
             processed = 0;
+            groupId = 0;
             selCs = 0;
+            selGroup = Unselected;
         }
 
         void ResetSelection()
@@ -470,12 +496,26 @@ private:
             selAverage = 0;
             selMedian = 0;
             selTotal = 0;
+            selTime = 0;
             binCache.numBins = -1;
         }
 
         void ShowZone( int16_t srcloc, const char* name )
         {
             show = true;
+            limitRange = false;
+            Reset();
+            match.emplace_back( srcloc );
+            strcpy( pattern, name );
+        }
+
+        void ShowZone( int16_t srcloc, const char* name, int64_t limitMin, int64_t limitMax )
+        {
+            assert( limitMin <= limitMax );
+            show = true;
+            limitRange = true;
+            rangeMin = limitMin;
+            rangeMax = limitMax;
             Reset();
             match.emplace_back( srcloc );
             strcpy( pattern, name );
@@ -586,7 +626,8 @@ private:
         enum class SortBy : int { Count, Time, Mtpc };
         SortBy sortBy = SortBy::Time;
         bool runningTime = false;
-        flat_hash_map<int16_t, ZoneTimeData, nohash<uint16_t>> data;
+        bool exclusiveTime = true;
+        unordered_flat_map<int16_t, ZoneTimeData> data;
         const ZoneEvent* dataValidFor = nullptr;
         float fztime;
     } m_timeDist;

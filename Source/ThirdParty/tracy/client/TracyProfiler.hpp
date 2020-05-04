@@ -57,7 +57,6 @@ TRACY_API std::atomic<uint32_t>& GetLockCounter();
 TRACY_API std::atomic<uint8_t>& GetGpuCtxCounter();
 TRACY_API GpuCtxWrapper& GetGpuCtx();
 TRACY_API uint64_t GetThreadHandle();
-
 TRACY_API void InitRPMallocThread();
 
 struct SourceLocationData
@@ -77,8 +76,29 @@ struct LuaZoneState
 };
 #endif
 
-using Magic = moodycamel::ConcurrentQueueDefaultTraits::index_t;
 
+#define TracyLfqPrepare( _type ) \
+    moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+    auto __token = GetToken(); \
+    auto& __tail = __token->get_tail_index(); \
+    auto item = __token->enqueue_begin( __magic ); \
+    MemWrite( &item->hdr.type, _type );
+
+#define TracyLfqCommit \
+    __tail.store( __magic + 1, std::memory_order_release );
+
+#define TracyLfqPrepareC( _type ) \
+    tracy::moodycamel::ConcurrentQueueDefaultTraits::index_t __magic; \
+    auto __token = tracy::GetToken(); \
+    auto& __tail = __token->get_tail_index(); \
+    auto item = __token->enqueue_begin( __magic ); \
+    tracy::MemWrite( &item->hdr.type, _type );
+
+#define TracyLfqCommitC \
+    __tail.store( __magic + 1, std::memory_order_release );
+
+
+typedef void(*ParameterCallback)( uint32_t idx, int32_t val );
 
 class Profiler
 {
@@ -150,14 +170,10 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::FrameMarkMsg );
+        TracyLfqPrepare( QueueType::FrameMarkMsg );
         MemWrite( &item->frameMark.time, GetTime() );
         MemWrite( &item->frameMark.name, uint64_t( name ) );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void SendFrameMark( const char* name, QueueType type )
@@ -199,16 +215,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::PlotData );
+        TracyLfqPrepare( QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Int );
         MemWrite( &item->plotData.data.i, val );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void PlotData( const char* name, float val )
@@ -216,16 +228,12 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::PlotData );
+        TracyLfqPrepare( QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Float );
         MemWrite( &item->plotData.data.f, val );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void PlotData( const char* name, double val )
@@ -233,25 +241,17 @@ public:
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::PlotData );
+        TracyLfqPrepare( QueueType::PlotData );
         MemWrite( &item->plotData.name, (uint64_t)name );
         MemWrite( &item->plotData.time, GetTime() );
         MemWrite( &item->plotData.type, PlotDataType::Double );
         MemWrite( &item->plotData.data.d, val );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void ConfigurePlot( const char* name, PlotFormatType type )
     {
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::PlotConfig );
+        TracyLfqPrepare( QueueType::PlotConfig );
         MemWrite( &item->plotConfig.name, (uint64_t)name );
         MemWrite( &item->plotConfig.type, (uint8_t)type );
 
@@ -259,91 +259,79 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 
-    static tracy_force_inline void Message( const char* txt, size_t size )
+    static tracy_force_inline void Message( const char* txt, size_t size, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::Message );
+        TracyLfqPrepare( callstack == 0 ? QueueType::Message : QueueType::MessageCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
-    static tracy_force_inline void Message( const char* txt )
+    static tracy_force_inline void Message( const char* txt, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageLiteral );
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteral : QueueType::MessageLiteralCallstack );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)txt );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
-    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color )
+    static tracy_force_inline void MessageColor( const char* txt, size_t size, uint32_t color, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageColor );
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageColor : QueueType::MessageColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)ptr );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
-    static tracy_force_inline void MessageColor( const char* txt, uint32_t color )
+    static tracy_force_inline void MessageColor( const char* txt, uint32_t color, int callstack )
     {
 #ifdef TRACY_ON_DEMAND
         if( !GetProfiler().IsConnected() ) return;
 #endif
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageLiteralColor );
+        TracyLfqPrepare( callstack == 0 ? QueueType::MessageLiteralColor : QueueType::MessageLiteralColorCallstack );
         MemWrite( &item->messageColor.time, GetTime() );
         MemWrite( &item->messageColor.text, (uint64_t)txt );
         MemWrite( &item->messageColor.r, uint8_t( ( color       ) & 0xFF ) );
         MemWrite( &item->messageColor.g, uint8_t( ( color >> 8  ) & 0xFF ) );
         MemWrite( &item->messageColor.b, uint8_t( ( color >> 16 ) & 0xFF ) );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
+
+        if( callstack != 0 ) tracy::GetProfiler().SendCallstack( callstack );
     }
 
     static tracy_force_inline void MessageAppInfo( const char* txt, size_t size )
     {
-        Magic magic;
-        auto token = GetToken();
         auto ptr = (char*)tracy_malloc( size+1 );
         memcpy( ptr, txt, size );
         ptr[size] = '\0';
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::MessageAppInfo );
+        TracyLfqPrepare( QueueType::MessageAppInfo );
         MemWrite( &item->message.time, GetTime() );
         MemWrite( &item->message.text, (uint64_t)ptr );
 
@@ -351,7 +339,7 @@ public:
         GetProfiler().DeferItem( *item );
 #endif
 
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
     }
 
     static tracy_force_inline void MemAlloc( const void* ptr, size_t size )
@@ -387,7 +375,7 @@ public:
 #  endif
         const auto thread = GetThreadHandle();
 
-        rpmalloc_thread_initialize();
+        InitRPMallocThread();
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
@@ -408,7 +396,7 @@ public:
 #  endif
         const auto thread = GetThreadHandle();
 
-        rpmalloc_thread_initialize();
+        InitRPMallocThread();
         auto callstack = Callstack( depth );
 
         profiler.m_serialLock.lock();
@@ -424,14 +412,26 @@ public:
     {
 #ifdef TRACY_HAS_CALLSTACK
         auto ptr = Callstack( depth );
-        Magic magic;
-        auto token = GetToken();
-        auto& tail = token->get_tail_index();
-        auto item = token->enqueue_begin( magic );
-        MemWrite( &item->hdr.type, QueueType::Callstack );
+        TracyLfqPrepare( QueueType::Callstack );
         MemWrite( &item->callstack.ptr, ptr );
-        tail.store( magic + 1, std::memory_order_release );
+        TracyLfqCommit;
 #endif
+    }
+
+    static tracy_force_inline void ParameterRegister( ParameterCallback cb ) { GetProfiler().m_paramCallback = cb; }
+    static tracy_force_inline void ParameterSetup( uint32_t idx, const char* name, bool isBool, int32_t val )
+    {
+        TracyLfqPrepare( QueueType::ParamSetup );
+        tracy::MemWrite( &item->paramSetup.idx, idx );
+        tracy::MemWrite( &item->paramSetup.name, (uint64_t)name );
+        tracy::MemWrite( &item->paramSetup.isBool, (uint8_t)isBool );
+        tracy::MemWrite( &item->paramSetup.val, val );
+
+#ifdef TRACY_ON_DEMAND
+        GetProfiler().DeferItem( *item );
+#endif
+
+        TracyLfqCommit;
     }
 
     void SendCallstack( int depth, const char* skipBefore );
@@ -464,8 +464,48 @@ public:
 
     void SendString( uint64_t ptr, const char* str, QueueType type );
 
+
+    // Allocated source location data layout:
+    //  4b  payload size
+    //  4b  color
+    //  4b  source line
+    //  fsz function name
+    //  1b  null terminator
+    //  ssz source file name
+    //  1b  null terminator
+    //  nsz zone name (optional)
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, const char* function )
+    {
+        const auto fsz = strlen( function );
+        const auto ssz = strlen( source );
+        const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 );
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, &sz, 4 );
+        memset( ptr + 4, 0, 4 );
+        memcpy( ptr + 8, &line, 4 );
+        memcpy( ptr + 12, function, fsz+1 );
+        memcpy( ptr + 12 + fsz + 1, source, ssz + 1 );
+        return uint64_t( ptr );
+    }
+
+    static tracy_force_inline uint64_t AllocSourceLocation( uint32_t line, const char* source, const char* function, const char* name, size_t nameSz )
+    {
+        const auto fsz = strlen( function );
+        const auto ssz = strlen( source );
+        const uint32_t sz = uint32_t( 4 + 4 + 4 + fsz + 1 + ssz + 1 + nameSz );
+        auto ptr = (char*)tracy_malloc( sz );
+        memcpy( ptr, &sz, 4 );
+        memset( ptr + 4, 0, 4 );
+        memcpy( ptr + 8, &line, 4 );
+        memcpy( ptr + 12, function, fsz+1 );
+        memcpy( ptr + 12 + fsz + 1, source, ssz + 1 );
+        memcpy( ptr + 12 + fsz + 1 + ssz + 1, name, nameSz );
+        return uint64_t( ptr );
+    }
+
 private:
-    enum class DequeueStatus { Success, ConnectionLost, QueueEmpty };
+    enum class DequeueStatus { DataDequeued, ConnectionLost, QueueEmpty };
 
     static void LaunchWorker( void* ptr ) { ((Profiler*)ptr)->Worker(); }
     void Worker();
@@ -498,9 +538,11 @@ private:
 
     bool HandleServerQuery();
     void HandleDisconnect();
+    void HandleParameter( uint64_t payload );
 
     void CalibrateTimer();
     void CalibrateDelay();
+    void ReportTopology();
 
     static tracy_force_inline void SendCallstackMemory( void* ptr )
     {
@@ -597,6 +639,8 @@ private:
 #else
     void ProcessSysTime() {}
 #endif
+
+    ParameterCallback m_paramCallback;
 };
 
 };

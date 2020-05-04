@@ -12,6 +12,8 @@ enum class QueueType : uint8_t
     ZoneName,
     Message,
     MessageColor,
+    MessageCallstack,
+    MessageColorCallstack,
     MessageAppInfo,
     ZoneBeginAllocSrcLoc,
     ZoneBeginAllocSrcLocCallstack,
@@ -57,12 +59,16 @@ enum class QueueType : uint8_t
     LockMark,
     MessageLiteral,
     MessageLiteralColor,
+    MessageLiteralCallstack,
+    MessageLiteralColorCallstack,
     GpuNewContext,
     CallstackFrameSize,
     CallstackFrame,
     SysTimeReport,
     TidToPid,
     PlotConfig,
+    ParamSetup,
+    CpuTopology,
     StringData,
     ThreadName,
     CustomStringData,
@@ -344,6 +350,21 @@ struct QueuePlotConfig
     uint8_t type;
 };
 
+struct QueueParamSetup
+{
+    uint32_t idx;
+    uint64_t name;      // ptr
+    uint8_t isBool;
+    int32_t val;
+};
+
+struct QueueCpuTopology
+{
+    uint32_t package;
+    uint32_t core;
+    uint32_t thread;
+};
+
 struct QueueHeader
 {
     union
@@ -393,6 +414,8 @@ struct QueueItem
         QueueThreadWakeup threadWakeup;
         QueueTidToPid tidToPid;
         QueuePlotConfig plotConfig;
+        QueueParamSetup paramSetup;
+        QueueCpuTopology cpuTopology;
     };
 };
 #pragma pack()
@@ -400,11 +423,13 @@ struct QueueItem
 
 enum { QueueItemSize = sizeof( QueueItem ) };
 
-static const size_t QueueDataSize[] = {
+static constexpr size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),
     sizeof( QueueHeader ) + sizeof( QueueZoneText ),        // zone name
     sizeof( QueueHeader ) + sizeof( QueueMessage ),
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // callstack
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // app info
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location
     sizeof( QueueHeader ) + sizeof( QueueZoneBegin ),       // allocated source location, callstack
@@ -451,12 +476,16 @@ static const size_t QueueDataSize[] = {
     sizeof( QueueHeader ) + sizeof( QueueLockMark ),
     sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal
     sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal
+    sizeof( QueueHeader ) + sizeof( QueueMessage ),         // literal, callstack
+    sizeof( QueueHeader ) + sizeof( QueueMessageColor ),    // literal, callstack
     sizeof( QueueHeader ) + sizeof( QueueGpuNewContext ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrameSize ),
     sizeof( QueueHeader ) + sizeof( QueueCallstackFrame ),
     sizeof( QueueHeader ) + sizeof( QueueSysTime ),
     sizeof( QueueHeader ) + sizeof( QueueTidToPid ),
     sizeof( QueueHeader ) + sizeof( QueuePlotConfig ),
+    sizeof( QueueHeader ) + sizeof( QueueParamSetup ),
+    sizeof( QueueHeader ) + sizeof( QueueCpuTopology ),
     // keep all QueueStringTransfer below
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // string data
     sizeof( QueueHeader ) + sizeof( QueueStringTransfer ),  // thread name
