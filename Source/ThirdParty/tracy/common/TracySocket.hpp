@@ -14,8 +14,6 @@ void InitWinSock();
 
 class Socket
 {
-    enum { BufSize = 128 * 1024 };
-
 public:
     Socket();
     Socket( int sock );
@@ -30,6 +28,7 @@ public:
     bool Read( void* buf, int len, int timeout, std::function<bool()> exitCb );
     bool ReadRaw( void* buf, int len, int timeout );
     bool HasData();
+    bool IsValid() const;
 
     Socket( const Socket& ) = delete;
     Socket( Socket&& ) = delete;

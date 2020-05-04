@@ -22,6 +22,8 @@
 #else
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
+#  include <sys/param.h>
+#  include <netinet/in.h>
 #  include <netdb.h>
 #  include <unistd.h>
 #  include <poll.h>
@@ -59,6 +61,9 @@ void InitWinSock()
     static __wsinit init;
 }
 #endif
+
+
+enum { BufSize = 128 * 1024 };
 
 Socket::Socket()
     : m_buf( (char*)tracy_malloc( BufSize ) )
@@ -270,6 +275,11 @@ bool Socket::HasData()
     return poll( &fd, 1, 0 ) > 0;
 }
 
+bool Socket::IsValid() const
+{
+    return m_sock >= 0;
+}
+
 
 ListenSocket::ListenSocket()
     : m_sock( -1 )
@@ -305,6 +315,11 @@ bool ListenSocket::Listen( int port, int backlog )
 #if defined _WIN32 || defined __CYGWIN__
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
+#elif defined BSD
+    int val = 0;
+    setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
+    val = 1;
+    setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
 #else
     int val = 1;
     setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );

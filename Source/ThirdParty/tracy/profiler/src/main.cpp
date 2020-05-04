@@ -18,7 +18,7 @@
 #include "stb_image.h"
 
 #include "../../common/TracyProtocol.hpp"
-#include "../../server/tracy_flat_hash_map.hpp"
+#include "../../server/tracy_robin_hood.h"
 #include "../../server/tracy_pdqsort.h"
 #include "../../server/TracyBadVersion.hpp"
 #include "../../server/TracyFileRead.hpp"
@@ -379,6 +379,10 @@ public:
                 {
                     OpenWebpage( "https://www.youtube.com/watch?v=P6E7qLMmzTQ" );
                 }
+                if( ImGui::Selectable( ICON_FA_VIDEO " New features in Tracy Profiler v0.6" ) )
+                {
+                    OpenWebpage( "https://www.youtube.com/watch?v=uJkrFgriuOo" );
+                }
                 ImGui::EndPopup();
             }
             ImGui::Separator();
@@ -462,6 +466,10 @@ public:
                     catch( const tracy::NotTracyDump& )
                     {
                         badVer.state = tracy::BadVersionState::BadFile;
+                    }
+                    catch( const tracy::FileReadError& )
+                    {
+                        badVer.state = tracy::BadVersionState::ReadError;
                     }
                 }
             }
@@ -653,9 +661,9 @@ public:
     enum class ViewShutdown { False, True, Join };
     ViewShutdown viewShutdown = ViewShutdown::False;
     std::mutex resolvLock;
-    tracy::flat_hash_map<std::string, std::string> resolvMap;
+    tracy::unordered_flat_map<std::string, std::string> resolvMap;
     ResolvService resolv{port};
-    tracy::flat_hash_map<uint32_t, ClientData> clients;
+    tracy::unordered_flat_map<uint32_t, ClientData> clients;
 };
 
 URHO3D_DEFINE_APPLICATION_MAIN(ProfilerApplication);

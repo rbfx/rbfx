@@ -129,11 +129,11 @@ int main( int argc, char** argv )
         {
             printf( "\33[2K\r\033[36;1m%7.2f Mbps", mbps );
         }
-        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mNet: \033[32m%s \033[0m| \033[33mMem: \033[31;1m%.2f MB\033[0m | \033[33mTime: %s\033[0m",
+        printf( " \033[0m /\033[36;1m%5.1f%% \033[0m=\033[33;1m%7.2f Mbps \033[0m| \033[33mNet: \033[32m%s \033[0m| \033[33mMem: \033[31;1m%s\033[0m | \033[33mTime: %s\033[0m",
             compRatio * 100.f,
             mbps / compRatio,
             tracy::MemSizeToString( netTotal ),
-            tracy::memUsage.load( std::memory_order_relaxed ) / ( 1024.f * 1024.f ),
+            tracy::MemSizeToString( tracy::memUsage ),
             tracy::TimeToString( worker.GetLastTime() ) );
         fflush( stdout );
 
@@ -148,7 +148,7 @@ int main( int argc, char** argv )
     }
 
     printf( "\nFrames: %" PRIu64 "\nTime span: %s\nZones: %s\nElapsed time: %s\nSaving trace...",
-        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount(), true ),
+        worker.GetFrameCount( *worker.GetFramesBase() ), tracy::TimeToString( worker.GetLastTime() ), tracy::RealToString( worker.GetZoneCount() ),
         tracy::TimeToString( std::chrono::duration_cast<std::chrono::nanoseconds>( t1 - t0 ).count() ) );
     fflush( stdout );
     auto f = std::unique_ptr<tracy::FileWrite>( tracy::FileWrite::Open( output ) );
@@ -156,6 +156,9 @@ int main( int argc, char** argv )
     {
         worker.Write( *f );
         printf( " \033[32;1mdone!\033[0m\n" );
+        f->Finish();
+        const auto stats = f->GetCompressionStatistics();
+        printf( "Trace size %s (%.2f%% ratio)\n", tracy::MemSizeToString( stats.second ), 100.f * stats.second / stats.first );
     }
     else
     {
