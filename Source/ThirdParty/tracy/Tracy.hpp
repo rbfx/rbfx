@@ -59,6 +59,14 @@
 #define TracyAllocS(x,y,z)
 #define TracyFreeS(x,y)
 
+#define TracyMessageS(x,y,z)
+#define TracyMessageLS(x,y)
+#define TracyMessageCS(x,y,z,w)
+#define TracyMessageLCS(x,y,z)
+
+#define TracyParameterRegister(x)
+#define TracyParameterSetup(x,y,z,w)
+
 #else
 
 #include "client/TracyLock.hpp"
@@ -103,16 +111,22 @@
 #define TracyPlot( name, val ) tracy::Profiler::PlotData( name, val );
 #define TracyPlotConfig( name, type ) tracy::Profiler::ConfigurePlot( name, type );
 
-#define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size );
-#define TracyMessageL( txt ) tracy::Profiler::Message( txt );
-#define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color );
-#define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color );
 #define TracyAppInfo( txt, size ) tracy::Profiler::MessageAppInfo( txt, size );
 
 #if defined TRACY_HAS_CALLSTACK && defined TRACY_CALLSTACK
+#  define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, TRACY_CALLSTACK );
+#  define TracyMessageL( txt ) tracy::Profiler::Message( txt, TRACY_CALLSTACK );
+#  define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, TRACY_CALLSTACK );
+#  define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, TRACY_CALLSTACK );
+
 #  define TracyAlloc( ptr, size ) tracy::Profiler::MemAllocCallstack( ptr, size, TRACY_CALLSTACK );
 #  define TracyFree( ptr ) tracy::Profiler::MemFreeCallstack( ptr, TRACY_CALLSTACK );
 #else
+#  define TracyMessage( txt, size ) tracy::Profiler::Message( txt, size, 0 );
+#  define TracyMessageL( txt ) tracy::Profiler::Message( txt, 0 );
+#  define TracyMessageC( txt, size, color ) tracy::Profiler::MessageColor( txt, size, color, 0 );
+#  define TracyMessageLC( txt, color ) tracy::Profiler::MessageColor( txt, color, 0 );
+
 #  define TracyAlloc( ptr, size ) tracy::Profiler::MemAlloc( ptr, size );
 #  define TracyFree( ptr ) tracy::Profiler::MemFree( ptr );
 #endif
@@ -130,6 +144,11 @@
 
 #  define TracyAllocS( ptr, size, depth ) tracy::Profiler::MemAllocCallstack( ptr, size, depth );
 #  define TracyFreeS( ptr, depth ) tracy::Profiler::MemFreeCallstack( ptr, depth );
+
+#  define TracyMessageS( txt, size, depth ) tracy::Profiler::Message( txt, size, depth );
+#  define TracyMessageLS( txt, depth ) tracy::Profiler::Message( txt, depth );
+#  define TracyMessageCS( txt, size, color, depth ) tracy::Profiler::MessageColor( txt, size, color, depth );
+#  define TracyMessageLCS( txt, color, depth ) tracy::Profiler::MessageColor( txt, color, depth );
 #else
 #  define ZoneNamedS( varname, depth, active ) ZoneNamed( varname, active )
 #  define ZoneNamedNS( varname, name, depth, active ) ZoneNamedN( varname, name, active )
@@ -143,7 +162,15 @@
 
 #  define TracyAllocS( ptr, size, depth ) TracyAlloc( ptr, size )
 #  define TracyFreeS( ptr, depth ) TracyFree( ptr )
+
+#  define TracyMessageS( txt, size, depth ) TracyMessage( txt, size )
+#  define TracyMessageLS( txt, depth ) TracyMessageL( txt )
+#  define TracyMessageCS( txt, size, color, depth ) TracyMessageC( txt, size, color )
+#  define TracyMessageLCS( txt, color, depth ) TracyMessageLC( txt, color )
 #endif
+
+#define TracyParameterRegister( cb ) tracy::Profiler::ParameterRegister( cb );
+#define TracyParameterSetup( idx, name, isBool, val ) tracy::Profiler::ParameterSetup( idx, name, isBool, val );
 
 #endif
 
