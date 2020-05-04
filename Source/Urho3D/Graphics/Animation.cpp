@@ -90,8 +90,11 @@ AnimationKeyFrame* AnimationTrack::GetKeyFrame(unsigned index)
     return index < keyFrames_.size() ? &keyFrames_[index] : nullptr;
 }
 
-void AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
+bool AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
 {
+    if (keyFrames_.empty())
+        return false;
+
     if (time < 0.0f)
         time = 0.0f;
 
@@ -105,6 +108,8 @@ void AnimationTrack::GetKeyFrameIndex(float time, unsigned& index) const
     // Check for being too far behind
     while (index < keyFrames_.size() - 1 && time >= keyFrames_[index + 1].time_)
         ++index;
+
+    return true;
 }
 
 Animation::Animation(Context* context) :
