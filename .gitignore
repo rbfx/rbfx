@@ -80,6 +80,11 @@ captures/
 # Android output directories
 gradle*
 
+# Visual Studio project settings
+/.vs/
+/CMakeSettings.json
+/out/
+
 # CMake generated build files
 CMakeCache.txt
 CMakeFiles/
