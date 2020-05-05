@@ -12,7 +12,7 @@
 
 // CHANGELOG
 // (minor and older changes stripped away, please see git history for details)
-//  2019-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
+//  2020-XX-XX: Platform: Added support for multiple windows via the ImGuiPlatformIO interface.
 //  2019-05-29: DirectX9: Added support for large mesh (64K+ vertices), enable ImGuiBackendFlags_RendererHasVtxOffset flag.
 //  2019-04-30: DirectX9: Added support for special ImDrawCallback_ResetRenderState callback to reset render state.
 //  2019-03-29: Misc: Fixed erroneous assert in ImGui_ImplDX9_InvalidateDeviceObjects().
@@ -58,8 +58,8 @@ static void ImGui_ImplDX9_SetupRenderState(ImDrawData* draw_data)
     // Setup viewport
     D3DVIEWPORT9 vp;
     vp.X = vp.Y = 0;
-    vp.Width = (DWORD)(draw_data->DisplaySize.x * draw_data->FramebufferScale.x);
-    vp.Height = (DWORD)(draw_data->DisplaySize.y * draw_data->FramebufferScale.y);
+    vp.Width = (DWORD)draw_data->DisplaySize.x;
+    vp.Height = (DWORD)draw_data->DisplaySize.y;
     vp.MinZ = 0.0f;
     vp.MaxZ = 1.0f;
     g_pd3dDevice->SetViewport(&vp);
@@ -68,16 +68,16 @@ static void ImGui_ImplDX9_SetupRenderState(ImDrawData* draw_data)
     g_pd3dDevice->SetPixelShader(NULL);
     g_pd3dDevice->SetVertexShader(NULL);
     g_pd3dDevice->SetRenderState(D3DRS_CULLMODE, D3DCULL_NONE);
-    g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, false);
-    g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, false);
-    g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, true);
-    g_pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, false);
+    g_pd3dDevice->SetRenderState(D3DRS_LIGHTING, FALSE);
+    g_pd3dDevice->SetRenderState(D3DRS_ZENABLE, FALSE);
+    g_pd3dDevice->SetRenderState(D3DRS_ALPHABLENDENABLE, TRUE);
+    g_pd3dDevice->SetRenderState(D3DRS_ALPHATESTENABLE, FALSE);
     g_pd3dDevice->SetRenderState(D3DRS_BLENDOP, D3DBLENDOP_ADD);
     g_pd3dDevice->SetRenderState(D3DRS_SRCBLEND, D3DBLEND_SRCALPHA);
     g_pd3dDevice->SetRenderState(D3DRS_DESTBLEND, D3DBLEND_INVSRCALPHA);
-    g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, true);
+    g_pd3dDevice->SetRenderState(D3DRS_SCISSORTESTENABLE, TRUE);
     g_pd3dDevice->SetRenderState(D3DRS_SHADEMODE, D3DSHADE_GOURAUD);
-    g_pd3dDevice->SetRenderState(D3DRS_FOGENABLE, false);
+    g_pd3dDevice->SetRenderState(D3DRS_FOGENABLE, FALSE);
     g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLOROP, D3DTOP_MODULATE);
     g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG1, D3DTA_TEXTURE);
     g_pd3dDevice->SetTextureStageState(0, D3DTSS_COLORARG2, D3DTA_DIFFUSE);
@@ -186,7 +186,6 @@ void ImGui_ImplDX9_RenderDrawData(ImDrawData* draw_data)
     int global_vtx_offset = 0;
     int global_idx_offset = 0;
     ImVec2 clip_off = draw_data->DisplayPos;
-    ImVec2 clip_scale = draw_data->FramebufferScale;
     for (int n = 0; n < draw_data->CmdListsCount; n++)
     {
         const ImDrawList* cmd_list = draw_data->CmdLists[n];
@@ -204,12 +203,7 @@ void ImGui_ImplDX9_RenderDrawData(ImDrawData* draw_data)
             }
             else
             {
-                const RECT r = {
-                    (LONG)(pcmd->ClipRect.x - clip_off.x) * clip_scale.x,
-                    (LONG)(pcmd->ClipRect.y - clip_off.y) * clip_scale.y,
-                    (LONG)(pcmd->ClipRect.z - clip_off.x) * clip_scale.x,
-                    (LONG)(pcmd->ClipRect.w - clip_off.y) * clip_scale.y
-                };
+                const RECT r = { (LONG)(pcmd->ClipRect.x - clip_off.x), (LONG)(pcmd->ClipRect.y - clip_off.y), (LONG)(pcmd->ClipRect.z - clip_off.x), (LONG)(pcmd->ClipRect.w - clip_off.y) };
                 const LPDIRECT3DTEXTURE9 texture = (LPDIRECT3DTEXTURE9)pcmd->TextureId;
                 g_pd3dDevice->SetTexture(0, texture);
                 g_pd3dDevice->SetScissorRect(&r);
@@ -316,6 +310,7 @@ void ImGui_ImplDX9_NewFrame()
 // If you are new to dear imgui or creating a new binding for dear imgui, it is recommended that you completely ignore this section first..
 //--------------------------------------------------------------------------------------------------------
 
+// Helper structure we store in the void* RenderUserData field of each ImGuiViewport to easily retrieve our backend data.
 struct ImGuiViewportDataDx9
 {
     IDirect3DSwapChain9*    SwapChain;
@@ -338,8 +333,8 @@ static void ImGui_ImplDX9_CreateWindow(ImGuiViewport* viewport)
     ZeroMemory(&data->d3dpp, sizeof(D3DPRESENT_PARAMETERS));
     data->d3dpp.Windowed = TRUE;
     data->d3dpp.SwapEffect = D3DSWAPEFFECT_DISCARD;
-    data->d3dpp.BackBufferWidth = (UINT)viewport->PlatformSize.x;
-    data->d3dpp.BackBufferHeight = (UINT)viewport->PlatformSize.y;
+    data->d3dpp.BackBufferWidth = (UINT)viewport->Size.x;
+    data->d3dpp.BackBufferHeight = (UINT)viewport->Size.y;
     data->d3dpp.BackBufferFormat = D3DFMT_UNKNOWN;
     data->d3dpp.hDeviceWindow = hwnd;
     data->d3dpp.EnableAutoDepthStencil = FALSE;
