@@ -156,6 +156,6 @@ static inline ImRect& operator+=(ImRect& lhs, const ImRect& rhs) { lhs.Min += rh
 static inline ImRect operator/(const ImRect& lhs, float rhs) { return ImRect(lhs.Min / rhs, lhs.Max / rhs); }
 static inline ImRect& operator/=(ImRect& lhs, float rhs) { lhs.Min /= rhs; lhs.Max /= rhs; return lhs; }
 static inline ImRect& operator*=(ImRect& lhs, float rhs) { lhs.Min *= rhs; lhs.Max *= rhs; return lhs; }
-static inline ImRect ImRound(const ImRect& r) { return ImRect(ImRound(r.Min), ImRound(r.Max)); };
+static inline ImRect ImRound(const ImRect& r) { return ImRect({Urho3D::Round(r.Min.x), Urho3D::Round(r.Min.y)}, {Urho3D::Round(r.Max.x), Urho3D::Round(r.Max.y)}); };
 
 namespace ui = ImGui;

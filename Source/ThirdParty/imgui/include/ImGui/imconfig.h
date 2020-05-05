@@ -14,17 +14,18 @@
 #pragma once
 
 //---- Define assertion handler. Defaults to calling assert().
+// If your macro uses multiple statements, make sure is enclosed in a 'do { .. } while (0)' block so it can be used as a single statement.
 //#define IM_ASSERT(_EXPR)  MyAssert(_EXPR)
 //#define IM_ASSERT(_EXPR)  ((void)(_EXPR))     // Disable asserts
 
-//---- Define attributes of all API symbols declarations, e.g. for DLL under Windows.
+//---- Define attributes of all API symbols declarations, e.g. for DLL under Windows
 #if _WIN32
 #   if IMGUI_EXPORTS || URHO3D_EXPORTS
 #       define IMGUI_API __declspec(dllexport)
 #   elif IMGUI_IMPORTS || URHO3D_IMPORTS
 #       define IMGUI_API __declspec(dllimport)
-#	else
-#		define IMGUI_API
+#    else
+#       define IMGUI_API
 #   endif
 #elif IMGUI_EXPORTS || IMGUI_IMPORTS
 #   define IMGUI_API __attribute__((visibility("default")))
@@ -35,10 +36,11 @@
 //---- Don't define obsolete functions/enums/behaviors. Consider enabling from time to time after updating to avoid using soon-to-be obsolete function/names.
 //#define IMGUI_DISABLE_OBSOLETE_FUNCTIONS
 
-//---- Don't implement demo windows functionality (ShowDemoWindow()/ShowStyleEditor()/ShowUserGuide() methods will be empty)
-// It is very strongly recommended to NOT disable the demo windows during development. Please read the comments in imgui_demo.cpp.
-//#define IMGUI_DISABLE_DEMO_WINDOWS
-//#define IMGUI_DISABLE_METRICS_WINDOW
+//---- Disable all of Dear ImGui or don't implement standard windows.
+// It is very strongly recommended to NOT disable the demo windows during development. Please read comments in imgui_demo.cpp.
+//#define IMGUI_DISABLE                                     // Disable everything: all headers and source files will be empty.
+//#define IMGUI_DISABLE_DEMO_WINDOWS                        // Disable demo windows: ShowDemoWindow()/ShowStyleEditor() will be empty. Not recommended.
+//#define IMGUI_DISABLE_METRICS_WINDOW                      // Disable debug/metrics window: ShowMetricsWindow() will be empty.
 
 //---- Don't implement some functions to reduce linkage requirements.
 //#define IMGUI_DISABLE_WIN32_DEFAULT_CLIPBOARD_FUNCTIONS   // [Win32] Don't implement default clipboard handler. Won't use and link with OpenClipboard/GetClipboardData/CloseClipboard etc.
@@ -56,12 +58,19 @@
 //---- Pack colors to BGRA8 instead of RGBA8 (to avoid converting from one to another)
 //#define IMGUI_USE_BGRA_PACKED_COLOR
 
+//---- Use 32-bit for ImWchar (default is 16-bit) to support full unicode code points.
+//#define IMGUI_USE_WCHAR32
+
 //---- Avoid multiple STB libraries implementations, or redefine path/filenames to prioritize another version
 // By default the embedded implementations are declared static and not available outside of imgui cpp files.
 //#define IMGUI_STB_TRUETYPE_FILENAME   "my_folder/stb_truetype.h"
 //#define IMGUI_STB_RECT_PACK_FILENAME  "my_folder/stb_rect_pack.h"
 //#define IMGUI_DISABLE_STB_TRUETYPE_IMPLEMENTATION
 //#define IMGUI_DISABLE_STB_RECT_PACK_IMPLEMENTATION
+
+//---- Unless IMGUI_DISABLE_DEFAULT_FORMAT_FUNCTIONS is defined, use the much faster STB sprintf library implementation of vsnprintf instead of the one from the default C library.
+// Note that stb_sprintf.h is meant to be provided by the user and available in the include path at compile time. Also, the compatibility checks of the arguments and formats done by clang and GCC will be disabled in order to support the extra formats provided by STB sprintf.
+// #define IMGUI_USE_STB_SPRINTF
 
 //---- Define constructor and implicit cast operators to convert back<>forth between your math types and ImVec2/ImVec4.
 // This will be inlined as part of ImVec2 and ImVec4 class declarations.
