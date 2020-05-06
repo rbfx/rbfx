@@ -205,8 +205,7 @@ Graphics::Graphics(Context* context) :
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
-    apiName_("D3D11"),
-    computeDevice_(nullptr) // will be set when the subsystem is registered
+    apiName_("D3D11")
 {
     SetTextureUnitMappings();
     ResetCachedState();
@@ -264,9 +263,6 @@ Graphics::~Graphics()
         SDL_DestroyWindow(window_);
         window_ = nullptr;
     }
-
-    delete computeDevice_;
-    computeDevice_ = nullptr;
 
     delete impl_;
     impl_ = nullptr;
@@ -2278,6 +2274,9 @@ void Graphics::CheckFeatureSupport()
     dummyColorFormat_ = DXGI_FORMAT_UNKNOWN;
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+#endif
 }
 
 void Graphics::ResetCachedState()

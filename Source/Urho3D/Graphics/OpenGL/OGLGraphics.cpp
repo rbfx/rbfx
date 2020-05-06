@@ -301,8 +301,7 @@ Graphics::Graphics(Context* context) :
     hiresShadowMapFormat_(GL_DEPTH_COMPONENT24),
     shaderPath_("Shaders/GLSL/"),
     shaderExtension_(".glsl"),
-    orientations_("LandscapeLeft LandscapeRight"),
-    computeDevice_(nullptr)
+    orientations_("LandscapeLeft LandscapeRight")
 {
     SetTextureUnitMappings();
     ResetCachedState();
@@ -2890,6 +2889,10 @@ void Graphics::CheckFeatureSupport()
 
     // Consider OpenGL shadows always hardware sampled, if supported at all
     hardwareShadowSupport_ = shadowMapFormat_ != 0;
+
+#ifdef URHO3D_COMPUTE
+    computeSupport_ = !!GLEW_VERSION_4_3;
+#endif
 }
 
 void Graphics::PrepareDraw()

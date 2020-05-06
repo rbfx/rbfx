@@ -165,6 +165,7 @@ Context::~Context()
     RemoveSubsystem("ResourceCache");
     RemoveSubsystem("Input");
     RemoveSubsystem("Renderer");
+    RemoveSubsystem("ComputeDevice");
     RemoveSubsystem("Graphics");
 
     subsystems_.clear();

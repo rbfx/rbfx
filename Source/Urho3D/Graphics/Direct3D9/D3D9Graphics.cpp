@@ -258,8 +258,7 @@ Graphics::Graphics(Context* context) :
     shaderPath_("Shaders/HLSL/"),
     shaderExtension_(".hlsl"),
     orientations_("LandscapeLeft LandscapeRight"),
-    apiName_("D3D9"),
-    computeDevice_(nullptr) // never not null, barring a hypothetical OpenCL KHR_DX9 sharing backend.
+    apiName_("D3D9")
 {
     SetTextureUnitMappings();
 

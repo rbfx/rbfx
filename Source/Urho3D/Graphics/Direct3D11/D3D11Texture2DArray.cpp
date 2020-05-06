@@ -464,7 +464,7 @@ bool Texture2DArray::Create()
     textureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
 
     // Is this format supported by compute?
-    if (IsComputeWriteable(format_))
+    if (IsComputeWriteable(format_) && graphics_->GetComputeSupport())
         textureDesc.BindFlags |= D3D11_BIND_UNORDERED_ACCESS;
 
     if (usage_ == TEXTURE_RENDERTARGET)

@@ -1751,7 +1751,7 @@ void View::ExecuteRenderPathCommands()
             case CMD_COMPUTE_FILTER:
                 #if defined(URHO3D_COMPUTE)
                 {
-                    if (auto device = graphics_->GetComputeDevice())
+                    if (auto device = graphics_->GetSubsystem<ComputeDevice>())
                     {
                         Texture* firstInput = nullptr;
                         for (unsigned i = 0; i < MAX_TEXTURE_UNITS; ++i)
