@@ -472,6 +472,13 @@ function (csharp_bind_target)
     set (SWIG_MODULE_${BIND_TARGET}_DLLIMPORT ${BIND_NATIVE})
     set (SWIG_MODULE_${BIND_TARGET}_OUTDIR ${CMAKE_CURRENT_BINARY_DIR}/${BIND_TARGET}CSharp)
     set (SWIG_MODULE_${BIND_TARGET}_NO_LIBRARY ON)
+
+    # CMakeCache.txt does not exist when cache directory is configured for the first time and when user changes any
+    # cmake parameters. We exploit this to delete bindings upon configuration change and force their regeneration.
+    if (NOT EXISTS ${CMAKE_BINARY_DIR}/CMakeCache.txt)
+        file(REMOVE_RECURSE ${SWIG_MODULE_${BIND_TARGET}_OUTDIR})
+    endif ()
+
     swig_add_module(${BIND_TARGET} csharp ${BIND_SWIG})
     unset (CMAKE_SWIG_FLAGS)
 
