@@ -1130,7 +1130,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariat
         {
             if (hs->GetCompilerOutput().empty())
             {
-                URHO3D_PROFILE(CompileTessCtrlShader);
+                URHO3D_PROFILE("CompileTessCtrlShader");
 
                 bool success = hs->Create();
                 if (success)
@@ -1149,7 +1149,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariat
         {
             if (ds->GetCompilerOutput().empty())
             {
-                URHO3D_PROFILE(CompileTessEvalShader);
+                URHO3D_PROFILE("CompileTessEvalShader");
 
                 bool success = ds->Create();
                 if (success)
@@ -1171,7 +1171,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariat
         {
             if (gs->GetCompilerOutput().empty())
             {
-                URHO3D_PROFILE(CompileGeometryShader);
+                URHO3D_PROFILE("CompileGeometryShader");
 
                 bool success = gs->Create();
                 if (success)
@@ -2504,7 +2504,7 @@ void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
     for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
     {
 #ifndef GL_ES_VERSION_2_0
-        if (i->second_->GetVertexShader() == variation || i->second_->GetPixelShader() == variation || i->second_->GetGeometryShader() == variation || i->second_->GetTCSShader() == variation || i->second_->GetTESShader() == variation)
+        if (i->second->GetVertexShader() == variation || i->second->GetPixelShader() == variation || i->second->GetGeometryShader() == variation || i->second->GetTCSShader() == variation || i->second->GetTESShader() == variation)
             i = impl_->shaderPrograms_.erase(i);
         else
             ++i;
@@ -2709,7 +2709,6 @@ void Graphics::Restore()
             }
             if (GLEW_VERSION_4_3)
             {
-                computeSupport = true;
                 apiName_ = "GL4.3";
             }
 

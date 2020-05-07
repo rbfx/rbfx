@@ -437,6 +437,11 @@ ShaderVariation* ShaderProgram::GetTESShader() const
 {
     return tesShader_;
 }
+
+ShaderVariation* ShaderProgram::GetComputeShader() const
+{
+    return computeShader_;
+}
 #endif
 
 bool ShaderProgram::HasParameter(StringHash param) const

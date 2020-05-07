@@ -65,6 +65,8 @@ public:
     ShaderVariation* GetTCSShader() const;
     /// Return the TES shader.
     ShaderVariation* GetTESShader() const;
+    /// Return the compute shader.
+    ShaderVariation* GetComputeShader() const;
 #endif
     /// Return whether uses a shader parameter.
     bool HasParameter(StringHash param) const;
@@ -112,6 +114,8 @@ private:
     WeakPtr<ShaderVariation> tcsShader_;
     /// TES shader.
     WeakPtr<ShaderVariation> tesShader_;
+    /// Compute shader.
+    WeakPtr<ShaderVariation> computeShader_;
 #endif
     /// Shader parameters.
     ea::unordered_map<StringHash, ShaderParameter> shaderParameters_;
