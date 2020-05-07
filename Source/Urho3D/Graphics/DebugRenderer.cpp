@@ -646,7 +646,7 @@ void DebugRenderer::Render()
     graphics->SetLineAntiAlias(lineAntiAlias_);
     graphics->SetScissorTest(false);
     graphics->SetStencilTest(false);
-    graphics->SetShaders(vs, ps);
+    graphics->SetShaders(vs, ps, nullptr, nullptr, nullptr);
     graphics->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
     graphics->SetShaderParameter(VSP_VIEW, view_);
     graphics->SetShaderParameter(VSP_VIEWINV, view_.Inverse());

@@ -47,7 +47,10 @@ enum PrimitiveType
     POINT_LIST,
     TRIANGLE_STRIP,
     LINE_STRIP,
-    TRIANGLE_FAN
+    TRIANGLE_FAN,
+    LINE_LIST_ADJ,
+    TRIANGLE_LIST_ADJ,
+    QUAD_PATCH,
 };
 
 /// %Geometry type for vertex shader geometry variations.

@@ -26,6 +26,7 @@
 
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/Graphics.h"
+#include "../../IO/Log.h"
 #include "../../Graphics/ShaderVariation.h"
 
 namespace Urho3D
@@ -36,42 +37,7 @@ class URHO3D_API ShaderProgram : public RefCounted
 {
 public:
     /// Construct.
-    ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader)
-    {
-        // Create needed constant buffers
-        const unsigned* vsBufferSizes = vertexShader->GetConstantBufferSizes();
-        for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-        {
-            if (vsBufferSizes[i])
-                vsConstantBuffers_[i] = graphics->GetOrCreateConstantBuffer(VS, i, vsBufferSizes[i]);
-        }
-
-        const unsigned* psBufferSizes = pixelShader->GetConstantBufferSizes();
-        for (unsigned i = 0; i < MAX_SHADER_PARAMETER_GROUPS; ++i)
-        {
-            if (psBufferSizes[i])
-                psConstantBuffers_[i] = graphics->GetOrCreateConstantBuffer(PS, i, psBufferSizes[i]);
-        }
-
-        // Copy parameters, add direct links to constant buffers
-        const ea::unordered_map<StringHash, ShaderParameter>& vsParams = vertexShader->GetParameters();
-        for (auto i = vsParams.begin(); i != vsParams.end(); ++i)
-        {
-            parameters_[i->first] = i->second;
-            parameters_[i->first].bufferPtr_ = vsConstantBuffers_[i->second.buffer_].Get();
-        }
-
-        const ea::unordered_map<StringHash, ShaderParameter>& psParams = pixelShader->GetParameters();
-        for (auto i = psParams.begin(); i != psParams.end(); ++i)
-        {
-            parameters_[i->first] = i->second;
-            parameters_[i->first].bufferPtr_ = psConstantBuffers_[i->second.buffer_].Get();
-        }
-
-        // Optimize shader parameter lookup by rehashing to next power of two
-        parameters_.rehash(Max(2u, NextPowerOfTwo(parameters_.size())));
-
-    }
+    ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader, ShaderVariation* geometryShader, ShaderVariation* tcsShader, ShaderVariation* tesShader);
 
     /// Destruct.
     virtual ~ShaderProgram() override
@@ -80,7 +46,7 @@ public:
 
     /// Combined parameters from the vertex and pixel shader.
     ea::unordered_map<StringHash, ShaderParameter> parameters_;
-    /// Vertex shader constant buffers.
+    /// Vertex and geometry shader constant buffers.
     SharedPtr<ConstantBuffer> vsConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];
     /// Pixel shader constant buffers.
     SharedPtr<ConstantBuffer> psConstantBuffers_[MAX_SHADER_PARAMETER_GROUPS];

@@ -183,7 +183,27 @@ static void GetD3DPrimitiveType(unsigned elementCount, PrimitiveType type, unsig
         primitiveCount = 0;
         d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_UNDEFINED;
         break;
+
+    case LINE_LIST_ADJ:
+        primitiveCount = elementCount / 4;
+        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_LINELIST_ADJ;
+        break;
+
+    case TRIANGLE_LIST_ADJ:
+        primitiveCount = elementCount / 6;
+        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_TRIANGLELIST_ADJ;
+        break;
+    case QUAD_PATCH:
+        primitiveCount = elementCount / 4;
+        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST;
+        break;
     }
+}
+
+inline static void GetTessellationType(D3D_PRIMITIVE_TOPOLOGY& d3dPrimitiveType, bool isTessellating)
+{
+    if (isTessellating && (d3dPrimitiveType != D3D_PRIMITIVE_TOPOLOGY_4_CONTROL_POINT_PATCHLIST))
+        d3dPrimitiveType = D3D_PRIMITIVE_TOPOLOGY_3_CONTROL_POINT_PATCHLIST;
 }
 
 static HWND GetWindowHandle(SDL_Window* window)
@@ -197,6 +217,8 @@ static HWND GetWindowHandle(SDL_Window* window)
 
 const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
+bool Graphics::tessellationSupport = false;
+bool Graphics::geometryShaderSupport = false;
 
 Graphics::Graphics(Context* context) :
     Object(context),
@@ -550,7 +572,7 @@ void Graphics::Clear(ClearTargetFlags flags, const Color& color, float depth, un
         SetFillMode(FILL_SOLID);
         SetScissorTest(false);
         SetStencilTest(flags & CLEAR_STENCIL, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, stencil);
-        SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"));
+        SetShaders(GetShader(VS, "ClearFramebuffer"), GetShader(PS, "ClearFramebuffer"), nullptr, nullptr, nullptr);
         SetShaderParameter(VSP_MODEL, model);
         SetShaderParameter(VSP_VIEWPROJ, projection);
         SetShaderParameter(PSP_MATDIFFCOLOR, color);
@@ -682,6 +704,10 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
         type = POINT_LIST;
 
     GetD3DPrimitiveType(vertexCount, type, primitiveCount, d3dPrimitiveType);
+
+    // If tessellating then remap primitive type
+    GetTessellationType(d3dPrimitiveType, hullShader_ && domainShader_);
+
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -707,6 +733,10 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
         type = POINT_LIST;
 
     GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+
+    // If tessellating then remap primitive type
+    GetTessellationType(d3dPrimitiveType, hullShader_ && domainShader_);
+
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -732,6 +762,10 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
         type = POINT_LIST;
 
     GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+
+    // If tessellating then remap primitive type
+    GetTessellationType(d3dPrimitiveType, hullShader_ && domainShader_);
+
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -758,6 +792,10 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         type = POINT_LIST;
 
     GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+
+    // If tessellating then remap primitive type
+    GetTessellationType(d3dPrimitiveType, hullShader_ && domainShader_);
+
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -784,6 +822,10 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
         type = POINT_LIST;
 
     GetD3DPrimitiveType(indexCount, type, primitiveCount, d3dPrimitiveType);
+
+    // If tessellating then remap primitive type
+    GetTessellationType(d3dPrimitiveType, hullShader_ && domainShader_);
+
     if (d3dPrimitiveType != primitiveType_)
     {
         impl_->deviceContext_->IASetPrimitiveTopology(d3dPrimitiveType);
@@ -884,7 +926,7 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
     }
 }
 
-void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
+void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariation* gs, ShaderVariation* hs, ShaderVariation* ds)
 {
     // Switch to the clip plane variations if necessary
     if (useClipPlane_)
@@ -895,7 +937,27 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             ps = ps->GetOwner()->GetVariation(PS, ps->GetDefinesClipPlane());
     }
 
-    if (vs == vertexShader_ && ps == pixelShader_)
+    if (gs && !GetGeometryShaderSupport())
+    {
+        URHO3D_LOGERROR("Attempted to use geometry shader without D3D_FEATURE_LEVEL_10_0");
+        gs = nullptr;
+    }
+
+    if ((hs || ds) && !GetTessellationSupport())
+    {
+        URHO3D_LOGERROR("Attempted to use tessellation without D3D_FEATURE_LEVEL_11_0");
+        hs = nullptr;
+        ds = nullptr;
+    }
+
+    if ((hs && !ds) || (!hs && ds))
+    {
+        URHO3D_LOGERROR("Attempted to use incomplete tessellation shader, both stages are required");
+        hs = nullptr;
+        ds = nullptr;
+    }
+
+    if (vs == vertexShader_ && ps == pixelShader_ && gs == geometryShader_ && hs == hullShader_ && ds == domainShader_)
         return;
 
     if (vs != vertexShader_)
@@ -921,6 +983,85 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         impl_->deviceContext_->VSSetShader((ID3D11VertexShader*)(vs ? vs->GetGPUObject() : nullptr), nullptr, 0);
         vertexShader_ = vs;
         impl_->vertexDeclarationDirty_ = true;
+    }
+
+    bool tessellationFailure = false;
+    if (hs != hullShader_)
+    {
+        if (hs && !hs->GetGPUObject())
+        {
+            if (hs->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE("CompileHullShader");
+
+                bool success = hs->Create();
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Failed to compile hull shader " + hs->GetFullName() + ":\n" + hs->GetCompilerOutput());
+                    hs = nullptr;
+                }
+            }
+            else
+                hs = nullptr;
+        }
+
+        impl_->deviceContext_->HSSetShader((ID3D11HullShader*)(hs ? hs->GetGPUObject() : nullptr), nullptr, 0);
+        hullShader_ = hs;
+        tessellationFailure |= (hs == nullptr);
+    }
+
+    if (ds != domainShader_)
+    {
+        if (ds && !ds->GetGPUObject())
+        {
+            if (ds->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE("CompileDomainShader");
+
+                bool success = ds->Create();
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Failed to compile domain shader " + ds->GetFullName() + ":\n" + ds->GetCompilerOutput());
+                    ds = nullptr;
+                }
+            }
+            else
+                ds = nullptr;
+        }
+
+        impl_->deviceContext_->DSSetShader((ID3D11DomainShader*)(ds ? ds->GetGPUObject() : nullptr), nullptr, 0);
+        domainShader_ = ds;
+        tessellationFailure |= (ds == nullptr);
+    }
+
+    // If tessellation fails to compile then clear any partial state and nil the locally tracked version
+    // This is not optional! Driver can and will go down.
+    if (tessellationFailure)
+    {
+        impl_->deviceContext_->HSSetShader(nullptr, nullptr, 0);
+        impl_->deviceContext_->DSSetShader(nullptr, nullptr, 0);
+        hs = ds = nullptr;
+        hullShader_ = domainShader_ = nullptr;
+    }
+
+    if (gs != geometryShader_)
+    {
+        if (gs && !gs->GetGPUObject())
+        {
+            if (gs->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE("CompileGeometryShader");
+
+                bool success = gs->Create();
+                if (!success)
+                {
+                    URHO3D_LOGERROR("Failed to compile geometry shader " + gs->GetFullName() + ":\n" + gs->GetCompilerOutput());
+                    gs = nullptr;
+                }
+            }
+        }
+        impl_->deviceContext_->GSSetShader((ID3D11GeometryShader*)(gs ? gs->GetGPUObject() : nullptr), nullptr, 0);
+        geometryShader_ = gs;
     }
 
     if (ps != pixelShader_)
@@ -949,13 +1090,13 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
     // Update current shader parameters & constant buffers
     if (vertexShader_ && pixelShader_)
     {
-        ea::pair<ShaderVariation*, ShaderVariation*> key = ea::make_pair(vertexShader_, pixelShader_);
+        const ShaderCombination key = { vertexShader_, pixelShader_, geometryShader_, hullShader_, domainShader_ };
         auto i = impl_->shaderPrograms_.find(key);
         if (i != impl_->shaderPrograms_.end())
             impl_->shaderProgram_ = i->second.Get();
         else
         {
-            ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_);
+            ShaderProgram* newProgram = impl_->shaderPrograms_[key] = new ShaderProgram(this, vertexShader_, pixelShader_, geometryShader_, hullShader_, domainShader_);
             impl_->shaderProgram_ = newProgram;
         }
 
@@ -985,6 +1126,15 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
         if (vsBuffersChanged)
             impl_->deviceContext_->VSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, &impl_->constantBuffers_[VS][0]);
+
+        // Geometry/Hull/Domain shaders share the constant buffers with the VS
+        if (vsBuffersChanged)
+        {
+            impl_->deviceContext_->GSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, &impl_->constantBuffers_[VS][0]);
+            impl_->deviceContext_->HSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, &impl_->constantBuffers_[VS][0]);
+            impl_->deviceContext_->DSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, &impl_->constantBuffers_[VS][0]);
+        }
+
         if (psBuffersChanged)
             impl_->deviceContext_->PSSetConstantBuffers(0, MAX_SHADER_PARAMETER_GROUPS, &impl_->constantBuffers_[PS][0]);
     }
@@ -993,7 +1143,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Store shader combination if shader dumping in progress
     if (shaderPrecache_)
-        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
+        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_, geometryShader_, hullShader_, domainShader_);
 
     // Update clip plane parameter if necessary
     if (useClipPlane_)
@@ -1789,13 +1939,13 @@ void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
     for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
     {
-        if (i->first.first == variation || i->first.second == variation)
+        if (i->first.vertexShader_ == variation || i->first.pixelShader_ == variation || i->first.geometryShader_ == variation || i->first.hullShader_ == variation || i->first.domainShader_ == variation)
             i = impl_->shaderPrograms_.erase(i);
         else
             ++i;
     }
 
-    if (vertexShader_ == variation || pixelShader_ == variation)
+    if (vertexShader_ == variation || pixelShader_ == variation || geometryShader_ == variation || hullShader_ == variation || domainShader_ == variation)
         impl_->shaderProgram_ = nullptr;
 }
 
@@ -1951,6 +2101,16 @@ unsigned Graphics::GetMaxBones()
 bool Graphics::GetGL3Support()
 {
     return gl3Support;
+}
+
+bool Graphics::GetTessellationSupport()
+{
+    return tessellationSupport;
+}
+
+bool Graphics::GetGeometryShaderSupport()
+{
+    return geometryShaderSupport;
 }
 
 bool Graphics::OpenWindow(int width, int height, bool resizable, bool borderless)
@@ -2274,9 +2434,14 @@ void Graphics::CheckFeatureSupport()
     dummyColorFormat_ = DXGI_FORMAT_UNKNOWN;
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
+
+    const bool isDX11Capable = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
 #ifdef URHO3D_COMPUTE
-    computeSupport_ = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_11_0;
+    computeSupport_ = isDX11Capable;
 #endif
+
+    tessellationSupport = isDX11Capable;
+    geometryShaderSupport = impl_->device_->GetFeatureLevel() >= D3D_FEATURE_LEVEL_10_0;
 }
 
 void Graphics::ResetCachedState()
@@ -2317,6 +2482,9 @@ void Graphics::ResetCachedState()
     primitiveType_ = 0;
     vertexShader_ = nullptr;
     pixelShader_ = nullptr;
+    geometryShader_ = nullptr;
+    hullShader_ = nullptr;
+    domainShader_ = nullptr;
     blendMode_ = BLEND_REPLACE;
     alphaToCoverage_ = false;
     colorWrite_ = true;
@@ -2389,6 +2557,30 @@ void Graphics::PrepareDraw()
             &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
         impl_->deviceContext_->VSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
             &impl_->samplers_[impl_->firstDirtyTexture_]);
+
+        // If tessellation is available then set shader resources for texture access
+        if (tessellationSupport)
+        {
+            impl_->deviceContext_->HSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+                &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
+            impl_->deviceContext_->HSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+                &impl_->samplers_[impl_->firstDirtyTexture_]);
+
+            impl_->deviceContext_->DSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+                &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
+            impl_->deviceContext_->DSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+                &impl_->samplers_[impl_->firstDirtyTexture_]);
+        }
+
+        // If geometry shader is available then set shader resources for texture access
+        if (geometryShaderSupport)
+        {
+            impl_->deviceContext_->GSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+                &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
+            impl_->deviceContext_->GSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
+                &impl_->samplers_[impl_->firstDirtyTexture_]);
+        }
+
         impl_->deviceContext_->PSSetShaderResources(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,
             &impl_->shaderResourceViews_[impl_->firstDirtyTexture_]);
         impl_->deviceContext_->PSSetSamplers(impl_->firstDirtyTexture_, impl_->lastDirtyTexture_ - impl_->firstDirtyTexture_ + 1,

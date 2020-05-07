@@ -75,16 +75,16 @@ ShaderPrecache::~ShaderPrecache()
     xmlFile_.Save(dest);
 }
 
-void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
+void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariation* gs, ShaderVariation* hs, ShaderVariation* ds)
 {
     if (!vs || !ps)
         return;
 
     // Check for duplicate using pointers first (fast)
-    ea::pair<ShaderVariation*, ShaderVariation*> shaderPair = ea::make_pair(vs, ps);
-    if (usedPtrCombinations_.contains(shaderPair))
+    const ShaderCombination shaderCombo = { vs, ps, gs, hs, ds };
+    if (usedPtrCombinations_.contains(shaderCombo))
         return;
-    usedPtrCombinations_.insert(shaderPair);
+    usedPtrCombinations_.insert(shaderCombo);
 
     ea::string vsName = vs->GetName();
     ea::string psName = ps->GetName();
@@ -93,7 +93,16 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Check for duplicate using strings (needed for combinations loaded from existing file)
     ea::string newCombination = vsName + " " + vsDefines + " " + psName + " " + psDefines;
-    if (usedCombinations_.contains(newCombination))
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    if (gs)
+        newCombination += gs->GetName() + " " + gs->GetDefines();
+    if (hs)
+        newCombination += hs->GetName() + " " + hs->GetDefines();
+    if (ds)
+        newCombination += ds->GetName() + " " + ds->GetDefines();
+#endif
+
         return;
     usedCombinations_.insert(newCombination);
 
@@ -102,6 +111,24 @@ void ShaderPrecache::StoreShaders(ShaderVariation* vs, ShaderVariation* ps)
     shaderElem.SetAttribute("vsdefines", vsDefines);
     shaderElem.SetAttribute("ps", psName);
     shaderElem.SetAttribute("psdefines", psDefines);
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    if (gs)
+    {
+        shaderElem.SetAttribute("gs", gs->GetName());
+        shaderElem.SetAttribute("gsdefines", gs->GetDefines());
+    }
+    if (hs)
+    {
+        shaderElem.SetAttribute("hs", hs->GetName());
+        shaderElem.SetAttribute("hsdefines", hs->GetDefines());
+    }
+    if (ds)
+    {
+        shaderElem.SetAttribute("ds", ds->GetName());
+        shaderElem.SetAttribute("dsdefines", ds->GetDefines());
+    }
+#endif
 }
 
 void ShaderPrecache::LoadShaders(Graphics* graphics, Deserializer& source)
@@ -116,6 +143,11 @@ void ShaderPrecache::LoadShaders(Graphics* graphics, Deserializer& source)
     {
         ea::string vsDefines = shader.GetAttribute("vsdefines");
         ea::string psDefines = shader.GetAttribute("psdefines");
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+        ea::string gsDefines = shader.GetAttribute("gsdefines");
+        ea::string hsDefines = shader.GetAttribute("hsdefines");
+        ea::string dsDefines = shader.GetAttribute("dsdefines");
+#endif
 
         // Check for illegal variations on OpenGL ES and skip them
 #ifdef GL_ES_VERSION_2_0
@@ -130,10 +162,20 @@ void ShaderPrecache::LoadShaders(Graphics* graphics, Deserializer& source)
         }
 #endif
 
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+        ShaderVariation* vs = graphics->GetShader(VS, shader.GetAttribute("vs"), vsDefines);
+        ShaderVariation* hs = graphics->GetShader(HS, shader.GetAttribute("hs"), hsDefines);
+        ShaderVariation* ds = graphics->GetShader(DS, shader.GetAttribute("ds"), dsDefines);
+        ShaderVariation* gs = graphics->GetShader(GS, shader.GetAttribute("gs"), gsDefines);
+        ShaderVariation* ps = graphics->GetShader(PS, shader.GetAttribute("ps"), psDefines);
+        // Set the shaders active to actually compile them
+        graphics->SetShaders(vs, ps, gs, hs, ds);
+#else
         ShaderVariation* vs = graphics->GetShader(VS, shader.GetAttribute("vs"), vsDefines);
         ShaderVariation* ps = graphics->GetShader(PS, shader.GetAttribute("ps"), psDefines);
         // Set the shaders active to actually compile them
-        graphics->SetShaders(vs, ps);
+        graphics->SetShaders(vs, ps, nullptr, nullptr, nullptr);
+#endif
 
         shader = shader.GetNext("shader");
     }

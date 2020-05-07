@@ -1017,7 +1017,7 @@ void UI::Render(VertexBuffer* buffer, const ea::vector<UIBatch>& batches, unsign
             }
         }
 
-        graphics_->SetShaders(vs, ps);
+        graphics_->SetShaders(vs, ps, nullptr, nullptr, nullptr);
         if (graphics_->NeedParameterUpdate(SP_OBJECT, this))
             graphics_->SetShaderParameter(VSP_MODEL, Matrix3x4::IDENTITY);
         if (graphics_->NeedParameterUpdate(SP_CAMERA, this))

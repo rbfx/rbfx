@@ -105,7 +105,7 @@ bool ShaderVariation::Create()
     } \
     else \
         compilerOutput_ = "Could not create " PRINTNAME " , empty bytecode";
-    
+
 
     // Then create shader from the bytecode
     ID3D11Device* device = graphics_->GetImpl()->GetDevice();
@@ -113,13 +113,29 @@ bool ShaderVariation::Create()
     {
         CREATE_SHADER(VS, VertexShader, "vertex shader")
     }
+    else if (type_ == GS)
+    {
+        CREATE_SHADER(GS, GeometryShader, "geometry shader")
+    }
+    else if (type_ == HS)
+    {
+        CREATE_SHADER(HS, HullShader, "hull shader")
+    }
+    else if (type_ == DS)
+    {
+        CREATE_SHADER(DS, DomainShader, "domain shader")
+    }
     else if (type_ == CS)
     {
         CREATE_SHADER(CS, ComputeShader, "compute shader")
     }
-    else
+    else if (type_ == PS)
     {
         CREATE_SHADER(PS, PixelShader, "pixel shader")
+    }
+    else
+    {
+        assert(0);
     }
 
 #undef CREATE_SHADER
@@ -139,16 +155,31 @@ void ShaderVariation::Release()
         if (type_ == VS)
         {
             if (graphics_->GetVertexShader() == this)
-                graphics_->SetShaders(nullptr, nullptr);
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
         }
-        else if (type_ == CS)
+        else if (type_ == PS)
         {
-            // Nothing to-do here yet?
+            if (graphics_->GetPixelShader() == this)
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
+        }
+        else if (type_ == GS)
+        {
+            if (graphics_->GetGeometryShader() == this)
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
+        }
+        else if (type_ == HS)
+        {
+            if (graphics_->GetHullShader() == this)
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
+        }
+        else if (type_ == DS)
+        {
+            if (graphics_->GetDomainShader() == this)
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
         }
         else
         {
-            if (graphics_->GetPixelShader() == this)
-                graphics_->SetShaders(nullptr, nullptr);
+            // Nothing to-do here yet?
         }
 
         URHO3D_SAFE_RELEASE(object_.ptr_);
@@ -215,7 +246,7 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
     unsigned numTextureUnits = file->ReadUInt();
     for (unsigned i = 0; i < numTextureUnits; ++i)
     {
-        /*String unitName = */file->ReadString();
+        /*ea::string unitName = */file->ReadString();
         unsigned reg = file->ReadUByte();
 
         if (reg < MAX_TEXTURE_UNITS)
@@ -230,10 +261,16 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
 
         if (type_ == VS)
             URHO3D_LOGDEBUG("Loaded cached vertex shader " + GetFullName());
-        else if (type_ == CS)
-            URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
-        else
+        else if (type_ == PS)
             URHO3D_LOGDEBUG("Loaded cached pixel shader " + GetFullName());
+        else if (type_ == GS)
+            URHO3D_LOGDEBUG("Loaded cached geometry shader " + GetFullName());
+        else if (type_ == HS)
+            URHO3D_LOGDEBUG("Loaded cached hull shader " + GetFullName());
+        else if (type_ == DS)
+            URHO3D_LOGDEBUG("Loaded cached domain shader " + GetFullName());
+        else
+            URHO3D_LOGDEBUG("Loaded cached compute shader " + GetFullName());
 
         CalculateConstantBufferSizes();
         return true;
@@ -263,6 +300,31 @@ bool ShaderVariation::Compile()
         defines.emplace_back("COMPILEVS");
         profile = "vs_4_0";
     }
+    else if (type_ == PS)
+    {
+        entryPoint = "PS";
+        defines.emplace_back("COMPILEPS");
+        profile = "ps_4_0";
+        flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
+    }
+    else if (type_ == GS)
+    {
+        entryPoint = "GS";
+        defines.emplace_back("COMPILEGS");
+        profile = "gs_4_0";
+    }
+    else if (type_ == HS)
+    {
+        entryPoint = "HS";
+        defines.emplace_back("COMPILEHS");
+        profile = "hs_5_0";
+    }
+    else if (type_ == DS)
+    {
+        entryPoint = "DS";
+        defines.emplace_back("COMPILEDS");
+        profile = "ds_5_0";
+    }
     else if (type_ == CS)
     {
         entryPoint = "CS";
@@ -271,10 +333,7 @@ bool ShaderVariation::Compile()
     }
     else
     {
-        entryPoint = "PS";
-        defines.emplace_back("COMPILEPS");
-        profile = "ps_4_0";
-        flags |= D3DCOMPILE_PREFER_FLOW_CONTROL;
+        assert(0);
     }
 
     defines.emplace_back("MAXBONES=" + ea::to_string(Graphics::GetMaxBones()));
@@ -328,10 +387,18 @@ bool ShaderVariation::Compile()
     {
         if (type_ == VS)
             URHO3D_LOGDEBUG("Compiled vertex shader " + GetFullName());
+        else if (type_ == PS)
+            URHO3D_LOGDEBUG("Compiled pixel shader " + GetFullName());
+        else if (type_ == GS)
+            URHO3D_LOGDEBUG("Compiled geometry shader " + GetFullName());
+        else if (type_ == HS)
+            URHO3D_LOGDEBUG("Compiled hull shader " + GetFullName());
+        else if (type_ == DS)
+            URHO3D_LOGDEBUG("Compiled domain shader " + GetFullName());
         else if (type_ == CS)
             URHO3D_LOGDEBUG("Compiled compute shader " + GetFullName());
         else
-            URHO3D_LOGDEBUG("Compiled pixel shader " + GetFullName());
+            assert(0);
 
         unsigned char* bufData = (unsigned char*)shaderCode->GetBufferPointer();
         unsigned bufSize = (unsigned)shaderCode->GetBufferSize();

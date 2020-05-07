@@ -287,11 +287,43 @@ static void GetGLPrimitiveType(unsigned elementCount, PrimitiveType type, unsign
         primitiveCount = elementCount - 2;
         glPrimitiveType = GL_TRIANGLE_FAN;
         break;
+
+#ifndef GL_ES_VERSION_2_0
+    case LINE_LIST_ADJ:
+        primitiveCount = elementCount / 4;
+        glPrimitiveType = GL_LINES_ADJACENCY;
+        break;
+
+    case TRIANGLE_LIST_ADJ:
+        primitiveCount = elementCount / 6;
+        glPrimitiveType = GL_TRIANGLES_ADJACENCY;
+        break;
+
+    case QUAD_PATCH:
+        glPatchParameteri(GL_PATCH_VERTICES, 4);
+        primitiveCount = elementCount / 4;
+        glPrimitiveType = GL_PATCHES;
+        break;
+#endif
     }
 }
 
+#ifndef GL_ES_VERSION_2_0
+inline static void GetGLTessellationType(GLenum& glPrimitiveType, bool isTessellationActive)
+{
+    if (isTessellationActive)
+    {
+        if (glPrimitiveType != GL_PATCHES)
+            glPatchParameteri(GL_PATCH_VERTICES, 3);
+        glPrimitiveType = GL_PATCHES;
+    }
+}
+#endif
+
 const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
+bool Graphics::tessellationSupport = false;
+bool Graphics::geometryShaderSupport = false;
 
 Graphics::Graphics(Context* context) :
     Object(context),
@@ -870,6 +902,11 @@ void Graphics::Draw(PrimitiveType type, unsigned vertexStart, unsigned vertexCou
     GLenum glPrimitiveType;
 
     GetGLPrimitiveType(vertexCount, type, primitiveCount, glPrimitiveType);
+
+#ifndef GL_ES_VERSION_2_0
+    GetGLTessellationType(glPrimitiveType, hullShader_ && domainShader_);
+#endif
+
     glDrawArrays(glPrimitiveType, vertexStart, vertexCount);
 
     numPrimitives_ += primitiveCount;
@@ -889,6 +926,11 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     GetGLPrimitiveType(indexCount, type, primitiveCount, glPrimitiveType);
     GLenum indexType = indexSize == sizeof(unsigned short) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+
+#ifndef GL_ES_VERSION_2_0
+    GetGLTessellationType(glPrimitiveType, hullShader_ && domainShader_);
+#endif
+
     glDrawElements(glPrimitiveType, indexCount, indexType, reinterpret_cast<const GLvoid*>((uintptr_t)(indexStart * indexSize)));
 
     numPrimitives_ += primitiveCount;
@@ -909,6 +951,11 @@ void Graphics::Draw(PrimitiveType type, unsigned indexStart, unsigned indexCount
 
     GetGLPrimitiveType(indexCount, type, primitiveCount, glPrimitiveType);
     GLenum indexType = indexSize == sizeof(unsigned short) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+
+#ifndef GL_ES_VERSION_2_0
+    GetGLTessellationType(glPrimitiveType, hullShader_ && domainShader_);
+#endif
+
     glDrawElementsBaseVertex(glPrimitiveType, indexCount, indexType, reinterpret_cast<GLvoid*>((uintptr_t)(indexStart * indexSize)), baseVertexIndex);
 
     numPrimitives_ += primitiveCount;
@@ -937,6 +984,10 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 #else
     if (gl3Support)
     {
+#ifndef GL_ES_VERSION_2_0
+        GetGLTessellationType(glPrimitiveType, hullShader_ && domainShader_);
+#endif
+
         glDrawElementsInstanced(glPrimitiveType, indexCount, indexType, reinterpret_cast<const GLvoid*>((uintptr_t)(indexStart * indexSize)),
             instanceCount);
     }
@@ -967,6 +1018,10 @@ void Graphics::DrawInstanced(PrimitiveType type, unsigned indexStart, unsigned i
 
     GetGLPrimitiveType(indexCount, type, primitiveCount, glPrimitiveType);
     GLenum indexType = indexSize == sizeof(unsigned short) ? GL_UNSIGNED_SHORT : GL_UNSIGNED_INT;
+
+#ifndef GL_ES_VERSION_2_0
+    GetGLTessellationType(glPrimitiveType, hullShader_ && domainShader_);
+#endif
 
     glDrawElementsInstancedBaseVertex(glPrimitiveType, indexCount, indexType, reinterpret_cast<const GLvoid*>((uintptr_t)(indexStart * indexSize)),
         instanceCount, baseVertexIndex);
@@ -1031,10 +1086,22 @@ void Graphics::SetIndexBuffer(IndexBuffer* buffer)
     indexBuffer_ = buffer;
 }
 
-void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
+void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariation* gs, ShaderVariation* hs, ShaderVariation* ds)
 {
-    if (vs == vertexShader_ && ps == pixelShader_)
+    if (vs == vertexShader_ && ps == pixelShader_ && gs == geometryShader_ && hs == hullShader_ && ds == domainShader_)
         return;
+
+    if ((hs || ds) && !GetTessellationSupport())
+    {
+        URHO3D_LOGERROR("Tessellation not supported by this GL context");
+        hs = nullptr;
+        ds = nullptr;
+    }
+    if (gs && !GetGeometryShaderSupport())
+    {
+        URHO3D_LOGERROR("Geometry shaders not supported by this GL context");
+        gs = nullptr;
+    }
 
     // Compile the shaders now if not yet compiled. If already attempted, do not retry
     if (vs && !vs->GetGPUObjectName())
@@ -1055,6 +1122,71 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         else
             vs = nullptr;
     }
+
+#ifndef GL_ES_VERSION_2_0
+    if (GetTessellationSupport())
+    {
+        if (hs && !hs->GetGPUObjectName())
+        {
+            if (hs->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE(CompileTessCtrlShader);
+
+                bool success = hs->Create();
+                if (success)
+                    URHO3D_LOGDEBUG("Compiled tess ctrl shader " + hs->GetFullName());
+                else
+                {
+                    URHO3D_LOGERROR("Failed to compile tess ctrl shader " + hs->GetFullName() + ":\n" + hs->GetCompilerOutput());
+                    hs = nullptr;
+                }
+            }
+            else
+                hs = nullptr;
+        }
+
+        if (ds && !ds->GetGPUObjectName())
+        {
+            if (ds->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE(CompileTessEvalShader);
+
+                bool success = ds->Create();
+                if (success)
+                    URHO3D_LOGDEBUG("Compiled tess eval shader " + ds->GetFullName());
+                else
+                {
+                    URHO3D_LOGERROR("Failed to compile tess eval shader " + ds->GetFullName() + ":\n" + ds->GetCompilerOutput());
+                    ds = nullptr;
+                }
+            }
+            else
+                ds = nullptr;
+        }
+    }
+
+    if (GetGeometryShaderSupport())
+    {
+        if (gs && !gs->GetGPUObjectName())
+        {
+            if (gs->GetCompilerOutput().empty())
+            {
+                URHO3D_PROFILE(CompileGeometryShader);
+
+                bool success = gs->Create();
+                if (success)
+                    URHO3D_LOGDEBUG("Compiled geometry shader " + gs->GetFullName());
+                else
+                {
+                    URHO3D_LOGERROR("Failed to compile geometry shader " + gs->GetFullName() + ":\n" + gs->GetCompilerOutput());
+                    gs = nullptr;
+                }
+            }
+            else
+                gs = nullptr;
+        }
+    }
+#endif
 
     if (ps && !ps->GetGPUObjectName())
     {
@@ -1080,14 +1212,20 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
         glUseProgram(0);
         vertexShader_ = nullptr;
         pixelShader_ = nullptr;
+        geometryShader_ = nullptr; // using a geometry shader still requires the vertex shader stage, the condition above holds
+        hullShader_ = nullptr;
+        domainShader_ = nullptr;
         impl_->shaderProgram_ = nullptr;
     }
     else
     {
         vertexShader_ = vs;
+        geometryShader_ = gs;
         pixelShader_ = ps;
+        hullShader_ = hs;
+        domainShader_ = ds;
 
-        ea::pair<ShaderVariation*, ShaderVariation*> combination(vs, ps);
+        ShaderCombination combination{ vs, ps, gs, hs, ds };
         auto i = impl_->shaderPrograms_.find(combination);
 
         if (i != impl_->shaderPrograms_.end())
@@ -1109,7 +1247,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             // Link a new combination
             URHO3D_PROFILE("LinkShaders");
 
-            SharedPtr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps));
+            SharedPtr<ShaderProgram> newProgram(new ShaderProgram(this, vs, ps, gs, hs, ds));
             if (newProgram->Link())
             {
                 URHO3D_LOGDEBUG("Linked vertex shader " + vs->GetFullName() + " and pixel shader " + ps->GetFullName());
@@ -1119,7 +1257,16 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
             }
             else
             {
-                URHO3D_LOGERROR("Failed to link vertex shader " + vs->GetFullName() + " and pixel shader " + ps->GetFullName() + ":\n" +
+                ea::string linkError = "Failed to link shaders, vertex shader: " + vs->GetFullName();
+                if (hs != nullptr)
+                    linkError += " hull shader: " + hs->GetFullName();
+                if (ds != nullptr)
+                    linkError += " domain shader: " + ds->GetFullName();
+                if (gs != nullptr)
+                    linkError += " geometry shader: " + gs->GetFullName();
+                linkError += " pixel shader: " + ps->GetFullName();
+
+                URHO3D_LOGERROR(linkError + ":\n" +
                          newProgram->GetLinkerOutput());
                 glUseProgram(0);
                 impl_->shaderProgram_ = nullptr;
@@ -1154,7 +1301,7 @@ void Graphics::SetShaders(ShaderVariation* vs, ShaderVariation* ps)
 
     // Store shader combination if shader dumping in progress
     if (shaderPrecache_)
-        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_);
+        shaderPrecache_->StoreShaders(vertexShader_, pixelShader_, geometryShader_, hullShader_, domainShader_);
 
     if (impl_->shaderProgram_)
     {
@@ -2144,6 +2291,16 @@ bool Graphics::GetGL3Support()
     return gl3Support;
 }
 
+bool Graphics::GetTessellationSupport()
+{
+    return tessellationSupport;
+}
+
+bool Graphics::GetGeometryShaderSupport()
+{
+    return geometryShaderSupport;
+}
+
 ShaderVariation* Graphics::GetShader(ShaderType type, const ea::string& name, const ea::string& defines) const
 {
     return GetShader(type, name.c_str(), defines.c_str());
@@ -2346,13 +2503,20 @@ void Graphics::CleanupShaderPrograms(ShaderVariation* variation)
 {
     for (auto i = impl_->shaderPrograms_.begin(); i != impl_->shaderPrograms_.end();)
     {
+#ifndef GL_ES_VERSION_2_0
+        if (i->second_->GetVertexShader() == variation || i->second_->GetPixelShader() == variation || i->second_->GetGeometryShader() == variation || i->second_->GetTCSShader() == variation || i->second_->GetTESShader() == variation)
+            i = impl_->shaderPrograms_.erase(i);
+        else
+            ++i;
+#else
         if (i->second->GetVertexShader() == variation || i->second->GetPixelShader() == variation)
             i = impl_->shaderPrograms_.erase(i);
         else
             ++i;
+#endif
     }
 
-    if (vertexShader_ == variation || pixelShader_ == variation)
+    if (vertexShader_ == variation || pixelShader_ == variation || geometryShader_ == variation)
         impl_->shaderProgram_ = nullptr;
 }
 
@@ -2527,6 +2691,27 @@ void Graphics::Restore()
         {
             gl3Support = true;
             apiName_ = "GL3";
+
+            if (GLEW_VERSION_3_3)
+            {
+                geometryShaderSupport = true;
+                apiName_ = "GL3.3";
+            }
+            if (GLEW_VERSION_4_0)
+            {
+                tessellationSupport = true;
+                apiName_ = "GL4";
+            }
+            if (GLEW_VERSION_4_1)
+            {
+                tessellationSupport = true;
+                apiName_ = "GL4.1";
+            }
+            if (GLEW_VERSION_4_3)
+            {
+                computeSupport = true;
+                apiName_ = "GL4.3";
+            }
 
             // Create and bind a vertex array object that will stay in use throughout
             unsigned vertexArrayObject;
@@ -3253,6 +3438,9 @@ void Graphics::ResetCachedState()
     indexBuffer_ = nullptr;
     vertexShader_ = nullptr;
     pixelShader_ = nullptr;
+    geometryShader_ = nullptr;
+    hullShader_ = nullptr;
+    domainShader_ = nullptr;
     blendMode_ = BLEND_REPLACE;
     alphaToCoverage_ = false;
     colorWrite_ = true;

@@ -145,12 +145,12 @@ void ShaderVariation::Release()
         if (type_ == VS)
         {
             if (graphics_->GetVertexShader() == this)
-                graphics_->SetShaders(nullptr, nullptr);
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
         }
         else
         {
             if (graphics_->GetPixelShader() == this)
-                graphics_->SetShaders(nullptr, nullptr);
+                graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
         }
     }
 
@@ -205,7 +205,7 @@ bool ShaderVariation::LoadByteCode(const ea::string& binaryShaderName)
     unsigned numTextureUnits = file->ReadUInt();
     for (unsigned i = 0; i < numTextureUnits; ++i)
     {
-        /*String unitName = */file->ReadString();
+        /*ea::string unitName = */file->ReadString();
         unsigned reg = file->ReadUByte();
 
         if (reg < MAX_TEXTURE_UNITS)

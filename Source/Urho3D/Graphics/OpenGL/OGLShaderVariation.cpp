@@ -69,12 +69,12 @@ void ShaderVariation::Release()
             if (type_ == VS)
             {
                 if (graphics_->GetVertexShader() == this)
-                    graphics_->SetShaders(nullptr, nullptr);
+                    graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
             }
             else if (type_ == PS)
             {
                 if (graphics_->GetPixelShader() == this)
-                    graphics_->SetShaders(nullptr, nullptr);
+                    graphics_->SetShaders(nullptr, nullptr, nullptr, nullptr, nullptr);
             }
 
             glDeleteShader(object_.name_);
@@ -97,29 +97,29 @@ bool ShaderVariation::Create()
         return false;
     }
 
-    GLenum shaderStage = 0;
+#ifndef GL_ES_VERSION_2_0
     switch (type_)
     {
     case VS:
-        shaderStage = GL_VERTEX_SHADER;
+        object_.name_ = glCreateShader(GL_VERTEX_SHADER);
         break;
     case PS:
-        shaderStage = GL_FRAGMENT_SHADER;
+        object_.name_ = glCreateShader(GL_FRAGMENT_SHADER);
         break;
-#if 0
     case GS:
-        shaderStage = GL_GEOMETRY_SHADER;
+        object_.name_ = glCreateShader(GL_GEOMETRY_SHADER);
         break;
     case HS:
-        shaderStage = GL_TESS_CONTROL_SHADER;
+        object_.name_ = glCreateShader(GL_TESS_CONTROL_SHADER);
         break;
     case DS:
-        shaderStage = GL_TESS_EVALUATION_SHADER;
+        object_.name_ = glCreateShader(GL_TESS_EVALUATION_SHADER);
         break;
-#endif
+    }
+#else
 #ifdef URHO3D_COMPUTE
-    case CS:
-        shaderStage = GL_COMPUTE_SHADER;
+#endif
+
         break;
 #endif
     default:
@@ -158,6 +158,8 @@ bool ShaderVariation::Create()
         }
     }
     // Force GLSL version 150 if no version define and GL3 is being used
+    //??if (!verEnd && Graphics::GetTessellationSupport())
+    //??    shaderCode += "#version 410\n";
     if (!verEnd && Graphics::GetGL3Support())
     {
 #ifdef MOBILE_GRAPHICS
@@ -173,15 +175,27 @@ bool ShaderVariation::Create()
 #endif
 
     // Distinguish between VS and PS compile in case the shader code wants to include/omit different things
-    static const char* STAGE_DEFS[] = {
-        "#define COMPILEVS\n", // VS
-        "#define COMPILEPS\n", // PS
-        "#define COMPILEGS\n", // GS
-        "#define COMPILEHS\n", // HS
-        "#define COMPILEDS\n", // DS
-        "#define COMPILECS\n", // CS
-    };
-    shaderCode += STAGE_DEFS[type_];
+#ifndef GL_ES_VERSION_2_0
+    switch (type_)
+    {
+    case VS:
+        shaderCode += "#define COMPILEVS\n";
+        break;
+    case PS:
+        shaderCode += "#define COMPILEPS\n";
+        break;
+    case GS:
+        shaderCode += "#define COMPILEGS\n";
+        break;
+    case HS:
+        shaderCode += "#define COMPILEHS\n";
+        break;
+    case DS:
+        shaderCode += "#define COMPILEDS\n";
+        break;
+    }
+#else
+#endif
 
     // Add define for the maximum number of supported bones
     shaderCode += "#define MAXBONES " + ea::to_string(Graphics::GetMaxBones()) + "\n";
@@ -211,6 +225,8 @@ bool ShaderVariation::Create()
 #endif
     if (Graphics::GetGL3Support())
         shaderCode += "#define GL3\n";
+    if (Graphics::GetTessellationSupport())
+        shaderCode += "#define GL4\n";
 
     // When version define found, do not insert it a second time
     if (verEnd > 0)

@@ -26,6 +26,7 @@
 
 #include "../../Core/Timer.h"
 #include "../../Graphics/ConstantBuffer.h"
+#include "../../Graphics/ShaderPrecache.h"
 #include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/Texture2D.h"
 #include "../../Math/Color.h"
@@ -89,7 +90,7 @@ namespace Urho3D
 class Context;
 
 using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer> >;
-using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram> >;
+using ShaderProgramMap = ea::unordered_map<ShaderCombination, SharedPtr<ShaderProgram> >;
 
 /// Cached state of a frame buffer object.
 struct FrameBufferObject

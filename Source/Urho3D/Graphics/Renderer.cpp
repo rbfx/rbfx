@@ -1221,12 +1221,22 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
     if (pass->GetShadersLoadedFrameNumber() != shadersChangedFrameNumber_)
         pass->ReleaseShaders();
 
-    ea::vector<SharedPtr<ShaderVariation> >& vertexShaders = queue.hasExtraDefines_ ? pass->GetVertexShaders(queue.vsExtraDefinesHash_) : pass->GetVertexShaders();
-    ea::vector<SharedPtr<ShaderVariation> >& pixelShaders = queue.hasExtraDefines_ ? pass->GetPixelShaders(queue.psExtraDefinesHash_) : pass->GetPixelShaders();
+    ea::vector<SharedPtr<ShaderVariation> >& vertexShaders = queue.hasExtraDefines_ ? pass->GetVertexShaders(queue.vsExtraDefines_.hash_) : pass->GetVertexShaders();
+    ea::vector<SharedPtr<ShaderVariation> >& pixelShaders = queue.hasExtraDefines_ ? pass->GetPixelShaders(queue.psExtraDefines_.hash_) : pass->GetPixelShaders();
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    ea::vector<SharedPtr<ShaderVariation> >& geometryShaders = queue.hasExtraDefines_ ? pass->GetGeometryShaders(queue.gsExtraDefines_.hash_) : pass->GetGeometryShaders();
+    ea::vector<SharedPtr<ShaderVariation> >& hsShaders = queue.hasExtraDefines_ ? pass->GetHullShaders(queue.hsExtraDefines_.hash_) : pass->GetHullShaders();
+    ea::vector<SharedPtr<ShaderVariation> >& dsShaders = queue.hasExtraDefines_ ? pass->GetDomainShaders(queue.dsExtraDefines_.hash_) : pass->GetDomainShaders();
+#else
+    // Provide stubs for LoadPassShaders.
+    ea::vector<SharedPtr<ShaderVariation> > geometryShaders;
+    ea::vector<SharedPtr<ShaderVariation> > hsShaders;
+    ea::vector<SharedPtr<ShaderVariation> > dsShaders;
+#endif
 
     // Load shaders now if necessary
     if (!vertexShaders.size() || !pixelShaders.size())
-        LoadPassShaders(pass, vertexShaders, pixelShaders, queue);
+        LoadPassShaders(pass, vertexShaders, pixelShaders, geometryShaders, hsShaders, dsShaders, queue);
 
     // Make sure shaders are loaded now
     if (vertexShaders.size() && pixelShaders.size())
@@ -1247,14 +1257,20 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
             if (!lightQueue)
             {
                 // Do not log error, as it would result in a lot of spam
-                batch.vertexShader_ = nullptr;
-                batch.pixelShader_ = nullptr;
+                batch.shaders_.vertexShader_ = nullptr;
+                batch.shaders_.pixelShader_ = nullptr;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+                batch.shaders_.geometryShader_ = nullptr;
+                batch.shaders_.hullShader_ = nullptr;
+                batch.shaders_.domainShader_ = nullptr;
+#endif
                 return;
             }
 
             Light* light = lightQueue->light_;
             unsigned vsi = 0;
             unsigned psi = 0;
+            unsigned gsi = 0;
             vsi = batch.geometryType_ * MAX_LIGHT_VS_VARIATIONS;
 
             bool materialHasSpecular = batch.material_ ? batch.material_->GetSpecular() : true;
@@ -1292,8 +1308,13 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
             if (heightFog)
                 psi += MAX_LIGHT_PS_VARIATIONS;
 
-            batch.vertexShader_ = vertexShaders[vsi];
-            batch.pixelShader_ = pixelShaders[psi];
+            batch.shaders_.vertexShader_ = vertexShaders[vsi];
+            batch.shaders_.pixelShader_ = pixelShaders[psi];
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+            batch.shaders_.geometryShader_ = geometryShaders.empty() ? nullptr : geometryShaders[vsi];
+            batch.shaders_.hullShader_ = hsShaders.empty() ? nullptr : hsShaders[vsi];
+            batch.shaders_.domainShader_ = dsShaders.empty() ? nullptr : dsShaders[vsi];
+#endif
         }
         else
         {
@@ -1305,20 +1326,30 @@ void Renderer::SetBatchShaders(Batch& batch, Technique* tech, bool allowShadows,
                     numVertexLights = batch.lightQueue_->vertexLights_.size();
 
                 unsigned vsi = batch.geometryType_ * MAX_VERTEXLIGHT_VS_VARIATIONS + numVertexLights;
-                batch.vertexShader_ = vertexShaders[vsi];
+                batch.shaders_.vertexShader_ = vertexShaders[vsi];
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+                batch.shaders_.geometryShader_ = geometryShaders.empty() ? nullptr : geometryShaders[vsi];
+                batch.shaders_.hullShader_ = hsShaders.empty() ? nullptr : hsShaders[vsi];
+                batch.shaders_.domainShader_ = dsShaders.empty() ? nullptr : dsShaders[vsi];
+#endif
             }
             else
             {
                 unsigned vsi = batch.geometryType_;
-                batch.vertexShader_ = vertexShaders[vsi];
+                batch.shaders_.vertexShader_ = vertexShaders[vsi];
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+                batch.shaders_.geometryShader_ = geometryShaders.empty() ? nullptr : geometryShaders[vsi];
+                batch.shaders_.hullShader_ = hsShaders.empty() ? nullptr : hsShaders[vsi];
+                batch.shaders_.domainShader_ = dsShaders.empty() ? nullptr : dsShaders[vsi];
+#endif
             }
 
-            batch.pixelShader_ = pixelShaders[heightFog ? 1 : 0];
+            batch.shaders_.pixelShader_ = pixelShaders[heightFog ? 1 : 0];
         }
     }
 
     // Log error if shaders could not be assigned, but only once per technique
-    if (!batch.vertexShader_ || !batch.pixelShader_)
+    if (!batch.shaders_.vertexShader_ || !batch.shaders_.pixelShader_)
     {
         if (!shaderErrorDisplayed_.contains(tech))
         {
@@ -1373,14 +1404,22 @@ void Renderer::SetLightVolumeBatchShaders(Batch& batch, Camera* camera, const ea
     }
 
     if (vsDefines.length())
-        batch.vertexShader_ = graphics_->GetShader(VS, vsName, deferredLightVSVariations[vsi] + vsDefines);
+        batch.shaders_.vertexShader_ = graphics_->GetShader(VS, vsName, deferredLightVSVariations[vsi] + vsDefines);
     else
-        batch.vertexShader_ = graphics_->GetShader(VS, vsName, deferredLightVSVariations[vsi]);
+        batch.shaders_.vertexShader_ = graphics_->GetShader(VS, vsName, deferredLightVSVariations[vsi]);
+
 
     if (psDefines.length())
-        batch.pixelShader_ = graphics_->GetShader(PS, psName, deferredLightPSVariations_[psi] + psDefines);
+        batch.shaders_.pixelShader_ = graphics_->GetShader(PS, psName, deferredLightPSVariations_[psi] + psDefines);
     else
-        batch.pixelShader_ = graphics_->GetShader(PS, psName, deferredLightPSVariations_[psi]);
+        batch.shaders_.pixelShader_ = graphics_->GetShader(PS, psName, deferredLightPSVariations_[psi]);
+
+    // light volumes do not use a GS, TCS, or TES
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    batch.shaders_.geometryShader_ = nullptr;
+    batch.shaders_.hullShader_ = nullptr;
+    batch.shaders_.domainShader_ = nullptr;
+#endif
 }
 
 void Renderer::SetCullMode(CullMode mode, Camera* camera)
@@ -1483,7 +1522,7 @@ void Renderer::OptimizeLightByStencil(Light* light, Camera* camera)
         graphics_->SetColorWrite(false);
         graphics_->SetDepthWrite(false);
         graphics_->SetStencilTest(true, CMP_ALWAYS, OP_REF, OP_KEEP, OP_KEEP, lightStencilValue_);
-        graphics_->SetShaders(graphics_->GetShader(VS, "Stencil"), graphics_->GetShader(PS, "Stencil"));
+        graphics_->SetShaders(graphics_->GetShader(VS, "Stencil"), graphics_->GetShader(PS, "Stencil"), nullptr, nullptr, nullptr);
         graphics_->SetShaderParameter(VSP_VIEW, view);
         graphics_->SetShaderParameter(VSP_VIEWINV, camera->GetEffectiveWorldTransform());
         graphics_->SetShaderParameter(VSP_VIEWPROJ, projection * view);
@@ -1693,34 +1732,68 @@ void Renderer::LoadShaders()
     shadersDirty_ = false;
 }
 
-void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation> >& vertexShaders, ea::vector<SharedPtr<ShaderVariation> >& pixelShaders, const BatchQueue& queue)
+void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation> >& vertexShaders, ea::vector<SharedPtr<ShaderVariation> >& pixelShaders, ea::vector<SharedPtr<ShaderVariation> >& geometryShaders, ea::vector<SharedPtr<ShaderVariation> >& tcsShaders, ea::vector<SharedPtr<ShaderVariation> >& tesShaders, const BatchQueue& queue)
 {
     URHO3D_PROFILE("LoadPassShaders");
 
     // Forget all the old shaders
     vertexShaders.clear();
     pixelShaders.clear();
+    geometryShaders.clear();
+    tcsShaders.clear();
+    tesShaders.clear();
 
     ea::string vsDefines = pass->GetEffectiveVertexShaderDefines();
     ea::string psDefines = pass->GetEffectivePixelShaderDefines();
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    ea::string gsDefines = pass->GetEffectiveGeometryShaderDefines();
+    ea::string hsDefines = pass->GetEffectiveHullShaderDefines();
+    ea::string dsDefines = pass->GetEffectiveDomainShaderDefines();
+#endif
 
     // Make sure to end defines with space to allow appending engine's defines
     if (vsDefines.length() && !vsDefines.ends_with(" "))
         vsDefines += ' ';
     if (psDefines.length() && !psDefines.ends_with(" "))
         psDefines += ' ';
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    if (gsDefines.length() && !gsDefines.ends_with(" "))
+        gsDefines += ' ';
+    if (hsDefines.length() && !hsDefines.ends_with(" "))
+        hsDefines += ' ';
+    if (dsDefines.length() && !dsDefines.ends_with(" "))
+        dsDefines += ' ';
+#endif
 
     // Append defines from batch queue (renderpath command) if needed
-    if (queue.vsExtraDefines_.length())
+    if (queue.vsExtraDefines_.defines_.length())
     {
-        vsDefines += queue.vsExtraDefines_;
+        vsDefines += queue.vsExtraDefines_.defines_;
         vsDefines += ' ';
     }
-    if (queue.psExtraDefines_.length())
+    if (queue.psExtraDefines_.defines_.length())
     {
-        psDefines += queue.psExtraDefines_;
+        psDefines += queue.psExtraDefines_.defines_;
         psDefines += ' ';
     }
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    if (queue.gsExtraDefines_.defines_.length())
+    {
+        gsDefines += queue.gsExtraDefines_.defines_;
+        gsDefines += ' ';
+    }
+    if (queue.hsExtraDefines_.defines_.length())
+    {
+        hsDefines += queue.hsExtraDefines_.defines_;
+        hsDefines += ' ';
+    }
+    if (queue.dsExtraDefines_.defines_.length())
+    {
+        dsDefines += queue.dsExtraDefines_.defines_;
+        dsDefines += ' ';
+    }
+#endif
 
     // Add defines for VSM in the shadow pass if necessary
     if (pass->GetName() == "shadow"
@@ -1728,6 +1801,11 @@ void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation>
     {
         vsDefines += "VSM_SHADOW ";
         psDefines += "VSM_SHADOW ";
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+        gsDefines += "VSM_SHADOW ";
+        hsDefines += "VSM_SHADOW ";
+        dsDefines += "VSM_SHADOW ";
+#endif
     }
 
     if (pass->GetLightingMode() == LIGHTING_PERPIXEL)
@@ -1744,6 +1822,32 @@ void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation>
             vertexShaders[j] = graphics_->GetShader(VS, pass->GetVertexShader(),
                 vsDefines + lightVSVariations[l] + geometryVSVariations[g]);
         }
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+        geometryShaders.resize(MAX_GEOMETRYTYPES * MAX_LIGHT_VS_VARIATIONS);
+        tcsShaders.resize(MAX_GEOMETRYTYPES * MAX_LIGHT_VS_VARIATIONS);
+        tesShaders.resize(MAX_GEOMETRYTYPES * MAX_LIGHT_VS_VARIATIONS);
+        if (!pass->GetGeometryShader().empty())
+        {
+            for (unsigned j = 0; j < MAX_GEOMETRYTYPES * MAX_LIGHT_VS_VARIATIONS; ++j)
+            {
+                unsigned g = j / MAX_LIGHT_VS_VARIATIONS;
+                unsigned l = j % MAX_LIGHT_VS_VARIATIONS;
+                geometryShaders[j] = graphics_->GetShader(GS, pass->GetGeometryShader(), gsDefines + lightVSVariations[l] + geometryVSVariations[g]);
+            }
+        }
+        if (!pass->GetHullShader().empty() && !pass->GetDomainShader().empty())
+        {
+            for (unsigned j = 0; j < MAX_GEOMETRYTYPES * MAX_LIGHT_VS_VARIATIONS; ++j)
+            {
+                unsigned g = j / MAX_LIGHT_VS_VARIATIONS;
+                unsigned l = j % MAX_LIGHT_VS_VARIATIONS;
+                tcsShaders[j] = graphics_->GetShader(HS, pass->GetHullShader(), hsDefines + lightVSVariations[l] + geometryVSVariations[g]);
+                tesShaders[j] = graphics_->GetShader(DS, pass->GetDomainShader(), dsDefines + lightVSVariations[l] + geometryVSVariations[g]);
+            }
+        }
+#endif
+
         for (unsigned j = 0; j < MAX_LIGHT_PS_VARIATIONS * 2; ++j)
         {
             unsigned l = j % MAX_LIGHT_PS_VARIATIONS;
@@ -1773,6 +1877,31 @@ void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation>
                 vertexShaders[j] = graphics_->GetShader(VS, pass->GetVertexShader(),
                     vsDefines + vertexLightVSVariations[l] + geometryVSVariations[g]);
             }
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+            geometryShaders.resize(MAX_GEOMETRYTYPES * MAX_VERTEXLIGHT_VS_VARIATIONS);
+            tcsShaders.resize(MAX_GEOMETRYTYPES * MAX_VERTEXLIGHT_VS_VARIATIONS);
+            tesShaders.resize(MAX_GEOMETRYTYPES * MAX_VERTEXLIGHT_VS_VARIATIONS);
+            if (!pass->GetGeometryShader().empty())
+            {
+                for (unsigned j = 0; j < MAX_GEOMETRYTYPES * MAX_VERTEXLIGHT_VS_VARIATIONS; ++j)
+                {
+                    unsigned g = j / MAX_VERTEXLIGHT_VS_VARIATIONS;
+                    unsigned l = j % MAX_VERTEXLIGHT_VS_VARIATIONS;
+                    geometryShaders[j] = graphics_->GetShader(GS, pass->GetGeometryShader(), gsDefines + vertexLightVSVariations[l] + geometryVSVariations[g]);
+                }
+            }
+            if (!pass->GetHullShader().empty() && !pass->GetDomainShader().empty())
+            {
+                for (unsigned j = 0; j < MAX_GEOMETRYTYPES * MAX_VERTEXLIGHT_VS_VARIATIONS; ++j)
+                {
+                    unsigned g = j / MAX_VERTEXLIGHT_VS_VARIATIONS;
+                    unsigned l = j % MAX_VERTEXLIGHT_VS_VARIATIONS;
+                    tcsShaders[j] = graphics_->GetShader(HS, pass->GetHullShader(), hsDefines + vertexLightVSVariations[l] + geometryVSVariations[g]);
+                    tesShaders[j] = graphics_->GetShader(DS, pass->GetDomainShader(), dsDefines + vertexLightVSVariations[l] + geometryVSVariations[g]);
+                }
+            }
+#endif
         }
         else
         {
@@ -1782,6 +1911,27 @@ void Renderer::LoadPassShaders(Pass* pass, ea::vector<SharedPtr<ShaderVariation>
                 vertexShaders[j] = graphics_->GetShader(VS, pass->GetVertexShader(),
                     vsDefines + geometryVSVariations[j]);
             }
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+            geometryShaders.resize(MAX_GEOMETRYTYPES);
+            tcsShaders.resize(MAX_GEOMETRYTYPES);
+            tesShaders.resize(MAX_GEOMETRYTYPES);
+            if (!pass->GetGeometryShader().empty())
+            {
+                for (unsigned j = 0; j < MAX_GEOMETRYTYPES; ++j)
+                {
+                    geometryShaders[j] = graphics_->GetShader(GS, pass->GetGeometryShader(), gsDefines + geometryVSVariations[j]);
+                }
+            }
+            if (!pass->GetHullShader().empty() && !pass->GetDomainShader().empty())
+            {
+                for (unsigned j = 0; j < MAX_GEOMETRYTYPES; ++j)
+                {
+                    tcsShaders[j] = graphics_->GetShader(HS, pass->GetHullShader(), hsDefines + geometryVSVariations[j]);
+                    tesShaders[j] = graphics_->GetShader(DS, pass->GetDomainShader(), dsDefines + geometryVSVariations[j]);
+                }
+            }
+#endif
         }
 
         pixelShaders.resize(2);
@@ -2035,7 +2185,7 @@ void Renderer::BlurShadowMap(View* view, Texture2D* shadowMap, float blurScale)
     static const char* shaderName = "ShadowBlur";
     ShaderVariation* vs = graphics_->GetShader(VS, shaderName);
     ShaderVariation* ps = graphics_->GetShader(PS, shaderName);
-    graphics_->SetShaders(vs, ps);
+    graphics_->SetShaders(vs, ps, nullptr, nullptr, nullptr);
 
     view->SetGBufferShaderParameters(IntVector2(shadowMap->GetWidth(), shadowMap->GetHeight()), IntRect(0, 0, shadowMap->GetWidth(), shadowMap->GetHeight()));
 

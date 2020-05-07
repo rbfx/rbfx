@@ -1924,16 +1924,32 @@ void View::RenderQuad(RenderPathCommand& command)
     if (command.vertexShaderName_.empty() || command.pixelShaderName_.empty())
         return;
 
+    ShaderVariation* hs = nullptr;
+    ShaderVariation* ds = nullptr;
+    ShaderVariation* gs = nullptr;
+
     // If shader can not be found, clear it from the command to prevent redundant attempts
     ShaderVariation* vs = graphics_->GetShader(VS, command.vertexShaderName_, command.vertexShaderDefines_);
     if (!vs)
         command.vertexShaderName_ = EMPTY_STRING;
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    if (!command.hullShaderName_.empty())
+        hs = graphics_->GetShader(HS, command.hullShaderName_, command.hullShaderDefines_);
+
+    if (!command.domainShaderName_.empty())
+        ds = graphics_->GetShader(DS, command.domainShaderName_, command.domainShaderDefines_);
+
+    if (!command.geometryShaderName_.empty())
+        gs = graphics_->GetShader(GS, command.geometryShaderName_, command.geometryShaderDefines_);
+#endif
+
     ShaderVariation* ps = graphics_->GetShader(PS, command.pixelShaderName_, command.pixelShaderDefines_);
     if (!ps)
         command.pixelShaderName_ = EMPTY_STRING;
 
     // Set shaders & shader parameters and textures
-    graphics_->SetShaders(vs, ps);
+    graphics_->SetShaders(vs, ps, gs, hs, ds);
 
     SetGlobalShaderParameters();
     SetCameraShaderParameters(camera_);
@@ -2211,7 +2227,7 @@ void View::BlitFramebuffer(Texture* source, RenderSurface* destination, bool dep
     graphics_->SetViewport(destRect);
 
     static const char* shaderName = "CopyFramebuffer";
-    graphics_->SetShaders(graphics_->GetShader(VS, shaderName), graphics_->GetShader(PS, shaderName));
+    graphics_->SetShaders(graphics_->GetShader(VS, shaderName), graphics_->GetShader(PS, shaderName), nullptr, nullptr, nullptr);
 
     SetGBufferShaderParameters(srcSize, srcRect);
 
@@ -2966,13 +2982,27 @@ void View::SetQueueShaderDefines(BatchQueue& queue, const RenderPathCommand& com
 {
     ea::string vsDefines = command.vertexShaderDefines_.trimmed();
     ea::string psDefines = command.pixelShaderDefines_.trimmed();
-    if (vsDefines.length() || psDefines.length())
+
+    ea::string gsDefines = command.geometryShaderDefines_.trimmed();
+    ea::string tcsDefines = command.hullShaderDefines_.trimmed();
+    ea::string tesDefines = command.domainShaderDefines_.trimmed();
+
+    if (vsDefines.length() || psDefines.length() || gsDefines.length())
     {
         queue.hasExtraDefines_ = true;
-        queue.vsExtraDefines_ = vsDefines;
-        queue.psExtraDefines_ = psDefines;
-        queue.vsExtraDefinesHash_ = StringHash(vsDefines);
-        queue.psExtraDefinesHash_ = StringHash(psDefines);
+        queue.vsExtraDefines_.defines_ = vsDefines;
+        queue.psExtraDefines_.defines_ = psDefines;
+        queue.vsExtraDefines_.hash_ = StringHash(vsDefines);
+        queue.psExtraDefines_.hash_ = StringHash(psDefines);
+
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+        queue.gsExtraDefines_.defines_ = gsDefines;
+        queue.hsExtraDefines_.defines_ = tcsDefines;
+        queue.dsExtraDefines_.defines_ = tesDefines;
+        queue.gsExtraDefines_.hash_ = StringHash(gsDefines);
+        queue.hsExtraDefines_.hash_ = StringHash(tcsDefines);
+        queue.dsExtraDefines_.hash_ = StringHash(tesDefines);
+#endif
     }
     else
         queue.hasExtraDefines_ = false;

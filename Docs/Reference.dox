@@ -1034,6 +1034,9 @@ A technique definition looks like this:
     <pass name="base|litbase|light|alpha|litalpha|postopaque|refract|postalpha|prepass|material|deferred|depth|shadow" desktop="false|true" >
         vs="VertexShaderName" ps="PixelShaderName" vsdefines="DEFINE1 DEFINE2" psdefines="DEFINE3 DEFINE4"
         vsexcludes="EXCLUDE1 EXCLUDE2" psexcludes="EXCLUDE3 EXCLUDE4"
+        [gs="HullShaderNames" gsdefines="DEFINE5 DEFINE6" gsexcludes="EXCLUDE5"]
+        [hs="HullShaderNames" hsdefines="DEFINE7 DEFINE8" hsexcludes="EXCLUDE6"]
+        [ds="HullShaderNames" dsdefines="DEFINE9 DEFINE10" dsexcludes="EXCLUDE7"]
         lighting="unlit|pervertex|perpixel"
         blend="replace|add|multiply|alpha|addalpha|premulalpha|invdestalpha|subtract|subtractalpha"
         [cull="cw|ccw|none"]
@@ -1152,6 +1155,8 @@ Pixel shader uniforms:
 - float4 cFogParams: fog calculation parameters (see Batch.cpp and Fog.hlsl for the exact meaning)
 - float cNearClipPS: camera's near clip distance
 - float cFarClipPS: camera's far clip distance
+
+Geometry and tessellation shaders must share their uniforms with the vertex shader in exactly the same layout.
 
 \section Shaders_Writing Writing shaders
 

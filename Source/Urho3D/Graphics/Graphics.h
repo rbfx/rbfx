@@ -224,7 +224,7 @@ public:
     /// Set index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set shaders.
-    void SetShaders(ShaderVariation* vs, ShaderVariation* ps);
+    void SetShaders(ShaderVariation* vs, ShaderVariation* ps, ShaderVariation* gs, ShaderVariation* tcs, ShaderVariation* tes);
     /// Set shader float constants.
     void SetShaderParameter(StringHash param, const float data[], unsigned count);
     /// Set shader float constant.
@@ -480,6 +480,15 @@ public:
     /// Return current pixel shader.
     ShaderVariation* GetPixelShader() const { return pixelShader_; }
 
+    /// Return current pixel shader.
+    ShaderVariation* GetGeometryShader() const { return geometryShader_; }
+
+    /// Return current Hull/TCS shader.
+    ShaderVariation* GetHullShader() const { return hullShader_; }
+
+    /// Return current Domain/TES shader.
+    ShaderVariation* GetDomainShader() const { return domainShader_; }
+
     /// Return shader program. This is an API-specific class and should not be used by applications.
     ShaderProgram* GetShaderProgram() const;
 
@@ -657,6 +666,10 @@ public:
     static unsigned GetMaxBones();
     /// Return whether is using an OpenGL 3 context. Return always false on Direct3D9 & Direct3D11.
     static bool GetGL3Support();
+    /// Returns true if tessellation is supported (GL 4.1+, D3D11).
+    static bool GetTessellationSupport();
+    /// Returns true if geometry shaders are supported (GL 3.3+, D3D11 feature level 10+).
+    static bool GetGeometryShaderSupport();
 
     /// Get the SDL_Window as a void* to avoid having to include the graphics implementation
     void* GetSDLWindow() { return window_; }
@@ -802,8 +815,14 @@ private:
     unsigned primitiveType_{};
     /// Vertex shader in use.
     ShaderVariation* vertexShader_{};
+    /// Geometry shader in use.
+    ShaderVariation* geometryShader_{};
     /// Pixel shader in use.
     ShaderVariation* pixelShader_{};
+    /// Hull/TCS shader in use.
+    ShaderVariation* hullShader_{};
+    /// Domain/TES shader in use.
+    ShaderVariation* domainShader_{};
     /// Textures in use.
     Texture* textures_[MAX_TEXTURE_UNITS]{};
     /// Texture unit mappings.
@@ -889,6 +908,10 @@ private:
     static const Vector2 pixelUVOffset;
     /// OpenGL3 support flag.
     static bool gl3Support;
+    /// Flag for geometry shader capability.
+    static bool geometryShaderSupport;
+    /// Flag for tessellation capability.
+    static bool tessellationSupport;
 };
 
 /// Register Graphics library objects.

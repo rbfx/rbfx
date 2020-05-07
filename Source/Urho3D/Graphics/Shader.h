@@ -54,7 +54,7 @@ public:
     ShaderVariation* GetVariation(ShaderType type, const char* defines);
 
     /// Return either vertex or pixel shader source code.
-    const ea::string& GetSourceCode(ShaderType type) const { return type == VS ? vsSourceCode_ : type == PS ? psSourceCode_ : csSourceCode_; }
+    const ea::string& GetSourceCode(ShaderType type) const;
 
     /// Return the latest timestamp of the shader code and its includes.
     unsigned GetTimeStamp() const { return timeStamp_; }
@@ -62,6 +62,8 @@ public:
 private:
     /// Return hash for given shader defines and current global shader defines.
     unsigned GetShaderDefinesHash(const char* defines) const;
+    /// Return the table of shader variations for a specific shader stage.
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >& GetVariations(ShaderType type);
     /// Process source code and include files. Return true if successful.
     bool ProcessSource(ea::string& code, Deserializer& source);
     /// Sort the defines and strip extra spaces to prevent creation of unnecessary duplicate shader variations.
@@ -69,18 +71,29 @@ private:
     /// Recalculate the memory used by the shader.
     void RefreshMemoryUse();
 
-    /// Source code adapted for vertex shader.
-    ea::string vsSourceCode_;
-    /// Source code adapted for pixel shader.
-    ea::string psSourceCode_;
-    /// Source code adapted for compute shader.
-    ea::string csSourceCode_;
-    /// Vertex shader variations.
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > vsVariations_;
-    /// Pixel shader variations.
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > psVariations_;
-    /// Compute shader variations.
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > csVariations_;
+    /// Encapsulates information for a specific shader stage.
+    struct ShaderData
+    {
+        /// Source code adapted for the shader.
+        ea::string sourceCode_;
+        /// Shader variations.
+        ea::unordered_map<unsigned, SharedPtr<ShaderVariation> > variations_;
+    };
+
+    /// Vertex shader source and variations.
+    ShaderData vertexShader_;
+    /// Pixel shader source and variations.
+    ShaderData pixelShader_;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    /// Geometry shader source and variations.
+    ShaderData geometryShader_;
+    /// TCS shader source and variations.
+    ShaderData hullShader_;
+    /// TES shader source and variations.
+    ShaderData domainShader_;
+    /// Compute shader source and variations.
+    ShaderData computeShader_;
+#endif
     /// Source code timestamp.
     unsigned timeStamp_;
     /// Number of unique variations so far.

@@ -63,6 +63,36 @@ void CommentOutFunction(ea::string& code, const ea::string& signature)
     }
 }
 
+void ExtractShaderSource(ea::string& code, ShaderType shaderType)
+{
+    static const ea::pair<ShaderType, const char*> mainNamesMapping[] = {
+        { VS, "void VS(" },
+        { PS, "void PS(" },
+        { GS, "void GS(" },
+        { HS, "void HS(" },
+        { DS, "void DS(" },
+        { CS, "void CS(" }
+    };
+
+    for (const auto& item : mainNamesMapping)
+    {
+        // Comment out the rest of mains
+        if (item.first != shaderType)
+            CommentOutFunction(code, item.second);
+#ifdef URHO3D_OPENGL
+        else
+            code.replace(item.second, "void main(");
+        // On OpenGL, rename main
+#endif
+    }
+}
+
+void FreeVariations(const ea::unordered_map<unsigned, SharedPtr<ShaderVariation>>& variations)
+{
+    for (const auto& item : variations)
+        item.second->Release();
+}
+
 Shader::Shader(Context* context) :
     Resource(context),
     timeStamp_(0),
@@ -99,29 +129,22 @@ bool Shader::BeginLoad(Deserializer& source)
         return false;
 
     // Comment out the unneeded shader function
-    vsSourceCode_ = shaderCode;
-    psSourceCode_ = shaderCode;
-    csSourceCode_ = shaderCode;
+    vertexShader_.sourceCode_ = shaderCode;
+    pixelShader_.sourceCode_ = shaderCode;
 
-    CommentOutFunction(vsSourceCode_, "void PS(");
-    CommentOutFunction(vsSourceCode_, "void CS(");
+    ExtractShaderSource(vertexShader_.sourceCode_, VS);
+    ExtractShaderSource(pixelShader_.sourceCode_, PS);
 
-    CommentOutFunction(psSourceCode_, "void VS(");
-    CommentOutFunction(psSourceCode_, "void CS(");
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    geometryShader_.sourceCode_ = shaderCode;
+    hullShader_.sourceCode_ = shaderCode;
+    domainShader_.sourceCode_ = shaderCode;
+    computeShader_.sourceCode_ = shaderCode;
 
-    CommentOutFunction(csSourceCode_, "void VS(");
-    CommentOutFunction(csSourceCode_, "void PS(");
-
-    // OpenGL: rename either VS() or PS() to main()
-#ifdef URHO3D_OPENGL
-#define HANDLE_SHADER_STAGE(SHORTNAME, LCASESHORTNAME) \
-    LCASESHORTNAME ## SourceCode_.replace("void " #SHORTNAME "(", "void main(");
-
-    HANDLE_SHADER_STAGE(VS, vs);
-    HANDLE_SHADER_STAGE(PS, ps);
-    HANDLE_SHADER_STAGE(CS, cs);
-
-#undef HANDLE_SHADER_STAGE
+    ExtractShaderSource(geometryShader_.sourceCode_, GS);
+    ExtractShaderSource(hullShader_.sourceCode_, HS);
+    ExtractShaderSource(domainShader_.sourceCode_, DS);
+    ExtractShaderSource(computeShader_.sourceCode_, VS);
 #endif
 
     RefreshMemoryUse();
@@ -130,15 +153,15 @@ bool Shader::BeginLoad(Deserializer& source)
 
 bool Shader::EndLoad()
 {
-#define FREE_VARIATIONS(STAGE) \
-    for (auto i = STAGE ## Variations_.begin(); i != STAGE ## Variations_.end(); ++i) i->second->Release();
+    FreeVariations(vertexShader_.variations_);
+    FreeVariations(pixelShader_.variations_);
 
-    // If variations had already been created, release them and require recompile
-    FREE_VARIATIONS(vs);
-    FREE_VARIATIONS(ps);
-    FREE_VARIATIONS(cs);
-
-#undef FREE_VARIATIONS
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    FreeVariations(geometryShader_.variations_);
+    FreeVariations(hullShader_.variations_);
+    FreeVariations(domainShader_.variations_);
+    FreeVariations(computeShader_.variations_);
+#endif
 
     return true;
 }
@@ -148,44 +171,72 @@ ShaderVariation* Shader::GetVariation(ShaderType type, const ea::string& defines
     return GetVariation(type, defines.c_str());
 }
 
-ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
+const ea::string& Shader::GetSourceCode(ShaderType type) const
 {
-    const unsigned definesHash = GetShaderDefinesHash(defines);
+    switch (type)
+{
+    case VS:
+        return vertexShader_.sourceCode_;
+    case PS:
+        return pixelShader_.sourceCode_;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    case GS:
+        return geometryShader_.sourceCode_;
+    case HS:
+        return hullShader_.sourceCode_;
+    case DS:
+        return domainShader_.sourceCode_;
+    case CS:
+        return computeShader_.sourceCode_;
+#endif
+    }
+    return vertexShader_.sourceCode_;
+}
 
-    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >* variations = nullptr;
+ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >& Shader::GetVariations(ShaderType type)
+{
     switch (type)
     {
     case VS:
-        variations = &vsVariations_;
-        break;
+        return vertexShader_.variations_;
     case PS:
-        variations = &psVariations_;
-        break;
+        return pixelShader_.variations_;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    case GS:
+        return geometryShader_.variations_;
+    case HS:
+        return hullShader_.variations_;
+    case DS:
+        return domainShader_.variations_;
     case CS:
-        variations = &csVariations_;
-        break;
+        return computeShader_.variations_;
+#endif
+    }
+    return vertexShader_.variations_;
     }
 
-    if (variations == nullptr)
-        return nullptr;
-    
-    auto i = variations->find(definesHash);
-    if (i == variations->end())
+ShaderVariation* Shader::GetVariation(ShaderType type, const char* defines)
+{
+    const unsigned definesHash = GetShaderDefinesHash(defines);
+    ea::unordered_map<unsigned, SharedPtr<ShaderVariation> >& variations = GetVariations(type);
+
+    auto i = variations.find(definesHash);
+    if (i == variations.end())
     {
         // If shader not found, normalize the defines (to prevent duplicates) and check again. In that case make an alias
         // so that further queries are faster
         const ea::string normalizedDefines = NormalizeDefines(defines);
         const unsigned normalizedHash = GetShaderDefinesHash(normalizedDefines.c_str());
 
-        i = variations->find(normalizedHash);
-        if (i != variations->end())
-            variations->insert(ea::make_pair(definesHash, i->second));
+        i = variations.find(normalizedHash);
+        if (i != variations.end())
+            variations.insert(ea::make_pair(definesHash, i->second));
         else
         {
             // No shader variation found. Create new
-            i = variations->insert(ea::make_pair(normalizedHash, SharedPtr<ShaderVariation>(new ShaderVariation(this, type)))).first;
+            i = variations.insert(ea::make_pair(normalizedHash, SharedPtr<ShaderVariation>(new ShaderVariation(this, type)))).first;
             if (definesHash != normalizedHash)
-                variations->insert(ea::make_pair(definesHash, i->second));
+                variations.insert(ea::make_pair(definesHash, i->second));
 
             Graphics* graphics = context_->GetGraphics();
             i->second->SetName(GetFileName(GetName()));
@@ -263,12 +314,12 @@ ea::string Shader::NormalizeDefines(const ea::string& defines)
 
 void Shader::RefreshMemoryUse()
 {
-    SetMemoryUse(
-        (unsigned)(sizeof(Shader) +
-            vsSourceCode_.length() +
-            psSourceCode_.length() +
-            csSourceCode_.length() +
-            numVariations_ * sizeof(ShaderVariation)));
+    unsigned sourcesSize = vertexShader_.sourceCode_.length() + pixelShader_.sourceCode_.length();
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    sourcesSize += geometryShader_.sourceCode_.length();
+    sourcesSize += hullShader_.sourceCode_.length() + domainShader_.sourceCode_.length();
+#endif
+    SetMemoryUse((unsigned)(sizeof(Shader) + sourcesSize + numVariations_ * sizeof(ShaderVariation)));
 }
 
 }

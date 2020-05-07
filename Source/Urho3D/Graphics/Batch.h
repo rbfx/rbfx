@@ -62,6 +62,23 @@ struct InstanceShaderParameters
 #endif
 };
 
+/// Container of shaders used in a batch.
+struct BatchShaders
+{
+    /// Vertex shader.
+    ShaderVariation* vertexShader_;
+    /// Pixel shader.
+    ShaderVariation* pixelShader_;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    /// Geometry shader.
+    ShaderVariation* geometryShader_;
+    /// Hull/TCS shader.
+    ShaderVariation* hullShader_;
+    /// Domain/TES shader.
+    ShaderVariation* domainShader_;
+#endif
+};
+
 /// Queued 3D geometry draw call.
 struct Batch
 {
@@ -118,10 +135,8 @@ struct Batch
     LightBatchQueue* lightQueue_{};
     /// Material pass.
     Pass* pass_{};
-    /// Vertex shader.
-    ShaderVariation* vertexShader_{};
-    /// Pixel shader.
-    ShaderVariation* pixelShader_{};
+    /// Set of shaders used for the batch.
+    BatchShaders shaders_;
     /// %Geometry type.
     GeometryType geometryType_{};
     /// Mandatory per-instance shader parameters.
@@ -292,14 +307,28 @@ public:
     unsigned maxSortedInstances_;
     /// Whether the pass command contains extra shader defines.
     bool hasExtraDefines_;
+
+    /// Shader definitions container.
+    struct ExtraShaderDefines
+    {
+        /// Text of the preprocessor definitions.
+        ea::string defines_;
+        /// Hash of the preprocessor definitions.
+        StringHash hash_;
+    };
+
     /// Vertex shader extra defines.
-    ea::string vsExtraDefines_;
+    ExtraShaderDefines vsExtraDefines_;
     /// Pixel shader extra defines.
-    ea::string psExtraDefines_;
-    /// Hash for vertex shader extra defines.
-    StringHash vsExtraDefinesHash_;
-    /// Hash for pixel shader extra defines.
-    StringHash psExtraDefinesHash_;
+    ExtraShaderDefines psExtraDefines_;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    /// Geometry shader extra defines.
+    ExtraShaderDefines gsExtraDefines_;
+    /// Hull/TCS shader extra defines.
+    ExtraShaderDefines hsExtraDefines_;
+    /// Domain/TES shader extra defines.
+    ExtraShaderDefines dsExtraDefines_;
+#endif
 };
 
 /// Queue for shadow map draw calls.

@@ -40,7 +40,7 @@ class URHO3D_API ShaderProgram : public RefCounted, public GPUObject
 {
 public:
     /// Construct.
-    ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader);
+    ShaderProgram(Graphics* graphics, ShaderVariation* vertexShader, ShaderVariation* pixelShader, ShaderVariation* geometryShader, ShaderVariation* tcsShader, ShaderVariation* tesShader);
     /// Construct, exclusive to compute shader.
     ShaderProgram(Graphics* graphics, ShaderVariation* computeShader);
     /// Destruct.
@@ -58,8 +58,14 @@ public:
     ShaderVariation* GetVertexShader() const;
     /// Return the pixel shader.
     ShaderVariation* GetPixelShader() const;
-    /// Return the compute shader.
-    ShaderVariation* GetComputeShader() const;
+#ifndef GL_ES_VERSION_2_0
+    /// Return the geometry shader.
+    ShaderVariation* GetGeometryShader() const;
+    /// Return the TCS shader.
+    ShaderVariation* GetTCSShader() const;
+    /// Return the TES shader.
+    ShaderVariation* GetTESShader() const;
+#endif
     /// Return whether uses a shader parameter.
     bool HasParameter(StringHash param) const;
 
@@ -92,12 +98,21 @@ public:
     static void ClearGlobalParameterSource(ShaderParameterGroup group);
 
 private:
+    /// Returns an aggregated shader name for logging.
+    ea::string GetShaderName() const;
+
     /// Vertex shader.
     WeakPtr<ShaderVariation> vertexShader_;
     /// Pixel shader.
     WeakPtr<ShaderVariation> pixelShader_;
-    /// Compute shader.
-    WeakPtr<ShaderVariation> computeShader_;
+#ifndef GL_ES_VERSION_2_0
+    /// Geometry shader.
+    WeakPtr<ShaderVariation> geometryShader_;
+    /// TCS shader.
+    WeakPtr<ShaderVariation> tcsShader_;
+    /// TES shader.
+    WeakPtr<ShaderVariation> tesShader_;
+#endif
     /// Shader parameters.
     ea::unordered_map<StringHash, ShaderParameter> shaderParameters_;
     /// Texture unit use.

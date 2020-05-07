@@ -175,6 +175,12 @@ struct URHO3D_API RenderPathCommand
     ea::string metadata_;
     /// Vertex shader name.
     ea::string vertexShaderName_;
+    /// Hull shader name.
+    ea::string hullShaderName_;
+    /// Hull shader name.
+    ea::string domainShaderName_;
+    /// Geometry shader name.
+    ea::string geometryShaderName_;
     /// Pixel shader name.
     ea::string pixelShaderName_;
     /// Compute shader name.
@@ -183,6 +189,12 @@ struct URHO3D_API RenderPathCommand
     ea::string vertexShaderDefines_;
     /// Pixel shader defines.
     ea::string pixelShaderDefines_;
+    /// Geometry shader defines.
+    ea::string geometryShaderDefines_;
+    /// TCS shader defines.
+    ea::string hullShaderDefines_;
+    /// TES shader defines.
+    ea::string domainShaderDefines_;
     /// Textures.
     ea::string textureNames_[MAX_TEXTURE_UNITS];
     /// %Shader parameters.

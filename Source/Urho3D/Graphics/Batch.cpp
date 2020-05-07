@@ -179,9 +179,16 @@ void SetInstanceShaderParameters(Graphics* graphics, const InstanceShaderParamet
 
 void Batch::CalculateSortKey()
 {
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
     auto shaderID = (unsigned)(
-        ((*((unsigned*)&vertexShader_) / sizeof(ShaderVariation)) + (*((unsigned*)&pixelShader_) / sizeof(ShaderVariation))) &
-        0x7fffu);
+        ((*((unsigned*)&shaders_.vertexShader_) / sizeof(ShaderVariation)) +
+        (*((unsigned*)&shaders_.pixelShader_) / sizeof(ShaderVariation)) +
+        (*((unsigned*)&shaders_.geometryShader_) / sizeof(ShaderVariation)) +
+        (*((unsigned*)&shaders_.hullShader_) / sizeof(ShaderVariation)) +
+        (*((unsigned*)&shaders_.domainShader_) / sizeof(ShaderVariation))) & 0x7fff);
+#else
+    auto shaderID = (unsigned)(((*((unsigned*)&shaders_.vertexShader_) / sizeof(ShaderVariation)) + (*((unsigned*)&shaders_.pixelShader_) / sizeof(ShaderVariation))) & 0x7fff);
+#endif
     if (!isBase_)
         shaderID |= 0x8000;
 
@@ -195,7 +202,7 @@ void Batch::CalculateSortKey()
 
 void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool allowDepthWrite) const
 {
-    if (!vertexShader_ || !pixelShader_)
+    if (!shaders_.vertexShader_ || !shaders_.pixelShader_)
         return;
 
     Graphics* graphics = view->GetContext()->GetGraphics();
@@ -205,7 +212,11 @@ void Batch::Prepare(View* view, Camera* camera, bool setModelTransform, bool all
     Texture2D* shadowMap = lightQueue_ ? lightQueue_->shadowMap_ : nullptr;
 
     // Set shaders first. The available shader parameters and their register/uniform positions depend on the currently set shaders
-    graphics->SetShaders(vertexShader_, pixelShader_);
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    graphics->SetShaders(shaders_.vertexShader_, shaders_.pixelShader_, shaders_.geometryShader_, shaders_.hullShader_, shaders_.domainShader_);
+#else
+    graphics->SetShaders(shaders_.vertexShader_, shaders_.pixelShader_, nullptr, nullptr, nullptr);
+#endif
 
     // Set pass / material-specific renderstates
     if (pass_ && material_)

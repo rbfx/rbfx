@@ -24,6 +24,7 @@
 
 #include "../../Graphics/ConstantBuffer.h"
 #include "../../Graphics/GraphicsDefs.h"
+#include "../../Graphics/ShaderPrecache.h"
 #include "../../Graphics/ShaderProgram.h"
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
@@ -38,7 +39,7 @@ namespace Urho3D
 
 #define URHO3D_LOGD3DERROR(msg, hr) URHO3D_LOGERRORF("%s (HRESULT %x)", msg, (unsigned)hr)
 
-using ShaderProgramMap = ea::unordered_map<ea::pair<ShaderVariation*, ShaderVariation*>, SharedPtr<ShaderProgram> >;
+using ShaderProgramMap = ea::unordered_map<ShaderCombination, SharedPtr<ShaderProgram> >;
 using VertexDeclarationMap = ea::unordered_map<unsigned long long, SharedPtr<VertexDeclaration> >;
 using ConstantBufferMap = ea::unordered_map<unsigned, SharedPtr<ConstantBuffer> >;
 
@@ -103,7 +104,7 @@ private:
     ID3D11SamplerState* samplers_[MAX_TEXTURE_UNITS];
     /// Bound vertex buffers.
     ID3D11Buffer* vertexBuffers_[MAX_VERTEX_STREAMS];
-    /// Bound constant buffers.
+    /// Bound constant buffers. Vertex and Geometry shaders use the same buffers.
     ID3D11Buffer* constantBuffers_[2][MAX_SHADER_PARAMETER_GROUPS];
     /// Vertex sizes per buffer.
     unsigned vertexSizes_[MAX_VERTEX_STREAMS];

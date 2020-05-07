@@ -190,11 +190,18 @@ public:
     void SetVertexShaderDefines(const ea::string& defines);
     /// Set additional pixel shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
     void SetPixelShaderDefines(const ea::string& defines);
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    /// Set additional geometry shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
+    void SetGeometryShaderDefines(const ea::string& defines);
+    /// Set additional TCS/Hull shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
+    void SetHullShaderDefines(const ea::string& defines);
+    /// Set additional TES/Domain shader defines. Separate multiple defines with spaces. Setting defines at the material level causes technique(s) to be cloned as necessary.
+    void SetDomainShaderDefines(const ea::string& defines);
+#endif
     /// Set shader parameter.
     void SetShaderParameter(const ea::string& name, const Variant& value);
     /// Set shader parameter animation.
-    void
-        SetShaderParameterAnimation(const ea::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
+    void SetShaderParameterAnimation(const ea::string& name, ValueAnimation* animation, WrapMode wrapMode = WM_LOOP, float speed = 1.0f);
     /// Set shader parameter animation wrap mode.
     void SetShaderParameterAnimationWrapMode(const ea::string& name, WrapMode wrapMode);
     /// Set shader parameter animation speed.
@@ -256,6 +263,14 @@ public:
     const ea::string& GetVertexShaderDefines() const { return vertexShaderDefines_; }
     /// Return additional pixel shader defines.
     const ea::string& GetPixelShaderDefines() const { return pixelShaderDefines_; }
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    /// Return additional geometry shader defines.
+    const ea::string& GetGeometryShaderDefines() const { return geometryShaderDefines_; }
+    /// Return additional TCS/Hull shader defines.
+    const ea::string& GetHullShaderDefines() const { return hullShaderDefines_; }
+    /// Return additional TES/Domain shader defines.
+    const ea::string& GetDomainShaderDefines() const { return domainShaderDefines_; }
+#endif
 
     /// Return shader parameter.
     const Variant& GetShaderParameter(const ea::string& name) const;
@@ -342,10 +357,19 @@ private:
     ea::unordered_map<StringHash, MaterialShaderParameter> shaderParameters_;
     /// %Shader parameters animation infos.
     ea::unordered_map<StringHash, SharedPtr<ShaderParameterAnimationInfo> > shaderParameterAnimationInfos_;
+
     /// Vertex shader defines.
     ea::string vertexShaderDefines_;
     /// Pixel shader defines.
     ea::string pixelShaderDefines_;
+#if !defined(GL_ES_VERSION_2_0) && !defined(URHO3D_D3D9)
+    /// Geometry shader defines.
+    ea::string geometryShaderDefines_;
+    /// TCS/Hull shader defines.
+    ea::string hullShaderDefines_;
+    /// TES/Domain shader defines.
+    ea::string domainShaderDefines_;
+#endif
     /// Normal culling mode.
     CullMode cullMode_{};
     /// Culling mode for shadow rendering.
