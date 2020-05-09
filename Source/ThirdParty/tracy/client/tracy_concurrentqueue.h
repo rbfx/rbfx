@@ -52,7 +52,7 @@
 #include <cstdint>
 #include <cstdlib>
 #include <type_traits>
-#include <algorithm>
+//#include <algorithm> rbfx
 #include <utility>
 #include <limits>
 #include <climits>		// for CHAR_BIT
