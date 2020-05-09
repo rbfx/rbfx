@@ -153,6 +153,7 @@ Urho3D development, contributions and bugfixes by:
 - smortex
 - ssinai1
 - sssooonnnggg
+- stievie
 - svifylabs
 - szamq
 - thebluefish

@@ -135,6 +135,7 @@ _option(URHO3D_DOCS               "Build documentation."                        
 _option2(URHO3D_MERGE_STATIC_LIBS "Merge third party dependency libs to Urho3D.a"         OFF "NOT BUILD_SHARED_LIBS"                          OFF)
 _option(URHO3D_NO_EDITOR_PLAYER_EXE "Do not build editor or player executables."          OFF)
 _option(URHO3D_CONTAINER_ADAPTERS "Enable EASTL-to-Urho container adapters for easier porting of legacy code." OFF)
+_option(URHO3D_SSL                "Enable OpenSSL support"                                OFF)
 
 if (WIN32)
     set(URHO3D_GRAPHICS_API D3D11 CACHE STRING "Graphics API")
