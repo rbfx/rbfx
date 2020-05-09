@@ -67,6 +67,22 @@ else ()
     target_compile_definitions(Civetweb PRIVATE -DNO_SSL)
 endif ()
 
+check_c_source_compiles("
+#if _WIN32
+#include <winsock2.h>
+#else
+#include <poll.h>
+#endif
+int main()
+{
+    struct pollfd fd;
+    return 0;
+}
+" HAVE_POLL)
+if (HAVE_POLL)
+    target_compile_definitions(Civetweb PRIVATE -DHAVE_POLL=1)
+endif ()
+
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS)
 endif ()
