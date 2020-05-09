@@ -54,6 +54,15 @@ HttpRequest::HttpRequest(const ea::string& url, const ea::string& verb, const ea
 
     URHO3D_LOGDEBUG("HTTP " + verb_ + " request to URL " + url_);
 
+#ifdef URHO3D_SSL
+    static bool sslInitialized = false;
+    if (!sslInitialized)
+    {
+        mg_init_library(MG_FEATURES_TLS);
+        sslInitialized = true;
+    }
+#endif
+
 #ifdef URHO3D_THREADING
     // Start the worker thread to actually create the connection and read the response data.
     Run();
@@ -95,7 +104,8 @@ void HttpRequest::ThreadFunction()
     {
         port = ToInt(host.substr(portStart + 1));
         host = host.substr(0, portStart);
-    }
+    } else if (protocol.comparei("https") >= 0)
+        port = 443;
 
     char errorBuffer[ERROR_BUFFER_SIZE];
     memset(errorBuffer, 0, sizeof(errorBuffer));
@@ -110,11 +120,11 @@ void HttpRequest::ThreadFunction()
     }
 
     // Initiate the connection. This may block due to DNS query
-    /// \todo SSL mode will not actually work unless Civetweb's SSL mode is initialized with an external SSL DLL
     mg_connection* connection = nullptr;
+
     if (postData_.empty())
     {
-        connection = mg_download(host.c_str(), port, protocol.comparei("https") ? 0 : 1, errorBuffer, sizeof(errorBuffer),
+        connection = mg_download(host.c_str(), port, protocol.comparei("https") >= 0 ? 1 : 0, errorBuffer, sizeof(errorBuffer),
             "%s %s HTTP/1.0\r\n"
             "Host: %s\r\n"
             "%s"
@@ -122,7 +132,7 @@ void HttpRequest::ThreadFunction()
     }
     else
     {
-        connection = mg_download(host.c_str(), port, protocol.comparei("https") ? 0 : 1, errorBuffer, sizeof(errorBuffer),
+        connection = mg_download(host.c_str(), port, protocol.comparei("https") >= 0 ? 1 : 0, errorBuffer, sizeof(errorBuffer),
             "%s %s HTTP/1.0\r\n"
             "Host: %s\r\n"
             "%s"
