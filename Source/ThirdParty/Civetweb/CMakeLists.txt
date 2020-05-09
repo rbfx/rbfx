@@ -27,10 +27,9 @@ target_include_directories(Civetweb
     PRIVATE $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include/Civetweb>
 )
 
-
 # Define preprocessor macros
 # Always disable Common Gateway Interface
-target_compile_definitions(Civetweb PRIVATE -DNO_CGI)
+target_compile_definitions(Civetweb PRIVATE -DNO_CGI -DNO_FILES -DNO_CACHING)
 if (WIN32)
     include (CheckStructHasMember)
     check_struct_has_member (struct\ timespec tv_sec time.h HAVE_STRUCT_TIMESPEC_TV_SEC)
@@ -49,6 +48,25 @@ elseif (APPLE AND (NOT IOS OR IPHONEOS_DEPLOYMENT_TARGET STREQUAL "" OR NOT IPHO
         target_compile_definitions(Civetweb PRIVATE -DHAVE_CLOCK_GETTIME)
     endif ()
 endif ()
+
+if (URHO3D_SSL)
+    target_compile_definitions(Civetweb PRIVATE -DNO_SSL_DL)
+    if (NOT BUILD_SHARED_LIBS)
+        set (OPENSSL_USE_STATIC_LIBS ON)
+    endif ()
+    if (MSVC AND URHO3D_STATIC_RUNTIME)
+        set (OPENSSL_MSVC_STATIC_RT ON)
+    endif ()
+    if (NOT DEFINED OPENSSL_ROOT_DIR AND APPLE)
+        set(OPENSSL_ROOT_DIR "/usr/local/opt/openssl")
+    endif ()
+    find_package(OpenSSL REQUIRED)
+    target_link_libraries(Civetweb PRIVATE ${OPENSSL_LIBRARIES})
+    target_include_directories(Civetweb PRIVATE ${OPENSSL_INCLUDE_DIR})
+else ()
+    target_compile_definitions(Civetweb PRIVATE -DNO_SSL)
+endif ()
+
 if (BUILD_SHARED_LIBS)
     target_compile_definitions(Civetweb PRIVATE -DCIVETWEB_DLL_EXPORTS)
 endif ()
