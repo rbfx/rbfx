@@ -94,7 +94,11 @@ void ModelPreview::CreateObjects()
 void ModelPreview::RenderPreview()
 {
     auto* input = GetSubsystem<Input>();
-    float dpi = ui::GetCurrentWindow()->Viewport->DpiScale;
+#if 0
+    const float dpi = ui::GetCurrentWindow()->Viewport->DpiScale;
+#else
+    const float dpi = 1.0f;
+#endif
     float size = ui::GetWindowWidth() - ui::GetCursorPosX();
     view_.SetSize({0, 0, static_cast<int>(size * dpi), static_cast<int>(size * dpi)});
     ui::ImageItem(view_.GetTexture(), ImVec2(size, size));

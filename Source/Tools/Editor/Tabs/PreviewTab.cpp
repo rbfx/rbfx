@@ -184,9 +184,15 @@ bool PreviewTab::RenderWindowContent()
     ImGuiViewport* viewport = window->Viewport;
 
     ImRect rect = ImRound(window->ContentRegionRect);
+#if 0
+    const float dpi = viewport->DpiScale;
+#else
+    const float dpi = 1.0f;
+#endif
+
     IntVector2 textureSize{
-        static_cast<int>(IM_ROUND(rect.GetWidth() * viewport->DpiScale)),
-        static_cast<int>(IM_ROUND(rect.GetHeight() * viewport->DpiScale))
+        static_cast<int>(IM_ROUND(rect.GetWidth() * dpi)),
+        static_cast<int>(IM_ROUND(rect.GetHeight() * dpi))
     };
     if (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight())
     {
@@ -198,7 +204,7 @@ bool PreviewTab::RenderWindowContent()
 
     ui::Image(texture_.Get(), rect.GetSize());
 
-    ImVec2 offset = (ui::GetItemRectMin() - viewport->Pos) * viewport->DpiScale;
+    ImVec2 offset = (ui::GetItemRectMin() - viewport->Pos) * dpi;
     auto* root = static_cast<RootUIElement*>(context_->GetUI()->GetRoot());
     root->SetOffset({static_cast<int>(IM_ROUND(offset.x)), static_cast<int>(IM_ROUND(offset.y))});
 
