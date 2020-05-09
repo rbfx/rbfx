@@ -193,15 +193,20 @@ bool UITab::RenderWindowContent()
     ImGuiWindow* window = ui::GetCurrentWindow();
     ImGuiViewport* viewport = window->Viewport;
     ImRect rect = ImRound(window->ContentRegionRect);
+#if 0
+    const float dpi = viewport->DpiScale;
+#else
+    const float dpi = 1.0f;
+#endif
     // Correct content rect to not overlap buttons.
     rect.Min.y += ui::GetCursorPosY();
     IntVector2 textureSize{
-        static_cast<int>(IM_ROUND(rect.GetWidth() * viewport->DpiScale)),
-        static_cast<int>(IM_ROUND(rect.GetHeight() * viewport->DpiScale))
+        static_cast<int>(IM_ROUND(rect.GetWidth() * dpi)),
+        static_cast<int>(IM_ROUND(rect.GetHeight() * dpi))
     };
     if (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight())
     {
-        ImVec2 offset = (rect.Min - viewport->Pos) * viewport->DpiScale;
+        ImVec2 offset = (rect.Min - viewport->Pos) * dpi;
         rootElement_->SetOffset({static_cast<int>(IM_ROUND(offset.x)), static_cast<int>(IM_ROUND(offset.y))});
         offScreenUI_->SetCustomSize(textureSize);
     }
@@ -214,8 +219,8 @@ bool UITab::RenderWindowContent()
     if (auto selected = GetSelected())
     {
         // Render element selection rect, resize handles, and handle element transformations.
-        ImVec2 elementPos(Vector2(selected->GetScreenPosition()) / viewport->DpiScale);
-        ImVec2 elementSize(Vector2(selected->GetSize()) / viewport->DpiScale);
+        ImVec2 elementPos(Vector2(selected->GetScreenPosition()) / dpi);
+        ImVec2 elementSize(Vector2(selected->GetSize()) / dpi);
         ImRect screenRect{elementPos + rect.Min, elementPos + rect.Min + elementSize};
         ImRect delta;
 
@@ -244,10 +249,10 @@ bool UITab::RenderWindowContent()
                 s->resizeStartSize_ = selected->GetSize();
             }
             IntRect pixelDelta{
-                static_cast<int>(IM_ROUND(delta.Min.x * viewport->DpiScale)),
-                static_cast<int>(IM_ROUND(delta.Min.y * viewport->DpiScale)),
-                static_cast<int>(IM_ROUND(delta.GetWidth() * viewport->DpiScale)),
-                static_cast<int>(IM_ROUND(delta.GetHeight() * viewport->DpiScale)),
+                static_cast<int>(IM_ROUND(delta.Min.x * dpi)),
+                static_cast<int>(IM_ROUND(delta.Min.y * dpi)),
+                static_cast<int>(IM_ROUND(delta.GetWidth() * dpi)),
+                static_cast<int>(IM_ROUND(delta.GetHeight() * dpi)),
             };
             selected->SetPosition(selected->GetPosition() + pixelDelta.Min());
             selected->SetSize(selected->GetSize() + pixelDelta.Max());
@@ -619,11 +624,16 @@ void UITab::RenderRectSelector()
     {
         ImGuiWindow* window = ui::GetCurrentWindow();
         ImGuiViewport* viewport = window->Viewport;
+#if 0
+        const float dpi = viewport->DpiScale;
+#else
+        const float dpi = 1.0f;
+#endif
 
         ui::SliderInt("Zoom", &s->textureScale_, 1, 5);
         ImVec2 imageSize{
-            (float)texture->GetWidth() * (float)s->textureScale_ / viewport->DpiScale,
-            (float)texture->GetHeight() * (float)s->textureScale_ / viewport->DpiScale,
+            (float)texture->GetWidth() * (float)s->textureScale_ / dpi,
+            (float)texture->GetHeight() * (float)s->textureScale_ / dpi,
         };
         ui::Image(texture, imageSize);
         ImVec2 imagePos = ui::GetItemRectMin();
@@ -641,8 +651,8 @@ void UITab::RenderRectSelector()
         else
         {
             selectorRect = {
-                imagePos + ImVec2(Vector2(rect.Min()) * (float)s->textureScale_ / viewport->DpiScale),
-                imagePos + ImVec2(Vector2(rect.Max()) * (float)s->textureScale_ / viewport->DpiScale)
+                imagePos + ImVec2(Vector2(rect.Min()) * (float)s->textureScale_ / dpi),
+                imagePos + ImVec2(Vector2(rect.Max()) * (float)s->textureScale_ / dpi)
             };
         }
 
@@ -662,8 +672,8 @@ void UITab::RenderRectSelector()
 
             if (ui::IsItemActive())
             {
-                ImVec2 min = (selectorRect.Min - imagePos) / (float)s->textureScale_ * viewport->DpiScale;
-                ImVec2 max = (selectorRect.Max - imagePos) / (float)s->textureScale_ * viewport->DpiScale;
+                ImVec2 min = (selectorRect.Min - imagePos) / (float)s->textureScale_ * dpi;
+                ImVec2 max = (selectorRect.Max - imagePos) / (float)s->textureScale_ * dpi;
                 IntRect currentRect{
                     IntVector2(Round(min.x), Round(min.y)),
                     IntVector2(Round(max.x), Round(max.y))

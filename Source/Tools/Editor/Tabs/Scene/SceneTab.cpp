@@ -138,10 +138,15 @@ bool SceneTab::RenderWindowContent()
     ImGuiWindow* window = g.CurrentWindow;
     ImGuiViewport* viewport = window->Viewport;
 
+#if 0
+    const float dpi = viewport->DpiScale;
+#else
+    const float dpi = 1.0f;
+#endif
     ImRect rect = ImRound(window->ContentRegionRect);
     IntVector2 textureSize{
-        static_cast<int>(IM_ROUND(rect.GetWidth() * viewport->DpiScale)),
-        static_cast<int>(IM_ROUND(rect.GetHeight() * viewport->DpiScale))
+        static_cast<int>(IM_ROUND(rect.GetWidth() * dpi)),
+        static_cast<int>(IM_ROUND(rect.GetHeight() * dpi))
     };
     if (textureSize.x_ != texture_->GetWidth() || textureSize.y_ != texture_->GetHeight())
     {
