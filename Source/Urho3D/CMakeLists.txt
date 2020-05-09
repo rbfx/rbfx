@@ -120,6 +120,12 @@ target_include_directories(Urho3D PUBLIC
     $<INSTALL_INTERFACE:${DEST_THIRDPARTY_HEADERS_DIR}>
 )
 
+if (NOT WEB AND NOT ANDROID)
+    if (${CMAKE_VERSION} VERSION_GREATER_EQUAL 3.16)
+        target_precompile_headers(Urho3D PUBLIC $<BUILD_INTERFACE:$<$<COMPILE_LANGUAGE:CXX>:${CMAKE_CURRENT_SOURCE_DIR}/Precompiled.h>>)
+    endif ()
+endif ()
+
 # Add any variables starting with URHO3D_ as project defines
 get_cmake_property(__cmake_variables VARIABLES)
 foreach (var ${__cmake_variables})
