@@ -3329,6 +3329,11 @@ typename buffer_context<Char>::iterator internal::vformat_to(
                                           args);
 }
 
+#ifndef FMT_HEADER_ONLY
+extern template format_context::iterator internal::vformat_to(
+    internal::buffer<char>&, string_view, basic_format_args<format_context>);
+#endif
+
 template <typename S, typename Char = char_t<S>,
           FMT_ENABLE_IF(internal::is_string<S>::value)>
 inline typename buffer_context<Char>::iterator vformat_to(
@@ -3438,7 +3443,7 @@ inline format_to_n_result<OutputIt> format_to_n(OutputIt out, std::size_t n,
 }
 
 template <typename Char>
-inline std_basic_string<Char> internal::vformat(
+std_basic_string<Char> internal::vformat(
     basic_string_view<Char> format_str,
     basic_format_args<buffer_context<Char>> args) {
   basic_memory_buffer<Char> buffer;
