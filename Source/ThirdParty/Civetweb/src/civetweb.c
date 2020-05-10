@@ -5419,7 +5419,9 @@ return result;
 }
 
 
-#if !defined(HAVE_POLL)
+#if defined(_WIN32) && defined(HAVE_POLL)
+#define poll WSAPoll    // rbfx
+#elif !defined(HAVE_POLL)
 #define POLLIN (1)  /* Data ready - read will not block. */
 #define POLLPRI (2) /* Priority data ready. */
 #define POLLOUT (4) /* Send queue not full - write will not block. */
