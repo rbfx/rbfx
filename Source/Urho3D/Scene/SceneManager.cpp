@@ -152,7 +152,7 @@ void SceneManager::UpdateViewports()
         return;
 
     unsigned index = 0;
-    ea::span<Component* const> viewportComponents = activeScene_->GetComponentIndex<CameraViewport>();
+    const SceneComponentIndex& viewportComponents = activeScene_->GetComponentIndex<CameraViewport>();
     if (renderSurface_.Expired())
         context_->GetRenderer()->SetNumViewports(viewportComponents.size());
     else
