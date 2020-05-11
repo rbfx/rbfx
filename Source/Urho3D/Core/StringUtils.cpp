@@ -563,6 +563,11 @@ Matrix4 ToMatrix4(const char* source)
     return ret;
 }
 
+ea::string ToStringBool(bool value)
+{
+    return value ? "true" : "false";
+}
+
 ea::string ToString(void* value)
 {
     return ToStringHex((unsigned)(size_t)value);
