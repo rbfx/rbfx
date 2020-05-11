@@ -28,9 +28,6 @@
 #include "../Math/Matrix3x4.h"
 #include "../Scene/Animatable.h"
 
-#include <entt/entity/entity.hpp>
-#include <entt/entity/fwd.hpp>
-
 namespace Urho3D
 {
 
@@ -349,8 +346,6 @@ public:
 
     /// Return ID.
     unsigned GetID() const { return id_; }
-    /// Return entity.
-    entt::entity GetEntity() const { return entity_; }
     /// Return whether the node is replicated or local to a scene.
     bool IsReplicated() const;
 
@@ -589,8 +584,6 @@ public:
 
     /// Set ID. Called by Scene.
     void SetID(unsigned id);
-    /// Set entity. Called by Scene.
-    void SetEntity(entt::entity entity);
     /// Set scene. Called by Scene.
     void SetScene(Scene* scene);
     /// Reset scene, ID and owner. Called by Scene.
@@ -699,8 +692,6 @@ private:
     Node* parent_;
     /// Scene (root node).
     Scene* scene_;
-    /// Entity ID within registry.
-    entt::entity entity_{ entt::null };
     /// Unique ID within the scene.
     unsigned id_;
     /// Position.
