@@ -334,7 +334,7 @@ bool XMLElement::SetAttribute(const char* value)
 
 bool XMLElement::SetBool(const ea::string& name, bool value)
 {
-    return SetAttribute(name, ea::to_string(value));
+    return SetAttribute(name, ToStringBool(value));
 }
 
 bool XMLElement::SetBoundingBox(const BoundingBox& value)

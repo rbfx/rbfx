@@ -541,7 +541,7 @@ ea::string Variant::ToString() const
         return ea::to_string(value_.int64_);
 
     case VAR_BOOL:
-        return ea::to_string(value_.bool_);
+        return ToStringBool(value_.bool_);
 
     case VAR_FLOAT:
         return ea::to_string(value_.float_);
