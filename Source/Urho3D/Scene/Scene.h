@@ -33,8 +33,6 @@
 #include "../Scene/Node.h"
 #include "../Scene/SceneResolver.h"
 
-#include <entt/entity/registry.hpp>
-
 namespace Urho3D
 {
 
@@ -88,6 +86,9 @@ struct AsyncProgress
     unsigned totalNodes_;
 };
 
+/// Index of components in the Scene.
+using SceneComponentIndex = ea::hash_set<Component*>;
+
 /// Root scene node, represents the whole scene.
 class URHO3D_API Scene : public Node
 {
@@ -105,18 +106,14 @@ public:
     /// Register object factory. Node must be registered first.
     static void RegisterObject(Context* context);
 
-    /// Enable registry. Scene must be empty.
-    bool EnableRegistry();
     /// Create component index. Scene must be empty.
     bool CreateComponentIndex(StringHash componentType);
     /// Create component index for template type. Scene must be empty.
     template <class T> void CreateComponentIndex() { CreateComponentIndex(T::GetTypeStatic()); }
-    /// Return registry.
-    entt::registry& GetRegistry() { return reg_; }
     /// Return component index. Iterable. Invalidated when indexed component is added or removed!
-    ea::span<Component* const> GetComponentIndex(StringHash componentType);
+    const SceneComponentIndex& GetComponentIndex(StringHash componentType);
     /// Return component index for template type. Invalidated when indexed component is added or removed!
-    template <class T> ea::span<Component* const> GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }
+    template <class T> const SceneComponentIndex& GetComponentIndex() { return GetComponentIndex(T::GetTypeStatic()); }
 
     /// Serialize from/to archive. Return true if successful.
     bool Serialize(Archive& archive) override;
@@ -200,6 +197,8 @@ public:
     /// Set source file name.
     void SetFileName(const ea::string_view fileName) { fileName_ = fileName; }
 
+    /// Return whether the Scene is empty.
+    bool IsEmpty(bool ignoreComponents = false) const;
     /// Return node from the whole scene by ID, or null if not found.
     Node* GetNode(unsigned id) const;
     /// Return component from the whole scene by ID, or null if not found.
@@ -313,18 +312,14 @@ private:
     /// Preload resources from a JSON scene or object prefab file.
     void PreloadResourcesJSON(const JSONValue& value);
     /// Return component index storage for given type.
-    entt::storage<entt::entity, Component*>* GetComponentIndexStorage(StringHash componentType);
+    SceneComponentIndex* GetMutableComponentIndex(StringHash componentType);
     /// Mark lightmap textures dirty.
     void MarkLightmapTexturesDirty() { lightmapTexturesDirty_ = true; }
 
-    /// Whether the registry is active.
-    bool registryEnabled_{ false };
-    /// Registry.
-    entt::registry reg_;
     /// Types of components that should be indexed.
     ea::vector<StringHash> indexedComponentTypes_;
     /// Indexes of components.
-    ea::vector<entt::storage<entt::entity, Component*>> componentIndexes_;
+    ea::vector<SceneComponentIndex> componentIndexes_;
 
     /// Replicated scene nodes by ID.
     ea::unordered_map<unsigned, Node*> replicatedNodes_;
