@@ -2951,56 +2951,27 @@ There are two kinds of wrapped objects:
 Memory management of %RefCounted objects is semi-manual in C# code. There are three rules that user must follow in order to achieve deterministic
 object destruction.
 
-1. \ref Context::CreateObject (or any object returning \ref Urho3D::SharedPtr as a value) returns an object with acquired reference. User must call
-\ref RefCounted::ReleaseRef when returned object is no longer in use in C# code to avoid memory leaks.
-2. C# `new` operator returns an object with acquired reference. User must call \ref RefCounted::ReleaseRef when returned object is no longer in use
-in C# code to avoid memory leaks.
-3. API returning `T*` does not increase refcount. User must explicitly call \ref RefCounted::AddRef in order to maintain a non-expiring reference
-in C# code and \ref RefCounted::ReleaseRef when this reference is no longer in use.
-
-Engine provides a safety net for the user. If user held a hard reference (\ref RefCounted::AddRef was called explicitly or implicitly) to object
-in C# code, lost all managed references to object and native side lost all it's references - GC will release remaining references and destroy the
-object. It is advised to not depend on this behavior as object lifetime becomes undetermined, which may lead to subtle bugs or crashes.
+1. Always call `obj.Dispose()` when `obj` is no longer in use.
+  * Required if object is constructed using \ref Context::CreateObject or `new` keyword.
+  * Failure to dispose of object when required will defer object deallocation to garbage collector.
+  * A good practice is to always call `obj.Dispose()` or use `using` pattern, without being concerned whether it is required or not.
+2. Always call \ref RefCounted::AddRef if you intend to hold object reference for a prolonged period of time.
+  * Optional, if object is constructed using \ref Context::CreateObject or `new` keyword.
+3. Always call \ref RefCounted::ReleaseRef for each corresponding \ref RefCounted::AddRef call, when you are done using the object.
+  * \ref RefCounted::ReleaseRef will immdeiately free an underlying native object when last reference is released, managed object will enter
+    "expired" state (`RefCounted.Expired` will return `true`).
+  * Calls to `obj.Dispose()` are noop after object is freed.
+  * Failure to release a reference when required will result in memory leaks.
 
 C# object is a thin wrapper object containing a pointer to a native object implementing core logic. Manual memory management means that C# code
 may hold an expired reference. This happens when engine owned an object, user accessed it, saved reference to an object and engine freed this object.
-For example \ref Scene owns it's \Node instances. If user saved reference to a particular \ref Node and this node was later removed from the scene -
+For example \ref Scene owns it's \Node instances. If user saved a reference to a particular \ref Node and this node was later removed from the scene -
 saved instance is no longer valid. In order to determine validity of a reference please use `RefCounted.Expired` or `RefCounted.NotExpired` properties.
-Instances of expired objects should be discarded without calling `Dispose()`.
 
 Engine guarantees that a wrapper C# object will never be destroyed unless a native instance is also destroyed.
 
-RefCounted instances may be in one of following states:
-
-1. Object is referenced only by native object(s) (created from C++, using `new` or a factory).
-  * GCHandle to managed object is not allocated.
-  * Managed wrapper object does not exist.
-  * Transition to state (2) by accessing object from C# code.
-2. Object is referenced only by native object(s), accessed from .NET.
-  * GCHandle of type `GCHandleType.Normal` is allocated.
-  * Managed object is allocated and will be allocated until all of it's native references are released.
-  * Managed object is not eligible for GC.
-  * Transition to state (3) by calling \ref RefCounted::AddRef from C# code.
-  * Free object by calling \ref RefCounted::ReleaseRef from C++.
-3. Object is referenced by managed object(s) and native object(s).
-  * GCHandle of type `GCHandleType.Normal` is allocated. Object is not eligible for GC.
-  * Managed object is allocated and will be allocated until all of it's references are released.
-  * Transition to state (2) by calling \ref RefCounted::ReleaseRef or `Dispose()` from C# (losing all managed references).
-  * Transition to state (4) by calling \ref RefCounted::ReleaseRef from C++ (losing all native references).
-4. Object is referenced only by managed object(s)
-  * GCHandle of type `GCHandleType.Weak` is allocated.
-  * Managed object is eligible for GC.
-  * Managed object is allocated and will be allocated until all of it's references are released (explicitly or by finalizer).
-  * Transition to state (3) by calling \ref RefCounted::AddRef from C++.
-  * Free object by calling \ref RefCounted::ReleaseRef from C#.
-  * Garbage-collect and free object by losing all managed references to this object.
-
-RefCounted instances migrate between one of these states automatically as user references or dereferences objects.
-
 Please implement `protected override void Dispose(bool disposing)` method and implement any logic for releasing resources. Engine guarantees that
-user's implementation of `Dispose(true)` will be called before native object is freed. It is allowed to keep no managed references to objects that
-are owned by engine subsystems. \ref Component is owned by \ref Node. \ref Node is owned by the \ref Scene. \ref Resource is owned by \ref
-ResourceCache.
+user's implementation of `Dispose(true)` will be called before native object is freed.
 
 \subsection CSharp_Non_RefCounted_Subclasses Other classes
 
@@ -3020,20 +2991,20 @@ retrieve cached wrapper object from the cache.
 
 \section CSharp_Best_Practices Best practices
 
-Object reference counting is atomic, but not thread-safe. Executing RefCounted::ReleaseRef when object has one reference and calling "Dispose()"
+Object reference counting is atomic, but not thread-safe. Executing RefCounted::ReleaseRef when object has one reference and calling `Dispose()`
 method of managed instance on different thread is undefined behavior. Note that "Dispose(false)" may be implicitly called from a finalizer thread
 if all the references to managed object are lost.
 
-Classes that inherit from native classes should override "Dispose(bool)" method and dispose of other native resources class owns. Failure to do so
+Classes that inherit from native classes should override `Dispose(bool)`` method and dispose of other native resources class owns. Failure to do so
 may or may not result in memory leaks. Wrapper does free native resources in object finalizer but managed runtime does not guarantee execution of
 finalizers, nor their execution is deterministic.
 
-It is advised to manually dispose objects by calling their "Dispose()" method. In order to dispose object it must have 1 remaining reference. This
-means that native objects may not keep any references to object that is being disposed. Dalling "Dispose()" on an object with more than 1 reference
+It is advised to manually dispose objects by calling their `Dispose()` method. In order to dispose object it must have 1 remaining reference. This
+means that native objects may not keep any references to object that is being disposed. Calling `Dispose()` on an object with more than 1 reference
 will throw an exception and leave an object in an unknown state, therefore caching of such exceptions is not advised. Instead application should be
 fixed to not throw them.
 
-Calling "Dispose()" on non-owning wrapper instances will dispose of managed wrapper instance only. Native object is not freed and may be accessed
+Calling `Dispose()` on non-owning wrapper instances will dispose of managed wrapper instance only. Native object is not freed and may be accessed
 later.
 
 \section CSharp_Common_Problems Common Problems
