@@ -45,9 +45,6 @@ public:
         // Set reference counts below zero to fire asserts if this object is still accessed
         refs_ = -1;
         weakRefs_ = -1;
-#if URHO3D_CSHARP
-        scriptRefs_ = -1;
-#endif
     }
 
     /// Allocate RefCount using it's default allocator.
@@ -59,10 +56,6 @@ public:
     int refs_ = 0;
     /// Weak reference count.
     int weakRefs_ = 0;
-#if URHO3D_CSHARP
-    /// Reference count acquired from scripts. This is always equal or less than refs_.
-    int scriptRefs_ = 0;
-#endif
 };
 
 /// Base class for intrusively reference-counted objects. These are noncopyable and non-assignable.
@@ -93,12 +86,8 @@ public:
 #if URHO3D_CSHARP
     /// Return true if script runtime object wrapping this native object exists.
     bool HasScriptObject() const { return scriptObject_ != nullptr; }
-    /// Increment script reference count. For internal use.
-    int ScriptAddRef();
-    /// Decrement script reference count. For internal use.
-    int ScriptReleaseRef();
-    /// Return script reference count.
-    int ScriptRefs() const;
+    /// Return true if script reference is strong.
+    bool IsScriptStrongRef() const { return isScriptStrongRef_; }
 
 protected:
     /// Returns handle to wrapper script object. This is scripting-runtime-dependent.
@@ -114,10 +103,8 @@ private:
 #if URHO3D_CSHARP
     /// A handle to script object that wraps this native instance.
     void* scriptObject_ = nullptr;
-#if URHO3D_DEBUG
     /// GC Handle type (strong vs weak).
     bool isScriptStrongRef_ = false;
-#endif
 #endif
 };
 

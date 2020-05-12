@@ -136,11 +136,7 @@ void PluginManager::OnEndFrame()
             plugin->application_->Unload();
 
             int allowedPluginRefs = 1;
-#if URHO3D_CSHARP
-            if (plugin->application_->HasScriptObject())
-                allowedPluginRefs = 2;
-#endif
-            if (plugin->application_->Refs() != allowedPluginRefs)
+            if (plugin->application_->Refs() != 1)
             {
                 URHO3D_LOGERROR("Plugin application '{}' has more than one reference remaining. "
                                  "This will lead to memory leaks or crashes.",

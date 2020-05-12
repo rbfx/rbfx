@@ -35,44 +35,10 @@ ScriptRuntimeApi* Script::api_{nullptr};
 Script::Script(Context* context)
     : Object(context)
 {
-    SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) {
-        if (destructionQueue_.empty())
-            return;
-
-        URHO3D_PROFILE("ReleaseFinalizedObjects");
-        MutexLock lock(destructionQueueLock_);
-        if (!destructionQueue_.empty())
-        {
-            destructionQueue_.back()->ScriptReleaseRef();
-            destructionQueue_.pop_back();
-        }
-    });
 }
 
 Script::~Script()
 {
-    URHO3D_PROFILE("Script::~Script");
-    while (!destructionQueue_.empty())
-    {
-        destructionQueue_.back()->ScriptReleaseRef();
-        destructionQueue_.pop_back();
-    }
-}
-
-int Script::ReleaseRefOnMainThread(RefCounted* object)
-{
-    if (object == nullptr)
-        return 0;
-
-    if (Thread::IsMainThread())
-        return object->ReleaseRef();
-    else
-    {
-        MutexLock lock(destructionQueueLock_);
-        destructionQueue_.push_back(object);
-    }
-    // FIXME: ReleaseRefOnMainThread() is called from a finalizer thread. Not thread-safe.
-    return object->Refs() - 1;
 }
 
 void ScriptRuntimeApi::DereferenceAndDispose(RefCounted* instance)
