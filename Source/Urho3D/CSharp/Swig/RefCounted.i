@@ -4,7 +4,8 @@
     %typemap(csbody) TYPE %{
       [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
-      private bool _disposing = true;
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
+      private bool _swigCMemOwn = false;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // This function gets called when we want to turn a native cPtr into managed instance. For example when some
         // method returns a pointer to a wrapped object.
@@ -20,6 +21,8 @@
         }
         // GCHandle is null. cPtr does not have a managed wrapper object yet. We will create one.
         global::System.Type type;
+        // Most downstream class always owns instance of RefCounted.
+        cMemoryOwn = true;
         // Look up a most downstream type in type registry. This is important, because it allows us to use correct
         // wrapper type for polymorphic classes. For example API may return "UIElement" type, but cPtr would actually be
         // of type "Text". Here we would fetch type "Text" from type registry.
@@ -37,12 +40,14 @@
       internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // Construct a wrapper object wrapping a native instance.
         // Only most downstream class gets cMemoryOwn=true. Base classes do not.
+        _swigCMemOwn = cMemoryOwn;
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);
-        global::System.Runtime.InteropServices.GCHandleType handleType;
-        if (cMemoryOwn)
-          AddRef();
-        SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
-          global::System.Runtime.InteropServices.GCHandle.Alloc(this, global::System.Runtime.InteropServices.GCHandleType.Weak)), false);
+        if (cMemoryOwn) {
+          var isStrong = Refs() > 0;
+          var handleType = isStrong ? global::System.Runtime.InteropServices.GCHandleType.Normal : global::System.Runtime.InteropServices.GCHandleType.Weak;
+          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
+            global::System.Runtime.InteropServices.GCHandle.Alloc(this, handleType)), isStrong);
+        }
       }
 
       internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
@@ -53,6 +58,8 @@
     %typemap(csbody_derived, directorsetup="\n        SetupSwigDirector();") TYPE %{
       [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
       private global::System.Runtime.InteropServices.HandleRef swigCPtr;
+      [global::System.Diagnostics.DebuggerBrowsable(global::System.Diagnostics.DebuggerBrowsableState.Never)]
+      private bool _swigCMemOwn = false;
       internal static $csclassname wrap(global::System.IntPtr cPtr, bool cMemoryOwn) {
         // This function gets called when we want to turn a native cPtr into managed instance. For example when some
         // method returns a pointer to a wrapped object.
@@ -68,6 +75,8 @@
         }
         // GCHandle is null. cPtr does not have a managed wrapper object yet. We will create one.
         global::System.Type type;
+        // Most downstream class always owns instance of RefCounted.
+        cMemoryOwn = true;
         // Look up a most downstream type in type registry. This is important, because it allows us to use correct
         // wrapper type for polymorphic classes. For example API may return "UIElement" type, but cPtr would actually be
         // of type "Text". Here we would fetch type "Text" from type registry.
@@ -85,10 +94,14 @@
       internal $csclassname(global::System.IntPtr cPtr, bool cMemoryOwn) : base($imclassname.$csclazznameSWIGUpcast(cPtr), false) {
         // Construct a wrapper object wrapping a native instance.
         // Only most downstream class gets cMemoryOwn=true. Base classes do not.
+        _swigCMemOwn = cMemoryOwn;
         swigCPtr = new global::System.Runtime.InteropServices.HandleRef(this, cPtr);$directorsetup
-        global::System.Runtime.InteropServices.GCHandleType handleType;
-        if (cMemoryOwn)
-          AddRef();
+        if (cMemoryOwn) {
+          var isStrong = Refs() > 0;
+          var handleType = isStrong ? global::System.Runtime.InteropServices.GCHandleType.Normal : global::System.Runtime.InteropServices.GCHandleType.Weak;
+          SetScriptObject(global::System.Runtime.InteropServices.GCHandle.ToIntPtr(
+            global::System.Runtime.InteropServices.GCHandle.Alloc(this, handleType)), isStrong);
+        }
       }
 
       internal static global::System.Runtime.InteropServices.HandleRef getCPtr($csclassname obj) {
@@ -98,36 +111,16 @@
 
     %typemap(csdispose) TYPE %{
       ~$csclassname() {
-        _disposing = false;
         if (!Expired) {
-          // Finalizer should only execute if only .NET held references to a managed object and lost them.
-          if (ScriptRefs() != Refs())
-            System.Console.WriteLine($"Object of type '{GetType().Name}' has native references during execution of finalizer. This is a bug!");
-          // Release all references but one here on this thread.
-          while (ScriptRefs() > 1)
-            ReleaseRef();
-          // Here be dragons. This evil hack prevents crashes on application exit. Lost objects are being finalized on
-          // finalizer thread, however runtime scripting API object is gone already and we can not invoke Dispose(false)
-          // from C++ side, therefore we do it manually.
-          var ptrBkp = swigCPtr;                                        // Native instance pointer backup.
-          Dispose(_disposing);                                          // Dispose of resources. This resets swigCPtr. Also frees GC handle.
-          swigCPtr = ptrBkp;                                            // Restore swigCPtr so we can call ReleaseRef().
-          if (ScriptRefs() == 1) {                                      // Last remaining reference.
-            var script = Context.Instance?.GetSubsystem<Script>();      // Wont return an object when finalizers run on application exit.
-            if (script != null)
-              script.ReleaseRefOnMainThread(this);                      // Called when objects are lost and finalized during application lifetime.
-            else
-              ReleaseRef();                                             // Called when application is quitting. Main loop is not running.
-          }
-          // Object is completely destroyed. Reset swigCPtr so Expired once again returns true.
-          swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
+          Dispose(false);
         }
       }
 
       public void Dispose() {
-        // Dispose() only releases a reference. Releasing last reference will call obj.Dispose(true). This is to allow
-        // use of objects with C# `using` statement. Finalization suppression is in RefCounted.DisposeInternal().
-        ReleaseRef();
+        // Free object when refcounting is not in use. If object had any references added through it's lifetime - last
+        // ReleaseRef() will invoke Dispose(true) instead and this call will be noop.
+        if (!Expired && !IsScriptStrongRef())
+          Dispose(true);
       }
     %}
     %typemap(csdispose_derived) TYPE ""
@@ -135,7 +128,15 @@
     %typemap(csdisposing, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
       lock(this) {
         $typemap(csdisposed_extra_early_optional, TYPE)
-        FreeGCHandle();
+        // FreeGCHandle();
+        if (_swigCMemOwn) {
+          if (Refs() > 0)
+            throw new global::System.InvalidOperationException("Objects with active references can not be disposed.");
+          _swigCMemOwn = false;
+          if (!IsScriptStrongRef())
+            $imcall;
+        }
+
         if (swigCPtr.Handle != global::System.IntPtr.Zero)
           swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
         if (disposing) {
@@ -148,15 +149,19 @@
     %typemap(csdisposing_derived, methodname="Dispose", methodmodifiers="protected", parameters="bool disposing") TYPE {
       lock(this) {
         $typemap(csdisposed_extra_early_optional, TYPE)
+        if (_swigCMemOwn) {
+          if (Refs() > 0)
+            throw new global::System.InvalidOperationException("Objects with active references can not be disposed.");
+          _swigCMemOwn = false;
+          if (!IsScriptStrongRef())
+            $imcall;
+        }
         if (swigCPtr.Handle != global::System.IntPtr.Zero)
           swigCPtr = new global::System.Runtime.InteropServices.HandleRef(null, global::System.IntPtr.Zero);
         base.Dispose(disposing);
         $typemap(csdisposed_extra_optional, TYPE)
       }
     }
-    // C# wrapper does this instead
-    %refobject   TYPE "//$this->AddRef();        // Called by C# wrapper wrap() or constructor."
-    %unrefobject TYPE "//$this->ReleaseRef();    // Called by C# wrapper Dispose().\n  assert(false);   // This destructor should never be called, ReleaseRef() handles destruction."
 
     // SharedPtr
     %typemap(ctype)  Urho3D::SharedPtr<TYPE> "TYPE*"                               // c layer type
@@ -215,11 +220,5 @@ URHO3D_REFCOUNTED(Urho3D::ShaderProgram);
 %ignore Urho3D::RefCount;
 %csmethodmodifiers Urho3D::RefCounted::SetScriptObject "internal"
 %csmethodmodifiers Urho3D::RefCounted::GetScriptObject "internal"
-%csmethodmodifiers Urho3D::RefCounted::AddRef "internal"
-%csmethodmodifiers Urho3D::RefCounted::ReleaseRef "internal"
-%rename(NativeAddRef) Urho3D::RefCounted::AddRef;
-%rename(NativeReleaseRef) Urho3D::RefCounted::ReleaseRef;
-%rename(AddRef) Urho3D::RefCounted::ScriptAddRef;
-%rename(ReleaseRef) Urho3D::RefCounted::ScriptReleaseRef;
 %include "Urho3D/Container/RefCounted.h"
 %include "Urho3D/Container/Ptr.h"

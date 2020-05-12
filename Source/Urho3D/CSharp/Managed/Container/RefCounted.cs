@@ -12,7 +12,7 @@ namespace Urho3DNet
         /// </summary>
         internal void DisposeInternal()
         {
-            Dispose(_disposing);
+            Dispose(true);
         }
         /// <summary>
         /// Returns true if native object pointer is null.
@@ -30,10 +30,14 @@ namespace Urho3DNet
             if (Expired)
                 return;
 
-            GCHandle handle = GCHandle.FromIntPtr(GetScriptObject());
-            if (handle.IsAllocated)
-                handle.Free();
-            ResetScriptObject();
+            IntPtr cPtr = GetScriptObject();
+            if (cPtr != IntPtr.Zero)
+            {
+                GCHandle handle = GCHandle.FromIntPtr(cPtr);
+                if (handle.IsAllocated)
+                    handle.Free();
+                ResetScriptObject();
+            }
         }
     }
 }
