@@ -21,7 +21,6 @@
     <PlatformTarget Condition=" '$(PlatformTarget)' == '' Or '$(Platform)' == 'x64' ">x64</PlatformTarget>
     <PlatformTarget Condition=" '$(Platform)' == 'Win32' Or '$(Platform)' == 'x86' ">x86</PlatformTarget>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
-    <PublishSingleFile>false</PublishSingleFile>
   </PropertyGroup>
   <PropertyGroup>
     <TargetFramework>$(URHO3D_NETFX)</TargetFramework>
