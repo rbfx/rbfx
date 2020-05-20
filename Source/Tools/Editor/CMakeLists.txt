@@ -35,6 +35,7 @@ else ()
         # Use C# executable to host .net runtime and load editor. Editor is built as a dynamic library.
         add_target_csharp(
             TARGET Editor
+            EXE
             PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Editor.csproj
             OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Editor.exe
             DEPENDS Urho3DNet)
