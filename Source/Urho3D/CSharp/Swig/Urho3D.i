@@ -61,7 +61,11 @@
 %typemap(csvarout, excode=SWIGEXCODE2) float INOUT[] "get { var ret = $imcall;$excode return ret; }"
 %typemap(ctype)   const char* INPUT[] "char**"
 %typemap(cstype)  const char* INPUT[] "string[]"
+#if URHO3D_NETFX_LEGACY_VERSION
+%typemap(imtype, inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPStr)]") const char* INPUT[] "string[]"
+#else
 %typemap(imtype, inattributes="[global::System.Runtime.InteropServices.In, global::System.Runtime.InteropServices.MarshalAs(global::System.Runtime.InteropServices.UnmanagedType.LPUTF8Str)]") const char* INPUT[] "string[]"
+#endif
 %typemap(csin)    const char* INPUT[] "$csinput"
 %typemap(in)      const char* INPUT[] "$1 = $input;"
 %typemap(freearg) const char* INPUT[] ""
