@@ -139,7 +139,7 @@ jobs:
     steps:
       - bash: |
           brew install pkg-config
-          wget -q https://download.mono-project.com/archive/5.10.1/macos-10-universal/MonoFramework-MDK-5.10.1.57.macos10.xamarin.universal.pkg -O /tmp/Mono.pkg
+          wget -q https://download.mono-project.com/archive/6.8.0/macos-10-universal/MonoFramework-MDK-6.8.0.123.macos10.xamarin.universal.pkg -O /tmp/Mono.pkg
           sudo installer -pkg /tmp/Mono.pkg -target /
         displayName: 'Setup'
 
