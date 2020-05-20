@@ -5,7 +5,6 @@
     <RootNamespace>ScriptPlayer</RootNamespace>
     <EnableDefaultCompileItems>False</EnableDefaultCompileItems>
     <LangVersion>7.2</LangVersion>
-    <ProjectGuid>{30200AB5-2FD2-4ECE-A9AC-6EC4F29618E5}</ProjectGuid>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="*.cs" />

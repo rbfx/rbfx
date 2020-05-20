@@ -108,11 +108,7 @@ _option(URHO3D_URHO2D             "2D subsystem enabled"                        
 _option2(URHO3D_CSHARP             "Enable C# support"                                     OFF                  "BUILD_SHARED_LIBS"             OFF)
 # Valid values at https://docs.microsoft.com/en-us/dotnet/standard/frameworks
 set(URHO3D_NETFX net471 CACHE STRING "TargetFramework value for .NET projects")
-if (WIN32)
-    _option2(URHO3D_WITH_MONO      "Use Mono runtime"                                      OFF                  "URHO3D_CSHARP"                 OFF)
-else ()
-    set (URHO3D_WITH_MONO ON)
-endif ()
+set_property(CACHE URHO3D_NETFX PROPERTY STRINGS net46 net461 net462 net47 net471 net472 net48)
 _option2(URHO3D_FILEWATCHER       "Watch filesystem for resource changes"                 ${URHO3D_ENABLE_ALL} "URHO3D_THREADING"              OFF)
 _option(URHO3D_SPHERICAL_HARMONICS "Use spherical harmonics for ambient lighting"         ON)
 _option(URHO3D_HASH_DEBUG         "Enable StringHash name debugging"                      ${URHO3D_ENABLE_ALL}                                    )

@@ -173,5 +173,3 @@ if (NOT ANDROID)
         install (DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}/bin/${dir} DESTINATION ${DEST_RESOURCE_DIR}/${dir}/../)
     endforeach()
 endif ()
-
-set (URHO3D_CMAKE_CONFIGURED ON CACHE STRING "" FORCE)

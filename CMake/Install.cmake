@@ -19,16 +19,27 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
+cmake_policy(PUSH)
+cmake_policy(SET CMP0009 NEW)
 
-if (NOT URHO3D_CSHARP)
-    return ()
-endif ()
+# CMake is not aware of files C# builds produce. Since those files end up in
+# binary directory we inconditionally install any possible C# artifacts.
+file (GLOB_RECURSE INSTALL_FILES
+    RELATIVE ${CMAKE_BINARY_DIR}
+    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.dll
+    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.exe
+    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.exe.config
+    ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/*.pdb
+)
 
-add_target_csharp(
-    TARGET ScriptPlayer
-    EXE
-    PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ScriptPlayer.csproj
-    OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer.exe
-    DEPENDS Urho3DNet)
-add_dependencies(ScriptPlayer Urho3DNet)
-install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/ScriptPlayer.exe" DESTINATION ${DEST_BIN_DIR_CONFIG})
+foreach (file ${INSTALL_FILES})
+    set (SOURCE_FILE ${CMAKE_BINARY_DIR}/${file})
+    set (DEST_FILE ${CMAKE_INSTALL_PREFIX}/${file})
+    if (NOT EXISTS "${DEST_FILE}")
+        get_filename_component(DEST_DIR "${DEST_FILE}" DIRECTORY)
+        file (MAKE_DIRECTORY "${DEST_DIR}")
+        file (COPY ${SOURCE_FILE} DESTINATION "${DEST_DIR}")
+    endif ()
+endforeach()
+
+cmake_policy(POP)
