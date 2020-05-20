@@ -26,6 +26,7 @@ endif ()
 
 add_target_csharp(
     TARGET 102_CSharpProject
+    EXE
     PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/102_CSharpProject.csproj
     OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/102_CSharpProject.exe
     DEPENDS Urho3DNet)
