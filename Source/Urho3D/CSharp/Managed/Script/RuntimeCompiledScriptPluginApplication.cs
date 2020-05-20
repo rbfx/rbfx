@@ -6,27 +6,27 @@ namespace Urho3DNet
     public class RuntimeCompiledScriptPluginApplication : PluginApplication
     {
         /// Assembly that is being managed by this plugin.
-        private Assembly _hostAssembly;
+        private Assembly _slaveAssembly;
         /// Construct.
         public RuntimeCompiledScriptPluginApplication(Context context) : base(context)
         {
         }
         /// Sets assembly that is being managed by this plugin.
-        internal void SetHostAssembly(Assembly assembly)
+        public void SetSlaveAssembly(Assembly assembly)
         {
-            _hostAssembly = assembly;
+            _slaveAssembly = assembly;
         }
 
         public override void Load()
         {
-            if (_hostAssembly != null)
-                Context.RegisterFactories(_hostAssembly);
+            if (_slaveAssembly != null)
+                Context.RegisterFactories(_slaveAssembly);
         }
 
         public override void Unload()
         {
-            if (_hostAssembly != null)
-                Context.RemoveFactories(_hostAssembly);
+            if (_slaveAssembly != null)
+                Context.RemoveFactories(_slaveAssembly);
         }
     }
 }

@@ -44,6 +44,8 @@ namespace Player
             args.CopyTo(argv, 1);
             Urho3D.ParseArguments(argc, argv);
 
+            // TODO: iOS does not allow runtime-compiled code.
+            Context.SetRuntimeApi(new CompiledScriptRuntimeApiImpl());
             using (var context = new Context())
             {
                 using (var player = Application.CreateApplicationFromFactory(context, CreateApplication))
