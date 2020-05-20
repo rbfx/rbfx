@@ -12,7 +12,7 @@ using Mono.Cecil.Pdb;
 
 namespace Editor
 {
-    public class ScriptRuntimeApiReloadableImpl : ScriptRuntimeApiImpl
+    public class ScriptRuntimeApiReloadableImpl : CompiledScriptRuntimeApiImpl
     {
         public override bool VerifyAssembly(string path)
         {

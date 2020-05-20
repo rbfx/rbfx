@@ -113,6 +113,8 @@ namespace DemoApplication
     {
         public static void Main(string[] args)
         {
+            // This is required for loading and compiling *.cs scripts from resource path.
+            Context.SetRuntimeApi(new CompiledScriptRuntimeApiImpl());
             using (var context = new Context())
             {
                 using (var application = new DemoApplication(context))
