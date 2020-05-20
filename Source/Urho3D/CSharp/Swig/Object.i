@@ -9,11 +9,13 @@ IGNORE_SUBSYSTEM(WorkQueue)
 IGNORE_SUBSYSTEM(Tasks)
 
 %typemap(csout, excode=SWIGEXCODE) Urho3D::StringHash GetType {
-    return new $typemap(cstype, Urho3D::StringHash)(GetType().Name);
+    var ret = new $typemap(cstype, Urho3D::StringHash)(GetType().Name);$excode
+    return ret;
 }
 
 %typemap(csout, excode=SWIGEXCODE) const eastl::string& GetTypeName, const eastl::string& GetTypeName {
-    return GetType().Name;
+    var ret = GetType().Name;$excode
+    return ret;
 }
 
 // Not all RefCounted are Object descendants, but most are.
