@@ -1,11 +1,8 @@
 using System;
-using System.CodeDom.Compiler;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
-using Microsoft.CSharp;
 
 namespace Urho3DNet
 {
@@ -119,88 +116,8 @@ namespace Urho3DNet
 
         public override PluginApplication CompileResourceScriptPlugin()
         {
-            var scriptRsrcs = new StringList();
-            var scriptCodes = new List<string>();
-            var sourceFiles = new List<string>();
-            Context.Instance.Cache.Scan(scriptRsrcs, "", "*.cs", Urho3D.ScanFiles, true);
-            foreach (string fileName in scriptRsrcs)
-            {
-                using (var file = Context.Instance.Cache.GetFile(fileName))
-                {
-                    // Gather both paths and code text here. If scripts are packaged we must compile them from
-                    // text form. However if we are running a development version of application we prefer to
-                    // compile scripts directly from file because then we get proper error locations.
-                    if (file.IsPackaged())
-                        scriptCodes.Add(file.ReadString());
-                    else
-                    {
-                        string path = Context.Instance.Cache.GetResourceFileName(fileName);
-                        path = Urho3D.GetAbsolutePath(path);
-                        path = Urho3D.GetNativePath(path);
-                        sourceFiles.Add(path);
-                    }
-                }
-            }
-
-            var csc = new CSharpCodeProvider();
-            var compileParameters = new CompilerParameters(new[] // TODO: User may need to extend this list
-            {
-                "mscorlib.dll",
-                "System.dll",
-                "System.Core.dll",
-                "System.Data.dll",
-                "System.Drawing.dll",
-                "System.Numerics.dll",
-                "System.Runtime.Serialization.dll",
-                "System.Xml.dll",
-                "System.Xml.Linq.dll",
-                "Urho3DNet.dll",
-            })
-            {
-                GenerateExecutable = false,
-                GenerateInMemory = true,
-                TreatWarningsAsErrors = false,
-            };
-
-            CompilerResults results = null;
-            if (scriptCodes.Count > 0)
-                results = csc.CompileAssemblyFromSource(compileParameters, scriptCodes.ToArray());
-            else if (sourceFiles.Count > 0)
-                results = csc.CompileAssemblyFromFile(compileParameters, sourceFiles.ToArray());
-
-            // New projects may have no C# scripts. In this case a dummy plugin instance that does nothing will be
-            // returned. Once new scripts appear - plugin will be reloaded properly.
-            var plugin = new RuntimeCompiledScriptPluginApplication(Context.Instance);
-
-            if (results != null)
-            {
-                if (results.Errors.HasErrors)
-                {
-                    foreach (CompilerError error in results.Errors)
-                    {
-                        string resourceName = error.FileName;
-                        foreach (string resourceDir in Context.Instance.Cache.ResourceDirs)
-                        {
-                            if (resourceName.StartsWith(resourceDir))
-                            {
-                                resourceName = resourceName.Substring(resourceDir.Length);
-                                break;
-                            }
-                        }
-
-                        string message = $"{resourceName}:{error.Line}:{error.Column}: {error.ErrorText}";
-                        if (error.IsWarning)
-                            Log.Warning(message);
-                        else
-                            Log.Error(message);
-                    }
-
-                    return null;
-                }
-                plugin.SetHostAssembly(results.CompiledAssembly);
-            }
-
-            return plugin;
+            // Empty plugin. Essentially a noop.
+            return new RuntimeCompiledScriptPluginApplication(Context.Instance);
         }
     }
 }

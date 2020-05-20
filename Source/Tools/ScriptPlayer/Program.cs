@@ -27,6 +27,9 @@ using System.IO;
 using System.Linq;
 using System.Reflection;
 using Microsoft.CSharp;
+using Urho3DNet;
+using Console = System.Console;
+using File = System.IO.File;
 
 public static class Program
 {
@@ -53,35 +56,10 @@ public static class Program
         foreach (FileInfo fi in scriptDirInfo.GetFiles("*.cs", SearchOption.AllDirectories))
             sourceCode.Add(File.ReadAllText(fi.FullName));
 
-        var csc = new CSharpCodeProvider();
-        var compileParameters = new CompilerParameters(new[]
+        Assembly assembly = CsCompiler.Compile(sourceCode, null, null);
+        if (assembly != null)
         {
-            "mscorlib.dll",
-            "System.dll",
-            "System.Core.dll",
-            "System.Data.dll",
-            "System.Drawing.dll",
-            "System.Numerics.dll",
-            "System.Runtime.Serialization.dll",
-            "System.Xml.dll",
-            "System.Xml.Linq.dll",
-            "Urho3DNet.dll",
-        })
-        {
-            GenerateExecutable = true,
-            GenerateInMemory = true,
-            TreatWarningsAsErrors = false,
-        };
-
-        CompilerResults results = csc.CompileAssemblyFromSource(compileParameters, sourceCode.ToArray());
-        if (results.Errors.HasErrors)
-        {
-            foreach (CompilerError error in results.Errors)
-                Console.WriteLine(error.ErrorText);
-        }
-        else
-        {
-            foreach (Type type in results.CompiledAssembly.GetTypes())
+            foreach (Type type in assembly.GetTypes())
             {
                 foreach (MethodInfo method in type.GetMethods())
                 {
