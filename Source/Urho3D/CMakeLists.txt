@@ -386,8 +386,16 @@ if (URHO3D_CSHARP)
         )
     endif ()
     unset (CMAKE_SWIG_OUTDIR)
+
+    add_target_csharp(
+        TARGET Urho3DNet.Scripts
+        PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Urho3DNet.Scripts.csproj
+        OUTPUT ${NET_OUTPUT_DIRECTORY}/Urho3DNet.Scripts.dll
+        DEPENDS Urho3DNet
+    )
+
     file (GLOB_RECURSE EXTRA_NATIVE_FILES ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.h ${CMAKE_CURRENT_SOURCE_DIR}/CSharp/Native/*.cpp)
-    file (GLOB_RECURSE WRAPPER_FILES )
+    file (GLOB_RECURSE WRAPPER_FILES)
 
     target_sources(Urho3D PRIVATE ${EXTRA_NATIVE_FILES} ${CMAKE_CURRENT_BINARY_DIR}/Urho3DCSharp/Urho3DCSHARP_wrap.cxx)
     if (URHO3D_SYSTEMUI)
@@ -396,11 +404,11 @@ if (URHO3D_CSHARP)
     if (MSVC)
         target_compile_options(Urho3D PRIVATE /bigobj)
     endif ()
+endif ()
 
-    # TODO: Can this be automatized?
-    foreach (dll "Mono.Cecil.dll" "Mono.Cecil.Mdb.dll" "Mono.Cecil.Pdb.dll" "Mono.Cecil.Rocks.dll" "System.Numerics.Vectors.dll")
-        install(FILES "${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/${dll}" DESTINATION ${DEST_BIN_DIR_CONFIG} OPTIONAL)
-    endforeach ()
+# Install C# dependencies
+if (URHO3D_CSHARP)
+   install (SCRIPT ${rbfx_SOURCE_DIR}/CMake/Install.cmake)
 endif ()
 
 ################################################### SDK preparation ####################################################

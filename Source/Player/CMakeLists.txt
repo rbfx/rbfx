@@ -39,6 +39,7 @@ elseif (ANDROID OR URHO3D_CSHARP)
     if (URHO3D_CSHARP)
         add_target_csharp(
             TARGET Player
+            EXE
             PROJECT ${CMAKE_CURRENT_SOURCE_DIR}/ManagedHost/Player.csproj
             OUTPUT ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/Player.exe
             DEPENDS Urho3DNet)

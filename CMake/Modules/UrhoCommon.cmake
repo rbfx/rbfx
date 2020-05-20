@@ -101,8 +101,10 @@ set (VS_DEBUGGER_WORKING_DIRECTORY ${CMAKE_RUNTIME_OUTPUT_DIRECTORY})
 if (NOT DEFINED URHO3D_64BIT)
     if (CMAKE_SIZEOF_VOID_P MATCHES 8)
         set(URHO3D_64BIT ON)
+        set(URHO3D_PLATFORM x64)
     else ()
         set(URHO3D_64BIT OFF)
+        set(URHO3D_PLATFORM x86)
     endif ()
 endif ()
 
@@ -279,21 +281,35 @@ if (URHO3D_CSHARP)
     if (CMAKE_VS_MSBUILD_COMMAND)
         set (MSBUILD ${CMAKE_VS_MSBUILD_COMMAND} CACHE STRING "")
     else ()
-        find_program(MSBUILD msbuild PATHS /Library/Frameworks/Mono.framework/Versions/Current/bin ${MONO_PATH}/bin)
+        find_program(MSBUILD msbuild HINTS $<MACOS:/Library/Frameworks/Mono.framework/Versions/Current/bin> $ENV{PATH})
+    endif ()
+
+    if (NOT MSBUILD)
+        message(FATAL_ERROR "msbuild executable was not found.")
+    endif ()
+
+    if (URHO3D_NETFX MATCHES "net46.*")
+        set (URHO3D_NETFX_LEGACY_VERSION ON)
+    endif ()
+
+    if (WIN32)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER win7-${URHO3D_PLATFORM})
+    elseif (MACOS)
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER osx-${URHO3D_PLATFORM})
+    else ()
+        set (URHO3D_NETFX_RUNTIME_IDENTIFIER linux-${URHO3D_PLATFORM})
+    endif ()
+    if (URHO3D_OMNISHARP_HELPER)
+        message (STATUS "Omnisharp helper saves .OmniSharp.props to ${rbfx_SOURCE_DIR}.")
+        message (STATUS "This helper helps OmniSharp to find CMAKE_BINARY_DIR.")
+        message (STATUS "As a consequence - you must reconfigure project in order to use this source tree with another cmake binary dir!")
+        file (WRITE "${rbfx_SOURCE_DIR}/.OmniSharp.props" "<Project ToolsVersion=\"15.0\"><PropertyGroup><CMAKE_BINARY_DIR>${CMAKE_BINARY_DIR}</CMAKE_BINARY_DIR></PropertyGroup></Project>")
     endif ()
 endif ()
 
 function (add_msbuild_target)
     if (URHO3D_CSHARP)
         cmake_parse_arguments(MSBUILD "EXCLUDE_FROM_ALL" "TARGET;DEPENDS" "ARGS;BYPRODUCTS" ${ARGN})
-
-        if (NOT MSBUILD)
-            if (WIN32)
-                message(FATAL_ERROR "MSBuild could not be found.")
-            else ()
-                message(FATAL_ERROR "MSBuild could not be found. You may need to install 'msbuild' package.")
-            endif ()
-        endif ()
         add_custom_target(${MSBUILD_TARGET} ALL
             COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${MSBUILD_ARGS}
             /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/
@@ -307,7 +323,22 @@ function (add_msbuild_target)
 endfunction ()
 
 if (URHO3D_CSHARP)
-    set (CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION v4.7.1)
+    # For .csproj embedded into visual studio solution
+    configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
+    # For .csproj that gets built by cmake invoking msbuild
+    set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
+    set (ENV{CMAKE_BINARY_DIR "${CMAKE_BINARY_DIR}/")
+    set (ENV{RBFX_BINARY_DIR "${rbfx_BINARY_DIR}/")
+    set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
+
+    set (DOTNET_FRAMEWORK_TYPES net46 net461 net462 net47 net471 net472 net48)
+    set (DOTNET_FRAMEWORK_VERSIONS v4.6 v4.6.1 v4.6.2 v4.7 v4.7.1 v4.7.2 v4.8)
+    list (FIND DOTNET_FRAMEWORK_TYPES ${URHO3D_NETFX} DOTNET_FRAMEWORK_INDEX)
+    if (DOTNET_FRAMEWORK_INDEX GREATER -1)
+        list (GET DOTNET_FRAMEWORK_VERSIONS ${DOTNET_FRAMEWORK_INDEX} CMAKE_DOTNET_TARGET_FRAMEWORK_VERSION)
+    endif ()
+    unset (DOTNET_FRAMEWORK_INDEX)
+
     if (NOT SWIG_EXECUTABLE)
         set (SWIG_EXECUTABLE ${CMAKE_BINARY_DIR}/${DEST_BIN_DIR_CONFIG}/swig${CMAKE_EXECUTABLE_SUFFIX})
     endif ()
@@ -315,16 +346,6 @@ if (URHO3D_CSHARP)
         set (SWIG_DIR ${rbfx_SOURCE_DIR}/Source/ThirdParty/swig/Lib)
     endif ()
     include(UrhoSWIG)
-
-    if (NOT WIN32 OR URHO3D_WITH_MONO)
-        find_package(Mono REQUIRED)
-    endif ()
-
-    if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-        set (CSHARP_PLATFORM x64)
-    else ()
-        set (CSHARP_PLATFORM x86)
-    endif ()
 
     # Prefer binary dir - generated msvc solution with .csproj projects included in it.
     file (GLOB VS_SOLUTIONS ${CMAKE_BINARY_DIR}/*.sln)
@@ -337,20 +358,11 @@ if (URHO3D_CSHARP)
         endif ()
     endif ()
     add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
-
+    # Run nuget restore during generation stage
     execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
         /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
     )
 endif()
-
-
-# For .csproj embedded into visual studio solution
-configure_file("${rbfx_SOURCE_DIR}/CMake/CMake.props.in" "${CMAKE_BINARY_DIR}/CMake.props" @ONLY)
-# For .csproj that gets built by cmake invoking msbuild
-set (ENV{CMAKE_GENERATOR} "${CMAKE_GENERATOR}")
-set (ENV{CMAKE_BINARY_DIR "${CMAKE_BINARY_DIR}/")
-set (ENV{RBFX_BINARY_DIR "${rbfx_BINARY_DIR}/")
-set (ENV{CMAKE_RUNTIME_OUTPUT_DIRECTORY "${CMAKE_RUNTIME_OUTPUT_DIRECTORY}/")
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
     get_target_property(values ${TARGET} ${PROPERTY})
@@ -369,25 +381,20 @@ macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
 endmacro()
 
 function (add_target_csharp)
-    cmake_parse_arguments (CS "" "TARGET;PROJECT;OUTPUT" "DEPENDS" ${ARGN})
-    if (WIN32 AND NOT URHO3D_WITH_MONO)
+    cmake_parse_arguments (CS "EXE" "TARGET;PROJECT;OUTPUT" "DEPENDS" ${ARGN})
+    if (MSVC)
         include_external_msproject(${CS_TARGET} ${CS_PROJECT} TYPE FAE04EC0-301F-11D3-BF4B-00C04F79EFBC ${CS_DEPENDS})
         if (CS_DEPENDS)
             add_dependencies(${CS_TARGET} ${CS_DEPENDS})
         endif ()
     else ()
-        if (CMAKE_SIZEOF_VOID_P EQUAL 8)
-            set (CSHARP_PLATFORM x64)
-        else ()
-            set (CSHARP_PLATFORM x86)
-        endif ()
         if (MULTI_CONFIG_PROJECT)
             set (CSHARP_CONFIG $<CONFIG>)
         else ()
             set (CSHARP_CONFIG ${CMAKE_BUILD_TYPE})
         endif ()
         add_msbuild_target(TARGET ${CS_TARGET} DEPENDS ${CS_DEPENDS} ARGS ${CS_PROJECT}
-            /p:Platform=${CSHARP_PLATFORM}
+            /p:Platform=${URHO3D_PLATFORM}
             /p:Configuration=${CSHARP_CONFIG}
             BYPRODUCTS ${CS_OUTPUT_FILE}
         )
@@ -434,6 +441,11 @@ function (csharp_bind_target)
         endif ()
         list(APPEND GENERATOR_OPTIONS "-D\"${item}\"")
     endforeach()
+
+    if (URHO3D_NETFX_LEGACY_VERSION)
+        # TODO: Not great, little bit terrible.
+        list(APPEND GENERATOR_OPTIONS "-D\"URHO3D_NETFX_LEGACY_VERSION=1\"")
+    endif ()
 
     if (NOT BIND_NATIVE)
         set (BIND_NATIVE ${BIND_TARGET})
