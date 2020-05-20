@@ -93,6 +93,13 @@
 #include <Urho3D/CSharp/Native/SWIGHelpers.h>
 %}
 
+%typemap(check, canthrow=1) SWIGTYPE* self %{
+  if (!$1) {
+    SWIG_CSharpSetPendingExceptionArgument(SWIG_CSharpArgumentNullException, "$1_type is expired.", 0);
+    return $null;
+  }
+%}
+
 %include "Helpers.i"
 %include "Operators.i"
 namespace eastl{}
