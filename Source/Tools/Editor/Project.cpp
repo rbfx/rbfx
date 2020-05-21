@@ -480,8 +480,7 @@ void Project::RenderSettingsUI()
                     defaultResourcePath_ = projectFileDir_ + resourcePaths_[0];
             }
 
-            // Deleting CoreData is unsafe.
-            if (i == 0 || resourcePaths_[i] == "CoreData/")
+            if (i == 0)
             {
                 ui::PushStyleColor(ImGuiCol_Text, ui::GetStyle().Colors[ImGuiCol_TextDisabled]);
                 ui::PushItemFlag(ImGuiItemFlags_Disabled, true);
