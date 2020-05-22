@@ -60,7 +60,7 @@ Pipeline::Pipeline(Context* context)
     if (context_->GetEngine()->IsHeadless())
         return;
 
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Pipeline, OnEndFrame));
+    SubscribeToEvent(E_ENDFRAME, &Pipeline::OnEndFrame);
     SubscribeToEvent(E_RESOURCERENAMED, [this](StringHash, VariantMap& args) {
         using namespace ResourceRenamed;
         ea::string from = args[P_FROM].GetString();

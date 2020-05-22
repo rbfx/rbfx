@@ -265,7 +265,7 @@ void Editor::Start()
     SubscribeToEvent(E_EXITREQUESTED, [this](StringHash, VariantMap&) { OnExitRequested(); });
     SubscribeToEvent(E_EDITORPROJECTSERIALIZE, [this](StringHash, VariantMap&) { UpdateWindowTitle(); });
     SubscribeToEvent(E_CONSOLEURICLICK, [this](StringHash, VariantMap& args) { OnConsoleUriClick(args); });
-    SubscribeToEvent(E_EDITORSELECTIONCHANGED, URHO3D_HANDLER(Editor, OnSelectionChanged));
+    SubscribeToEvent(E_EDITORSELECTIONCHANGED, &Editor::OnSelectionChanged);
     SetupSystemUI();
     if (!defaultProjectPath_.empty())
     {

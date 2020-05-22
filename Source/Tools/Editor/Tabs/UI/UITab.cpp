@@ -69,8 +69,8 @@ UITab::UITab(Context* context)
 
     undo_->Connect(static_cast<UIElement*>(rootElement_.Get()), this);
 
-    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTORMENU, URHO3D_HANDLER(UITab, AttributeMenu));
-    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTOATTRIBUTE, URHO3D_HANDLER(UITab, AttributeCustomize));
+    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTORMENU, &UITab::AttributeMenu);
+    SubscribeToEvent(rootElement_, E_ATTRIBUTEINSPECTOATTRIBUTE, &UITab::AttributeCustomize);
 
     AutoLoadDefaultStyle();
 }
