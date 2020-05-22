@@ -54,15 +54,15 @@ PreviewTab::PreviewTab(Context* context)
     texture_ = context_->CreateObject<Texture2D>();
     noContentPadding_ = true;
 
-    SubscribeToEvent(E_CAMERAVIEWPORTRESIZED, URHO3D_HANDLER(PreviewTab, OnCameraViewportResized));
-    SubscribeToEvent(E_COMPONENTADDED, URHO3D_HANDLER(PreviewTab, OnComponentAdded));
-    SubscribeToEvent(E_COMPONENTREMOVED, URHO3D_HANDLER(PreviewTab, OnComponentRemoved));
-    SubscribeToEvent(E_RELOADFINISHED, URHO3D_HANDLER(PreviewTab, OnReloadFinished));
-    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, URHO3D_HANDLER(PreviewTab, OnEditorUserCodeReloadStart));
-    SubscribeToEvent(E_EDITORUSERCODERELOADEND, URHO3D_HANDLER(PreviewTab, OnEditorUserCodeReloadEnd));
-    SubscribeToEvent(E_ENDALLVIEWSRENDER, URHO3D_HANDLER(PreviewTab, OnEndAllViewsRender));
-    SubscribeToEvent(E_SCENEACTIVATED, URHO3D_HANDLER(PreviewTab, OnSceneActivated));
-    SubscribeToEvent(E_ENDRENDERINGSYSTEMUI, URHO3D_HANDLER(PreviewTab, OnEndRenderingSystemUI));
+    SubscribeToEvent(E_CAMERAVIEWPORTRESIZED, &PreviewTab::OnCameraViewportResized);
+    SubscribeToEvent(E_COMPONENTADDED, &PreviewTab::OnComponentAdded);
+    SubscribeToEvent(E_COMPONENTREMOVED, &PreviewTab::OnComponentRemoved);
+    SubscribeToEvent(E_RELOADFINISHED, &PreviewTab::OnReloadFinished);
+    SubscribeToEvent(E_EDITORUSERCODERELOADSTART, &PreviewTab::OnEditorUserCodeReloadStart);
+    SubscribeToEvent(E_EDITORUSERCODERELOADEND, &PreviewTab::OnEditorUserCodeReloadEnd);
+    SubscribeToEvent(E_ENDALLVIEWSRENDER, &PreviewTab::OnEndAllViewsRender);
+    SubscribeToEvent(E_SCENEACTIVATED, &PreviewTab::OnSceneActivated);
+    SubscribeToEvent(E_ENDRENDERINGSYSTEMUI, &PreviewTab::OnEndRenderingSystemUI);
 }
 
 void PreviewTab::OnCameraViewportResized(StringHash type, VariantMap& args)
