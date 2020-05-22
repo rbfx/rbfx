@@ -152,6 +152,12 @@ public:
     void SubscribeToEvent(StringHash eventType, const std::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
     /// Subscribe to a specific sender's event.
     void SubscribeToEvent(Object* sender, StringHash eventType, const std::function<void(StringHash, VariantMap&)>& function, void* userData = nullptr);
+    /// Subscribe to an event that can be sent by any sender.
+    template<typename T>
+    void SubscribeToEvent(StringHash eventType, void(T::*handler)(StringHash, VariantMap&));
+    /// Subscribe to a specific sender's event.
+    template<typename T>
+    void SubscribeToEvent(Object* sender, StringHash eventType, void(T::*handler)(StringHash, VariantMap&));
     /// Unsubscribe from an event.
     void UnsubscribeFromEvent(StringHash eventType);
     /// Unsubscribe from a specific sender's event.
@@ -403,6 +409,18 @@ private:
     /// Class-specific pointer to handler function.
     std::function<void(StringHash, VariantMap&)> function_;
 };
+
+template<typename T>
+inline void Object::SubscribeToEvent(StringHash eventType, void(T::*handler)(StringHash, VariantMap&))
+{
+    SubscribeToEvent(eventType, new Urho3D::EventHandlerImpl<T>((T*)this, handler));
+}
+
+template<typename T>
+inline void Object::SubscribeToEvent(Object* sender, StringHash eventType, void(T::*handler)(StringHash, VariantMap&))
+{
+    SubscribeToEvent(sender, eventType, new Urho3D::EventHandlerImpl<T>((T*)this, handler));
+}
 
 /// Get register of event names.
 URHO3D_API StringHashRegister& GetEventNameRegister();
