@@ -62,7 +62,7 @@ ResourceTab::ResourceTab(Context* context)
     SetTitle("Resources");
     isUtility_ = true;
 
-    SubscribeToEvent(E_INSPECTORLOCATERESOURCE, URHO3D_HANDLER(ResourceTab, OnLocateResource));
+    SubscribeToEvent(E_INSPECTORLOCATERESOURCE, &ResourceTab::OnLocateResource);
 }
 
 void ResourceTab::OnLocateResource(StringHash, VariantMap& args)

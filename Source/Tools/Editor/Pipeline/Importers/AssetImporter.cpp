@@ -35,8 +35,8 @@ namespace Urho3D
 AssetImporter::AssetImporter(Context* context)
     : Serializable(context)
 {
-    SubscribeToEvent(this, E_ATTRIBUTEINSPECTVALUEMODIFIED, URHO3D_HANDLER(AssetImporter, OnInspectorModified));
-    SubscribeToEvent(this, E_ATTRIBUTEINSPECTOATTRIBUTE, URHO3D_HANDLER(AssetImporter, OnRenderInspectorAttribute));
+    SubscribeToEvent(this, E_ATTRIBUTEINSPECTVALUEMODIFIED, &AssetImporter::OnInspectorModified);
+    SubscribeToEvent(this, E_ATTRIBUTEINSPECTOATTRIBUTE, &AssetImporter::OnRenderInspectorAttribute);
 }
 
 void AssetImporter::OnInspectorModified(StringHash, VariantMap& args)

@@ -61,10 +61,10 @@ Project::Project(Context* context)
 #endif
     , undo_(new UndoStack(context))
 {
-    SubscribeToEvent(E_EDITORRESOURCESAVED, URHO3D_HANDLER(Project, OnEditorResourceSaved));
-    SubscribeToEvent(E_RESOURCERENAMED, URHO3D_HANDLER(Project, OnResourceRenamed));
-    SubscribeToEvent(E_RESOURCEBROWSERDELETE, URHO3D_HANDLER(Project, OnResourceBrowserDelete));
-    SubscribeToEvent(E_ENDFRAME, URHO3D_HANDLER(Project, OnEndFrame));
+    SubscribeToEvent(E_EDITORRESOURCESAVED, &Project::OnEditorResourceSaved);
+    SubscribeToEvent(E_RESOURCERENAMED, &Project::OnResourceRenamed);
+    SubscribeToEvent(E_RESOURCEBROWSERDELETE, &Project::OnResourceBrowserDelete);
+    SubscribeToEvent(E_ENDFRAME, &Project::OnEndFrame);
     context_->RegisterSubsystem(pipeline_);
 #if URHO3D_PLUGINS
     context_->RegisterSubsystem(plugins_);
