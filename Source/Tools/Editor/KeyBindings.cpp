@@ -38,7 +38,7 @@ namespace Urho3D
 KeyBindings::KeyBindings(Context* context)
     : Object(context)
 {
-    SubscribeToEvent(E_INPUTEND, URHO3D_HANDLER(KeyBindings, OnInputEnd));
+    SubscribeToEvent(E_INPUTEND, &KeyBindings::OnInputEnd);
 
     actions_[ActionType::SaveProject] = {"Save project", KEY_S, QUAL_CTRL};
     actions_[ActionType::OpenProject] = {"Open project", KEY_O, QUAL_CTRL};
@@ -56,7 +56,7 @@ KeyBindings::KeyBindings(Context* context)
 
     // We have to delay any access to Editor object because constructor of this object runs as part of Editor
     // constructor and at that point Editor is not registered as a subsystem yet.
-    SubscribeToEvent(E_APPLICATIONSTARTED, URHO3D_HANDLER(KeyBindings, OnApplicationStarted));
+    SubscribeToEvent(E_APPLICATIONSTARTED, &KeyBindings::OnApplicationStarted);
 }
 
 void KeyBindings::OnApplicationStarted(StringHash, VariantMap&)
