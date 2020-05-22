@@ -19,7 +19,6 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 //
-#include <Urho3D/Core/Function.h>
 #include <Urho3D/Graphics/Viewport.h>
 #include <Urho3D/Graphics/RenderPath.h>
 #include <Urho3D/Graphics/Renderer.h>
@@ -35,6 +34,7 @@
 #include <Urho3D/IO/FileSystem.h>
 
 #include <EASTL/sort.h>
+#include <EASTL/functional.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
 #include <ImGui/imgui_stdlib.h>
