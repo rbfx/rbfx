@@ -90,14 +90,18 @@ static unsigned Tick()
 static long long HiresTick()
 {
 #ifdef _WIN32
+#ifndef UWP
     if (HiresTimer::IsSupported())
     {
+#endif
         LARGE_INTEGER counter;
         QueryPerformanceCounter(&counter);
         return counter.QuadPart;
+#ifndef UWP
     }
     else
         return GetTickCount();
+#endif
 #elif __EMSCRIPTEN__
     return (long long)(emscripten_get_now()*1000.0);
 #else
@@ -143,7 +147,7 @@ void Time::EndFrame()
 
 void Time::SetTimerPeriod(unsigned mSec)
 {
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
     if (timerPeriod_ > 0)
         timeEndPeriod(timerPeriod_);
 

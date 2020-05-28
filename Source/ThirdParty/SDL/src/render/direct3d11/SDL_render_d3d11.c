@@ -2562,7 +2562,23 @@ SDL_RenderDriver D3D11_RenderDriver = {
         0                           /* max_texture_height: will be filled in later */
     }
 };
+#else
+// rbfx fix for WINRT: WINRT_DXGIModeToSDLDisplayMode uses this function.
+#include <dxgiformat.h>
+#include "SDL_pixels.h"
 
+Uint32
+D3D11_DXGIFormatToSDLPixelFormat(DXGI_FORMAT dxgiFormat)
+{
+    switch (dxgiFormat) {
+    case DXGI_FORMAT_B8G8R8A8_UNORM:
+        return SDL_PIXELFORMAT_ARGB8888;
+    case DXGI_FORMAT_B8G8R8X8_UNORM:
+        return SDL_PIXELFORMAT_RGB888;
+    default:
+        return SDL_PIXELFORMAT_UNKNOWN;
+    }
+}
 #endif /* SDL_VIDEO_RENDER_D3D11 && !SDL_RENDER_DISABLED */
 
 /* vi: set ts=4 sw=4 expandtab: */
