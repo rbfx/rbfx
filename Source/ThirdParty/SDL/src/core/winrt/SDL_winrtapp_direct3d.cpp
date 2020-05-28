@@ -24,7 +24,8 @@
 #include <functional>
 #include <string>
 #include <sstream>
-using namespace std;
+// rbfx fix
+//using namespace std;
 
 
 /* Windows includes */

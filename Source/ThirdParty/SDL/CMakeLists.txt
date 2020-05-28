@@ -1266,7 +1266,11 @@ elseif(WINDOWS)
   check_include_file (windows.h HAVE_WIN32_CC)
 
   file(GLOB CORE_SOURCES ${SDL2_SOURCE_DIR}/src/core/windows/*.c)
-  set(SOURCE_FILES ${SOURCE_FILES} ${CORE_SOURCES})
+  # rbfx - UWP support
+  if (UWP)
+    file(GLOB WINRT_CORE_SOURCES ${SDL2_SOURCE_DIR}/src/core/winrt/*)
+  endif ()
+  set(SOURCE_FILES ${SOURCE_FILES} ${CORE_SOURCES} ${WINRT_CORE_SOURCES})
 
   # Urho3D - commented out MSVC-specific compiler flags setup as we have configured MSVC compiler flags globally in Urho3D common module
 
@@ -1306,7 +1310,12 @@ elseif(WINDOWS)
       message_error("SDL_VIDEO requires SDL_LOADSO, which is not enabled")
     endif()
     set(SDL_VIDEO_DRIVER_WINDOWS 1)
-    file(GLOB WIN_VIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/windows/*.c)
+    # rbfx - UWP support
+    if (UWP)
+      file(GLOB WIN_VIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/winrt/*)
+    else ()
+      file(GLOB WIN_VIDEO_SOURCES ${SDL2_SOURCE_DIR}/src/video/windows/*.c)
+    endif ()
     set(SOURCE_FILES ${SOURCE_FILES} ${WIN_VIDEO_SOURCES})
 
     if(RENDER_D3D AND HAVE_D3D_H)
@@ -1335,13 +1344,23 @@ elseif(WINDOWS)
 
   if(SDL_POWER)
     set(SDL_POWER_WINDOWS 1)
+    # rbfx - UWP support
+    if (UWP)
+      set(SOURCE_FILES ${SOURCE_FILES} ${SDL2_SOURCE_DIR}/src/power/winrt/SDL_syspower.cpp)
+    else ()
     set(SOURCE_FILES ${SOURCE_FILES} ${SDL2_SOURCE_DIR}/src/power/windows/SDL_syspower.c)
+    endif ()
     set(HAVE_SDL_POWER TRUE)
   endif()
 
   if(SDL_FILESYSTEM)
     set(SDL_FILESYSTEM_WINDOWS 1)
-    file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/windows/*.c)
+    # rbfx - UWP support
+    if (UWP)
+      file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/winrt/*)
+    else ()
+      file(GLOB FILESYSTEM_SOURCES ${SDL2_SOURCE_DIR}/src/filesystem/windows/*.c)
+    endif ()
     set(SOURCE_FILES ${SOURCE_FILES} ${FILESYSTEM_SOURCES})
     set(HAVE_SDL_FILESYSTEM TRUE)
   endif()
@@ -1493,8 +1512,14 @@ endif()
 # endif()
 
 # Urho3D - use 'generated' path suffix for generated config header file (need the suffix as we support both out-of-source and non out-of-source build tree)
-configure_file("${SDL2_SOURCE_DIR}/include/SDL/SDL_config.h.cmake"
-  "${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h")
+# rbfx - UWP support
+if (UWP)
+  configure_file("${SDL2_SOURCE_DIR}/include/SDL/SDL_config_winrt.h"
+    "${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h" COPYONLY)
+else ()
+  configure_file("${SDL2_SOURCE_DIR}/include/SDL/SDL_config.h.cmake"
+    "${SDL2_BINARY_DIR}/include/SDL/generated/SDL_config.h")
+endif ()
 
 # Prepare the flags and remove duplicates
 if(EXTRA_LDFLAGS)
@@ -1635,6 +1660,12 @@ elseif (EMSCRIPTEN)
   target_link_libraries(SDL PUBLIC "-s DISABLE_DEPRECATED_FIND_EVENT_TARGET_BEHAVIOR=0")
 endif ()
 
+if (NOT SDL_RENDER OR SDL_RENDER_DISABLED)
+  target_compile_definitions(SDL PRIVATE -DSDL_RENDER_DISABLED)
+  if (UWP)
+    target_sources(SDL PRIVATE ${SDL2_SOURCE_DIR}/src/render/direct3d11/SDL_render_d3d11.c)
+  endif ()
+endif ()
 if (NOT MINI_URHO)
     # Install headers for building and using the Urho3D library (install dependency for InputEvents.h)
     install (DIRECTORY include/ DESTINATION ${DEST_THIRDPARTY_HEADERS_DIR}/ FILES_MATCHING PATTERN *.h)    # Note: the trailing slash is significant
@@ -1644,3 +1675,5 @@ if (NOT MINI_URHO)
         install(TARGETS SDL EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR_CONFIG})
     endif ()
 endif ()
+
+group_sources()
