@@ -42,6 +42,19 @@
 #include "../../IO/Log.h"
 #include "../../Resource/ResourceCache.h"
 
+#if UWP
+#include <wrl/client.h>
+#include <windows.ui.xaml.media.dxinterop.h>
+using namespace Microsoft::WRL;
+using namespace Windows::Foundation;
+using namespace Windows::Graphics::Display;
+using namespace Windows::UI::Core;
+using namespace Windows::UI::Xaml;
+using namespace Windows::UI::Xaml::Controls;
+using namespace Windows::UI::Xaml::Media;
+using namespace Platform;
+#endif
+
 #include <SDL/SDL.h>
 #include <SDL/SDL_syswm.h>
 
@@ -185,6 +198,7 @@ static void GetD3DPrimitiveType(unsigned elementCount, PrimitiveType type, unsig
     }
 }
 
+#ifndef UWP
 static HWND GetWindowHandle(SDL_Window* window)
 {
     SDL_SysWMinfo sysInfo;
@@ -193,6 +207,7 @@ static HWND GetWindowHandle(SDL_Window* window)
     SDL_GetWindowWMInfo(window, &sysInfo);
     return sysInfo.info.win.window;
 }
+#endif
 
 const Vector2 Graphics::pixelUVOffset(0.0f, 0.0f);
 bool Graphics::gl3Support = false;
@@ -2043,13 +2058,23 @@ bool Graphics::CreateDevice(int width, int height)
     // Device needs only to be created once
     if (!impl_->device_)
     {
+        D3D_FEATURE_LEVEL featureLevels[] =
+        {
+            D3D_FEATURE_LEVEL_11_1,
+            D3D_FEATURE_LEVEL_11_0,
+            D3D_FEATURE_LEVEL_10_1,
+            D3D_FEATURE_LEVEL_10_0,
+            D3D_FEATURE_LEVEL_9_3,
+            D3D_FEATURE_LEVEL_9_2,
+            D3D_FEATURE_LEVEL_9_1
+        };
         HRESULT hr = D3D11CreateDevice(
             nullptr,
             D3D_DRIVER_TYPE_HARDWARE,
             nullptr,
-            0,
-            nullptr,
-            0,
+            D3D11_CREATE_DEVICE_BGRA_SUPPORT| D3D11_CREATE_DEVICE_DEBUG,
+            featureLevels,
+            ARRAYSIZE(featureLevels),
             D3D11_SDK_VERSION,
             &impl_->device_,
             nullptr,
@@ -2081,14 +2106,16 @@ bool Graphics::CreateDevice(int width, int height)
         impl_->swapChain_ = nullptr;
     }
 
-    IDXGIDevice* dxgiDevice = nullptr;
-    impl_->device_->QueryInterface(IID_IDXGIDevice, (void**)&dxgiDevice);
+    IDXGIDevice3* dxgiDevice = nullptr;
+    impl_->device_->QueryInterface(IID_PPV_ARGS(&dxgiDevice));
     IDXGIAdapter* dxgiAdapter = nullptr;
-    dxgiDevice->GetParent(IID_IDXGIAdapter, (void**)&dxgiAdapter);
-    IDXGIFactory* dxgiFactory = nullptr;
-    dxgiAdapter->GetParent(IID_IDXGIFactory, (void**)&dxgiFactory);
+    dxgiDevice->GetParent(IID_PPV_ARGS(&dxgiAdapter));
+    IDXGIFactory4* dxgiFactory = nullptr;
+    dxgiAdapter->GetParent(IID_PPV_ARGS(&dxgiFactory));
 
-    DXGI_RATIONAL refreshRateRational = {};
+#ifndef UWP
+    DXGI_SWAP_CHAIN_FULLSCREEN_DESC swapChainFullScreenDesc{};
+    swapChainFullScreenDesc.Windowed = TRUE;
     IDXGIOutput* dxgiOutput = nullptr;
     UINT numModes = 0;
     dxgiAdapter->EnumOutputs(screenParams_.monitor_, &dxgiOutput);
@@ -2116,33 +2143,39 @@ bool Graphics::CreateDevice(int width, int height)
         }
         if (bestMatchingRateIndex != -1)
         {
-            refreshRateRational.Numerator = modes[bestMatchingRateIndex].RefreshRate.Numerator;
-            refreshRateRational.Denominator = modes[bestMatchingRateIndex].RefreshRate.Denominator;
+            swapChainFullScreenDesc.RefreshRate.Numerator = modes[bestMatchingRateIndex].RefreshRate.Numerator;
+            swapChainFullScreenDesc.RefreshRate.Denominator = modes[bestMatchingRateIndex].RefreshRate.Denominator;
         }
         delete[] modes;
     }
 
     dxgiOutput->Release();
+#endif
 
-    DXGI_SWAP_CHAIN_DESC swapChainDesc;
-    memset(&swapChainDesc, 0, sizeof swapChainDesc);
-    swapChainDesc.BufferCount = 1;
-    swapChainDesc.BufferDesc.Width = (UINT)width;
-    swapChainDesc.BufferDesc.Height = (UINT)height;
-    swapChainDesc.BufferDesc.Format = sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;
+    DXGI_SWAP_CHAIN_DESC1 swapChainDesc{};
+    swapChainDesc.Width = (UINT)width;
+    swapChainDesc.Height = (UINT)height;
+    swapChainDesc.Format = sRGB_ ? DXGI_FORMAT_R8G8B8A8_UNORM_SRGB : DXGI_FORMAT_R8G8B8A8_UNORM;;
     swapChainDesc.BufferUsage = DXGI_USAGE_RENDER_TARGET_OUTPUT;
-    swapChainDesc.BufferDesc.RefreshRate.Numerator = refreshRateRational.Numerator;
-    swapChainDesc.BufferDesc.RefreshRate.Denominator = refreshRateRational.Denominator;
-    swapChainDesc.OutputWindow = GetWindowHandle(window_);
     swapChainDesc.SampleDesc.Count = static_cast<UINT>(screenParams_.multiSample_);
-    swapChainDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(swapChainDesc.BufferDesc.Format, screenParams_.multiSample_);
-    swapChainDesc.Windowed = TRUE;
+    swapChainDesc.SampleDesc.Quality = impl_->GetMultiSampleQuality(swapChainDesc.Format, screenParams_.multiSample_);
     swapChainDesc.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH;
-
-    HRESULT hr = dxgiFactory->CreateSwapChain(impl_->device_, &swapChainDesc, &impl_->swapChain_);
+    swapChainDesc.Scaling = DXGI_SCALING_STRETCH;
+    swapChainDesc.AlphaMode = DXGI_ALPHA_MODE_IGNORE;
+    swapChainDesc.Stereo = false;
+#if UWP
+    swapChainDesc.BufferCount = 2;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_SEQUENTIAL;
+    Windows::UI::Core::CoreWindow^ coreWindow = Windows::UI::Core::CoreWindow::GetForCurrentThread();
+    HRESULT hr = dxgiFactory->CreateSwapChainForCoreWindow(impl_->device_, reinterpret_cast<IUnknown*>(coreWindow), &swapChainDesc, nullptr, &impl_->swapChain_);
+#else
+    swapChainDesc.BufferCount = 1;
+    swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_SEQUENTIAL;
+    HRESULT hr = dxgiFactory->CreateSwapChainForHwnd(impl_->device_, GetWindowHandle(window_), &swapChainDesc, &swapChainFullScreenDesc, nullptr, &impl_->swapChain_);
     // After creating the swap chain, disable automatic Alt-Enter fullscreen/windowed switching
     // (the application will switch manually if it wants to)
     dxgiFactory->MakeWindowAssociation(GetWindowHandle(window_), DXGI_MWA_NO_ALT_ENTER);
+#endif
 
 #ifdef URHO3D_LOGGING
     DXGI_ADAPTER_DESC desc;
@@ -2197,7 +2230,12 @@ bool Graphics::UpdateSwapChain(int width, int height)
         impl_->renderTargetViews_[i] = nullptr;
     impl_->renderTargetsDirty_ = true;
 
-    impl_->swapChain_->ResizeBuffers(1, (UINT)width, (UINT)height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
+#if UWP
+    int bufferCount = 2;
+#else
+    int bufferCount = 1;
+#endif
+    impl_->swapChain_->ResizeBuffers(bufferCount, (UINT)width, (UINT)height, DXGI_FORMAT_UNKNOWN, DXGI_SWAP_CHAIN_FLAG_ALLOW_MODE_SWITCH);
 
     // Create default rendertarget view representing the backbuffer
     ID3D11Texture2D* backbufferTexture;

@@ -213,4 +213,7 @@ typedef unsigned int uintptr_t;
 #define SDL_ASSEMBLY_ROUTINES	1
 #endif
 
+// rbfx: otherwise we get a build error
+#define SDL_SENSOR_DUMMY 1
+
 #endif /* SDL_config_winrt_h_ */

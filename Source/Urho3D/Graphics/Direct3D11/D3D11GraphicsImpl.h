@@ -28,8 +28,8 @@
 #include "../../Graphics/VertexDeclaration.h"
 #include "../../Math/Color.h"
 
-#include <d3d11.h>
-#include <dxgi.h>
+#include <d3d11_4.h>
+#include <dxgi1_4.h>
 
 namespace Urho3D
 {
@@ -78,7 +78,7 @@ private:
     /// Immediate device context.
     ID3D11DeviceContext* deviceContext_;
     /// Swap chain.
-    IDXGISwapChain* swapChain_;
+    IDXGISwapChain1* swapChain_;
     /// Default (backbuffer) rendertarget view.
     ID3D11RenderTargetView* defaultRenderTargetView_;
     /// Default depth-stencil texture.
