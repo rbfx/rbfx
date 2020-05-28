@@ -105,6 +105,7 @@ protected:
     void OnScreenMode(VariantMap& args);
     void OnInputEnd(VariantMap& args);
     void OnRenderEnd();
+    void OnMouseVisibilityChanged(StringHash, VariantMap& args);
 };
 
 /// Convert Color to ImVec4.
