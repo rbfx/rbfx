@@ -103,16 +103,12 @@ void ModelPreview::RenderPreview()
     view_.SetSize({0, 0, static_cast<int>(size * dpi), static_cast<int>(size * dpi)});
     ui::ImageItem(view_.GetTexture(), ImVec2(size, size));
     bool wasActive = mouseGrabbed_;
-    mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT) && ui::IsMouseDragging(MOUSEB_RIGHT);
+    mouseGrabbed_ = ui::ItemMouseActivation(MOUSEB_RIGHT, ImGuiItemMouseActivation_Dragging);
     if (wasActive != mouseGrabbed_)
-    {
         input->SetMouseVisible(!mouseGrabbed_);
-        ui::SetMouseCursor(ImGuiMouseCursor_None);  // Hint for SceneTab that mouse was hidden on this frame.
-    }
 
     if (mouseGrabbed_)
     {
-        ui::SetMouseCursor(ImGuiMouseCursor_None);
         Node* node = view_.GetCamera()->GetNode();
         if (input->GetKeyPress(KEY_ESCAPE))
         {

@@ -75,6 +75,7 @@ SystemUI::SystemUI(Urho3D::Context* context, ImGuiConfigFlags flags)
     SubscribeToEvent(E_ENDFRAME, [this](StringHash, VariantMap&) { referencedTextures_.clear(); });
     SubscribeToEvent(E_DEVICELOST, [this](StringHash, VariantMap&) { PlatformShutdown(); });
     SubscribeToEvent(E_DEVICERESET, [this](StringHash, VariantMap&) { PlatformInitialize(); });
+    SubscribeToEvent(E_MOUSEVISIBLECHANGED, &SystemUI::OnMouseVisibilityChanged);
 }
 
 SystemUI::~SystemUI()
@@ -175,6 +176,7 @@ void SystemUI::OnInputEnd(VariantMap& args)
 
     ImGuiIO& io = ui::GetIO();
     Graphics* graphics = GetSubsystem<Graphics>();
+    Input* input = GetSubsystem<Input>();
     referencedTextures_.push_back(fontTexture_);
     if (graphics && graphics->IsInitialized())
     {
@@ -187,7 +189,12 @@ void SystemUI::OnInputEnd(VariantMap& args)
 #endif
         ImGui_ImplSDL2_NewFrame(graphics->GetWindow());
     }
+
     ui::NewFrame();
+
+    if (!input->IsMouseVisible())
+        ui::SetMouseCursor(ImGuiMouseCursor_None);
+
     ImGuizmo::BeginFrame();
 }
 
@@ -233,6 +240,12 @@ void SystemUI::OnRenderEnd()
         graphicsImpl->MarkRenderTargetsDirty();
 #endif
     }
+}
+
+void SystemUI::OnMouseVisibilityChanged(StringHash, VariantMap& args)
+{
+    using namespace MouseVisibleChanged;
+    ui::SetMouseCursor(args[P_VISIBLE].GetBool() ? ImGuiMouseCursor_Arrow : ImGuiMouseCursor_None);
 }
 
 ImFont* SystemUI::AddFont(const ea::string& fontPath, const ImWchar* ranges, float size, bool merge)
