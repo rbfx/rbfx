@@ -93,7 +93,7 @@ ea::string specifiedExecutableFile;
 
 int DoSystemCommand(const ea::string& commandLine, bool redirectToLog, Context* context)
 {
-#if defined(TVOS) || defined(IOS)
+#if defined(TVOS) || defined(IOS) || defined(UWP)
     return -1;
 #else
 #if !defined(__EMSCRIPTEN__) && !defined(MINI_URHO)
@@ -164,7 +164,7 @@ URHO3D_FLAGSET(SystemRunFlag, SystemRunFlags);
 
 int DoSystemRun(const ea::string& fileName, const ea::vector<ea::string>& arguments, SystemRunFlags flags, ea::string& output)
 {
-#if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28)
+#if defined(TVOS) || defined(IOS) || (defined(__ANDROID__) && __ANDROID_API__ < 28) || defined(UWP)
     return -1;
 #else
     ea::string fixedFileName = GetNativePath(fileName);
@@ -583,8 +583,9 @@ bool FileSystem::SystemOpen(const ea::string& fileName, const ea::string& mode)
                 return false;
             }
         }
-
-#ifdef _WIN32
+#ifdef UWP
+        bool success = false;
+#elif defined(_WIN32)
         bool success = (size_t)ShellExecuteW(nullptr, !mode.empty() ? MultiByteToWide(mode).c_str() : nullptr,
             GetWideNativePath(fileName).c_str(), nullptr, nullptr, SW_SHOW) > 32;
 #else
@@ -650,7 +651,9 @@ bool FileSystem::Rename(const ea::string& srcFileName, const ea::string& destFil
         return false;
     }
 
-#ifdef _WIN32
+#ifdef UWP
+    return false;
+#elif defined(_WIN32)
     return MoveFileW(GetWideNativePath(srcFileName).c_str(), GetWideNativePath(destFileName).c_str()) != 0;
 #else
     return rename(GetNativePath(srcFileName).c_str(), GetNativePath(destFileName).c_str()) == 0;
@@ -805,7 +808,7 @@ bool FileSystem::DirExists(const ea::string& pathName) const
     }
 #endif
 
-#ifdef _WIN32
+#if defined(_WIN32) && !defined(UWP)
     DWORD attributes = GetFileAttributesW(MultiByteToWide(fixedName).c_str());
     if (attributes == INVALID_FILE_ATTRIBUTES || !(attributes & FILE_ATTRIBUTE_DIRECTORY))
         return false;
@@ -840,7 +843,9 @@ void FileSystem::ScanDirAdd(ea::vector<ea::string>& result, const ea::string& pa
 
 ea::string FileSystem::GetProgramDir() const
 {
-#if defined(__ANDROID__)
+#ifdef UWP
+    return AddTrailingSlash(WideToMultiByte(Windows::ApplicationModel::Package::Current->InstalledLocation->Path->Data()));
+#elif defined(__ANDROID__)
     // This is an internal directory specifier pointing to the assets in the .apk
     // Files from this directory will be opened using special handling
     return APK;
@@ -892,7 +897,9 @@ ea::string FileSystem::GetInterpreterFileName() const
 
 ea::string FileSystem::GetUserDocumentsDir() const
 {
-#if defined(__ANDROID__)
+#if defined(UWP)
+    return AddTrailingSlash(WideToMultiByte(Windows::Storage::ApplicationData::Current->LocalFolder->Path->Data()));
+#elif defined(__ANDROID__)
     return AddTrailingSlash(SDL_Android_GetFilesDir());
 #elif defined(IOS) || defined(TVOS)
     return AddTrailingSlash(SDL_IOS_GetDocumentsDir());

@@ -27,6 +27,10 @@ else ()
 	ucm_add_flags("-w")
 endif ()
 
+if (UWP)
+	add_definitions (-DUWP=1)
+endif ()
+
 add_subdirectory(EASTL)
 add_subdirectory(LZ4)
 add_subdirectory(PugiXml)
@@ -36,6 +40,8 @@ add_subdirectory(IconFontCppHeaders)
 add_subdirectory(CLI11)
 add_subdirectory(fmt)
 add_subdirectory(spdlog)
+set (SDL_CMAKE_DEBUG_POSTFIX "" CACHE STRING "" FORCE)
+set (SDL_RENDER OFF CACHE BOOL "" FORCE)
 add_subdirectory(SDL)
 add_subdirectory(ETCPACK)
 
@@ -143,7 +149,7 @@ if (URHO3D_CSHARP AND NOT CMAKE_CROSSCOMPILING)
     add_subdirectory(swig)
 endif ()
 
-if (WIN32 OR APPLE)
+if ((WIN32 OR APPLE) AND NOT UWP)
 	add_subdirectory (LibCpuId)
 endif ()
 

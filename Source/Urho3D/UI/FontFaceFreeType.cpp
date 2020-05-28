@@ -34,9 +34,17 @@
 
 #include <cassert>
 
+#if UWP
+#define generic generic_
+#endif
+
 #include <ft2build.h>
 #include FT_FREETYPE_H
 #include FT_TRUETYPE_TABLES_H
+
+#if UWP
+#undef generic
+#endif
 
 #include "../DebugNew.h"
 
