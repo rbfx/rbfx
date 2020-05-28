@@ -77,7 +77,38 @@ unsigned NamedPipe::Seek(unsigned position)
     return 0;
 }
 
-#ifdef _WIN32
+#ifdef UWP
+
+bool NamedPipe::Open(const ea::string& pipeName, bool isServer)
+{
+    return false;
+}
+
+unsigned NamedPipe::Read(void* dest, unsigned size)
+{
+    return 0;
+}
+
+unsigned NamedPipe::Write(const void* data, unsigned size)
+{
+    return 0;
+}
+
+void NamedPipe::Close()
+{
+}
+
+bool NamedPipe::IsOpen() const
+{
+    return false;
+}
+
+bool NamedPipe::IsEof() const
+{
+    return true;
+}
+
+#elif defined(_WIN32)
 
 static const char* pipePath = "\\\\.\\pipe\\";
 
