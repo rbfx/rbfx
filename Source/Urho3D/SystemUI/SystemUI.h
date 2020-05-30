@@ -123,6 +123,12 @@ inline IntRect ToIntRect(const ImRect& rect) { return {ToIntVector2(rect.Min), T
 
 }
 
+enum ImGuiItemMouseActivation
+{
+    ImGuiItemMouseActivation_Click,
+    ImGuiItemMouseActivation_Dragging,
+};
+
 namespace ImGui
 {
 
@@ -144,7 +150,7 @@ URHO3D_API bool IsKeyPressed(Urho3D::Key key, bool repeat = true);
 URHO3D_API bool IsKeyReleased(Urho3D::Key key);
 URHO3D_API int GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate);
 /// Activate last item if specified mouse button is pressed and held over it, deactivate when released.
-URHO3D_API bool ItemMouseActivation(Urho3D::MouseButton button);
+URHO3D_API bool ItemMouseActivation(Urho3D::MouseButton button, unsigned flags = ImGuiItemMouseActivation_Click);
 
 }
 
