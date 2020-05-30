@@ -209,6 +209,8 @@ protected:
     void PasteIntuitive();
     ///
     void RenderDebugInfo();
+    /// Editor camera rotation guide at the top-right corner.
+    void RenderViewManipulator(ImRect rect);
 
     /// Rectangle dimensions that are rendered by this view.
     IntRect rect_;
@@ -258,6 +260,8 @@ protected:
     int performRangeSelectionFrame_ = -1;
     /// We have to use our own because drawlist splitter may be used by other widgets.
     ImDrawListSplitter viewportSplitter_{};
+    /// Distance from the camera that manipulator will rotate around.
+    float rotateAroundDistance_ = 1;
 };
 
 };

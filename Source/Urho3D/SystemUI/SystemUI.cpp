@@ -504,14 +504,21 @@ int ui::GetKeyPressedAmount(Urho3D::Key key, float repeat_delay, float rate)
     return GetKeyPressedAmount(SDL_GetScancodeFromKey(key), repeat_delay, rate);
 }
 
-bool ui::ItemMouseActivation(Urho3D::MouseButton button)
+bool ui::ItemMouseActivation(Urho3D::MouseButton button, unsigned flags)
 {
     ImGuiContext& g = *GImGui;
     ImGuiWindow* window = g.CurrentWindow;
     bool hovered = ui::IsItemHovered();
     if (hovered)
         g.HoveredId = window->DC.LastItemId;
-    if (!ui::IsItemActive() && hovered && ui::IsMouseClicked(button))
+
+    bool activated = !ui::IsItemActive() && hovered;
+    if (flags == ImGuiItemMouseActivation_Dragging)
+        activated &= ui::IsMouseDragging(button);
+    else
+        activated &= ui::IsMouseClicked(button);
+
+    if (activated)
         ui::SetActiveID(window->DC.LastItemId, window);
     else if (ui::IsItemActive() && !ui::IsMouseDown(button))
         ui::ClearActiveID();
