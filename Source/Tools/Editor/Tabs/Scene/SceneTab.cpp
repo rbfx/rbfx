@@ -30,6 +30,8 @@
 #include <Urho3D/Graphics/Material.h>
 #include <Urho3D/Graphics/Octree.h>
 #include <Urho3D/Graphics/RenderPath.h>
+#include <Urho3D/Graphics/StaticModel.h>
+#include <Urho3D/Graphics/AnimatedModel.h>
 #include <Urho3D/Graphics/Terrain.h>
 #include <Urho3D/IO/ArchiveSerialization.h>
 #include <Urho3D/IO/FileSystem.h>
@@ -37,6 +39,8 @@
 #include <Urho3D/Resource/ResourceCache.h>
 #include <Urho3D/Scene/SceneEvents.h>
 #include <Urho3D/Scene/SceneManager.h>
+#include <Urho3D/Scene/ObjectAnimation.h>
+#include <Urho3D/Scene/ValueAnimation.h>
 #include <Urho3D/SystemUI/DebugHud.h>
 
 #include <IconFontCppHeaders/IconsFontAwesome5.h>
@@ -59,6 +63,7 @@ namespace Urho3D
 {
 
 static const IntVector2 cameraPreviewSize{320, 200};
+static Matrix4 inversionMatrix(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, -1, 0, 0, 0, 0, 1);
 
 SceneTab::SceneTab(Context* context)
     : BaseClassName(context)
@@ -196,35 +201,7 @@ bool SceneTab::RenderWindowContent()
     ImRect viewportRect{ui::GetItemRectMin(), ui::GetItemRectMax()};
     viewportSplitter_.Merge(window->DrawList);
 
-    // Render editor camera rotation guide
-    if (!GetScene()->GetComponent<EditorSceneSettings>()->GetCamera2D())
-    {
-        const ImVec2 size{128, 128};
-        const ImVec2 pos{rect.Max.x - 128, rect.Min.y};
-        ui::SetCursorScreenPos(pos);
-        ui::InvisibleButton("##view-manipulator", size);
-
-        Camera* camera = GetCamera();
-        Node* cameraNode = camera->GetNode();
-        // TODO: Calculate length of selected objects in front of the camera?
-        float length = 1;
-        // if (!selectedNodes_.empty())
-        // {
-        //     Vector3 posSum;
-        //     for (Node* node : selectedNodes_)
-        //         posSum += node->GetWorldPosition();
-        //     length = ((posSum / selectedNodes_.size()) - cameraNode->GetWorldPosition()).Length();
-        // }
-        Matrix4 view = camera->GetView().ToMatrix4().Transpose();
-        ImGuizmo::ViewManipulate(&view.m00_, length, pos, size, 0);
-        cameraNode->SetRotation(view.Transpose().Inverse().Rotation());
-        // TODO: We should be setting entire world transform, however then manipulator rotates around the point behind camera, that needs fixed first. For now manipulator is just a rotation guide.
-        // cameraNode->SetWorldTransform(Matrix3x4(view.Transpose().Inverse()));
-
-        // Eat click event so selection does not change.
-        if (ui::IsItemClicked(MOUSEB_LEFT))
-            isClickedLeft_ = isClickedRight_ = isViewportActive_ = false;
-    }
+    RenderViewManipulator(rect);
 
     if (wasActive != isViewportActive_)
         GetSubsystem<Input>()->SetMouseVisible(!isViewportActive_);
@@ -1545,6 +1522,80 @@ void SceneTab::RenderDebugInfo()
         if (component)
             renderDebugInfo(component);
     }
+}
+
+void SceneTab::RenderViewManipulator(ImRect rect)
+{
+    if (GetScene()->GetComponent<EditorSceneSettings>()->GetCamera2D())
+        return;
+
+    const ImVec2 size{128, 128};
+    const ImVec2 pos{rect.Max.x - 128, rect.Min.y};
+    ui::SetCursorScreenPos(pos);
+    ui::InvisibleButton("##view-manipulator", size);
+    if (ui::ItemMouseActivation(MOUSEB_LEFT, ImGuiItemMouseActivation_Dragging))
+        ui::SetMouseCursor(ImGuiMouseCursor_None);
+    else if (ui::WasItemActive())
+        ui::SetMouseCursor(ImGuiMouseCursor_None);
+
+    Camera* camera = GetCamera();
+    Node* cameraNode = camera->GetNode();
+    if (ui::IsItemClicked(MOUSEB_LEFT))
+    {
+        rotateAroundDistance_ = 1;
+        if (!selectedNodes_.empty())
+        {
+            Vector3 center;
+            for (Node* node : selectedNodes_)
+            {
+                StaticModel* model = node->GetComponent<StaticModel>();
+                if (model == nullptr)
+                    model = node->GetComponent<AnimatedModel>();
+                if (model)
+                    center += model->GetWorldBoundingBox().Center();
+                else
+                    center += node->GetWorldPosition();
+            }
+            center /= selectedNodes_.size();
+
+            // Smooth look-at.
+            Quaternion newRotation;
+            Vector3 lookDir = center - cameraNode->GetWorldPosition();
+            if (!lookDir.Equals(Vector3::ZERO) && newRotation.FromLookRotation(lookDir, Vector3::UP))
+            {
+                // TODO: Ease-in / ease-out may look good here, but ValueAnimation does not support them.
+                SharedPtr<ValueAnimation> rotationAnimation = context_->CreateObject<ValueAnimation>();
+                rotationAnimation->SetKeyFrame(0.0f, cameraNode->GetRotation());
+                rotationAnimation->SetKeyFrame(0.1f, newRotation);
+                cameraNode->SetAttributeAnimation("Rotation", rotationAnimation, WM_ONCE, 1);
+                rotateAroundDistance_ = Max((center - cameraNode->GetWorldPosition()).Length(), 1);
+                cameraNode->SetEnabled(true);
+            }
+        }
+    }
+
+    // TODO: Add a limit for vertical rotation angles. Going too high or too low makes camera go crazy.
+    // https://github.com/CedricGuillemet/ImGuizmo/issues/114
+    Matrix4 view = camera->GetView().ToMatrix4();
+    view = (inversionMatrix * view * inversionMatrix).Transpose();
+    ImGuizmo::ViewManipulate(&view.m00_, rotateAroundDistance_, pos, size, 0);
+    view = inversionMatrix * view.Transpose() * inversionMatrix;
+
+    if (cameraNode->GetAttributeAnimation("Rotation") == nullptr)
+        cameraNode->SetWorldTransform(Matrix3x4(view.Inverse()));
+    else
+    {
+        // Editor scene is manually updated therefore we must fire this event ourselves.
+        using namespace AttributeAnimationUpdate;
+        VariantMap& args = GetEventDataMap();
+        args[P_TIMESTEP] = GetSubsystem<Time>()->GetTimeStep();
+        args[P_SCENE] = GetScene();
+        cameraNode->OnEvent(GetScene(), E_ATTRIBUTEANIMATIONUPDATE, args);
+    }
+
+    // Eat click event so selection does not change.
+    if (ui::IsItemClicked(MOUSEB_LEFT))
+        isClickedLeft_ = isClickedRight_ = isViewportActive_ = false;
 }
 
 void SceneTab::Close()
