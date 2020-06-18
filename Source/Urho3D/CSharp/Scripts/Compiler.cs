@@ -160,8 +160,8 @@ namespace Urho3DNet
                     }
                 }
             }
-#endif
             return null;
+#endif
         }
     }
 }

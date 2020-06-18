@@ -1207,7 +1207,7 @@
     get { return GetTags(); }
     set { SetTags(value); }
   }
-  public $typemap(cstype, int) DragButtonCombo {
+  public $typemap(cstype, Urho3D::MouseButtonFlags) DragButtonCombo {
     get { return GetDragButtonCombo(); }
   }
   public $typemap(cstype, unsigned int) DragButtonCount {
