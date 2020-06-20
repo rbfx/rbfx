@@ -34,27 +34,18 @@ void SetProfilerThreadName(const char* name);
 
 }
 
+#define URHO3D_PROFILE_FUNCTION()                   ZoneScopedN(__FUNCTION__)
+#define URHO3D_PROFILE_C(name, color)               ZoneScopedNC(name, color)
+#define URHO3D_PROFILE(name)                        ZoneScopedN(name)
+#define URHO3D_PROFILE_THREAD(name)                 Urho3D::SetProfilerThreadName(name)
+#define URHO3D_PROFILE_VALUE(name, value)           TracyPlot(name, value)
+#define URHO3D_PROFILE_FRAME()                      FrameMark
+#define URHO3D_PROFILE_MESSAGE(txt, len)            TracyMessage(txt, len)
+#define URHO3D_PROFILE_ZONENAME(txt, len)           ZoneName(txt, len)
 #if URHO3D_PROFILING
-#   define URHO3D_PROFILE_FUNCTION()              ZoneScopedN(__FUNCTION__)
-#   define URHO3D_PROFILE_C(name, color)          ZoneScopedNC(name, color)
-#   define URHO3D_PROFILE(name)                   ZoneScopedN(name)
-#   define URHO3D_PROFILE_THREAD(name)            SetProfilerThreadName(name)
-#   define URHO3D_PROFILE_VALUE(name, value)      TracyPlot(name, value)
-#   define URHO3D_PROFILE_FRAME()                 FrameMark
-#   define URHO3D_PROFILE_MESSAGE(txt, len)       TracyMessage(txt, len)
-#   define URHO3D_PROFILE_ZONENAME(txt, len)      ZoneName(txt, len)
-#   define URHO3D_PROFILE_SRC_LOCATION(title)     [] () -> const tracy::SourceLocationData* { static const tracy::SourceLocationData srcloc { nullptr, title, __FILE__, __LINE__, 0 }; return &srcloc; }()
-#   define URHO3D_PROFILE_MUTEX(name)             ProfiledMutex name{URHO3D_PROFILE_SRC_LOCATION_DATA(#name)}
+#   define URHO3D_PROFILE_SRC_LOCATION(title)       [] () -> const tracy::SourceLocationData* { static const tracy::SourceLocationData srcloc { nullptr, title, __FILE__, __LINE__, 0 }; return &srcloc; }()
+#   define URHO3D_PROFILE_MUTEX(name)               ProfiledMutex name{URHO3D_PROFILE_SRC_LOCATION_DATA(#name)}
 #else
-#   define URHO3D_PROFILE_FUNCTION()
-#   define URHO3D_PROFILE_C(...)
-#   define URHO3D_PROFILE(...)
-#   define URHO3D_PROFILE_THREAD(...)
-#   define URHO3D_PROFILE_VALUE(...)
-#   define URHO3D_PROFILE_FRAME()
-#   define URHO3D_PROFILE_MESSAGE(txt, len)
-#   define URHO3D_PROFILE_ZONENAME(txt, len)
 #   define URHO3D_PROFILE_SRC_LOCATION_DATA(title)
-#   define URHO3D_PROFILE_MUTEX(name)             Mutex name{}
+#   define URHO3D_PROFILE_MUTEX(name)               Mutex name{}
 #endif
-
