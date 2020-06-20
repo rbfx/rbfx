@@ -112,8 +112,9 @@ if (NOT MINI_URHO)
         if (NOT TARGET GLEW AND URHO3D_TOOLS)
             add_subdirectory (GLEW)
         endif ()
-        add_subdirectory (tracy)
     endif ()
+    # Tracy's headers are included even in non-profiled builds in order to probvide stub profiler macros.
+    add_subdirectory (tracy)
 
     if (URHO3D_TOOLS)
         add_subdirectory(Assimp)
