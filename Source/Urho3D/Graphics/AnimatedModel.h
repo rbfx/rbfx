@@ -47,6 +47,9 @@ public:
     /// Register object factory. Drawable must be registered first.
     static void RegisterObject(Context* context);
 
+    /// Serialize from/to archive. Return true if successful.
+    bool Serialize(Archive& archive) override;
+
     /// Load from binary data. Return true if successful.
     bool Load(Deserializer& source) override;
     /// Load from XML data. Return true if successful.
