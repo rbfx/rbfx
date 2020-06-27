@@ -119,7 +119,7 @@ struct RaytracerGeometry
     /// Raytracer geometry ID, aka index of this structure in the array of geometries.
     unsigned raytracerGeometryId_{};
     /// Internal geometry pointer.
-    RTCGeometry embreeGeometry_{};
+    embree3::RTCGeometry embreeGeometry_{};
     /// Material.
     RaytracingGeometryMaterial material_;
 };
@@ -159,7 +159,7 @@ public:
     static const unsigned AllGeometry = 0xffffffff;
 
     /// Construct.
-    RaytracerScene(Context* context, RTCDevice embreeDevice, RTCScene raytracerScene,
+    RaytracerScene(Context* context, embree3::RTCDevice embreeDevice, embree3::RTCScene raytracerScene,
         ea::vector<RaytracerGeometry> geometries, const RaytracingBackground& background, float maxDistance)
         : context_(context)
         , device_(embreeDevice)
@@ -175,9 +175,9 @@ public:
     /// Return context.
     Context* GetContext() const { return context_; }
     /// Return Embree device.
-    RTCDevice GetEmbreeDevice() const { return device_; }
+    embree3::RTCDevice GetEmbreeDevice() const { return device_; }
     /// Return Embree scene.
-    RTCScene GetEmbreeScene() const { return scene_; }
+    embree3::RTCScene GetEmbreeScene() const { return scene_; }
     /// Return geometries.
     const ea::vector<RaytracerGeometry>& GetGeometries() const { return geometries_; }
     /// Return background.
@@ -189,9 +189,9 @@ private:
     /// Context.
     Context* context_{};
     /// Embree device.
-    RTCDevice device_{};
+    embree3::RTCDevice device_{};
     /// Embree scene.
-    RTCScene scene_{};
+    embree3::RTCScene scene_{};
     /// Geometries.
     ea::vector<RaytracerGeometry> geometries_;
     /// Background.
