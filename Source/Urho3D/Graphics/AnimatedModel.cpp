@@ -127,6 +127,15 @@ void AnimatedModel::RegisterObject(Context* context)
         AM_DEFAULT | AM_NOEDIT);
 }
 
+bool AnimatedModel::Serialize(Archive& archive)
+{
+    loading_ = true;
+    bool success = Component::Serialize(archive);
+    loading_ = false;
+
+    return success;
+}
+
 bool AnimatedModel::Load(Deserializer& source)
 {
     loading_ = true;
