@@ -60,6 +60,7 @@ if (NOT MINI_URHO)
         set (EMBREE_ISA_AVX2 OFF CACHE BOOL "")
         set (EMBREE_ISA_AVX512KNL OFF CACHE BOOL "")
         set (EMBREE_ISA_AVX512SKX OFF CACHE BOOL "")
+        set (EMBREE_API_NAMESPACE "embree3" CACHE STRING "")
         add_subdirectory(embree)
     endif ()
 
