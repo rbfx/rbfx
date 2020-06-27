@@ -20,11 +20,6 @@
 // THE SOFTWARE.
 //
 
-// Embree includes must be first
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_ray.h>
-#define _SSIZE_T_DEFINED
-
 #include "../Graphics/Model.h"
 #include "../Graphics/ModelView.h"
 #include "../Graphics/StaticModel.h"
@@ -34,7 +29,12 @@
 #include "../Glow/Helpers.h"
 #include "../IO/Log.h"
 
+#include <embree3/rtcore.h>
+#include <embree3/rtcore_ray.h>
+
 #include <future>
+
+using namespace embree3;
 
 namespace Urho3D
 {

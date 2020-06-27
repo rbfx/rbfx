@@ -20,11 +20,6 @@
 // THE SOFTWARE.
 //
 
-// Embree includes must be first
-#include <embree3/rtcore.h>
-#include <embree3/rtcore_ray.h>
-#define _SSIZE_T_DEFINED
-
 #include "../Glow/Helpers.h"
 #include "../Glow/RaytracerScene.h"
 #include "../Glow/LightTracer.h"
@@ -32,7 +27,12 @@
 #include "../IO/Log.h"
 #include "../Math/TetrahedralMesh.h"
 
+#include <embree3/rtcore.h>
+#include <embree3/rtcore_ray.h>
+
 #include <future>
+
+using namespace embree3;
 
 namespace Urho3D
 {
