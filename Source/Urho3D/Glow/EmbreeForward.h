@@ -24,7 +24,12 @@
 
 #pragma once
 
+namespace embree3
+{
+
 // Forward declarations of opaque Embree types.
 typedef struct RTCDeviceTy* RTCDevice;
 typedef struct RTCSceneTy* RTCScene;
 typedef struct RTCGeometryTy* RTCGeometry;
+
+}
