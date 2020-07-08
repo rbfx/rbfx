@@ -53,6 +53,8 @@ public:
     bool SetNumVertexBuffers(unsigned num);
     /// Set a vertex buffer by index.
     bool SetVertexBuffer(unsigned index, VertexBuffer* buffer);
+    /// Set all vertex buffers at once.
+    void SetVertexBuffers(const ea::vector<SharedPtr<VertexBuffer>>& vertexBuffers);
     /// Set the index buffer.
     void SetIndexBuffer(IndexBuffer* buffer);
     /// Set the draw range.
