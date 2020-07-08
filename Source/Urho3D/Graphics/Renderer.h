@@ -173,6 +173,14 @@ enum DeferredLightPSVariation
     MAX_DEFERRED_LIGHT_PS_VARIATIONS
 };
 
+/// Skinning mode.
+enum SkinningMode
+{
+    SKINNING_AUTO,
+    SKINNING_HARDWARE,
+    SKINNING_SOFTWARE,
+};
+
 /// High-level rendering subsystem. Manages drawing of 3D views.
 class URHO3D_API Renderer : public Object
 {
@@ -252,6 +260,10 @@ public:
     void SetMobileNormalOffsetMul(float mul);
     /// Set whether to enable spherical harmonics.
     void SetSphericalHarmonics(bool enable);
+    /// Set skinning mode.
+    void SetSkinningMode(SkinningMode mode);
+    /// Set number of bones used for software skinning.
+    void SetNumSoftwareSkinningBones(unsigned numBones);
     /// Force reload of shaders.
     void ReloadShaders();
 
@@ -347,6 +359,12 @@ public:
 
     /// Return whether to enable spherical harmonics.
     float GetSphericalHarmonics() const { return sphericalHarmonics_; }
+
+    /// Return whether hardware skinning is used.
+    bool GetUseHardwareSkinning() const { return (skinningMode_ == SKINNING_AUTO && hardwareSkinningSupported_) || skinningMode_ == SKINNING_HARDWARE; }
+
+    /// Return number of bones used for software skinning.
+    unsigned GetNumSoftwareSkinningBones() const { return numSoftwareSkinningBones_; }
 
     /// Return number of views rendered.
     unsigned GetNumViews() const { return views_.size(); }
@@ -617,6 +635,12 @@ private:
     bool initialized_{};
     /// Flag for views needing reset.
     bool resetViews_{};
+    /// Whether hardware skinning is supported.
+    bool hardwareSkinningSupported_{ true };
+    /// Skinning mode.
+    SkinningMode skinningMode_{};
+    /// Number of bones used for software skinning.
+    unsigned numSoftwareSkinningBones_{ 4 };
 };
 
 }
