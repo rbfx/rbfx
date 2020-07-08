@@ -2469,7 +2469,7 @@ void Graphics::CheckFeatureSupport()
     sRGBWriteSupport_ = impl_->CheckFormatSupport(D3DFMT_X8R8G8B8, D3DUSAGE_QUERY_SRGBWRITE, D3DRTYPE_TEXTURE);
 
     maxVertexShaderUniforms_ = impl_->deviceCaps_.MaxVertexShaderConst;
-    maxPixelShaderUniforms_ = impl_->deviceCaps_.MaxPixelShaderConst;
+    maxPixelShaderUniforms_ = impl_->deviceCaps_.MaxVertexShaderConst; // there's no MaxPixelShaderConst
 }
 
 void Graphics::ResetDevice()
