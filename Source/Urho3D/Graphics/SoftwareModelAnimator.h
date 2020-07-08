@@ -76,6 +76,9 @@ public:
     /// Return animated geometries.
     const ea::vector<ea::vector<SharedPtr<Geometry>>>& GetGeometries() const { return geometries_; }
 
+    /// Return all cloned vertex buffers.
+    const ea::vector<SharedPtr<VertexBuffer> >& GetVertexBuffers() const { return vertexBuffers_; }
+
 private:
     /// Return morph mask.
     VertexMaskFlags GetMorphElementMask() const;

@@ -649,6 +649,12 @@ void AnimatedModel::ResetMorphWeights()
     MarkNetworkUpdate();
 }
 
+const ea::vector<SharedPtr<VertexBuffer> >& AnimatedModel::GetMorphVertexBuffers() const
+{
+    static const ea::vector<SharedPtr<VertexBuffer>> empty;
+    return modelAnimator_ ? modelAnimator_->GetVertexBuffers() : empty;
+}
+
 float AnimatedModel::GetMorphWeight(unsigned index) const
 {
     return index < morphs_.size() ? morphs_[index].weight_ : 0.0f;
