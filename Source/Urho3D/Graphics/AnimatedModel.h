@@ -130,6 +130,9 @@ public:
     /// Return all vertex morphs.
     const ea::vector<ModelMorph>& GetMorphs() const { return morphs_; }
 
+    /// Return all morph vertex buffers.
+    const ea::vector<SharedPtr<VertexBuffer> >& GetMorphVertexBuffers() const;
+
     /// Return number of vertex morphs.
     unsigned GetNumMorphs() const { return morphs_.size(); }
 
