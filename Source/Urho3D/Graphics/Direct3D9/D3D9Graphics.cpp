@@ -2467,6 +2467,9 @@ void Graphics::CheckFeatureSupport()
     /// \todo Should be checked for each texture format separately
     sRGBSupport_ = impl_->CheckFormatSupport(D3DFMT_X8R8G8B8, D3DUSAGE_QUERY_SRGBREAD, D3DRTYPE_TEXTURE);
     sRGBWriteSupport_ = impl_->CheckFormatSupport(D3DFMT_X8R8G8B8, D3DUSAGE_QUERY_SRGBWRITE, D3DRTYPE_TEXTURE);
+
+    maxVertexShaderUniforms_ = impl_->deviceCaps_.MaxVertexShaderConst;
+    maxPixelShaderUniforms_ = impl_->deviceCaps_.MaxPixelShaderConst;
 }
 
 void Graphics::ResetDevice()
