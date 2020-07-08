@@ -440,6 +440,12 @@ public:
     /// Return whether sRGB conversion on rendertarget writing is supported.
     bool GetSRGBWriteSupport() const { return sRGBWriteSupport_; }
 
+    /// Return max vertex shader uniforms support.
+    unsigned GetMaxVertexShaderUniforms() const { return maxVertexShaderUniforms_; }
+
+    /// Return max pixel shader uniforms support.
+    unsigned GetMaxPixelShaderUniforms() const { return maxPixelShaderUniforms_; }
+
     /// Return supported fullscreen resolutions (third component is refreshRate). Will be empty if listing the resolutions is not supported on the platform (e.g. Web).
     ea::vector<IntVector3> GetResolutions(int monitor) const;
     /// Return index of the best resolution for requested width, height and refresh rate.
@@ -769,6 +775,10 @@ private:
     bool sRGBSupport_{};
     /// sRGB conversion on write support flag.
     bool sRGBWriteSupport_{};
+    /// Max number of vertex shader uniforms.
+    unsigned maxVertexShaderUniforms_{};
+    /// Max number of pixel shader uniforms.
+    unsigned maxPixelShaderUniforms_{};
     /// Number of primitives this frame.
     unsigned numPrimitives_{};
     /// Number of batches this frame.

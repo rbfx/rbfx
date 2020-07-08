@@ -31,6 +31,7 @@ namespace Urho3D
 
 class Animation;
 class AnimationState;
+class SoftwareModelAnimator;
 
 /// Animated model component.
 class URHO3D_API AnimatedModel : public StaticModel
@@ -129,9 +130,6 @@ public:
     /// Return all vertex morphs.
     const ea::vector<ModelMorph>& GetMorphs() const { return morphs_; }
 
-    /// Return all morph vertex buffers.
-    const ea::vector<SharedPtr<VertexBuffer> >& GetMorphVertexBuffers() const { return morphVertexBuffers_; }
-
     /// Return number of vertex morphs.
     unsigned GetNumMorphs() const { return morphs_.size(); }
 
@@ -198,24 +196,19 @@ private:
     void SetGeometryBoneMappings();
     /// Clone geometries for vertex morphing.
     void CloneGeometries();
-    /// Copy morph vertices.
-    void CopyMorphVertices(void* destVertexData, void* srcVertexData, unsigned vertexCount, VertexBuffer* destBuffer, VertexBuffer* srcBuffer);
     /// Recalculate animations. Called from Update().
     void UpdateAnimation(const FrameInfo& frame);
     /// Recalculate skinning.
     void UpdateSkinning();
     /// Reapply all vertex morphs.
     void UpdateMorphs();
-    /// Apply a vertex morph.
-    void ApplyMorph
-        (VertexBuffer* buffer, void* destVertexData, unsigned morphRangeStart, const VertexBufferMorph& morph, float weight);
     /// Handle model reload finished.
     void HandleModelReloadFinished(StringHash eventType, VariantMap& eventData);
 
     /// Skeleton.
     Skeleton skeleton_;
-    /// Morph vertex buffers.
-    ea::vector<SharedPtr<VertexBuffer> > morphVertexBuffers_;
+    /// Software model animator.
+    SharedPtr<SoftwareModelAnimator> modelAnimator_;
     /// Vertex morphs.
     ea::vector<ModelMorph> morphs_;
     /// Animation states.
@@ -234,8 +227,6 @@ private:
     mutable VectorBuffer attrBuffer_;
     /// The frame number animation LOD distance was last calculated on.
     unsigned animationLodFrameNumber_;
-    /// Morph vertex element mask.
-    VertexMaskFlags morphElementMask_;
     /// Animation LOD bias.
     float animationLodBias_;
     /// Animation LOD timer.
@@ -254,6 +245,10 @@ private:
     bool skinningDirty_;
     /// Bone bounding box dirty flag.
     bool boneBoundingBoxDirty_;
+    /// Software skinning flag.
+    bool softwareSkinning_{};
+    /// Number of bones used for software skinning.
+    unsigned numSoftwareSkinningBones_{ 4 };
     /// Master model flag.
     bool isMaster_;
     /// Loading flag. During loading bone nodes are not created, as they will be serialized as child nodes.

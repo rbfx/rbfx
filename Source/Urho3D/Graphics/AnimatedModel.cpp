@@ -38,6 +38,8 @@
 #include "../Graphics/IndexBuffer.h"
 #include "../Graphics/Material.h"
 #include "../Graphics/Octree.h"
+#include "../Graphics/Renderer.h"
+#include "../Graphics/SoftwareModelAnimator.h"
 #include "../Graphics/VertexBuffer.h"
 #include "../IO/Log.h"
 #include "../Resource/ResourceCache.h"
@@ -72,7 +74,6 @@ static const unsigned MAX_ANIMATION_STATES = 256;
 AnimatedModel::AnimatedModel(Context* context) :
     StaticModel(context),
     animationLodFrameNumber_(0),
-    morphElementMask_(0),
     animationLodBias_(1.0f),
     animationLodTimer_(-1.0f),
     animationLodDistance_(0.0f),
@@ -87,6 +88,11 @@ AnimatedModel::AnimatedModel(Context* context) :
     assignBonesPending_(false),
     forceAnimationUpdate_(false)
 {
+    if (auto renderer = context_->GetRenderer())
+    {
+        softwareSkinning_ = !renderer->GetUseHardwareSkinning();
+        numSoftwareSkinningBones_ = renderer->GetNumSoftwareSkinningBones();
+    }
 }
 
 AnimatedModel::~AnimatedModel()
@@ -314,16 +320,16 @@ void AnimatedModel::UpdateGeometry(const FrameInfo& frame)
         forceAnimationUpdate_ = false;
     }
 
-    if (morphsDirty_)
-        UpdateMorphs();
-
     if (skinningDirty_)
         UpdateSkinning();
+
+    if (morphsDirty_)
+        UpdateMorphs();
 }
 
 UpdateGeometryType AnimatedModel::GetUpdateGeometryType()
 {
-    if (morphsDirty_ || forceAnimationUpdate_)
+    if (morphsDirty_ || forceAnimationUpdate_ || (skinningDirty_ && softwareSkinning_))
         return UPDATE_MAIN_THREAD;
     else if (skinningDirty_)
         return UPDATE_WORKER_THREAD;
@@ -379,11 +385,10 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
             geometryBoneMappings_.push_back(geometryBoneMappings[i]);
 
         // Copy morphs. Note: morph vertex buffers will be created later on-demand
-        morphVertexBuffers_.clear();
+        modelAnimator_ = nullptr;
         morphs_.clear();
         const ea::vector<ModelMorph>& morphs = model->GetMorphs();
         morphs_.reserve(morphs.size());
-        morphElementMask_ = MASK_NONE;
         for (unsigned i = 0; i < morphs.size(); ++i)
         {
             ModelMorph newMorph;
@@ -391,9 +396,6 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
             newMorph.nameHash_ = morphs[i].nameHash_;
             newMorph.weight_ = 0.0f;
             newMorph.buffers_ = morphs[i].buffers_;
-            for (auto j = morphs[i].buffers_.begin();
-                 j != morphs[i].buffers_.end(); ++j)
-                morphElementMask_ |= j->second.elementMask_;
             morphs_.push_back(newMorph);
         }
 
@@ -412,7 +414,7 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
         // Enable skinning in batches
         for (unsigned i = 0; i < batches_.size(); ++i)
         {
-            if (skinMatrices_.size())
+            if (skinMatrices_.size() && !softwareSkinning_)
             {
                 batches_[i].geometryType_ = GEOM_SKINNED;
                 // Check if model has per-geometry bone mappings
@@ -428,6 +430,12 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
                     batches_[i].numWorldTransforms_ = skinMatrices_.size();
                 }
             }
+            else if (softwareSkinning_)
+            {
+                batches_[i].geometryType_ = GEOM_STATIC;
+                batches_[i].worldTransform_ = &Matrix3x4::IDENTITY;
+                batches_[i].numWorldTransforms_ = 1;
+            }
             else
             {
                 batches_[i].geometryType_ = GEOM_STATIC;
@@ -435,15 +443,18 @@ void AnimatedModel::SetModel(Model* model, bool createBones)
                 batches_[i].numWorldTransforms_ = 1;
             }
         }
+
+        // Clone geometries now if software skinning is enabled
+        if (softwareSkinning_)
+            CloneGeometries();
     }
     else
     {
         RemoveRootBone(); // Remove existing root bone if any
         SetNumGeometries(0);
         geometryBoneMappings_.clear();
-        morphVertexBuffers_.clear();
+        modelAnimator_ = nullptr;
         morphs_.clear();
-        morphElementMask_ = MASK_NONE;
         SetBoundingBox(BoundingBox());
         SetSkeleton(Skeleton(), false);
     }
@@ -566,7 +577,7 @@ void AnimatedModel::SetMorphWeight(unsigned index, float weight)
         return;
 
     // If morph vertex buffers have not been created yet, create now
-    if (weight != 0.0f && morphVertexBuffers_.empty())
+    if (weight != 0.0f && !modelAnimator_)
         CloneGeometries();
 
     if (weight != morphs_[index].weight_)
@@ -1115,120 +1126,13 @@ void AnimatedModel::MarkMorphsDirty()
 
 void AnimatedModel::CloneGeometries()
 {
-    const ea::vector<SharedPtr<VertexBuffer> >& originalVertexBuffers = model_->GetVertexBuffers();
-    ea::unordered_map<VertexBuffer*, SharedPtr<VertexBuffer> > clonedVertexBuffers;
-    morphVertexBuffers_.resize(originalVertexBuffers.size());
-
-    for (unsigned i = 0; i < originalVertexBuffers.size(); ++i)
-    {
-        VertexBuffer* original = originalVertexBuffers[i];
-        if (model_->GetMorphRangeCount(i))
-        {
-            SharedPtr<VertexBuffer> clone(context_->CreateObject<VertexBuffer>());
-            clone->SetShadowed(true);
-            clone->SetSize(original->GetVertexCount(), morphElementMask_ & original->GetElementMask(), true);
-            void* dest = clone->Lock(0, original->GetVertexCount());
-            if (dest)
-            {
-                CopyMorphVertices(dest, original->GetShadowData(), original->GetVertexCount(), clone, original);
-                clone->Unlock();
-            }
-            clonedVertexBuffers[original] = clone;
-            morphVertexBuffers_[i] = clone;
-        }
-        else
-            morphVertexBuffers_[i].Reset();
-    }
-
-    // Geometries will always be cloned fully. They contain only references to buffer, so they are relatively light
-    for (unsigned i = 0; i < geometries_.size(); ++i)
-    {
-        for (unsigned j = 0; j < geometries_[i].size(); ++j)
-        {
-            SharedPtr<Geometry> original = geometries_[i][j];
-            SharedPtr<Geometry> clone(context_->CreateObject<Geometry>());
-
-            // Add an additional vertex stream into the clone, which supplies only the morphable vertex data, while the static
-            // data comes from the original vertex buffer(s)
-            const ea::vector<SharedPtr<VertexBuffer> >& originalBuffers = original->GetVertexBuffers();
-            unsigned totalBuf = originalBuffers.size();
-            for (unsigned k = 0; k < originalBuffers.size(); ++k)
-            {
-                VertexBuffer* originalBuffer = originalBuffers[k];
-                if (clonedVertexBuffers.contains(originalBuffer))
-                    ++totalBuf;
-            }
-            clone->SetNumVertexBuffers(totalBuf);
-
-            unsigned l = 0;
-            for (unsigned k = 0; k < originalBuffers.size(); ++k)
-            {
-                VertexBuffer* originalBuffer = originalBuffers[k];
-
-                if (clonedVertexBuffers.contains(originalBuffer))
-                {
-                    VertexBuffer* clonedBuffer = clonedVertexBuffers[originalBuffer];
-                    clone->SetVertexBuffer(l++, originalBuffer);
-                    // Specify the morph buffer at a greater index to override the model's original positions/normals/tangents
-                    clone->SetVertexBuffer(l++, clonedBuffer);
-                }
-                else
-                    clone->SetVertexBuffer(l++, originalBuffer);
-            }
-
-            clone->SetIndexBuffer(original->GetIndexBuffer());
-            clone->SetDrawRange(original->GetPrimitiveType(), original->GetIndexStart(), original->GetIndexCount());
-            clone->SetLodDistance(original->GetLodDistance());
-
-            geometries_[i][j] = clone;
-        }
-    }
+    modelAnimator_ = MakeShared<SoftwareModelAnimator>(context_);
+    modelAnimator_->Initialize(model_, softwareSkinning_, numSoftwareSkinningBones_);
+    geometries_ = modelAnimator_->GetGeometries();
 
     // Make sure the rendering batches use the new cloned geometries
     ResetLodLevels();
     MarkMorphsDirty();
-}
-
-void AnimatedModel::CopyMorphVertices(void* destVertexData, void* srcVertexData, unsigned vertexCount, VertexBuffer* destBuffer,
-    VertexBuffer* srcBuffer)
-{
-    unsigned mask = destBuffer->GetElementMask() & srcBuffer->GetElementMask();
-    unsigned normalOffset = srcBuffer->GetElementOffset(SEM_NORMAL);
-    unsigned tangentOffset = srcBuffer->GetElementOffset(SEM_TANGENT);
-    unsigned vertexSize = srcBuffer->GetVertexSize();
-    auto* dest = (float*)destVertexData;
-    auto* src = (unsigned char*)srcVertexData;
-
-    while (vertexCount--)
-    {
-        if (mask & MASK_POSITION)
-        {
-            auto* posSrc = (float*)src;
-            dest[0] = posSrc[0];
-            dest[1] = posSrc[1];
-            dest[2] = posSrc[2];
-            dest += 3;
-        }
-        if (mask & MASK_NORMAL)
-        {
-            auto* normalSrc = (float*)(src + normalOffset);
-            dest[0] = normalSrc[0];
-            dest[1] = normalSrc[1];
-            dest[2] = normalSrc[2];
-            dest += 3;
-        }
-        if (mask & MASK_TANGENT)
-        {
-            auto* tangentSrc = (float*)(src + tangentOffset);
-            dest[0] = tangentSrc[0];
-            dest[1] = tangentSrc[1];
-            dest[2] = tangentSrc[2];
-            dest[3] = tangentSrc[3];
-            dest += 4;
-        }
-
-        src += vertexSize;
-    }
 }
 
 void AnimatedModel::SetGeometryBoneMappings()
@@ -1247,6 +1151,12 @@ void AnimatedModel::SetGeometryBoneMappings()
 
     if (allEmpty)
         return;
+
+    if (softwareSkinning_)
+    {
+        URHO3D_LOGWARNING("Geometry bone mappings are ignored in software skinning");
+        return;
+    }
 
     // Reserve space for per-geometry skinning matrices
     geometrySkinMatrices_.resize(geometryBoneMappings_.size());
@@ -1349,6 +1259,10 @@ void AnimatedModel::UpdateSkinning()
     }
 
     skinningDirty_ = false;
+
+    // If software skinning is enabled, force update
+    if (softwareSkinning_)
+        morphsDirty_ = true;
 }
 
 void AnimatedModel::UpdateMorphs()
@@ -1357,89 +1271,16 @@ void AnimatedModel::UpdateMorphs()
     if (!graphics)
         return;
 
-    if (morphs_.size())
+    if (modelAnimator_)
     {
-        // Reset the morph data range from all morphable vertex buffers, then apply morphs
-        for (unsigned i = 0; i < morphVertexBuffers_.size(); ++i)
-        {
-            VertexBuffer* buffer = morphVertexBuffers_[i];
-            if (buffer)
-            {
-                VertexBuffer* originalBuffer = model_->GetVertexBuffers()[i];
-                unsigned morphStart = model_->GetMorphRangeStart(i);
-                unsigned morphCount = model_->GetMorphRangeCount(i);
-
-                void* dest = buffer->Lock(morphStart, morphCount);
-                if (dest)
-                {
-                    // Reset morph range by copying data from the original vertex buffer
-                    CopyMorphVertices(dest, originalBuffer->GetShadowData() + morphStart * originalBuffer->GetVertexSize(),
-                        morphCount, buffer, originalBuffer);
-
-                    for (unsigned j = 0; j < morphs_.size(); ++j)
-                    {
-                        if (morphs_[j].weight_ != 0.0f)
-                        {
-                            auto k = morphs_[j].buffers_.find(i);
-                            if (k != morphs_[j].buffers_.end())
-                                ApplyMorph(buffer, dest, morphStart, k->second, morphs_[j].weight_);
-                        }
-                    }
-
-                    buffer->Unlock();
-                }
-            }
-        }
+        modelAnimator_->ResetAnimation();
+        modelAnimator_->ApplyMorphs(morphs_);
+        if (softwareSkinning_)
+            modelAnimator_->ApplySkinning(skinMatrices_);
+        modelAnimator_->Commit();
     }
 
     morphsDirty_ = false;
-}
-
-void AnimatedModel::ApplyMorph(VertexBuffer* buffer, void* destVertexData, unsigned morphRangeStart, const VertexBufferMorph& morph,
-    float weight)
-{
-    const VertexMaskFlags elementMask = morph.elementMask_ & buffer->GetElementMask();
-    unsigned vertexCount = morph.vertexCount_;
-    unsigned normalOffset = buffer->GetElementOffset(SEM_NORMAL);
-    unsigned tangentOffset = buffer->GetElementOffset(SEM_TANGENT);
-    unsigned vertexSize = buffer->GetVertexSize();
-
-    unsigned char* srcData = morph.morphData_.get();
-    auto* destData = (unsigned char*)destVertexData;
-
-    while (vertexCount--)
-    {
-        unsigned vertexIndex = *((unsigned*)srcData) - morphRangeStart;
-        srcData += sizeof(unsigned);
-
-        if (elementMask & MASK_POSITION)
-        {
-            auto* dest = (float*)(destData + vertexIndex * vertexSize);
-            auto* src = (float*)srcData;
-            dest[0] += src[0] * weight;
-            dest[1] += src[1] * weight;
-            dest[2] += src[2] * weight;
-            srcData += 3 * sizeof(float);
-        }
-        if (elementMask & MASK_NORMAL)
-        {
-            auto* dest = (float*)(destData + vertexIndex * vertexSize + normalOffset);
-            auto* src = (float*)srcData;
-            dest[0] += src[0] * weight;
-            dest[1] += src[1] * weight;
-            dest[2] += src[2] * weight;
-            srcData += 3 * sizeof(float);
-        }
-        if (elementMask & MASK_TANGENT)
-        {
-            auto* dest = (float*)(destData + vertexIndex * vertexSize + tangentOffset);
-            auto* src = (float*)srcData;
-            dest[0] += src[0] * weight;
-            dest[1] += src[1] * weight;
-            dest[2] += src[2] * weight;
-            srcData += 3 * sizeof(float);
-        }
-    }
 }
 
 void AnimatedModel::HandleModelReloadFinished(StringHash eventType, VariantMap& eventData)

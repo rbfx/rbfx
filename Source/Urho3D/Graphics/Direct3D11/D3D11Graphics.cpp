@@ -2273,6 +2273,9 @@ void Graphics::CheckFeatureSupport()
     dummyColorFormat_ = DXGI_FORMAT_UNKNOWN;
     sRGBSupport_ = true;
     sRGBWriteSupport_ = true;
+
+    maxVertexShaderUniforms_ = 4096;
+    maxPixelShaderUniforms_ = 4096;
 }
 
 void Graphics::ResetCachedState()
