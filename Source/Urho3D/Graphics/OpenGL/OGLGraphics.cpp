@@ -2889,6 +2889,14 @@ void Graphics::CheckFeatureSupport()
 
     // Consider OpenGL shadows always hardware sampled, if supported at all
     hardwareShadowSupport_ = shadowMapFormat_ != 0;
+
+    // Get number of uniforms available
+    GLint maxVertexUniforms{};
+    GLint maxPixelUniforms{};
+    glGetIntegerv(GL_MAX_VERTEX_UNIFORM_VECTORS, &maxVertexUniforms);
+    glGetIntegerv(GL_MAX_FRAGMENT_UNIFORM_VECTORS, &maxPixelUniforms);
+    maxVertexShaderUniforms_ = static_cast<unsigned>(maxVertexUniforms);
+    maxPixelShaderUniforms_ = static_cast<unsigned>(maxPixelUniforms);
 }
 
 void Graphics::PrepareDraw()

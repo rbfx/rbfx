@@ -560,6 +560,16 @@ void Renderer::SetSphericalHarmonics(bool enable)
     }
 }
 
+void Renderer::SetSkinningMode(SkinningMode mode)
+{
+    skinningMode_ = mode;
+}
+
+void Renderer::SetNumSoftwareSkinningBones(unsigned numBones)
+{
+    numSoftwareSkinningBones_ = numBones;
+}
+
 void Renderer::SetOccluderSizeThreshold(float screenSize)
 {
     occluderSizeThreshold_ = Max(screenSize, 0.0f);
@@ -1643,6 +1653,8 @@ void Renderer::Initialize()
 
     graphics_ = graphics;
     graphics_->SetGlobalShaderDefines(globalShaderDefinesString_);
+
+    hardwareSkinningSupported_ = graphics_->GetMaxVertexShaderUniforms() >= 256;
 
     if (!graphics_->GetShadowMapFormat())
         drawShadows_ = false;
