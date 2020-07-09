@@ -8,70 +8,68 @@
 #include "PBR.hlsl"
 #include "IBL.hlsl"
 
+#ifndef D3D11
+
+// D3D9 uniforms and samplers
+#ifdef COMPILEVS
+uniform float2 cDetailTiling;
+#else
+sampler2D sWeightMap0 : register(s0);
+sampler2D sDetailMap1 : register(s1);
+sampler2D sDetailMap2 : register(s2);
+sampler2D sDetailMap3 : register(s3);
+#endif
+
+#else
+
+// D3D11 constant buffers and samplers
+#ifdef COMPILEVS
+cbuffer CustomVS : register(b6)
+{
+    float2 cDetailTiling;
+}
+#else
+Texture2D tWeightMap0 : register(t0);
+Texture2D tDetailMap1 : register(t1);
+Texture2D tDetailMap2 : register(t2);
+Texture2D tDetailMap3 : register(t3);
+SamplerState sWeightMap0 : register(s0);
+SamplerState sDetailMap1 : register(s1);
+SamplerState sDetailMap2 : register(s2);
+SamplerState sDetailMap3 : register(s3);
+#endif
+
+#endif
 void VS(float4 iPos : POSITION,
-    #if !defined(BILLBOARD) && !defined(TRAILFACECAM)
         float3 iNormal : NORMAL,
-    #endif
-    #ifndef NOUV
         float2 iTexCoord : TEXCOORD0,
-    #endif
-    #ifdef VERTEXCOLOR
-        float4 iColor : COLOR0,
-    #endif
-    #if defined(LIGHTMAP) || defined(AO)
-        float2 iTexCoord2 : TEXCOORD1,
-    #endif
-    #if (defined(NORMALMAP) || defined(TRAILFACECAM) || defined(TRAILBONE)) && !defined(BILLBOARD) && !defined(DIRBILLBOARD)
-        float4 iTangent : TANGENT,
-    #endif
     #ifdef SKINNED
         float4 iBlendWeights : BLENDWEIGHT,
         int4 iBlendIndices : BLENDINDICES,
     #endif
     #ifdef INSTANCED
         float4x3 iModelInstance : TEXCOORD4,
-        #ifdef SPHERICALHARMONICS
-            float4 iSHArInstance : TEXCOORD7,
-            float4 iSHAgInstance : TEXCOORD8,
-            float4 iSHAbInstance : TEXCOORD9,
-            float4 iSHBrInstance : TEXCOORD10,
-            float4 iSHBgInstance : TEXCOORD11,
-            float4 iSHBbInstance : TEXCOORD12,
-            float4 iSHCInstance  : TEXCOORD13,
-        #else
-            float4 iAmbientInstance : TEXCOORD7,
-        #endif
     #endif
     #if defined(BILLBOARD) || defined(DIRBILLBOARD)
         float2 iSize : TEXCOORD1,
     #endif
-    #ifndef NORMALMAP
-        out float2 oTexCoord : TEXCOORD0,
-    #else
-        out float4 oTexCoord : TEXCOORD0,
-        out float4 oTangent : TEXCOORD3,
-    #endif
+    out float2 oTexCoord : TEXCOORD0,
     out float3 oNormal : TEXCOORD1,
     out float4 oWorldPos : TEXCOORD2,
-    #if defined(LIGHTMAP) || defined(AO)
-        out float2 oTexCoord2 : TEXCOORD4,
-    #endif
-    out float3 oVertexLight : TEXCOORD5,
+    out float2 oDetailTexCoord : TEXCOORD3,
     #ifdef PERPIXEL
         #ifdef SHADOW
-            out float4 oShadowPos[NUMCASCADES] : TEXCOORD6,
+            out float4 oShadowPos[NUMCASCADES] : TEXCOORD4,
         #endif
         #ifdef SPOTLIGHT
-            out float4 oSpotPos : TEXCOORD7,
+            out float4 oSpotPos : TEXCOORD5,
         #endif
         #ifdef POINTLIGHT
-            out float3 oCubeMaskVec : TEXCOORD7,
+            out float3 oCubeMaskVec : TEXCOORD5,
         #endif
     #else
-        out float4 oScreenPos : TEXCOORD6,
-        #ifdef ENVCUBEMAP
-            out float3 oReflectionVec : TEXCOORD7,
-        #endif
+        out float3 oVertexLight : TEXCOORD4,
+        out float4 oScreenPos : TEXCOORD5,
     #endif
     #ifdef VERTEXCOLOR
         out float4 oColor : COLOR0,
@@ -81,42 +79,16 @@ void VS(float4 iPos : POSITION,
     #endif
     out float4 oPos : OUTPOSITION)
 {
-    // Define a 0,0 UV coord if not expected from the vertex data
-    #ifdef NOUV
-        const float2 iTexCoord = float2(0.0, 0.0);
-    #endif
-
     const float4x3 modelMatrix = iModelMatrix;
     const float3 worldPos = GetWorldPos(modelMatrix);
     oPos = GetClipPos(worldPos);
     oNormal = GetWorldNormal(modelMatrix);
     oWorldPos = float4(worldPos, GetDepth(oPos));
+    oTexCoord = GetTexCoord(iTexCoord);
+    oDetailTexCoord = cDetailTiling * oTexCoord;
 
     #if defined(D3D11) && defined(CLIPPLANE)
         oClip = dot(oPos, cClipPlane);
-    #endif
-
-    #ifdef VERTEXCOLOR
-        oColor = iColor;
-    #endif
-
-    #if defined(NORMALMAP)
-        const float4 tangent = GetWorldTangent(modelMatrix);
-        const float3 bitangent = cross(tangent.xyz, oNormal) * tangent.w;
-        oTexCoord = float4(GetTexCoord(iTexCoord), bitangent.xy);
-        oTangent = float4(tangent.xyz, bitangent.z);
-    #else
-        oTexCoord = GetTexCoord(iTexCoord);
-    #endif
-
-    // Ambient & per-vertex lighting
-    #if defined(LIGHTMAP) || defined(AO)
-        // If using lightmap, disregard zone ambient light
-        // If using AO, calculate ambient in the PS
-        oVertexLight = float3(0.0, 0.0, 0.0);
-        oTexCoord2 = GetLightMapTexCoord(iTexCoord2);
-    #else
-        oVertexLight = GetAmbientLight(float4(oNormal, 1.0)) + GetAmbient(0.0);
     #endif
 
     #ifdef PERPIXEL
@@ -137,47 +109,35 @@ void VS(float4 iPos : POSITION,
             oCubeMaskVec = mul(worldPos - cLightPos.xyz, (float3x3)cLightMatrices[0]);
         #endif
     #else
+        oVertexLight = GetAmbient(GetZonePos(worldPos));
+
         #ifdef NUMVERTEXLIGHTS
             for (int i = 0; i < NUMVERTEXLIGHTS; ++i)
                 oVertexLight += GetVertexLight(i, worldPos, oNormal) * cVertexLights[i * 3].rgb;
         #endif
 
         oScreenPos = GetScreenPos(oPos);
-
-        #ifdef ENVCUBEMAP
-            oReflectionVec = worldPos - cCameraPos;
-        #endif
     #endif
 }
 
 void PS(
-    #ifndef NORMALMAP
-        float2 iTexCoord : TEXCOORD0,
-    #else
-        float4 iTexCoord : TEXCOORD0,
-        float4 iTangent : TEXCOORD3,
-    #endif
+    float2 iTexCoord : TEXCOORD0,
     float3 iNormal : TEXCOORD1,
     float4 iWorldPos : TEXCOORD2,
-    #if defined(LIGHTMAP) || defined(AO)
-        float2 iTexCoord2 : TEXCOORD4,
-    #endif
-    float3 iVertexLight : TEXCOORD5,
+    float2 iDetailTexCoord : TEXCOORD3,
     #ifdef PERPIXEL
         #ifdef SHADOW
-            float4 iShadowPos[NUMCASCADES] : TEXCOORD6,
+            float4 iShadowPos[NUMCASCADES] : TEXCOORD4,
         #endif
         #ifdef SPOTLIGHT
-            float4 iSpotPos : TEXCOORD7,
+            float4 iSpotPos : TEXCOORD5,
         #endif
         #ifdef POINTLIGHT
-            float3 iCubeMaskVec : TEXCOORD7,
+            float3 iCubeMaskVec : TEXCOORD5,
         #endif
     #else
-        float4 iScreenPos : TEXCOORD6,
-        #ifdef ENVCUBEMAP
-            float3 iReflectionVec : TEXCOORD7,
-        #endif
+        float3 iVertexLight : TEXCOORD4,
+        float4 iScreenPos : TEXCOORD5,
     #endif
     #ifdef VERTEXCOLOR
         float4 iColor : COLOR0,
@@ -201,20 +161,14 @@ void PS(
     out float4 oColor : OUTCOLOR0)
 {
     // Get material diffuse albedo
-    #ifdef DIFFMAP
-        const float4 diffInput = Sample2D(DiffMap, iTexCoord.xy);
-        #ifdef ALPHAMASK
-            if (diffInput.a < 0.5)
-                discard;
-        #endif
-        float4 diffColor = cMatDiffColor * diffInput;
-    #else
-        float4 diffColor = cMatDiffColor;
-    #endif
-
-    #ifdef VERTEXCOLOR
-        diffColor *= iColor;
-    #endif
+    float3 weights = Sample2D(WeightMap0, iTexCoord).rgb;
+    float sumWeights = weights.r + weights.g + weights.b;
+    weights /= sumWeights;
+    float4 diffColor = cMatDiffColor * (
+        weights.r * Sample2D(DetailMap1, iDetailTexCoord) +
+        weights.g * Sample2D(DetailMap2, iDetailTexCoord) +
+        weights.b * Sample2D(DetailMap3, iDetailTexCoord)
+    );
 
     // Get material specular albedo
     #ifdef METALLIC // METALNESS
@@ -236,19 +190,7 @@ void PS(
     diffColor.rgb = diffColor.rgb - diffColor.rgb * metalness; // Modulate down the diffuse
 
     // Get normal
-    #if defined(NORMALMAP)
-        const float3 tangent = normalize(iTangent.xyz);
-        const float3 bitangent = normalize(float3(iTexCoord.zw, iTangent.w));
-        const float3x3 tbn = float3x3(tangent, bitangent, iNormal);
-    #endif
-
-    #ifdef NORMALMAP
-        const float3 nn = DecodeNormal(Sample2D(NormalMap, iTexCoord.xy));
-        //nn.rg *= 2.0;
-        const float3 normal = normalize(mul(nn, tbn));
-    #else
-        const float3 normal = normalize(iNormal);
-    #endif
+    const float3 normal = normalize(iNormal);
 
     // Get fog factor
     #ifdef HEIGHTFOG
@@ -296,14 +238,8 @@ void PS(
         finalColor.rgb = BRDF * lightColor * (atten * shadow) / M_PI;
 
         #ifdef AMBIENT
-            finalColor += iVertexLight * diffColor.rgb;
-            #ifdef LIGHTMAP
-                finalColor += (Sample2D(EmissiveMap, iTexCoord2).rgb * 2.0 + cAmbientColor.rgb) * diffColor.rgb;
-            #elif defined(EMISSIVEMAP)
-                finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
-            #else
-                finalColor += cMatEmissiveColor;
-            #endif
+            finalColor += cAmbientColor.rgb * diffColor.rgb;
+            finalColor += cMatEmissiveColor;
             oColor = float4(GetFog(finalColor, fogFactor), diffColor.a);
         #else
             oColor = float4(GetLitFog(finalColor, fogFactor), diffColor.a);
@@ -315,17 +251,9 @@ void PS(
         oAlbedo = float4(diffColor.rgb, spareData.g);
         oNormal = float4(normalize(normal) * roughness, spareData.b);
         oDepth = iWorldPos.w;
-        #ifdef LIGHTMAP
-            #error Lightmaps are not supported for PBR Deferred
-        #endif
     #else
         // Ambient & per-vertex lighting
         float3 finalColor = iVertexLight * diffColor.rgb;
-        #ifdef AO
-            // If using AO, the vertex light ambient is black, calculate occluded ambient here
-            finalColor += Sample2D(EmissiveMap, iTexCoord2).rgb * cAmbientColor.rgb * diffColor.rgb;
-        #endif
-
         #ifdef MATERIAL
             // Add light pre-pass accumulation result
             // Lights are accumulated at half intensity. Bring back to full intensity now
@@ -346,16 +274,7 @@ void PS(
             finalColor += iblColor;
         #endif
 
-        #ifdef ENVCUBEMAP
-            finalColor += cMatEnvMapColor * SampleCube(EnvCubeMap, reflect(iReflectionVec, normal)).rgb;
-        #endif
-        #ifdef LIGHTMAP
-            finalColor += (Sample2D(EmissiveMap, iTexCoord2).rgb * 2.0 + cAmbientColor.rgb) * diffColor.rgb;
-        #elif defined(EMISSIVEMAP)
-            finalColor += cMatEmissiveColor * Sample2D(EmissiveMap, iTexCoord.xy).rgb;
-        #else
-            finalColor += cMatEmissiveColor;
-        #endif
+        finalColor += cMatEmissiveColor;
 
         oColor = float4(GetFog(finalColor, fogFactor), diffColor.a);
     #endif
