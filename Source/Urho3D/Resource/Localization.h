@@ -60,7 +60,7 @@ public:
     /// Clear all loaded strings.
     void Reset();
     /// Load strings from JSONFile. The file should be UTF8 without BOM.
-    void LoadJSONFile(const ea::string& name, const ea::string language = EMPTY_STRING);
+    void LoadJSONFile(const ea::string& name, const ea::string& language = EMPTY_STRING);
     /// Load strings from JSONValue.
     void LoadMultipleLanguageJSON(const JSONValue& source);
     /// Load strings from JSONValue for specific language.
