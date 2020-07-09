@@ -160,6 +160,9 @@ Urho3D development, contributions and bugfixes by:
 - tommy3
 - yushli
 - zlum
+- ChrisDenham
+- Katekov Anton
+- SirNate0
 
 Urho3D is greatly inspired by OGRE (http://www.ogre3d.org) and Horde3D
 (http://www.horde3d.org). Additional inspiration & research used:

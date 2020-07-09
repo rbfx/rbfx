@@ -158,7 +158,7 @@ void Localization::Reset()
     strings_.clear();
 }
 
-void Localization::LoadJSONFile(const ea::string& name, const ea::string language)
+void Localization::LoadJSONFile(const ea::string& name, const ea::string& language)
 {
     auto* cache = GetSubsystem<ResourceCache>();
     auto* jsonFile = cache->GetResource<JSONFile>(name);
