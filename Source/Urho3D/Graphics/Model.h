@@ -215,10 +215,10 @@ public:
     unsigned GetMorphRangeCount(unsigned bufferIndex) const;
 
     /// Return morph range starts for each vertex buffer.
-    ea::vector<unsigned> GetMorphRangeStarts() const { return morphRangeStarts_; }
+    const ea::vector<unsigned>& GetMorphRangeStarts() const { return morphRangeStarts_; }
 
     /// Return morph range vertex counts for each vertex buffer.
-    ea::vector<unsigned> GetMorphRangeCounts() const { return morphRangeCounts_; }
+    const ea::vector<unsigned>& GetMorphRangeCounts() const { return morphRangeCounts_; }
 
 private:
     /// Bounding box.
