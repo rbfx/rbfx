@@ -540,9 +540,9 @@ void MaterialInspector::RenderInspector(InspectArgs& args)
                 if (!colorVariant.IsEmpty())
                 {
                     if (pair.second.value_.GetType() == VAR_VECTOR3)
-                        value.current_ = colorVariant.GetVector3();
+                        value.current_ = colorVariant.GetColor().ToVector3();
                     else if (pair.second.value_.GetType() == VAR_VECTOR4)
-                        value.current_ = colorVariant.GetVector4();
+                        value.current_ = colorVariant.GetColor().ToVector4();
                 }
                 material->SetShaderParameter(parameterName, value.current_);
                 value.SetModified(true);
