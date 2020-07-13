@@ -66,7 +66,11 @@
 #if URHO3D_URHO2D
 #include "24_Urho2DSprite/Urho2DSprite.h"
 #include "25_Urho2DParticle/Urho2DParticle.h"
+#endif
+#if URHO3D_SYSTEMUI
 #include "26_ConsoleInput/ConsoleInput.h"
+#endif
+#if URHO3D_URHO2D
 #include "27_Urho2DPhysics/Urho2DPhysics.h"
 #include "28_Urho2DPhysicsRope/Urho2DPhysicsRope.h"
 #endif
