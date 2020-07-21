@@ -76,6 +76,9 @@ add_subdirectory (Extras)
 add_subdirectory (Samples)
 add_subdirectory (Player)
 
+# Urho3D tests
+add_subdirectory (Tests)
+
 if (NOT MINI_URHO)
     if (URHO3D_CSHARP AND NOT CMAKE_VS_MSBUILD_COMMAND)
         # Generate a VS solution for C# projects when outside of visual studio.
