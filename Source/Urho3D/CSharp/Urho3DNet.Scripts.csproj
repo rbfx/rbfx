@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk" ToolsVersion="15.0" InitialTargets="FixNetFrameworkDefine">
+﻿<Project Sdk="Microsoft.NET.Sdk" InitialTargets="FixNetFrameworkDefine">
   <PropertyGroup>
     <AssemblyName>Urho3DNet.Scripts</AssemblyName>
     <OutputType>Library</OutputType>
