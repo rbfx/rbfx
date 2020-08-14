@@ -17,7 +17,7 @@ variables:
 jobs:
   - job: Web
     pool:
-      vmImage: 'ubuntu-latest'
+      vmImage: 'ubuntu-20.04'
 
     variables:
       URHO3D_CSHARP: OFF
@@ -26,7 +26,6 @@ jobs:
       EMSCRIPTEN_ROOT_PATH: $(Build.SourcesDirectory)/emsdk-master/upstream/emscripten
 
     steps:
-      - template: cmake.yml
       - bash: |
           # Default compiler on this build worker image does not support c++17.
           sudo apt-get install -y --no-install-recommends uuid-dev gcc-8 g++-8
