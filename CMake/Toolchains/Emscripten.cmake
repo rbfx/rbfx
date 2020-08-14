@@ -143,9 +143,9 @@ set (CMAKE_RANLIB       ${EMSCRIPTEN_ROOT_PATH}/emranlib${TOOL_EXT} CACHE PATH "
 set (CMAKE_LINKER       ${EMSCRIPTEN_ROOT_PATH}/emlink.py           CACHE PATH "linker")
 # Specific to Emscripten
 set (EMRUN              ${EMSCRIPTEN_ROOT_PATH}/emrun${TOOL_EXT}    CACHE PATH "emrun")
-find_program(PYTHON NAMES python2 python)
+find_program(PYTHON NAMES python3 python)
 if (NOT PYTHON)
-    message(FATAL_ERROR "Python v2.7 is required")
+    message(FATAL_ERROR "Python v3.5+ is required")
 endif ()
 set (EMPACKAGER         ${PYTHON} ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py CACHE PATH "file_packager.py")
 set (EMBUILDER          ${PYTHON} ${EMSCRIPTEN_ROOT_PATH}/embuilder.py CACHE PATH "embuilder.py")
