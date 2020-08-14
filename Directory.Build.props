@@ -1,4 +1,4 @@
-<Project ToolsVersion="15.0">
+<Project>
   <!-- Works when -DURHO3D_OMNISHARP_HELPER=ON is used, typically with VSCode -->
   <Import Project="$(MSBuildThisFileDirectory)/.OmniSharp.props" Condition=" Exists('$(MSBuildThisFileDirectory)/.OmniSharp.props') " />
   <!-- Works when building on windows using cmake-generated VS solution -->
