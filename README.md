@@ -120,6 +120,7 @@ rbfx uses the following third-party libraries:
 - EASTL 3.16.01 (https://github.com/electronicarts/EASTL/)
 - SWIG 4.0 (http://swig.org/)
 - Embree 3.11 (https://github.com/embree/embree)
+- RmlUi (https://github.com/mikke89/RmlUi)
 
 rbfx optionally uses the following external third-party libraries:
 - Mono (http://www.mono-project.com/download/stable/)
