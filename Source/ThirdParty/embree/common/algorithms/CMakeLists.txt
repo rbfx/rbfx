@@ -1,20 +1,7 @@
-## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
-##                                                                          ##
-## Licensed under the Apache License, Version 2.0 (the "License");          ##
-## you may not use this file except in compliance with the License.         ##
-## You may obtain a copy of the License at                                  ##
-##                                                                          ##
-##     http://www.apache.org/licenses/LICENSE-2.0                           ##
-##                                                                          ##
-## Unless required by applicable law or agreed to in writing, software      ##
-## distributed under the License is distributed on an "AS IS" BASIS,        ##
-## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ##
-## See the License for the specific language governing permissions and      ##
-## limitations under the License.                                           ##
-## ======================================================================== ##
-# Urho3D: Rename target and hide it in a subfolder.
-ADD_LIBRARY(embree-algorithms OBJECT
+## Copyright 2009-2020 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
+ADD_LIBRARY(algorithms OBJECT
  parallel_for.cpp
  parallel_reduce.cpp
  parallel_prefix_sum.cpp
@@ -27,5 +14,19 @@ ADD_LIBRARY(embree-algorithms OBJECT
  parallel_filter.cpp
 )
 
-SET_PROPERTY(TARGET embree-algorithms PROPERTY FOLDER ThirdParty/embree3/common)
-SET_PROPERTY(TARGET embree-algorithms APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+SET_PROPERTY(TARGET algorithms PROPERTY FOLDER common)
+SET_PROPERTY(TARGET algorithms APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+
+# ideally we would use target_link_libraries to provide the algorithms target
+# with the TBB include directory information. Howeve, this is only possible in
+# very recent versions of TBB and therefore we use the target property instead
+GET_TARGET_PROPERTY(tasking_include_dirs tasking INCLUDE_DIRECTORIES)
+if (tasking_include_dirs)
+  TARGET_INCLUDE_DIRECTORIES(algorithms PUBLIC "${tasking_include_dirs}")
+  GET_TARGET_PROPERTY(algorithms_include_dirs algorithms INCLUDE_DIRECTORIES)
+endif()
+
+# Urho3D: Install targets
+if (NOT URHO3D_MERGE_STATIC_LIBS)
+  install(TARGETS algorithms EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+endif ()

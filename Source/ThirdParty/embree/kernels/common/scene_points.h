@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -33,8 +20,6 @@ namespace embree
     Points(Device* device, Geometry::GType gtype);
 
    public:
-    void enabling();
-    void disabling();
     void setMask(unsigned mask);
     void setNumTimeSteps(unsigned int numTimeSteps);
     void setVertexAttributeCount(unsigned int N);
@@ -47,104 +32,94 @@ namespace embree
                    unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
-    void preCommit();
-    void postCommit();
+    void commit();
     bool verify();
+    void setMaxRadiusScale(float s);
+    void addElementsToCount (GeometryCounts & counts) const;
 
    public:
     /*! returns the number of vertices */
-    __forceinline size_t numVertices() const
-    {
+    __forceinline size_t numVertices() const {
       return vertices[0].size();
     }
 
     /*! returns i'th vertex of the first time step */
-    __forceinline Vec3fa vertex(size_t i) const
-    {
+    __forceinline Vec3ff vertex(size_t i) const {
       return vertices0[i];
     }
 
     /*! returns i'th vertex of the first time step */
-    __forceinline const char* vertexPtr(size_t i) const
-    {
+    __forceinline const char* vertexPtr(size_t i) const {
       return vertices0.getPtr(i);
     }
 
     /*! returns i'th normal of the first time step */
-    __forceinline Vec3fa normal(size_t i) const
-    {
+    __forceinline Vec3fa normal(size_t i) const {
       return normals0[i];
     }
 
     /*! returns i'th radius of the first time step */
-    __forceinline float radius(size_t i) const
-    {
+    __forceinline float radius(size_t i) const {
       return vertices0[i].w;
     }
 
     /*! returns i'th vertex of itime'th timestep */
-    __forceinline Vec3fa vertex(size_t i, size_t itime) const
-    {
+    __forceinline Vec3ff vertex(size_t i, size_t itime) const {
       return vertices[itime][i];
     }
 
     /*! returns i'th vertex of itime'th timestep */
-    __forceinline const char* vertexPtr(size_t i, size_t itime) const
-    {
+    __forceinline const char* vertexPtr(size_t i, size_t itime) const {
       return vertices[itime].getPtr(i);
     }
 
     /*! returns i'th normal of itime'th timestep */
-    __forceinline Vec3fa normal(size_t i, size_t itime) const
-    {
+    __forceinline Vec3fa normal(size_t i, size_t itime) const {
       return normals[itime][i];
     }
 
     /*! returns i'th radius of itime'th timestep */
-    __forceinline float radius(size_t i, size_t itime) const
-    {
+    __forceinline float radius(size_t i, size_t itime) const {
       return vertices[itime][i].w;
     }
 
     /*! calculates bounding box of i'th line segment */
-    __forceinline BBox3fa bounds(const Vec3fa& v0) const
-    {
-      return enlarge(BBox3fa(v0), Vec3fa(v0.w));
+    __forceinline BBox3fa bounds(const Vec3ff& v0) const {
+      return enlarge(BBox3fa(v0), maxRadiusScale*Vec3fa(v0.w));
     }
 
     /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(size_t i) const
     {
-      const Vec3fa v0 = vertex(i);
+      const Vec3ff v0 = vertex(i);
       return bounds(v0);
     }
 
     /*! calculates bounding box of i'th line segment for the itime'th time step */
     __forceinline BBox3fa bounds(size_t i, size_t itime) const
     {
-      const Vec3fa v0 = vertex(i, itime);
+      const Vec3ff v0 = vertex(i, itime);
       return bounds(v0);
     }
 
     /*! calculates bounding box of i'th line segment */
     __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i) const
     {
-      const Vec3fa v0 = vertex(i);
-      const Vec3fa w0(xfmVector(space, v0), v0.w);
+      const Vec3ff v0 = vertex(i);
+      const Vec3ff w0(xfmVector(space, (Vec3fa)v0), v0.w);
       return bounds(w0);
     }
 
     /*! calculates bounding box of i'th line segment for the itime'th time step */
     __forceinline BBox3fa bounds(const LinearSpace3fa& space, size_t i, size_t itime) const
     {
-      const Vec3fa v0 = vertex(i, itime);
-      const Vec3fa w0(xfmVector(space, v0), v0.w);
+      const Vec3ff v0 = vertex(i, itime);
+      const Vec3ff w0(xfmVector(space, (Vec3fa)v0), v0.w);
       return bounds(w0);
     }
 
     /*! check if the i'th primitive is valid at the itime'th timestep */
-    __forceinline bool valid(size_t i, size_t itime) const
-    {
+    __forceinline bool valid(size_t i, size_t itime) const {
       return valid(i, make_range(itime, itime));
     }
 
@@ -156,8 +131,8 @@ namespace embree
         return false;
 
       for (size_t itime = itime_range.begin(); itime <= itime_range.end(); itime++) {
-        const Vec3fa v0 = vertex(index + 0, itime);
-        if (unlikely(!isvalid((vfloat4)v0)))
+        const Vec3ff v0 = vertex(index + 0, itime);
+        if (unlikely(!isvalid4(v0)))
           return false;
         if (v0.w < 0.0f)
           return false;
@@ -166,8 +141,7 @@ namespace embree
     }
 
     /*! calculates the linear bounds of the i'th primitive at the itimeGlobal'th time segment */
-    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const
-    {
+    __forceinline LBBox3fa linearBounds(size_t i, size_t itime) const {
       return LBBox3fa(bounds(i, itime + 0), bounds(i, itime + 1));
     }
 
@@ -210,18 +184,18 @@ namespace embree
       return true;
     }
 
-    /* returns true if topology changed */
-    bool topologyChanged() const
-    {
-      return numPrimitivesChanged;
+    /*! get fast access to first vertex buffer */
+    __forceinline float * getCompactVertexArray () const {
+      return (float*) vertices0.getPtr();
     }
 
    public:
-    BufferView<Vec3fa> vertices0;            //!< fast access to first vertex buffer
+    BufferView<Vec3ff> vertices0;            //!< fast access to first vertex buffer
     BufferView<Vec3fa> normals0;             //!< fast access to first normal buffer
-    vector<BufferView<Vec3fa>> vertices;     //!< vertex array for each timestep
+    vector<BufferView<Vec3ff>> vertices;     //!< vertex array for each timestep
     vector<BufferView<Vec3fa>> normals;      //!< normal array for each timestep
     vector<BufferView<char>> vertexAttribs;  //!< user buffers
+    float maxRadiusScale = 1.0;              //!< maximal min-width scaling of curve radii
   };
 
   namespace isa
@@ -240,7 +214,7 @@ namespace embree
         return Vec3fa(1, 0, 0);
       }
 
-      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
         for (size_t j = r.begin(); j < r.end(); j++) {
@@ -254,7 +228,7 @@ namespace embree
         return pinfo;
       }
 
-      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const
+      PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k, unsigned int geomID) const
       {
         PrimInfo pinfo(empty);
         for (size_t j = r.begin(); j < r.end(); j++) {
@@ -271,7 +245,8 @@ namespace embree
       PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims,
                                       const BBox1f& t0t1,
                                       const range<size_t>& r,
-                                      size_t k) const
+                                      size_t k,
+                                      unsigned int geomID) const
       {
         PrimInfoMB pinfo(empty);
         for (size_t j = r.begin(); j < r.end(); j++) {
@@ -281,7 +256,7 @@ namespace embree
                                this->numTimeSegments(),
                                this->time_range,
                                this->numTimeSegments(),
-                               this->geomID,
+                               geomID,
                                unsigned(j));
           pinfo.add_primref(prim);
           prims[k++] = prim;

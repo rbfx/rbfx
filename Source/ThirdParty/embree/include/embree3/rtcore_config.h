@@ -1,28 +1,18 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #define RTC_VERSION_MAJOR 3
-#define RTC_VERSION_MINOR 6
-#define RTC_VERSION_PATCH 1
-#define RTC_VERSION 30601
-#define RTC_VERSION_STRING "3.6.1"
+#define RTC_VERSION_MINOR 11
+#define RTC_VERSION_PATCH 0
+#define RTC_VERSION 31100
+#define RTC_VERSION_STRING "3.11.0"
 
 #define RTC_MAX_INSTANCE_LEVEL_COUNT 1
+
+#define EMBREE_MIN_WIDTH 0
+#define RTC_MIN_WIDTH EMBREE_MIN_WIDTH
 
 #define EMBREE_STATIC_LIB
 #define EMBREE_API_NAMESPACE

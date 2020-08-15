@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -198,6 +185,14 @@ namespace embree
           travCost(1.0f), intCost(1.0f), singleLeafTimeSegment(false),
           singleThreadThreshold(1024) {}
 
+
+        Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold)
+        : branchingFactor(2), maxDepth(32), logBlockSize(bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold)
+        {
+          minLeafSize = min(minLeafSize,maxLeafSize);
+        }
+
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
         size_t maxDepth;         //!< maximum depth of BVH to build
@@ -260,7 +255,7 @@ namespace embree
         class BuilderT
         {
           ALIGNED_CLASS_(16);
-          static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
+          static const size_t MAX_BRANCHING_FACTOR = 16;       //!< maximum supported BVH branching factor	  
           static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree if we are that many levels before the maximum tree depth
 
           typedef BVHNodeRecordMB4D<NodeRef> NodeRecordMB4D;
@@ -451,11 +446,11 @@ namespace embree
               
               force_split = c.lower > p.lower || c.upper < p.upper;
             }
-
+	    
             /* create leaf for few primitives */
             if (current.size() <= cfg.maxLeafSize && current.split.data < Split::SPLIT_ENFORCE && !force_split)
               return createLeaf(current,alloc);
-
+	  
             /* fill all children by always splitting the largest one */
             bool hasTimeSplits = false;
             NodeRecordMB4D values[MAX_BRANCHING_FACTOR];
@@ -503,15 +498,16 @@ namespace embree
             }
 
             /* create node */
-            auto node = createNode(alloc, hasTimeSplits);
+            auto node = createNode(children.children.data(),children.numChildren,alloc,hasTimeSplits);
 
             /* recurse into each child and perform reduction */
             LBBox3fa gbounds = empty;
             for (size_t i=0; i<children.size(); i++) {
               values[i] = createLargeLeaf(children[i],alloc);
               gbounds.extend(values[i].lbounds);
-              setNode(node,i,values[i]);
             }
+
+            setNode(current,children.children.data(),node,values,children.numChildren);
 
             /* calculate geometry bounds of this node */
             if (hasTimeSplits)
@@ -592,7 +588,7 @@ namespace embree
             //std::sort(&children[0],&children[children.size()],std::greater<BuildRecord>()); // FIXME: reduces traversal performance of bvh8.triangle4 (need to verified) !!
 
             /*! create an inner node */
-            auto node = createNode(alloc, hasTimeSplits);
+            auto node = createNode(children.children.data(), children.numChildren, alloc, hasTimeSplits);
             LBBox3fa gbounds = empty;
 
             /* spawn tasks */
@@ -602,7 +598,6 @@ namespace embree
               parallel_for(size_t(0), children.size(), [&] (const range<size_t>& r) {
                   for (size_t i=r.begin(); i<r.end(); i++) {
                     values[i] = recurse(children[i],nullptr,true);
-                    setNode(node,i,values[i]);
                     _mm_mfence(); // to allow non-temporal stores during build
                   }
                 });
@@ -618,9 +613,10 @@ namespace embree
               for (ssize_t i=children.size()-1; i>=0; i--) {
                 values[i] = recurse(children[i],alloc,false);
                 gbounds.extend(values[i].lbounds);
-                setNode(node,i,values[i]);
               }
             }
+
+            setNode(current,children.children.data(),node,values,children.numChildren);
 
             /* calculate geometry bounds of this node */
             if (unlikely(hasTimeSplits))

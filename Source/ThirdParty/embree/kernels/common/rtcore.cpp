@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #define RTC_EXPORT_API
 
@@ -179,6 +166,17 @@ RTC_NAMESPACE_BEGIN;
     return nullptr;
   }
 
+  RTC_API RTCDevice rtcGetSceneDevice(RTCScene hscene)
+  {
+    Scene* scene = (Scene*) hscene;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcGetSceneDevice);
+    RTC_VERIFY_HANDLE(hscene);
+    return (RTCDevice)scene->device->refInc(); // user will own one additional device reference
+    RTC_CATCH_END2(scene);
+    return (RTCDevice)nullptr;
+  }
+
   RTC_API void rtcSetSceneProgressMonitorFunction(RTCScene hscene, RTCProgressMonitorFunction progress, void* ptr) 
   {
     Scene* scene = (Scene*) hscene;
@@ -294,6 +292,26 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(scene);
   }
 
+  RTC_API void rtcCollide (RTCScene hscene0, RTCScene hscene1, RTCCollideFunc callback, void* userPtr)
+  {
+    Scene* scene0 = (Scene*) hscene0;
+    Scene* scene1 = (Scene*) hscene1;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcCollide);
+#if defined(DEBUG)
+    RTC_VERIFY_HANDLE(hscene0);
+    RTC_VERIFY_HANDLE(hscene1);
+    if (scene0->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
+    if (scene1->isModified()) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scene got not committed");
+    if (scene0->device != scene1->device) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes are from different devices");
+    auto nUserPrims0 = scene0->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    auto nUserPrims1 = scene1->getNumPrimitives (Geometry::MTY_USER_GEOMETRY, false);
+    if (scene0->numPrimitives() != nUserPrims0 && scene1->numPrimitives() != nUserPrims1) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"scenes must only contain user geometries with a single timestep");
+#endif
+    scene0->intersectors.collide(scene0,scene1,callback,userPtr);
+    RTC_CATCH_END(scene0->device);
+  }
+  
   inline bool pointQuery(Scene* scene, RTCPointQuery* query, RTCPointQueryContext* userContext, RTCPointQueryFunction queryFunc, void* userPtr)
   {
     bool changed = false;
@@ -1029,6 +1047,40 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
 
+  RTC_API void rtcSetGeometryTransformQuaternion(RTCGeometry hgeometry, unsigned int timeStep, const RTCQuaternionDecomposition* qd)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryTransformQuaternion);
+    RTC_VERIFY_HANDLE(hgeometry);
+    RTC_VERIFY_HANDLE(qd);
+    
+    AffineSpace3fx transform;
+    transform.l.vx.x = qd->scale_x;
+    transform.l.vy.y = qd->scale_y;
+    transform.l.vz.z = qd->scale_z;
+    transform.l.vy.x = qd->skew_xy;
+    transform.l.vz.x = qd->skew_xz;
+    transform.l.vz.y = qd->skew_yz;
+    transform.l.vx.y = qd->translation_x;
+    transform.l.vx.z = qd->translation_y;
+    transform.l.vy.z = qd->translation_z;
+    transform.p.x    = qd->shift_x;
+    transform.p.y    = qd->shift_y;
+    transform.p.z    = qd->shift_z;
+
+    // normalize quaternion
+    Quaternion3f q(qd->quaternion_r, qd->quaternion_i, qd->quaternion_j, qd->quaternion_k);
+    q = normalize(q);
+    transform.l.vx.w = q.i;
+    transform.l.vy.w = q.j;
+    transform.l.vz.w = q.k;
+    transform.p.w    = q.r;
+
+    geometry->setQuaternionDecomposition(transform, timeStep);
+    RTC_CATCH_END2(geometry);
+  }
+
   RTC_API void rtcGetGeometryTransform(RTCGeometry hgeometry, float time, RTCFormat format, void* xfm)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1113,6 +1165,7 @@ RTC_NAMESPACE_BEGIN;
 #endif
     }
 
+    case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE:
     case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE:
       
     case RTC_GEOMETRY_TYPE_ROUND_BEZIER_CURVE:
@@ -1139,7 +1192,7 @@ RTC_NAMESPACE_BEGIN;
       
       Geometry* geom;
       switch (type) {
-      //case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE            : geom = createLineSegments (device,Geometry::GTY_ROUND_LINEAR_CURVE); break;
+      case RTC_GEOMETRY_TYPE_ROUND_LINEAR_CURVE            : geom = createLineSegments (device,Geometry::GTY_ROUND_LINEAR_CURVE); break;
       case RTC_GEOMETRY_TYPE_FLAT_LINEAR_CURVE             : geom = createLineSegments (device,Geometry::GTY_FLAT_LINEAR_CURVE); break;
       //case RTC_GEOMETRY_TYPE_NORMAL_ORIENTED_LINEAR_CURVE  : geom = createLineSegments (device,Geometry::GTY_ORIENTED_LINEAR_CURVE); break;
         
@@ -1222,7 +1275,7 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END(device);
     return nullptr;
   }
-  
+
   RTC_API void rtcSetGeometryUserPrimitiveCount(RTCGeometry hgeometry, unsigned int userPrimitiveCount)
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1285,7 +1338,6 @@ RTC_NAMESPACE_BEGIN;
     RTC_CATCH_END2(geometry);
   }
  
-  /*! sets the build quality of the geometry */
   RTC_API void rtcSetGeometryBuildQuality (RTCGeometry hgeometry, RTCBuildQuality quality) 
   {
     Geometry* geometry = (Geometry*) hgeometry;
@@ -1298,6 +1350,21 @@ RTC_NAMESPACE_BEGIN;
         quality != RTC_BUILD_QUALITY_REFIT)
       throw std::runtime_error("invalid build quality");
     geometry->setBuildQuality(quality);
+    RTC_CATCH_END2(geometry);
+  }
+
+  RTC_API void rtcSetGeometryMaxRadiusScale(RTCGeometry hgeometry, float maxRadiusScale)
+  {
+    Geometry* geometry = (Geometry*) hgeometry;
+    RTC_CATCH_BEGIN;
+    RTC_TRACE(rtcSetGeometryMaxRadiusScale);
+    RTC_VERIFY_HANDLE(hgeometry);
+#if RTC_MIN_WIDTH
+    if (maxRadiusScale < 1.0f) throw_RTCError(RTC_ERROR_INVALID_OPERATION,"maximal radius scale has to be larger or equal to 1");
+    geometry->setMaxRadiusScale(maxRadiusScale);
+#else
+    throw_RTCError(RTC_ERROR_INVALID_OPERATION,"min-width feature is not enabled");
+#endif
     RTC_CATCH_END2(geometry);
   }
   

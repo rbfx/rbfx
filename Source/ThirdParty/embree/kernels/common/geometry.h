@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -26,6 +13,104 @@ namespace embree
 {
   class Scene;
   class Geometry;
+
+  struct GeometryCounts 
+  {
+    __forceinline GeometryCounts()
+      : numFilterFunctions(0),
+        numTriangles(0), numMBTriangles(0), 
+        numQuads(0), numMBQuads(0), 
+        numBezierCurves(0), numMBBezierCurves(0), 
+        numLineSegments(0), numMBLineSegments(0), 
+        numSubdivPatches(0), numMBSubdivPatches(0), 
+        numUserGeometries(0), numMBUserGeometries(0), 
+        numInstancesCheap(0), numMBInstancesCheap(0), 
+        numInstancesExpensive(0), numMBInstancesExpensive(0), 
+        numGrids(0), numMBGrids(0), 
+        numPoints(0), numMBPoints(0) {}
+
+    __forceinline size_t size() const {
+      return    numTriangles + numQuads + numBezierCurves + numLineSegments + numSubdivPatches + numUserGeometries + numInstancesCheap + numInstancesExpensive + numGrids + numPoints
+              + numMBTriangles + numMBQuads + numMBBezierCurves + numMBLineSegments + numMBSubdivPatches + numMBUserGeometries + numMBInstancesCheap + numMBInstancesExpensive + numMBGrids + numMBPoints;
+    }
+
+    __forceinline unsigned int enabledGeometryTypesMask() const
+    {
+      unsigned int mask = 0;
+      if (numTriangles) mask |= 1 << 0;
+      if (numQuads) mask |= 1 << 1;
+      if (numBezierCurves+numLineSegments) mask |= 1 << 2;
+      if (numSubdivPatches) mask |= 1 << 3;
+      if (numUserGeometries) mask |= 1 << 4;
+      if (numInstancesCheap) mask |= 1 << 5;
+      if (numInstancesExpensive) mask |= 1 << 6;
+      if (numGrids) mask |= 1 << 7;
+      if (numPoints) mask |= 1 << 8;
+
+      unsigned int maskMB = 0;
+      if (numMBTriangles) maskMB |= 1 << 0;
+      if (numMBQuads) maskMB |= 1 << 1;
+      if (numMBBezierCurves+numMBLineSegments) maskMB |= 1 << 2;
+      if (numMBSubdivPatches) maskMB |= 1 << 3;
+      if (numMBUserGeometries) maskMB |= 1 << 4;
+      if (numMBInstancesCheap) maskMB |= 1 << 5;
+      if (numMBInstancesExpensive) maskMB |= 1 << 6;
+      if (numMBGrids) maskMB |= 1 << 7;
+      if (numMBPoints) maskMB |= 1 << 8;
+      
+      return (mask<<8) + maskMB;
+    }
+
+    __forceinline GeometryCounts operator+ (GeometryCounts const & rhs) const
+    {
+      GeometryCounts ret;
+      ret.numFilterFunctions = numFilterFunctions + rhs.numFilterFunctions;
+      ret.numTriangles = numTriangles + rhs.numTriangles;
+      ret.numMBTriangles = numMBTriangles + rhs.numMBTriangles;
+      ret.numQuads = numQuads + rhs.numQuads;
+      ret.numMBQuads = numMBQuads + rhs.numMBQuads;
+      ret.numBezierCurves = numBezierCurves + rhs.numBezierCurves;
+      ret.numMBBezierCurves = numMBBezierCurves + rhs.numMBBezierCurves;
+      ret.numLineSegments = numLineSegments + rhs.numLineSegments;
+      ret.numMBLineSegments = numMBLineSegments + rhs.numMBLineSegments;
+      ret.numSubdivPatches = numSubdivPatches + rhs.numSubdivPatches;
+      ret.numMBSubdivPatches = numMBSubdivPatches + rhs.numMBSubdivPatches;
+      ret.numUserGeometries = numUserGeometries + rhs.numUserGeometries;
+      ret.numMBUserGeometries = numMBUserGeometries + rhs.numMBUserGeometries;
+      ret.numInstancesCheap = numInstancesCheap + rhs.numInstancesCheap;
+      ret.numMBInstancesCheap = numMBInstancesCheap + rhs.numMBInstancesCheap;
+      ret.numInstancesExpensive = numInstancesExpensive + rhs.numInstancesExpensive;
+      ret.numMBInstancesExpensive = numMBInstancesExpensive + rhs.numMBInstancesExpensive;
+      ret.numGrids = numGrids + rhs.numGrids;
+      ret.numMBGrids = numMBGrids + rhs.numMBGrids;
+      ret.numPoints = numPoints + rhs.numPoints;
+      ret.numMBPoints = numMBPoints + rhs.numMBPoints;
+
+      return ret;
+    }
+
+    size_t numFilterFunctions;       //!< number of geometries with filter functions enabled
+    size_t numTriangles;             //!< number of enabled triangles
+    size_t numMBTriangles;           //!< number of enabled motion blured triangles
+    size_t numQuads;                 //!< number of enabled quads
+    size_t numMBQuads;               //!< number of enabled motion blurred quads
+    size_t numBezierCurves;          //!< number of enabled curves
+    size_t numMBBezierCurves;        //!< number of enabled motion blurred curves
+    size_t numLineSegments;          //!< number of enabled line segments
+    size_t numMBLineSegments;        //!< number of enabled line motion blurred segments
+    size_t numSubdivPatches;         //!< number of enabled subdivision patches
+    size_t numMBSubdivPatches;       //!< number of enabled motion blured subdivision patches
+    size_t numUserGeometries;        //!< number of enabled user geometries
+    size_t numMBUserGeometries;      //!< number of enabled motion blurred user geometries
+    size_t numInstancesCheap;        //!< number of enabled cheap instances
+    size_t numMBInstancesCheap;      //!< number of enabled motion blurred cheap instances
+    size_t numInstancesExpensive;    //!< number of enabled expensive instances
+    size_t numMBInstancesExpensive;  //!< number of enabled motion blurred expensive instances
+    size_t numGrids;                 //!< number of enabled grid geometries
+    size_t numMBGrids;               //!< number of enabled motion blurred grid geometries
+    size_t numPoints;                //!< number of enabled points
+    size_t numMBPoints;              //!< number of enabled motion blurred points
+  };
 
   /*! Base class all geometries are derived from */
   class Geometry : public RefCount
@@ -66,8 +151,9 @@ namespace embree
       GTY_ORIENTED_DISC_POINT = 27,
       
       GTY_USER_GEOMETRY = 29,
-      GTY_INSTANCE = 30,
-      GTY_END = 31,
+      GTY_INSTANCE_CHEAP = 30,
+      GTY_INSTANCE_EXPENSIVE = 31,
+      GTY_END = 32,
 
       GTY_BASIS_LINEAR = 0,
       GTY_BASIS_BEZIER = 4,
@@ -82,27 +168,34 @@ namespace embree
       GTY_SUBTYPE_MASK = 3,
     };
 
+    enum GSubType
+    {
+      GTY_SUBTYPE_DEFAULT= 0,
+      GTY_SUBTYPE_INSTANCE_LINEAR = 0,
+      GTY_SUBTYPE_INSTANCE_QUATERNION = 1
+    };
+
     enum GTypeMask
     {
-      MTY_FLAT_LINEAR_CURVE = 1 << GTY_FLAT_LINEAR_CURVE,
-      MTY_ROUND_LINEAR_CURVE = 1 << GTY_ROUND_LINEAR_CURVE,
-      MTY_ORIENTED_LINEAR_CURVE = 1 << GTY_ORIENTED_LINEAR_CURVE,
+      MTY_FLAT_LINEAR_CURVE = 1ul << GTY_FLAT_LINEAR_CURVE,
+      MTY_ROUND_LINEAR_CURVE = 1ul << GTY_ROUND_LINEAR_CURVE,
+      MTY_ORIENTED_LINEAR_CURVE = 1ul << GTY_ORIENTED_LINEAR_CURVE,
       
-      MTY_FLAT_BEZIER_CURVE = 1 << GTY_FLAT_BEZIER_CURVE,
-      MTY_ROUND_BEZIER_CURVE = 1 << GTY_ROUND_BEZIER_CURVE,
-      MTY_ORIENTED_BEZIER_CURVE = 1 << GTY_ORIENTED_BEZIER_CURVE,
+      MTY_FLAT_BEZIER_CURVE = 1ul << GTY_FLAT_BEZIER_CURVE,
+      MTY_ROUND_BEZIER_CURVE = 1ul << GTY_ROUND_BEZIER_CURVE,
+      MTY_ORIENTED_BEZIER_CURVE = 1ul << GTY_ORIENTED_BEZIER_CURVE,
       
-      MTY_FLAT_BSPLINE_CURVE = 1 << GTY_FLAT_BSPLINE_CURVE,
-      MTY_ROUND_BSPLINE_CURVE = 1 << GTY_ROUND_BSPLINE_CURVE,
-      MTY_ORIENTED_BSPLINE_CURVE = 1 << GTY_ORIENTED_BSPLINE_CURVE,
+      MTY_FLAT_BSPLINE_CURVE = 1ul << GTY_FLAT_BSPLINE_CURVE,
+      MTY_ROUND_BSPLINE_CURVE = 1ul << GTY_ROUND_BSPLINE_CURVE,
+      MTY_ORIENTED_BSPLINE_CURVE = 1ul << GTY_ORIENTED_BSPLINE_CURVE,
 
-      MTY_FLAT_HERMITE_CURVE = 1 << GTY_FLAT_HERMITE_CURVE,
-      MTY_ROUND_HERMITE_CURVE = 1 << GTY_ROUND_HERMITE_CURVE,
-      MTY_ORIENTED_HERMITE_CURVE = 1 << GTY_ORIENTED_HERMITE_CURVE,
+      MTY_FLAT_HERMITE_CURVE = 1ul << GTY_FLAT_HERMITE_CURVE,
+      MTY_ROUND_HERMITE_CURVE = 1ul << GTY_ROUND_HERMITE_CURVE,
+      MTY_ORIENTED_HERMITE_CURVE = 1ul << GTY_ORIENTED_HERMITE_CURVE,
 
-      MTY_FLAT_CATMULL_ROM_CURVE = 1 << GTY_FLAT_CATMULL_ROM_CURVE,
-      MTY_ROUND_CATMULL_ROM_CURVE = 1 << GTY_ROUND_CATMULL_ROM_CURVE,
-      MTY_ORIENTED_CATMULL_ROM_CURVE = 1 << GTY_ORIENTED_CATMULL_ROM_CURVE,
+      MTY_FLAT_CATMULL_ROM_CURVE = 1ul << GTY_FLAT_CATMULL_ROM_CURVE,
+      MTY_ROUND_CATMULL_ROM_CURVE = 1ul << GTY_ROUND_CATMULL_ROM_CURVE,
+      MTY_ORIENTED_CATMULL_ROM_CURVE = 1ul << GTY_ORIENTED_CATMULL_ROM_CURVE,
 
       MTY_CURVE2 = MTY_FLAT_LINEAR_CURVE | MTY_ROUND_LINEAR_CURVE | MTY_ORIENTED_LINEAR_CURVE,
       
@@ -111,28 +204,30 @@ namespace embree
                    MTY_FLAT_HERMITE_CURVE | MTY_ROUND_HERMITE_CURVE | MTY_ORIENTED_HERMITE_CURVE |
                    MTY_FLAT_CATMULL_ROM_CURVE | MTY_ROUND_CATMULL_ROM_CURVE | MTY_ORIENTED_CATMULL_ROM_CURVE,
 
-      MTY_SPHERE_POINT = 1 << GTY_SPHERE_POINT,
-      MTY_DISC_POINT = 1 << GTY_DISC_POINT,
-      MTY_ORIENTED_DISC_POINT = 1 << GTY_ORIENTED_DISC_POINT,
+      MTY_SPHERE_POINT = 1ul << GTY_SPHERE_POINT,
+      MTY_DISC_POINT = 1ul << GTY_DISC_POINT,
+      MTY_ORIENTED_DISC_POINT = 1ul << GTY_ORIENTED_DISC_POINT,
 
       MTY_POINTS = MTY_SPHERE_POINT | MTY_DISC_POINT | MTY_ORIENTED_DISC_POINT,
 
       MTY_CURVES = MTY_CURVE2 | MTY_CURVE4 | MTY_POINTS,
 
-      MTY_TRIANGLE_MESH = 1 << GTY_TRIANGLE_MESH,
-      MTY_QUAD_MESH = 1 << GTY_QUAD_MESH,
-      MTY_GRID_MESH = 1 << GTY_GRID_MESH,
-      MTY_SUBDIV_MESH = 1 << GTY_SUBDIV_MESH,
-      MTY_USER_GEOMETRY = 1 << GTY_USER_GEOMETRY,
-      MTY_INSTANCE = 1 << GTY_INSTANCE,
+      MTY_TRIANGLE_MESH = 1ul << GTY_TRIANGLE_MESH,
+      MTY_QUAD_MESH = 1ul << GTY_QUAD_MESH,
+      MTY_GRID_MESH = 1ul << GTY_GRID_MESH,
+      MTY_SUBDIV_MESH = 1ul << GTY_SUBDIV_MESH,
+      MTY_USER_GEOMETRY = 1ul << GTY_USER_GEOMETRY,
+
+      MTY_INSTANCE_CHEAP = 1ul << GTY_INSTANCE_CHEAP,
+      MTY_INSTANCE_EXPENSIVE = 1ul << GTY_INSTANCE_EXPENSIVE,
+      MTY_INSTANCE = MTY_INSTANCE_CHEAP | MTY_INSTANCE_EXPENSIVE
     };
 
     static const char* gtype_names[GTY_END];
 
-    enum State {
+    enum class State : unsigned {
       MODIFIED = 0,
       COMMITTED = 1,
-      BUILD = 2
     };
 
   public:
@@ -143,9 +238,6 @@ namespace embree
     /*! Geometry destructor */
     virtual ~Geometry();
 
-    /*! updates intersection filter function counts in scene */
-    void updateIntersectionFilters(bool enable);
-
   public:
 
     /*! tests if geometry is enabled */
@@ -154,12 +246,9 @@ namespace embree
     /*! tests if geometry is disabled */
     __forceinline bool isDisabled() const { return !isEnabled(); }
 
-    /*! tests if geometry is modified */
-    __forceinline bool isModified() const { return state != BUILD; }
-
-    /*! marks geometry modified */
-    __forceinline void setModified() {
-      if (state == BUILD) state = COMMITTED;
+    /*! tests if that geometry has some filter function set */
+    __forceinline bool hasFilterFunctions () const {
+      return (intersectionFilterN  != nullptr) || (occlusionFilterN  != nullptr);
     }
 
     /*! returns geometry type */
@@ -227,9 +316,6 @@ namespace embree
     /*! for all geometries */
   public:
 
-    Geometry* attach(Scene* scene, unsigned int geomID);
-    void detach();
-
     /*! Enable geometry. */
     virtual void enable();
 
@@ -250,20 +336,23 @@ namespace embree
     /*! Verify the geometry */
     virtual bool verify() { return true; }
 
-    /*! called if geometry is switching from disabled to enabled state */
-    virtual void enabling() = 0;
-
-    /*! called if geometry is switching from enabled to disabled state */
-    virtual void disabling() = 0;
-
     /*! called before every build */
     virtual void preCommit();
   
     /*! called after every build */
     virtual void postCommit();
 
+    virtual void addElementsToCount (GeometryCounts & counts) const {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    };
+
     /*! sets constant tessellation rate for the geometry */
     virtual void setTessellationRate(float N) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Sets the maximal curve radius scale allowed by min-width feature. */
+    virtual void setMaxRadiusScale(float s) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -321,6 +410,16 @@ namespace embree
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
+    /*! get fast access to first vertex buffer if applicable */
+    virtual float * getCompactVertexArray () const {
+      return nullptr;
+    }
+
+    /*! Returns the modified counter - how many times the geo has been modified */
+    __forceinline unsigned int getModCounter () const {
+      return modCounter_;
+    }
+
     /*! for triangle meshes and bezier curves only */
   public:
 
@@ -351,11 +450,16 @@ namespace embree
 
     /*! Sets the instanced scene */
     virtual void setInstancedScene(const Ref<Scene>& scene) {
-      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry");
     }
-    
+
     /*! Sets transformation of the instance */
     virtual void setTransform(const AffineSpace3fa& transform, unsigned int timeStep) {
+      throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
+    }
+
+    /*! Sets transformation of the instance */
+    virtual void setQuaternionDecomposition(const AffineSpace3ff& qd, unsigned int timeStep) {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"operation not supported for this geometry"); 
     }
 
@@ -392,15 +496,15 @@ namespace embree
 
   public:
 
-    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k) const {
+    virtual PrimInfo createPrimRefArray(mvector<PrimRef>& prims, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefArray not implemented for this geometry"); 
     }
 
-    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k) const {
+    virtual PrimInfo createPrimRefArrayMB(mvector<PrimRef>& prims, size_t itime, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }
 
-    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k) const {
+    virtual PrimInfoMB createPrimRefMBArray(mvector<PrimRefMB>& prims, const BBox1f& t0t1, const range<size_t>& r, size_t k, unsigned int geomID) const {
       throw_RTCError(RTC_ERROR_INVALID_OPERATION,"createPrimRefMBArray not implemented for this geometry"); 
     }
 
@@ -450,10 +554,8 @@ namespace embree
 
   public:
     Device* device;             //!< device this geometry belongs to
-    Scene* scene;               //!< pointer to scene this mesh belongs to
 
     void* userPtr;              //!< user pointer
-    unsigned int geomID;        //!< internal geometry ID
     unsigned int numPrimitives; //!< number of primitives of this geometry
     
     unsigned int numTimeSteps;  //!< number of time steps
@@ -461,11 +563,13 @@ namespace embree
     BBox1f time_range;          //!< motion blur time range
     
     unsigned int mask;             //!< for masking out geometry
+    unsigned int modCounter_ = 1; //!< counter for every modification - used to rebuild scenes when geo is modified
+    
     struct {
-      GType gtype : 6;                //!< geometry type
+      GType gtype : 8;                //!< geometry type
+      GSubType gsubtype : 8;          //!< geometry subtype
       RTCBuildQuality quality : 3;    //!< build quality for geometry
-      State state : 2;
-      bool numPrimitivesChanged : 1; //!< true if number of primitives changed
+      unsigned state : 2;
       bool enabled : 1;              //!< true if geometry is enabled
     };
        

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -145,7 +132,7 @@ namespace embree
   public:
     /*! Buffer construction */
     RawBufferView()
-      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modified(true), userData(0) {}
+      : ptr_ofs(nullptr), stride(0), num(0), format(RTC_FORMAT_UNDEFINED), modCounter(1), modified(true), userData(0) {}
 
   public:
     /*! sets the buffer view */
@@ -158,6 +145,7 @@ namespace embree
       stride = stride_in;
       num = num_in;
       format = format_in;
+      modCounter++;
       modified = true;
       buffer = buffer_in;
     }
@@ -197,13 +185,24 @@ namespace embree
     }
 
     /*! mark buffer as modified or unmodified */
-    __forceinline void setModified(bool b) {
-      modified = b;
+    __forceinline void setModified() {
+      modCounter++;
+      modified = true;
     }
 
     /*! mark buffer as modified or unmodified */
-    __forceinline bool isModified() const {
+    __forceinline bool isModified(unsigned int otherModCounter) const {
+      return modCounter > otherModCounter;
+    }
+
+     /*! mark buffer as modified or unmodified */
+    __forceinline bool isLocalModified() const {
       return modified;
+    }
+
+    /*! clear local modified flag */
+    __forceinline void clearLocalModified() {
+      modified = false;
     }
 
     /*! returns true of the buffer is not empty */
@@ -223,7 +222,8 @@ namespace embree
     size_t stride;      //!< stride of the buffer in bytes
     size_t num;         //!< number of elements in the buffer
     RTCFormat format;   //!< format of the buffer
-    bool modified;      //!< true if the buffer got modified
+    unsigned int modCounter; //!< version ID of this buffer
+    bool modified;      //!< local modified data
     int userData;       //!< special data
     Ref<Buffer> buffer; //!< reference to the parent buffer
   };

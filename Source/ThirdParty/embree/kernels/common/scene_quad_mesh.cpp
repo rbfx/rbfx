@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "scene_quad_mesh.h"
 #include "scene.h"
@@ -25,18 +12,6 @@ namespace embree
     : Geometry(device,GTY_QUAD_MESH,0,1)
   {
     vertices.resize(numTimeSteps);
-  }
-
-  void QuadMesh::enabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numQuads += numPrimitives;
-    else                   scene->worldMB.numQuads += numPrimitives;
-  }
-  
-  void QuadMesh::disabling() 
-  { 
-    if (numTimeSteps == 1) scene->world.numQuads -= numPrimitives;
-    else                   scene->worldMB.numQuads -= numPrimitives;
   }
 
   void QuadMesh::setMask (unsigned mask) 
@@ -137,19 +112,19 @@ namespace embree
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      quads.setModified(true);
+      quads.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX)
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertices[slot].setModified(true);
+      vertices[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertexAttribs[slot].setModified(true);
+      vertexAttribs[slot].setModified();
     }
     else
     {
@@ -159,27 +134,20 @@ namespace embree
     Geometry::update();
   }
 
-  void QuadMesh::preCommit() 
+  void QuadMesh::commit() 
   {
     /* verify that stride of all time steps are identical */
     for (unsigned int t=0; t<numTimeSteps; t++)
       if (vertices[t].getStride() != vertices[0].getStride())
         throw_RTCError(RTC_ERROR_INVALID_OPERATION,"stride of vertex buffers have to be identical for each time step");
 
-    Geometry::preCommit();
+    Geometry::commit();
   }
 
-  void QuadMesh::postCommit() 
+  void QuadMesh::addElementsToCount (GeometryCounts & counts) const
   {
-    scene->vertices[geomID] = (float*) vertices0.getPtr();
-
-    quads.setModified(false);
-    for (auto& buf : vertices)
-      buf.setModified(false);
-    for (auto& attrib : vertexAttribs)
-      attrib.setModified(false);
-
-    Geometry::postCommit();
+    if (numTimeSteps == 1) counts.numQuads += numPrimitives;
+    else                   counts.numMBQuads += numPrimitives;
   }
 
   bool QuadMesh::verify() 

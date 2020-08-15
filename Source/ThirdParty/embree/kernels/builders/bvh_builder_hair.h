@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -36,7 +23,7 @@ namespace embree
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8), finished_range_threshold(inf) {}
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(7), finished_range_threshold(inf) {}
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -49,10 +36,10 @@ namespace embree
 
       template<typename NodeRef,
         typename CreateAllocFunc,
-        typename CreateAlignedNodeFunc,
-        typename SetAlignedNodeFunc,
-        typename CreateUnalignedNodeFunc,
-        typename SetUnalignedNodeFunc,
+        typename CreateAABBNodeFunc,
+        typename SetAABBNodeFunc,
+        typename CreateOBBNodeFunc,
+        typename SetOBBNodeFunc,
         typename CreateLeafFunc,
         typename ProgressMonitor,
         typename ReportFinishedRangeFunc>
@@ -78,10 +65,10 @@ namespace embree
           BuilderT (Scene* scene,
                     PrimRef* prims,
                     const CreateAllocFunc& createAlloc,
-                    const CreateAlignedNodeFunc& createAlignedNode,
-                    const SetAlignedNodeFunc& setAlignedNode,
-                    const CreateUnalignedNodeFunc& createUnalignedNode,
-                    const SetUnalignedNodeFunc& setUnalignedNode,
+                    const CreateAABBNodeFunc& createAABBNode,
+                    const SetAABBNodeFunc& setAABBNode,
+                    const CreateOBBNodeFunc& createOBBNode,
+                    const SetOBBNodeFunc& setOBBNode,
                     const CreateLeafFunc& createLeaf,
                     const ProgressMonitor& progressMonitor,
                     const ReportFinishedRangeFunc& reportFinishedRange,
@@ -90,10 +77,10 @@ namespace embree
             : cfg(settings),
             prims(prims),
             createAlloc(createAlloc),
-            createAlignedNode(createAlignedNode),
-            setAlignedNode(setAlignedNode),
-            createUnalignedNode(createUnalignedNode),
-            setUnalignedNode(setUnalignedNode),
+            createAABBNode(createAABBNode),
+            setAABBNode(setAABBNode),
+            createOBBNode(createOBBNode),
+            setOBBNode(setOBBNode),
             createLeaf(createLeaf),
             progressMonitor(progressMonitor),
             reportFinishedRange(reportFinishedRange),
@@ -164,11 +151,11 @@ namespace embree
             } while (numChildren < cfg.branchingFactor);
 
             /* create node */
-            auto node = createAlignedNode(alloc);
+            auto node = createAABBNode(alloc);
 
             for (size_t i=0; i<numChildren; i++) {
               const NodeRef child = createLargeLeaf(depth+1,children[i],alloc);
-              setAlignedNode(node,i,child,children[i].geomBounds);
+              setAABBNode(node,i,child,children[i].geomBounds);
             }
 
             return node;
@@ -301,7 +288,7 @@ namespace embree
             /* create aligned node */
             if (aligned)
             {
-              node = createAlignedNode(alloc);
+              node = createAABBNode(alloc);
 
               /* spawn tasks or ... */
               if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
@@ -309,7 +296,7 @@ namespace embree
                 parallel_for(size_t(0), numChildren, [&] (const range<size_t>& r) {
                     for (size_t i=r.begin(); i<r.end(); i++) {
                       const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
-                      setAlignedNode(node,i,recurse(depth+1,children[i],nullptr,true,child_alloc_barrier),children[i].geomBounds);
+                      setAABBNode(node,i,recurse(depth+1,children[i],nullptr,true,child_alloc_barrier),children[i].geomBounds);
                       _mm_mfence(); // to allow non-temporal stores during build
                     }
                   });
@@ -318,7 +305,7 @@ namespace embree
               else {
                 for (size_t i=0; i<numChildren; i++) {
                   const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
-                  setAlignedNode(node,i,recurse(depth+1,children[i],alloc,false,child_alloc_barrier),children[i].geomBounds);
+                  setAABBNode(node,i,recurse(depth+1,children[i],alloc,false,child_alloc_barrier),children[i].geomBounds);
                 }
               }
             }
@@ -326,7 +313,7 @@ namespace embree
             /* create unaligned node */
             else
             {
-              node = createUnalignedNode(alloc);
+              node = createOBBNode(alloc);
 
               /* spawn tasks or ... */
               if (pinfo.size() > SINGLE_THREADED_THRESHOLD)
@@ -337,7 +324,7 @@ namespace embree
                       const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                       const OBBox3fa obounds(space,sinfo.geomBounds);
                       const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
-                      setUnalignedNode(node,i,recurse(depth+1,children[i],nullptr,true,child_alloc_barrier),obounds);
+                      setOBBNode(node,i,recurse(depth+1,children[i],nullptr,true,child_alloc_barrier),obounds);
                       _mm_mfence(); // to allow non-temporal stores during build
                     }
                   });
@@ -350,7 +337,7 @@ namespace embree
                   const PrimInfoRange sinfo = unalignedHeuristic.computePrimInfo(children[i],space);
                   const OBBox3fa obounds(space,sinfo.geomBounds);
                   const bool child_alloc_barrier = pinfo.size() > cfg.finished_range_threshold && children[i].size() <= cfg.finished_range_threshold;
-                  setUnalignedNode(node,i,recurse(depth+1,children[i],alloc,false,child_alloc_barrier),obounds);
+                  setOBBNode(node,i,recurse(depth+1,children[i],alloc,false,child_alloc_barrier),obounds);
                 }
               }
             }
@@ -366,10 +353,10 @@ namespace embree
           Settings cfg;
           PrimRef* prims;
           const CreateAllocFunc& createAlloc;
-          const CreateAlignedNodeFunc& createAlignedNode;
-          const SetAlignedNodeFunc& setAlignedNode;
-          const CreateUnalignedNodeFunc& createUnalignedNode;
-          const SetUnalignedNodeFunc& setUnalignedNode;
+          const CreateAABBNodeFunc& createAABBNode;
+          const SetAABBNodeFunc& setAABBNode;
+          const CreateOBBNodeFunc& createOBBNode;
+          const SetOBBNodeFunc& setOBBNode;
           const CreateLeafFunc& createLeaf;
           const ProgressMonitor& progressMonitor;
           const ReportFinishedRangeFunc& reportFinishedRange;
@@ -382,19 +369,19 @@ namespace embree
 
       template<typename NodeRef,
         typename CreateAllocFunc,
-        typename CreateAlignedNodeFunc,
-        typename SetAlignedNodeFunc,
-        typename CreateUnalignedNodeFunc,
-        typename SetUnalignedNodeFunc,
+        typename CreateAABBNodeFunc,
+        typename SetAABBNodeFunc,
+        typename CreateOBBNodeFunc,
+        typename SetOBBNodeFunc,
         typename CreateLeafFunc,
         typename ProgressMonitor,
         typename ReportFinishedRangeFunc>
 
         static NodeRef build (const CreateAllocFunc& createAlloc,
-                              const CreateAlignedNodeFunc& createAlignedNode,
-                              const SetAlignedNodeFunc& setAlignedNode,
-                              const CreateUnalignedNodeFunc& createUnalignedNode,
-                              const SetUnalignedNodeFunc& setUnalignedNode,
+                              const CreateAABBNodeFunc& createAABBNode,
+                              const SetAABBNodeFunc& setAABBNode,
+                              const CreateOBBNodeFunc& createOBBNode,
+                              const SetOBBNodeFunc& setOBBNode,
                               const CreateLeafFunc& createLeaf,
                               const ProgressMonitor& progressMonitor,
                               const ReportFinishedRangeFunc& reportFinishedRange,
@@ -405,14 +392,14 @@ namespace embree
         {
           typedef BuilderT<NodeRef,
             CreateAllocFunc,
-            CreateAlignedNodeFunc,SetAlignedNodeFunc,
-            CreateUnalignedNodeFunc,SetUnalignedNodeFunc,
+            CreateAABBNodeFunc,SetAABBNodeFunc,
+            CreateOBBNodeFunc,SetOBBNodeFunc,
             CreateLeafFunc,ProgressMonitor,
             ReportFinishedRangeFunc> Builder;
 
           Builder builder(scene,prims,createAlloc,
-                          createAlignedNode,setAlignedNode,
-                          createUnalignedNode,setUnalignedNode,
+                          createAABBNode,setAABBNode,
+                          createOBBNode,setOBBNode,
                           createLeaf,progressMonitor,reportFinishedRange,settings);
 
           NodeRef root = builder.recurse(1,pinfo,nullptr,true,false);

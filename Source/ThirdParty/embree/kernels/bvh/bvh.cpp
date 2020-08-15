@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "bvh.h"
 #include "bvh_statistics.h"
@@ -55,7 +42,7 @@ namespace embree
     if (node.isBarrier())
       node.clearBarrier();
     else if (!node.isLeaf()) {
-      BaseNode* n = node.baseNode(BVH_FLAG_ALIGNED_NODE); // FIXME: flags should be stored in BVH
+      BaseNode* n = node.baseNode(); // FIXME: flags should be stored in BVH
       for (size_t c=0; c<N; c++)
         clearBarrier(n->child(c));
     }
@@ -87,8 +74,8 @@ namespace embree
     {
       std::pop_heap(lst.begin(), lst.end());
       NodeArea n = lst.back(); lst.pop_back();
-      if (!n.node->isAlignedNode()) break;
-      AlignedNode* node = n.node->alignedNode();
+      if (!n.node->isAABBNode()) break;
+      AABBNode* node = n.node->getAABBNode();
       for (size_t i=0; i<N; i++) {
         if (node->child(i) == BVHN::emptyNode) continue;
         lst.push_back(NodeArea(node->child(i),node->bounds(i)));
@@ -110,10 +97,10 @@ namespace embree
       node.clearBarrier();
       return node;
     }
-    else if (node.isAlignedNode()) 
+    else if (node.isAABBNode()) 
     {
-      AlignedNode* oldnode = node.alignedNode();
-      AlignedNode* newnode = (BVHN::AlignedNode*) allocator.malloc0(sizeof(BVHN::AlignedNode),byteNodeAlignment);
+      AABBNode* oldnode = node.getAABBNode();
+      AABBNode* newnode = (BVHN::AABBNode*) allocator.malloc0(sizeof(BVHN::AABBNode),byteNodeAlignment);
       *newnode = *oldnode;
       for (size_t c=0; c<N; c++)
         newnode->child(c) = layoutLargeNodesRecursion(oldnode->child(c),allocator);

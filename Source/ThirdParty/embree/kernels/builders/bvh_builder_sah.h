@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -37,20 +24,21 @@ namespace embree
 
     struct GeneralBVHBuilder
     {
-      static const size_t MAX_BRANCHING_FACTOR = 8;        //!< maximum supported BVH branching factor
-      static const size_t MIN_LARGE_LEAF_LEVELS = 8;        //!< create balanced tree of we are that many levels before the maximum tree depth
+      static const size_t MAX_BRANCHING_FACTOR = 16;       //!< maximum supported BVH branching factor      
+      static const size_t MIN_LARGE_LEAF_LEVELS = 8;       //!< create balanced tree of we are that many levels before the maximum tree depth
+      
 
       /*! settings for SAH builder */
       struct Settings
       {
         /*! default settings */
         Settings ()
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(7),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf) {}
 
         /*! initialize settings from API settings */
         Settings (const RTCBuildArguments& settings)
-        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(8),
+        : branchingFactor(2), maxDepth(32), logBlockSize(0), minLeafSize(1), maxLeafSize(7),
           travCost(1.0f), intCost(1.0f), singleThreadThreshold(1024), primrefarrayalloc(inf)
         {
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxBranchingFactor)) branchingFactor = settings.maxBranchingFactor;
@@ -60,11 +48,16 @@ namespace embree
           if (RTC_BUILD_ARGUMENTS_HAS(settings,maxLeafSize       )) maxLeafSize     = settings.maxLeafSize;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,traversalCost     )) travCost        = settings.traversalCost;
           if (RTC_BUILD_ARGUMENTS_HAS(settings,intersectionCost  )) intCost         = settings.intersectionCost;
+
+          minLeafSize = min(minLeafSize,maxLeafSize);
         }
 
         Settings (size_t sahBlockSize, size_t minLeafSize, size_t maxLeafSize, float travCost, float intCost, size_t singleThreadThreshold, size_t primrefarrayalloc = inf)
         : branchingFactor(2), maxDepth(32), logBlockSize(bsr(sahBlockSize)), minLeafSize(minLeafSize), maxLeafSize(maxLeafSize),
-          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc) {}
+          travCost(travCost), intCost(intCost), singleThreadThreshold(singleThreadThreshold), primrefarrayalloc(primrefarrayalloc)
+        {
+          minLeafSize = min(minLeafSize,maxLeafSize);
+        }
 
       public:
         size_t branchingFactor;  //!< branching factor of BVH to build
@@ -104,6 +97,18 @@ namespace embree
           Set prims;          //!< The list of primitives.
         };
 
+      template<typename PrimRef, typename Set>
+      struct DefaultCanCreateLeafFunc
+      {
+        __forceinline bool operator()(const PrimRef*, const Set&) const { return true; }
+      };
+
+      template<typename PrimRef, typename Set>
+      struct DefaultCanCreateLeafSplitFunc
+      {
+        __forceinline void operator()(PrimRef*, const Set&, Set&, Set&) const { }
+      };
+
       template<typename BuildRecord,
         typename Heuristic,
         typename Set,
@@ -114,6 +119,8 @@ namespace embree
         typename CreateNodeFunc,
         typename UpdateNodeFunc,
         typename CreateLeafFunc,
+        typename CanCreateLeafFunc,
+        typename CanCreateLeafSplitFunc,
         typename ProgressMonitor>
 
         class BuilderT
@@ -126,14 +133,20 @@ namespace embree
                     const CreateNodeFunc& createNode,
                     const UpdateNodeFunc& updateNode,
                     const CreateLeafFunc& createLeaf,
+                    const CanCreateLeafFunc& canCreateLeaf,
+                    const CanCreateLeafSplitFunc& canCreateLeafSplit,
                     const ProgressMonitor& progressMonitor,
-                    const Settings& settings)
-
-            : cfg(settings),
-            prims(prims),
-            heuristic(heuristic),
-            createAlloc(createAlloc), createNode(createNode), updateNode(updateNode), createLeaf(createLeaf),
-            progressMonitor(progressMonitor)
+                    const Settings& settings) :
+                    cfg(settings),
+                    prims(prims),
+                    heuristic(heuristic),
+                    createAlloc(createAlloc),
+                    createNode(createNode),
+                    updateNode(updateNode),
+                    createLeaf(createLeaf),
+                    canCreateLeaf(canCreateLeaf),
+                    canCreateLeafSplit(canCreateLeafSplit),
+                    progressMonitor(progressMonitor)
           {
             if (cfg.branchingFactor > MAX_BRANCHING_FACTOR)
               throw_RTCError(RTC_ERROR_UNKNOWN,"bvh_builder: branching factor too large");
@@ -146,7 +159,7 @@ namespace embree
               throw_RTCError(RTC_ERROR_UNKNOWN,"depth limit reached");
 
             /* create leaf for few primitives */
-            if (current.prims.size() <= cfg.maxLeafSize)
+            if (current.prims.size() <= cfg.maxLeafSize && canCreateLeaf(prims,current.prims))
               return createLeaf(prims,current.prims,alloc);
 
             /* fill all children by always splitting the largest one */
@@ -162,7 +175,7 @@ namespace embree
               for (size_t i=0; i<numChildren; i++)
               {
                 /* ignore leaves as they cannot get split */
-                if (children[i].prims.size() <= cfg.maxLeafSize)
+                if (children[i].prims.size() <= cfg.maxLeafSize && canCreateLeaf(prims,children[i].prims))
                   continue;
 
                 /* remember child with largest size */
@@ -176,7 +189,11 @@ namespace embree
               /*! split best child into left and right child */
               BuildRecord left(current.depth+1);
               BuildRecord right(current.depth+1);
-              heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
+              if (!canCreateLeaf(prims,children[bestChild].prims)) {
+                canCreateLeafSplit(prims,children[bestChild].prims,left.prims,right.prims);
+              } else {
+                heuristic.splitFallback(children[bestChild].prims,left.prims,right.prims);
+              }
 
               /* add new children left and right */
               children[bestChild] = children[numChildren-1];
@@ -229,7 +246,7 @@ namespace embree
             /*! perform initial split */
             Set lprims,rprims;
             heuristic.split(split,current.prims,lprims,rprims);
-
+	    
             /*! initialize child list with initial split */
             ReductionTy values[MAX_BRANCHING_FACTOR];
             BuildRecord children[MAX_BRANCHING_FACTOR];
@@ -309,6 +326,8 @@ namespace embree
           const CreateNodeFunc& createNode;
           const UpdateNodeFunc& updateNode;
           const CreateLeafFunc& createLeaf;
+          const CanCreateLeafFunc& canCreateLeaf;
+          const CanCreateLeafSplitFunc& canCreateLeafSplit;
           const ProgressMonitor& progressMonitor;
         };
 
@@ -325,12 +344,12 @@ namespace embree
 
         __noinline static ReductionTy build(Heuristic& heuristic,
                                             PrimRef* prims,
-                                 const Set& set,
-                                 CreateAllocFunc createAlloc,
-                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode,
-                                 const CreateLeafFunc& createLeaf,
-                                 const ProgressMonitor& progressMonitor,
-                                 const Settings& settings)
+                                            const Set& set,
+                                            CreateAllocFunc createAlloc,
+                                            CreateNodeFunc createNode, UpdateNodeFunc updateNode,
+                                            const CreateLeafFunc& createLeaf,
+                                            const ProgressMonitor& progressMonitor,
+                                            const Settings& settings)
       {
         typedef BuildRecordT<Set,typename Heuristic::Split> BuildRecord;
 
@@ -345,6 +364,8 @@ namespace embree
           CreateNodeFunc,
           UpdateNodeFunc,
           CreateLeafFunc,
+          DefaultCanCreateLeafFunc<PrimRef, Set>,
+          DefaultCanCreateLeafSplitFunc<PrimRef, Set>,
           ProgressMonitor> Builder;
 
         /* instantiate builder */
@@ -354,6 +375,68 @@ namespace embree
                         createNode,
                         updateNode,
                         createLeaf,
+                        DefaultCanCreateLeafFunc<PrimRef, Set>(),
+                        DefaultCanCreateLeafSplitFunc<PrimRef, Set>(),
+                        progressMonitor,
+                        settings);
+
+        /* build hierarchy */
+        BuildRecord record(1,set);
+        const ReductionTy root = builder.recurse(record,nullptr,true);
+        _mm_mfence(); // to allow non-temporal stores during build
+        return root;
+      }
+
+      template<
+      typename ReductionTy,
+        typename Heuristic,
+        typename Set,
+        typename PrimRef,
+        typename CreateAllocFunc,
+        typename CreateNodeFunc,
+        typename UpdateNodeFunc,
+        typename CreateLeafFunc,
+        typename CanCreateLeafFunc,
+        typename CanCreateLeafSplitFunc,
+        typename ProgressMonitor>
+
+        __noinline static ReductionTy build(Heuristic& heuristic,
+                                            PrimRef* prims,
+                                            const Set& set,
+                                            CreateAllocFunc createAlloc,
+                                            CreateNodeFunc createNode, UpdateNodeFunc updateNode,
+                                            const CreateLeafFunc& createLeaf,
+                                            const CanCreateLeafFunc& canCreateLeaf,
+                                            const CanCreateLeafSplitFunc& canCreateLeafSplit,
+                                            const ProgressMonitor& progressMonitor,
+                                            const Settings& settings)
+      {
+        typedef BuildRecordT<Set,typename Heuristic::Split> BuildRecord;
+
+        typedef BuilderT<
+          BuildRecord,
+          Heuristic,
+          Set,
+          PrimRef,
+          ReductionTy,
+          decltype(createAlloc()),
+          CreateAllocFunc,
+          CreateNodeFunc,
+          UpdateNodeFunc,
+          CreateLeafFunc,
+          CanCreateLeafFunc,
+          CanCreateLeafSplitFunc,
+          ProgressMonitor> Builder;
+
+        /* instantiate builder */
+        Builder builder(prims,
+                        heuristic,
+                        createAlloc,
+                        createNode,
+                        updateNode,
+                        createLeaf,
+                        canCreateLeaf,
+                        canCreateLeafSplit,
                         progressMonitor,
                         settings);
 
@@ -398,6 +481,41 @@ namespace embree
           createNode,
           updateNode,
           createLeaf,
+          progressMonitor,
+          settings);
+      }
+
+      /*! special builder that propagates reduction over the tree */
+      template<
+      typename ReductionTy,
+        typename CreateAllocFunc,
+        typename CreateNodeFunc,
+        typename UpdateNodeFunc,
+        typename CreateLeafFunc,
+        typename CanCreateLeafFunc,
+        typename CanCreateLeafSplitFunc,
+        typename ProgressMonitor>
+
+        static ReductionTy build(CreateAllocFunc createAlloc,
+                                 CreateNodeFunc createNode, UpdateNodeFunc updateNode,
+                                 const CreateLeafFunc& createLeaf,
+                                 const CanCreateLeafFunc& canCreateLeaf,
+                                 const CanCreateLeafSplitFunc& canCreateLeafSplit,
+                                 const ProgressMonitor& progressMonitor,
+                                 PrimRef* prims, const PrimInfo& pinfo,
+                                 const Settings& settings)
+      {
+        Heuristic heuristic(prims);
+        return GeneralBVHBuilder::build<ReductionTy,Heuristic,Set,PrimRef>(
+          heuristic,
+          prims,
+          PrimInfoRange(0,pinfo.size(),pinfo),
+          createAlloc,
+          createNode,
+          updateNode,
+          createLeaf,
+          canCreateLeaf,
+          canCreateLeafSplit,
           progressMonitor,
           settings);
       }

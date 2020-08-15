@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -36,18 +23,18 @@ namespace embree
 
     __forceinline PrimRef (const BBox3fa& bounds, unsigned int geomID, unsigned int primID) 
     {
-      lower = bounds.lower; lower.a = geomID;
-      upper = bounds.upper; upper.a = primID;
+      lower = Vec3fx(bounds.lower, geomID);
+      upper = Vec3fx(bounds.upper, primID);
     }
 
     __forceinline PrimRef (const BBox3fa& bounds, size_t id) 
     {
 #if defined(__X86_64__)
-      lower = bounds.lower; lower.u = id & 0xFFFFFFFF;
-      upper = bounds.upper; upper.u = (id >> 32) & 0xFFFFFFFF;
+      lower = Vec3fx(bounds.lower, (unsigned)(id & 0xFFFFFFFF));
+      upper = Vec3fx(bounds.upper, (unsigned)((id >> 32) & 0xFFFFFFFF));
 #else
-      lower = bounds.lower; lower.u = id;
-      upper = bounds.upper; upper.u = 0;
+      lower = Vec3fx(bounds.lower, (unsigned)id);
+      upper = Vec3fx(bounds.upper, (unsigned)0);
 #endif
     }
 
@@ -110,13 +97,13 @@ namespace embree
     }
 
     /*! Outputs primitive reference to a stream. */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const PrimRef& ref) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const PrimRef& ref) {
       return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", geomID = " << ref.geomID() << ", primID = " << ref.primID() << " }";
     }
 
   public:
-    Vec3fa lower;     //!< lower bounds and geomID
-    Vec3fa upper;     //!< upper bounds and primID
+    Vec3fx lower;     //!< lower bounds and geomID
+    Vec3fx upper;     //!< upper bounds and primID
   };
 
   /*! fast exchange for PrimRefs */

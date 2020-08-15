@@ -1,39 +1,41 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
+#include <type_traits>
+
+#include "bvh_builder_twolevel_internal.h"
 #include "bvh.h"
 #include "../common/primref.h"
 #include "../builders/priminfo.h"
+#include "../builders/primrefgen.h"
+
+/* new open/merge builder */
+#define ENABLE_DIRECT_SAH_MERGE_BUILDER 1
+#define ENABLE_OPEN_SEQUENTIAL 0
+#define SPLIT_MEMORY_RESERVE_FACTOR 1000
+#define SPLIT_MEMORY_RESERVE_SCALE 2
+#define SPLIT_MIN_EXT_SPACE 1000
 
 namespace embree
 {
   namespace isa
   {
-    template<int N, typename Mesh>
+    template<int N, typename Mesh, typename Primitive>
     class BVHNBuilderTwoLevel : public Builder
     {
       typedef BVHN<N> BVH;
-      typedef typename BVH::AlignedNode AlignedNode;
+      typedef typename BVH::AABBNode AABBNode;
       typedef typename BVH::NodeRef NodeRef;
+
+      __forceinline static bool isSmallGeometry(Mesh* mesh) {
+        return mesh->size() <= 4;
+      }
 
     public:
 
-      typedef void (*createMeshAccelTy)(Mesh* mesh, AccelData*& accel, Builder*& builder);
+      typedef void (*createMeshAccelTy)(Scene* scene, unsigned int geomID, AccelData*& accel, Builder*& builder);
 
       struct BuildRef : public PrimRef
       {
@@ -68,7 +70,7 @@ namespace embree
           return a.bounds_area < b.bounds_area;
         }
 
-        friend __forceinline std::ostream& operator<<(std::ostream& cout, const BuildRef& ref) {
+        friend __forceinline embree_ostream operator<<(embree_ostream cout, const BuildRef& ref) {
           return cout << "{ lower = " << ref.lower << ", upper = " << ref.upper << ", center2 = " << ref.center2() << ", geomID = " << ref.geomID() << ", numPrimitives = " << ref.numPrimitives() << ", bounds_area = " << ref.bounds_area << " }";
         }
 
@@ -89,7 +91,7 @@ namespace embree
         NodeRef ref = bref.node;
         unsigned int geomID   = bref.geomID();
         unsigned int numPrims = max((unsigned int)bref.numPrimitives() / N,(unsigned int)1);
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         size_t n = 0;
         for (size_t i=0; i<N; i++) {
           if (node->child(i) == BVH::emptyNode) continue;
@@ -101,7 +103,7 @@ namespace embree
       }
       
       /*! Constructor. */
-      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, const createMeshAccelTy createMeshAcce, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
+      BVHNBuilderTwoLevel (BVH* bvh, Scene* scene, bool useMortonBuilder = false, const size_t singleThreadThreshold = DEFAULT_SINGLE_THREAD_THRESHOLD);
       
       /*! Destructor */
       ~BVHNBuilderTwoLevel ();
@@ -112,42 +114,149 @@ namespace embree
       void clear();
 
       void open_sequential(const size_t extSize);
-
-    public:
       
-      struct BuilderState
-      {
-        BuilderState ()
-        : builder(nullptr), quality(RTC_BUILD_QUALITY_LOW) {}
+    private:
 
-        BuilderState (const Ref<Builder>& builder, RTCBuildQuality quality)
-        : builder(builder), quality(quality) {}
-        
-        void clear() {
-          builder = nullptr;
-          quality = RTC_BUILD_QUALITY_LOW;
+      class RefBuilderBase {
+      public:
+        virtual ~RefBuilderBase () {}
+        virtual void attachBuildRefs (BVHNBuilderTwoLevel* builder) = 0;
+        virtual bool meshQualityChanged (RTCBuildQuality currQuality) = 0;
+      };
+
+      class RefBuilderSmall : public RefBuilderBase {
+      public:
+
+        RefBuilderSmall (size_t objectID)
+          : objectID_ (objectID) {}
+
+        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder) {
+
+          Mesh* mesh = topBuilder->scene->template getSafe<Mesh>(objectID_);
+          size_t meshSize = mesh->size();
+          assert(isSmallGeometry(mesh));
+          
+          mvector<PrimRef> prefs(topBuilder->scene->device, meshSize);
+          auto pinfo = createPrimRefArray(mesh,objectID_,prefs,topBuilder->bvh->scene->progressInterface);
+
+          size_t begin=0;
+          while (begin < pinfo.size())
+          {
+            Primitive* accel = (Primitive*) topBuilder->bvh->alloc.getCachedAllocator().malloc1(sizeof(Primitive),BVH::byteAlignment);
+            typename BVH::NodeRef node = BVH::encodeLeaf((char*)accel,1);
+            accel->fill(prefs.data(),begin,pinfo.size(),topBuilder->bvh->scene);
+            
+            /* create build primitive */
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node,(unsigned int)objectID_,1);
+#else
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(pinfo.geomBounds,node);
+#endif
+          }
+          assert(begin == pinfo.size());
+        }
+
+        bool meshQualityChanged (RTCBuildQuality /*currQuality*/) {
+          return false;
         }
         
-        Ref<Builder> builder;
-        RTCBuildQuality quality;
+        size_t  objectID_;
       };
-      
-    public:
-      BVH* bvh;
-      std::vector<BVH*>& objects;
-      std::vector<BuilderState> builders;
-      
-    public:
-      Scene* scene;
-      createMeshAccelTy createMeshAccel;
-      
+
+      class RefBuilderLarge : public RefBuilderBase {
+      public:
+        
+        RefBuilderLarge (size_t objectID, const Ref<Builder>& builder, RTCBuildQuality quality)
+        : objectID_ (objectID), builder_ (builder), quality_ (quality) {}
+
+        void attachBuildRefs (BVHNBuilderTwoLevel* topBuilder)
+        {
+          BVH* object  = topBuilder->getBVH(objectID_); assert(object);
+          
+          /* build object if it got modified */
+          if (topBuilder->isGeometryModified(objectID_))
+            builder_->build();
+
+          /* create build primitive */
+          if (!object->getBounds().empty())
+          {
+#if ENABLE_DIRECT_SAH_MERGE_BUILDER
+            Mesh* mesh = topBuilder->getMesh(objectID_);
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root,(unsigned int)objectID_,(unsigned int)mesh->size());
+#else
+            topBuilder->refs[topBuilder->nextRef++] = BVHNBuilderTwoLevel::BuildRef(object->getBounds(),object->root);
+#endif
+          }
+        }
+
+        bool meshQualityChanged (RTCBuildQuality currQuality) {
+          return currQuality != quality_;
+        }
+
+      private:
+        size_t          objectID_;
+        Ref<Builder>    builder_;
+        RTCBuildQuality quality_;
+      };
+
+      void setupLargeBuildRefBuilder (size_t objectID, Mesh const * const mesh);
+      void setupSmallBuildRefBuilder (size_t objectID, Mesh const * const mesh);
+
+      BVH*  getBVH (size_t objectID) {
+        return this->bvh->objects[objectID];
+      }
+      Mesh* getMesh (size_t objectID) {
+        return this->scene->template getSafe<Mesh>(objectID);
+      }
+      bool  isGeometryModified (size_t objectID) {
+        return this->scene->isGeometryModified(objectID);
+      }
+
+      void resizeRefsList ()
+      {
+        size_t num = parallel_reduce (size_t(0), scene->size(), size_t(0), 
+          [this](const range<size_t>& r)->size_t {
+            size_t c = 0;
+            for (auto i=r.begin(); i<r.end(); ++i) {
+              Mesh* mesh = scene->getSafe<Mesh>(i);
+              if (mesh == nullptr || mesh->numTimeSteps != 1)
+                continue;
+              size_t meshSize = mesh->size();
+              c += isSmallGeometry(mesh) ? Primitive::blocks(meshSize) : 1;
+            }
+            return c;
+          },
+          std::plus<size_t>()
+        );
+
+        if (refs.size() < num) {
+          refs.resize(num);
+        }
+      }
+
+      void createMeshAccel (size_t geomID, Builder*& builder)
+      {
+        bvh->objects[geomID] = new BVH(Primitive::type,scene);
+        BVH* accel = bvh->objects[geomID];
+        auto mesh = scene->getSafe<Mesh>(geomID);
+        if (nullptr == mesh) {
+          throw_RTCError(RTC_ERROR_INVALID_ARGUMENT,"geomID does not return correct type");
+          return;
+        }
+
+        __internal_two_level_builder__::MeshBuilder<N,Mesh,Primitive>()(accel, mesh, geomID, this->useMortonBuilder_, builder);
+      }      
+
+      using BuilderList = std::vector<std::unique_ptr<RefBuilderBase>>;
+
+      BuilderList       builders;
+      BVH*              bvh;
+      Scene*            scene;      
       mvector<BuildRef> refs;
-      mvector<PrimRef> prims;
-      std::atomic<int> nextRef;
-      const size_t singleThreadThreshold;
-
-      typedef mvector<BuildRef> bvector;
-
+      mvector<PrimRef>  prims;
+      std::atomic<int>  nextRef;
+      const size_t      singleThreadThreshold;
+      bool              useMortonBuilder_ = false;
     };
   }
 }

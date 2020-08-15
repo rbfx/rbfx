@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -92,10 +79,6 @@
 #  endif
 #endif
 
-#if defined (_DEBUG)
-#define DEBUG
-#endif
-
 ////////////////////////////////////////////////////////////////////////////////
 /// Macros
 ////////////////////////////////////////////////////////////////////////////////
@@ -173,11 +156,11 @@
 /* debug printing macros */
 #define STRING(x) #x
 #define TOSTRING(x) STRING(x)
-#define PING std::cout << __FILE__ << " (" << __LINE__ << "): " << __FUNCTION__ << std::endl
-#define PRINT(x) std::cout << STRING(x) << " = " << (x) << std::endl
-#define PRINT2(x,y) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << std::endl
-#define PRINT3(x,y,z) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << std::endl
-#define PRINT4(x,y,z,w) std::cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << std::endl
+#define PING embree_cout << __FILE__ << " (" << __LINE__ << "): " << __FUNCTION__ << embree_endl
+#define PRINT(x) embree_cout << STRING(x) << " = " << (x) << embree_endl
+#define PRINT2(x,y) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << embree_endl
+#define PRINT3(x,y,z) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << embree_endl
+#define PRINT4(x,y,z,w) embree_cout << STRING(x) << " = " << (x) << ", " << STRING(y) << " = " << (y) << ", " << STRING(z) << " = " << (z) << ", " << STRING(w) << " = " << (w) << embree_endl
 
 #if defined(DEBUG) // only report file and line in debug mode
   #define THROW_RUNTIME_ERROR(str) \
@@ -188,7 +171,7 @@
 #endif
 
 #define FATAL(x)   THROW_RUNTIME_ERROR(x)
-#define WARNING(x) { std::cerr << "Warning: " << x << std::endl << std::flush; }
+#define WARNING(x) { std::cerr << "Warning: " << x << embree_endl << std::flush; }
 
 #define NOT_IMPLEMENTED FATAL(std::string(__FUNCTION__) + " not implemented")
 
@@ -244,7 +227,7 @@ __forceinline std::string toString(long long value) {
 //#pragma warning(disable:4200) // nonstandard extension used : zero-sized array in struct/union
 #pragma warning(disable:4800) // forcing value to bool 'true' or 'false' (performance warning)
 //#pragma warning(disable:4267) // '=' : conversion from 'size_t' to 'unsigned long', possible loss of data
-//#pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
+#pragma warning(disable:4244) // 'argument' : conversion from 'ssize_t' to 'unsigned int', possible loss of data
 //#pragma warning(disable:4355) // 'this' : used in base member initializer list
 //#pragma warning(disable:391 ) // '<=' : signed / unsigned mismatch
 //#pragma warning(disable:4018) // '<' : signed / unsigned mismatch
@@ -256,7 +239,12 @@ __forceinline std::string toString(long long value) {
 #pragma warning(disable:4503) // decorated name length exceeded, name was truncated
 #pragma warning(disable:4180) // qualifier applied to function type has no meaning; ignored
 #pragma warning(disable:4258) // definition from the for loop is ignored; the definition from the enclosing scope is used
-#pragma warning(disable:4789) // buffer '' of size 8 bytes will be overrun; 32 bytes will be written starting at offset 0
+
+#  if _MSC_VER < 1910 // prior to Visual studio 2017 (V141)
+#    pragma warning(disable:4101) // warning C4101: 'x': unreferenced local variable // a compiler bug issues wrong warnings
+#    pragma warning(disable:4789) // buffer '' of size 8 bytes will be overrun; 32 bytes will be written starting at offset 0
+#  endif
+
 #endif
 
 #if defined(__clang__) && !defined(__INTEL_COMPILER)
@@ -312,6 +300,12 @@ __forceinline std::string toString(long long value) {
 #define ENABLE_DEPRECATED_WARNING  __pragma(warning (enable : 4996)) // warning: function was declared deprecated
 #endif
 
+/* embree output stream */
+#define embree_ostream std::ostream&
+#define embree_cout std::cout
+#define embree_cout_uniform std::cout
+#define embree_endl std::endl
+  
 ////////////////////////////////////////////////////////////////////////////////
 /// Some macros for static profiling
 ////////////////////////////////////////////////////////////////////////////////

@@ -1,18 +1,5 @@
-## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
-##                                                                          ##
-## Licensed under the Apache License, Version 2.0 (the "License");          ##
-## you may not use this file except in compliance with the License.         ##
-## You may obtain a copy of the License at                                  ##
-##                                                                          ##
-##     http://www.apache.org/licenses/LICENSE-2.0                           ##
-##                                                                          ##
-## Unless required by applicable law or agreed to in writing, software      ##
-## distributed under the License is distributed on an "AS IS" BASIS,        ##
-## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ##
-## See the License for the specific language governing permissions and      ##
-## limitations under the License.                                           ##
-## ======================================================================== ##
+## Copyright 2009-2020 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
 
 MACRO(DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS)
   FOREACH(src ${ARGN})
@@ -53,6 +40,7 @@ SET(EMBREE_LIBRARY_FILES
   common/scene_line_segments.cpp
   common/scene_grid_mesh.cpp
   common/scene_points.cpp
+  common/motion_derivative.cpp
 
   subdiv/bezier_curve.cpp
   subdiv/bspline_curve.cpp
@@ -61,6 +49,7 @@ SET(EMBREE_LIBRARY_FILES
   geometry/primitive4.cpp
   geometry/instance_intersector.cpp
   geometry/curve_intersector_virtual.cpp
+  geometry/curve_intersector_virtual2.cpp
   builders/primrefgen.cpp
 
   bvh/bvh.cpp
@@ -68,6 +57,7 @@ SET(EMBREE_LIBRARY_FILES
   bvh/bvh4_factory.cpp
   bvh/bvh8_factory.cpp
 
+  bvh/bvh_collider.cpp
   bvh/bvh_rotate.cpp
   bvh/bvh_refit.cpp
   bvh/bvh_builder.cpp
@@ -88,7 +78,7 @@ IF (EMBREE_GEOMETRY_SUBDIVISION)
   subdiv/tessellation_cache.cpp
   subdiv/subdivpatch1base.cpp
   subdiv/catmullclark_coefficients.cpp
-  geometry/grid_soa.cpp	
+  geometry/grid_soa.cpp
   subdiv/subdivpatch1base_eval.cpp
   bvh/bvh_builder_subdiv.cpp)
 ENDIF()
@@ -102,28 +92,30 @@ IF (EMBREE_RAY_PACKETS)
 ENDIF()
 
 MACRO(embree_files TARGET ISA)
-      
+
   SET(${TARGET}
     geometry/instance_intersector.cpp
     geometry/curve_intersector_virtual.cpp
+    geometry/curve_intersector_virtual2.cpp
     bvh/bvh_intersector1_bvh4.cpp)
 
   IF (${ISA} EQUAL ${ISA_LOWEST_AVX})
     LIST(APPEND ${TARGET} geometry/primitive8.cpp)
-  ENDIF() 
+  ENDIF()
 
   IF (${ISA} EQUAL ${SSE2} OR ${ISA} EQUAL ${AVX} OR ${ISA} EQUAL ${AVX2} OR ${ISA} EQUAL ${AVX512KNL} OR ${ISA} EQUAL ${AVX512SKX} OR ${ISA_LOWEST} EQUAL ${ISA})
-    
+
     LIST(APPEND ${TARGET}
       common/scene_user_geometry.cpp
       common/scene_instance.cpp
       common/scene_triangle_mesh.cpp
-      common/scene_quad_mesh.cpp 
+      common/scene_quad_mesh.cpp
       common/scene_curves.cpp
       common/scene_line_segments.cpp
       common/scene_grid_mesh.cpp
       common/scene_points.cpp
-      
+
+      bvh/bvh_collider.cpp
       bvh/bvh_refit.cpp
       bvh/bvh_builder.cpp
       bvh/bvh_builder_hair.cpp
@@ -144,7 +136,7 @@ MACRO(embree_files TARGET ISA)
       bvh/bvh_rotate.cpp
       builders/primrefgen.cpp)
   ENDIF()
-    
+
   IF (${ISA} GREATER ${SSE42})
     LIST(APPEND ${TARGET} bvh/bvh_intersector1_bvh8.cpp)
   ENDIF()
@@ -161,7 +153,7 @@ MACRO(embree_files TARGET ISA)
         geometry/grid_soa.cpp
         subdiv/subdivpatch1base_eval.cpp)
   ENDIF()
-    
+
   IF (EMBREE_RAY_PACKETS)
     LIST(APPEND ${TARGET}
       bvh/bvh_intersector_hybrid4_bvh4.cpp
@@ -182,7 +174,7 @@ MACRO(embree_files TARGET ISA)
         bvh/bvh_intersector_hybrid16_bvh4.cpp)
     ENDIF()
   ENDIF()
-  
+
 ENDMACRO()
 
 #embree_files(EMBREE_LIBRARY_FILES_SSE2 ${SSE2})
@@ -208,7 +200,7 @@ MACRO (CreateISADummyFiles list isa)
     SET(dst_file ${CMAKE_BINARY_DIR}/${src}.${isa}.cpp)
     SET(${list} ${${list}} ${dst_file})
     ADD_CUSTOM_COMMAND(OUTPUT ${dst_file}
-      COMMAND ${CMAKE_COMMAND} 
+      COMMAND ${CMAKE_COMMAND}
        -D src=${src_file}
        -D dst=${dst_file}
        -P ${PROJECT_SOURCE_DIR}/common/cmake/create_isa_dummy_file.cmake
@@ -229,10 +221,10 @@ MACRO (CheckGlobals library)
 ENDMACRO()
 
 DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES})
-ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:embree-algorithms>)  # Urho3D: Renamed target
+ADD_LIBRARY(embree ${EMBREE_LIB_TYPE} ${EMBREE_LIBRARY_FILES} $<TARGET_OBJECTS:algorithms>)
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_FLAGS "${FLAGS_LOWEST}")
 SET_TARGET_PROPERTIES(embree PROPERTIES COMPILE_DEFINITIONS "EMBREE_LOWEST_ISA")
-SET_PROPERTY(TARGET embree PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+SET_PROPERTY(TARGET embree PROPERTY FOLDER kernels)
 # Urho3D: Not required.
 #IF (NOT WIN32 AND NOT  APPLE)
 #  ADD_CUSTOM_TARGET(embree_check_stack_frame_size COMMAND ${CMAKE_COMMAND} -D file=$<TARGET_FILE:embree> -P ${PROJECT_SOURCE_DIR}/common/cmake/check_stack_frame_size.cmake DEPENDS embree)
@@ -241,7 +233,7 @@ SET_PROPERTY(TARGET embree PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D
 #IF (EMBREE_ISA_SSE2 AND EMBREE_LIBRARY_FILES_SSE2)
 #  ADD_LIBRARY(embree_sse2 STATIC ${EMBREE_LIBRARY_FILES_SSE2})
 #  SET_TARGET_PROPERTIES(embree_sse2 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE2}")
-#  SET_PROPERTY(TARGET embree_sse2 PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+#  SET_PROPERTY(TARGET embree_sse2 PROPERTY FOLDER kernels)
 #  SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse2)
 #  CheckGlobals(embree_sse2)
 #IF (EMBREE_STATIC_LIB)
@@ -252,8 +244,9 @@ SET_PROPERTY(TARGET embree PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D
 IF (EMBREE_ISA_SSE42 AND EMBREE_LIBRARY_FILES_SSE42)
   DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_SSE42})
   ADD_LIBRARY(embree_sse42 STATIC ${EMBREE_LIBRARY_FILES_SSE42})
+  TARGET_LINK_LIBRARIES(embree_sse42 PRIVATE tasking)
   SET_TARGET_PROPERTIES(embree_sse42 PROPERTIES COMPILE_FLAGS "${FLAGS_SSE42}")
-  SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+  SET_PROPERTY(TARGET embree_sse42 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_sse42)
   CheckGlobals(embree_sse42)
   # Urho3D: Export library.
@@ -265,8 +258,9 @@ ENDIF ()
 IF (EMBREE_ISA_AVX  AND EMBREE_LIBRARY_FILES_AVX)
   DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX})
   ADD_LIBRARY(embree_avx STATIC ${EMBREE_LIBRARY_FILES_AVX})
+  TARGET_LINK_LIBRARIES(embree_avx PRIVATE tasking)
   SET_TARGET_PROPERTIES(embree_avx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX}")
-  SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+  SET_PROPERTY(TARGET embree_avx PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx)
   CheckGlobals(embree_avx)
   # Urho3D: Export library.
@@ -278,8 +272,9 @@ ENDIF()
 IF (EMBREE_ISA_AVX2 AND EMBREE_LIBRARY_FILES_AVX2)
   DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX2})
   ADD_LIBRARY(embree_avx2 STATIC ${EMBREE_LIBRARY_FILES_AVX2})
+  TARGET_LINK_LIBRARIES(embree_avx2 PRIVATE tasking)
   SET_TARGET_PROPERTIES(embree_avx2 PROPERTIES COMPILE_FLAGS "${FLAGS_AVX2}")
-  SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+  SET_PROPERTY(TARGET embree_avx2 PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx2)
   CheckGlobals(embree_avx2)
   # Urho3D: Export library.
@@ -291,8 +286,9 @@ ENDIF()
 IF (EMBREE_ISA_AVX512KNL AND EMBREE_LIBRARY_FILES_AVX512KNL)
   DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX512KNL})
   ADD_LIBRARY(embree_avx512knl STATIC ${EMBREE_LIBRARY_FILES_AVX512KNL})
+  TARGET_LINK_LIBRARIES(embree_avx512knl PRIVATE tasking)
   SET_TARGET_PROPERTIES(embree_avx512knl PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512KNL}")
-  SET_PROPERTY(TARGET embree_avx512knl PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+  SET_PROPERTY(TARGET embree_avx512knl PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512knl)
   CheckGlobals(embree_avx512knl)
   # Urho3D: Export library.
@@ -304,8 +300,9 @@ ENDIF()
 IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
   DISABLE_STACK_PROTECTOR_FOR_INTERSECTORS(${EMBREE_LIBRARY_FILES_AVX512SKX})
   ADD_LIBRARY(embree_avx512skx STATIC ${EMBREE_LIBRARY_FILES_AVX512SKX})
+  TARGET_LINK_LIBRARIES(embree_avx512skx PRIVATE embree-tasking)
   SET_TARGET_PROPERTIES(embree_avx512skx PROPERTIES COMPILE_FLAGS "${FLAGS_AVX512SKX}")
-  SET_PROPERTY(TARGET embree_avx512skx PROPERTY FOLDER ThirdParty/embree3/kernels)  # Urho3D: Change folder
+  SET_PROPERTY(TARGET embree_avx512skx PROPERTY FOLDER kernels)
   SET(EMBREE_LIBRARIES ${EMBREE_LIBRARIES} embree_avx512skx)
   CheckGlobals(embree_avx512skx)
   # Urho3D: Export library.
@@ -313,15 +310,26 @@ IF (EMBREE_ISA_AVX512SKX AND EMBREE_LIBRARY_FILES_AVX512SKX)
     install(TARGETS embree_avx512skx EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
   endif ()
 ENDIF()
-# Urho3D: Renamed targets.
-TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} embree-sys embree-math embree-simd embree-lexers PUBLIC embree-tasking)
-SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "") # no RPATH for installed libembree
+
+TARGET_LINK_LIBRARIES(embree PRIVATE ${EMBREE_LIBRARIES} sys math simd lexers tasking)
 SET_TARGET_PROPERTIES(embree PROPERTIES OUTPUT_NAME ${EMBREE_LIBRARY_NAME})
+target_include_directories(embree PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/../include>)
+# $<INSTALL_INTERFACE:include>) # Urho3D: not needed.
+
+
+# libtbb is located in same install folder as libembree
+IF(WIN32)
+ELSEIF(APPLE)
+  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "@rpath") # On MacOSX the app is supposed to already have an rpath set to that folder
+ELSE()
+  SET_TARGET_PROPERTIES(embree PROPERTIES INSTALL_RPATH "$ORIGIN")  # Linux we tell ld to find libtbb in the folder libembree is placed.
+ENDIF()
 
 IF (WIN32)
 ELSEIF (APPLE)
   SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,-exported_symbols_list,${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
-  SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.macosx.map) 
+  SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.macosx.map)
 ELSE()
   SET_TARGET_PROPERTIES(embree PROPERTIES LINK_FLAGS -Wl,--version-script=${PROJECT_SOURCE_DIR}/kernels/export.linux.map)
   SET_SOURCE_FILES_PROPERTIES(common/rtcore.cpp PROPERTIES OBJECT_DEPENDS ${PROJECT_SOURCE_DIR}/kernels/export.linux.map)

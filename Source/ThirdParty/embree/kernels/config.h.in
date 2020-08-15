@@ -1,24 +1,10 @@
-// ======================================================================== //
-// Copyright 2009-2016 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #cmakedefine EMBREE_RAY_MASK
 #cmakedefine EMBREE_STAT_COUNTERS
 #cmakedefine EMBREE_BACKFACE_CULLING
 #cmakedefine EMBREE_FILTER_FUNCTION
-#cmakedefine EMBREE_RETURN_SUBDIV_NORMAL
 #cmakedefine EMBREE_IGNORE_INVALID_RAYS
 #cmakedefine EMBREE_GEOMETRY_TRIANGLE
 #cmakedefine EMBREE_GEOMETRY_QUAD
@@ -29,6 +15,7 @@
 #cmakedefine EMBREE_GEOMETRY_GRID
 #cmakedefine EMBREE_GEOMETRY_POINT
 #cmakedefine EMBREE_RAY_PACKETS
+#cmakedefine EMBREE_COMPACT_POLYS
 
 #define EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR @EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR@
 
@@ -45,9 +32,21 @@
 #endif
 
 #if defined(EMBREE_GEOMETRY_CURVE) || defined(EMBREE_GEOMETRY_POINT)
+  #define IF_ENABLED_CURVES_OR_POINTS(x) x
+#else
+  #define IF_ENABLED_CURVES_OR_POINTS(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_CURVE)
   #define IF_ENABLED_CURVES(x) x
 #else
   #define IF_ENABLED_CURVES(x)
+#endif
+
+#if defined(EMBREE_GEOMETRY_POINT)
+  #define IF_ENABLED_POINTS(x) x
+#else
+  #define IF_ENABLED_POINTS(x)
 #endif
 
 #if defined(EMBREE_GEOMETRY_SUBDIVISION)

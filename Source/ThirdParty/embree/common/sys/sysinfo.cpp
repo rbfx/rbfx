@@ -1,23 +1,15 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "sysinfo.h"
 #include "intrinsics.h"
 #include "string.h"
 #include "ref.h"
+#if defined(__FREEBSD__)
+#include <sys/cpuset.h>
+#include <pthread_np.h>
+typedef cpuset_t cpu_set_t;
+#endif
 
 ////////////////////////////////////////////////////////////////////////////////
 /// All Platforms
@@ -542,13 +534,24 @@ namespace embree
 #include <unistd.h>
 #include <sys/ioctl.h>
 #include <sys/time.h>
+#include <pthread.h>
 
 namespace embree
 {
   unsigned int getNumberOfLogicalThreads() 
   {
     static int nThreads = -1;
-    if (nThreads == -1) nThreads = sysconf(_SC_NPROCESSORS_CONF);
+    if (nThreads != -1) return nThreads;
+
+#if defined(__MACOSX__)
+    nThreads = sysconf(_SC_NPROCESSORS_ONLN); // does not work in Linux LXC container
+    assert(nThreads);
+#else
+    cpu_set_t set;
+    if (pthread_getaffinity_np(pthread_self(), sizeof(set), &set) == 0)
+      nThreads = CPU_COUNT(&set);
+#endif
+    
     assert(nThreads);
     return nThreads;
   }

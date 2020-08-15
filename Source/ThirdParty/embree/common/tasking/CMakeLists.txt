@@ -1,35 +1,42 @@
-## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
-##                                                                          ##
-## Licensed under the Apache License, Version 2.0 (the "License");          ##
-## you may not use this file except in compliance with the License.         ##
-## You may obtain a copy of the License at                                  ##
-##                                                                          ##
-##     http://www.apache.org/licenses/LICENSE-2.0                           ##
-##                                                                          ##
-## Unless required by applicable law or agreed to in writing, software      ##
-## distributed under the License is distributed on an "AS IS" BASIS,        ##
-## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ##
-## See the License for the specific language governing permissions and      ##
-## limitations under the License.                                           ##
-## ======================================================================== ##
-# Urho3D: Rename target and hide it in a subfolder.
+## Copyright 2009-2020 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
+
 IF (TASKING_INTERNAL)
-  ADD_LIBRARY(embree-tasking STATIC taskschedulerinternal.cpp)
+  ADD_LIBRARY(tasking STATIC taskschedulerinternal.cpp)
 ELSEIF (TASKING_TBB)
-  ADD_LIBRARY(embree-tasking STATIC taskschedulertbb.cpp)
-  TARGET_LINK_LIBRARIES(embree-tasking PRIVATE embree-sys embree-math)
-  TARGET_LINK_LIBRARIES(embree-tasking PUBLIC ${TBB_LIBRARIES})
+  ##############################################################
+  # Find TBB
+  ##############################################################
+  if (NOT ${EMBREE_TBB_ROOT} STREQUAL "")
+    set(TBB_ROOT ${EMBREE_TBB_ROOT})
+  endif()
+  FIND_PACKAGE(TBB REQUIRED tbb)
+
+  ##############################################################
+  # Create tasking target and link against TBB. Also set include directory
+  # information on tasking target to provide the "algorithms" object library
+  # with the TBB header files
+  ##############################################################
+  ADD_LIBRARY(tasking STATIC taskschedulertbb.cpp)
+  TARGET_LINK_LIBRARIES(tasking PUBLIC TBB)
+  TARGET_INCLUDE_DIRECTORIES(tasking PUBLIC "${TBB_INCLUDE_DIRS}")
+
+  include(installTBB)
+
 ELSEIF (TASKING_PPL)
-  ADD_LIBRARY(embree-tasking STATIC taskschedulerppl.cpp)
-  TARGET_LINK_LIBRARIES(embree-tasking PRIVATE embree-sys embree-math)
-  TARGET_LINK_LIBRARIES(embree-tasking PUBLIC ${PPL_LIBRARIES})
+  ADD_LIBRARY(tasking STATIC taskschedulerppl.cpp)
+  TARGET_LINK_LIBRARIES(tasking PUBLIC ${PPL_LIBRARIES})
 ENDIF()
 
-SET_PROPERTY(TARGET embree-tasking PROPERTY FOLDER ThirdParty/embree3/common)
-SET_PROPERTY(TARGET embree-tasking APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+SET_PROPERTY(TARGET tasking PROPERTY FOLDER common)
+SET_PROPERTY(TARGET tasking APPEND PROPERTY COMPILE_FLAGS " ${FLAGS_LOWEST}")
+
+# IF (EMBREE_STATIC_LIB)
+#   INSTALL(TARGETS tasking EXPORT tasking-targets ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT devel)
+#   INSTALL(EXPORT tasking-targets DESTINATION ${EMBREE_CMAKEEXPORT_DIR} COMPONENT devel)
+# ENDIF()
 
 # Urho3D: Install targets
 if (NOT URHO3D_MERGE_STATIC_LIBS)
-  install(TARGETS embree-tasking EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
+  install(TARGETS tasking EXPORT Urho3D ARCHIVE DESTINATION ${DEST_ARCHIVE_DIR})
 endif ()

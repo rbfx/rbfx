@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -197,11 +184,30 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<typename T> static std::ostream& operator<<(std::ostream& cout, const LinearSpace3<T>& m) {
+  template<typename T> static embree_ostream operator<<(embree_ostream cout, const LinearSpace3<T>& m) {
     return cout << "{ vx = " << m.vx << ", vy = " << m.vy << ", vz = " << m.vz << "}";
   }
 
   /*! Shortcuts for common linear spaces. */
   typedef LinearSpace3<Vec3f> LinearSpace3f;
   typedef LinearSpace3<Vec3fa> LinearSpace3fa;
+  typedef LinearSpace3<Vec3fx> LinearSpace3fx;
+  typedef LinearSpace3<Vec3ff> LinearSpace3ff;
+
+  template<int N> using LinearSpace3vf = LinearSpace3<Vec3<vfloat<N>>>;
+  typedef LinearSpace3<Vec3<vfloat<4>>>  LinearSpace3vf4;
+  typedef LinearSpace3<Vec3<vfloat<8>>>  LinearSpace3vf8;
+  typedef LinearSpace3<Vec3<vfloat<16>>> LinearSpace3vf16;
+
+  /*! blending */
+  template<typename T, typename S>
+    __forceinline LinearSpace3<T> lerp(const LinearSpace3<T>& l0,
+                                       const LinearSpace3<T>& l1,
+                                       const S& t)
+  {
+    return LinearSpace3<T>(lerp(l0.vx,l1.vx,t),
+                           lerp(l0.vy,l1.vy,t),
+                           lerp(l0.vz,l1.vz,t));
+  }
+
 }
