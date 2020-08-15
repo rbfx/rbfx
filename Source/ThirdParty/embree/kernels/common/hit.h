@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -24,7 +11,7 @@ namespace embree
 {
   /* Hit structure for K hits */
   template<int K>
-  struct HitK
+    struct HitK
   {
     /* Default construction does nothing */
     __forceinline HitK() {}
@@ -52,7 +39,7 @@ namespace embree
 
   /* Specialization for a single hit */
   template<>
-  struct HitK<1>
+    struct __aligned(16) HitK<1>
   {
      /* Default construction does nothing */
     __forceinline HitK() {}
@@ -84,20 +71,20 @@ namespace embree
 
   /* Outputs hit to stream */
   template<int K>
-  inline std::ostream& operator<<(std::ostream& cout, const HitK<K>& ray)
+  __forceinline embree_ostream operator<<(embree_ostream cout, const HitK<K>& ray)
   {
-    cout << "{ " << std::endl
-         << "  Ng = " << ray.Ng <<  std::endl
-         << "  u = " << ray.u <<  std::endl
-         << "  v = " << ray.v << std::endl
-         << "  primID = " << ray.primID <<  std::endl
-         << "  geomID = " << ray.geomID << std::endl
+    cout << "{ " << embree_endl
+         << "  Ng = " << ray.Ng <<  embree_endl
+         << "  u = " << ray.u <<  embree_endl
+         << "  v = " << ray.v << embree_endl
+         << "  primID = " << ray.primID <<  embree_endl
+         << "  geomID = " << ray.geomID << embree_endl
          << "  instID =";
     for (unsigned l = 0; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     {
       cout << " " << ray.instID[l];
     }
-    cout << std::endl;
+    cout << embree_endl;
     return cout << "}";
   }
 

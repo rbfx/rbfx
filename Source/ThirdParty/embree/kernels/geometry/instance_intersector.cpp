@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "instance_intersector.h"
 #include "../common/scene.h"
@@ -60,7 +47,7 @@ namespace embree
     void InstanceIntersector1::intersect(const Precalculations& pre, RayHit& ray, IntersectContext* context, const InstancePrimitive& prim)
     {
       const Instance* instance = prim.instance;
-      
+
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
       if ((ray.mask & instance->mask) == 0) 
@@ -68,13 +55,13 @@ namespace embree
 #endif
 
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
-        const Vec3fa ray_org = ray.org;
-        const Vec3fa ray_dir = ray.dir;
-        ray.org = Vec3fa(xfmPoint(world2local, ray_org), ray.tnear());
-        ray.dir = Vec3fa(xfmVector(world2local, ray_dir), ray.time());
+        const Vec3ff ray_org = ray.org;
+        const Vec3ff ray_dir = ray.dir;
+        ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
+        ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
         IntersectContext newcontext((Scene*)instance->object, user_context);
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
@@ -95,13 +82,13 @@ namespace embree
       
       RTCIntersectContext* user_context = context->user;
       bool occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local();
-        const Vec3fa ray_org = ray.org;
-        const Vec3fa ray_dir = ray.dir;
-        ray.org = Vec3fa(xfmPoint(world2local, ray_org), ray.tnear());
-        ray.dir = Vec3fa(xfmVector(world2local, ray_dir), ray.time());
+        const Vec3ff ray_org = ray.org;
+        const Vec3ff ray_dir = ray.dir;
+        ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
+        ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
         IntersectContext newcontext((Scene*)instance->object, user_context);
         instance->object->intersectors.occluded((RTCRay&)ray, &newcontext);
         ray.org = ray_org;
@@ -123,7 +110,7 @@ namespace embree
                            && similarityTransform(world2local, &similarityScale);
       assert((similtude && similarityScale > 0) || !similtude);
 
-      if (likely(pushInstance(context->userContext, instance->geomID, world2local, local2world)))
+      if (likely(pushInstance(context->userContext, prim.instID_, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -157,13 +144,13 @@ namespace embree
 #endif
       
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
-        const Vec3fa ray_org = ray.org;
-        const Vec3fa ray_dir = ray.dir;
-        ray.org = Vec3fa(xfmPoint(world2local, ray_org), ray.tnear());
-        ray.dir = Vec3fa(xfmVector(world2local, ray_dir), ray.time());
+        const Vec3ff ray_org = ray.org;
+        const Vec3ff ray_dir = ray.dir;
+        ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
+        ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
         IntersectContext newcontext((Scene*)instance->object, user_context);
         instance->object->intersectors.intersect((RTCRayHit&)ray, &newcontext);
         ray.org = ray_org;
@@ -184,13 +171,13 @@ namespace embree
       
       RTCIntersectContext* user_context = context->user;
       bool occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         const AffineSpace3fa world2local = instance->getWorld2Local(ray.time());
-        const Vec3fa ray_org = ray.org;
-        const Vec3fa ray_dir = ray.dir;
-        ray.org = Vec3fa(xfmPoint(world2local, ray_org), ray.tnear());
-        ray.dir = Vec3fa(xfmVector(world2local, ray_dir), ray.time());
+        const Vec3ff ray_org = ray.org;
+        const Vec3ff ray_dir = ray.dir;
+        ray.org = Vec3ff(xfmPoint(world2local, ray_org), ray.tnear());
+        ray.dir = Vec3ff(xfmVector(world2local, ray_dir), ray.time());
         IntersectContext newcontext((Scene*)instance->object, user_context);
         instance->object->intersectors.occluded((RTCRay&)ray, &newcontext);
         ray.org = ray_org;
@@ -211,7 +198,7 @@ namespace embree
       const bool similtude = context->query_type == POINT_QUERY_TYPE_SPHERE
                            && similarityTransform(world2local, &similarityScale);
 
-      if (likely(pushInstance(context->userContext, instance->geomID, world2local, local2world)))
+      if (likely(pushInstance(context->userContext, prim.instID_, world2local, local2world)))
       {
         PointQuery query_inst;
         query_inst.time = query->time;
@@ -239,6 +226,7 @@ namespace embree
     {
       vbool<K> valid = valid_i;
       const Instance* instance = prim.instance;
+      //ray.geomID = 10;
       
       /* perform ray mask test */
 #if defined(EMBREE_RAY_MASK)
@@ -247,7 +235,7 @@ namespace embree
 #endif
         
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -276,7 +264,7 @@ namespace embree
         
       RTCIntersectContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local();
         const Vec3vf<K> ray_org = ray.org;
@@ -306,7 +294,7 @@ namespace embree
 #endif
         
       RTCIntersectContext* user_context = context->user;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;
@@ -335,7 +323,7 @@ namespace embree
         
       RTCIntersectContext* user_context = context->user;
       vbool<K> occluded = false;
-      if (likely(instance_id_stack::push(user_context, instance->geomID)))
+      if (likely(instance_id_stack::push(user_context, prim.instID_)))
       {
         AffineSpace3vf<K> world2local = instance->getWorld2Local<K>(valid, ray.time());
         const Vec3vf<K> ray_org = ray.org;

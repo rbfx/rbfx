@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -84,7 +71,7 @@ namespace embree
       __forceinline friend const Interval intersect( const Interval& a, const Interval& b, const Interval& c ) { return intersect(a,intersect(b,c)); }
       __forceinline friend const Interval intersect( const Interval& a, const Interval& b, const Interval& c, const Interval& d ) { return intersect(intersect(a,b),intersect(c,d)); }       
       
-      friend std::ostream& operator<<(std::ostream& cout, const Interval& a) {
+      friend embree_ostream operator<<(embree_ostream cout, const Interval& a) {
         return cout << "[" << a.lower << ", " << a.upper << "]";
       }
       
@@ -140,4 +127,35 @@ namespace embree
   typedef Interval<float> Interval1f;
   typedef Vec2<Interval<float>> Interval2f;
   typedef Vec3<Interval<float>> Interval3f;
+
+inline void swap(float& a, float& b) { float tmp = a; a = b; b = tmp; }
+
+inline Interval1f shift(const Interval1f& v, float shift) { return Interval1f(v.lower + shift, v.upper + shift); }
+
+#define TWO_PI (2.0*M_PI)
+inline Interval1f sin(Interval1f interval)
+{
+  if (interval.upper-interval.lower >= M_PI) { return Interval1f(-1.0, 1.0); }
+  if (interval.upper > TWO_PI)                 { interval = shift(interval, -TWO_PI*floor(interval.upper/TWO_PI)); }
+  if (interval.lower < 0)                      { interval = shift(interval, -TWO_PI*floor(interval.lower/TWO_PI)); }
+  float sinLower = sin(interval.lower);
+  float sinUpper = sin(interval.upper);
+  if (sinLower > sinUpper) swap(sinLower, sinUpper);
+  if (interval.lower <       M_PI / 2.0 && interval.upper >       M_PI / 2.0) sinUpper =  1.0;
+  if (interval.lower < 3.0 * M_PI / 2.0 && interval.upper > 3.0 * M_PI / 2.0) sinLower = -1.0;
+  return Interval1f(sinLower, sinUpper);
+}
+
+inline Interval1f cos(Interval1f interval)
+{
+  if (interval.upper-interval.lower >= M_PI) { return Interval1f(-1.0, 1.0); }
+  if (interval.upper > TWO_PI)                 { interval = shift(interval, -TWO_PI*floor(interval.upper/TWO_PI)); }
+  if (interval.lower < 0)                      { interval = shift(interval, -TWO_PI*floor(interval.lower/TWO_PI)); }
+  float cosLower = cos(interval.lower);
+  float cosUpper = cos(interval.upper);
+  if (cosLower > cosUpper) swap(cosLower, cosUpper);
+  if (interval.lower < M_PI && interval.upper > M_PI) cosLower = -1.0;
+  return Interval1f(cosLower, cosUpper);
+}
+#undef TWO_PI
 }

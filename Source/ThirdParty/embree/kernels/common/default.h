@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -31,6 +18,7 @@
 #include "../../common/sys/vector.h"
 
 #include "../../common/math/math.h"
+#include "../../common/math/transcendental.h"
 #include "../../common/simd/simd.h"
 #include "../../common/math/vec2.h"
 #include "../../common/math/vec3.h"
@@ -220,21 +208,10 @@ namespace embree
   /// Other shortcuts
   ////////////////////////////////////////////////////////////////////////////////
 
-  template<int N> using LinearSpace3vf = LinearSpace3<Vec3vf<N>>;
-  typedef LinearSpace3<Vec3vf4>  LinearSpace3vf4;
-  typedef LinearSpace3<Vec3vf8>  LinearSpace3vf8;
-  typedef LinearSpace3<Vec3vf16> LinearSpace3vf16;
-
-  template<int N> using AffineSpace3vf = AffineSpaceT<LinearSpace3<Vec3vf<N>>>;
-  typedef AffineSpaceT<LinearSpace3<Vec3vf4>>  AffineSpace3vf4;
-  typedef AffineSpaceT<LinearSpace3<Vec3vf8>>  AffineSpace3vf8;
-  typedef AffineSpaceT<LinearSpace3<Vec3vf16>> AffineSpace3vf16;
-
   template<int N> using BBox3vf = BBox<Vec3vf<N>>;
   typedef BBox<Vec3vf4>  BBox3vf4;
   typedef BBox<Vec3vf8>  BBox3vf8;
   typedef BBox<Vec3vf16> BBox3vf16;
-
 
   /* calculate time segment itime and fractional time ftime */
   __forceinline int getTimeSegment(float time, float numTimeSegments, float& ftime)
@@ -274,8 +251,10 @@ namespace embree
   /* calculate overlapping time segment range */
   __forceinline range<int> getTimeSegmentRange(const BBox1f& time_range, float numTimeSegments)
   {
-    const int itime_lower = (int)max(floor(time_range.lower*numTimeSegments), 0.0f);
-    const int itime_upper = (int)min(ceil (time_range.upper*numTimeSegments), numTimeSegments);
+    const float round_up   = 1.0f+2.0f*float(ulp); // corrects inaccuracies to precisely match time step
+    const float round_down = 1.0f-2.0f*float(ulp);
+    const int itime_lower = (int)max(floor(round_up  *time_range.lower*numTimeSegments), 0.0f);
+    const int itime_upper = (int)min(ceil (round_down*time_range.upper*numTimeSegments), numTimeSegments);
     return make_range(itime_lower, itime_upper);
   }
 

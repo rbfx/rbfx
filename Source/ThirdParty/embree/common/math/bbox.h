@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -21,6 +8,13 @@
 
 namespace embree
 {
+  namespace internal {
+
+    template <typename T> __forceinline T divideByTwo(const T& v) { return v / T(2); }
+    template <> __forceinline float divideByTwo<float>(const float& v) { return v * 0.5f; }
+    template <> __forceinline double divideByTwo<double>(const double& v) { return v * 0.5; }
+
+  } // namespace internal
   template<typename T>
   struct BBox
   {
@@ -31,7 +25,8 @@ namespace embree
     ////////////////////////////////////////////////////////////////////////////////
 
     __forceinline BBox           ( )                   { }
-    __forceinline BBox           ( const BBox& other ) { lower = other.lower; upper = other.upper; }
+    template<typename T1>
+    __forceinline BBox           ( const BBox<T1>& other ) : lower(other.lower), upper(other.upper) {}
     __forceinline BBox& operator=( const BBox& other ) { lower = other.lower; upper = other.upper; return *this; }
 
     __forceinline BBox ( const T& v                     ) : lower(v), upper(v) {}
@@ -51,7 +46,7 @@ namespace embree
     __forceinline T size() const { return upper - lower; }
 
     /*! computes the center of the box */
-    __forceinline T center() const { return 0.5f*(lower+upper); }
+    __forceinline T center() const { return internal::divideByTwo<T>(lower+upper); }
 
     /*! computes twice the center of the box */
     __forceinline T center2() const { return lower+upper; }
@@ -62,7 +57,7 @@ namespace embree
     }
 
      /*! enlarge box by some scaling factor */
-    __forceinline BBox enlarge_by(const float a) {
+    __forceinline BBox enlarge_by(const float a) const {
       return BBox(lower - T(a)*abs(lower), upper + T(a)*abs(upper));
     }
     
@@ -86,6 +81,9 @@ namespace embree
   template<> __forceinline bool BBox<Vec3fa>::empty() const {
     return !all(le_mask(lower,upper));
   }
+  template<> __forceinline bool BBox<Vec3fx>::empty() const {
+    return !all(le_mask(lower,upper));
+  }
 #endif
 
   /*! tests if box is finite */
@@ -103,7 +101,7 @@ namespace embree
 
   /*! computes the center of the box */
   template<typename T> __forceinline const T center2(const BBox<T>& box) { return box.lower + box.upper; }
-  template<typename T> __forceinline const T center (const BBox<T>& box) { return T(0.5f)*center2(box); }
+  template<typename T> __forceinline const T center (const BBox<T>& box) { return internal::divideByTwo<T>(center2(box)); }
 
   /*! computes the volume of a bounding box */
   __forceinline float volume    ( const BBox<Vec3fa>& b ) { return reduce_mul(b.size()); }
@@ -116,10 +114,13 @@ namespace embree
   template<typename T> __forceinline const T area( const BBox<Vec2<T> >& b ) { const Vec2<T> d = b.size(); return d.x*d.y; }
 
   template<typename T> __forceinline const T halfArea( const BBox<Vec3<T> >& b ) { return halfArea(b.size()); }
-  template<typename T> __forceinline const T     area( const BBox<Vec3<T> >& b ) { return 2.0f*halfArea(b); }
+  template<typename T> __forceinline const T     area( const BBox<Vec3<T> >& b ) { return T(2)*halfArea(b); }
 
   __forceinline float halfArea( const BBox<Vec3fa>& b ) { return halfArea(b.size()); }
   __forceinline float     area( const BBox<Vec3fa>& b ) { return 2.0f*halfArea(b); }
+
+  __forceinline float halfArea( const BBox<Vec3fx>& b ) { return halfArea(b.size()); }
+  __forceinline float     area( const BBox<Vec3fx>& b ) { return 2.0f*halfArea(b); }
 
   template<typename Vec> __forceinline float safeArea( const BBox<Vec>& b ) { if (b.empty()) return 0.0f; else return area(b); }
 
@@ -192,6 +193,10 @@ namespace embree
   template<> __inline bool subset( const BBox<Vec3fa>& a, const BBox<Vec3fa>& b ) {
     return all(ge_mask(a.lower,b.lower)) & all(le_mask(a.upper,b.upper));
   }
+
+  template<> __inline bool subset( const BBox<Vec3fx>& a, const BBox<Vec3fx>& b ) {
+    return all(ge_mask(a.lower,b.lower)) & all(le_mask(a.upper,b.upper));
+  }
   
   /*! blending */
   template<typename T>
@@ -200,7 +205,7 @@ namespace embree
   }
 
   /*! output operator */
-  template<typename T> __forceinline std::ostream& operator<<(std::ostream& cout, const BBox<T>& box) {
+  template<typename T> __forceinline embree_ostream operator<<(embree_ostream cout, const BBox<T>& box) {
     return cout << "[" << box.lower << "; " << box.upper << "]";
   }
 
@@ -210,6 +215,8 @@ namespace embree
   typedef BBox<Vec2fa> BBox2fa;
   typedef BBox<Vec3f> BBox3f;
   typedef BBox<Vec3fa> BBox3fa;
+  typedef BBox<Vec3fx> BBox3fx;
+  typedef BBox<Vec3ff> BBox3ff;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

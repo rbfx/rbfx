@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -22,6 +9,8 @@ namespace embree
   template<>
   struct vfloat<4>
   {
+    ALIGNED_STRUCT_(16);
+    
     typedef vboolf4 Bool;
     typedef vint4   Int;
     typedef vfloat4 Float;
@@ -250,6 +239,9 @@ namespace embree
   __forceinline vint4   asInt  (const vfloat4& a) { return _mm_castps_si128(a); }
   __forceinline vuint4  asUInt (const vfloat4& a) { return _mm_castps_si128(a); }
 
+  __forceinline vint4   toInt  (const vfloat4& a) { return vint4(a); }
+  __forceinline vfloat4 toFloat(const vint4&   a) { return vfloat4(a); }
+
   __forceinline vfloat4 operator +(const vfloat4& a) { return a; }
   __forceinline vfloat4 operator -(const vfloat4& a) { return _mm_xor_ps(a, _mm_castsi128_ps(_mm_set1_epi32(0x80000000))); }
 
@@ -324,6 +316,8 @@ namespace embree
   __forceinline vfloat4 operator /(const vfloat4& a, float          b) { return a/vfloat4(b); }
   __forceinline vfloat4 operator /(float          a, const vfloat4& b) { return vfloat4(a)/b; }
 
+  __forceinline vfloat4 operator &(const vfloat4& a, const vfloat4& b) { return _mm_and_ps(a,b); }
+  __forceinline vfloat4 operator |(const vfloat4& a, const vfloat4& b) { return _mm_or_ps(a,b); }
   __forceinline vfloat4 operator ^(const vfloat4& a, const vfloat4& b) { return _mm_xor_ps(a,b); }
   __forceinline vfloat4 operator ^(const vfloat4& a, const vint4&   b) { return _mm_xor_ps(a,_mm_castsi128_ps(b)); }
 
@@ -497,13 +491,15 @@ namespace embree
   ////////////////////////////////////////////////////////////////////////////////
 
 #if defined (__SSE4_1__)
-  __forceinline vfloat4 floor(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF   ); }
-  __forceinline vfloat4 ceil (const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF   ); }
-  __forceinline vfloat4 trunc(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO      ); }
+  __forceinline vfloat4 floor(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_NEG_INF    ); }
+  __forceinline vfloat4 ceil (const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_POS_INF    ); }
+  __forceinline vfloat4 trunc(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_ZERO       ); }
+  __forceinline vfloat4 round(const vfloat4& a) { return _mm_round_ps(a, _MM_FROUND_TO_NEAREST_INT); }
 #else
-  __forceinline vfloat4 floor(const vfloat4& a) { return vfloat4(floorf(a[0]),floorf(a[1]),floorf(a[2]),floorf(a[3]));  }
+  __forceinline vfloat4 floor(const vfloat4& a) { return vfloat4(floorf(a[0]),floorf(a[1]),floorf(a[2]),floorf(a[3])); }
   __forceinline vfloat4 ceil (const vfloat4& a) { return vfloat4(ceilf (a[0]),ceilf (a[1]),ceilf (a[2]),ceilf (a[3])); }
-  //__forceinline vfloat4 trunc(const vfloat4& a) { return vfloat4(truncf(a[0]),truncf(a[1]),truncf(a[2]),truncf(a[3])); }
+  __forceinline vfloat4 trunc(const vfloat4& a) { return vfloat4(truncf(a[0]),truncf(a[1]),truncf(a[2]),truncf(a[3])); }
+  __forceinline vfloat4 round(const vfloat4& a) { return vfloat4(roundf(a[0]),roundf(a[1]),roundf(a[2]),roundf(a[3])); }
 #endif
   __forceinline vfloat4 frac(const vfloat4& a) { return a-floor(a); }
 
@@ -705,7 +701,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
 
-  inline std::ostream& operator <<(std::ostream& cout, const vfloat4& a) {
+  __forceinline embree_ostream operator <<(embree_ostream cout, const vfloat4& a) {
     return cout << "<" << a[0] << ", " << a[1] << ", " << a[2] << ", " << a[3] << ">";
   }
 

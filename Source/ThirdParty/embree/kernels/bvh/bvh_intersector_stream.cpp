@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "bvh_intersector_stream.h"
 
@@ -112,7 +99,7 @@ namespace embree
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          const AABBNode* __restrict__ const node = cur.getAABBNode();
           parent = cur;
 
           __aligned(64) size_t maskK[N];
@@ -129,13 +116,13 @@ namespace embree
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(parent != 0 && cur.isLeaf()))
         {
-          const AlignedNode* __restrict__ const node = parent.alignedNode();
+          const AABBNode* __restrict__ const node = parent.getAABBNode();
           size_t boxID = 0xff;
           for (size_t i = 0; i < N; i++)
             if (node->child(i) == cur) { boxID = i; break; }
           assert(boxID < N);
           assert(cur == node->child(boxID));
-          m_trav_active = intersectAlignedNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
+          m_trav_active = intersectAABBNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
         }
 
         /*! this is a leaf node */
@@ -241,7 +228,7 @@ namespace embree
         while (1)
         {
           if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          const AABBNode* __restrict__ const node = cur.getAABBNode();
           parent = cur;
 
           __aligned(64) size_t maskK[N];
@@ -259,13 +246,13 @@ namespace embree
         /* non-root and leaf => full culling test for all rays */
         if (unlikely(parent != 0 && cur.isLeaf()))
         {
-          const AlignedNode* __restrict__ const node = parent.alignedNode();
+          const AABBNode* __restrict__ const node = parent.getAABBNode();
           size_t boxID = 0xff;
           for (size_t i = 0; i < N; i++)
             if (node->child(i) == cur) { boxID = i; break; }
           assert(boxID < N);
           assert(cur == node->child(boxID));
-          m_trav_active = intersectAlignedNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
+          m_trav_active = intersectAABBNodePacket(m_trav_active, packets, node, boxID, frustum.nf);
         }
 
         /*! this is a leaf node */
@@ -349,7 +336,7 @@ namespace embree
         {
           /*! stop if we found a leaf node */
           if (unlikely(cur.isLeaf())) break;
-          const AlignedNode* __restrict__ const node = cur.alignedNode();
+          const AABBNode* __restrict__ const node = cur.getAABBNode();
 
           const vint<Nx> vmask = traverseIncoherentStream(cur_mask, packet, node, nf, shiftTable);
 
@@ -363,7 +350,7 @@ namespace embree
           size_t r = bscf(mask);
           assert(r < N);
           cur = node->child(r);         
-          cur.prefetch(types);
+          BVHN<N>::prefetch(cur,types);
           cur_mask = child_mask[r];
 
           /* simple in order sequence */
@@ -379,7 +366,7 @@ namespace embree
             assert(r < N);
 
             cur = node->child(r);          
-            cur.prefetch(types);
+            BVHN<N>::prefetch(cur,types);
             cur_mask = child_mask[r];            
             assert(cur != BVH::emptyNode);
             if (likely(mask == 0)) break;

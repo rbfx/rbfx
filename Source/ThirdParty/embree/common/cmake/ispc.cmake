@@ -1,18 +1,5 @@
-## ======================================================================== ##
-## Copyright 2009-2018 Intel Corporation                                    ##
-##                                                                          ##
-## Licensed under the Apache License, Version 2.0 (the "License");          ##
-## you may not use this file except in compliance with the License.         ##
-## You may obtain a copy of the License at                                  ##
-##                                                                          ##
-##     http://www.apache.org/licenses/LICENSE-2.0                           ##
-##                                                                          ##
-## Unless required by applicable law or agreed to in writing, software      ##
-## distributed under the License is distributed on an "AS IS" BASIS,        ##
-## WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. ##
-## See the License for the specific language governing permissions and      ##
-## limitations under the License.                                           ##
-## ======================================================================== ##
+## Copyright 2009-2020 Intel Corporation
+## SPDX-License-Identifier: Apache-2.0
 
 # ##################################################################
 # add macro INCLUDE_DIRECTORIES_ISPC() that allows to specify search
@@ -58,7 +45,14 @@ IF (NOT EMBREE_ISPC_EXECUTABLE)
 ENDIF()
 
 # check ISPC version
-EXECUTE_PROCESS(COMMAND ${EMBREE_ISPC_EXECUTABLE} --version OUTPUT_VARIABLE ISPC_OUTPUT)
+EXECUTE_PROCESS(COMMAND ${EMBREE_ISPC_EXECUTABLE} --version
+                OUTPUT_VARIABLE ISPC_OUTPUT
+                RESULT_VARIABLE ISPC_RESULT)
+
+IF (NOT ${ISPC_RESULT} STREQUAL "0")
+  MESSAGE(FATAL_ERROR "Error executing ISPC executable '${EMBREE_ISPC_EXECUTABLE}': ${ISPC_RESULT}")
+ENDIF()
+
 STRING(REGEX MATCH "([0-9]+[.][0-9]+[.][0-9]+)" DUMMY "${ISPC_OUTPUT}")
 SET(ISPC_VERSION ${CMAKE_MATCH_1})
 
@@ -68,7 +62,8 @@ ENDIF()
 
 GET_FILENAME_COMPONENT(ISPC_DIR ${EMBREE_ISPC_EXECUTABLE} PATH)
 
-SET(EMBREE_ISPC_ADDRESSING 32 CACHE INT "32vs64 bit addressing in ispc")
+SET(EMBREE_ISPC_ADDRESSING 32 CACHE STRING "32vs64 bit addressing in ispc")
+SET_PROPERTY(CACHE EMBREE_ISPC_ADDRESSING PROPERTY STRINGS 32 64)
 MARK_AS_ADVANCED(EMBREE_ISPC_ADDRESSING)
 
 MACRO (ISPC_COMPILE)
@@ -179,8 +174,6 @@ MACRO (ADD_EMBREE_ISPC_EXECUTABLE name)
   ENDFOREACH()
   ISPC_COMPILE(${ISPC_SOURCES})
   ADD_EXECUTABLE(${name} ${ISPC_OBJECTS} ${OTHER_SOURCES})
-  # Urho3D: Hide targets in a folder.
-  SET_PROPERTY(TARGET ${name} PROPERTY FOLDER ThirdParty/embree3/ispc)
 ENDMACRO()
 
 MACRO (ADD_ISPC_LIBRARY name type)
@@ -196,8 +189,6 @@ MACRO (ADD_ISPC_LIBRARY name type)
   ENDFOREACH()
   ISPC_COMPILE(${ISPC_SOURCES})
   ADD_LIBRARY(${name} ${type} ${ISPC_OBJECTS} ${OTHER_SOURCES})
-  # Urho3D: Hide targets in a folder.
-  SET_PROPERTY(TARGET ${name} PROPERTY FOLDER ThirdParty/embree3/ispc)
 ENDMACRO()
 
 ELSE (EMBREE_ISPC_SUPPORT)
@@ -214,8 +205,6 @@ MACRO (ADD_ISPC_LIBRARY name type)
     ENDIF ()
   ENDFOREACH()
   ADD_LIBRARY(${name} ${type} ${OTHER_SOURCES})
-  # Urho3D: Hide targets in a folder.
-  SET_PROPERTY(TARGET ${name} PROPERTY FOLDER ThirdParty/embree3/ispc)
 ENDMACRO()
 
 ENDIF (EMBREE_ISPC_SUPPORT)

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -34,18 +21,17 @@ namespace embree
     CurveGeometry (Device* device, Geometry::GType gtype);
     
   public:
-    void enabling();
-    void disabling();
     void setMask(unsigned mask);
     void setNumTimeSteps (unsigned int numTimeSteps);
     void setVertexAttributeCount (unsigned int N);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
-    void preCommit();
-    void postCommit();
+    void commit();
     bool verify();
     void setTessellationRate(float N);
+    void setMaxRadiusScale(float s);
+    void addElementsToCount (GeometryCounts & counts) const;
 
   public:
     
@@ -59,16 +45,8 @@ namespace embree
       return curves[i];
     }
 
-    /*! returns the i'th segment */
-    __forceinline unsigned int getStartEndBitMask(size_t i) const {
-      unsigned int mask = 0;
-      if (flags) 
-        mask |= (flags[i] & 0x3) << 30;
-      return mask;
-    }
-
     /*! returns i'th vertex of the first time step */
-    __forceinline Vec3fa vertex(size_t i) const {
+    __forceinline Vec3ff vertex(size_t i) const {
       return vertices0[i];
     }
 
@@ -78,7 +56,7 @@ namespace embree
     }
 
     /*! returns i'th tangent of the first time step */
-    __forceinline Vec3fa tangent(size_t i) const {
+    __forceinline Vec3ff tangent(size_t i) const {
       return tangents0[i];
     }
 
@@ -93,7 +71,7 @@ namespace embree
     }
 
     /*! returns i'th vertex of itime'th timestep */
-    __forceinline Vec3fa vertex(size_t i, size_t itime) const {
+    __forceinline Vec3ff vertex(size_t i, size_t itime) const {
       return vertices[itime][i];
     }
 
@@ -103,7 +81,7 @@ namespace embree
     }
 
     /*! returns i'th tangent of itime'th timestep */
-    __forceinline Vec3fa tangent(size_t i, size_t itime) const {
+    __forceinline Vec3ff tangent(size_t i, size_t itime) const {
       return tangents[itime][i];
     }
 
@@ -118,7 +96,7 @@ namespace embree
     }
 
     /*! gathers the curve starting with i'th vertex */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i) const
+    __forceinline void gather(Vec3ff& p0, Vec3ff& p1, Vec3ff& p2, Vec3ff& p3, size_t i) const
     {
       p0 = vertex(i+0);
       p1 = vertex(i+1);
@@ -127,7 +105,7 @@ namespace embree
     }
 
     /*! gathers the curve starting with i'th vertex of itime'th timestep */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i, size_t itime) const
+    __forceinline void gather(Vec3ff& p0, Vec3ff& p1, Vec3ff& p2, Vec3ff& p3, size_t i, size_t itime) const
     {
       p0 = vertex(i+0,itime);
       p1 = vertex(i+1,itime);
@@ -136,7 +114,7 @@ namespace embree
     }
 
     /*! gathers the curve starting with i'th vertex */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i) const
+    __forceinline void gather(Vec3ff& p0, Vec3ff& p1, Vec3ff& p2, Vec3ff& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i) const
     {
       p0 = vertex(i+0);
       p1 = vertex(i+1);
@@ -149,7 +127,7 @@ namespace embree
     }
 
     /*! gathers the curve starting with i'th vertex of itime'th timestep */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, size_t itime) const
+    __forceinline void gather(Vec3ff& p0, Vec3ff& p1, Vec3ff& p2, Vec3ff& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, size_t itime) const
     {
       p0 = vertex(i+0,itime);
       p1 = vertex(i+1,itime);
@@ -176,66 +154,69 @@ namespace embree
     }  
 
     /*! loads curve vertices for specified time */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, size_t i, float time) const
+    __forceinline void gather(Vec3ff& p0, Vec3ff& p1, Vec3ff& p2, Vec3ff& p3, size_t i, float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
 
       const float t0 = 1.0f - ftime;
       const float t1 = ftime;
-      Vec3fa a0,a1,a2,a3;
+      Vec3ff a0,a1,a2,a3;
       gather(a0,a1,a2,a3,i,itime);
-      Vec3fa b0,b1,b2,b3;
+      Vec3ff b0,b1,b2,b3;
       gather(b0,b1,b2,b3,i,itime+1);
-      p0 = madd(Vec3fa(t0),a0,t1*b0);
-      p1 = madd(Vec3fa(t0),a1,t1*b1);
-      p2 = madd(Vec3fa(t0),a2,t1*b2);
-      p3 = madd(Vec3fa(t0),a3,t1*b3);
+      p0 = madd(Vec3ff(t0),a0,t1*b0);
+      p1 = madd(Vec3ff(t0),a1,t1*b1);
+      p2 = madd(Vec3ff(t0),a2,t1*b2);
+      p3 = madd(Vec3ff(t0),a3,t1*b3);
     }
 
     /*! loads curve vertices for specified time */
-    __forceinline void gather(Vec3fa& p0, Vec3fa& p1, Vec3fa& p2, Vec3fa& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, float time) const
+    __forceinline void gather(Vec3ff& p0, Vec3ff& p1, Vec3ff& p2, Vec3ff& p3, Vec3fa& n0, Vec3fa& n1, Vec3fa& n2, Vec3fa& n3, size_t i, float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
 
       const float t0 = 1.0f - ftime;
       const float t1 = ftime;
-      Vec3fa a0,a1,a2,a3,an0,an1,an2,an3;
+      Vec3ff a0,a1,a2,a3; Vec3fa an0,an1,an2,an3;
       gather(a0,a1,a2,a3,an0,an1,an2,an3,i,itime);
-      Vec3fa b0,b1,b2,b3,bn0,bn1,bn2,bn3;
+      Vec3ff b0,b1,b2,b3; Vec3fa bn0,bn1,bn2,bn3;
       gather(b0,b1,b2,b3,bn0,bn1,bn2,bn3,i,itime+1);
-      p0 = madd(Vec3fa(t0),a0,t1*b0);
-      p1 = madd(Vec3fa(t0),a1,t1*b1);
-      p2 = madd(Vec3fa(t0),a2,t1*b2);
-      p3 = madd(Vec3fa(t0),a3,t1*b3);
-      n0 = madd(Vec3fa(t0),an0,t1*bn0);
-      n1 = madd(Vec3fa(t0),an1,t1*bn1);
-      n2 = madd(Vec3fa(t0),an2,t1*bn2);
-      n3 = madd(Vec3fa(t0),an3,t1*bn3);
+      p0 = madd(Vec3ff(t0),a0,t1*b0);
+      p1 = madd(Vec3ff(t0),a1,t1*b1);
+      p2 = madd(Vec3ff(t0),a2,t1*b2);
+      p3 = madd(Vec3ff(t0),a3,t1*b3);
+      n0 = madd(Vec3ff(t0),an0,t1*bn0);
+      n1 = madd(Vec3ff(t0),an1,t1*bn1);
+      n2 = madd(Vec3ff(t0),an2,t1*bn2);
+      n3 = madd(Vec3ff(t0),an3,t1*bn3);
     }
 
-    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(const unsigned int primID, const size_t itime) const
+    template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
     {
-      Vec3fa v0,v1,v2,v3,n0,n1,n2,n3;
+      Vec3ff v0,v1,v2,v3; Vec3fa n0,n1,n2,n3;
       unsigned int vertexID = curve(primID);
       gather(v0,v1,v2,v3,n0,n1,n2,n3,vertexID,itime);
-      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0,v1,v2,v3),SourceCurve3fa(n0,n1,n2,n3));
+      SourceCurve3ff ccurve(v0,v1,v2,v3);
+      SourceCurve3fa ncurve(n0,n1,n2,n3);
+      ccurve = enlargeRadiusToMinWidth(context,this,ray_org,ccurve);
+      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
     }
 
-    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(const unsigned int primID, const float time) const
+    template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
-      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
-      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
+      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context,ray_org,primID,itime+0);
+      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context,ray_org,primID,itime+1);
       return clerp(curve0,curve1,ftime);
     }
 
     /*! gathers the hermite curve starting with i'th vertex */
-    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i) const
+    __forceinline void gather_hermite(Vec3ff& p0, Vec3ff& t0, Vec3ff& p1, Vec3ff& t1, size_t i) const
     {
       p0 = vertex (i+0);
       p1 = vertex (i+1);
@@ -244,7 +225,7 @@ namespace embree
     }
 
     /*! gathers the hermite curve starting with i'th vertex of itime'th timestep */
-    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i, size_t itime) const
+    __forceinline void gather_hermite(Vec3ff& p0, Vec3ff& t0, Vec3ff& p1, Vec3ff& t1, size_t i, size_t itime) const
     {
       p0 = vertex (i+0,itime);
       p1 = vertex (i+1,itime);
@@ -253,23 +234,23 @@ namespace embree
     }
 
     /*! loads curve vertices for specified time */
-    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& p1, Vec3fa& t1, size_t i, float time) const
+    __forceinline void gather_hermite(Vec3ff& p0, Vec3ff& t0, Vec3ff& p1, Vec3ff& t1, size_t i, float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
       const float f0 = 1.0f - ftime, f1 = ftime;
-      Vec3fa ap0,at0,ap1,at1;
+      Vec3ff ap0,at0,ap1,at1;
       gather_hermite(ap0,at0,ap1,at1,i,itime);
-      Vec3fa bp0,bt0,bp1,bt1;
+      Vec3ff bp0,bt0,bp1,bt1;
       gather_hermite(bp0,bt0,bp1,bt1,i,itime+1);
-      p0 = madd(Vec3fa(f0),ap0,f1*bp0);
-      t0 = madd(Vec3fa(f0),at0,f1*bt0);
-      p1 = madd(Vec3fa(f0),ap1,f1*bp1);
-      t1 = madd(Vec3fa(f0),at1,f1*bt1);
+      p0 = madd(Vec3ff(f0),ap0,f1*bp0);
+      t0 = madd(Vec3ff(f0),at0,f1*bt0);
+      p1 = madd(Vec3ff(f0),ap1,f1*bp1);
+      t1 = madd(Vec3ff(f0),at1,f1*bt1);
     }
 
     /*! gathers the hermite curve starting with i'th vertex */
-    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& dn0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, Vec3fa& dn1, size_t i) const
+    __forceinline void gather_hermite(Vec3ff& p0, Vec3ff& t0, Vec3fa& n0, Vec3fa& dn0, Vec3ff& p1, Vec3ff& t1, Vec3fa& n1, Vec3fa& dn1, size_t i) const
     {
       p0 = vertex (i+0);
       p1 = vertex (i+1);
@@ -282,7 +263,7 @@ namespace embree
     }
 
     /*! gathers the hermite curve starting with i'th vertex of itime'th timestep */
-    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& dn0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, Vec3fa& dn1, size_t i, size_t itime) const
+    __forceinline void gather_hermite(Vec3ff& p0, Vec3ff& t0, Vec3fa& n0, Vec3fa& dn0, Vec3ff& p1, Vec3ff& t1, Vec3fa& n1, Vec3fa& dn1, size_t i, size_t itime) const
     {
       p0 = vertex (i+0,itime);
       p1 = vertex (i+1,itime);
@@ -295,41 +276,45 @@ namespace embree
     }
 
     /*! loads curve vertices for specified time */
-    __forceinline void gather_hermite(Vec3fa& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& dn0, Vec3fa& p1, Vec3fa& t1, Vec3fa& n1, Vec3fa& dn1, size_t i, float time) const
+    __forceinline void gather_hermite(Vec3ff& p0, Vec3fa& t0, Vec3fa& n0, Vec3fa& dn0, Vec3ff& p1, Vec3fa& t1, Vec3fa& n1, Vec3fa& dn1, size_t i, float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
       const float f0 = 1.0f - ftime, f1 = ftime;
-      Vec3fa ap0,at0,an0,adn0,ap1,at1,an1,adn1;
+      Vec3ff ap0,at0,ap1,at1; Vec3fa an0,adn0,an1,adn1;
       gather_hermite(ap0,at0,an0,adn0,ap1,at1,an1,adn1,i,itime);
-      Vec3fa bp0,bt0,bn0,bdn0,bp1,bt1,bn1,bdn1;
+      Vec3ff bp0,bt0,bp1,bt1; Vec3fa bn0,bdn0,bn1,bdn1;
       gather_hermite(bp0,bt0,bn0,bdn0,bp1,bt1,bn1,bdn1,i,itime+1);
-      p0 = madd(Vec3fa(f0),ap0,f1*bp0);
-      t0 = madd(Vec3fa(f0),at0,f1*bt0);
-      n0 = madd(Vec3fa(f0),an0,f1*bn0);
-      dn0= madd(Vec3fa(f0),adn0,f1*bdn0);
-      p1 = madd(Vec3fa(f0),ap1,f1*bp1);
-      t1 = madd(Vec3fa(f0),at1,f1*bt1);
-      n1 = madd(Vec3fa(f0),an1,f1*bn1);
-      dn1= madd(Vec3fa(f0),adn1,f1*bdn1);
+      p0 = madd(Vec3ff(f0),ap0,f1*bp0);
+      t0 = madd(Vec3ff(f0),at0,f1*bt0);
+      n0 = madd(Vec3ff(f0),an0,f1*bn0);
+      dn0= madd(Vec3ff(f0),adn0,f1*bdn0);
+      p1 = madd(Vec3ff(f0),ap1,f1*bp1);
+      t1 = madd(Vec3ff(f0),at1,f1*bt1);
+      n1 = madd(Vec3ff(f0),an1,f1*bn1);
+      dn1= madd(Vec3ff(f0),adn1,f1*bdn1);
     }
 
-    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(const unsigned int primID, const size_t itime) const
+    template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+      __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const size_t itime) const
     {
-      Vec3fa v0,t0,n0,dn0,v1,t1,n1,dn1;
+      Vec3ff v0,t0,v1,t1; Vec3fa n0,dn0,n1,dn1;
       unsigned int vertexID = curve(primID);
       gather_hermite(v0,t0,n0,dn0,v1,t1,n1,dn1,vertexID,itime);
-      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0,t0,v1,t1),SourceCurve3fa(n0,dn0,n1,dn1));
+
+      SourceCurve3ff ccurve(v0,t0,v1,t1);
+      SourceCurve3fa ncurve(n0,dn0,n1,dn1);
+      ccurve = enlargeRadiusToMinWidth(context,this,ray_org,ccurve);
+      return TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
     }
 
-    template<typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
-    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(const unsigned int primID, const float time) const
+    template<typename SourceCurve3ff, typename SourceCurve3fa, typename TensorLinearCubicBezierSurface3fa>
+    __forceinline TensorLinearCubicBezierSurface3fa getNormalOrientedHermiteCurve(IntersectContext* context, const Vec3fa& ray_org, const unsigned int primID, const float time) const
     {
       float ftime;
       const size_t itime = timeSegment(time, ftime);
-      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedHermiteCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+0);
-      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedHermiteCurve<SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(primID,itime+1);
+      const TensorLinearCubicBezierSurface3fa curve0 = getNormalOrientedHermiteCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context, ray_org, primID,itime+0);
+      const TensorLinearCubicBezierSurface3fa curve1 = getNormalOrientedHermiteCurve<SourceCurve3ff, SourceCurve3fa, TensorLinearCubicBezierSurface3fa>(context, ray_org, primID,itime+1);
       return clerp(curve0,curve1,ftime);
     }
 
@@ -338,17 +323,18 @@ namespace embree
 
   public:
     BufferView<unsigned int> curves;        //!< array of curve indices
-    BufferView<Vec3fa> vertices0;           //!< fast access to first vertex buffer
+    BufferView<Vec3ff> vertices0;           //!< fast access to first vertex buffer
     BufferView<Vec3fa> normals0;            //!< fast access to first normal buffer
-    BufferView<Vec3fa> tangents0;           //!< fast access to first tangent buffer
+    BufferView<Vec3ff> tangents0;           //!< fast access to first tangent buffer
     BufferView<Vec3fa> dnormals0;           //!< fast access to first normal derivative buffer
-    vector<BufferView<Vec3fa>> vertices;    //!< vertex array for each timestep
+    vector<BufferView<Vec3ff>> vertices;    //!< vertex array for each timestep
     vector<BufferView<Vec3fa>> normals;     //!< normal array for each timestep
-    vector<BufferView<Vec3fa>> tangents;    //!< tangent array for each timestep
-    vector<BufferView<Vec3fa>> dnormals;     //!< normal derivative array for each timestep
+    vector<BufferView<Vec3ff>> tangents;    //!< tangent array for each timestep
+    vector<BufferView<Vec3fa>> dnormals;    //!< normal derivative array for each timestep
     BufferView<char> flags;                 //!< start, end flag per segment
     vector<BufferView<char>> vertexAttribs; //!< user buffers
-    int tessellationRate;                   //!< tessellation rate for bezier curve
+    int tessellationRate;                   //!< tessellation rate for flat curve
+    float maxRadiusScale = 1.0;             //!< maximal min-width scaling of curve radii
   };
   
   DECLARE_ISA_FUNCTION(CurveGeometry*, createCurves, Device* COMMA Geometry::GType);

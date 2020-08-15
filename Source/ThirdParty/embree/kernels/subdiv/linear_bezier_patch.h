@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -89,25 +76,25 @@ namespace embree
         __forceinline TensorLinearCubicBezierSurface(const CubicBezierCurve<V>& L, const CubicBezierCurve<V>& R)
           : L(L), R(R) {}
 
-        template<typename SourceCurve3fa>
-        __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve3fa& center, const SourceCurve3fa& normal)
+        template<template<typename T> class SourceCurve>
+        __forceinline static TensorLinearCubicBezierSurface fromCenterAndNormalCurve(const SourceCurve<Vec3ff>& center, const SourceCurve<Vec3fa>& normal)
         {
-          SourceCurve3fa vcurve = center;
-          SourceCurve3fa ncurve = normal;
+          SourceCurve<Vec3ff> vcurve = center;
+          SourceCurve<Vec3fa> ncurve = normal;
           
           /* here we construct a patch which follows the curve l(t) =
            * p(t) +/- r(t)*normalize(cross(n(t),dp(t))) */
           
-          const Vec3fa p0   = vcurve.eval(0.0f);
-          const Vec3fa dp0  = vcurve.eval_du(0.0f);
-          const Vec3fa ddp0 = vcurve.eval_dudu(0.0f);
+          const Vec3ff p0   = vcurve.eval(0.0f);
+          const Vec3ff dp0  = vcurve.eval_du(0.0f);
+          const Vec3ff ddp0 = vcurve.eval_dudu(0.0f);
 
           const Vec3fa n0   = ncurve.eval(0.0f);
           const Vec3fa dn0  = ncurve.eval_du(0.0f);
 
-          const Vec3fa p1   = vcurve.eval(1.0f);
-          const Vec3fa dp1  = vcurve.eval_du(1.0f);
-          const Vec3fa ddp1 = vcurve.eval_dudu(1.0f);
+          const Vec3ff p1   = vcurve.eval(1.0f);
+          const Vec3ff dp1  = vcurve.eval_du(1.0f);
+          const Vec3ff ddp1 = vcurve.eval_dudu(1.0f);
 
           const Vec3fa n1   = ncurve.eval(1.0f);
           const Vec3fa dn1  = ncurve.eval_du(1.0f);
@@ -244,12 +231,12 @@ namespace embree
           return (R.begin()-L.begin())+(R.end()-L.end());
         }
         
-        friend std::ostream& operator<<(std::ostream& cout, const TensorLinearCubicBezierSurface& a)
+        friend embree_ostream operator<<(embree_ostream cout, const TensorLinearCubicBezierSurface& a)
         {
-          return cout << "TensorLinearCubicBezierSurface" << std::endl
-                      << "{" << std::endl
-                      << "  L = " << a.L << ", " << std::endl
-                      << "  R = " << a.R << std::endl
+          return cout << "TensorLinearCubicBezierSurface" << embree_endl
+                      << "{" << embree_endl
+                      << "  L = " << a.L << ", " << embree_endl
+                      << "  R = " << a.R << embree_endl
                       << "}";
         }
 
@@ -399,12 +386,12 @@ namespace embree
         return (R.begin()-L.begin())+(R.end()-L.end());
       }
       
-      friend std::ostream& operator<<(std::ostream& cout, const TensorLinearCubicBezierSurface& a)
+      friend embree_ostream operator<<(embree_ostream cout, const TensorLinearCubicBezierSurface& a)
       {
-        return cout << "TensorLinearCubicBezierSurface" << std::endl
-                    << "{" << std::endl
-                    << "  L = " << a.getL() << ", " << std::endl
-                    << "  R = " << a.getR() << std::endl
+        return cout << "TensorLinearCubicBezierSurface" << embree_endl
+                    << "{" << embree_endl
+                    << "  L = " << a.getL() << ", " << embree_endl
+                    << "  R = " << a.getR() << embree_endl
                     << "}";
       }
     };

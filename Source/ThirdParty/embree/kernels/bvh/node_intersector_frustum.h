@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -202,11 +189,11 @@ namespace embree
     typedef Frustum<true> FrustumRobust;
 
     //////////////////////////////////////////////////////////////////////////////////////
-    // Fast AlignedNode intersection
+    // Fast AABBNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx>
-    __forceinline size_t intersectNodeFrustum(const typename BVHN<N>::AlignedNode* __restrict__ node,
+    __forceinline size_t intersectNodeFrustum(const typename BVHN<N>::AABBNode* __restrict__ node,
                                        const FrustumFast& frustum, vfloat<Nx>& dist)
     {
       const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + frustum.nf.nearX);
@@ -232,11 +219,11 @@ namespace embree
     }
 
     //////////////////////////////////////////////////////////////////////////////////////
-    // Robust AlignedNode intersection
+    // Robust AABBNode intersection
     //////////////////////////////////////////////////////////////////////////////////////
 
     template<int N, int Nx>
-    __forceinline size_t intersectNodeFrustum(const typename BVHN<N>::AlignedNode* __restrict__ node,
+    __forceinline size_t intersectNodeFrustum(const typename BVHN<N>::AABBNode* __restrict__ node,
                                        const FrustumRobust& frustum, vfloat<Nx>& dist)
     {
       const vfloat<Nx> bminX = *(const vfloat<N>*)((const char*)&node->lower_x + frustum.nf.nearX);

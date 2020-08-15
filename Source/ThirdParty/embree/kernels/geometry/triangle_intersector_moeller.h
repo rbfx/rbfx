@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -82,11 +69,12 @@ namespace embree
       {
         /* calculate denominator */
         vbool<M> valid = valid0;
-        const Vec3vf<M> O = Vec3vf<M>(ray.org);
-        const Vec3vf<M> D = Vec3vf<M>(ray.dir);
+        const Vec3vf<M> O = Vec3vf<M>((Vec3fa)ray.org);
+        const Vec3vf<M> D = Vec3vf<M>((Vec3fa)ray.dir);
         const Vec3vf<M> C = Vec3vf<M>(tri_v0) - O;
         const Vec3vf<M> R = cross(C,D);
         const vfloat<M> den = dot(Vec3vf<M>(tri_Ng),D);
+
         const vfloat<M> absDen = abs(den);
         const vfloat<M> sgnDen = signmsk(den);
         
@@ -101,14 +89,16 @@ namespace embree
         valid &= (den != vfloat<M>(zero)) & (U >= 0.0f) & (V >= 0.0f) & (U+V<=absDen);
 #endif
         if (likely(none(valid))) return false;
-        
+
         /* perform depth test */
         const vfloat<M> T = dot(Vec3vf<M>(tri_Ng),C) ^ sgnDen;
         valid &= (absDen*vfloat<M>(ray.tnear()) < T) & (T <= absDen*vfloat<M>(ray.tfar));
         if (likely(none(valid))) return false;
+   
         
         /* update hit information */
         new (&hit) MoellerTrumboreHitM<M>(valid,U,V,T,absDen,tri_Ng);
+
         return true;
       }
 

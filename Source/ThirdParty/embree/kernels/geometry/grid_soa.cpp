@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
  
 #include "grid_soa.h"
 
@@ -125,8 +112,8 @@ namespace embree
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::AlignedNode* node = (BVH4::AlignedNode *)&bvhData()[allocator];
-        allocator += sizeof(BVH4::AlignedNode);
+        BVH4::AABBNode* node = (BVH4::AABBNode *)&bvhData()[allocator];
+        allocator += sizeof(BVH4::AABBNode);
         node->clear();
         
         /* split range */
@@ -174,8 +161,8 @@ namespace embree
       else 
       {
         /* allocate new bvh4 node */
-        BVH4::AlignedNodeMB* node = (BVH4::AlignedNodeMB *)&bvhData()[allocator];
-        allocator += sizeof(BVH4::AlignedNodeMB);
+        BVH4::AABBNodeMB* node = (BVH4::AABBNodeMB *)&bvhData()[allocator];
+        allocator += sizeof(BVH4::AABBNodeMB);
         node->clear();
         
         /* split range */
@@ -215,8 +202,8 @@ namespace embree
       }
 
       /* allocate new bvh4 node */
-      BVH4::AlignedNodeMB4D* node = (BVH4::AlignedNodeMB4D*)&bvhData()[allocator];
-      allocator += sizeof(BVH4::AlignedNodeMB4D);
+      BVH4::AABBNodeMB4D* node = (BVH4::AABBNodeMB4D*)&bvhData()[allocator];
+      allocator += sizeof(BVH4::AABBNodeMB4D);
       node->clear();
 
       for (int i=0, j=0; i<4; i++) 
@@ -227,7 +214,11 @@ namespace embree
         std::pair<BVH4::NodeRef,LBBox3fa> node_bounds = buildMSMBlurBVH(make_range(begin,end),allocator,bounds_o);
         const float t0 = float(begin)/float(time_steps-1);
         const float t1 = float(end  )/float(time_steps-1);
-        node->set(j,node_bounds.first,node_bounds.second,BBox1f(t0,t1));
+        BVH4::NodeRecordMB4D nodeRecord;
+        nodeRecord.ref = node_bounds.first;
+        nodeRecord.lbounds = node_bounds.second;
+        nodeRecord.dt = BBox1f(t0, t1);
+        node->set(j,nodeRecord);
         j++;
       }
 

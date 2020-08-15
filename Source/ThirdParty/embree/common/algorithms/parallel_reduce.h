@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -40,7 +27,7 @@ namespace embree
     taskCount = min(taskCount,threadCount,maxTasks);
 
     /* parallel invokation of all tasks */
-    dynamic_large_stack_array(Value,values,taskCount,4096); // consumes at most 4096 bytes on the stack
+    dynamic_large_stack_array(Value,values,taskCount,8192); // consumes at most 8192 bytes on the stack
     parallel_for(taskCount, [&](const Index taskIndex) {
         const Index k0 = first+(taskIndex+0)*(last-first)/taskCount;
         const Index k1 = first+(taskIndex+1)*(last-first)/taskCount;
