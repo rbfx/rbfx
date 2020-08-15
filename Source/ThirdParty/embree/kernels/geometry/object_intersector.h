@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -45,7 +32,7 @@ namespace embree
           return;
 #endif
 
-        accel->intersect(ray,prim.primID(),context,reportIntersection1);
+        accel->intersect(ray,prim.geomID(),prim.primID(),context,reportIntersection1);
       }
       
       static __forceinline bool occluded(const Precalculations& pre, Ray& ray, IntersectContext* context, const Primitive& prim)
@@ -57,7 +44,7 @@ namespace embree
           return false;
 #endif
 
-        accel->occluded(ray,prim.primID(),context,&reportOcclusion1);
+        accel->occluded(ray,prim.geomID(),prim.primID(),context,&reportOcclusion1);
         return ray.tfar < 0.0f;
       }
       
@@ -102,7 +89,7 @@ namespace embree
         valid &= (ray.mask & accel->mask) != 0;
         if (none(valid)) return;
 #endif
-        accel->intersect(valid,ray,prim.primID(),context,&reportIntersection1);
+        accel->intersect(valid,ray,prim.geomID(),prim.primID(),context,&reportIntersection1);
       }
 
       static __forceinline vbool<K> occluded(const vbool<K>& valid_i, const Precalculations& pre, RayK<K>& ray, IntersectContext* context, const Primitive& prim)
@@ -115,7 +102,7 @@ namespace embree
         valid &= (ray.mask & accel->mask) != 0;
         if (none(valid)) return false;
 #endif
-        accel->occluded(valid,ray,prim.primID(),context,&reportOcclusion1);
+        accel->occluded(valid,ray,prim.geomID(),prim.primID(),context,&reportOcclusion1);
         return ray.tfar < 0.0f;
       }
       

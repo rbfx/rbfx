@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -43,13 +30,13 @@ namespace embree
         const NodeRef parent = cur;
         size_t mask = movemask(vmask);
         assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         const size_t r0 = bscf(mask);
         assert(r0 < 8);
         cur = node->child(r0);
-        cur.prefetch(types);
+        BVHN<N>::prefetch(cur,types);
         m_trav_active = tMask[r0];
         assert(cur != BVH::emptyNode);
         if (unlikely(mask == 0)) return;
@@ -62,7 +49,7 @@ namespace embree
         const size_t r1 = bscf(mask);
         assert(r1 < 8);
         NodeRef c1 = node->child(r1);
-        c1.prefetch(types);
+        BVHN<N>::prefetch(c1,types);
         unsigned int d1 = tNear_i[r1];
 
         assert(c0 != BVH::emptyNode);
@@ -109,7 +96,7 @@ namespace embree
           cur = node->child(index);
           m_trav_active = tMask[index];
           assert(m_trav_active);
-          cur.prefetch(types);
+          BVHN<N>::prefetch(cur,types);
           bscf(hits);
           if (unlikely(hits==0)) break;
           i++;
@@ -132,12 +119,12 @@ namespace embree
         const NodeRef parent = cur;
         size_t mask = movemask(vmask);
         assert(mask != 0);
-        const BaseNode* node = cur.baseNode(types);
+        const BaseNode* node = cur.baseNode();
 
         /*! one child is hit, continue with that child */
         size_t r = bscf(mask);
         cur = node->child(r);
-        cur.prefetch(types);
+        BVHN<N>::prefetch(cur,types);
         m_trav_active = tMask[r];
 
         /* simple in order sequence */
@@ -152,7 +139,7 @@ namespace embree
         {
           r = bscf(mask);
           cur = node->child(r);
-          cur.prefetch(types);
+          BVHN<N>::prefetch(cur,types);
           m_trav_active = tMask[r];
           assert(cur != BVH::emptyNode);
           if (likely(mask == 0)) return;

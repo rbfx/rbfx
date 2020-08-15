@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -193,7 +180,7 @@ struct RTCFilterFunctionNArguments
 {
   int* valid;
   void* geometryUserPtr;
-  const struct RTCIntersectContext* context;
+  struct RTCIntersectContext* context;
   struct RTCRayN* ray;
   struct RTCHitN* hit;
   unsigned int N;
@@ -207,10 +194,15 @@ struct RTCIntersectContext
 {
   enum RTCIntersectContextFlags flags;               // intersection flags
   RTCFilterFunctionN filter;                         // filter function to execute
+  
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   unsigned int instStackSize;                        // Number of instances currently on the stack.
 #endif
   unsigned int instID[RTC_MAX_INSTANCE_LEVEL_COUNT]; // The current stack of instance ids.
+  
+#if RTC_MIN_WIDTH
+  float minWidthDistanceFactor;                      // curve radius is set to this factor times distance to ray origin
+#endif
 };
 
 /* Initializes an intersection context. */
@@ -219,11 +211,16 @@ RTC_FORCEINLINE void rtcInitIntersectContext(struct RTCIntersectContext* context
   unsigned l = 0;
   context->flags = RTC_INTERSECT_CONTEXT_FLAG_INCOHERENT;
   context->filter = NULL;
+  
 #if RTC_MAX_INSTANCE_LEVEL_COUNT > 1
   context->instStackSize = 0;
 #endif
   for (; l < RTC_MAX_INSTANCE_LEVEL_COUNT; ++l)
     context->instID[l] = RTC_INVALID_GEOMETRY_ID;
+  
+#if RTC_MIN_WIDTH
+  context->minWidthDistanceFactor = 0.0f;
+#endif
 }
 
 /* Point query structure for closest point query */

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -68,10 +55,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomID(),quad.primID(),i));
         }
       }
@@ -85,10 +72,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomID(),quad.primID(),i)))
             break;
         }
@@ -156,10 +143,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(normal.trav_prims,1,popcnt(valid_i),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           pre.intersectK(valid_i,ray,p0,p1,p2,p3,IntersectKEpilogM<M,K,filter>(ray,context,quad.geomID(),quad.primID(),i));
         }
       }
@@ -173,10 +160,10 @@ namespace embree
         {
           if (!quad.valid(i)) break;
           STAT3(shadow.trav_prims,1,popcnt(valid0),K);
-          const Vec3vf<K> p0 = quad.getVertex(quad.v0,i,scene);
-          const Vec3vf<K> p1 = quad.getVertex(quad.v1,i,scene);
-          const Vec3vf<K> p2 = quad.getVertex(quad.v2,i,scene);
-          const Vec3vf<K> p3 = quad.getVertex(quad.v3,i,scene);
+          const Vec3vf<K> p0 = quad.template getVertex<0>(i,scene);
+          const Vec3vf<K> p1 = quad.template getVertex<1>(i,scene);
+          const Vec3vf<K> p2 = quad.template getVertex<2>(i,scene);
+          const Vec3vf<K> p3 = quad.template getVertex<3>(i,scene);
           if (pre.intersectK(valid0,ray,p0,p1,p2,p3,OccludedKEpilogM<M,K,filter>(valid0,ray,context,quad.geomID(),quad.primID(),i)))
             break;
         }

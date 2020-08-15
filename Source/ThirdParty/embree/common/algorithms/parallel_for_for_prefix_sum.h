@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -53,7 +40,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<Index>((Index)r0,(Index)r1),(Index)k,(Index)i));
         k+=r1-r0; j0 = 0;
       }
       state.prefix_state.counts[taskIndex] = N;
@@ -91,7 +78,7 @@ namespace embree
       for (size_t i=i0; k<k1; i++) {
 	const size_t size = array2[i] ? array2[i]->size() : 0;
         const size_t r0 = j0, r1 = min(size,r0+k1-k);
-        if (r1 > r0) N = reduction(N, func(array2[i],range<size_t>(r0,r1),k,reduction(state.prefix_state.sums[taskIndex],N)));
+        if (r1 > r0) N = reduction(N, func(array2[i],range<Index>((Index)r0,(Index)r1),(Index)k,(Index)i,reduction(state.prefix_state.sums[taskIndex],N)));
         k+=r1-r0; j0 = 0;
       }
       state.prefix_state.counts[taskIndex] = N;

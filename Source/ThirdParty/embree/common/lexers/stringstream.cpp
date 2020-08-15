@@ -1,23 +1,12 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "stringstream.h"
 
 namespace embree
 {
+  static const std::string stringChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 _.,+-=:/*\\";
+  
   /* creates map for fast categorization of characters */
   static void createCharMap(bool map[256], const std::string& chrs) {
     for (size_t i=0; i<256; i++) map[i] = false;
@@ -29,6 +18,7 @@ namespace embree
     : cin(cin), endl(endl), multiLine(multiLine)
   {
     createCharMap(isSepMap,seps);
+    createCharMap(isValidCharMap,stringChars);
   }
 
   std::string StringStream::next()
@@ -47,8 +37,11 @@ namespace embree
 
     /* parse everything until the next separator */
     std::vector<char> str; str.reserve(64);
-    while (cin->peek() != EOF && !isSeparator(cin->peek()))
-      str.push_back((char)cin->get());
+    while (cin->peek() != EOF && !isSeparator(cin->peek())) {
+      int c = cin->get();
+      if (!isValidChar(c)) throw std::runtime_error("invalid character "+std::string(1,c)+" in input");
+      str.push_back((char)c);
+    }
     str.push_back(0);
     return std::string(str.data());
   }

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -295,7 +282,7 @@ namespace embree
         }
 
 
-        friend std::ostream& operator<<(std::ostream& cout, const SubGrid& sg) {
+        friend embree_ostream operator<<(embree_ostream cout, const SubGrid& sg) {
           return cout << "SubGrid " << " ( x " << sg.x() << ", y = " << sg.y() << ", geomID = " << sg.geomID() << ", primID = " << sg.primID() << " )";
         }
 
@@ -364,7 +351,7 @@ namespace embree
           clear();
           _geomID = geomID;
 
-          __aligned(64) typename BVHN<N>::AlignedNode node;
+          __aligned(64) typename BVHN<N>::AABBNode node;
           node.clear();          
           for (size_t i=0;i<items;i++)
           {
@@ -393,17 +380,17 @@ namespace embree
         unsigned int _geomID;    // geometry ID of mesh
 
 
-        friend std::ostream& operator<<(std::ostream& cout, const SubGridQBVHN& sg) {
-          cout << "SubGridQBVHN " << std::endl;
+        friend embree_ostream operator<<(embree_ostream cout, const SubGridQBVHN& sg) {
+          cout << "SubGridQBVHN " << embree_endl;
           for (size_t i=0;i<N;i++)
-            cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << std::endl;
-          cout << "geomID " << sg._geomID << std::endl;
-          cout << "lowerX " << sg.qnode.dequantizeLowerX() << std::endl;
-          cout << "upperX " << sg.qnode.dequantizeUpperX() << std::endl;
-          cout << "lowerY " << sg.qnode.dequantizeLowerY() << std::endl;
-          cout << "upperY " << sg.qnode.dequantizeUpperY() << std::endl;
-          cout << "lowerZ " << sg.qnode.dequantizeLowerZ() << std::endl;
-          cout << "upperZ " << sg.qnode.dequantizeUpperZ() << std::endl;
+            cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << embree_endl;
+          cout << "geomID " << sg._geomID << embree_endl;
+          cout << "lowerX " << sg.qnode.dequantizeLowerX() << embree_endl;
+          cout << "upperX " << sg.qnode.dequantizeUpperX() << embree_endl;
+          cout << "lowerY " << sg.qnode.dequantizeLowerY() << embree_endl;
+          cout << "upperY " << sg.qnode.dequantizeUpperY() << embree_endl;
+          cout << "lowerZ " << sg.qnode.dequantizeLowerZ() << embree_endl;
+          cout << "upperZ " << sg.qnode.dequantizeUpperZ() << embree_endl;
           return cout;
         }
 
@@ -464,7 +451,7 @@ namespace embree
           time_offset = toffset;
           time_scale  = tscale;
 
-          __aligned(64) typename BVHN<N>::AlignedNode node0,node1;
+          __aligned(64) typename BVHN<N>::AABBNode node0,node1;
           node0.clear();          
           node1.clear();          
           for (size_t i=0;i<items;i++)
@@ -503,25 +490,25 @@ namespace embree
         unsigned int _geomID;    // geometry ID of mesh
 
 
-        friend std::ostream& operator<<(std::ostream& cout, const SubGridMBQBVHN& sg) {
-          cout << "SubGridMBQBVHN " << std::endl;
+        friend embree_ostream operator<<(embree_ostream cout, const SubGridMBQBVHN& sg) {
+          cout << "SubGridMBQBVHN " << embree_endl;
           for (size_t i=0;i<N;i++)
-            cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << std::endl;
-          cout << "geomID      " << sg._geomID << std::endl;
-          cout << "time_offset " << sg.time_offset << std::endl;
-          cout << "time_scale  " << sg.time_scale << std::endl;         
-          cout << "lowerX " << sg.qnode.node0.dequantizeLowerX() << std::endl;
-          cout << "upperX " << sg.qnode.node0.dequantizeUpperX() << std::endl;
-          cout << "lowerY " << sg.qnode.node0.dequantizeLowerY() << std::endl;
-          cout << "upperY " << sg.qnode.node0.dequantizeUpperY() << std::endl;
-          cout << "lowerZ " << sg.qnode.node0.dequantizeLowerZ() << std::endl;
-          cout << "upperZ " << sg.qnode.node0.dequantizeUpperZ() << std::endl;
-          cout << "lowerX " << sg.qnode.node1.dequantizeLowerX() << std::endl;
-          cout << "upperX " << sg.qnode.node1.dequantizeUpperX() << std::endl;
-          cout << "lowerY " << sg.qnode.node1.dequantizeLowerY() << std::endl;
-          cout << "upperY " << sg.qnode.node1.dequantizeUpperY() << std::endl;
-          cout << "lowerZ " << sg.qnode.node1.dequantizeLowerZ() << std::endl;
-          cout << "upperZ " << sg.qnode.node1.dequantizeUpperZ() << std::endl;
+            cout << i << " ( x = " << sg.subgridIDs[i].x << ", y = " << sg.subgridIDs[i].y << ", primID = " << sg.subgridIDs[i].primID << " )" << embree_endl;
+          cout << "geomID      " << sg._geomID << embree_endl;
+          cout << "time_offset " << sg.time_offset << embree_endl;
+          cout << "time_scale  " << sg.time_scale << embree_endl;         
+          cout << "lowerX " << sg.qnode.node0.dequantizeLowerX() << embree_endl;
+          cout << "upperX " << sg.qnode.node0.dequantizeUpperX() << embree_endl;
+          cout << "lowerY " << sg.qnode.node0.dequantizeLowerY() << embree_endl;
+          cout << "upperY " << sg.qnode.node0.dequantizeUpperY() << embree_endl;
+          cout << "lowerZ " << sg.qnode.node0.dequantizeLowerZ() << embree_endl;
+          cout << "upperZ " << sg.qnode.node0.dequantizeUpperZ() << embree_endl;
+          cout << "lowerX " << sg.qnode.node1.dequantizeLowerX() << embree_endl;
+          cout << "upperX " << sg.qnode.node1.dequantizeUpperX() << embree_endl;
+          cout << "lowerY " << sg.qnode.node1.dequantizeLowerY() << embree_endl;
+          cout << "upperY " << sg.qnode.node1.dequantizeUpperY() << embree_endl;
+          cout << "lowerZ " << sg.qnode.node1.dequantizeLowerZ() << embree_endl;
+          cout << "upperZ " << sg.qnode.node1.dequantizeUpperZ() << embree_endl;
           return cout;
         }
 

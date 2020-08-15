@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -44,10 +31,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -61,7 +48,7 @@ namespace embree
             }
           }
 
-          Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
+          Intersector().intersect(pre,ray,context,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
         }
       }
@@ -81,10 +68,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -98,7 +85,7 @@ namespace embree
             }
           }
           
-          if (Intersector().intersect(pre,ray,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,context,geom,primID,a0,a1,a2,a3,Epilog(ray,context,geomID,primID)))
             return true;
           
           mask &= movemask(tNear <= vfloat<M>(ray.tfar));
@@ -128,10 +115,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -145,7 +132,7 @@ namespace embree
             }
           }
 
-          Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
+          Intersector().intersect(pre,ray,k,context,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID));
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));
         }
       }
@@ -165,10 +152,10 @@ namespace embree
           const unsigned int geomID = prim.geomID(N);
           const unsigned int primID = prim.primID(N)[i];
           const CurveGeometry* geom = (CurveGeometry*) context->scene->get(geomID);
-          const Vec3fa a0 = Vec3fa::loadu(&prim.vertices(i,N)[0]);
-          const Vec3fa a1 = Vec3fa::loadu(&prim.vertices(i,N)[1]);
-          const Vec3fa a2 = Vec3fa::loadu(&prim.vertices(i,N)[2]);
-          const Vec3fa a3 = Vec3fa::loadu(&prim.vertices(i,N)[3]);
+          const Vec3ff a0 = Vec3ff::loadu(&prim.vertices(i,N)[0]);
+          const Vec3ff a1 = Vec3ff::loadu(&prim.vertices(i,N)[1]);
+          const Vec3ff a2 = Vec3ff::loadu(&prim.vertices(i,N)[2]);
+          const Vec3ff a3 = Vec3ff::loadu(&prim.vertices(i,N)[3]);
 
           size_t mask1 = mask;
           const size_t i1 = bscf(mask1);
@@ -182,7 +169,7 @@ namespace embree
             }
           }
 
-          if (Intersector().intersect(pre,ray,k,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))
+          if (Intersector().intersect(pre,ray,k,context,geom,primID,a0,a1,a2,a3,Epilog(ray,k,context,geomID,primID)))
             return true;
 
           mask &= movemask(tNear <= vfloat<M>(ray.tfar[k]));

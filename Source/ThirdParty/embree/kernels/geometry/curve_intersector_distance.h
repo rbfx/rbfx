@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -64,6 +51,7 @@ namespace embree
     {
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculations1& pre,Ray& ray,
+                                   IntersectContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const Vec3fa& v0, const Vec3fa& v1, const Vec3fa& v2, const Vec3fa& v3,
                                    const Epilog& epilog)
@@ -71,7 +59,8 @@ namespace embree
         const int N = geom->tessellationRate;
         
         /* transform control points into ray space */
-        const NativeCurve3fa curve3D(v0,v1,v2,v3);
+        const NativeCurve3fa curve3Di(v0,v1,v2,v3);
+        const NativeCurve3fa curve3D = enlargeRadiusToMinWidth(context,geom,ray.org,curve3Di);
         const NativeCurve3fa curve2D = curve3D.xfm_pr(pre.ray_space,ray.org);
       
         /* evaluate the bezier curve */
@@ -90,7 +79,7 @@ namespace embree
         const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
         const vfloatx r = p.w;
         const vfloatx r2 = r*r;
-        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
+        valid &= (d2 <= r2) & (vfloatx(ray.tnear()) <= t) & (t <= vfloatx(ray.tfar));
         if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f) 
           valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*pre.depth_scale; // ignore self intersections
 
@@ -122,7 +111,7 @@ namespace embree
             const vfloatx d2 = madd(p.x,p.x,p.y*p.y); 
             const vfloatx r = p.w;
             const vfloatx r2 = r*r;
-            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) < t) & (t <= vfloatx(ray.tfar));
+            valid &= (d2 <= r2) & (vfloatx(ray.tnear()) <= t) & (t <= vfloatx(ray.tfar));
             if (EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR != 0.0f)
               valid &= t > float(EMBREE_CURVE_SELF_INTERSECTION_AVOIDANCE_FACTOR)*r*pre.depth_scale; // ignore self intersections
 

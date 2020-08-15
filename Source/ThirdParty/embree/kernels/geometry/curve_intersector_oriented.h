@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -85,7 +72,7 @@ namespace embree
           return intersect(v,Interval1f(0.0f,1.0f));
         }
 
-        void solve_bezier_clipping(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2fa& curve2)
+        __forceinline void solve_bezier_clipping(BBox1f cu, BBox1f cv, const TensorLinearCubicBezierSurface2fa& curve2)
         {
           BBox2fa bounds = curve2.bounds();
           if (bounds.upper.x < 0.0f) return;
@@ -99,7 +86,7 @@ namespace embree
             const float v = cv.center();
             TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(ray_space.row2(),ray.org);
             const float t = curve_z.eval(u,v);
-            if (t >= ray.tnear() && t <= ray.tfar) {
+            if (ray.tnear() <= t && t <= ray.tfar) {
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
               isHit |= epilog(hit);
@@ -139,7 +126,7 @@ namespace embree
           solve_bezier_clipping(BBox1f(cu.center(),cu.upper),cv,curve2r);
         }
         
-        bool solve_bezier_clipping()
+        __forceinline bool solve_bezier_clipping()
         {
           solve_bezier_clipping(BBox1f(0.0f,1.0f),BBox1f(0.0f,1.0f),curve2d);
           return isHit;
@@ -164,7 +151,7 @@ namespace embree
             const Vec2fa duv = rcp_J*f;
             uv -= duv;
 
-            if (max(fabs(f.x),fabs(f.y)) < eps)
+            if (max(abs(f.x),abs(f.y)) < eps)
             {
               const float u = uv.x;
               const float v = uv.y;
@@ -172,7 +159,7 @@ namespace embree
               if (!(v >= 0.0f && v <= 1.0f)) return; // rejects NaNs
               const TensorLinearCubicBezierSurface1f curve_z = curve3d.xfm(ray_space.row2(),ray.org);
               const float t = curve_z.eval(u,v);
-              if (!(t > ray.tnear() && t < ray.tfar)) return; // rejects NaNs
+              if (!(ray.tnear() <= t && t <= ray.tfar)) return; // rejects NaNs
               const Vec3fa Ng = cross(curve3d.eval_du(u,v),curve3d.eval_dv(u,v));
               BezierCurveHit hit(t,u,v,Ng);
               isHit |= epilog(hit);
@@ -194,7 +181,7 @@ namespace embree
           return true;
         }
 
-        __forceinline bool solve_krawczyk(BBox1f& cu, BBox1f& cv)
+        __forceinline bool solve_krawczyk(bool very_small, BBox1f& cu, BBox1f& cv)
         {
           /* perform bezier clipping in v-direction to get tight v-bounds */
           TensorLinearCubicBezierSurface2fa curve2 = curve2d.clip(cu,cv);
@@ -235,56 +222,89 @@ namespace embree
           const Vec2<Interval1f> KK = intersect(K,x);
           if (unlikely(isEmpty(KK.x) || isEmpty(KK.y))) return true;
 
-          /* exit if convergence cannot get proven */
-          if (unlikely(!subset(K,x))) return false;
+          /* exit if convergence cannot get proven, but terminate if we are very small */
+          if (unlikely(!subset(K,x) && !very_small)) return false;
 
           /* solve using newton raphson iteration of convergence is guarenteed */
           solve_newton_raphson_loop(cu,cv,c1,dfdu,dfdv,rcp_J);
           return true;
         }
-        
-        void solve_newton_raphson_recursion(BBox1f cu, BBox1f cv)
+
+        __forceinline void solve_newton_raphson_no_recursion(BBox1f cu, BBox1f cv)
         {
-          /* for very short curve segments we assume convergence */
-          if (cu.size() < 0.001f) {
-            if (!clip_v(cu,cv)) return;
-            return solve_newton_raphson(cu,cv);
-          }
-
-          /* we assume convergence for small u ranges and verify using krawczyk */
-          if (cu.size() < 1.0f/6.0f) {
-            if (solve_krawczyk(cu,cv)) {
-              return;
-            }
-          }
-
-          /* split the curve into VSIZEX-1 segments in u-direction */
-          vboolx valid = true;
-          TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).vsplit_u(valid,cu);
-
-          /* slabs test in u-direction */
-          Vec2vfx ndv = cross(subcurves.axis_v());
-          BBox<vfloatx> boundsv = subcurves.vxfm(ndv).bounds();
-          valid &= boundsv.lower <= eps;
-          valid &= boundsv.upper >= -eps;
-          if (none(valid)) return;
+           if (!clip_v(cu,cv)) return;
+           return solve_newton_raphson(cu,cv);
+        }
+        
+        __forceinline void solve_newton_raphson_recursion(BBox1f cu, BBox1f cv)
+        {
+          unsigned int sptr = 0;
+          const unsigned int stack_size = 4;
+          unsigned int mask_stack[stack_size];
+          BBox1f cu_stack[stack_size];
+          BBox1f cv_stack[stack_size];
+          goto entry;
           
-          /* slabs test in v-direction */
-          Vec2vfx ndu = cross(subcurves.axis_u());
-          BBox<vfloatx> boundsu = subcurves.vxfm(ndu).bounds();
-          valid &= boundsu.lower <= eps;
-          valid &= boundsu.upper >= -eps;
-          if (none(valid)) return;
-
-          /* recurse into each hit curve segment */
-          size_t mask = movemask(valid);
-          while (mask)
+          /* terminate if stack is empty */
+          while (sptr)
           {
-            const size_t i = bscf(mask);
-            const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
-            const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
-            const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
-            solve_newton_raphson_recursion(cui,cv);
+            /* pop from stack */
+            {
+              sptr--;
+              size_t mask = mask_stack[sptr];
+              cu = cu_stack[sptr];
+              cv = cv_stack[sptr];
+              const size_t i = bscf(mask);
+              mask_stack[sptr] = mask;
+              if (mask) sptr++; // there are still items on the stack
+              
+              /* process next element recurse into each hit curve segment */
+              const float u0 = float(i+0)*(1.0f/(VSIZEX-1));
+              const float u1 = float(i+1)*(1.0f/(VSIZEX-1));
+              const BBox1f cui(lerp(cu.lower,cu.upper,u0),lerp(cu.lower,cu.upper,u1));
+              cu = cui;
+            }
+
+#if 0
+            solve_newton_raphson_no_recursion(cu,cv);
+            continue;
+            
+#else
+            /* we assume convergence for small u ranges and verify using krawczyk */
+            if (cu.size() < 1.0f/6.0f) {
+              const bool very_small = cu.size() < 0.001f || sptr >= stack_size;
+              if (solve_krawczyk(very_small,cu,cv)) {
+                continue;
+              }
+            }
+#endif
+
+          entry:
+          
+            /* split the curve into VSIZEX-1 segments in u-direction */
+            vboolx valid = true;
+            TensorLinearCubicBezierSurface<Vec2vfx> subcurves = curve2d.clip_v(cv).vsplit_u(valid,cu);
+            
+            /* slabs test in u-direction */
+            Vec2vfx ndv = cross(subcurves.axis_v());
+            BBox<vfloatx> boundsv = subcurves.vxfm(ndv).bounds();
+            valid &= boundsv.lower <= eps;
+            valid &= boundsv.upper >= -eps;
+            if (none(valid)) continue;
+
+            /* slabs test in v-direction */
+            Vec2vfx ndu = cross(subcurves.axis_u());
+            BBox<vfloatx> boundsu = subcurves.vxfm(ndu).bounds();
+            valid &= boundsu.lower <= eps;
+            valid &= boundsu.upper >= -eps;
+            if (none(valid)) continue;
+
+            /* push valid segments to stack */
+            assert(sptr < stack_size);
+            mask_stack [sptr] = movemask(valid);
+            cu_stack   [sptr] = cu;
+            cv_stack   [sptr] = cv;
+            sptr++;
           }
         }
         
@@ -298,30 +318,39 @@ namespace embree
       };
 
 
-    template<typename SourceCurve3fa>
+    template<template<typename Ty> class SourceCurve>
       struct OrientedCurve1Intersector1
     {
-      typedef SourceCurve3fa Curve;
+      //template<typename Ty> using Curve = SourceCurve<Ty>;
+      typedef SourceCurve<Vec3ff> SourceCurve3ff;
+      typedef SourceCurve<Vec3fa> SourceCurve3fa;
       
       __forceinline OrientedCurve1Intersector1() {}
       
       __forceinline OrientedCurve1Intersector1(const Ray& ray, const void* ptr) {}
       
       template<typename Epilog>
-      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, const unsigned int primID, 
-                                const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
+                                IntersectContext* context,
+                                const CurveGeometry* geom, const unsigned int primID, 
+                                const Vec3ff& v0i, const Vec3ff& v1i, const Vec3ff& v2i, const Vec3ff& v3i,
                                 const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
                                 const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
-        TensorLinearCubicBezierSurface3fa curve =
-          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
+
+        SourceCurve3ff ccurve(v0i,v1i,v2i,v3i);
+        SourceCurve3fa ncurve(n0i,n1i,n2i,n3i);
+        ccurve = enlargeRadiusToMinWidth(context,geom,ray.org,ccurve);
+        TensorLinearCubicBezierSurface3fa curve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
         //return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray,Epilog>(pre.ray_space,ray,curve,epilog).solve_newton_raphson_main();
       }
 
       template<typename Epilog>
-      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray, const CurveGeometry* geom, const unsigned int primID,
+      __noinline bool intersect(const CurvePrecalculations1& pre, Ray& ray,
+                                IntersectContext* context,
+                                const CurveGeometry* geom, const unsigned int primID,
                                 const TensorLinearCubicBezierSurface3fa& curve, const Epilog& epilog) const
       {
         STAT3(normal.trav_prims,1,1,1);
@@ -330,10 +359,12 @@ namespace embree
       }
     };
 
-    template<typename SourceCurve3fa, int K>
+    template<template<typename Ty> class SourceCurve, int K>
       struct OrientedCurve1IntersectorK
     {
-      typedef SourceCurve3fa Curve;
+      //template<typename Ty> using Curve = SourceCurve<Ty>;
+      typedef SourceCurve<Vec3ff> SourceCurve3ff;
+      typedef SourceCurve<Vec3fa> SourceCurve3fa;
       
       struct Ray1
       {
@@ -353,21 +384,25 @@ namespace embree
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
+                                   IntersectContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
-                                   const Vec3fa& v0i, const Vec3fa& v1i, const Vec3fa& v2i, const Vec3fa& v3i,
+                                   const Vec3ff& v0i, const Vec3ff& v1i, const Vec3ff& v2i, const Vec3ff& v3i,
                                    const Vec3fa& n0i, const Vec3fa& n1i, const Vec3fa& n2i, const Vec3fa& n3i,
                                    const Epilog& epilog)
       {
         STAT3(normal.trav_prims,1,1,1);
         Ray1 ray(vray,k);
-        TensorLinearCubicBezierSurface3fa curve =
-          TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(SourceCurve3fa(v0i,v1i,v2i,v3i),SourceCurve3fa(n0i,n1i,n2i,n3i));
+        SourceCurve3ff ccurve(v0i,v1i,v2i,v3i);
+        SourceCurve3fa ncurve(n0i,n1i,n2i,n3i);
+        ccurve = enlargeRadiusToMinWidth(context,geom,ray.org,ccurve);
+        TensorLinearCubicBezierSurface3fa curve = TensorLinearCubicBezierSurface3fa::fromCenterAndNormalCurve(ccurve,ncurve);
         //return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_bezier_clipping();
         return TensorLinearCubicBezierSurfaceIntersector<Ray1,Epilog>(pre.ray_space[k],ray,curve,epilog).solve_newton_raphson_main();
       }
 
       template<typename Epilog>
       __forceinline bool intersect(const CurvePrecalculationsK<K>& pre, RayK<K>& vray, size_t k,
+                                   IntersectContext* context,
                                    const CurveGeometry* geom, const unsigned int primID,
                                    const TensorLinearCubicBezierSurface3fa& curve,
                                    const Epilog& epilog)

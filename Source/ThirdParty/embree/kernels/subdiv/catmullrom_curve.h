@@ -1,22 +1,18 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "../common/default.h"
+#include "../common/scene_curves.h"
+
+/*
+
+  Implements Catmul Rom curves with control points p0, p1, p2, p3. At
+  t=0 the curve goes through p1, with tangent (p2-p0)/3, and for t=1
+  the curve goes through p2 with tangent (p3-p2)/2.
+
+ */
 
 namespace embree
 {
@@ -106,17 +102,21 @@ namespace embree
         return 0.25f*(v0+v1+v2+v3);
       }
 
+      __forceinline BBox<Vertex> bounds() const {
+        return merge(BBox<Vertex>(v0),BBox<Vertex>(v1),BBox<Vertex>(v2),BBox<Vertex>(v3));
+      }
+
       __forceinline friend CatmullRomCurveT operator -( const CatmullRomCurveT& a, const Vertex& b ) {
         return CatmullRomCurveT(a.v0-b,a.v1-b,a.v2-b,a.v3-b);
       }
 
-      __forceinline CatmullRomCurveT<Vec3fa> xfm_pr(const LinearSpace3fa& space, const Vec3fa& p) const
+      __forceinline CatmullRomCurveT<Vec3ff> xfm_pr(const LinearSpace3fa& space, const Vec3fa& p) const
       {
-        Vec3fa q0 = xfmVector(space,v0-p); q0.w = v0.w;
-        Vec3fa q1 = xfmVector(space,v1-p); q1.w = v1.w;
-        Vec3fa q2 = xfmVector(space,v2-p); q2.w = v2.w;
-        Vec3fa q3 = xfmVector(space,v3-p); q3.w = v3.w;
-        return CatmullRomCurveT<Vec3fa>(q0,q1,q2,q3);
+        const Vec3ff q0(xfmVector(space,v0-p), v0.w);
+        const Vec3ff q1(xfmVector(space,v1-p), v1.w);
+        const Vec3ff q2(xfmVector(space,v2-p), v2.w);
+        const Vec3ff q3(xfmVector(space,v3-p), v3.w);
+        return CatmullRomCurveT<Vec3ff>(q0,q1,q2,q3);
       }
       
       __forceinline Vertex eval(const float t) const 
@@ -250,7 +250,7 @@ namespace embree
           const Vec3fa lower(reduce_min(pi.x),reduce_min(pi.y),reduce_min(pi.z));
           const Vec3fa upper(reduce_max(pi.x),reduce_max(pi.y),reduce_max(pi.z));
           const Vec3fa upper_r = Vec3fa(reduce_max(abs(pi.w)));
-          const Vec3fa pe = end();
+          const Vec3ff pe = end();
           return enlarge(BBox3fa(min(lower,pe),max(upper,pe)),max(upper_r,Vec3fa(abs(pe.w))));
         } 
         else
@@ -278,10 +278,18 @@ namespace embree
         }
       }
       
-      friend inline std::ostream& operator<<(std::ostream& cout, const CatmullRomCurveT& curve) {
+      friend __forceinline embree_ostream operator<<(embree_ostream cout, const CatmullRomCurveT& curve) {
         return cout << "CatmullRomCurve { v0 = " << curve.v0 << ", v1 = " << curve.v1 << ", v2 = " << curve.v2 << ", v3 = " << curve.v3 << " }";
       }
     };
+
+  __forceinline CatmullRomCurveT<Vec3ff> enlargeRadiusToMinWidth(const IntersectContext* context, const CurveGeometry* geom, const Vec3fa& ray_org, const CatmullRomCurveT<Vec3ff>& curve)
+  {
+    return CatmullRomCurveT<Vec3ff>(enlargeRadiusToMinWidth(context,geom,ray_org,curve.v0),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v1),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v2),
+                                    enlargeRadiusToMinWidth(context,geom,ray_org,curve.v3));
+  }
   
   typedef CatmullRomCurveT<Vec3fa> CatmullRomCurve3fa;
 }

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -22,6 +9,8 @@ namespace embree
   template<>
   struct vfloat<16>
   {
+    ALIGNED_STRUCT_(64);
+    
     typedef vboolf16 Bool;
     typedef vint16   Int;
     typedef vfloat16 Float;
@@ -195,6 +184,9 @@ namespace embree
   __forceinline vint16   asInt  (const vfloat16& a) { return _mm512_castps_si512(a); }
   __forceinline vuint16  asUInt (const vfloat16& a) { return _mm512_castps_si512(a); }
 
+  __forceinline vint16   toInt  (const vfloat16& a) { return vint16(a); }
+  __forceinline vfloat16 toFloat(const vint16&   a) { return vfloat16(a); }
+
   __forceinline vfloat16 operator +(const vfloat16& a) { return a; }
   __forceinline vfloat16 operator -(const vfloat16& a) { return _mm512_mul_ps(a,vfloat16(-1)); }
 
@@ -244,6 +236,8 @@ namespace embree
   __forceinline vfloat16 operator /(const vfloat16& a, float           b) { return a/vfloat16(b); }
   __forceinline vfloat16 operator /(float           a, const vfloat16& b) { return vfloat16(a)/b; }
   
+  __forceinline vfloat16 operator &(const vfloat16& a, const vfloat16& b) { return _mm512_and_ps(a,b); }
+  __forceinline vfloat16 operator |(const vfloat16& a, const vfloat16& b) { return _mm512_or_ps(a,b); }
   __forceinline vfloat16 operator ^(const vfloat16& a, const vfloat16& b) {
     return  _mm512_castsi512_ps(_mm512_xor_epi32(_mm512_castps_si512(a),_mm512_castps_si512(b))); 
   }
@@ -426,6 +420,9 @@ namespace embree
   }
   __forceinline vfloat16 ceil (const vfloat16& a) {
     return _mm512_ceil_ps(a);
+  }
+  __forceinline vfloat16 round (const vfloat16& a) {
+    return _mm512_roundscale_ps(a, _MM_FROUND_TO_NEAREST_INT | _MM_FROUND_NO_EXC);
   }
   __forceinline vint16 floori (const vfloat16& a) {
     return _mm512_cvt_roundps_epi32(a, _MM_FROUND_TO_NEG_INF | _MM_FROUND_NO_EXC);
@@ -764,7 +761,7 @@ namespace embree
   /// Output Operators
   ////////////////////////////////////////////////////////////////////////////////
   
-  __forceinline std::ostream& operator <<(std::ostream& cout, const vfloat16& v)
+  __forceinline embree_ostream operator <<(embree_ostream cout, const vfloat16& v)
   {
     cout << "<" << v[0];
     for (int i=1; i<16; i++) cout << ", " << v[i];

@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -70,7 +57,7 @@ namespace embree
 
     /* Calculates if this is a valid ray that does not cause issues during traversal */
     __forceinline bool valid() const {
-      return all(le_mask(abs(Vec3fa(p, 0.0f)), Vec3fa(FLT_LARGE)) & le_mask(Vec3fa(0.f), Vec3fa(radius))) && abs(time) < float(inf);
+      return all(le_mask(abs(Vec3fa(p)), Vec3fa(FLT_LARGE)) & le_mask(Vec3fa(0.f), Vec3fa(radius))) && abs(time) < float(inf);
     }
 
     Vec3f p;  
@@ -137,12 +124,12 @@ namespace embree
 
   /* Outputs point query to stream */
   template<int K>
-  inline std::ostream& operator <<(std::ostream& cout, const PointQueryK<K>& query)
+  __forceinline embree_ostream operator <<(embree_ostream cout, const PointQueryK<K>& query)
   {
-    cout << "{ " << std::endl
-        << "  p = "    << query.p      << std::endl
-        << "  r = "    << query.radius << std::endl
-        << "  time = " << query.time   << std::endl
+    cout << "{ " << embree_endl
+        << "  p = "    << query.p      << embree_endl
+        << "  r = "    << query.radius << embree_endl
+        << "  time = " << query.time   << embree_endl
         << "}";
     return cout;
   }

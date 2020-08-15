@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "scene_subdiv_mesh.h"
 #include "scene.h"
@@ -47,18 +34,10 @@ namespace embree
     topology[0] = Topology(this);
   }
 
-  void SubdivMesh::enabling() 
-  { 
-    scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches += numPrimitives;
-    else                   scene->worldMB.numSubdivPatches += numPrimitives;
-  }
-  
-  void SubdivMesh::disabling() 
-  { 
-    scene->numSubdivEnableDisableEvents++;
-    if (numTimeSteps == 1) scene->world.numSubdivPatches -= numPrimitives;
-    else                   scene->worldMB.numSubdivPatches -= numPrimitives;
+  void SubdivMesh::addElementsToCount (GeometryCounts & counts) const
+  {
+    if (numTimeSteps == 1) counts.numSubdivPatches += numPrimitives;
+    else                   counts.numMBSubdivPatches += numPrimitives;
   }
 
   void SubdivMesh::setMask (unsigned mask) 
@@ -305,61 +284,61 @@ namespace embree
     {
       if (slot >= vertices.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertices[slot].setModified(true);
+      vertices[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_ATTRIBUTE)
     {
       if (slot >= vertexAttribs.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertexAttribs[slot].setModified(true);
+      vertexAttribs[slot].setModified();
     }
     else if (type == RTC_BUFFER_TYPE_FACE)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      faceVertices.setModified(true);
+      faceVertices.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_INDEX)
     {
       if (slot >= topology.size())
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      topology[slot].vertexIndices.setModified(true);
+      topology[slot].vertexIndices.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      edge_creases.setModified(true);
+      edge_creases.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_EDGE_CREASE_WEIGHT)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      edge_crease_weights.setModified(true);
+      edge_crease_weights.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_INDEX)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertex_creases.setModified(true);
+      vertex_creases.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_VERTEX_CREASE_WEIGHT)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      vertex_crease_weights.setModified(true);
+      vertex_crease_weights.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_HOLE)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      holes.setModified(true);
+      holes.setModified();
     }
     else if (type == RTC_BUFFER_TYPE_LEVEL)
     {
       if (slot != 0)
         throw_RTCError(RTC_ERROR_INVALID_ARGUMENT, "invalid buffer slot");
-      levels.setModified(true);
+      levels.setModified();
     }
     else
     {
@@ -377,7 +356,7 @@ namespace embree
   void SubdivMesh::setTessellationRate(float N)
   {
     tessellationRate = N;
-    levels.setModified(true);
+    levels.setModified();
   }
 
   __forceinline uint64_t pair64(unsigned int x, unsigned int y) 
@@ -399,7 +378,7 @@ namespace embree
   }
   
   void SubdivMesh::Topology::update () {
-    vertexIndices.setModified(true); 
+    vertexIndices.setModified();
   }
 
   bool SubdivMesh::Topology::verify (size_t numVertices) 
@@ -581,9 +560,9 @@ namespace embree
     halfEdges1.clear();
 
     /* calculate which data to update */
-    const bool updateEdgeCreases   = mesh->topology[0].vertexIndices.isModified() || mesh->edge_creases.isModified()   || mesh->edge_crease_weights.isModified();
-    const bool updateVertexCreases = mesh->topology[0].vertexIndices.isModified() || mesh->vertex_creases.isModified() || mesh->vertex_crease_weights.isModified(); 
-    const bool updateLevels = mesh->levels.isModified();
+    const bool updateEdgeCreases   = mesh->topology[0].vertexIndices.isLocalModified() || mesh->edge_creases.isLocalModified()   || mesh->edge_crease_weights.isLocalModified();
+    const bool updateVertexCreases = mesh->topology[0].vertexIndices.isLocalModified() || mesh->vertex_creases.isLocalModified() || mesh->vertex_crease_weights.isLocalModified(); 
+    const bool updateLevels = mesh->levels.isLocalModified();
 
     /* parallel loop over all half edges */
     parallel_for( size_t(0), mesh->numHalfEdges, size_t(4096), [&](const range<size_t>& r) 
@@ -639,32 +618,32 @@ namespace embree
 
     /* check if we have to recalculate the half edges */
     bool recalculate = false;
-    recalculate |= vertexIndices.isModified(); 
-    recalculate |= mesh->faceVertices.isModified();
-    recalculate |= mesh->holes.isModified();
+    recalculate |= vertexIndices.isLocalModified(); 
+    recalculate |= mesh->faceVertices.isLocalModified();
+    recalculate |= mesh->holes.isLocalModified();
 
     /* check if we can simply update the half edges */
     bool update = false;
-    update |= mesh->topology[0].vertexIndices.isModified(); // we use this buffer to copy creases to interpolation topologies
-    update |= mesh->edge_creases.isModified();
-    update |= mesh->edge_crease_weights.isModified();
-    update |= mesh->vertex_creases.isModified();
-    update |= mesh->vertex_crease_weights.isModified(); 
-    update |= mesh->levels.isModified();
+    update |= mesh->topology[0].vertexIndices.isLocalModified(); // we use this buffer to copy creases to interpolation topologies
+    update |= mesh->edge_creases.isLocalModified();
+    update |= mesh->edge_crease_weights.isLocalModified();
+    update |= mesh->vertex_creases.isLocalModified();
+    update |= mesh->vertex_crease_weights.isLocalModified(); 
+    update |= mesh->levels.isLocalModified();
 
     /* now either recalculate or update the half edges */
     if (recalculate) calculateHalfEdges();
     else if (update) updateHalfEdges();
    
     /* cleanup some state for static scenes */
-    if (mesh->scene == nullptr || mesh->scene->isStaticAccel()) 
+    /* if (mesh->scene_ == nullptr || mesh->scene_->isStaticAccel()) 
     {
       halfEdges0.clear();
       halfEdges1.clear();
-    }
+    } */
 
     /* clear modified state of all buffers */
-    vertexIndices.setModified(false); 
+    vertexIndices.clearLocalModified(); 
   }
 
   void SubdivMesh::printStatistics()
@@ -701,7 +680,7 @@ namespace embree
     /* calculate start edge of each face */
     faceStartEdge.resize(numFaces());
     
-    if (faceVertices.isModified())
+    if (faceVertices.isLocalModified())
     {
       numHalfEdges = parallel_prefix_sum(faceVertices,faceStartEdge,numFaces(),0,std::plus<unsigned>());
 
@@ -713,15 +692,15 @@ namespace embree
     }
     
     /* create set with all vertex creases */
-    if (vertex_creases.isModified() || vertex_crease_weights.isModified())
+    if (vertex_creases.isLocalModified() || vertex_crease_weights.isLocalModified())
       vertexCreaseMap.init(vertex_creases,vertex_crease_weights);
     
     /* create map with all edge creases */
-    if (edge_creases.isModified() || edge_crease_weights.isModified())
+    if (edge_creases.isLocalModified() || edge_crease_weights.isLocalModified())
       edgeCreaseMap.init(edge_creases,edge_crease_weights);
 
     /* create set with all holes */
-    if (holes.isModified())
+    if (holes.isLocalModified())
       holeSet.init(holes);
 
     /* create topology */
@@ -735,21 +714,21 @@ namespace embree
       if (vertexAttribs[i]) vertex_attrib_buffer_tags[i].resize(numFaces()*numInterpolationSlots4(vertexAttribs[i].getStride()));
 
     /* cleanup some state for static scenes */
-    if (scene == nullptr || scene->isStaticAccel()) 
+    /* if (scene_ == nullptr || scene_->isStaticAccel()) 
     {
       vertexCreaseMap.clear();
       edgeCreaseMap.clear();
-    }
+    } */
 
     /* clear modified state of all buffers */
-    faceVertices.setModified(false);
-    holes.setModified(false);
-    for (auto& buffer : vertices) buffer.setModified(false); 
-    levels.setModified(false);
-    edge_creases.setModified(false);
-    edge_crease_weights.setModified(false);
-    vertex_creases.setModified(false);
-    vertex_crease_weights.setModified(false);
+    faceVertices.clearLocalModified();
+    holes.clearLocalModified();
+    for (auto& buffer : vertices) buffer.clearLocalModified(); 
+    levels.clearLocalModified();
+    edge_creases.clearLocalModified();
+    edge_crease_weights.clearLocalModified();
+    vertex_creases.clearLocalModified();
+    vertex_crease_weights.clearLocalModified();
 
     double t1 = getSeconds();
 
