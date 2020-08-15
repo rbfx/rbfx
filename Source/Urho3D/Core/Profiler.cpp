@@ -20,6 +20,8 @@
 // THE SOFTWARE.
 //
 
+#include <stdint.h>
+
 #if URHO3D_PROFILING
 #include "ThirdParty/tracy/TracyClient.cpp"
 #if _WIN32
