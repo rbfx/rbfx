@@ -1,22 +1,10 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
 #include "alloc.h"
+#include <algorithm>
 
 namespace embree
 {
@@ -62,13 +50,14 @@ namespace embree
       __forceinline vector_t& operator=(const vector_t& other) 
       {
         resize(other.size_active);
-        for (size_t i=0; i<size_active; i++) 
-          ::new (&items[i]) value_type(other.items[i]);
+        for (size_t i=0; i<size_active; i++)
+          items[i] = value_type(other.items[i]);
         return *this;
       }
 
       __forceinline vector_t& operator=(vector_t&& other) 
       {
+        clear();
         alloc = std::move(other.alloc);
         size_active = other.size_active; other.size_active = 0;
         size_alloced = other.size_alloced; other.size_alloced = 0;
@@ -208,9 +197,11 @@ namespace embree
           ::new (&items[i]) T(std::move(old_items[i]));
           alloc.destroy(&old_items[i]);
         }
+
         for (size_t i=size_active; i<new_active; i++) {
           ::new (&items[i]) T;
         }
+
         alloc.deallocate(old_items,size_alloced);
         size_active = new_active;
         size_alloced = new_alloced;
@@ -225,8 +216,7 @@ namespace embree
         /* resize to next power of 2 otherwise */
         size_t new_size_alloced = size_alloced;
         while (new_size_alloced < new_alloced) {
-          new_size_alloced = 2*new_size_alloced;
-          if (new_size_alloced == 0) new_size_alloced = 1;
+          new_size_alloced = std::max(size_t(1),2*new_size_alloced);
         }
         return new_size_alloced;
       }

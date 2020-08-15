@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -25,11 +12,11 @@ namespace embree
   class BVHNStatistics
   {
     typedef BVHN<N> BVH;
-    typedef typename BVH::AlignedNode AlignedNode;
-    typedef typename BVH::UnalignedNode UnalignedNode;
-    typedef typename BVH::AlignedNodeMB AlignedNodeMB;
-    typedef typename BVH::AlignedNodeMB4D AlignedNodeMB4D;
-    typedef typename BVH::UnalignedNodeMB UnalignedNodeMB;
+    typedef typename BVH::AABBNode AABBNode;
+    typedef typename BVH::OBBNode OBBNode;
+    typedef typename BVH::AABBNodeMB AABBNodeMB;
+    typedef typename BVH::AABBNodeMB4D AABBNodeMB4D;
+    typedef typename BVH::OBBNodeMB OBBNodeMB;
     typedef typename BVH::QuantizedNode QuantizedNode;
 
     typedef typename BVH::NodeRef NodeRef;
@@ -175,69 +162,69 @@ namespace embree
     public:
       Statistics (size_t depth = 0,
                   LeafStat statLeaf = LeafStat(),
-                  NodeStat<AlignedNode> statAlignedNodes = NodeStat<AlignedNode>(),
-                  NodeStat<UnalignedNode> statUnalignedNodes = NodeStat<UnalignedNode>(),
-                  NodeStat<AlignedNodeMB> statAlignedNodesMB = NodeStat<AlignedNodeMB>(),
-                  NodeStat<AlignedNodeMB4D> statAlignedNodesMB4D = NodeStat<AlignedNodeMB4D>(),
-                  NodeStat<UnalignedNodeMB> statUnalignedNodesMB = NodeStat<UnalignedNodeMB>(),
+                  NodeStat<AABBNode> statAABBNodes = NodeStat<AABBNode>(),
+                  NodeStat<OBBNode> statOBBNodes = NodeStat<OBBNode>(),
+                  NodeStat<AABBNodeMB> statAABBNodesMB = NodeStat<AABBNodeMB>(),
+                  NodeStat<AABBNodeMB4D> statAABBNodesMB4D = NodeStat<AABBNodeMB4D>(),
+                  NodeStat<OBBNodeMB> statOBBNodesMB = NodeStat<OBBNodeMB>(),
                   NodeStat<QuantizedNode> statQuantizedNodes = NodeStat<QuantizedNode>())
 
       : depth(depth), 
         statLeaf(statLeaf),
-        statAlignedNodes(statAlignedNodes),
-        statUnalignedNodes(statUnalignedNodes),
-        statAlignedNodesMB(statAlignedNodesMB),
-        statAlignedNodesMB4D(statAlignedNodesMB4D),
-        statUnalignedNodesMB(statUnalignedNodesMB),
+        statAABBNodes(statAABBNodes),
+        statOBBNodes(statOBBNodes),
+        statAABBNodesMB(statAABBNodesMB),
+        statAABBNodesMB4D(statAABBNodesMB4D),
+        statOBBNodesMB(statOBBNodesMB),
         statQuantizedNodes(statQuantizedNodes) {}
 
       double sah(BVH* bvh) const 
       {
         return statLeaf.sah(bvh) +
-          statAlignedNodes.sah(bvh) + 
-          statUnalignedNodes.sah(bvh) + 
-          statAlignedNodesMB.sah(bvh) + 
-          statAlignedNodesMB4D.sah(bvh) + 
-          statUnalignedNodesMB.sah(bvh) + 
+          statAABBNodes.sah(bvh) + 
+          statOBBNodes.sah(bvh) + 
+          statAABBNodesMB.sah(bvh) + 
+          statAABBNodesMB4D.sah(bvh) + 
+          statOBBNodesMB.sah(bvh) + 
           statQuantizedNodes.sah(bvh);
       }
       
       size_t bytes(BVH* bvh) const {
         return statLeaf.bytes(bvh) +
-          statAlignedNodes.bytes() + 
-          statUnalignedNodes.bytes() + 
-          statAlignedNodesMB.bytes() + 
-          statAlignedNodesMB4D.bytes() + 
-          statUnalignedNodesMB.bytes() + 
+          statAABBNodes.bytes() + 
+          statOBBNodes.bytes() + 
+          statAABBNodesMB.bytes() + 
+          statAABBNodesMB4D.bytes() + 
+          statOBBNodesMB.bytes() + 
           statQuantizedNodes.bytes();
       }
 
       size_t size() const 
       {
         return statLeaf.size() +
-          statAlignedNodes.size() + 
-          statUnalignedNodes.size() + 
-          statAlignedNodesMB.size() + 
-          statAlignedNodesMB4D.size() + 
-          statUnalignedNodesMB.size() + 
+          statAABBNodes.size() + 
+          statOBBNodes.size() + 
+          statAABBNodesMB.size() + 
+          statAABBNodesMB4D.size() + 
+          statOBBNodesMB.size() + 
           statQuantizedNodes.size();
       }
 
       double fillRate (BVH* bvh) const 
       {
         double nom = statLeaf.fillRateNom(bvh) +
-          statAlignedNodes.fillRateNom() + 
-          statUnalignedNodes.fillRateNom() + 
-          statAlignedNodesMB.fillRateNom() + 
-          statAlignedNodesMB4D.fillRateNom() + 
-          statUnalignedNodesMB.fillRateNom() + 
+          statAABBNodes.fillRateNom() + 
+          statOBBNodes.fillRateNom() + 
+          statAABBNodesMB.fillRateNom() + 
+          statAABBNodesMB4D.fillRateNom() + 
+          statOBBNodesMB.fillRateNom() + 
           statQuantizedNodes.fillRateNom();
         double den = statLeaf.fillRateDen(bvh) +
-          statAlignedNodes.fillRateDen() + 
-          statUnalignedNodes.fillRateDen() + 
-          statAlignedNodesMB.fillRateDen() + 
-          statAlignedNodesMB4D.fillRateDen() + 
-          statUnalignedNodesMB.fillRateDen() + 
+          statAABBNodes.fillRateDen() + 
+          statOBBNodes.fillRateDen() + 
+          statAABBNodesMB.fillRateDen() + 
+          statAABBNodesMB4D.fillRateDen() + 
+          statOBBNodesMB.fillRateDen() + 
           statQuantizedNodes.fillRateDen();
         return nom/den;
       }
@@ -246,11 +233,11 @@ namespace embree
       {
         return Statistics(max(a.depth,b.depth),
                           a.statLeaf + b.statLeaf,
-                          a.statAlignedNodes + b.statAlignedNodes,
-                          a.statUnalignedNodes + b.statUnalignedNodes,
-                          a.statAlignedNodesMB + b.statAlignedNodesMB,
-                          a.statAlignedNodesMB4D + b.statAlignedNodesMB4D,
-                          a.statUnalignedNodesMB + b.statUnalignedNodesMB,
+                          a.statAABBNodes + b.statAABBNodes,
+                          a.statOBBNodes + b.statOBBNodes,
+                          a.statAABBNodesMB + b.statAABBNodesMB,
+                          a.statAABBNodesMB4D + b.statAABBNodesMB4D,
+                          a.statOBBNodesMB + b.statOBBNodesMB,
                           a.statQuantizedNodes + b.statQuantizedNodes);
       }
 
@@ -261,11 +248,11 @@ namespace embree
     public:
       size_t depth;
       LeafStat statLeaf;
-      NodeStat<AlignedNode> statAlignedNodes;
-      NodeStat<UnalignedNode> statUnalignedNodes;
-      NodeStat<AlignedNodeMB> statAlignedNodesMB;
-      NodeStat<AlignedNodeMB4D> statAlignedNodesMB4D;
-      NodeStat<UnalignedNodeMB> statUnalignedNodesMB;
+      NodeStat<AABBNode> statAABBNodes;
+      NodeStat<OBBNode> statOBBNodes;
+      NodeStat<AABBNodeMB> statAABBNodesMB;
+      NodeStat<AABBNodeMB4D> statAABBNodesMB4D;
+      NodeStat<OBBNodeMB> statOBBNodesMB;
       NodeStat<QuantizedNode> statQuantizedNodes;
     };
 

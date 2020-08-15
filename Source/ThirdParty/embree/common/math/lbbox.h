@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -36,9 +23,10 @@ namespace embree
   public:
     __forceinline LBBox () {}
 
-    __forceinline LBBox ( const LBBox& other ) { 
-      bounds0 = other.bounds0; bounds1 = other.bounds1; 
-    }
+    template<typename T1>
+    __forceinline LBBox ( const LBBox<T1>& other )
+    : bounds0(other.bounds0), bounds1(other.bounds1) {} 
+
     __forceinline LBBox& operator= ( const LBBox& other ) { 
       bounds0 = other.bounds0; bounds1 = other.bounds1; return *this; 
     }
@@ -234,11 +222,13 @@ namespace embree
     }
 
     /*! Comparison Operators */
-    template<typename TT> friend __forceinline bool operator==( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
-    template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
-
+    //template<typename TT> friend __forceinline bool operator==( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
+    //template<typename TT> friend __forceinline bool operator!=( const LBBox<TT>& a, const LBBox<TT>& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
+    friend __forceinline bool operator==( const LBBox& a, const LBBox& b ) { return a.bounds0 == b.bounds0 && a.bounds1 == b.bounds1; }
+    friend __forceinline bool operator!=( const LBBox& a, const LBBox& b ) { return a.bounds0 != b.bounds0 || a.bounds1 != b.bounds1; }
+    
     /*! output operator */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const LBBox& box) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const LBBox& box) {
       return cout << "LBBox { " << box.bounds0 << "; " << box.bounds1 << " }";
     }
 
@@ -290,4 +280,5 @@ namespace embree
   typedef LBBox<Vec2f> LBBox2f;
   typedef LBBox<Vec3f> LBBox3f;
   typedef LBBox<Vec3fa> LBBox3fa;
+  typedef LBBox<Vec3fx> LBBox3fx;
 }

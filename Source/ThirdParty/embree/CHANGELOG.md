@@ -1,6 +1,81 @@
 Version History
 ---------------
 
+### Embree 3.11.0
+
+-   Round linear curves now automatically check for the existence of left and right
+    connected segments if the flags buffer is empty.  Left segments exist if the
+    segment(id-1) + 1 == segment(id) and similarly for right segments.
+-   Implemented the min-width feature for curves and points, which allows to increase the
+    radius in a distance dependent way, such that the curve or points thickness is n pixels wide.
+-   Round linear curves are closed now also at their start.
+-   Embree no longer supports Visual Studio 2013 starting with this release.
+-   Bugfix in subdivision tessellation level assignment for non-quad base primitives
+-   Small meshes are directly added to top level build phase of two-level builder to reduce memory consumption.
+-   Enabled fast two level builder for user geometries when low quality build is requested.
+
+### Embree 3.10.0
+
+-   Added EMBREE_COMPACT_POLYS CMake option which enables double indexed triangle and quad
+    leaves to reduce memory consumption in compact mode by an additional 40% at about
+    15% performance impact. This new mode is disabled by default.
+-   Compile fix for oneTBB 2021.1-beta05
+-   Releases upgrade to TBB 2020.2
+-   Compile fix for ISPC v1.13.0
+-   Adding RPATH to libembree.so in releases
+-   Increased required CMake version to 3.1.0
+-   Made instID member for array of pointers ray stream layout optional again.
+
+### Embree 3.9.0
+
+-   Added round linear curve geometry support. In this mode a real geometric surface for curves
+    with linear basis is rendered using capped cones with spherical filling between
+    the curve segments.
+-   Added rtcGetSceneDevice API function, that returns the device a scene got created in.
+-   Improved performance of round curve rendering by up to 1.8x.
+-   Bugfix to sphere intersection filter invokation for back hit.
+-   Fixed wrong assertion that triggered for invalid curves which anyway get filtered out.
+-   RelWithDebInfo mode no longer enables assertions.
+-   Fixed an issue in FindTBB.cmake that caused compile error with Debug build under Linux.
+-   Embree releases no longer provide RPMs for Linux. Please use the RPMs coming with the package
+    manager of your Linux distribution.
+
+### Embree 3.8.0
+
+-   Added collision detection support for user geometries (see rtcCollide API function)
+-   Passing geomID to user geometry callbacks.
+-   Bugfix in AVX512VL codepath for rtcIntersect1
+-   For sphere geometries the intersection filter gets now invoked for
+    front and back hit.
+-   Fixed some bugs for quaternion motion blur.
+-   RTCIntersectContext always non-const in Embree API
+-   Made RTCHit aligned to 16 bytes in Embree API
+
+### New Features in Embree 3.7.0
+-   Added quaternion motion blur for correct interpolation of rotational transformations.
+-   Fixed wrong bounding calculations when a motion blurred instance did
+    instantiate a motion blurred scene.
+-   In robust mode the depth test consistently uses tnear <= t <= tfar now in order
+    to robustly continue traversal at a previous hit point
+    in a way that guarentees reaching all hits, even hits at the same place.
+-   Fixed depth test in robust mode to be precise at tnear and tfar.
+-   Added next_hit tutorial to demonstrate robustly collecting all hits
+    along a ray using multiple ray queries.
+-   Implemented robust mode for curves. This has a small performance impact but
+    fixes bounding problems with flat curves.
+-   Improved quality of motion blur BVH by using linear bounds during binning.
+-   Implemented issue with motion blur builder where number of time segments
+    for SAH heuristic were counted wrong due to some numerical issues.
+-   Fixed an accuracy issue with rendering very short fat curves.
+-   rtcCommitScene can now get called during rendering from multiple threads
+    to lazily build geometry. When TBB is used this causes a much lower overhead
+    than using rtcJoinCommitScene.
+-   Geometries can now get attached to multiple scenes at the same time, which
+    simplifies mapping general scene graphs to API.
+-   Updated to TBB 2019.9 for release builds.
+-   Fixed a bug in the BVH builder for Grid geometries.
+-   Added macOS Catalina support to Embree releases.
+
 ### New Features in Embree 3.6.1
 -   Restored binary compatibility between Embree 3.6 and 3.5 when single-level instancing is used.
 -   Fixed bug in subgrid intersector

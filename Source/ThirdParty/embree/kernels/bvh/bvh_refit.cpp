@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "bvh_refit.h"
 #include "bvh_statistics.h"
@@ -80,9 +67,9 @@ namespace embree
         return;
       }
 
-      if (ref.isAlignedNode())
+      if (ref.isAABBNode())
       {
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         for (size_t i=0; i<N; i++) {
           NodeRef& child = node->child(i);
           if (unlikely(child == BVH::emptyNode)) continue;
@@ -104,9 +91,9 @@ namespace embree
         return subTreeBounds[subtrees++];
       }
 
-      if (ref.isAlignedNode())
+      if (ref.isAABBNode())
       {
-        AlignedNode* node = ref.alignedNode();
+        AABBNode* node = ref.getAABBNode();
         BBox3fa bounds[N];
 
         for (size_t i=0; i<N; i++)
@@ -148,11 +135,11 @@ namespace embree
         return leafBounds.leafBounds(ref);
       
       /* recurse if this is an internal node */
-      AlignedNode* node = ref.alignedNode();
+      AABBNode* node = ref.getAABBNode();
 
       /* enable exclusive prefetch for >= AVX platforms */      
 #if defined(__AVX__)      
-      ref.prefetchW();
+      BVH::prefetchW(ref);
 #endif      
       BBox3fa bounds[N];
 
@@ -180,7 +167,7 @@ namespace embree
 
     template<int N, typename Mesh, typename Primitive>
     BVHNRefitT<N,Mesh,Primitive>::BVHNRefitT (BVH* bvh, Builder* builder, Mesh* mesh, size_t mode)
-      : bvh(bvh), builder(builder), refitter(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this)), mesh(mesh) {}
+      : bvh(bvh), builder(builder), refitter(new BVHNRefitter<N>(bvh,*(typename BVHNRefitter<N>::LeafBoundsInterface*)this)), mesh(mesh), topologyVersion(0) {}
 
     template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::clear()
@@ -192,7 +179,8 @@ namespace embree
     template<int N, typename Mesh, typename Primitive>
     void BVHNRefitT<N,Mesh,Primitive>::build()
     {
-      if (mesh->topologyChanged()) {
+      if (mesh->topologyChanged(topologyVersion)) {
+        topologyVersion = mesh->getTopologyVersion();
         builder->build();
       }
       else
@@ -205,42 +193,42 @@ namespace embree
 #endif
     
 #if defined(EMBREE_GEOMETRY_TRIANGLE)
-    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH4Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH4Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH4Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode);
 
-    Builder* BVH4Triangle4MeshRefitSAH  (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4> ((BVH4*)accel,BVH4Triangle4MeshBuilderSAH (accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
-    Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4i>((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Triangle4MeshRefitSAH  (void* accel, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4> ((BVH4*)accel,BVH4Triangle4MeshBuilderSAH (accel,mesh,geomID,mode),mesh,mode); }
+    Builder* BVH4Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4v>((BVH4*)accel,BVH4Triangle4vMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
+    Builder* BVH4Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<4,TriangleMesh,Triangle4i>((BVH4*)accel,BVH4Triangle4iMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 #if  defined(__AVX__)
-    Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH8Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
-    Builder* BVH8Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, size_t mode);
+    Builder* BVH8Triangle4MeshBuilderSAH  (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH8Triangle4vMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH8Triangle4iMeshBuilderSAH (void* bvh, TriangleMesh* mesh, unsigned int geomID, size_t mode);
 
-    Builder* BVH8Triangle4MeshRefitSAH  (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<8,TriangleMesh,Triangle4> ((BVH8*)accel,BVH8Triangle4MeshBuilderSAH (accel,mesh,mode),mesh,mode); }
-    Builder* BVH8Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<8,TriangleMesh,Triangle4v>((BVH8*)accel,BVH8Triangle4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
-    Builder* BVH8Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, size_t mode) { return new BVHNRefitT<8,TriangleMesh,Triangle4i>((BVH8*)accel,BVH8Triangle4iMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH8Triangle4MeshRefitSAH  (void* accel, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,TriangleMesh,Triangle4> ((BVH8*)accel,BVH8Triangle4MeshBuilderSAH (accel,mesh,geomID,mode),mesh,mode); }
+    Builder* BVH8Triangle4vMeshRefitSAH (void* accel, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,TriangleMesh,Triangle4v>((BVH8*)accel,BVH8Triangle4vMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
+    Builder* BVH8Triangle4iMeshRefitSAH (void* accel, TriangleMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,TriangleMesh,Triangle4i>((BVH8*)accel,BVH8Triangle4iMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 #endif
 #endif
 
 #if defined(EMBREE_GEOMETRY_QUAD)
-    Builder* BVH4Quad4vMeshBuilderSAH (void* bvh, QuadMesh* mesh, size_t mode);
-    Builder* BVH4Quad4vMeshRefitSAH (void* accel, QuadMesh* mesh, size_t mode) { return new BVHNRefitT<4,QuadMesh,Quad4v>((BVH4*)accel,BVH4Quad4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4Quad4vMeshBuilderSAH (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH4Quad4vMeshRefitSAH (void* accel, QuadMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<4,QuadMesh,Quad4v>((BVH4*)accel,BVH4Quad4vMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 
 #if  defined(__AVX__)
-    Builder* BVH8Quad4vMeshBuilderSAH (void* bvh, QuadMesh* mesh, size_t mode);
-    Builder* BVH8Quad4vMeshRefitSAH (void* accel, QuadMesh* mesh, size_t mode) { return new BVHNRefitT<8,QuadMesh,Quad4v>((BVH8*)accel,BVH8Quad4vMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH8Quad4vMeshBuilderSAH (void* bvh, QuadMesh* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH8Quad4vMeshRefitSAH (void* accel, QuadMesh* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,QuadMesh,Quad4v>((BVH8*)accel,BVH8Quad4vMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 #endif
 
 #endif
 
 #if defined(EMBREE_GEOMETRY_USER)
-    Builder* BVH4VirtualMeshBuilderSAH (void* bvh, UserGeometry* mesh, size_t mode);
-    Builder* BVH4VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, size_t mode) { return new BVHNRefitT<4,UserGeometry,Object>((BVH4*)accel,BVH4VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH4VirtualMeshBuilderSAH (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH4VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<4,UserGeometry,Object>((BVH4*)accel,BVH4VirtualMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 
 #if  defined(__AVX__)
-    Builder* BVH8VirtualMeshBuilderSAH (void* bvh, UserGeometry* mesh, size_t mode);
-    Builder* BVH8VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, size_t mode) { return new BVHNRefitT<8,UserGeometry,Object>((BVH8*)accel,BVH8VirtualMeshBuilderSAH(accel,mesh,mode),mesh,mode); }
+    Builder* BVH8VirtualMeshBuilderSAH (void* bvh, UserGeometry* mesh, unsigned int geomID, size_t mode);
+    Builder* BVH8VirtualMeshRefitSAH (void* accel, UserGeometry* mesh, unsigned int geomID, size_t mode) { return new BVHNRefitT<8,UserGeometry,Object>((BVH8*)accel,BVH8VirtualMeshBuilderSAH(accel,mesh,geomID,mode),mesh,mode); }
 #endif
 #endif
   }

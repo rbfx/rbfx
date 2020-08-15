@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "bvh_intersector_hybrid.h"
 #include "bvh_traverser1.h"
@@ -87,14 +74,11 @@ namespace embree
         /* downtraversal loop */
         while (true)
         {
-          /* stop if we found a leaf node */
-          if (unlikely(cur.isLeaf())) break;
-          STAT3(normal.trav_nodes, 1, 1, 1);
-
           /* intersect node */
-          size_t mask = 0;
-          vfloat<Nx> tNear;
-          BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
+          size_t mask; vfloat<Nx> tNear;
+          STAT3(normal.trav_nodes, 1, 1, 1);
+          bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
+          if (unlikely(!nodeIntersected)) { STAT3(normal.trav_nodes,-1,-1,-1); break; }
 
           /* if no child is hit, pop next node */
           if (unlikely(mask == 0))
@@ -276,7 +260,7 @@ namespace embree
             const vbool<K> valid_node = tray.tfar > curDist;
             STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+            const BaseNode* __restrict__ const node = nodeRef.baseNode();
 
             /* set cur to invalid */
             cur = BVH::emptyNode;
@@ -456,7 +440,7 @@ namespace embree
             /* process nodes */
             //STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+            const AABBNode* __restrict__ const node = nodeRef.getAABBNode();
 
             vfloat<Nx> fmin;
             size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
@@ -480,7 +464,7 @@ namespace embree
               {                                
                 const vfloat<K> childDist = fmin[i];
                 const NodeRef child = node->child(i);
-                child.prefetch();
+                BVHN<N>::prefetch(child);
                 if (any(childDist < curDist))
                 {
                   if (likely(cur != BVH::emptyNode)) {
@@ -581,14 +565,11 @@ namespace embree
           /* downtraversal loop */
           while (true)
           {
-            /* stop if we found a leaf node */
-            if (unlikely(cur.isLeaf())) break;
-            STAT3(shadow.trav_nodes, 1, 1, 1);
-
             /* intersect node */
-            size_t mask = 0;
-            vfloat<Nx> tNear;
-            BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
+            size_t mask; vfloat<Nx> tNear;
+            STAT3(shadow.trav_nodes, 1, 1, 1);
+            bool nodeIntersected = BVHNNodeIntersector1<N, Nx, types, robust>::intersect(cur, tray1, ray.time()[k], tNear, mask);
+            if (unlikely(!nodeIntersected)) { STAT3(shadow.trav_nodes,-1,-1,-1); break; }
 
             /* if no child is hit, pop next node */
             if (unlikely(mask == 0))
@@ -726,7 +707,7 @@ namespace embree
           const vbool<K> valid_node = tray.tfar > curDist;
           STAT3(shadow.trav_nodes, 1, popcnt(valid_node), K);
           const NodeRef nodeRef = cur;
-          const BaseNode* __restrict__ const node = nodeRef.baseNode(types);
+          const BaseNode* __restrict__ const node = nodeRef.baseNode();
 
           /* set cur to invalid */
           cur = BVH::emptyNode;
@@ -870,7 +851,7 @@ namespace embree
             /* process nodes */
             //STAT3(normal.trav_nodes, 1, popcnt(valid_node), K);
             const NodeRef nodeRef = cur;
-            const AlignedNode* __restrict__ const node = nodeRef.alignedNode();
+            const AABBNode* __restrict__ const node = nodeRef.getAABBNode();
 
             vfloat<Nx> fmin;
             size_t m_frustum_node = intersectNodeFrustum<N,Nx>(node, frustum, fmin);
@@ -894,7 +875,7 @@ namespace embree
               {                                
                 const NodeRef child = node->child(i);
                 assert(child != BVH::emptyNode);
-                child.prefetch();
+                BVHN<N>::prefetch(child);
                 if (likely(cur != BVH::emptyNode)) {
                   num_child_hits++;
                   stackPtr->ptr  = cur;

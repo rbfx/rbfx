@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "primitive.h"
 #include "curveNv.h"
@@ -61,9 +48,9 @@ namespace embree
   size_t Curve4v::Type::getBytes(const char* This) const
   {
      if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
+      return Line4i::bytes(sizeActive(This));
      else
-       return Curve4v::bytes(sizeActive(This));
+        return Curve4v::bytes(sizeActive(This));
   }
 
   /********************** Curve4i **************************/
@@ -95,9 +82,9 @@ namespace embree
   size_t Curve4i::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
-     else
-       return Curve4i::bytes(sizeActive(This));
+      return Line4i::bytes(sizeActive(This));
+    else
+      return Curve4i::bytes(sizeActive(This));
   }
 
   /********************** Curve4iMB **************************/
@@ -129,9 +116,9 @@ namespace embree
   size_t Curve4iMB::Type::getBytes(const char* This) const
   {
     if ((*This & Geometry::GType::GTY_BASIS_MASK) == Geometry::GType::GTY_BASIS_LINEAR)
-       return Line4i::bytes(sizeActive(This));
-     else
-       return Curve4iMB::bytes(sizeActive(This));
+      return Line4i::bytes(sizeActive(This));
+    else
+      return Curve4iMB::bytes(sizeActive(This));
   }
 
   /********************** Line4i **************************/

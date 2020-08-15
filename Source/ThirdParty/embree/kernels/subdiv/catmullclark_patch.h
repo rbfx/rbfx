@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -275,12 +262,12 @@ namespace embree
       quad.vtx[3] = (Vertex_t)ring[3].vtx;
     };
     
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClarkPatchT &p)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const CatmullClarkPatchT &p)
     {
-      o << "CatmullClarkPatch { " << std::endl;
+      o << "CatmullClarkPatch { " << embree_endl;
       for (size_t i=0; i<4; i++)
-	o << "ring" << i << ": " << p.ring[i] << std::endl;
-      o << "}" << std::endl;
+	o << "ring" << i << ": " << p.ring[i] << embree_endl;
+      o << "}" << embree_endl;
       return o;
     }
     };
@@ -561,12 +548,12 @@ namespace embree
       new (&curves[1]) BezierCurve(b33,b22,b11,b00);
     }
     
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClarkPatchT &p)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const GeneralCatmullClarkPatchT &p)
     {
-      o << "GeneralCatmullClarkPatch { " << std::endl;
+      o << "GeneralCatmullClarkPatch { " << embree_endl;
       for (unsigned i=0; i<p.N; i++)
-	o << "ring" << i << ": " << p.ring[i] << std::endl;
-      o << "}" << std::endl;
+	o << "ring" << i << ": " << p.ring[i] << embree_endl;
+      o << "}" << embree_endl;
       return o;
     }
     };

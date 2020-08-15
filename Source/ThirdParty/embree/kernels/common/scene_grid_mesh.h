@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -47,7 +34,7 @@ namespace embree
       }
 
       /*! outputs grid structure */
-      __forceinline friend std::ostream &operator<<(std::ostream& cout, const Grid& t) {
+      __forceinline friend embree_ostream operator<<(embree_ostream cout, const Grid& t) {
         return cout << "Grid { startVtxID " << t.startVtxID << ", lineVtxOffset " << t.lineVtxOffset << ", resX " << t.resX << ", resY " << t.resY << " }";
       }
     };
@@ -59,23 +46,26 @@ namespace embree
 
     /* geometry interface */
   public:
-    void enabling();
-    void disabling();
     void setMask(unsigned mask);
     void setNumTimeSteps (unsigned int numTimeSteps);
     void setVertexAttributeCount (unsigned int N);
     void setBuffer(RTCBufferType type, unsigned int slot, RTCFormat format, const Ref<Buffer>& buffer, size_t offset, size_t stride, unsigned int num);
     void* getBuffer(RTCBufferType type, unsigned int slot);
     void updateBuffer(RTCBufferType type, unsigned int slot);
-    void preCommit();
-    void postCommit();
+    void commit();
     bool verify();
     void interpolate(const RTCInterpolateArguments* const args);
+    void addElementsToCount (GeometryCounts & counts) const;
 
     __forceinline unsigned int getNumSubGrids(const size_t gridID)
     {
       const Grid &g = grid(gridID);
       return max((unsigned int)1,((unsigned int)g.resX >> 1) * ((unsigned int)g.resY >> 1));
+    }
+
+    /*! get fast access to first vertex buffer */
+    __forceinline float * getCompactVertexArray () const {
+      return (float*) vertices0.getPtr();
     }
 
   public:
@@ -203,11 +193,6 @@ namespace embree
     /*! calculates the linear bounds of the i'th primitive for the specified time range */
     __forceinline LBBox3fa linearBounds(const Grid& g, size_t sx, size_t sy, const BBox1f& dt) const {
       return LBBox3fa([&] (size_t itime) { return bounds(g,sx,sy,itime); }, dt, time_range, fnumTimeSegments);
-    }
-
-    /* returns true if topology changed */
-    bool topologyChanged() const {
-      return grids.isModified() || numPrimitivesChanged;
     }
 
   public:

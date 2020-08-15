@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -513,16 +500,16 @@ namespace embree
       return true;
     }
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const CatmullClark1RingT &c)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const CatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", " << 
 	"hard_edge = " << c.border_index << ", face_valence " << c.face_valence << 
-	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << std::endl;
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", eval_start_index: " << c.eval_start_index << ", ring: " << embree_endl;
       
       for (unsigned int i=0; i<min(c.edge_valence,(unsigned int)MAX_RING_FACE_VALENCE); i++) {
         o << i << " -> " << c.ring[i];
         if (i % 2 == 0) o << " crease = " << c.crease_weight[i/2];
-        o << std::endl;
+        o << embree_endl;
       }
       return o;
     } 
@@ -822,15 +809,15 @@ namespace embree
       return cc_vtx.getLimitVertex();
     }
 
-    friend __forceinline std::ostream &operator<<(std::ostream &o, const GeneralCatmullClark1RingT &c)
+    friend __forceinline embree_ostream operator<<(embree_ostream o, const GeneralCatmullClark1RingT &c)
     {
       o << "vtx " << c.vtx << " size = " << c.edge_valence << ", border_face = " << c.border_face << ", " << " face_valence = " << c.face_valence << 
-	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << std::endl;
+	", edge_level = " << c.edge_level << ", vertex_level = " << c.vertex_level << ", ring: " << embree_endl;
       for (size_t v=0, f=0; f<c.face_valence; v+=c.faces[f++].size) {
         for (size_t i=v; i<v+c.faces[f].size; i++) {
           o << i << " -> " << c.ring[i];
           if (i == v) o << " crease = " << c.faces[f].crease_weight;
-          o << std::endl;
+          o << embree_endl;
         }
       }
       return o;

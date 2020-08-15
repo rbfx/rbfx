@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -89,16 +76,37 @@ namespace embree
     /* gather the line segments */
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-                              const Scene* scene) const;
+                              const LineSegments* geom) const;
+
+    __forceinline void gatheri(Vec4vf<M>& p0,
+                               Vec4vf<M>& p1,
+                               const LineSegments* geom,
+                               const int itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
                               const LineSegments* geom,
-                              const int itime) const;
+                              float time) const;
+
+    /* gather the line segments with lateral info */
+    __forceinline void gather(Vec4vf<M>& p0,
+                              Vec4vf<M>& p1,
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
+                              const LineSegments* geom) const;
+
+    __forceinline void gatheri(Vec4vf<M>& p0,
+                               Vec4vf<M>& p1,
+                               Vec4vf<M>& pL,
+                               Vec4vf<M>& pR,
+                               const LineSegments* geom,
+                               const int itime) const;
 
     __forceinline void gather(Vec4vf<M>& p0,
                               Vec4vf<M>& p1,
-                              const Scene* scene,
+                              Vec4vf<M>& pL,
+                              Vec4vf<M>& pR,
+                              const LineSegments* geom,
                               float time) const;
 
     /* Calculate the bounds of the line segments */
@@ -108,8 +116,8 @@ namespace embree
       for (size_t i=0; i<M && valid(i); i++)
       {
         const LineSegments* geom = scene->get<LineSegments>(geomID(i));
-        const Vec3fa& p0 = geom->vertex(v0[i]+0,itime);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1,itime);
+        const Vec3ff& p0 = geom->vertex(v0[i]+0,itime);
+        const Vec3ff& p1 = geom->vertex(v0[i]+1,itime);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);
@@ -156,8 +164,6 @@ namespace embree
       {
         const LineSegments* geom = scene->get<LineSegments>(prim->geomID());
         if (begin<end) {
-          /* encode the RTCCurveFlags into the two most significant bits */
-          //const unsigned int mask = geom->getStartEndBitMask(prim->primID());
           geomID[i] = prim->geomID();
           primID[i] = prim->primID();
           v0[i] = geom->segment(prim->primID());         
@@ -223,8 +229,8 @@ namespace embree
       BBox3fa bounds = empty;
       for (size_t i=0; i<M && valid(i); i++)
       {
-        const Vec3fa& p0 = geom->vertex(v0[i]+0);
-        const Vec3fa& p1 = geom->vertex(v0[i]+1);
+        const Vec3ff& p0 = geom->vertex(v0[i]+0);
+        const Vec3ff& p1 = geom->vertex(v0[i]+1);
         BBox3fa b = merge(BBox3fa(p0),BBox3fa(p1));
         b = enlarge(b,Vec3fa(max(p0.w,p1.w)));
         bounds.extend(b);
@@ -233,7 +239,7 @@ namespace embree
     }
 
     /*! output operator */
-    friend __forceinline std::ostream& operator<<(std::ostream& cout, const LineMi& line) {
+    friend __forceinline embree_ostream operator<<(embree_ostream cout, const LineMi& line) {
       return cout << "Line" << M << "i {" << line.v0 << ", " << line.geomID() << ", " << line.primID() << "}";
     }
     
@@ -249,9 +255,8 @@ namespace embree
   template<>
     __forceinline void LineMi<4>::gather(Vec4vf4& p0,
                                          Vec4vf4& p1,
-                                         const Scene* scene) const
+                                         const LineSegments* geom) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
     const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
@@ -266,7 +271,7 @@ namespace embree
   }
 
   template<>
-  __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+  __forceinline void LineMi<4>::gatheri(Vec4vf4& p0,
                                        Vec4vf4& p1,
                                        const LineSegments* geom,
                                        const int itime) const
@@ -287,20 +292,104 @@ namespace embree
   template<>
     __forceinline void LineMi<4>::gather(Vec4vf4& p0,
                                          Vec4vf4& p1,
-                                         const Scene* scene,
+                                         const LineSegments* geom,
                                          float time) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-
     float ftime;
     const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf4 a0,a1;
-    gather(a0,a1,geom,itime);
+    gatheri(a0,a1,geom,itime);
     Vec4vf4 b0,b1;
-    gather(b0,b1,geom,itime+1);
+    gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat4(ftime));
     p1 = lerp(a1,b1,vfloat4(ftime));
+  }
+
+  template<>
+    __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+                                              Vec4vf4& p1,
+                                              Vec4vf4& pL,
+                                              Vec4vf4& pR,
+                                              const LineSegments* geom) const
+  {
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(v0[3]));
+    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
+
+    const vfloat4 b0 = vfloat4::loadu(geom->vertexPtr(v0[0]+1));
+    const vfloat4 b1 = vfloat4::loadu(geom->vertexPtr(v0[1]+1));
+    const vfloat4 b2 = vfloat4::loadu(geom->vertexPtr(v0[2]+1));
+    const vfloat4 b3 = vfloat4::loadu(geom->vertexPtr(v0[3]+1));
+    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
+    
+    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1)) : vfloat4(inf);
+    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1)) : vfloat4(inf);
+    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1)) : vfloat4(inf);
+    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1)) : vfloat4(inf);
+    transpose(l0,l1,l2,l3,pL.x,pL.y,pL.z,pL.w);
+    
+    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2)) : vfloat4(inf);
+    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2)) : vfloat4(inf);
+    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2)) : vfloat4(inf);
+    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2)) : vfloat4(inf);
+    transpose(r0,r1,r2,r3,pR.x,pR.y,pR.z,pR.w);
+  }
+  
+  template<>
+    __forceinline void LineMi<4>::gatheri(Vec4vf4& p0,
+                                              Vec4vf4& p1,
+                                              Vec4vf4& pL,
+                                              Vec4vf4& pR,
+                                              const LineSegments* geom,
+                                              const int itime) const
+  {
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0],itime));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1],itime));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2],itime));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(v0[3],itime));
+    transpose(a0,a1,a2,a3,p0.x,p0.y,p0.z,p0.w);
+    
+    const vfloat4 b0 = vfloat4::loadu(geom->vertexPtr(v0[0]+1,itime));
+    const vfloat4 b1 = vfloat4::loadu(geom->vertexPtr(v0[1]+1,itime));
+    const vfloat4 b2 = vfloat4::loadu(geom->vertexPtr(v0[2]+1,itime));
+    const vfloat4 b3 = vfloat4::loadu(geom->vertexPtr(v0[3]+1,itime));
+    transpose(b0,b1,b2,b3,p1.x,p1.y,p1.z,p1.w);
+    
+    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1,itime)) : vfloat4(inf);
+    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1,itime)) : vfloat4(inf);
+    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1,itime)) : vfloat4(inf);
+    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1,itime)) : vfloat4(inf);
+    transpose(l0,l1,l2,l3,pL.x,pL.y,pL.z,pL.w);
+    
+    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2,itime)) : vfloat4(inf);
+    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2,itime)) : vfloat4(inf);
+    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2,itime)) : vfloat4(inf);
+    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2,itime)) : vfloat4(inf);
+    transpose(r0,r1,r2,r3,pR.x,pR.y,pR.z,pR.w);
+  }
+  
+  template<>
+    __forceinline void LineMi<4>::gather(Vec4vf4& p0,
+                                              Vec4vf4& p1,
+                                              Vec4vf4& pL,
+                                              Vec4vf4& pR,
+                                              const LineSegments* geom,
+                                              float time) const
+  {
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
+    
+    Vec4vf4 a0,a1,aL,aR;
+    gatheri(a0,a1,aL,aR,geom,itime);
+    Vec4vf4 b0,b1,bL,bR;
+    gatheri(b0,b1,bL,bR,geom,itime+1);
+    p0 = lerp(a0,b0,vfloat4(ftime));
+    p1 = lerp(a1,b1,vfloat4(ftime));
+    pL = lerp(aL,bL,vfloat4(ftime));
+    pR = lerp(aR,bR,vfloat4(ftime));
   }
 
 #if defined(__AVX__)
@@ -308,10 +397,8 @@ namespace embree
   template<>
     __forceinline void LineMi<8>::gather(Vec4vf8& p0,
                                          Vec4vf8& p1,
-                                         const Scene* scene) const
+                                         const LineSegments* geom) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-    
     const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
     const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
     const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
@@ -334,7 +421,7 @@ namespace embree
   }
 
   template<>
-  __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+  __forceinline void LineMi<8>::gatheri(Vec4vf8& p0,
                                        Vec4vf8& p1,
                                        const LineSegments* geom,
                                        const int itime) const
@@ -363,22 +450,138 @@ namespace embree
   template<>
     __forceinline void LineMi<8>::gather(Vec4vf8& p0,
                                          Vec4vf8& p1,
-                                         const Scene* scene,
+                                         const LineSegments* geom,
                                          float time) const
   {
-    const LineSegments* geom = scene->get<LineSegments>(geomID());
-
     float ftime;
     const int itime = geom->timeSegment(time, ftime);
 
     Vec4vf8 a0,a1;
-    gather(a0,a1,geom,itime);
+    gatheri(a0,a1,geom,itime);
     Vec4vf8 b0,b1;
-    gather(b0,b1,geom,itime+1);
+    gatheri(b0,b1,geom,itime+1);
     p0 = lerp(a0,b0,vfloat8(ftime));
     p1 = lerp(a1,b1,vfloat8(ftime));
   }
-
+  
+  template<>
+    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                              Vec4vf8& p1,
+                                              Vec4vf8& pL,
+                                              Vec4vf8& pR,
+                                              const LineSegments* geom) const
+  {
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0]));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1]));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2]));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(v0[3]));
+    const vfloat4 a4 = vfloat4::loadu(geom->vertexPtr(v0[4]));
+    const vfloat4 a5 = vfloat4::loadu(geom->vertexPtr(v0[5]));
+    const vfloat4 a6 = vfloat4::loadu(geom->vertexPtr(v0[6]));
+    const vfloat4 a7 = vfloat4::loadu(geom->vertexPtr(v0[7]));
+    transpose(a0,a1,a2,a3,a4,a5,a6,a7,p0.x,p0.y,p0.z,p0.w);
+    
+    const vfloat4 b0 = vfloat4::loadu(geom->vertexPtr(v0[0]+1));
+    const vfloat4 b1 = vfloat4::loadu(geom->vertexPtr(v0[1]+1));
+    const vfloat4 b2 = vfloat4::loadu(geom->vertexPtr(v0[2]+1));
+    const vfloat4 b3 = vfloat4::loadu(geom->vertexPtr(v0[3]+1));
+    const vfloat4 b4 = vfloat4::loadu(geom->vertexPtr(v0[4]+1));
+    const vfloat4 b5 = vfloat4::loadu(geom->vertexPtr(v0[5]+1));
+    const vfloat4 b6 = vfloat4::loadu(geom->vertexPtr(v0[6]+1));
+    const vfloat4 b7 = vfloat4::loadu(geom->vertexPtr(v0[7]+1));
+    transpose(b0,b1,b2,b3,b4,b5,b6,b7,p1.x,p1.y,p1.z,p1.w);
+    
+    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1)) : vfloat4(inf);
+    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1)) : vfloat4(inf);
+    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1)) : vfloat4(inf);
+    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1)) : vfloat4(inf);
+    const vfloat4 l4 = (primIDs[4] != -1 && geom->segmentLeftExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]-1)) : vfloat4(inf);
+    const vfloat4 l5 = (primIDs[5] != -1 && geom->segmentLeftExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]-1)) : vfloat4(inf);
+    const vfloat4 l6 = (primIDs[6] != -1 && geom->segmentLeftExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]-1)) : vfloat4(inf);
+    const vfloat4 l7 = (primIDs[7] != -1 && geom->segmentLeftExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]-1)) : vfloat4(inf);
+    transpose(l0,l1,l2,l3,l4,l5,l6,l7,pL.x,pL.y,pL.z,pL.w);
+    
+    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2)) : vfloat4(inf);
+    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2)) : vfloat4(inf);
+    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2)) : vfloat4(inf);
+    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2)) : vfloat4(inf);
+    const vfloat4 r4 = (primIDs[4] != -1 && geom->segmentRightExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]+2)) : vfloat4(inf);
+    const vfloat4 r5 = (primIDs[5] != -1 && geom->segmentRightExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]+2)) : vfloat4(inf);
+    const vfloat4 r6 = (primIDs[6] != -1 && geom->segmentRightExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]+2)) : vfloat4(inf);
+    const vfloat4 r7 = (primIDs[7] != -1 && geom->segmentRightExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]+2)) : vfloat4(inf);
+    transpose(r0,r1,r2,r3,r4,r5,r6,r7,pR.x,pR.y,pR.z,pR.w);
+  }
+  
+  template<>
+    __forceinline void LineMi<8>::gatheri(Vec4vf8& p0,
+                                              Vec4vf8& p1,
+                                              Vec4vf8& pL,
+                                              Vec4vf8& pR,
+                                              const LineSegments* geom,
+                                              const int itime) const
+  {
+    const vfloat4 a0 = vfloat4::loadu(geom->vertexPtr(v0[0],itime));
+    const vfloat4 a1 = vfloat4::loadu(geom->vertexPtr(v0[1],itime));
+    const vfloat4 a2 = vfloat4::loadu(geom->vertexPtr(v0[2],itime));
+    const vfloat4 a3 = vfloat4::loadu(geom->vertexPtr(v0[3],itime));
+    const vfloat4 a4 = vfloat4::loadu(geom->vertexPtr(v0[4],itime));
+    const vfloat4 a5 = vfloat4::loadu(geom->vertexPtr(v0[5],itime));
+    const vfloat4 a6 = vfloat4::loadu(geom->vertexPtr(v0[6],itime));
+    const vfloat4 a7 = vfloat4::loadu(geom->vertexPtr(v0[7],itime));
+    transpose(a0,a1,a2,a3,a4,a5,a6,a7,p0.x,p0.y,p0.z,p0.w);
+    
+    const vfloat4 b0 = vfloat4::loadu(geom->vertexPtr(v0[0]+1,itime));
+    const vfloat4 b1 = vfloat4::loadu(geom->vertexPtr(v0[1]+1,itime));
+    const vfloat4 b2 = vfloat4::loadu(geom->vertexPtr(v0[2]+1,itime));
+    const vfloat4 b3 = vfloat4::loadu(geom->vertexPtr(v0[3]+1,itime));
+    const vfloat4 b4 = vfloat4::loadu(geom->vertexPtr(v0[4]+1,itime));
+    const vfloat4 b5 = vfloat4::loadu(geom->vertexPtr(v0[5]+1,itime));
+    const vfloat4 b6 = vfloat4::loadu(geom->vertexPtr(v0[6]+1,itime));
+    const vfloat4 b7 = vfloat4::loadu(geom->vertexPtr(v0[7]+1,itime));
+    transpose(b0,b1,b2,b3,b4,b5,b6,b7,p1.x,p1.y,p1.z,p1.w);
+    
+    const vfloat4 l0 = (primIDs[0] != -1 && geom->segmentLeftExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]-1,itime)) : vfloat4(inf);
+    const vfloat4 l1 = (primIDs[1] != -1 && geom->segmentLeftExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]-1,itime)) : vfloat4(inf);
+    const vfloat4 l2 = (primIDs[2] != -1 && geom->segmentLeftExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]-1,itime)) : vfloat4(inf);
+    const vfloat4 l3 = (primIDs[3] != -1 && geom->segmentLeftExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]-1,itime)) : vfloat4(inf);
+    const vfloat4 l4 = (primIDs[4] != -1 && geom->segmentLeftExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]-1,itime)) : vfloat4(inf);
+    const vfloat4 l5 = (primIDs[5] != -1 && geom->segmentLeftExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]-1,itime)) : vfloat4(inf);
+    const vfloat4 l6 = (primIDs[6] != -1 && geom->segmentLeftExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]-1,itime)) : vfloat4(inf);
+    const vfloat4 l7 = (primIDs[7] != -1 && geom->segmentLeftExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]-1,itime)) : vfloat4(inf);
+    transpose(l0,l1,l2,l3,l4,l5,l6,l7,pL.x,pL.y,pL.z,pL.w);
+    
+    const vfloat4 r0 = (primIDs[0] != -1 && geom->segmentRightExists(primIDs[0])) ? vfloat4::loadu(geom->vertexPtr(v0[0]+2,itime)) : vfloat4(inf);
+    const vfloat4 r1 = (primIDs[1] != -1 && geom->segmentRightExists(primIDs[1])) ? vfloat4::loadu(geom->vertexPtr(v0[1]+2,itime)) : vfloat4(inf);
+    const vfloat4 r2 = (primIDs[2] != -1 && geom->segmentRightExists(primIDs[2])) ? vfloat4::loadu(geom->vertexPtr(v0[2]+2,itime)) : vfloat4(inf);
+    const vfloat4 r3 = (primIDs[3] != -1 && geom->segmentRightExists(primIDs[3])) ? vfloat4::loadu(geom->vertexPtr(v0[3]+2,itime)) : vfloat4(inf);
+    const vfloat4 r4 = (primIDs[4] != -1 && geom->segmentRightExists(primIDs[4])) ? vfloat4::loadu(geom->vertexPtr(v0[4]+2,itime)) : vfloat4(inf);
+    const vfloat4 r5 = (primIDs[5] != -1 && geom->segmentRightExists(primIDs[5])) ? vfloat4::loadu(geom->vertexPtr(v0[5]+2,itime)) : vfloat4(inf);
+    const vfloat4 r6 = (primIDs[6] != -1 && geom->segmentRightExists(primIDs[6])) ? vfloat4::loadu(geom->vertexPtr(v0[6]+2,itime)) : vfloat4(inf);
+    const vfloat4 r7 = (primIDs[7] != -1 && geom->segmentRightExists(primIDs[7])) ? vfloat4::loadu(geom->vertexPtr(v0[7]+2,itime)) : vfloat4(inf);
+    transpose(r0,r1,r2,r3,r4,r5,r6,r7,pR.x,pR.y,pR.z,pR.w);
+  }
+  
+  template<>
+    __forceinline void LineMi<8>::gather(Vec4vf8& p0,
+                                              Vec4vf8& p1,
+                                              Vec4vf8& pL,
+                                              Vec4vf8& pR,
+                                              const LineSegments* geom,
+                                              float time) const
+  {
+    float ftime;
+    const int itime = geom->timeSegment(time, ftime);
+    
+    Vec4vf8 a0,a1,aL,aR;
+    gatheri(a0,a1,aL,aR,geom,itime);
+    Vec4vf8 b0,b1,bL,bR;
+    gatheri(b0,b1,bL,bR,geom,itime+1);
+    p0 = lerp(a0,b0,vfloat8(ftime));
+    p1 = lerp(a1,b1,vfloat8(ftime));
+    pL = lerp(aL,bL,vfloat8(ftime));
+    pR = lerp(aR,bR,vfloat8(ftime));
+  }
+  
 #endif
   
   template<int M>

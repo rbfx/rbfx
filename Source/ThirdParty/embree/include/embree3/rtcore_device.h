@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #pragma once
 
@@ -49,6 +36,7 @@ enum RTCDeviceProperty
   RTC_DEVICE_PROPERTY_BACKFACE_CULLING_ENABLED    = 65,
   RTC_DEVICE_PROPERTY_FILTER_FUNCTION_SUPPORTED   = 66,
   RTC_DEVICE_PROPERTY_IGNORE_INVALID_RAYS_ENABLED = 67,
+  RTC_DEVICE_PROPERTY_COMPACT_POLYS_ENABLED       = 68,
 
   RTC_DEVICE_PROPERTY_TRIANGLE_GEOMETRY_SUPPORTED    = 96,
   RTC_DEVICE_PROPERTY_QUAD_GEOMETRY_SUPPORTED        = 97,
@@ -58,7 +46,8 @@ enum RTCDeviceProperty
   RTC_DEVICE_PROPERTY_POINT_GEOMETRY_SUPPORTED       = 101,
 
   RTC_DEVICE_PROPERTY_TASKING_SYSTEM        = 128,
-  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129
+  RTC_DEVICE_PROPERTY_JOIN_COMMIT_SUPPORTED = 129,
+  RTC_DEVICE_PROPERTY_PARALLEL_COMMIT_SUPPORTED = 130
 };
 
 /* Gets a device property. */

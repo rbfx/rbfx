@@ -1,18 +1,5 @@
-// ======================================================================== //
-// Copyright 2009-2018 Intel Corporation                                    //
-//                                                                          //
-// Licensed under the Apache License, Version 2.0 (the "License");          //
-// you may not use this file except in compliance with the License.         //
-// You may obtain a copy of the License at                                  //
-//                                                                          //
-//     http://www.apache.org/licenses/LICENSE-2.0                           //
-//                                                                          //
-// Unless required by applicable law or agreed to in writing, software      //
-// distributed under the License is distributed on an "AS IS" BASIS,        //
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. //
-// See the License for the specific language governing permissions and      //
-// limitations under the License.                                           //
-// ======================================================================== //
+// Copyright 2009-2020 Intel Corporation
+// SPDX-License-Identifier: Apache-2.0
 
 #include "../builders/bvh_builder_hair.h"
 #include "../builders/primrefgen.h"
@@ -49,7 +36,7 @@ namespace embree
           bvh->alloc.unshare(prims);
 
         /* fast path for empty BVH */
-        const size_t numPrimitives = scene->getNumPrimitives<CurveGeometry,false>();
+        const size_t numPrimitives = scene->getNumPrimitives(Geometry::MTY_CURVES,false);
         if (numPrimitives == 0) {
           bvh->clear();
           prims.clear();
@@ -63,7 +50,7 @@ namespace embree
         const PrimInfo pinfo = createPrimRefArray(scene,Geometry::MTY_CURVES,false,prims,scene->progressInterface);
 
         /* estimate acceleration structure size */
-        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::UnalignedNode)/(4*N);
+        const size_t node_bytes = pinfo.size()*sizeof(typename BVH::OBBNode)/(4*N);
         const size_t leaf_bytes = CurvePrimitive::bytes(pinfo.size());
         bvh->alloc.init_estimate(node_bytes+leaf_bytes);
         
@@ -103,10 +90,10 @@ namespace embree
         /* build hierarchy */
         typename BVH::NodeRef root = BVHBuilderHair::build<NodeRef>
           (typename BVH::CreateAlloc(bvh),
-           typename BVH::AlignedNode::Create(),
-           typename BVH::AlignedNode::Set(),
-           typename BVH::UnalignedNode::Create(),
-           typename BVH::UnalignedNode::Set(),
+           typename BVH::AABBNode::Create(),
+           typename BVH::AABBNode::Set(),
+           typename BVH::OBBNode::Create(),
+           typename BVH::OBBNode::Set(),
            createLeaf,scene->progressInterface,
            reportFinishedRange,
            scene,prims.data(),pinfo,settings);
@@ -120,7 +107,6 @@ namespace embree
         /* clear temporary data for static geometry */
         if (scene->isStaticAccel()) {
           prims.clear();
-          bvh->shrink();
         }
         bvh->cleanup();
         bvh->postBuild(t0);
