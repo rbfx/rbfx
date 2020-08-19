@@ -362,9 +362,16 @@ if (WEB OR ANDROID)
         target_compile_options(Urho3D PUBLIC $<$<COMPILE_LANGUAGE:CXX>:-std=gnu++${URHO3D_CXX_STANDARD}>)
     endif ()
 endif ()
-if (APPLE)
-    target_link_options(Urho3D PUBLIC -stdlib=libc++)
+
+if (CLANG AND NOT WEB)
+    if (APPLE)
+        target_compile_options(Urho3D INTERFACE $<INSTALL_INTERFACE:-stdlib=libc++>)
+        target_link_libraries(Urho3D INTERFACE $<INSTALL_INTERFACE:c++ c++abi>)
+    else ()
+        target_link_libraries(Urho3D INTERFACE $<INSTALL_INTERFACE:stdc++ m>)
+    endif ()
 endif ()
+
 # Group them together under 'Resources' in Xcode IDE
 source_group(Resources FILES ${RESOURCE_FILES})     # RESOURCE_PAKS could be empty if packaging is not requested
 target_sources(Urho3D PRIVATE ${RESOURCE_DIRS})
