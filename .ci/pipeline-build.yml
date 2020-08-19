@@ -94,13 +94,12 @@ jobs:
           CMAKE_GENERATE_ARGS: -DTRACY_NO_PARALLEL_ALGORITHMS=ON
           CC: clang-8
           CXX: clang++-8
-          EXTRA_PACKAGES: clang-8
         shared-clang-opengl:
           BUILD_SHARED_LIBS: ON
           CMAKE_GENERATE_ARGS: -DTRACY_NO_PARALLEL_ALGORITHMS=ON
           CC: clang-8
           CXX: clang++-8
-          EXTRA_PACKAGES: clang-8 mono-devel msbuild-libhostfxr msbuild-sdkresolver msbuild
+          EXTRA_PACKAGES: mono-devel msbuild-libhostfxr msbuild-sdkresolver msbuild
 
     steps:
       - bash: |

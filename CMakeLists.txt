@@ -64,8 +64,15 @@ if (WEB OR ANDROID)
     # crosscompiler works just fine.
     unset (CMAKE_CXX_STANDARD)
 endif ()
-if (APPLE)
-    ucm_add_flags(CXX -stdlib=libc++)
+if (CLANG AND NOT WEB)
+    if (APPLE)
+        # Ensure that everything built by this project use these libraries. Urho3D target also exports them so all downstream
+        # projects linking to the engine get them as well.
+        ucm_add_flags(C CXX -stdlib=libc++)
+        link_libraries(c++ c++abi)
+    else ()
+        link_libraries(stdc++ m)
+    endif ()
 endif ()
 
 set (CMAKE_EXPORT_COMPILE_COMMANDS ON)
