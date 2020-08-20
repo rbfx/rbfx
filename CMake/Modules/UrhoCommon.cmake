@@ -349,7 +349,7 @@ if (URHO3D_CSHARP)
 
     # Prefer binary dir - generated msvc solution with .csproj projects included in it.
     if (MSVC)
-        set (VS_SOLUTIONS ${CMAKE_BINARY_DIR}/rbfx.sln)
+        set (VS_SOLUTIONS ${CMAKE_BINARY_DIR}/${CMAKE_PROJECT_NAME}.sln)
     else ()
         # On unixes source directory will contain manually crafted .sln
         file (GLOB VS_SOLUTIONS ${CMAKE_SOURCE_DIR}/*.sln)
