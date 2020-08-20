@@ -348,8 +348,9 @@ if (URHO3D_CSHARP)
     include(UrhoSWIG)
 
     # Prefer binary dir - generated msvc solution with .csproj projects included in it.
-    file (GLOB VS_SOLUTIONS ${CMAKE_BINARY_DIR}/*.sln)
-    if (NOT VS_SOLUTIONS)
+    if (MSVC)
+        set (VS_SOLUTIONS ${CMAKE_BINARY_DIR}/rbfx.sln)
+    else ()
         # On unixes source directory will contain manually crafted .sln
         file (GLOB VS_SOLUTIONS ${CMAKE_SOURCE_DIR}/*.sln)
         if (NOT VS_SOLUTIONS)
@@ -358,16 +359,19 @@ if (URHO3D_CSHARP)
         endif ()
     endif ()
     add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
-    # Run nuget restore during generation stage
-    message(STATUS "NuGet restore")
-    execute_process(
-        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
-        /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
-        RESULT_VARIABLE NUGET_RESTORE_RESULT
-        OUTPUT_VARIABLE NUGET_RESTORE_OUTPUT
-    )
-    if (NOT NUGET_RESTORE_RESULT EQUAL 0)
-        message(FATAL_ERROR "${NUGET_RESTORE_OUTPUT}")
+    # Run nuget restore during generation stage. Can not be done when cmake generate step runs for
+    # the first time with Visual Studio generators, because solution does not exist yet.
+    if (EXISTS ${VS_SOLUTIONS})
+        message(STATUS "NuGet restore")
+        execute_process(
+            COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
+            /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
+            RESULT_VARIABLE NUGET_RESTORE_RESULT
+            OUTPUT_VARIABLE NUGET_RESTORE_OUTPUT
+        )
+        if (NOT NUGET_RESTORE_RESULT EQUAL 0)
+            message(FATAL_ERROR "${NUGET_RESTORE_OUTPUT}")
+        endif ()
     endif ()
 endif()
 
