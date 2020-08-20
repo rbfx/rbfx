@@ -359,9 +359,16 @@ if (URHO3D_CSHARP)
     endif ()
     add_msbuild_target(TARGET NugetRestore EXCLUDE_FROM_ALL ARGS ${VS_SOLUTIONS} /t:restore /m)
     # Run nuget restore during generation stage
-    execute_process(COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
+    message(STATUS "NuGet restore")
+    execute_process(
+        COMMAND ${TERM_WORKAROUND} ${MSBUILD} ${VS_SOLUTIONS} /t:restore /m /nologo
         /p:CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}/ /consoleloggerparameters:ErrorsOnly
+        RESULT_VARIABLE NUGET_RESTORE_RESULT
+        OUTPUT_VARIABLE NUGET_RESTORE_OUTPUT
     )
+    if (NOT NUGET_RESTORE_RESULT EQUAL 0)
+        message(FATAL_ERROR "${NUGET_RESTORE_OUTPUT}")
+    endif ()
 endif()
 
 macro (__TARGET_GET_PROPERTIES_RECURSIVE OUTPUT TARGET PROPERTY)
