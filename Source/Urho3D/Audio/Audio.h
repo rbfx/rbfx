@@ -117,16 +117,13 @@ public:
 #ifndef URHO3D_USE_OPENAL
     /// Return audio thread mutex.
     Mutex& GetMutex() { return audioMutex_; }
+    
+    /// Mix sound sources into the buffer.
+    void MixOutput(void* dest, unsigned samples);
 #endif
 
     /// Return sound type specific gain multiplied by master gain.
     float GetSoundSourceMasterGain(StringHash typeHash) const;
-
-#ifndef URHO3D_USE_OPENAL
-    /// Mix sound sources into the buffer.
-    void MixOutput(void* dest, unsigned samples);
-
-#endif
 
 private:
     /// Handle render update event.
