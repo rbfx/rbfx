@@ -22,10 +22,18 @@
 
 #pragma once
 
+#define URHO3D_USE_OPENAL
+
 #include "../Container/Str.h"
 
 namespace Urho3D
 {
+
+#ifdef URHO3D_USE_OPENAL
+	using audio_t = unsigned char;
+#else
+	using audio_t = signed char;
+#endif
 
 // SoundSource type defaults
 static const ea::string SOUND_MASTER = "Master";
@@ -33,5 +41,7 @@ static const ea::string SOUND_EFFECT = "Effect";
 static const ea::string SOUND_AMBIENT = "Ambient";
 static const ea::string SOUND_VOICE = "Voice";
 static const ea::string SOUND_MUSIC = "Music";
+
+void _ALERROR();
 
 }
