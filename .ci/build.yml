@@ -5,20 +5,25 @@ steps:
     workingDirectory: cmake-build
     cmakeArgs: $(CMAKE_GENERATE_ARGS) -DCMAKE_INSTALL_PREFIX=$(Build.SourcesDirectory)/SDK -DCMAKE_BUILD_TYPE=RelWithDebInfo -DURHO3D_SAMPLES=ON -DURHO3D_CSHARP=$(URHO3D_CSHARP) -DURHO3D_PACKAGING=ON -DBUILD_SHARED_LIBS=$(BUILD_SHARED_LIBS) $(Build.SourcesDirectory)
 
+# Restore nuget packages for builds on unix platforms.
+- script: |
+    msbuild /p:CMAKE_BINARY_DIR=$(pwd)/cmake-build/ /t:restore rbfx.unix.sln
+  condition: and(and(eq(variables['BUILD_SHARED_LIBS'], 'ON'), eq(variables['URHO3D_CSHARP'], 'ON')), ne(variables['MSBUILD'], 'ON'))
+
 # VS2017, VS2019 may not honor build dependencies of custom targets if we invoke build through cmake, therefore we use
 # msbuild directly in this case.
 - script: |
     cd cmake-build
     msbuild /t:restore rbfx.sln
     msbuild /p:Configuration=RelWithDebInfo rbfx.sln
-  condition: eq(variables['MSBUILD'], '1')
+  condition: eq(variables['MSBUILD'], 'ON')
 
 - task: CMake@1
   displayName: 'Build'
   inputs:
     workingDirectory: cmake-build
     cmakeArgs: --build . --config RelWithDebInfo $(CMAKE_BUILD_ARGS)
-  condition: ne(variables['MSBUILD'], '1')
+  condition: ne(variables['MSBUILD'], 'ON')
 
 # --build . is technically not necessary, but web builds somehow insist on installing
 # CMakeFiles/CMakeRelink.dir/Samples.html instead of bin/Samples.html so just let installation step link it for now.
