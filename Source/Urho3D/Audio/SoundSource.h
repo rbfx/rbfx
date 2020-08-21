@@ -109,10 +109,10 @@ public:
 
     /// Update the sound source. Perform subclass specific operations. Called by Audio.
     virtual void Update(float timeStep);
-	#ifndef URHO3D_USE_OPENAL
+    #ifndef URHO3D_USE_OPENAL
     /// Mix sound source output to a 32-bit clipping buffer. Called by Audio.
     void Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation);
-	#endif
+    #endif
     /// Update the effective master gain. Called internally and by Audio when the master gain changes.
     void UpdateMasterGain();
 
@@ -198,8 +198,8 @@ private:
 
 protected:
 #ifdef URHO3D_USE_OPENAL
-	uint32_t alsource_;
-	uint32_t albuffer_;
+    uint32_t alsource_;
+    uint32_t albuffer_;
 #endif
 };
 

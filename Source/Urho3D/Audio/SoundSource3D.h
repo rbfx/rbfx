@@ -59,11 +59,11 @@ public:
     void SetOuterAngle(float angle);
     /// Set rolloff power factor, defines attenuation function shape.
     void SetRolloffFactor(float factor);
-	
-	#ifndef URHO3D_USE_OPENAL
+    
+#ifndef URHO3D_USE_OPENAL
     /// Calculate attenuation and panning based on current position and listener position.
     void CalculateAttenuation();
-	#endif
+#endif
 
     /// Return near distance.
     float GetNearDistance() const { return nearDistance_; }

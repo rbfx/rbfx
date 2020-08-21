@@ -57,12 +57,13 @@ SoundSource3D::SoundSource3D(Context* context) :
     rolloffFactor_(DEFAULT_ROLLOFF)
 {
     // Start from zero volume until attenuation properly calculated
-	#ifdef URHO3D_USE_OPENAL
-		alSourcef(alsource_, AL_ROLLOFF_FACTOR, 1.0f / rolloffFactor_);
-		alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
-		alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
-	#endif
+#ifdef URHO3D_USE_OPENAL
+    alSourcef(alsource_, AL_ROLLOFF_FACTOR, rolloffFactor_);
+    alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
+    alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
+#else
     attenuation_ = 0.0f;
+#endif
 }
 
 void SoundSource3D::RegisterObject(Context* context)
@@ -108,9 +109,9 @@ void SoundSource3D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 void SoundSource3D::Update(float timeStep)
 {
 #ifdef URHO3D_USE_OPENAL
-	// We set the OpenAL location here
-	Vector3 pos = node_->GetPosition();
-	alSource3f(alsource_, AL_POSITION, pos.x_, pos.y_, pos.z_);	
+    // We set the OpenAL location here
+    Vector3 pos = node_->GetPosition();
+    alSource3f(alsource_, AL_POSITION, pos.x_, pos.y_, pos.z_);	
 #else
     CalculateAttenuation();
 #endif
@@ -123,11 +124,11 @@ void SoundSource3D::SetDistanceAttenuation(float nearDistance, float farDistance
     farDistance_ = Max(farDistance, 0.0f);
     rolloffFactor_ = Max(rolloffFactor, MIN_ROLLOFF);
 #ifdef URHO3D_USE_OPENAL
-	alSourcef(alsource_, AL_ROLLOFF_FACTOR, rolloffFactor);
-	alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
-	alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
+    alSourcef(alsource_, AL_ROLLOFF_FACTOR, rolloffFactor);
+    alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
+    alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
 #endif
-	// TODO: near distance? It's not possible to set it seems
+    // TODO: near distance? It's not possible to set it seems
     MarkNetworkUpdate();
 }
 
@@ -142,7 +143,7 @@ void SoundSource3D::SetFarDistance(float distance)
 {
     farDistance_ = Max(distance, 0.0f);
 #ifdef URHO3D_USE_OPENAL
-	alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
+    alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
 #endif
     MarkNetworkUpdate();
 }
@@ -169,7 +170,7 @@ void SoundSource3D::SetRolloffFactor(float factor)
 {
     rolloffFactor_ = Max(factor, MIN_ROLLOFF);
 #ifdef URHO3D_USE_OPENAL
-	alSourcef(alsource_, AL_ROLLOFF_FACTOR, factor);
+    alSourcef(alsource_, AL_ROLLOFF_FACTOR, factor);
 #endif
     MarkNetworkUpdate();
 }

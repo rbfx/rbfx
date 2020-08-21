@@ -30,9 +30,9 @@ namespace Urho3D
 {
 
 #ifdef URHO3D_USE_OPENAL
-	using audio_t = unsigned char;
+    using audio_t = unsigned char;
 #else
-	using audio_t = signed char;
+    using audio_t = signed char;
 #endif
 
 // SoundSource type defaults
