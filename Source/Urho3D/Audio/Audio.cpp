@@ -40,8 +40,45 @@
 #pragma warning(disable:6293)
 #endif
 
+#ifdef URHO3D_USE_OPENAL
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif
+
 namespace Urho3D
 {
+
+#ifdef URHO3D_USE_OPENAL
+void _ALERROR()
+{
+	ALenum error = alGetError();
+    if(error != AL_NO_ERROR)
+    {
+        switch(error)
+        {
+        case AL_INVALID_NAME:
+			URHO3D_LOGERROR("AL_INVALID_NAME");
+            break;
+        case AL_INVALID_ENUM:
+			URHO3D_LOGERROR("AL_INVALID_ENUM");
+            break;
+        case AL_INVALID_VALUE:
+			URHO3D_LOGERROR("AL_INVALID_VALUE");
+            break;
+        case AL_INVALID_OPERATION:
+			URHO3D_LOGERROR("AL_INVALID_OPERATION");
+            break;
+        case AL_OUT_OF_MEMORY:
+			URHO3D_LOGERROR("AL_OUT_OF_MEMORY");
+            break;
+        default:
+			URHO3D_LOGERROR("UNKNOWN AL ERROR");
+        }
+    }
+
+}
+
+#endif
 
 const char* AUDIO_CATEGORY = "Audio";
 
@@ -55,7 +92,12 @@ static void SDLAudioCallback(void* userdata, Uint8* stream, int len);
 Audio::Audio(Context* context) :
     Object(context)
 {
+
+#ifndef URHO3D_USE_OPENAL
+
     context_->RequireSDL(SDL_INIT_AUDIO);
+
+#endif
 
     // Set the master to the default value
     masterGain_[SOUND_MASTER_HASH] = 1.0f;
@@ -76,6 +118,36 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
 {
     Release();
 
+#ifdef URHO3D_USE_OPENAL
+	// We simply create the mode and ignore all paramaters
+	// because they cannot be configured in OpenAL
+	// TODO: Better handling? OpenAL offers some customization possibilities
+
+	URHO3D_LOGINFO("Audio mode was changed using OpenAL. No changes applied");
+	isInitialized_ = true;
+
+	ALCdevice *aldevice;
+	aldevice = alcOpenDevice(NULL);
+	if(!aldevice)
+	{
+		URHO3D_LOGERROR("Could not create OpenAL device");
+	}
+	
+	ALCcontext *alcontext;
+	alcontext = alcCreateContext(aldevice, NULL);
+	if(!alcontext)
+	{
+		URHO3D_LOGERROR("Could not create OpenAL context");
+	}
+
+	if(!alcMakeContextCurrent(alcontext))
+	{
+		URHO3D_LOGERROR("Could not make OpenAL context current context");
+	}
+
+	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+	
+#else
     bufferLengthMSec = Max(bufferLengthMSec, MIN_BUFFERLENGTH);
     mixRate = Clamp(mixRate, MIN_MIXRATE, MAX_MIXRATE);
 
@@ -119,9 +191,9 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     mixRate_ = obtained.freq;
     interpolation_ = interpolation;
     clipBuffer_.reset(new int[stereo ? fragmentSize_ << 1u : fragmentSize_]);
-
     URHO3D_LOGINFO("Set audio mode " + ea::to_string(mixRate_) + " Hz " + (stereo_ ? "stereo" : "mono") + " " +
             (interpolation_ ? "interpolated" : ""));
+#endif
 
     return Play();
 }
@@ -139,14 +211,17 @@ bool Audio::Play()
     if (playing_)
         return true;
 
-    if (!deviceID_)
+    if (!IsInitialized())
     {
         URHO3D_LOGERROR("No audio mode set, can not start playback");
         return false;
     }
 
-    SDL_PauseAudioDevice(deviceID_, 0);
+#ifdef URHO3D_USE_OPENAL
 
+#else 
+    SDL_PauseAudioDevice(deviceID_, 0);
+#endif
     // Update sound sources before resuming playback to make sure 3D positions are up to date
     UpdateInternal(0.0f);
 
@@ -169,13 +244,21 @@ void Audio::SetMasterGain(const ea::string& type, float gain)
 
 void Audio::PauseSoundType(const ea::string& type)
 {
+#ifdef URHO3D_USE_OPENAL
+
+#else
     MutexLock lock(audioMutex_);
+#endif
     pausedSoundTypes_.insert(type);
 }
 
 void Audio::ResumeSoundType(const ea::string& type)
 {
+#ifdef URHO3D_USE_OPENAL
+
+#else
     MutexLock lock(audioMutex_);
+#endif
     pausedSoundTypes_.erase(type);
     // Update sound sources before resuming playback to make sure 3D positions are up to date
     // Done under mutex to ensure no mixing happens before we are ready
@@ -184,7 +267,10 @@ void Audio::ResumeSoundType(const ea::string& type)
 
 void Audio::ResumeAll()
 {
+#ifdef URHO3D_USE_OPENAL
+#else
     MutexLock lock(audioMutex_);
+#endif
     pausedSoundTypes_.clear();
     UpdateInternal(0.0f);
 }
@@ -225,7 +311,10 @@ SoundListener* Audio::GetListener() const
 
 void Audio::AddSoundSource(SoundSource* soundSource)
 {
+#ifdef URHO3D_USE_OPENAL
+#else
     MutexLock lock(audioMutex_);
+#endif
     soundSources_.push_back(soundSource);
 }
 
@@ -234,7 +323,10 @@ void Audio::RemoveSoundSource(SoundSource* soundSource)
     auto i = soundSources_.find(soundSource);
     if (i != soundSources_.end())
     {
+#ifdef URHO3D_USE_OPENAL
+#else
         MutexLock lock(audioMutex_);
+#endif
         soundSources_.erase(i);
     }
 }
@@ -254,6 +346,7 @@ float Audio::GetSoundSourceMasterGain(StringHash typeHash) const
     return masterIt->second.GetFloat() * typeIt->second.GetFloat();
 }
 
+#ifndef URHO3D_USE_OPENAL
 void SDLAudioCallback(void* userdata, Uint8* stream, int len)
 {
     auto* audio = static_cast<Audio*>(userdata);
@@ -306,6 +399,8 @@ void Audio::MixOutput(void* dest, unsigned samples)
     }
 }
 
+#endif
+
 void Audio::HandleRenderUpdate(StringHash eventType, VariantMap& eventData)
 {
     using namespace RenderUpdate;
@@ -317,12 +412,24 @@ void Audio::Release()
 {
     Stop();
 
+#ifdef URHO3D_USE_OPENAL
+	if(IsInitialized())
+	{
+		URHO3D_LOGINFO("Releasing OpenAL");
+		ALCcontext* context = alcGetCurrentContext();
+		ALCdevice* device = alcGetContextsDevice(context);
+		alcMakeContextCurrent(nullptr);
+		alcDestroyContext(context);
+		alcCloseDevice(device);
+	}
+#else 
     if (deviceID_)
     {
         SDL_CloseAudioDevice(deviceID_);
         deviceID_ = 0;
         clipBuffer_.reset();
     }
+#endif
 }
 
 void Audio::UpdateInternal(float timeStep)

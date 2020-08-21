@@ -75,13 +75,13 @@ public:
     /// Set to remove either the sound source component or its owner node from the scene automatically on sound playback completion. Disabled by default.
     void SetAutoRemoveMode(AutoRemoveMode mode);
     /// Set new playback position.
-    void SetPlayPosition(signed char* pos);
+    void SetPlayPosition(audio_t* pos);
 
     /// Return sound.
     Sound* GetSound() const { return sound_; }
 
     /// Return playback position.
-    volatile signed char* GetPlayPosition() const { return position_; }
+    volatile audio_t* GetPlayPosition() const { return position_; }
 
     /// Return sound type, determines the master gain group.
     ea::string GetSoundType() const { return soundType_; }
@@ -109,8 +109,10 @@ public:
 
     /// Update the sound source. Perform subclass specific operations. Called by Audio.
     virtual void Update(float timeStep);
+	#ifndef URHO3D_USE_OPENAL
     /// Mix sound source output to a 32-bit clipping buffer. Called by Audio.
     void Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation);
+	#endif
     /// Update the effective master gain. Called internally and by Audio when the master gain changes.
     void UpdateMasterGain();
 
@@ -155,7 +157,8 @@ private:
     /// Stop sound without locking the audio mutex. Called internally.
     void StopLockless();
     /// Set new playback position without locking the audio mutex. Called internally.
-    void SetPlayPositionLockless(signed char* pos);
+    void SetPlayPositionLockless(audio_t* pos);
+#ifndef URHO3D_USE_OPENAL
     /// Mix mono sample to mono buffer.
     void MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Mix mono sample to stereo buffer.
@@ -174,6 +177,7 @@ private:
     void MixStereoToStereoIP(Sound* sound, int dest[], unsigned samples, int mixRate);
     /// Advance playback pointer without producing audible output.
     void MixZeroVolume(Sound* sound, unsigned samples, int mixRate);
+#endif
     /// Advance playback pointer to simulate audio playback in headless mode.
     void MixNull(float timeStep);
 
@@ -182,7 +186,7 @@ private:
     /// Sound stream that is being played.
     SharedPtr<SoundStream> soundStream_;
     /// Playback position.
-    volatile signed char* position_;
+    volatile audio_t* position_;
     /// Playback fractional position.
     volatile int fractPosition_;
     /// Playback time position.
@@ -191,6 +195,12 @@ private:
     SharedPtr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
+
+protected:
+#ifdef URHO3D_USE_OPENAL
+	uint32_t alsource_;
+	uint32_t albuffer_;
+#endif
 };
 
 }
