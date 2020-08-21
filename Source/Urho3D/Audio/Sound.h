@@ -26,11 +26,13 @@
 #include <EASTL/shared_array.h>
 
 #include "../Resource/Resource.h"
+#include "AudioDefs.h"
 
 namespace Urho3D
 {
 
 class SoundStream;
+
 
 /// %Sound resource.
 class URHO3D_API Sound : public ResourceWithMetadata
@@ -38,6 +40,8 @@ class URHO3D_API Sound : public ResourceWithMetadata
     URHO3D_OBJECT(Sound, ResourceWithMetadata);
 
 public:
+
+
     /// Construct.
     explicit Sound(Context* context);
     /// Destruct and free sound data.
@@ -69,16 +73,16 @@ public:
     SharedPtr<SoundStream> GetDecoderStream() const;
 
     /// Return shared sound data.
-    ea::shared_array<signed char> GetData() const { return data_; }
+    ea::shared_array<audio_t> GetData() const { return data_; }
 
     /// Return sound data start.
-    signed char* GetStart() const { return data_.get(); }
+    audio_t* GetStart() const { return data_.get(); }
 
     /// Return loop start.
-    signed char* GetRepeat() const { return repeat_; }
+	audio_t* GetRepeat() const { return repeat_; }
 
     /// Return sound data end.
-    signed char* GetEnd() const { return end_; }
+    audio_t* GetEnd() const { return end_; }
 
     /// Return length in seconds.
     float GetLength() const;
@@ -115,11 +119,11 @@ private:
     void LoadParameters();
 
     /// Sound data.
-    ea::shared_array<signed char> data_;
+    ea::shared_array<audio_t> data_;
     /// Loop start.
-    signed char* repeat_;
+    audio_t* repeat_;
     /// Sound data end.
-    signed char* end_;
+    audio_t* end_;
     /// Sound data size in bytes.
     unsigned dataSize_;
     /// Default frequency.

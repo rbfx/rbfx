@@ -35,9 +35,15 @@
 
 #include "../DebugNew.h"
 
+#ifdef URHO3D_USE_OPENAL
+#include <AL/al.h>
+#include <AL/alc.h>
+#endif
+
 namespace Urho3D
 {
 
+#ifndef URHO3D_USE_OPENAL
 #define INC_POS_LOOPED() \
     pos += intAdd; \
     fractPos += fractAdd; \
@@ -96,9 +102,12 @@ namespace Urho3D
 
 static const int STREAM_SAFETY_SAMPLES = 4;
 
+#endif
+
 extern const char* AUDIO_CATEGORY;
 
 extern const char* autoRemoveModeNames[];
+
 
 SoundSource::SoundSource(Context* context) :
     Component(context),
@@ -118,6 +127,18 @@ SoundSource::SoundSource(Context* context) :
 
     if (audio_)
         audio_->AddSoundSource(this);
+
+#ifdef URHO3D_USE_OPENAL
+	if(audio_->IsInitialized())
+	{
+		alGenSources(1, &alsource_); _ALERROR();
+		alSourcef(alsource_, AL_PITCH, 1.0f); _ALERROR();
+		alSourcef(alsource_, AL_GAIN, 1.0f); _ALERROR();
+		alSource3f(alsource_, AL_POSITION, 0.0f, 0.0f, 0.0f); _ALERROR();
+		alSource3f(alsource_, AL_VELOCITY, 0.0f, 0.0f, 0.0f); _ALERROR();
+		alSourcei(alsource_, AL_LOOPING, AL_FALSE); _ALERROR();
+	}
+#endif
 
     UpdateMasterGain();
 }
@@ -178,12 +199,14 @@ void SoundSource::Play(Sound* sound)
         SetFrequency(sound->GetFrequency());
 
     // If sound source is currently playing, have to lock the audio mutex
+#ifndef URHO3D_USE_OPENAL
     if (position_)
     {
         MutexLock lock(audio_->GetMutex());
         PlayLockless(sound);
     }
-    else
+else
+#endif
         PlayLockless(sound);
 
     // Forget the Sound & Is Playing attribute previous values so that they will be sent again, triggering
@@ -237,6 +260,10 @@ void SoundSource::Play(SoundStream* stream)
 
     // If sound source is currently playing, have to lock the audio mutex. When stream playback is explicitly
     // requested, clear the existing sound if any
+#ifdef URHO3D_USE_OPENAL
+	sound_.Reset();
+	PlayLockless(streamPtr);
+#else 
     if (position_)
     {
         MutexLock lock(audio_->GetMutex());
@@ -248,6 +275,7 @@ void SoundSource::Play(SoundStream* stream)
         sound_.Reset();
         PlayLockless(streamPtr);
     }
+#endif
 
     // Stream playback is not supported for network replication, no need to mark network dirty
 }
@@ -258,12 +286,14 @@ void SoundSource::Stop()
         return;
 
     // If sound source is currently playing, have to lock the audio mutex
+	#ifndef URHO3D_USE_OPENAL
     if (position_)
     {
         MutexLock lock(audio_->GetMutex());
         StopLockless();
     }
     else
+	#endif
         StopLockless();
 
     MarkNetworkUpdate();
@@ -316,13 +346,14 @@ bool SoundSource::IsPlaying() const
     return (sound_ || soundStream_) && position_ != nullptr;
 }
 
-void SoundSource::SetPlayPosition(signed char* pos)
+void SoundSource::SetPlayPosition(audio_t* pos)
 {
     // Setting play position on a stream is not supported
     if (!audio_ || !sound_ || soundStream_)
         return;
-
+#ifndef URHO3D_USE_OPENAL
     MutexLock lock(audio_->GetMutex());
+#endif
     SetPlayPositionLockless(pos);
 }
 
@@ -332,8 +363,19 @@ void SoundSource::Update(float timeStep)
         return;
 
     // If there is no actual audio output, perform fake mixing into a nonexistent buffer to check stopping/looping
+#ifdef URHO3D_USE_OPENAL
+	if(!audio_->IsInitialized())
+	{
+		MixNull(timeStep);
+	}
+	else
+	{
+		// Query OpenAL for progress
+	}
+#else
     if (!audio_->IsInitialized())
         MixNull(timeStep);
+#endif
 
     // Free the stream if playback has stopped
     if (soundStream_ && !position_)
@@ -363,6 +405,7 @@ void SoundSource::Update(float timeStep)
     }
 }
 
+#ifndef URHO3D_USE_OPENAL
 void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation)
 {
     if (!position_ || (!sound_ && !soundStream_) || (!IsEnabledEffective() && node_ != nullptr))
@@ -457,6 +500,8 @@ void SoundSource::Mix(int dest[], unsigned samples, int mixRate, bool stereo, bo
         timePosition_ = ((float)(int)(size_t)(position_ - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
 }
 
+#endif
+
 void SoundSource::UpdateMasterGain()
 {
     if (audio_)
@@ -515,8 +560,43 @@ void SoundSource::PlayLockless(Sound* sound)
 
     if (sound)
     {
+#ifdef URHO3D_USE_OPENAL
+		if(sound->IsLooped())
+		{	
+			alSourcei(alsource_, AL_LOOPING, AL_TRUE);	
+		}
+		else
+		{
+			alSourcei(alsource_, AL_LOOPING, AL_FALSE);
+		}
+#endif
+
         if (!sound->IsCompressed())
         {
+#ifdef URHO3D_USE_OPENAL
+			// We simply load the full sound into a buffer and pass it to OpenAl
+			alGenBuffers(1, &albuffer_);
+			ALenum format;
+			if(sound->IsSixteenBit() && sound->IsStereo())
+			{
+				format = AL_FORMAT_STEREO16;
+			}
+			else if(sound->IsSixteenBit())
+			{
+				format = AL_FORMAT_MONO16;
+			}
+			else if(sound->IsStereo())
+			{
+				format = AL_FORMAT_STEREO8;
+			}
+			else
+			{
+				format = AL_FORMAT_MONO8;	
+			}
+			alBufferData(albuffer_, format, sound->GetStart(), sound->GetDataSize(), sound->GetIntFrequency());
+			alSourcei(alsource_, AL_BUFFER, albuffer_);
+			alSourcePlay(alsource_);
+#else
             // Uncompressed sound start
             signed char* start = sound->GetStart();
             if (start)
@@ -530,6 +610,7 @@ void SoundSource::PlayLockless(Sound* sound)
                 sendFinishedEvent_ = true;
                 return;
             }
+#endif
         }
         else
         {
@@ -583,14 +664,14 @@ void SoundSource::StopLockless()
     streamBuffer_.Reset();
 }
 
-void SoundSource::SetPlayPositionLockless(signed char* pos)
+void SoundSource::SetPlayPositionLockless(audio_t* pos)
 {
     // Setting position on a stream is not supported
     if (!sound_ || soundStream_)
         return;
 
-    signed char* start = sound_->GetStart();
-    signed char* end = sound_->GetEnd();
+    audio_t* start = sound_->GetStart();
+    audio_t* end = sound_->GetEnd();
     if (pos < start)
         pos = start;
     if (sound_->IsSixteenBit() && (pos - start) & 1u)
@@ -601,6 +682,8 @@ void SoundSource::SetPlayPositionLockless(signed char* pos)
     position_ = pos;
     timePosition_ = ((float)(int)(size_t)(pos - sound_->GetStart())) / (sound_->GetSampleSize() * sound_->GetFrequency());
 }
+
+#ifndef URHO3D_USE_OPENAL
 
 void SoundSource::MixMonoToMono(Sound* sound, int dest[], unsigned samples, int mixRate)
 {
@@ -1259,6 +1342,8 @@ void SoundSource::MixZeroVolume(Sound* sound, unsigned samples, int mixRate)
             position_ = nullptr;
     }
 }
+
+#endif
 
 void SoundSource::MixNull(float timeStep)
 {
