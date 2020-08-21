@@ -50,11 +50,11 @@ jobs:
       matrix:
         static-msvc-d3d11:
           BUILD_SHARED_LIBS: OFF
-          MSBUILD: 1
+          MSBUILD: ON
           CMAKE_GENERATE_ARGS: "-G \"Visual Studio 15 2017 Win64\" -DURHO3D_GRAPHICS_API=D3D11"
         shared-msvc-d3d11:
           BUILD_SHARED_LIBS: ON
-          MSBUILD: 1
+          MSBUILD: ON
           CMAKE_GENERATE_ARGS: "-G \"Visual Studio 15 2017 Win64\" -DURHO3D_GRAPHICS_API=D3D11"
         static-mingw-d3d9:
           BUILD_SHARED_LIBS: OFF
