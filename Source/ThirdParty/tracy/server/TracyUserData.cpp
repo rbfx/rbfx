@@ -18,10 +18,12 @@ constexpr auto FileDescription = "description";
 constexpr auto FileTimeline = "timeline";
 constexpr auto FileOptions = "options";
 constexpr auto FileAnnotations = "annotations";
+constexpr auto FileSourceSubstitutions = "srcsub";
 
 enum : uint32_t { VersionTimeline = 0 };
-enum : uint32_t { VersionOptions = 3 };
+enum : uint32_t { VersionOptions = 5 };
 enum : uint32_t { VersionAnnotations = 0 };
+enum : uint32_t { VersionSourceSubstitutions = 0 };
 
 UserData::UserData()
     : m_preserveState( false )
@@ -104,7 +106,9 @@ void UserData::LoadState( ViewData& data )
             fread( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
             fread( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
             fread( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
+            fread( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
             fread( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
+            fread( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
         }
         fclose( f );
     }
@@ -143,7 +147,9 @@ void UserData::SaveState( const ViewData& data )
         fwrite( &data.darkenContextSwitches, 1, sizeof( data.darkenContextSwitches ), f );
         fwrite( &data.drawCpuData, 1, sizeof( data.drawCpuData ), f );
         fwrite( &data.drawCpuUsageGraph, 1, sizeof( data.drawCpuUsageGraph ), f );
+        fwrite( &data.drawSamples, 1, sizeof( data.drawSamples ), f );
         fwrite( &data.dynamicColors, 1, sizeof( data.dynamicColors ), f );
+        fwrite( &data.ghostZones, 1, sizeof( data.ghostZones ), f );
         fclose( f );
     }
 }
@@ -178,9 +184,10 @@ void UserData::LoadAnnotations( std::vector<std::unique_ptr<Annotation>>& data )
                     fread( buf, 1, tsz, f );
                     ann->text.assign( buf, tsz );
                 }
-                fread( &ann->start, 1, sizeof( ann->start ), f );
-                fread( &ann->end, 1, sizeof( ann->end ), f );
+                fread( &ann->range.min, 1, sizeof( ann->range.min ), f );
+                fread( &ann->range.max, 1, sizeof( ann->range.max ), f );
                 fread( &ann->color, 1, sizeof( ann->color ), f );
+                ann->range.active = true;
 
                 data.emplace_back( std::move( ann ) );
             }
@@ -213,13 +220,99 @@ void UserData::SaveAnnotations( const std::vector<std::unique_ptr<Annotation>>& 
             {
                 fwrite( ann->text.c_str(), 1, sz, f );
             }
-            fwrite( &ann->start, 1, sizeof( ann->start ), f );
-            fwrite( &ann->end, 1, sizeof( ann->end ), f );
+            fwrite( &ann->range.min, 1, sizeof( ann->range.min ), f );
+            fwrite( &ann->range.max, 1, sizeof( ann->range.max ), f );
             fwrite( &ann->color, 1, sizeof( ann->color ), f );
         }
         fclose( f );
     }
 }
+
+bool UserData::LoadSourceSubstitutions( std::vector<SourceRegex>& data )
+{
+    assert( Valid() );
+    bool regexValid = true;
+    FILE* f = OpenFile( FileSourceSubstitutions, false );
+    if( f )
+    {
+        uint32_t ver;
+        fread( &ver, 1, sizeof( ver ), f );
+        if( ver == VersionSourceSubstitutions )
+        {
+            uint32_t sz;
+            fread( &sz, 1, sizeof( sz ), f );
+            for( uint32_t i=0; i<sz; i++ )
+            {
+                std::string pattern, target;
+                uint32_t tsz;
+                fread( &tsz, 1, sizeof( tsz ), f );
+                if( tsz != 0 )
+                {
+                    char buf[1024];
+                    assert( tsz < 1024 );
+                    fread( buf, 1, tsz, f );
+                    pattern.assign( buf, tsz );
+                }
+                fread( &tsz, 1, sizeof( tsz ), f );
+                if( tsz != 0 )
+                {
+                    char buf[1024];
+                    assert( tsz < 1024 );
+                    fread( buf, 1, tsz, f );
+                    target.assign( buf, tsz );
+                }
+                std::regex regex;
+                try
+                {
+                    regex.assign( pattern );
+                }
+                catch( std::regex_error& err )
+                {
+                    regexValid = false;
+                }
+                data.emplace_back( SourceRegex { std::move( pattern ), std::move( target ), std::move( regex ) } );
+            }
+        }
+        fclose( f );
+    }
+    return regexValid;
+}
+
+void UserData::SaveSourceSubstitutions( const std::vector<SourceRegex>& data )
+{
+    if( !m_preserveState ) return;
+    if( data.empty() )
+    {
+        Remove( FileSourceSubstitutions );
+        return;
+    }
+    assert( Valid() );
+    FILE* f = OpenFile( FileSourceSubstitutions, true );
+    if( f )
+    {
+        uint32_t ver = VersionSourceSubstitutions;
+        fwrite( &ver, 1, sizeof( ver ), f );
+        uint32_t sz = uint32_t( data.size() );
+        fwrite( &sz, 1, sizeof( sz ), f );
+        for( auto& v : data )
+        {
+            sz = uint32_t( v.pattern.size() );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            if( sz != 0 )
+            {
+                fwrite( v.pattern.c_str(), 1, sz, f );
+            }
+            sz = uint32_t( v.target.size() );
+            fwrite( &sz, 1, sizeof( sz ), f );
+            if( sz != 0 )
+            {
+                fwrite( v.target.c_str(), 1, sz, f );
+            }
+        }
+        fclose( f );
+    }
+}
+
 
 FILE* UserData::OpenFile( const char* filename, bool write )
 {

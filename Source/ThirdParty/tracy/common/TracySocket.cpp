@@ -23,6 +23,8 @@
 #  include <arpa/inet.h>
 #  include <sys/socket.h>
 #  include <sys/param.h>
+#  include <errno.h>
+#  include <fcntl.h>
 #  include <netinet/in.h>
 #  include <netdb.h>
 #  include <unistd.h>
@@ -70,6 +72,7 @@ Socket::Socket()
     , m_bufPtr( nullptr )
     , m_sock( -1 )
     , m_bufLeft( 0 )
+    , m_ptr( nullptr )
 {
 #ifdef _WIN32
     InitWinSock();
@@ -81,21 +84,72 @@ Socket::Socket( int sock )
     , m_bufPtr( nullptr )
     , m_sock( sock )
     , m_bufLeft( 0 )
+    , m_ptr( nullptr )
 {
 }
 
 Socket::~Socket()
 {
     tracy_free( m_buf );
-    if( m_sock != -1 )
+    if( m_sock.load( std::memory_order_relaxed ) != -1 )
     {
         Close();
+    }
+    if( m_ptr )
+    {
+        freeaddrinfo( m_res );
+#ifdef _WIN32
+        closesocket( m_connSock );
+#else
+        close( m_connSock );
+#endif
     }
 }
 
 bool Socket::Connect( const char* addr, int port )
 {
-    assert( m_sock == -1 );
+    assert( !IsValid() );
+
+    if( m_ptr )
+    {
+        const auto c = connect( m_connSock, m_ptr->ai_addr, m_ptr->ai_addrlen );
+        if( c == -1 )
+        {
+#if defined _WIN32 || defined __CYGWIN__
+            const auto err = WSAGetLastError();
+            if( err == WSAEALREADY || err == WSAEINPROGRESS ) return false;
+            if( err != WSAEISCONN )
+            {
+                freeaddrinfo( m_res );
+                closesocket( m_connSock );
+                m_ptr = nullptr;
+                return false;
+            }
+#else
+            const auto err = errno;
+            if( err == EALREADY || err == EINPROGRESS ) return false;
+            if( err != EISCONN )
+            {
+                freeaddrinfo( m_res );
+                close( m_connSock );
+                m_ptr = nullptr;
+                return false;
+            }
+#endif
+        }
+
+#if defined _WIN32 || defined __CYGWIN__
+        u_long nonblocking = 0;
+        ioctlsocket( m_connSock, FIONBIO, &nonblocking );
+#else
+        int flags = fcntl( m_connSock, F_GETFL, 0 );
+        fcntl( m_connSock, F_SETFL, flags & ~O_NONBLOCK );
+#endif
+        m_sock.store( m_connSock, std::memory_order_relaxed );
+        freeaddrinfo( m_res );
+        m_ptr = nullptr;
+        return true;
+    }
 
     struct addrinfo hints;
     struct addrinfo *res, *ptr;
@@ -116,43 +170,75 @@ bool Socket::Connect( const char* addr, int port )
         int val = 1;
         setsockopt( sock, SOL_SOCKET, SO_NOSIGPIPE, &val, sizeof( val ) );
 #endif
-        if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == -1 )
-        {
-#ifdef _WIN32
-            closesocket( sock );
+#if defined _WIN32 || defined __CYGWIN__
+        u_long nonblocking = 1;
+        ioctlsocket( sock, FIONBIO, &nonblocking );
 #else
-            close( sock );
+        int flags = fcntl( sock, F_GETFL, 0 );
+        fcntl( sock, F_SETFL, flags | O_NONBLOCK );
 #endif
-            continue;
+        if( connect( sock, ptr->ai_addr, ptr->ai_addrlen ) == 0 )
+        {
+            break;
         }
-        break;
+        else
+        {
+#if defined _WIN32 || defined __CYGWIN__
+            const auto err = WSAGetLastError();
+            if( err != WSAEWOULDBLOCK )
+            {
+                closesocket( sock );
+                continue;
+            }
+#else
+            if( errno != EINPROGRESS )
+            {
+                close( sock );
+                continue;
+            }
+#endif
+        }
+        m_res = res;
+        m_ptr = ptr;
+        m_connSock = sock;
+        return false;
     }
     freeaddrinfo( res );
     if( !ptr ) return false;
 
-    m_sock = sock;
+#if defined _WIN32 || defined __CYGWIN__
+    u_long nonblocking = 0;
+    ioctlsocket( sock, FIONBIO, &nonblocking );
+#else
+    int flags = fcntl( sock, F_GETFL, 0 );
+    fcntl( sock, F_SETFL, flags & ~O_NONBLOCK );
+#endif
+
+    m_sock.store( sock, std::memory_order_relaxed );
     return true;
 }
 
 void Socket::Close()
 {
-    assert( m_sock != -1 );
+    const auto sock = m_sock.load( std::memory_order_relaxed );
+    assert( sock != -1 );
 #ifdef _WIN32
-    closesocket( m_sock );
+    closesocket( sock );
 #else
-    close( m_sock );
+    close( sock );
 #endif
-    m_sock = -1;
+    m_sock.store( -1, std::memory_order_relaxed );
 }
 
 int Socket::Send( const void* _buf, int len )
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (const char*)_buf;
-    assert( m_sock != -1 );
+    assert( sock != -1 );
     auto start = buf;
     while( len > 0 )
     {
-        auto ret = send( m_sock, buf, len, MSG_NOSIGNAL );
+        auto ret = send( sock, buf, len, MSG_NOSIGNAL );
         if( ret == -1 ) return -1;
         len -= ret;
         buf += ret;
@@ -162,13 +248,14 @@ int Socket::Send( const void* _buf, int len )
 
 int Socket::GetSendBufSize()
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     int bufSize;
 #if defined _WIN32 || defined __CYGWIN__
     int sz = sizeof( bufSize );
-    getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
+    getsockopt( sock, SOL_SOCKET, SO_SNDBUF, (char*)&bufSize, &sz );
 #else
     socklen_t sz = sizeof( bufSize );
-    getsockopt( m_sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
+    getsockopt( sock, SOL_SOCKET, SO_SNDBUF, &bufSize, &sz );
 #endif
     return bufSize;
 }
@@ -205,15 +292,16 @@ int Socket::RecvBuffered( void* buf, int len, int timeout )
 
 int Socket::Recv( void* _buf, int len, int timeout )
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     auto buf = (char*)_buf;
 
     struct pollfd fd;
-    fd.fd = (socket_t)m_sock;
+    fd.fd = (socket_t)sock;
     fd.events = POLLIN;
 
     if( poll( &fd, 1, timeout ) > 0 )
     {
-        return recv( m_sock, buf, len, 0 );
+        return recv( sock, buf, len, 0 );
     }
     else
     {
@@ -221,33 +309,36 @@ int Socket::Recv( void* _buf, int len, int timeout )
     }
 }
 
-bool Socket::Read( void* _buf, int len, int timeout, std::function<bool()> exitCb )
+bool Socket::Read( void* buf, int len, int timeout )
 {
-    auto buf = (char*)_buf;
-
+    auto cbuf = (char*)buf;
     while( len > 0 )
     {
-        if( exitCb() ) return false;
-        const auto sz = RecvBuffered( buf, len, timeout );
-        switch( sz )
-        {
-        case 0:
-            return false;
-        case -1:
-#ifdef _WIN32
-        {
-            auto err = WSAGetLastError();
-            if( err == WSAECONNABORTED || err == WSAECONNRESET ) return false;
-        }
-#endif
-            break;
-        default:
-            len -= sz;
-            buf += sz;
-            break;
-        }
+        if( !ReadImpl( cbuf, len, timeout ) ) return false;
     }
+    return true;
+}
 
+bool Socket::ReadImpl( char*& buf, int& len, int timeout )
+{
+    const auto sz = RecvBuffered( buf, len, timeout );
+    switch( sz )
+    {
+    case 0:
+        return false;
+    case -1:
+#ifdef _WIN32
+    {
+        auto err = WSAGetLastError();
+        if( err == WSAECONNABORTED || err == WSAECONNRESET ) return false;
+    }
+#endif
+    break;
+    default:
+        len -= sz;
+        buf += sz;
+        break;
+    }
     return true;
 }
 
@@ -266,10 +357,11 @@ bool Socket::ReadRaw( void* _buf, int len, int timeout )
 
 bool Socket::HasData()
 {
+    const auto sock = m_sock.load( std::memory_order_relaxed );
     if( m_bufLeft > 0 ) return true;
 
     struct pollfd fd;
-    fd.fd = (socket_t)m_sock;
+    fd.fd = (socket_t)sock;
     fd.events = POLLIN;
 
     return poll( &fd, 1, 0 ) > 0;
@@ -277,7 +369,7 @@ bool Socket::HasData()
 
 bool Socket::IsValid() const
 {
-    return m_sock >= 0;
+    return m_sock.load( std::memory_order_relaxed ) >= 0;
 }
 
 
@@ -304,7 +396,9 @@ bool ListenSocket::Listen( int port, int backlog )
     memset( &hints, 0, sizeof( hints ) );
     hints.ai_family = AF_INET6;
     hints.ai_socktype = SOCK_STREAM;
+#ifndef TRACY_ONLY_LOCALHOST
     hints.ai_flags = AI_PASSIVE;
+#endif
 
     char portbuf[32];
     sprintf( portbuf, "%i", port );
@@ -312,6 +406,15 @@ bool ListenSocket::Listen( int port, int backlog )
     if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
 
     m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
+    if (m_sock == -1)
+    {
+        // IPV6 protocol may not be available/is disabled. Try to create a socket
+        // with the IPV4 protocol
+        hints.ai_family = AF_INET;
+        if( getaddrinfo( nullptr, portbuf, &hints, &res ) != 0 ) return false;
+        m_sock = socket( res->ai_family, res->ai_socktype, res->ai_protocol );
+        if( m_sock == -1 ) return false;
+    }
 #if defined _WIN32 || defined __CYGWIN__
     unsigned long val = 0;
     setsockopt( m_sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&val, sizeof( val ) );
@@ -324,8 +427,8 @@ bool ListenSocket::Listen( int port, int backlog )
     int val = 1;
     setsockopt( m_sock, SOL_SOCKET, SO_REUSEADDR, &val, sizeof( val ) );
 #endif
-    if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) { freeaddrinfo( res ); return false; }
-    if( listen( m_sock, backlog ) == -1 ) { freeaddrinfo( res ); return false; }
+    if( bind( m_sock, res->ai_addr, res->ai_addrlen ) == -1 ) { freeaddrinfo( res ); Close(); return false; }
+    if( listen( m_sock, backlog ) == -1 ) { freeaddrinfo( res ); Close(); return false; }
     freeaddrinfo( res );
     return true;
 }
@@ -463,8 +566,10 @@ IpAddress::~IpAddress()
 
 void IpAddress::Set( const struct sockaddr& addr )
 {
-#if defined(__MINGW32__) || defined(_WIN32) // rbfx
-    auto ai = (struct sockaddr_in*)&addr;
+#if defined _WIN32 && ( !defined NTDDI_WIN10 || NTDDI_VERSION < NTDDI_WIN10 )
+    struct sockaddr_in tmp;
+    memcpy( &tmp, &addr, sizeof( tmp ) );
+    auto ai = &tmp;
 #else
     auto ai = (const struct sockaddr_in*)&addr;
 #endif

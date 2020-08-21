@@ -13,9 +13,9 @@ void* MakeTexture()
     return new Urho3D::Texture2D(systemUI->GetContext());
 }
 
-void FreeTexture( void* _tex )
+void FreeTexture( void* _tex, void(*runOnMainThread)(std::function<void()>) )
 {
-    delete static_cast<Urho3D::Texture2D*>(_tex);
+    runOnMainThread( [_tex] { delete static_cast<Urho3D::Texture2D*>(_tex); });
 }
 
 void UpdateTexture( void* _tex, const char* data, int w, int h )
