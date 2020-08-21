@@ -79,7 +79,7 @@ public:
     audio_t* GetStart() const { return data_.get(); }
 
     /// Return loop start.
-	audio_t* GetRepeat() const { return repeat_; }
+    audio_t* GetRepeat() const { return repeat_; }
 
     /// Return sound data end.
     audio_t* GetEnd() const { return end_; }

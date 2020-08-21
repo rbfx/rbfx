@@ -74,7 +74,7 @@ public:
     /// Return byte size of one sample.
     unsigned GetSampleSize() const { return sampleSize_; }
 
-	/// Return mixing rate.
+    /// Return mixing rate.
     int GetMixRate() const { return mixRate_; }
 
     /// Return whether output is interpolated.
@@ -89,7 +89,7 @@ public:
 
     /// Return whether an audio stream has been reserved.
 #ifdef URHO3D_USE_OPENAL
-	bool IsInitialized() const { return isInitialized_; }
+    bool IsInitialized() const { return isInitialized_; }
 #else 
     bool IsInitialized() const { return deviceID_ != 0; }
 #endif
@@ -137,7 +137,7 @@ private:
     void UpdateInternal(float timeStep);
 
 #ifdef URHO3D_USE_OPENAL
-	bool isInitialized_;
+    bool isInitialized_;
 #else
     /// Audio thread mutex.
     Mutex audioMutex_;

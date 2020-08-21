@@ -129,15 +129,15 @@ SoundSource::SoundSource(Context* context) :
         audio_->AddSoundSource(this);
 
 #ifdef URHO3D_USE_OPENAL
-	if(audio_->IsInitialized())
-	{
-		alGenSources(1, &alsource_); _ALERROR();
-		alSourcef(alsource_, AL_PITCH, 1.0f); _ALERROR();
-		alSourcef(alsource_, AL_GAIN, 1.0f); _ALERROR();
-		alSource3f(alsource_, AL_POSITION, 0.0f, 0.0f, 0.0f); _ALERROR();
-		alSource3f(alsource_, AL_VELOCITY, 0.0f, 0.0f, 0.0f); _ALERROR();
-		alSourcei(alsource_, AL_LOOPING, AL_FALSE); _ALERROR();
-	}
+    if(audio_->IsInitialized())
+    {
+        alGenSources(1, &alsource_); _ALERROR();
+        alSourcef(alsource_, AL_PITCH, 1.0f); _ALERROR();
+        alSourcef(alsource_, AL_GAIN, 1.0f); _ALERROR();
+        alSource3f(alsource_, AL_POSITION, 0.0f, 0.0f, 0.0f); _ALERROR();
+        alSource3f(alsource_, AL_VELOCITY, 0.0f, 0.0f, 0.0f); _ALERROR();
+        alSourcei(alsource_, AL_LOOPING, AL_FALSE); _ALERROR();
+    }
 #endif
 
     UpdateMasterGain();
@@ -261,8 +261,8 @@ void SoundSource::Play(SoundStream* stream)
     // If sound source is currently playing, have to lock the audio mutex. When stream playback is explicitly
     // requested, clear the existing sound if any
 #ifdef URHO3D_USE_OPENAL
-	sound_.Reset();
-	PlayLockless(streamPtr);
+    sound_.Reset();
+    PlayLockless(streamPtr);
 #else 
     if (position_)
     {
@@ -286,14 +286,14 @@ void SoundSource::Stop()
         return;
 
     // If sound source is currently playing, have to lock the audio mutex
-	#ifndef URHO3D_USE_OPENAL
+    #ifndef URHO3D_USE_OPENAL
     if (position_)
     {
         MutexLock lock(audio_->GetMutex());
         StopLockless();
     }
     else
-	#endif
+    #endif
         StopLockless();
 
     MarkNetworkUpdate();
@@ -364,14 +364,14 @@ void SoundSource::Update(float timeStep)
 
     // If there is no actual audio output, perform fake mixing into a nonexistent buffer to check stopping/looping
 #ifdef URHO3D_USE_OPENAL
-	if(!audio_->IsInitialized())
-	{
-		MixNull(timeStep);
-	}
-	else
-	{
-		// Query OpenAL for progress
-	}
+    if(!audio_->IsInitialized())
+    {
+        MixNull(timeStep);
+    }
+    else
+    {
+        // Query OpenAL for progress
+    }
 #else
     if (!audio_->IsInitialized())
         MixNull(timeStep);
@@ -561,41 +561,41 @@ void SoundSource::PlayLockless(Sound* sound)
     if (sound)
     {
 #ifdef URHO3D_USE_OPENAL
-		if(sound->IsLooped())
-		{	
-			alSourcei(alsource_, AL_LOOPING, AL_TRUE);	
-		}
-		else
-		{
-			alSourcei(alsource_, AL_LOOPING, AL_FALSE);
-		}
+        if(sound->IsLooped())
+        {	
+            alSourcei(alsource_, AL_LOOPING, AL_TRUE);	
+        }
+        else
+        {
+            alSourcei(alsource_, AL_LOOPING, AL_FALSE);
+        }
 #endif
 
         if (!sound->IsCompressed())
         {
 #ifdef URHO3D_USE_OPENAL
-			// We simply load the full sound into a buffer and pass it to OpenAl
-			alGenBuffers(1, &albuffer_);
-			ALenum format;
-			if(sound->IsSixteenBit() && sound->IsStereo())
-			{
-				format = AL_FORMAT_STEREO16;
-			}
-			else if(sound->IsSixteenBit())
-			{
-				format = AL_FORMAT_MONO16;
-			}
-			else if(sound->IsStereo())
-			{
-				format = AL_FORMAT_STEREO8;
-			}
-			else
-			{
-				format = AL_FORMAT_MONO8;	
-			}
-			alBufferData(albuffer_, format, sound->GetStart(), sound->GetDataSize(), sound->GetIntFrequency());
-			alSourcei(alsource_, AL_BUFFER, albuffer_);
-			alSourcePlay(alsource_);
+            // We simply load the full sound into a buffer and pass it to OpenAl
+            alGenBuffers(1, &albuffer_);
+            ALenum format;
+            if(sound->IsSixteenBit() && sound->IsStereo())
+            {
+                format = AL_FORMAT_STEREO16;
+            }
+            else if(sound->IsSixteenBit())
+            {
+                format = AL_FORMAT_MONO16;
+            }
+            else if(sound->IsStereo())
+            {
+                format = AL_FORMAT_STEREO8;
+            }
+            else
+            {
+                format = AL_FORMAT_MONO8;	
+            }
+            alBufferData(albuffer_, format, sound->GetStart(), sound->GetDataSize(), sound->GetIntFrequency());
+            alSourcei(alsource_, AL_BUFFER, albuffer_);
+            alSourcePlay(alsource_);
 #else
             // Uncompressed sound start
             signed char* start = sound->GetStart();

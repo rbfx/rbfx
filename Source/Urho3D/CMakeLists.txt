@@ -185,19 +185,19 @@ set (THIRD_PARTY_DEPENDENCIES
     entt
     ETCPACK
     xatlas
-	embree
+    embree
 )
 
 # TODO: Integrate openal-soft as a ThidParty depedency
-FIND_PACKAGE(OpenAL)
+find_package(OpenAL)
 
-IF(WIN32)
-  TARGET_LINK_LIBRARIES(Urho3D PRIVATE OpenAL32.lib)
-ELSE()
-  TARGET_LINK_LIBRARIES(Urho3D PRIVATE openal)
-ENDIF()
+if(WIN32)
+    target_link_libraries(Urho3D PRIVATE OpenAL32.lib)
+else()
+    target_link_libraries(Urho3D PRIVATE openal)
+endif()
 
-TARGET_INCLUDE_DIRECTORIES(Urho3D PRIVATE OPENAL_INCLUDE_DIR)
+target_include_directories(Urho3D PRIVATE OPENAL_INCLUDE_DIR)
 
 if (URHO3D_MERGE_STATIC_LIBS)
     list (APPEND THIRD_PARTY_DEPENDENCIES Bullet)
