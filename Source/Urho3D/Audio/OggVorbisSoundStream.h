@@ -25,6 +25,7 @@
 #include <EASTL/shared_array.h>
 
 #include "../Audio/SoundStream.h"
+#include "../Audio/AudioDefs.h"
 
 namespace Urho3D
 {
@@ -50,7 +51,7 @@ protected:
     /// Decoder state.
     void* decoder_;
     /// Compressed sound data.
-    ea::shared_array<signed char> data_;
+    ea::shared_array<audio_t> data_;
     /// Compressed sound data size in bytes.
     unsigned dataSize_;
 };
