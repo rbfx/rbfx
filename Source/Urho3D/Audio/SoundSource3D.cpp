@@ -58,7 +58,7 @@ SoundSource3D::SoundSource3D(Context* context) :
 {
     // Start from zero volume until attenuation properly calculated
 #ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_ROLLOFF_FACTOR, rolloffFactor_);
+    alSourcef(alsource_, AL_ROLLOFF_FACTOR, -rolloffFactor_);
     alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
     alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
 #else
@@ -108,13 +108,11 @@ void SoundSource3D::DrawDebugGeometry(DebugRenderer* debug, bool depthTest)
 
 void SoundSource3D::Update(float timeStep)
 {
-#ifdef URHO3D_USE_OPENAL
-    // We set the OpenAL location here
     Vector3 pos = node_->GetPosition();
-    alSource3f(alsource_, AL_POSITION, pos.x_, pos.y_, pos.z_);	
-#else
-    CalculateAttenuation();
+#ifdef URHO3D_USE_OPENAL
+    alSource3f(alsource_, AL_POSITION, pos.x_, pos.y_, -pos.z_);	
 #endif
+    CalculateAttenuation();
     SoundSource::Update(timeStep);
 }
 
@@ -123,11 +121,6 @@ void SoundSource3D::SetDistanceAttenuation(float nearDistance, float farDistance
     nearDistance_ = Max(nearDistance, 0.0f);
     farDistance_ = Max(farDistance, 0.0f);
     rolloffFactor_ = Max(rolloffFactor, MIN_ROLLOFF);
-#ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_ROLLOFF_FACTOR, rolloffFactor);
-    alSourcef(alsource_, AL_MAX_DISTANCE, farDistance_);
-    alSourcef(alsource_, AL_REFERENCE_DISTANCE, nearDistance_);
-#endif
     // TODO: near distance? It's not possible to set it seems
     MarkNetworkUpdate();
 }
@@ -175,7 +168,6 @@ void SoundSource3D::SetRolloffFactor(float factor)
     MarkNetworkUpdate();
 }
 
-#ifndef URHO3D_USE_OPENAL
 void SoundSource3D::CalculateAttenuation()
 {
     if (!audio_)
@@ -233,6 +225,5 @@ void SoundSource3D::CalculateAttenuation()
     else
         attenuation_ = 0.0f;
 }
-#endif
 
 }

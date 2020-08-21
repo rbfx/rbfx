@@ -328,10 +328,6 @@ void SoundSource::SetGain(float gain)
 {
     gain_ = Max(gain, 0.0f);
 
-#ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_GAIN, masterGain_ * gain_);
-#endif
-
     MarkNetworkUpdate();
 }
 
@@ -401,7 +397,8 @@ void SoundSource::Update(float timeStep)
     }
     else
     {
-        // Query OpenAL for progress
+        // Manual OpenAL attenuation
+        alSourcef(alsource_, AL_GAIN, gain_ * masterGain_ * attenuation_);
     }
 #else
     if (!audio_->IsInitialized())
@@ -542,11 +539,6 @@ void SoundSource::UpdateMasterGain()
 {
     if (audio_)
         masterGain_ = audio_->GetSoundSourceMasterGain(soundType_);
-    
-#ifdef URHO3D_USE_OPENAL
-    alSourcef(alsource_, AL_GAIN, masterGain_ * gain_);
-#endif
-
 }
 
 void SoundSource::SetSoundAttr(const ResourceRef& value)
