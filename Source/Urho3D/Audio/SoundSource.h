@@ -87,7 +87,7 @@ public:
     ea::string GetSoundType() const { return soundType_; }
 
     /// Return playback time position.
-    float GetTimePosition() const { return timePosition_; }
+    float GetTimePosition() const;
 
     /// Return frequency.
     float GetFrequency() const { return frequency_; }
@@ -113,6 +113,7 @@ public:
     /// Mix sound source output to a 32-bit clipping buffer. Called by Audio.
     void Mix(int dest[], unsigned samples, int mixRate, bool stereo, bool interpolation);
     #endif
+    
     /// Update the effective master gain. Called internally and by Audio when the master gain changes.
     void UpdateMasterGain();
 
@@ -148,6 +149,11 @@ protected:
     bool sendFinishedEvent_;
     /// Automatic removal mode.
     AutoRemoveMode autoRemove_;
+
+#ifdef URHO3D_USE_OPENAL
+    uint32_t alsource_;
+    uint32_t albuffer_;
+#endif
 
 private:
     /// Play a sound without locking the audio mutex. Called internally.
@@ -185,22 +191,19 @@ private:
     SharedPtr<Sound> sound_;
     /// Sound stream that is being played.
     SharedPtr<SoundStream> soundStream_;
+
+    // These are only used on OpenAL by the null mixer
     /// Playback position.
     volatile audio_t* position_;
     /// Playback fractional position.
     volatile int fractPosition_;
     /// Playback time position.
     volatile float timePosition_;
+
     /// Decode buffer.
     SharedPtr<Sound> streamBuffer_;
     /// Unused stream bytes from previous frame.
     int unusedStreamSize_;
-
-protected:
-#ifdef URHO3D_USE_OPENAL
-    uint32_t alsource_;
-    uint32_t albuffer_;
-#endif
 };
 
 }
