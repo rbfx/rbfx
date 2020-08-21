@@ -51,28 +51,28 @@ namespace Urho3D
 #ifdef URHO3D_USE_OPENAL
 void _ALERROR()
 {
-	ALenum error = alGetError();
+    ALenum error = alGetError();
     if(error != AL_NO_ERROR)
     {
         switch(error)
         {
         case AL_INVALID_NAME:
-			URHO3D_LOGERROR("AL_INVALID_NAME");
+            URHO3D_LOGERROR("AL_INVALID_NAME");
             break;
         case AL_INVALID_ENUM:
-			URHO3D_LOGERROR("AL_INVALID_ENUM");
+            URHO3D_LOGERROR("AL_INVALID_ENUM");
             break;
         case AL_INVALID_VALUE:
-			URHO3D_LOGERROR("AL_INVALID_VALUE");
+            URHO3D_LOGERROR("AL_INVALID_VALUE");
             break;
         case AL_INVALID_OPERATION:
-			URHO3D_LOGERROR("AL_INVALID_OPERATION");
+            URHO3D_LOGERROR("AL_INVALID_OPERATION");
             break;
         case AL_OUT_OF_MEMORY:
-			URHO3D_LOGERROR("AL_OUT_OF_MEMORY");
+            URHO3D_LOGERROR("AL_OUT_OF_MEMORY");
             break;
         default:
-			URHO3D_LOGERROR("UNKNOWN AL ERROR");
+            URHO3D_LOGERROR("UNKNOWN AL ERROR");
         }
     }
 
@@ -119,34 +119,34 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     Release();
 
 #ifdef URHO3D_USE_OPENAL
-	// We simply create the mode and ignore all paramaters
-	// because they cannot be configured in OpenAL
-	// TODO: Better handling? OpenAL offers some customization possibilities
+    // We simply create the mode and ignore all paramaters
+    // because they cannot be configured in OpenAL
+    // TODO: Better handling? OpenAL offers some customization possibilities
 
-	URHO3D_LOGINFO("Audio mode was changed using OpenAL. No changes applied");
-	isInitialized_ = true;
+    URHO3D_LOGINFO("Audio mode was changed using OpenAL. No changes applied");
+    isInitialized_ = true;
 
-	ALCdevice *aldevice;
-	aldevice = alcOpenDevice(NULL);
-	if(!aldevice)
-	{
-		URHO3D_LOGERROR("Could not create OpenAL device");
-	}
-	
-	ALCcontext *alcontext;
-	alcontext = alcCreateContext(aldevice, NULL);
-	if(!alcontext)
-	{
-		URHO3D_LOGERROR("Could not create OpenAL context");
-	}
+    ALCdevice *aldevice;
+    aldevice = alcOpenDevice(NULL);
+    if(!aldevice)
+    {
+        URHO3D_LOGERROR("Could not create OpenAL device");
+    }
+    
+    ALCcontext *alcontext;
+    alcontext = alcCreateContext(aldevice, NULL);
+    if(!alcontext)
+    {
+        URHO3D_LOGERROR("Could not create OpenAL context");
+    }
 
-	if(!alcMakeContextCurrent(alcontext))
-	{
-		URHO3D_LOGERROR("Could not make OpenAL context current context");
-	}
+    if(!alcMakeContextCurrent(alcontext))
+    {
+        URHO3D_LOGERROR("Could not make OpenAL context current context");
+    }
 
-	alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
-	
+    alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+    
 #else
     bufferLengthMSec = Max(bufferLengthMSec, MIN_BUFFERLENGTH);
     mixRate = Clamp(mixRate, MIN_MIXRATE, MAX_MIXRATE);
@@ -413,15 +413,15 @@ void Audio::Release()
     Stop();
 
 #ifdef URHO3D_USE_OPENAL
-	if(IsInitialized())
-	{
-		URHO3D_LOGINFO("Releasing OpenAL");
-		ALCcontext* context = alcGetCurrentContext();
-		ALCdevice* device = alcGetContextsDevice(context);
-		alcMakeContextCurrent(nullptr);
-		alcDestroyContext(context);
-		alcCloseDevice(device);
-	}
+    if(IsInitialized())
+    {
+        URHO3D_LOGINFO("Releasing OpenAL");
+        ALCcontext* context = alcGetCurrentContext();
+        ALCdevice* device = alcGetContextsDevice(context);
+        alcMakeContextCurrent(nullptr);
+        alcDestroyContext(context);
+        alcCloseDevice(device);
+    }
 #else 
     if (deviceID_)
     {
