@@ -142,7 +142,7 @@ extern "C"
 {
 
 /* single file open dialog */
-nfdresult_t NFD_OpenDialog(const nfdchar_t* filterList, const nfdchar_t* defaultPath, nfdchar_t** outPath)
+nfdresult_t NFD_OpenDialog(const nfdchar_t* filterList, const nfdchar_t* defaultPath, nfdchar_t** outPath, void* owner)
 {
     std::string result;
     if (nfd::use_kdialog())
@@ -240,7 +240,7 @@ nfdresult_t NFD_OpenDialogMultiple(const nfdchar_t* filterList, const nfdchar_t*
 }
 
 /* save dialog */
-nfdresult_t NFD_SaveDialog(const nfdchar_t* filterList, const nfdchar_t* defaultPath, nfdchar_t** outPath)
+nfdresult_t NFD_SaveDialog(const nfdchar_t* filterList, const nfdchar_t* defaultPath, nfdchar_t** outPath, void* owner)
 {
     std::string result;
     if (nfd::use_kdialog())
