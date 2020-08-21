@@ -265,7 +265,8 @@ void BackgroundLoader::FinishBackgroundLoading(BackgroundLoadItem& item)
     // If BeginLoad() phase was successful, call EndLoad() and get the final success/failure result
     if (success)
     {
-        URHO3D_PROFILE(ea::string("Finish" + resource->GetTypeName()).c_str());
+        URHO3D_PROFILE("FinishBackgroundLoading");
+        URHO3D_PROFILE_ZONENAME(resource->GetTypeName().c_str(), resource->GetTypeName().length());
         URHO3D_LOGDEBUG("Finishing background loaded resource " + resource->GetName());
         success = resource->EndLoad();
     }

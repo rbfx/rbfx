@@ -74,7 +74,6 @@ if (URHO3D_PROFILING)
         endif ()
         add_executable (TracyProfiler ${TARGET_TYPE} ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES} ${TRACY_PROFILER_SOURCE_FILES})
         target_include_directories(TracyProfiler PRIVATE .)
-        target_compile_definitions(TracyProfiler PUBLIC -DTRACY_ROOT_WINDOW=1)
         set_target_properties(TracyProfiler PROPERTIES OUTPUT_NAME Profiler)
         setup_tracy_profiler_target(TracyProfiler)
         install (TARGETS TracyProfiler
@@ -86,8 +85,8 @@ if (URHO3D_PROFILING)
         # Lib for editor to easily consume profiler
         add_library (TracyEmbedded STATIC ${SERVER_SOURCE_FILES} ${COMMON_SOURCE_FILES})
         setup_tracy_profiler_target(TracyEmbedded)
-        target_compile_definitions(TracyEmbedded PRIVATE -DTRACY_EMBED_WINDOW=1)
         target_include_directories(TracyEmbedded SYSTEM PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+        target_compile_definitions(TracyEmbedded PRIVATE -DTRACY_NO_ROOT_WINDOW=1 -DTRACY_EMBED_WINDOW=1)
     endif ()
 
     install (TARGETS Tracy EXPORT Urho3D

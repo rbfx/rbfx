@@ -79,7 +79,7 @@ public:
     template<class T>
     tracy_force_inline void Read( T& v )
     {
-        if( sizeof( T ) < BufSize - m_offset )
+        if( sizeof( T ) <= BufSize - m_offset )
         {
             memcpy( &v, m_buf + m_offset, sizeof( T ) );
             m_offset += sizeof( T );
@@ -96,7 +96,7 @@ public:
     template<class T, class U>
     tracy_force_inline void Read2( T& v0, U& v1 )
     {
-        if( sizeof( T ) + sizeof( U ) < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) <= BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
             memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
@@ -114,7 +114,7 @@ public:
     template<class T, class U, class V>
     tracy_force_inline void Read3( T& v0, U& v1, V& v2 )
     {
-        if( sizeof( T ) + sizeof( U ) + sizeof( V ) < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) <= BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
             memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
@@ -134,7 +134,7 @@ public:
     template<class T, class U, class V, class W>
     tracy_force_inline void Read4( T& v0, U& v1, V& v2, W& v3 )
     {
-        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) <= BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
             memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
@@ -156,7 +156,7 @@ public:
     template<class T, class U, class V, class W, class X>
     tracy_force_inline void Read5( T& v0, U& v1, V& v2, W& v3, X& v4 )
     {
-        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) <= BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
             memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
@@ -180,7 +180,7 @@ public:
     template<class T, class U, class V, class W, class X, class Y>
     tracy_force_inline void Read6( T& v0, U& v1, V& v2, W& v3, X& v4, Y& v5 )
     {
-        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) <= BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
             memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
@@ -203,10 +203,38 @@ public:
         }
     }
 
+    template<class T, class U, class V, class W, class X, class Y, class Z>
+    tracy_force_inline void Read7( T& v0, U& v1, V& v2, W& v3, X& v4, Y& v5, Z& v6 )
+    {
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) <= BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, m_buf + m_offset + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            memcpy( &v5, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
+            memcpy( &v6, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
+            m_offset += sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z );
+        }
+        else
+        {
+            char tmp[sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, tmp + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            memcpy( &v5, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
+            memcpy( &v6, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
+        }
+    }
+
     template<class T, class U, class V, class W, class X, class Y, class Z, class A>
     tracy_force_inline void Read8( T& v0, U& v1, V& v2, W& v3, X& v4, Y& v5, Z& v6, A& v7 )
     {
-        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ) < BufSize - m_offset )
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ) <= BufSize - m_offset )
         {
             memcpy( &v0, m_buf + m_offset, sizeof( T ) );
             memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
@@ -230,6 +258,38 @@ public:
             memcpy( &v5, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
             memcpy( &v6, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
             memcpy( &v7, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ), sizeof( A ) );
+        }
+    }
+
+    template<class T, class U, class V, class W, class X, class Y, class Z, class A, class B>
+    tracy_force_inline void Read9( T& v0, U& v1, V& v2, W& v3, X& v4, Y& v5, Z& v6, A& v7, B& v8 )
+    {
+        if( sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ) + sizeof( B ) <= BufSize - m_offset )
+        {
+            memcpy( &v0, m_buf + m_offset, sizeof( T ) );
+            memcpy( &v1, m_buf + m_offset + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, m_buf + m_offset + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            memcpy( &v5, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
+            memcpy( &v6, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
+            memcpy( &v7, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ), sizeof( A ) );
+            memcpy( &v8, m_buf + m_offset + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ), sizeof( B ) );
+            m_offset += sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ) + sizeof( B );
+        }
+        else
+        {
+            char tmp[sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ) + sizeof( B )];
+            ReadBig( tmp, sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ) + sizeof( B ) );
+            memcpy( &v0, tmp, sizeof( T ) );
+            memcpy( &v1, tmp + sizeof( T ), sizeof( U ) );
+            memcpy( &v2, tmp + sizeof( T ) + sizeof( U ), sizeof( V ) );
+            memcpy( &v3, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ), sizeof( W ) );
+            memcpy( &v4, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ), sizeof( X ) );
+            memcpy( &v5, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ), sizeof( Y ) );
+            memcpy( &v6, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ), sizeof( Z ) );
+            memcpy( &v7, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ), sizeof( A ) );
+            memcpy( &v8, tmp + sizeof( T ) + sizeof( U ) + sizeof( V ) + sizeof( W ) + sizeof( X ) + sizeof( Y ) + sizeof( Z ) + sizeof( A ), sizeof( B ) );
         }
     }
 
