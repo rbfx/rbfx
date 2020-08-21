@@ -45,43 +45,55 @@ typedef enum {
     NFD_OKAY,        /* user pressed okay, or successful return */
     NFD_CANCEL       /* user pressed cancel */
 }nfdresult_t;
-
+    
 
 /* nfd_<targetplatform>.c */
 
-/* single file open dialog */
-NFD_API nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
-                                    const nfdchar_t *defaultPath,
-                                    nfdchar_t **outPath );
+/* single file open dialog */    
+NFD_API
+nfdresult_t NFD_OpenDialog( const nfdchar_t *filterList,
+                            const nfdchar_t *defaultPath,
+                            nfdchar_t **outPath,
+                            void* owner );
 
-/* multiple file open dialog */
-NFD_API nfdresult_t NFD_OpenDialogMultiple( const nfdchar_t *filterList,
-                                            const nfdchar_t *defaultPath,
-                                            nfdpathset_t *outPaths );
+/* multiple file open dialog */    
+NFD_API
+nfdresult_t NFD_OpenDialogMultiple( const nfdchar_t *filterList,
+                                    const nfdchar_t *defaultPath,
+                                    nfdpathset_t *outPaths );
 
 /* save dialog */
-NFD_API nfdresult_t NFD_SaveDialog( const nfdchar_t *filterList,
-                                    const nfdchar_t *defaultPath,
-                                    nfdchar_t **outPath );
+NFD_API
+nfdresult_t NFD_SaveDialog( const nfdchar_t *filterList,
+                            const nfdchar_t *defaultPath,
+                            nfdchar_t **outPath,
+                            void* owner );
 
 
 /* select folder dialog */
-NFD_API nfdresult_t NFD_PickFolder( const nfdchar_t *defaultPath,
-                                    nfdchar_t **outPath);
+NFD_API
+nfdresult_t NFD_PickFolder( const nfdchar_t *defaultPath,
+                            nfdchar_t **outPath);
 
 /* nfd_common.c */
 
-/* free the memory allocated for a path */
-NFD_API void        NFD_FreePath( nfdchar_t *outPath );
 /* get last error -- set when nfdresult_t returns NFD_ERROR */
-NFD_API const char *NFD_GetError( void );
+NFD_API
+const char *NFD_GetError( void );
 /* get the number of entries stored in pathSet */
-NFD_API size_t      NFD_PathSet_GetCount( const nfdpathset_t *pathSet );
+NFD_API
+size_t      NFD_PathSet_GetCount( const nfdpathset_t *pathSet );
 /* Get the UTF-8 path at offset index */
-NFD_API nfdchar_t  *NFD_PathSet_GetPath( const nfdpathset_t *pathSet, size_t index );
-/* Free the pathSet */
-NFD_API void        NFD_PathSet_Free( nfdpathset_t *pathSet );
+NFD_API
+nfdchar_t  *NFD_PathSet_GetPath( const nfdpathset_t *pathSet, size_t index );
+/* Free the pathSet */    
+NFD_API
+void        NFD_PathSet_Free( nfdpathset_t *pathSet );
 
+
+/* free the memory allocated for a path */
+NFD_API
+void        NFD_FreePath( nfdchar_t *outPath );
 
 #ifdef __cplusplus
 }
