@@ -94,9 +94,7 @@ Audio::Audio(Context* context) :
 {
 
 #ifndef URHO3D_USE_OPENAL
-
     context_->RequireSDL(SDL_INIT_AUDIO);
-
 #endif
 
     // Set the master to the default value
@@ -111,7 +109,10 @@ Audio::Audio(Context* context) :
 Audio::~Audio()
 {
     Release();
+
+#ifndef URHO3D_USE_OPENAL
     context_->ReleaseSDL();
+#endif
 }
 
 bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpolation)
@@ -123,14 +124,13 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     // because they cannot be configured in OpenAL
     // TODO: Better handling? OpenAL offers some customization possibilities
 
-    URHO3D_LOGINFO("Audio mode was changed using OpenAL. No changes applied");
-    isInitialized_ = true;
 
     ALCdevice *aldevice;
     aldevice = alcOpenDevice(NULL);
     if(!aldevice)
     {
         URHO3D_LOGERROR("Could not create OpenAL device");
+        return false;
     }
     
     ALCcontext *alcontext;
@@ -138,16 +138,21 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     if(!alcontext)
     {
         URHO3D_LOGERROR("Could not create OpenAL context");
+        return false;
     }
 
     if(!alcMakeContextCurrent(alcontext))
     {
         URHO3D_LOGERROR("Could not make OpenAL context current context");
+        return false;
     }
-
+    
+    isInitialized_ = true;
     alDistanceModel(AL_INVERSE_DISTANCE_CLAMPED);
+    URHO3D_LOGINFO("OpenAL context created");
     
 #else
+
     bufferLengthMSec = Max(bufferLengthMSec, MIN_BUFFERLENGTH);
     mixRate = Clamp(mixRate, MIN_MIXRATE, MAX_MIXRATE);
 
@@ -193,6 +198,7 @@ bool Audio::SetMode(int bufferLengthMSec, int mixRate, bool stereo, bool interpo
     clipBuffer_.reset(new int[stereo ? fragmentSize_ << 1u : fragmentSize_]);
     URHO3D_LOGINFO("Set audio mode " + ea::to_string(mixRate_) + " Hz " + (stereo_ ? "stereo" : "mono") + " " +
             (interpolation_ ? "interpolated" : ""));
+
 #endif
 
     return Play();
@@ -240,6 +246,7 @@ void Audio::SetMasterGain(const ea::string& type, float gain)
 
     for (auto i = soundSources_.begin(); i != soundSources_.end(); ++i)
         (*i)->UpdateMasterGain();
+    
 }
 
 void Audio::PauseSoundType(const ea::string& type)
